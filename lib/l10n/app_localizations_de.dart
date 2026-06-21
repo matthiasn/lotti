@@ -4975,6 +4975,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Füge ein Foto oder eine Notiz hinzu, dann erscheint hier die Zusammenfassung.';
 
   @override
+  String get eventsRecapUnavailable =>
+      'Die Zusammenfassung konnte nicht geladen werden.';
+
+  @override
   String get eventsRegenerateSummary => 'Zusammenfassung neu erstellen';
 
   @override

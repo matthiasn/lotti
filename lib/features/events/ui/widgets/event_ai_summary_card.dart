@@ -41,32 +41,51 @@ class EventAiSummaryCard extends ConsumerWidget {
       if (fallback == null || fallback.isEmpty) {
         return const SizedBox.shrink();
       }
-      return _RecapCard(body: fallback);
+      return _RecapCard(state: _RecapState.recap, body: fallback);
     }
 
-    final report = ref
+    void refresh() =>
+        ref.read(eventAgentServiceProvider).triggerReanalysis(agent.agentId);
+
+    // unwrapPrevious() keeps the last recap during a background reload (after a
+    // wake / sync) instead of dropping to a loading state — honoring the
+    // "never flash established UI during background refresh" rule. Loading and
+    // error are only ever surfaced on a genuine first load, and they render
+    // distinctly so they never masquerade as the awaiting-content hint.
+    return ref
         .watch(agentReportProvider(agent.agentId))
-        .value
-        ?.mapOrNull(agentReport: (r) => r);
-
-    final tldr = report?.tldr?.trim();
-    final content = report?.content.trim();
-    final body = (tldr != null && tldr.isNotEmpty)
-        ? tldr
-        : (content != null && content.isNotEmpty ? content : null);
-
-    return _RecapCard(
-      body: body,
-      onRefresh: () =>
-          ref.read(eventAgentServiceProvider).triggerReanalysis(agent.agentId),
-    );
+        .unwrapPrevious()
+        .when(
+          skipLoadingOnReload: true,
+          data: (value) {
+            final report = value?.mapOrNull(agentReport: (r) => r);
+            final tldr = report?.tldr?.trim();
+            final content = report?.content.trim();
+            final body = (tldr != null && tldr.isNotEmpty)
+                ? tldr
+                : (content != null && content.isNotEmpty ? content : null);
+            return _RecapCard(
+              state: body != null ? _RecapState.recap : _RecapState.awaiting,
+              body: body,
+              onRefresh: refresh,
+            );
+          },
+          loading: () =>
+              _RecapCard(state: _RecapState.loading, onRefresh: refresh),
+          error: (_, _) =>
+              _RecapCard(state: _RecapState.error, onRefresh: refresh),
+        );
   }
 }
 
-class _RecapCard extends StatelessWidget {
-  const _RecapCard({this.body, this.onRefresh});
+enum _RecapState { recap, awaiting, loading, error }
 
-  /// The recap text. When `null` the card shows the awaiting-content hint.
+class _RecapCard extends StatelessWidget {
+  const _RecapCard({required this.state, this.body, this.onRefresh});
+
+  final _RecapState state;
+
+  /// The recap text, present only when [state] is [_RecapState.recap].
   final String? body;
   final VoidCallback? onRefresh;
 
@@ -75,7 +94,32 @@ class _RecapCard extends StatelessWidget {
     final tokens = context.designTokens;
     final cs = context.colorScheme;
     final styles = tokens.typography.styles;
-    final hasBody = body != null;
+
+    final bodyWidget = switch (state) {
+      _RecapState.recap => Text(
+        body!,
+        style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
+      ),
+      _RecapState.awaiting => Text(
+        context.messages.eventsRecapAwaitingContent,
+        style: styles.body.bodyMedium.copyWith(color: cs.onSurfaceVariant),
+      ),
+      _RecapState.error => Text(
+        context.messages.eventsRecapUnavailable,
+        style: styles.body.bodyMedium.copyWith(color: cs.onSurfaceVariant),
+      ),
+      _RecapState.loading => Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+        child: SizedBox(
+          width: tokens.spacing.step5,
+          height: tokens.spacing.step5,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: cs.onSurfaceVariant,
+          ),
+        ),
+      ),
+    };
 
     return ModernBaseCard(
       isEnhanced: true,
@@ -106,12 +150,7 @@ class _RecapCard extends StatelessWidget {
             ],
           ),
           SizedBox(height: tokens.spacing.step2),
-          Text(
-            hasBody ? body! : context.messages.eventsRecapAwaitingContent,
-            style: hasBody
-                ? styles.body.bodyLarge.copyWith(color: cs.onSurface)
-                : styles.body.bodyMedium.copyWith(color: cs.onSurfaceVariant),
-          ),
+          bodyWidget,
         ],
       ),
     );

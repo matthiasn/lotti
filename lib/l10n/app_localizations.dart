@@ -8574,6 +8574,12 @@ abstract class AppLocalizations {
   /// **'Add a photo or note and the recap will appear here.'**
   String get eventsRecapAwaitingContent;
 
+  /// No description provided for @eventsRecapUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the recap.'**
+  String get eventsRecapUnavailable;
+
   /// No description provided for @eventsRegenerateSummary.
   ///
   /// In en, this message translates to:

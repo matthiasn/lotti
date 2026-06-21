@@ -4916,6 +4916,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add a photo or note and the recap will appear here.';
 
   @override
+  String get eventsRecapUnavailable => 'Couldn\'t load the recap.';
+
+  @override
   String get eventsRegenerateSummary => 'Regenerate summary';
 
   @override

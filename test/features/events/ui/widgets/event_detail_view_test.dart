@@ -47,6 +47,27 @@ void main() {
       expect(find.byType(StarRating), findsOneWidget);
     });
 
+    testWidgets('injected aiSummaryCard replaces the passive summary', (
+      tester,
+    ) async {
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          // buildEventDetailData supplies a passive summary by default.
+          data: buildEventDetailData(),
+          aiSummaryCard: const Text('AGENT RECAP CARD'),
+        ),
+        size: _tallMobile,
+      );
+
+      expect(find.text('AGENT RECAP CARD'), findsOneWidget);
+      // The injected card takes the slot; the passive summary is not rendered.
+      expect(
+        find.text('A surprise 30th for Anna on the rooftop.'),
+        findsNothing,
+      );
+    });
+
     testWidgets('hides the rating on a fresh, not-yet-happened event', (
       tester,
     ) async {

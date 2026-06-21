@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -61,6 +63,52 @@ void main() {
 
       expect(find.text('Summary'), findsNothing);
       expect(find.byIcon(Icons.auto_awesome), findsNothing);
+    });
+  });
+
+  group('degraded report states (never the awaiting hint)', () {
+    const awaitingHint = 'Add a photo or note and the recap will appear here.';
+
+    testWidgets('first load shows a spinner, not the awaiting hint', (
+      tester,
+    ) async {
+      final pending = Completer<AgentDomainEntity?>();
+      addTearDown(() => pending.complete(null));
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const EventAiSummaryCard(eventId: eventId),
+          overrides: <Override>[
+            eventAgentProvider(eventId).overrideWith((ref) => agentIdentity),
+            agentReportProvider(agentId).overrideWith((ref) => pending.future),
+          ],
+        ),
+      );
+      await tester.pump(); // resolve the agent; the report stays loading
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text(awaitingHint), findsNothing);
+    });
+
+    testWidgets('a report error shows the unavailable message, not the hint', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const EventAiSummaryCard(eventId: eventId),
+          overrides: <Override>[
+            eventAgentProvider(eventId).overrideWith((ref) => agentIdentity),
+            agentReportProvider(agentId).overrideWith(
+              (ref) => throw StateError('db down'),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text("Couldn't load the recap."), findsOneWidget);
+      expect(find.text(awaitingHint), findsNothing);
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
     });
   });
 

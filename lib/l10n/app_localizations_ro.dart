@@ -5016,6 +5016,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Adăugați o fotografie sau o notă, iar rezumatul va apărea aici.';
 
   @override
+  String get eventsRecapUnavailable => 'Rezumatul nu a putut fi încărcat.';
+
+  @override
   String get eventsRegenerateSummary => 'Regenerează rezumatul';
 
   @override

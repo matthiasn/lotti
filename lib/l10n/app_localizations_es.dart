@@ -5005,6 +5005,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Añade una foto o una nota y aquí aparecerá el resumen.';
 
   @override
+  String get eventsRecapUnavailable => 'No se pudo cargar el resumen.';
+
+  @override
   String get eventsRegenerateSummary => 'Regenerar resumen';
 
   @override

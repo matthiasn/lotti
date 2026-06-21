@@ -2242,6 +2242,7 @@
   "eventsPageTitle": "Événements",
   "eventsPhotosSection": "Photos",
   "eventsRecapAwaitingContent": "Ajoute une photo ou une note et le récap apparaîtra ici.",
+  "eventsRecapUnavailable": "Impossible de charger le récap.",
   "eventsRegenerateSummary": "Régénérer le résumé",
   "eventsSearchHint": "Rechercher des événements",
   "eventsSectionUpcoming": "À venir",

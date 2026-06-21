@@ -5016,6 +5016,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ajoute une photo ou une note et le récap apparaîtra ici.';
 
   @override
+  String get eventsRecapUnavailable => 'Impossible de charger le récap.';
+
+  @override
   String get eventsRegenerateSummary => 'Régénérer le résumé';
 
   @override

@@ -4982,6 +4982,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přidej fotku nebo poznámku a tady se objeví shrnutí.';
 
   @override
+  String get eventsRecapUnavailable => 'Shrnutí se nepodařilo načíst.';
+
+  @override
   String get eventsRegenerateSummary => 'Znovu vytvořit shrnutí';
 
   @override
