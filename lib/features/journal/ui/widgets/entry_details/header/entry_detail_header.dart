@@ -320,6 +320,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         label,
         style: tokens.typography.styles.body.bodySmall.copyWith(
           color: tokens.colors.text.mediumEmphasis,
+          fontFeatures: numericBadgeFontFeatures,
         ),
       ),
     );

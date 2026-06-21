@@ -1,11 +1,10 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -82,7 +81,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('date text is a legible proportional caption (not tabular)', (
+    testWidgets('date text uses the shared numeric badge font features', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -98,13 +97,10 @@ void main() {
       expect(finder, findsOneWidget);
 
       final text = tester.widget<Text>(finder);
-      // Proportional figures — not the old monospace/tabular "badge" look.
-      final hasTabular =
-          text.style?.fontFeatures?.any(
-            (ui.FontFeature ff) => ff.feature == 'tnum',
-          ) ??
-          false;
-      expect(hasTabular, isFalse);
+      // The date is a small numeric readout, so it carries the shared
+      // numericBadgeFontFeatures (tabular + open four/six/nine + slashed zero)
+      // for steady, legible digits — matching the audio timecodes and duration.
+      expect(text.style?.fontFeatures, numericBadgeFontFeatures);
 
       // Legible secondary colour (mediumEmphasis ≈ 10:1 on the card), not the
       // faint decorative hairline tone the timestamp used to inherit.

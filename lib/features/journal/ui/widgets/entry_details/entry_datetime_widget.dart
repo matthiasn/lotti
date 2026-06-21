@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
 class EntryDatetimeWidget extends ConsumerWidget {
   const EntryDatetimeWidget({
@@ -33,11 +34,13 @@ class EntryDatetimeWidget extends ConsumerWidget {
     // timecodes — and never larger than the body, the value, or any other
     // content. mediumEmphasis (white @ 80% ≈ 10:1) keeps it a calm, recessive
     // metadata line; users who need everything bigger use OS text scaling rather
-    // than this one element being inflated. Proportional figures (no tabular/
-    // badge features) so the date reads as one word in the body sans.
+    // than this one element being inflated. Shared numeric badge features
+    // (tabular + open four/six/nine + slashed zero) keep the date digits steady
+    // and legible at this small size, matching the audio timecodes.
     final tokens = context.designTokens;
     final style = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
+      fontFeatures: numericBadgeFontFeatures,
     );
 
     return GestureDetector(

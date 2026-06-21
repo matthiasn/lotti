@@ -7,6 +7,7 @@ import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
 const List<double> _speedSequence = <double>[
   0.5,
@@ -121,10 +122,12 @@ class _PlayerBody extends StatelessWidget {
         tokens?.colors.text.mediumEmphasis ??
         theme.colorScheme.onSurfaceVariant;
     final captionStyle = tokens?.typography.styles.others.caption;
-    // Proportional body sans (no monospace/slashed-zero badge features) so the
-    // timecodes share one numeric voice with the rest of the card.
+    // Shared numeric badge features (tabular + open four/six/nine + slashed
+    // zero): constant digit advance so the elapsed counter does not "breathe"
+    // as it ticks, and open-digit glyphs that stay legible at this small size.
     final timeStyle = (captionStyle ?? const TextStyle(fontSize: 12)).copyWith(
       color: timeColor,
+      fontFeatures: numericBadgeFontFeatures,
     );
 
     final controlSpacing = tokens?.spacing.step2 ?? 4.0;
@@ -364,7 +367,10 @@ class _SpeedButton extends StatelessWidget {
         ? scheme.error
         : (tokens?.colors.text.mediumEmphasis ?? scheme.onSurfaceVariant);
     final speedTextStyle = (captionStyle ?? const TextStyle(fontSize: 12))
-        .copyWith(color: speedTextColor);
+        .copyWith(
+          color: speedTextColor,
+          fontFeatures: numericBadgeFontFeatures,
+        );
 
     // A filled chip with a mediumEmphasis boundary (well above the WCAG 1.4.11
     // 3:1 floor) so the speed control reads as a real, tappable pill rather than

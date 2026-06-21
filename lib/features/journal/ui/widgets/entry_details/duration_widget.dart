@@ -219,15 +219,17 @@ class FormattedTime extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     // Same "label: value" grammar as the other cards — a quiet "Duration:"
-    // label and the time as the bold value (tabular figures so the running
-    // counter does not jitter), instead of a bare unlabelled time + glyph.
+    // label and the time as the bold value. Shared numeric badge features
+    // (tabular + open four/six/nine + slashed zero) so the running counter keeps
+    // a constant digit width and stays legible, instead of a bare unlabelled
+    // time + glyph.
     final labelStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: labelColor,
     );
     final valueStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: isRecording ? labelColor : tokens.colors.text.highEmphasis,
       fontWeight: FontWeight.w600,
-      fontFeatures: const [FontFeature.tabularFigures()],
+      fontFeatures: numericBadgeFontFeatures,
     );
     final text = formatDuration(entryDuration(displayed));
     return Text.rich(
