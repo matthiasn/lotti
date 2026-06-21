@@ -17,6 +17,13 @@ import 'package:uuid/uuid.dart';
 
 // Edit-mode form widgets: provider type, available models, AI setup.
 
+final meliousInferenceRepositoryProvider =
+    Provider.autoDispose<MeliousInferenceRepository>((ref) {
+      final repository = MeliousInferenceRepository();
+      ref.onDispose(repository.close);
+      return repository;
+    });
+
 // Riverpod 3 keeps the concrete provider-family type internal, so this family
 // has to rely on inference to remain callable and invalidatable.
 // ignore: specify_nonobvious_property_types
@@ -32,8 +39,7 @@ final _meliousKnownModelsProvider = FutureProvider.autoDispose
         return const <KnownModel>[];
       }
 
-      final meliousRepository = MeliousInferenceRepository();
-      ref.onDispose(meliousRepository.close);
+      final meliousRepository = ref.read(meliousInferenceRepositoryProvider);
       final baseUrl = config.baseUrl.trim().isEmpty
           ? ProviderConfig.getDefaultBaseUrl(config.inferenceProviderType)
           : config.baseUrl.trim();
@@ -42,7 +48,7 @@ final _meliousKnownModelsProvider = FutureProvider.autoDispose
         baseUrl: baseUrl,
         apiKey: config.apiKey,
       );
-    });
+    }, retry: (_, _) => null);
 
 /// Read-only field used to surface the currently-selected provider type
 /// inside the form. Tapping anywhere on the field opens the provider

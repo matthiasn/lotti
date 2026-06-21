@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -173,6 +174,200 @@ void main() {
       );
     });
 
+    test('listModels validates required request parameters', () {
+      final repository = MeliousInferenceRepository();
+      addTearDown(repository.close);
+
+      expect(
+        () => repository.listModels(baseUrl: '', apiKey: apiKey),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () => repository.listModels(baseUrl: baseUrl, apiKey: ''),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('listModels rejects malformed catalog payloads', () async {
+      Future<void> expectMessage({
+        required Object payload,
+        required String message,
+      }) async {
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((_) async {
+            return http.Response(jsonEncode(payload), 200);
+          }),
+        );
+        addTearDown(repository.close);
+
+        await expectLater(
+          repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
+          throwsA(
+            isA<MeliousInferenceException>().having(
+              (e) => e.message,
+              'message',
+              message,
+            ),
+          ),
+        );
+      }
+
+      await expectMessage(
+        payload: const [],
+        message: 'Melious model list response must be a JSON object',
+      );
+      await expectMessage(
+        payload: const <String, Object?>{},
+        message: 'Melious model list response is missing the data array',
+      );
+      await expectMessage(
+        payload: const {
+          'data': ['not-a-model-object'],
+        },
+        message: 'Melious model entry must be a JSON object',
+      );
+      await expectMessage(
+        payload: const {
+          'data': [
+            {'object': 'model'},
+          ],
+        },
+        message: 'Melious model entry is missing a string id',
+      );
+    });
+
+    test(
+      'listModels coerces modality aliases and truthy metadata values',
+      () async {
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((_) async {
+            return http.Response(
+              jsonEncode({
+                'data': [
+                  {
+                    'id': 'custom/speech-json-model',
+                    'owned_by': 'custom',
+                    '_meta': {
+                      'type': 'unexpected-kind',
+                      'input_modalities': ['speech', 'vision'],
+                      'output_modalities': ['text'],
+                      'context_length': '4096',
+                      'capabilities': {
+                        'audio_input': 'true',
+                        'function_calling': 1,
+                        'reasoning': 'true',
+                        'structured_output': true,
+                        'json_schema': true,
+                      },
+                    },
+                  },
+                ],
+              }),
+              200,
+            );
+          }),
+        );
+        addTearDown(repository.close);
+
+        final models = await repository.listModels(
+          baseUrl: '$baseUrl?existing=1',
+          apiKey: apiKey,
+        );
+
+        expect(models, hasLength(1));
+        final model = models.single;
+        expect(model.name, 'Speech JSON Model');
+        expect(
+          model.inputModalities,
+          containsAll([Modality.audio, Modality.image, Modality.text]),
+        );
+        expect(model.outputModalities, equals([Modality.text]));
+        expect(model.isReasoningModel, isTrue);
+        expect(model.supportsFunctionCalling, isTrue);
+        expect(model.description, contains('Context: 4096 tokens'));
+        expect(model.description, contains('structured output'));
+        expect(model.description, contains('JSON schema'));
+      },
+    );
+
+    test(
+      'transcribeAudio sends multipart request and returns transcript',
+      () async {
+        http.BaseRequest? captured;
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient.streaming((request, _) async {
+            captured = request;
+            return http.StreamedResponse(
+              Stream.value(utf8.encode(jsonEncode({'text': 'bonjour'}))),
+              200,
+            );
+          }),
+        );
+        addTearDown(repository.close);
+
+        final chunks = await repository
+            .transcribeAudio(
+              model: 'openai/whisper-large-v3',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            )
+            .toList();
+
+        expect(chunks.single.id, startsWith('melious-transcription-'));
+        expect(chunks.single.choices?.single.delta?.content, 'bonjour');
+        expect(captured, isA<http.MultipartRequest>());
+        final request = captured! as http.MultipartRequest;
+        expect(request.url.toString(), '$baseUrl/audio/transcriptions');
+        expect(request.headers['Authorization'], 'Bearer $apiKey');
+        expect(request.fields['model'], 'openai/whisper-large-v3');
+        expect(request.fields['response_format'], 'json');
+        expect(request.files.single.filename, 'audio.m4a');
+      },
+    );
+
+    test('transcribeAudio validates required request parameters', () {
+      final repository = MeliousInferenceRepository();
+      addTearDown(repository.close);
+
+      expect(
+        () => repository.transcribeAudio(
+          model: '',
+          audioBase64: 'abc',
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () => repository.transcribeAudio(
+          model: 'openai/whisper-large-v3',
+          audioBase64: '',
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () => repository.transcribeAudio(
+          model: 'openai/whisper-large-v3',
+          audioBase64: 'abc',
+          baseUrl: '',
+          apiKey: apiKey,
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () => repository.transcribeAudio(
+          model: 'openai/whisper-large-v3',
+          audioBase64: 'abc',
+          baseUrl: baseUrl,
+          apiKey: '',
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
     test('generateImage decodes base64 image responses', () async {
       const pngBytes = [137, 80, 78, 71];
       final repository = MeliousInferenceRepository(
@@ -261,6 +456,102 @@ void main() {
       );
     });
 
+    test('generateImage surfaces provider error messages', () async {
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async {
+          return http.Response(
+            jsonEncode({'error': 'image model unavailable'}),
+            503,
+          );
+        }),
+      );
+      addTearDown(repository.close);
+
+      await expectLater(
+        repository.generateImage(
+          prompt: 'a quiet lake',
+          model: 'flux-2-klein',
+          provider: meliousProvider(),
+        ),
+        throwsA(
+          isA<MeliousInferenceException>()
+              .having((e) => e.statusCode, 'statusCode', 503)
+              .having((e) => e.message, 'message', 'image model unavailable'),
+        ),
+      );
+    });
+
+    test('generateImage rejects malformed image payloads', () async {
+      final cases = <Object>[
+        const [],
+        const <String, Object?>{'data': []},
+        const {
+          'data': ['not-an-object'],
+        },
+        const {
+          'data': [
+            {'url': 'https://example.com/image.png'},
+          ],
+        },
+      ];
+
+      for (final payload in cases) {
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((_) async {
+            return http.Response(jsonEncode(payload), 200);
+          }),
+        );
+        addTearDown(repository.close);
+
+        await expectLater(
+          repository.generateImage(
+            prompt: 'a quiet lake',
+            model: 'flux-2-klein',
+            provider: meliousProvider(),
+          ),
+          throwsA(isA<MeliousInferenceException>()),
+        );
+      }
+    });
+
+    test('generateImage validates required parameters', () async {
+      final repository = MeliousInferenceRepository();
+      addTearDown(repository.close);
+
+      await expectLater(
+        repository.generateImage(
+          prompt: '',
+          model: 'flux-2-klein',
+          provider: meliousProvider(),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+      await expectLater(
+        repository.generateImage(
+          prompt: 'a quiet lake',
+          model: '',
+          provider: meliousProvider(),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+      await expectLater(
+        repository.generateImage(
+          prompt: 'a quiet lake',
+          model: 'flux-2-klein',
+          provider: meliousProvider().copyWith(baseUrl: ''),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+      await expectLater(
+        repository.generateImage(
+          prompt: 'a quiet lake',
+          model: 'flux-2-klein',
+          provider: meliousProvider().copyWith(apiKey: ''),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
     test('isMeliousTranscriptionModel matches speech-to-text model IDs', () {
       expect(
         MeliousInferenceRepository.isMeliousTranscriptionModel(
@@ -283,6 +574,17 @@ void main() {
           'qwen/qwen3-vl-plus',
         ),
         isFalse,
+      );
+    });
+
+    test('MeliousInferenceException includes status and cause in toString', () {
+      expect(
+        const MeliousInferenceException(
+          'failed',
+          statusCode: 429,
+          originalError: 'rate limit',
+        ).toString(),
+        'MeliousInferenceException (HTTP 429): failed: rate limit',
       );
     });
   });

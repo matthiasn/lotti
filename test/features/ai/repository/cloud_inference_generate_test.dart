@@ -17,6 +17,63 @@ class _FakeCreateChatCompletionRequest extends Fake
 
 class _FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
+class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
+  final textCalls = <({String prompt, String model, String baseUrl})>[];
+  final imageCalls =
+      <({String prompt, String model, String baseUrl, List<String> images})>[];
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateText({
+    required String prompt,
+    required String model,
+    required String baseUrl,
+    required String apiKey,
+    String? systemMessage,
+    double? temperature,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+  }) {
+    textCalls.add((prompt: prompt, model: model, baseUrl: baseUrl));
+    return Stream.value(_chunk('melious text'));
+  }
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateWithImages({
+    required String prompt,
+    required String model,
+    required String baseUrl,
+    required String apiKey,
+    required List<String> images,
+    String? systemMessage,
+    double? temperature,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+  }) {
+    imageCalls.add((
+      prompt: prompt,
+      model: model,
+      baseUrl: baseUrl,
+      images: images,
+    ));
+    return Stream.value(_chunk('melious vision'));
+  }
+
+  static CreateChatCompletionStreamResponse _chunk(String content) {
+    return CreateChatCompletionStreamResponse(
+      id: 'melious-response-id',
+      choices: [
+        ChatCompletionStreamResponseChoice(
+          delta: ChatCompletionStreamResponseDelta(content: content),
+          index: 0,
+        ),
+      ],
+      object: 'chat.completion.chunk',
+      created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+    );
+  }
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeCreateChatCompletionRequest());
@@ -170,6 +227,45 @@ void main() {
         ),
       );
     });
+
+    test('routes Melious provider to the Melious repository', () async {
+      final fakeMeliousRepo = _FakeMeliousInferenceRepository();
+      generate = CloudInferenceGenerate(
+        ollamaRepository: ollamaRepo,
+        geminiRepository: geminiRepo,
+        meliousRepository: fakeMeliousRepo,
+        mistralRepository: mistralRepo,
+        helpers: const CloudInferenceRequestHelpers(),
+      );
+      final meliousProvider = providerOfType(InferenceProviderType.melious);
+
+      final chunks = await generate
+          .generate(
+            prompt,
+            model: 'qwen/qwen3-vl-plus',
+            temperature: 0.2,
+            baseUrl: 'https://api.melious.ai/v1',
+            apiKey: 'sk-mel-test',
+            provider: meliousProvider,
+            systemMessage: 'be brief',
+            maxCompletionTokens: 512,
+          )
+          .toList();
+
+      expect(chunks.single.choices?.single.delta?.content, 'melious text');
+      expect(fakeMeliousRepo.textCalls, hasLength(1));
+      expect(fakeMeliousRepo.textCalls.single.prompt, prompt);
+      expect(fakeMeliousRepo.textCalls.single.model, 'qwen/qwen3-vl-plus');
+      expect(
+        fakeMeliousRepo.textCalls.single.baseUrl,
+        'https://api.melious.ai/v1',
+      );
+      verifyNever(
+        () => client.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      );
+    });
   });
 
   group('generateWithImages', () {
@@ -246,6 +342,45 @@ void main() {
           systemMessage: any(named: 'systemMessage'),
         ),
       ).called(1);
+      verifyNever(
+        () => client.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      );
+    });
+
+    test('routes Melious provider to the Melious vision repository', () async {
+      final fakeMeliousRepo = _FakeMeliousInferenceRepository();
+      generate = CloudInferenceGenerate(
+        ollamaRepository: ollamaRepo,
+        geminiRepository: geminiRepo,
+        meliousRepository: fakeMeliousRepo,
+        mistralRepository: mistralRepo,
+        helpers: const CloudInferenceRequestHelpers(),
+      );
+      final meliousProvider = providerOfType(InferenceProviderType.melious);
+
+      final chunks = await generate
+          .generateWithImages(
+            prompt,
+            baseUrl: 'https://api.melious.ai/v1',
+            apiKey: 'sk-mel-test',
+            model: 'qwen/qwen3-vl-plus',
+            temperature: 0.5,
+            images: const ['image-a', 'image-b'],
+            provider: meliousProvider,
+            overrideClient: client,
+          )
+          .toList();
+
+      expect(chunks.single.choices?.single.delta?.content, 'melious vision');
+      expect(fakeMeliousRepo.imageCalls, hasLength(1));
+      expect(fakeMeliousRepo.imageCalls.single.prompt, prompt);
+      expect(fakeMeliousRepo.imageCalls.single.model, 'qwen/qwen3-vl-plus');
+      expect(
+        fakeMeliousRepo.imageCalls.single.images,
+        const ['image-a', 'image-b'],
+      );
       verifyNever(
         () => client.createChatCompletionStream(
           request: any(named: 'request'),

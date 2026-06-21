@@ -12,6 +12,9 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
+    show meliousInferenceRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
@@ -41,6 +44,30 @@ class _MockWhatsNewController extends WhatsNewController {
 AppLocalizations l10n(WidgetTester tester) => AppLocalizations.of(
   tester.element(find.byType(InferenceProviderEditPage)),
 )!;
+
+class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
+  _FakeMeliousInferenceRepository(this._results);
+
+  final List<Future<List<KnownModel>> Function()> _results;
+  final calls = <({String baseUrl, String apiKey})>[];
+  var _index = 0;
+
+  @override
+  Future<List<KnownModel>> listModels({
+    required String baseUrl,
+    required String apiKey,
+    Duration timeout = const Duration(seconds: 15),
+  }) {
+    calls.add((baseUrl: baseUrl, apiKey: apiKey));
+    final resultIndex = _index < _results.length ? _index : _results.length - 1;
+    final result = _results[resultIndex];
+    _index++;
+    return result();
+  }
+
+  @override
+  void close() {}
+}
 
 /// Sets the test surface size for the duration of the test.
 Future<void> _setTestSurface(
@@ -1334,6 +1361,257 @@ void main() {
 
       // Should not show Available Models section for new provider
       expect(find.text('Available Models'), findsNothing);
+    });
+
+    testWidgets('renders dynamic Melious models and existing Added state', (
+      WidgetTester tester,
+    ) async {
+      await _setTestSurface(tester, height: 1600);
+
+      final meliousProvider = AiConfig.inferenceProvider(
+        id: 'melious-provider-id',
+        name: 'Melious.ai',
+        baseUrl: '',
+        apiKey: 'sk-mel-test',
+        createdAt: DateTime(2024, 3, 15),
+        inferenceProviderType: InferenceProviderType.melious,
+      );
+      final existingModel = AiConfig.model(
+        id: 'existing-whisper-model',
+        name: 'Whisper Large v3',
+        providerModelId: 'openai/whisper-large-v3',
+        inferenceProviderId: 'melious-provider-id',
+        createdAt: DateTime(2024, 3, 15),
+        inputModalities: [Modality.audio],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      );
+      final fakeMeliousRepository = _FakeMeliousInferenceRepository([
+        () async => const [
+          KnownModel(
+            providerModelId: 'qwen/qwen3-vl-plus',
+            name: 'Qwen3 VL Plus',
+            inputModalities: [Modality.text, Modality.image],
+            outputModalities: [Modality.text],
+            isReasoningModel: true,
+            supportsFunctionCalling: true,
+            description: 'Vision reasoning model.',
+          ),
+          KnownModel(
+            providerModelId: 'openai/whisper-large-v3',
+            name: 'Whisper Large v3',
+            inputModalities: [Modality.audio],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+            description: 'Audio transcription model.',
+          ),
+        ],
+      ]);
+
+      when(
+        () => mockRepository.getConfigById('melious-provider-id'),
+      ).thenAnswer((_) async => meliousProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([existingModel]));
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'melious-provider-id',
+          additionalOverrides: [
+            meliousInferenceRepositoryProvider.overrideWithValue(
+              fakeMeliousRepository,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.ensureVisible(find.text('Available Models'));
+      await tester.pump();
+
+      expect(find.text('Qwen3 VL Plus'), findsOneWidget);
+      expect(find.text('Whisper Large v3'), findsOneWidget);
+      expect(find.text('Added'), findsOneWidget);
+      expect(fakeMeliousRepository.calls, hasLength(1));
+      expect(
+        fakeMeliousRepository.calls.single.baseUrl,
+        'https://api.melious.ai/v1',
+      );
+      expect(fakeMeliousRepository.calls.single.apiKey, 'sk-mel-test');
+    });
+
+    testWidgets('shows loading state while Melious catalog is pending', (
+      WidgetTester tester,
+    ) async {
+      await _setTestSurface(tester, height: 1600);
+
+      final catalogCompleter = Completer<List<KnownModel>>();
+      final fakeMeliousRepository = _FakeMeliousInferenceRepository([
+        () => catalogCompleter.future,
+      ]);
+      final meliousProvider = AiConfig.inferenceProvider(
+        id: 'melious-provider-id',
+        name: 'Melious.ai',
+        baseUrl: 'https://proxy.example/v1',
+        apiKey: 'sk-mel-test',
+        createdAt: DateTime(2024, 3, 15),
+        inferenceProviderType: InferenceProviderType.melious,
+      );
+
+      when(
+        () => mockRepository.getConfigById('melious-provider-id'),
+      ).thenAnswer((_) async => meliousProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'melious-provider-id',
+          additionalOverrides: [
+            meliousInferenceRepositoryProvider.overrideWithValue(
+              fakeMeliousRepository,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.ensureVisible(find.text('Available Models'));
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsAtLeastNWidgets(1));
+
+      catalogCompleter.complete(const [
+        KnownModel(
+          providerModelId: 'openai/whisper-large-v3',
+          name: 'Whisper Large v3',
+          inputModalities: [Modality.audio],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+          description: 'Audio transcription model.',
+        ),
+      ]);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Whisper Large v3'), findsOneWidget);
+      expect(
+        fakeMeliousRepository.calls.single.baseUrl,
+        'https://proxy.example/v1',
+      );
+    });
+
+    testWidgets('shows empty state when Melious catalog has no models', (
+      WidgetTester tester,
+    ) async {
+      await _setTestSurface(tester, height: 1600);
+
+      final fakeMeliousRepository = _FakeMeliousInferenceRepository([
+        () async => const <KnownModel>[],
+      ]);
+      final meliousProvider = AiConfig.inferenceProvider(
+        id: 'melious-provider-id',
+        name: 'Melious.ai',
+        baseUrl: 'https://api.melious.ai/v1',
+        apiKey: 'sk-mel-test',
+        createdAt: DateTime(2024, 3, 15),
+        inferenceProviderType: InferenceProviderType.melious,
+      );
+
+      when(
+        () => mockRepository.getConfigById('melious-provider-id'),
+      ).thenAnswer((_) async => meliousProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'melious-provider-id',
+          additionalOverrides: [
+            meliousInferenceRepositoryProvider.overrideWithValue(
+              fakeMeliousRepository,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final strings = l10n(tester);
+      await tester.ensureVisible(find.text('Available Models'));
+      await tester.pump();
+
+      expect(find.text(strings.aiConfigNoModelsAvailable), findsOneWidget);
+    });
+
+    testWidgets('shows Melious catalog error and retries after refresh', (
+      WidgetTester tester,
+    ) async {
+      await _setTestSurface(tester, height: 1600);
+
+      final fakeMeliousRepository = _FakeMeliousInferenceRepository([
+        () async => throw const MeliousInferenceException('first failure'),
+        () async => const [
+          KnownModel(
+            providerModelId: 'openai/whisper-large-v3',
+            name: 'Whisper Large v3',
+            inputModalities: [Modality.audio],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+            description: 'Audio transcription model.',
+          ),
+        ],
+      ]);
+      final meliousProvider = AiConfig.inferenceProvider(
+        id: 'melious-provider-id',
+        name: 'Melious.ai',
+        baseUrl: 'https://api.melious.ai/v1',
+        apiKey: 'sk-mel-test',
+        createdAt: DateTime(2024, 3, 15),
+        inferenceProviderType: InferenceProviderType.melious,
+      );
+
+      when(
+        () => mockRepository.getConfigById('melious-provider-id'),
+      ).thenAnswer((_) async => meliousProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([]));
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'melious-provider-id',
+          additionalOverrides: [
+            meliousInferenceRepositoryProvider.overrideWithValue(
+              fakeMeliousRepository,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final strings = l10n(tester);
+      await tester.ensureVisible(find.text('Available Models'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.text(strings.aiConfigFailedToLoadModelsGeneric),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byIcon(Icons.refresh_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(fakeMeliousRepository.calls, hasLength(2));
+      expect(find.text('Whisper Large v3'), findsOneWidget);
     });
 
     testWidgets('displays known models for Gemini provider', (
