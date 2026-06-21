@@ -43,7 +43,6 @@ class ToolbarWidget extends ConsumerWidget {
     const duration = Duration(milliseconds: 400);
     const curve = Curves.easeInOutQuint;
     final tokens = context.designTokens;
-    final savePad = tokens.spacing.step3;
 
     // The toolbar shares the editor card's surface so the strip and the text
     // area read as one continuous panel rather than a brighter bar bolted onto a
@@ -87,12 +86,12 @@ class ToolbarWidget extends ConsumerWidget {
                     controller: controller,
                     notifier: notifier,
                   ),
-                // A generous, deterministic gap fences the save/discard actions
-                // off from the formatting controls so they read as the pinned,
-                // primary cluster and an overshoot can't land on them (no orphan
-                // divider glyph).
-                SizedBox(width: tokens.spacing.step5),
-                _ToolbarActions(entryId: entryId, savePad: savePad),
+                // A deterministic gap fences the discard/save pair off from the
+                // formatting controls so the pair reads as the pinned, primary
+                // cluster and an overshoot can't land on it (no orphan divider
+                // glyph).
+                SizedBox(width: tokens.spacing.step3),
+                _ToolbarActions(entryId: entryId),
               ],
             ),
           ),
@@ -288,6 +287,12 @@ class _MoreFormattingButton extends StatelessWidget {
       icon: const Icon(Icons.more_horiz),
       color: tokens.colors.text.mediumEmphasis,
       tooltip: context.messages.editorMoreFormatting,
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(
+        width: _trailingControlSize,
+        height: _trailingControlSize,
+      ),
       onPressed: () {
         final toolbarColor = context.colorScheme.surface.brighten();
         showModalBottomSheet<void>(
@@ -315,6 +320,11 @@ class _MoreFormattingButton extends StatelessWidget {
   }
 }
 
+/// Size for the trailing icon controls (discard, more) — matches the formatting
+/// buttons' `toolbarSize` so the whole row shares one tap-target rhythm and the
+/// controls don't float in oversized 48px boxes.
+const double _trailingControlSize = 44;
+
 /// The pinned trailing cluster: a discard control that appears only when there
 /// are unsaved changes, followed by the always-present save control.
 ///
@@ -322,10 +332,9 @@ class _MoreFormattingButton extends StatelessWidget {
 /// toolbar never reflows the moment editing begins — only the icon inside it
 /// appears/disappears. A single watch of the save state drives both controls.
 class _ToolbarActions extends ConsumerWidget {
-  const _ToolbarActions({required this.entryId, required this.savePad});
+  const _ToolbarActions({required this.entryId});
 
   final String entryId;
-  final double savePad;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -338,15 +347,23 @@ class _ToolbarActions extends ConsumerWidget {
       children: [
         // Reserved, fixed-width discard slot. Discarding only makes sense when
         // there are edits to throw away, but reserving the width in both states
-        // keeps the formatting controls from shifting when editing begins. A
-        // square slot (== toolbar height) gives the icon a ≥48px tap target.
+        // keeps the formatting controls from shifting when editing begins. The
+        // slot matches the formatting buttons' 44px size (a comfortable tap
+        // target) with a compact icon button so the X sits tight to Save rather
+        // than floating in a wide, centred box.
         SizedBox(
-          width: ToolbarWidget.height,
+          width: _trailingControlSize,
           child: unsaved
               ? IconButton(
                   icon: const Icon(Icons.close_rounded),
                   color: tokens.colors.text.mediumEmphasis,
                   tooltip: context.messages.editorDiscardChanges,
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints.tightFor(
+                    width: _trailingControlSize,
+                    height: _trailingControlSize,
+                  ),
                   onPressed: () => ref
                       .read(entryControllerProvider(id: entryId).notifier)
                       .discard(),
@@ -354,10 +371,11 @@ class _ToolbarActions extends ConsumerWidget {
               : null,
         ),
         Padding(
-          // A slightly larger trailing inset (== the card's corner radius) keeps
-          // the save pill clear of the card's rounded corner instead of pinching
-          // it; the smaller leading gap separates it from the discard slot.
-          padding: EdgeInsets.only(left: savePad, right: tokens.spacing.step4),
+          // No leading inset: the discard slot's own padding already spaces the
+          // save off the X, so they read as one tight pair. The trailing inset
+          // (== the card's corner radius) keeps the pill clear of the rounded
+          // corner instead of pinching it.
+          padding: EdgeInsets.only(right: tokens.spacing.step4),
           child: _ToolbarSaveButton(entryId: entryId, unsaved: unsaved),
         ),
       ],
@@ -381,18 +399,18 @@ class _ToolbarSaveButton extends ConsumerWidget {
     // button's corner radius) gives the control a perceivable shape in BOTH
     // states. So the clean→dirty change is figure-ground (the outline fills with
     // teal) plus a leading save glyph — never carried by the teal hue alone, and
-    // the clean state never has a near-invisible (1:1) boundary. The medium size
-    // gives a ~44px tap target that also aligns with the toolbar's icon row.
+    // the clean state never has a near-invisible (1:1) boundary. The small size
+    // keeps the pill clear of the panel frame (a medium pill nearly filled the
+    // toolbar height and crowded the top/right border).
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.xl),
+        borderRadius: BorderRadius.circular(tokens.radii.l),
         border: Border.all(
           color: unsaved ? Colors.transparent : tokens.colors.text.lowEmphasis,
         ),
       ),
       child: DesignSystemButton(
         label: context.messages.saveLabel,
-        size: DesignSystemButtonSize.medium,
         // Always present (greyed when clean) so the chip keeps a fixed width and
         // the narrow toolbar never reflows between clean and dirty states.
         leadingIcon: Icons.save_rounded,
