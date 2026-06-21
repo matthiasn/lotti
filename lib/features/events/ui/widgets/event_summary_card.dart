@@ -70,6 +70,7 @@ class EventSummaryCard extends StatelessWidget {
                       fallbackColor: data.categoryColor,
                       cropX: data.coverCropX,
                       scrim: EventCoverScrim.none,
+                      decodeWidth: coverWidth,
                     ),
                   ),
                   Expanded(

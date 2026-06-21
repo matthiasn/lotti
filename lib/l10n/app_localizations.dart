@@ -8496,6 +8496,12 @@ abstract class AppLocalizations {
   /// **'Add cover photo'**
   String get eventsAddCoverPhoto;
 
+  /// No description provided for @eventsChangeCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Change cover'**
+  String get eventsChangeCover;
+
   /// No description provided for @eventsAddLabel.
   ///
   /// In en, this message translates to:

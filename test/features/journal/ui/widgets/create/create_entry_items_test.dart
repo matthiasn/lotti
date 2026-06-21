@@ -1538,7 +1538,7 @@ void main() {
 
           // Verify navigation was called with the correct path
           expect(navCalled, true);
-          expect(navPath, '/journal/$testEventId');
+          expect(navPath, '/events/$testEventId');
         });
 
         testWidgets('navigates to event after creation with linked ID', (
@@ -1601,7 +1601,7 @@ void main() {
 
           // Verify navigation was called even with linked ID
           expect(navCalled, true);
-          expect(navPath, '/journal/$testEventId');
+          expect(navPath, '/events/$testEventId');
         });
 
         testWidgets('does not navigate when event creation fails', (
@@ -2446,7 +2446,7 @@ void main() {
         ).called(1);
 
         // Verify navigation was called
-        verify(() => mockNavService.beamToNamed('/journal/event-id')).called(1);
+        verify(() => mockNavService.beamToNamed('/events/event-id')).called(1);
 
         await getIt.reset();
       });

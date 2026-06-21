@@ -12,10 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   photo-led overview that groups your moments by time and filters by category,
   plus a redesigned detail page that doubles as a full inline editor: a
   photographic header where you rename the event, set its category, status and
-  rating, and add a cover; an at-a-glance summary; a photo gallery you can tap
-  into full-screen and swipe through; a timeline of the linked photos, notes and
-  voice notes (each opening its source entry); and the prep/follow-up tasks tied
-  to the event. Add photos, notes, voice memos and tasks straight from the page —
+  rating, and add or change a cover; an at-a-glance summary; a photo gallery you
+  can tap into full-screen and swipe through; a timeline of the linked photos,
+  notes, voice notes and time recordings (each opening its source entry; a time
+  recording reads as a span with its elapsed duration); and the prep/follow-up
+  tasks tied to the event. Add photos, notes, voice memos and tasks straight from the page —
   even a brand-new event shows what to do next instead of an empty screen.
 
 ### Changed

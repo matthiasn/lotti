@@ -12,9 +12,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../features/categories/test_utils.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../categories/test_utils.dart';
 
 const _view = SavedTaskFilter(
   id: 'sv-1',

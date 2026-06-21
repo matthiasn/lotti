@@ -8,6 +8,7 @@ import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_overlay_pill.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
+import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -34,6 +35,7 @@ class EventDetailView extends StatelessWidget {
     this.onTapDateTime,
     this.onSetRating,
     this.onAddCover,
+    this.onChangeCover,
     this.onDelete,
     this.onRegenerateSummary,
     this.onAddToTimeline,
@@ -58,6 +60,10 @@ class EventDetailView extends StatelessWidget {
 
   /// Adds a cover photo (shown only while the event has no cover).
   final VoidCallback? onAddCover;
+
+  /// Changes the cover photo (offered in the overflow menu once the event has
+  /// one), e.g. picking a different linked photo or adding a new one.
+  final VoidCallback? onChangeCover;
 
   /// Deletes the event (offered in the overflow menu).
   final VoidCallback? onDelete;
@@ -94,6 +100,7 @@ class EventDetailView extends StatelessWidget {
             whenLabel: data.whenLabel,
             onBack: onBack,
             onDelete: onDelete,
+            onChangeCover: onChangeCover,
             onRenameTitle: onRenameTitle,
             onTapCategory: onTapCategory,
             onTapStatus: onTapStatus,
@@ -219,6 +226,7 @@ class _HeroSliver extends StatelessWidget {
     this.whenLabel,
     this.onBack,
     this.onDelete,
+    this.onChangeCover,
     this.onRenameTitle,
     this.onTapCategory,
     this.onTapStatus,
@@ -231,6 +239,7 @@ class _HeroSliver extends StatelessWidget {
   final String? whenLabel;
   final VoidCallback? onBack;
   final VoidCallback? onDelete;
+  final VoidCallback? onChangeCover;
   final ValueChanged<String>? onRenameTitle;
   final VoidCallback? onTapCategory;
   final VoidCallback? onTapStatus;
@@ -254,7 +263,8 @@ class _HeroSliver extends StatelessWidget {
       backgroundColor: dsPageSurface(context),
       leading: _ScrimIconButton(icon: Icons.arrow_back, onPressed: onBack),
       actions: [
-        if (onDelete != null) _HeroMenuButton(onDelete: onDelete),
+        if (onDelete != null || onChangeCover != null)
+          _HeroMenuButton(onDelete: onDelete, onChangeCover: onChangeCover),
         SizedBox(width: tokens.spacing.step2),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -659,15 +669,17 @@ class _ScrimIconButton extends StatelessWidget {
 /// Overflow menu over the hero. Currently a single destructive action; more
 /// (share, change cover) slot in here as they land.
 class _HeroMenuButton extends StatelessWidget {
-  const _HeroMenuButton({this.onDelete});
+  const _HeroMenuButton({this.onDelete, this.onChangeCover});
 
   final VoidCallback? onDelete;
+  final VoidCallback? onChangeCover;
 
   @override
   Widget build(BuildContext context) {
     final cs = context.colorScheme;
+    final spacing = context.designTokens.spacing.step2;
     return Padding(
-      padding: EdgeInsets.all(context.designTokens.spacing.step2),
+      padding: EdgeInsets.all(spacing),
       child: Material(
         color: Colors.black.withValues(alpha: 0.35),
         shape: const CircleBorder(),
@@ -675,19 +687,36 @@ class _HeroMenuButton extends StatelessWidget {
         child: PopupMenuButton<String>(
           icon: const Icon(Icons.more_horiz, color: Colors.white),
           onSelected: (value) {
+            if (value == 'change_cover') onChangeCover?.call();
             if (value == 'delete') onDelete?.call();
           },
           itemBuilder: (context) => [
-            PopupMenuItem<String>(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete_outline, size: 18, color: cs.error),
-                  SizedBox(width: context.designTokens.spacing.step2),
-                  Text(context.messages.eventsDeleteEvent),
-                ],
+            if (onChangeCover != null)
+              PopupMenuItem<String>(
+                value: 'change_cover',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.image_outlined,
+                      size: 18,
+                      color: cs.onSurfaceVariant,
+                    ),
+                    SizedBox(width: spacing),
+                    Text(context.messages.eventsChangeCover),
+                  ],
+                ),
               ),
-            ),
+            if (onDelete != null)
+              PopupMenuItem<String>(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, size: 18, color: cs.error),
+                    SizedBox(width: spacing),
+                    Text(context.messages.eventsDeleteEvent),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -1071,6 +1100,39 @@ class _TimelineContent extends StatelessWidget {
         return Text(
           entry.text ?? '',
           style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
+        );
+      case EventTimelineKind.timeRecording:
+        final endLabel = entry.endTimeLabel;
+        final durationLabel = entry.durationLabel;
+        // A well-formed time recording carries both span labels; without them
+        // fall back to a plain note rather than a broken, blank span bar.
+        if (endLabel == null ||
+            endLabel.isEmpty ||
+            durationLabel == null ||
+            durationLabel.isEmpty) {
+          return Text(
+            entry.text ?? '',
+            style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
+          );
+        }
+        // A time recording reads as a span (start → end · elapsed), with its
+        // note beneath, rather than a bare observation.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TimeSpanBar(
+              startLabel: entry.timeLabel,
+              endLabel: endLabel,
+              durationLabel: durationLabel,
+            ),
+            if (entry.text != null) ...[
+              SizedBox(height: tokens.spacing.step2),
+              Text(
+                entry.text!,
+                style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
+              ),
+            ],
+          ],
         );
       case EventTimelineKind.audio:
         return Row(

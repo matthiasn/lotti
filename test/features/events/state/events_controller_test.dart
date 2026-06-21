@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/painting.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -137,6 +135,7 @@ void main() {
         flaggedStatuses: any(named: 'flaggedStatuses'),
         categoryIds: any(named: 'categoryIds'),
         limit: any(named: 'limit'),
+        offset: any(named: 'offset'),
       ),
     ).thenAnswer((_) async => events);
   }
@@ -162,6 +161,7 @@ void main() {
         flaggedStatuses: any(named: 'flaggedStatuses'),
         categoryIds: any(named: 'categoryIds'),
         limit: any(named: 'limit'),
+        offset: any(named: 'offset'),
       ),
     ).captured.single;
     expect(captured, const ['JournalEvent']);
@@ -241,27 +241,6 @@ void main() {
     );
   });
 
-  test('eventsStreamProvider emits resolved events on first listen', () async {
-    stubEvents([_event(id: 'e1')]);
-    when(() => db.getJournalEntitiesForIds(any())).thenAnswer((_) async => []);
-
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
-
-    final completer = Completer<List<ResolvedEvent>>();
-    final sub = container.listen(eventsStreamProvider, (_, next) {
-      if (next is AsyncData<List<ResolvedEvent>> && !completer.isCompleted) {
-        completer.complete(next.value);
-      }
-    });
-    addTearDown(sub.close);
-
-    final events = await completer.future.timeout(const Duration(seconds: 5));
-
-    expect(events.single.event.meta.id, 'e1');
-    expect(events.single.categoryName, 'Friends');
-  });
-
   test(
     'passes private filter through when private entries are hidden',
     () async {
@@ -279,6 +258,7 @@ void main() {
           flaggedStatuses: any(named: 'flaggedStatuses'),
           categoryIds: any(named: 'categoryIds'),
           limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
         ),
       ).captured.single;
       expect(captured, const [false]);

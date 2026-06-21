@@ -18,6 +18,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
+import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart' as entry_tools;
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
@@ -141,6 +142,35 @@ void main() {
       // text viewer anymore).
       expect(find.text(testEntry.entryText!.plainText), findsOneWidget);
       // Leading glyph for a plain journal entry.
+      expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
+    });
+
+    testWidgets('surfaces a tracked entry as a span in a linked timeline', (
+      tester,
+    ) async {
+      // testTextEntry spans 13:00–14:00. In a task/event linked timeline
+      // (showLinkedDuration) it reads as a tracked interval, not a bare note.
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalCard(item: testTextEntry, showLinkedDuration: true),
+        ),
+      );
+
+      expect(find.byType(TimeSpanBar), findsOneWidget);
+      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+      expect(find.text('1h'), findsOneWidget);
+    });
+
+    testWidgets('keeps a tracked entry a plain note in the main logbook', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalCard(item: testTextEntry),
+        ),
+      );
+
+      expect(find.byType(TimeSpanBar), findsNothing);
       expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
     });
 
@@ -876,9 +906,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        // Events open the dedicated event page, not the generic journal route.
         expect(
           mockNavService.navigationHistory,
-          contains('/journal/${testEvent.meta.id}'),
+          contains('/events/${testEvent.meta.id}'),
         );
       });
 

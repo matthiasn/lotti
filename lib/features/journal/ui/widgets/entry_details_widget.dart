@@ -6,8 +6,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
@@ -34,7 +36,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/events/event_form.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Renders a single journal entry of any type, watching
 /// [entryControllerProvider] for `itemId` and choosing a layout based on the
@@ -116,6 +118,23 @@ class EntryDetailsWidget extends ConsumerWidget {
       right: tokens.spacing.step2,
       bottom: tokens.spacing.step4,
     );
+
+    // Events render as their own compact, photo-led card that opens the
+    // dedicated event page. With the Events feature off they're hidden entirely
+    // rather than shown through a generic editor.
+    if (item is JournalEvent) {
+      final eventsEnabled =
+          ref
+              .watch(configFlagProvider(enableEventsFlag))
+              .unwrapPrevious()
+              .value ??
+          false;
+      if (!eventsEnabled) return const SizedBox.shrink();
+      return Padding(
+        padding: cardMargin,
+        child: LinkedEventCard(event: item),
+      );
+    }
 
     final card = TaskDetailSectionCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
@@ -286,7 +305,9 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       SurveyEntry() => SurveySummary(item),
       QuantitativeEntry() => HealthSummary(item),
       MeasurementEntry() => MeasurementSummary(item),
-      JournalEvent() => EventForm(item),
+      // Events are rendered by EntryDetailsWidget as a LinkedEventCard (or
+      // hidden when the feature is off), so they never reach this editor body.
+      JournalEvent() => const SizedBox.shrink(),
       // No leading avatar glyph — the habit line uses the same plain
       // "label: value" grammar as the other value cards.
       HabitCompletionEntry() => HabitSummary(item, showText: false),

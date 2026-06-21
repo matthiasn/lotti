@@ -17,9 +17,9 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../features/agents/test_utils.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../agents/test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Declarations moved from backfill_response_handler_generated_test.dart

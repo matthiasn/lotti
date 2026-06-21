@@ -18,9 +18,9 @@ import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.d
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../features/agents/test_data/entity_factories.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../agents/test_data/entity_factories.dart';
 
 const _agentId = 'day-agent-001';
 const _dayId = 'dayplan-2026-05-25';

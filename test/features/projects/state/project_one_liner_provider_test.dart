@@ -5,7 +5,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 
-import '../../../features/agents/test_utils.dart';
+import '../../agents/test_utils.dart';
 
 void main() {
   group('projectOneLinerProvider', () {

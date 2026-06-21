@@ -150,5 +150,80 @@ void main() {
       expect(created, isTrue);
       expect(searched, isTrue);
     });
+
+    testWidgets(
+      'builds grid cards lazily so a large event set does not mount them all',
+      (tester) async {
+        // The overview can hold hundreds of events. Eager rendering would build
+        // every card and fire every full-resolution cover decode at once, which
+        // OOM-kills the app on phones. The grid must build lazily.
+        final manyEvents = [
+          for (var i = 0; i < 200; i++)
+            buildEventCardData(
+              id: 'e$i',
+              title: 'Event $i',
+              coverImage: testImage(),
+            ),
+        ];
+        // pumpEventScreen defaults to a 390x844 phone viewport.
+        await pumpEventScreen(
+          tester,
+          EventsOverviewView(
+            sections: [EventSection(title: '2026', events: manyEvents)],
+          ),
+        );
+
+        // Only a viewport's worth (plus the sliver cache) is instantiated — far
+        // fewer than the 200 events. Eager rendering would build all 200.
+        final built = find.byType(EventCard).evaluate().length;
+        expect(built, greaterThan(0));
+        expect(built, lessThan(50));
+      },
+    );
+
+    testWidgets('fires onLoadMore when scrolled near the bottom', (
+      tester,
+    ) async {
+      var loadMoreCalls = 0;
+      final events = [
+        for (var i = 0; i < 12; i++)
+          buildEventCardData(
+            id: 'e$i',
+            title: 'Event $i',
+            coverImage: testImage(),
+          ),
+      ];
+      await pumpEventScreen(
+        tester,
+        EventsOverviewView(
+          sections: [EventSection(title: '2026', events: events)],
+          onLoadMore: () => loadMoreCalls++,
+        ),
+      );
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -5000));
+      await tester.pump();
+
+      expect(loadMoreCalls, greaterThan(0));
+    });
+
+    testWidgets('shows a trailing progress indicator while loading more', (
+      tester,
+    ) async {
+      await pumpEventScreen(
+        tester,
+        EventsOverviewView(
+          sections: [
+            EventSection(
+              title: '2026',
+              events: [buildEventCardData(coverImage: testImage())],
+            ),
+          ],
+          onLoadMore: () {},
+          isLoadingMore: true,
+        ),
+      );
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
   });
 }

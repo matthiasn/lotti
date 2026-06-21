@@ -11,6 +11,8 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/events/ui/pages/event_detail_page.dart';
+import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
+import 'package:lotti/features/events/ui/widgets/event_cover_picker.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -60,6 +62,7 @@ class _RecordingEntryController extends FakeEntryController {
   final ratings = <double>[];
   final categories = <String?>[];
   final statuses = <EventStatus>[];
+  final covers = <String?>[];
   int deletes = 0;
 
   @override
@@ -77,6 +80,10 @@ class _RecordingEntryController extends FakeEntryController {
   @override
   Future<void> updateEventStatus(EventStatus status) async =>
       statuses.add(status);
+
+  @override
+  Future<void> updateEventCover(String? imageId, {double? cropX}) async =>
+      covers.add(imageId);
 
   @override
   Future<bool> delete({required bool beamBack}) async {
@@ -386,6 +393,34 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(rec.deletes, 1);
+    });
+
+    testWidgets('the overflow menu opens the cover picker and sets the cover', (
+      tester,
+    ) async {
+      final rec = _RecordingEntryController(_event());
+      // A linked photo gives the event a cover, so "Change cover" is offered.
+      await pumpResolved(
+        tester,
+        linked: [testImageEntry],
+        controllerBuilder: () => rec,
+      );
+
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Change cover'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EventCoverPicker), findsOneWidget);
+      final pickerTile = find.descendant(
+        of: find.byType(EventCoverPicker),
+        matching: find.byType(EventCoverImage),
+      );
+      expect(pickerTile, findsOneWidget);
+      await tester.tap(pickerTile);
+      await tester.pumpAndSettle();
+
+      expect(rec.covers, [testImageEntry.meta.id]);
     });
 
     testWidgets('the back button is wired to maybePop', (tester) async {

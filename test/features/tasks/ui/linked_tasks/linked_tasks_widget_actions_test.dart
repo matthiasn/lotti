@@ -22,12 +22,12 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../features/categories/test_utils.dart';
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../categories/test_utils.dart';
 
 void main() {
   final now = DateTime(2025, 12, 31, 12);

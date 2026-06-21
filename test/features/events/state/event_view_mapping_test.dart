@@ -240,13 +240,29 @@ void main() {
       expect(entry.entryId, testImageEntry.meta.id);
     });
 
-    test('maps a text entry to a note timeline entry', () {
+    test('maps a point-in-time text entry to a note timeline entry', () {
+      final instant = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(dateTo: testTextEntry.meta.dateFrom),
+      );
       final entry = eventTimelineEntryFor(
-        testTextEntry,
+        instant,
         timeLabel: '20:40',
         imageProviderFor: fakeImage,
       );
       expect(entry!.kind, EventTimelineKind.note);
+      expect(entry.text, 'test entry text');
+    });
+
+    test('maps a spanning text entry to a time-recording timeline entry', () {
+      // testTextEntry spans 13:00–14:00, so it reads as a tracked interval.
+      final entry = eventTimelineEntryFor(
+        testTextEntry,
+        timeLabel: '13:00',
+        imageProviderFor: fakeImage,
+      );
+      expect(entry!.kind, EventTimelineKind.timeRecording);
+      expect(entry.endTimeLabel, '14:00');
+      expect(entry.durationLabel, '1h');
       expect(entry.text, 'test entry text');
     });
 

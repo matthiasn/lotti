@@ -2229,6 +2229,7 @@
   "entryTypeLabelWorkoutEntry": "Entraînement",
   "eventNameLabel": "Événement :",
   "eventsAddCoverPhoto": "Ajouter une photo de couverture",
+  "eventsChangeCover": "Changer la couverture",
   "eventsAddLabel": "Ajouter",
   "eventsDeleteEvent": "Supprimer l'événement",
   "eventsFilterAll": "Tous",

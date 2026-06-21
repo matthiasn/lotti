@@ -42,7 +42,7 @@ flowchart TD
     DB[(JournalDb + EntitiesCacheService)]
 
     subgraph Overview
-      ESP[eventsStreamProvider<br/>loadResolvedEvents] -->|ResolvedEvent list| OP[EventsOverviewPage]
+      ESP[eventsOverviewControllerProvider<br/>loadResolvedEventsPage paged] -->|ResolvedEvent page| OP[EventsOverviewPage]
       OP -->|eventCardDataFromEvent<br/>+ groupEventsIntoSections| OV[EventsOverviewView]
       OV --> CARD[EventCard / EventFeatureCard]
     end
@@ -72,13 +72,40 @@ is a header button on wide layouts and a FAB on phones.
 section (events dated after now, soonest first) followed by past events grouped
 by year, newest first.
 
+The grid renders **lazily**: each section is a builder-driven `SliverList` of
+row chunks (`columns` derived once from the viewport width), so only the rows
+near the viewport are built. This matters because the overview can hold hundreds
+of events — eager rendering would mount every card and decode every cover photo
+at once, spiking memory enough for the OS to kill the app on phones. Cover
+decoding is bounded too: `EventCoverImage` decodes each photo no wider than it is
+displayed (the screen width, or an explicit `decodeWidth` for small thumbnails)
+via `ResizeImage`, never at full camera resolution.
+
+The data load is paged as well. `eventsOverviewControllerProvider` (an
+`AsyncNotifier`) loads `eventsPageSize` events at a time via
+`loadResolvedEventsPage(limit:, offset:, categoryId:)` — resolving covers only
+for that page — and appends the next page when the view's scroll listener nears
+the bottom. The category filter is applied **server-side** (re-querying from the
+first page) and the filter chips come from `EntitiesCacheService.sortedCategories`
+(all active categories), so filtering stays correct and complete regardless of
+how far the archive has been scrolled. An `eventNotification` re-fetches just the
+currently-loaded window, so new/edited events appear without resetting scroll
+depth.
+
 ### Detail
 
 `EventDetailView` leads with a capped photographic hero (cover, title,
 when/where, category, rating over a strong scrim), then an AI summary card (the
 newest linked `AiResponseEntry` by `meta.dateFrom`, else the event note), a
 **Photos** gallery, a vertical timeline of linked entries (lead photo +
-supporting cluster + caption, notes, voice notes), and a linked-tasks section.
+supporting cluster + caption, notes, voice notes, and time recordings), and a
+linked-tasks section. A linked note whose `dateTo` is more than a minute after
+its `dateFrom` is a *time recording*: the mapping emits an
+`EventTimelineKind.timeRecording` beat that renders as a `TimeSpanBar`
+(start → end · elapsed, via `isTimeRecordingSpan`/`formatRangeDuration`) so it
+reads as a tracked interval rather than a point-in-time observation. The same
+`TimeSpanBar` surfaces in a task's linked-entries timeline (`journal_card.dart`,
+gated on `showLinkedDuration`).
 On wide screens the body splits into a main column (summary + photos + timeline)
 and a tasks rail; on phones it stacks.
 
@@ -111,13 +138,27 @@ entry form. `EventDetailView` is presentational and surfaces every mutation as a
 callback; `EventDetailPage` wires them to `EntryController` and the shared
 pickers/create flows.
 
-The title/status/rating writes go through `EntryController`'s direct event-data
-setters (`updateEventTitle` / `updateEventStatus` / `updateRating`, all built on
-the private `_updateEventData` helper: optimistic local state → `updateEvent` →
-haptic). These supersede the legacy `EventForm` + `EntryController.save()`
-FormBuilder path (`lib/widgets/events/event_form.dart`): the new Events surface
-never mounts a `FormBuilder`, so `save()`'s event branch is dead for it and
-should be removed once the old form route is retired (don't "fix" it).
+The title/status/rating/cover writes go through `EntryController`'s direct
+event-data setters (`updateEventTitle` / `updateEventStatus` / `updateRating` /
+`updateEventCover`, all built on the private `_updateEventData` helper: optimistic
+local state → `updateEvent` → haptic). The legacy FormBuilder-based `EventForm`
+has been removed; an event is only ever shown through this surface now. (One dead
+tail remains: `EntryController.save()`'s `JournalEvent` branch, which nothing
+mounts a `FormBuilder` for anymore — safe to drop in a follow-up; don't "fix" it.)
+
+### Routing & linked rendering
+
+There is one way to open an event: the detail page at `/events/<id>`. Every entry
+point routes there — the Events overview, a logbook card tap (`journal_card`), a
+freshly-created event (`create_entry_items`), and a linked event inside a task's
+timeline. A linked event renders as a `LinkedEventCard` (a compact
+`EventSummaryCard` resolved the same way the detail page resolves its cover) via
+`EntryDetailsWidget`, not the generic entry editor.
+
+This is all gated on the `enableEventsFlag`: when **off**, events are hidden
+everywhere — the logbook query drops the `JournalEvent` type
+(`computeAllowedEntryTypes`), `EntryDetailsWidget` renders a linked event as
+nothing, and the tab / create-event / type-filter affordances are absent.
 
 - **Title** — tap to swap in a borderless field; commit on submit/blur →
   `updateEventTitle`.
@@ -132,6 +173,10 @@ should be removed once the old form route is retired (don't "fix" it).
   rating, so a fresh/tentative event isn't pushed gold stars.
 - **Cover** — while the event has no cover, an "add cover photo" action opens the
   create-entry menu; the first linked photo then becomes the cover automatically.
+  Once a cover exists, the hero overflow menu offers **Change cover** →
+  `EventCoverPicker` (a sheet of the event's linked photos), and picking one calls
+  `EntryController.updateEventCover(imageId)` to set `EventData.coverArtId`; the
+  sheet's "add photo" tile falls back to the create-entry menu for a new shot.
 - **Add to timeline** — opens the shared `CreateEntryModal` scoped to the event
   (`linkedFromId`), so new notes, photos and audio link straight back.
 - **Add task** — mirrors the linked-tasks flow: `createTask(linkedId: eventId)`
@@ -161,7 +206,8 @@ rather than a blank void.
 | `ui/widgets/event_summary_card.dart` | Dense list-context summary card (cover + meta + metrics) for the logbook / task timeline. |
 | `ui/widgets/event_photo_gallery.dart` | `EventPhotoGrid` (photo wall + "+N" overflow) + full-screen `EventPhotoGalleryViewer`. |
 | `state/event_view_mapping.dart` | Pure entity→view-model mapping, date labels, grouping. |
-| `state/events_controller.dart` | `eventsStreamProvider` + `loadResolvedEvents` (DB → resolved events). |
+| `state/events_controller.dart` | `loadResolvedEventsPage` / `loadResolvedEvents` (DB → resolved events, paged). |
+| `state/events_overview_controller.dart` | `eventsOverviewControllerProvider`: paged, category-filterable overview state. |
 | `ui/pages/events_overview_page.dart` | Route page: provider → localized sections → view. |
 | `ui/pages/event_detail_page.dart` | Route page: event + links → `EventDetailData` → view. |
 

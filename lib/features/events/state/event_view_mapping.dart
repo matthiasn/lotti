@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 
 String? _trimmedNote(JournalEntity entity) {
   final text = entity.entryText?.plainText.trim();
@@ -45,14 +46,33 @@ EventTimelineEntry? eventTimelineEntryFor(
       ),
       text: _trimmedNote(audio),
     ),
-    final JournalEntry entry => EventTimelineEntry(
-      timeLabel: timeLabel,
-      kind: EventTimelineKind.note,
-      entryId: entry.meta.id,
-      text: _trimmedNote(entry),
-    ),
+    final JournalEntry entry => _journalEntryBeat(entry, timeLabel),
     _ => null,
   };
+}
+
+/// A plain note becomes a [EventTimelineKind.note]; one whose `dateTo` is after
+/// its `dateFrom` (a time recording) becomes a [EventTimelineKind.timeRecording]
+/// carrying its end time and elapsed duration, so it reads as a span rather than
+/// a point-in-time observation.
+EventTimelineEntry _journalEntryBeat(JournalEntry entry, String timeLabel) {
+  final span = entry.meta.dateTo.difference(entry.meta.dateFrom);
+  if (isTimeRecordingSpan(span)) {
+    return EventTimelineEntry(
+      timeLabel: timeLabel,
+      kind: EventTimelineKind.timeRecording,
+      entryId: entry.meta.id,
+      endTimeLabel: DateFormat('HH:mm').format(entry.meta.dateTo.toLocal()),
+      durationLabel: formatRangeDuration(span),
+      text: _trimmedNote(entry),
+    );
+  }
+  return EventTimelineEntry(
+    timeLabel: timeLabel,
+    kind: EventTimelineKind.note,
+    entryId: entry.meta.id,
+    text: _trimmedNote(entry),
+  );
 }
 
 /// Maps a linked [Task] to the compact [EventTaskRef] shown in the event's
@@ -122,7 +142,7 @@ EventDetailData eventDetailDataFromEntities({
   for (final entity in sorted) {
     final timelineEntry = eventTimelineEntryFor(
       entity,
-      timeLabel: DateFormat('HH:mm').format(entity.meta.dateFrom),
+      timeLabel: DateFormat('HH:mm').format(entity.meta.dateFrom.toLocal()),
       imageProviderFor: imageProviderFor,
     );
     if (timelineEntry != null) timeline.add(timelineEntry);

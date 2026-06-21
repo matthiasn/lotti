@@ -17,6 +17,12 @@ Duration entryDuration(JournalEntity journalEntity) {
   return journalEntity.meta.dateTo.difference(journalEntity.meta.dateFrom);
 }
 
+/// Whether a [span] is long enough to read as a deliberate time recording
+/// rather than an instant note. Entries are created with `dateFrom == dateTo`
+/// (give or take a little creation latency), so anything under a minute is
+/// treated as a point in time, not a tracked interval.
+bool isTimeRecordingSpan(Duration span) => span >= const Duration(minutes: 1);
+
 /// Formats a duration as zero-padded `H:MM:SS`, dropping sub-second precision;
 /// returns an empty string for null. See [formatRangeDuration] for the
 /// day-aware, seconds-less variant used by the date-time editor.

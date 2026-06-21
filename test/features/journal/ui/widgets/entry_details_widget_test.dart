@@ -11,13 +11,18 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
@@ -39,6 +44,7 @@ import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -743,6 +749,84 @@ void main() {
         expect(find.byType(EntryDetailsContent), findsNothing);
       },
     );
+
+    group('JournalEvent', () {
+      JournalEvent buildEvent() {
+        final now = DateTime(2026, 5, 12);
+        return JournalEvent(
+          meta: Metadata(
+            id: 'event-id',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: const EventData(
+            title: 'Launch Party',
+            stars: 0,
+            status: EventStatus.completed,
+          ),
+        );
+      }
+
+      testWidgets('renders as a LinkedEventCard when the Events flag is on', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(id: 'event-id').overrideWith(
+                  () => _FakeEntryController(buildEvent()),
+                ),
+                resolvedOutgoingLinkedEntriesProvider(
+                  'event-id',
+                ).overrideWithValue(const []),
+                configFlagProvider(
+                  enableEventsFlag,
+                ).overrideWith((ref) => Stream.value(true)),
+              ],
+              child: const EntryDetailsWidget(
+                itemId: 'event-id',
+                showAiEntry: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(LinkedEventCard), findsOneWidget);
+        // Not the generic per-type editor body.
+        expect(find.byType(EntryDetailsContent), findsNothing);
+      });
+
+      testWidgets('is hidden entirely when the Events flag is off', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(id: 'event-id').overrideWith(
+                  () => _FakeEntryController(buildEvent()),
+                ),
+                configFlagProvider(
+                  enableEventsFlag,
+                ).overrideWith((ref) => Stream.value(false)),
+              ],
+              child: const EntryDetailsWidget(
+                itemId: 'event-id',
+                showAiEntry: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(LinkedEventCard), findsNothing);
+        expect(find.byType(EntryDetailsContent), findsNothing);
+      });
+    });
 
     // Null entry → SizedBox.shrink (null item check)
     testWidgets('returns SizedBox.shrink when entry state is null', (

@@ -4959,6 +4959,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Ajouter une photo de couverture';
 
   @override
+  String get eventsChangeCover => 'Changer la couverture';
+
+  @override
   String get eventsAddLabel => 'Ajouter';
 
   @override
