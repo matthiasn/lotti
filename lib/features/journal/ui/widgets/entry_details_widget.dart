@@ -536,16 +536,22 @@ class _CollapsibleBodyState extends State<_CollapsibleBody>
       vsync: this,
       value: widget.isCollapsed ? 0.0 : 1.0,
     );
+    // Symmetric smooth easing in BOTH directions. The old easeOutCubic reverse
+    // curve front-loaded the collapse (most of the height vanished in the first
+    // frames), so it lurched and felt abrupt next to the eased expand;
+    // easeInOutCubic both ways gives the same calm accel/decel opening and
+    // closing.
     _sizeAnimation = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeInOutCubic,
-      reverseCurve: Curves.easeOutCubic,
     );
+    // Tie content opacity to the box being open in BOTH directions (no separate
+    // reverse curve): it fades in only once the box has grown on expand, and
+    // fades out before the box shrinks on collapse, so the content never
+    // visibly squishes as the height changes.
     _opacityAnimation = CurvedAnimation(
       parent: _controller,
-      // Delay fade-in so content becomes visible after size has grown enough
-      curve: const Interval(0.3, 1, curve: Curves.easeInOutCubic),
-      reverseCurve: Curves.easeOutCubic,
+      curve: const Interval(0.3, 1, curve: Curves.easeInOut),
     );
   }
 
