@@ -54,11 +54,11 @@ class SwitchIconWidget extends StatelessWidget {
             : Icon(
                 icon,
                 size: iconSize,
-                // highEmphasis (pure white, ~15:1) for the OFF state: the thin
-                // outline glyph (e.g. the unfavorited star) read as a faint
-                // hairline at mediumEmphasis for low-vision users, so it was
-                // hard to tell the control was present and tappable.
-                color: context.designTokens.colors.text.highEmphasis,
+                // mediumEmphasis (white @ 80%, ~10:1) keeps the OFF control
+                // quiet so it does not out-compete the card's value for first
+                // fixation. Perceptibility for low-vision users is carried by
+                // the larger glyph size (headerActionIconSize), not brightness.
+                color: context.designTokens.colors.text.mediumEmphasis,
               ),
       ),
     );
