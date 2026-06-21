@@ -149,12 +149,6 @@ String projectEntityUpdateNotification(String projectId) {
   return '$projectEntityUpdatePrefix$projectId';
 }
 
-const eventEntityUpdatePrefix = 'EVENT_ENTITY_UPDATE:';
-
-String eventEntityUpdateNotification(String eventId) {
-  return '$eventEntityUpdatePrefix$eventId';
-}
-
 /// Prefix marking a notification token that did not originate from a
 /// direct edit of the entity it references — e.g. a parent ID added by
 /// `parentLinkedEntityIds` fan-out, or a project's update token emitted

@@ -6,7 +6,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/event_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -188,7 +187,7 @@ void main() {
       expect(subscription.agentId, 'agent-1');
       expect(
         subscription.matchEntityIds,
-        {eventEntityUpdateNotification(eventId)},
+        {eventId},
       );
 
       // Content gate mirrored + creation wake enqueued.
@@ -418,7 +417,7 @@ void main() {
       expect(subscription.agentId, 'agent-event');
       expect(
         subscription.matchEntityIds,
-        {eventEntityUpdateNotification(eventId)},
+        {eventId},
       );
     });
   });

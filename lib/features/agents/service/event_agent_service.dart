@@ -11,7 +11,6 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
@@ -286,7 +285,14 @@ class EventAgentService {
       AgentSubscription(
         id: '${agentId}_event_direct_$eventId',
         agentId: agentId,
-        matchEntityIds: {eventEntityUpdateNotification(eventId)},
+        // Match the bare event id, exactly like the task agent matches its bare
+        // task id. `JournalEntity.affectedIds` always includes the entity id,
+        // and linking a photo/note to the event emits the event id via the
+        // link notification — so this wakes the agent on direct event edits AND
+        // on content arrival (which clears the awaiting-content gate). Events
+        // wake on direct content like tasks, not on aggregated activity like
+        // projects, so they do not use a dedicated `*_ENTITY_UPDATE:` channel.
+        matchEntityIds: {eventId},
       ),
     );
   }
