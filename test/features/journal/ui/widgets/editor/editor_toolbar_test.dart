@@ -5,6 +5,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/editor_db.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_toolbar.dart';
@@ -147,41 +148,67 @@ void main() {
               )
               .first,
         );
-        expect(sizedBox.height, 45);
+        expect(sizedBox.height, ToolbarWidget.height);
 
         // Flush any timers Quill schedules internally before teardown.
         await tester.pump(const Duration(seconds: 1));
       },
     );
 
-    testWidgets('custom divider button inserts a divider embed', (
-      tester,
-    ) async {
-      final container = makeKeptAliveContainer();
-      // Render the static (post-animation) branch so the toolbar is at
-      // full height and the buttons are hittable.
-      container
-              .read(entryControllerProvider(id: entryId).notifier)
-              .animationCompleted =
-          true;
-      await tester.pumpWidget(buildSubject(container));
-      await tester.pump();
+    testWidgets(
+      'divider button in the more-formatting sheet inserts a divider embed',
+      (tester) async {
+        final container = makeKeptAliveContainer();
+        // Render the static (post-animation) branch so the toolbar is at full
+        // height and the buttons are hittable.
+        container
+                .read(entryControllerProvider(id: entryId).notifier)
+                .animationCompleted =
+            true;
+        await tester.pumpWidget(buildSubject(container));
+        await tester.pump();
 
-      // The custom button sits at the end of the single-row toolbar;
-      // bring it into view before tapping.
-      await tester.ensureVisible(find.byIcon(Icons.horizontal_rule));
-      await tester.pump();
-      await tester.tap(find.byIcon(Icons.horizontal_rule));
-      await tester.pump();
+        // The divider now lives behind the "…" overflow, not inline.
+        expect(find.byIcon(Icons.horizontal_rule), findsNothing);
+        await tester.tap(find.byIcon(Icons.more_horiz));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // The embed's object replacement character lands in the document.
-      expect(
-        quillController.document.toPlainText().codeUnitAt(0),
-        0xFFFC,
-      );
+        await tester.tap(find.byIcon(Icons.horizontal_rule));
+        await tester.pump();
 
-      // Flush any timers Quill schedules internally before teardown.
-      await tester.pump(const Duration(seconds: 1));
-    });
+        // The embed's object replacement character lands in the document.
+        expect(
+          quillController.document.toPlainText().codeUnitAt(0),
+          0xFFFC,
+        );
+
+        // Flush any timers Quill schedules internally before teardown.
+        await tester.pump(const Duration(seconds: 1));
+      },
+    );
+
+    testWidgets(
+      'save button is present, disabled while there is nothing to save',
+      (tester) async {
+        final container = makeKeptAliveContainer();
+        container
+                .read(entryControllerProvider(id: entryId).notifier)
+                .animationCompleted =
+            true;
+        await tester.pumpWidget(buildSubject(container));
+        await tester.pump();
+
+        // The save action is pinned in the toolbar (not the footer) and, with a
+        // freshly-loaded entry (no edits), renders disabled.
+        expect(find.text('Save'), findsOneWidget);
+        final saveButton = tester.widget<DesignSystemButton>(
+          find.byType(DesignSystemButton),
+        );
+        expect(saveButton.onPressed, isNull);
+
+        await tester.pump(const Duration(seconds: 1));
+      },
+    );
   });
 }

@@ -4862,6 +4862,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editorInsertDivider => 'Insertar separador';
 
   @override
+  String get editorMoreFormatting => 'Más formato';
+
+  @override
   String get editorPlaceholder => 'Introducir notas...';
 
   @override

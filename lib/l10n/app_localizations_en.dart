@@ -4773,6 +4773,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorInsertDivider => 'Insert divider';
 
   @override
+  String get editorMoreFormatting => 'More formatting';
+
+  @override
   String get editorPlaceholder => 'Enter notes...';
 
   @override

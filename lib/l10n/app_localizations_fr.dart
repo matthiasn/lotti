@@ -4873,6 +4873,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editorInsertDivider => 'Insérer un séparateur';
 
   @override
+  String get editorMoreFormatting => 'Plus de mise en forme';
+
+  @override
   String get editorPlaceholder => 'Saisir des notes...';
 
   @override

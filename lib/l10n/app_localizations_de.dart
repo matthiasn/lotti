@@ -4832,6 +4832,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editorInsertDivider => 'Trennlinie einfügen';
 
   @override
+  String get editorMoreFormatting => 'Mehr Formatierung';
+
+  @override
   String get editorPlaceholder => 'Notizen eingeben...';
 
   @override

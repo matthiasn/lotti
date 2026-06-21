@@ -8328,6 +8328,12 @@ abstract class AppLocalizations {
   /// **'Insert divider'**
   String get editorInsertDivider;
 
+  /// No description provided for @editorMoreFormatting.
+  ///
+  /// In en, this message translates to:
+  /// **'More formatting'**
+  String get editorMoreFormatting;
+
   /// No description provided for @editorPlaceholder.
   ///
   /// In en, this message translates to:

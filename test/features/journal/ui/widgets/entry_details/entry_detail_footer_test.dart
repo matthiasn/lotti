@@ -9,10 +9,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/state/save_button_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/duration_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -257,8 +255,9 @@ void main() {
       verify(mockStopTimer).called(1);
     });
 
-    testWidgets('shows DurationWidget but no SaveButton when not in linked '
-        'entries', (tester) async {
+    testWidgets('shows the DurationWidget and carries no save action', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailFooter(
@@ -277,69 +276,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 10));
 
-      // A JournalEntry always renders the DurationWidget; the save button is
-      // only present inside linked-entries lists.
+      // A JournalEntry renders the DurationWidget. Saving now lives in the
+      // editor toolbar, so the footer never renders a Save action.
       expect(find.byType(DurationWidget), findsOneWidget);
-      expect(find.byType(SaveButton), findsNothing);
-    });
-
-    testWidgets('shows SaveButton in linked entries when there are unsaved '
-        'changes', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EntryDetailFooter(
-            entryId: testTextEntryNoGeo.meta.id,
-            linkedFrom: null,
-            inLinkedEntries: true,
-          ),
-          overrides: [
-            entryControllerProvider(
-              id: testTextEntryNoGeo.meta.id,
-            ).overrideWith(
-              () => FakeEntryController(testTextEntryNoGeo),
-            ),
-            saveButtonControllerProvider(
-              id: testTextEntryNoGeo.meta.id,
-            ).overrideWith(
-              () => _FakeSaveButtonController(unsaved: true),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 10));
-
-      expect(find.byType(SaveButton), findsOneWidget);
-    });
-
-    testWidgets('hides SaveButton in linked entries when there are no unsaved '
-        'changes (footer stays compact)', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EntryDetailFooter(
-            entryId: testTextEntryNoGeo.meta.id,
-            linkedFrom: null,
-            inLinkedEntries: true,
-          ),
-          overrides: [
-            entryControllerProvider(
-              id: testTextEntryNoGeo.meta.id,
-            ).overrideWith(
-              () => FakeEntryController(testTextEntryNoGeo),
-            ),
-            saveButtonControllerProvider(
-              id: testTextEntryNoGeo.meta.id,
-            ).overrideWith(
-              () => _FakeSaveButtonController(unsaved: false),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 10));
-
-      // With no unsaved changes the save button renders nothing and reserves no
-      // space, so the footer stays compact.
       expect(find.text('Save'), findsNothing);
     });
 
@@ -396,19 +335,7 @@ void main() {
       // The footer short-circuits to SizedBox.shrink, so none of its content
       // widgets are present.
       expect(find.byType(DurationWidget), findsNothing);
-      expect(find.byType(SaveButton), findsNothing);
       expect(find.byType(MapWidget), findsNothing);
     });
   });
-}
-
-/// Drives the footer's SaveButton visibility deterministically by forcing the
-/// unsaved-changes state.
-class _FakeSaveButtonController extends SaveButtonController {
-  _FakeSaveButtonController({required this.unsaved});
-
-  final bool unsaved;
-
-  @override
-  Future<bool?> build({required String id}) async => unsaved;
 }

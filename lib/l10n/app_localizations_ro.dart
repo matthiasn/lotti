@@ -4871,6 +4871,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get editorInsertDivider => 'Inserează separator';
 
   @override
+  String get editorMoreFormatting => 'Mai multă formatare';
+
+  @override
   String get editorPlaceholder => 'Introduceți notițe...';
 
   @override

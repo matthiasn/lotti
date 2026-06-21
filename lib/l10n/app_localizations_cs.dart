@@ -4837,6 +4837,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get editorInsertDivider => 'Vložit oddělovač';
 
   @override
+  String get editorMoreFormatting => 'Více formátování';
+
+  @override
   String get editorPlaceholder => 'Zadejte poznámky...';
 
   @override

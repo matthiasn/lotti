@@ -394,7 +394,6 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
     final footer = EntryDetailFooter(
       entryId: itemId,
       linkedFrom: linkedFrom,
-      inLinkedEntries: linkedFrom != null,
     );
 
     if (!isCollapsible) {
