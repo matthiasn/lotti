@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
+import 'package:lotti/features/journal/state/save_button_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
@@ -117,21 +118,29 @@ class EntryDetailsWidget extends ConsumerWidget {
       bottom: tokens.spacing.step4,
     );
 
+    // When the transient save button is the last thing in the card (an unsaved
+    // linked entry), it is a chunky control that does not need the full content
+    // gutter beneath it — tighten the bottom inset so it sits closer to the edge
+    // rather than floating above a wide band.
+    final showsSaveButton =
+        linkedFrom != null &&
+        (ref.watch(saveButtonControllerProvider(id: itemId)).value ?? false);
+
     final card = TaskDetailSectionCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: cardMargin,
       // One shared shell inset: a consistent left/right gutter so every card
       // type aligns to a single content edge. The top is intentionally tighter
       // (step3) because the header's 48px tap targets overhang below the
-      // timestamp baseline and already supply visual air; the bottom has no such
-      // overhang, so it takes the full gutter (step4, matching the horizontal
-      // inset and the inter-section rhythm) to keep the last line — e.g. an audio
-      // transcript — from crowding the card edge.
+      // timestamp baseline and already supply visual air; the bottom takes the
+      // full gutter (step4) so the last line — e.g. an audio transcript — does
+      // not crowd the card edge, but drops to step3 under the save button (a
+      // control, which would otherwise read as floating above too wide a band).
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.step4,
         tokens.spacing.step3,
         tokens.spacing.step4,
-        tokens.spacing.step4,
+        showsSaveButton ? tokens.spacing.step3 : tokens.spacing.step4,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
