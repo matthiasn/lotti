@@ -149,7 +149,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         ),
       if (entry?.meta.flag == EntryFlag.import)
         SwitchIconWidget(
-          tooltip: context.messages.journalFlaggedTooltip,
+          tooltip: context.messages.journalToggleFlaggedTitle,
           onPressed: notifier.toggleFlagged,
           value: entry?.meta.flag == EntryFlag.import,
           icon: Icons.flag_outlined,
@@ -162,7 +162,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
       // starred, gold when starred — so the action set never changes shape.
       if (entry != null && entry is! JournalEvent)
         SwitchIconWidget(
-          tooltip: context.messages.journalFavoriteTooltip,
+          tooltip: context.messages.journalToggleStarredTitle,
           onPressed: notifier.toggleStarred,
           value: entry.meta.starred ?? false,
           icon: Icons.star_outline_rounded,

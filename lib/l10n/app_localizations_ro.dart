@@ -5752,9 +5752,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalEndTimeLabel => 'Oră de sfârșit';
 
   @override
-  String get journalFavoriteTooltip => 'Favorit';
-
-  @override
   String get journalFilterEntryTypesTitle => 'Tipuri de intrare';
 
   @override
@@ -5768,9 +5765,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get journalFilterStarred => 'Favorite';
-
-  @override
-  String get journalFlaggedTooltip => 'Marcat';
 
   @override
   String get journalHideLinkHint => 'Ascunde linkul';

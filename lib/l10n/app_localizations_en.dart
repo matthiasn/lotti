@@ -5622,9 +5622,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalEndTimeLabel => 'End time';
 
   @override
-  String get journalFavoriteTooltip => 'starred only';
-
-  @override
   String get journalFilterEntryTypesTitle => 'Entry types';
 
   @override
@@ -5638,9 +5635,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get journalFilterStarred => 'Starred';
-
-  @override
-  String get journalFlaggedTooltip => 'flagged only';
 
   @override
   String get journalHideLinkHint => 'Hide link';
@@ -8858,12 +8852,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get journalDurationLabel => 'Duration';
-
-  @override
-  String get journalFavoriteTooltip => 'starred only';
-
-  @override
-  String get journalFlaggedTooltip => 'flagged only';
 
   @override
   String get journalHideMapHint => 'Hide map';

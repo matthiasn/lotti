@@ -9840,12 +9840,6 @@ abstract class AppLocalizations {
   /// **'End time'**
   String get journalEndTimeLabel;
 
-  /// No description provided for @journalFavoriteTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'starred only'**
-  String get journalFavoriteTooltip;
-
   /// No description provided for @journalFilterEntryTypesTitle.
   ///
   /// In en, this message translates to:
@@ -9875,12 +9869,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Starred'**
   String get journalFilterStarred;
-
-  /// No description provided for @journalFlaggedTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'flagged only'**
-  String get journalFlaggedTooltip;
 
   /// No description provided for @journalHideLinkHint.
   ///

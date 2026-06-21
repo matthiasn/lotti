@@ -5737,9 +5737,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalEndTimeLabel => 'Hora de fin';
 
   @override
-  String get journalFavoriteTooltip => 'solo destacados';
-
-  @override
   String get journalFilterEntryTypesTitle => 'Tipos de entrada';
 
   @override
@@ -5753,9 +5750,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get journalFilterStarred => 'Destacados';
-
-  @override
-  String get journalFlaggedTooltip => 'solo marcados';
 
   @override
   String get journalHideLinkHint => 'Ocultar enlace';
