@@ -97,6 +97,7 @@ class ProfileSeedingService {
 
     for (final config in configs.whereType<AiConfigInferenceProfile>()) {
       var upgraded = _withMigratedLegacyLocalPowerSeed(config, models);
+      upgraded = _withUpgradedOmlxWhisperTranscription(upgraded, models);
       upgraded = _withResolvedModelConfigIds(upgraded, models);
       final template = templatesById[config.id];
 
@@ -142,6 +143,56 @@ class ProfileSeedingService {
       thinkingModelId: omlxRecommendedMultimodalModelId,
       imageRecognitionModelId: omlxRecommendedMultimodalModelId,
     );
+  }
+
+  static AiConfigInferenceProfile _withUpgradedOmlxWhisperTranscription(
+    AiConfigInferenceProfile profile,
+    List<AiConfigModel> models,
+  ) {
+    final expectedModelId = switch (profile.id) {
+      profileLocalPowerId => omlxRecommendedMultimodalModelId,
+      profileLocalGemmaOmlxId => omlxGemma426BA4BItQatMlx4BitModelId,
+      _ => null,
+    };
+
+    if (expectedModelId == null ||
+        !_isUntouchedOmlxProfileMissingTranscription(
+          profile,
+          expectedModelId,
+          models,
+        )) {
+      return profile;
+    }
+
+    return profile.copyWith(
+      transcriptionModelId: omlxWhisperLargeV3TurboModelId,
+      skillAssignments: _defaultSkillAssignments,
+    );
+  }
+
+  static bool _isUntouchedOmlxProfileMissingTranscription(
+    AiConfigInferenceProfile profile,
+    String expectedModelId,
+    List<AiConfigModel> models,
+  ) {
+    return profile.description == null &&
+        profile.thinkingHighEndModelId == null &&
+        _slotMatchesProviderModelId(
+          profile.thinkingModelId,
+          expectedModelId,
+          models,
+        ) &&
+        _slotMatchesProviderModelId(
+          profile.imageRecognitionModelId,
+          expectedModelId,
+          models,
+        ) &&
+        profile.transcriptionModelId == null &&
+        profile.imageGenerationModelId == null &&
+        !profile.isDefault &&
+        profile.desktopOnly &&
+        profile.skillAssignments.isEmpty &&
+        profile.pinnedHostId == null;
   }
 
   static bool _isUntouchedLegacyLocalPowerSeed(
@@ -396,6 +447,8 @@ class ProfileSeedingService {
       name: _localPowerName,
       thinkingModelId: omlxRecommendedMultimodalModelId,
       imageRecognitionModelId: omlxRecommendedMultimodalModelId,
+      transcriptionModelId: omlxWhisperLargeV3TurboModelId,
+      skillAssignments: _defaultSkillAssignments,
       desktopOnly: true,
       createdAt: DateTime(2026),
     ),
@@ -404,6 +457,8 @@ class ProfileSeedingService {
       name: 'Local Gemma 4 (oMLX)',
       thinkingModelId: omlxGemma426BA4BItQatMlx4BitModelId,
       imageRecognitionModelId: omlxGemma426BA4BItQatMlx4BitModelId,
+      transcriptionModelId: omlxWhisperLargeV3TurboModelId,
+      skillAssignments: _defaultSkillAssignments,
       desktopOnly: true,
       createdAt: DateTime(2026),
     ),

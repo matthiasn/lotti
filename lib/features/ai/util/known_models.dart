@@ -111,11 +111,15 @@ const String meliousWhisperLargeV3TurboModelId = 'whisper-large-v3-turbo';
 const String omlxQwen36A35bA3bTurboQuantMlx4BitModelId =
     'Qwen3.6-35B-A3B-TurboQuant-MLX-4bit';
 const String omlxQwen36A35bA3b4BitModelId = 'Qwen3.6-35B-A3B-4bit';
+const String omlxQwen36A35bA3bUdMlx4BitModelId =
+    'unsloth/Qwen3.6-35B-A3B-UD-MLX-4bit';
 const String omlxQwen36A35bA3bMlx8BitModelId = 'Qwen3.6-35B-A3B-MLX-8bit';
 const String omlxGemma426BA4BItQatMlx4BitModelId =
     'gemma-4-26B-A4B-it-QAT-MLX-4bit';
 const String omlxRecommendedMultimodalModelId = omlxQwen36A35bA3b4BitModelId;
 const String omlxWhisperLargeV3ModelId = 'openai/whisper-large-v3';
+const String omlxWhisperLargeV3MlxModelId = 'whisper-large-v3-mlx';
+const String omlxWhisperLargeV3TurboModelId = 'whisper-large-v3-turbo';
 
 /// Whether [providerModelId] is a Qwen3-ASR checkpoint converted for MLX Audio.
 bool isMlxAudioQwenAsrModelId(String providerModelId) {

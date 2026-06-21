@@ -171,8 +171,8 @@ const List<KnownModel> mlxAudioModels = [
 ///
 /// Qwen3.6-35B-A3B and Gemma 4 26B A4B are multimodal, so these local MLX
 /// variants are cataloged for both thinking and image recognition slots.
-/// Whisper Large v3 is cataloged separately as an audio transcription model
-/// routed through the OpenAI-compatible `/audio/transcriptions` endpoint.
+/// Whisper Large v3 variants are cataloged separately as audio transcription
+/// models routed through the OpenAI-compatible `/audio/transcriptions` endpoint.
 const List<KnownModel> omlxModels = [
   KnownModel(
     providerModelId: omlxQwen36A35bA3b4BitModelId,
@@ -184,6 +184,18 @@ const List<KnownModel> omlxModels = [
     description:
         'Recommended local oMLX model for thinking, coding, tool use, and '
         'image recognition. 35B total parameters with about 3B active.',
+  ),
+  KnownModel(
+    providerModelId: omlxQwen36A35bA3bUdMlx4BitModelId,
+    name: 'Qwen3.6-35B-A3B-UD-MLX-4bit',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Unsloth UD 4-bit MLX conversion for local oMLX serving. Cataloged '
+        'for thinking and image-recognition testing alongside the base Qwen '
+        '3.6 35B-A3B oMLX rows.',
   ),
   KnownModel(
     providerModelId: omlxQwen36A35bA3bTurboQuantMlx4BitModelId,
@@ -228,6 +240,26 @@ const List<KnownModel> omlxModels = [
     description:
         'Local Whisper Large v3 transcription served by oMLX on Apple '
         'Silicon through the OpenAI-compatible audio transcriptions endpoint.',
+  ),
+  KnownModel(
+    providerModelId: omlxWhisperLargeV3MlxModelId,
+    name: 'Whisper Large v3 MLX (oMLX)',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Local Whisper Large v3 MLX transcription model served by oMLX through '
+        'the OpenAI-compatible audio transcriptions endpoint.',
+  ),
+  KnownModel(
+    providerModelId: omlxWhisperLargeV3TurboModelId,
+    name: 'Whisper Large v3 Turbo (oMLX)',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Faster local Whisper Large v3 Turbo transcription model served by '
+        'oMLX through the OpenAI-compatible audio transcriptions endpoint.',
   ),
 ];
 

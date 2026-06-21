@@ -240,6 +240,17 @@ void main() {
         powerProfile.imageRecognitionModelId,
         omlxRecommendedMultimodalModelId,
       );
+      expect(
+        powerProfile.transcriptionModelId,
+        omlxWhisperLargeV3TurboModelId,
+      );
+      expect(
+        powerProfile.skillAssignments.map((a) => a.skillId),
+        containsAll([
+          skillTranscribeContextId,
+          skillImageAnalysisContextId,
+        ]),
+      );
       expect(powerProfile.isDefault, isFalse);
     });
 
@@ -309,6 +320,17 @@ void main() {
       expect(
         gemmaProfile.imageRecognitionModelId,
         omlxGemma426BA4BItQatMlx4BitModelId,
+      );
+      expect(
+        gemmaProfile.transcriptionModelId,
+        omlxWhisperLargeV3TurboModelId,
+      );
+      expect(
+        gemmaProfile.skillAssignments.map((a) => a.skillId),
+        containsAll([
+          skillTranscribeContextId,
+          skillImageAnalysisContextId,
+        ]),
       );
       expect(gemmaProfile.isDefault, isFalse);
     });
@@ -386,8 +408,6 @@ void main() {
       for (final config in capturedConfigs) {
         final profile = config as AiConfigInferenceProfile;
         // Power profiles have no skill assignments (opt-in profiles).
-        if (profile.id == profileLocalPowerId) continue;
-        if (profile.id == profileLocalGemmaOmlxId) continue;
         if (profile.id == profileLocalGemmaPowerId) continue;
         expect(
           profile.skillAssignments,

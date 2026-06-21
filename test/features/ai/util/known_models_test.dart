@@ -700,6 +700,7 @@ void main() {
           final modelIds = omlxModels.map((m) => m.providerModelId).toSet();
 
           expect(modelIds, contains(omlxQwen36A35bA3b4BitModelId));
+          expect(modelIds, contains(omlxQwen36A35bA3bUdMlx4BitModelId));
           expect(
             modelIds,
             contains(omlxQwen36A35bA3bTurboQuantMlx4BitModelId),
@@ -707,9 +708,11 @@ void main() {
           expect(modelIds, contains(omlxQwen36A35bA3bMlx8BitModelId));
           expect(modelIds, contains(omlxGemma426BA4BItQatMlx4BitModelId));
           expect(modelIds, contains(omlxWhisperLargeV3ModelId));
+          expect(modelIds, contains(omlxWhisperLargeV3MlxModelId));
+          expect(modelIds, contains(omlxWhisperLargeV3TurboModelId));
 
           final reasoningModels = omlxModels.where(
-            (m) => m.providerModelId != omlxWhisperLargeV3ModelId,
+            (m) => !m.inputModalities.contains(Modality.audio),
           );
           for (final model in reasoningModels) {
             expect(model.inputModalities, contains(Modality.text));
@@ -719,14 +722,23 @@ void main() {
             expect(model.supportsFunctionCalling, isTrue);
           }
 
-          final whisper = omlxModels.firstWhere(
-            (m) => m.providerModelId == omlxWhisperLargeV3ModelId,
+          final transcriptionModels = omlxModels
+              .where((m) => m.inputModalities.contains(Modality.audio))
+              .toList(growable: false);
+          expect(transcriptionModels, hasLength(3));
+          expect(
+            transcriptionModels.map((m) => m.providerModelId),
+            containsAll([
+              omlxWhisperLargeV3ModelId,
+              omlxWhisperLargeV3MlxModelId,
+              omlxWhisperLargeV3TurboModelId,
+            ]),
           );
-          expect(whisper.name, equals('Whisper Large v3 (oMLX)'));
-          expect(whisper.inputModalities, equals([Modality.audio]));
-          expect(whisper.outputModalities, equals([Modality.text]));
-          expect(whisper.isReasoningModel, isFalse);
-          expect(whisper.supportsFunctionCalling, isFalse);
+          for (final model in transcriptionModels) {
+            expect(model.outputModalities, equals([Modality.text]));
+            expect(model.isReasoningModel, isFalse);
+            expect(model.supportsFunctionCalling, isFalse);
+          }
         },
       );
 

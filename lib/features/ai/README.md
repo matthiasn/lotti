@@ -258,8 +258,9 @@ attestations, or decision ledgers. The built-in comparison targets
 `Qwen3.6-35B-A3B-MLX-8bit`; set `QWEN_EVAL_BASE_URL` or `OMLX_BASE_URL` when
 oMLX is not exposed at the local OpenAI-compatible default. The corresponding
 app provider type is `InferenceProviderType.omlx`, with default base URL
-`http://127.0.0.1:8003/v1`; its known Qwen3.6 rows are text+image models, so
-the same local model can back thinking and image-recognition slots.
+`http://127.0.0.1:8003/v1`; its known Qwen3.6 rows include
+`unsloth/Qwen3.6-35B-A3B-UD-MLX-4bit` and are text+image models, so the same
+local model can back thinking and image-recognition slots.
 
 `tool/local_task_agent_inference_eval.sh` is the stronger app-shaped local eval.
 It sends a production-style first-wake task-agent prompt through
@@ -521,8 +522,9 @@ For oMLX, the audio branch is model-sensitive. Regular oMLX Qwen and Gemma
 rows still use OpenAI-compatible chat or vision chat routes, while
 Whisper/ASR/STT-shaped oMLX model ids use the configured provider base URL plus
 `/audio/transcriptions` with multipart audio and bearer authentication. The
-static oMLX catalog includes `openai/whisper-large-v3` as an audio-input,
-text-output model so it can be selected for inference-profile transcription
+static oMLX catalog includes `openai/whisper-large-v3`,
+`whisper-large-v3-mlx`, and `whisper-large-v3-turbo` as audio-input,
+text-output models so they can be selected for inference-profile transcription
 slots on Apple Silicon oMLX installations.
 
 ### Gemini Thinking Mode
@@ -689,14 +691,14 @@ Operational details from the seeded definitions:
 
 - the five local profiles are `desktopOnly`
 - `Local (Ollama)` and `Local Gemma 4 (Ollama)` ship with image-analysis automation but no transcription slot
-- `Local Power (oMLX)` uses `Qwen3.6-35B-A3B-4bit` for both thinking and image recognition
-- `Local Gemma 4 (oMLX)` uses `gemma-4-26B-A4B-it-QAT-MLX-4bit` for both thinking and image recognition
+- `Local Power (oMLX)` uses `Qwen3.6-35B-A3B-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
+- `Local Gemma 4 (oMLX)` uses `gemma-4-26B-A4B-it-QAT-MLX-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
 - `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, DeepSeek V4 Pro for high-end thinking, and Whisper Large v3 Turbo for transcription
-- `Local Power (oMLX)`, `Local Gemma 4 (oMLX)`, and `Local Gemma 4 Power (Ollama)` currently ship with no default skill assignments
+- `Local Gemma 4 Power (Ollama)` currently ships with no default skill assignments
 
 `seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 
-`upgradeExisting()` backfills migration-safe pieces after model rows exist: legacy profile slots that still contain provider-native model IDs are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, model slots, optional slots, and non-empty assignment lists are preserved.
+`upgradeExisting()` backfills migration-safe pieces after model rows exist: legacy profile slots that still contain provider-native model IDs are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, model slots, optional slots, and non-empty assignment lists are preserved.
 
 `ModelPrepopulationService.backfillNewModels()` seeds known model rows for
 configured providers at startup. Known model identity is the
