@@ -1773,7 +1773,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiProviderTaglineMelious =>
-      'Alojado en la UE · catálogo dinámico · rutas eco';
+      'Alojado en la UE · catálogo dinámico · enrutamiento ecológico';
 
   @override
   String get aiProviderTaglineMlxAudio =>

@@ -22,8 +22,8 @@ import 'package:openai_dart/openai_dart.dart';
 class MeliousInferenceRepository extends TranscriptionRepository {
   MeliousInferenceRepository({
     super.httpClient,
-    CloudInferenceRequestHelpers helpers = const CloudInferenceRequestHelpers(),
-  }) : _helpers = helpers;
+    CloudInferenceRequestHelpers? helpers,
+  }) : _helpers = helpers ?? const CloudInferenceRequestHelpers();
 
   static const _providerName = 'MeliousInferenceRepository';
   static const _modelListTimeout = Duration(seconds: 15);
@@ -78,14 +78,14 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
       final decoded = jsonDecode(response.body);
       if (decoded is! Map<String, dynamic>) {
-        throw MeliousInferenceException(
+        throw const MeliousInferenceException(
           'Melious model list response must be a JSON object',
         );
       }
 
       final data = decoded['data'];
       if (data is! List) {
-        throw MeliousInferenceException(
+        throw const MeliousInferenceException(
           'Melious model list response is missing the data array',
         );
       }
@@ -93,7 +93,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       return data
           .map((item) {
             if (item is! Map<String, dynamic>) {
-              throw MeliousInferenceException(
+              throw const MeliousInferenceException(
                 'Melious model entry must be a JSON object',
               );
             }
@@ -215,7 +215,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
             ],
             model: model,
             temperature: temperature,
-            maxTokens: maxCompletionTokens,
+            maxCompletionTokens: maxCompletionTokens,
             tools: tools,
           ),
         )
@@ -348,25 +348,25 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
       final decoded = jsonDecode(response.body);
       if (decoded is! Map<String, dynamic>) {
-        throw MeliousInferenceException(
+        throw const MeliousInferenceException(
           'Melious image generation response must be a JSON object',
         );
       }
       final data = decoded['data'];
       if (data is! List || data.isEmpty) {
-        throw MeliousInferenceException(
+        throw const MeliousInferenceException(
           'Melious image generation response is missing image data',
         );
       }
       final first = data.first;
       if (first is! Map<String, dynamic>) {
-        throw MeliousInferenceException(
+        throw const MeliousInferenceException(
           'Melious image generation entry must be a JSON object',
         );
       }
       final encodedImage = first['b64_json'];
       if (encodedImage is! String || encodedImage.isEmpty) {
-        throw MeliousInferenceException(
+        throw const MeliousInferenceException(
           'Melious image generation response is missing b64_json',
         );
       }
@@ -407,7 +407,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   KnownModel _knownModelFromPayload(Map<String, dynamic> model) {
     final providerModelId = model['id'];
     if (providerModelId is! String || providerModelId.trim().isEmpty) {
-      throw MeliousInferenceException(
+      throw const MeliousInferenceException(
         'Melious model entry is missing a string id',
       );
     }
@@ -511,16 +511,19 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     required _MeliousModelType type,
     required Map<String, dynamic> capabilities,
   }) {
-    final parts = <String>[];
-    parts.add('Melious ${type.label} model.');
+    final parts = <String>['Melious ${type.label} model.'];
 
     final ownedBy = model['owned_by'];
     if (ownedBy is String && ownedBy.trim().isNotEmpty) {
       parts.add('Owned by ${ownedBy.trim()}.');
     }
 
+    final meta = model['_meta'];
+    final metaMap = meta is Map<String, dynamic>
+        ? meta
+        : const <String, dynamic>{};
     final contextLength = _integerValue(
-      (model['_meta'] as Map<String, dynamic>?)?['context_length'],
+      metaMap['context_length'],
     );
     if (contextLength != null) {
       parts.add('Context: $contextLength tokens.');
@@ -618,7 +621,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   }) {
     final baseUri = Uri.parse(baseUrl.trim());
     final basePath = baseUri.path.replaceAll(RegExp(r'/+$'), '');
-    final normalizedEndpoint = endpointPath.replaceAll(RegExp(r'^/+'), '');
+    final normalizedEndpoint = endpointPath.replaceAll(RegExp('^/+'), '');
     final mergedQuery = <String, String>{
       ...baseUri.queryParameters,
       ...queryParameters,

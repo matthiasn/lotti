@@ -17,6 +17,9 @@ import 'package:uuid/uuid.dart';
 
 // Edit-mode form widgets: provider type, available models, AI setup.
 
+// Riverpod 3 keeps the concrete provider-family type internal, so this family
+// has to rely on inference to remain callable and invalidatable.
+// ignore: specify_nonobvious_property_types
 final _meliousKnownModelsProvider = FutureProvider.autoDispose
     .family<List<KnownModel>, String>((
       ref,
@@ -33,7 +36,7 @@ final _meliousKnownModelsProvider = FutureProvider.autoDispose
       ref.onDispose(meliousRepository.close);
       final baseUrl = config.baseUrl.trim().isEmpty
           ? ProviderConfig.getDefaultBaseUrl(config.inferenceProviderType)
-          : config.baseUrl;
+          : config.baseUrl.trim();
 
       return meliousRepository.listModels(
         baseUrl: baseUrl,

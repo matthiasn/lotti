@@ -89,8 +89,8 @@ void main() {
                   '_meta': {
                     'type': 'embeddings',
                     'input_modalities': ['text'],
-                    'output_modalities': [],
-                    'capabilities': {},
+                    'output_modalities': <String>[],
+                    'capabilities': <String, Object?>{},
                   },
                 },
                 {
@@ -101,8 +101,8 @@ void main() {
                   '_meta': {
                     'type': 'rerank',
                     'input_modalities': ['text'],
-                    'output_modalities': [],
-                    'capabilities': {},
+                    'output_modalities': <String>[],
+                    'capabilities': <String, Object?>{},
                   },
                 },
               ],
@@ -184,9 +184,7 @@ void main() {
             equals('Bearer $apiKey'),
           );
 
-          final body =
-              jsonDecode((request as http.Request).body)
-                  as Map<String, dynamic>;
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
           expect(body['model'], equals('flux-2-klein'));
           expect(body['prompt'], equals('a quiet lake'));
           expect(body['response_format'], equals('b64_json'));

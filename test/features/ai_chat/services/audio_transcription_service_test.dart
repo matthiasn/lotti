@@ -841,7 +841,7 @@ void main() {
         bool isMeliousWhisper(AiConfigModel m) =>
             providerType[m.inferenceProviderId] ==
                 InferenceProviderType.melious &&
-            m.providerModelId.contains('whisper');
+            m.providerModelId == 'openai/whisper-large-v3';
         bool isFlash(AiConfigModel m) =>
             m.providerModelId.contains('gemini-2.5-flash');
 
