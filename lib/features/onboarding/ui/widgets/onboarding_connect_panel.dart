@@ -110,7 +110,7 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                 children: [
                   AuroraHero(
                     colors: onboardingAuroraColors(accent),
-                    maxAlpha: 0.28,
+                    maxAlpha: 0.16,
                   ),
                   NeuralConstellation(
                     nodeColor: accent,
