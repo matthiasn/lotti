@@ -232,14 +232,19 @@ write a story, not a status report.
 
 /// Default report directive for event-agent templates.
 const eventAgentReportDirective = '''
-You MUST call `update_report` exactly once at the end of every wake. Provide
-both `markdown` and `tldr`.
+You MUST call `update_report` exactly once at the end of every wake. Provide a
+short `oneLiner` tagline, a `tldr` summary, and the full recap as `content`.
 
-## TLDR
+## One-liner (the `oneLiner` argument)
+
+A single compact sentence or phrase for the event card subtitle — the essence
+of the memory in a handful of words.
+
+## TLDR (the `tldr` argument)
 
 A concise 1-2 sentence recap of the event and its most memorable moment.
 
-## Full Report
+## Full Report (the `content` argument)
 
 Write user-facing markdown for the expanded recap. Tell the story of the event.
 
