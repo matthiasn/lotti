@@ -8,12 +8,36 @@ part of 'entry_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// The detail-side controller for a single journal entry, keyed by entry id.
+///
+/// Owns the entry's load/draft/save lifecycle (the two-state `EntryState`
+/// machine), editor focus/toolbar state, and the entity mutations exposed to
+/// the detail UI — status/priority, cover art, language, and text copy. Saves
+/// follow the dual-write path (persist the entity, then propagate metadata such
+/// as category to linked entries). See the feature README for the full
+/// save/refresh flow.
 
 @ProviderFor(EntryController)
 final entryControllerProvider = EntryControllerFamily._();
 
+/// The detail-side controller for a single journal entry, keyed by entry id.
+///
+/// Owns the entry's load/draft/save lifecycle (the two-state `EntryState`
+/// machine), editor focus/toolbar state, and the entity mutations exposed to
+/// the detail UI — status/priority, cover art, language, and text copy. Saves
+/// follow the dual-write path (persist the entity, then propagate metadata such
+/// as category to linked entries). See the feature README for the full
+/// save/refresh flow.
 final class EntryControllerProvider
     extends $AsyncNotifierProvider<EntryController, EntryState?> {
+  /// The detail-side controller for a single journal entry, keyed by entry id.
+  ///
+  /// Owns the entry's load/draft/save lifecycle (the two-state `EntryState`
+  /// machine), editor focus/toolbar state, and the entity mutations exposed to
+  /// the detail UI — status/priority, cover art, language, and text copy. Saves
+  /// follow the dual-write path (persist the entity, then propagate metadata such
+  /// as category to linked entries). See the feature README for the full
+  /// save/refresh flow.
   EntryControllerProvider._({
     required EntryControllerFamily super.from,
     required String super.argument,
@@ -50,7 +74,16 @@ final class EntryControllerProvider
   }
 }
 
-String _$entryControllerHash() => r'4c940ff77926fb1d20f487b6b483358837afe180';
+String _$entryControllerHash() => r'89ea8962ec514aab90887fef7ab990758dd4af76';
+
+/// The detail-side controller for a single journal entry, keyed by entry id.
+///
+/// Owns the entry's load/draft/save lifecycle (the two-state `EntryState`
+/// machine), editor focus/toolbar state, and the entity mutations exposed to
+/// the detail UI — status/priority, cover art, language, and text copy. Saves
+/// follow the dual-write path (persist the entity, then propagate metadata such
+/// as category to linked entries). See the feature README for the full
+/// save/refresh flow.
 
 final class EntryControllerFamily extends $Family
     with
@@ -70,12 +103,30 @@ final class EntryControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// The detail-side controller for a single journal entry, keyed by entry id.
+  ///
+  /// Owns the entry's load/draft/save lifecycle (the two-state `EntryState`
+  /// machine), editor focus/toolbar state, and the entity mutations exposed to
+  /// the detail UI — status/priority, cover art, language, and text copy. Saves
+  /// follow the dual-write path (persist the entity, then propagate metadata such
+  /// as category to linked entries). See the feature README for the full
+  /// save/refresh flow.
+
   EntryControllerProvider call({required String id}) =>
       EntryControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'entryControllerProvider';
 }
+
+/// The detail-side controller for a single journal entry, keyed by entry id.
+///
+/// Owns the entry's load/draft/save lifecycle (the two-state `EntryState`
+/// machine), editor focus/toolbar state, and the entity mutations exposed to
+/// the detail UI — status/priority, cover art, language, and text copy. Saves
+/// follow the dual-write path (persist the entity, then propagate metadata such
+/// as category to linked entries). See the feature README for the full
+/// save/refresh flow.
 
 abstract class _$EntryController extends $AsyncNotifier<EntryState?> {
   late final _$args = ref.$arg as String;

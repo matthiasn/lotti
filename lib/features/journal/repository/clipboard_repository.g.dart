@@ -8,9 +8,16 @@ part of 'clipboard_repository.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// The platform [SystemClipboard] (null where unsupported), wrapped in a
+/// provider so clipboard access can be overridden in tests. Used by the
+/// image-paste flow to detect and read pasteable images.
 
 @ProviderFor(clipboardRepository)
 final clipboardRepositoryProvider = ClipboardRepositoryProvider._();
+
+/// The platform [SystemClipboard] (null where unsupported), wrapped in a
+/// provider so clipboard access can be overridden in tests. Used by the
+/// image-paste flow to detect and read pasteable images.
 
 final class ClipboardRepositoryProvider
     extends
@@ -20,6 +27,9 @@ final class ClipboardRepositoryProvider
           SystemClipboard?
         >
     with $Provider<SystemClipboard?> {
+  /// The platform [SystemClipboard] (null where unsupported), wrapped in a
+  /// provider so clipboard access can be overridden in tests. Used by the
+  /// image-paste flow to detect and read pasteable images.
   ClipboardRepositoryProvider._()
     : super(
         from: null,

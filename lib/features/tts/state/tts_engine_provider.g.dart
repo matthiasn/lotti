@@ -8,20 +8,26 @@ part of 'tts_engine_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provides the on-device TTS engine. Tests override this with a fake; the
-/// concrete Supertonic ONNX engine replaces the fallback once wired.
+/// Provides the on-device TTS engine — the Supertonic ONNX engine on the
+/// platforms where `flutter_onnxruntime` is integrated
+/// ([SupertonicOnnxEngine.isPlatformSupported]: macOS, iOS, Linux, Android), the
+/// unavailable fallback elsewhere. Tests override this with a fake.
 
 @ProviderFor(ttsEngine)
 final ttsEngineProvider = TtsEngineProvider._();
 
-/// Provides the on-device TTS engine. Tests override this with a fake; the
-/// concrete Supertonic ONNX engine replaces the fallback once wired.
+/// Provides the on-device TTS engine — the Supertonic ONNX engine on the
+/// platforms where `flutter_onnxruntime` is integrated
+/// ([SupertonicOnnxEngine.isPlatformSupported]: macOS, iOS, Linux, Android), the
+/// unavailable fallback elsewhere. Tests override this with a fake.
 
 final class TtsEngineProvider
     extends $FunctionalProvider<TtsEngine, TtsEngine, TtsEngine>
     with $Provider<TtsEngine> {
-  /// Provides the on-device TTS engine. Tests override this with a fake; the
-  /// concrete Supertonic ONNX engine replaces the fallback once wired.
+  /// Provides the on-device TTS engine — the Supertonic ONNX engine on the
+  /// platforms where `flutter_onnxruntime` is integrated
+  /// ([SupertonicOnnxEngine.isPlatformSupported]: macOS, iOS, Linux, Android), the
+  /// unavailable fallback elsewhere. Tests override this with a fake.
   TtsEngineProvider._()
     : super(
         from: null,
@@ -55,4 +61,4 @@ final class TtsEngineProvider
   }
 }
 
-String _$ttsEngineHash() => r'a6697d4a986a4486cc7e33a34198ad6ce0d807dc';
+String _$ttsEngineHash() => r'1daa0b63336c245a5f7e279d11cce0aa23d71a69';

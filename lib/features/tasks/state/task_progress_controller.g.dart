@@ -8,12 +8,51 @@ part of 'task_progress_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Live time-spent / estimate state for a single task, keyed by task `id`.
+///
+/// On build it loads the task's progress via [TaskProgressRepository] and then
+/// keeps it fresh from two sources:
+/// - [UpdateNotifications]: re-fetches when any subscribed entity (the task or
+///   one of its linked entries) changes.
+/// - [TimeService]: while a timer is running *for this task*, the 1Hz ticker
+///   updates the live entity's range in-memory so the displayed total grows
+///   smoothly without a DB round-trip.
+///
+/// [_fetch] deliberately preserves that live range across re-fetches because
+/// the persisted `dateTo` of a running timer is stale; see the inline comment
+/// there for why clobbering it caused the recorded time to blip back to zero.
 
 @ProviderFor(TaskProgressController)
 final taskProgressControllerProvider = TaskProgressControllerFamily._();
 
+/// Live time-spent / estimate state for a single task, keyed by task `id`.
+///
+/// On build it loads the task's progress via [TaskProgressRepository] and then
+/// keeps it fresh from two sources:
+/// - [UpdateNotifications]: re-fetches when any subscribed entity (the task or
+///   one of its linked entries) changes.
+/// - [TimeService]: while a timer is running *for this task*, the 1Hz ticker
+///   updates the live entity's range in-memory so the displayed total grows
+///   smoothly without a DB round-trip.
+///
+/// [_fetch] deliberately preserves that live range across re-fetches because
+/// the persisted `dateTo` of a running timer is stale; see the inline comment
+/// there for why clobbering it caused the recorded time to blip back to zero.
 final class TaskProgressControllerProvider
     extends $AsyncNotifierProvider<TaskProgressController, TaskProgressState?> {
+  /// Live time-spent / estimate state for a single task, keyed by task `id`.
+  ///
+  /// On build it loads the task's progress via [TaskProgressRepository] and then
+  /// keeps it fresh from two sources:
+  /// - [UpdateNotifications]: re-fetches when any subscribed entity (the task or
+  ///   one of its linked entries) changes.
+  /// - [TimeService]: while a timer is running *for this task*, the 1Hz ticker
+  ///   updates the live entity's range in-memory so the displayed total grows
+  ///   smoothly without a DB round-trip.
+  ///
+  /// [_fetch] deliberately preserves that live range across re-fetches because
+  /// the persisted `dateTo` of a running timer is stale; see the inline comment
+  /// there for why clobbering it caused the recorded time to blip back to zero.
   TaskProgressControllerProvider._({
     required TaskProgressControllerFamily super.from,
     required String super.argument,
@@ -54,6 +93,20 @@ final class TaskProgressControllerProvider
 String _$taskProgressControllerHash() =>
     r'4e831bc4e71f2bea3fdae70284c63154165ef0dc';
 
+/// Live time-spent / estimate state for a single task, keyed by task `id`.
+///
+/// On build it loads the task's progress via [TaskProgressRepository] and then
+/// keeps it fresh from two sources:
+/// - [UpdateNotifications]: re-fetches when any subscribed entity (the task or
+///   one of its linked entries) changes.
+/// - [TimeService]: while a timer is running *for this task*, the 1Hz ticker
+///   updates the live entity's range in-memory so the displayed total grows
+///   smoothly without a DB round-trip.
+///
+/// [_fetch] deliberately preserves that live range across re-fetches because
+/// the persisted `dateTo` of a running timer is stale; see the inline comment
+/// there for why clobbering it caused the recorded time to blip back to zero.
+
 final class TaskProgressControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -72,12 +125,40 @@ final class TaskProgressControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Live time-spent / estimate state for a single task, keyed by task `id`.
+  ///
+  /// On build it loads the task's progress via [TaskProgressRepository] and then
+  /// keeps it fresh from two sources:
+  /// - [UpdateNotifications]: re-fetches when any subscribed entity (the task or
+  ///   one of its linked entries) changes.
+  /// - [TimeService]: while a timer is running *for this task*, the 1Hz ticker
+  ///   updates the live entity's range in-memory so the displayed total grows
+  ///   smoothly without a DB round-trip.
+  ///
+  /// [_fetch] deliberately preserves that live range across re-fetches because
+  /// the persisted `dateTo` of a running timer is stale; see the inline comment
+  /// there for why clobbering it caused the recorded time to blip back to zero.
+
   TaskProgressControllerProvider call({required String id}) =>
       TaskProgressControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'taskProgressControllerProvider';
 }
+
+/// Live time-spent / estimate state for a single task, keyed by task `id`.
+///
+/// On build it loads the task's progress via [TaskProgressRepository] and then
+/// keeps it fresh from two sources:
+/// - [UpdateNotifications]: re-fetches when any subscribed entity (the task or
+///   one of its linked entries) changes.
+/// - [TimeService]: while a timer is running *for this task*, the 1Hz ticker
+///   updates the live entity's range in-memory so the displayed total grows
+///   smoothly without a DB round-trip.
+///
+/// [_fetch] deliberately preserves that live range across re-fetches because
+/// the persisted `dateTo` of a running timer is stale; see the inline comment
+/// there for why clobbering it caused the recorded time to blip back to zero.
 
 abstract class _$TaskProgressController
     extends $AsyncNotifier<TaskProgressState?> {

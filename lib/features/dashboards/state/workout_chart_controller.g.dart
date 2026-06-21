@@ -8,16 +8,43 @@ part of 'workout_chart_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Loads *all* workout entities in a date range (not filtered by type) and
+/// keeps them live; one instance backs every workout chart sharing the same
+/// range.
+///
+/// On construction it triggers a background workout-import delta so newly
+/// recorded workouts appear without a manual refresh. Caches for
+/// `dashboardCacheDuration` and re-fetches on workout [UpdateNotifications]
+/// events. Per-type filtering and aggregation happen downstream in
+/// [WorkoutObservationsController].
 
 @ProviderFor(WorkoutChartDataController)
 final workoutChartDataControllerProvider = WorkoutChartDataControllerFamily._();
 
+/// Loads *all* workout entities in a date range (not filtered by type) and
+/// keeps them live; one instance backs every workout chart sharing the same
+/// range.
+///
+/// On construction it triggers a background workout-import delta so newly
+/// recorded workouts appear without a manual refresh. Caches for
+/// `dashboardCacheDuration` and re-fetches on workout [UpdateNotifications]
+/// events. Per-type filtering and aggregation happen downstream in
+/// [WorkoutObservationsController].
 final class WorkoutChartDataControllerProvider
     extends
         $AsyncNotifierProvider<
           WorkoutChartDataController,
           List<JournalEntity>
         > {
+  /// Loads *all* workout entities in a date range (not filtered by type) and
+  /// keeps them live; one instance backs every workout chart sharing the same
+  /// range.
+  ///
+  /// On construction it triggers a background workout-import delta so newly
+  /// recorded workouts appear without a manual refresh. Caches for
+  /// `dashboardCacheDuration` and re-fetches on workout [UpdateNotifications]
+  /// events. Per-type filtering and aggregation happen downstream in
+  /// [WorkoutObservationsController].
   WorkoutChartDataControllerProvider._({
     required WorkoutChartDataControllerFamily super.from,
     required ({DateTime rangeStart, DateTime rangeEnd}) super.argument,
@@ -58,6 +85,16 @@ final class WorkoutChartDataControllerProvider
 String _$workoutChartDataControllerHash() =>
     r'7e7bd9a96f705b02261f25a69607751065dc4777';
 
+/// Loads *all* workout entities in a date range (not filtered by type) and
+/// keeps them live; one instance backs every workout chart sharing the same
+/// range.
+///
+/// On construction it triggers a background workout-import delta so newly
+/// recorded workouts appear without a manual refresh. Caches for
+/// `dashboardCacheDuration` and re-fetches on workout [UpdateNotifications]
+/// events. Per-type filtering and aggregation happen downstream in
+/// [WorkoutObservationsController].
+
 final class WorkoutChartDataControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -76,6 +113,16 @@ final class WorkoutChartDataControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Loads *all* workout entities in a date range (not filtered by type) and
+  /// keeps them live; one instance backs every workout chart sharing the same
+  /// range.
+  ///
+  /// On construction it triggers a background workout-import delta so newly
+  /// recorded workouts appear without a manual refresh. Caches for
+  /// `dashboardCacheDuration` and re-fetches on workout [UpdateNotifications]
+  /// events. Per-type filtering and aggregation happen downstream in
+  /// [WorkoutObservationsController].
+
   WorkoutChartDataControllerProvider call({
     required DateTime rangeStart,
     required DateTime rangeEnd,
@@ -87,6 +134,16 @@ final class WorkoutChartDataControllerFamily extends $Family
   @override
   String toString() => r'workoutChartDataControllerProvider';
 }
+
+/// Loads *all* workout entities in a date range (not filtered by type) and
+/// keeps them live; one instance backs every workout chart sharing the same
+/// range.
+///
+/// On construction it triggers a background workout-import delta so newly
+/// recorded workouts appear without a manual refresh. Caches for
+/// `dashboardCacheDuration` and re-fetches on workout [UpdateNotifications]
+/// events. Per-type filtering and aggregation happen downstream in
+/// [WorkoutObservationsController].
 
 abstract class _$WorkoutChartDataController
     extends $AsyncNotifier<List<JournalEntity>> {
@@ -118,16 +175,44 @@ abstract class _$WorkoutChartDataController
   }
 }
 
+/// Chart-ready daily-sum observations for one workout series (a workout type +
+/// value dimension described by `chartConfig`).
+///
+/// Watches [WorkoutChartDataController] for all workouts in range, then sums the
+/// configured dimension per day via `aggregateWorkoutDailySum`. `chartConfig` is
+/// typed as `DashboardItem` and cast to `DashboardWorkoutItem` to work around a
+/// Riverpod codegen limitation. Returns an empty list when no workout of this
+/// type exists in range so the chart shows "No data" rather than a flat row of
+/// the prefilled zero buckets the aggregator produces.
+
 @ProviderFor(WorkoutObservationsController)
 final workoutObservationsControllerProvider =
     WorkoutObservationsControllerFamily._();
 
+/// Chart-ready daily-sum observations for one workout series (a workout type +
+/// value dimension described by `chartConfig`).
+///
+/// Watches [WorkoutChartDataController] for all workouts in range, then sums the
+/// configured dimension per day via `aggregateWorkoutDailySum`. `chartConfig` is
+/// typed as `DashboardItem` and cast to `DashboardWorkoutItem` to work around a
+/// Riverpod codegen limitation. Returns an empty list when no workout of this
+/// type exists in range so the chart shows "No data" rather than a flat row of
+/// the prefilled zero buckets the aggregator produces.
 final class WorkoutObservationsControllerProvider
     extends
         $AsyncNotifierProvider<
           WorkoutObservationsController,
           List<Observation>
         > {
+  /// Chart-ready daily-sum observations for one workout series (a workout type +
+  /// value dimension described by `chartConfig`).
+  ///
+  /// Watches [WorkoutChartDataController] for all workouts in range, then sums the
+  /// configured dimension per day via `aggregateWorkoutDailySum`. `chartConfig` is
+  /// typed as `DashboardItem` and cast to `DashboardWorkoutItem` to work around a
+  /// Riverpod codegen limitation. Returns an empty list when no workout of this
+  /// type exists in range so the chart shows "No data" rather than a flat row of
+  /// the prefilled zero buckets the aggregator produces.
   WorkoutObservationsControllerProvider._({
     required WorkoutObservationsControllerFamily super.from,
     required ({
@@ -171,7 +256,17 @@ final class WorkoutObservationsControllerProvider
 }
 
 String _$workoutObservationsControllerHash() =>
-    r'df354a8d1aaddaef8b246bcb78310fcd105ea3ff';
+    r'd2caa9f4774b6a1b04a8c8fde918c73d9619bed1';
+
+/// Chart-ready daily-sum observations for one workout series (a workout type +
+/// value dimension described by `chartConfig`).
+///
+/// Watches [WorkoutChartDataController] for all workouts in range, then sums the
+/// configured dimension per day via `aggregateWorkoutDailySum`. `chartConfig` is
+/// typed as `DashboardItem` and cast to `DashboardWorkoutItem` to work around a
+/// Riverpod codegen limitation. Returns an empty list when no workout of this
+/// type exists in range so the chart shows "No data" rather than a flat row of
+/// the prefilled zero buckets the aggregator produces.
 
 final class WorkoutObservationsControllerFamily extends $Family
     with
@@ -191,6 +286,16 @@ final class WorkoutObservationsControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Chart-ready daily-sum observations for one workout series (a workout type +
+  /// value dimension described by `chartConfig`).
+  ///
+  /// Watches [WorkoutChartDataController] for all workouts in range, then sums the
+  /// configured dimension per day via `aggregateWorkoutDailySum`. `chartConfig` is
+  /// typed as `DashboardItem` and cast to `DashboardWorkoutItem` to work around a
+  /// Riverpod codegen limitation. Returns an empty list when no workout of this
+  /// type exists in range so the chart shows "No data" rather than a flat row of
+  /// the prefilled zero buckets the aggregator produces.
+
   WorkoutObservationsControllerProvider call({
     required DashboardItem chartConfig,
     required DateTime rangeStart,
@@ -207,6 +312,16 @@ final class WorkoutObservationsControllerFamily extends $Family
   @override
   String toString() => r'workoutObservationsControllerProvider';
 }
+
+/// Chart-ready daily-sum observations for one workout series (a workout type +
+/// value dimension described by `chartConfig`).
+///
+/// Watches [WorkoutChartDataController] for all workouts in range, then sums the
+/// configured dimension per day via `aggregateWorkoutDailySum`. `chartConfig` is
+/// typed as `DashboardItem` and cast to `DashboardWorkoutItem` to work around a
+/// Riverpod codegen limitation. Returns an empty list when no workout of this
+/// type exists in range so the chart shows "No data" rather than a flat row of
+/// the prefilled zero buckets the aggregator produces.
 
 abstract class _$WorkoutObservationsController
     extends $AsyncNotifier<List<Observation>> {

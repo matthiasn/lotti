@@ -8,9 +8,20 @@ part of 'task_progress_repository.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Keep-alive provider exposing the singleton [TaskProgressRepository].
+///
+/// Kept alive so the per-microtask batching state (pending ids, in-flight
+/// futures) is shared across every `TaskProgressController` instance instead
+/// of being rebuilt per task.
 
 @ProviderFor(taskProgressRepository)
 final taskProgressRepositoryProvider = TaskProgressRepositoryProvider._();
+
+/// Keep-alive provider exposing the singleton [TaskProgressRepository].
+///
+/// Kept alive so the per-microtask batching state (pending ids, in-flight
+/// futures) is shared across every `TaskProgressController` instance instead
+/// of being rebuilt per task.
 
 final class TaskProgressRepositoryProvider
     extends
@@ -20,6 +31,11 @@ final class TaskProgressRepositoryProvider
           TaskProgressRepository
         >
     with $Provider<TaskProgressRepository> {
+  /// Keep-alive provider exposing the singleton [TaskProgressRepository].
+  ///
+  /// Kept alive so the per-microtask batching state (pending ids, in-flight
+  /// futures) is shared across every `TaskProgressController` instance instead
+  /// of being rebuilt per task.
   TaskProgressRepositoryProvider._()
     : super(
         from: null,

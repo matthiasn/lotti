@@ -8,15 +8,24 @@ part of 'daily_os_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provides the selected date for the Daily OS view.
+/// Holds the date the page is currently viewing, always normalised to local
+/// midnight. This is the keep-it-simple selection that every section watches;
+/// changing it re-keys [unifiedDailyOsDataControllerProvider] and reloads the
+/// whole view for the new day.
 
 @ProviderFor(DailyOsSelectedDate)
 final dailyOsSelectedDateProvider = DailyOsSelectedDateProvider._();
 
-/// Provides the selected date for the Daily OS view.
+/// Holds the date the page is currently viewing, always normalised to local
+/// midnight. This is the keep-it-simple selection that every section watches;
+/// changing it re-keys [unifiedDailyOsDataControllerProvider] and reloads the
+/// whole view for the new day.
 final class DailyOsSelectedDateProvider
     extends $NotifierProvider<DailyOsSelectedDate, DateTime> {
-  /// Provides the selected date for the Daily OS view.
+  /// Holds the date the page is currently viewing, always normalised to local
+  /// midnight. This is the keep-it-simple selection that every section watches;
+  /// changing it re-keys [unifiedDailyOsDataControllerProvider] and reloads the
+  /// whole view for the new day.
   DailyOsSelectedDateProvider._()
     : super(
         from: null,
@@ -47,7 +56,10 @@ final class DailyOsSelectedDateProvider
 String _$dailyOsSelectedDateHash() =>
     r'c3800905cdbd658c554c92c87f379b58008181f0';
 
-/// Provides the selected date for the Daily OS view.
+/// Holds the date the page is currently viewing, always normalised to local
+/// midnight. This is the keep-it-simple selection that every section watches;
+/// changing it re-keys [unifiedDailyOsDataControllerProvider] and reloads the
+/// whole view for the new day.
 
 abstract class _$DailyOsSelectedDate extends $Notifier<DateTime> {
   DateTime build();

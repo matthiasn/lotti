@@ -8,13 +8,34 @@ part of 'habit_completion_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Owns one habit card's completion-history strip for a fixed date range.
+///
+/// Deliberately separate from `HabitsController`: it fetches completions for a
+/// single `habitId` + range and, via [listen], refreshes only when an update
+/// notification's affected IDs include that habit — so one new completion
+/// repaints one card instead of recomputing the whole tab. Keyed by
+/// `(habitId, rangeStart, rangeEnd)`.
 
 @ProviderFor(HabitCompletionController)
 final habitCompletionControllerProvider = HabitCompletionControllerFamily._();
 
+/// Owns one habit card's completion-history strip for a fixed date range.
+///
+/// Deliberately separate from `HabitsController`: it fetches completions for a
+/// single `habitId` + range and, via [listen], refreshes only when an update
+/// notification's affected IDs include that habit — so one new completion
+/// repaints one card instead of recomputing the whole tab. Keyed by
+/// `(habitId, rangeStart, rangeEnd)`.
 final class HabitCompletionControllerProvider
     extends
         $AsyncNotifierProvider<HabitCompletionController, List<HabitResult>> {
+  /// Owns one habit card's completion-history strip for a fixed date range.
+  ///
+  /// Deliberately separate from `HabitsController`: it fetches completions for a
+  /// single `habitId` + range and, via [listen], refreshes only when an update
+  /// notification's affected IDs include that habit — so one new completion
+  /// repaints one card instead of recomputing the whole tab. Keyed by
+  /// `(habitId, rangeStart, rangeEnd)`.
   HabitCompletionControllerProvider._({
     required HabitCompletionControllerFamily super.from,
     required ({String habitId, DateTime rangeStart, DateTime rangeEnd})
@@ -56,6 +77,14 @@ final class HabitCompletionControllerProvider
 String _$habitCompletionControllerHash() =>
     r'8d260b21ccd31e85888f0ca3d382bab05d3dad4d';
 
+/// Owns one habit card's completion-history strip for a fixed date range.
+///
+/// Deliberately separate from `HabitsController`: it fetches completions for a
+/// single `habitId` + range and, via [listen], refreshes only when an update
+/// notification's affected IDs include that habit — so one new completion
+/// repaints one card instead of recomputing the whole tab. Keyed by
+/// `(habitId, rangeStart, rangeEnd)`.
+
 final class HabitCompletionControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -74,6 +103,14 @@ final class HabitCompletionControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Owns one habit card's completion-history strip for a fixed date range.
+  ///
+  /// Deliberately separate from `HabitsController`: it fetches completions for a
+  /// single `habitId` + range and, via [listen], refreshes only when an update
+  /// notification's affected IDs include that habit — so one new completion
+  /// repaints one card instead of recomputing the whole tab. Keyed by
+  /// `(habitId, rangeStart, rangeEnd)`.
+
   HabitCompletionControllerProvider call({
     required String habitId,
     required DateTime rangeStart,
@@ -86,6 +123,14 @@ final class HabitCompletionControllerFamily extends $Family
   @override
   String toString() => r'habitCompletionControllerProvider';
 }
+
+/// Owns one habit card's completion-history strip for a fixed date range.
+///
+/// Deliberately separate from `HabitsController`: it fetches completions for a
+/// single `habitId` + range and, via [listen], refreshes only when an update
+/// notification's affected IDs include that habit — so one new completion
+/// repaints one card instead of recomputing the whole tab. Keyed by
+/// `(habitId, rangeStart, rangeEnd)`.
 
 abstract class _$HabitCompletionController
     extends $AsyncNotifier<List<HabitResult>> {

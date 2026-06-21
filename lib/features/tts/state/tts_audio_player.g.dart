@@ -9,16 +9,31 @@ part of 'tts_audio_player.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// App-wide [TtsAudioPlayer]. Overridden with a fake in tests.
+//
+// Constructs the real media_kit Player, so it is exercised at runtime rather
+// than in unit tests (MediaKitTtsAudioPlayer itself is tested with a mock
+// Player).
+// coverage:ignore-start
 
 @ProviderFor(ttsAudioPlayer)
 final ttsAudioPlayerProvider = TtsAudioPlayerProvider._();
 
 /// App-wide [TtsAudioPlayer]. Overridden with a fake in tests.
+//
+// Constructs the real media_kit Player, so it is exercised at runtime rather
+// than in unit tests (MediaKitTtsAudioPlayer itself is tested with a mock
+// Player).
+// coverage:ignore-start
 
 final class TtsAudioPlayerProvider
     extends $FunctionalProvider<TtsAudioPlayer, TtsAudioPlayer, TtsAudioPlayer>
     with $Provider<TtsAudioPlayer> {
   /// App-wide [TtsAudioPlayer]. Overridden with a fake in tests.
+  //
+  // Constructs the real media_kit Player, so it is exercised at runtime rather
+  // than in unit tests (MediaKitTtsAudioPlayer itself is tested with a mock
+  // Player).
+  // coverage:ignore-start
   TtsAudioPlayerProvider._()
     : super(
         from: null,

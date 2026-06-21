@@ -119,9 +119,19 @@ final class LocalSyncNodeSelfProvider
 
 String _$localSyncNodeSelfHash() => r'428b79f4766522564af79f52c85d6b8aa6558dff';
 
+/// Provides the [SyncedAudioInferenceDispatcher] that decides whether this node
+/// should run AI inference on audio that arrived via sync. `keepAlive` so it
+/// shares the listener's lifetime; wires it to the journal DB, vector-clock
+/// service, profile resolvers, and the inference/wake machinery.
+
 @ProviderFor(syncedAudioInferenceDispatcher)
 final syncedAudioInferenceDispatcherProvider =
     SyncedAudioInferenceDispatcherProvider._();
+
+/// Provides the [SyncedAudioInferenceDispatcher] that decides whether this node
+/// should run AI inference on audio that arrived via sync. `keepAlive` so it
+/// shares the listener's lifetime; wires it to the journal DB, vector-clock
+/// service, profile resolvers, and the inference/wake machinery.
 
 final class SyncedAudioInferenceDispatcherProvider
     extends
@@ -131,6 +141,10 @@ final class SyncedAudioInferenceDispatcherProvider
           SyncedAudioInferenceDispatcher
         >
     with $Provider<SyncedAudioInferenceDispatcher> {
+  /// Provides the [SyncedAudioInferenceDispatcher] that decides whether this node
+  /// should run AI inference on audio that arrived via sync. `keepAlive` so it
+  /// shares the listener's lifetime; wires it to the journal DB, vector-clock
+  /// service, profile resolvers, and the inference/wake machinery.
   SyncedAudioInferenceDispatcherProvider._()
     : super(
         from: null,

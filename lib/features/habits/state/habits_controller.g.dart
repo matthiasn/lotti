@@ -8,18 +8,51 @@ part of 'habits_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Notifier managing the complete habits page state.
-/// Marked as keepAlive since habits state should persist across navigation.
+/// Owns the whole [HabitsState] for the habits tab.
+///
+/// Subscribes to three sources and recomputes derived state whenever any
+/// fires: the repository's habit-definition stream, the update stream filtered
+/// for `habitCompletionNotification`, and the nav-index stream (to refresh the
+/// time-sensitive due/later split when the tab is re-entered). The heavy lift
+/// is [_determineHabitSuccessByDays], which buckets completions into the
+/// per-day maps, splits open habits into due-now vs. pending-later via
+/// `showHabit`, applies the category filter, counts streaks and recomputes the
+/// chart's [HabitsState.minY].
+///
+/// Marked `keepAlive` so the (relatively expensive) state survives navigating
+/// away from and back to the tab.
 
 @ProviderFor(HabitsController)
 final habitsControllerProvider = HabitsControllerProvider._();
 
-/// Notifier managing the complete habits page state.
-/// Marked as keepAlive since habits state should persist across navigation.
+/// Owns the whole [HabitsState] for the habits tab.
+///
+/// Subscribes to three sources and recomputes derived state whenever any
+/// fires: the repository's habit-definition stream, the update stream filtered
+/// for `habitCompletionNotification`, and the nav-index stream (to refresh the
+/// time-sensitive due/later split when the tab is re-entered). The heavy lift
+/// is [_determineHabitSuccessByDays], which buckets completions into the
+/// per-day maps, splits open habits into due-now vs. pending-later via
+/// `showHabit`, applies the category filter, counts streaks and recomputes the
+/// chart's [HabitsState.minY].
+///
+/// Marked `keepAlive` so the (relatively expensive) state survives navigating
+/// away from and back to the tab.
 final class HabitsControllerProvider
     extends $NotifierProvider<HabitsController, HabitsState> {
-  /// Notifier managing the complete habits page state.
-  /// Marked as keepAlive since habits state should persist across navigation.
+  /// Owns the whole [HabitsState] for the habits tab.
+  ///
+  /// Subscribes to three sources and recomputes derived state whenever any
+  /// fires: the repository's habit-definition stream, the update stream filtered
+  /// for `habitCompletionNotification`, and the nav-index stream (to refresh the
+  /// time-sensitive due/later split when the tab is re-entered). The heavy lift
+  /// is [_determineHabitSuccessByDays], which buckets completions into the
+  /// per-day maps, splits open habits into due-now vs. pending-later via
+  /// `showHabit`, applies the category filter, counts streaks and recomputes the
+  /// chart's [HabitsState.minY].
+  ///
+  /// Marked `keepAlive` so the (relatively expensive) state survives navigating
+  /// away from and back to the tab.
   HabitsControllerProvider._()
     : super(
         from: null,
@@ -47,10 +80,21 @@ final class HabitsControllerProvider
   }
 }
 
-String _$habitsControllerHash() => r'c6438f63ee552f3abe9ea889658d7980b7ddfa35';
+String _$habitsControllerHash() => r'e6da6f4ec4d09e1e84e3baf89b8815c740fafbfa';
 
-/// Notifier managing the complete habits page state.
-/// Marked as keepAlive since habits state should persist across navigation.
+/// Owns the whole [HabitsState] for the habits tab.
+///
+/// Subscribes to three sources and recomputes derived state whenever any
+/// fires: the repository's habit-definition stream, the update stream filtered
+/// for `habitCompletionNotification`, and the nav-index stream (to refresh the
+/// time-sensitive due/later split when the tab is re-entered). The heavy lift
+/// is [_determineHabitSuccessByDays], which buckets completions into the
+/// per-day maps, splits open habits into due-now vs. pending-later via
+/// `showHabit`, applies the category filter, counts streaks and recomputes the
+/// chart's [HabitsState.minY].
+///
+/// Marked `keepAlive` so the (relatively expensive) state survives navigating
+/// away from and back to the tab.
 
 abstract class _$HabitsController extends $Notifier<HabitsState> {
   HabitsState build();

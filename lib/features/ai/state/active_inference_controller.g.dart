@@ -8,12 +8,27 @@ part of 'active_inference_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Tracks the active inference (if any) for a single (entityId, responseType)
+/// pair. State is null when idle and an [ActiveInferenceData] while a run is in
+/// flight. The provider is kept alive briefly after disposal
+/// ([inferenceStateCacheDuration]) and disposes the current data's progress
+/// stream on teardown.
 
 @ProviderFor(ActiveInferenceController)
 final activeInferenceControllerProvider = ActiveInferenceControllerFamily._();
 
+/// Tracks the active inference (if any) for a single (entityId, responseType)
+/// pair. State is null when idle and an [ActiveInferenceData] while a run is in
+/// flight. The provider is kept alive briefly after disposal
+/// ([inferenceStateCacheDuration]) and disposes the current data's progress
+/// stream on teardown.
 final class ActiveInferenceControllerProvider
     extends $NotifierProvider<ActiveInferenceController, ActiveInferenceData?> {
+  /// Tracks the active inference (if any) for a single (entityId, responseType)
+  /// pair. State is null when idle and an [ActiveInferenceData] while a run is in
+  /// flight. The provider is kept alive briefly after disposal
+  /// ([inferenceStateCacheDuration]) and disposes the current data's progress
+  /// stream on teardown.
   ActiveInferenceControllerProvider._({
     required ActiveInferenceControllerFamily super.from,
     required ({String entityId, AiResponseType aiResponseType}) super.argument,
@@ -62,6 +77,12 @@ final class ActiveInferenceControllerProvider
 String _$activeInferenceControllerHash() =>
     r'bf81922d7ae90001c2eb6a04613dc20038380e9f';
 
+/// Tracks the active inference (if any) for a single (entityId, responseType)
+/// pair. State is null when idle and an [ActiveInferenceData] while a run is in
+/// flight. The provider is kept alive briefly after disposal
+/// ([inferenceStateCacheDuration]) and disposes the current data's progress
+/// stream on teardown.
+
 final class ActiveInferenceControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -80,6 +101,12 @@ final class ActiveInferenceControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Tracks the active inference (if any) for a single (entityId, responseType)
+  /// pair. State is null when idle and an [ActiveInferenceData] while a run is in
+  /// flight. The provider is kept alive briefly after disposal
+  /// ([inferenceStateCacheDuration]) and disposes the current data's progress
+  /// stream on teardown.
+
   ActiveInferenceControllerProvider call({
     required String entityId,
     required AiResponseType aiResponseType,
@@ -91,6 +118,12 @@ final class ActiveInferenceControllerFamily extends $Family
   @override
   String toString() => r'activeInferenceControllerProvider';
 }
+
+/// Tracks the active inference (if any) for a single (entityId, responseType)
+/// pair. State is null when idle and an [ActiveInferenceData] while a run is in
+/// flight. The provider is kept alive briefly after disposal
+/// ([inferenceStateCacheDuration]) and disposes the current data's progress
+/// stream on teardown.
 
 abstract class _$ActiveInferenceController
     extends $Notifier<ActiveInferenceData?> {
@@ -125,11 +158,30 @@ abstract class _$ActiveInferenceController
   }
 }
 
+/// Resolves the active inference for an entity regardless of response type.
+///
+/// Scans every [AiResponseType]'s [ActiveInferenceController] and returns the
+/// first in-flight run, or null if the entity is idle. Because the unified
+/// controller registers active inference for BOTH the primary and linked
+/// entity, this also reports runs that were started against a linked entity.
+
 @ProviderFor(ActiveInferenceByEntity)
 final activeInferenceByEntityProvider = ActiveInferenceByEntityFamily._();
 
+/// Resolves the active inference for an entity regardless of response type.
+///
+/// Scans every [AiResponseType]'s [ActiveInferenceController] and returns the
+/// first in-flight run, or null if the entity is idle. Because the unified
+/// controller registers active inference for BOTH the primary and linked
+/// entity, this also reports runs that were started against a linked entity.
 final class ActiveInferenceByEntityProvider
     extends $NotifierProvider<ActiveInferenceByEntity, ActiveInferenceData?> {
+  /// Resolves the active inference for an entity regardless of response type.
+  ///
+  /// Scans every [AiResponseType]'s [ActiveInferenceController] and returns the
+  /// first in-flight run, or null if the entity is idle. Because the unified
+  /// controller registers active inference for BOTH the primary and linked
+  /// entity, this also reports runs that were started against a linked entity.
   ActiveInferenceByEntityProvider._({
     required ActiveInferenceByEntityFamily super.from,
     required String super.argument,
@@ -178,6 +230,13 @@ final class ActiveInferenceByEntityProvider
 String _$activeInferenceByEntityHash() =>
     r'8154dbc469fdbab7f789ab4e56f4b8c801ce5fe1';
 
+/// Resolves the active inference for an entity regardless of response type.
+///
+/// Scans every [AiResponseType]'s [ActiveInferenceController] and returns the
+/// first in-flight run, or null if the entity is idle. Because the unified
+/// controller registers active inference for BOTH the primary and linked
+/// entity, this also reports runs that were started against a linked entity.
+
 final class ActiveInferenceByEntityFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -196,12 +255,26 @@ final class ActiveInferenceByEntityFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Resolves the active inference for an entity regardless of response type.
+  ///
+  /// Scans every [AiResponseType]'s [ActiveInferenceController] and returns the
+  /// first in-flight run, or null if the entity is idle. Because the unified
+  /// controller registers active inference for BOTH the primary and linked
+  /// entity, this also reports runs that were started against a linked entity.
+
   ActiveInferenceByEntityProvider call(String entityId) =>
       ActiveInferenceByEntityProvider._(argument: entityId, from: this);
 
   @override
   String toString() => r'activeInferenceByEntityProvider';
 }
+
+/// Resolves the active inference for an entity regardless of response type.
+///
+/// Scans every [AiResponseType]'s [ActiveInferenceController] and returns the
+/// first in-flight run, or null if the entity is idle. Because the unified
+/// controller registers active inference for BOTH the primary and linked
+/// entity, this also reports runs that were started against a linked entity.
 
 abstract class _$ActiveInferenceByEntity
     extends $Notifier<ActiveInferenceData?> {

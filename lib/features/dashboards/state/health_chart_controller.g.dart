@@ -8,13 +8,37 @@ part of 'health_chart_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Loads the raw quantitative health entities of one `healthDataType` within a
+/// date range and keeps them fresh.
+///
+/// Holds the result for `dashboardCacheDuration` so flipping between dashboards
+/// doesn't re-query, and subscribes to [UpdateNotifications] so an inbound
+/// change to this exact health type re-fetches and pushes new data (skipping
+/// the rebuild when the rows are unchanged). The returned entities are
+/// unaggregated; [HealthObservationsController] turns them into chart points.
 
 @ProviderFor(HealthChartDataController)
 final healthChartDataControllerProvider = HealthChartDataControllerFamily._();
 
+/// Loads the raw quantitative health entities of one `healthDataType` within a
+/// date range and keeps them fresh.
+///
+/// Holds the result for `dashboardCacheDuration` so flipping between dashboards
+/// doesn't re-query, and subscribes to [UpdateNotifications] so an inbound
+/// change to this exact health type re-fetches and pushes new data (skipping
+/// the rebuild when the rows are unchanged). The returned entities are
+/// unaggregated; [HealthObservationsController] turns them into chart points.
 final class HealthChartDataControllerProvider
     extends
         $AsyncNotifierProvider<HealthChartDataController, List<JournalEntity>> {
+  /// Loads the raw quantitative health entities of one `healthDataType` within a
+  /// date range and keeps them fresh.
+  ///
+  /// Holds the result for `dashboardCacheDuration` so flipping between dashboards
+  /// doesn't re-query, and subscribes to [UpdateNotifications] so an inbound
+  /// change to this exact health type re-fetches and pushes new data (skipping
+  /// the rebuild when the rows are unchanged). The returned entities are
+  /// unaggregated; [HealthObservationsController] turns them into chart points.
   HealthChartDataControllerProvider._({
     required HealthChartDataControllerFamily super.from,
     required ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
@@ -56,6 +80,15 @@ final class HealthChartDataControllerProvider
 String _$healthChartDataControllerHash() =>
     r'a8861ff8ffc25462e01bf2de63cb864fbe0e9bb2';
 
+/// Loads the raw quantitative health entities of one `healthDataType` within a
+/// date range and keeps them fresh.
+///
+/// Holds the result for `dashboardCacheDuration` so flipping between dashboards
+/// doesn't re-query, and subscribes to [UpdateNotifications] so an inbound
+/// change to this exact health type re-fetches and pushes new data (skipping
+/// the rebuild when the rows are unchanged). The returned entities are
+/// unaggregated; [HealthObservationsController] turns them into chart points.
+
 final class HealthChartDataControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -74,6 +107,15 @@ final class HealthChartDataControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Loads the raw quantitative health entities of one `healthDataType` within a
+  /// date range and keeps them fresh.
+  ///
+  /// Holds the result for `dashboardCacheDuration` so flipping between dashboards
+  /// doesn't re-query, and subscribes to [UpdateNotifications] so an inbound
+  /// change to this exact health type re-fetches and pushes new data (skipping
+  /// the rebuild when the rows are unchanged). The returned entities are
+  /// unaggregated; [HealthObservationsController] turns them into chart points.
+
   HealthChartDataControllerProvider call({
     required String healthDataType,
     required DateTime rangeStart,
@@ -90,6 +132,15 @@ final class HealthChartDataControllerFamily extends $Family
   @override
   String toString() => r'healthChartDataControllerProvider';
 }
+
+/// Loads the raw quantitative health entities of one `healthDataType` within a
+/// date range and keeps them fresh.
+///
+/// Holds the result for `dashboardCacheDuration` so flipping between dashboards
+/// doesn't re-query, and subscribes to [UpdateNotifications] so an inbound
+/// change to this exact health type re-fetches and pushes new data (skipping
+/// the rebuild when the rows are unchanged). The returned entities are
+/// unaggregated; [HealthObservationsController] turns them into chart points.
 
 abstract class _$HealthChartDataController
     extends $AsyncNotifier<List<JournalEntity>> {
@@ -129,16 +180,47 @@ abstract class _$HealthChartDataController
   }
 }
 
+/// Chart-ready observations for one health type: watches
+/// [HealthChartDataController] for the raw entities and reduces them via
+/// `aggregateByType` (the per-type rule from `healthTypes`).
+///
+/// On construction (outside tests) it kicks off a short, jittered-delay
+/// background health-data sync for this type so the chart refreshes itself with
+/// freshly imported samples without blocking first paint. The build awaits the
+/// upstream future (rather than reading a possibly-empty cached value) so the
+/// provider stays in `AsyncLoading` until the DB read completes — otherwise the
+/// chart's stale-while-revalidate wrapper would flash an empty "No data" state.
+
 @ProviderFor(HealthObservationsController)
 final healthObservationsControllerProvider =
     HealthObservationsControllerFamily._();
 
+/// Chart-ready observations for one health type: watches
+/// [HealthChartDataController] for the raw entities and reduces them via
+/// `aggregateByType` (the per-type rule from `healthTypes`).
+///
+/// On construction (outside tests) it kicks off a short, jittered-delay
+/// background health-data sync for this type so the chart refreshes itself with
+/// freshly imported samples without blocking first paint. The build awaits the
+/// upstream future (rather than reading a possibly-empty cached value) so the
+/// provider stays in `AsyncLoading` until the DB read completes — otherwise the
+/// chart's stale-while-revalidate wrapper would flash an empty "No data" state.
 final class HealthObservationsControllerProvider
     extends
         $AsyncNotifierProvider<
           HealthObservationsController,
           List<Observation>
         > {
+  /// Chart-ready observations for one health type: watches
+  /// [HealthChartDataController] for the raw entities and reduces them via
+  /// `aggregateByType` (the per-type rule from `healthTypes`).
+  ///
+  /// On construction (outside tests) it kicks off a short, jittered-delay
+  /// background health-data sync for this type so the chart refreshes itself with
+  /// freshly imported samples without blocking first paint. The build awaits the
+  /// upstream future (rather than reading a possibly-empty cached value) so the
+  /// provider stays in `AsyncLoading` until the DB read completes — otherwise the
+  /// chart's stale-while-revalidate wrapper would flash an empty "No data" state.
   HealthObservationsControllerProvider._({
     required HealthObservationsControllerFamily super.from,
     required ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
@@ -178,7 +260,18 @@ final class HealthObservationsControllerProvider
 }
 
 String _$healthObservationsControllerHash() =>
-    r'd0179e81781f38fc4818ff4cef2b89fd6ec51060';
+    r'd84c36606ad4a536b32a12ff549b5b7ffb1750b5';
+
+/// Chart-ready observations for one health type: watches
+/// [HealthChartDataController] for the raw entities and reduces them via
+/// `aggregateByType` (the per-type rule from `healthTypes`).
+///
+/// On construction (outside tests) it kicks off a short, jittered-delay
+/// background health-data sync for this type so the chart refreshes itself with
+/// freshly imported samples without blocking first paint. The build awaits the
+/// upstream future (rather than reading a possibly-empty cached value) so the
+/// provider stays in `AsyncLoading` until the DB read completes — otherwise the
+/// chart's stale-while-revalidate wrapper would flash an empty "No data" state.
 
 final class HealthObservationsControllerFamily extends $Family
     with
@@ -198,6 +291,17 @@ final class HealthObservationsControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Chart-ready observations for one health type: watches
+  /// [HealthChartDataController] for the raw entities and reduces them via
+  /// `aggregateByType` (the per-type rule from `healthTypes`).
+  ///
+  /// On construction (outside tests) it kicks off a short, jittered-delay
+  /// background health-data sync for this type so the chart refreshes itself with
+  /// freshly imported samples without blocking first paint. The build awaits the
+  /// upstream future (rather than reading a possibly-empty cached value) so the
+  /// provider stays in `AsyncLoading` until the DB read completes — otherwise the
+  /// chart's stale-while-revalidate wrapper would flash an empty "No data" state.
+
   HealthObservationsControllerProvider call({
     required String healthDataType,
     required DateTime rangeStart,
@@ -214,6 +318,17 @@ final class HealthObservationsControllerFamily extends $Family
   @override
   String toString() => r'healthObservationsControllerProvider';
 }
+
+/// Chart-ready observations for one health type: watches
+/// [HealthChartDataController] for the raw entities and reduces them via
+/// `aggregateByType` (the per-type rule from `healthTypes`).
+///
+/// On construction (outside tests) it kicks off a short, jittered-delay
+/// background health-data sync for this type so the chart refreshes itself with
+/// freshly imported samples without blocking first paint. The build awaits the
+/// upstream future (rather than reading a possibly-empty cached value) so the
+/// provider stays in `AsyncLoading` until the DB read completes — otherwise the
+/// chart's stale-while-revalidate wrapper would flash an empty "No data" state.
 
 abstract class _$HealthObservationsController
     extends $AsyncNotifier<List<Observation>> {

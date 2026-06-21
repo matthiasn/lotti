@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$EventData {
 
- String get title; double get stars; EventStatus get status;/// Id of a linked [JournalImage] used as the event's cover art. New events
+ String get title; double get stars; EventStatus get status;/// Id of a linked `JournalImage` used as the event's cover art. New events
 /// have none until the user picks one (or one is derived from a linked
 /// photo); the UI falls back to a category-tinted card.
  String? get coverArtId;/// Horizontal crop offset for the cover art (0.0 = left … 1.0 = right).
@@ -223,7 +223,7 @@ class _EventData implements EventData {
 @override final  String title;
 @override final  double stars;
 @override final  EventStatus status;
-/// Id of a linked [JournalImage] used as the event's cover art. New events
+/// Id of a linked `JournalImage` used as the event's cover art. New events
 /// have none until the user picks one (or one is derived from a linked
 /// photo); the UI falls back to a category-tinted card.
 @override final  String? coverArtId;

@@ -60,7 +60,7 @@ final class TtsSettingsControllerProvider
 }
 
 String _$ttsSettingsControllerHash() =>
-    r'ed53678067a3f0102e1b15a1eafc2be4c1165526';
+    r'0f04a478e0b4ac62b79141dc38845caef7a764fc';
 
 /// Holds the user's TTS preferences — selected voice, model, and playback
 /// speed — persisted locally via [SettingsDb].

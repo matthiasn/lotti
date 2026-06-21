@@ -8,13 +8,34 @@ part of 'survey_chart_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Loads the survey-completion entities of one `surveyType` within a date range
+/// and keeps them live for its chart.
+///
+/// Caches for `dashboardCacheDuration` and re-fetches whenever a survey-related
+/// [UpdateNotifications] event fires (pushing new state only when the rows
+/// changed). The entities are returned unaggregated; the chart turns each
+/// survey's `calculatedScores` into lines via `surveyLines`.
 
 @ProviderFor(SurveyChartDataController)
 final surveyChartDataControllerProvider = SurveyChartDataControllerFamily._();
 
+/// Loads the survey-completion entities of one `surveyType` within a date range
+/// and keeps them live for its chart.
+///
+/// Caches for `dashboardCacheDuration` and re-fetches whenever a survey-related
+/// [UpdateNotifications] event fires (pushing new state only when the rows
+/// changed). The entities are returned unaggregated; the chart turns each
+/// survey's `calculatedScores` into lines via `surveyLines`.
 final class SurveyChartDataControllerProvider
     extends
         $AsyncNotifierProvider<SurveyChartDataController, List<JournalEntity>> {
+  /// Loads the survey-completion entities of one `surveyType` within a date range
+  /// and keeps them live for its chart.
+  ///
+  /// Caches for `dashboardCacheDuration` and re-fetches whenever a survey-related
+  /// [UpdateNotifications] event fires (pushing new state only when the rows
+  /// changed). The entities are returned unaggregated; the chart turns each
+  /// survey's `calculatedScores` into lines via `surveyLines`.
   SurveyChartDataControllerProvider._({
     required SurveyChartDataControllerFamily super.from,
     required ({String surveyType, DateTime rangeStart, DateTime rangeEnd})
@@ -56,6 +77,14 @@ final class SurveyChartDataControllerProvider
 String _$surveyChartDataControllerHash() =>
     r'6fab5e5f2377b3f54e40041937aa0bdaab4d1f2b';
 
+/// Loads the survey-completion entities of one `surveyType` within a date range
+/// and keeps them live for its chart.
+///
+/// Caches for `dashboardCacheDuration` and re-fetches whenever a survey-related
+/// [UpdateNotifications] event fires (pushing new state only when the rows
+/// changed). The entities are returned unaggregated; the chart turns each
+/// survey's `calculatedScores` into lines via `surveyLines`.
+
 final class SurveyChartDataControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -74,6 +103,14 @@ final class SurveyChartDataControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Loads the survey-completion entities of one `surveyType` within a date range
+  /// and keeps them live for its chart.
+  ///
+  /// Caches for `dashboardCacheDuration` and re-fetches whenever a survey-related
+  /// [UpdateNotifications] event fires (pushing new state only when the rows
+  /// changed). The entities are returned unaggregated; the chart turns each
+  /// survey's `calculatedScores` into lines via `surveyLines`.
+
   SurveyChartDataControllerProvider call({
     required String surveyType,
     required DateTime rangeStart,
@@ -90,6 +127,14 @@ final class SurveyChartDataControllerFamily extends $Family
   @override
   String toString() => r'surveyChartDataControllerProvider';
 }
+
+/// Loads the survey-completion entities of one `surveyType` within a date range
+/// and keeps them live for its chart.
+///
+/// Caches for `dashboardCacheDuration` and re-fetches whenever a survey-related
+/// [UpdateNotifications] event fires (pushing new state only when the rows
+/// changed). The entities are returned unaggregated; the chart turns each
+/// survey's `calculatedScores` into lines via `surveyLines`.
 
 abstract class _$SurveyChartDataController
     extends $AsyncNotifier<List<JournalEntity>> {

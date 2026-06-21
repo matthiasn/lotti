@@ -12,7 +12,7 @@ part of 'celebration_preferences_controller.dart';
 /// [SettingsDb].
 ///
 /// [build] returns [CelebrationPreferences.allEnabled] synchronously and then
-/// hydrates the persisted values, mirroring [ZoomController]. Returning a value
+/// hydrates the persisted values, mirroring `ZoomController`. Returning a value
 /// synchronously (rather than an `AsyncValue`) lets a celebration call site read
 /// the flag on the very frame it would fire — no loading state to thread through
 /// a `didUpdateWidget`. Reads from / writes to [SettingsDb] are skipped when it
@@ -26,7 +26,7 @@ final celebrationPreferencesControllerProvider =
 /// [SettingsDb].
 ///
 /// [build] returns [CelebrationPreferences.allEnabled] synchronously and then
-/// hydrates the persisted values, mirroring [ZoomController]. Returning a value
+/// hydrates the persisted values, mirroring `ZoomController`. Returning a value
 /// synchronously (rather than an `AsyncValue`) lets a celebration call site read
 /// the flag on the very frame it would fire — no loading state to thread through
 /// a `didUpdateWidget`. Reads from / writes to [SettingsDb] are skipped when it
@@ -41,7 +41,7 @@ final class CelebrationPreferencesControllerProvider
   /// [SettingsDb].
   ///
   /// [build] returns [CelebrationPreferences.allEnabled] synchronously and then
-  /// hydrates the persisted values, mirroring [ZoomController]. Returning a value
+  /// hydrates the persisted values, mirroring `ZoomController`. Returning a value
   /// synchronously (rather than an `AsyncValue`) lets a celebration call site read
   /// the flag on the very frame it would fire — no loading state to thread through
   /// a `didUpdateWidget`. Reads from / writes to [SettingsDb] are skipped when it
@@ -75,13 +75,13 @@ final class CelebrationPreferencesControllerProvider
 }
 
 String _$celebrationPreferencesControllerHash() =>
-    r'b9cefa16ed21b5a754c0f52283ac57071803daba';
+    r'52037a3a1bd3e6419b53b7598f1a883a5cfd30b0';
 
 /// Holds the three celebratory-animation switches, persisted across launches in
 /// [SettingsDb].
 ///
 /// [build] returns [CelebrationPreferences.allEnabled] synchronously and then
-/// hydrates the persisted values, mirroring [ZoomController]. Returning a value
+/// hydrates the persisted values, mirroring `ZoomController`. Returning a value
 /// synchronously (rather than an `AsyncValue`) lets a celebration call site read
 /// the flag on the very frame it would fire — no loading state to thread through
 /// a `didUpdateWidget`. Reads from / writes to [SettingsDb] are skipped when it

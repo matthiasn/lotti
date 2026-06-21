@@ -78,7 +78,7 @@ final class HabitHeatmapControllerProvider
 }
 
 String _$habitHeatmapControllerHash() =>
-    r'343481b26beb848f3165705cf804443bfa80651a';
+    r'ddac11eaa36fb9be42f50f2310bdd6e9e58c35cc';
 
 /// Owns the deep-history series for the habits consistency heatmap.
 ///

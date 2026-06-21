@@ -8,17 +8,35 @@ part of 'linked_from_entries_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Loads and live-updates the entries that link *to* entry `id` (incoming
+/// links, the "linked from" set), resolved to full [JournalEntity]s.
+///
+/// Mirrors `LinkedEntriesController` but for the reverse direction: subscribes
+/// to [UpdateNotifications] and re-fetches when the source or any linking
+/// entity changes, caching for `entryCacheDuration`.
 
 @ProviderFor(LinkedFromEntriesController)
 final linkedFromEntriesControllerProvider =
     LinkedFromEntriesControllerFamily._();
 
+/// Loads and live-updates the entries that link *to* entry `id` (incoming
+/// links, the "linked from" set), resolved to full [JournalEntity]s.
+///
+/// Mirrors `LinkedEntriesController` but for the reverse direction: subscribes
+/// to [UpdateNotifications] and re-fetches when the source or any linking
+/// entity changes, caching for `entryCacheDuration`.
 final class LinkedFromEntriesControllerProvider
     extends
         $AsyncNotifierProvider<
           LinkedFromEntriesController,
           List<JournalEntity>
         > {
+  /// Loads and live-updates the entries that link *to* entry `id` (incoming
+  /// links, the "linked from" set), resolved to full [JournalEntity]s.
+  ///
+  /// Mirrors `LinkedEntriesController` but for the reverse direction: subscribes
+  /// to [UpdateNotifications] and re-fetches when the source or any linking
+  /// entity changes, caching for `entryCacheDuration`.
   LinkedFromEntriesControllerProvider._({
     required LinkedFromEntriesControllerFamily super.from,
     required String super.argument,
@@ -59,6 +77,13 @@ final class LinkedFromEntriesControllerProvider
 String _$linkedFromEntriesControllerHash() =>
     r'f0e539e16b539e4177fd402ed1150b391b3248f3';
 
+/// Loads and live-updates the entries that link *to* entry `id` (incoming
+/// links, the "linked from" set), resolved to full [JournalEntity]s.
+///
+/// Mirrors `LinkedEntriesController` but for the reverse direction: subscribes
+/// to [UpdateNotifications] and re-fetches when the source or any linking
+/// entity changes, caching for `entryCacheDuration`.
+
 final class LinkedFromEntriesControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -77,12 +102,26 @@ final class LinkedFromEntriesControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Loads and live-updates the entries that link *to* entry `id` (incoming
+  /// links, the "linked from" set), resolved to full [JournalEntity]s.
+  ///
+  /// Mirrors `LinkedEntriesController` but for the reverse direction: subscribes
+  /// to [UpdateNotifications] and re-fetches when the source or any linking
+  /// entity changes, caching for `entryCacheDuration`.
+
   LinkedFromEntriesControllerProvider call({required String id}) =>
       LinkedFromEntriesControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'linkedFromEntriesControllerProvider';
 }
+
+/// Loads and live-updates the entries that link *to* entry `id` (incoming
+/// links, the "linked from" set), resolved to full [JournalEntity]s.
+///
+/// Mirrors `LinkedEntriesController` but for the reverse direction: subscribes
+/// to [UpdateNotifications] and re-fetches when the source or any linking
+/// entity changes, caching for `entryCacheDuration`.
 
 abstract class _$LinkedFromEntriesController
     extends $AsyncNotifier<List<JournalEntity>> {

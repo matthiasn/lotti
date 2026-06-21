@@ -8,9 +8,12 @@ part of 'checklist_repository.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Keep-alive provider exposing the singleton [ChecklistRepository].
 
 @ProviderFor(checklistRepository)
 final checklistRepositoryProvider = ChecklistRepositoryProvider._();
+
+/// Keep-alive provider exposing the singleton [ChecklistRepository].
 
 final class ChecklistRepositoryProvider
     extends
@@ -20,6 +23,7 @@ final class ChecklistRepositoryProvider
           ChecklistRepository
         >
     with $Provider<ChecklistRepository> {
+  /// Keep-alive provider exposing the singleton [ChecklistRepository].
   ChecklistRepositoryProvider._()
     : super(
         from: null,

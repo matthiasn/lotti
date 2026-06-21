@@ -8,12 +8,30 @@ part of 'rating_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Async controller exposing the current rating for a single target entry.
+///
+/// Keyed by ([targetId], [catalogId]). The initial state loads any existing
+/// [RatingEntry] from the repository; [submitRating] persists changes and
+/// pushes the result back into state so watchers (e.g. the rate button and
+/// summary) update immediately without re-querying the database.
 
 @ProviderFor(RatingController)
 final ratingControllerProvider = RatingControllerFamily._();
 
+/// Async controller exposing the current rating for a single target entry.
+///
+/// Keyed by ([targetId], [catalogId]). The initial state loads any existing
+/// [RatingEntry] from the repository; [submitRating] persists changes and
+/// pushes the result back into state so watchers (e.g. the rate button and
+/// summary) update immediately without re-querying the database.
 final class RatingControllerProvider
     extends $AsyncNotifierProvider<RatingController, JournalEntity?> {
+  /// Async controller exposing the current rating for a single target entry.
+  ///
+  /// Keyed by ([targetId], [catalogId]). The initial state loads any existing
+  /// [RatingEntry] from the repository; [submitRating] persists changes and
+  /// pushes the result back into state so watchers (e.g. the rate button and
+  /// summary) update immediately without re-querying the database.
   RatingControllerProvider._({
     required RatingControllerFamily super.from,
     required ({String targetId, String catalogId}) super.argument,
@@ -52,6 +70,13 @@ final class RatingControllerProvider
 
 String _$ratingControllerHash() => r'928761becac741d5d98985803d506e042919acdf';
 
+/// Async controller exposing the current rating for a single target entry.
+///
+/// Keyed by ([targetId], [catalogId]). The initial state loads any existing
+/// [RatingEntry] from the repository; [submitRating] persists changes and
+/// pushes the result back into state so watchers (e.g. the rate button and
+/// summary) update immediately without re-querying the database.
+
 final class RatingControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -70,6 +95,13 @@ final class RatingControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Async controller exposing the current rating for a single target entry.
+  ///
+  /// Keyed by ([targetId], [catalogId]). The initial state loads any existing
+  /// [RatingEntry] from the repository; [submitRating] persists changes and
+  /// pushes the result back into state so watchers (e.g. the rate button and
+  /// summary) update immediately without re-querying the database.
+
   RatingControllerProvider call({
     required String targetId,
     String catalogId = 'session',
@@ -81,6 +113,13 @@ final class RatingControllerFamily extends $Family
   @override
   String toString() => r'ratingControllerProvider';
 }
+
+/// Async controller exposing the current rating for a single target entry.
+///
+/// Keyed by ([targetId], [catalogId]). The initial state loads any existing
+/// [RatingEntry] from the repository; [submitRating] persists changes and
+/// pushes the result back into state so watchers (e.g. the rate button and
+/// summary) update immediately without re-querying the database.
 
 abstract class _$RatingController extends $AsyncNotifier<JournalEntity?> {
   late final _$args = ref.$arg as ({String targetId, String catalogId});

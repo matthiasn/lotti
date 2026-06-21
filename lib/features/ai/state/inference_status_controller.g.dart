@@ -8,12 +8,27 @@ part of 'inference_status_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Holds the [InferenceStatus] for a single (id, responseType) pair.
+///
+/// Defaults to [InferenceStatus.idle] and is briefly kept alive after disposal
+/// ([inferenceStateCacheDuration]) so a status set just before teardown isn't
+/// lost. Updated via [setStatus] by the inference runners.
 
 @ProviderFor(InferenceStatusController)
 final inferenceStatusControllerProvider = InferenceStatusControllerFamily._();
 
+/// Holds the [InferenceStatus] for a single (id, responseType) pair.
+///
+/// Defaults to [InferenceStatus.idle] and is briefly kept alive after disposal
+/// ([inferenceStateCacheDuration]) so a status set just before teardown isn't
+/// lost. Updated via [setStatus] by the inference runners.
 final class InferenceStatusControllerProvider
     extends $NotifierProvider<InferenceStatusController, InferenceStatus> {
+  /// Holds the [InferenceStatus] for a single (id, responseType) pair.
+  ///
+  /// Defaults to [InferenceStatus.idle] and is briefly kept alive after disposal
+  /// ([inferenceStateCacheDuration]) so a status set just before teardown isn't
+  /// lost. Updated via [setStatus] by the inference runners.
   InferenceStatusControllerProvider._({
     required InferenceStatusControllerFamily super.from,
     required ({String id, AiResponseType aiResponseType}) super.argument,
@@ -62,6 +77,12 @@ final class InferenceStatusControllerProvider
 String _$inferenceStatusControllerHash() =>
     r'42c736c8fcb9f21c98683e879518cfda4ab88120';
 
+/// Holds the [InferenceStatus] for a single (id, responseType) pair.
+///
+/// Defaults to [InferenceStatus.idle] and is briefly kept alive after disposal
+/// ([inferenceStateCacheDuration]) so a status set just before teardown isn't
+/// lost. Updated via [setStatus] by the inference runners.
+
 final class InferenceStatusControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -80,6 +101,12 @@ final class InferenceStatusControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Holds the [InferenceStatus] for a single (id, responseType) pair.
+  ///
+  /// Defaults to [InferenceStatus.idle] and is briefly kept alive after disposal
+  /// ([inferenceStateCacheDuration]) so a status set just before teardown isn't
+  /// lost. Updated via [setStatus] by the inference runners.
+
   InferenceStatusControllerProvider call({
     required String id,
     required AiResponseType aiResponseType,
@@ -91,6 +118,12 @@ final class InferenceStatusControllerFamily extends $Family
   @override
   String toString() => r'inferenceStatusControllerProvider';
 }
+
+/// Holds the [InferenceStatus] for a single (id, responseType) pair.
+///
+/// Defaults to [InferenceStatus.idle] and is briefly kept alive after disposal
+/// ([inferenceStateCacheDuration]) so a status set just before teardown isn't
+/// lost. Updated via [setStatus] by the inference runners.
 
 abstract class _$InferenceStatusController extends $Notifier<InferenceStatus> {
   late final _$args = ref.$arg as ({String id, AiResponseType aiResponseType});
@@ -120,11 +153,24 @@ abstract class _$InferenceStatusController extends $Notifier<InferenceStatus> {
   }
 }
 
+/// True when ANY of [responseTypes] is currently running for [id].
+///
+/// Aggregates the per-type [InferenceStatusController]s so a widget can show a
+/// single "AI is working" indicator without subscribing to each type itself.
+
 @ProviderFor(InferenceRunningController)
 final inferenceRunningControllerProvider = InferenceRunningControllerFamily._();
 
+/// True when ANY of [responseTypes] is currently running for [id].
+///
+/// Aggregates the per-type [InferenceStatusController]s so a widget can show a
+/// single "AI is working" indicator without subscribing to each type itself.
 final class InferenceRunningControllerProvider
     extends $NotifierProvider<InferenceRunningController, bool> {
+  /// True when ANY of [responseTypes] is currently running for [id].
+  ///
+  /// Aggregates the per-type [InferenceStatusController]s so a widget can show a
+  /// single "AI is working" indicator without subscribing to each type itself.
   InferenceRunningControllerProvider._({
     required InferenceRunningControllerFamily super.from,
     required ({String id, Set<AiResponseType> responseTypes}) super.argument,
@@ -173,6 +219,11 @@ final class InferenceRunningControllerProvider
 String _$inferenceRunningControllerHash() =>
     r'98e6bb2372af2115718976c3eb9f9651da5ec5f1';
 
+/// True when ANY of [responseTypes] is currently running for [id].
+///
+/// Aggregates the per-type [InferenceStatusController]s so a widget can show a
+/// single "AI is working" indicator without subscribing to each type itself.
+
 final class InferenceRunningControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -191,6 +242,11 @@ final class InferenceRunningControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// True when ANY of [responseTypes] is currently running for [id].
+  ///
+  /// Aggregates the per-type [InferenceStatusController]s so a widget can show a
+  /// single "AI is working" indicator without subscribing to each type itself.
+
   InferenceRunningControllerProvider call({
     required String id,
     required Set<AiResponseType> responseTypes,
@@ -202,6 +258,11 @@ final class InferenceRunningControllerFamily extends $Family
   @override
   String toString() => r'inferenceRunningControllerProvider';
 }
+
+/// True when ANY of [responseTypes] is currently running for [id].
+///
+/// Aggregates the per-type [InferenceStatusController]s so a widget can show a
+/// single "AI is working" indicator without subscribing to each type itself.
 
 abstract class _$InferenceRunningController extends $Notifier<bool> {
   late final _$args =

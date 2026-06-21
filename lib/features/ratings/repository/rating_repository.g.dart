@@ -8,9 +8,12 @@ part of 'rating_repository.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Provides the singleton [RatingRepository] used by controllers and UI.
 
 @ProviderFor(ratingRepository)
 final ratingRepositoryProvider = RatingRepositoryProvider._();
+
+/// Provides the singleton [RatingRepository] used by controllers and UI.
 
 final class RatingRepositoryProvider
     extends
@@ -20,6 +23,7 @@ final class RatingRepositoryProvider
           RatingRepository
         >
     with $Provider<RatingRepository> {
+  /// Provides the singleton [RatingRepository] used by controllers and UI.
   RatingRepositoryProvider._()
     : super(
         from: null,

@@ -8,12 +8,39 @@ part of 'linked_entries_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Loads and live-updates the outgoing [EntryLink]s from entry `id` (the links
+/// to the entries shown in its linked-entries list).
+///
+/// Subscribes to [UpdateNotifications] and re-fetches whenever the source
+/// entry or any currently-linked target changes (`watchedIds`), so the list
+/// stays current as links are added/removed and target entries are edited.
+/// Visibility of hidden links is driven by [IncludeHiddenController] for the
+/// same id. Result is cached for `entryCacheDuration`. Also exposes
+/// [removeLink]/[updateLink] write helpers that delegate to the repository.
 
 @ProviderFor(LinkedEntriesController)
 final linkedEntriesControllerProvider = LinkedEntriesControllerFamily._();
 
+/// Loads and live-updates the outgoing [EntryLink]s from entry `id` (the links
+/// to the entries shown in its linked-entries list).
+///
+/// Subscribes to [UpdateNotifications] and re-fetches whenever the source
+/// entry or any currently-linked target changes (`watchedIds`), so the list
+/// stays current as links are added/removed and target entries are edited.
+/// Visibility of hidden links is driven by [IncludeHiddenController] for the
+/// same id. Result is cached for `entryCacheDuration`. Also exposes
+/// [removeLink]/[updateLink] write helpers that delegate to the repository.
 final class LinkedEntriesControllerProvider
     extends $AsyncNotifierProvider<LinkedEntriesController, List<EntryLink>> {
+  /// Loads and live-updates the outgoing [EntryLink]s from entry `id` (the links
+  /// to the entries shown in its linked-entries list).
+  ///
+  /// Subscribes to [UpdateNotifications] and re-fetches whenever the source
+  /// entry or any currently-linked target changes (`watchedIds`), so the list
+  /// stays current as links are added/removed and target entries are edited.
+  /// Visibility of hidden links is driven by [IncludeHiddenController] for the
+  /// same id. Result is cached for `entryCacheDuration`. Also exposes
+  /// [removeLink]/[updateLink] write helpers that delegate to the repository.
   LinkedEntriesControllerProvider._({
     required LinkedEntriesControllerFamily super.from,
     required String super.argument,
@@ -54,6 +81,16 @@ final class LinkedEntriesControllerProvider
 String _$linkedEntriesControllerHash() =>
     r'233ba30fd610e9366af282fd28573fb8df7eb040';
 
+/// Loads and live-updates the outgoing [EntryLink]s from entry `id` (the links
+/// to the entries shown in its linked-entries list).
+///
+/// Subscribes to [UpdateNotifications] and re-fetches whenever the source
+/// entry or any currently-linked target changes (`watchedIds`), so the list
+/// stays current as links are added/removed and target entries are edited.
+/// Visibility of hidden links is driven by [IncludeHiddenController] for the
+/// same id. Result is cached for `entryCacheDuration`. Also exposes
+/// [removeLink]/[updateLink] write helpers that delegate to the repository.
+
 final class LinkedEntriesControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -72,12 +109,32 @@ final class LinkedEntriesControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Loads and live-updates the outgoing [EntryLink]s from entry `id` (the links
+  /// to the entries shown in its linked-entries list).
+  ///
+  /// Subscribes to [UpdateNotifications] and re-fetches whenever the source
+  /// entry or any currently-linked target changes (`watchedIds`), so the list
+  /// stays current as links are added/removed and target entries are edited.
+  /// Visibility of hidden links is driven by [IncludeHiddenController] for the
+  /// same id. Result is cached for `entryCacheDuration`. Also exposes
+  /// [removeLink]/[updateLink] write helpers that delegate to the repository.
+
   LinkedEntriesControllerProvider call({required String id}) =>
       LinkedEntriesControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'linkedEntriesControllerProvider';
 }
+
+/// Loads and live-updates the outgoing [EntryLink]s from entry `id` (the links
+/// to the entries shown in its linked-entries list).
+///
+/// Subscribes to [UpdateNotifications] and re-fetches whenever the source
+/// entry or any currently-linked target changes (`watchedIds`), so the list
+/// stays current as links are added/removed and target entries are edited.
+/// Visibility of hidden links is driven by [IncludeHiddenController] for the
+/// same id. Result is cached for `entryCacheDuration`. Also exposes
+/// [removeLink]/[updateLink] write helpers that delegate to the repository.
 
 abstract class _$LinkedEntriesController
     extends $AsyncNotifier<List<EntryLink>> {
@@ -101,11 +158,18 @@ abstract class _$LinkedEntriesController
   }
 }
 
+/// Per-entry toggle controlling whether hidden links are included when
+/// [LinkedEntriesController] fetches the linked-entries list. Defaults to off.
+
 @ProviderFor(IncludeHiddenController)
 final includeHiddenControllerProvider = IncludeHiddenControllerFamily._();
 
+/// Per-entry toggle controlling whether hidden links are included when
+/// [LinkedEntriesController] fetches the linked-entries list. Defaults to off.
 final class IncludeHiddenControllerProvider
     extends $NotifierProvider<IncludeHiddenController, bool> {
+  /// Per-entry toggle controlling whether hidden links are included when
+  /// [LinkedEntriesController] fetches the linked-entries list. Defaults to off.
   IncludeHiddenControllerProvider._({
     required IncludeHiddenControllerFamily super.from,
     required String super.argument,
@@ -154,6 +218,9 @@ final class IncludeHiddenControllerProvider
 String _$includeHiddenControllerHash() =>
     r'224d7a7bbee3c403c65bb85517e10fb1eeac3148';
 
+/// Per-entry toggle controlling whether hidden links are included when
+/// [LinkedEntriesController] fetches the linked-entries list. Defaults to off.
+
 final class IncludeHiddenControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -172,12 +239,18 @@ final class IncludeHiddenControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Per-entry toggle controlling whether hidden links are included when
+  /// [LinkedEntriesController] fetches the linked-entries list. Defaults to off.
+
   IncludeHiddenControllerProvider call({required String id}) =>
       IncludeHiddenControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'includeHiddenControllerProvider';
 }
+
+/// Per-entry toggle controlling whether hidden links are included when
+/// [LinkedEntriesController] fetches the linked-entries list. Defaults to off.
 
 abstract class _$IncludeHiddenController extends $Notifier<bool> {
   late final _$args = ref.$arg as String;
@@ -200,11 +273,24 @@ abstract class _$IncludeHiddenController extends $Notifier<bool> {
   }
 }
 
+/// Per-entry toggle controlling whether [AiResponseEntry] entries are shown in
+/// the linked-entries list (passed through to the entry detail widget as
+/// `showAiEntry`). Defaults to off so AI responses stay collapsed under their
+/// source entry unless the user opts in.
+
 @ProviderFor(IncludeAiEntriesController)
 final includeAiEntriesControllerProvider = IncludeAiEntriesControllerFamily._();
 
+/// Per-entry toggle controlling whether [AiResponseEntry] entries are shown in
+/// the linked-entries list (passed through to the entry detail widget as
+/// `showAiEntry`). Defaults to off so AI responses stay collapsed under their
+/// source entry unless the user opts in.
 final class IncludeAiEntriesControllerProvider
     extends $NotifierProvider<IncludeAiEntriesController, bool> {
+  /// Per-entry toggle controlling whether [AiResponseEntry] entries are shown in
+  /// the linked-entries list (passed through to the entry detail widget as
+  /// `showAiEntry`). Defaults to off so AI responses stay collapsed under their
+  /// source entry unless the user opts in.
   IncludeAiEntriesControllerProvider._({
     required IncludeAiEntriesControllerFamily super.from,
     required String super.argument,
@@ -253,6 +339,11 @@ final class IncludeAiEntriesControllerProvider
 String _$includeAiEntriesControllerHash() =>
     r'8db4e5da7dbd6f9ba3da50fc5227a5e0e507708a';
 
+/// Per-entry toggle controlling whether [AiResponseEntry] entries are shown in
+/// the linked-entries list (passed through to the entry detail widget as
+/// `showAiEntry`). Defaults to off so AI responses stay collapsed under their
+/// source entry unless the user opts in.
+
 final class IncludeAiEntriesControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -271,12 +362,22 @@ final class IncludeAiEntriesControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Per-entry toggle controlling whether [AiResponseEntry] entries are shown in
+  /// the linked-entries list (passed through to the entry detail widget as
+  /// `showAiEntry`). Defaults to off so AI responses stay collapsed under their
+  /// source entry unless the user opts in.
+
   IncludeAiEntriesControllerProvider call({required String id}) =>
       IncludeAiEntriesControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'includeAiEntriesControllerProvider';
 }
+
+/// Per-entry toggle controlling whether [AiResponseEntry] entries are shown in
+/// the linked-entries list (passed through to the entry detail widget as
+/// `showAiEntry`). Defaults to off so AI responses stay collapsed under their
+/// source entry unless the user opts in.
 
 abstract class _$IncludeAiEntriesController extends $Notifier<bool> {
   late final _$args = ref.$arg as String;
@@ -427,16 +528,16 @@ abstract class _$ShowFlaggedOnlyController extends $Notifier<bool> {
 }
 
 /// Per-entry toggle state for the activity filter pills shown above the
-/// linked entries list (Timer / Audio / Images). Defaults to all kinds
-/// active so existing behavior is preserved when the bar mounts.
+/// linked entries list (Timer / Audio / Images / Code). Defaults to all
+/// kinds active so existing behavior is preserved when the bar mounts.
 
 @ProviderFor(LinkedEntriesActivityFilterController)
 final linkedEntriesActivityFilterControllerProvider =
     LinkedEntriesActivityFilterControllerFamily._();
 
 /// Per-entry toggle state for the activity filter pills shown above the
-/// linked entries list (Timer / Audio / Images). Defaults to all kinds
-/// active so existing behavior is preserved when the bar mounts.
+/// linked entries list (Timer / Audio / Images / Code). Defaults to all
+/// kinds active so existing behavior is preserved when the bar mounts.
 final class LinkedEntriesActivityFilterControllerProvider
     extends
         $NotifierProvider<
@@ -444,8 +545,8 @@ final class LinkedEntriesActivityFilterControllerProvider
           Set<LinkedEntryActivityFilter>
         > {
   /// Per-entry toggle state for the activity filter pills shown above the
-  /// linked entries list (Timer / Audio / Images). Defaults to all kinds
-  /// active so existing behavior is preserved when the bar mounts.
+  /// linked entries list (Timer / Audio / Images / Code). Defaults to all
+  /// kinds active so existing behavior is preserved when the bar mounts.
   LinkedEntriesActivityFilterControllerProvider._({
     required LinkedEntriesActivityFilterControllerFamily super.from,
     required String super.argument,
@@ -499,8 +600,8 @@ String _$linkedEntriesActivityFilterControllerHash() =>
     r'884815b222085c5f64ce212c96ecc47701fd74c6';
 
 /// Per-entry toggle state for the activity filter pills shown above the
-/// linked entries list (Timer / Audio / Images). Defaults to all kinds
-/// active so existing behavior is preserved when the bar mounts.
+/// linked entries list (Timer / Audio / Images / Code). Defaults to all
+/// kinds active so existing behavior is preserved when the bar mounts.
 
 final class LinkedEntriesActivityFilterControllerFamily extends $Family
     with
@@ -521,8 +622,8 @@ final class LinkedEntriesActivityFilterControllerFamily extends $Family
       );
 
   /// Per-entry toggle state for the activity filter pills shown above the
-  /// linked entries list (Timer / Audio / Images). Defaults to all kinds
-  /// active so existing behavior is preserved when the bar mounts.
+  /// linked entries list (Timer / Audio / Images / Code). Defaults to all
+  /// kinds active so existing behavior is preserved when the bar mounts.
 
   LinkedEntriesActivityFilterControllerProvider call({required String id}) =>
       LinkedEntriesActivityFilterControllerProvider._(argument: id, from: this);
@@ -532,8 +633,8 @@ final class LinkedEntriesActivityFilterControllerFamily extends $Family
 }
 
 /// Per-entry toggle state for the activity filter pills shown above the
-/// linked entries list (Timer / Audio / Images). Defaults to all kinds
-/// active so existing behavior is preserved when the bar mounts.
+/// linked entries list (Timer / Audio / Images / Code). Defaults to all
+/// kinds active so existing behavior is preserved when the bar mounts.
 
 abstract class _$LinkedEntriesActivityFilterController
     extends $Notifier<Set<LinkedEntryActivityFilter>> {
@@ -807,11 +908,24 @@ final class SortedLinkedEntriesFamily extends $Family
   String toString() => r'sortedLinkedEntriesProvider';
 }
 
+/// Resolves the `toId` of the most recently *created* outgoing link from
+/// entry `id` (by `EntryLink.createdAt`), or null when `id` is null or has no
+/// links. Used by the duration widget to decide which linked timer entry shows
+/// the record button.
+
 @ProviderFor(NewestLinkedIdController)
 final newestLinkedIdControllerProvider = NewestLinkedIdControllerFamily._();
 
+/// Resolves the `toId` of the most recently *created* outgoing link from
+/// entry `id` (by `EntryLink.createdAt`), or null when `id` is null or has no
+/// links. Used by the duration widget to decide which linked timer entry shows
+/// the record button.
 final class NewestLinkedIdControllerProvider
     extends $AsyncNotifierProvider<NewestLinkedIdController, String?> {
+  /// Resolves the `toId` of the most recently *created* outgoing link from
+  /// entry `id` (by `EntryLink.createdAt`), or null when `id` is null or has no
+  /// links. Used by the duration widget to decide which linked timer entry shows
+  /// the record button.
   NewestLinkedIdControllerProvider._({
     required NewestLinkedIdControllerFamily super.from,
     required String? super.argument,
@@ -852,6 +966,11 @@ final class NewestLinkedIdControllerProvider
 String _$newestLinkedIdControllerHash() =>
     r'b97f5f08862c659af19b300d4b6fbaf4c8d187dd';
 
+/// Resolves the `toId` of the most recently *created* outgoing link from
+/// entry `id` (by `EntryLink.createdAt`), or null when `id` is null or has no
+/// links. Used by the duration widget to decide which linked timer entry shows
+/// the record button.
+
 final class NewestLinkedIdControllerFamily extends $Family
     with
         $ClassFamilyOverride<
@@ -870,12 +989,22 @@ final class NewestLinkedIdControllerFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Resolves the `toId` of the most recently *created* outgoing link from
+  /// entry `id` (by `EntryLink.createdAt`), or null when `id` is null or has no
+  /// links. Used by the duration widget to decide which linked timer entry shows
+  /// the record button.
+
   NewestLinkedIdControllerProvider call({required String? id}) =>
       NewestLinkedIdControllerProvider._(argument: id, from: this);
 
   @override
   String toString() => r'newestLinkedIdControllerProvider';
 }
+
+/// Resolves the `toId` of the most recently *created* outgoing link from
+/// entry `id` (by `EntryLink.createdAt`), or null when `id` is null or has no
+/// links. Used by the duration widget to decide which linked timer entry shows
+/// the record button.
 
 abstract class _$NewestLinkedIdController extends $AsyncNotifier<String?> {
   late final _$args = ref.$arg as String?;

@@ -8,14 +8,14 @@ part of 'tts_model_repository.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provides the model repository. Tests override this with a fake; the
-/// concrete Hugging Face downloader replaces the placeholder once wired.
+/// Provides the model repository — the Hugging Face downloader in production;
+/// tests override it with a fake.
 
 @ProviderFor(ttsModelRepository)
 final ttsModelRepositoryProvider = TtsModelRepositoryProvider._();
 
-/// Provides the model repository. Tests override this with a fake; the
-/// concrete Hugging Face downloader replaces the placeholder once wired.
+/// Provides the model repository — the Hugging Face downloader in production;
+/// tests override it with a fake.
 
 final class TtsModelRepositoryProvider
     extends
@@ -25,8 +25,8 @@ final class TtsModelRepositoryProvider
           TtsModelRepository
         >
     with $Provider<TtsModelRepository> {
-  /// Provides the model repository. Tests override this with a fake; the
-  /// concrete Hugging Face downloader replaces the placeholder once wired.
+  /// Provides the model repository — the Hugging Face downloader in production;
+  /// tests override it with a fake.
   TtsModelRepositoryProvider._()
     : super(
         from: null,
@@ -62,4 +62,4 @@ final class TtsModelRepositoryProvider
 }
 
 String _$ttsModelRepositoryHash() =>
-    r'b54df863ae2ff004ce49adcef8bebf3a7477c50b';
+    r'18ad7554e51706b03d07fe99b851bfe2495a6fce';

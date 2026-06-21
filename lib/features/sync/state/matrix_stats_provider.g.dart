@@ -8,9 +8,14 @@ part of 'matrix_stats_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Streams live message-count [MatrixStats] from the Matrix service for the
+/// stats UI.
 
 @ProviderFor(matrixStatsStream)
 final matrixStatsStreamProvider = MatrixStatsStreamProvider._();
+
+/// Streams live message-count [MatrixStats] from the Matrix service for the
+/// stats UI.
 
 final class MatrixStatsStreamProvider
     extends
@@ -20,6 +25,8 @@ final class MatrixStatsStreamProvider
           Stream<MatrixStats>
         >
     with $FutureModifier<MatrixStats>, $StreamProvider<MatrixStats> {
+  /// Streams live message-count [MatrixStats] from the Matrix service for the
+  /// stats UI.
   MatrixStatsStreamProvider._()
     : super(
         from: null,
@@ -48,11 +55,18 @@ final class MatrixStatsStreamProvider
 
 String _$matrixStatsStreamHash() => r'f65363ebb78af16342af4b7347dc68febafaf1b7';
 
+/// Exposes the latest [MatrixStats], seeded from the service's current counts
+/// and then kept live by [matrixStatsStream].
+
 @ProviderFor(MatrixStatsController)
 final matrixStatsControllerProvider = MatrixStatsControllerProvider._();
 
+/// Exposes the latest [MatrixStats], seeded from the service's current counts
+/// and then kept live by [matrixStatsStream].
 final class MatrixStatsControllerProvider
     extends $AsyncNotifierProvider<MatrixStatsController, MatrixStats> {
+  /// Exposes the latest [MatrixStats], seeded from the service's current counts
+  /// and then kept live by [matrixStatsStream].
   MatrixStatsControllerProvider._()
     : super(
         from: null,
@@ -74,6 +88,9 @@ final class MatrixStatsControllerProvider
 
 String _$matrixStatsControllerHash() =>
     r'494709d34289d70c6583df085d70c6c5c59c76fb';
+
+/// Exposes the latest [MatrixStats], seeded from the service's current counts
+/// and then kept live by [matrixStatsStream].
 
 abstract class _$MatrixStatsController extends $AsyncNotifier<MatrixStats> {
   FutureOr<MatrixStats> build();

@@ -8,9 +8,16 @@ part of 'task_summary_repository.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Provides the [TaskSummaryRepository], wiring in the journal DB and a
+/// [TaskSummaryResolver] backed by the agent database when one is registered
+/// (the resolver prefers agent reports, falling back to legacy summaries).
 
 @ProviderFor(taskSummaryRepository)
 final taskSummaryRepositoryProvider = TaskSummaryRepositoryProvider._();
+
+/// Provides the [TaskSummaryRepository], wiring in the journal DB and a
+/// [TaskSummaryResolver] backed by the agent database when one is registered
+/// (the resolver prefers agent reports, falling back to legacy summaries).
 
 final class TaskSummaryRepositoryProvider
     extends
@@ -20,6 +27,9 @@ final class TaskSummaryRepositoryProvider
           TaskSummaryRepository
         >
     with $Provider<TaskSummaryRepository> {
+  /// Provides the [TaskSummaryRepository], wiring in the journal DB and a
+  /// [TaskSummaryResolver] backed by the agent database when one is registered
+  /// (the resolver prefers agent reports, falling back to legacy summaries).
   TaskSummaryRepositoryProvider._()
     : super(
         from: null,

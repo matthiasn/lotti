@@ -8,9 +8,16 @@ part of 'project_repository.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Kept-alive provider for the singleton [ProjectRepository], wired to the
+/// app's database, caches, persistence, and update-notification services from
+/// `getIt`. Every project provider in this feature reads through here.
 
 @ProviderFor(projectRepository)
 final projectRepositoryProvider = ProjectRepositoryProvider._();
+
+/// Kept-alive provider for the singleton [ProjectRepository], wired to the
+/// app's database, caches, persistence, and update-notification services from
+/// `getIt`. Every project provider in this feature reads through here.
 
 final class ProjectRepositoryProvider
     extends
@@ -20,6 +27,9 @@ final class ProjectRepositoryProvider
           ProjectRepository
         >
     with $Provider<ProjectRepository> {
+  /// Kept-alive provider for the singleton [ProjectRepository], wired to the
+  /// app's database, caches, persistence, and update-notification services from
+  /// `getIt`. Every project provider in this feature reads through here.
   ProjectRepositoryProvider._()
     : super(
         from: null,

@@ -8,9 +8,28 @@ part of 'audio_waveform_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Resolves the waveform data for a [AudioWaveformRequest] via
+/// [AudioWaveformService] (disk cache + extraction), returning `null` when the
+/// source file is missing or extraction fails.
+///
+/// Extraction is comparatively expensive, so the result is pinned with a
+/// 15-minute keep-alive: the provider stays cached while a player card is
+/// repeatedly scrolled in/out of view, then auto-releases so long sessions
+/// don't accumulate amplitude lists for every clip ever shown. The keep-alive
+/// link is closed early on dispose by cancelling the timer.
 
 @ProviderFor(audioWaveform)
 final audioWaveformProvider = AudioWaveformFamily._();
+
+/// Resolves the waveform data for a [AudioWaveformRequest] via
+/// [AudioWaveformService] (disk cache + extraction), returning `null` when the
+/// source file is missing or extraction fails.
+///
+/// Extraction is comparatively expensive, so the result is pinned with a
+/// 15-minute keep-alive: the provider stays cached while a player card is
+/// repeatedly scrolled in/out of view, then auto-releases so long sessions
+/// don't accumulate amplitude lists for every clip ever shown. The keep-alive
+/// link is closed early on dispose by cancelling the timer.
 
 final class AudioWaveformProvider
     extends
@@ -22,6 +41,15 @@ final class AudioWaveformProvider
     with
         $FutureModifier<AudioWaveformData?>,
         $FutureProvider<AudioWaveformData?> {
+  /// Resolves the waveform data for a [AudioWaveformRequest] via
+  /// [AudioWaveformService] (disk cache + extraction), returning `null` when the
+  /// source file is missing or extraction fails.
+  ///
+  /// Extraction is comparatively expensive, so the result is pinned with a
+  /// 15-minute keep-alive: the provider stays cached while a player card is
+  /// repeatedly scrolled in/out of view, then auto-releases so long sessions
+  /// don't accumulate amplitude lists for every clip ever shown. The keep-alive
+  /// link is closed early on dispose by cancelling the timer.
   AudioWaveformProvider._({
     required AudioWaveformFamily super.from,
     required AudioWaveformRequest super.argument,
@@ -68,6 +96,16 @@ final class AudioWaveformProvider
 
 String _$audioWaveformHash() => r'6b355266d3590bbdf948e9f0b0b89efda13b61fa';
 
+/// Resolves the waveform data for a [AudioWaveformRequest] via
+/// [AudioWaveformService] (disk cache + extraction), returning `null` when the
+/// source file is missing or extraction fails.
+///
+/// Extraction is comparatively expensive, so the result is pinned with a
+/// 15-minute keep-alive: the provider stays cached while a player card is
+/// repeatedly scrolled in/out of view, then auto-releases so long sessions
+/// don't accumulate amplitude lists for every clip ever shown. The keep-alive
+/// link is closed early on dispose by cancelling the timer.
+
 final class AudioWaveformFamily extends $Family
     with
         $FunctionalFamilyOverride<
@@ -82,6 +120,16 @@ final class AudioWaveformFamily extends $Family
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
+
+  /// Resolves the waveform data for a [AudioWaveformRequest] via
+  /// [AudioWaveformService] (disk cache + extraction), returning `null` when the
+  /// source file is missing or extraction fails.
+  ///
+  /// Extraction is comparatively expensive, so the result is pinned with a
+  /// 15-minute keep-alive: the provider stays cached while a player card is
+  /// repeatedly scrolled in/out of view, then auto-releases so long sessions
+  /// don't accumulate amplitude lists for every clip ever shown. The keep-alive
+  /// link is closed early on dispose by cancelling the timer.
 
   AudioWaveformProvider call(AudioWaveformRequest request) =>
       AudioWaveformProvider._(argument: request, from: this);

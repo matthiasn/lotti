@@ -8,12 +8,33 @@ part of 'pane_width_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Keep-alive Riverpod notifier owning the resizable sidebar and list-pane
+/// widths and the sidebar's collapsed flag.
+///
+/// Loads persisted, clamped widths from `SettingsDb` on build, applies drag
+/// deltas, and debounces writes back to disk. Once the user adjusts a width,
+/// a late-arriving persisted load is ignored so it cannot clobber the live
+/// value.
 
 @ProviderFor(PaneWidthController)
 final paneWidthControllerProvider = PaneWidthControllerProvider._();
 
+/// Keep-alive Riverpod notifier owning the resizable sidebar and list-pane
+/// widths and the sidebar's collapsed flag.
+///
+/// Loads persisted, clamped widths from `SettingsDb` on build, applies drag
+/// deltas, and debounces writes back to disk. Once the user adjusts a width,
+/// a late-arriving persisted load is ignored so it cannot clobber the live
+/// value.
 final class PaneWidthControllerProvider
     extends $NotifierProvider<PaneWidthController, PaneWidths> {
+  /// Keep-alive Riverpod notifier owning the resizable sidebar and list-pane
+  /// widths and the sidebar's collapsed flag.
+  ///
+  /// Loads persisted, clamped widths from `SettingsDb` on build, applies drag
+  /// deltas, and debounces writes back to disk. Once the user adjusts a width,
+  /// a late-arriving persisted load is ignored so it cannot clobber the live
+  /// value.
   PaneWidthControllerProvider._()
     : super(
         from: null,
@@ -43,6 +64,14 @@ final class PaneWidthControllerProvider
 
 String _$paneWidthControllerHash() =>
     r'cab1608c86ffb5c3dfb40fd96bf5ab4fd1713e8c';
+
+/// Keep-alive Riverpod notifier owning the resizable sidebar and list-pane
+/// widths and the sidebar's collapsed flag.
+///
+/// Loads persisted, clamped widths from `SettingsDb` on build, applies drag
+/// deltas, and debounces writes back to disk. Once the user adjusts a width,
+/// a late-arriving persisted load is ignored so it cannot clobber the live
+/// value.
 
 abstract class _$PaneWidthController extends $Notifier<PaneWidths> {
   PaneWidths build();
