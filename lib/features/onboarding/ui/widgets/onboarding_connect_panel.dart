@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/onboarding/ui/widgets/aurora_hero.dart';
-import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -99,29 +97,9 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
       borderRadius: BorderRadius.circular(tokens.radii.l),
       child: Stack(
         children: [
-          // Combined backdrop: the aurora wash (screen 2) layered under the
-          // neural constellation (screen 1), so the connect page is as alive as
-          // the welcome rather than a flat cloud gradient.
-          Positioned.fill(
-            child: ColoredBox(
-              color: panelBg,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  AuroraHero(
-                    colors: onboardingAuroraColors(accent),
-                    maxAlpha: 0.16,
-                  ),
-                  NeuralConstellation(
-                    nodeColor: accent,
-                    lineColor: accent.withValues(alpha: 0.55),
-                    pulseColor: Color.lerp(accent, Colors.white, 0.45)!,
-                    nodeCount: 26,
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Shared alive backdrop: aurora wash + neural constellation, as on the
+          // welcome — not a flat cloud gradient.
+          const Positioned.fill(child: OnboardingBackdrop()),
           // Bottom scrim so the lower tiles read against the aurora.
           Positioned.fill(
             child: DecoratedBox(

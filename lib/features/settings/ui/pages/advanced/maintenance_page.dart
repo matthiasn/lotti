@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/embedding_backfill_modal.dart';
 import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
@@ -62,16 +61,7 @@ class MaintenanceBody extends ConsumerWidget {
             subtitle: 'Preview the FTUE welcome + provider tiles (debug)',
             icon: Icons.auto_awesome_motion_rounded,
             onTap: () => unawaited(
-              OnboardingWelcomeModal.show(
-                context,
-                onProviderSelected: (type) =>
-                    const AiSettingsNavigationService()
-                        .navigateToCreateProvider(
-                          context,
-                          preselectedType: type,
-                        ),
-                onDismiss: () {},
-              ),
+              OnboardingWelcomeModal.show(context, onDismiss: () {}),
             ),
           ),
           (

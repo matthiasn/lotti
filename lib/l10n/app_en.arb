@@ -3167,6 +3167,13 @@
       }
     }
   },
+  "onboardingApiKeyConnect": "Connect",
+  "onboardingApiKeyConnecting": "Connecting…",
+  "onboardingApiKeyError": "Couldn't connect. Check your key and try again.",
+  "onboardingApiKeyField": "API key",
+  "onboardingApiKeyGetKeyAt": "Get a key at",
+  "onboardingApiKeyLocalNote": "Runs on your device — no key needed.",
+  "onboardingApiKeyTitle": "Paste your API key",
   "onboardingConnectGeminiName": "Gemini",
   "onboardingConnectGeminiTagline": "United States",
   "onboardingConnectLessOptions": "Less options",

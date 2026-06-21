@@ -6350,10 +6350,36 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get onboardingApiKeyConnect => 'Verbinden';
+
+  @override
+  String get onboardingApiKeyConnecting => 'Verbinde…';
+
+  @override
+  String get onboardingApiKeyError =>
+      'Verbindung fehlgeschlagen. Prüfe deinen Schlüssel und versuch es erneut.';
+
+  @override
+  String get onboardingApiKeyField => 'API-Schlüssel';
+
+  @override
+  String get onboardingApiKeyGetKeyAt => 'Schlüssel erhältst du bei';
+
+  @override
+  String get onboardingApiKeyLocalNote =>
+      'Läuft auf deinem Gerät – kein Schlüssel nötig.';
+
+  @override
+  String get onboardingApiKeyTitle => 'Füge deinen API-Schlüssel ein';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
   String get onboardingConnectGeminiTagline => 'USA';
+
+  @override
+  String get onboardingConnectLessOptions => 'Weniger Optionen';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
@@ -6363,9 +6389,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get onboardingConnectMoreOptions => 'Mehr Optionen';
-
-  @override
-  String get onboardingConnectLessOptions => 'Weniger Optionen';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

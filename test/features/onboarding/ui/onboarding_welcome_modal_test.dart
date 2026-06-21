@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
@@ -32,16 +31,12 @@ void main() {
     await db.close();
   });
 
-  Widget host({
-    void Function(InferenceProviderType)? onSelected,
-    VoidCallback? onDismiss,
-  }) {
+  Widget host({VoidCallback? onDismiss}) {
     return Builder(
       builder: (context) => ElevatedButton(
         onPressed: () => OnboardingWelcomeModal.show(
           context,
           metrics: repo,
-          onProviderSelected: onSelected ?? (_) {},
           onDismiss: onDismiss ?? () {},
         ),
         child: const Text('open'),
@@ -107,19 +102,14 @@ void main() {
     expect(find.text('Ollama'), findsOneWidget);
   });
 
-  testWidgets('tapping a provider tile invokes onProviderSelected with its '
-      'type', (tester) async {
-    InferenceProviderType? picked;
-    await openWelcome(
-      tester,
-      child: host(onSelected: (type) => picked = type),
-    );
+  testWidgets('selecting a provider opens the API-key step', (tester) async {
+    await openWelcome(tester);
     await tester.tap(find.text('Connect your brain'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Mistral'));
     await tester.pumpAndSettle();
 
-    expect(picked, InferenceProviderType.mistral);
+    expect(find.text('Paste your API key'), findsOneWidget);
   });
 
   testWidgets('skipping invokes onDismiss and records welcomeSkipped', (

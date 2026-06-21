@@ -5,24 +5,24 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/get_it.dart';
 
-/// The FTUE "connect your brain" front door: a full-screen cinematic route
-/// whose body crossfades between a welcome (animated `heroStyle` hero) and a
-/// matching dark connect page (combined backdrop + provider tiles).
+/// The FTUE "connect your brain" front door: a full-screen cinematic route that
+/// crossfades through three steps — a welcome (animated `heroStyle` hero), a
+/// matching connect page (provider tiles), and a key step that creates the
+/// provider and runs the existing per-provider FTUE setup natively.
 ///
-/// A full-screen route (not a bottom sheet) keeps the in-panel back button
-/// reliably hittable and gives the keyboard-driven steps room. It owns only the
-/// framing; provider creation reuses the existing per-provider FTUE setup via
-/// `onProviderSelected`.
+/// A full-screen route (not a bottom sheet) keeps the in-panel back buttons
+/// reliably hittable and gives the keyboard step room. `onDismiss` fires only
+/// when the user backs out without connecting.
 class OnboardingWelcomeModal {
   OnboardingWelcomeModal._();
 
   static Future<void> show(
     BuildContext context, {
-    required void Function(InferenceProviderType) onProviderSelected,
     required VoidCallback onDismiss,
     OnboardingMetricsRepository? metrics,
     OnboardingHeroStyle heroStyle = OnboardingHeroStyle.constellation,
@@ -34,30 +34,52 @@ class OnboardingWelcomeModal {
             : null);
     unawaited(repo?.recordEvent(OnboardingEventName.welcomeShown));
 
-    InferenceProviderType? selected;
+    InferenceProviderType? connectedType;
 
     await Navigator.of(context, rootNavigator: true).push(
       PageRouteBuilder<void>(
+        // Transparent route + dim barrier: the app stays visible (dimmed)
+        // behind the floating panel rather than being replaced by a solid
+        // takeover.
+        opaque: false,
+        barrierColor: Colors.black.withValues(alpha: 0.6),
         reverseTransitionDuration: MotionDurations.short4,
-        pageBuilder: (routeContext, animation, _) => FadeTransition(
-          opacity: animation,
-          child: _OnboardingScaffold(
-            heroStyle: heroStyle,
-            onProviderModalShown: () => unawaited(
-              repo?.recordEvent(OnboardingEventName.providerModalShown),
+        pageBuilder: (routeContext, animation, _) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: MotionCurves.emphasizedDecelerate,
+          );
+          return FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.06),
+                end: Offset.zero,
+              ).animate(curved),
+              child: _OnboardingScaffold(
+                heroStyle: heroStyle,
+                onProviderModalShown: () => unawaited(
+                  repo?.recordEvent(OnboardingEventName.providerModalShown),
+                ),
+                onConnected: (type) {
+                  connectedType = type;
+                  Navigator.of(routeContext).pop();
+                },
+                onSkip: () => Navigator.of(routeContext).pop(),
+              ),
             ),
-            onSelect: (type) {
-              selected = type;
-              Navigator.of(routeContext).pop();
-            },
-            onSkip: () => Navigator.of(routeContext).pop(),
-          ),
-        ),
+          );
+        },
       ),
     );
 
-    if (selected != null) {
-      onProviderSelected(selected!);
+    if (connectedType != null) {
+      unawaited(
+        repo?.recordEvent(
+          OnboardingEventName.providerConnected,
+          provider: connectedType!.name,
+        ),
+      );
     } else {
       unawaited(repo?.recordEvent(OnboardingEventName.welcomeSkipped));
       onDismiss();
@@ -65,36 +87,40 @@ class OnboardingWelcomeModal {
   }
 }
 
-/// The full-screen dark canvas hosting the flow. Seamless (scaffold and panels
-/// share the dark background) so the animated backdrop reads as the whole
-/// screen, with the content block centered and scrollable for small viewports.
+/// Full-screen dark canvas hosting the flow, centered + scrollable so the
+/// keyboard step fits on small viewports.
 class _OnboardingScaffold extends StatelessWidget {
   const _OnboardingScaffold({
     required this.heroStyle,
     required this.onProviderModalShown,
-    required this.onSelect,
+    required this.onConnected,
     required this.onSkip,
   });
 
   final OnboardingHeroStyle heroStyle;
   final VoidCallback onProviderModalShown;
-  final void Function(InferenceProviderType) onSelect;
+  final void Function(InferenceProviderType) onConnected;
   final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context) {
+    // Transparent scaffold so the dim barrier (and the app behind it) shows
+    // around the panel; the panel supplies its own dark surface. Anchored to
+    // the bottom as a sheet on phones, centered as a dialog on wide screens.
+    final wide = MediaQuery.sizeOf(context).width >= 600;
     return Scaffold(
-      backgroundColor: dsTokensDark.colors.background.level01,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: wide ? Alignment.center : Alignment.bottomCenter,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(wide ? 24 : 8),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
               child: _OnboardingFlow(
                 heroStyle: heroStyle,
                 onProviderModalShown: onProviderModalShown,
-                onSelect: onSelect,
+                onConnected: onConnected,
                 onSkip: onSkip,
               ),
             ),
@@ -105,19 +131,21 @@ class _OnboardingScaffold extends StatelessWidget {
   }
 }
 
-/// Internal two-step flow: welcome ⇄ connect, swapped with a crossfade +
-/// height animation. Owning the step locally keeps the back button hittable.
+enum _FlowStep { welcome, connect, apiKey }
+
+/// Internal three-step flow swapped with a crossfade + height animation. Owning
+/// the step locally keeps the in-panel back buttons hittable.
 class _OnboardingFlow extends StatefulWidget {
   const _OnboardingFlow({
     required this.heroStyle,
     required this.onProviderModalShown,
-    required this.onSelect,
+    required this.onConnected,
     required this.onSkip,
   });
 
   final OnboardingHeroStyle heroStyle;
   final VoidCallback onProviderModalShown;
-  final void Function(InferenceProviderType) onSelect;
+  final void Function(InferenceProviderType) onConnected;
   final VoidCallback onSkip;
 
   @override
@@ -125,7 +153,8 @@ class _OnboardingFlow extends StatefulWidget {
 }
 
 class _OnboardingFlowState extends State<_OnboardingFlow> {
-  bool _connect = false;
+  _FlowStep _step = _FlowStep.welcome;
+  late InferenceProviderType _type;
 
   @override
   Widget build(BuildContext context) {
@@ -135,22 +164,39 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
       alignment: Alignment.topCenter,
       child: AnimatedSwitcher(
         duration: MotionDurations.medium2,
-        child: _connect
-            ? OnboardingConnectPanel(
-                key: const ValueKey('onboarding-connect'),
-                onBack: () => setState(() => _connect = false),
-                onSelect: widget.onSelect,
-              )
-            : OnboardingHeroPanel(
-                key: const ValueKey('onboarding-welcome'),
-                heroStyle: widget.heroStyle,
-                onConnect: () {
-                  setState(() => _connect = true);
-                  widget.onProviderModalShown();
-                },
-                onSkip: widget.onSkip,
-              ),
+        child: _buildStep(),
       ),
     );
+  }
+
+  Widget _buildStep() {
+    switch (_step) {
+      case _FlowStep.welcome:
+        return OnboardingHeroPanel(
+          key: const ValueKey('onboarding-welcome'),
+          heroStyle: widget.heroStyle,
+          onConnect: () {
+            setState(() => _step = _FlowStep.connect);
+            widget.onProviderModalShown();
+          },
+          onSkip: widget.onSkip,
+        );
+      case _FlowStep.connect:
+        return OnboardingConnectPanel(
+          key: const ValueKey('onboarding-connect'),
+          onBack: () => setState(() => _step = _FlowStep.welcome),
+          onSelect: (type) => setState(() {
+            _type = type;
+            _step = _FlowStep.apiKey;
+          }),
+        );
+      case _FlowStep.apiKey:
+        return OnboardingApiKeyPanel(
+          key: ValueKey('onboarding-apikey-${_type.name}'),
+          type: _type,
+          onBack: () => setState(() => _step = _FlowStep.connect),
+          onConnected: () => widget.onConnected(_type),
+        );
+    }
   }
 }

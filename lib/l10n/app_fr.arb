@@ -2731,6 +2731,13 @@
       }
     }
   },
+  "onboardingApiKeyConnect": "Connecter",
+  "onboardingApiKeyConnecting": "Connexion…",
+  "onboardingApiKeyError": "Échec de la connexion. Vérifie ta clé et réessaie.",
+  "onboardingApiKeyField": "Clé API",
+  "onboardingApiKeyGetKeyAt": "Obtiens une clé sur",
+  "onboardingApiKeyLocalNote": "Fonctionne sur ton appareil — aucune clé requise.",
+  "onboardingApiKeyTitle": "Colle ta clé API",
   "onboardingConnectGeminiName": "Gemini",
   "onboardingConnectGeminiTagline": "États-Unis",
   "onboardingConnectLessOptions": "Moins d'options",

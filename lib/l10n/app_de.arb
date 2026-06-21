@@ -2731,6 +2731,13 @@
       }
     }
   },
+  "onboardingApiKeyConnect": "Verbinden",
+  "onboardingApiKeyConnecting": "Verbinde…",
+  "onboardingApiKeyError": "Verbindung fehlgeschlagen. Prüfe deinen Schlüssel und versuch es erneut.",
+  "onboardingApiKeyField": "API-Schlüssel",
+  "onboardingApiKeyGetKeyAt": "Schlüssel erhältst du bei",
+  "onboardingApiKeyLocalNote": "Läuft auf deinem Gerät – kein Schlüssel nötig.",
+  "onboardingApiKeyTitle": "Füge deinen API-Schlüssel ein",
   "onboardingConnectGeminiName": "Gemini",
   "onboardingConnectGeminiTagline": "USA",
   "onboardingConnectLessOptions": "Weniger Optionen",

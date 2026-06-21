@@ -10972,6 +10972,48 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 suggestion needs your attention} other{{count} suggestions need your attention}}'**
   String notificationSuggestionAttentionTitle(int count);
 
+  /// No description provided for @onboardingApiKeyConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get onboardingApiKeyConnect;
+
+  /// No description provided for @onboardingApiKeyConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get onboardingApiKeyConnecting;
+
+  /// No description provided for @onboardingApiKeyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t connect. Check your key and try again.'**
+  String get onboardingApiKeyError;
+
+  /// No description provided for @onboardingApiKeyField.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get onboardingApiKeyField;
+
+  /// No description provided for @onboardingApiKeyGetKeyAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a key at'**
+  String get onboardingApiKeyGetKeyAt;
+
+  /// No description provided for @onboardingApiKeyLocalNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs on your device — no key needed.'**
+  String get onboardingApiKeyLocalNote;
+
+  /// No description provided for @onboardingApiKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste your API key'**
+  String get onboardingApiKeyTitle;
+
   /// No description provided for @onboardingConnectGeminiName.
   ///
   /// In en, this message translates to:
@@ -10983,6 +11025,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'United States'**
   String get onboardingConnectGeminiTagline;
+
+  /// No description provided for @onboardingConnectLessOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Less options'**
+  String get onboardingConnectLessOptions;
 
   /// No description provided for @onboardingConnectMistralName.
   ///
@@ -11001,12 +11049,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More options'**
   String get onboardingConnectMoreOptions;
-
-  /// No description provided for @onboardingConnectLessOptions.
-  ///
-  /// In en, this message translates to:
-  /// **'Less options'**
-  String get onboardingConnectLessOptions;
 
   /// No description provided for @onboardingConnectOllamaName.
   ///

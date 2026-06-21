@@ -14,7 +14,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
-import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
@@ -275,15 +274,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // navigateToCreateProvider, and the existing dismissal flag for "skip".
     OnboardingWelcomeModal.show(
       context,
-      onProviderSelected: (providerType) {
-        // Modal closes itself, then we navigate
-        const AiSettingsNavigationService().navigateToCreateProvider(
-          context,
-          preselectedType: providerType,
-        );
-      },
       onDismiss: () {
-        // Modal closes itself, then we persist dismissal
+        // Backed out without connecting → persist dismissal so it doesn't nag.
         ref.read(aiSetupPromptServiceProvider.notifier).dismissPrompt();
       },
     );

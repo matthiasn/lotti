@@ -46,6 +46,35 @@ List<Color> onboardingAuroraColors(Color accent) {
   ];
 }
 
+/// The shared alive dark backdrop for the connect + API-key pages: a toned-down
+/// aurora wash layered under the neural constellation, on the dark panel
+/// background. Keeps the post-welcome steps as alive as the welcome itself.
+class OnboardingBackdrop extends StatelessWidget {
+  const OnboardingBackdrop({this.nodeCount = 26, super.key});
+
+  final int nodeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = dsTokensDark.colors.interactive.enabled;
+    return ColoredBox(
+      color: dsTokensDark.colors.background.level01,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AuroraHero(colors: onboardingAuroraColors(accent), maxAlpha: 0.16),
+          NeuralConstellation(
+            nodeColor: accent,
+            lineColor: accent.withValues(alpha: 0.55),
+            pulseColor: Color.lerp(accent, Colors.white, 0.45)!,
+            nodeCount: nodeCount,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Builds the animated visual for [style], coloured from the dark token set so
 /// it reads on the cinematic dark panel regardless of the app's theme.
 Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {

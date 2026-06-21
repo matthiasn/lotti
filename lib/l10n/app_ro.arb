@@ -2731,6 +2731,13 @@
       }
     }
   },
+  "onboardingApiKeyConnect": "Conectați",
+  "onboardingApiKeyConnecting": "Se conectează…",
+  "onboardingApiKeyError": "Conectarea a eșuat. Verificați cheia și încercați din nou.",
+  "onboardingApiKeyField": "Cheie API",
+  "onboardingApiKeyGetKeyAt": "Obțineți o cheie la",
+  "onboardingApiKeyLocalNote": "Rulează pe dispozitiv – nu e nevoie de cheie.",
+  "onboardingApiKeyTitle": "Introduceți cheia API",
   "onboardingConnectGeminiName": "Gemini",
   "onboardingConnectGeminiTagline": "Statele Unite",
   "onboardingConnectLessOptions": "Mai puține opțiuni",

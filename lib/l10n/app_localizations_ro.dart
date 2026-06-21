@@ -6424,10 +6424,36 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get onboardingApiKeyConnect => 'Conectați';
+
+  @override
+  String get onboardingApiKeyConnecting => 'Se conectează…';
+
+  @override
+  String get onboardingApiKeyError =>
+      'Conectarea a eșuat. Verificați cheia și încercați din nou.';
+
+  @override
+  String get onboardingApiKeyField => 'Cheie API';
+
+  @override
+  String get onboardingApiKeyGetKeyAt => 'Obțineți o cheie la';
+
+  @override
+  String get onboardingApiKeyLocalNote =>
+      'Rulează pe dispozitiv – nu e nevoie de cheie.';
+
+  @override
+  String get onboardingApiKeyTitle => 'Introduceți cheia API';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
   String get onboardingConnectGeminiTagline => 'Statele Unite';
+
+  @override
+  String get onboardingConnectLessOptions => 'Mai puține opțiuni';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
@@ -6437,9 +6463,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingConnectMoreOptions => 'Mai multe opțiuni';
-
-  @override
-  String get onboardingConnectLessOptions => 'Mai puține opțiuni';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

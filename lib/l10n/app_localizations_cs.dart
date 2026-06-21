@@ -6379,10 +6379,36 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get onboardingApiKeyConnect => 'Připojit';
+
+  @override
+  String get onboardingApiKeyConnecting => 'Připojuji…';
+
+  @override
+  String get onboardingApiKeyError =>
+      'Připojení selhalo. Zkontroluj klíč a zkus to znovu.';
+
+  @override
+  String get onboardingApiKeyField => 'API klíč';
+
+  @override
+  String get onboardingApiKeyGetKeyAt => 'Klíč získáš na';
+
+  @override
+  String get onboardingApiKeyLocalNote =>
+      'Běží na tvém zařízení – klíč není potřeba.';
+
+  @override
+  String get onboardingApiKeyTitle => 'Vlož svůj API klíč';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
   String get onboardingConnectGeminiTagline => 'Spojené státy';
+
+  @override
+  String get onboardingConnectLessOptions => 'Méně možností';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
@@ -6392,9 +6418,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get onboardingConnectMoreOptions => 'Další možnosti';
-
-  @override
-  String get onboardingConnectLessOptions => 'Méně možností';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

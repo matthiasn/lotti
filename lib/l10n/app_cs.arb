@@ -2523,6 +2523,13 @@
       }
     }
   },
+  "onboardingApiKeyConnect": "Připojit",
+  "onboardingApiKeyConnecting": "Připojuji…",
+  "onboardingApiKeyError": "Připojení selhalo. Zkontroluj klíč a zkus to znovu.",
+  "onboardingApiKeyField": "API klíč",
+  "onboardingApiKeyGetKeyAt": "Klíč získáš na",
+  "onboardingApiKeyLocalNote": "Běží na tvém zařízení – klíč není potřeba.",
+  "onboardingApiKeyTitle": "Vlož svůj API klíč",
   "onboardingConnectGeminiName": "Gemini",
   "onboardingConnectGeminiTagline": "Spojené státy",
   "onboardingConnectLessOptions": "Méně možností",
