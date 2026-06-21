@@ -81,6 +81,10 @@ class ToolbarWidget extends ConsumerWidget {
                     controller: controller,
                     notifier: notifier,
                   ),
+                // Fence the save action off from the formatting controls so it
+                // reads as a pinned, categorically-different primary action and
+                // can't be mis-tapped against the adjacent control.
+                const _ToolbarSeparator(),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: savePad),
                   child: _ToolbarSaveButton(entryId: entryId),
@@ -113,6 +117,25 @@ class ToolbarWidget extends ConsumerWidget {
   }
 }
 
+/// A thin vertical rule that fences the save action off from the formatting
+/// controls (and matches Quill's own section dividers).
+class _ToolbarSeparator extends StatelessWidget {
+  const _ToolbarSeparator();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
+      child: Container(
+        width: 1,
+        height: tokens.spacing.sectionGap,
+        color: tokens.colors.text.lowEmphasis,
+      ),
+    );
+  }
+}
+
 /// The full formatting set, shown inline when the toolbar is wide enough.
 QuillSimpleToolbarConfig _fullConfig(
   BuildContext context,
@@ -140,7 +163,6 @@ QuillSimpleToolbarConfig _fullConfig(
     showRightAlignment: false,
     showJustifyAlignment: false,
     showSearchButton: false,
-    showDividers: false,
     customButtons: [
       QuillToolbarCustomButtonOptions(
         icon: const Icon(Icons.horizontal_rule),
@@ -154,6 +176,9 @@ QuillSimpleToolbarConfig _fullConfig(
             dynamic,
             QuillToolbarBaseButtonExtraOptions
           >(afterButtonPressed: notifier.focusNode.requestFocus),
+      codeBlock: const QuillToolbarToggleStyleButtonOptions(
+        iconData: Icons.data_object,
+      ),
     ),
   );
 }
@@ -190,13 +215,15 @@ QuillSimpleToolbarConfig _essentialsConfig(
     showRightAlignment: false,
     showJustifyAlignment: false,
     showSearchButton: false,
-    showDividers: false,
     buttonOptions: QuillSimpleToolbarButtonOptions(
       base:
           QuillToolbarBaseButtonOptions<
             dynamic,
             QuillToolbarBaseButtonExtraOptions
           >(afterButtonPressed: notifier.focusNode.requestFocus),
+      codeBlock: const QuillToolbarToggleStyleButtonOptions(
+        iconData: Icons.data_object,
+      ),
     ),
   );
 }
@@ -229,7 +256,6 @@ QuillSimpleToolbarConfig _advancedConfig(
     showSuperscript: false,
     showIndent: false,
     showSearchButton: false,
-    showDividers: false,
     customButtons: [
       QuillToolbarCustomButtonOptions(
         icon: const Icon(Icons.horizontal_rule),
@@ -243,6 +269,9 @@ QuillSimpleToolbarConfig _advancedConfig(
             dynamic,
             QuillToolbarBaseButtonExtraOptions
           >(afterButtonPressed: notifier.focusNode.requestFocus),
+      codeBlock: const QuillToolbarToggleStyleButtonOptions(
+        iconData: Icons.data_object,
+      ),
     ),
   );
 }
@@ -302,21 +331,20 @@ class _ToolbarSaveButton extends ConsumerWidget {
     final provider = saveButtonControllerProvider(id: entryId);
     final unsaved = ref.watch(provider).value ?? false;
 
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
-      // Recede (but hold its place) when there is nothing to save.
-      opacity: unsaved ? 1.0 : 0.45,
-      child: DesignSystemButton(
-        label: context.messages.saveLabel,
-        // null onPressed → the button renders its disabled (quiet) state.
-        onPressed: unsaved
-            ? () {
-                ref.read(provider.notifier).save();
-                FocusManager.instance.primaryFocus?.unfocus();
-              }
-            : null,
-      ),
+    // The button holds its position and footprint in both states (the
+    // design-system disabled state keeps a faint neutral pill at full opacity).
+    // A leading save glyph appears only when there are unsaved changes, so the
+    // dirty/clean distinction is carried by an icon — not the teal hue alone.
+    return DesignSystemButton(
+      label: context.messages.saveLabel,
+      leadingIcon: unsaved ? Icons.save_rounded : null,
+      // null onPressed → the button renders its disabled (quiet) state.
+      onPressed: unsaved
+          ? () {
+              ref.read(provider.notifier).save();
+              FocusManager.instance.primaryFocus?.unfocus();
+            }
+          : null,
     );
   }
 }
