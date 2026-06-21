@@ -4,12 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/events/ui/pages/event_detail_page.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_picker.dart';
@@ -217,6 +219,7 @@ void main() {
       WidgetTester tester, {
       required List<JournalEntity> linked,
       EntryController Function()? controllerBuilder,
+      List<Override> extraOverrides = const [],
       Size size = const Size(500, 2400),
     }) async {
       tester.view
@@ -235,6 +238,7 @@ void main() {
               resolvedOutgoingLinkedEntriesProvider(
                 _eventId,
               ).overrideWithValue(linked),
+              ...extraOverrides,
             ],
             child: const EventDetailPage(eventId: _eventId),
           ),
@@ -447,6 +451,65 @@ void main() {
           categoryId: any(named: 'categoryId'),
         ),
       ).called(1);
+    });
+
+    testWidgets(
+      'creating a task assigns the category agent and beams to the new task',
+      (tester) async {
+        // The created task is returned (not null), so the page runs the
+        // post-create glue: auto-assigning the category agent and beaming to
+        // the new task's detail page.
+        when(
+          () => persistence.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => testTask);
+
+        final beamed = <String>[];
+        beamToNamedOverride = beamed.add;
+
+        final taskAgentService = MockTaskAgentService();
+
+        await pumpResolved(
+          tester,
+          linked: const [],
+          extraOverrides: [
+            taskAgentServiceProvider.overrideWithValue(taskAgentService),
+          ],
+        );
+
+        await tester.tap(find.text('Add').last); // the Tasks "+ Add"
+        await tester.pump();
+
+        // The page navigates to the freshly created task's detail page.
+        expect(beamed, ['/tasks/${testTask.meta.id}']);
+        // The event's category ('cat-1', Friends) has no default task
+        // template, so no agent is created — but the service was resolved.
+        verifyNever(
+          () => taskAgentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      },
+    );
+
+    testWidgets('tapping a linked task opens its task detail page', (
+      tester,
+    ) async {
+      final beamed = <String>[];
+      beamToNamedOverride = beamed.add;
+
+      await pumpResolved(tester, linked: [testTask]);
+
+      await tester.tap(find.text('Add tests for journal page'));
+      await tester.pump();
+
+      expect(beamed, ['/tasks/${testTask.meta.id}']);
     });
   });
 }

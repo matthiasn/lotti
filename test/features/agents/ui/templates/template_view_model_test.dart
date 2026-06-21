@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/templates/template_view_model.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
 
 import '../../test_utils.dart';
 
@@ -109,6 +110,31 @@ extension _AnyGeneratedTemplateRowsScenario on glados.Any {
 }
 
 void main() {
+  group('agentTemplateKindLabel', () {
+    final messages = AppLocalizationsEn();
+
+    // Every kind must resolve to its own localized label — in particular the
+    // event-agent arm, which the events redesign added.
+    const expected = <AgentTemplateKind, String>{
+      AgentTemplateKind.taskAgent: 'Task Agent',
+      AgentTemplateKind.dayAgent: 'Day Agent',
+      AgentTemplateKind.templateImprover: 'Template Improver',
+      AgentTemplateKind.projectAgent: 'Project Agent',
+      AgentTemplateKind.eventAgent: 'Event Agent',
+    };
+
+    test('covers every AgentTemplateKind value', () {
+      // Guards against a new kind being added without a label arm.
+      expect(expected.keys, containsAll(AgentTemplateKind.values));
+    });
+
+    for (final entry in expected.entries) {
+      test('maps ${entry.key.name} to "${entry.value}"', () {
+        expect(agentTemplateKindLabel(messages, entry.key), entry.value);
+      });
+    }
+  });
+
   group('agentTemplateRowVmsProvider', () {
     glados.Glados(
       glados.any.templateRowsScenario,

@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -402,7 +403,7 @@ class EventAgentWorkflow {
         if (deferredItems.isNotEmpty) {
           final changeItems = buildDeferredChangeItems(
             deferredItems,
-            _buildHumanSummary,
+            buildHumanSummary,
           );
 
           await syncService.upsertEntity(
@@ -585,7 +586,8 @@ class EventAgentWorkflow {
   }
 
   /// Builds a user-facing one-line summary for a deferred tool call.
-  static String _buildHumanSummary(String toolName, Map<String, dynamic> args) {
+  @visibleForTesting
+  static String buildHumanSummary(String toolName, Map<String, dynamic> args) {
     switch (toolName) {
       case EventAgentToolNames.suggestFollowUpTask:
         final title = args['title'];

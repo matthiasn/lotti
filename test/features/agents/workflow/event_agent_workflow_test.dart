@@ -8,12 +8,15 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -118,6 +121,22 @@ void main() {
     syncService: mockSyncService,
     templateService: mockTemplateService,
   );
+
+  /// A workflow wired with a real [DomainLogger] (so the `domainLogger != null`
+  /// logging branches execute) and an optional soul-document service.
+  EventAgentWorkflow buildLoggedWorkflow({SoulDocumentService? soul}) =>
+      EventAgentWorkflow(
+        agentRepository: mockAgentRepository,
+        conversationRepository: mockConversationRepository,
+        aiConfigRepository: mockAiConfigRepository,
+        cloudInferenceRepository: mockCloudInferenceRepository,
+        journalRepository: mockJournalRepository,
+        syncService: mockSyncService,
+        templateService: mockTemplateService,
+        soulDocumentService: soul,
+        domainLogger: DomainLogger(loggingService: LoggingService())
+          ..enabledDomains.add(LogDomain.agentWorkflow),
+      );
 
   void stubProviderResolution() {
     when(
@@ -602,6 +621,279 @@ void main() {
       ).captured;
       final states = captured.whereType<AgentStateEntity>().toList();
       expect(states.last.consecutiveFailureCount, 1);
+    });
+  });
+
+  group('resilience + edge paths (domain logger configured)', () {
+    setUp(() {
+      when(
+        () => mockAgentRepository.getAgentState(agentId),
+      ).thenAnswer((_) async => testAgentState);
+      when(
+        () => mockJournalRepository.getJournalEntityById(eventId),
+      ).thenAnswer((_) async => eventEntity());
+      stubProviderResolution();
+    });
+
+    test(
+      'swallows a failed user-message persist and still lands the recap',
+      () async {
+        stubProviderResolution();
+        stubReportPublishingRun();
+        // Only the user-kind message write fails; everything else succeeds.
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((inv) async {
+          final entity = inv.positionalArguments.first;
+          if (entity is AgentMessageEntity &&
+              entity.kind == AgentMessageKind.user) {
+            throw Exception('user persist boom');
+          }
+        });
+
+        final result = await buildLoggedWorkflow().execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {eventId},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+      },
+    );
+
+    test(
+      'swallows a failed provenance write and still lands the recap',
+      () async {
+        stubProviderResolution();
+        stubReportPublishingRun();
+        when(
+          () => mockAgentRepository.updateWakeRunTemplate(
+            any(),
+            any(),
+            any(),
+            resolvedModelId: any(named: 'resolvedModelId'),
+            soulId: any(named: 'soulId'),
+            soulVersionId: any(named: 'soulVersionId'),
+          ),
+        ).thenThrow(Exception('provenance boom'));
+
+        final result = await buildLoggedWorkflow().execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {eventId},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+      },
+    );
+
+    test(
+      'merges token usage across the first pass and the forced retry',
+      () async {
+        stubProviderResolution();
+        // Allow the forced retry to actually invoke the delegate a second time.
+        // First pass: usage but no recap. Forced retry (toolChoice set): publishes
+        // the recap and reports more usage → the two are merged.
+        mockConversationRepository.maxDelegateCalls = 2;
+        // ignore: cascade_invocations
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (toolChoice != null && strategy != null) {
+                final manager = mockConversationRepository.getConversation(
+                  conversationId,
+                )!;
+                when(
+                  () => manager.addToolResponse(
+                    toolCallId: any(named: 'toolCallId'),
+                    response: any(named: 'response'),
+                  ),
+                ).thenReturn(null);
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    ChatCompletionMessageToolCall(
+                      id: 'call-forced',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: EventAgentToolNames.updateReport,
+                        arguments: jsonEncode({
+                          'oneLiner': 'one',
+                          'tldr': 'two',
+                          'content': 'three',
+                        }),
+                      ),
+                    ),
+                  ],
+                  manager: manager,
+                );
+                return const InferenceUsage(inputTokens: 10, outputTokens: 5);
+              }
+              return const InferenceUsage(inputTokens: 100, outputTokens: 50);
+            };
+
+        final result = await buildLoggedWorkflow().execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {eventId},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        final usage = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<WakeTokenUsageEntity>().toList();
+        expect(usage, hasLength(1));
+        // 100+10 in, 50+5 out — proves the merge ran.
+        expect(usage.single.inputTokens, 110);
+        expect(usage.single.outputTokens, 55);
+      },
+    );
+
+    test(
+      'swallows a failed token-usage persist and still lands the recap',
+      () async {
+        stubProviderResolution();
+        stubReportPublishingRun(
+          usage: const InferenceUsage(inputTokens: 100, outputTokens: 50),
+        );
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((inv) async {
+          if (inv.positionalArguments.first is WakeTokenUsageEntity) {
+            throw Exception('usage persist boom');
+          }
+        });
+
+        final result = await buildLoggedWorkflow().execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {eventId},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+      },
+    );
+
+    test(
+      'logs and fails the wake when the failure-count write also throws',
+      () async {
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async => throw Exception('inference exploded');
+        // The error-path failure-count write then also throws → inner catch logs.
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((inv) async {
+          if (inv.positionalArguments.first is AgentStateEntity) {
+            throw Exception('state persist boom');
+          }
+        });
+
+        final result = await buildLoggedWorkflow().execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {eventId},
+          threadId: threadId,
+        );
+
+        expect(result.success, isFalse);
+      },
+    );
+
+    test('fails the wake when the forced report retry itself throws', () async {
+      stubProviderResolution();
+      // Allow the forced retry to actually invoke the delegate a second time.
+      mockConversationRepository.maxDelegateCalls = 2;
+      // First pass publishes nothing; the forced retry (toolChoice set) throws.
+      // ignore: cascade_invocations
+      mockConversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            if (toolChoice != null) {
+              throw Exception('forced retry boom');
+            }
+            return null;
+          };
+
+      final result = await buildLoggedWorkflow().execute(
+        agentIdentity: testAgentIdentity,
+        runKey: runKey,
+        triggerTokens: {eventId},
+        threadId: threadId,
+      );
+
+      // No recap produced → failed wake (and the retry failure was logged).
+      expect(result.success, isFalse);
+    });
+
+    test(
+      'resolves the active soul for the template when a soul service is set',
+      () async {
+        stubProviderResolution();
+        stubReportPublishingRun();
+        final soul = MockSoulDocumentService();
+        when(
+          () => soul.resolveActiveSoulForTemplate(any()),
+        ).thenAnswer((_) async => null);
+
+        final result = await buildLoggedWorkflow(soul: soul).execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {eventId},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        verify(
+          () => soul.resolveActiveSoulForTemplate(testTemplate.id),
+        ).called(1);
+      },
+    );
+
+    test('buildHumanSummary labels follow-up proposals and falls back', () {
+      expect(
+        EventAgentWorkflow.buildHumanSummary(
+          EventAgentToolNames.suggestFollowUpTask,
+          {'title': '  Share the album  '},
+        ),
+        'Follow-up task: Share the album',
+      );
+      expect(
+        EventAgentWorkflow.buildHumanSummary(
+          EventAgentToolNames.suggestFollowUpTask,
+          {'title': '   '},
+        ),
+        'Suggest a follow-up task',
+      );
+      // Defensive fallback for any other (future) deferred tool name.
+      expect(
+        EventAgentWorkflow.buildHumanSummary('some_other_tool', const {}),
+        'Deferred: some_other_tool',
+      );
     });
   });
 }
