@@ -8568,6 +8568,12 @@ abstract class AppLocalizations {
   /// **'Photos'**
   String get eventsPhotosSection;
 
+  /// No description provided for @eventsRecapAwaitingContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo or note and the recap will appear here.'**
+  String get eventsRecapAwaitingContent;
+
   /// No description provided for @eventsRegenerateSummary.
   ///
   /// In en, this message translates to:

@@ -5012,6 +5012,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventsPhotosSection => 'Photos';
 
   @override
+  String get eventsRecapAwaitingContent =>
+      'Ajoute une photo ou une note et le récap apparaîtra ici.';
+
+  @override
   String get eventsRegenerateSummary => 'Régénérer le résumé';
 
   @override

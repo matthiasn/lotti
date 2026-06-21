@@ -4971,6 +4971,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsPhotosSection => 'Fotos';
 
   @override
+  String get eventsRecapAwaitingContent =>
+      'Füge ein Foto oder eine Notiz hinzu, dann erscheint hier die Zusammenfassung.';
+
+  @override
   String get eventsRegenerateSummary => 'Zusammenfassung neu erstellen';
 
   @override

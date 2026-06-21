@@ -5001,6 +5001,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsPhotosSection => 'Fotos';
 
   @override
+  String get eventsRecapAwaitingContent =>
+      'Añade una foto o una nota y aquí aparecerá el resumen.';
+
+  @override
   String get eventsRegenerateSummary => 'Regenerar resumen';
 
   @override

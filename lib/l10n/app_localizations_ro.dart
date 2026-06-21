@@ -5012,6 +5012,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsPhotosSection => 'Fotografii';
 
   @override
+  String get eventsRecapAwaitingContent =>
+      'Adăugați o fotografie sau o notă, iar rezumatul va apărea aici.';
+
+  @override
   String get eventsRegenerateSummary => 'Regenerează rezumatul';
 
   @override

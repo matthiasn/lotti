@@ -42,6 +42,7 @@ class EventDetailView extends StatelessWidget {
     this.onAddTask,
     this.onOpenTimelineEntry,
     this.onOpenTask,
+    this.aiSummaryCard,
     super.key,
   });
 
@@ -80,6 +81,11 @@ class EventDetailView extends StatelessWidget {
   /// Opens a linked task's detail page (receives the task id). When null (or a
   /// row has no id) the task rows render as static.
   final ValueChanged<String>? onOpenTask;
+
+  /// Provider-backed AI summary card injected by the page (the event agent's
+  /// living recap). When provided it replaces the passive [EventDetailData.summary]
+  /// card; when null the view falls back to the passive summary.
+  final Widget? aiSummaryCard;
 
   /// Content cap so the body doesn't sprawl on very wide screens.
   static const double _contentMaxWidth = 1080;
@@ -175,8 +181,11 @@ class EventDetailView extends StatelessWidget {
   List<Widget> _mainColumn(BuildContext context) {
     return [
       // The date/time lives in the hero now (single source); the body opens
-      // straight into the summary + sections.
-      if (data.summary != null)
+      // straight into the summary + sections. The page injects the agent-backed
+      // recap card when events are enabled; otherwise the passive summary shows.
+      if (aiSummaryCard != null)
+        aiSummaryCard!
+      else if (data.summary != null)
         _SummaryCard(summary: data.summary!, onRegenerate: onRegenerateSummary),
       // A flat, scannable photo wall (distinct from the narrative timeline).
       if (data.photos.isNotEmpty) ...[

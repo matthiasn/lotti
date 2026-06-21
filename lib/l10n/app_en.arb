@@ -2536,6 +2536,7 @@
   "eventsNewEvent": "New event",
   "eventsPageTitle": "Events",
   "eventsPhotosSection": "Photos",
+  "eventsRecapAwaitingContent": "Add a photo or note and the recap will appear here.",
   "eventsRegenerateSummary": "Regenerate summary",
   "eventsSearchHint": "Search events",
   "eventsSectionUpcoming": "Upcoming",

@@ -4912,6 +4912,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventsPhotosSection => 'Photos';
 
   @override
+  String get eventsRecapAwaitingContent =>
+      'Add a photo or note and the recap will appear here.';
+
+  @override
   String get eventsRegenerateSummary => 'Regenerate summary';
 
   @override

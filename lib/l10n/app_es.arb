@@ -2241,6 +2241,7 @@
   "eventsNewEvent": "Nuevo evento",
   "eventsPageTitle": "Eventos",
   "eventsPhotosSection": "Fotos",
+  "eventsRecapAwaitingContent": "Añade una foto o una nota y aquí aparecerá el resumen.",
   "eventsRegenerateSummary": "Regenerar resumen",
   "eventsSearchHint": "Buscar eventos",
   "eventsSectionUpcoming": "Próximos",

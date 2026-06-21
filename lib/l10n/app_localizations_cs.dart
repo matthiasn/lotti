@@ -4978,6 +4978,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsPhotosSection => 'Fotky';
 
   @override
+  String get eventsRecapAwaitingContent =>
+      'Přidej fotku nebo poznámku a tady se objeví shrnutí.';
+
+  @override
   String get eventsRegenerateSummary => 'Znovu vytvořit shrnutí';
 
   @override
