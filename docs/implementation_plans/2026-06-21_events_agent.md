@@ -48,13 +48,15 @@ proposal-row work.
 **Later PRs (one action per PR), opt-in and auditable:**
 
 - **Suggest follow-up tasks** — genuinely event-shaped forward action; reuses the
-  existing follow-up handler. Highest-value of the three.
+  existing follow-up handler. Highest-value action.
 - **Suggest status** — only as a *suggestion* tied to objective time signals
   ("end date passed — mark completed/missed?"); never auto-flip.
-- **Cover / rating — cut or demote.** Rating is the human's verdict on their own
-  memory; the agent must never author `EventData.stars`. Cover is sentiment, not
-  optimisation; at most a one-tap "use as cover?" hint while viewing a photo,
-  never a background change-set. (These were the panel's strongest "against".)
+
+**Rating and cover are human-only — the agent never touches them.**
+`EventData.stars` is the human's verdict on their own memory and `coverArtId` is
+a personal aesthetic choice; both are **excluded from the agent entirely** (not
+deferred). This removes the `set_event_rating` / `set_event_cover` tools, the
+missing event cover-setter, and the rating-authoring concern from the whole plan.
 
 Each write-action, when added, must (a) break the **accept → re-wake loop** by
 scoping the agent's subscription to *user-authored* content only (not agent-
@@ -171,11 +173,10 @@ same; sequence to de-risk the shared platform first.
 - **PR5 — UI card (narrate-only)** — `EventAiSummaryCard` showing the report,
   replacing the passive `_SummaryCard`; the "Update recap" button reuses
   `onRegenerateSummary`.
-- **PR6+ — write-actions, one per PR** — follow-up tasks first; status as a
-  time-tied suggestion; cover/rating cut or demoted. Each adds its tool +
-  `eventSuggestionListProvider` + change-set rendering + (for cover) an
-  event-reachable cover setter (today `entry_controller.dart:610` is Task-gated)
-  + the accept→re-wake-loop break.
+- **PR6+ — write-actions, one per PR** — follow-up tasks first, then status as a
+  time-tied suggestion. (Rating and cover are human-only — excluded.) Each adds
+  its tool + `eventSuggestionListProvider` + change-set rendering + the
+  accept→re-wake-loop break.
 
 ## Cross-cutting: observability, tests, docs
 
@@ -226,6 +227,6 @@ the first draft. Net changes folded in above:
   **silent string-switch** sites `analyze` won't catch.
 - **Pre-mortem** → **directives are the unspecified product**; the content gate is
   a **shared-singleton risk** (own PR + test); **`activeEventId` is sync-unsafe**;
-  **`set_event_cover` has no write path**; no observability / no
-  `wake_batch_router_test` / docs unscoped; **this is many PRs, not one** (the
-  project agent took 8+).
+  no observability / no `wake_batch_router_test` / docs unscoped; **this is many
+  PRs, not one** (the project agent took 8+). *(The flagged "`set_event_cover` has
+  no write path" is moot — cover is human-only.)*
