@@ -1244,14 +1244,21 @@ summary is stale again.
 Templates are first-class persisted entities with a template row, version rows,
 and a head pointer.
 
-`AgentTemplateService.seedDefaults()` currently seeds six named templates:
+`AgentTemplateService.seedDefaults()` seeds seven named templates:
 
-- `Laura`
-- `Tom`
+- `Laura` (kind `taskAgent`)
+- `Tom` (kind `taskAgent`)
+- `Project Analyst` (kind `projectAgent`)
+- `Scribe` (kind `eventAgent`)
 - `Shepherd` (the Daily OS day-agent template, kind `dayAgent`)
-- `Project Analyst`
 - `Template Improver`
 - `Meta Improver`
+
+`Scribe` is the seeded default **event-agent** template: a category opts in to
+event recaps by pointing `Category.defaultEventTemplateId` at it (or at any other
+`eventAgent`-kind template created through the agent-creation modal). Without a
+seeded event template the category event-template picker would have nothing to
+offer, so this default is what makes the opt-in usable out of the box.
 
 The one-on-one UI is split into two surfaces:
 

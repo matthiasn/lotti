@@ -7,6 +7,7 @@ abstract final class AgentKinds {
   static const templateImprover = 'template_improver';
   static const projectAgent = 'project_agent';
   static const dayAgent = 'day_agent';
+  static const eventAgent = 'event_agent';
 }
 
 /// `linkType` discriminators on `AgentLink` rows.
@@ -32,6 +33,7 @@ abstract final class AgentLinkTypes {
   static const improverTarget = 'improver_target';
   static const agentProject = 'agent_project';
   static const agentDay = 'agent_day';
+  static const agentEvent = 'agent_event';
   static const soulAssignment = 'soul_assignment';
 }
 

@@ -188,6 +188,7 @@ class AgentDbConversions {
       templateAssignment: (l) => l.deletedAt,
       improverTarget: (l) => l.deletedAt,
       agentProject: (l) => l.deletedAt,
+      agentEvent: (l) => l.deletedAt,
       agentDay: (l) => l.deletedAt,
       soulAssignment: (l) => l.deletedAt,
     );
@@ -379,6 +380,7 @@ class AgentDbConversions {
       templateAssignment: (_) => AgentLinkTypes.templateAssignment,
       improverTarget: (_) => AgentLinkTypes.improverTarget,
       agentProject: (_) => AgentLinkTypes.agentProject,
+      agentEvent: (_) => AgentLinkTypes.agentEvent,
       agentDay: (_) => AgentLinkTypes.agentDay,
       soulAssignment: (_) => AgentLinkTypes.soulAssignment,
     );

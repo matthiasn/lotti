@@ -972,6 +972,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTemplateKindDayAgent => 'Day Agent';
 
   @override
+  String get agentTemplateKindEventAgent => 'Event Agent';
+
+  @override
   String get agentTemplateKindImprover => 'Template Improver';
 
   @override

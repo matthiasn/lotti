@@ -437,6 +437,7 @@
   "agentTemplateGeneralDirectiveLabel": "Directive générale",
   "agentTemplateInstanceBreakdownHeading": "Détail par instance",
   "agentTemplateKindDayAgent": "Agent de journée",
+  "agentTemplateKindEventAgent": "Agent d'événement",
   "agentTemplateKindImprover": "Améliorateur de modèle",
   "agentTemplateKindProjectAgent": "Agent de projet",
   "agentTemplateKindTaskAgent": "Agent de tâches",

@@ -1765,6 +1765,12 @@ abstract class AppLocalizations {
   /// **'Day Agent'**
   String get agentTemplateKindDayAgent;
 
+  /// No description provided for @agentTemplateKindEventAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event Agent'**
+  String get agentTemplateKindEventAgent;
+
   /// Display name for the template-improver agent kind.
   ///
   /// In en, this message translates to:

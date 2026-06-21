@@ -313,7 +313,8 @@ mixin _$AgentSlots {
 /// The journal-domain task ID this agent is working on.
  String? get activeTaskId;/// The day-plan ID this agent is working on.
  String? get activeDayId;/// The project ID this agent is working on.
- String? get activeProjectId;/// The template ID this improver agent manages.
+ String? get activeProjectId;/// The event ID this agent is working on.
+ String? get activeEventId;/// The template ID this improver agent manages.
  String? get activeTemplateId;/// When the last one-on-one ritual completed.
  DateTime? get lastOneOnOneAt;/// Incremental feedback scan watermark.
  DateTime? get lastFeedbackScanAt;/// Configurable ritual frequency in days (default 7).
@@ -339,16 +340,16 @@ $AgentSlotsCopyWith<AgentSlots> get copyWith => _$AgentSlotsCopyWithImpl<AgentSl
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentSlots&&(identical(other.activeTaskId, activeTaskId) || other.activeTaskId == activeTaskId)&&(identical(other.activeDayId, activeDayId) || other.activeDayId == activeDayId)&&(identical(other.activeProjectId, activeProjectId) || other.activeProjectId == activeProjectId)&&(identical(other.activeTemplateId, activeTemplateId) || other.activeTemplateId == activeTemplateId)&&(identical(other.lastOneOnOneAt, lastOneOnOneAt) || other.lastOneOnOneAt == lastOneOnOneAt)&&(identical(other.lastFeedbackScanAt, lastFeedbackScanAt) || other.lastFeedbackScanAt == lastFeedbackScanAt)&&(identical(other.feedbackWindowDays, feedbackWindowDays) || other.feedbackWindowDays == feedbackWindowDays)&&(identical(other.totalSessionsCompleted, totalSessionsCompleted) || other.totalSessionsCompleted == totalSessionsCompleted)&&(identical(other.recursionDepth, recursionDepth) || other.recursionDepth == recursionDepth)&&(identical(other.lastDailyWakeAt, lastDailyWakeAt) || other.lastDailyWakeAt == lastDailyWakeAt)&&(identical(other.lastWeeklyReviewAt, lastWeeklyReviewAt) || other.lastWeeklyReviewAt == lastWeeklyReviewAt)&&(identical(other.weeklyReviewCount, weeklyReviewCount) || other.weeklyReviewCount == weeklyReviewCount)&&(identical(other.pendingProjectActivityAt, pendingProjectActivityAt) || other.pendingProjectActivityAt == pendingProjectActivityAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentSlots&&(identical(other.activeTaskId, activeTaskId) || other.activeTaskId == activeTaskId)&&(identical(other.activeDayId, activeDayId) || other.activeDayId == activeDayId)&&(identical(other.activeProjectId, activeProjectId) || other.activeProjectId == activeProjectId)&&(identical(other.activeEventId, activeEventId) || other.activeEventId == activeEventId)&&(identical(other.activeTemplateId, activeTemplateId) || other.activeTemplateId == activeTemplateId)&&(identical(other.lastOneOnOneAt, lastOneOnOneAt) || other.lastOneOnOneAt == lastOneOnOneAt)&&(identical(other.lastFeedbackScanAt, lastFeedbackScanAt) || other.lastFeedbackScanAt == lastFeedbackScanAt)&&(identical(other.feedbackWindowDays, feedbackWindowDays) || other.feedbackWindowDays == feedbackWindowDays)&&(identical(other.totalSessionsCompleted, totalSessionsCompleted) || other.totalSessionsCompleted == totalSessionsCompleted)&&(identical(other.recursionDepth, recursionDepth) || other.recursionDepth == recursionDepth)&&(identical(other.lastDailyWakeAt, lastDailyWakeAt) || other.lastDailyWakeAt == lastDailyWakeAt)&&(identical(other.lastWeeklyReviewAt, lastWeeklyReviewAt) || other.lastWeeklyReviewAt == lastWeeklyReviewAt)&&(identical(other.weeklyReviewCount, weeklyReviewCount) || other.weeklyReviewCount == weeklyReviewCount)&&(identical(other.pendingProjectActivityAt, pendingProjectActivityAt) || other.pendingProjectActivityAt == pendingProjectActivityAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,activeTaskId,activeDayId,activeProjectId,activeTemplateId,lastOneOnOneAt,lastFeedbackScanAt,feedbackWindowDays,totalSessionsCompleted,recursionDepth,lastDailyWakeAt,lastWeeklyReviewAt,weeklyReviewCount,pendingProjectActivityAt);
+int get hashCode => Object.hash(runtimeType,activeTaskId,activeDayId,activeProjectId,activeEventId,activeTemplateId,lastOneOnOneAt,lastFeedbackScanAt,feedbackWindowDays,totalSessionsCompleted,recursionDepth,lastDailyWakeAt,lastWeeklyReviewAt,weeklyReviewCount,pendingProjectActivityAt);
 
 @override
 String toString() {
-  return 'AgentSlots(activeTaskId: $activeTaskId, activeDayId: $activeDayId, activeProjectId: $activeProjectId, activeTemplateId: $activeTemplateId, lastOneOnOneAt: $lastOneOnOneAt, lastFeedbackScanAt: $lastFeedbackScanAt, feedbackWindowDays: $feedbackWindowDays, totalSessionsCompleted: $totalSessionsCompleted, recursionDepth: $recursionDepth, lastDailyWakeAt: $lastDailyWakeAt, lastWeeklyReviewAt: $lastWeeklyReviewAt, weeklyReviewCount: $weeklyReviewCount, pendingProjectActivityAt: $pendingProjectActivityAt)';
+  return 'AgentSlots(activeTaskId: $activeTaskId, activeDayId: $activeDayId, activeProjectId: $activeProjectId, activeEventId: $activeEventId, activeTemplateId: $activeTemplateId, lastOneOnOneAt: $lastOneOnOneAt, lastFeedbackScanAt: $lastFeedbackScanAt, feedbackWindowDays: $feedbackWindowDays, totalSessionsCompleted: $totalSessionsCompleted, recursionDepth: $recursionDepth, lastDailyWakeAt: $lastDailyWakeAt, lastWeeklyReviewAt: $lastWeeklyReviewAt, weeklyReviewCount: $weeklyReviewCount, pendingProjectActivityAt: $pendingProjectActivityAt)';
 }
 
 
@@ -359,7 +360,7 @@ abstract mixin class $AgentSlotsCopyWith<$Res>  {
   factory $AgentSlotsCopyWith(AgentSlots value, $Res Function(AgentSlots) _then) = _$AgentSlotsCopyWithImpl;
 @useResult
 $Res call({
- String? activeTaskId, String? activeDayId, String? activeProjectId, String? activeTemplateId, DateTime? lastOneOnOneAt, DateTime? lastFeedbackScanAt, int? feedbackWindowDays,@JsonKey(name: 'totalSessionsCompletedByHost') GCounter totalSessionsCompleted, int? recursionDepth, DateTime? lastDailyWakeAt, DateTime? lastWeeklyReviewAt,@JsonKey(name: 'weeklyReviewCountByHost') GCounter weeklyReviewCount, DateTime? pendingProjectActivityAt
+ String? activeTaskId, String? activeDayId, String? activeProjectId, String? activeEventId, String? activeTemplateId, DateTime? lastOneOnOneAt, DateTime? lastFeedbackScanAt, int? feedbackWindowDays,@JsonKey(name: 'totalSessionsCompletedByHost') GCounter totalSessionsCompleted, int? recursionDepth, DateTime? lastDailyWakeAt, DateTime? lastWeeklyReviewAt,@JsonKey(name: 'weeklyReviewCountByHost') GCounter weeklyReviewCount, DateTime? pendingProjectActivityAt
 });
 
 
@@ -376,11 +377,12 @@ class _$AgentSlotsCopyWithImpl<$Res>
 
 /// Create a copy of AgentSlots
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? activeTaskId = freezed,Object? activeDayId = freezed,Object? activeProjectId = freezed,Object? activeTemplateId = freezed,Object? lastOneOnOneAt = freezed,Object? lastFeedbackScanAt = freezed,Object? feedbackWindowDays = freezed,Object? totalSessionsCompleted = null,Object? recursionDepth = freezed,Object? lastDailyWakeAt = freezed,Object? lastWeeklyReviewAt = freezed,Object? weeklyReviewCount = null,Object? pendingProjectActivityAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? activeTaskId = freezed,Object? activeDayId = freezed,Object? activeProjectId = freezed,Object? activeEventId = freezed,Object? activeTemplateId = freezed,Object? lastOneOnOneAt = freezed,Object? lastFeedbackScanAt = freezed,Object? feedbackWindowDays = freezed,Object? totalSessionsCompleted = null,Object? recursionDepth = freezed,Object? lastDailyWakeAt = freezed,Object? lastWeeklyReviewAt = freezed,Object? weeklyReviewCount = null,Object? pendingProjectActivityAt = freezed,}) {
   return _then(_self.copyWith(
 activeTaskId: freezed == activeTaskId ? _self.activeTaskId : activeTaskId // ignore: cast_nullable_to_non_nullable
 as String?,activeDayId: freezed == activeDayId ? _self.activeDayId : activeDayId // ignore: cast_nullable_to_non_nullable
 as String?,activeProjectId: freezed == activeProjectId ? _self.activeProjectId : activeProjectId // ignore: cast_nullable_to_non_nullable
+as String?,activeEventId: freezed == activeEventId ? _self.activeEventId : activeEventId // ignore: cast_nullable_to_non_nullable
 as String?,activeTemplateId: freezed == activeTemplateId ? _self.activeTemplateId : activeTemplateId // ignore: cast_nullable_to_non_nullable
 as String?,lastOneOnOneAt: freezed == lastOneOnOneAt ? _self.lastOneOnOneAt : lastOneOnOneAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastFeedbackScanAt: freezed == lastFeedbackScanAt ? _self.lastFeedbackScanAt : lastFeedbackScanAt // ignore: cast_nullable_to_non_nullable
@@ -476,10 +478,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? activeTaskId,  String? activeDayId,  String? activeProjectId,  String? activeTemplateId,  DateTime? lastOneOnOneAt,  DateTime? lastFeedbackScanAt,  int? feedbackWindowDays, @JsonKey(name: 'totalSessionsCompletedByHost')  GCounter totalSessionsCompleted,  int? recursionDepth,  DateTime? lastDailyWakeAt,  DateTime? lastWeeklyReviewAt, @JsonKey(name: 'weeklyReviewCountByHost')  GCounter weeklyReviewCount,  DateTime? pendingProjectActivityAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? activeTaskId,  String? activeDayId,  String? activeProjectId,  String? activeEventId,  String? activeTemplateId,  DateTime? lastOneOnOneAt,  DateTime? lastFeedbackScanAt,  int? feedbackWindowDays, @JsonKey(name: 'totalSessionsCompletedByHost')  GCounter totalSessionsCompleted,  int? recursionDepth,  DateTime? lastDailyWakeAt,  DateTime? lastWeeklyReviewAt, @JsonKey(name: 'weeklyReviewCountByHost')  GCounter weeklyReviewCount,  DateTime? pendingProjectActivityAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentSlots() when $default != null:
-return $default(_that.activeTaskId,_that.activeDayId,_that.activeProjectId,_that.activeTemplateId,_that.lastOneOnOneAt,_that.lastFeedbackScanAt,_that.feedbackWindowDays,_that.totalSessionsCompleted,_that.recursionDepth,_that.lastDailyWakeAt,_that.lastWeeklyReviewAt,_that.weeklyReviewCount,_that.pendingProjectActivityAt);case _:
+return $default(_that.activeTaskId,_that.activeDayId,_that.activeProjectId,_that.activeEventId,_that.activeTemplateId,_that.lastOneOnOneAt,_that.lastFeedbackScanAt,_that.feedbackWindowDays,_that.totalSessionsCompleted,_that.recursionDepth,_that.lastDailyWakeAt,_that.lastWeeklyReviewAt,_that.weeklyReviewCount,_that.pendingProjectActivityAt);case _:
   return orElse();
 
 }
@@ -497,10 +499,10 @@ return $default(_that.activeTaskId,_that.activeDayId,_that.activeProjectId,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? activeTaskId,  String? activeDayId,  String? activeProjectId,  String? activeTemplateId,  DateTime? lastOneOnOneAt,  DateTime? lastFeedbackScanAt,  int? feedbackWindowDays, @JsonKey(name: 'totalSessionsCompletedByHost')  GCounter totalSessionsCompleted,  int? recursionDepth,  DateTime? lastDailyWakeAt,  DateTime? lastWeeklyReviewAt, @JsonKey(name: 'weeklyReviewCountByHost')  GCounter weeklyReviewCount,  DateTime? pendingProjectActivityAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? activeTaskId,  String? activeDayId,  String? activeProjectId,  String? activeEventId,  String? activeTemplateId,  DateTime? lastOneOnOneAt,  DateTime? lastFeedbackScanAt,  int? feedbackWindowDays, @JsonKey(name: 'totalSessionsCompletedByHost')  GCounter totalSessionsCompleted,  int? recursionDepth,  DateTime? lastDailyWakeAt,  DateTime? lastWeeklyReviewAt, @JsonKey(name: 'weeklyReviewCountByHost')  GCounter weeklyReviewCount,  DateTime? pendingProjectActivityAt)  $default,) {final _that = this;
 switch (_that) {
 case _AgentSlots():
-return $default(_that.activeTaskId,_that.activeDayId,_that.activeProjectId,_that.activeTemplateId,_that.lastOneOnOneAt,_that.lastFeedbackScanAt,_that.feedbackWindowDays,_that.totalSessionsCompleted,_that.recursionDepth,_that.lastDailyWakeAt,_that.lastWeeklyReviewAt,_that.weeklyReviewCount,_that.pendingProjectActivityAt);case _:
+return $default(_that.activeTaskId,_that.activeDayId,_that.activeProjectId,_that.activeEventId,_that.activeTemplateId,_that.lastOneOnOneAt,_that.lastFeedbackScanAt,_that.feedbackWindowDays,_that.totalSessionsCompleted,_that.recursionDepth,_that.lastDailyWakeAt,_that.lastWeeklyReviewAt,_that.weeklyReviewCount,_that.pendingProjectActivityAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -517,10 +519,10 @@ return $default(_that.activeTaskId,_that.activeDayId,_that.activeProjectId,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? activeTaskId,  String? activeDayId,  String? activeProjectId,  String? activeTemplateId,  DateTime? lastOneOnOneAt,  DateTime? lastFeedbackScanAt,  int? feedbackWindowDays, @JsonKey(name: 'totalSessionsCompletedByHost')  GCounter totalSessionsCompleted,  int? recursionDepth,  DateTime? lastDailyWakeAt,  DateTime? lastWeeklyReviewAt, @JsonKey(name: 'weeklyReviewCountByHost')  GCounter weeklyReviewCount,  DateTime? pendingProjectActivityAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? activeTaskId,  String? activeDayId,  String? activeProjectId,  String? activeEventId,  String? activeTemplateId,  DateTime? lastOneOnOneAt,  DateTime? lastFeedbackScanAt,  int? feedbackWindowDays, @JsonKey(name: 'totalSessionsCompletedByHost')  GCounter totalSessionsCompleted,  int? recursionDepth,  DateTime? lastDailyWakeAt,  DateTime? lastWeeklyReviewAt, @JsonKey(name: 'weeklyReviewCountByHost')  GCounter weeklyReviewCount,  DateTime? pendingProjectActivityAt)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentSlots() when $default != null:
-return $default(_that.activeTaskId,_that.activeDayId,_that.activeProjectId,_that.activeTemplateId,_that.lastOneOnOneAt,_that.lastFeedbackScanAt,_that.feedbackWindowDays,_that.totalSessionsCompleted,_that.recursionDepth,_that.lastDailyWakeAt,_that.lastWeeklyReviewAt,_that.weeklyReviewCount,_that.pendingProjectActivityAt);case _:
+return $default(_that.activeTaskId,_that.activeDayId,_that.activeProjectId,_that.activeEventId,_that.activeTemplateId,_that.lastOneOnOneAt,_that.lastFeedbackScanAt,_that.feedbackWindowDays,_that.totalSessionsCompleted,_that.recursionDepth,_that.lastDailyWakeAt,_that.lastWeeklyReviewAt,_that.weeklyReviewCount,_that.pendingProjectActivityAt);case _:
   return null;
 
 }
@@ -532,7 +534,7 @@ return $default(_that.activeTaskId,_that.activeDayId,_that.activeProjectId,_that
 @JsonSerializable()
 
 class _AgentSlots implements AgentSlots {
-  const _AgentSlots({this.activeTaskId, this.activeDayId, this.activeProjectId, this.activeTemplateId, this.lastOneOnOneAt, this.lastFeedbackScanAt, this.feedbackWindowDays, @JsonKey(name: 'totalSessionsCompletedByHost') this.totalSessionsCompleted = const GCounter.empty(), this.recursionDepth, this.lastDailyWakeAt, this.lastWeeklyReviewAt, @JsonKey(name: 'weeklyReviewCountByHost') this.weeklyReviewCount = const GCounter.empty(), this.pendingProjectActivityAt});
+  const _AgentSlots({this.activeTaskId, this.activeDayId, this.activeProjectId, this.activeEventId, this.activeTemplateId, this.lastOneOnOneAt, this.lastFeedbackScanAt, this.feedbackWindowDays, @JsonKey(name: 'totalSessionsCompletedByHost') this.totalSessionsCompleted = const GCounter.empty(), this.recursionDepth, this.lastDailyWakeAt, this.lastWeeklyReviewAt, @JsonKey(name: 'weeklyReviewCountByHost') this.weeklyReviewCount = const GCounter.empty(), this.pendingProjectActivityAt});
   factory _AgentSlots.fromJson(Map<String, dynamic> json) => _$AgentSlotsFromJson(json);
 
 /// The journal-domain task ID this agent is working on.
@@ -541,6 +543,8 @@ class _AgentSlots implements AgentSlots {
 @override final  String? activeDayId;
 /// The project ID this agent is working on.
 @override final  String? activeProjectId;
+/// The event ID this agent is working on.
+@override final  String? activeEventId;
 /// The template ID this improver agent manages.
 @override final  String? activeTemplateId;
 /// When the last one-on-one ritual completed.
@@ -578,16 +582,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentSlots&&(identical(other.activeTaskId, activeTaskId) || other.activeTaskId == activeTaskId)&&(identical(other.activeDayId, activeDayId) || other.activeDayId == activeDayId)&&(identical(other.activeProjectId, activeProjectId) || other.activeProjectId == activeProjectId)&&(identical(other.activeTemplateId, activeTemplateId) || other.activeTemplateId == activeTemplateId)&&(identical(other.lastOneOnOneAt, lastOneOnOneAt) || other.lastOneOnOneAt == lastOneOnOneAt)&&(identical(other.lastFeedbackScanAt, lastFeedbackScanAt) || other.lastFeedbackScanAt == lastFeedbackScanAt)&&(identical(other.feedbackWindowDays, feedbackWindowDays) || other.feedbackWindowDays == feedbackWindowDays)&&(identical(other.totalSessionsCompleted, totalSessionsCompleted) || other.totalSessionsCompleted == totalSessionsCompleted)&&(identical(other.recursionDepth, recursionDepth) || other.recursionDepth == recursionDepth)&&(identical(other.lastDailyWakeAt, lastDailyWakeAt) || other.lastDailyWakeAt == lastDailyWakeAt)&&(identical(other.lastWeeklyReviewAt, lastWeeklyReviewAt) || other.lastWeeklyReviewAt == lastWeeklyReviewAt)&&(identical(other.weeklyReviewCount, weeklyReviewCount) || other.weeklyReviewCount == weeklyReviewCount)&&(identical(other.pendingProjectActivityAt, pendingProjectActivityAt) || other.pendingProjectActivityAt == pendingProjectActivityAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentSlots&&(identical(other.activeTaskId, activeTaskId) || other.activeTaskId == activeTaskId)&&(identical(other.activeDayId, activeDayId) || other.activeDayId == activeDayId)&&(identical(other.activeProjectId, activeProjectId) || other.activeProjectId == activeProjectId)&&(identical(other.activeEventId, activeEventId) || other.activeEventId == activeEventId)&&(identical(other.activeTemplateId, activeTemplateId) || other.activeTemplateId == activeTemplateId)&&(identical(other.lastOneOnOneAt, lastOneOnOneAt) || other.lastOneOnOneAt == lastOneOnOneAt)&&(identical(other.lastFeedbackScanAt, lastFeedbackScanAt) || other.lastFeedbackScanAt == lastFeedbackScanAt)&&(identical(other.feedbackWindowDays, feedbackWindowDays) || other.feedbackWindowDays == feedbackWindowDays)&&(identical(other.totalSessionsCompleted, totalSessionsCompleted) || other.totalSessionsCompleted == totalSessionsCompleted)&&(identical(other.recursionDepth, recursionDepth) || other.recursionDepth == recursionDepth)&&(identical(other.lastDailyWakeAt, lastDailyWakeAt) || other.lastDailyWakeAt == lastDailyWakeAt)&&(identical(other.lastWeeklyReviewAt, lastWeeklyReviewAt) || other.lastWeeklyReviewAt == lastWeeklyReviewAt)&&(identical(other.weeklyReviewCount, weeklyReviewCount) || other.weeklyReviewCount == weeklyReviewCount)&&(identical(other.pendingProjectActivityAt, pendingProjectActivityAt) || other.pendingProjectActivityAt == pendingProjectActivityAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,activeTaskId,activeDayId,activeProjectId,activeTemplateId,lastOneOnOneAt,lastFeedbackScanAt,feedbackWindowDays,totalSessionsCompleted,recursionDepth,lastDailyWakeAt,lastWeeklyReviewAt,weeklyReviewCount,pendingProjectActivityAt);
+int get hashCode => Object.hash(runtimeType,activeTaskId,activeDayId,activeProjectId,activeEventId,activeTemplateId,lastOneOnOneAt,lastFeedbackScanAt,feedbackWindowDays,totalSessionsCompleted,recursionDepth,lastDailyWakeAt,lastWeeklyReviewAt,weeklyReviewCount,pendingProjectActivityAt);
 
 @override
 String toString() {
-  return 'AgentSlots(activeTaskId: $activeTaskId, activeDayId: $activeDayId, activeProjectId: $activeProjectId, activeTemplateId: $activeTemplateId, lastOneOnOneAt: $lastOneOnOneAt, lastFeedbackScanAt: $lastFeedbackScanAt, feedbackWindowDays: $feedbackWindowDays, totalSessionsCompleted: $totalSessionsCompleted, recursionDepth: $recursionDepth, lastDailyWakeAt: $lastDailyWakeAt, lastWeeklyReviewAt: $lastWeeklyReviewAt, weeklyReviewCount: $weeklyReviewCount, pendingProjectActivityAt: $pendingProjectActivityAt)';
+  return 'AgentSlots(activeTaskId: $activeTaskId, activeDayId: $activeDayId, activeProjectId: $activeProjectId, activeEventId: $activeEventId, activeTemplateId: $activeTemplateId, lastOneOnOneAt: $lastOneOnOneAt, lastFeedbackScanAt: $lastFeedbackScanAt, feedbackWindowDays: $feedbackWindowDays, totalSessionsCompleted: $totalSessionsCompleted, recursionDepth: $recursionDepth, lastDailyWakeAt: $lastDailyWakeAt, lastWeeklyReviewAt: $lastWeeklyReviewAt, weeklyReviewCount: $weeklyReviewCount, pendingProjectActivityAt: $pendingProjectActivityAt)';
 }
 
 
@@ -598,7 +602,7 @@ abstract mixin class _$AgentSlotsCopyWith<$Res> implements $AgentSlotsCopyWith<$
   factory _$AgentSlotsCopyWith(_AgentSlots value, $Res Function(_AgentSlots) _then) = __$AgentSlotsCopyWithImpl;
 @override @useResult
 $Res call({
- String? activeTaskId, String? activeDayId, String? activeProjectId, String? activeTemplateId, DateTime? lastOneOnOneAt, DateTime? lastFeedbackScanAt, int? feedbackWindowDays,@JsonKey(name: 'totalSessionsCompletedByHost') GCounter totalSessionsCompleted, int? recursionDepth, DateTime? lastDailyWakeAt, DateTime? lastWeeklyReviewAt,@JsonKey(name: 'weeklyReviewCountByHost') GCounter weeklyReviewCount, DateTime? pendingProjectActivityAt
+ String? activeTaskId, String? activeDayId, String? activeProjectId, String? activeEventId, String? activeTemplateId, DateTime? lastOneOnOneAt, DateTime? lastFeedbackScanAt, int? feedbackWindowDays,@JsonKey(name: 'totalSessionsCompletedByHost') GCounter totalSessionsCompleted, int? recursionDepth, DateTime? lastDailyWakeAt, DateTime? lastWeeklyReviewAt,@JsonKey(name: 'weeklyReviewCountByHost') GCounter weeklyReviewCount, DateTime? pendingProjectActivityAt
 });
 
 
@@ -615,11 +619,12 @@ class __$AgentSlotsCopyWithImpl<$Res>
 
 /// Create a copy of AgentSlots
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? activeTaskId = freezed,Object? activeDayId = freezed,Object? activeProjectId = freezed,Object? activeTemplateId = freezed,Object? lastOneOnOneAt = freezed,Object? lastFeedbackScanAt = freezed,Object? feedbackWindowDays = freezed,Object? totalSessionsCompleted = null,Object? recursionDepth = freezed,Object? lastDailyWakeAt = freezed,Object? lastWeeklyReviewAt = freezed,Object? weeklyReviewCount = null,Object? pendingProjectActivityAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? activeTaskId = freezed,Object? activeDayId = freezed,Object? activeProjectId = freezed,Object? activeEventId = freezed,Object? activeTemplateId = freezed,Object? lastOneOnOneAt = freezed,Object? lastFeedbackScanAt = freezed,Object? feedbackWindowDays = freezed,Object? totalSessionsCompleted = null,Object? recursionDepth = freezed,Object? lastDailyWakeAt = freezed,Object? lastWeeklyReviewAt = freezed,Object? weeklyReviewCount = null,Object? pendingProjectActivityAt = freezed,}) {
   return _then(_AgentSlots(
 activeTaskId: freezed == activeTaskId ? _self.activeTaskId : activeTaskId // ignore: cast_nullable_to_non_nullable
 as String?,activeDayId: freezed == activeDayId ? _self.activeDayId : activeDayId // ignore: cast_nullable_to_non_nullable
 as String?,activeProjectId: freezed == activeProjectId ? _self.activeProjectId : activeProjectId // ignore: cast_nullable_to_non_nullable
+as String?,activeEventId: freezed == activeEventId ? _self.activeEventId : activeEventId // ignore: cast_nullable_to_non_nullable
 as String?,activeTemplateId: freezed == activeTemplateId ? _self.activeTemplateId : activeTemplateId // ignore: cast_nullable_to_non_nullable
 as String?,lastOneOnOneAt: freezed == lastOneOnOneAt ? _self.lastOneOnOneAt : lastOneOnOneAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastFeedbackScanAt: freezed == lastFeedbackScanAt ? _self.lastFeedbackScanAt : lastFeedbackScanAt // ignore: cast_nullable_to_non_nullable

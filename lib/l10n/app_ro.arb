@@ -437,6 +437,7 @@
   "agentTemplateGeneralDirectiveLabel": "Directivă generală",
   "agentTemplateInstanceBreakdownHeading": "Detaliere pe instanță",
   "agentTemplateKindDayAgent": "Agent de zi",
+  "agentTemplateKindEventAgent": "Agent de eveniment",
   "agentTemplateKindImprover": "Îmbunătățitor de șablon",
   "agentTemplateKindProjectAgent": "Agent de proiect",
   "agentTemplateKindTaskAgent": "Agent de sarcini",

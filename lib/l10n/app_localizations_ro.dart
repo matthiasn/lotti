@@ -990,6 +990,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateKindDayAgent => 'Agent de zi';
 
   @override
+  String get agentTemplateKindEventAgent => 'Agent de eveniment';
+
+  @override
   String get agentTemplateKindImprover => 'Îmbunătățitor de șablon';
 
   @override

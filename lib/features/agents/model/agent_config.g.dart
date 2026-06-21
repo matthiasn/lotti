@@ -27,6 +27,7 @@ _AgentSlots _$AgentSlotsFromJson(Map<String, dynamic> json) => _AgentSlots(
   activeTaskId: json['activeTaskId'] as String?,
   activeDayId: json['activeDayId'] as String?,
   activeProjectId: json['activeProjectId'] as String?,
+  activeEventId: json['activeEventId'] as String?,
   activeTemplateId: json['activeTemplateId'] as String?,
   lastOneOnOneAt: json['lastOneOnOneAt'] == null
       ? null
@@ -62,6 +63,7 @@ Map<String, dynamic> _$AgentSlotsToJson(_AgentSlots instance) =>
       'activeTaskId': instance.activeTaskId,
       'activeDayId': instance.activeDayId,
       'activeProjectId': instance.activeProjectId,
+      'activeEventId': instance.activeEventId,
       'activeTemplateId': instance.activeTemplateId,
       'lastOneOnOneAt': instance.lastOneOnOneAt?.toIso8601String(),
       'lastFeedbackScanAt': instance.lastFeedbackScanAt?.toIso8601String(),

@@ -998,6 +998,7 @@ const _$AgentTemplateKindEnumMap = {
   AgentTemplateKind.dayAgent: 'dayAgent',
   AgentTemplateKind.templateImprover: 'templateImprover',
   AgentTemplateKind.projectAgent: 'projectAgent',
+  AgentTemplateKind.eventAgent: 'eventAgent',
 };
 
 AgentTemplateVersionEntity _$AgentTemplateVersionEntityFromJson(

@@ -437,6 +437,7 @@
   "agentTemplateGeneralDirectiveLabel": "Allgemeine Anweisung",
   "agentTemplateInstanceBreakdownHeading": "Aufschlüsselung nach Instanz",
   "agentTemplateKindDayAgent": "Tages-Agent",
+  "agentTemplateKindEventAgent": "Ereignis-Agent",
   "agentTemplateKindImprover": "Vorlagen-Verbesserer",
   "agentTemplateKindProjectAgent": "Projekt-Agent",
   "agentTemplateKindTaskAgent": "Aufgaben-Agent",

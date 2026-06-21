@@ -437,6 +437,7 @@
   "agentTemplateGeneralDirectiveLabel": "Directiva general",
   "agentTemplateInstanceBreakdownHeading": "Desglose por instancia",
   "agentTemplateKindDayAgent": "Agente diario",
+  "agentTemplateKindEventAgent": "Agente de eventos",
   "agentTemplateKindImprover": "Mejorador de plantilla",
   "agentTemplateKindProjectAgent": "Agente de proyecto",
   "agentTemplateKindTaskAgent": "Agente de tareas",

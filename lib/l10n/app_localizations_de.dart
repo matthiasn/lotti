@@ -989,6 +989,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateKindDayAgent => 'Tages-Agent';
 
   @override
+  String get agentTemplateKindEventAgent => 'Ereignis-Agent';
+
+  @override
   String get agentTemplateKindImprover => 'Vorlagen-Verbesserer';
 
   @override

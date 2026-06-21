@@ -309,6 +309,7 @@
   "agentTemplateGeneralDirectiveLabel": "Obecná direktiva",
   "agentTemplateInstanceBreakdownHeading": "Rozpis podle instancí",
   "agentTemplateKindDayAgent": "Denní agent",
+  "agentTemplateKindEventAgent": "Agent události",
   "agentTemplateKindImprover": "Zlepšovač šablon",
   "agentTemplateKindProjectAgent": "Agent projektu",
   "agentTemplateKindTaskAgent": "Agent úkolů",
