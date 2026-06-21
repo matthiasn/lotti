@@ -340,7 +340,9 @@ class _ToolbarSaveButton extends ConsumerWidget {
       ),
       child: DesignSystemButton(
         label: context.messages.saveLabel,
-        leadingIcon: unsaved ? Icons.save_rounded : null,
+        // Always present (greyed when clean) so the chip keeps a fixed width and
+        // the narrow toolbar never reflows between clean and dirty states.
+        leadingIcon: Icons.save_rounded,
         // null onPressed → the button renders its disabled (quiet) state.
         onPressed: unsaved
             ? () {
