@@ -47,10 +47,18 @@ class _SpyEntryController extends _TestEntryController {
 }
 
 /// Forces the save-button state to "unsaved" so the dirty-state controls (the
-/// teal save + the discard "X") render regardless of the entry's real state.
+/// teal save + the discard "X") render regardless of the entry's real state, and
+/// records whether [save] was invoked.
 class _UnsavedSaveButtonController extends SaveButtonController {
+  bool saveCalled = false;
+
   @override
   Future<bool?> build({required String id}) async => true;
+
+  @override
+  Future<void> save({Duration? estimate}) async {
+    saveCalled = true;
+  }
 }
 
 void main() {
@@ -234,6 +242,68 @@ void main() {
         // Nothing to discard when clean: the discard control is absent (its slot
         // stays reserved, so the formatting controls don't shift).
         expect(find.byIcon(Icons.close_rounded), findsNothing);
+
+        await tester.pump(const Duration(seconds: 1));
+      },
+    );
+
+    testWidgets(
+      'wide layout shows the full set inline and drops the overflow button',
+      (tester) async {
+        // A wide surface puts the toolbar over the full-inline threshold.
+        await tester.binding.setSurfaceSize(const Size(1400, 600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final container = makeKeptAliveContainer();
+        container
+                .read(entryControllerProvider(id: entryId).notifier)
+                .animationCompleted =
+            true;
+        await tester.pumpWidget(buildSubject(container));
+        await tester.pump();
+
+        // Full inline: the divider lives in the toolbar (not behind "…"), and
+        // the "…" overflow button is gone entirely.
+        expect(find.byIcon(Icons.more_horiz), findsNothing);
+        expect(find.byIcon(Icons.horizontal_rule), findsOneWidget);
+
+        // The inline divider inserts the embed (exercises the full config's
+        // custom button).
+        await tester.tap(find.byIcon(Icons.horizontal_rule));
+        await tester.pump();
+        expect(quillController.document.toPlainText().codeUnitAt(0), 0xFFFC);
+
+        await tester.pump(const Duration(seconds: 1));
+      },
+    );
+
+    testWidgets(
+      'save button triggers save when there are unsaved changes',
+      (tester) async {
+        final saveSpy = _UnsavedSaveButtonController();
+        final container = makeKeptAliveContainer(
+          extraOverrides: [
+            saveButtonControllerProvider(id: entryId).overrideWith(
+              () => saveSpy,
+            ),
+          ],
+        );
+        container
+                .read(entryControllerProvider(id: entryId).notifier)
+                .animationCompleted =
+            true;
+        await tester.pumpWidget(buildSubject(container));
+        await tester.pump();
+
+        final saveButton = tester.widget<DesignSystemButton>(
+          find.byType(DesignSystemButton),
+        );
+        expect(saveButton.onPressed, isNotNull);
+        expect(saveSpy.saveCalled, isFalse);
+
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        expect(saveSpy.saveCalled, isTrue);
 
         await tester.pump(const Duration(seconds: 1));
       },
