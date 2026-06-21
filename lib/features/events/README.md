@@ -138,13 +138,27 @@ entry form. `EventDetailView` is presentational and surfaces every mutation as a
 callback; `EventDetailPage` wires them to `EntryController` and the shared
 pickers/create flows.
 
-The title/status/rating writes go through `EntryController`'s direct event-data
-setters (`updateEventTitle` / `updateEventStatus` / `updateRating`, all built on
-the private `_updateEventData` helper: optimistic local state → `updateEvent` →
-haptic). These supersede the legacy `EventForm` + `EntryController.save()`
-FormBuilder path (`lib/widgets/events/event_form.dart`): the new Events surface
-never mounts a `FormBuilder`, so `save()`'s event branch is dead for it and
-should be removed once the old form route is retired (don't "fix" it).
+The title/status/rating/cover writes go through `EntryController`'s direct
+event-data setters (`updateEventTitle` / `updateEventStatus` / `updateRating` /
+`updateEventCover`, all built on the private `_updateEventData` helper: optimistic
+local state → `updateEvent` → haptic). The legacy FormBuilder-based `EventForm`
+has been removed; an event is only ever shown through this surface now. (One dead
+tail remains: `EntryController.save()`'s `JournalEvent` branch, which nothing
+mounts a `FormBuilder` for anymore — safe to drop in a follow-up; don't "fix" it.)
+
+### Routing & linked rendering
+
+There is one way to open an event: the detail page at `/events/<id>`. Every entry
+point routes there — the Events overview, a logbook card tap (`journal_card`), a
+freshly-created event (`create_entry_items`), and a linked event inside a task's
+timeline. A linked event renders as a `LinkedEventCard` (a compact
+`EventSummaryCard` resolved the same way the detail page resolves its cover) via
+`EntryDetailsWidget`, not the generic entry editor.
+
+This is all gated on the `enableEventsFlag`: when **off**, events are hidden
+everywhere — the logbook query drops the `JournalEvent` type
+(`computeAllowedEntryTypes`), `EntryDetailsWidget` renders a linked event as
+nothing, and the tab / create-event / type-filter affordances are absent.
 
 - **Title** — tap to swap in a borderless field; commit on submit/blur →
   `updateEventTitle`.

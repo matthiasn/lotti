@@ -137,16 +137,6 @@ scrolling. Built on `DesignSystemModalActionBar` (the app-wide dominant-primary
 layout): `secondary` Cancel and Now actions keep their intrinsic width on the
 left and the `primary` Done flexes to fill the trailing width.
 
-## Event Widgets
-
-Located in `/lib/widgets/events/`
-
-### EventForm
-Comprehensive form for creating and editing events with all necessary fields.
-
-### EventStatusWidget
-Chip displaying the current status of an event. Renders the `EventStatus` enum value (`tentative`, `planned`, `ongoing`, `completed`, `cancelled`, `postponed`, `rescheduled`, `missed`) as a colored label.
-
 ## Flag Widgets
 
 Located in `/lib/widgets/flags/`

@@ -67,6 +67,8 @@ class ModernJournalCard extends StatelessWidget {
     void onTap() {
       if (item is Task) {
         beamToNamed('/tasks/${item.meta.id}');
+      } else if (item is JournalEvent) {
+        beamToNamed('/events/${item.meta.id}');
       } else {
         beamToNamed('/journal/${item.meta.id}');
       }

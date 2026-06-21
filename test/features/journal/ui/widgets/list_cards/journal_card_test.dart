@@ -906,9 +906,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        // Events open the dedicated event page, not the generic journal route.
         expect(
           mockNavService.navigationHistory,
-          contains('/journal/${testEvent.meta.id}'),
+          contains('/events/${testEvent.meta.id}'),
         );
       });
 

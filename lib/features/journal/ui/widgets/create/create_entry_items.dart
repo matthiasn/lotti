@@ -67,7 +67,7 @@ class CreateEventItem extends ConsumerWidget {
           return;
         }
         if (event != null) {
-          beamToNamed('/journal/${event.meta.id}');
+          beamToNamed('/events/${event.meta.id}');
         }
         Navigator.of(context).pop();
       },
