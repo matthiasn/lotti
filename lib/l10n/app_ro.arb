@@ -2374,6 +2374,7 @@
   "inferenceProfileEditTitle": "Editați profilul",
   "inferenceProfileImageGeneration": "Generare de imagini",
   "inferenceProfileImageRecognition": "Recunoaștere de imagini",
+  "inferenceProfileModelUnavailable": "Model indisponibil — furnizorul său a fost posibil eliminat",
   "inferenceProfileNameLabel": "Numele profilului",
   "inferenceProfileNameRequired": "Este necesar un nume de profil",
   "inferenceProfilePinnedHostHelper": "Când este setat, doar acest dispozitiv rulează automat inferența pentru intrările audio sincronizate care folosesc acest profil.",

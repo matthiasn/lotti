@@ -5399,6 +5399,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inferenceProfileImageRecognition => 'Bilderkennung';
 
   @override
+  String get inferenceProfileModelUnavailable =>
+      'Modell nicht verfügbar – sein Anbieter wurde möglicherweise entfernt';
+
+  @override
   String get inferenceProfileNameLabel => 'Profilname';
 
   @override

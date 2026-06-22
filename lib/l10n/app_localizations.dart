@@ -9282,6 +9282,12 @@ abstract class AppLocalizations {
   /// **'Image Recognition'**
   String get inferenceProfileImageRecognition;
 
+  /// No description provided for @inferenceProfileModelUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Model unavailable — its provider may have been removed'**
+  String get inferenceProfileModelUnavailable;
+
   /// No description provided for @inferenceProfileNameLabel.
   ///
   /// In en, this message translates to:

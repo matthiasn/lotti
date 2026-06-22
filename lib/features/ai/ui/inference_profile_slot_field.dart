@@ -90,11 +90,22 @@ class ModelSlotField extends ConsumerWidget {
                 selectedModel.name,
                 style: context.textTheme.bodyLarge,
               )
+            : modelId != null
+            // The slot holds a model id that no longer resolves to a row —
+            // typically because the model's inference provider was deleted,
+            // which cascade-deletes its models. Show a clear "unavailable"
+            // message instead of the raw composite id, and keep the clear
+            // (×) action so the dangling slot can be reset.
+            ? Text(
+                context.messages.inferenceProfileModelUnavailable,
+                style: context.textTheme.bodyLarge?.copyWith(
+                  color: context.colorScheme.error,
+                ),
+              )
             : Text(
-                modelId ?? context.messages.inferenceProfileSelectModel,
+                context.messages.inferenceProfileSelectModel,
                 style: context.textTheme.bodyLarge?.copyWith(
                   color: context.colorScheme.onSurface.withValues(alpha: 0.5),
-                  fontFamily: modelId != null ? 'monospace' : null,
                 ),
               ),
       ),
