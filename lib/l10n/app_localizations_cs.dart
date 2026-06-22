@@ -5408,6 +5408,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileImageRecognition => 'Image Recognition';
 
   @override
+  String get inferenceProfileModelUnavailable =>
+      'Model není dostupný — jeho poskytovatel byl možná odebrán';
+
+  @override
   String get inferenceProfileNameLabel => 'Profile Name';
 
   @override

@@ -5453,6 +5453,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inferenceProfileImageRecognition => 'Recunoaștere de imagini';
 
   @override
+  String get inferenceProfileModelUnavailable =>
+      'Model indisponibil — furnizorul său a fost posibil eliminat';
+
+  @override
   String get inferenceProfileNameLabel => 'Numele profilului';
 
   @override

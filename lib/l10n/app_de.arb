@@ -2374,6 +2374,7 @@
   "inferenceProfileEditTitle": "Profil bearbeiten",
   "inferenceProfileImageGeneration": "Bilderzeugung",
   "inferenceProfileImageRecognition": "Bilderkennung",
+  "inferenceProfileModelUnavailable": "Modell nicht verfügbar – sein Anbieter wurde möglicherweise entfernt",
   "inferenceProfileNameLabel": "Profilname",
   "inferenceProfileNameRequired": "Ein Profilname ist erforderlich",
   "inferenceProfilePinnedHostHelper": "Wenn gesetzt, führt nur dieses Gerät die Inferenz für synchronisierte Audio-Einträge automatisch aus, die dieses Profil verwenden.",

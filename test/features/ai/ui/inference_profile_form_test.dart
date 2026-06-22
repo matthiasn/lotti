@@ -416,25 +416,71 @@ void main() {
       expect(find.text('Gemini Pro'), findsOneWidget);
     });
 
-    testWidgets('model slot shows raw ID when model not found in list', (
-      tester,
-    ) async {
-      // Edit profile with a model ID that doesn't match any loaded model.
-      final profile = testInferenceProfile(
-        id: 'p1',
-        name: 'My Profile',
-        thinkingModelId: 'models/unknown-model',
-      );
+    testWidgets(
+      'model slot shows unavailable message (not the raw id) when the '
+      'model no longer resolves — e.g. its provider was deleted and its '
+      'models were cascade-removed',
+      (tester) async {
+        // Edit a profile whose slot points at a model id that no longer
+        // matches any loaded model row, as happens after the model's
+        // inference provider is deleted.
+        final profile = testInferenceProfile(
+          id: 'p1',
+          name: 'My Profile',
+          thinkingModelId: 'models/unknown-model',
+        );
 
-      await tester.pumpWidget(
-        buildSubject(existingProfile: profile),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpWidget(
+          buildSubject(existingProfile: profile),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // The raw model ID should be displayed as fallback.
-      expect(find.text('models/unknown-model'), findsOneWidget);
-    });
+        // The dangling slot shows a clear "unavailable" message instead of
+        // leaking the raw composite id.
+        expect(
+          find.text('Model unavailable — its provider may have been removed'),
+          findsOneWidget,
+        );
+        expect(find.text('models/unknown-model'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'unavailable slot keeps its clear (×) action so the dangling '
+      'reference can be reset',
+      (tester) async {
+        final profile = testInferenceProfile(
+          id: 'p1',
+          name: 'My Profile',
+          thinkingModelId: 'models/unknown-model',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(existingProfile: profile),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The unavailable message is shown and a clear button is present.
+        expect(
+          find.text('Model unavailable — its provider may have been removed'),
+          findsOneWidget,
+        );
+
+        // Clearing the slot drops the dangling id and reveals the
+        // placeholder again.
+        await tester.tap(find.byIcon(Icons.clear).first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.text('Model unavailable — its provider may have been removed'),
+          findsNothing,
+        );
+        expect(find.text('Select a model…'), findsAtLeastNWidgets(1));
+      },
+    );
 
     testWidgets('clear button removes selected model', (tester) async {
       final thinkingModel =

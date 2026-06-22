@@ -70,6 +70,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   drop back to the saved text. The toolbar also adapts to width: on a roomy
   desktop window every formatting control is one click away, while on narrow
   screens it shows the essentials plus a "…" button that opens the rest.
+### Fixed
+- An inference profile whose model's provider had been deleted no longer shows a
+  garbled raw model id in its slots. The slot now reads "Model unavailable — its
+  provider may have been removed" and keeps its clear (×) button so you can reset
+  the dangling reference.
 
 ## [0.9.1030]
 ### Changed

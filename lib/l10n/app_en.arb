@@ -2775,6 +2775,7 @@
   "inferenceProfileEditTitle": "Edit Profile",
   "inferenceProfileImageGeneration": "Image Generation",
   "inferenceProfileImageRecognition": "Image Recognition",
+  "inferenceProfileModelUnavailable": "Model unavailable — its provider may have been removed",
   "inferenceProfileNameLabel": "Profile Name",
   "inferenceProfileNameRequired": "A profile name is required",
   "inferenceProfilePinnedHostHelper": "When set, only this device auto-runs inference for synced audio entries that use this profile.",

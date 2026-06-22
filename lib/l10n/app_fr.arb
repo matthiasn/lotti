@@ -2374,6 +2374,7 @@
   "inferenceProfileEditTitle": "Modifier le profil",
   "inferenceProfileImageGeneration": "Génération d'images",
   "inferenceProfileImageRecognition": "Reconnaissance d'images",
+  "inferenceProfileModelUnavailable": "Modèle indisponible — son fournisseur a peut-être été supprimé",
   "inferenceProfileNameLabel": "Nom du profil",
   "inferenceProfileNameRequired": "Un nom de profil est requis",
   "inferenceProfilePinnedHostHelper": "Lorsque défini, seul cet appareil exécute automatiquement l'inférence pour les entrées audio synchronisées qui utilisent ce profil.",

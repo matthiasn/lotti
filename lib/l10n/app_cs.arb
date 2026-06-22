@@ -2176,6 +2176,7 @@
     }
   },
   "inferenceProfileDetailNotFound": "Profil nenalezen",
+  "inferenceProfileModelUnavailable": "Model není dostupný — jeho poskytovatel byl možná odebrán",
   "inferenceProfilePinnedHostHelper": "Když je nastaveno, pouze toto zařízení automaticky spouští inference pro synchronizované zvukové záznamy používající tento profil.",
   "inferenceProfilePinnedHostLabel": "Připnuté zařízení",
   "inferenceProfilePinnedHostNoEligibleNodes": "Žádné známé zařízení neoznamuje poskytovatele, které tento profil používá. Otevři nastavení synchronizačních uzlů na cílovém zařízení.",
