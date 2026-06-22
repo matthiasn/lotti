@@ -25,11 +25,13 @@ class OnboardingCategoryView extends StatelessWidget {
     required this.accent,
     required this.title,
     required this.explanation,
+    required this.whyLabel,
     required this.continueLabel,
     required this.addOwnLabel,
     required this.options,
     required this.selected,
     required this.onToggle,
+    required this.onWhy,
     required this.onAddOwn,
     required this.onContinue,
     super.key,
@@ -40,8 +42,12 @@ class OnboardingCategoryView extends StatelessWidget {
   /// "Where should your AI work?"
   final String title;
 
-  /// Plain-language: a different AI can run per area of life.
+  /// Benefit-led lead copy (keeps each area separate). The per-category-AI
+  /// mechanism lives behind [whyLabel] / [onWhy], not in the lead.
   final String explanation;
+
+  /// Label for the "why areas?" disclosure.
+  final String whyLabel;
 
   final String continueLabel;
   final String addOwnLabel;
@@ -52,6 +58,7 @@ class OnboardingCategoryView extends StatelessWidget {
   final Set<String> selected;
 
   final void Function(String label) onToggle;
+  final VoidCallback onWhy;
   final VoidCallback onAddOwn;
   final VoidCallback onContinue;
 
@@ -105,7 +112,27 @@ class OnboardingCategoryView extends StatelessWidget {
                     color: textMedium,
                   ),
                 ),
-                SizedBox(height: tokens.spacing.step6),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    onTap: onWhy,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: tokens.spacing.step2,
+                      ),
+                      child: Text(
+                        whyLabel,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: accent,
+                          decoration: TextDecoration.underline,
+                          decorationColor: accent,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step4),
                 Wrap(
                   spacing: tokens.spacing.step3,
                   runSpacing: tokens.spacing.step3,

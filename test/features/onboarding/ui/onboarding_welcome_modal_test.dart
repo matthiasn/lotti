@@ -259,8 +259,16 @@ void main() {
     await tester.tap(find.text('Get started'));
     await tester.pumpAndSettle();
 
-    // Success leads into the category step; pick an area and continue.
+    // Success leads into the category step; the "why areas?" disclosure opens
+    // the per-category-AI explanation, then dismisses.
     expect(find.text('Where should your AI work?'), findsOneWidget);
+    await tester.tap(find.text('Why areas?'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('own AI'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    // Pick an area and continue.
     await tester.tap(find.text('Work'));
     await tester.pump();
     await tester.tap(find.text('Continue'));

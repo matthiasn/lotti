@@ -21,6 +21,7 @@ void main() {
     WidgetTester tester, {
     required Set<String> selected,
     void Function(String)? onToggle,
+    VoidCallback? onWhy,
     VoidCallback? onAddOwn,
     VoidCallback? onContinue,
   }) async {
@@ -32,12 +33,14 @@ void main() {
             accent: accent,
             title: 'Where should your AI work?',
             explanation:
-                'Lotti uses a different AI for each area of your life. Pick where Gemini should help.',
+                'Lotti keeps each area of your life in its own space, so tasks stay relevant.',
+            whyLabel: 'Why areas?',
             continueLabel: 'Continue',
             addOwnLabel: 'Add your own',
             options: options,
             selected: selected,
             onToggle: onToggle ?? (_) {},
+            onWhy: onWhy ?? () {},
             onAddOwn: onAddOwn ?? () {},
             onContinue: onContinue ?? () {},
           ),
@@ -57,11 +60,20 @@ void main() {
     await pumpView(tester, selected: const {});
 
     expect(find.text('Where should your AI work?'), findsOneWidget);
-    expect(find.textContaining('different AI for each area'), findsOneWidget);
+    expect(find.textContaining('its own space'), findsOneWidget);
+    expect(find.text('Why areas?'), findsOneWidget);
     for (final option in options) {
       expect(find.text(option.label), findsOneWidget);
     }
     expect(find.text('Add your own'), findsOneWidget);
+  });
+
+  testWidgets('the "why areas?" disclosure reports its tap', (tester) async {
+    var whys = 0;
+    await pumpView(tester, selected: const {}, onWhy: () => whys++);
+
+    await tester.tap(find.text('Why areas?'));
+    expect(whys, 1);
   });
 
   testWidgets('selected options show a check; unselected show their icon', (

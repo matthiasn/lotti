@@ -3208,18 +3208,20 @@
   "onboardingApiKeyVerifying": "Verifying…",
   "onboardingCategoryAddOwn": "Add your own",
   "onboardingCategoryContinue": "Continue",
-  "onboardingCategoryExplanation": "Lotti uses a different AI for each area of your life. Pick where {provider} should help — you can change this anytime.",
-  "@onboardingCategoryExplanation": {
+  "onboardingCategoryExplanation": "Lotti keeps each area of your life in its own space, so tasks and suggestions stay relevant. Pick a few to start — you can change them anytime.",
+  "onboardingCategoryFamily": "Family",
+  "onboardingCategoryFitness": "Fitness",
+  "onboardingCategoryFriends": "Friends",
+  "onboardingCategoryTitle": "Where should your AI work?",
+  "onboardingCategoryWhy": "Why areas?",
+  "onboardingCategoryWhyDetail": "Each area can use its own AI. {provider} will power the areas you pick here — later you can give different areas different AIs.",
+  "@onboardingCategoryWhyDetail": {
     "placeholders": {
       "provider": {
         "type": "String"
       }
     }
   },
-  "onboardingCategoryFamily": "Family",
-  "onboardingCategoryFitness": "Fitness",
-  "onboardingCategoryFriends": "Friends",
-  "onboardingCategoryTitle": "Where should your AI work?",
   "onboardingCategoryWork": "Work",
   "onboardingConnectGeminiName": "Gemini",
   "onboardingConnectGeminiTagline": "United States",

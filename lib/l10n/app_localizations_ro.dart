@@ -6526,9 +6526,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingCategoryContinue => 'Continuați';
 
   @override
-  String onboardingCategoryExplanation(String provider) {
-    return 'Lotti folosește o AI diferită pentru fiecare zonă a vieții. Alegeți unde să ajute $provider — puteți schimba oricând.';
-  }
+  String get onboardingCategoryExplanation =>
+      'Lotti păstrează fiecare zonă a vieții în spațiul ei, astfel încât sarcinile și sugestiile să rămână relevante. Alegeți câteva pentru început — le puteți schimba oricând.';
 
   @override
   String get onboardingCategoryFamily => 'Familie';
@@ -6541,6 +6540,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingCategoryTitle => 'Unde să lucreze AI-ul dvs.?';
+
+  @override
+  String get onboardingCategoryWhy => 'De ce zone?';
+
+  @override
+  String onboardingCategoryWhyDetail(String provider) {
+    return 'Fiecare zonă poate folosi propria AI. $provider va alimenta zonele alese aici — mai târziu puteți atribui AI diferite pentru zone diferite.';
+  }
 
   @override
   String get onboardingCategoryWork => 'Muncă';

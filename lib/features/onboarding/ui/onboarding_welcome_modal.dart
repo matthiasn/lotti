@@ -405,16 +405,38 @@ class _OnboardingCategoryStepState
     return OnboardingCategoryView(
       accent: dsTokensDark.colors.interactive.enabled,
       title: messages.onboardingCategoryTitle,
-      explanation: messages.onboardingCategoryExplanation(
-        onboardingProviderName(messages, widget.type),
-      ),
+      explanation: messages.onboardingCategoryExplanation,
+      whyLabel: messages.onboardingCategoryWhy,
       continueLabel: messages.onboardingCategoryContinue,
       addOwnLabel: messages.onboardingCategoryAddOwn,
       options: options,
       selected: _selected,
       onToggle: _toggle,
+      onWhy: _explainWhy,
       onAddOwn: _addOwn,
       onContinue: () => _continue(options),
+    );
+  }
+
+  Future<void> _explainWhy() async {
+    final messages = context.messages;
+    final material = MaterialLocalizations.of(context);
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(messages.onboardingCategoryWhy),
+        content: Text(
+          messages.onboardingCategoryWhyDetail(
+            onboardingProviderName(messages, widget.type),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(material.okButtonLabel),
+          ),
+        ],
+      ),
     );
   }
 }

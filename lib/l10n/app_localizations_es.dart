@@ -6522,9 +6522,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingCategoryContinue => 'Continuar';
 
   @override
-  String onboardingCategoryExplanation(String provider) {
-    return 'Lotti usa una IA distinta para cada área de tu vida. Elige dónde quieres que ayude $provider: puedes cambiarlo cuando quieras.';
-  }
+  String get onboardingCategoryExplanation =>
+      'Lotti mantiene cada área de tu vida en su propio espacio, para que las tareas y sugerencias sigan siendo relevantes. Elige algunas para empezar; puedes cambiarlas cuando quieras.';
 
   @override
   String get onboardingCategoryFamily => 'Familia';
@@ -6537,6 +6536,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingCategoryTitle => '¿Dónde quieres que trabaje tu IA?';
+
+  @override
+  String get onboardingCategoryWhy => '¿Por qué áreas?';
+
+  @override
+  String onboardingCategoryWhyDetail(String provider) {
+    return 'Cada área puede usar su propia IA. $provider impulsará las áreas que elijas aquí; más adelante puedes asignar diferentes IA a diferentes áreas.';
+  }
 
   @override
   String get onboardingCategoryWork => 'Trabajo';

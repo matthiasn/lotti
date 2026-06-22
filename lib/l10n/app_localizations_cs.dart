@@ -6481,9 +6481,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingCategoryContinue => 'Pokračovat';
 
   @override
-  String onboardingCategoryExplanation(String provider) {
-    return 'Lotti používá pro každou oblast tvého života jinou AI. Vyber, kde má $provider pomáhat — kdykoli to můžeš změnit.';
-  }
+  String get onboardingCategoryExplanation =>
+      'Lotti udržuje každou oblast tvého života v jejím vlastním prostoru, aby úkoly a návrhy zůstaly relevantní. Vyber si pár na začátek — kdykoli je můžeš změnit.';
 
   @override
   String get onboardingCategoryFamily => 'Rodina';
@@ -6496,6 +6495,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get onboardingCategoryTitle => 'Kde má tvoje AI pracovat?';
+
+  @override
+  String get onboardingCategoryWhy => 'Proč oblasti?';
+
+  @override
+  String onboardingCategoryWhyDetail(String provider) {
+    return 'Každá oblast může používat vlastní AI. $provider bude pohánět oblasti, které zde vybereš — později můžeš různým oblastem přiřadit různé AI.';
+  }
 
   @override
   String get onboardingCategoryWork => 'Práce';

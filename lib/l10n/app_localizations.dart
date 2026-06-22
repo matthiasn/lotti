@@ -11137,8 +11137,8 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingCategoryExplanation.
   ///
   /// In en, this message translates to:
-  /// **'Lotti uses a different AI for each area of your life. Pick where {provider} should help — you can change this anytime.'**
-  String onboardingCategoryExplanation(String provider);
+  /// **'Lotti keeps each area of your life in its own space, so tasks and suggestions stay relevant. Pick a few to start — you can change them anytime.'**
+  String get onboardingCategoryExplanation;
 
   /// No description provided for @onboardingCategoryFamily.
   ///
@@ -11163,6 +11163,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Where should your AI work?'**
   String get onboardingCategoryTitle;
+
+  /// No description provided for @onboardingCategoryWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Why areas?'**
+  String get onboardingCategoryWhy;
+
+  /// No description provided for @onboardingCategoryWhyDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Each area can use its own AI. {provider} will power the areas you pick here — later you can give different areas different AIs.'**
+  String onboardingCategoryWhyDetail(String provider);
 
   /// No description provided for @onboardingCategoryWork.
   ///
