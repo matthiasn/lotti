@@ -11,179 +11,166 @@ void main() {
   const onCardColor = Color(0xFF1A1A1A);
   const ghostColor = Color(0xFF9E9E9E);
 
-  // The hero contains a fixed-width 260px card whose checklist rows lay out
-  // their label at the text's natural width. Under the default test font
-  // (every glyph is one em wide) the labels are far wider than with the real
-  // proportional font, so each checklist Row would report a harmless
-  // horizontal overflow. We shrink text with a small textScaler so the
-  // labels fit the fixed card and no overflow is reported — this is a
-  // test-font accommodation, not a change to widget behaviour.
+  const title = 'Car & health errands';
+  const items = ['Call the dentist', 'Book the car service'];
+  const spokenLines = [
+    '"remind me to call the dentist"',
+    '"and book the car service"',
+  ];
+  const categoryLabel = 'Personal';
+
+  // The default test font lays out every glyph one em wide, so the centred
+  // ghost phrases (plain Text, no wrapping) are far wider than with the real
+  // proportional font and would report a harmless horizontal overflow. A small
+  // textScaler shrinks them to fit the canvas — a test-font accommodation, not
+  // a change to widget behaviour. (Card labels wrap via Expanded regardless.)
   const baseSize = Size(390, 844);
   const fitText = TextScaler.linear(0.5);
 
-  Widget buildHero({MediaQueryData? mediaQueryData}) => makeTestableWidget(
-    const SizedBox(
+  Widget buildHero({
+    bool loop = false,
+    bool reduceMotion = false,
+    List<String> taskItems = items,
+    List<String> lines = spokenLines,
+    String? category = categoryLabel,
+  }) => makeTestableWidget(
+    SizedBox(
       width: 360,
-      height: 264,
+      height: 320,
       child: CrystallizeHero(
         accent: accent,
         cardColor: cardColor,
         onCardColor: onCardColor,
         ghostColor: ghostColor,
+        title: title,
+        items: taskItems,
+        spokenLines: lines,
+        categoryLabel: category,
+        loop: loop,
       ),
     ),
-    mediaQueryData:
-        mediaQueryData ??
-        const MediaQueryData(size: baseSize, textScaler: fitText),
+    mediaQueryData: MediaQueryData(
+      size: baseSize,
+      textScaler: fitText,
+      disableAnimations: reduceMotion,
+    ),
   );
 
+  Opacity outerOpacityOf(WidgetTester tester, Finder of) =>
+      tester.widget<Opacity>(
+        find.ancestor(of: of, matching: find.byType(Opacity)).last,
+      );
+
   group('CrystallizeHero', () {
-    testWidgets(
-      'reduced motion shows the static resolved card with title and items',
-      (tester) async {
-        await tester.pumpWidget(
-          buildHero(
-            mediaQueryData: const MediaQueryData(
-              size: baseSize,
-              textScaler: fitText,
-              disableAnimations: true,
-            ),
-          ),
-        );
-        // Static path: the tree settles because the controller is stopped.
-        await tester.pump();
+    testWidgets('reduced motion shows the static resolved card', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildHero(reduceMotion: true));
+      await tester.pump();
 
-        expect(find.byType(CrystallizeHero), findsOneWidget);
-        // Resolved card is fully shown in reduced motion: title + both items.
-        expect(find.text('Car & health errands'), findsOneWidget);
-        expect(find.text('Call the dentist'), findsOneWidget);
-        expect(find.text('Book car service'), findsOneWidget);
-        // Ghost phrases exist in the tree but at zero opacity.
-        expect(find.text('"remind me to call the dentist"'), findsOneWidget);
-        expect(find.text('"and book the car service"'), findsOneWidget);
+      // Resolved card fully shown: category pill, title, both items.
+      expect(find.text(categoryLabel), findsOneWidget);
+      expect(find.text(title), findsOneWidget);
+      expect(find.text('Call the dentist'), findsOneWidget);
+      expect(find.text('Book the car service'), findsOneWidget);
 
-        // Ghost layer fully transparent in reduced motion.
-        final ghostOpacity = tester.widget<Opacity>(
-          find
-              .ancestor(
-                of: find.text('"remind me to call the dentist"'),
-                matching: find.byType(Opacity),
-              )
-              .last,
-        );
-        expect(ghostOpacity.opacity, 0.0);
+      // Ghost layer present but fully transparent; card layer fully opaque.
+      expect(outerOpacityOf(tester, find.text(spokenLines.first)).opacity, 0.0);
+      expect(outerOpacityOf(tester, find.text(title)).opacity, 1.0);
 
-        // Card layer fully opaque in reduced motion.
-        final cardOpacity = tester.widget<Opacity>(
-          find
-              .ancestor(
-                of: find.text('Car & health errands'),
-                matching: find.byType(Opacity),
-              )
-              .last,
-        );
-        expect(cardOpacity.opacity, 1.0);
+      // Colours reach the rendered widgets.
+      final icon = tester.widget<Icon>(find.byIcon(Icons.check_rounded).first);
+      expect(icon.color, accent);
+      expect(tester.widget<Text>(find.text(title)).style?.color, onCardColor);
+      expect(
+        tester.widget<Text>(find.text(spokenLines.first)).style?.color,
+        ghostColor,
+      );
+      expect(tester.takeException(), isNull);
+    });
 
-        // The accent colour reaches the check icons.
-        final icon = tester.widget<Icon>(find.byType(Icon).first);
-        expect(icon.color, accent);
-        expect(icon.icon, Icons.check_rounded);
+    testWidgets('one-shot reveal plays once and lands on the resolved card', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildHero());
+      await tester.pump();
+      expect(tester.takeException(), isNull);
 
-        // Title uses the onCard colour.
-        final title = tester.widget<Text>(find.text('Car & health errands'));
-        expect(title.style?.color, onCardColor);
-
-        // Ghost phrase uses the ghost colour.
-        final ghost = tester.widget<Text>(
-          find.text('"remind me to call the dentist"'),
-        );
-        expect(ghost.style?.color, ghostColor);
-
+      // Step through the 1800ms reveal (ghost window, card window, title, item
+      // appears + ticks) in sub-second steps, asserting no overflow/error.
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 350));
         expect(tester.takeException(), isNull);
-      },
-    );
+      }
 
-    testWidgets(
-      'animated mode advances across timeline phases without error',
-      (tester) async {
-        await tester.pumpWidget(
-          buildHero(
-            mediaQueryData: const MediaQueryData(
-              size: baseSize,
-              textScaler: fitText,
-            ),
-          ),
-        );
-        // First frame of the repeating animation.
-        await tester.pump();
-        expect(find.byType(CrystallizeHero), findsOneWidget);
-        expect(tester.takeException(), isNull);
+      // Resolved: title, both items, both ticks, and the category pill.
+      expect(find.text(title), findsOneWidget);
+      expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
+      expect(find.text(categoryLabel), findsOneWidget);
+      // After the one-shot completes the card layer is fully opaque.
+      expect(outerOpacityOf(tester, find.text(title)).opacity, 1.0);
+    });
 
-        // The loop is 6s. Step through it so the build runs across the ghost
-        // window, card window, title-in, item appear and tick segments.
-        // 400ms steps stay under the 1s/pump guidance while sampling many
-        // distinct timeline values across the full loop.
-        for (var i = 0; i < 16; i++) {
-          await tester.pump(const Duration(milliseconds: 400));
-          expect(tester.takeException(), isNull);
-        }
-
-        // Content widgets are still present after advancing the controller.
-        expect(find.text('Car & health errands'), findsOneWidget);
-        expect(find.text('Call the dentist'), findsOneWidget);
-        expect(find.text('Book car service'), findsOneWidget);
-        expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
-      },
-    );
-
-    testWidgets('animated mode keeps repeating after a full loop elapses', (
+    testWidgets('ghost opacity moves across the reveal timeline', (
       tester,
     ) async {
       await tester.pumpWidget(buildHero());
       await tester.pump();
 
-      // Advance well past one 6s loop to exercise the repeat() restart.
+      double ghostOpacity() =>
+          outerOpacityOf(tester, find.text(spokenLines.first)).opacity;
+
+      // Near the ghost-window peak.
+      await tester.pump(const Duration(milliseconds: 200));
+      final early = ghostOpacity();
+      // After the ghost window has closed and the card has taken over.
+      await tester.pump(const Duration(milliseconds: 1200));
+      final later = ghostOpacity();
+
+      expect(early, inInclusiveRange(0.0, 1.0));
+      expect(later, inInclusiveRange(0.0, 1.0));
+      expect(early, isNot(equals(later)));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('loop mode keeps repeating after a full loop elapses', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildHero(loop: true));
+      await tester.pump();
+
       await tester.pump(const Duration(seconds: 6));
       await tester.pump(const Duration(milliseconds: 600));
 
       expect(find.byType(CrystallizeHero), findsOneWidget);
+      expect(find.text(title), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-      'ghost layer opacity changes between early and later animated frames',
-      (tester) async {
-        await tester.pumpWidget(buildHero());
-        await tester.pump();
+    testWidgets('renders a title-only card when there are no items', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildHero(reduceMotion: true, taskItems: const [], lines: const []),
+      );
+      await tester.pump();
 
-        double ghostOpacityNow() => tester
-            .widget<Opacity>(
-              find
-                  .ancestor(
-                    of: find.text('"remind me to call the dentist"'),
-                    matching: find.byType(Opacity),
-                  )
-                  .last,
-            )
-            .opacity;
+      expect(find.text(title), findsOneWidget);
+      // No checklist rows means no check icons.
+      expect(find.byIcon(Icons.check_rounded), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
 
-        // Sample opacity near the start of the loop (ghost fading in/holding).
-        await tester.pump(const Duration(milliseconds: 600));
-        final early = ghostOpacityNow();
+    testWidgets('omits the category pill when none is provided', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildHero(reduceMotion: true, category: null));
+      await tester.pump();
 
-        // Sample later in the loop, after the ghost window has closed and the
-        // card window is active (ghost should have faded back out).
-        await tester.pump(const Duration(milliseconds: 3000));
-        final later = ghostOpacityNow();
-
-        // Both are valid opacities and the value moved across the timeline,
-        // proving the animation actually drives the windowed opacities.
-        expect(early, inInclusiveRange(0.0, 1.0));
-        expect(later, inInclusiveRange(0.0, 1.0));
-        expect(early, isNot(equals(later)));
-        expect(tester.takeException(), isNull);
-      },
-    );
+      expect(find.text(categoryLabel), findsNothing);
+      expect(find.text(title), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets('disposes cleanly when removed from the tree', (tester) async {
       await tester.pumpWidget(buildHero());
@@ -191,7 +178,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(tester.takeException(), isNull);
 
-      // Replace with an empty tree to trigger State.dispose().
       await tester.pumpWidget(makeTestableWidget(const SizedBox()));
       await tester.pump();
 
