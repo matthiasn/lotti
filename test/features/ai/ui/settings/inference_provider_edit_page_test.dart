@@ -12,7 +12,8 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
-import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart'
+    show MeliousInferenceException;
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
@@ -45,30 +46,6 @@ class _MockWhatsNewController extends WhatsNewController {
 AppLocalizations l10n(WidgetTester tester) => AppLocalizations.of(
   tester.element(find.byType(InferenceProviderEditPage)),
 )!;
-
-class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
-  _FakeMeliousInferenceRepository(this._results);
-
-  final List<Future<List<KnownModel>> Function()> _results;
-  final calls = <({String baseUrl, String apiKey})>[];
-  var _index = 0;
-
-  @override
-  Future<List<KnownModel>> listModels({
-    required String baseUrl,
-    required String apiKey,
-    Duration timeout = const Duration(seconds: 15),
-  }) {
-    calls.add((baseUrl: baseUrl, apiKey: apiKey));
-    final resultIndex = _index < _results.length ? _index : _results.length - 1;
-    final result = _results[resultIndex];
-    _index++;
-    return result();
-  }
-
-  @override
-  void close() {}
-}
 
 class _ErrorAiConfigByTypeController extends AiConfigByTypeController {
   @override
@@ -1412,7 +1389,7 @@ void main() {
         outputModalities: [Modality.text],
         isReasoningModel: false,
       );
-      final fakeMeliousRepository = _FakeMeliousInferenceRepository([
+      final fakeMeliousRepository = FakeMeliousInferenceRepository([
         () async => const [
           KnownModel(
             providerModelId: 'qwen/qwen3-vl-plus',
@@ -1474,7 +1451,7 @@ void main() {
       await _setTestSurface(tester, height: 1600);
 
       final catalogCompleter = Completer<List<KnownModel>>();
-      final fakeMeliousRepository = _FakeMeliousInferenceRepository([
+      final fakeMeliousRepository = FakeMeliousInferenceRepository([
         () => catalogCompleter.future,
       ]);
       final meliousProvider = AiConfig.inferenceProvider(
@@ -1536,7 +1513,7 @@ void main() {
     ) async {
       await _setTestSurface(tester, height: 1600);
 
-      final fakeMeliousRepository = _FakeMeliousInferenceRepository([
+      final fakeMeliousRepository = FakeMeliousInferenceRepository([
         () async => const <KnownModel>[],
       ]);
       final meliousProvider = AiConfig.inferenceProvider(
@@ -1580,7 +1557,7 @@ void main() {
     ) async {
       await _setTestSurface(tester, height: 1600);
 
-      final fakeMeliousRepository = _FakeMeliousInferenceRepository([
+      final fakeMeliousRepository = FakeMeliousInferenceRepository([
         () async => throw const MeliousInferenceException('first failure'),
         () async => const [
           KnownModel(
@@ -1645,7 +1622,7 @@ void main() {
       (WidgetTester tester) async {
         await _setTestSurface(tester, height: 1200);
 
-        final fakeMeliousRepository = _FakeMeliousInferenceRepository([
+        final fakeMeliousRepository = FakeMeliousInferenceRepository([
           () async => const [
             KnownModel(
               providerModelId: 'deepseek-v4-pro',
@@ -1711,7 +1688,7 @@ void main() {
       (WidgetTester tester) async {
         await _setTestSurface(tester, height: 1200);
 
-        final fakeMeliousRepository = _FakeMeliousInferenceRepository([
+        final fakeMeliousRepository = FakeMeliousInferenceRepository([
           () async => const [
             KnownModel(
               providerModelId: 'deepseek-v4-pro',

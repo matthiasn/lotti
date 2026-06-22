@@ -465,6 +465,51 @@ void main() {
     );
 
     test(
+      'does not enable oMLX transcription skill without Whisper model row',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestModel(
+              id: 'model-omlx-qwen36',
+              providerModelId: omlxRecommendedMultimodalModelId,
+            ),
+          ],
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileLocalPowerId,
+              name: 'Local Power (oMLX)',
+              thinkingModelId: 'model-omlx-qwen36',
+              imageRecognitionModelId: 'model-omlx-qwen36',
+              desktopOnly: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        final upgraded = captured.single as AiConfigInferenceProfile;
+        final skillIds = upgraded.skillAssignments.map((a) => a.skillId);
+
+        expect(
+          upgraded.transcriptionModelId,
+          omlxWhisperLargeV3TurboModelId,
+        );
+        expect(skillIds, contains(skillImageAnalysisContextId));
+        expect(skillIds, isNot(contains(skillTranscribeContextId)));
+      },
+    );
+
+    test(
       'preserves user-edited Local Power profiles during oMLX migration',
       () async {
         when(

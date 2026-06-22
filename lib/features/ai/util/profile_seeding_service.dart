@@ -164,10 +164,22 @@ class ProfileSeedingService {
       return profile;
     }
 
-    return profile.copyWith(
+    final upgraded = profile.copyWith(
       transcriptionModelId: omlxWhisperLargeV3TurboModelId,
-      skillAssignments: _defaultSkillAssignments,
     );
+
+    final sanitizedAssignments = _defaultSkillAssignments
+        .where((assignment) {
+          final skill = findBuiltInSkill(assignment.skillId);
+          if (skill == null) {
+            return true;
+          }
+
+          return hasSlotForSkillType(upgraded, skill.skillType, models);
+        })
+        .toList(growable: false);
+
+    return upgraded.copyWith(skillAssignments: sanitizedAssignments);
   }
 
   static bool _isUntouchedOmlxProfileMissingTranscription(

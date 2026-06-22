@@ -44,10 +44,11 @@ class OmlxTranscriptionRepository extends TranscriptionRepository {
   }) {
     final normalizedBaseUrl = baseUrl.trim();
     final normalizedApiKey = apiKey.trim();
+    final normalizedAudioBase64 = audioBase64.trim();
     if (model.trim().isEmpty) {
       throw ArgumentError('Model name cannot be empty');
     }
-    if (audioBase64.isEmpty) {
+    if (normalizedAudioBase64.isEmpty) {
       throw ArgumentError('Audio data cannot be empty');
     }
     if (normalizedBaseUrl.isEmpty) {
@@ -57,10 +58,17 @@ class OmlxTranscriptionRepository extends TranscriptionRepository {
       throw ArgumentError('API key cannot be empty');
     }
 
+    late final List<int> audioBytes;
+    try {
+      audioBytes = base64Decode(normalizedAudioBase64);
+    } on FormatException {
+      throw ArgumentError('Audio data must be valid base64');
+    }
+
     return executeTranscription(
       providerName: _providerName,
       responseIdPrefix: 'omlx-transcription-',
-      audioLengthForLog: audioBase64.length,
+      audioLengthForLog: normalizedAudioBase64.length,
       timeout: timeout,
       sendRequest: (requestTimeout, timeoutErrorMessage) async {
         final request =
@@ -72,7 +80,7 @@ class OmlxTranscriptionRepository extends TranscriptionRepository {
               ..files.add(
                 http.MultipartFile.fromBytes(
                   'file',
-                  base64Decode(audioBase64),
+                  audioBytes,
                   filename: 'audio.m4a',
                 ),
               )

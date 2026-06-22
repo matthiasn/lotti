@@ -104,6 +104,34 @@ void main() {
       );
     });
 
+    test('rejects invalid base64 before sending a request', () {
+      var sentRequest = false;
+      final repo = OmlxTranscriptionRepository(
+        httpClient: MockClient.streaming((_, _) async {
+          sentRequest = true;
+          return http.StreamedResponse(const Stream.empty(), 200);
+        }),
+      );
+      addTearDown(repo.close);
+
+      expect(
+        () => repo.transcribeAudio(
+          model: omlxWhisperLargeV3ModelId,
+          audioBase64: 'not base64%',
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            'Audio data must be valid base64',
+          ),
+        ),
+      );
+      expect(sentRequest, isFalse);
+    });
+
     test(
       'sends multipart request to configured oMLX transcription endpoint',
       () async {
@@ -144,6 +172,26 @@ void main() {
         expect(request.files.single.filename, equals('audio.m4a'));
       },
     );
+
+    test('trims base64 audio before building multipart upload', () async {
+      final stub = _stubStreamingOk();
+      final repo = OmlxTranscriptionRepository(httpClient: stub.client);
+      addTearDown(repo.close);
+
+      await repo
+          .transcribeAudio(
+            model: omlxWhisperLargeV3ModelId,
+            audioBase64: '  $audioBase64  ',
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+          )
+          .toList();
+
+      expect(stub.captured(), isA<http.MultipartRequest>());
+      final request = stub.captured()! as http.MultipartRequest;
+      expect(request.files, hasLength(1));
+      expect(request.files.single.length, 4);
+    });
 
     test('does not send blank prompt field', () async {
       final stub = _stubStreamingOk();
