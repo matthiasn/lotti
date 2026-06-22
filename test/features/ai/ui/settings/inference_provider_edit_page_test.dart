@@ -15,7 +15,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
-    show meliousInferenceRepositoryProvider;
+    show AvailableModelsSection, meliousInferenceRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -1613,6 +1613,72 @@ void main() {
       expect(fakeMeliousRepository.calls, hasLength(2));
       expect(find.text('Whisper Large v3'), findsOneWidget);
     });
+
+    testWidgets(
+      'Melious dynamic catalog returns empty for a stale non-Melious config id',
+      (WidgetTester tester) async {
+        await _setTestSurface(tester, height: 1200);
+
+        final fakeMeliousRepository = _FakeMeliousInferenceRepository([
+          () async => const [
+            KnownModel(
+              providerModelId: 'deepseek-v4-pro',
+              name: 'DeepSeek V4 Pro',
+              inputModalities: [Modality.text],
+              outputModalities: [Modality.text],
+              isReasoningModel: true,
+              description: 'Advanced reasoning model.',
+            ),
+          ],
+        ]);
+
+        when(
+          () => mockRepository.getConfigById('stale-provider-id'),
+        ).thenAnswer((_) async => testProvider);
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.value([]));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+              meliousInferenceRepositoryProvider.overrideWithValue(
+                fakeMeliousRepository,
+              ),
+            ],
+            child: MaterialApp(
+              theme: ThemeData(
+                useMaterial3: true,
+                extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+              ),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const Scaffold(
+                body: AvailableModelsSection(
+                  providerId: 'stale-provider-id',
+                  providerType: InferenceProviderType.melious,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final strings = AppLocalizations.of(
+          tester.element(find.byType(AvailableModelsSection)),
+        )!;
+        expect(find.text(strings.aiConfigNoModelsAvailable), findsOneWidget);
+        expect(find.text('DeepSeek V4 Pro'), findsNothing);
+        expect(fakeMeliousRepository.calls, isEmpty);
+      },
+    );
 
     testWidgets('displays known models for Gemini provider', (
       WidgetTester tester,

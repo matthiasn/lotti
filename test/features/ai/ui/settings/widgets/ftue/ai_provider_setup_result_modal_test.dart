@@ -73,6 +73,15 @@ void main() {
           'Mistral',
         ),
         (
+          const MeliousFtueResult(
+            modelsCreated: 1,
+            modelsVerified: 0,
+            categoryCreated: true,
+          ),
+          InferenceProviderType.melious,
+          'Melious.ai',
+        ),
+        (
           const AlibabaFtueResult(
             modelsCreated: 1,
             modelsVerified: 0,
