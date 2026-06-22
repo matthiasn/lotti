@@ -5913,6 +5913,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get loggingDomainNotifications => 'Oznámení';
 
   @override
+  String get loggingDomainOnboarding => 'Onboarding a FTUE';
+
+  @override
   String get loggingDomainPersistence => 'Perzistence';
 
   @override

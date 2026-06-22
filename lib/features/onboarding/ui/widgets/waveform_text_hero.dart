@@ -159,5 +159,7 @@ class _WavePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WavePainter oldDelegate) =>
-      oldDelegate.t != t || oldDelegate.envelope != envelope;
+      oldDelegate.t != t ||
+      oldDelegate.envelope != envelope ||
+      oldDelegate.color != color;
 }

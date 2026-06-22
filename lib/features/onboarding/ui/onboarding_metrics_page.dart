@@ -79,8 +79,20 @@ class _OnboardingMetricsBodyState extends State<OnboardingMetricsBody> {
       child: FutureBuilder<_FunnelReport>(
         future: _future,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator.adaptive());
+          }
+          if (snapshot.hasError) {
+            // Debug-only surface, so the failure text stays in English (like
+            // the rest of this page) — but surface it instead of spinning.
+            return Center(
+              child: DesignSystemListItem(
+                title: 'Failed to load onboarding metrics',
+                subtitle: '${snapshot.error}',
+                leading: const SettingsIcon(icon: Icons.error_outline_rounded),
+                onTap: _refresh,
+              ),
+            );
           }
           final report = snapshot.data!;
           final state = report.state;

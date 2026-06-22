@@ -5959,6 +5959,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get loggingDomainNotifications => 'Notifications';
 
   @override
+  String get loggingDomainOnboarding => 'Onboarding et FTUE';
+
+  @override
   String get loggingDomainPersistence => 'Persistance';
 
   @override

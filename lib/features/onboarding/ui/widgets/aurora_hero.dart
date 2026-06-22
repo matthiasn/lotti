@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Slow flowing aurora: several large soft colour blooms drift on lissajous
@@ -118,6 +119,6 @@ class _AuroraPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _AuroraPainter oldDelegate) =>
       oldDelegate.t != t ||
-      oldDelegate.colors != colors ||
-      oldDelegate.maxAlpha != maxAlpha;
+      oldDelegate.maxAlpha != maxAlpha ||
+      !listEquals(oldDelegate.colors, colors);
 }

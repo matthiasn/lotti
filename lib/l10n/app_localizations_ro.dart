@@ -5967,6 +5967,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get loggingDomainNotifications => 'Notificări';
 
   @override
+  String get loggingDomainOnboarding => 'Onboarding și FTUE';
+
+  @override
   String get loggingDomainPersistence => 'Persistență';
 
   @override

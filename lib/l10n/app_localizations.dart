@@ -10254,6 +10254,12 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get loggingDomainNotifications;
 
+  /// No description provided for @loggingDomainOnboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding & FTUE'**
+  String get loggingDomainOnboarding;
+
   /// No description provided for @loggingDomainPersistence.
   ///
   /// In en, this message translates to:
@@ -11053,7 +11059,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingConnectLessOptions.
   ///
   /// In en, this message translates to:
-  /// **'Less options'**
+  /// **'Fewer options'**
   String get onboardingConnectLessOptions;
 
   /// No description provided for @onboardingConnectMistralName.

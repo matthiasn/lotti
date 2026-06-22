@@ -279,9 +279,21 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // still being built. Until it's enabled, first-run AI setup falls back to
     // the provider-selection modal (the pre-FTUE behaviour). A one-shot DB read
     // (not the stream provider) avoids a load-state race on this single check.
-    final ftueEnabled = await ref
-        .read(journalDbProvider)
-        .getConfigFlag(enableOnboardingFtueFlag);
+    // This method is fire-and-forget, so a read failure must default to the
+    // fallback rather than surfacing as an uncaught async error.
+    var ftueEnabled = false;
+    try {
+      ftueEnabled = await ref
+          .read(journalDbProvider)
+          .getConfigFlag(enableOnboardingFtueFlag);
+    } catch (error, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomain.onboarding,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'aiSetupPromptFtueFlag',
+      );
+    }
     if (!mounted) return;
 
     if (ftueEnabled) {

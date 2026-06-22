@@ -399,7 +399,8 @@ void main() {
     final original = UrlLauncherPlatform.instance;
     final launcher = MockUrlLauncher();
     UrlLauncherPlatform.instance = launcher;
-    registerFallbackValue(FakeLaunchOptions());
+    // FakeLaunchOptions fallback is registered centrally via
+    // registerAllFallbackValues() in setUpAll.
     when(() => launcher.launchUrl(any(), any())).thenAnswer((_) async => true);
     addTearDown(() => UrlLauncherPlatform.instance = original);
 

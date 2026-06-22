@@ -5835,6 +5835,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loggingDomainNotifications => 'Notifications';
 
   @override
+  String get loggingDomainOnboarding => 'Onboarding & FTUE';
+
+  @override
   String get loggingDomainPersistence => 'Persistence';
 
   @override
@@ -6315,7 +6318,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingConnectGeminiTagline => 'United States';
 
   @override
-  String get onboardingConnectLessOptions => 'Less options';
+  String get onboardingConnectLessOptions => 'Fewer options';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';

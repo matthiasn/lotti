@@ -5906,6 +5906,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get loggingDomainNotifications => 'Benachrichtigungen';
 
   @override
+  String get loggingDomainOnboarding => 'Onboarding & FTUE';
+
+  @override
   String get loggingDomainPersistence => 'Persistenz';
 
   @override

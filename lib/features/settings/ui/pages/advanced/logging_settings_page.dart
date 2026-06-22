@@ -149,9 +149,7 @@ String _domainLabel(BuildContext context, LogDomain domain) {
     LogDomain.theming => messages.loggingDomainTheming,
     LogDomain.notifications => messages.loggingDomainNotifications,
     LogDomain.whatsNew => messages.loggingDomainWhatsNew,
-    // Not yet localized — falls back to the English LogDomain.label per the
-    // documented behavior of this resolver.
-    LogDomain.onboarding => domain.label,
+    LogDomain.onboarding => messages.loggingDomainOnboarding,
     LogDomain.settings => messages.loggingDomainSettings,
     LogDomain.ratings => messages.loggingDomainRatings,
     LogDomain.dailyOs => messages.loggingDomainDailyOs,

@@ -49,13 +49,25 @@ class _NeuralConstellationState extends State<NeuralConstellation>
   static const _loop = Duration(seconds: 24);
 
   late final AnimationController _controller;
-  late final List<_Node> _nodes;
+  late List<_Node> _nodes;
 
   @override
   void initState() {
     super.initState();
     _nodes = _buildNodes(widget.nodeCount, widget.seed);
     _controller = AnimationController(vsync: this, duration: _loop);
+  }
+
+  @override
+  void didUpdateWidget(NeuralConstellation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Regenerate the seeded node field if the topology inputs change, so a
+    // reused element doesn't keep painting the old configuration (matters most
+    // under reduced motion, where `t` is static and won't trigger a repaint).
+    if (oldWidget.nodeCount != widget.nodeCount ||
+        oldWidget.seed != widget.seed) {
+      _nodes = _buildNodes(widget.nodeCount, widget.seed);
+    }
   }
 
   @override
@@ -244,6 +256,8 @@ class _ConstellationPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ConstellationPainter oldDelegate) =>
       oldDelegate.t != t ||
+      oldDelegate.pulseCount != pulseCount ||
+      oldDelegate.nodes.length != nodes.length ||
       oldDelegate.nodeColor != nodeColor ||
       oldDelegate.lineColor != lineColor ||
       oldDelegate.pulseColor != pulseColor;

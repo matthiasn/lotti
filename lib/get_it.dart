@@ -183,7 +183,20 @@ Future<void> registerSingletons() async {
   getIt.registerSingleton<OnboardingMetricsRepository>(
     onboardingMetricsRepository,
   );
-  unawaited(onboardingMetricsRepository.recordAppFirstSeenIfAbsent());
+  // Fire-and-forget startup write — guard it so a metrics-DB failure can't
+  // surface as an uncaught async error during startup.
+  unawaited(() async {
+    try {
+      await onboardingMetricsRepository.recordAppFirstSeenIfAbsent();
+    } catch (error, stackTrace) {
+      domainLogger.error(
+        LogDomain.onboarding,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'recordAppFirstSeen',
+      );
+    }
+  }());
 
   final sentEventRegistry = SentEventRegistry();
   final matrixGateway = MatrixSdkGateway(

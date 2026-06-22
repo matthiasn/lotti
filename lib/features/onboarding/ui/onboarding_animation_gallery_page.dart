@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
@@ -26,12 +27,14 @@ class _OnboardingAnimationGalleryPageState
 
   @override
   Widget build(BuildContext context) {
+    // Always-dark chrome (debug-only gallery) sourced from the dark token set
+    // so it previews the cinematic dark panels regardless of the app theme.
     return Scaffold(
-      backgroundColor: const Color(0xFF0E0E0E),
+      backgroundColor: dsTokensDark.colors.background.level01,
       appBar: AppBar(
         title: const Text('Onboarding animations'),
-        backgroundColor: const Color(0xFF181818),
-        foregroundColor: Colors.white,
+        backgroundColor: dsTokensDark.colors.background.level02,
+        foregroundColor: dsTokensDark.colors.text.highEmphasis,
       ),
       body: Column(
         children: [

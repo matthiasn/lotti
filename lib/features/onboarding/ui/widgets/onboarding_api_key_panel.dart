@@ -111,7 +111,10 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
   }
 
   void _verifyNow() {
-    unawaited(_verifier.verify(baseUrl: _baseUrl, apiKey: _controller.text));
+    // Trim so a pasted key with stray whitespace verifies the same value that
+    // _connect() persists — no false rejection blocking Connect.
+    final apiKey = _controller.text.trim();
+    unawaited(_verifier.verify(baseUrl: _baseUrl, apiKey: apiKey));
   }
 
   /// Drives the displayed status from verifier changes, enforcing the minimum
