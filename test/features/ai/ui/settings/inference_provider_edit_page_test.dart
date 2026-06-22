@@ -1533,6 +1533,98 @@ void main() {
       },
     );
 
+    testWidgets(
+      'filters large dynamic Melious catalogs with a bounded search list',
+      (WidgetTester tester) async {
+        await _setTestSurface(tester, height: 1600);
+
+        final catalogModels = [
+          for (var index = 0; index < 10; index++)
+            KnownModel(
+              providerModelId: 'catalog-model-$index',
+              name: 'Catalog Model $index',
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+              description: 'General catalog model.',
+            ),
+          const KnownModel(
+            providerModelId: 'needle-model',
+            name: 'Needle Vision Model',
+            inputModalities: [Modality.text, Modality.image],
+            outputModalities: [Modality.text],
+            isReasoningModel: true,
+            supportsFunctionCalling: true,
+            description: 'The model this test searches for.',
+          ),
+        ];
+        final fakeMeliousRepository = FakeMeliousInferenceRepository([
+          () async => catalogModels,
+        ]);
+        final meliousProvider = AiConfig.inferenceProvider(
+          id: 'melious-provider-id',
+          name: 'Melious.ai',
+          baseUrl: 'https://api.melious.ai/v1',
+          apiKey: 'sk-mel-test',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.melious,
+        );
+
+        when(
+          () => mockRepository.getConfigById('melious-provider-id'),
+        ).thenAnswer((_) async => meliousProvider);
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.value([]));
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            configId: 'melious-provider-id',
+            additionalOverrides: [
+              meliousInferenceRepositoryProvider.overrideWithValue(
+                fakeMeliousRepository,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.ensureVisible(find.text('Available Models'));
+        await tester.pump();
+
+        expect(
+          find.byKey(const ValueKey('dynamic-model-catalog-scrollable-list')),
+          findsOneWidget,
+        );
+        expect(find.text('Needle Vision Model'), findsNothing);
+
+        final searchField = find.descendant(
+          of: find.byKey(const ValueKey('dynamic-model-catalog-search')),
+          matching: find.byType(TextField),
+        );
+        expect(searchField, findsOneWidget);
+        await tester.enterText(searchField, 'needle');
+        await tester.pump();
+
+        expect(
+          find.byKey(const ValueKey('dynamic-model-catalog-scrollable-list')),
+          findsNothing,
+        );
+        expect(find.text('Needle Vision Model'), findsOneWidget);
+        expect(find.text('Catalog Model 0'), findsNothing);
+
+        await tester.enterText(searchField, 'does-not-exist');
+        await tester.pump();
+
+        expect(
+          find.text(l10n(tester).filterSelectionNoMatches),
+          findsOneWidget,
+        );
+        expect(find.text('Needle Vision Model'), findsNothing);
+      },
+    );
+
     testWidgets('renders dynamic oMLX models and existing Added state', (
       WidgetTester tester,
     ) async {

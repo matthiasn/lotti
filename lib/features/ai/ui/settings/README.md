@@ -213,7 +213,9 @@ that provider. Melious uses the saved API key and `/models?include_meta=true`;
 oMLX calls the local OpenAI-compatible `/models` endpoint and only sends bearer
 auth when an API key is configured. The responses are translated into the same
 `KnownModel` shape used by static catalogs, so the UI can reuse the existing
-install tile and "Added" state.
+install tile and "Added" state. Live catalogs with more than eight rows render
+inside a bounded, searchable list so provider detail pages do not grow by the
+full endpoint result size.
 
 ```mermaid
 sequenceDiagram

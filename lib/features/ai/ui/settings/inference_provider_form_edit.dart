@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/repository/omlx_inference_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit_setup.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -284,7 +285,7 @@ class AvailableModelsSection extends ConsumerWidget {
   }
 }
 
-class _DynamicAvailableModelsSection extends ConsumerWidget {
+class _DynamicAvailableModelsSection extends ConsumerStatefulWidget {
   const _DynamicAvailableModelsSection({
     required this.providerId,
   });
@@ -292,10 +293,30 @@ class _DynamicAvailableModelsSection extends ConsumerWidget {
   final String providerId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DynamicAvailableModelsSection> createState() =>
+      _DynamicAvailableModelsSectionState();
+}
+
+class _DynamicAvailableModelsSectionState
+    extends ConsumerState<_DynamicAvailableModelsSection> {
+  static const _inlineModelLimit = 8;
+
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final catalogAsync = ref.watch(_dynamicKnownModelsProvider(providerId));
+    final catalogAsync = ref.watch(
+      _dynamicKnownModelsProvider(widget.providerId),
+    );
     final allModelsAsync = ref.watch(
       aiConfigByTypeControllerProvider(configType: AiConfigType.model),
     );
@@ -313,7 +334,7 @@ class _DynamicAvailableModelsSection extends ConsumerWidget {
               data: (allModels) {
                 final existingModelIds = allModels
                     .whereType<AiConfigModel>()
-                    .where((m) => m.inferenceProviderId == providerId)
+                    .where((m) => m.inferenceProviderId == widget.providerId)
                     .map((m) => m.providerModelId)
                     .toSet();
 
@@ -334,29 +355,47 @@ class _DynamicAvailableModelsSection extends ConsumerWidget {
 
                     final sortedModels = [...knownModels]
                       ..sort((a, b) => a.name.compareTo(b.name));
+                    final filteredModels = _filterDynamicModels(
+                      sortedModels,
+                      _searchQuery,
+                    );
+
                     return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ...sortedModels.map((knownModel) {
-                          final isAdded = existingModelIds.contains(
-                            knownModel.providerModelId,
-                          );
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              bottom: tokens.spacing.step4,
-                            ),
-                            child: _KnownModelTile(
-                              knownModel: knownModel,
-                              providerId: providerId,
-                              isAdded: isAdded,
-                            ),
-                          );
-                        }),
+                        AiSettingsSearchBar(
+                          key: const ValueKey('dynamic-model-catalog-search'),
+                          controller: _searchController,
+                          hintText: messages.aiProfileModelPickerSearchHint,
+                          isCompact: true,
+                          onChanged: (value) {
+                            setState(() => _searchQuery = value);
+                          },
+                          onClear: () {
+                            setState(() => _searchQuery = '');
+                          },
+                        ),
+                        SizedBox(height: tokens.spacing.step4),
+                        if (filteredModels.isEmpty)
+                          _DynamicModelsNoMatches(tokens: tokens)
+                        else if (filteredModels.length <= _inlineModelLimit)
+                          _DynamicModelsColumn(
+                            models: filteredModels,
+                            existingModelIds: existingModelIds,
+                            providerId: widget.providerId,
+                          )
+                        else
+                          _DynamicModelsScrollableList(
+                            models: filteredModels,
+                            existingModelIds: existingModelIds,
+                            providerId: widget.providerId,
+                          ),
                       ],
                     );
                   },
                   loading: () => _DynamicModelsLoading(tokens: tokens),
                   error: (error, _) => _DynamicModelsError(
-                    providerId: providerId,
+                    providerId: widget.providerId,
                     error: error,
                   ),
                 );
@@ -367,6 +406,116 @@ class _DynamicAvailableModelsSection extends ConsumerWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+List<KnownModel> _filterDynamicModels(
+  List<KnownModel> models,
+  String query,
+) {
+  final normalizedQuery = query.trim().toLowerCase();
+  if (normalizedQuery.isEmpty) return models;
+  return models
+      .where((model) {
+        final haystack = [
+          model.name,
+          model.providerModelId,
+          model.description,
+          ...model.inputModalities.map((modality) => modality.name),
+          ...model.outputModalities.map((modality) => modality.name),
+          if (model.isReasoningModel) 'thinking reasoning',
+          if (model.supportsFunctionCalling) 'tools function calling',
+        ].join(' ').toLowerCase();
+        return haystack.contains(normalizedQuery);
+      })
+      .toList(growable: false);
+}
+
+class _DynamicModelsNoMatches extends StatelessWidget {
+  const _DynamicModelsNoMatches({required this.tokens});
+
+  final DsTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(tokens.spacing.step4),
+      child: Text(
+        context.messages.filterSelectionNoMatches,
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _DynamicModelsColumn extends StatelessWidget {
+  const _DynamicModelsColumn({
+    required this.models,
+    required this.existingModelIds,
+    required this.providerId,
+  });
+
+  final List<KnownModel> models;
+  final Set<String> existingModelIds;
+  final String providerId;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Column(
+      children: [
+        ...models.map((knownModel) {
+          final isAdded = existingModelIds.contains(
+            knownModel.providerModelId,
+          );
+          return Padding(
+            padding: EdgeInsets.only(bottom: tokens.spacing.step4),
+            child: _KnownModelTile(
+              knownModel: knownModel,
+              providerId: providerId,
+              isAdded: isAdded,
+            ),
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _DynamicModelsScrollableList extends StatelessWidget {
+  const _DynamicModelsScrollableList({
+    required this.models,
+    required this.existingModelIds,
+    required this.providerId,
+  });
+
+  final List<KnownModel> models;
+  final Set<String> existingModelIds;
+  final String providerId;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return SizedBox(
+      key: const ValueKey('dynamic-model-catalog-scrollable-list'),
+      height: tokens.spacing.step13 * 3,
+      child: ListView.separated(
+        primary: false,
+        padding: EdgeInsets.zero,
+        itemCount: models.length,
+        separatorBuilder: (_, _) => SizedBox(height: tokens.spacing.step4),
+        itemBuilder: (context, index) {
+          final knownModel = models[index];
+          return _KnownModelTile(
+            knownModel: knownModel,
+            providerId: providerId,
+            isAdded: existingModelIds.contains(knownModel.providerModelId),
+          );
+        },
+      ),
     );
   }
 }
