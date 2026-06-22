@@ -141,7 +141,16 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                     color: textHigh,
                   ),
                 ),
-                SizedBox(height: tokens.spacing.step6),
+                SizedBox(height: tokens.spacing.step2),
+                // Plain-language reassurance so a novice isn't paralysed by the
+                // unfamiliar provider names (the recurring novice-review note).
+                Text(
+                  context.messages.onboardingConnectNotSure,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: dsTokensDark.colors.text.mediumEmphasis,
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step5),
                 for (final type in onboardingPrimaryProviders)
                   Padding(
                     padding: EdgeInsets.only(bottom: tokens.spacing.step3),

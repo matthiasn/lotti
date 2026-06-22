@@ -6463,7 +6463,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboardingApiKeyNoKeyHelp =>
-      'Première fois ? Connecte-toi là-bas, crée une clé API, puis colle-la ici. Gratuit pour commencer.';
+      'Première fois ? Connecte-toi, crée une clé API, puis colle-la — gratuit pour commencer.';
 
   @override
   String get onboardingApiKeyTitle => 'Colle ta clé API';
@@ -6490,6 +6490,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboardingConnectMoreOptions => 'Plus d\'options';
+
+  @override
+  String get onboardingConnectNotSure =>
+      'Pas sûr ? Gemini est le plus simple pour commencer.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

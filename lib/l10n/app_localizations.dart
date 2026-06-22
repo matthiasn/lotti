@@ -11035,7 +11035,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingApiKeyNoKeyHelp.
   ///
   /// In en, this message translates to:
-  /// **'New here? Sign in there, create an API key, then paste it. It\'s free to start.'**
+  /// **'New here? Sign in, create an API key, then paste it — free to start.'**
   String get onboardingApiKeyNoKeyHelp;
 
   /// No description provided for @onboardingApiKeyTitle.
@@ -11085,6 +11085,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More options'**
   String get onboardingConnectMoreOptions;
+
+  /// No description provided for @onboardingConnectNotSure.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sure? Gemini is the easiest to start with.'**
+  String get onboardingConnectNotSure;
 
   /// No description provided for @onboardingConnectOllamaName.
   ///

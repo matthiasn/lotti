@@ -348,15 +348,24 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                         horizontal: tokens.spacing.step4,
                         vertical: tokens.spacing.step3,
                       ),
-                      border: OutlineInputBorder(
+                      // A visible resting border so the field reads as a
+                      // discrete control at rest (low-vision review), brightening
+                      // to the brand colour on focus.
+                      enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(tokens.radii.m),
-                        borderSide: BorderSide.none,
+                        borderSide: BorderSide(
+                          color: textHigh.withValues(alpha: 0.24),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(tokens.radii.m),
+                        borderSide: BorderSide(color: brand, width: 2),
                       ),
                     ),
                   ),
                   if (console != null) ...[
                     SizedBox(height: tokens.spacing.step3),
-                    _GetKeyHelp(console: console, brand: brand),
+                    _GetKeyHelp(console: console),
                   ],
                 ] else
                   Text(
@@ -447,10 +456,9 @@ ColorFilter _saturationColorFilter(double s) {
 /// isn't a dead-end "link and leave". Always visible (not buried in the live
 /// status slot) so it survives the moment the user starts typing.
 class _GetKeyHelp extends StatelessWidget {
-  const _GetKeyHelp({required this.console, required this.brand});
+  const _GetKeyHelp({required this.console});
 
   final String console;
-  final Color brand;
 
   @override
   Widget build(BuildContext context) {
@@ -458,7 +466,7 @@ class _GetKeyHelp extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _GetKeyLink(console: console, brand: brand),
+        _GetKeyLink(console: console),
         SizedBox(height: tokens.spacing.step1),
         Text(
           context.messages.onboardingApiKeyNoKeyHelp,
@@ -476,10 +484,9 @@ class _GetKeyHelp extends StatelessWidget {
 /// with an underline + external-link glyph so it reads as a link on the dark
 /// panel.
 class _GetKeyLink extends StatelessWidget {
-  const _GetKeyLink({required this.console, required this.brand});
+  const _GetKeyLink({required this.console});
 
   final String console;
-  final Color brand;
 
   @override
   Widget build(BuildContext context) {
@@ -487,6 +494,10 @@ class _GetKeyLink extends StatelessWidget {
     final messages = context.messages;
     final textMed = dsTokensDark.colors.text.mediumEmphasis;
     final bodySmall = tokens.typography.styles.body.bodySmall;
+    // Teal (the app's single structural accent), not the provider brand: a
+    // "open this URL" link is an app action, so it matches the Connect CTA and
+    // "More options" rather than the provider-identity surfaces.
+    final accent = dsTokensDark.colors.interactive.enabled;
 
     return InkWell(
       onTap: () => unawaited(handleMarkdownLinkTap('https://$console', '')),
@@ -509,9 +520,9 @@ class _GetKeyLink extends StatelessWidget {
                     TextSpan(
                       text: console,
                       style: bodySmall.copyWith(
-                        color: brand,
+                        color: accent,
                         decoration: TextDecoration.underline,
-                        decorationColor: brand,
+                        decorationColor: accent,
                       ),
                     ),
                   ],
@@ -522,7 +533,7 @@ class _GetKeyLink extends StatelessWidget {
             Icon(
               Icons.open_in_new_rounded,
               size: tokens.spacing.step4,
-              color: brand,
+              color: accent,
             ),
           ],
         ),
@@ -551,7 +562,10 @@ class _VerifyStatus extends StatelessWidget {
     final messages = context.messages;
     final textMed = dsTokensDark.colors.text.mediumEmphasis;
     final success = dsTokensDark.colors.alert.success.defaultColor;
-    final danger = dsTokensDark.colors.alert.error.defaultColor;
+    // The lighter error tint (the `hover` ramp step) clears WCAG AA on the dark
+    // panel where the base `defaultColor` sits ~3:1; the failure line is the
+    // most anxious moment, so it must be the most readable.
+    final danger = dsTokensDark.colors.alert.error.hover;
 
     switch (state) {
       case ConnectionCheckIdle():
@@ -595,6 +609,7 @@ class _VerifyStatus extends StatelessWidget {
               ? messages.onboardingApiKeyInvalid
               : messages.onboardingApiKeyUnreachable(providerName),
           color: danger,
+          emphasize: true,
         );
       case ConnectionCheckFailedNetwork():
         return _line(
@@ -606,6 +621,7 @@ class _VerifyStatus extends StatelessWidget {
           ),
           text: messages.onboardingApiKeyUnreachable(providerName),
           color: danger,
+          emphasize: true,
         );
     }
   }
@@ -615,6 +631,7 @@ class _VerifyStatus extends StatelessWidget {
     required Widget leading,
     required String text,
     required Color color,
+    bool emphasize = false,
   }) {
     final tokens = context.designTokens;
     return Row(
@@ -629,6 +646,9 @@ class _VerifyStatus extends StatelessWidget {
             text,
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: color,
+              // Errors carry extra weight so the most anxious line is the
+              // clearest, per the low-vision review.
+              fontWeight: emphasize ? tokens.typography.weight.semiBold : null,
             ),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,

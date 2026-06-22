@@ -221,6 +221,12 @@ void main() {
       );
       await tester.pump();
 
+      // Scroll the skip link into the (800x600) render surface — the display
+      // hero title pushes it below the fold in the bare test viewport.
+      await tester.ensureVisible(
+        find.text(messages.onboardingWelcomeSkipButton),
+      );
+      await tester.pump();
       await tester.tap(find.text(messages.onboardingWelcomeSkipButton));
       await tester.pump();
 

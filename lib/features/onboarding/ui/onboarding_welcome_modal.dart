@@ -158,21 +158,21 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
 
   @override
   Widget build(BuildContext context) {
+    // The resize (AnimatedSize) and the content crossfade (AnimatedSwitcher)
+    // run on ONE shared timeline — same duration and curve — so the box never
+    // finishes resizing before/after the fade, which was the residual "jump".
+    // A plain symmetric crossfade is seamless here precisely because every step
+    // shares the same dark panel background: the two layers overlapping at
+    // partial opacity show no colour seam, so there's no need for a
+    // fade-through dead-zone (its empty gap was what still read as a jump).
     return AnimatedSize(
       duration: MotionDurations.medium4,
-      curve: MotionCurves.standard,
+      curve: MotionCurves.emphasizedDecelerate,
       alignment: Alignment.topCenter,
       child: AnimatedSwitcher(
-        duration: MotionDurations.medium2,
-        // Fade-through: the outgoing step accelerates away in the first half,
-        // the incoming decelerates in over the second — so two dark panels
-        // never sit at full opacity at once.
-        switchOutCurve: const Interval(0, 0.5, curve: MotionCurves.standard),
-        switchInCurve: const Interval(
-          0.35,
-          1,
-          curve: MotionCurves.emphasizedDecelerate,
-        ),
+        duration: MotionDurations.medium4,
+        switchInCurve: MotionCurves.emphasizedDecelerate,
+        switchOutCurve: MotionCurves.emphasizedDecelerate,
         // Size to the *incoming* child (top-aligned to match AnimatedSize) so
         // the height animates concurrently with the fade. The default
         // (centered Stack sized to the taller child) made the box stay tall

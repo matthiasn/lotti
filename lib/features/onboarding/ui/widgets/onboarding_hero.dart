@@ -170,7 +170,10 @@ class OnboardingHeroPanel extends StatelessWidget {
                   Text(
                     context.messages.onboardingWelcomeTitle,
                     textAlign: TextAlign.center,
-                    style: tokens.typography.styles.heading.heading2.copyWith(
+                    // heading1 (the display tier of this flow) so the promise
+                    // clearly out-ranks the step titles (heading3) — and the
+                    // larger size wraps earlier, fixing the orphaned "plan.".
+                    style: tokens.typography.styles.heading.heading1.copyWith(
                       color: textHigh,
                     ),
                   ),

@@ -6459,7 +6459,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingApiKeyNoKeyHelp =>
-      'Prima dată? Conectați-vă acolo, creați o cheie API și lipiți-o aici. Gratuit la început.';
+      'Prima dată? Conectați-vă, creați o cheie API și lipiți-o — gratuit la început.';
 
   @override
   String get onboardingApiKeyTitle => 'Introduceți cheia API';
@@ -6486,6 +6486,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingConnectMoreOptions => 'Mai multe opțiuni';
+
+  @override
+  String get onboardingConnectNotSure =>
+      'Nu sunteți sigur? Gemini este cel mai simplu pentru început.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

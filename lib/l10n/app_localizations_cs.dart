@@ -6414,7 +6414,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get onboardingApiKeyNoKeyHelp =>
-      'Poprvé tady? Přihlas se tam, vytvoř API klíč a vlož ho sem. Zdarma na začátek.';
+      'Poprvé tady? Přihlas se, vytvoř API klíč a vlož ho – zdarma na začátek.';
 
   @override
   String get onboardingApiKeyTitle => 'Vlož svůj API klíč';
@@ -6441,6 +6441,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get onboardingConnectMoreOptions => 'Další možnosti';
+
+  @override
+  String get onboardingConnectNotSure =>
+      'Nevíš? Gemini je pro začátek nejjednodušší.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

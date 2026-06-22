@@ -3177,7 +3177,7 @@
   "onboardingApiKeyGetKeyAt": "Get a key at",
   "onboardingApiKeyInvalid": "That key was rejected. Double-check it and paste it again.",
   "onboardingApiKeyLocalNote": "Runs on your device — no key needed.",
-  "onboardingApiKeyNoKeyHelp": "New here? Sign in there, create an API key, then paste it. It's free to start.",
+  "onboardingApiKeyNoKeyHelp": "New here? Sign in, create an API key, then paste it — free to start.",
   "onboardingApiKeyTitle": "Paste your API key",
   "onboardingApiKeyUnreachable": "Couldn't reach {providerName}. Check the key or your connection and try again.",
   "@onboardingApiKeyUnreachable": {
@@ -3193,6 +3193,7 @@
   "onboardingConnectMistralName": "Mistral",
   "onboardingConnectMistralTagline": "European Union",
   "onboardingConnectMoreOptions": "More options",
+  "onboardingConnectNotSure": "Not sure? Gemini is the easiest to start with.",
   "onboardingConnectOllamaName": "Ollama",
   "onboardingConnectOpenAiName": "OpenAI",
   "onboardingConnectQwenName": "Qwen",

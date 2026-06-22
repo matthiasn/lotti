@@ -6305,7 +6305,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingApiKeyNoKeyHelp =>
-      'New here? Sign in there, create an API key, then paste it. It\'s free to start.';
+      'New here? Sign in, create an API key, then paste it — free to start.';
 
   @override
   String get onboardingApiKeyTitle => 'Paste your API key';
@@ -6332,6 +6332,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingConnectMoreOptions => 'More options';
+
+  @override
+  String get onboardingConnectNotSure =>
+      'Not sure? Gemini is the easiest to start with.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

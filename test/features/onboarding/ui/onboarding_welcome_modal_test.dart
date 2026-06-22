@@ -136,6 +136,10 @@ void main() {
   ) async {
     var dismissed = false;
     await openWelcome(tester, child: host(onDismiss: () => dismissed = true));
+    // Scroll the skip link into the render surface — the display hero title
+    // pushes it below the fold in the bare test viewport.
+    await tester.ensureVisible(find.text('Look around first'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Look around first'));
     await tester.pumpAndSettle();
 
