@@ -61,6 +61,7 @@ void main() {
       'advanced-maintenance',
       'advanced-logging',
       'advanced-animations',
+      'advanced-onboarding-metrics',
       'sync-provisioned',
       'sync-node-profile',
       'sync-backfill',

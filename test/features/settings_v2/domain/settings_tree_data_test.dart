@@ -288,6 +288,7 @@ void main() {
         'advanced/animations',
         'advanced/logging',
         'advanced/maintenance',
+        'advanced/onboarding-metrics',
         'advanced/about',
       ]);
     });
@@ -382,6 +383,7 @@ void main() {
         'advanced/animations': 'advanced-animations',
         'advanced/logging': 'advanced-logging',
         'advanced/maintenance': 'advanced-maintenance',
+        'advanced/onboarding-metrics': 'advanced-onboarding-metrics',
         'advanced/about': 'advanced-about',
       });
     });
@@ -441,6 +443,7 @@ void main() {
           'advanced/animations',
           'advanced/logging',
           'advanced/maintenance',
+          'advanced/onboarding-metrics',
           'advanced/about',
         ]);
       },
