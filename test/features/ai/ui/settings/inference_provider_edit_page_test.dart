@@ -1680,6 +1680,84 @@ void main() {
       },
     );
 
+    testWidgets(
+      'Melious dynamic catalog hides rows when configured models fail to load',
+      (WidgetTester tester) async {
+        await _setTestSurface(tester, height: 1200);
+
+        final fakeMeliousRepository = _FakeMeliousInferenceRepository([
+          () async => const [
+            KnownModel(
+              providerModelId: 'deepseek-v4-pro',
+              name: 'DeepSeek V4 Pro',
+              inputModalities: [Modality.text],
+              outputModalities: [Modality.text],
+              isReasoningModel: true,
+              description: 'Advanced reasoning model.',
+            ),
+          ],
+        ]);
+        final meliousProvider = AiConfig.inferenceProvider(
+          id: 'melious-provider-id',
+          name: 'Melious.ai',
+          baseUrl: 'https://api.melious.ai/v1',
+          apiKey: 'sk-mel-test',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.melious,
+        );
+
+        when(
+          () => mockRepository.getConfigById('melious-provider-id'),
+        ).thenAnswer((_) async => meliousProvider);
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.error(Exception('model stream failed')));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+              meliousInferenceRepositoryProvider.overrideWithValue(
+                fakeMeliousRepository,
+              ),
+            ],
+            child: MaterialApp(
+              theme: ThemeData(
+                useMaterial3: true,
+                extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+              ),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const Scaffold(
+                body: AvailableModelsSection(
+                  providerId: 'melious-provider-id',
+                  providerType: InferenceProviderType.melious,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final strings = AppLocalizations.of(
+          tester.element(find.byType(AvailableModelsSection)),
+        )!;
+        expect(find.text(strings.apiKeyAvailableModelsTitle), findsOneWidget);
+        expect(find.text('DeepSeek V4 Pro'), findsNothing);
+        expect(find.text(strings.aiConfigNoModelsAvailable), findsNothing);
+        expect(
+          find.text(strings.aiConfigFailedToLoadModelsGeneric),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets('displays known models for Gemini provider', (
       WidgetTester tester,
     ) async {

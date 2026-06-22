@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -436,6 +437,129 @@ void main() {
     );
 
     test(
+      'listModels handles sparse metadata and direct error messages',
+      () async {
+        var call = 0;
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((_) async {
+            call++;
+            if (call == 1) {
+              return http.Response(
+                jsonEncode({
+                  'data': [
+                    {
+                      'id': 'openai/gpt-4.1-mini',
+                      'owned_by': '   ',
+                      '_meta': {
+                        'type': 'embedding',
+                        'input_modalities': 'text',
+                        'output_modalities': null,
+                        'context_length': 2048.5,
+                        'capabilities': {
+                          'streaming': 0,
+                          'function_calling': false,
+                          'reasoning': 'false',
+                        },
+                      },
+                    },
+                  ],
+                }),
+                200,
+              );
+            }
+
+            return http.Response(
+              jsonEncode({'message': 'top-level Melious failure'}),
+              429,
+            );
+          }),
+        );
+        addTearDown(repository.close);
+
+        final models = await repository.listModels(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
+
+        expect(models.single.name, 'GPT 4 1 Mini');
+        expect(models.single.description, contains('embeddings model'));
+        expect(models.single.description, contains('Context: 2048 tokens'));
+        expect(models.single.isReasoningModel, isFalse);
+        expect(models.single.supportsFunctionCalling, isFalse);
+
+        await expectLater(
+          repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
+          throwsA(
+            isA<MeliousInferenceException>().having(
+              (e) => e.message,
+              'message',
+              'top-level Melious failure',
+            ),
+          ),
+        );
+      },
+    );
+
+    test('listModels wraps timeout and transport failures', () async {
+      final timeoutRepository = MeliousInferenceRepository(
+        httpClient: MockClient((_) => Completer<http.Response>().future),
+      );
+      addTearDown(timeoutRepository.close);
+
+      await expectLater(
+        timeoutRepository.listModels(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          timeout: Duration.zero,
+        ),
+        throwsA(
+          isA<MeliousInferenceException>().having(
+            (e) => e.message,
+            'message',
+            'Melious model list request timed out',
+          ),
+        ),
+      );
+
+      final failingRepository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async {
+          throw Exception('socket closed');
+        }),
+      );
+      addTearDown(failingRepository.close);
+
+      await expectLater(
+        failingRepository.listModels(baseUrl: baseUrl, apiKey: apiKey),
+        throwsA(
+          isA<MeliousInferenceException>().having(
+            (e) => e.message,
+            'message',
+            contains('Failed to fetch Melious models'),
+          ),
+        ),
+      );
+    });
+
+    test('listModels clips raw non-JSON error bodies', () async {
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async {
+          return http.Response('x' * 260, 500);
+        }),
+      );
+      addTearDown(repository.close);
+
+      await expectLater(
+        repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
+        throwsA(
+          isA<MeliousInferenceException>()
+              .having((e) => e.statusCode, 'statusCode', 500)
+              .having((e) => e.message.length, 'message length', 243)
+              .having((e) => e.message, 'message suffix', endsWith('...')),
+        ),
+      );
+    });
+
+    test(
       'transcribeAudio sends multipart request and returns transcript',
       () async {
         http.BaseRequest? captured;
@@ -468,6 +592,64 @@ void main() {
         expect(request.fields['model'], 'openai/whisper-large-v3');
         expect(request.fields['response_format'], 'json');
         expect(request.files.single.filename, 'audio.m4a');
+      },
+    );
+
+    test(
+      'transcribeAudio supports custom response format and timeout',
+      () async {
+        http.BaseRequest? captured;
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient.streaming((request, _) async {
+            captured = request;
+            return http.StreamedResponse(
+              Stream.value(utf8.encode(jsonEncode({'text': 'ciao'}))),
+              200,
+            );
+          }),
+        );
+        addTearDown(repository.close);
+
+        await repository
+            .transcribeAudio(
+              model: 'openai/whisper-large-v3',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              responseFormat: 'verbose_json',
+            )
+            .toList();
+
+        final request = captured! as http.MultipartRequest;
+        expect(request.fields['response_format'], 'verbose_json');
+
+        final timeoutRepository = MeliousInferenceRepository(
+          httpClient: MockClient.streaming((_, _) {
+            return Completer<http.StreamedResponse>().future;
+          }),
+        );
+        addTearDown(timeoutRepository.close);
+
+        await expectLater(
+          timeoutRepository
+              .transcribeAudio(
+                model: 'openai/whisper-large-v3',
+                audioBase64: base64Encode([1, 2, 3]),
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                timeout: Duration.zero,
+              )
+              .toList(),
+          throwsA(
+            isA<TranscriptionException>()
+                .having(
+                  (e) => e.provider,
+                  'provider',
+                  'MeliousInferenceRepository',
+                )
+                .having((e) => e.statusCode, 'statusCode', 408),
+          ),
+        );
       },
     );
 
@@ -626,6 +808,50 @@ void main() {
       );
     });
 
+    test('generateImage wraps malformed JSON and transport failures', () async {
+      final malformedRepository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async => http.Response('{', 200)),
+      );
+      addTearDown(malformedRepository.close);
+
+      await expectLater(
+        malformedRepository.generateImage(
+          prompt: 'a quiet lake',
+          model: 'flux-2-klein',
+          provider: meliousProvider(),
+        ),
+        throwsA(
+          isA<MeliousInferenceException>().having(
+            (e) => e.message,
+            'message',
+            'Melious image generation response was not valid JSON',
+          ),
+        ),
+      );
+
+      final failingRepository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async {
+          throw Exception('connection reset');
+        }),
+      );
+      addTearDown(failingRepository.close);
+
+      await expectLater(
+        failingRepository.generateImage(
+          prompt: 'a quiet lake',
+          model: 'flux-2-klein',
+          provider: meliousProvider(),
+        ),
+        throwsA(
+          isA<MeliousInferenceException>().having(
+            (e) => e.message,
+            'message',
+            contains('Failed to generate Melious image'),
+          ),
+        ),
+      );
+    });
+
     test('generateImage rejects malformed image payloads', () async {
       final cases = <Object>[
         const [],
@@ -716,6 +942,24 @@ void main() {
       );
       expect(
         MeliousInferenceRepository.isMeliousTranscriptionModel(
+          'custom/transcription-fast',
+        ),
+        isTrue,
+      );
+      expect(
+        MeliousInferenceRepository.isMeliousTranscriptionModel(
+          'custom-transcribe-model',
+        ),
+        isTrue,
+      );
+      expect(
+        MeliousInferenceRepository.isMeliousTranscriptionModel(
+          'custom-stt-model',
+        ),
+        isTrue,
+      );
+      expect(
+        MeliousInferenceRepository.isMeliousTranscriptionModel(
           'qwen/qwen3-vl-plus',
         ),
         isFalse,
@@ -730,6 +974,10 @@ void main() {
           originalError: 'rate limit',
         ).toString(),
         'MeliousInferenceException (HTTP 429): failed: rate limit',
+      );
+      expect(
+        const MeliousInferenceException('failed').toString(),
+        'MeliousInferenceException: failed',
       );
     });
   });

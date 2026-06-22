@@ -165,6 +165,26 @@ void main() {
       expect(request.fields.containsKey('prompt'), isFalse);
     });
 
+    test('trims non-blank prompt field', () async {
+      final stub = _stubStreamingOk();
+      final repo = OmlxTranscriptionRepository(httpClient: stub.client);
+      addTearDown(repo.close);
+
+      await repo
+          .transcribeAudio(
+            model: omlxWhisperLargeV3ModelId,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            prompt: '  domain vocabulary  ',
+          )
+          .toList();
+
+      expect(stub.captured(), isA<http.MultipartRequest>());
+      final request = stub.captured()! as http.MultipartRequest;
+      expect(request.fields['prompt'], 'domain vocabulary');
+    });
+
     test('surfaces structured provider errors', () async {
       final repo = OmlxTranscriptionRepository(
         httpClient: MockClient.streaming((_, _) async {
