@@ -34,6 +34,21 @@ void main() {
       expect(byX[DateTime(2024, 3, 20).millisecondsSinceEpoch], 10.0);
     });
 
+    testWidgets('disables the implicit data-swap animation', (tester) async {
+      await hPumpChart(
+        tester,
+        data: [Observation(DateTime(2024, 3, 10), 5)],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      // The chart rebuilds on every span change and background data refresh;
+      // a non-zero duration would replay fl_chart's grow-from-baseline tween
+      // each time — unsolicited motion. It must be pinned to zero.
+      final barChart = tester.widget<BarChart>(find.byType(BarChart));
+      expect(barChart.duration, Duration.zero);
+    });
+
     testWidgets('wraps chart in a Padding widget', (tester) async {
       await hPumpChart(
         tester,

@@ -69,6 +69,38 @@ void main() {
       expect(find.byIcon(Icons.star_rate_rounded), findsNothing);
     });
 
+    testWidgets('reduced motion shows the button steady, without pulsing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const PulsatingRateButton(
+            entryId: testEntryId,
+            sessionJustEnded: true,
+          ),
+          mediaQueryData: const MediaQueryData(disableAnimations: true),
+          overrides: [
+            configFlagProvider(
+              enableSessionRatingsFlag,
+            ).overrideWith((_) => Stream.value(true)),
+            ratingRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // The button is shown at full opacity — the 0.4→1.0 pulse fade never
+      // runs under reduced motion — and stays steady across time.
+      final icon = tester.widget<Icon>(find.byIcon(Icons.star_rate_rounded));
+      expect(icon.color!.a, 1.0);
+      await tester.pump(const Duration(seconds: 2));
+      final iconAfter = tester.widget<Icon>(
+        find.byIcon(Icons.star_rate_rounded),
+      );
+      expect(iconAfter.color!.a, 1.0);
+    });
+
     testWidgets('visible when ratings enabled and session just ended', (
       tester,
     ) async {

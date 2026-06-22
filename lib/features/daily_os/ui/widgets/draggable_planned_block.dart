@@ -118,8 +118,16 @@ class _DraggablePlannedBlockState extends ConsumerState<DraggablePlannedBlock> {
     final highlightedId = ref.watch(highlightedCategoryIdProvider);
     final isHighlighted = categoryId != null && highlightedId == categoryId;
     final isDragging = _dragState != null;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
-    return Positioned(
+    return AnimatedPositioned(
+      // Follow the finger 1:1 while dragging (no animation), then ease from the
+      // drop point to the 15-min-snapped slot on release instead of teleporting.
+      // Matches the inner AnimatedContainer's 150ms.
+      duration: (isDragging || reduceMotion)
+          ? Duration.zero
+          : const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
       top: top,
       left: 4,
       right: 4,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -27,14 +29,35 @@ class LockInScene extends StatefulWidget {
 class _LockInSceneState extends State<LockInScene>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  bool _started = false;
+  Timer? _reduceMotionTimer;
 
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: widget.totalDuration)
-          ..addStatusListener(_onStatusChanged)
-          ..forward();
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.totalDuration,
+    )..addStatusListener(_onStatusChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Start here (not initState) so the reduced-motion setting is readable.
+    if (_started) return;
+    _started = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      // Reduced motion: skip the ~3.4s full-screen takeover. Snap to the
+      // resolved end frame and honour the routing contract after a brief,
+      // un-animated beat so the host still advances to the Day view.
+      _controller.value = 1;
+      _reduceMotionTimer = Timer(MotionDurations.long2, () {
+        if (mounted) widget.onComplete();
+      });
+    } else {
+      _controller.forward();
+    }
   }
 
   void _onStatusChanged(AnimationStatus status) {
@@ -45,6 +68,7 @@ class _LockInSceneState extends State<LockInScene>
 
   @override
   void dispose() {
+    _reduceMotionTimer?.cancel();
     _controller
       ..removeStatusListener(_onStatusChanged)
       ..dispose();

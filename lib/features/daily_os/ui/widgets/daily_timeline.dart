@@ -35,6 +35,10 @@ class DailyTimeline extends ConsumerWidget {
     );
 
     return unifiedDataAsync.when(
+      // Keep the established timeline visible during a background reload (sync /
+      // db tick) instead of flashing the full-screen loading/empty shell — the
+      // "never flash established UI during background refresh" rule.
+      skipLoadingOnReload: true,
       data: (unifiedData) {
         final data = unifiedData.timelineData;
         if (data.plannedSlots.isEmpty && data.actualSlots.isEmpty) {

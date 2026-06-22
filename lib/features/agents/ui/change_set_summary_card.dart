@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/motion_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
@@ -64,31 +65,44 @@ class ChangeSetSummaryCard extends ConsumerWidget {
       ),
     };
 
-    return changeSetsAsync.when(
-      skipLoadingOnReload: true,
-      skipLoadingOnRefresh: true,
-      data: (entities) {
-        final changeSets = entities.whereType<ChangeSetEntity>().toList();
-        if (changeSets.isEmpty) return const SizedBox.shrink();
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    // The card pops between empty (SizedBox.shrink) and a full proposals stack,
+    // and shrinks as items are confirmed/rejected. Animate the height change so
+    // the event/project detail content below it eases instead of snapping.
+    // Width is pinned full so only the height animates.
+    return AnimatedSize(
+      alignment: Alignment.topCenter,
+      duration: reduceMotion ? Duration.zero : MotionDurations.medium2,
+      curve: MotionCurves.emphasizedDecelerate,
+      child: SizedBox(
+        width: double.infinity,
+        child: changeSetsAsync.when(
+          skipLoadingOnReload: true,
+          skipLoadingOnRefresh: true,
+          data: (entities) {
+            final changeSets = entities.whereType<ChangeSetEntity>().toList();
+            if (changeSets.isEmpty) return const SizedBox.shrink();
 
-        return Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Column(
-            children: [
-              for (final changeSet in changeSets)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _ChangeSetCard(
-                    changeSet: changeSet,
-                    confirmationProvider: _confirmationProvider,
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-      error: (_, _) => const SizedBox.shrink(),
-      loading: () => const SizedBox.shrink(),
+            return Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Column(
+                children: [
+                  for (final changeSet in changeSets)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _ChangeSetCard(
+                        changeSet: changeSet,
+                        confirmationProvider: _confirmationProvider,
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+          error: (_, _) => const SizedBox.shrink(),
+          loading: () => const SizedBox.shrink(),
+        ),
+      ),
     );
   }
 }

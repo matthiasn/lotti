@@ -19,6 +19,9 @@ class DaySummary extends ConsumerWidget {
     );
 
     return budgetStatsAsync.when(
+      // Keep the established summary visible during a background reload instead
+      // of collapsing it to a spinner (and the card out entirely on error).
+      skipLoadingOnReload: true,
       data: (stats) {
         return ModernBaseCard(
           margin: const EdgeInsets.all(AppTheme.spacingLarge),

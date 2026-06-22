@@ -61,6 +61,14 @@ class _RitualPendingIndicatorState extends ConsumerState<RitualPendingIndicator>
       return const SizedBox.shrink();
     }
 
+    // Under reduced motion, show a steady dot at full strength instead of the
+    // looping pulse/glow — a continuous decorative animation is exactly what
+    // the setting asks us to drop.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller?.stop();
+      return _buildDot(1);
+    }
+
     _ensureAnimationInitialized();
     final controller = _controller!;
     if (!controller.isAnimating) controller.repeat(reverse: true);
@@ -68,27 +76,25 @@ class _RitualPendingIndicatorState extends ConsumerState<RitualPendingIndicator>
 
     return AnimatedBuilder(
       animation: animation,
-      builder: (context, child) {
-        return Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AgentPalette.purple.withAlpha(
-              (animation.value * 255).toInt(),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AgentPalette.purple.withAlpha(
-                  (animation.value * 128).toInt(),
-                ),
-                blurRadius: 6,
-                spreadRadius: 1,
-              ),
-            ],
+      builder: (context, child) => _buildDot(animation.value),
+    );
+  }
+
+  Widget _buildDot(double value) {
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AgentPalette.purple.withAlpha((value * 255).toInt()),
+        boxShadow: [
+          BoxShadow(
+            color: AgentPalette.purple.withAlpha((value * 128).toInt()),
+            blurRadius: 6,
+            spreadRadius: 1,
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

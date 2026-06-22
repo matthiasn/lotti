@@ -23,6 +23,7 @@ class ProposalsSection extends StatelessWidget {
     this.onResolveStart,
     this.onResolveEnd,
     this.settling = false,
+    this.newlyArrived = const {},
     super.key,
   });
 
@@ -52,6 +53,10 @@ class ProposalsSection extends StatelessWidget {
   /// True while at least one row is committing/collapsing, so the surviving
   /// rows guard taps against a mis-targeted second action while they slide.
   final bool settling;
+
+  /// Fingerprints whose row should play an entrance reveal (a proposal that
+  /// arrived after the initial load). Rows not in this set appear instantly.
+  final Set<String> newlyArrived;
 
   @override
   Widget build(BuildContext context) {
@@ -113,25 +118,35 @@ class ProposalsSection extends StatelessWidget {
             // (step4) *inside* its collapse subtree, so the gap closes with the
             // row when it leaves — no leftover spacing to snap on prune.
             for (var i = 0; i < open.length; i++)
-              ProposalRow(
-                // Stable identity (set id + item index) so the row's
-                // timer/animation/busy state stays bound to its suggestion
-                // when the open list mutates (e.g. confirm-all), instead of
-                // index-based element reuse transferring it to a sibling.
+              // A newly arrived proposal eases its own height open; the initial
+              // batch (and a row re-appearing mid-collapse) appears instantly.
+              // EnterTransition is a SizeTransition, so it composes with the
+              // row's own collapse on exit without fighting it.
+              EnterTransition(
                 key: ValueKey(
-                  'open-${open[i].changeSet.id}-${open[i].itemIndex}',
+                  'enter-${open[i].changeSet.id}-${open[i].itemIndex}',
                 ),
-                suggestion: open[i],
-                // Only the first pending row gets the swipe-affordance
-                // wiggle hint so the page doesn't pulse with every
-                // visible row.
-                isFirst: i == 0,
-                confirmAllPulse: confirmAllPulse,
-                cascadeIndex: i,
-                onResolveStart: onResolveStart,
-                onResolveEnd: onResolveEnd,
-                settling: settling,
-                pendingCount: pendingCount ?? open.length,
+                animate: newlyArrived.contains(open[i].fingerprint),
+                child: ProposalRow(
+                  // Stable identity (set id + item index) so the row's
+                  // timer/animation/busy state stays bound to its suggestion
+                  // when the open list mutates (e.g. confirm-all), instead of
+                  // index-based element reuse transferring it to a sibling.
+                  key: ValueKey(
+                    'open-${open[i].changeSet.id}-${open[i].itemIndex}',
+                  ),
+                  suggestion: open[i],
+                  // Only the first pending row gets the swipe-affordance
+                  // wiggle hint so the page doesn't pulse with every
+                  // visible row.
+                  isFirst: i == 0,
+                  confirmAllPulse: confirmAllPulse,
+                  cascadeIndex: i,
+                  onResolveStart: onResolveStart,
+                  onResolveEnd: onResolveEnd,
+                  settling: settling,
+                  pendingCount: pendingCount ?? open.length,
+                ),
               ),
           if (resolved.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -156,6 +171,83 @@ class ProposalsSection extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// One-shot entrance reveal for a card section that lands *after* the card is
+/// already on screen (an async report or the proposals section appearing).
+///
+/// Eases the child's height open from zero — vertical only, full width
+/// throughout — with a fade, so the content below it is pushed down smoothly
+/// instead of in one jerking frame. Built on [SizeTransition] rather than
+/// [AnimatedSize] on purpose: it animates exactly once, then sits at full size
+/// as an inert pass-through, so a proposal row collapsing *inside* it later is
+/// left entirely to that row's own choreography (an enclosing `AnimatedSize`
+/// would instead try to re-drive — and crash on — that inner size change).
+///
+/// Plays only when [animate] is true and reduced motion is off; otherwise it
+/// snaps to full size on its first layout (used for content already present on
+/// the card's first frame, which the card's `StaggeredEntrance` covers).
+class EnterTransition extends StatefulWidget {
+  const EnterTransition({
+    required this.child,
+    this.animate = true,
+    super.key,
+  });
+
+  final Widget child;
+
+  /// Whether to play the reveal. False snaps straight to full size — the
+  /// caller has decided this content should appear without its own motion.
+  final bool animate;
+
+  @override
+  State<EnterTransition> createState() => _EnterTransitionState();
+}
+
+class _EnterTransitionState extends State<EnterTransition>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: MotionDurations.medium2,
+  );
+  late final Animation<double> _size = CurvedAnimation(
+    parent: _controller,
+    curve: MotionCurves.emphasizedDecelerate,
+  );
+  late final Animation<double> _fade = CurvedAnimation(
+    parent: _controller,
+    curve: MotionCurves.standard,
+  );
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Decide once, on first layout, so a later rebuild (e.g. [_ready] flipping
+    // on the parent) can never restart a reveal that already played.
+    if (_started) return;
+    _started = true;
+    if (widget.animate && !MediaQuery.disableAnimationsOf(context)) {
+      _controller.forward();
+    } else {
+      _controller.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizeTransition(
+      alignment: Alignment.topCenter,
+      sizeFactor: _size,
+      child: FadeTransition(opacity: _fade, child: widget.child),
     );
   }
 }

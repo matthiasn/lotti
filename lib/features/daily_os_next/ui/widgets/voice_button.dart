@@ -155,8 +155,10 @@ class _VoiceButtonState extends State<VoiceButton>
   );
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // didChangeDependencies (not initState) so the reduced-motion setting is
+    // readable, and so toggling it later re-syncs the breath ticker.
     _syncBreath();
   }
 
@@ -166,11 +168,15 @@ class _VoiceButtonState extends State<VoiceButton>
     if (oldWidget.phase != widget.phase) _syncBreath();
   }
 
-  /// The breath ticker runs ONLY while listening — every other phase is
-  /// static, so no frames are burned on an invisible animation.
+  /// The breath ticker runs ONLY while listening AND motion is allowed — every
+  /// other phase (and reduced motion) is static, so no frames are burned on an
+  /// invisible animation and the disc never pulses for a reduced-motion user.
   void _syncBreath() {
-    if (widget.phase == CapturePhase.listening) {
-      _breath.repeat();
+    final shouldBreathe =
+        widget.phase == CapturePhase.listening &&
+        !MediaQuery.disableAnimationsOf(context);
+    if (shouldBreathe) {
+      if (!_breath.isAnimating) _breath.repeat();
     } else {
       _breath
         ..stop()

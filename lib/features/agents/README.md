@@ -1671,9 +1671,29 @@ Key invariants:
   speaks the verdict + remaining count; the committed row is `ExcludeSemantics`'d
   immediately (no ghost focus); action buttons carry explicit
   `Semantics(button:)` roles + labels.
+- **Entrance reveal (the dual of the exit).** Sections the agent produces *live
+  during a wake* — the TL;DR landing, the proposals section first appearing —
+  reveal their height open from zero with a fade via `EnterTransition` (a
+  one-shot `SizeTransition`+`FadeTransition` in `proposals_section_part.dart`),
+  so the linked entries below ease down instead of being shoved in one frame.
+  It is gated on the agent's `isRunning` flag, so statically loaded content
+  (opening a task that already has a report/proposals, or a background sync)
+  stays instant — the card's `StaggeredEntrance` owns the on-open motion.
+  `EnterTransition` is a one-shot built on `SizeTransition` (not `AnimatedSize`)
+  on purpose: it reveals once then sits inert, so a proposal row collapsing
+  *inside* it later is left entirely to that row's own choreography — an
+  enclosing `AnimatedSize` would instead try to re-drive (and assert on) that
+  inner, per-frame size change.
+- **Off-screen growth anchor.** When a new proposal grows the card while the
+  card has scrolled *fully above* the viewport, `TaskDetailsPage` pins the seam
+  just below the card (a second `ScrollAnchor` keyed on the linked-entries
+  sliver, engaged only when the card is off-screen — the visible/partly-visible
+  case is left to the entrance reveal) so the growth never moves the visible
+  area. This is the rise-side dual of `_suggestionsAnchor`, which guards the
+  shrink-above-card case on resolve.
 - **Reduced motion** (`MediaQuery.disableAnimations`): no resolve/collapse
-  travel — the row is pruned instantly; pill swaps instantly; the haptic still
-  fires (feedback, not motion).
+  travel — the row is pruned instantly; pill swaps instantly; the entrance
+  reveal is instant; the haptic still fires (feedback, not motion).
 
 ### `AgentInternalsPanel` — right-side overlay
 

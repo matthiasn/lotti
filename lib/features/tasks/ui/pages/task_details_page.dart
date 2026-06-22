@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -58,6 +59,12 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   final GlobalKey<State<StatefulWidget>> _suggestionsKey = GlobalKey(
     debugLabel: 'task_suggestions',
   );
+
+  /// Anchors the seam just below the AI card (the linked-entries sliver). When
+  /// the card grows while scrolled fully above the viewport, pinning this seam
+  /// keeps the visible content from being shoved down. See
+  /// [_holdBelowCardIfCardOffscreen].
+  final GlobalKey _belowCardKey = GlobalKey(debugLabel: 'task_below_card');
   Timer? _suggestionsRetryTimer;
 
   /// Holds the AI proposals' on-screen position when a proposal is confirmed:
@@ -65,6 +72,16 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// which would otherwise shove the card (and the proposal the user just
   /// tapped) downward. The anchor keeps the spot stable across that relayout.
   late final ScrollAnchor _suggestionsAnchor;
+
+  /// Holds the content below the AI card fixed while the card grows off-screen
+  /// above the viewport (a new suggestion landing), so the visible area never
+  /// jumps. The dual of [_suggestionsAnchor], which guards shrink-above-card.
+  late final ScrollAnchor _belowCardAnchor;
+
+  /// Spans the card's `EnterTransition` reveal (`MotionDurations.medium2`) plus
+  /// a buffer, so the below-card pin holds for the whole growth animation.
+  static final Duration _belowCardGrowthHold =
+      MotionDurations.medium2 + const Duration(milliseconds: 200);
   int? _lastOpenSuggestionCount;
 
   /// The task the [_lastOpenSuggestionCount] belongs to. If this page's state is
@@ -99,6 +116,12 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
           const Duration(milliseconds: 200),
     );
 
+    _belowCardAnchor = ScrollAnchor(
+      controller: _scrollController,
+      locate: _belowCardViewportTop,
+      holdDuration: _belowCardGrowthHold,
+    );
+
     super.initState();
   }
 
@@ -107,6 +130,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     disposeHighlight();
     _suggestionsRetryTimer?.cancel();
     _suggestionsAnchor.dispose();
+    _belowCardAnchor.dispose();
     _scrollController
       ..removeListener(_listener)
       ..removeListener(_updateOffsetListener)
@@ -138,8 +162,53 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     final nextOpen = next.value?.open.length;
     final previousOpen = _lastOpenSuggestionCount;
     if (nextOpen != null) _lastOpenSuggestionCount = nextOpen;
-    if (previousOpen != null && nextOpen != null && nextOpen < previousOpen) {
+    if (nextOpen == null) return;
+    if (previousOpen != null && nextOpen < previousOpen) {
       _suggestionsAnchor.hold();
+    } else if (nextOpen > (previousOpen ?? 0)) {
+      // A new proposal grew the card. If it has scrolled fully above the
+      // viewport (the user can't see it), pin the content below the card so the
+      // growth doesn't push the visible area down. A visible card is left to
+      // the card's own EnterTransition, which eases the growth in smoothly.
+      _holdBelowCardIfCardOffscreen();
+    }
+  }
+
+  /// Global-Y of the first content below the AI card (the linked-entries
+  /// sliver's top), or null when it isn't laid out / attached.
+  double? _belowCardViewportTop() {
+    final renderObject = _belowCardKey.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.attached) return null;
+    return renderObject.localToGlobal(Offset.zero).dy;
+  }
+
+  /// Global-Y of the top of the scroll viewport (where the slivers begin to be
+  /// painted), or null when it isn't available.
+  double? _viewportTopGlobal() {
+    final renderObject = _belowCardKey.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.attached) return null;
+    final viewport = RenderAbstractViewport.maybeOf(renderObject);
+    // `is` doesn't promote here (RenderBox isn't a subtype of
+    // RenderAbstractViewport), so cast explicitly after the guard. The
+    // concrete viewport behind a CustomScrollView (RenderViewport) is a
+    // RenderBox.
+    if (viewport is! RenderBox) return null;
+    final viewportBox = viewport! as RenderBox;
+    if (!viewportBox.attached) return null;
+    return viewportBox.localToGlobal(Offset.zero).dy;
+  }
+
+  /// Pin the content below the AI card *only* when the card (and the seam just
+  /// below it) has scrolled fully above the viewport top — i.e. the user can't
+  /// see the card grow. A visible / partly-visible card is deliberately left
+  /// alone so its `EnterTransition` reveals the growth in place rather than the
+  /// page scrolling under the user.
+  void _holdBelowCardIfCardOffscreen() {
+    final belowTop = _belowCardViewportTop();
+    final viewportTop = _viewportTopGlobal();
+    if (belowTop == null || viewportTop == null) return;
+    if (belowTop <= viewportTop) {
+      _belowCardAnchor.hold();
     }
   }
 
@@ -270,6 +339,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
             ),
             SliverToBoxAdapter(
               child: Center(
+                key: _belowCardKey,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 760),
                   child: Padding(

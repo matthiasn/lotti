@@ -70,6 +70,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   drop back to the saved text. The toolbar also adapts to width: on a roomy
   desktop window every formatting control is one click away, while on narrow
   screens it shows the essentials plus a "…" button that opens the rest.
+- **New AI suggestions now ease into place instead of snapping.** When a fresh
+  proposal lands, its row grows open and the content below it glides down rather
+  than jumping — and if the card has scrolled off the top of the screen, nothing
+  on screen moves at all. The event recap and proposal cards and the
+  daily-planning "learning" cards reveal the same calm way.
+- **Charts no longer replay their grow-in animation on every refresh.** The
+  dashboard bar chart and the habits completion-rate chart used to re-animate
+  each time their data refreshed or you changed the time range; now they update
+  in place.
+- **Reduce motion quiets more of the app.** With *reduce motion* on, the looping
+  pulse on the pending-review dot, the rate-session button and the voice-capture
+  orb hold steady instead of breathing, and the full-screen "locking in"
+  takeover resolves at once.
+- Scrolling the time-history strip at the top of the Day view is smoother on
+  long histories — the background chart no longer rebuilds on every frame as you
+  drag.
+- **The template and soul evolution chats no longer jerk to the bottom while
+  you're reading.** If you've scrolled up to look back at earlier messages, a
+  new reply (or the typing indicator) no longer yanks you down — the view only
+  follows along when you're already at the bottom, and eases there instead of
+  snapping.
+- **Dragging a planned block on the Day timeline now settles smoothly.** When
+  you let go, the block eases into its snapped 15-minute slot instead of
+  teleporting to it.
+- Checklist cards in the journal feed no longer grow a step taller a moment
+  after they appear — their progress chip and bar hold their space from the
+  first frame, so the list doesn't shuffle under you as you scroll.
 ### Fixed
 - An inference profile whose model's provider had been deleted no longer shows a
   garbled raw model id in its slots. The slot now reads "Model unavailable — its

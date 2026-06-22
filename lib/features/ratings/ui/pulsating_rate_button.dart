@@ -81,6 +81,7 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
   late final AnimationController _controller;
   late final Animation<double> _animation;
   bool _isPulsing = false;
+  bool _pulseStartChecked = false;
 
   /// Number of full pulse cycles (forward + reverse = 1 cycle). With a
   /// 1-second animation duration per leg, 5 cycles is about 10 seconds.
@@ -97,8 +98,16 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
     _animation = Tween<double>(begin: 0.4, end: 1).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
+  }
 
-    if (widget.shouldPulse) {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Start the pulse here (not initState) so the reduced-motion setting is
+    // readable: under reduced motion the button stays visible but never pulses.
+    if (_pulseStartChecked) return;
+    _pulseStartChecked = true;
+    if (widget.shouldPulse && !MediaQuery.disableAnimationsOf(context)) {
       _startPulsing();
     }
   }
@@ -123,7 +132,10 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
   @override
   void didUpdateWidget(_AnimatedRateButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.shouldPulse && !oldWidget.shouldPulse && !_isPulsing) {
+    if (widget.shouldPulse &&
+        !oldWidget.shouldPulse &&
+        !_isPulsing &&
+        !MediaQuery.disableAnimationsOf(context)) {
       _startPulsing();
     }
   }

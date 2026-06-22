@@ -106,6 +106,13 @@ class DefinitionsListPage<T> extends StatefulWidget {
 class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
   late String _queryRaw = widget.initialSearchTerm ?? '';
 
+  // Memoize the filtered+sorted list so an unrelated rebuild (a background
+  // provider re-emitting the same list during sync / db notifications) doesn't
+  // redo the O(n log n) sort. Keyed on the source list identity + the query.
+  List<T>? _cachedFiltered;
+  List<T>? _cachedFilteredItems;
+  String? _cachedFilteredQuery;
+
   @override
   void didUpdateWidget(DefinitionsListPage<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -189,17 +196,33 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
     );
   }
 
-  List<Widget> _buildContentSlivers(BuildContext context, List<T> items) {
-    final tokens = context.designTokens;
+  /// The query-filtered, name-sorted items, memoized on the source list
+  /// identity + the lowercased query so a background rebuild doesn't re-sort.
+  List<T> _filteredItems(List<T> items) {
+    final query = _queryLower;
+    final cached = _cachedFiltered;
+    if (cached != null &&
+        identical(items, _cachedFilteredItems) &&
+        query == _cachedFilteredQuery) {
+      return cached;
+    }
     final haystack = widget.searchText ?? widget.displayName;
     final filtered = items
         .where(
           (item) =>
-              _queryLower.isEmpty ||
-              haystack(item).toLowerCase().contains(_queryLower),
+              query.isEmpty || haystack(item).toLowerCase().contains(query),
         )
         .sortedBy((item) => widget.displayName(item).toLowerCase())
         .toList();
+    _cachedFiltered = filtered;
+    _cachedFilteredItems = items;
+    _cachedFilteredQuery = query;
+    return filtered;
+  }
+
+  List<Widget> _buildContentSlivers(BuildContext context, List<T> items) {
+    final tokens = context.designTokens;
+    final filtered = _filteredItems(items);
 
     return [
       // Search over zero items is dead UI — the empty state owns that

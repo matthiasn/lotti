@@ -224,6 +224,40 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   group('DraggablePlannedBlock rendering', () {
+    testWidgets('eases to its slot on release (AnimatedPositioned)', (
+      tester,
+    ) async {
+      final slot = createTestSlot(
+        startHour: 9,
+        startMinute: 0,
+        endHour: 11,
+        endMinute: 0,
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          slot: slot,
+          sectionStartHour: 8,
+          sectionEndHour: 18,
+        ),
+      );
+      await tester.pump();
+
+      // At rest the block is an AnimatedPositioned with a non-zero duration, so
+      // a drag release eases from the drop point to the snapped slot instead of
+      // teleporting. (While dragging the duration is zeroed to follow the
+      // finger 1:1.)
+      final positioned = tester.widget<AnimatedPositioned>(
+        find
+            .descendant(
+              of: find.byType(DraggablePlannedBlock),
+              matching: find.byType(AnimatedPositioned),
+            )
+            .first,
+      );
+      expect(positioned.duration, const Duration(milliseconds: 150));
+    });
+
     testWidgets('renders category name', (tester) async {
       final slot = createTestSlot(
         startHour: 9,

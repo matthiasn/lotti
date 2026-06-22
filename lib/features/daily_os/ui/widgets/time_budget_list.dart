@@ -30,6 +30,9 @@ class TimeBudgetList extends ConsumerWidget {
         .value;
 
     return unifiedDataAsync.when(
+      // Keep the established budgets list visible during a background reload
+      // (sync / db tick) instead of flashing the loading spinner / empty state.
+      skipLoadingOnReload: true,
       data: (unifiedData) {
         final budgets = unifiedData.budgetProgress;
         if (budgets.isEmpty) {
