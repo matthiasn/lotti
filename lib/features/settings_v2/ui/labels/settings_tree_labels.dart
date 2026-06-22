@@ -162,6 +162,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.settingsMaintenanceTitle,
           desc: m.settingsAdvancedMaintenanceSubtitle,
         );
+      case 'advanced/onboarding-metrics':
+        return (
+          title: m.settingsOnboardingMetricsTitle,
+          desc: m.settingsOnboardingMetricsSubtitle,
+        );
       case 'advanced/about':
         return (
           title: m.settingsAboutTitle,

@@ -11,6 +11,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -26,6 +27,7 @@ import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
+import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -97,6 +99,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<AgentDatabase>(AgentDatabase())
     ..registerSingleton<NotificationsDb>(NotificationsDb())
     ..registerSingleton<EditorDb>(EditorDb())
+    ..registerSingleton<OnboardingMetricsDb>(OnboardingMetricsDb())
     ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<TimeService>(
@@ -166,6 +169,35 @@ Future<void> registerSingletons() async {
     );
   }
   final domainLogger = getIt<DomainLogger>();
+
+  // FTUE measurement substrate. Recording the first-launch signal here (rather
+  // than when the welcome UI shows) ensures pre-FTUE users upgrading into this
+  // build are tagged as the baseline cohort even if they never trigger the
+  // welcome, which is essential for clean before/after retention comparison.
+  final onboardingMetricsRepository = OnboardingMetricsRepository(
+    db: getIt<OnboardingMetricsDb>(),
+    logger: domainLogger,
+    hasExistingUserData: () async =>
+        await journalDb.countAllJournalEntries() > 0,
+  );
+  getIt.registerSingleton<OnboardingMetricsRepository>(
+    onboardingMetricsRepository,
+  );
+  // Fire-and-forget startup write — guard it so a metrics-DB failure can't
+  // surface as an uncaught async error during startup.
+  unawaited(() async {
+    try {
+      await onboardingMetricsRepository.recordAppFirstSeenIfAbsent();
+    } catch (error, stackTrace) {
+      domainLogger.error(
+        LogDomain.onboarding,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'recordAppFirstSeen',
+      );
+    }
+  }());
+
   final sentEventRegistry = SentEventRegistry();
   final matrixGateway = MatrixSdkGateway(
     client: client,

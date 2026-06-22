@@ -2798,6 +2798,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Primiți notificări pentru mementouri, actualizări și evenimente importante.';
 
   @override
+  String get configFlagEnableOnboardingFtue => 'Onboarding nou (FTUE)';
+
+  @override
+  String get configFlagEnableOnboardingFtueDescription =>
+      'Folosiți noul flux de onboarding pentru configurarea inițială AI în loc de selectorul de furnizor.';
+
+  @override
   String get configFlagEnableProjects => 'Activează proiectele';
 
   @override
@@ -4967,10 +4974,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Adăugați o fotografie de copertă';
 
   @override
-  String get eventsChangeCover => 'Schimbați coperta';
+  String get eventsAddLabel => 'Adăugați';
 
   @override
-  String get eventsAddLabel => 'Adăugați';
+  String get eventsChangeCover => 'Schimbați coperta';
 
   @override
   String get eventsDeleteEvent => 'Ștergeți evenimentul';
@@ -5960,6 +5967,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get loggingDomainNotifications => 'Notificări';
 
   @override
+  String get loggingDomainOnboarding => 'Onboarding și FTUE';
+
+  @override
   String get loggingDomainPersistence => 'Persistență';
 
   @override
@@ -6422,6 +6432,107 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get onboardingApiKeyConnect => 'Conectați';
+
+  @override
+  String get onboardingApiKeyConnecting => 'Se conectează…';
+
+  @override
+  String get onboardingApiKeyEnterKeyHint =>
+      'Introduceți o cheie validă pentru a continua.';
+
+  @override
+  String get onboardingApiKeyError =>
+      'Conectarea a eșuat. Verificați cheia și încercați din nou.';
+
+  @override
+  String get onboardingApiKeyField => 'Cheie API';
+
+  @override
+  String get onboardingApiKeyGetKeyAt => 'Obțineți o cheie la';
+
+  @override
+  String get onboardingApiKeyHide => 'Ascundeți cheia';
+
+  @override
+  String get onboardingApiKeyInvalid =>
+      'Cheia a fost respinsă. Verificați-o și lipiți-o din nou.';
+
+  @override
+  String get onboardingApiKeyLocalNote =>
+      'Rulează pe dispozitiv – nu e nevoie de cheie.';
+
+  @override
+  String get onboardingApiKeyNoKeyHelp =>
+      'Prima dată? Conectați-vă, creați o cheie API și lipiți-o — gratuit la început.';
+
+  @override
+  String get onboardingApiKeyReveal => 'Afișați cheia';
+
+  @override
+  String get onboardingApiKeyTitle => 'Introduceți cheia API';
+
+  @override
+  String onboardingApiKeyUnreachable(String providerName) {
+    return 'Nu s-a putut contacta $providerName. Verificați cheia sau conexiunea și încercați din nou.';
+  }
+
+  @override
+  String get onboardingApiKeyVerifying => 'Se verifică…';
+
+  @override
+  String get onboardingConnectGeminiName => 'Gemini';
+
+  @override
+  String get onboardingConnectGeminiTagline => 'Statele Unite';
+
+  @override
+  String get onboardingConnectLessOptions => 'Mai puține opțiuni';
+
+  @override
+  String get onboardingConnectMistralName => 'Mistral';
+
+  @override
+  String get onboardingConnectMistralTagline => 'Uniunea Europeană';
+
+  @override
+  String get onboardingConnectMoreOptions => 'Mai multe opțiuni';
+
+  @override
+  String get onboardingConnectNotSure =>
+      'Nu sunteți sigur? Gemini este cel mai simplu pentru început.';
+
+  @override
+  String get onboardingConnectOllamaName => 'Ollama';
+
+  @override
+  String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectQwenName => 'Qwen';
+
+  @override
+  String get onboardingConnectQwenTagline => 'China';
+
+  @override
+  String get onboardingConnectTitle =>
+      'Alegeți creierul care vă transformă cuvintele în sarcini';
+
+  @override
+  String get onboardingWelcomeConnectButton => 'Conectați-vă creierul';
+
+  @override
+  String get onboardingWelcomeMessage =>
+      'Conectați-vă creierul AI, rostiți un gând și urmăriți-l devenind o sarcină structurată.';
+
+  @override
+  String get onboardingWelcomeSkipButton => 'Explorați mai întâi';
+
+  @override
+  String get onboardingWelcomeTitle =>
+      'Vorbiți. Lotti transformă totul într-un plan.';
 
   @override
   String get optionalCategoryLabel => 'Categorie (opțional)';
@@ -7848,6 +7959,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Unitatea abrevierii';
+
+  @override
+  String get settingsOnboardingMetricsSubtitle =>
+      'Pâlnie FTUE — instalare, activare, retenție (depanare)';
+
+  @override
+  String get settingsOnboardingMetricsTitle => 'Valori de onboarding';
 
   @override
   String get settingsResetGeminiConfirm => 'Resetează';

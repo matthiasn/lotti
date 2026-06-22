@@ -150,6 +150,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackNotificationEntity);
   registerFallbackValue(fallbackConfigFlag);
   registerFallbackValue(fallbackSurveyData);
+  registerFallbackValue(FakeLaunchOptions());
 
   // Logging
   registerFallbackValue(LogDomain.general);

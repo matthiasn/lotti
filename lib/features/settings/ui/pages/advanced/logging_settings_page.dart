@@ -149,6 +149,7 @@ String _domainLabel(BuildContext context, LogDomain domain) {
     LogDomain.theming => messages.loggingDomainTheming,
     LogDomain.notifications => messages.loggingDomainNotifications,
     LogDomain.whatsNew => messages.loggingDomainWhatsNew,
+    LogDomain.onboarding => messages.loggingDomainOnboarding,
     LogDomain.settings => messages.loggingDomainSettings,
     LogDomain.ratings => messages.loggingDomainRatings,
     LogDomain.dailyOs => messages.loggingDomainDailyOs,

@@ -195,6 +195,17 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableOnboardingFtueFlag,
+      // Off by default: the new onboarding (FTUE) flow is still being built;
+      // until it's enabled, first-run AI setup falls back to the provider
+      // selection modal. Flip on to make the FTUE the new-user front door.
+      description: 'Enable the new onboarding (FTUE) flow?',
+      status: false,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: showSyncActivityIndicatorFlag,
       description: 'Show live sync activity in the sidebar.',
       status: false,

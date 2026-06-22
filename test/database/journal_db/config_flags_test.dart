@@ -86,6 +86,7 @@ void main() {
         enableEmbeddingsFlag: false,
         enableVectorSearchFlag: false,
         enableWhatsNewFlag: false,
+        enableOnboardingFtueFlag: false,
         showSyncActivityIndicatorFlag: false,
         showSidebarWakeQueueFlag: false,
       };

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 
@@ -27,6 +28,7 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_sidebar_entry.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.dart';
@@ -268,22 +270,50 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     });
   }
 
-  void _showAiSetupPrompt(BuildContext context, WidgetRef ref) {
+  Future<void> _showAiSetupPrompt() async {
     if (!mounted) return;
-    AiProviderSelectionModal.show(
-      context,
-      onProviderSelected: (providerType) {
-        // Modal closes itself, then we navigate
-        const AiSettingsNavigationService().navigateToCreateProvider(
-          context,
-          preselectedType: providerType,
-        );
-      },
-      onDismiss: () {
-        // Modal closes itself, then we persist dismissal
+    void dismiss() =>
         ref.read(aiSetupPromptServiceProvider.notifier).dismissPrompt();
-      },
-    );
+
+    // The new onboarding (FTUE) flow is gated behind a config flag while it's
+    // still being built. Until it's enabled, first-run AI setup falls back to
+    // the provider-selection modal (the pre-FTUE behaviour). A one-shot DB read
+    // (not the stream provider) avoids a load-state race on this single check.
+    // This method is fire-and-forget, so a read failure must default to the
+    // fallback rather than surfacing as an uncaught async error.
+    var ftueEnabled = false;
+    try {
+      ftueEnabled = await ref
+          .read(journalDbProvider)
+          .getConfigFlag(enableOnboardingFtueFlag);
+    } catch (error, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomain.onboarding,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'aiSetupPromptFtueFlag',
+      );
+    }
+    if (!mounted) return;
+
+    if (ftueEnabled) {
+      // The FTUE "connect your brain" welcome owns first-run provider setup,
+      // creating the provider natively and reusing the dismissal flag for skip.
+      unawaited(OnboardingWelcomeModal.show(context, onDismiss: dismiss));
+    } else {
+      unawaited(
+        AiProviderSelectionModal.show(
+          context,
+          onProviderSelected: (providerType) {
+            const AiSettingsNavigationService().navigateToCreateProvider(
+              context,
+              preselectedType: providerType,
+            );
+          },
+          onDismiss: dismiss,
+        ),
+      );
+    }
   }
 
   @override
@@ -354,7 +384,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             if (shouldShow && mounted) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
-                  _showAiSetupPrompt(context, ref);
+                  unawaited(_showAiSetupPrompt());
                 }
               });
             }

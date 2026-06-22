@@ -2794,6 +2794,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Recevoir des notifications pour les rappels, les mises à jour et les événements importants.';
 
   @override
+  String get configFlagEnableOnboardingFtue => 'Nouvel onboarding (FTUE)';
+
+  @override
+  String get configFlagEnableOnboardingFtueDescription =>
+      'Utilise le nouveau parcours d\'accueil pour la configuration initiale de l\'IA au lieu du sélecteur de fournisseur.';
+
+  @override
   String get configFlagEnableProjects => 'Activer les projets';
 
   @override
@@ -4969,10 +4976,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Ajouter une photo de couverture';
 
   @override
-  String get eventsChangeCover => 'Changer la couverture';
+  String get eventsAddLabel => 'Ajouter';
 
   @override
-  String get eventsAddLabel => 'Ajouter';
+  String get eventsChangeCover => 'Changer la couverture';
 
   @override
   String get eventsDeleteEvent => 'Supprimer l\'événement';
@@ -5952,6 +5959,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get loggingDomainNotifications => 'Notifications';
 
   @override
+  String get loggingDomainOnboarding => 'Onboarding et FTUE';
+
+  @override
   String get loggingDomainPersistence => 'Persistance';
 
   @override
@@ -6426,6 +6436,106 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get onboardingApiKeyConnect => 'Connecter';
+
+  @override
+  String get onboardingApiKeyConnecting => 'Connexion…';
+
+  @override
+  String get onboardingApiKeyEnterKeyHint =>
+      'Saisis une clé valide pour continuer.';
+
+  @override
+  String get onboardingApiKeyError =>
+      'Échec de la connexion. Vérifie ta clé et réessaie.';
+
+  @override
+  String get onboardingApiKeyField => 'Clé API';
+
+  @override
+  String get onboardingApiKeyGetKeyAt => 'Obtiens une clé sur';
+
+  @override
+  String get onboardingApiKeyHide => 'Masquer la clé';
+
+  @override
+  String get onboardingApiKeyInvalid =>
+      'Cette clé a été refusée. Vérifie-la et colle-la à nouveau.';
+
+  @override
+  String get onboardingApiKeyLocalNote =>
+      'Fonctionne sur ton appareil — aucune clé requise.';
+
+  @override
+  String get onboardingApiKeyNoKeyHelp =>
+      'Première fois ? Connecte-toi, crée une clé API, puis colle-la — gratuit pour commencer.';
+
+  @override
+  String get onboardingApiKeyReveal => 'Afficher la clé';
+
+  @override
+  String get onboardingApiKeyTitle => 'Colle ta clé API';
+
+  @override
+  String onboardingApiKeyUnreachable(String providerName) {
+    return 'Impossible de joindre $providerName. Vérifie la clé ou ta connexion et réessaie.';
+  }
+
+  @override
+  String get onboardingApiKeyVerifying => 'Vérification…';
+
+  @override
+  String get onboardingConnectGeminiName => 'Gemini';
+
+  @override
+  String get onboardingConnectGeminiTagline => 'États-Unis';
+
+  @override
+  String get onboardingConnectLessOptions => 'Moins d\'options';
+
+  @override
+  String get onboardingConnectMistralName => 'Mistral';
+
+  @override
+  String get onboardingConnectMistralTagline => 'Union européenne';
+
+  @override
+  String get onboardingConnectMoreOptions => 'Plus d\'options';
+
+  @override
+  String get onboardingConnectNotSure =>
+      'Pas sûr ? Gemini est le plus simple pour commencer.';
+
+  @override
+  String get onboardingConnectOllamaName => 'Ollama';
+
+  @override
+  String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectQwenName => 'Qwen';
+
+  @override
+  String get onboardingConnectQwenTagline => 'Chine';
+
+  @override
+  String get onboardingConnectTitle =>
+      'Choisis le cerveau qui transforme tes mots en tâches';
+
+  @override
+  String get onboardingWelcomeConnectButton => 'Connecter ton cerveau';
+
+  @override
+  String get onboardingWelcomeMessage =>
+      'Connecte ton cerveau IA, exprime une pensée et regarde-la devenir une tâche structurée.';
+
+  @override
+  String get onboardingWelcomeSkipButton => 'Explorer d\'abord';
+
+  @override
+  String get onboardingWelcomeTitle => 'Parle. Lotti en fait un plan.';
 
   @override
   String get optionalCategoryLabel => 'Catégorie (facultatif)';
@@ -7860,6 +7970,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Abréviation d\'unité';
+
+  @override
+  String get settingsOnboardingMetricsSubtitle =>
+      'Entonnoir FTUE — installation, activation, rétention (débogage)';
+
+  @override
+  String get settingsOnboardingMetricsTitle => 'Métriques d\'intégration';
 
   @override
   String get settingsResetGeminiConfirm => 'Réinitialiser';

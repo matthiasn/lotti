@@ -4759,6 +4759,18 @@ abstract class AppLocalizations {
   /// **'Receive notifications for reminders, updates, and important events.'**
   String get configFlagEnableNotificationsDescription;
 
+  /// No description provided for @configFlagEnableOnboardingFtue.
+  ///
+  /// In en, this message translates to:
+  /// **'New onboarding (FTUE)'**
+  String get configFlagEnableOnboardingFtue;
+
+  /// No description provided for @configFlagEnableOnboardingFtueDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the new onboarding flow for first-run AI setup instead of the provider picker.'**
+  String get configFlagEnableOnboardingFtueDescription;
+
   /// No description provided for @configFlagEnableProjects.
   ///
   /// In en, this message translates to:
@@ -8514,17 +8526,17 @@ abstract class AppLocalizations {
   /// **'Add cover photo'**
   String get eventsAddCoverPhoto;
 
-  /// No description provided for @eventsChangeCover.
-  ///
-  /// In en, this message translates to:
-  /// **'Change cover'**
-  String get eventsChangeCover;
-
   /// No description provided for @eventsAddLabel.
   ///
   /// In en, this message translates to:
   /// **'Add'**
   String get eventsAddLabel;
+
+  /// No description provided for @eventsChangeCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Change cover'**
+  String get eventsChangeCover;
 
   /// No description provided for @eventsDeleteEvent.
   ///
@@ -10242,6 +10254,12 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get loggingDomainNotifications;
 
+  /// No description provided for @loggingDomainOnboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding & FTUE'**
+  String get loggingDomainOnboarding;
+
   /// No description provided for @loggingDomainPersistence.
   ///
   /// In en, this message translates to:
@@ -10971,6 +10989,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 suggestion needs your attention} other{{count} suggestions need your attention}}'**
   String notificationSuggestionAttentionTitle(int count);
+
+  /// No description provided for @onboardingApiKeyConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get onboardingApiKeyConnect;
+
+  /// No description provided for @onboardingApiKeyConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get onboardingApiKeyConnecting;
+
+  /// No description provided for @onboardingApiKeyEnterKeyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid key to continue.'**
+  String get onboardingApiKeyEnterKeyHint;
+
+  /// No description provided for @onboardingApiKeyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t connect. Check your key and try again.'**
+  String get onboardingApiKeyError;
+
+  /// No description provided for @onboardingApiKeyField.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get onboardingApiKeyField;
+
+  /// No description provided for @onboardingApiKeyGetKeyAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a key at'**
+  String get onboardingApiKeyGetKeyAt;
+
+  /// No description provided for @onboardingApiKeyHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide key'**
+  String get onboardingApiKeyHide;
+
+  /// No description provided for @onboardingApiKeyInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That key was rejected. Double-check it and paste it again.'**
+  String get onboardingApiKeyInvalid;
+
+  /// No description provided for @onboardingApiKeyLocalNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs on your device — no key needed.'**
+  String get onboardingApiKeyLocalNote;
+
+  /// No description provided for @onboardingApiKeyNoKeyHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'New here? Sign in, create an API key, then paste it — free to start.'**
+  String get onboardingApiKeyNoKeyHelp;
+
+  /// No description provided for @onboardingApiKeyReveal.
+  ///
+  /// In en, this message translates to:
+  /// **'Show key'**
+  String get onboardingApiKeyReveal;
+
+  /// No description provided for @onboardingApiKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste your API key'**
+  String get onboardingApiKeyTitle;
+
+  /// No description provided for @onboardingApiKeyUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach {providerName}. Check the key or your connection and try again.'**
+  String onboardingApiKeyUnreachable(String providerName);
+
+  /// No description provided for @onboardingApiKeyVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying…'**
+  String get onboardingApiKeyVerifying;
+
+  /// No description provided for @onboardingConnectGeminiName.
+  ///
+  /// In en, this message translates to:
+  /// **'Gemini'**
+  String get onboardingConnectGeminiName;
+
+  /// No description provided for @onboardingConnectGeminiTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'United States'**
+  String get onboardingConnectGeminiTagline;
+
+  /// No description provided for @onboardingConnectLessOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Fewer options'**
+  String get onboardingConnectLessOptions;
+
+  /// No description provided for @onboardingConnectMistralName.
+  ///
+  /// In en, this message translates to:
+  /// **'Mistral'**
+  String get onboardingConnectMistralName;
+
+  /// No description provided for @onboardingConnectMistralTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'European Union'**
+  String get onboardingConnectMistralTagline;
+
+  /// No description provided for @onboardingConnectMoreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get onboardingConnectMoreOptions;
+
+  /// No description provided for @onboardingConnectNotSure.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sure? Gemini is the easiest to start with.'**
+  String get onboardingConnectNotSure;
+
+  /// No description provided for @onboardingConnectOllamaName.
+  ///
+  /// In en, this message translates to:
+  /// **'Ollama'**
+  String get onboardingConnectOllamaName;
+
+  /// No description provided for @onboardingConnectOpenAiName.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenAI'**
+  String get onboardingConnectOpenAiName;
+
+  /// No description provided for @onboardingConnectQwenName.
+  ///
+  /// In en, this message translates to:
+  /// **'Qwen'**
+  String get onboardingConnectQwenName;
+
+  /// No description provided for @onboardingConnectQwenTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'China'**
+  String get onboardingConnectQwenTagline;
+
+  /// No description provided for @onboardingConnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the brain that turns your words into tasks'**
+  String get onboardingConnectTitle;
+
+  /// No description provided for @onboardingWelcomeConnectButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your brain'**
+  String get onboardingWelcomeConnectButton;
+
+  /// No description provided for @onboardingWelcomeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your AI brain, then speak a thought and watch it become a structured task.'**
+  String get onboardingWelcomeMessage;
+
+  /// No description provided for @onboardingWelcomeSkipButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Look around first'**
+  String get onboardingWelcomeSkipButton;
+
+  /// No description provided for @onboardingWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk. Lotti turns it into a plan.'**
+  String get onboardingWelcomeTitle;
 
   /// No description provided for @optionalCategoryLabel.
   ///
@@ -13212,6 +13410,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unit abbreviation (optional)'**
   String get settingsMeasurableUnitLabel;
+
+  /// No description provided for @settingsOnboardingMetricsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FTUE funnel — install, activation, retention (debug)'**
+  String get settingsOnboardingMetricsSubtitle;
+
+  /// No description provided for @settingsOnboardingMetricsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding Metrics'**
+  String get settingsOnboardingMetricsTitle;
 
   /// No description provided for @settingsResetGeminiConfirm.
   ///

@@ -139,6 +139,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableOnboardingFtueFlag,
+    description: 'Enable the new onboarding (FTUE) flow?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: showSyncActivityIndicatorFlag,
     description: 'Show live sync activity in the sidebar.',
     status: false,

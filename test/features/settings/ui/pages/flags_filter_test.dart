@@ -186,6 +186,12 @@ void main() {
       expect(FlagsBody.displayedItems, contains('enable_whats_new'));
     });
 
+    test('includes the onboarding FTUE flag', () {
+      // The FTUE gate must be toggleable from settings so it can be
+      // flipped on once the flow is complete.
+      expect(FlagsBody.displayedItems, contains('enable_onboarding_ftue'));
+    });
+
     test('every entry is a non-empty unique string', () {
       // Authoring guard: a duplicate id would silently render the same
       // flag twice (the lookup map keeps the last entry but the

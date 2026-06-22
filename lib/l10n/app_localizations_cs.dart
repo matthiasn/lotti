@@ -2781,6 +2781,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přijímejte upozornění na připomínky, aktualizace a důležité události.';
 
   @override
+  String get configFlagEnableOnboardingFtue => 'Nový onboarding (FTUE)';
+
+  @override
+  String get configFlagEnableOnboardingFtueDescription =>
+      'Použij nový onboarding pro první nastavení AI místo výběru poskytovatele.';
+
+  @override
   String get configFlagEnableProjects => 'Povolit projekty';
 
   @override
@@ -4933,10 +4940,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Přidat titulní fotku';
 
   @override
-  String get eventsChangeCover => 'Změnit obálku';
+  String get eventsAddLabel => 'Přidat';
 
   @override
-  String get eventsAddLabel => 'Přidat';
+  String get eventsChangeCover => 'Změnit obálku';
 
   @override
   String get eventsDeleteEvent => 'Smazat událost';
@@ -5906,6 +5913,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get loggingDomainNotifications => 'Oznámení';
 
   @override
+  String get loggingDomainOnboarding => 'Onboarding a FTUE';
+
+  @override
   String get loggingDomainPersistence => 'Perzistence';
 
   @override
@@ -6377,6 +6387,106 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get onboardingApiKeyConnect => 'Připojit';
+
+  @override
+  String get onboardingApiKeyConnecting => 'Připojuji…';
+
+  @override
+  String get onboardingApiKeyEnterKeyHint =>
+      'Zadej platný klíč pro pokračování.';
+
+  @override
+  String get onboardingApiKeyError =>
+      'Připojení selhalo. Zkontroluj klíč a zkus to znovu.';
+
+  @override
+  String get onboardingApiKeyField => 'API klíč';
+
+  @override
+  String get onboardingApiKeyGetKeyAt => 'Klíč získáš na';
+
+  @override
+  String get onboardingApiKeyHide => 'Skrýt klíč';
+
+  @override
+  String get onboardingApiKeyInvalid =>
+      'Tento klíč byl odmítnut. Zkontroluj ho a vlož ho znovu.';
+
+  @override
+  String get onboardingApiKeyLocalNote =>
+      'Běží na tvém zařízení – klíč není potřeba.';
+
+  @override
+  String get onboardingApiKeyNoKeyHelp =>
+      'Poprvé tady? Přihlas se, vytvoř API klíč a vlož ho – zdarma na začátek.';
+
+  @override
+  String get onboardingApiKeyReveal => 'Zobrazit klíč';
+
+  @override
+  String get onboardingApiKeyTitle => 'Vlož svůj API klíč';
+
+  @override
+  String onboardingApiKeyUnreachable(String providerName) {
+    return 'Nepodařilo se spojit s $providerName. Zkontroluj klíč nebo připojení a zkus to znovu.';
+  }
+
+  @override
+  String get onboardingApiKeyVerifying => 'Ověřuji…';
+
+  @override
+  String get onboardingConnectGeminiName => 'Gemini';
+
+  @override
+  String get onboardingConnectGeminiTagline => 'Spojené státy';
+
+  @override
+  String get onboardingConnectLessOptions => 'Méně možností';
+
+  @override
+  String get onboardingConnectMistralName => 'Mistral';
+
+  @override
+  String get onboardingConnectMistralTagline => 'Evropská unie';
+
+  @override
+  String get onboardingConnectMoreOptions => 'Další možnosti';
+
+  @override
+  String get onboardingConnectNotSure =>
+      'Nevíš? Gemini je pro začátek nejjednodušší.';
+
+  @override
+  String get onboardingConnectOllamaName => 'Ollama';
+
+  @override
+  String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectQwenName => 'Qwen';
+
+  @override
+  String get onboardingConnectQwenTagline => 'Čína';
+
+  @override
+  String get onboardingConnectTitle =>
+      'Vyber mozek, který promění tvá slova v úkoly';
+
+  @override
+  String get onboardingWelcomeConnectButton => 'Připojit mozek';
+
+  @override
+  String get onboardingWelcomeMessage =>
+      'Připoj svůj AI mozek, vyslov myšlenku a sleduj, jak se mění ve strukturovaný úkol.';
+
+  @override
+  String get onboardingWelcomeSkipButton => 'Nejdřív se rozhlédnout';
+
+  @override
+  String get onboardingWelcomeTitle => 'Mluv. Lotti z toho udělá plán.';
 
   @override
   String get optionalCategoryLabel => 'Kategorie (volitelné)';
@@ -7801,6 +7911,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Zkratka jednotky (volitelné)';
+
+  @override
+  String get settingsOnboardingMetricsSubtitle =>
+      'FTUE trychtýř — instalace, aktivace, retence (ladění)';
+
+  @override
+  String get settingsOnboardingMetricsTitle => 'Metriky onboardingu';
 
   @override
   String get settingsResetGeminiConfirm => 'Obnovit';

@@ -1,0 +1,41 @@
+/* Append-only, content-free event log for the first-time-user experience
+   (FTUE). Source of truth for the onboarding funnel; the derived funnel
+   state is computed via the queries below rather than stored separately.
+
+   Privacy: this table NEVER stores transcript/audio/thought content. Only
+   event names, coarse day buckets, and a small fixed set of low-cardinality
+   dimensions (platform, provider, reason) plus an already-bucketed integer. */
+CREATE TABLE onboarding_events (
+  id TEXT NOT NULL,
+  event_name TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  -- Whole days since the Unix epoch in UTC; used for active-day grouping so
+  -- the funnel does not depend on local-time wall clocks.
+  day_bucket INTEGER NOT NULL,
+  -- Low-cardinality dimensions, all optional. Never free text from the user.
+  platform TEXT,
+  provider TEXT,
+  reason TEXT,
+  -- A pre-bucketed numeric (e.g. duration bucket), never a raw measurement.
+  value_bucket INTEGER,
+  PRIMARY KEY (id)
+) AS OnboardingEventRow;
+
+CREATE INDEX idx_onboarding_events_name ON onboarding_events (event_name);
+CREATE INDEX idx_onboarding_events_day ON onboarding_events (day_bucket);
+
+/* Queries ----------------------------------------------------- */
+allOnboardingEvents:
+SELECT * FROM onboarding_events ORDER BY created_at ASC, id ASC;
+
+countOnboardingEventsByName:
+SELECT event_name, COUNT(*) AS cnt
+  FROM onboarding_events
+  GROUP BY event_name;
+
+firstOnboardingEventTime:
+SELECT MIN(created_at) AS ts FROM onboarding_events
+  WHERE event_name = :event_name;
+
+distinctActiveDayBuckets:
+SELECT DISTINCT day_bucket FROM onboarding_events ORDER BY day_bucket ASC;

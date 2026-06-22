@@ -137,6 +137,54 @@ void main() {
 
     tearDown(getIt.reset);
 
+    testWidgets('Show onboarding welcome opens the FTUE welcome', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _constrainedMaintenancePage(),
+          mediaQueryData: const MediaQueryData(
+            size: Size(800, 1200),
+            disableAnimations: true,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Show onboarding welcome'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // Both welcome CTAs are present — the FTUE welcome step, not some other
+      // surface. (The dim modal is transparent, so the maintenance list stays
+      // in the tree behind it; asserting its absence would be wrong.)
+      expect(find.text('Connect your brain'), findsOneWidget);
+      expect(find.text('Look around first'), findsOneWidget);
+    });
+
+    testWidgets('Onboarding animation gallery pushes the gallery page', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _constrainedMaintenancePage(),
+          mediaQueryData: const MediaQueryData(
+            size: Size(800, 1200),
+            disableAnimations: true,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Onboarding animation gallery'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // The gallery page is on top: its title plus the hero-style and step
+      // chips that only it renders.
+      expect(find.text('Onboarding animations'), findsOneWidget);
+      expect(find.text('Constellation'), findsOneWidget);
+      expect(find.text('API key'), findsOneWidget);
+    });
+
     testWidgets('page displays expected maintenance options', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(_constrainedMaintenancePage()),
@@ -351,11 +399,12 @@ void main() {
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
       // 6 fixed items (EmbeddingStore not registered in this group)
       // plus the diagnostic repaint-rainbow toggle = 7 list items.
-      // Only the 6 action rows carry chevrons; the toggle uses an
-      // adaptive Switch as its trailing affordance instead.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(7));
-      expect(find.byType(SettingsIcon), findsNWidgets(7));
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(6));
+      // Only the 8 action rows carry chevrons (incl. the two onboarding/FTUE
+      // debug actions); the toggle uses an adaptive Switch as its trailing
+      // affordance instead.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(9));
+      expect(find.byType(SettingsIcon), findsNWidgets(9));
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(8));
       expect(find.byType(Switch), findsOneWidget);
     });
 

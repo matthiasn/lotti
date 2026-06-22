@@ -78,6 +78,9 @@ enum LogDomain {
   /// What's-new feature.
   whatsNew(flagName: 'log_whats_new', label: "What's new"),
 
+  /// First-time-user experience (FTUE) / onboarding funnel.
+  onboarding(flagName: 'log_onboarding', label: 'Onboarding & FTUE'),
+
   /// Settings, config flags, service registration.
   settings(flagName: 'log_settings', label: 'Settings'),
 
