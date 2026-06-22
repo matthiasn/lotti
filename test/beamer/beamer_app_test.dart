@@ -257,6 +257,10 @@ Future<void> _pumpAppScreen(
   _useViewport(tester, viewportSize);
 
   final effectiveJournalDb = journalDb ?? MockJournalDb();
+  // FTUE gate off → first-run AI setup uses the provider-selection modal.
+  when(
+    () => effectiveJournalDb.getConfigFlag(enableOnboardingFtueFlag),
+  ).thenAnswer((_) async => false);
   final mockMatrix = MockMatrixService();
   when(
     mockMatrix.getIncomingKeyVerificationStream,
@@ -371,6 +375,10 @@ Future<void> _pumpAppScreenCustomProviders(
   );
 
   final mockJournalDb = MockJournalDb();
+  // FTUE gate off → first-run AI setup uses the provider-selection modal.
+  when(
+    () => mockJournalDb.getConfigFlag(enableOnboardingFtueFlag),
+  ).thenAnswer((_) async => false);
 
   await tester.pumpWidget(
     ProviderScope(

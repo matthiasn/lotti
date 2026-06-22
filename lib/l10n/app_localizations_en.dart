@@ -2739,6 +2739,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Receive notifications for reminders, updates, and important events.';
 
   @override
+  String get configFlagEnableOnboardingFtue => 'New onboarding (FTUE)';
+
+  @override
+  String get configFlagEnableOnboardingFtueDescription =>
+      'Use the new onboarding flow for first-run AI setup instead of the provider picker.';
+
+  @override
   String get configFlagEnableProjects => 'Enable Projects';
 
   @override

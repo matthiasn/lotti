@@ -1300,6 +1300,8 @@
   "configFlagEnableMatrixDescription": "Aktiviert die Matrix-Integration, um deine Einträge geräteübergreifend und mit anderen Matrix-Benutzern zu synchronisieren.",
   "configFlagEnableNotifications": "Benachrichtigungen aktivieren?",
   "configFlagEnableNotificationsDescription": "Erhalte Benachrichtigungen für Erinnerungen, Updates und wichtige Ereignisse.",
+  "configFlagEnableOnboardingFtue": "Neues Onboarding (FTUE)",
+  "configFlagEnableOnboardingFtueDescription": "Nutze den neuen Onboarding-Ablauf für die erste KI-Einrichtung statt der Anbieterauswahl.",
   "configFlagEnableProjects": "Projekte aktivieren",
   "configFlagEnableProjectsDescription": "Projektverwaltung zum Organisieren von Aufgaben in Projekten anzeigen.",
   "configFlagEnableSessionRatings": "Sitzungsbewertungen aktivieren",

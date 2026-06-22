@@ -2781,6 +2781,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přijímejte upozornění na připomínky, aktualizace a důležité události.';
 
   @override
+  String get configFlagEnableOnboardingFtue => 'Nový onboarding (FTUE)';
+
+  @override
+  String get configFlagEnableOnboardingFtueDescription =>
+      'Použij nový onboarding pro první nastavení AI místo výběru poskytovatele.';
+
+  @override
   String get configFlagEnableProjects => 'Povolit projekty';
 
   @override

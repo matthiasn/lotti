@@ -2775,6 +2775,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Erhalte Benachrichtigungen für Erinnerungen, Updates und wichtige Ereignisse.';
 
   @override
+  String get configFlagEnableOnboardingFtue => 'Neues Onboarding (FTUE)';
+
+  @override
+  String get configFlagEnableOnboardingFtueDescription =>
+      'Nutze den neuen Onboarding-Ablauf für die erste KI-Einrichtung statt der Anbieterauswahl.';
+
+  @override
   String get configFlagEnableProjects => 'Projekte aktivieren';
 
   @override

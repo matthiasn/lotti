@@ -22,6 +22,7 @@ const enableVectorSearchFlag = 'enable_vector_search';
 const enableSyncedAlertsFlag = 'enable_synced_alerts';
 
 const enableWhatsNewFlag = 'enable_whats_new';
+const enableOnboardingFtueFlag = 'enable_onboarding_ftue';
 const showSyncActivityIndicatorFlag = 'show_sync_activity_indicator';
 const showSidebarWakeQueueFlag = 'show_sidebar_wake_queue';
 const enableForkHealingFlag = 'enable_fork_healing';

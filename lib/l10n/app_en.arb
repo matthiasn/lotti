@@ -1496,6 +1496,8 @@
   "configFlagEnableMatrixDescription": "Enable the Matrix integration to sync your entries across devices and with other Matrix users.",
   "configFlagEnableNotifications": "Enable notifications?",
   "configFlagEnableNotificationsDescription": "Receive notifications for reminders, updates, and important events.",
+  "configFlagEnableOnboardingFtue": "New onboarding (FTUE)",
+  "configFlagEnableOnboardingFtueDescription": "Use the new onboarding flow for first-run AI setup instead of the provider picker.",
   "configFlagEnableProjects": "Enable Projects",
   "configFlagEnableProjectsDescription": "Show project management features for organizing tasks into projects.",
   "configFlagEnableSessionRatings": "Enable Session Ratings",

@@ -2794,6 +2794,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Recevoir des notifications pour les rappels, les mises à jour et les événements importants.';
 
   @override
+  String get configFlagEnableOnboardingFtue => 'Nouvel onboarding (FTUE)';
+
+  @override
+  String get configFlagEnableOnboardingFtueDescription =>
+      'Utilise le nouveau parcours d\'accueil pour la configuration initiale de l\'IA au lieu du sélecteur de fournisseur.';
+
+  @override
   String get configFlagEnableProjects => 'Activer les projets';
 
   @override

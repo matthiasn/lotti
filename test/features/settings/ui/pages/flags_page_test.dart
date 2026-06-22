@@ -89,6 +89,11 @@ void main() {
             status: false,
           ),
           const ConfigFlag(
+            name: enableOnboardingFtueFlag,
+            description: 'Enable the new onboarding (FTUE) flow?',
+            status: false,
+          ),
+          const ConfigFlag(
             name: showSyncActivityIndicatorFlag,
             description: 'Show live sync activity in the sidebar.',
             status: false,
@@ -140,8 +145,8 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 13 flags in the mock data.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(13));
+      // 14 flags in the mock data.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(14));
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -150,7 +155,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(SettingsIcon), findsNWidgets(13));
+      expect(find.byType(SettingsIcon), findsNWidgets(14));
     });
 
     testWidgets('shows correct title and description for private flag', (
@@ -364,6 +369,17 @@ void main() {
               status: true,
             ),
           ),
+          (
+            name: 'onboarding-ftue',
+            title: (m) => m.configFlagEnableOnboardingFtue,
+            description: (m) => m.configFlagEnableOnboardingFtueDescription,
+            icon: Icons.auto_awesome_motion_rounded,
+            expectedToggle: const ConfigFlag(
+              name: enableOnboardingFtueFlag,
+              description: 'Enable the new onboarding (FTUE) flow?',
+              status: true,
+            ),
+          ),
         ];
 
     // Pumps the page and narrows the list to the row via the search bar,
@@ -543,7 +559,7 @@ void main() {
         await tester.tap(clearIcon);
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(14));
       },
     );
 
@@ -564,7 +580,7 @@ void main() {
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(14));
       },
     );
 
@@ -581,7 +597,7 @@ void main() {
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
-        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(14));
       },
     );
   });

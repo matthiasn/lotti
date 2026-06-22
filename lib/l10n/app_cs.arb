@@ -1109,6 +1109,8 @@
   "configFlagEnableMatrixDescription": "Povolit integraci s Matrix pro synchronizaci vašich záznamů mezi zařízeními a s ostatními uživateli Matrix.",
   "configFlagEnableNotifications": "Povolit oznámení?",
   "configFlagEnableNotificationsDescription": "Přijímejte upozornění na připomínky, aktualizace a důležité události.",
+  "configFlagEnableOnboardingFtue": "Nový onboarding (FTUE)",
+  "configFlagEnableOnboardingFtueDescription": "Použij nový onboarding pro první nastavení AI místo výběru poskytovatele.",
   "configFlagEnableProjects": "Povolit projekty",
   "configFlagEnableProjectsDescription": "Zobrazit funkce správy projektů pro organizaci úkolů do projektů.",
   "configFlagEnableSessionRatings": "Povolit hodnocení relací",

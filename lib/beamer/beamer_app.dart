@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 
@@ -14,7 +15,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
+import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
@@ -267,18 +270,38 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     });
   }
 
-  void _showAiSetupPrompt(BuildContext context, WidgetRef ref) {
+  Future<void> _showAiSetupPrompt() async {
     if (!mounted) return;
-    // The FTUE "connect your brain" welcome owns the first-run provider setup.
-    // It reuses the existing per-provider FTUE setup downstream via
-    // navigateToCreateProvider, and the existing dismissal flag for "skip".
-    OnboardingWelcomeModal.show(
-      context,
-      onDismiss: () {
-        // Backed out without connecting → persist dismissal so it doesn't nag.
+    void dismiss() =>
         ref.read(aiSetupPromptServiceProvider.notifier).dismissPrompt();
-      },
-    );
+
+    // The new onboarding (FTUE) flow is gated behind a config flag while it's
+    // still being built. Until it's enabled, first-run AI setup falls back to
+    // the provider-selection modal (the pre-FTUE behaviour). A one-shot DB read
+    // (not the stream provider) avoids a load-state race on this single check.
+    final ftueEnabled = await ref
+        .read(journalDbProvider)
+        .getConfigFlag(enableOnboardingFtueFlag);
+    if (!mounted) return;
+
+    if (ftueEnabled) {
+      // The FTUE "connect your brain" welcome owns first-run provider setup,
+      // creating the provider natively and reusing the dismissal flag for skip.
+      unawaited(OnboardingWelcomeModal.show(context, onDismiss: dismiss));
+    } else {
+      unawaited(
+        AiProviderSelectionModal.show(
+          context,
+          onProviderSelected: (providerType) {
+            const AiSettingsNavigationService().navigateToCreateProvider(
+              context,
+              preselectedType: providerType,
+            );
+          },
+          onDismiss: dismiss,
+        ),
+      );
+    }
   }
 
   @override
@@ -349,7 +372,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             if (shouldShow && mounted) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
-                  _showAiSetupPrompt(context, ref);
+                  unawaited(_showAiSetupPrompt());
                 }
               });
             }

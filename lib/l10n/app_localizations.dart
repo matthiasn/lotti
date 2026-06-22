@@ -4759,6 +4759,18 @@ abstract class AppLocalizations {
   /// **'Receive notifications for reminders, updates, and important events.'**
   String get configFlagEnableNotificationsDescription;
 
+  /// No description provided for @configFlagEnableOnboardingFtue.
+  ///
+  /// In en, this message translates to:
+  /// **'New onboarding (FTUE)'**
+  String get configFlagEnableOnboardingFtue;
+
+  /// No description provided for @configFlagEnableOnboardingFtueDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the new onboarding flow for first-run AI setup instead of the provider picker.'**
+  String get configFlagEnableOnboardingFtueDescription;
+
   /// No description provided for @configFlagEnableProjects.
   ///
   /// In en, this message translates to:

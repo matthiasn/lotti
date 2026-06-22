@@ -2798,6 +2798,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Primiți notificări pentru mementouri, actualizări și evenimente importante.';
 
   @override
+  String get configFlagEnableOnboardingFtue => 'Onboarding nou (FTUE)';
+
+  @override
+  String get configFlagEnableOnboardingFtueDescription =>
+      'Folosiți noul flux de onboarding pentru configurarea inițială AI în loc de selectorul de furnizor.';
+
+  @override
   String get configFlagEnableProjects => 'Activează proiectele';
 
   @override
