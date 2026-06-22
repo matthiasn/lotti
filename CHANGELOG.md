@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   you accept or dismiss with a swipe; accepting turns it into a task linked to
   the event. It never touches your star rating or cover photo — those stay
   entirely yours.
+- AI settings now include Melious.ai as a dedicated EU-hosted inference
+  provider. The provider setup can fetch Melious' live model catalog, including
+  chat, reasoning, vision, audio, image, embedding and rerank models, and add any
+  returned model as a saved Lotti model row instead of relying on a hard-coded
+  static list.
 
 ### Changed
 - **Accepting or dismissing an AI suggestion is now smooth and calm instead of

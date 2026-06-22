@@ -490,8 +490,9 @@ void main() {
       test('should contain all provider types', () {
         // `genericOpenAi` is intentionally absent: it represents an
         // arbitrary OpenAI-compatible endpoint where Lotti cannot
-        // assume a fixed model catalog. Every concrete provider with
-        // a curated model list belongs here.
+        // assume a fixed model catalog. Melious is also intentionally
+        // absent: it exposes its catalog dynamically via /models.
+        // Every concrete provider with a curated model list belongs here.
         expect(
           knownModelsByProvider.keys.toSet(),
           containsAll([

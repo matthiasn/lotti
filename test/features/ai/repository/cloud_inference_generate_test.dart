@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_generate.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -26,6 +27,7 @@ void main() {
 
   late MockOllamaInferenceRepository ollamaRepo;
   late MockGeminiInferenceRepository geminiRepo;
+  late MeliousInferenceRepository meliousRepo;
   late MistralInferenceRepository mistralRepo;
   late MockOpenAIClient client;
   late CloudInferenceGenerate generate;
@@ -64,17 +66,22 @@ void main() {
   setUp(() {
     ollamaRepo = MockOllamaInferenceRepository();
     geminiRepo = MockGeminiInferenceRepository();
+    meliousRepo = MeliousInferenceRepository();
     mistralRepo = MistralInferenceRepository();
     client = MockOpenAIClient();
     generate = CloudInferenceGenerate(
       ollamaRepository: ollamaRepo,
       geminiRepository: geminiRepo,
+      meliousRepository: meliousRepo,
       mistralRepository: mistralRepo,
       helpers: const CloudInferenceRequestHelpers(),
     );
   });
 
-  tearDown(() => mistralRepo.close());
+  tearDown(() {
+    meliousRepo.close();
+    mistralRepo.close();
+  });
 
   group('generate', () {
     test(

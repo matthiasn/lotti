@@ -209,6 +209,31 @@ variant (`GeminiThinkingConfig.isGemini3(model)`); it defaults to `low` unless a
 per-invocation thinking mode is passed. Non-Gemini transcription providers (and
 non-Gemini-3 Gemini models) leave reasoning effort unset.
 
+Melious.ai uses a self-contained provider repository because its OpenAI-compatible
+surface also exposes provider-specific model metadata. Settings fetch
+`GET /models?include_meta=true` and map each `_meta.type`,
+`_meta.input_modalities`, `_meta.output_modalities`, and `_meta.capabilities`
+entry into a `KnownModel` row at runtime. The mapping preserves chat, vision,
+reasoning, function-calling, audio-input, image-generation, embedding, and
+rerank models in the installable catalog instead of relying on a static list.
+The request path stays OpenAI-compatible for chat and vision chat; Whisper-class
+IDs (`whisper`, `transcribe`, `voxtral`, `asr`, or `stt`) route to
+`POST /audio/transcriptions`; image-output models route to
+`POST /images/generations` and decode the returned `b64_json` image bytes.
+Melious currently documents text-to-image generation there, so reference-image
+generation is rejected explicitly rather than silently ignored.
+
+```mermaid
+flowchart TD
+  Provider["Saved Melious provider"] --> Catalog["GET /models?include_meta=true"]
+  Catalog --> Map["Map _meta to KnownModel"]
+  Map --> Install["Save AiConfig.model rows"]
+  Install --> Route{"Runtime request"}
+  Route -->|chat / vision| Chat["OpenAI-compatible /chat/completions"]
+  Route -->|speech-to-text ID| Audio["/audio/transcriptions"]
+  Route -->|image output| Image["/images/generations"]
+```
+
 ## Developer Eval Tool
 
 `tool/qwen_local_inference_eval.sh` is a narrow local oMLX/OpenAI-compatible

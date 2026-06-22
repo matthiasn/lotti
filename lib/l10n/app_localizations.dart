@@ -2947,6 +2947,18 @@ abstract class AppLocalizations {
   /// **'OpenAI Compatible'**
   String get aiProviderGenericOpenAiName;
 
+  /// No description provided for @aiProviderMeliousDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'European-hosted inference with a dynamic model catalog, routing, audio, and images'**
+  String get aiProviderMeliousDescription;
+
+  /// No description provided for @aiProviderMeliousName.
+  ///
+  /// In en, this message translates to:
+  /// **'Melious.ai'**
+  String get aiProviderMeliousName;
+
   /// No description provided for @aiProviderMistralDescription.
   ///
   /// In en, this message translates to:
@@ -3078,6 +3090,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Multimodal · audio transcription'**
   String get aiProviderTaglineGemini;
+
+  /// No description provided for @aiProviderTaglineMelious.
+  ///
+  /// In en, this message translates to:
+  /// **'EU-hosted · dynamic catalog · eco routing'**
+  String get aiProviderTaglineMelious;
 
   /// No description provided for @aiProviderTaglineMlxAudio.
   ///

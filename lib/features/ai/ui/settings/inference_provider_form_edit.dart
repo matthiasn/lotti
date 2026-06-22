@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit_setup.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
@@ -14,6 +16,30 @@ import 'package:lotti/themes/theme.dart';
 import 'package:uuid/uuid.dart';
 
 // Edit-mode form widgets: provider type, available models, AI setup.
+
+final _meliousKnownModelsProvider = FutureProvider.autoDispose
+    .family<List<KnownModel>, String>((
+      ref,
+      providerId,
+    ) async {
+      final repository = ref.read(aiConfigRepositoryProvider);
+      final config = await repository.getConfigById(providerId);
+      if (config is! AiConfigInferenceProvider ||
+          config.inferenceProviderType != InferenceProviderType.melious) {
+        return const <KnownModel>[];
+      }
+
+      final meliousRepository = MeliousInferenceRepository();
+      ref.onDispose(meliousRepository.close);
+      final baseUrl = config.baseUrl.trim().isEmpty
+          ? ProviderConfig.getDefaultBaseUrl(config.inferenceProviderType)
+          : config.baseUrl;
+
+      return meliousRepository.listModels(
+        baseUrl: baseUrl,
+        apiKey: config.apiKey,
+      );
+    });
 
 /// Read-only field used to surface the currently-selected provider type
 /// inside the form. Tapping anywhere on the field opens the provider
@@ -166,6 +192,11 @@ class AvailableModelsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
+
+    if (providerType == InferenceProviderType.melious) {
+      return _DynamicAvailableModelsSection(providerId: providerId);
+    }
+
     final knownModels = knownModelsByProvider[providerType] ?? [];
 
     if (knownModels.isEmpty) {
@@ -220,6 +251,155 @@ class AvailableModelsSection extends ConsumerWidget {
         ),
       ),
       error: (_, _) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _DynamicAvailableModelsSection extends ConsumerWidget {
+  const _DynamicAvailableModelsSection({
+    required this.providerId,
+  });
+
+  final String providerId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final catalogAsync = ref.watch(_meliousKnownModelsProvider(providerId));
+    final allModelsAsync = ref.watch(
+      aiConfigByTypeControllerProvider(configType: AiConfigType.model),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: tokens.spacing.step4),
+        AiFormSection(
+          title: messages.apiKeyAvailableModelsTitle,
+          icon: Icons.psychology_rounded,
+          description: messages.apiKeyAvailableModelsDescription,
+          children: [
+            allModelsAsync.when(
+              data: (allModels) {
+                final existingModelIds = allModels
+                    .whereType<AiConfigModel>()
+                    .where((m) => m.inferenceProviderId == providerId)
+                    .map((m) => m.providerModelId)
+                    .toSet();
+
+                return catalogAsync.when(
+                  data: (knownModels) {
+                    if (knownModels.isEmpty) {
+                      return Padding(
+                        padding: EdgeInsets.all(tokens.spacing.step4),
+                        child: Text(
+                          messages.aiConfigNoModelsAvailable,
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(
+                                color: context.colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      );
+                    }
+
+                    final sortedModels = [...knownModels]
+                      ..sort((a, b) => a.name.compareTo(b.name));
+                    return Column(
+                      children: [
+                        ...sortedModels.map((knownModel) {
+                          final isAdded = existingModelIds.contains(
+                            knownModel.providerModelId,
+                          );
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom: tokens.spacing.step4,
+                            ),
+                            child: _KnownModelTile(
+                              knownModel: knownModel,
+                              providerId: providerId,
+                              isAdded: isAdded,
+                            ),
+                          );
+                        }),
+                      ],
+                    );
+                  },
+                  loading: () => _DynamicModelsLoading(tokens: tokens),
+                  error: (_, _) => _DynamicModelsError(
+                    providerId: providerId,
+                  ),
+                );
+              },
+              loading: () => _DynamicModelsLoading(tokens: tokens),
+              error: (_, _) => const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _DynamicModelsLoading extends StatelessWidget {
+  const _DynamicModelsLoading({required this.tokens});
+
+  final DsTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step6),
+        child: const CircularProgressIndicator(),
+      ),
+    );
+  }
+}
+
+class _DynamicModelsError extends ConsumerWidget {
+  const _DynamicModelsError({required this.providerId});
+
+  final String providerId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return Container(
+      padding: EdgeInsets.all(tokens.spacing.step4),
+      decoration: BoxDecoration(
+        color: context.colorScheme.errorContainer.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        border: Border.all(
+          color: context.colorScheme.error.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            color: context.colorScheme.error,
+            size: tokens.spacing.step6,
+          ),
+          SizedBox(width: tokens.spacing.step3),
+          Expanded(
+            child: Text(
+              messages.aiConfigFailedToLoadModelsGeneric,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: context.colorScheme.onErrorContainer,
+              ),
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step2),
+          IconButton(
+            onPressed: () =>
+                ref.invalidate(_meliousKnownModelsProvider(providerId)),
+            tooltip: messages.aiProviderConnectionRetryButton,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dar
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
@@ -27,7 +28,7 @@ import 'package:uuid/uuid.dart';
 /// resource cleanup paths for [CloudInferenceRepository].
 ///
 /// Routes `generateWithAudio` to the dedicated transcription repositories
-/// (Whisper, Voxtral, OpenAI, Mistral) or the in-process MLX Audio channel,
+/// (Whisper, Voxtral, OpenAI, Mistral, Melious) or the in-process MLX Audio channel,
 /// `generateWithMessages` to the provider-specific multi-turn implementations,
 /// and `generateImage` to the Gemini/DashScope image APIs. Owns the HTTP-backed
 /// sub-repositories so [close] can dispose them.
@@ -38,6 +39,7 @@ class CloudInferenceGenerateMore {
     required this._geminiRepository,
     required this._dashScopeRepository,
     required this._mistralRepository,
+    required this._meliousRepository,
     required this._mistralTranscriptionRepository,
     required this._whisperRepository,
     required this._voxtralRepository,
@@ -50,6 +52,7 @@ class CloudInferenceGenerateMore {
   final GeminiInferenceRepository _geminiRepository;
   final DashScopeInferenceRepository _dashScopeRepository;
   final MistralInferenceRepository _mistralRepository;
+  final MeliousInferenceRepository _meliousRepository;
   final MistralTranscriptionRepository _mistralTranscriptionRepository;
   final WhisperInferenceRepository _whisperRepository;
   final VoxtralInferenceRepository _voxtralRepository;
@@ -166,6 +169,20 @@ class CloudInferenceGenerateMore {
         baseUrl: baseUrl,
         apiKey: apiKey,
         contextBias: speechDictionaryTerms,
+      );
+    }
+
+    if (provider.inferenceProviderType == InferenceProviderType.melious &&
+        MeliousInferenceRepository.isMeliousTranscriptionModel(model)) {
+      developer.log(
+        'Using Melious transcription endpoint for model: $model',
+        name: 'CloudInferenceRepository',
+      );
+      return _meliousRepository.transcribeAudio(
+        model: model,
+        audioBase64: audioBase64,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
       );
     }
 
@@ -317,6 +334,19 @@ class CloudInferenceGenerateMore {
       );
     }
 
+    if (provider.inferenceProviderType == InferenceProviderType.melious) {
+      return _meliousRepository.generateTextWithMessages(
+        messages: messages,
+        model: model,
+        baseUrl: provider.baseUrl,
+        apiKey: provider.apiKey,
+        temperature: temperature,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+        toolChoice: toolChoice,
+      );
+    }
+
     // For other providers (OpenAI, OpenRouter, Anthropic), use full message history
     final client = OpenAIClient(
       baseUrl: provider.baseUrl,
@@ -359,6 +389,7 @@ class CloudInferenceGenerateMore {
   /// Supported providers:
   /// - **Gemini**: Uses Gemini's native image generation API
   /// - **Alibaba**: Uses DashScope's native SSE streaming API (Wan models)
+  /// - **Melious**: Uses OpenAI-compatible base64 image generation
   ///
   /// Parameters:
   /// - [prompt]: The text prompt describing the image to generate.
@@ -403,6 +434,13 @@ class CloudInferenceGenerateMore {
           provider: provider,
           referenceImages: referenceImages,
         );
+      case InferenceProviderType.melious:
+        return _meliousRepository.generateImage(
+          prompt: prompt,
+          model: model,
+          provider: provider,
+          referenceImages: referenceImages,
+        );
       case InferenceProviderType.anthropic:
       case InferenceProviderType.genericOpenAi:
       case InferenceProviderType.mistral:
@@ -427,6 +465,7 @@ class CloudInferenceGenerateMore {
   /// closed by their own `ref.onDispose` hooks.
   void close() {
     _mistralRepository.close();
+    _meliousRepository.close();
     _mistralTranscriptionRepository.close();
     _whisperRepository.close();
     _voxtralRepository.close();

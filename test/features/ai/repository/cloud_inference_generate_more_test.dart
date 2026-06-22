@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_generate_more.dart'
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
     show GeneratedImage;
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart'
@@ -37,6 +38,7 @@ void main() {
   late MockGeminiInferenceRepository geminiRepo;
   late MockDashScopeInferenceRepository dashScopeRepo;
   late MistralInferenceRepository mistralRepo;
+  late MeliousInferenceRepository meliousRepo;
   late MistralTranscriptionRepository mistralTranscriptionRepo;
   late WhisperInferenceRepository whisperRepo;
   late VoxtralInferenceRepository voxtralRepo;
@@ -66,6 +68,7 @@ void main() {
     geminiRepo = MockGeminiInferenceRepository();
     dashScopeRepo = MockDashScopeInferenceRepository();
     mistralRepo = MistralInferenceRepository(httpClient: httpClient);
+    meliousRepo = MeliousInferenceRepository(httpClient: httpClient);
     mistralTranscriptionRepo = MistralTranscriptionRepository(
       httpClient: httpClient,
     );
@@ -82,6 +85,7 @@ void main() {
       geminiRepository: geminiRepo,
       dashScopeRepository: dashScopeRepo,
       mistralRepository: mistralRepo,
+      meliousRepository: meliousRepo,
       mistralTranscriptionRepository: mistralTranscriptionRepo,
       whisperRepository: whisperRepo,
       voxtralRepository: voxtralRepo,

@@ -1701,6 +1701,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderGenericOpenAiName => 'Compatibil OpenAI';
 
   @override
+  String get aiProviderMeliousDescription =>
+      'Inferență găzduită în Europa cu catalog dinamic de modele, rutare, audio și imagini';
+
+  @override
+  String get aiProviderMeliousName => 'Melious.ai';
+
+  @override
   String get aiProviderMistralDescription =>
       'API cloud Mistral AI cu transcriere audio nativă';
 
@@ -1772,6 +1779,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiProviderTaglineGemini => 'Multimodal · transcriere audio';
+
+  @override
+  String get aiProviderTaglineMelious =>
+      'Găzduit în UE · catalog dinamic · rutare eco';
 
   @override
   String get aiProviderTaglineMlxAudio =>

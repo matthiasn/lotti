@@ -1,0 +1,291 @@
+import 'dart:convert';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
+
+void main() {
+  group('MeliousInferenceRepository', () {
+    const baseUrl = 'https://api.melious.ai/v1';
+    const apiKey = 'sk-mel-test';
+
+    AiConfigInferenceProvider meliousProvider() {
+      return AiConfig.inferenceProvider(
+            id: 'provider-melious',
+            name: 'Melious.ai',
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            createdAt: DateTime(2024, 3, 15),
+            inferenceProviderType: InferenceProviderType.melious,
+          )
+          as AiConfigInferenceProvider;
+    }
+
+    test('listModels fetches include_meta and maps capabilities', () async {
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((request) async {
+          expect(request.method, equals('GET'));
+          expect(request.url.path, equals('/v1/models'));
+          expect(request.url.queryParameters['include_meta'], equals('true'));
+          expect(
+            request.headers['authorization'],
+            equals('Bearer $apiKey'),
+          );
+
+          return http.Response(
+            jsonEncode({
+              'object': 'list',
+              'data': [
+                {
+                  'id': 'qwen/qwen3-vl-plus',
+                  'object': 'model',
+                  'created': 1710460800,
+                  'owned_by': 'qwen',
+                  '_meta': {
+                    'type': 'chat',
+                    'input_modalities': ['text'],
+                    'output_modalities': ['text'],
+                    'context_length': 131072,
+                    'capabilities': {
+                      'streaming': true,
+                      'function_calling': true,
+                      'vision': true,
+                      'reasoning': true,
+                    },
+                  },
+                },
+                {
+                  'id': 'openai/whisper-large-v3',
+                  'object': 'model',
+                  'created': 1710460800,
+                  'owned_by': 'openai',
+                  '_meta': {
+                    'type': 'audio',
+                    'input_modalities': ['audio'],
+                    'output_modalities': ['text'],
+                    'capabilities': {'streaming': false},
+                  },
+                },
+                {
+                  'id': 'black-forest-labs/flux-2-klein',
+                  'object': 'model',
+                  'created': 1710460800,
+                  'owned_by': 'black-forest-labs',
+                  '_meta': {
+                    'type': 'image',
+                    'input_modalities': ['text'],
+                    'output_modalities': ['image'],
+                    'capabilities': {'streaming': false},
+                  },
+                },
+                {
+                  'id': 'baai/bge-m3',
+                  'object': 'model',
+                  'created': 1710460800,
+                  'owned_by': 'baai',
+                  '_meta': {
+                    'type': 'embeddings',
+                    'input_modalities': ['text'],
+                    'output_modalities': [],
+                    'capabilities': {},
+                  },
+                },
+                {
+                  'id': 'bge-reranker-v2-m3',
+                  'object': 'model',
+                  'created': 1710460800,
+                  'owned_by': 'baai',
+                  '_meta': {
+                    'type': 'rerank',
+                    'input_modalities': ['text'],
+                    'output_modalities': [],
+                    'capabilities': {},
+                  },
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+      addTearDown(repository.close);
+
+      final models = await repository.listModels(
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+      );
+
+      expect(models, hasLength(5));
+
+      final vision = models[0];
+      expect(vision.providerModelId, equals('qwen/qwen3-vl-plus'));
+      expect(vision.name, equals('Qwen3 VL Plus'));
+      expect(
+        vision.inputModalities,
+        containsAll([Modality.text, Modality.image]),
+      );
+      expect(vision.outputModalities, contains(Modality.text));
+      expect(vision.isReasoningModel, isTrue);
+      expect(vision.supportsFunctionCalling, isTrue);
+      expect(vision.description, contains('Context: 131072 tokens'));
+      expect(vision.description, contains('vision'));
+      expect(vision.description, contains('tools'));
+
+      final audio = models[1];
+      expect(audio.inputModalities, contains(Modality.audio));
+      expect(audio.outputModalities, contains(Modality.text));
+
+      final image = models[2];
+      expect(image.inputModalities, contains(Modality.text));
+      expect(image.outputModalities, contains(Modality.image));
+
+      for (final nonChat in models.skip(3)) {
+        expect(nonChat.inputModalities, contains(Modality.text));
+        expect(nonChat.outputModalities, contains(Modality.text));
+      }
+      expect(models[3].description, contains('embeddings model'));
+      expect(models[4].description, contains('rerank model'));
+    });
+
+    test('listModels surfaces provider error messages', () async {
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'error': {'message': 'Invalid Melious API key'},
+            }),
+            401,
+          );
+        }),
+      );
+      addTearDown(repository.close);
+
+      await expectLater(
+        repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
+        throwsA(
+          isA<MeliousInferenceException>()
+              .having((e) => e.message, 'message', 'Invalid Melious API key')
+              .having((e) => e.statusCode, 'statusCode', 401),
+        ),
+      );
+    });
+
+    test('generateImage decodes base64 image responses', () async {
+      const pngBytes = [137, 80, 78, 71];
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((request) async {
+          expect(request.method, equals('POST'));
+          expect(request.url.path, equals('/v1/images/generations'));
+          expect(
+            request.headers['authorization'],
+            equals('Bearer $apiKey'),
+          );
+
+          final body =
+              jsonDecode((request as http.Request).body)
+                  as Map<String, dynamic>;
+          expect(body['model'], equals('flux-2-klein'));
+          expect(body['prompt'], equals('a quiet lake'));
+          expect(body['response_format'], equals('b64_json'));
+
+          return http.Response(
+            jsonEncode({
+              'data': [
+                {'b64_json': base64Encode(pngBytes)},
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+      addTearDown(repository.close);
+
+      final image = await repository.generateImage(
+        prompt: 'a quiet lake',
+        model: 'flux-2-klein',
+        provider: meliousProvider(),
+      );
+
+      expect(image.bytes, equals(pngBytes));
+      expect(image.mimeType, equals('image/png'));
+    });
+
+    test('generateImage decodes data-uri MIME types', () async {
+      const webpBytes = [82, 73, 70, 70];
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'data': [
+                {
+                  'b64_json':
+                      'data:image/webp;base64,${base64Encode(webpBytes)}',
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+      addTearDown(repository.close);
+
+      final image = await repository.generateImage(
+        prompt: 'a quiet lake',
+        model: 'flux-2-klein',
+        provider: meliousProvider(),
+      );
+
+      expect(image.bytes, equals(webpBytes));
+      expect(image.mimeType, equals('image/webp'));
+    });
+
+    test('generateImage rejects reference images explicitly', () async {
+      final repository = MeliousInferenceRepository();
+      addTearDown(repository.close);
+
+      await expectLater(
+        repository.generateImage(
+          prompt: 'a quiet lake',
+          model: 'flux-2-klein',
+          provider: meliousProvider(),
+          referenceImages: const [
+            ProcessedReferenceImage(
+              base64Data: 'abc',
+              mimeType: 'image/jpeg',
+              originalId: 'reference',
+            ),
+          ],
+        ),
+        throwsA(isA<UnsupportedError>()),
+      );
+    });
+
+    test('isMeliousTranscriptionModel matches speech-to-text model IDs', () {
+      expect(
+        MeliousInferenceRepository.isMeliousTranscriptionModel(
+          'openai/whisper-large-v3',
+        ),
+        isTrue,
+      );
+      expect(
+        MeliousInferenceRepository.isMeliousTranscriptionModel(
+          'mistral/voxtral-small-latest',
+        ),
+        isTrue,
+      );
+      expect(
+        MeliousInferenceRepository.isMeliousTranscriptionModel('qwen3-asr'),
+        isTrue,
+      );
+      expect(
+        MeliousInferenceRepository.isMeliousTranscriptionModel(
+          'qwen/qwen3-vl-plus',
+        ),
+        isFalse,
+      );
+    });
+  });
+}

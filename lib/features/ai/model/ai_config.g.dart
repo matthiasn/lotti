@@ -45,6 +45,7 @@ const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.anthropic: 'anthropic',
   InferenceProviderType.gemini: 'gemini',
   InferenceProviderType.genericOpenAi: 'genericOpenAi',
+  InferenceProviderType.melious: 'melious',
   InferenceProviderType.mistral: 'mistral',
   InferenceProviderType.mlxAudio: 'mlxAudio',
   InferenceProviderType.nebiusAiStudio: 'nebiusAiStudio',

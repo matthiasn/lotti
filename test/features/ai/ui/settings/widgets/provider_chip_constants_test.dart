@@ -83,6 +83,17 @@ void main() {
         expect(color, equals(const Color(0xFFA78BFA))); // Purple dark
       });
 
+      test('returns correct dark color for Melious provider', () {
+        const type = InferenceProviderType.melious;
+
+        final color = ProviderChipConstants.getProviderColor(
+          type,
+          isDark: true,
+        );
+
+        expect(color, equals(const Color(0xFF64D8A9))); // Green dark
+      });
+
       test('returns correct dark color for NebiusAiStudio provider', () {
         const type = InferenceProviderType.nebiusAiStudio;
 
@@ -196,6 +207,17 @@ void main() {
         );
 
         expect(color, equals(const Color(0xFF9C27B0))); // Purple
+      });
+
+      test('returns correct light color for Melious provider', () {
+        const type = InferenceProviderType.melious;
+
+        final color = ProviderChipConstants.getProviderColor(
+          type,
+          isDark: false,
+        );
+
+        expect(color, equals(const Color(0xFF0E9F6E))); // Green
       });
 
       test('returns correct light color for NebiusAiStudio provider', () {

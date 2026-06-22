@@ -23,6 +23,7 @@ class ProviderConfig {
     InferenceProviderType.gemini:
         'https://generativelanguage.googleapis.com/v1beta/openai',
     InferenceProviderType.genericOpenAi: 'http://localhost:8002/v1',
+    InferenceProviderType.melious: 'https://api.melious.ai/v1',
     InferenceProviderType.mistral: 'https://api.mistral.ai/v1',
     InferenceProviderType.mlxAudio: '',
     InferenceProviderType.nebiusAiStudio: 'https://api.studio.nebius.com/v1',
@@ -42,6 +43,7 @@ class ProviderConfig {
     InferenceProviderType.alibaba: 'Alibaba Cloud (Qwen)',
     InferenceProviderType.gemini: 'Gemini',
     InferenceProviderType.genericOpenAi: 'AI Proxy (local)',
+    InferenceProviderType.melious: 'Melious.ai',
     InferenceProviderType.mistral: 'Mistral',
     InferenceProviderType.mlxAudio: 'MLX Audio (local)',
     InferenceProviderType.nebiusAiStudio: 'Nebius AI Studio',

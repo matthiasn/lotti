@@ -94,6 +94,9 @@ enum _ModelKind {
   /// Mistral provider + a non-voxtral model → generic Mistral batch.
   mistralOther,
 
+  /// Melious provider + a Whisper-class model → Melious transcription.
+  meliousWhisper,
+
   /// MLX Audio provider + a Qwen3-ASR model id.
   mlxQwen,
 
@@ -107,6 +110,7 @@ enum _ModelKind {
 InferenceProviderType _providerTypeFor(_ModelKind kind) => switch (kind) {
   _ModelKind.mistralVoxtral ||
   _ModelKind.mistralOther => InferenceProviderType.mistral,
+  _ModelKind.meliousWhisper => InferenceProviderType.melious,
   _ModelKind.mlxQwen => InferenceProviderType.mlxAudio,
   _ModelKind.geminiFlash ||
   _ModelKind.geminiOther => InferenceProviderType.gemini,
@@ -115,6 +119,7 @@ InferenceProviderType _providerTypeFor(_ModelKind kind) => switch (kind) {
 String _providerModelIdFor(_ModelKind kind, int index) => switch (kind) {
   _ModelKind.mistralVoxtral => 'voxtral-mini-latest-$index',
   _ModelKind.mistralOther => 'mistral-large-audio-$index',
+  _ModelKind.meliousWhisper => 'openai/whisper-large-v3',
   _ModelKind.mlxQwen => mlxAudioQwenAsrModelId,
   _ModelKind.geminiFlash => 'gemini-2.5-flash',
   _ModelKind.geminiOther => 'gemini-pro-audio-$index',
@@ -833,6 +838,10 @@ void main() {
             providerType[m.inferenceProviderId] ==
                 InferenceProviderType.mlxAudio &&
             isMlxAudioQwenAsrModelId(m.providerModelId);
+        bool isMeliousWhisper(AiConfigModel m) =>
+            providerType[m.inferenceProviderId] ==
+                InferenceProviderType.melious &&
+            m.providerModelId.contains('whisper');
         bool isFlash(AiConfigModel m) =>
             m.providerModelId.contains('gemini-2.5-flash');
 
@@ -851,6 +860,12 @@ void main() {
             isMistral(selected),
             isTrue,
             reason: 'mistral batch wins; kinds=$kinds',
+          );
+        } else if (inputs.models.any(isMeliousWhisper)) {
+          expect(
+            isMeliousWhisper(selected),
+            isTrue,
+            reason: 'melious transcription wins; kinds=$kinds',
           );
         } else if (inputs.models.any(isMlxQwen)) {
           expect(
