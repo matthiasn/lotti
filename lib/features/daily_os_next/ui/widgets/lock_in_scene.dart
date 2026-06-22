@@ -38,7 +38,7 @@ class _LockInSceneState extends State<LockInScene>
     _controller = AnimationController(
       vsync: this,
       duration: widget.totalDuration,
-    );
+    )..addStatusListener(_onStatusChanged);
   }
 
   @override
@@ -48,24 +48,33 @@ class _LockInSceneState extends State<LockInScene>
     if (_started) return;
     _started = true;
     if (MediaQuery.disableAnimationsOf(context)) {
-      // Reduced motion: skip the ~3.4s full-screen takeover. Snap to the
-      // resolved end frame and honour the routing contract after a brief,
-      // un-animated beat so the host still advances to the Day view.
-      _controller.value = 1;
+      // Reduced motion: skip the ~3.4s takeover. Detach the status listener
+      // first so snapping the controller to its end frame doesn't fire
+      // onComplete synchronously during this build; then snap and route after a
+      // brief, un-animated beat so the host still advances to the Day view.
+      _controller
+        ..removeStatusListener(_onStatusChanged)
+        ..value = 1;
       _reduceMotionTimer = Timer(MotionDurations.long2, () {
         if (mounted) widget.onComplete();
       });
     } else {
-      _controller.forward().whenComplete(() {
-        if (mounted) widget.onComplete();
-      });
+      _controller.forward();
+    }
+  }
+
+  void _onStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      widget.onComplete();
     }
   }
 
   @override
   void dispose() {
     _reduceMotionTimer?.cancel();
-    _controller.dispose();
+    _controller
+      ..removeStatusListener(_onStatusChanged)
+      ..dispose();
     super.dispose();
   }
 
