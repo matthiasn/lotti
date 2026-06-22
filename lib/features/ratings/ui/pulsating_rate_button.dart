@@ -103,13 +103,26 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Start the pulse here (not initState) so the reduced-motion setting is
-    // readable: under reduced motion the button stays visible but never pulses.
+    // React to reduce-motion toggling on while the button is on screen: stop an
+    // in-flight pulse and rest at full opacity (disableAnimationsOf registers a
+    // MediaQuery dependency, so this fires when the setting changes).
+    if (MediaQuery.disableAnimationsOf(context)) {
+      if (_isPulsing) {
+        _controller
+          ..stop()
+          ..value = 1;
+        _isPulsing = false;
+      }
+      _pulseStartChecked = true;
+      return;
+    }
+    // Start the pulse once — it's a one-shot ~10s prompt, not a perpetual loop,
+    // so the flag prevents it replaying after it completes (or after the user
+    // toggles reduce-motion off again). Done here, not in initState, so the
+    // reduced-motion setting is readable.
     if (_pulseStartChecked) return;
     _pulseStartChecked = true;
-    if (widget.shouldPulse && !MediaQuery.disableAnimationsOf(context)) {
-      _startPulsing();
-    }
+    if (widget.shouldPulse) _startPulsing();
   }
 
   void _startPulsing() {

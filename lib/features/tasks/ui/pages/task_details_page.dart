@@ -187,15 +187,13 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   double? _viewportTopGlobal() {
     final renderObject = _belowCardKey.currentContext?.findRenderObject();
     if (renderObject is! RenderBox || !renderObject.attached) return null;
-    final viewport = RenderAbstractViewport.maybeOf(renderObject);
-    // `is` doesn't promote here (RenderBox isn't a subtype of
-    // RenderAbstractViewport), so cast explicitly after the guard. The
-    // concrete viewport behind a CustomScrollView (RenderViewport) is a
-    // RenderBox.
-    if (viewport is! RenderBox) return null;
-    final viewportBox = viewport! as RenderBox;
-    if (!viewportBox.attached) return null;
-    return viewportBox.localToGlobal(Offset.zero).dy;
+    // Typed as the RenderObject supertype (not RenderAbstractViewport) so the
+    // `is RenderBox` check below promotes — RenderBox is a subtype of
+    // RenderObject, so no cast/`!` is needed. The concrete viewport behind a
+    // CustomScrollView (RenderViewport) is a RenderBox.
+    final RenderObject? viewport = RenderAbstractViewport.maybeOf(renderObject);
+    if (viewport is! RenderBox || !viewport.attached) return null;
+    return viewport.localToGlobal(Offset.zero).dy;
   }
 
   /// Pin the content below the AI card *only* when the card (and the seam just

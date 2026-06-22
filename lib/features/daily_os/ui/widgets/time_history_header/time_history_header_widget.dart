@@ -428,21 +428,24 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
             // chart and only re-applies the Transform.translate below. Without
             // this the chart (an O(days × categories) graphic rebuild) was
             // reconstructed on every scroll frame. The RepaintBoundary isolates
-            // its painting from the rest of the header.
+            // its painting from the rest of the header. The window width is
+            // derived cheaply (no sublist) and kept in the cache key so a future
+            // change to daySegmentWidth would invalidate it; `data` is a freezed
+            // value type, so `!=` reuses the chart across an equal re-emission
+            // and rebuilds on any real change. The sublist is only allocated on
+            // an actual miss.
+            final expectedLength = chartEnd - chartStart + 1;
+            final width = expectedLength * daySegmentWidth;
             if (_cachedChart == null ||
                 chartStart != _cachedChartStart ||
                 chartEnd != _cachedChartEnd ||
-                !identical(data, _cachedChartData)) {
+                width != _cachedChartWidth ||
+                data != _cachedChartData) {
+              if (expectedLength < 2 || width <= 0) {
+                _cachedChart = null;
+                return const SizedBox.shrink();
+              }
               final chartDays = data.days.sublist(chartStart, chartEnd + 1);
-              if (chartDays.length < 2) {
-                _cachedChart = null;
-                return const SizedBox.shrink();
-              }
-              final width = chartDays.length * daySegmentWidth;
-              if (width <= 0) {
-                _cachedChart = null;
-                return const SizedBox.shrink();
-              }
               _cachedChartStart = chartStart;
               _cachedChartEnd = chartEnd;
               _cachedChartData = data;
