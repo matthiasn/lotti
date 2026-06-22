@@ -182,12 +182,13 @@ void main() {
     expect(state.reached(OnboardingEventName.welcomeSkipped), isTrue);
   });
 
-  testWidgets('connecting a provider pops the modal and records '
-      'providerConnected', (tester) async {
-    // Drive the full flow welcome → connect → Ollama → verified → Connect,
-    // exercising the modal's onConnected glue (connectedType + the
-    // providerConnected event). Ollama needs no key and its FTUE setup only
-    // touches the category repository, so it's the cheapest provider to drive.
+  testWidgets('connecting reveals the success beat, then completing pops and '
+      'records providerConnected', (tester) async {
+    // Drive the full flow welcome → connect → Ollama → verified → Connect →
+    // success → Get started, exercising the modal's onConnected glue
+    // (connectedType + the providerConnected event). Ollama needs no key and
+    // its FTUE setup only touches the category repository, so it's the cheapest
+    // provider to drive.
     final aiRepo = MockAiConfigRepository();
     when(() => aiRepo.saveConfig(any())).thenAnswer((_) async {});
     final catRepo = MockCategoryRepository();
@@ -252,8 +253,15 @@ void main() {
     await tester.tap(find.text('Connect'));
     await tester.pumpAndSettle();
 
-    // Modal popped; provider creation + FTUE setup ran; event recorded.
+    // Connect now reveals the success beat instead of dropping silently.
+    expect(find.text('Get started'), findsOneWidget);
+    await tester.tap(find.text('Get started'));
+    await tester.pumpAndSettle();
+
+    // Completing the success beat pops the modal; provider creation + FTUE
+    // setup ran; event recorded.
     expect(find.text('Connect your brain'), findsNothing);
+    expect(find.text('Get started'), findsNothing);
     verify(() => aiRepo.saveConfig(any())).called(1);
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.providerConnected), isTrue);

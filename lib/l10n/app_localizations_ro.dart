@@ -6558,6 +6558,16 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alegeți creierul care vă transformă cuvintele în sarcini';
 
   @override
+  String get onboardingSuccessContinue => 'Începeți';
+
+  @override
+  String get onboardingSuccessSubtitle =>
+      'Creierul AI este conectat și pregătit să vă transforme cuvintele în sarcini.';
+
+  @override
+  String get onboardingSuccessTitle => 'Gata de start';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Conectați-vă creierul';
 
   @override

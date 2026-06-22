@@ -8,7 +8,9 @@ import 'package:lotti/features/onboarding/repository/onboarding_metrics_reposito
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// The FTUE "connect your brain" front door: a full-screen cinematic route that
 /// crossfades through three steps — a welcome (animated `heroStyle` hero), a
@@ -36,13 +38,19 @@ class OnboardingWelcomeModal {
     unawaited(repo?.recordEvent(OnboardingEventName.welcomeShown));
 
     InferenceProviderType? connectedType;
+    final dismissLabel = MaterialLocalizations.of(
+      context,
+    ).modalBarrierDismissLabel;
 
     await Navigator.of(context, rootNavigator: true).push(
       PageRouteBuilder<void>(
         // Transparent route + dim barrier: the app stays visible (dimmed)
         // behind the floating panel rather than being replaced by a solid
-        // takeover.
+        // takeover. Tapping the dim barrier closes it, matching the app's
+        // modal convention.
         opaque: false,
+        barrierDismissible: true,
+        barrierLabel: dismissLabel,
         barrierColor: Colors.black.withValues(alpha: 0.6),
         reverseTransitionDuration: MotionDurations.short4,
         pageBuilder: (routeContext, animation, _) {
@@ -62,10 +70,11 @@ class OnboardingWelcomeModal {
                 onProviderModalShown: () => unawaited(
                   repo?.recordEvent(OnboardingEventName.providerModalShown),
                 ),
-                onConnected: (type) {
-                  connectedType = type;
-                  Navigator.of(routeContext).pop();
-                },
+                // The connection succeeded (provider + models created) — record
+                // it now so it counts even if the user dismisses on the success
+                // beat; the route stays open to show that beat.
+                onConnected: (type) => connectedType = type,
+                onComplete: () => Navigator.of(routeContext).pop(),
                 onSkip: () => Navigator.of(routeContext).pop(),
               ),
             ),
@@ -95,12 +104,14 @@ class _OnboardingScaffold extends StatelessWidget {
     required this.heroStyle,
     required this.onProviderModalShown,
     required this.onConnected,
+    required this.onComplete,
     required this.onSkip,
   });
 
   final OnboardingHeroStyle heroStyle;
   final VoidCallback onProviderModalShown;
   final void Function(InferenceProviderType) onConnected;
+  final VoidCallback onComplete;
   final VoidCallback onSkip;
 
   @override
@@ -113,6 +124,7 @@ class _OnboardingScaffold extends StatelessWidget {
       heroStyle: heroStyle,
       onProviderModalShown: onProviderModalShown,
       onConnected: onConnected,
+      onComplete: onComplete,
       onSkip: onSkip,
     );
 
@@ -152,7 +164,7 @@ class _OnboardingScaffold extends StatelessWidget {
   }
 }
 
-enum _FlowStep { welcome, connect, apiKey }
+enum _FlowStep { welcome, connect, apiKey, success }
 
 /// Internal three-step flow swapped with a crossfade + height animation. Owning
 /// the step locally keeps the in-panel back buttons hittable.
@@ -161,12 +173,14 @@ class _OnboardingFlow extends StatefulWidget {
     required this.heroStyle,
     required this.onProviderModalShown,
     required this.onConnected,
+    required this.onComplete,
     required this.onSkip,
   });
 
   final OnboardingHeroStyle heroStyle;
   final VoidCallback onProviderModalShown;
   final void Function(InferenceProviderType) onConnected;
+  final VoidCallback onComplete;
   final VoidCallback onSkip;
 
   @override
@@ -233,7 +247,21 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           key: ValueKey('onboarding-apikey-${_type.name}'),
           type: _type,
           onBack: () => setState(() => _step = _FlowStep.connect),
-          onConnected: () => widget.onConnected(_type),
+          onConnected: () {
+            // Provider + models are created — record the win and reveal the
+            // success beat instead of dropping silently into the app.
+            widget.onConnected(_type);
+            setState(() => _step = _FlowStep.success);
+          },
+        );
+      case _FlowStep.success:
+        return OnboardingSuccessView(
+          key: const ValueKey('onboarding-success'),
+          accent: dsTokensDark.colors.interactive.enabled,
+          title: context.messages.onboardingSuccessTitle,
+          subtitle: context.messages.onboardingSuccessSubtitle,
+          continueLabel: context.messages.onboardingSuccessContinue,
+          onContinue: widget.onComplete,
         );
     }
   }
