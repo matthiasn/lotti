@@ -12,6 +12,13 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+typedef MeliousChatCompletionStreamFactory =
+    Stream<CreateChatCompletionStreamResponse> Function({
+      required String baseUrl,
+      required String apiKey,
+      required CreateChatCompletionRequest request,
+    });
+
 /// Melious.ai inference repository.
 ///
 /// Melious is OpenAI-compatible for chat, vision chat, audio transcription,
@@ -23,13 +30,17 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   MeliousInferenceRepository({
     super.httpClient,
     CloudInferenceRequestHelpers? helpers,
-  }) : _helpers = helpers ?? const CloudInferenceRequestHelpers();
+    MeliousChatCompletionStreamFactory? chatCompletionStreamFactory,
+  }) : _helpers = helpers ?? const CloudInferenceRequestHelpers(),
+       _chatCompletionStreamFactory =
+           chatCompletionStreamFactory ?? _createChatCompletionStream;
 
   static const _providerName = 'MeliousInferenceRepository';
   static const _modelListTimeout = Duration(seconds: 15);
   static const _imageGenerationTimeout = Duration(seconds: 180);
 
   final CloudInferenceRequestHelpers _helpers;
+  final MeliousChatCompletionStreamFactory _chatCompletionStreamFactory;
 
   /// Fetches the live Melious model catalog and maps `_meta` capability data
   /// into the app's [KnownModel] shape.
@@ -132,8 +143,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
   }) {
-    final client = OpenAIClient(baseUrl: baseUrl, apiKey: apiKey);
-    final stream = client.createChatCompletionStream(
+    final stream = _chatCompletionStreamFactory(
+      baseUrl: baseUrl,
+      apiKey: apiKey,
       request: _helpers.createBaseRequest(
         messages: [
           if (systemMessage != null)
@@ -165,8 +177,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
   }) {
-    final client = OpenAIClient(baseUrl: baseUrl, apiKey: apiKey);
-    final stream = client.createChatCompletionStream(
+    final stream = _chatCompletionStreamFactory(
+      baseUrl: baseUrl,
+      apiKey: apiKey,
       request: _helpers.createBaseRequest(
         messages: messages,
         model: model,
@@ -193,33 +206,42 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
   }) {
-    final client = OpenAIClient(baseUrl: baseUrl, apiKey: apiKey);
-    return client
-        .createChatCompletionStream(
-          request: _helpers.createBaseRequest(
-            messages: [
-              if (systemMessage != null)
-                ChatCompletionMessage.system(content: systemMessage),
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.parts([
-                  ChatCompletionMessageContentPart.text(text: prompt),
-                  ...images.map(
-                    (image) => ChatCompletionMessageContentPart.image(
-                      imageUrl: ChatCompletionMessageImageUrl(
-                        url: 'data:image/jpeg;base64,$image',
-                      ),
-                    ),
+    return _chatCompletionStreamFactory(
+      baseUrl: baseUrl,
+      apiKey: apiKey,
+      request: _helpers.createBaseRequest(
+        messages: [
+          if (systemMessage != null)
+            ChatCompletionMessage.system(content: systemMessage),
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.parts([
+              ChatCompletionMessageContentPart.text(text: prompt),
+              ...images.map(
+                (image) => ChatCompletionMessageContentPart.image(
+                  imageUrl: ChatCompletionMessageImageUrl(
+                    url: 'data:image/jpeg;base64,$image',
                   ),
-                ]),
+                ),
               ),
-            ],
-            model: model,
-            temperature: temperature,
-            maxCompletionTokens: maxCompletionTokens,
-            tools: tools,
+            ]),
           ),
-        )
-        .asBroadcastStream();
+        ],
+        model: model,
+        temperature: temperature,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+      ),
+    ).asBroadcastStream();
+  }
+
+  static Stream<CreateChatCompletionStreamResponse>
+  _createChatCompletionStream({
+    required String baseUrl,
+    required String apiKey,
+    required CreateChatCompletionRequest request,
+  }) {
+    final client = OpenAIClient(baseUrl: baseUrl, apiKey: apiKey);
+    return client.createChatCompletionStream(request: request);
   }
 
   /// Transcribes audio through Melious' OpenAI-compatible

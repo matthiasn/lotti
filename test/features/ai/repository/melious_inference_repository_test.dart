@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -10,65 +9,37 @@ import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-class _StreamingChatServer {
-  _StreamingChatServer({
-    required this.baseUrl,
-    required this.body,
-    required this.dispose,
-  });
+class _ChatStreamProbe {
+  _ChatStreamProbe({required this.content});
 
-  final String baseUrl;
-  final Future<Map<String, dynamic>> body;
-  final Future<void> Function() dispose;
-}
+  final String content;
+  final requests = <CreateChatCompletionRequest>[];
+  final baseUrls = <String>[];
+  final apiKeys = <String>[];
 
-Future<_StreamingChatServer> _startStreamingChatServer({
-  String content = 'melious response',
-}) async {
-  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-  final bodyCompleter = Completer<Map<String, dynamic>>();
+  Stream<CreateChatCompletionStreamResponse> call({
+    required String baseUrl,
+    required String apiKey,
+    required CreateChatCompletionRequest request,
+  }) {
+    baseUrls.add(baseUrl);
+    apiKeys.add(apiKey);
+    requests.add(request);
 
-  final subscription = server.listen((request) async {
-    expect(request.method, equals('POST'));
-    expect(request.uri.path, equals('/v1/chat/completions'));
-    expect(
-      request.headers.value('authorization'),
-      equals('Bearer sk-mel-test'),
+    return Stream.value(
+      CreateChatCompletionStreamResponse(
+        id: 'chatcmpl-melious-test',
+        choices: [
+          ChatCompletionStreamResponseChoice(
+            delta: ChatCompletionStreamResponseDelta(content: content),
+            index: 0,
+          ),
+        ],
+        object: 'chat.completion.chunk',
+        created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+      ),
     );
-
-    final rawBody = await utf8.decoder.bind(request).join();
-    bodyCompleter.complete(jsonDecode(rawBody) as Map<String, dynamic>);
-
-    final chunk = {
-      'id': 'chatcmpl-melious-test',
-      'object': 'chat.completion.chunk',
-      'created': 1710460800,
-      'model': 'test-model',
-      'choices': [
-        {
-          'index': 0,
-          'delta': {'content': content},
-          'finish_reason': null,
-        },
-      ],
-    };
-
-    request.response
-      ..statusCode = 200
-      ..headers.contentType = ContentType('text', 'event-stream')
-      ..write('data: ${jsonEncode(chunk)}\n\n')
-      ..write('data: [DONE]\n\n');
-    await request.response.close();
-  });
-
-  return _StreamingChatServer(
-    baseUrl: 'http://${server.address.host}:${server.port}/v1',
-    body: bodyCompleter.future,
-    dispose: () async {
-      await subscription.cancel();
-      await server.close(force: true);
-    },
-  );
+  }
 }
 
 void main() {
@@ -215,16 +186,17 @@ void main() {
     });
 
     test('generateText streams text and sends prompt request body', () async {
-      final server = await _startStreamingChatServer();
-      addTearDown(server.dispose);
-      final repository = MeliousInferenceRepository();
+      final probe = _ChatStreamProbe(content: 'melious response');
+      final repository = MeliousInferenceRepository(
+        chatCompletionStreamFactory: probe.call,
+      );
       addTearDown(repository.close);
 
       final chunks = await repository
           .generateText(
             prompt: 'Say hello',
             model: 'minimax-m2.7',
-            baseUrl: server.baseUrl,
+            baseUrl: baseUrl,
             apiKey: apiKey,
             systemMessage: 'Be concise.',
             temperature: 0.2,
@@ -234,26 +206,27 @@ void main() {
 
       expect(chunks.single.choices?.single.delta?.content, 'melious response');
 
-      final body = await server.body;
-      expect(body['model'], equals('minimax-m2.7'));
-      expect(body['stream'], isTrue);
-      expect(body['temperature'], equals(0.2));
-      expect(body['max_completion_tokens'], equals(128));
-      final messages = body['messages'] as List<dynamic>;
-      expect(messages, hasLength(2));
-      expect(messages.first, containsPair('role', 'system'));
-      expect(messages.last, containsPair('role', 'user'));
-      expect(messages.last, containsPair('content', 'Say hello'));
+      expect(probe.baseUrls.single, baseUrl);
+      expect(probe.apiKeys.single, apiKey);
+      final request = probe.requests.single;
+      expect(request.model.toString(), contains('minimax-m2.7'));
+      expect(request.stream, isTrue);
+      expect(request.temperature, 0.2);
+      expect(request.maxCompletionTokens, 128);
+      expect(request.messages, hasLength(2));
+      expect(request.messages.first.role, ChatCompletionMessageRole.system);
+      expect(request.messages.last.role, ChatCompletionMessageRole.user);
+      expect(request.toString(), contains('Say hello'));
+      expect(request.toString(), contains('Be concise.'));
     });
 
     test(
       'generateTextWithMessages forwards conversation history to Melious',
       () async {
-        final server = await _startStreamingChatServer(
-          content: 'history response',
+        final probe = _ChatStreamProbe(content: 'history response');
+        final repository = MeliousInferenceRepository(
+          chatCompletionStreamFactory: probe.call,
         );
-        addTearDown(server.dispose);
-        final repository = MeliousInferenceRepository();
         addTearDown(repository.close);
 
         final chunks = await repository
@@ -267,7 +240,7 @@ void main() {
                 ),
               ],
               model: 'deepseek-v4-pro',
-              baseUrl: server.baseUrl,
+              baseUrl: baseUrl,
               apiKey: apiKey,
               maxCompletionTokens: 256,
             )
@@ -278,29 +251,30 @@ void main() {
           'history response',
         );
 
-        final body = await server.body;
-        expect(body['model'], equals('deepseek-v4-pro'));
-        expect(body['max_completion_tokens'], equals(256));
-        final messages = body['messages'] as List<dynamic>;
-        expect(messages, hasLength(2));
-        expect(messages.first, containsPair('role', 'system'));
-        expect(messages.last, containsPair('content', 'Previous user turn'));
+        expect(probe.baseUrls.single, baseUrl);
+        expect(probe.apiKeys.single, apiKey);
+        final request = probe.requests.single;
+        expect(request.model.toString(), contains('deepseek-v4-pro'));
+        expect(request.maxCompletionTokens, 256);
+        expect(request.messages, hasLength(2));
+        expect(request.messages.first.role, ChatCompletionMessageRole.system);
+        expect(request.messages.last.role, ChatCompletionMessageRole.user);
+        expect(request.toString(), contains('Previous user turn'));
       },
     );
 
     test('generateWithImages sends multimodal message parts', () async {
-      final server = await _startStreamingChatServer(
-        content: 'vision response',
+      final probe = _ChatStreamProbe(content: 'vision response');
+      final repository = MeliousInferenceRepository(
+        chatCompletionStreamFactory: probe.call,
       );
-      addTearDown(server.dispose);
-      final repository = MeliousInferenceRepository();
       addTearDown(repository.close);
 
       final chunks = await repository
           .generateWithImages(
             prompt: 'Describe this image',
             model: 'gemma-4-26b-a4b',
-            baseUrl: server.baseUrl,
+            baseUrl: baseUrl,
             apiKey: apiKey,
             images: const ['abc123'],
             systemMessage: 'Use visual evidence only.',
@@ -309,20 +283,17 @@ void main() {
 
       expect(chunks.single.choices?.single.delta?.content, 'vision response');
 
-      final body = await server.body;
-      expect(body['model'], equals('gemma-4-26b-a4b'));
-      final messages = body['messages'] as List<dynamic>;
-      expect(messages, hasLength(2));
-      final userMessage = messages.last as Map<String, dynamic>;
-      final content = userMessage['content'] as List<dynamic>;
-      expect(content.first, containsPair('type', 'text'));
-      expect(content.first, containsPair('text', 'Describe this image'));
-      final imagePart = content.last as Map<String, dynamic>;
-      expect(imagePart, containsPair('type', 'image_url'));
-      expect(
-        imagePart['image_url'],
-        containsPair('url', 'data:image/jpeg;base64,abc123'),
-      );
+      expect(probe.baseUrls.single, baseUrl);
+      expect(probe.apiKeys.single, apiKey);
+      final request = probe.requests.single;
+      expect(request.model.toString(), contains('gemma-4-26b-a4b'));
+      expect(request.messages, hasLength(2));
+      expect(request.messages.first.role, ChatCompletionMessageRole.system);
+      expect(request.messages.last.role, ChatCompletionMessageRole.user);
+      final requestString = request.toString();
+      expect(requestString, contains('Describe this image'));
+      expect(requestString, contains('Use visual evidence only.'));
+      expect(requestString, contains('data:image/jpeg;base64,abc123'));
     });
 
     test('listModels surfaces provider error messages', () async {
