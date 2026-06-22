@@ -44,6 +44,8 @@ final _dynamicKnownModelsProvider = FutureProvider.autoDispose
       ref,
       providerId,
     ) async {
+      final meliousRepository = ref.watch(meliousInferenceRepositoryProvider);
+      final omlxRepository = ref.watch(omlxInferenceRepositoryProvider);
       final repository = ref.read(aiConfigRepositoryProvider);
       final config = await repository.getConfigById(providerId);
       if (config is! AiConfigInferenceProvider) {
@@ -55,14 +57,14 @@ final _dynamicKnownModelsProvider = FutureProvider.autoDispose
           : config.baseUrl.trim();
 
       return switch (config.inferenceProviderType) {
-        InferenceProviderType.melious =>
-          ref
-              .read(meliousInferenceRepositoryProvider)
-              .listModels(baseUrl: baseUrl, apiKey: config.apiKey),
-        InferenceProviderType.omlx =>
-          ref
-              .read(omlxInferenceRepositoryProvider)
-              .listModels(baseUrl: baseUrl, apiKey: config.apiKey),
+        InferenceProviderType.melious => meliousRepository.listModels(
+          baseUrl: baseUrl,
+          apiKey: config.apiKey,
+        ),
+        InferenceProviderType.omlx => omlxRepository.listModels(
+          baseUrl: baseUrl,
+          apiKey: config.apiKey,
+        ),
         _ => const <KnownModel>[],
       };
     }, retry: (_, _) => null);

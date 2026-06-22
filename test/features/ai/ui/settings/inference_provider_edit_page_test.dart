@@ -57,6 +57,20 @@ class _ErrorAiConfigByTypeController extends AiConfigByTypeController {
   }
 }
 
+class _CloseTrackingMeliousInferenceRepository
+    extends FakeMeliousInferenceRepository {
+  _CloseTrackingMeliousInferenceRepository(super._results);
+
+  int closeCount = 0;
+
+  bool get isClosed => closeCount > 0;
+
+  @override
+  void close() {
+    closeCount++;
+  }
+}
+
 /// Sets the test surface size for the duration of the test.
 Future<void> _setTestSurface(
   WidgetTester tester, {
@@ -1447,6 +1461,77 @@ void main() {
       );
       expect(fakeMeliousRepository.calls.single.apiKey, 'sk-mel-test');
     });
+
+    testWidgets(
+      'keeps the Melious repository alive while catalog loading is pending',
+      (WidgetTester tester) async {
+        await _setTestSurface(tester, height: 1600);
+
+        final catalogCompleter = Completer<List<KnownModel>>();
+        final fakeMeliousRepository = _CloseTrackingMeliousInferenceRepository([
+          () => catalogCompleter.future,
+        ]);
+        final meliousProvider = AiConfig.inferenceProvider(
+          id: 'melious-provider-id',
+          name: 'Melious.ai',
+          baseUrl: 'https://api.melious.ai/v1',
+          apiKey: 'sk-mel-test',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.melious,
+        );
+
+        when(
+          () => mockRepository.getConfigById('melious-provider-id'),
+        ).thenAnswer((_) async => meliousProvider);
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.value([]));
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            configId: 'melious-provider-id',
+            additionalOverrides: [
+              meliousInferenceRepositoryProvider.overrideWith((ref) {
+                ref.onDispose(fakeMeliousRepository.close);
+                return fakeMeliousRepository;
+              }),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.ensureVisible(find.text('Available Models'));
+        await tester.pump();
+
+        expect(fakeMeliousRepository.calls, hasLength(1));
+        expect(
+          fakeMeliousRepository.isClosed,
+          isFalse,
+          reason:
+              'The dynamic catalog provider must keep the repository watched '
+              'while listModels is pending; otherwise the HTTP client can be '
+              'closed and cancel the socket.',
+        );
+        expect(find.byType(CircularProgressIndicator), findsAtLeastNWidgets(1));
+
+        catalogCompleter.complete(const <KnownModel>[]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(fakeMeliousRepository.isClosed, isFalse);
+        expect(l10n(tester).aiConfigNoModelsAvailable, isNotEmpty);
+        expect(
+          find.text(l10n(tester).aiConfigNoModelsAvailable),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+
+        expect(fakeMeliousRepository.closeCount, 1);
+      },
+    );
 
     testWidgets('renders dynamic oMLX models and existing Added state', (
       WidgetTester tester,

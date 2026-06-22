@@ -92,7 +92,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   }
 
   static bool _shouldRetryPlainModels(MeliousInferenceException error) {
-    return error.statusCode != 401 && error.statusCode != 403;
+    final statusCode = error.statusCode;
+    if (statusCode == null) return false;
+    return statusCode != 401 && statusCode != 403;
   }
 
   Future<List<KnownModel>> _listModelsFromEndpoint({

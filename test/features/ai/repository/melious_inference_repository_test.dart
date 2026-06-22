@@ -773,8 +773,12 @@ void main() {
     );
 
     test('listModels wraps timeout and transport failures', () async {
+      var timeoutCalls = 0;
       final timeoutRepository = MeliousInferenceRepository(
-        httpClient: MockClient((_) => Completer<http.Response>().future),
+        httpClient: MockClient((_) {
+          timeoutCalls++;
+          return Completer<http.Response>().future;
+        }),
       );
       addTearDown(timeoutRepository.close);
 
@@ -792,9 +796,12 @@ void main() {
           ),
         ),
       );
+      expect(timeoutCalls, 1);
 
+      var failingCalls = 0;
       final failingRepository = MeliousInferenceRepository(
         httpClient: MockClient((_) async {
+          failingCalls++;
           throw Exception('socket closed');
         }),
       );
@@ -810,6 +817,7 @@ void main() {
           ),
         ),
       );
+      expect(failingCalls, 1);
     });
 
     test('listModels clips raw non-JSON error bodies', () async {
