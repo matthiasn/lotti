@@ -105,7 +105,7 @@ class OnboardingCategoryView extends StatelessWidget {
                     color: textMedium,
                   ),
                 ),
-                SizedBox(height: tokens.spacing.step5),
+                SizedBox(height: tokens.spacing.step6),
                 Wrap(
                   spacing: tokens.spacing.step3,
                   runSpacing: tokens.spacing.step3,
@@ -125,7 +125,7 @@ class OnboardingCategoryView extends StatelessWidget {
                     ),
                   ],
                 ),
-                SizedBox(height: tokens.spacing.step6),
+                SizedBox(height: tokens.spacing.step7),
                 DesignSystemButton(
                   label: continueLabel,
                   onPressed: selected.isEmpty ? null : onContinue,
