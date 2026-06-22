@@ -6444,6 +6444,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingApiKeyConnecting => 'Connexion…';
 
   @override
+  String get onboardingApiKeyEnterKeyHint =>
+      'Saisis une clé valide pour continuer.';
+
+  @override
   String get onboardingApiKeyError =>
       'Échec de la connexion. Vérifie ta clé et réessaie.';
 
@@ -6472,6 +6476,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String onboardingApiKeyUnreachable(String providerName) {
     return 'Impossible de joindre $providerName. Vérifie la clé ou ta connexion et réessaie.';
   }
+
+  @override
+  String get onboardingApiKeyVerifying => 'Vérification…';
 
   @override
   String get onboardingConnectGeminiName => 'Gemini';

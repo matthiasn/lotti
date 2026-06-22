@@ -102,6 +102,9 @@ Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {
         lineColor: accent.withValues(alpha: 0.6),
         pulseColor: Color.lerp(accent, Colors.white, 0.45)!,
         nodeCount: 30,
+        // Tame the brightest blooms ~20% so the hero supports the promise
+        // headline rather than out-shouting it (design-panel call).
+        glow: 0.8,
       );
     case OnboardingHeroStyle.crystallize:
       return CrystallizeHero(

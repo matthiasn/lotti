@@ -3172,6 +3172,7 @@
   },
   "onboardingApiKeyConnect": "Connect",
   "onboardingApiKeyConnecting": "Connecting…",
+  "onboardingApiKeyEnterKeyHint": "Enter a valid key to continue.",
   "onboardingApiKeyError": "Couldn't connect. Check your key and try again.",
   "onboardingApiKeyField": "API key",
   "onboardingApiKeyGetKeyAt": "Get a key at",
@@ -3187,6 +3188,7 @@
       }
     }
   },
+  "onboardingApiKeyVerifying": "Verifying…",
   "onboardingConnectGeminiName": "Gemini",
   "onboardingConnectGeminiTagline": "United States",
   "onboardingConnectLessOptions": "Fewer options",

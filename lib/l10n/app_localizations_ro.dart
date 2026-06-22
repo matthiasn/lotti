@@ -6440,6 +6440,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingApiKeyConnecting => 'Se conectează…';
 
   @override
+  String get onboardingApiKeyEnterKeyHint =>
+      'Introduceți o cheie validă pentru a continua.';
+
+  @override
   String get onboardingApiKeyError =>
       'Conectarea a eșuat. Verificați cheia și încercați din nou.';
 
@@ -6468,6 +6472,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String onboardingApiKeyUnreachable(String providerName) {
     return 'Nu s-a putut contacta $providerName. Verificați cheia sau conexiunea și încercați din nou.';
   }
+
+  @override
+  String get onboardingApiKeyVerifying => 'Se verifică…';
 
   @override
   String get onboardingConnectGeminiName => 'Gemini';

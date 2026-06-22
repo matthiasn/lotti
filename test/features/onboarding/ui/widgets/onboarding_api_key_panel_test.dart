@@ -124,6 +124,43 @@ void main() {
     );
     expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
     expect(connectOnPressed(tester), isNull);
+    // The disabled CTA narrates why it's inert at rest.
+    expect(find.text('Enter a valid key to continue.'), findsOneWidget);
+  });
+
+  testWidgets('the button shows Verifying… while a probe is in flight', (
+    tester,
+  ) async {
+    final probe = _DeferredProbe();
+    await pumpPanel(
+      tester,
+      type: InferenceProviderType.gemini,
+      extraOverrides: [
+        connectionProbeRegistryProvider.overrideWith(
+          (ref) => {InferenceProviderType.gemini: probe},
+        ),
+      ],
+    );
+
+    await tester.enterText(find.byType(TextField), 'some-key');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 900)); // debounce → checking
+
+    // Probe still pending → the gate narrates as Verifying… and stays disabled.
+    expect(find.text('Verifying…'), findsOneWidget);
+    expect(connectOnPressed(tester), isNull);
+    // The at-rest hint gives way to the live status.
+    expect(find.text('Enter a valid key to continue.'), findsNothing);
+
+    probe.completer.complete(
+      const ConnectionCheckVerified(
+        modelCount: 3,
+        latency: Duration(milliseconds: 5),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 1100)); // dwell → result
+    await tester.pumpAndSettle();
+    expect(connectOnPressed(tester), isNotNull);
   });
 
   testWidgets('a valid key verifies, confirms, and enables Connect', (

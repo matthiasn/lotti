@@ -11002,6 +11002,12 @@ abstract class AppLocalizations {
   /// **'Connecting…'**
   String get onboardingApiKeyConnecting;
 
+  /// No description provided for @onboardingApiKeyEnterKeyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid key to continue.'**
+  String get onboardingApiKeyEnterKeyHint;
+
   /// No description provided for @onboardingApiKeyError.
   ///
   /// In en, this message translates to:
@@ -11049,6 +11055,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t reach {providerName}. Check the key or your connection and try again.'**
   String onboardingApiKeyUnreachable(String providerName);
+
+  /// No description provided for @onboardingApiKeyVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying…'**
+  String get onboardingApiKeyVerifying;
 
   /// No description provided for @onboardingConnectGeminiName.
   ///

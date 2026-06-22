@@ -407,6 +407,21 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                       ),
                     ),
                   ),
+                // Tell the user WHY the Connect button is inert at rest, so a
+                // disabled button reads as "waiting for a key", not "broken"
+                // (low-vision review). Suppressed once a probe is in flight or
+                // has resolved — the status slot then carries the state.
+                if (_requiresKey &&
+                    verifyState is ConnectionCheckIdle &&
+                    !_busy) ...[
+                  SizedBox(height: tokens.spacing.step3),
+                  Text(
+                    messages.onboardingApiKeyEnterKeyHint,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: textMed,
+                    ),
+                  ),
+                ],
                 SizedBox(height: tokens.spacing.step6),
                 DesignSystemButton(
                   // Disabled until the key is verified, so the user can only
@@ -414,8 +429,12 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                   onPressed: (_busy || verifyState is! ConnectionCheckVerified)
                       ? null
                       : _connect,
+                  // The label narrates the gate: Verifying… while a probe runs,
+                  // Connecting… while creating the provider (power-user review).
                   label: _busy
                       ? messages.onboardingApiKeyConnecting
+                      : verifyState is ConnectionCheckChecking
+                      ? messages.onboardingApiKeyVerifying
                       : messages.onboardingApiKeyConnect,
                   leadingIcon: Icons.arrow_forward_rounded,
                   size: DesignSystemButtonSize.large,

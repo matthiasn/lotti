@@ -21,6 +21,7 @@ class NeuralConstellation extends StatefulWidget {
     this.nodeCount = 24,
     this.pulseCount = 3,
     this.seed = 7,
+    this.glow = 1,
     super.key,
   });
 
@@ -38,6 +39,12 @@ class NeuralConstellation extends StatefulWidget {
   /// How many "thought" pulses travel the network at once.
   final int pulseCount;
   final int seed;
+
+  /// Scales the node *bloom* (the soft halo radius + alpha), not the crisp
+  /// core dot. < 1 tames the brightest blooms so they don't out-shout
+  /// foreground text — the welcome hero passes a value below 1 per the design
+  /// panel; the dim working-step backdrop keeps the default.
+  final double glow;
 
   @override
   State<NeuralConstellation> createState() => _NeuralConstellationState();
@@ -118,6 +125,7 @@ class _NeuralConstellationState extends State<NeuralConstellation>
               lineColor: widget.lineColor,
               pulseColor: widget.pulseColor,
               pulseCount: widget.pulseCount,
+              glow: widget.glow,
             ),
           );
         },
@@ -158,6 +166,7 @@ class _ConstellationPainter extends CustomPainter {
     required this.lineColor,
     required this.pulseColor,
     required this.pulseCount,
+    required this.glow,
   });
 
   final List<_Node> nodes;
@@ -166,6 +175,7 @@ class _ConstellationPainter extends CustomPainter {
   final Color lineColor;
   final Color pulseColor;
   final int pulseCount;
+  final double glow;
 
   // Connect nodes closer than this fraction of the canvas diagonal.
   static const _linkThreshold = 0.26;
@@ -240,9 +250,9 @@ class _ConstellationPainter extends CustomPainter {
       canvas
         ..drawCircle(
           positions[i],
-          nodes[i].radius * (3.6 + 0.5 * tw),
+          nodes[i].radius * (3.6 + 0.5 * tw) * glow,
           Paint()
-            ..color = nodeColor.withValues(alpha: 0.2 + 0.08 * tw)
+            ..color = nodeColor.withValues(alpha: (0.2 + 0.08 * tw) * glow)
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
         )
         ..drawCircle(
@@ -260,5 +270,6 @@ class _ConstellationPainter extends CustomPainter {
       oldDelegate.nodes.length != nodes.length ||
       oldDelegate.nodeColor != nodeColor ||
       oldDelegate.lineColor != lineColor ||
-      oldDelegate.pulseColor != pulseColor;
+      oldDelegate.pulseColor != pulseColor ||
+      oldDelegate.glow != glow;
 }

@@ -6395,6 +6395,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingApiKeyConnecting => 'Připojuji…';
 
   @override
+  String get onboardingApiKeyEnterKeyHint =>
+      'Zadej platný klíč pro pokračování.';
+
+  @override
   String get onboardingApiKeyError =>
       'Připojení selhalo. Zkontroluj klíč a zkus to znovu.';
 
@@ -6423,6 +6427,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String onboardingApiKeyUnreachable(String providerName) {
     return 'Nepodařilo se spojit s $providerName. Zkontroluj klíč nebo připojení a zkus to znovu.';
   }
+
+  @override
+  String get onboardingApiKeyVerifying => 'Ověřuji…';
 
   @override
   String get onboardingConnectGeminiName => 'Gemini';
