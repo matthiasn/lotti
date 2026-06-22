@@ -101,6 +101,52 @@ void main() {
       expect(iconAfter.color!.a, 1.0);
     });
 
+    testWidgets('turning reduce-motion on stops an in-flight pulse', (
+      tester,
+    ) async {
+      final reduceMotion = ValueNotifier(false);
+      addTearDown(reduceMotion.dispose);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ValueListenableBuilder<bool>(
+            valueListenable: reduceMotion,
+            // Toggle disableAnimations in place so the button's State (and its
+            // running pulse) survives the change rather than remounting.
+            builder: (context, rm, _) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: rm),
+              child: const PulsatingRateButton(
+                entryId: testEntryId,
+                sessionJustEnded: true,
+              ),
+            ),
+          ),
+          overrides: [
+            configFlagProvider(
+              enableSessionRatingsFlag,
+            ).overrideWith((_) => Stream.value(true)),
+            ratingRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      // Mid-pulse: the 0.4→1.0 opacity fade is running, so it's below full.
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.star_rate_rounded)).color!.a,
+        lessThan(1.0),
+      );
+
+      // Reduce-motion turns on → the pulse stops and rests at full opacity.
+      reduceMotion.value = true;
+      await tester.pump();
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.star_rate_rounded)).color!.a,
+        1.0,
+      );
+    });
+
     testWidgets('visible when ratings enabled and session just ended', (
       tester,
     ) async {

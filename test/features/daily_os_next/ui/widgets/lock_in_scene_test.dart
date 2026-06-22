@@ -96,6 +96,39 @@ void main() {
     });
 
     testWidgets(
+      'reduced motion snaps to the end frame and completes after a beat',
+      (tester) async {
+        var completed = false;
+        await tester.pumpWidget(
+          makeTestableWidget2(
+            Scaffold(
+              body: LockInScene(onComplete: () => completed = true),
+            ),
+            mediaQueryData: const MediaQueryData(
+              size: Size(800, 1000),
+              disableAnimations: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Snapped straight to the resolved end frame instead of the ~3.4s
+        // takeover: the check icon and final caption are already showing.
+        final messages = tester.element(find.byType(LockInScene)).messages;
+        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(
+          find.text(messages.dailyOsNextCommitTodayIsYours),
+          findsOneWidget,
+        );
+        // onComplete still fires, after a brief un-animated beat
+        // (MotionDurations.long2), so routing isn't skipped.
+        expect(completed, isFalse);
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(completed, isTrue);
+      },
+    );
+
+    testWidgets(
       'IgnorePointer wraps the overlay so taps fall through to widgets below',
       (tester) async {
         var underlyingTaps = 0;
