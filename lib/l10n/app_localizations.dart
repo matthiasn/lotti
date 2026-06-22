@@ -1765,6 +1765,12 @@ abstract class AppLocalizations {
   /// **'Day Agent'**
   String get agentTemplateKindDayAgent;
 
+  /// No description provided for @agentTemplateKindEventAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event Agent'**
+  String get agentTemplateKindEventAgent;
+
   /// Display name for the template-improver agent kind.
   ///
   /// In en, this message translates to:
@@ -4122,6 +4128,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Day planning'**
   String get categoryDayPlanLabel;
+
+  /// No description provided for @categoryDefaultEventTemplateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a template'**
+  String get categoryDefaultEventTemplateHint;
+
+  /// No description provided for @categoryDefaultEventTemplateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default event agent template'**
+  String get categoryDefaultEventTemplateLabel;
 
   /// No description provided for @categoryDefaultLanguageDescription.
   ///
@@ -8549,6 +8567,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photos'**
   String get eventsPhotosSection;
+
+  /// No description provided for @eventsRecapAwaitingContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo or note and the recap will appear here.'**
+  String get eventsRecapAwaitingContent;
+
+  /// No description provided for @eventsRecapUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the recap.'**
+  String get eventsRecapUnavailable;
 
   /// No description provided for @eventsRegenerateSummary.
   ///

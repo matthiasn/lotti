@@ -90,6 +90,7 @@ void main() {
         links: [
           makeTestAgentTaskLink(toId: 'task-9'),
           makeTestAgentProjectLink(toId: 'project-9'),
+          makeTestAgentEventLink(toId: 'event-9'),
           makeTestAgentDayLink(toId: 'day-9'),
           makeTestImproverTargetLink(toId: 'template-9'),
         ],
@@ -97,6 +98,7 @@ void main() {
 
       expect(derived.activeTaskId, 'task-9');
       expect(derived.activeProjectId, 'project-9');
+      expect(derived.activeEventId, 'event-9');
       expect(derived.activeDayId, 'day-9');
       expect(derived.activeTemplateId, 'template-9');
     });

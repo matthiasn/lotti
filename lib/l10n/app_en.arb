@@ -559,6 +559,7 @@
   "@agentTemplateKindDayAgent": {
     "description": "Display name for the Daily OS day-agent template kind."
   },
+  "agentTemplateKindEventAgent": "Event Agent",
   "agentTemplateKindImprover": "Template Improver",
   "@agentTemplateKindImprover": {
     "description": "Display name for the template-improver agent kind."
@@ -1350,6 +1351,8 @@
   "categoryCreationError": "Failed to create category. Please try again.",
   "categoryDayPlanDescription": "Make this category available for selection in the day plan",
   "categoryDayPlanLabel": "Day planning",
+  "categoryDefaultEventTemplateHint": "Select a template",
+  "categoryDefaultEventTemplateLabel": "Default event agent template",
   "categoryDefaultLanguageDescription": "Set a default language for tasks in this category",
   "categoryDefaultProfileHint": "Select a profile",
   "categoryDefaultTemplateHint": "Select a template",
@@ -2533,6 +2536,8 @@
   "eventsNewEvent": "New event",
   "eventsPageTitle": "Events",
   "eventsPhotosSection": "Photos",
+  "eventsRecapAwaitingContent": "Add a photo or note and the recap will appear here.",
+  "eventsRecapUnavailable": "Couldn't load the recap.",
   "eventsRegenerateSummary": "Regenerate summary",
   "eventsSearchHint": "Search events",
   "eventsSectionUpcoming": "Upcoming",

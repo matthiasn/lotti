@@ -66,6 +66,29 @@ void wireWakeExecutor(
       return result.mutatedEntries;
     }
 
+    if (identity.kind == AgentKinds.eventAgent) {
+      final eventWorkflow = ref.read(eventAgentWorkflowProvider);
+      final result = await eventWorkflow.execute(
+        agentIdentity: identity,
+        runKey: runKey,
+        triggerTokens: triggers,
+        threadId: threadId,
+      );
+
+      if (!result.success) {
+        throw StateError(result.error ?? 'Event agent wake failed');
+      }
+
+      await _notifyWakeCompletion(
+        ref,
+        agentId: agentId,
+        updateNotifications: updateNotifications,
+        extraTokens: triggers,
+      );
+
+      return result.mutatedEntries;
+    }
+
     if (identity.kind == AgentKinds.dayAgent) {
       final dayWorkflow = ref.read(dayAgentWorkflowProvider);
       final result = await dayWorkflow.execute(

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -1951,6 +1953,108 @@ void main() {
         final result = await orchestrator.taskContentChecker!('entry-1');
         expect(result, isFalse);
       });
+    });
+
+    group('eventContentChecker', () {
+      late MockAgentRepository mockRepo;
+      late MockJournalDb mockDb;
+
+      setUp(() {
+        mockRepo = MockAgentRepository();
+        mockDb = MockJournalDb();
+      });
+
+      Future<bool> check(String eventId) async {
+        final container = createCheckerContainer(
+          mockRepo: mockRepo,
+          mockDb: mockDb,
+        );
+        final orchestrator = container.read(wakeOrchestratorProvider);
+        return orchestrator.eventContentChecker!(eventId);
+      }
+
+      JournalEntity event(String id, {String? note}) => JournalEntity.event(
+        meta: Metadata(
+          id: id,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+        data: const EventData(
+          title: 'Trip',
+          stars: 0,
+          status: EventStatus.completed,
+        ),
+        entryText: note == null ? null : EntryText(plainText: note),
+      );
+
+      JournalEntity image(String id) => JournalEntity.journalImage(
+        meta: Metadata(
+          id: id,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+        data: ImageData(
+          capturedAt: DateTime(2024),
+          imageId: id,
+          imageFile: '$id.jpg',
+          imageDirectory: '/images/',
+        ),
+      );
+
+      test('returns true when the event has a note', () async {
+        when(
+          () => mockDb.journalEntityById('ev-1'),
+        ).thenAnswer((_) async => event('ev-1', note: 'A lovely day'));
+        expect(await check('ev-1'), isTrue);
+      });
+
+      test('returns true when a linked photo exists', () async {
+        when(
+          () => mockDb.journalEntityById('ev-2'),
+        ).thenAnswer((_) async => event('ev-2'));
+        when(
+          () => mockDb.getLinkedEntities('ev-2'),
+        ).thenAnswer((_) async => [image('img-1')]);
+        expect(await check('ev-2'), isTrue);
+      });
+
+      test('returns true when a linked note has text', () async {
+        when(
+          () => mockDb.journalEntityById('ev-3'),
+        ).thenAnswer((_) async => event('ev-3'));
+        when(() => mockDb.getLinkedEntities('ev-3')).thenAnswer(
+          (_) async => [
+            JournalEntity.journalEntry(
+              meta: Metadata(
+                id: 'note-1',
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+                dateFrom: DateTime(2024),
+                dateTo: DateTime(2024),
+              ),
+              entryText: const EntryText(plainText: 'A linked note'),
+            ),
+          ],
+        );
+        expect(await check('ev-3'), isTrue);
+      });
+
+      test(
+        'returns false for a bare event (no note, no linked content)',
+        () async {
+          when(
+            () => mockDb.journalEntityById('ev-4'),
+          ).thenAnswer((_) async => event('ev-4'));
+          when(
+            () => mockDb.getLinkedEntities('ev-4'),
+          ).thenAnswer((_) async => <JournalEntity>[]);
+          expect(await check('ev-4'), isFalse);
+        },
+      );
     });
   });
 

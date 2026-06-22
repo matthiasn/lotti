@@ -444,6 +444,34 @@ Map<String, dynamic> _$AgentProjectLinkToJson(AgentProjectLink instance) =>
       'runtimeType': instance.$type,
     };
 
+AgentEventLink _$AgentEventLinkFromJson(Map<String, dynamic> json) =>
+    AgentEventLink(
+      id: json['id'] as String,
+      fromId: json['fromId'] as String,
+      toId: json['toId'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$AgentEventLinkToJson(AgentEventLink instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'fromId': instance.fromId,
+      'toId': instance.toId,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
 AgentDayLink _$AgentDayLinkFromJson(Map<String, dynamic> json) => AgentDayLink(
   id: json['id'] as String,
   fromId: json['fromId'] as String,

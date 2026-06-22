@@ -7,7 +7,9 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/service/event_agent_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
+import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -161,6 +163,52 @@ Future<void> autoAssignCategoryAgentWith(
     developer.log(
       'Failed to auto-assign agent for task ${task.meta.id}: $e',
       name: 'autoAssignCategoryAgent',
+      error: e,
+      stackTrace: stackTrace,
+    );
+  }
+}
+
+/// Auto-creates an event agent for [event] if the event's category has a
+/// `defaultEventTemplateId` set. The agent is created in content-awaiting mode
+/// so it won't narrate until the event has real content (a photo/note).
+///
+/// Call this after [createEvent] from contexts that have Riverpod [WidgetRef].
+Future<void> autoAssignCategoryEventAgent(WidgetRef ref, JournalEvent event) =>
+    autoAssignCategoryEventAgentWith(
+      ref.read(eventAgentServiceProvider),
+      event,
+    );
+
+/// Core of [autoAssignCategoryEventAgent].
+///
+/// Accepts an [EventAgentService] directly so callers can capture the service
+/// before an async gap (avoiding post-await [WidgetRef] usage) and tests can
+/// call it without needing a [WidgetRef].
+Future<void> autoAssignCategoryEventAgentWith(
+  EventAgentService service,
+  JournalEvent event,
+) async {
+  try {
+    final categoryId = event.meta.categoryId;
+    if (categoryId == null) return;
+
+    final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
+    if (category == null) return;
+
+    final templateId = category.defaultEventTemplateId;
+    if (templateId == null) return;
+
+    await service.createEventAgent(
+      eventId: event.meta.id,
+      templateId: templateId,
+      profileId: category.defaultProfileId,
+      allowedCategoryIds: {categoryId},
+    );
+  } catch (e, stackTrace) {
+    developer.log(
+      'Failed to auto-assign event agent for event ${event.meta.id}: $e',
+      name: 'autoAssignCategoryEventAgent',
       error: e,
       stackTrace: stackTrace,
     );

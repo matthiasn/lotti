@@ -459,5 +459,153 @@ void main() {
         ).called(1);
       },
     );
+
+    test(
+      'autoAssignCategoryEventAgentWith creates event agent for category '
+      'with defaultEventTemplateId',
+      () async {
+        const categoryId = 'cat-event-template';
+        const templateId = 'event-template-xyz';
+        const profileId = 'profile-xyz';
+        final mockCache =
+            getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'Event Cat',
+          private: false,
+          active: true,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+          defaultEventTemplateId: templateId,
+          defaultProfileId: profileId,
+        );
+        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+        final event = await createEvent(categoryId: categoryId);
+        expect(event, isNotNull);
+
+        final mockService = MockEventAgentService();
+        when(
+          () => mockService.createEventAgent(
+            eventId: any(named: 'eventId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+          ),
+        ).thenAnswer((_) async => makeTestIdentity(id: 'event-agent-1'));
+
+        await autoAssignCategoryEventAgentWith(mockService, event!);
+
+        verify(
+          () => mockService.createEventAgent(
+            eventId: event.meta.id,
+            templateId: templateId,
+            profileId: profileId,
+            allowedCategoryIds: {categoryId},
+            // Event agents attach in content-awaiting mode (the default).
+            // ignore: avoid_redundant_argument_values
+            awaitContent: true,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'autoAssignCategoryEventAgentWith does nothing when no categoryId',
+      () async {
+        final event = await createEvent();
+        expect(event, isNotNull);
+
+        final mockService = MockEventAgentService();
+        await autoAssignCategoryEventAgentWith(mockService, event!);
+
+        verifyNever(
+          () => mockService.createEventAgent(
+            eventId: any(named: 'eventId'),
+            templateId: any(named: 'templateId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'autoAssignCategoryEventAgentWith does nothing without '
+      'defaultEventTemplateId',
+      () async {
+        const categoryId = 'cat-no-event-template';
+        final mockCache =
+            getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'No Event Template',
+          private: false,
+          active: true,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+          // A task template alone must NOT spawn an event agent.
+          defaultTemplateId: 'task-template-only',
+        );
+        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+        final event = await createEvent(categoryId: categoryId);
+        expect(event, isNotNull);
+
+        final mockService = MockEventAgentService();
+        await autoAssignCategoryEventAgentWith(mockService, event!);
+
+        verifyNever(
+          () => mockService.createEventAgent(
+            eventId: any(named: 'eventId'),
+            templateId: any(named: 'templateId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'autoAssignCategoryEventAgentWith catches errors gracefully',
+      () async {
+        const categoryId = 'cat-event-error';
+        const templateId = 'event-template-err';
+        final mockCache =
+            getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'Event Error Cat',
+          private: false,
+          active: true,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+          defaultEventTemplateId: templateId,
+        );
+        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+        final event = await createEvent(categoryId: categoryId);
+        expect(event, isNotNull);
+
+        final mockService = MockEventAgentService();
+        when(
+          () => mockService.createEventAgent(
+            eventId: any(named: 'eventId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+          ),
+        ).thenThrow(StateError('already exists'));
+
+        // Should not throw — errors are caught and logged.
+        await autoAssignCategoryEventAgentWith(mockService, event!);
+      },
+    );
   });
 }

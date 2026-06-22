@@ -991,6 +991,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTemplateKindDayAgent => 'Agent de journée';
 
   @override
+  String get agentTemplateKindEventAgent => 'Agent d\'événement';
+
+  @override
   String get agentTemplateKindImprover => 'Améliorateur de modèle';
 
   @override
@@ -2431,6 +2434,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get categoryDayPlanLabel => 'Planification du jour';
+
+  @override
+  String get categoryDefaultEventTemplateHint => 'Sélectionner un modèle…';
+
+  @override
+  String get categoryDefaultEventTemplateLabel =>
+      'Modèle d\'agent d\'événement par défaut';
 
   @override
   String get categoryDefaultLanguageDescription =>
@@ -5000,6 +5010,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventsPhotosSection => 'Photos';
+
+  @override
+  String get eventsRecapAwaitingContent =>
+      'Ajoute une photo ou une note et le récap apparaîtra ici.';
+
+  @override
+  String get eventsRecapUnavailable => 'Impossible de charger le récap.';
 
   @override
   String get eventsRegenerateSummary => 'Régénérer le résumé';

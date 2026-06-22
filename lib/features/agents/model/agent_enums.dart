@@ -56,6 +56,9 @@ enum AgentTemplateKind {
 
   /// A project-focused agent template.
   projectAgent,
+
+  /// An event-focused agent template (narrates a recap of an event).
+  eventAgent,
 }
 
 /// Lifecycle status of an agent template version.

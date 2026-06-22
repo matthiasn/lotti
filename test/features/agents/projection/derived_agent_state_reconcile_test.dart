@@ -314,6 +314,7 @@ void main() {
       final links = [
         makeTestAgentTaskLink(toId: 'task-log'),
         makeTestAgentProjectLink(toId: 'project-log'),
+        makeTestAgentEventLink(toId: 'event-log'),
         makeTestAgentDayLink(toId: 'day-log'),
         makeTestImproverTargetLink(toId: 'template-log'),
       ];
@@ -323,6 +324,7 @@ void main() {
         slots: AgentSlots(
           activeTaskId: 'task-cache',
           activeProjectId: 'project-cache',
+          activeEventId: 'event-cache',
           activeDayId: 'day-cache',
           activeTemplateId: 'template-cache',
           lastOneOnOneAt: hDay(12),
@@ -342,6 +344,7 @@ void main() {
       expect(report.fieldMismatches.map((m) => m.field).toSet(), {
         'activeTaskId',
         'activeProjectId',
+        'activeEventId',
         'activeDayId',
         'activeTemplateId',
         'lastWakeAt',
@@ -355,6 +358,13 @@ void main() {
       );
       expect(task.derived, 'task-log');
       expect(task.live, 'task-cache');
+      // The event slot's mismatch carries the log-derived target and the cache
+      // value — exercising the activeEventId branch of compareDerivedAgentState.
+      final event = report.fieldMismatches.firstWhere(
+        (m) => m.field == 'activeEventId',
+      );
+      expect(event.derived, 'event-log');
+      expect(event.live, 'event-cache');
     });
 
     test('equivalent on a fresh empty agent (empty head status)', () {

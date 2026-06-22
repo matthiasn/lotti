@@ -178,6 +178,43 @@ void main() {
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     });
 
+    testWidgets('with kind eventAgent shows only event templates and the '
+        'custom label', (tester) async {
+      final eventTemplate = makeTestTemplate(
+        id: 'tpl-event',
+        displayName: 'Recap Writer',
+        kind: AgentTemplateKind.eventAgent,
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          TemplateSelector(
+            selectedTemplateId: null,
+            onTemplateSelected: (_) {},
+            kind: AgentTemplateKind.eventAgent,
+            labelText: 'Default event agent template',
+            hintText: 'Pick an event template',
+          ),
+          overrides: [
+            agentTemplatesProvider.overrideWith(
+              (ref) async => [template1, eventTemplate],
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Default event agent template'), findsOneWidget);
+      expect(find.text('Pick an event template'), findsOneWidget);
+
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+
+      // The event template is offered; the task template is filtered out.
+      expect(find.text('Recap Writer'), findsWidgets);
+      expect(find.text('Task Helper'), findsNothing);
+    });
+
     testWidgets('shows hint when templates are still loading', (tester) async {
       // Use a Completer that never completes to keep the provider in loading
       // state without leaving a pending Timer.

@@ -26,6 +26,7 @@ void main() {
     tomTemplateId,
     dayAgentTemplateId,
     projectTemplateId,
+    eventTemplateId,
     improverTemplateId,
     metaImproverTemplateId,
   };
@@ -50,24 +51,33 @@ void main() {
   });
 
   group('seedDefaults', () {
-    test('creates all six defaults when none exist, then backfills', () async {
-      // No default template exists yet.
-      when(() => mockRepo.getEntity(any())).thenAnswer((_) async => null);
-      // No templates exist, so directive backfill is a no-op.
-      when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
+    test(
+      'creates all seven defaults when none exist, then backfills',
+      () async {
+        // No default template exists yet.
+        when(() => mockRepo.getEntity(any())).thenAnswer((_) async => null);
+        // No templates exist, so directive backfill is a no-op.
+        when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
 
-      await seeding.seedDefaults();
+        await seeding.seedDefaults();
 
-      // Each created default writes a template + version + head (3 entities).
-      final captured = verify(
-        () => mockSync.upsertEntity(captureAny()),
-      ).captured.cast<AgentDomainEntity>();
-      final createdTemplateIds = captured
-          .whereType<AgentTemplateEntity>()
-          .map((t) => t.id)
-          .toSet();
-      expect(createdTemplateIds, seededTemplateIds);
-    });
+        // Each created default writes a template + version + head (3 entities).
+        final captured = verify(
+          () => mockSync.upsertEntity(captureAny()),
+        ).captured.cast<AgentDomainEntity>();
+        final createdTemplates = captured.whereType<AgentTemplateEntity>();
+        expect(createdTemplates.map((t) => t.id).toSet(), seededTemplateIds);
+
+        // The event default is the one that powers the category event-template
+        // picker, so it must be seeded as an event-agent kind (regression: it
+        // was previously omitted, leaving the picker empty).
+        final eventTemplate = createdTemplates.firstWhere(
+          (t) => t.id == eventTemplateId,
+        );
+        expect(eventTemplate.kind, AgentTemplateKind.eventAgent);
+        expect(eventTemplate.displayName, 'Scribe');
+      },
+    );
 
     test('skips creation when all defaults already exist', () async {
       for (final id in seededTemplateIds) {

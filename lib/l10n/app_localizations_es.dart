@@ -984,6 +984,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentTemplateKindDayAgent => 'Agente diario';
 
   @override
+  String get agentTemplateKindEventAgent => 'Agente de eventos';
+
+  @override
   String get agentTemplateKindImprover => 'Mejorador de plantilla';
 
   @override
@@ -2421,6 +2424,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get categoryDayPlanLabel => 'Plan del día';
+
+  @override
+  String get categoryDefaultEventTemplateHint => 'Seleccionar una plantilla…';
+
+  @override
+  String get categoryDefaultEventTemplateLabel =>
+      'Plantilla de agente de eventos predeterminada';
 
   @override
   String get categoryDefaultLanguageDescription =>
@@ -4989,6 +4999,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventsPhotosSection => 'Fotos';
+
+  @override
+  String get eventsRecapAwaitingContent =>
+      'Añade una foto o una nota y aquí aparecerá el resumen.';
+
+  @override
+  String get eventsRecapUnavailable => 'No se pudo cargar el resumen.';
 
   @override
   String get eventsRegenerateSummary => 'Regenerar resumen';

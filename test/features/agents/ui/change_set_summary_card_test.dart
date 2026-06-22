@@ -485,4 +485,64 @@ void main() {
       },
     );
   });
+
+  group('ChangeSetSummaryCard.event', () {
+    Widget buildEventWidget({List<AgentDomainEntity> changeSets = const []}) {
+      return makeTestableWidgetWithScaffold(
+        const ChangeSetSummaryCard.event(eventId: 'event-001'),
+        overrides: [
+          eventPendingChangeSetsProvider(
+            'event-001',
+          ).overrideWith((ref) async => changeSets),
+          eventChangeSetConfirmationServiceProvider.overrideWithValue(
+            mockConfirmationService,
+          ),
+          updateNotificationsProvider.overrideWithValue(
+            mockUpdateNotifications,
+          ),
+        ],
+      );
+    }
+
+    testWidgets('renders nothing when there are no event change sets', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildEventWidget());
+      await _pumpUi(tester);
+
+      expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
+      expect(find.text('Proposed changes'), findsNothing);
+    });
+
+    testWidgets('swipe right confirms a follow-up via the event service', (
+      tester,
+    ) async {
+      final changeSet = makeTestChangeSet(
+        taskId: 'event-001',
+        items: const [
+          ChangeItem(
+            toolName: 'suggest_follow_up_task',
+            args: {'title': 'Share the album with the group'},
+            humanSummary: 'Follow-up task: Share the album with the group',
+          ),
+        ],
+      );
+
+      when(() => mockConfirmationService.confirmItem(any(), any())).thenAnswer(
+        (_) async => const ToolExecutionResult(success: true, output: 'Done'),
+      );
+
+      await tester.pumpWidget(buildEventWidget(changeSets: [changeSet]));
+      await _pumpUi(tester);
+
+      await tester.drag(
+        find.text('Follow-up task: Share the album with the group'),
+        const Offset(300, 0),
+      );
+      await _pumpUi(tester);
+
+      verify(() => mockConfirmationService.confirmItem(changeSet, 0)).called(1);
+      verify(() => mockUpdateNotifications.notify({'agent-001'})).called(1);
+    });
+  });
 }

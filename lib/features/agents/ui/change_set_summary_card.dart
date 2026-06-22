@@ -5,9 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart'
     show
+        eventChangeSetConfirmationServiceProvider,
+        eventPendingChangeSetsProvider,
         projectChangeSetConfirmationServiceProvider,
         projectPendingChangeSetsProvider;
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -25,19 +28,41 @@ import 'package:lotti/widgets/cards/modern_base_card.dart';
 /// suggestions are rendered by `AiSummaryCard`, which goes
 /// through the proposal ledger; this card still serves the project-agent
 /// path until the same consolidation lands there.
+/// Whether the card surfaces a project agent's or an event agent's proposals.
+enum _ChangeSetScope { project, event }
+
 class ChangeSetSummaryCard extends ConsumerWidget {
   const ChangeSetSummaryCard.project({
     required String projectId,
     super.key,
-  }) : _targetId = projectId;
+  }) : _targetId = projectId,
+       _scope = _ChangeSetScope.project;
+
+  const ChangeSetSummaryCard.event({
+    required String eventId,
+    super.key,
+  }) : _targetId = eventId,
+       _scope = _ChangeSetScope.event;
 
   final String _targetId;
+  final _ChangeSetScope _scope;
+
+  Provider<ChangeSetConfirmationService> get _confirmationProvider =>
+      switch (_scope) {
+        _ChangeSetScope.project => projectChangeSetConfirmationServiceProvider,
+        _ChangeSetScope.event => eventChangeSetConfirmationServiceProvider,
+      };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final changeSetsAsync = ref.watch(
-      projectPendingChangeSetsProvider(_targetId),
-    );
+    final changeSetsAsync = switch (_scope) {
+      _ChangeSetScope.project => ref.watch(
+        projectPendingChangeSetsProvider(_targetId),
+      ),
+      _ChangeSetScope.event => ref.watch(
+        eventPendingChangeSetsProvider(_targetId),
+      ),
+    };
 
     return changeSetsAsync.when(
       skipLoadingOnReload: true,
@@ -53,7 +78,10 @@ class ChangeSetSummaryCard extends ConsumerWidget {
               for (final changeSet in changeSets)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: _ChangeSetCard(changeSet: changeSet),
+                  child: _ChangeSetCard(
+                    changeSet: changeSet,
+                    confirmationProvider: _confirmationProvider,
+                  ),
                 ),
             ],
           ),
@@ -66,9 +94,13 @@ class ChangeSetSummaryCard extends ConsumerWidget {
 }
 
 class _ChangeSetCard extends ConsumerStatefulWidget {
-  const _ChangeSetCard({required this.changeSet});
+  const _ChangeSetCard({
+    required this.changeSet,
+    required this.confirmationProvider,
+  });
 
   final ChangeSetEntity changeSet;
+  final Provider<ChangeSetConfirmationService> confirmationProvider;
 
   @override
   ConsumerState<_ChangeSetCard> createState() => _ChangeSetCardState();
@@ -142,6 +174,7 @@ class _ChangeSetCardState extends ConsumerState<_ChangeSetCard> {
                   child: _ChangeItemTile(
                     changeSet: widget.changeSet,
                     itemIndex: i,
+                    confirmationProvider: widget.confirmationProvider,
                   ),
                 ),
               ),
@@ -174,7 +207,7 @@ class _ChangeSetCardState extends ConsumerState<_ChangeSetCard> {
 
     // Capture ref-dependent values before the async gap so we don't
     // access ref after the widget is unmounted.
-    final service = ref.read(projectChangeSetConfirmationServiceProvider);
+    final service = ref.read(widget.confirmationProvider);
     final notifier = ref.read(updateNotificationsProvider);
     final agentId = widget.changeSet.agentId;
 
@@ -226,10 +259,12 @@ class _ChangeItemTile extends ConsumerStatefulWidget {
   const _ChangeItemTile({
     required this.changeSet,
     required this.itemIndex,
+    required this.confirmationProvider,
   });
 
   final ChangeSetEntity changeSet;
   final int itemIndex;
+  final Provider<ChangeSetConfirmationService> confirmationProvider;
 
   @override
   ConsumerState<_ChangeItemTile> createState() => _ChangeItemTileState();
@@ -352,7 +387,7 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
     setState(() => _busy = true);
 
     // Capture ref-dependent values before the async gap.
-    final service = ref.read(projectChangeSetConfirmationServiceProvider);
+    final service = ref.read(widget.confirmationProvider);
     final notifier = ref.read(updateNotificationsProvider);
     final agentId = _changeSet.agentId;
 
@@ -406,7 +441,7 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
     setState(() => _busy = true);
 
     // Capture ref-dependent values before the async gap.
-    final service = ref.read(projectChangeSetConfirmationServiceProvider);
+    final service = ref.read(widget.confirmationProvider);
     final notifier = ref.read(updateNotificationsProvider);
     final agentId = _changeSet.agentId;
 

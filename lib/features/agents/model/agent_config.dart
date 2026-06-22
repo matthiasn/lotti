@@ -47,6 +47,9 @@ abstract class AgentSlots with _$AgentSlots {
     /// The project ID this agent is working on.
     String? activeProjectId,
 
+    /// The event ID this agent is working on.
+    String? activeEventId,
+
     /// The template ID this improver agent manages.
     String? activeTemplateId,
 

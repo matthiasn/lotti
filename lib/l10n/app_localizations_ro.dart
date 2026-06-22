@@ -990,6 +990,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateKindDayAgent => 'Agent de zi';
 
   @override
+  String get agentTemplateKindEventAgent => 'Agent de eveniment';
+
+  @override
   String get agentTemplateKindImprover => 'Îmbunătățitor de șablon';
 
   @override
@@ -2435,6 +2438,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get categoryDayPlanLabel => 'Planificarea zilei';
+
+  @override
+  String get categoryDefaultEventTemplateHint => 'Selectați un șablon…';
+
+  @override
+  String get categoryDefaultEventTemplateLabel =>
+      'Șablon implicit de agent de eveniment';
 
   @override
   String get categoryDefaultLanguageDescription =>
@@ -5000,6 +5010,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get eventsPhotosSection => 'Fotografii';
+
+  @override
+  String get eventsRecapAwaitingContent =>
+      'Adăugați o fotografie sau o notă, iar rezumatul va apărea aici.';
+
+  @override
+  String get eventsRecapUnavailable => 'Rezumatul nu a putut fi încărcat.';
 
   @override
   String get eventsRegenerateSummary => 'Regenerează rezumatul';

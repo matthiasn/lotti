@@ -869,6 +869,36 @@ void main() {
       expect(result.toId, 'task-001');
     });
 
+    test('fromLinkRow roundtrips agentEvent links', () {
+      final link = model.AgentLink.agentEvent(
+        id: 'link-agent-event',
+        fromId: 'agent-001',
+        toId: 'event-001',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      final row = AgentLink(
+        id: 'link-agent-event',
+        fromId: 'agent-001',
+        toId: 'event-001',
+        type: AgentLinkTypes.agentEvent,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromLinkRow(row);
+
+      expect(result, isA<model.AgentEventLink>());
+      expect(result.fromId, 'agent-001');
+      expect(result.toId, 'event-001');
+      expect(result.softDeleted(updatedAt).deletedAt, updatedAt);
+    });
+
     test('fromLinkRow roundtrips captureToPlan link', () {
       final link = model.AgentLink.captureToPlan(
         id: 'link-capture-plan',

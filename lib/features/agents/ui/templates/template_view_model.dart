@@ -14,6 +14,7 @@ String agentTemplateKindLabel(AppLocalizations messages, AgentTemplateKind k) {
     AgentTemplateKind.dayAgent => messages.agentTemplateKindDayAgent,
     AgentTemplateKind.templateImprover => messages.agentTemplateKindImprover,
     AgentTemplateKind.projectAgent => messages.agentTemplateKindProjectAgent,
+    AgentTemplateKind.eventAgent => messages.agentTemplateKindEventAgent,
   };
 }
 

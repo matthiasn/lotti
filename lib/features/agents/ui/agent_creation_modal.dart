@@ -158,6 +158,8 @@ class _TemplateSelectionPageState extends State<_TemplateSelectionPage> {
         context.messages.agentTemplateKindImprover,
       AgentTemplateKind.projectAgent =>
         context.messages.agentTemplateKindProjectAgent,
+      AgentTemplateKind.eventAgent =>
+        context.messages.agentTemplateKindEventAgent,
     };
   }
 }

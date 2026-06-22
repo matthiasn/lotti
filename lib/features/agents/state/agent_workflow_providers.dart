@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/service/change_set_notification_service.da
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
+import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
@@ -134,6 +135,27 @@ ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
     logSummarizer: AgentLogLlmSummarizer(
       inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     ),
+  );
+}
+
+/// The event agent workflow with all dependencies resolved.
+///
+/// Leaner than the project workflow: v1 events are narrate-only recaps, so
+/// there is no input-capture log or compaction summarizer to wire in.
+@Riverpod(keepAlive: true)
+EventAgentWorkflow eventAgentWorkflow(Ref ref) {
+  final notifications = ref.watch(updateNotificationsProvider);
+  return EventAgentWorkflow(
+    agentRepository: ref.watch(agentRepositoryProvider),
+    conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
+    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+    journalRepository: ref.watch(journalRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    templateService: ref.watch(agentTemplateServiceProvider),
+    soulDocumentService: ref.watch(soulDocumentServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+    onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }
 

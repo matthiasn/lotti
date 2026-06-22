@@ -1,0 +1,184 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/state/event_agent_providers.dart';
+import 'package:lotti/features/events/ui/widgets/event_ai_summary_card.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
+import '../../../agents/test_utils.dart';
+
+void main() {
+  const eventId = 'event-1';
+  const agentId = 'agent-1';
+
+  final agentIdentity = makeTestIdentity(
+    id: agentId,
+    agentId: agentId,
+    kind: 'event_agent',
+  );
+
+  Widget buildCard({
+    String? fallbackSummary,
+    AgentDomainEntity? agent,
+    AgentDomainEntity? report,
+    MockEventAgentService? service,
+  }) {
+    return makeTestableWidgetWithScaffold(
+      EventAiSummaryCard(eventId: eventId, fallbackSummary: fallbackSummary),
+      overrides: <Override>[
+        // Resolve synchronously so the data-state tests don't transit a
+        // loading frame (the loading/error states have their own tests).
+        eventAgentProvider(eventId).overrideWith((ref) => agent),
+        agentReportProvider(agentId).overrideWith((ref) => report),
+        if (service != null)
+          eventAgentServiceProvider.overrideWithValue(service),
+      ],
+    );
+  }
+
+  group('no event agent', () {
+    testWidgets('renders the fallback summary without a refresh control', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildCard(fallbackSummary: 'A passive summary from a linked note.'),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(
+        find.text('A passive summary from a linked note.'),
+        findsOneWidget,
+      );
+      // No agent → no re-wake affordance.
+      expect(find.byIcon(Icons.refresh), findsNothing);
+    });
+
+    testWidgets('renders nothing when there is no fallback', (tester) async {
+      await tester.pumpWidget(buildCard());
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('Summary'), findsNothing);
+      expect(find.byIcon(Icons.auto_awesome), findsNothing);
+    });
+  });
+
+  group('degraded report states (never the awaiting hint)', () {
+    const awaitingHint = 'Add a photo or note and the recap will appear here.';
+
+    testWidgets('first load shows a spinner, not the awaiting hint', (
+      tester,
+    ) async {
+      final pending = Completer<AgentDomainEntity?>();
+      addTearDown(() => pending.complete(null));
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const EventAiSummaryCard(eventId: eventId),
+          overrides: <Override>[
+            eventAgentProvider(eventId).overrideWith((ref) => agentIdentity),
+            agentReportProvider(agentId).overrideWith((ref) => pending.future),
+          ],
+        ),
+      );
+      await tester.pump(); // resolve the agent; the report stays loading
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text(awaitingHint), findsNothing);
+    });
+
+    testWidgets('a report error shows the unavailable message, not the hint', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const EventAiSummaryCard(eventId: eventId),
+          overrides: <Override>[
+            eventAgentProvider(eventId).overrideWith((ref) => agentIdentity),
+            agentReportProvider(agentId).overrideWith(
+              (ref) => throw StateError('db down'),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text("Couldn't load the recap."), findsOneWidget);
+      expect(find.text(awaitingHint), findsNothing);
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+    });
+  });
+
+  group('with an event agent', () {
+    testWidgets('shows the report tldr and a refresh control', (tester) async {
+      await tester.pumpWidget(
+        buildCard(
+          agent: agentIdentity,
+          report: makeTestReport(
+            tldr: 'A warm rooftop birthday. 🎂',
+            content: '# The night\nlong markdown body',
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // The punchy tldr is shown, not the raw markdown body.
+      expect(find.text('A warm rooftop birthday. 🎂'), findsOneWidget);
+      expect(find.textContaining('# The night'), findsNothing);
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+    });
+
+    testWidgets('falls back to the report body when there is no tldr', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildCard(
+          agent: agentIdentity,
+          report: makeTestReport(content: 'Just a body recap.'),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('Just a body recap.'), findsOneWidget);
+    });
+
+    testWidgets('shows the awaiting-content hint when no report exists yet', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildCard(agent: agentIdentity));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(
+        find.text('Add a photo or note and the recap will appear here.'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+    });
+
+    testWidgets('refresh re-wakes the agent via triggerReanalysis', (
+      tester,
+    ) async {
+      final service = MockEventAgentService();
+      when(() => service.triggerReanalysis(any<String>())).thenReturn(null);
+
+      await tester.pumpWidget(
+        buildCard(
+          agent: agentIdentity,
+          report: makeTestReport(tldr: 'recap'),
+          service: service,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+
+      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      verify(() => service.triggerReanalysis(agentId)).called(1);
+    });
+  });
+}

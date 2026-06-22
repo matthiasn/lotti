@@ -984,6 +984,13 @@ const _defaultTemplateDefinitions = [
     reportDirective: projectAgentReportDirective,
   ),
   _DefaultTemplateDefinition(
+    id: eventTemplateId,
+    displayName: 'Scribe',
+    kind: AgentTemplateKind.eventAgent,
+    generalDirective: eventAgentGeneralDirective,
+    reportDirective: eventAgentReportDirective,
+  ),
+  _DefaultTemplateDefinition(
     id: dayAgentTemplateId,
     displayName: 'Shepherd',
     kind: AgentTemplateKind.dayAgent,
@@ -1012,6 +1019,7 @@ class _GeneratedSeedDefaultsScenario {
     required this.tomSlot,
     required this.dayAgentSlot,
     required this.projectSlot,
+    required this.eventSlot,
     required this.improverSlot,
     required this.metaImproverSlot,
   });
@@ -1020,14 +1028,18 @@ class _GeneratedSeedDefaultsScenario {
   final _GeneratedDefaultTemplateSlot tomSlot;
   final _GeneratedDefaultTemplateSlot dayAgentSlot;
   final _GeneratedDefaultTemplateSlot projectSlot;
+  final _GeneratedDefaultTemplateSlot eventSlot;
   final _GeneratedDefaultTemplateSlot improverSlot;
   final _GeneratedDefaultTemplateSlot metaImproverSlot;
 
+  // Order mirrors [_defaultTemplateDefinitions] (and the source seedDefaults
+  // creation order), so slots[i] pairs with _defaultTemplateDefinitions[i].
   List<_GeneratedDefaultTemplateSlot> get slots => [
     lauraSlot,
     tomSlot,
-    dayAgentSlot,
     projectSlot,
+    eventSlot,
+    dayAgentSlot,
     improverSlot,
     metaImproverSlot,
   ];
@@ -1048,7 +1060,7 @@ class _GeneratedSeedDefaultsScenario {
     return '_GeneratedSeedDefaultsScenario('
         'lauraSlot: $lauraSlot, tomSlot: $tomSlot, '
         'dayAgentSlot: $dayAgentSlot, projectSlot: $projectSlot, '
-        'improverSlot: $improverSlot, '
+        'eventSlot: $eventSlot, improverSlot: $improverSlot, '
         'metaImproverSlot: $metaImproverSlot)';
   }
 }
@@ -1172,6 +1184,10 @@ extension _AgentTemplateKindSeedDirectives on AgentTemplateKind {
         projectAgentGeneralDirective,
         projectAgentReportDirective,
       ),
+      AgentTemplateKind.eventAgent => (
+        eventAgentGeneralDirective,
+        eventAgentReportDirective,
+      ),
     };
   }
 }
@@ -1290,7 +1306,8 @@ extension _AnyGeneratedAgentTemplateServiceScenario on glados.Any {
       glados.IntAnys(this).intInRange(0, 30);
 
   glados.Generator<_GeneratedSeedDefaultsScenario> get seedDefaultsScenario =>
-      glados.CombinableAny(this).combine6(
+      glados.CombinableAny(this).combine7(
+        defaultTemplateSlot,
         defaultTemplateSlot,
         defaultTemplateSlot,
         defaultTemplateSlot,
@@ -1302,6 +1319,7 @@ extension _AnyGeneratedAgentTemplateServiceScenario on glados.Any {
           _GeneratedDefaultTemplateSlot tomSlot,
           _GeneratedDefaultTemplateSlot dayAgentSlot,
           _GeneratedDefaultTemplateSlot projectSlot,
+          _GeneratedDefaultTemplateSlot eventSlot,
           _GeneratedDefaultTemplateSlot improverSlot,
           _GeneratedDefaultTemplateSlot metaImproverSlot,
         ) => _GeneratedSeedDefaultsScenario(
@@ -1309,6 +1327,7 @@ extension _AnyGeneratedAgentTemplateServiceScenario on glados.Any {
           tomSlot: tomSlot,
           dayAgentSlot: dayAgentSlot,
           projectSlot: projectSlot,
+          eventSlot: eventSlot,
           improverSlot: improverSlot,
           metaImproverSlot: metaImproverSlot,
         ),
@@ -3162,13 +3181,16 @@ void main() {
       when(
         () => mockRepo.getEntity(metaImproverTemplateId),
       ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity(eventTemplateId),
+      ).thenAnswer((_) async => null);
       // seedDirectiveFields calls listTemplates after creating defaults.
       when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
 
       await service.seedDefaults();
 
-      // 6 templates * 3 entities each = 18 upserts.
-      verify(() => mockSync.upsertEntity(any())).called(18);
+      // 7 templates * 3 entities each = 21 upserts.
+      verify(() => mockSync.upsertEntity(any())).called(21);
     });
 
     test('skips creation when all already seeded', () async {
@@ -3216,6 +3238,15 @@ void main() {
       when(
         () => mockRepo.getEntity(metaImproverTemplateId),
       ).thenAnswer((_) async => metaImprover);
+      when(
+        () => mockRepo.getEntity(eventTemplateId),
+      ).thenAnswer(
+        (_) async => makeTestTemplate(
+          id: eventTemplateId,
+          agentId: eventTemplateId,
+          kind: AgentTemplateKind.eventAgent,
+        ),
+      );
       when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
       when(
         () => mockRepo.getActiveTemplateVersion(dayAgentTemplateId),
@@ -3267,6 +3298,15 @@ void main() {
       when(
         () => mockRepo.getEntity(metaImproverTemplateId),
       ).thenAnswer((_) async => metaImprover);
+      when(
+        () => mockRepo.getEntity(eventTemplateId),
+      ).thenAnswer(
+        (_) async => makeTestTemplate(
+          id: eventTemplateId,
+          agentId: eventTemplateId,
+          kind: AgentTemplateKind.eventAgent,
+        ),
+      );
       when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
       when(
         () => mockRepo.getActiveTemplateVersion(dayAgentTemplateId),
@@ -3315,6 +3355,15 @@ void main() {
       when(
         () => mockRepo.getEntity(metaImproverTemplateId),
       ).thenAnswer((_) async => metaImprover);
+      when(
+        () => mockRepo.getEntity(eventTemplateId),
+      ).thenAnswer(
+        (_) async => makeTestTemplate(
+          id: eventTemplateId,
+          agentId: eventTemplateId,
+          kind: AgentTemplateKind.eventAgent,
+        ),
+      );
       when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
       when(
         () => mockRepo.getActiveTemplateVersion(dayAgentTemplateId),
@@ -3367,6 +3416,15 @@ void main() {
       when(
         () => mockRepo.getEntity(metaImproverTemplateId),
       ).thenAnswer((_) async => metaImprover);
+      when(
+        () => mockRepo.getEntity(eventTemplateId),
+      ).thenAnswer(
+        (_) async => makeTestTemplate(
+          id: eventTemplateId,
+          agentId: eventTemplateId,
+          kind: AgentTemplateKind.eventAgent,
+        ),
+      );
       when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
       when(
         () => mockRepo.getActiveTemplateVersion(dayAgentTemplateId),

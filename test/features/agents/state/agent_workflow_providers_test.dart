@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
@@ -202,6 +203,31 @@ void main() {
         verify(
           () => notifications.notifyUiOnly({
             'project-agent-001',
+            agentNotification,
+          }),
+        ).called(1);
+      },
+    );
+
+    test(
+      'eventAgentWorkflowProvider wires dependencies and persisted-state '
+      'notifications',
+      () {
+        final workflow = container.read(eventAgentWorkflowProvider);
+
+        expect(workflow, isA<EventAgentWorkflow>());
+        expect(workflow.agentRepository, same(repository));
+        expect(workflow.syncService, same(syncService));
+        expect(workflow.templateService, same(templateService));
+        // The leaner event workflow has no input-capture or compaction
+        // summarizer, but optional services it does take are still resolved.
+        expect(workflow.soulDocumentService, isA<MockSoulDocumentService>());
+        expect(workflow.domainLogger, isA<MockDomainLogger>());
+
+        workflow.onPersistedStateChanged?.call('event-agent-001');
+        verify(
+          () => notifications.notifyUiOnly({
+            'event-agent-001',
             agentNotification,
           }),
         ).called(1);

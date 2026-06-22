@@ -36,6 +36,7 @@ class DerivedAgentState extends Equatable {
     required this.projection,
     required this.activeTaskId,
     required this.activeProjectId,
+    required this.activeEventId,
     required this.activeDayId,
     required this.activeTemplateId,
     required this.lastWakeAt,
@@ -56,6 +57,9 @@ class DerivedAgentState extends Equatable {
 
   /// `slots.activeProjectId` — primary active `agentProject` link target.
   final String? activeProjectId;
+
+  /// `slots.activeEventId` — primary active `agentEvent` link target.
+  final String? activeEventId;
 
   /// `slots.activeDayId` — primary active `agentDay` link target.
   final String? activeDayId;
@@ -83,6 +87,7 @@ class DerivedAgentState extends Equatable {
     projection,
     activeTaskId,
     activeProjectId,
+    activeEventId,
     activeDayId,
     activeTemplateId,
     lastWakeAt,
@@ -125,6 +130,11 @@ DerivedAgentState deriveAgentState({
       linkList,
       agentId,
       (link) => link is AgentProjectLink,
+    ),
+    activeEventId: _primaryActiveLinkTarget(
+      linkList,
+      agentId,
+      (link) => link is AgentEventLink,
     ),
     activeDayId: _primaryActiveLinkTarget(
       linkList,
@@ -285,6 +295,12 @@ DerivedStateReport compareDerivedAgentState({
           derived: derived.activeProjectId,
           live: slots.activeProjectId,
         ),
+      if (derived.activeEventId != slots.activeEventId)
+        DerivedFieldMismatch(
+          field: 'activeEventId',
+          derived: derived.activeEventId,
+          live: slots.activeEventId,
+        ),
       if (derived.activeDayId != slots.activeDayId)
         DerivedFieldMismatch(
           field: 'activeDayId',
@@ -376,6 +392,7 @@ AgentStateEntity reconcileAgentState({
     slots: slots.copyWith(
       activeTaskId: derived.activeTaskId ?? slots.activeTaskId,
       activeProjectId: derived.activeProjectId ?? slots.activeProjectId,
+      activeEventId: derived.activeEventId ?? slots.activeEventId,
       activeDayId: derived.activeDayId ?? slots.activeDayId,
       activeTemplateId: derived.activeTemplateId ?? slots.activeTemplateId,
       lastOneOnOneAt: _laterOf(derived.lastOneOnOneAt, slots.lastOneOnOneAt),

@@ -127,6 +127,8 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
             _originalCategory!.defaultProfileId ||
         _pendingCategory!.defaultTemplateId !=
             _originalCategory!.defaultTemplateId ||
+        _pendingCategory!.defaultEventTemplateId !=
+            _originalCategory!.defaultEventTemplateId ||
         _hasListChanges(
           _pendingCategory!.speechDictionary,
           _originalCategory!.speechDictionary,
@@ -207,6 +209,14 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
   void setDefaultTemplateId(String? templateId) {
     _updatePendingCategory(
       (c) => c.copyWith(defaultTemplateId: templateId),
+    );
+  }
+
+  /// Updates the default event-agent template for new events in this category.
+  /// Pass `null` to clear the default.
+  void setDefaultEventTemplateId(String? templateId) {
+    _updatePendingCategory(
+      (c) => c.copyWith(defaultEventTemplateId: templateId),
     );
   }
 

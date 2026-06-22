@@ -8,22 +8,31 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 
-/// Lists task-agent templates for selection in category default contexts,
-/// rendered as a [SettingsPickerField] so it matches the design-system
-/// fields around it. Selection happens in a [SelectionModalBase] modal.
+/// Lists agent templates of a given [kind] for selection in category default
+/// contexts, rendered as a [SettingsPickerField] so it matches the
+/// design-system fields around it. Selection happens in a [SelectionModalBase]
+/// modal.
 ///
-/// Filters to only [AgentTemplateKind.taskAgent] templates.
-/// Pre-selects the given [selectedTemplateId] if provided. With no
-/// templates available the field stays inert (tapping does nothing).
+/// Filters to only templates of [kind] (defaults to
+/// [AgentTemplateKind.taskAgent]). [labelText] / [hintText] default to the
+/// task-template strings; the event-template picker passes its own. Pre-selects
+/// the given [selectedTemplateId] if provided. With no templates available the
+/// field stays inert (tapping does nothing).
 class TemplateSelector extends ConsumerWidget {
   const TemplateSelector({
     required this.selectedTemplateId,
     required this.onTemplateSelected,
+    this.kind = AgentTemplateKind.taskAgent,
+    this.labelText,
+    this.hintText,
     super.key,
   });
 
   final String? selectedTemplateId;
   final ValueChanged<String?> onTemplateSelected;
+  final AgentTemplateKind kind;
+  final String? labelText;
+  final String? hintText;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,32 +42,35 @@ class TemplateSelector extends ConsumerWidget {
       AsyncData(:final value) =>
         value
             .whereType<AgentTemplateEntity>()
-            .where((t) => t.kind == AgentTemplateKind.taskAgent)
+            .where((t) => t.kind == kind)
             .toList(),
       _ => <AgentTemplateEntity>[],
     };
+
+    final label = labelText ?? context.messages.categoryDefaultTemplateLabel;
 
     final selected = selectedTemplateId != null
         ? templates.where((t) => t.id == selectedTemplateId).firstOrNull
         : null;
 
     return SettingsPickerField(
-      label: context.messages.categoryDefaultTemplateLabel,
+      label: label,
       valueText: selected?.displayName,
-      hintText: context.messages.categoryDefaultTemplateHint,
+      hintText: hintText ?? context.messages.categoryDefaultTemplateHint,
       enabled: templates.isNotEmpty,
       onClear: selected != null ? () => onTemplateSelected(null) : null,
-      onTap: () => _showTemplatePicker(context, templates),
+      onTap: () => _showTemplatePicker(context, templates, label),
     );
   }
 
   void _showTemplatePicker(
     BuildContext context,
     List<AgentTemplateEntity> templates,
+    String title,
   ) {
     SelectionModalBase.show(
       context: context,
-      title: context.messages.categoryDefaultTemplateLabel,
+      title: title,
       child: _TemplatePickerContent(
         templates: templates,
         selectedTemplateId: selectedTemplateId,

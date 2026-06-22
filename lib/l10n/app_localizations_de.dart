@@ -989,6 +989,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateKindDayAgent => 'Tages-Agent';
 
   @override
+  String get agentTemplateKindEventAgent => 'Ereignis-Agent';
+
+  @override
   String get agentTemplateKindImprover => 'Vorlagen-Verbesserer';
 
   @override
@@ -2416,6 +2419,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get categoryDayPlanLabel => 'Tagesplanung';
+
+  @override
+  String get categoryDefaultEventTemplateHint => 'Vorlage auswählen…';
+
+  @override
+  String get categoryDefaultEventTemplateLabel =>
+      'Standard-Ereignis-Agenten-Vorlage';
 
   @override
   String get categoryDefaultLanguageDescription =>
@@ -4959,6 +4969,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get eventsPhotosSection => 'Fotos';
+
+  @override
+  String get eventsRecapAwaitingContent =>
+      'Füge ein Foto oder eine Notiz hinzu, dann erscheint hier die Zusammenfassung.';
+
+  @override
+  String get eventsRecapUnavailable =>
+      'Die Zusammenfassung konnte nicht geladen werden.';
 
   @override
   String get eventsRegenerateSummary => 'Zusammenfassung neu erstellen';

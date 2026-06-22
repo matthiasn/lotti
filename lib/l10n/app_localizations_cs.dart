@@ -980,6 +980,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateKindDayAgent => 'Denní agent';
 
   @override
+  String get agentTemplateKindEventAgent => 'Agent události';
+
+  @override
   String get agentTemplateKindImprover => 'Zlepšovač šablon';
 
   @override
@@ -2424,6 +2427,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get categoryDayPlanLabel => 'Denní plánování';
+
+  @override
+  String get categoryDefaultEventTemplateHint => 'Vyberte šablonu…';
+
+  @override
+  String get categoryDefaultEventTemplateLabel =>
+      'Výchozí šablona agenta událostí';
 
   @override
   String get categoryDefaultLanguageDescription =>
@@ -4966,6 +4976,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get eventsPhotosSection => 'Fotky';
+
+  @override
+  String get eventsRecapAwaitingContent =>
+      'Přidej fotku nebo poznámku a tady se objeví shrnutí.';
+
+  @override
+  String get eventsRecapUnavailable => 'Shrnutí se nepodařilo načíst.';
 
   @override
   String get eventsRegenerateSummary => 'Znovu vytvořit shrnutí';

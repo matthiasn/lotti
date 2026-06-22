@@ -36,6 +36,7 @@ class AgentTemplateSeeding {
       tom,
       dayAgent,
       projectTemplate,
+      eventTemplate,
       improver,
       metaImprover,
     ] = await Future.wait([
@@ -43,6 +44,7 @@ class AgentTemplateSeeding {
       crud.getTemplate(tomTemplateId),
       crud.getTemplate(dayAgentTemplateId),
       crud.getTemplate(projectTemplateId),
+      crud.getTemplate(eventTemplateId),
       crud.getTemplate(improverTemplateId),
       crud.getTemplate(metaImproverTemplateId),
     ]);
@@ -52,6 +54,7 @@ class AgentTemplateSeeding {
         tom != null &&
         dayAgent != null &&
         projectTemplate != null &&
+        eventTemplate != null &&
         improver != null &&
         metaImprover != null;
     if (defaultsAlreadySeeded) {
@@ -104,6 +107,24 @@ class AgentTemplateSeeding {
               'report current with concise, actionable summaries.',
           generalDirective: projectAgentGeneralDirective,
           reportDirective: projectAgentReportDirective,
+          authoredBy: 'system',
+        );
+      }
+
+      if (eventTemplate == null) {
+        await crud.createTemplate(
+          templateId: eventTemplateId,
+          displayName: 'Scribe',
+          kind: AgentTemplateKind.eventAgent,
+          modelId: kDefaultAgentTemplateModelId,
+          directives:
+              'You are Scribe, an event-narration agent. You weave the linked '
+              'photos, notes, and voice memos of an event into a short, warm '
+              'recap the user would want to re-read, and surface the concrete '
+              'follow-ups it throws off. You only narrate — the rating and '
+              'cover photo stay with the user.',
+          generalDirective: eventAgentGeneralDirective,
+          reportDirective: eventAgentReportDirective,
           authoredBy: 'system',
         );
       }
@@ -167,7 +188,7 @@ class AgentTemplateSeeding {
 
       developer.log(
         'Seeded default templates (Laura, Tom, Shepherd, Template Improver, '
-        'Meta Improver, Project Analyst)',
+        'Meta Improver, Project Analyst, Scribe)',
         name: 'AgentTemplateService',
       );
     }
@@ -214,6 +235,10 @@ class AgentTemplateSeeding {
         AgentTemplateKind.projectAgent => (
           projectAgentGeneralDirective,
           projectAgentReportDirective,
+        ),
+        AgentTemplateKind.eventAgent => (
+          eventAgentGeneralDirective,
+          eventAgentReportDirective,
         ),
       };
 

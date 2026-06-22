@@ -62,12 +62,15 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
   Future<void> dispose() => _player.dispose();
 }
 
-/// App-wide [TtsAudioPlayer]. Overridden with a fake in tests.
-//
 // Constructs the real media_kit Player, so it is exercised at runtime rather
 // than in unit tests (MediaKitTtsAudioPlayer itself is tested with a mock
-// Player).
+// Player). The blank line below the directive is deliberate: it keeps the
+// coverage directive out of the doc comment the riverpod generator copies onto
+// the generated provider — otherwise an unmatched directive lands in the
+// .g.dart and crashes coverage collection.
 // coverage:ignore-start
+
+/// App-wide [TtsAudioPlayer]. Overridden with a fake in tests.
 @Riverpod(keepAlive: true)
 TtsAudioPlayer ttsAudioPlayer(Ref ref) {
   final player = MediaKitTtsAudioPlayer();

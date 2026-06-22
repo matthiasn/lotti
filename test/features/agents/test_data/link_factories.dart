@@ -116,6 +116,26 @@ model.AgentLink makeTestAgentProjectLink({
   );
 }
 
+model.AgentLink makeTestAgentEventLink({
+  String id = 'link-event-001',
+  String fromId = kTestAgentId,
+  String toId = 'event-001',
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+  DateTime? deletedAt,
+}) {
+  return model.AgentLink.agentEvent(
+    id: id,
+    fromId: fromId,
+    toId: toId,
+    createdAt: createdAt ?? kAgentTestDate,
+    updatedAt: updatedAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+    deletedAt: deletedAt,
+  );
+}
+
 model.AgentLink makeTestAgentDayLink({
   String id = 'link-day-001',
   String fromId = kTestAgentId,

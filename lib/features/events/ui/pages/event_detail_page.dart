@@ -4,9 +4,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/state/event_view_mapping.dart';
+import 'package:lotti/features/events/ui/widgets/event_ai_summary_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_picker.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
@@ -178,6 +180,15 @@ class EventDetailPage extends ConsumerWidget {
 
     return EventDetailView(
       data: data,
+      aiSummaryCard: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          EventAiSummaryCard(eventId: eventId, fallbackSummary: data.summary),
+          // Renders nothing until the agent proposes a follow-up the user can
+          // accept or reject.
+          ChangeSetSummaryCard.event(eventId: eventId),
+        ],
+      ),
       onBack: () => Navigator.of(context).maybePop(),
       onRenameTitle: controller.updateEventTitle,
       onTapCategory: pickCategory,

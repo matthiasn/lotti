@@ -672,6 +672,7 @@ The current persisted agent kinds are:
 | --- | --- | --- | --- |
 | `task_agent` | `activeTaskId` | `TaskAgentWorkflow` | task notifications, creation, reanalysis, transcription-complete |
 | `project_agent` | `activeProjectId` | `ProjectAgentWorkflow` | creation, direct project edits, daily scheduled digest |
+| `event_agent` | `activeEventId` | `EventAgentWorkflow` | creation (content-gated), direct event edits |
 | `template_improver` | `activeTemplateId` | `ImproverAgentWorkflow` | scheduled ritual |
 | `day_agent` | day workspace (`day:<dayId>`), no single active slot (ADR 0022) | `DayAgentWorkflow` | day-scoped `ScheduledWakeEntity` pre-warms and capture wakes |
 
@@ -1239,19 +1240,117 @@ no newer project activity arrived during the wake. If fresh activity lands
 mid-run, the newer timestamp is retained so the next digest still knows the
 summary is stale again.
 
+## Event Agents
+
+Event agents narrate a first-class Event (a trip, a birthday, a gathering) into
+a short living recap. An event mostly happens once, so the event agent is a
+**recap writer**, not a continuous watcher: it is leaner than the project agent
+(no compaction/input-capture log, no daily digest, no deferred change sets, no
+health band) and it borrows the **task agent's content gate** so a bare-title
+event does not burn an inference run.
+
+> **Rating and cover are human-only.** The event's star rating and cover photo
+> are the user's own authorship of their memory. The event agent has *no tool*
+> that can set them, the context builder never renders them, and no workflow
+> code path writes the `JournalEvent`. This invariant is enforced at three
+> independent layers, not just by directive.
+
+`EventAgentService.createEventAgent()`:
+
+1. enforces one event agent per event
+2. validates the assigned template is an event-agent template
+3. creates the agent identity and state
+4. sets `slots.activeEventId` and the `awaitingContent` gate flag
+5. creates `agent_event` and `template_assignment` links
+6. mirrors `awaitingContent` into the orchestrator and registers a subscription
+   on the bare `eventId` — exactly like the task agent matches its bare task id,
+   so the agent wakes on direct event edits and on content arrival (linking a
+   photo/note emits the event id), which is what clears the content gate
+7. enqueues a creation wake
+
+### Content gate
+
+The shared wake content gate (`wake_batch_router._shouldSkipForAwaitingContent`)
+dispatches per active slot: an `activeEventId` agent routes to
+`eventContentChecker` (`agent_providers.dart`), with no cross-slot fallback. The
+checker treats an event as having content when it has note text **or** a linked
+photo/note — a bare title does **not** pass. So the creation wake is suppressed
+until the event accrues real content, then the gate clears (in the router on
+detection and again in the workflow's success transaction).
+
+### Wake Behavior
+
+`EventAgentWorkflow.execute()`:
+
+1. loads the reconciled agent state and resolves `activeEventId`
+2. loads the latest recap and the event entity
+3. loads prior observation messages
+4. resolves template/version and inference profile
+5. builds context: event title/status/when + note, and a linked-entries digest
+   (photos with captions, notes, voice-memo transcripts, linked tasks)
+6. runs the conversation with `EventAgentStrategy`
+7. persists token usage, final thought, recap report + head, observations, and
+   the updated state (clearing `awaitingContent`), and emits the
+   `wakeCompleted` milestone
+
+### Event Tools
+
+Event agents have two immediate local tools, reusing the task agent's
+scope-agnostic contract:
+
+- `update_report` (`oneLiner` / `tldr` / `content`)
+- `record_observations`
+
+plus one **deferred** tool:
+
+- `suggest_follow_up_task` — proposes a concrete follow-up the event implies.
+  It is accumulated as a pending `ChangeSet` (keyed by the event id), surfaced
+  on the detail page as an accept/reject row (`ChangeSetSummaryCard.event`), and
+  on accept applied by `EventToolDispatcher` — which creates a follow-up task
+  linked to the event (inheriting its category + default profile). Rejection
+  only records the decision.
+
+By construction there is no rating/cover tool. Accepting a follow-up does not
+re-wake the agent (the new task is its own entity); a future status write-action
+that edits the event itself would re-wake it through the event subscription.
+
+### Auto-attach
+
+`autoAssignCategoryEventAgent` (`create_entry.dart`) creates a content-awaiting
+event agent when an event is created in a category whose
+`Category.defaultEventTemplateId` is set. This is independent of the task
+agents' `defaultTemplateId`, so enabling task agents does not implicitly spawn
+event agents.
+
+```mermaid
+stateDiagram-v2
+  [*] --> AwaitingContent: event agent created (auto-attach)
+  AwaitingContent --> AwaitingContent: creation wake suppressed (bare title)
+  AwaitingContent --> Narrating: photo/note added — gate clears
+  Narrating --> Idle: recap published, awaitingContent cleared
+  Idle --> Narrating: direct event edit / linked entry change
+```
+
 ## Templates, Evolution, and Improvers
 
 Templates are first-class persisted entities with a template row, version rows,
 and a head pointer.
 
-`AgentTemplateService.seedDefaults()` currently seeds six named templates:
+`AgentTemplateService.seedDefaults()` seeds seven named templates:
 
-- `Laura`
-- `Tom`
+- `Laura` (kind `taskAgent`)
+- `Tom` (kind `taskAgent`)
+- `Project Analyst` (kind `projectAgent`)
+- `Scribe` (kind `eventAgent`)
 - `Shepherd` (the Daily OS day-agent template, kind `dayAgent`)
-- `Project Analyst`
 - `Template Improver`
 - `Meta Improver`
+
+`Scribe` is the seeded default **event-agent** template: a category opts in to
+event recaps by pointing `Category.defaultEventTemplateId` at it (or at any other
+`eventAgent`-kind template created through the agent-creation modal). Without a
+seeded event template the category event-template picker would have nothing to
+offer, so this default is what makes the opt-in usable out of the box.
 
 The one-on-one UI is split into two surfaces:
 

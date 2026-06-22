@@ -228,6 +228,68 @@ final class ProjectAgentWorkflowProvider
 String _$projectAgentWorkflowHash() =>
     r'14f9bb2c5238508def93d9e1380bb619604bf625';
 
+/// The event agent workflow with all dependencies resolved.
+///
+/// Leaner than the project workflow: v1 events are narrate-only recaps, so
+/// there is no input-capture log or compaction summarizer to wire in.
+
+@ProviderFor(eventAgentWorkflow)
+final eventAgentWorkflowProvider = EventAgentWorkflowProvider._();
+
+/// The event agent workflow with all dependencies resolved.
+///
+/// Leaner than the project workflow: v1 events are narrate-only recaps, so
+/// there is no input-capture log or compaction summarizer to wire in.
+
+final class EventAgentWorkflowProvider
+    extends
+        $FunctionalProvider<
+          EventAgentWorkflow,
+          EventAgentWorkflow,
+          EventAgentWorkflow
+        >
+    with $Provider<EventAgentWorkflow> {
+  /// The event agent workflow with all dependencies resolved.
+  ///
+  /// Leaner than the project workflow: v1 events are narrate-only recaps, so
+  /// there is no input-capture log or compaction summarizer to wire in.
+  EventAgentWorkflowProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'eventAgentWorkflowProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$eventAgentWorkflowHash();
+
+  @$internal
+  @override
+  $ProviderElement<EventAgentWorkflow> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  EventAgentWorkflow create(Ref ref) {
+    return eventAgentWorkflow(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(EventAgentWorkflow value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<EventAgentWorkflow>(value),
+    );
+  }
+}
+
+String _$eventAgentWorkflowHash() =>
+    r'7c7f74457a4ca38525da1e089a7fb14674ba6afe';
+
 /// The Daily OS day-agent workflow with all dependencies resolved.
 
 @ProviderFor(dayAgentWorkflow)

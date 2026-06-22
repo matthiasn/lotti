@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/agents/ui/template_selector.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
@@ -22,6 +24,7 @@ import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
@@ -290,6 +293,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
             children: [
               _buildDefaultProfilePicker(category),
               _buildDefaultTemplatePicker(category),
+              if (ref.watch(configFlagProvider(enableEventsFlag)).value ??
+                  false)
+                _buildDefaultEventTemplatePicker(category),
             ],
           ),
           SettingsFormSection(

@@ -8,9 +8,11 @@ import 'package:lotti/features/agents/service/change_set_confirmation_service.da
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/event_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/project_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -90,6 +92,45 @@ projectPendingChangeSetsProvider = FutureProvider.autoDispose
         taskId: projectId,
       );
       return deduplicateChangeSets(sets);
+    });
+
+/// Fetches pending (and partially resolved) change sets for a given event.
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+eventPendingChangeSetsProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>((ref, eventId) async {
+      final agent = await ref.watch(eventAgentProvider(eventId).future);
+      final identity = agent?.mapOrNull(agent: (a) => a);
+      if (identity == null) return [];
+
+      ref.watch(agentUpdateStreamProvider(identity.agentId));
+
+      final repo = ref.watch(agentRepositoryProvider);
+      // Event-targeted change sets persist their target entity ID in the
+      // historical `taskId` field, same as project-targeted sets.
+      final sets = await repo.getPendingChangeSets(
+        identity.agentId,
+        taskId: eventId,
+      );
+      return deduplicateChangeSets(sets);
+    });
+
+/// Event-scoped confirmation service. Confirmed event-agent proposals
+/// (currently just `suggest_follow_up_task`) are applied via
+/// [EventToolDispatcher]; rejection only records the decision.
+final eventChangeSetConfirmationServiceProvider =
+    Provider<ChangeSetConfirmationService>((ref) {
+      final logger = ref.watch(domainLoggerProvider);
+      return ChangeSetConfirmationService(
+        syncService: ref.watch(agentSyncServiceProvider),
+        toolDispatcher: EventToolDispatcher(
+          journalRepository: ref.watch(journalRepositoryProvider),
+          persistenceLogic: getIt<PersistenceLogic>(),
+          entitiesCacheService: getIt<EntitiesCacheService>(),
+          domainLogger: logger,
+        ).dispatch,
+        labelsRepository: ref.watch(labelsRepositoryProvider),
+        domainLogger: logger,
+      );
     });
 
 /// Service that persists the project agent's "next steps" recommendations as
