@@ -6409,6 +6409,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingApiKeyGetKeyAt => 'Klíč získáš na';
 
   @override
+  String get onboardingApiKeyHide => 'Skrýt klíč';
+
+  @override
   String get onboardingApiKeyInvalid =>
       'Tento klíč byl odmítnut. Zkontroluj ho a vlož ho znovu.';
 
@@ -6419,6 +6422,9 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get onboardingApiKeyNoKeyHelp =>
       'Poprvé tady? Přihlas se, vytvoř API klíč a vlož ho – zdarma na začátek.';
+
+  @override
+  String get onboardingApiKeyReveal => 'Zobrazit klíč';
 
   @override
   String get onboardingApiKeyTitle => 'Vlož svůj API klíč';

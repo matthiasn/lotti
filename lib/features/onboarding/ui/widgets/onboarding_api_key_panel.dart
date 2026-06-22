@@ -27,6 +27,11 @@ const _verifyDebounce = Duration(milliseconds: 800);
 /// that arrives sooner is held until this elapses.
 const _minCheckingVisible = Duration(seconds: 1);
 
+/// How long the backdrop takes to drain to greyscale on a rejected key (and to
+/// recover). Deliberately slower than any motion token — a gradual, mournful
+/// fade reads as a deliberate mood shift rather than a snap.
+const _bleakFade = Duration(milliseconds: 1100);
+
 /// Screen 3 of the FTUE: the visually-matching, simple step that gathers just
 /// the API key for the chosen provider, **verifies it live** against the
 /// provider's "list models" endpoint, and only then creates the provider and
@@ -61,6 +66,7 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
   Timer? _debounce;
   Timer? _dwellTimer;
   bool _dwellElapsed = false;
+  bool _obscure = true;
   ConnectionCheckState? _pendingResult;
 
   /// The status the slot renders. Mirrors the verifier but holds the "checking"
@@ -215,13 +221,21 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
     });
     final verifyState = _display;
 
-    // The fixed-height status slot only ever carries the LIVE verification
-    // state now (idle → empty). The "how to get a key" guidance lives in a
-    // persistent block above the slot so it never disappears the moment the
-    // user starts typing — the activation cliff the novice reviewer flagged.
+    // One fixed-height slot crossfades between the at-rest hint and the live
+    // verification status, so the Connect button never moves as the user types
+    // / verifies / is rejected (the "jumpy when validating" complaint). The
+    // "how to get a key" guidance lives in its own persistent block above.
     final Widget statusChild;
     if (verifyState is ConnectionCheckIdle) {
-      statusChild = const SizedBox.shrink(key: ValueKey('empty'));
+      statusChild = _requiresKey
+          ? Text(
+              key: const ValueKey('hint'),
+              messages.onboardingApiKeyEnterKeyHint,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: textMed,
+              ),
+            )
+          : const SizedBox.shrink(key: ValueKey('empty'));
     } else {
       statusChild = _VerifyStatus(
         key: ValueKey('status-${verifyState.runtimeType}'),
@@ -240,7 +254,7 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
             // user fixes it (or while still typing/verifying).
             child: TweenAnimationBuilder<double>(
               tween: Tween<double>(end: _isRejected(verifyState) ? 0 : 1),
-              duration: MotionDurations.long2,
+              duration: _bleakFade,
               curve: MotionCurves.standard,
               child: OnboardingBackdrop(accent: brand),
               builder: (context, saturation, child) => ColorFiltered(
@@ -323,6 +337,11 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                     controller: _controller,
                     autofocus: true,
                     enabled: !_busy,
+                    // A secret like a password: obscured by default with an
+                    // eye toggle to reveal for paste verification.
+                    obscureText: _obscure,
+                    enableSuggestions: false,
+                    autocorrect: false,
                     onChanged: _onKeyChanged,
                     // Enter connects when already verified, otherwise forces an
                     // immediate check instead of waiting out the debounce.
@@ -347,6 +366,21 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: tokens.spacing.step4,
                         vertical: tokens.spacing.step3,
+                      ),
+                      suffixIcon: IconButton(
+                        onPressed: _busy
+                            ? null
+                            : () => setState(() => _obscure = !_obscure),
+                        icon: Icon(
+                          _obscure
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: textMed,
+                          size: tokens.spacing.step5,
+                        ),
+                        tooltip: _obscure
+                            ? messages.onboardingApiKeyReveal
+                            : messages.onboardingApiKeyHide,
                       ),
                       // A visible resting border so the field reads as a
                       // discrete control at rest (low-vision review), brightening
@@ -375,25 +409,18 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                     ),
                   ),
                 SizedBox(height: tokens.spacing.step3),
-                // Status slot: a stable one-line minimum height so the common
-                // states (link → checking → verified) crossfade in place
-                // without shoving the panel, and an AnimatedSize so a longer
-                // (multi-line) error message eases the slot taller rather than
-                // snapping.
-                AnimatedSize(
-                  duration: MotionDurations.short4,
-                  curve: MotionCurves.standard,
-                  alignment: Alignment.topLeft,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: tokens.spacing.step7,
-                    ),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: AnimatedSwitcher(
-                        duration: MotionDurations.short3,
-                        child: statusChild,
-                      ),
+                // FIXED-height slot (tall enough for a 2-line error) so the
+                // Connect button never moves as the slot crosses between the
+                // at-rest hint, "Checking…", "Verified", and the rejection —
+                // the "jumpy when validating" complaint. States crossfade in
+                // place within the reserved height.
+                SizedBox(
+                  height: tokens.spacing.step10,
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: AnimatedSwitcher(
+                      duration: MotionDurations.short3,
+                      child: statusChild,
                     ),
                   ),
                 ),
@@ -407,22 +434,7 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                       ),
                     ),
                   ),
-                // Tell the user WHY the Connect button is inert at rest, so a
-                // disabled button reads as "waiting for a key", not "broken"
-                // (low-vision review). Suppressed once a probe is in flight or
-                // has resolved — the status slot then carries the state.
-                if (_requiresKey &&
-                    verifyState is ConnectionCheckIdle &&
-                    !_busy) ...[
-                  SizedBox(height: tokens.spacing.step3),
-                  Text(
-                    messages.onboardingApiKeyEnterKeyHint,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: textMed,
-                    ),
-                  ),
-                ],
-                SizedBox(height: tokens.spacing.step6),
+                SizedBox(height: tokens.spacing.step5),
                 DesignSystemButton(
                   // Disabled until the key is verified, so the user can only
                   // proceed with a key the provider actually accepted.

@@ -6454,6 +6454,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingApiKeyGetKeyAt => 'Obțineți o cheie la';
 
   @override
+  String get onboardingApiKeyHide => 'Ascundeți cheia';
+
+  @override
   String get onboardingApiKeyInvalid =>
       'Cheia a fost respinsă. Verificați-o și lipiți-o din nou.';
 
@@ -6464,6 +6467,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get onboardingApiKeyNoKeyHelp =>
       'Prima dată? Conectați-vă, creați o cheie API și lipiți-o — gratuit la început.';
+
+  @override
+  String get onboardingApiKeyReveal => 'Afișați cheia';
 
   @override
   String get onboardingApiKeyTitle => 'Introduceți cheia API';

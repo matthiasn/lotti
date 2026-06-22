@@ -6380,6 +6380,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingApiKeyGetKeyAt => 'Schlüssel erhältst du bei';
 
   @override
+  String get onboardingApiKeyHide => 'Schlüssel verbergen';
+
+  @override
   String get onboardingApiKeyInvalid =>
       'Dieser Schlüssel wurde abgelehnt. Prüf ihn und füg ihn noch mal ein.';
 
@@ -6390,6 +6393,9 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get onboardingApiKeyNoKeyHelp =>
       'Neu hier? Anmelden, API-Schlüssel erstellen, einfügen – kostenlos zum Starten.';
+
+  @override
+  String get onboardingApiKeyReveal => 'Schlüssel anzeigen';
 
   @override
   String get onboardingApiKeyTitle => 'Füge deinen API-Schlüssel ein';

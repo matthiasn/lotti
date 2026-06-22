@@ -11026,6 +11026,12 @@ abstract class AppLocalizations {
   /// **'Get a key at'**
   String get onboardingApiKeyGetKeyAt;
 
+  /// No description provided for @onboardingApiKeyHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide key'**
+  String get onboardingApiKeyHide;
+
   /// No description provided for @onboardingApiKeyInvalid.
   ///
   /// In en, this message translates to:
@@ -11043,6 +11049,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New here? Sign in, create an API key, then paste it — free to start.'**
   String get onboardingApiKeyNoKeyHelp;
+
+  /// No description provided for @onboardingApiKeyReveal.
+  ///
+  /// In en, this message translates to:
+  /// **'Show key'**
+  String get onboardingApiKeyReveal;
 
   /// No description provided for @onboardingApiKeyTitle.
   ///

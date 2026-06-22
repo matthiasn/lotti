@@ -159,38 +159,39 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
 
   @override
   Widget build(BuildContext context) {
-    // The resize (AnimatedSize) and the content crossfade (AnimatedSwitcher)
-    // run on ONE shared timeline — same duration and curve — so the box never
-    // finishes resizing before/after the fade, which was the residual "jump".
-    // A plain symmetric crossfade is seamless here precisely because every step
-    // shares the same dark panel background: the two layers overlapping at
-    // partial opacity show no colour seam, so there's no need for a
-    // fade-through dead-zone (its empty gap was what still read as a jump).
-    return AnimatedSize(
+    // All three steps render at ONE fixed height so the modal never resizes
+    // between steps — the source of the screen-to-screen "jump". ~72% of the
+    // viewport (clamped) comfortably fits the tallest step (welcome) while
+    // keeping the shorter steps from looking stranded. With every step the same
+    // height, the crossfade is a pure opacity blend (identical dark
+    // backgrounds, no colour seam) with zero layout movement.
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    // The welcome (first) step is the tallest and is the height the user wants
+    // every step to share. Its hero + promise + CTAs run ≈ 760 at phone width,
+    // so the common height tracks the viewport but floors high enough to fit
+    // the welcome without clipping; the shorter steps fill the rest with their
+    // own backdrop (the constellation animation reads nicely in that space).
+    final panelHeight = (screenHeight * 0.9).clamp(790.0, 900.0);
+    return AnimatedSwitcher(
       duration: MotionDurations.medium4,
-      curve: MotionCurves.emphasizedDecelerate,
-      alignment: Alignment.topCenter,
-      child: AnimatedSwitcher(
-        duration: MotionDurations.medium4,
-        switchInCurve: MotionCurves.emphasizedDecelerate,
-        switchOutCurve: MotionCurves.emphasizedDecelerate,
-        // Size to the *incoming* child (top-aligned to match AnimatedSize) so
-        // the height animates concurrently with the fade. The default
-        // (centered Stack sized to the taller child) made the box stay tall
-        // through the fade and only collapse afterwards, with the content
-        // drifting centre→top — which read as an overshoot/weird settle.
-        layoutBuilder: (currentChild, previousChildren) => Stack(
-          alignment: Alignment.topCenter,
-          children: [
-            // Outgoing steps are pinned to the top at their own (loose) height
-            // — NOT `Positioned.fill`, which would tighten a taller step into
-            // the shorter incoming box and overflow it. The Stack clips the
-            // overhang as the step fades out.
-            for (final child in previousChildren)
-              Positioned(top: 0, left: 0, right: 0, child: child),
-            ?currentChild,
-          ],
+      switchInCurve: MotionCurves.emphasizedDecelerate,
+      switchOutCurve: MotionCurves.emphasizedDecelerate,
+      layoutBuilder: (currentChild, previousChildren) => Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          // Equal-height children, so a plain fill never clips or overflows.
+          for (final child in previousChildren) Positioned.fill(child: child),
+          ?currentChild,
+        ],
+      ),
+      child: SizedBox(
+        // Key by step (+ provider for the key step) so the switcher crossfades
+        // on every real navigation, including re-entering the key step for a
+        // different provider.
+        key: ValueKey(
+          _step == _FlowStep.apiKey ? 'apiKey-${_type.name}' : _step.name,
         ),
+        height: panelHeight,
         child: _buildStep(),
       ),
     );

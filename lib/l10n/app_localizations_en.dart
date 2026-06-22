@@ -6299,6 +6299,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingApiKeyGetKeyAt => 'Get a key at';
 
   @override
+  String get onboardingApiKeyHide => 'Hide key';
+
+  @override
   String get onboardingApiKeyInvalid =>
       'That key was rejected. Double-check it and paste it again.';
 
@@ -6309,6 +6312,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get onboardingApiKeyNoKeyHelp =>
       'New here? Sign in, create an API key, then paste it — free to start.';
+
+  @override
+  String get onboardingApiKeyReveal => 'Show key';
 
   @override
   String get onboardingApiKeyTitle => 'Paste your API key';

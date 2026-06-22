@@ -6458,6 +6458,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingApiKeyGetKeyAt => 'Obtiens une clé sur';
 
   @override
+  String get onboardingApiKeyHide => 'Masquer la clé';
+
+  @override
   String get onboardingApiKeyInvalid =>
       'Cette clé a été refusée. Vérifie-la et colle-la à nouveau.';
 
@@ -6468,6 +6471,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get onboardingApiKeyNoKeyHelp =>
       'Première fois ? Connecte-toi, crée une clé API, puis colle-la — gratuit pour commencer.';
+
+  @override
+  String get onboardingApiKeyReveal => 'Afficher la clé';
 
   @override
   String get onboardingApiKeyTitle => 'Colle ta clé API';

@@ -145,11 +145,14 @@ void main() {
     await tester.enterText(find.byType(TextField), 'some-key');
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 900)); // debounce → checking
+    await tester.pump(
+      const Duration(milliseconds: 200),
+    ); // settle slot crossfade
 
     // Probe still pending → the gate narrates as Verifying… and stays disabled.
     expect(find.text('Verifying…'), findsOneWidget);
     expect(connectOnPressed(tester), isNull);
-    // The at-rest hint gives way to the live status.
+    // The at-rest hint gave way to the live status.
     expect(find.text('Enter a valid key to continue.'), findsNothing);
 
     probe.completer.complete(

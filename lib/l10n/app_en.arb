@@ -3176,9 +3176,11 @@
   "onboardingApiKeyError": "Couldn't connect. Check your key and try again.",
   "onboardingApiKeyField": "API key",
   "onboardingApiKeyGetKeyAt": "Get a key at",
+  "onboardingApiKeyHide": "Hide key",
   "onboardingApiKeyInvalid": "That key was rejected. Double-check it and paste it again.",
   "onboardingApiKeyLocalNote": "Runs on your device — no key needed.",
   "onboardingApiKeyNoKeyHelp": "New here? Sign in, create an API key, then paste it — free to start.",
+  "onboardingApiKeyReveal": "Show key",
   "onboardingApiKeyTitle": "Paste your API key",
   "onboardingApiKeyUnreachable": "Couldn't reach {providerName}. Check the key or your connection and try again.",
   "@onboardingApiKeyUnreachable": {

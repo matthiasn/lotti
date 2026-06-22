@@ -72,6 +72,14 @@ void main() {
   }
 
   Future<void> openWelcome(WidgetTester tester, {Widget? child}) async {
+    // The fixed-height modal panel (~680) is taller than the default 800x600
+    // render surface; size the surface to the 844-tall MediaQuery so the lower
+    // controls are on-screen and hit-testable.
+    tester.view
+      ..physicalSize = const Size(390, 1000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       makeTestableWidget(child ?? host(), mediaQueryData: mq),
     );
@@ -198,7 +206,7 @@ void main() {
     // Match the render surface to the 844-tall MediaQuery so the lower tiles /
     // Connect button are on-screen and hit-testable.
     tester.view
-      ..physicalSize = const Size(390, 844)
+      ..physicalSize = const Size(390, 1000)
       ..devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
