@@ -22,6 +22,7 @@ class NeuralConstellation extends StatefulWidget {
     this.pulseCount = 3,
     this.seed = 7,
     this.glow = 1,
+    this.loop = const Duration(seconds: 24),
     super.key,
   });
 
@@ -46,14 +47,18 @@ class NeuralConstellation extends StatefulWidget {
   /// panel; the dim working-step backdrop keeps the default.
   final double glow;
 
+  /// Period of the drift/pulse loop. Shorter = livelier drift. The welcome
+  /// hero keeps the slow default; the working-step backdrop runs a bit faster
+  /// so its motion is perceptible without competing with the form.
+  final Duration loop;
+
   @override
   State<NeuralConstellation> createState() => _NeuralConstellationState();
 }
 
 class _NeuralConstellationState extends State<NeuralConstellation>
     with SingleTickerProviderStateMixin {
-  // One slow loop; node drift and the pulse cadence are derived from its phase.
-  static const _loop = Duration(seconds: 24);
+  Duration get _loop => widget.loop;
 
   late final AnimationController _controller;
   late List<_Node> _nodes;

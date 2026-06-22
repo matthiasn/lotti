@@ -78,15 +78,19 @@ class OnboardingBackdrop extends StatelessWidget {
           NeuralConstellation(
             nodeColor: accentColor.withValues(alpha: 0.62),
             lineColor: accentColor.withValues(alpha: 0.32),
+            // Brighter, more numerous travelling pulses + a faster loop give
+            // the working-step backdrop perceptible life (the calm base nodes
+            // were near-static over a 24s loop) without the bloom competing
+            // with the form — the node/line alpha + glow stay toned.
             pulseColor: Color.lerp(
               accentColor,
               Colors.white,
-              0.35,
-            )!.withValues(alpha: 0.7),
+              0.45,
+            )!.withValues(alpha: 0.9),
             nodeCount: nodeCount,
-            // Match the welcome hero's toned bloom so the connect + key steps
-            // share one coherent lighting language (design-panel note).
+            pulseCount: 5,
             glow: 0.8,
+            loop: const Duration(seconds: 14),
           ),
         ],
       ),
