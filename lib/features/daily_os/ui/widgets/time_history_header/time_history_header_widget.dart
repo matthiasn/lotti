@@ -441,10 +441,10 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                 chartEnd != _cachedChartEnd ||
                 width != _cachedChartWidth ||
                 data != _cachedChartData) {
-              if (expectedLength < 2 || width <= 0) {
-                _cachedChart = null;
-                return const SizedBox.shrink();
-              }
+              // `_buildDaySelectorWithChart` only calls this with >= 2 days, and
+              // the ±_chartBuffer padding keeps the window >= 2 wide (the
+              // `chartEnd < chartStart` early-return above covers the empty
+              // case), so the sublist is always valid here.
               final chartDays = data.days.sublist(chartStart, chartEnd + 1);
               _cachedChartStart = chartStart;
               _cachedChartEnd = chartEnd;
