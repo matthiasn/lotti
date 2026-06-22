@@ -6413,6 +6413,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Běží na tvém zařízení – klíč není potřeba.';
 
   @override
+  String get onboardingApiKeyNoKeyHelp =>
+      'Poprvé tady? Přihlas se tam, vytvoř API klíč a vlož ho sem. Zdarma na začátek.';
+
+  @override
   String get onboardingApiKeyTitle => 'Vlož svůj API klíč';
 
   @override

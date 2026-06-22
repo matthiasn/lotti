@@ -215,22 +215,13 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
     });
     final verifyState = _display;
 
-    // The content of the fixed-height status slot. Distinct keys let the
-    // AnimatedSwitcher crossfade between them:
-    //  - empty field → the "get a key" link (cloud providers only);
-    //  - typing, awaiting the debounce (idle but text present) → a neutral
-    //    empty slot, so no stale status flickers between keystrokes;
-    //  - any probe state → the live checking/verified/rejected status.
-    final keyEntered = _controller.text.trim().isNotEmpty;
+    // The fixed-height status slot only ever carries the LIVE verification
+    // state now (idle → empty). The "how to get a key" guidance lives in a
+    // persistent block above the slot so it never disappears the moment the
+    // user starts typing — the activation cliff the novice reviewer flagged.
     final Widget statusChild;
     if (verifyState is ConnectionCheckIdle) {
-      statusChild = (_requiresKey && console != null && !keyEntered)
-          ? _GetKeyLink(
-              key: const ValueKey('link'),
-              console: console,
-              brand: brand,
-            )
-          : const SizedBox.shrink(key: ValueKey('empty'));
+      statusChild = const SizedBox.shrink(key: ValueKey('empty'));
     } else {
       statusChild = _VerifyStatus(
         key: ValueKey('status-${verifyState.runtimeType}'),
@@ -363,6 +354,10 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                       ),
                     ),
                   ),
+                  if (console != null) ...[
+                    SizedBox(height: tokens.spacing.step3),
+                    _GetKeyHelp(console: console, brand: brand),
+                  ],
                 ] else
                   Text(
                     messages.onboardingApiKeyLocalNote,
@@ -447,12 +442,41 @@ ColorFilter _saturationColorFilter(double s) {
   ]);
 }
 
+/// Persistent novice guidance for the cloud-provider key step: the tappable
+/// console link plus a one-line, plain-language walkthrough so getting a key
+/// isn't a dead-end "link and leave". Always visible (not buried in the live
+/// status slot) so it survives the moment the user starts typing.
+class _GetKeyHelp extends StatelessWidget {
+  const _GetKeyHelp({required this.console, required this.brand});
+
+  final String console;
+  final Color brand;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _GetKeyLink(console: console, brand: brand),
+        SizedBox(height: tokens.spacing.step1),
+        Text(
+          context.messages.onboardingApiKeyNoKeyHelp,
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            color: dsTokensDark.colors.text.mediumEmphasis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Tappable "Get a key at `<console>`" hint that launches the provider's API-key
 /// console in the browser. The host is rendered in the provider's brand colour
 /// with an underline + external-link glyph so it reads as a link on the dark
 /// panel.
 class _GetKeyLink extends StatelessWidget {
-  const _GetKeyLink({required this.console, required this.brand, super.key});
+  const _GetKeyLink({required this.console, required this.brand});
 
   final String console;
   final Color brand;

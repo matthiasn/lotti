@@ -2533,6 +2533,7 @@
   "onboardingApiKeyGetKeyAt": "Klíč získáš na",
   "onboardingApiKeyInvalid": "Tento klíč byl odmítnut. Zkontroluj ho a vlož ho znovu.",
   "onboardingApiKeyLocalNote": "Běží na tvém zařízení – klíč není potřeba.",
+  "onboardingApiKeyNoKeyHelp": "Poprvé tady? Přihlas se tam, vytvoř API klíč a vlož ho sem. Zdarma na začátek.",
   "onboardingApiKeyTitle": "Vlož svůj API klíč",
   "onboardingApiKeyUnreachable": "Nepodařilo se spojit s {providerName}. Zkontroluj klíč nebo připojení a zkus to znovu.",
   "onboardingConnectGeminiName": "Gemini",

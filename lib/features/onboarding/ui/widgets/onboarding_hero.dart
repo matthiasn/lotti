@@ -62,6 +62,10 @@ class OnboardingBackdrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accentColor = accent ?? dsTokensDark.colors.interactive.enabled;
+    // The motion stays (it carries the welcome's "alive" thread forward) but is
+    // toned down behind the working steps so it never competes with the tiles
+    // / key field the user is reading and typing into — the review panels'
+    // dominant note. Lower aurora wash + dimmer nodes/lines + a calmer pulse.
     return ColoredBox(
       color: dsTokensDark.colors.background.level01,
       child: Stack(
@@ -69,12 +73,16 @@ class OnboardingBackdrop extends StatelessWidget {
         children: [
           AuroraHero(
             colors: onboardingAuroraColors(accentColor),
-            maxAlpha: 0.16,
+            maxAlpha: 0.10,
           ),
           NeuralConstellation(
-            nodeColor: accentColor,
-            lineColor: accentColor.withValues(alpha: 0.55),
-            pulseColor: Color.lerp(accentColor, Colors.white, 0.45)!,
+            nodeColor: accentColor.withValues(alpha: 0.62),
+            lineColor: accentColor.withValues(alpha: 0.32),
+            pulseColor: Color.lerp(
+              accentColor,
+              Colors.white,
+              0.35,
+            )!.withValues(alpha: 0.7),
             nodeCount: nodeCount,
           ),
         ],

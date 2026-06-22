@@ -6384,6 +6384,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Läuft auf deinem Gerät – kein Schlüssel nötig.';
 
   @override
+  String get onboardingApiKeyNoKeyHelp =>
+      'Neu hier? Melde dich dort an, erstelle einen API-Schlüssel und füg ihn dann ein. Kostenlos zum Starten.';
+
+  @override
   String get onboardingApiKeyTitle => 'Füge deinen API-Schlüssel ein';
 
   @override

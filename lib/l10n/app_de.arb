@@ -2741,6 +2741,7 @@
   "onboardingApiKeyGetKeyAt": "Schlüssel erhältst du bei",
   "onboardingApiKeyInvalid": "Dieser Schlüssel wurde abgelehnt. Prüf ihn und füg ihn noch mal ein.",
   "onboardingApiKeyLocalNote": "Läuft auf deinem Gerät – kein Schlüssel nötig.",
+  "onboardingApiKeyNoKeyHelp": "Neu hier? Melde dich dort an, erstelle einen API-Schlüssel und füg ihn dann ein. Kostenlos zum Starten.",
   "onboardingApiKeyTitle": "Füge deinen API-Schlüssel ein",
   "onboardingApiKeyUnreachable": "{providerName} ist nicht erreichbar. Prüf den Schlüssel oder deine Verbindung und versuch es noch mal.",
   "onboardingConnectGeminiName": "Gemini",

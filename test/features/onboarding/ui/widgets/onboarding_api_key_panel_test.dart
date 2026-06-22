@@ -139,8 +139,9 @@ void main() {
     await enterKeyAndSettle(tester, 'good-key');
 
     expect(find.text('Connection verified'), findsOneWidget);
-    // The "get a key" link gives way to the live status once a probe resolves.
-    expect(find.textContaining('Get a key at'), findsNothing);
+    // The "get a key" guidance is persistent now (no longer in the status
+    // slot), so it stays visible alongside the verified status.
+    expect(find.textContaining('Get a key at'), findsOneWidget);
     expect(connectOnPressed(tester), isNotNull);
   });
 

@@ -6455,6 +6455,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se ejecuta en tu dispositivo: no necesitas clave.';
 
   @override
+  String get onboardingApiKeyNoKeyHelp =>
+      '¿Primera vez? Inicia sesión allí, crea una clave de API y pégala aquí. Gratis para empezar.';
+
+  @override
   String get onboardingApiKeyTitle => 'Pega tu clave de API';
 
   @override

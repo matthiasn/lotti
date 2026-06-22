@@ -11032,6 +11032,12 @@ abstract class AppLocalizations {
   /// **'Runs on your device — no key needed.'**
   String get onboardingApiKeyLocalNote;
 
+  /// No description provided for @onboardingApiKeyNoKeyHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'New here? Sign in there, create an API key, then paste it. It\'s free to start.'**
+  String get onboardingApiKeyNoKeyHelp;
+
   /// No description provided for @onboardingApiKeyTitle.
   ///
   /// In en, this message translates to:

@@ -6458,6 +6458,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Rulează pe dispozitiv – nu e nevoie de cheie.';
 
   @override
+  String get onboardingApiKeyNoKeyHelp =>
+      'Prima dată? Conectați-vă acolo, creați o cheie API și lipiți-o aici. Gratuit la început.';
+
+  @override
   String get onboardingApiKeyTitle => 'Introduceți cheia API';
 
   @override

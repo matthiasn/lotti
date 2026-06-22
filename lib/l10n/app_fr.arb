@@ -2741,6 +2741,7 @@
   "onboardingApiKeyGetKeyAt": "Obtiens une clé sur",
   "onboardingApiKeyInvalid": "Cette clé a été refusée. Vérifie-la et colle-la à nouveau.",
   "onboardingApiKeyLocalNote": "Fonctionne sur ton appareil — aucune clé requise.",
+  "onboardingApiKeyNoKeyHelp": "Première fois ? Connecte-toi là-bas, crée une clé API, puis colle-la ici. Gratuit pour commencer.",
   "onboardingApiKeyTitle": "Colle ta clé API",
   "onboardingApiKeyUnreachable": "Impossible de joindre {providerName}. Vérifie la clé ou ta connexion et réessaie.",
   "onboardingConnectGeminiName": "Gemini",

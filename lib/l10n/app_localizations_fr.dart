@@ -6462,6 +6462,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Fonctionne sur ton appareil — aucune clé requise.';
 
   @override
+  String get onboardingApiKeyNoKeyHelp =>
+      'Première fois ? Connecte-toi là-bas, crée une clé API, puis colle-la ici. Gratuit pour commencer.';
+
+  @override
   String get onboardingApiKeyTitle => 'Colle ta clé API';
 
   @override
