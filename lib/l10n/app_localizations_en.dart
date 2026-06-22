@@ -6377,6 +6377,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pick the brain that turns your words into tasks';
 
   @override
+  String get onboardingSuccessContinue => 'Get started';
+
+  @override
+  String get onboardingSuccessSubtitle =>
+      'Your AI brain is connected and ready to turn your words into tasks.';
+
+  @override
+  String get onboardingSuccessTitle => 'You\'re all set';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Connect your brain';
 
   @override

@@ -6529,6 +6529,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elige el cerebro que convierte tus palabras en tareas';
 
   @override
+  String get onboardingSuccessContinue => 'Empezar';
+
+  @override
+  String get onboardingSuccessSubtitle =>
+      'Tu cerebro de IA está conectado y listo para convertir tus palabras en tareas.';
+
+  @override
+  String get onboardingSuccessTitle => '¡Todo listo!';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Conecta tu cerebro';
 
   @override

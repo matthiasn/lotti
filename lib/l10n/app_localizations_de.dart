@@ -6458,6 +6458,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wähle das Gehirn, das deine Worte in Aufgaben verwandelt';
 
   @override
+  String get onboardingSuccessContinue => 'Los geht\'s';
+
+  @override
+  String get onboardingSuccessSubtitle =>
+      'Dein KI-Gehirn ist verbunden und verwandelt deine Worte in Aufgaben.';
+
+  @override
+  String get onboardingSuccessTitle => 'Alles bereit';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Gehirn verbinden';
 
   @override

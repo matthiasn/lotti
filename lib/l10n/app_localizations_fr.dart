@@ -6536,6 +6536,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choisis le cerveau qui transforme tes mots en tâches';
 
   @override
+  String get onboardingSuccessContinue => 'C\'est parti';
+
+  @override
+  String get onboardingSuccessSubtitle =>
+      'Ton cerveau IA est connecté, prêt à transformer tes mots en tâches.';
+
+  @override
+  String get onboardingSuccessTitle => 'Tout est prêt';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Connecter ton cerveau';
 
   @override

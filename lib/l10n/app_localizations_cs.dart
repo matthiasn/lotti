@@ -6487,6 +6487,16 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyber mozek, který promění tvá slova v úkoly';
 
   @override
+  String get onboardingSuccessContinue => 'Začít';
+
+  @override
+  String get onboardingSuccessSubtitle =>
+      'Tvůj AI mozek je připojený a promění tvá slova v úkoly.';
+
+  @override
+  String get onboardingSuccessTitle => 'Vše připraveno';
+
+  @override
   String get onboardingWelcomeConnectButton => 'Připojit mozek';
 
   @override

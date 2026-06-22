@@ -11164,6 +11164,24 @@ abstract class AppLocalizations {
   /// **'Pick the brain that turns your words into tasks'**
   String get onboardingConnectTitle;
 
+  /// No description provided for @onboardingSuccessContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get onboardingSuccessContinue;
+
+  /// No description provided for @onboardingSuccessSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI brain is connected and ready to turn your words into tasks.'**
+  String get onboardingSuccessSubtitle;
+
+  /// No description provided for @onboardingSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all set'**
+  String get onboardingSuccessTitle;
+
   /// No description provided for @onboardingWelcomeConnectButton.
   ///
   /// In en, this message translates to:
