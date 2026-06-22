@@ -6,6 +6,40 @@ import 'package:lotti/features/ai/ui/settings/util/active_profile.dart';
 import '../../../test_utils.dart';
 
 void main() {
+  group('modelByProfileSlotId', () {
+    test('resolves canonical model row ids and unique provider model ids', () {
+      final model = AiTestDataFactory.createTestModel(
+        id: 'model-row-id',
+        name: 'Mistral Small',
+        providerModelId: 'mistral-small-provider-id',
+      );
+
+      final bySlotId = modelByProfileSlotId([model]);
+
+      expect(bySlotId['model-row-id'], same(model));
+      expect(bySlotId['mistral-small-provider-id'], same(model));
+    });
+
+    test('does not resolve ambiguous provider-native model ids', () {
+      final first = AiTestDataFactory.createTestModel(
+        id: 'first-row-id',
+        providerModelId: 'shared-provider-model-id',
+        inferenceProviderId: 'provider-1',
+      );
+      final second = AiTestDataFactory.createTestModel(
+        id: 'second-row-id',
+        providerModelId: 'shared-provider-model-id',
+        inferenceProviderId: 'provider-2',
+      );
+
+      final bySlotId = modelByProfileSlotId([first, second]);
+
+      expect(bySlotId['first-row-id'], same(first));
+      expect(bySlotId['second-row-id'], same(second));
+      expect(bySlotId['shared-provider-model-id'], isNull);
+    });
+  });
+
   group('pickActiveProfileForProvider', () {
     test('returns null when there are no provider models', () {
       final profile = AiTestDataFactory.createTestProfile(

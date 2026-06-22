@@ -1687,9 +1687,10 @@ void main() {
       await tester.pump();
 
       expect(
-        find.text(strings.aiConfigFailedToLoadModelsGeneric),
+        find.textContaining(strings.aiConfigFailedToLoadModelsGeneric),
         findsOneWidget,
       );
+      expect(find.textContaining('first failure'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.refresh_rounded));
       await tester.pump();

@@ -58,10 +58,53 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       throw ArgumentError('API key cannot be empty');
     }
 
+    try {
+      return await _listModelsFromEndpoint(
+        baseUrl: normalizedBaseUrl,
+        apiKey: normalizedApiKey,
+        includeMeta: true,
+        timeout: timeout,
+      );
+    } on MeliousInferenceException catch (includeMetaError) {
+      if (!_shouldRetryPlainModels(includeMetaError)) rethrow;
+      developer.log(
+        'Melious metadata catalog failed; retrying plain /models as degraded '
+        'fallback',
+        name: _providerName,
+        error: includeMetaError,
+      );
+      try {
+        return await _listModelsFromEndpoint(
+          baseUrl: normalizedBaseUrl,
+          apiKey: normalizedApiKey,
+          includeMeta: false,
+          timeout: timeout,
+        );
+      } on MeliousInferenceException catch (plainError) {
+        throw MeliousInferenceException(
+          'include_meta failed: ${includeMetaError.message}; '
+          'plain /models failed: ${plainError.message}',
+          statusCode: plainError.statusCode ?? includeMetaError.statusCode,
+          originalError: plainError.originalError ?? plainError,
+        );
+      }
+    }
+  }
+
+  static bool _shouldRetryPlainModels(MeliousInferenceException error) {
+    return error.statusCode != 401 && error.statusCode != 403;
+  }
+
+  Future<List<KnownModel>> _listModelsFromEndpoint({
+    required String baseUrl,
+    required String apiKey,
+    required bool includeMeta,
+    required Duration timeout,
+  }) async {
     final uri = _buildEndpointUri(
-      normalizedBaseUrl,
+      baseUrl,
       'models',
-      queryParameters: const {'include_meta': 'true'},
+      queryParameters: includeMeta ? const {'include_meta': 'true'} : const {},
     );
 
     developer.log(
@@ -75,10 +118,16 @@ class MeliousInferenceRepository extends TranscriptionRepository {
             uri,
             headers: {
               'Accept': 'application/json',
-              'Authorization': 'Bearer $normalizedApiKey',
+              'Authorization': 'Bearer $apiKey',
             },
           )
           .timeout(timeout);
+
+      developer.log(
+        'Melious model catalog response from $uri: HTTP '
+        '${response.statusCode}',
+        name: _providerName,
+      );
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw MeliousInferenceException(
@@ -88,29 +137,37 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       }
 
       final decoded = jsonDecode(response.body);
-      if (decoded is! Map<String, dynamic>) {
-        throw const MeliousInferenceException(
-          'Melious model list response must be a JSON object',
-        );
+      final data = switch (decoded) {
+        {'data': final List<dynamic> data} => data,
+        final List<dynamic> data => data,
+        _ => throw const MeliousInferenceException(
+          'Melious model list response must be a JSON object with data[] '
+          'or a JSON array',
+        ),
+      };
+      _logCatalogPayload(uri: uri, decoded: decoded, data: data);
+
+      final models = <KnownModel>[];
+      for (final (index, item) in data.indexed) {
+        try {
+          models.add(_knownModelFromCatalogItem(item));
+        } on Exception catch (e, stackTrace) {
+          developer.log(
+            'Failed to parse Melious model catalog row #$index from $uri: '
+            '${_catalogItemSummary(item)}',
+            name: _providerName,
+            error: e,
+            stackTrace: stackTrace,
+          );
+          rethrow;
+        }
       }
 
-      final data = decoded['data'];
-      if (data is! List) {
-        throw const MeliousInferenceException(
-          'Melious model list response is missing the data array',
-        );
-      }
-
-      return data
-          .map((item) {
-            if (item is! Map<String, dynamic>) {
-              throw const MeliousInferenceException(
-                'Melious model entry must be a JSON object',
-              );
-            }
-            return _knownModelFromPayload(item);
-          })
-          .toList(growable: false);
+      developer.log(
+        'Mapped ${models.length} Melious catalog rows from $uri',
+        name: _providerName,
+      );
+      return models;
     } on MeliousInferenceException {
       rethrow;
     } on TimeoutException catch (e) {
@@ -129,6 +186,19 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         originalError: e,
       );
     }
+  }
+
+  KnownModel _knownModelFromCatalogItem(Object? item) {
+    if (item is String) {
+      return _knownModelFromPayload({'id': item});
+    }
+    if (item is Map<String, dynamic>) {
+      return _knownModelFromPayload(item);
+    }
+
+    throw const MeliousInferenceException(
+      'Melious model entry must be a JSON object or string id',
+    );
   }
 
   /// Generates text using Melious' OpenAI-compatible streaming endpoint.
@@ -435,18 +505,29 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       );
     }
 
-    final meta = model['_meta'];
-    final metaMap = meta is Map<String, dynamic>
-        ? meta
-        : const <String, dynamic>{};
-    final capabilities = metaMap['capabilities'];
-    final capabilityMap = capabilities is Map<String, dynamic>
-        ? capabilities
-        : const <String, dynamic>{};
-    final type = _MeliousModelType.from(metaMap['type']);
+    final metaMap =
+        _asMap(model['_meta']) ??
+        _asMap(model['metadata']) ??
+        const <String, dynamic>{};
+    final knownModel = _knownMeliousModels[providerModelId];
+    if (knownModel != null && metaMap.isEmpty) {
+      return knownModel;
+    }
 
-    final inputModalities = _modalitiesFrom(metaMap['input_modalities']);
-    final outputModalities = _modalitiesFrom(metaMap['output_modalities']);
+    final capabilityMap =
+        _asMap(metaMap['capabilities']) ??
+        _asMap(model['capabilities']) ??
+        const <String, dynamic>{};
+    final type = _MeliousModelType.from(metaMap['type'] ?? model['type']);
+
+    final inputModalities = _mergedModalities(
+      knownModel?.inputModalities,
+      metaMap['input_modalities'] ?? model['input_modalities'],
+    );
+    final outputModalities = _mergedModalities(
+      knownModel?.outputModalities,
+      metaMap['output_modalities'] ?? model['output_modalities'],
+    );
 
     _applyCapabilityModalities(
       type: type,
@@ -455,12 +536,18 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       outputModalities: outputModalities,
     );
 
-    final supportsFunctionCalling = _truthy(capabilityMap['function_calling']);
-    final isReasoningModel = _truthy(capabilityMap['reasoning']);
+    final supportsFunctionCalling =
+        knownModel?.supportsFunctionCalling == true ||
+        _truthy(capabilityMap['function_calling']);
+    final isReasoningModel =
+        knownModel?.isReasoningModel == true ||
+        _truthy(capabilityMap['reasoning']) ||
+        _truthy(capabilityMap['thinking']) ||
+        _looksLikeReasoningModel(providerModelId);
 
     return KnownModel(
       providerModelId: providerModelId,
-      name: _displayNameForModel(providerModelId),
+      name: knownModel?.name ?? _displayNameForModel(providerModelId),
       inputModalities: inputModalities,
       outputModalities: outputModalities,
       isReasoningModel: isReasoningModel,
@@ -499,9 +586,36 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     if (_truthy(capabilities['vision'])) {
       _addUnique(inputModalities, Modality.image);
     }
-    if (_truthy(capabilities['audio_input'])) {
+    if (_truthy(capabilities['audio_input']) ||
+        _truthy(capabilities['supports_audio']) ||
+        _truthy(capabilities['transcription']) ||
+        _truthy(capabilities['translation']) ||
+        _truthy(capabilities['diarization'])) {
       _addUnique(inputModalities, Modality.audio);
+      _addUnique(outputModalities, Modality.text);
     }
+    if (_truthy(capabilities['text_to_image'])) {
+      _addUnique(inputModalities, Modality.text);
+      _addUnique(outputModalities, Modality.image);
+    }
+    if (_truthy(capabilities['image_to_image'])) {
+      _addUnique(inputModalities, Modality.image);
+      _addUnique(outputModalities, Modality.image);
+    }
+  }
+
+  static List<Modality> _mergedModalities(
+    List<Modality>? knownModalities,
+    Object? rawModalities,
+  ) {
+    final out = <Modality>[];
+    for (final modality in knownModalities ?? const <Modality>[]) {
+      _addUnique(out, modality);
+    }
+    for (final modality in _modalitiesFrom(rawModalities)) {
+      _addUnique(out, modality);
+    }
+    return out;
   }
 
   static List<Modality> _modalitiesFrom(Object? raw) {
@@ -529,6 +643,11 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     }
   }
 
+  static Map<String, dynamic>? _asMap(Object? value) {
+    if (value is Map<String, dynamic>) return value;
+    return null;
+  }
+
   String _descriptionFor({
     required Map<String, dynamic> model,
     required _MeliousModelType type,
@@ -541,10 +660,10 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       parts.add('Owned by ${ownedBy.trim()}.');
     }
 
-    final meta = model['_meta'];
-    final metaMap = meta is Map<String, dynamic>
-        ? meta
-        : const <String, dynamic>{};
+    final metaMap =
+        _asMap(model['_meta']) ??
+        _asMap(model['metadata']) ??
+        const <String, dynamic>{};
     final contextLength = _integerValue(
       metaMap['context_length'],
     );
@@ -554,11 +673,22 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
     final featureLabels = <String>[
       if (_truthy(capabilities['vision'])) 'vision',
-      if (_truthy(capabilities['audio_input'])) 'audio input',
+      if (_truthy(capabilities['audio_input']) ||
+          _truthy(capabilities['supports_audio']))
+        'audio input',
+      if (_truthy(capabilities['transcription'])) 'transcription',
+      if (_truthy(capabilities['translation'])) 'translation',
+      if (_truthy(capabilities['diarization'])) 'diarization',
+      if (_truthy(capabilities['text_to_image'])) 'text to image',
+      if (_truthy(capabilities['image_to_image'])) 'image to image',
       if (_truthy(capabilities['reasoning'])) 'reasoning',
+      if (_truthy(capabilities['thinking'])) 'thinking',
       if (_truthy(capabilities['function_calling'])) 'tools',
       if (_truthy(capabilities['structured_output'])) 'structured output',
       if (_truthy(capabilities['json_schema'])) 'JSON schema',
+      if (_truthy(capabilities['code_generation'])) 'code generation',
+      if (_truthy(capabilities['computer_use'])) 'computer use',
+      if (_truthy(capabilities['lora'])) 'LoRA',
       if (_truthy(capabilities['streaming'])) 'streaming',
     ];
     if (featureLabels.isNotEmpty) {
@@ -580,6 +710,12 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     if (value is num) return value != 0;
     if (value is String) return value.toLowerCase() == 'true';
     return false;
+  }
+
+  static bool _looksLikeReasoningModel(String modelId) {
+    final normalized = modelId.toLowerCase();
+    return normalized.contains('thinking') ||
+        normalized.contains('deepseek-r1');
   }
 
   static String _displayNameForModel(String modelId) {
@@ -656,6 +792,70 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     );
   }
 
+  static void _logCatalogPayload({
+    required Uri uri,
+    required Object? decoded,
+    required List<dynamic> data,
+  }) {
+    final shape = switch (decoded) {
+      final Map<String, dynamic> map => 'object keys=${map.keys.join(',')}',
+      final List<dynamic> _ => 'array',
+      _ => decoded.runtimeType.toString(),
+    };
+    developer.log(
+      'Melious model catalog payload from $uri: shape=$shape, '
+      'count=${data.length}',
+      name: _providerName,
+    );
+
+    final ids = data.map(_catalogItemIdForLog).toList(growable: false);
+    const chunkSize = 25;
+    for (var start = 0; start < ids.length; start += chunkSize) {
+      final end = (start + chunkSize).clamp(0, ids.length);
+      developer.log(
+        'Melious model catalog IDs ${start + 1}-$end/${ids.length}: '
+        '${ids.sublist(start, end).join(', ')}',
+        name: _providerName,
+      );
+    }
+  }
+
+  static String _catalogItemIdForLog(Object? item) {
+    if (item is String) return item;
+    if (item is Map<String, dynamic>) {
+      final id = item['id'] ?? item['name'];
+      if (id is String && id.trim().isNotEmpty) return id.trim();
+      return '<missing id; keys=${item.keys.join(',')}>';
+    }
+    return '<${item.runtimeType}>';
+  }
+
+  static String _catalogItemSummary(Object? item) {
+    if (item is String) return item;
+    if (item is Map<String, dynamic>) {
+      final id = item['id'] ?? item['name'];
+      final meta = _asMap(item['_meta']) ?? _asMap(item['metadata']);
+      final capabilities =
+          _asMap(meta?['capabilities']) ?? _asMap(item['capabilities']);
+      return [
+        if (id is String) 'id=$id' else 'id=<missing>',
+        'keys=${item.keys.join(',')}',
+        if (meta != null) 'metaKeys=${meta.keys.join(',')}',
+        if (capabilities != null)
+          'capabilityKeys=${capabilities.keys.join(',')}',
+        'snippet=${_clipForLog(jsonEncode(item))}',
+      ].join('; ');
+    }
+    return '<${item.runtimeType}> ${_clipForLog('$item')}';
+  }
+
+  static String _clipForLog(String value) {
+    const maxLength = 800;
+    return value.length > maxLength
+        ? '${value.substring(0, maxLength)}...'
+        : value;
+  }
+
   static String _extractErrorMessage(String body, int statusCode) {
     final fallback = 'Melious API error (HTTP $statusCode)';
     if (body.isEmpty) return fallback;
@@ -678,6 +878,10 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     return body.length > 240 ? '${body.substring(0, 240)}...' : body;
   }
 }
+
+final Map<String, KnownModel> _knownMeliousModels = {
+  for (final model in meliousModels) model.providerModelId: model,
+};
 
 enum _MeliousModelType {
   chat('chat'),

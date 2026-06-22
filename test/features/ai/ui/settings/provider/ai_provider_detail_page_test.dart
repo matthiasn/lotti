@@ -493,6 +493,63 @@ void main() {
     );
 
     testWidgets(
+      'active profile summary resolves canonical model row ids, not only '
+      'provider-native ids',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = buildProvider(
+          id: 'melious-provider',
+          type: InferenceProviderType.melious,
+          name: 'Melious.ai',
+          baseUrl: 'https://api.melious.ai/v1',
+        );
+        final thinkingModel = buildModel(
+          id: 'model-mistral-small',
+          providerId: provider.id,
+          name: 'Mistral Small 4 119B Instruct',
+          providerModelId: 'mistral-small-4-119b-instruct',
+        );
+        final transcriptionModel = buildModel(
+          id: 'model-whisper-turbo',
+          providerId: provider.id,
+          name: 'Whisper Large v3 Turbo',
+          providerModelId: 'whisper-large-v3-turbo',
+        );
+        final profile = buildProfile(
+          id: 'profile-melious',
+          name: 'Melious.ai',
+          isDefault: true,
+          thinking: thinkingModel.id,
+          imageRecognition: thinkingModel.id,
+          transcription: transcriptionModel.id,
+        );
+
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: [thinkingModel, transcriptionModel],
+          profiles: [profile],
+          overrides: [
+            meliousInferenceRepositoryProvider.overrideWithValue(
+              FakeMeliousInferenceRepository([
+                () async => const <KnownModel>[],
+              ]),
+            ),
+          ],
+        );
+
+        expect(find.text('Active profile'), findsOneWidget);
+        expect(find.text('Mistral Small 4 119B Instruct'), findsWidgets);
+        expect(find.text('Whisper Large v3 Turbo'), findsWidgets);
+        expect(find.text('missing'), findsNothing);
+
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
       'active profile section is omitted when no profile references any of '
       "the provider's models",
       (tester) async {

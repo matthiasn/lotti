@@ -353,8 +353,9 @@ class _DynamicAvailableModelsSection extends ConsumerWidget {
                     );
                   },
                   loading: () => _DynamicModelsLoading(tokens: tokens),
-                  error: (_, _) => _DynamicModelsError(
+                  error: (error, _) => _DynamicModelsError(
                     providerId: providerId,
+                    error: error,
                   ),
                 );
               },
@@ -385,9 +386,13 @@ class _DynamicModelsLoading extends StatelessWidget {
 }
 
 class _DynamicModelsError extends ConsumerWidget {
-  const _DynamicModelsError({required this.providerId});
+  const _DynamicModelsError({
+    required this.providerId,
+    required this.error,
+  });
 
   final String providerId;
+  final Object error;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -412,7 +417,8 @@ class _DynamicModelsError extends ConsumerWidget {
           SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: Text(
-              messages.aiConfigFailedToLoadModelsGeneric,
+              '${messages.aiConfigFailedToLoadModelsGeneric}\n'
+              '${_dynamicModelsErrorDetail(error)}',
               style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: context.colorScheme.onErrorContainer,
               ),
@@ -429,6 +435,28 @@ class _DynamicModelsError extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _dynamicModelsErrorDetail(Object error) {
+  final detail = switch (error) {
+    MeliousInferenceException(
+      :final message,
+      :final statusCode,
+    ) =>
+      statusCode == null ? message : '$message (HTTP $statusCode)',
+    OmlxInferenceException(
+      :final message,
+      :final statusCode,
+    ) =>
+      statusCode == null ? message : '$message (HTTP $statusCode)',
+    ArgumentError(:final message) => message?.toString() ?? error.toString(),
+    _ => error.toString(),
+  };
+
+  const maxLength = 280;
+  return detail.length > maxLength
+      ? '${detail.substring(0, maxLength)}...'
+      : detail;
 }
 
 /// Tile displaying a known model with an add button or "Added" indicator.

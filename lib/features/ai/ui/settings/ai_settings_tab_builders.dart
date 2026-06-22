@@ -123,27 +123,7 @@ extension _AiSettingsTabBuilders on _AiSettingsPageState {
     final providerTypeByProviderId = <String, InferenceProviderType>{
       for (final p in providers) p.id: p.inferenceProviderType,
     };
-    final modelNamesById = <String, String>{};
-    final providerIdByModelId = <String, String>{};
-    final modelsByProviderModelId = <String, List<AiConfigModel>>{};
-    for (final model in models) {
-      modelNamesById[model.id] = model.name;
-      providerIdByModelId[model.id] = model.inferenceProviderId;
-      (modelsByProviderModelId[model.providerModelId] ??= <AiConfigModel>[])
-          .add(model);
-    }
-    // Legacy slots store provider-native ids; only fall back to those when
-    // the providerModelId is unique so an ambiguous id never resolves to an
-    // arbitrary row's name or provider.
-    for (final entry in modelsByProviderModelId.entries) {
-      if (entry.value.length == 1) {
-        modelNamesById.putIfAbsent(entry.key, () => entry.value.single.name);
-        providerIdByModelId.putIfAbsent(
-          entry.key,
-          () => entry.value.single.inferenceProviderId,
-        );
-      }
-    }
+    final modelsBySlotId = modelByProfileSlotId(models);
     // A profile earns the Active badge iff it's the winning candidate
     // for at least one configured provider — same rule the detail
     // page uses for its "Active profile" section.
@@ -159,10 +139,10 @@ extension _AiSettingsTabBuilders on _AiSettingsPageState {
         isActive: activeProfileIds.contains(profile.id),
         providerTypeFor: () => _providerTypeForProfile(
           profile,
-          providerIdByModelId,
+          modelsBySlotId,
           providerTypeByProviderId,
         ),
-        modelLookup: (id) => modelNamesById[id],
+        modelLookup: (id) => modelsBySlotId[id]?.name,
         onTap: () => _handleConfigTap(profile),
         menuActions: _buildCardMenu(profile),
       );
@@ -242,7 +222,7 @@ extension _AiSettingsTabBuilders on _AiSettingsPageState {
   /// Gemini.
   InferenceProviderType? _providerTypeForProfile(
     AiConfigInferenceProfile profile,
-    Map<String, String> providerIdByModelId,
+    Map<String, AiConfigModel> modelsBySlotId,
     Map<String, InferenceProviderType> providerTypeByProviderId,
   ) {
     final candidates = <String?>[
@@ -254,9 +234,9 @@ extension _AiSettingsTabBuilders on _AiSettingsPageState {
     ];
     for (final candidate in candidates) {
       if (candidate == null) continue;
-      final providerId = providerIdByModelId[candidate];
-      if (providerId == null) continue;
-      final type = providerTypeByProviderId[providerId];
+      final model = modelsBySlotId[candidate];
+      if (model == null) continue;
+      final type = providerTypeByProviderId[model.inferenceProviderId];
       if (type != null) return type;
     }
     return null;
