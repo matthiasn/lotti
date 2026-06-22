@@ -112,6 +112,16 @@ class _MessageList extends StatefulWidget {
 class _MessageListState extends State<_MessageList> {
   late final ScrollController _scrollController;
 
+  /// While true, new messages / the typing indicator follow to the bottom. Set
+  /// from the user's position *before* new content lays out, so someone who
+  /// scrolled up to read earlier messages is never yanked back down. Starts
+  /// true so the chat opens pinned to the latest message.
+  bool _stickToBottom = true;
+
+  /// Distance from the bottom (logical px) within which the view still counts
+  /// as "following" — slack so a partially-scrolled tail still sticks.
+  static const double _stickToBottomThreshold = 120;
+
   @override
   void initState() {
     super.initState();
@@ -124,7 +134,10 @@ class _MessageListState extends State<_MessageList> {
     super.didUpdateWidget(oldWidget);
     if (widget.messages.length != oldWidget.messages.length ||
         widget.isWaiting != oldWidget.isWaiting) {
-      _scheduleScrollToBottom();
+      // Decide here, before the new content lays out: the controller still
+      // reflects the old extent, so this measures where the user actually was.
+      _stickToBottom = _isNearBottom();
+      _scheduleScrollToBottom(animate: true);
     }
   }
 
@@ -134,10 +147,26 @@ class _MessageListState extends State<_MessageList> {
     super.dispose();
   }
 
-  void _scheduleScrollToBottom() {
+  bool _isNearBottom() {
+    if (!_scrollController.hasClients) return true;
+    final position = _scrollController.position;
+    return position.maxScrollExtent - position.pixels <=
+        _stickToBottomThreshold;
+  }
+
+  void _scheduleScrollToBottom({bool animate = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollController.hasClients) return;
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      if (!mounted || !_scrollController.hasClients || !_stickToBottom) return;
+      final target = _scrollController.position.maxScrollExtent;
+      if (animate && !MediaQuery.disableAnimationsOf(context)) {
+        _scrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(target);
+      }
     });
   }
 

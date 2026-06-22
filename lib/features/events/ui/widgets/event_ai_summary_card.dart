@@ -94,6 +94,7 @@ class _RecapCard extends StatelessWidget {
     final tokens = context.designTokens;
     final cs = context.colorScheme;
     final styles = tokens.typography.styles;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
     final bodyWidget = switch (state) {
       _RecapState.recap => Text(
@@ -150,7 +151,17 @@ class _RecapCard extends StatelessWidget {
             ],
           ),
           SizedBox(height: tokens.spacing.step2),
-          bodyWidget,
+          // The body swaps between a small loading spinner and a multi-line
+          // recap (or the awaiting/error hints) as the agent report resolves.
+          // Animate the height change so the event detail column below eases
+          // down instead of snapping when the recap first lands. Width is
+          // pinned full so only the height animates (no horizontal slide).
+          AnimatedSize(
+            alignment: Alignment.topCenter,
+            duration: reduceMotion ? Duration.zero : MotionDurations.medium2,
+            curve: MotionCurves.emphasizedDecelerate,
+            child: SizedBox(width: double.infinity, child: bodyWidget),
+          ),
         ],
       ),
     );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -57,6 +58,18 @@ class _FakeChecklistCompletion extends ChecklistCompletionController {
   @override
   Future<ChecklistCompletionState> build() async =>
       (completedCount: 2, totalCount: 3);
+}
+
+/// Completion controller that never resolves, so the card renders with the
+/// completion counts still loading — used to verify the chip + bar are reserved
+/// from the entity's item count before the async counts arrive.
+class _LoadingChecklistCompletion extends ChecklistCompletionController {
+  _LoadingChecklistCompletion()
+    : super(const (id: 'test-checklist-id', taskId: null));
+
+  @override
+  Future<ChecklistCompletionState> build() =>
+      Completer<ChecklistCompletionState>().future;
 }
 
 void main() {
@@ -724,6 +737,29 @@ void main() {
         expect(find.byIcon(MdiIcons.checkAll), findsOneWidget);
         // 2/3 completed -> chip + a linear progress bar.
         expect(find.text('2/3'), findsOneWidget);
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      });
+
+      testWidgets('reserves the progress chip + bar before counts resolve', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: testChecklist),
+            overrides: [
+              checklistCompletionControllerProvider(
+                (id: 'test-checklist-id', taskId: null),
+              ).overrideWith(_LoadingChecklistCompletion.new),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        // The completion counts are still loading, but the chip + bar are
+        // already laid out from the checklist's two linked items (shown as 0
+        // done), so the row keeps a stable height — when the real counts land
+        // they swap in without growing the card and shoving the feed.
+        expect(find.text('0/2'), findsOneWidget);
         expect(find.byType(LinearProgressIndicator), findsOneWidget);
       });
 

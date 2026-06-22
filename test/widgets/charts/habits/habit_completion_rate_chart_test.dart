@@ -119,6 +119,16 @@ void main() {
       expect(find.textContaining('goal'), findsOneWidget);
     });
 
+    testWidgets('disables the implicit data-swap animation', (tester) async {
+      await pumpChart(tester, state: _fourteenDayState());
+
+      // The habits tab rebuilds this chart on every completion, sync, and span
+      // change; a non-zero duration would replay the rolling-average line morph
+      // each time — unsolicited motion. It must be pinned to zero.
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(lineChart.duration, Duration.zero);
+    });
+
     testWidgets('shows average, on-track count, trend and laggard nudge', (
       tester,
     ) async {

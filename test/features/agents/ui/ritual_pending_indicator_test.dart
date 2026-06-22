@@ -108,6 +108,43 @@ void main() {
       expect(tester.getSize(dotFinder), const Size(10, 10));
     });
 
+    testWidgets('reduced motion shows a steady, full-strength dot', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RitualPendingIndicator(),
+          mediaQueryData: const MediaQueryData(disableAnimations: true),
+          overrides: [
+            templatesPendingReviewProvider.overrideWith(
+              (ref) async => templateIds(2),
+            ),
+          ],
+        ),
+      );
+      await pumpUntilResolved(tester);
+
+      final dotFinder = find.byWidgetPredicate((widget) {
+        if (widget is Container) {
+          final d = widget.decoration;
+          return d is BoxDecoration && d.shape == BoxShape.circle;
+        }
+        return false;
+      });
+      expect(dotFinder, findsOneWidget);
+
+      // The dot renders at full strength (the pulse's brightest frame) and
+      // stays there — under reduced motion there is no pulse loop, so the
+      // looping 0.4→1.0 fade never runs. A pumped second leaves it unchanged.
+      final decoration =
+          tester.widget<Container>(dotFinder).decoration! as BoxDecoration;
+      expect(decoration.color!.a, 1.0);
+      await tester.pump(const Duration(seconds: 1));
+      final after =
+          tester.widget<Container>(dotFinder).decoration! as BoxDecoration;
+      expect(after.color!.a, 1.0);
+    });
+
     testWidgets('dot Container has a boxShadow when count > 0', (tester) async {
       await tester.pumpWidget(buildSubject(count: 2));
       await pumpUntilResolved(tester);

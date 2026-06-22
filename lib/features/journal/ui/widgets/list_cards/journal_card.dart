@@ -859,19 +859,26 @@ class _ChecklistContent extends ConsumerWidget {
         )
         .value;
 
+    // Reserve the status chip + progress bar from the first paint using the
+    // checklist's synchronous linked-item count, so the row keeps a stable
+    // height while the async completion counts resolve — otherwise the card
+    // grows after load and shoves the feed below it as you scroll. The
+    // completed count fills in (0 until resolved) without changing the layout.
+    final total =
+        counts?.totalCount ?? checklist.data.linkedChecklistItems.length;
+    final completed = counts?.completedCount ?? 0;
+
     final metaChips = <Widget>[];
     Widget? secondary;
-    if (counts != null && counts.totalCount > 0) {
+    if (total > 0) {
       metaChips.add(
         ModernStatusChip(
-          label: '${counts.completedCount}/${counts.totalCount}',
+          label: '$completed/$total',
           color: context.colorScheme.primary,
           icon: Icons.checklist_rounded,
         ),
       );
-      secondary = _TypeProgressBar(
-        value: counts.completedCount / counts.totalCount,
-      );
+      secondary = _TypeProgressBar(value: completed / total);
     }
 
     return _EntryCardScaffold(

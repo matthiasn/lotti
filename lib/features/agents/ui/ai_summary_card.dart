@@ -103,6 +103,20 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   bool _cancelledManually = false;
   UnifiedSuggestionList? _lastVisibleSuggestions;
 
+  /// Fingerprints already shown at least once. The first non-null suggestion
+  /// batch — the initial load, whenever it resolves — is seeded here without
+  /// animating; only fingerprints that arrive *after* that play an entrance
+  /// reveal, so a proposal produced by a background wake eases the list open
+  /// while the initial load (covered by the card's StaggeredEntrance) stays
+  /// instant.
+  final Set<String> _seenFingerprints = {};
+  bool _hasSeededFingerprints = false;
+
+  /// Fingerprints that arrived on the most recent sync — the rows that should
+  /// play their entrance reveal. Recomputed each sync; a row reads it once when
+  /// it first mounts.
+  Set<String> _newlyArrivedFingerprints = {};
+
   /// Fingerprints of suggestions the user has committed to (accept/reject) but
   /// whose row is still animating out. The provider drops a confirmed item
   /// immediately; this set keeps the row in the visible list (collapsing in
@@ -130,6 +144,9 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       // `settling` on or skew the pending-count filter).
       _exitingFingerprints.clear();
       _lastVisibleSuggestions = null;
+      _seenFingerprints.clear();
+      _hasSeededFingerprints = false;
+      _newlyArrivedFingerprints = const {};
       _closeSuggestionSubscriptions();
       _startSuggestionSubscriptions();
     }
@@ -216,6 +233,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       previous: _lastVisibleSuggestions,
     );
     if (next == _lastVisibleSuggestions) return;
+    _updateArrivals(next);
 
     if (!notify || !mounted) {
       _lastVisibleSuggestions = next;
@@ -223,6 +241,22 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     }
 
     setState(() => _lastVisibleSuggestions = next);
+  }
+
+  /// Tracks which open fingerprints are *newly arrived* so only their rows
+  /// animate in. The first non-null batch seeds [_seenFingerprints] silently
+  /// (it is the initial load); thereafter any fingerprint not yet seen counts
+  /// as new for this sync.
+  void _updateArrivals(UnifiedSuggestionList? next) {
+    if (next == null) return;
+    final openFps = {for (final s in next.open) s.fingerprint};
+    if (!_hasSeededFingerprints) {
+      _hasSeededFingerprints = true;
+      _newlyArrivedFingerprints = const {};
+    } else {
+      _newlyArrivedFingerprints = openFps.difference(_seenFingerprints);
+    }
+    _seenFingerprints.addAll(openFps);
   }
 
   int _computeRemainingSeconds(DateTime? nextWakeAt) {
@@ -486,19 +520,26 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                 additionalReport: additionalReport,
                 onOpenInternals: () => _openInternals(agentName: subtitle),
               ),
-            // Hide the proposals section until the unified
-            // suggestion list has produced its first value. This
-            // avoids briefly rendering the "No open proposals"
-            // placeholder during the initial async fetch.
+            // Hide the proposals section until the unified suggestion list has
+            // produced its first value (avoids briefly rendering the "No open
+            // proposals" placeholder during the initial async fetch). Inside,
+            // each *newly arrived* row eases its own height open (see
+            // [_newlyArrivedFingerprints]): a proposal from a background wake
+            // reveals smoothly while the initial batch stays instant. When the
+            // card is scrolled fully above the viewport, TaskDetailsPage pins
+            // the content below it so the growth never moves the visible area.
             if (list != null)
               ProposalsSection(
                 key: widget.proposalsFocusKey,
                 open: list.open,
+                newlyArrived: _newlyArrivedFingerprints,
                 // The pill counts what the user still has to act on: rows
                 // already committed (collapsing out) are excluded, so the count
                 // ticks down *with* the action rather than waiting for prune.
                 pendingCount: list.open
-                    .where((s) => !_exitingFingerprints.contains(s.fingerprint))
+                    .where(
+                      (s) => !_exitingFingerprints.contains(s.fingerprint),
+                    )
                     .length,
                 resolved: list.activity,
                 historyOpen: _historyOpen,

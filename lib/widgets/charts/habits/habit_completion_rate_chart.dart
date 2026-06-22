@@ -288,7 +288,11 @@ class HabitCompletionRateChart extends ConsumerWidget
                   ),
                 ],
               ),
-              curve: Curves.easeInOut,
+              // Instant data swap: the habits tab rebuilds this chart on every
+              // completion, sync, and span (14/30/90) change; a non-zero
+              // duration would replay the rolling-average line morph each time
+              // — motion the user didn't ask for.
+              duration: Duration.zero,
             ),
           ),
         ),

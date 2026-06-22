@@ -95,6 +95,92 @@ void main() {
       expect(find.byType(EvolutionChatBubble), findsNWidgets(2));
     });
 
+    EvolutionChatData chatWith(int count) => EvolutionChatData(
+      sessionId: 'session-1',
+      messages: [
+        for (var i = 0; i < count; i++)
+          EvolutionChatMessage.assistant(
+            text: 'Message $i with enough text to take real vertical space.',
+            timestamp: DateTime(2024, 3, 15),
+          ),
+      ],
+    );
+
+    ScrollPosition listPosition(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byType(ListView),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position;
+
+    // Mounts the page with a mutable chat state we can push new messages into.
+    // (buildSubject already overrides evolutionChatStateProvider, so we build
+    // directly rather than override the same family twice.)
+    Future<void> pumpWith(
+      WidgetTester tester,
+      MutableEvolutionChatState chatState,
+    ) async {
+      final tpl = makeTestTemplate();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const EvolutionChatPage(templateId: kTestTemplateId),
+          overrides: [
+            agentTemplateProvider.overrideWith((ref, id) async => tpl),
+            templatePerformanceMetricsProvider.overrideWith(
+              (ref, id) async => makeTestMetrics(),
+            ),
+            evolutionChatStateProvider.overrideWith(() => chatState),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a new message does not yank the view down when scrolled up', (
+      tester,
+    ) async {
+      final chatState = MutableEvolutionChatState(chatWith(30));
+      await pumpWith(tester, chatState);
+
+      // Scroll up toward older messages, well clear of the bottom.
+      await tester.drag(find.byType(ListView), const Offset(0, 600));
+      await tester.pumpAndSettle();
+      final position = listPosition(tester);
+      final offsetWhileReading = position.pixels;
+      expect(
+        position.maxScrollExtent - offsetWhileReading,
+        greaterThan(120),
+        reason: 'precondition: the user is reading well above the bottom',
+      );
+
+      // A new reply lands.
+      chatState.pushData(chatWith(31));
+      await tester.pumpAndSettle();
+
+      // The view stayed where the user was reading — it was NOT yanked down.
+      expect(position.pixels, closeTo(offsetWhileReading, 4));
+      expect(position.pixels, lessThan(position.maxScrollExtent));
+    });
+
+    testWidgets('a new message follows to the bottom when already there', (
+      tester,
+    ) async {
+      final chatState = MutableEvolutionChatState(chatWith(30));
+      await pumpWith(tester, chatState);
+
+      // The chat opens pinned to the latest message.
+      final position = listPosition(tester);
+      expect(position.pixels, closeTo(position.maxScrollExtent, 1));
+
+      chatState.pushData(chatWith(31));
+      await tester.pumpAndSettle();
+
+      // It followed the new message down to the new bottom.
+      expect(position.pixels, closeTo(position.maxScrollExtent, 1));
+    });
+
     testWidgets('shows loading indicator when chat state is loading', (
       tester,
     ) async {

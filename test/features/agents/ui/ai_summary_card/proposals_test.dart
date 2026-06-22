@@ -13,12 +13,14 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/design_system/theme/motion_tokens.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 import '../../test_data/change_set_factories.dart';
 import '../../test_data/entity_factories.dart';
 import 'test_bench.dart';
@@ -40,6 +42,52 @@ void main() {
 
       expect(find.text('Proposed changes'), findsOneWidget);
       expect(find.textContaining('No open proposals'), findsOneWidget);
+    });
+
+    testWidgets('flags only newly-arrived rows to animate their entrance', (
+      tester,
+    ) async {
+      final p1 = makePending(
+        id: 'p1',
+        toolName: 'set_task_status',
+        humanSummary: 'First',
+      );
+      final p2 = makePending(
+        id: 'p2',
+        toolName: 'set_task_status',
+        humanSummary: 'Second',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ProposalsSection(
+            open: [p1, p2],
+            newlyArrived: const {'fp-p2'},
+            resolved: const [],
+            historyOpen: false,
+            onToggleHistory: () {},
+            confirmAllBusy: false,
+            confirmAllPulse: 0,
+            onConfirmAll: null,
+          ),
+          // Reduced motion keeps the entrance instant (and suppresses the row's
+          // one-shot swipe-nudge timer); we assert the wiring, not the tween —
+          // EnterTransition's own tests cover the reveal.
+          mediaQueryData: const MediaQueryData(disableAnimations: true),
+        ),
+      );
+      await tester.pump();
+
+      final enterP1 = tester.widget<EnterTransition>(
+        find.byKey(const ValueKey('enter-p1-0')),
+      );
+      final enterP2 = tester.widget<EnterTransition>(
+        find.byKey(const ValueKey('enter-p2-0')),
+      );
+      // The initial batch (p1) is shown instantly; only the freshly arrived p2
+      // is flagged to reveal its height open.
+      expect(enterP1.animate, isFalse);
+      expect(enterP2.animate, isTrue);
     });
 
     testWidgets('renders pending proposals with kind chip and cleaned text', (
@@ -1285,6 +1333,72 @@ void main() {
         await tester.pump(ProposalMotion.staggerStep * 8);
         await tester.pump();
         expect(find.byType(ProposalRow), findsNothing);
+      },
+    );
+  });
+
+  // The card wraps each section that lands while the agent runs in an
+  // [EnterTransition] so it reveals open from zero instead of snapping the
+  // page below it (see `ai_summary_card.dart`).
+  group('EnterTransition', () {
+    Future<void> pumpEnter(
+      WidgetTester tester, {
+      required bool animate,
+      bool reduceMotion = false,
+    }) {
+      return tester.pumpWidget(
+        makeTestableWidget(
+          Align(
+            alignment: Alignment.topLeft,
+            child: EnterTransition(
+              animate: animate,
+              child: const SizedBox(height: 100, width: 100),
+            ),
+          ),
+          mediaQueryData: reduceMotion
+              ? const MediaQueryData(disableAnimations: true)
+              : null,
+        ),
+      );
+    }
+
+    double revealHeight(WidgetTester tester) => tester
+        .getSize(
+          find.descendant(
+            of: find.byType(EnterTransition),
+            matching: find.byType(SizeTransition),
+          ),
+        )
+        .height;
+
+    testWidgets('animate:false reveals the child at full height immediately', (
+      tester,
+    ) async {
+      await pumpEnter(tester, animate: false);
+      // No settle pump: content already present on the card's first frame must
+      // not animate — the card's StaggeredEntrance owns that on-open motion.
+      expect(revealHeight(tester), 100);
+    });
+
+    testWidgets('animate:true eases the height open from zero to full', (
+      tester,
+    ) async {
+      await pumpEnter(tester, animate: true);
+      // Collapsed on the first frame, then it grows.
+      expect(revealHeight(tester), lessThan(100));
+      await tester.pump(const Duration(milliseconds: 150));
+      final mid = revealHeight(tester);
+      expect(mid, greaterThan(0));
+      expect(mid, lessThan(100));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(revealHeight(tester), 100);
+    });
+
+    testWidgets(
+      'reduced motion snaps to full height even when animate is true',
+      (tester) async {
+        await pumpEnter(tester, animate: true, reduceMotion: true);
+        expect(revealHeight(tester), 100);
       },
     );
   });

@@ -7,6 +7,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
@@ -492,6 +493,64 @@ void main() {
 
         // Dispose the container (cancels the entry-controller cache timer)
         // before the framework's pending-timer check.
+        container.dispose();
+      },
+    );
+
+    testWidgets(
+      'a new proposal (open count rises) while the card is visible does not '
+      'jump the scroll',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hControllableSuggestionOverrides(),
+          ],
+        );
+        // Start with a single open proposal so we can grow it mid-run.
+        container.read(controllableOpenSuggestionCountProvider.notifier).set(1);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(
+              TaskDetailsPage(taskId: testTask.id),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Set estimate to 30 minutes'), findsOneWidget);
+        expect(find.byType(ProposalRow), findsOneWidget);
+
+        final position = tester
+            .state<ScrollableState>(
+              find
+                  .descendant(
+                    of: find.byType(CustomScrollView),
+                    matching: find.byType(Scrollable),
+                  )
+                  .first,
+            )
+            .position;
+        final offsetBefore = position.pixels;
+
+        // A new proposal lands (1 -> 2). The card is visible, so the growth
+        // anchor must NOT engage — the card's own EnterTransition reveals the
+        // growth in place rather than the page scrolling under the user.
+        container.read(controllableOpenSuggestionCountProvider.notifier).set(2);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(tester.takeException(), isNull);
+        // The new proposal is shown (1 -> 2 rows) and the scroll position was
+        // left untouched.
+        expect(find.byType(ProposalRow), findsNWidgets(2));
+        expect(position.pixels, offsetBefore);
+
         container.dispose();
       },
     );

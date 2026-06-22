@@ -161,6 +161,12 @@ class TimeSeriesBarChart extends StatelessWidget {
               ),
               barGroups: barGroups,
             ),
+            // Instant data swap. This chart rebuilds on every span change and
+            // on every background data refresh; without an explicit zero
+            // duration fl_chart replays its default 150ms grow-from-baseline
+            // tween each time — unsolicited motion the user didn't trigger.
+            // The line-chart sibling already pins this.
+            duration: Duration.zero,
           );
         },
       ),

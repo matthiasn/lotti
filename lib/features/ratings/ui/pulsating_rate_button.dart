@@ -81,6 +81,7 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
   late final AnimationController _controller;
   late final Animation<double> _animation;
   bool _isPulsing = false;
+  bool _pulseStartChecked = false;
 
   /// Number of full pulse cycles (forward + reverse = 1 cycle). With a
   /// 1-second animation duration per leg, 5 cycles is about 10 seconds.
@@ -97,10 +98,31 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
     _animation = Tween<double>(begin: 0.4, end: 1).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
+  }
 
-    if (widget.shouldPulse) {
-      _startPulsing();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // React to reduce-motion toggling on while the button is on screen: stop an
+    // in-flight pulse and rest at full opacity (disableAnimationsOf registers a
+    // MediaQuery dependency, so this fires when the setting changes).
+    if (MediaQuery.disableAnimationsOf(context)) {
+      if (_isPulsing) {
+        _controller
+          ..stop()
+          ..value = 1;
+        _isPulsing = false;
+      }
+      _pulseStartChecked = true;
+      return;
     }
+    // Start the pulse once — it's a one-shot ~10s prompt, not a perpetual loop,
+    // so the flag prevents it replaying after it completes (or after the user
+    // toggles reduce-motion off again). Done here, not in initState, so the
+    // reduced-motion setting is readable.
+    if (_pulseStartChecked) return;
+    _pulseStartChecked = true;
+    if (widget.shouldPulse) _startPulsing();
   }
 
   void _startPulsing() {
@@ -123,7 +145,10 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
   @override
   void didUpdateWidget(_AnimatedRateButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.shouldPulse && !oldWidget.shouldPulse && !_isPulsing) {
+    if (widget.shouldPulse &&
+        !oldWidget.shouldPulse &&
+        !_isPulsing &&
+        !MediaQuery.disableAnimationsOf(context)) {
       _startPulsing();
     }
   }

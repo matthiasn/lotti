@@ -132,6 +132,7 @@ class DraftingModalContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final isDrafting = state.phase == DraftingPhase.drafting;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
     // Content scrolling past the sheet edge dissolves over the last ~36px
     // instead of being razor-cut at full brightness.
@@ -172,8 +173,20 @@ class DraftingModalContent extends StatelessWidget {
                 SizedBox(height: tokens.spacing.step5),
                 DraftingStatusTicker(active: isDrafting),
                 SizedBox(height: tokens.spacing.step8),
-                if (state.learningCards != null)
-                  LearningCardsColumn(cards: state.learningCards!),
+                // The learning cards arrive mid-draft, after the user is
+                // already reading the status ticker. Reveal their height open
+                // (the stretch alignment keeps the width fixed) so they ease in
+                // instead of popping into the column.
+                AnimatedSize(
+                  alignment: Alignment.topCenter,
+                  duration: reduceMotion
+                      ? Duration.zero
+                      : MotionDurations.medium2,
+                  curve: MotionCurves.emphasizedDecelerate,
+                  child: state.learningCards != null
+                      ? LearningCardsColumn(cards: state.learningCards!)
+                      : const SizedBox.shrink(),
+                ),
               ],
             ),
           ),
