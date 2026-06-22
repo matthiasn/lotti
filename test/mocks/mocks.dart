@@ -105,6 +105,7 @@ import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/services/onboarding_task_structuring_service.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
@@ -972,6 +973,9 @@ class FakeMeliousInferenceRepository extends MeliousInferenceRepository {
 
 class MockOnboardingMetricsRepository extends Mock
     implements OnboardingMetricsRepository {}
+
+class MockOnboardingTaskStructuringService extends Mock
+    implements OnboardingTaskStructuringService {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
 

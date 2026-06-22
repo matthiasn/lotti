@@ -141,25 +141,15 @@ void main() {
         findsOneWidget,
       );
 
-      // The crystallize hero's checklist rows render their labels at full width
-      // (no Flexible), so at the gallery's narrow panel width each row
-      // legitimately overflows — a known cosmetic quirk of that debug preview,
-      // not a fault of the chip handler. Every other hero must render cleanly.
+      // Every hero — including crystallize, whose checklist labels now wrap via
+      // Expanded and whose ghost phrases wrap to the panel width — must render
+      // cleanly with no overflow at the gallery's panel size.
       final messages = captured.map((e) => '${e.exception}').toList();
-      if (style == OnboardingHeroStyle.crystallize) {
-        expect(messages, isNotEmpty);
-        expect(
-          messages.every((m) => m.contains('overflowed')),
-          isTrue,
-          reason: 'crystallize errors should only be overflows: $messages',
-        );
-      } else {
-        expect(
-          messages,
-          isEmpty,
-          reason: 'unexpected errors for ${style.label}',
-        );
-      }
+      expect(
+        messages,
+        isEmpty,
+        reason: 'unexpected errors for ${style.label}',
+      );
     }
   });
 
