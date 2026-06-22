@@ -165,6 +165,7 @@ void main() {
         '/settings/advanced/conflicts/:conflictId/edit',
         '/settings/advanced/conflicts',
         '/settings/advanced/maintenance',
+        '/settings/advanced/onboarding_metrics',
         '/settings/health_import',
         // Legacy alias kept so hand-edited bookmarks that hit the
         // pattern advertised on `main` still render the MaintenancePage.

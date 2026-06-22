@@ -351,11 +351,12 @@ void main() {
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
       // 6 fixed items (EmbeddingStore not registered in this group)
       // plus the diagnostic repaint-rainbow toggle = 7 list items.
-      // Only the 6 action rows carry chevrons; the toggle uses an
-      // adaptive Switch as its trailing affordance instead.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(7));
-      expect(find.byType(SettingsIcon), findsNWidgets(7));
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(6));
+      // Only the 8 action rows carry chevrons (incl. the two onboarding/FTUE
+      // debug actions); the toggle uses an adaptive Switch as its trailing
+      // affordance instead.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(9));
+      expect(find.byType(SettingsIcon), findsNWidgets(9));
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(8));
       expect(find.byType(Switch), findsOneWidget);
     });
 
