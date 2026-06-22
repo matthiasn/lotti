@@ -10,9 +10,11 @@ import 'package:lotti/features/ai/repository/cloud_inference_generate_more.dart'
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/omlx_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
@@ -35,6 +37,9 @@ class CloudInferenceRepository {
     final ollamaRepository = ref.read(ollamaInferenceRepositoryProvider);
     final geminiRepository = ref.read(geminiInferenceRepositoryProvider);
     final dashScopeRepository = ref.read(dashScopeInferenceRepositoryProvider);
+    final meliousRepository = MeliousInferenceRepository(
+      httpClient: httpClient,
+    );
     final mistralRepository = MistralInferenceRepository(
       httpClient: httpClient,
     );
@@ -42,6 +47,9 @@ class CloudInferenceRepository {
       httpClient: httpClient,
     );
     final whisperRepository = WhisperInferenceRepository(
+      httpClient: httpClient,
+    );
+    final omlxTranscriptionRepository = OmlxTranscriptionRepository(
       httpClient: httpClient,
     );
     final voxtralRepository = VoxtralInferenceRepository(
@@ -56,6 +64,7 @@ class CloudInferenceRepository {
     _generate = CloudInferenceGenerate(
       ollamaRepository: ollamaRepository,
       geminiRepository: geminiRepository,
+      meliousRepository: meliousRepository,
       mistralRepository: mistralRepository,
       helpers: helpers,
     );
@@ -66,8 +75,10 @@ class CloudInferenceRepository {
       geminiRepository: geminiRepository,
       dashScopeRepository: dashScopeRepository,
       mistralRepository: mistralRepository,
+      meliousRepository: meliousRepository,
       mistralTranscriptionRepository: mistralTranscriptionRepository,
       whisperRepository: whisperRepository,
+      omlxTranscriptionRepository: omlxTranscriptionRepository,
       voxtralRepository: voxtralRepository,
       openAiTranscriptionRepository: openAiTranscriptionRepository,
       helpers: helpers,

@@ -102,12 +102,12 @@ class AiPickProviderModal extends StatefulWidget {
   });
 
   /// Default tile lineup matching the design: Gemini (RECOMMENDED) →
-  /// OpenAI → Anthropic (NEW) → Alibaba (NEW) → MLX Audio (NEW) →
-  /// oMLX (DESKTOP ONLY) → Ollama (DESKTOP ONLY) → Voxtral (DESKTOP ONLY).
-  /// Alibaba lands before the local options so the embedded/desktop
-  /// providers stay last in the list. Exposed as a static so tests can
-  /// re-use the same spec the modal ships with without instantiating
-  /// the widget.
+  /// OpenAI → Anthropic (NEW) → Alibaba (NEW) → Melious.ai (NEW) →
+  /// MLX Audio (NEW) → oMLX (DESKTOP ONLY) → Ollama (DESKTOP ONLY) →
+  /// Voxtral (DESKTOP ONLY). Hosted providers land before the local options
+  /// so the embedded/desktop providers stay last in the list. Exposed as a
+  /// static so tests can re-use the same spec the modal ships with without
+  /// instantiating the widget.
   static const List<AiPickProviderTileSpec> defaultTiles =
       <AiPickProviderTileSpec>[
         AiPickProviderTileSpec(
@@ -121,6 +121,10 @@ class AiPickProviderModal extends StatefulWidget {
         ),
         AiPickProviderTileSpec(
           providerType: InferenceProviderType.alibaba,
+          badge: AiPickProviderBadge.newcomer,
+        ),
+        AiPickProviderTileSpec(
+          providerType: InferenceProviderType.melious,
           badge: AiPickProviderBadge.newcomer,
         ),
         AiPickProviderTileSpec(

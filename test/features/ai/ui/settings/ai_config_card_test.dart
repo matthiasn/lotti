@@ -424,6 +424,7 @@ void main() {
           InferenceProviderType.anthropic: Icons.auto_awesome,
           InferenceProviderType.openAi: Icons.psychology,
           InferenceProviderType.gemini: Icons.diamond,
+          InferenceProviderType.melious: Icons.eco,
           InferenceProviderType.openRouter: Icons.hub,
           InferenceProviderType.ollama: Icons.computer,
           InferenceProviderType.genericOpenAi: Icons.cloud,

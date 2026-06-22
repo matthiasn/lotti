@@ -61,6 +61,7 @@ NodeCapability? nodeCapabilityFromProviderType(
     case InferenceProviderType.anthropic:
     case InferenceProviderType.gemini:
     case InferenceProviderType.genericOpenAi:
+    case InferenceProviderType.melious:
     case InferenceProviderType.mistral:
     case InferenceProviderType.nebiusAiStudio:
     case InferenceProviderType.openAi:

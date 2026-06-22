@@ -124,6 +124,7 @@ const Map<InferenceProviderType, ConnectionProbe> _defaultConnectionProbes =
       InferenceProviderType.genericOpenAi: _OpenAiCompatibleProbe(),
       InferenceProviderType.openRouter: _OpenAiCompatibleProbe(),
       InferenceProviderType.nebiusAiStudio: _OpenAiCompatibleProbe(),
+      InferenceProviderType.melious: _OpenAiCompatibleProbe(),
       InferenceProviderType.mistral: _OpenAiCompatibleProbe(),
       InferenceProviderType.alibaba: _OpenAiCompatibleProbe(),
       InferenceProviderType.omlx: _OpenAiCompatibleProbe(),

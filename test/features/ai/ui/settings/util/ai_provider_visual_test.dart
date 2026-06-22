@@ -181,6 +181,13 @@ void main() {
       );
       expect(
         aiProviderDisplayName(
+          type: InferenceProviderType.melious,
+          messages: messages,
+        ),
+        equals('Melious.ai'),
+      );
+      expect(
+        aiProviderDisplayName(
           type: InferenceProviderType.ollama,
           messages: messages,
         ),
@@ -213,6 +220,7 @@ void main() {
           InferenceProviderType.anthropic,
           InferenceProviderType.ollama,
           InferenceProviderType.omlx,
+          InferenceProviderType.melious,
           InferenceProviderType.alibaba,
           InferenceProviderType.mlxAudio,
         };
@@ -259,12 +267,13 @@ void main() {
         aiProviderIcon(InferenceProviderType.anthropic),
         aiProviderIcon(InferenceProviderType.ollama),
         aiProviderIcon(InferenceProviderType.omlx),
+        aiProviderIcon(InferenceProviderType.melious),
         aiProviderIcon(InferenceProviderType.mistral),
         aiProviderIcon(InferenceProviderType.alibaba),
       };
       expect(
         icons.length,
-        equals(7),
+        equals(8),
         reason: 'Each named provider should have a distinct icon glyph',
       );
     });
@@ -324,6 +333,10 @@ void main() {
         expect(
           aiProviderKeyConsoleUrl(InferenceProviderType.anthropic),
           equals('console.anthropic.com'),
+        );
+        expect(
+          aiProviderKeyConsoleUrl(InferenceProviderType.melious),
+          equals('melious.ai'),
         );
         expect(
           aiProviderKeyConsoleUrl(InferenceProviderType.mistral),

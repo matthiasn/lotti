@@ -1668,6 +1668,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderGenericOpenAiName => 'OpenAI Compatible';
 
   @override
+  String get aiProviderMeliousDescription =>
+      'European-hosted inference with a dynamic model catalog, routing, audio, and images';
+
+  @override
+  String get aiProviderMeliousName => 'Melious.ai';
+
+  @override
   String get aiProviderMistralDescription =>
       'Mistral AI cloud API with native audio transcription';
 
@@ -1740,6 +1747,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiProviderTaglineGemini => 'Multimodal · audio transcription';
+
+  @override
+  String get aiProviderTaglineMelious =>
+      'EU-hosted · dynamic catalog · eco routing';
 
   @override
   String get aiProviderTaglineMlxAudio =>

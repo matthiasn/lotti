@@ -153,6 +153,7 @@ String? aiProviderKeyConsoleUrl(InferenceProviderType? type) {
     InferenceProviderType.gemini => 'aistudio.google.com',
     InferenceProviderType.openAi => 'platform.openai.com',
     InferenceProviderType.anthropic => 'console.anthropic.com',
+    InferenceProviderType.melious => 'melious.ai',
     InferenceProviderType.mistral => 'console.mistral.ai',
     InferenceProviderType.alibaba => 'dashscope.console.aliyun.com',
     InferenceProviderType.openRouter => 'openrouter.ai',
@@ -170,6 +171,7 @@ IconData aiProviderIcon(InferenceProviderType? type) {
     InferenceProviderType.anthropic => Icons.psychology_rounded,
     InferenceProviderType.ollama => Icons.computer_rounded,
     InferenceProviderType.omlx => Icons.developer_board_rounded,
+    InferenceProviderType.melious => Icons.eco_rounded,
     InferenceProviderType.mistral => Icons.air_rounded,
     InferenceProviderType.mlxAudio => Icons.memory_rounded,
     InferenceProviderType.alibaba => Icons.cloud_rounded,
@@ -194,6 +196,7 @@ String aiProviderDisplayName({
     InferenceProviderType.mistral => messages.aiProviderMistralName,
     InferenceProviderType.mlxAudio => messages.aiProviderMlxAudioName,
     InferenceProviderType.omlx => messages.aiProviderOmlxName,
+    InferenceProviderType.melious => messages.aiProviderMeliousName,
     InferenceProviderType.alibaba => messages.aiProviderAlibabaName,
     InferenceProviderType.openRouter => messages.aiProviderOpenRouterName,
     InferenceProviderType.nebiusAiStudio =>
@@ -220,6 +223,7 @@ String aiProviderTagline({
     InferenceProviderType.ollama => messages.aiProviderTaglineOllama,
     InferenceProviderType.mlxAudio => messages.aiProviderTaglineMlxAudio,
     InferenceProviderType.omlx => messages.aiProviderTaglineOmlx,
+    InferenceProviderType.melious => messages.aiProviderTaglineMelious,
     InferenceProviderType.alibaba => messages.aiProviderTaglineAlibaba,
     _ => '',
   };

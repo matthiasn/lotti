@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart'
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -14,19 +15,21 @@ import 'package:openai_dart/openai_dart.dart';
 /// Text and image generation paths for [CloudInferenceRepository].
 ///
 /// Routes the single-prompt `generate` and `generateWithImages` flows to the
-/// provider-specific repositories (Ollama, Gemini, Mistral) or, for
+/// provider-specific repositories (Ollama, Gemini, Mistral, Melious) or, for
 /// OpenAI-compatible providers, builds the request via the shared
 /// [CloudInferenceRequestHelpers] and streams from an [OpenAIClient].
 class CloudInferenceGenerate {
   CloudInferenceGenerate({
     required this._ollamaRepository,
     required this._geminiRepository,
+    required this._meliousRepository,
     required this._mistralRepository,
     required this._helpers,
   });
 
   final OllamaInferenceRepository _ollamaRepository;
   final GeminiInferenceRepository _geminiRepository;
+  final MeliousInferenceRepository _meliousRepository;
   final MistralInferenceRepository _mistralRepository;
   final CloudInferenceRequestHelpers _helpers;
 
@@ -90,6 +93,21 @@ class CloudInferenceGenerate {
     if (provider != null &&
         provider.inferenceProviderType == InferenceProviderType.mistral) {
       return _mistralRepository.generateText(
+        prompt: prompt,
+        model: model,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        systemMessage: systemMessage,
+        temperature: temperature,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+        toolChoice: toolChoice,
+      );
+    }
+
+    if (provider != null &&
+        provider.inferenceProviderType == InferenceProviderType.melious) {
+      return _meliousRepository.generateText(
         prompt: prompt,
         model: model,
         baseUrl: baseUrl,
@@ -167,6 +185,20 @@ class CloudInferenceGenerate {
         maxCompletionTokens: maxCompletionTokens,
         provider: provider!,
         systemMessage: systemMessage,
+      );
+    }
+
+    if (provider?.inferenceProviderType == InferenceProviderType.melious) {
+      return _meliousRepository.generateWithImages(
+        prompt: prompt,
+        model: model,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        images: images,
+        systemMessage: systemMessage,
+        temperature: temperature,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
       );
     }
 

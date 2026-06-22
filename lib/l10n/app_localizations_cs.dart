@@ -1688,6 +1688,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderGenericOpenAiName => 'Kompatibilní s OpenAI';
 
   @override
+  String get aiProviderMeliousDescription =>
+      'Inference hostovaná v Evropě s dynamickým katalogem modelů, směrováním, zvukem a obrázky';
+
+  @override
+  String get aiProviderMeliousName => 'Melious.ai';
+
+  @override
   String get aiProviderMistralDescription =>
       'Mistral AI cloudové API s nativním přepisem zvuku';
 
@@ -1760,6 +1767,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiProviderTaglineGemini => 'Multimodální · přepis zvuku';
+
+  @override
+  String get aiProviderTaglineMelious =>
+      'Hostováno v EU · dynamický katalog · eko směrování';
 
   @override
   String get aiProviderTaglineMlxAudio =>

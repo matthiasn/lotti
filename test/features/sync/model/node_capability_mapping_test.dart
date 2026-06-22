@@ -80,6 +80,7 @@ void main() {
         InferenceProviderType.anthropic,
         InferenceProviderType.gemini,
         InferenceProviderType.genericOpenAi,
+        InferenceProviderType.melious,
         InferenceProviderType.mistral,
         InferenceProviderType.nebiusAiStudio,
         InferenceProviderType.openAi,

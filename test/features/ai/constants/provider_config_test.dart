@@ -12,6 +12,7 @@ void main() {
             InferenceProviderType.alibaba,
             InferenceProviderType.gemini,
             InferenceProviderType.genericOpenAi,
+            InferenceProviderType.melious,
             InferenceProviderType.mistral,
             InferenceProviderType.mlxAudio,
             InferenceProviderType.nebiusAiStudio,
@@ -58,6 +59,13 @@ void main() {
         );
       });
 
+      test('should have correct URL for melious', () {
+        expect(
+          ProviderConfig.defaultBaseUrls[InferenceProviderType.melious],
+          equals('https://api.melious.ai/v1'),
+        );
+      });
+
       test('should have correct URL for openRouter', () {
         expect(
           ProviderConfig.defaultBaseUrls[InferenceProviderType.openRouter],
@@ -81,6 +89,7 @@ void main() {
             InferenceProviderType.alibaba,
             InferenceProviderType.gemini,
             InferenceProviderType.genericOpenAi,
+            InferenceProviderType.melious,
             InferenceProviderType.mistral,
             InferenceProviderType.mlxAudio,
             InferenceProviderType.nebiusAiStudio,
@@ -116,6 +125,13 @@ void main() {
         expect(
           ProviderConfig.defaultNames[InferenceProviderType.genericOpenAi],
           equals('AI Proxy (local)'),
+        );
+      });
+
+      test('should have correct name for melious', () {
+        expect(
+          ProviderConfig.defaultNames[InferenceProviderType.melious],
+          equals('Melious.ai'),
         );
       });
 
@@ -163,6 +179,10 @@ void main() {
         expect(
           ProviderConfig.noApiKeyRequired,
           isNot(contains(InferenceProviderType.anthropic)),
+        );
+        expect(
+          ProviderConfig.noApiKeyRequired,
+          isNot(contains(InferenceProviderType.melious)),
         );
         // genericOpenAi (OpenAI Compatible) requires API key for authentication
         expect(

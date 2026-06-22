@@ -17,6 +17,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderGeminiName;
       case InferenceProviderType.genericOpenAi:
         return context.messages.aiProviderGenericOpenAiName;
+      case InferenceProviderType.melious:
+        return context.messages.aiProviderMeliousName;
       case InferenceProviderType.mistral:
         return context.messages.aiProviderMistralName;
       case InferenceProviderType.mlxAudio:
@@ -50,6 +52,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderGeminiDescription;
       case InferenceProviderType.genericOpenAi:
         return context.messages.aiProviderGenericOpenAiDescription;
+      case InferenceProviderType.melious:
+        return context.messages.aiProviderMeliousDescription;
       case InferenceProviderType.mistral:
         return context.messages.aiProviderMistralDescription;
       case InferenceProviderType.mlxAudio:
@@ -83,6 +87,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return Icons.psychology;
       case InferenceProviderType.gemini:
         return Icons.diamond;
+      case InferenceProviderType.melious:
+        return Icons.eco;
       case InferenceProviderType.mistral:
         return Icons.record_voice_over;
       case InferenceProviderType.mlxAudio:

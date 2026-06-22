@@ -663,6 +663,7 @@ void main() {
     const whitespaceAtoms = ['', ' ', '  ', '\t', '\n', '\r', ' \t '];
     const cloudTypes = [
       InferenceProviderType.gemini,
+      InferenceProviderType.melious,
       InferenceProviderType.openAi,
       InferenceProviderType.anthropic,
       InferenceProviderType.omlx,
@@ -737,8 +738,9 @@ void main() {
     );
 
     test(
-      'OpenAI-compatible probe (OpenAI / OpenRouter / Mistral / Alibaba / oMLX) '
-      'targets `<baseUrl>/models` with a Bearer Authorization header',
+      'OpenAI-compatible probe (OpenAI / OpenRouter / Mistral / Melious / '
+      'Alibaba / oMLX) targets `<baseUrl>/models` with a Bearer '
+      'Authorization header',
       () async {
         http.BaseRequest? captured;
         final container = _makeContainer(

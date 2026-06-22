@@ -397,6 +397,119 @@ void main() {
     );
 
     test(
+      'adds oMLX Whisper Turbo to untouched local oMLX profiles',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestModel(
+              id: 'model-omlx-qwen36',
+              providerModelId: omlxRecommendedMultimodalModelId,
+            ),
+            AiTestDataFactory.createTestModel(
+              id: 'model-omlx-gemma4',
+              providerModelId: omlxGemma426BA4BItQatMlx4BitModelId,
+            ),
+            AiTestDataFactory.createTestModel(
+              id: 'model-omlx-whisper-turbo',
+              providerModelId: omlxWhisperLargeV3TurboModelId,
+            ),
+          ],
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileLocalPowerId,
+              name: 'Local Power (oMLX)',
+              thinkingModelId: 'model-omlx-qwen36',
+              imageRecognitionModelId: 'model-omlx-qwen36',
+              desktopOnly: true,
+              createdAt: DateTime(2026),
+            ),
+            AiConfig.inferenceProfile(
+              id: profileLocalGemmaOmlxId,
+              name: 'Local Gemma 4 (oMLX)',
+              thinkingModelId: 'model-omlx-gemma4',
+              imageRecognitionModelId: 'model-omlx-gemma4',
+              desktopOnly: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        expect(captured, hasLength(2));
+
+        for (final config in captured) {
+          final upgraded = config as AiConfigInferenceProfile;
+          expect(
+            upgraded.transcriptionModelId,
+            'model-omlx-whisper-turbo',
+          );
+          expect(
+            upgraded.skillAssignments.map((a) => a.skillId),
+            containsAll([
+              skillTranscribeContextId,
+              skillImageAnalysisContextId,
+            ]),
+          );
+        }
+      },
+    );
+
+    test(
+      'does not enable oMLX transcription skill without Whisper model row',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestModel(
+              id: 'model-omlx-qwen36',
+              providerModelId: omlxRecommendedMultimodalModelId,
+            ),
+          ],
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileLocalPowerId,
+              name: 'Local Power (oMLX)',
+              thinkingModelId: 'model-omlx-qwen36',
+              imageRecognitionModelId: 'model-omlx-qwen36',
+              desktopOnly: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        final upgraded = captured.single as AiConfigInferenceProfile;
+        final skillIds = upgraded.skillAssignments.map((a) => a.skillId);
+
+        expect(
+          upgraded.transcriptionModelId,
+          omlxWhisperLargeV3TurboModelId,
+        );
+        expect(skillIds, contains(skillImageAnalysisContextId));
+        expect(skillIds, isNot(contains(skillTranscribeContextId)));
+      },
+    );
+
+    test(
       'preserves user-edited Local Power profiles during oMLX migration',
       () async {
         when(

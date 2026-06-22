@@ -39,10 +39,12 @@ void main() {
   });
 
   group('ProfileSeedingService', () {
-    test('seeds all 11 default profiles when none exist', () async {
+    test('seeds all default profiles when none exist', () async {
       await service.seedDefaults();
 
-      verify(() => mockRepo.saveConfig(any())).called(11);
+      verify(
+        () => mockRepo.saveConfig(any()),
+      ).called(ProfileSeedingService.defaultProfiles.length);
     });
 
     test('skips profiles that already exist', () async {
@@ -72,8 +74,10 @@ void main() {
 
       await service.seedDefaults();
 
-      // Only 10 profiles should be saved (Gemini Flash skipped).
-      verify(() => mockRepo.saveConfig(any())).called(10);
+      // Only the missing profiles should be saved (Gemini Flash skipped).
+      verify(
+        () => mockRepo.saveConfig(any()),
+      ).called(ProfileSeedingService.defaultProfiles.length - 1);
     });
 
     test(
@@ -118,9 +122,11 @@ void main() {
 
         await service.seedDefaults();
 
-        // Only the 10 missing profiles get written. The existing Local
+        // Only the missing profiles get written. The existing Local
         // profile is left untouched — user edit survives.
-        verify(() => mockRepo.saveConfig(any())).called(10);
+        verify(
+          () => mockRepo.saveConfig(any()),
+        ).called(ProfileSeedingService.defaultProfiles.length - 1);
         verifyNever(
           () => mockRepo.saveConfig(
             any(
@@ -154,9 +160,11 @@ void main() {
 
         await service.seedDefaults();
 
-        // 10 new profiles only — the Local profile is not re-asserted to
+        // Missing profiles only — the Local profile is not re-asserted to
         // isDefault: true.
-        verify(() => mockRepo.saveConfig(any())).called(10);
+        verify(
+          () => mockRepo.saveConfig(any()),
+        ).called(ProfileSeedingService.defaultProfiles.length - 1);
       },
     );
 
@@ -169,6 +177,7 @@ void main() {
         profileGeminiProId,
         profileOpenAiId,
         profileMistralEuId,
+        profileMeliousId,
         profileAlibabaId,
         profileAnthropicId,
         profileLocalId,
@@ -200,8 +209,10 @@ void main() {
 
         await service.seedDefaults();
 
-        // 10 new profiles only — Local profile preserved as-is.
-        verify(() => mockRepo.saveConfig(any())).called(10);
+        // Missing profiles only — Local profile preserved as-is.
+        verify(
+          () => mockRepo.saveConfig(any()),
+        ).called(ProfileSeedingService.defaultProfiles.length - 1);
       },
     );
 
@@ -229,8 +240,59 @@ void main() {
         powerProfile.imageRecognitionModelId,
         omlxRecommendedMultimodalModelId,
       );
+      expect(
+        powerProfile.transcriptionModelId,
+        omlxWhisperLargeV3TurboModelId,
+      );
+      expect(
+        powerProfile.skillAssignments.map((a) => a.skillId),
+        containsAll([
+          skillTranscribeContextId,
+          skillImageAnalysisContextId,
+        ]),
+      );
       expect(powerProfile.isDefault, isFalse);
     });
+
+    test(
+      'Melious profile wires thinking, high-end, vision, and Whisper',
+      () async {
+        final capturedConfigs = <AiConfig>[];
+        when(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).thenAnswer((invocation) async {
+          capturedConfigs.add(
+            invocation.positionalArguments.first as AiConfig,
+          );
+        });
+
+        await service.seedDefaults();
+
+        final meliousProfile = capturedConfigs
+            .whereType<AiConfigInferenceProfile>()
+            .where((p) => p.id == profileMeliousId)
+            .first;
+
+        expect(meliousProfile.name, 'Melious.ai');
+        expect(
+          meliousProfile.thinkingModelId,
+          meliousMistralSmall4119BInstructModelId,
+        );
+        expect(
+          meliousProfile.thinkingHighEndModelId,
+          meliousDeepseekV4ProModelId,
+        );
+        expect(
+          meliousProfile.imageRecognitionModelId,
+          meliousMistralSmall4119BInstructModelId,
+        );
+        expect(
+          meliousProfile.transcriptionModelId,
+          meliousWhisperLargeV3TurboModelId,
+        );
+        expect(meliousProfile.isDefault, isTrue);
+      },
+    );
 
     test('local Gemma 4 oMLX profile has correct configuration', () async {
       final capturedConfigs = <AiConfig>[];
@@ -258,6 +320,17 @@ void main() {
       expect(
         gemmaProfile.imageRecognitionModelId,
         omlxGemma426BA4BItQatMlx4BitModelId,
+      );
+      expect(
+        gemmaProfile.transcriptionModelId,
+        omlxWhisperLargeV3TurboModelId,
+      );
+      expect(
+        gemmaProfile.skillAssignments.map((a) => a.skillId),
+        containsAll([
+          skillTranscribeContextId,
+          skillImageAnalysisContextId,
+        ]),
       );
       expect(gemmaProfile.isDefault, isFalse);
     });
@@ -335,8 +408,6 @@ void main() {
       for (final config in capturedConfigs) {
         final profile = config as AiConfigInferenceProfile;
         // Power profiles have no skill assignments (opt-in profiles).
-        if (profile.id == profileLocalPowerId) continue;
-        if (profile.id == profileLocalGemmaOmlxId) continue;
         if (profile.id == profileLocalGemmaPowerId) continue;
         expect(
           profile.skillAssignments,

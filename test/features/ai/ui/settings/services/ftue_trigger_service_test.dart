@@ -620,6 +620,7 @@ void main() {
       test('does not contain unsupported types', () {
         for (final type in const [
           InferenceProviderType.genericOpenAi,
+          InferenceProviderType.melious,
           InferenceProviderType.mlxAudio,
           InferenceProviderType.omlx,
           InferenceProviderType.whisper,

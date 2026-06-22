@@ -92,6 +92,7 @@ getOpenAiFtueKnownModels() {
 const ftueAlibabaCategoryName = 'Test Category Alibaba Enabled';
 const ftueAnthropicCategoryName = 'Test Category Anthropic Enabled';
 const ftueGeminiCategoryName = 'Test Category Gemini Enabled';
+const ftueMeliousCategoryName = 'Test Category Melious Enabled';
 const ftueOllamaCategoryName = 'Test Category Ollama Enabled';
 const ftueOpenAiCategoryName = 'Test Category OpenAI Enabled';
 const ftueMistralCategoryName = 'Test Category Mistral Enabled';
@@ -100,6 +101,7 @@ const ftueMistralCategoryName = 'Test Category Mistral Enabled';
 const ftueAlibabaCategoryColor = '#FF6D00'; // Alibaba Orange
 const ftueAnthropicCategoryColor = '#D97757'; // Anthropic Cinnamon
 const ftueGeminiCategoryColor = '#4285F4'; // Google Blue
+const ftueMeliousCategoryColor = '#14B8A6'; // Melious Teal
 const ftueOllamaCategoryColor = '#0F172A'; // Ollama Charcoal
 const ftueOpenAiCategoryColor = '#10A37F'; // OpenAI Green
 const ftueMistralCategoryColor = '#FF7000'; // Mistral Orange
@@ -207,6 +209,58 @@ getMistralFtueKnownModels() {
   }
 
   return (flash: flash, reasoning: reasoning, audio: audio);
+}
+
+// =============================================================================
+// Melious FTUE (First Time User Experience) Model Constants
+// =============================================================================
+
+/// Model IDs used for Melious FTUE automation.
+const String ftueMeliousThinkingModelId =
+    meliousMistralSmall4119BInstructModelId;
+const String ftueMeliousAdvancedThinkingModelId = meliousDeepseekV4ProModelId;
+const String ftueMeliousWhisperModelId = meliousWhisperLargeV3ModelId;
+const String ftueMeliousWhisperTurboModelId = meliousWhisperLargeV3TurboModelId;
+
+/// Finds a KnownModel by its provider model ID from the meliousModels list.
+/// Returns null if not found.
+KnownModel? findMeliousKnownModel(String providerModelId) {
+  return meliousModels.firstWhereOrNull(
+    (model) => model.providerModelId == providerModelId,
+  );
+}
+
+/// Returns the KnownModel configurations needed for Melious FTUE.
+/// - Thinking/vision model for the default Melious profile
+/// - Advanced thinking model for the high-end slot
+/// - Whisper Large v3 and Turbo for speech-to-text testing
+({
+  KnownModel thinking,
+  KnownModel advancedThinking,
+  KnownModel whisper,
+  KnownModel whisperTurbo,
+})?
+getMeliousFtueKnownModels() {
+  final thinking = findMeliousKnownModel(ftueMeliousThinkingModelId);
+  final advancedThinking = findMeliousKnownModel(
+    ftueMeliousAdvancedThinkingModelId,
+  );
+  final whisper = findMeliousKnownModel(ftueMeliousWhisperModelId);
+  final whisperTurbo = findMeliousKnownModel(ftueMeliousWhisperTurboModelId);
+
+  if (thinking == null ||
+      advancedThinking == null ||
+      whisper == null ||
+      whisperTurbo == null) {
+    return null;
+  }
+
+  return (
+    thinking: thinking,
+    advancedThinking: advancedThinking,
+    whisper: whisper,
+    whisperTurbo: whisperTurbo,
+  );
 }
 
 // =============================================================================

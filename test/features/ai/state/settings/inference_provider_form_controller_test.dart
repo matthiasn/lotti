@@ -32,6 +32,7 @@ enum _GeneratedProviderFormTypeSlot {
   anthropic,
   gemini,
   genericOpenAi,
+  melious,
   mistral,
   nebiusAiStudio,
   omlx,
@@ -62,6 +63,7 @@ InferenceProviderType _generatedProviderType(
     _GeneratedProviderFormTypeSlot.gemini => InferenceProviderType.gemini,
     _GeneratedProviderFormTypeSlot.genericOpenAi =>
       InferenceProviderType.genericOpenAi,
+    _GeneratedProviderFormTypeSlot.melious => InferenceProviderType.melious,
     _GeneratedProviderFormTypeSlot.mistral => InferenceProviderType.mistral,
     _GeneratedProviderFormTypeSlot.nebiusAiStudio =>
       InferenceProviderType.nebiusAiStudio,

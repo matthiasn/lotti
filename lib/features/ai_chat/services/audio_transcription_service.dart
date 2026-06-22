@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -141,9 +142,9 @@ class AudioTranscriptionService {
 }
 
 /// Test-only access to the batch audio-model selection priority, so its
-/// ordering algebra (Mistral-offline > Mistral-batch > MLX-Qwen >
-/// flash-preferred > first) can be property-tested without driving the
-/// streaming pipeline.
+/// ordering algebra (Mistral-offline > Mistral-batch > Melious-STT >
+/// MLX-Qwen > flash-preferred > first) can be property-tested without driving
+/// the streaming pipeline.
 @visibleForTesting
 AiConfigModel debugSelectBatchAudioModel(
   List<AiConfigModel> audioModels,
@@ -179,6 +180,17 @@ AiConfigModel _selectBatchAudioModel(
   );
   if (mistralBatch != null) {
     return mistralBatch;
+  }
+
+  final meliousTranscription = audioModels.firstWhereOrNull(
+    (model) =>
+        hasProviderType(model, InferenceProviderType.melious) &&
+        MeliousInferenceRepository.isMeliousTranscriptionModel(
+          model.providerModelId,
+        ),
+  );
+  if (meliousTranscription != null) {
+    return meliousTranscription;
   }
 
   final mlxQwen = audioModels.firstWhereOrNull(

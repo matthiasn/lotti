@@ -75,6 +75,10 @@ class ProviderChipConstants {
       dark: Color(0xFFA78BFA),
       light: Color(0xFF9C27B0), // Purple
     ),
+    InferenceProviderType.melious: (
+      dark: Color(0xFF64D8A9),
+      light: Color(0xFF0E9F6E), // Green
+    ),
     InferenceProviderType.nebiusAiStudio: (
       dark: Color(0xFFF06292),
       light: Color(0xFFE91E63), // Pink

@@ -16,6 +16,7 @@ enum InferenceProviderType {
   anthropic,
   gemini,
   genericOpenAi,
+  melious,
   mistral,
   mlxAudio,
   nebiusAiStudio,

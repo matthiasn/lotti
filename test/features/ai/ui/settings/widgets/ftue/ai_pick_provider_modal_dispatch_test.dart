@@ -18,13 +18,13 @@ void main() {
             .map((t) => t.providerType)
             .toList();
 
-        // First eight tiles match the FTUE lineup verbatim.
+        // First nine tiles match the FTUE lineup verbatim.
         expect(
-          types.take(8),
+          types.take(9),
           AiPickProviderModal.defaultTiles.map((t) => t.providerType),
         );
         // Remaining five are the advanced types appended alphabetically.
-        expect(types.skip(8).toList(), [
+        expect(types.skip(9).toList(), [
           InferenceProviderType.genericOpenAi,
           InferenceProviderType.mistral,
           InferenceProviderType.nebiusAiStudio,
@@ -102,7 +102,7 @@ void main() {
       'in-form type switcher, both of which must surface genericOpenAi, '
       'OpenRouter, Nebius, Mistral, and Whisper alongside the FTUE seven',
       (tester) async {
-        // Tall surface so all thirteen tiles + actions fit without
+        // Tall surface so all fourteen tiles + actions fit without
         // off-stage hit-testing complications.
         await tester.binding.setSurfaceSize(const Size(800, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));

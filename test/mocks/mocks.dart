@@ -68,6 +68,7 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
@@ -77,6 +78,7 @@ import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
@@ -943,6 +945,30 @@ class MockTaskAgentWorkflow extends Mock implements TaskAgentWorkflow {}
 class MockTaskToolDispatcher extends Mock implements TaskToolDispatcher {}
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+
+class FakeMeliousInferenceRepository extends MeliousInferenceRepository {
+  FakeMeliousInferenceRepository(this._results);
+
+  final List<Future<List<KnownModel>> Function()> _results;
+  final calls = <({String baseUrl, String apiKey})>[];
+  var _index = 0;
+
+  @override
+  Future<List<KnownModel>> listModels({
+    required String baseUrl,
+    required String apiKey,
+    Duration timeout = const Duration(seconds: 15),
+  }) {
+    calls.add((baseUrl: baseUrl, apiKey: apiKey));
+    final resultIndex = _index < _results.length ? _index : _results.length - 1;
+    final result = _results[resultIndex];
+    _index++;
+    return result();
+  }
+
+  @override
+  void close() {}
+}
 
 class MockOnboardingMetricsRepository extends Mock
     implements OnboardingMetricsRepository {}

@@ -301,9 +301,10 @@ class ProfileAutomationService {
       return 2;
     }
     if (type == InferenceProviderType.mistral) return 3;
-    if (type == InferenceProviderType.openAi) return 4;
-    if (type == InferenceProviderType.whisper) return 5;
-    if (type == InferenceProviderType.voxtral) return 6;
+    if (type == InferenceProviderType.melious) return 4;
+    if (type == InferenceProviderType.openAi) return 5;
+    if (type == InferenceProviderType.whisper) return 6;
+    if (type == InferenceProviderType.voxtral) return 7;
     return 10;
   }
 
