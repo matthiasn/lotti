@@ -812,6 +812,21 @@ void main() {
     );
   });
 
+  test('batch selector prefers Melious transcription before MLX and flash', () {
+    final inputs = _buildSelectionInputs([
+      _ModelKind.mlxQwen,
+      _ModelKind.geminiFlash,
+      _ModelKind.meliousWhisper,
+    ]);
+
+    final selected = debugSelectBatchAudioModel(
+      inputs.models,
+      inputs.providers,
+    );
+
+    expect(selected.providerModelId, 'openai/whisper-large-v3');
+  });
+
   group('batch model-selection priority (property)', () {
     glados.Glados<List<_ModelKind>>(
       glados.any.nonEmptyList(glados.any.choose(_ModelKind.values)),

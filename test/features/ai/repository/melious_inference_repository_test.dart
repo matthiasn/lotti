@@ -297,6 +297,20 @@ void main() {
       expect(requestString, contains('data:image/jpeg;base64,abc123'));
     });
 
+    test('generateText uses default OpenAI-compatible stream factory', () {
+      final repository = MeliousInferenceRepository();
+      addTearDown(repository.close);
+
+      final stream = repository.generateText(
+        prompt: 'Say hello',
+        model: 'minimax-m2.7',
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+      );
+
+      expect(stream.isBroadcast, isTrue);
+    });
+
     test('listModels surfaces provider error messages', () async {
       final repository = MeliousInferenceRepository(
         httpClient: MockClient((_) async {
@@ -331,6 +345,24 @@ void main() {
       expect(
         () => repository.listModels(baseUrl: baseUrl, apiKey: ''),
         throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('listModels wraps malformed JSON responses', () async {
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async => http.Response('{', 200)),
+      );
+      addTearDown(repository.close);
+
+      await expectLater(
+        repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
+        throwsA(
+          isA<MeliousInferenceException>().having(
+            (e) => e.message,
+            'message',
+            'Melious model list response was not valid JSON',
+          ),
+        ),
       );
     });
 
@@ -825,6 +857,27 @@ void main() {
             (e) => e.message,
             'message',
             'Melious image generation response was not valid JSON',
+          ),
+        ),
+      );
+
+      final timeoutRepository = MeliousInferenceRepository(
+        httpClient: MockClient((_) => Completer<http.Response>().future),
+      );
+      addTearDown(timeoutRepository.close);
+
+      await expectLater(
+        timeoutRepository.generateImage(
+          prompt: 'a quiet lake',
+          model: 'flux-2-klein',
+          provider: meliousProvider(),
+          timeout: Duration.zero,
+        ),
+        throwsA(
+          isA<MeliousInferenceException>().having(
+            (e) => e.message,
+            'message',
+            'Melious image generation request timed out',
           ),
         ),
       );

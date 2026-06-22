@@ -483,6 +483,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     List<ProcessedReferenceImage>? referenceImages,
+    Duration timeout = const Duration(seconds: 180),
   }) async {
     imageCalls.add((prompt: prompt, model: model, provider: provider));
     return const GeneratedImage(bytes: [9, 8, 7], mimeType: 'image/png');

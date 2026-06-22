@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
     show AvailableModelsSection, meliousInferenceRepositoryProvider;
@@ -67,6 +68,13 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
 
   @override
   void close() {}
+}
+
+class _ErrorAiConfigByTypeController extends AiConfigByTypeController {
+  @override
+  Stream<List<AiConfig>> build({required AiConfigType configType}) {
+    return Stream.error(Exception('model stream failed'));
+  }
 }
 
 /// Sets the test surface size for the duration of the test.
@@ -253,6 +261,24 @@ void main() {
   }
 
   group('InferenceProviderEditPage', () {
+    test(
+      'meliousInferenceRepositoryProvider wires the real reusable repository',
+      () async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final repository = container.read(meliousInferenceRepositoryProvider);
+        expect(
+          container.read(meliousInferenceRepositoryProvider),
+          same(repository),
+        );
+        await expectLater(
+          repository.listModels(baseUrl: '', apiKey: 'sk-mel-test'),
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
+
     testWidgets('displays correct title for new provider', (
       WidgetTester tester,
     ) async {
@@ -1717,6 +1743,9 @@ void main() {
           ProviderScope(
             overrides: [
               aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+              aiConfigByTypeControllerProvider(
+                configType: AiConfigType.model,
+              ).overrideWith(_ErrorAiConfigByTypeController.new),
               meliousInferenceRepositoryProvider.overrideWithValue(
                 fakeMeliousRepository,
               ),

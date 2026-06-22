@@ -320,6 +320,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     List<ProcessedReferenceImage>? referenceImages,
+    Duration timeout = _imageGenerationTimeout,
   }) async {
     if (prompt.trim().isEmpty) {
       throw ArgumentError('Prompt cannot be empty');
@@ -359,7 +360,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
             },
             body: jsonEncode(body),
           )
-          .timeout(_imageGenerationTimeout);
+          .timeout(timeout);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw MeliousInferenceException(

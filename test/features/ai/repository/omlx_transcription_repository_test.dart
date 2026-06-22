@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -215,6 +216,32 @@ void main() {
           isA<TranscriptionException>()
               .having((e) => e.statusCode, 'statusCode', 401)
               .having((e) => e.message, 'message', 'API key required'),
+        ),
+      );
+    });
+
+    test('wraps request timeouts with provider metadata', () async {
+      final repo = OmlxTranscriptionRepository(
+        httpClient: MockClient.streaming((_, _) {
+          return Completer<http.StreamedResponse>().future;
+        }),
+      );
+      addTearDown(repo.close);
+
+      await expectLater(
+        repo
+            .transcribeAudio(
+              model: omlxWhisperLargeV3ModelId,
+              audioBase64: audioBase64,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              timeout: Duration.zero,
+            )
+            .toList(),
+        throwsA(
+          isA<TranscriptionException>()
+              .having((e) => e.provider, 'provider', 'OmlxTranscription')
+              .having((e) => e.statusCode, 'statusCode', 408),
         ),
       );
     });
