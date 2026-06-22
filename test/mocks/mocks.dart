@@ -71,6 +71,7 @@ import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/omlx_inference_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
@@ -957,6 +958,30 @@ class FakeMeliousInferenceRepository extends MeliousInferenceRepository {
   Future<List<KnownModel>> listModels({
     required String baseUrl,
     required String apiKey,
+    Duration timeout = const Duration(seconds: 15),
+  }) {
+    calls.add((baseUrl: baseUrl, apiKey: apiKey));
+    final resultIndex = _index < _results.length ? _index : _results.length - 1;
+    final result = _results[resultIndex];
+    _index++;
+    return result();
+  }
+
+  @override
+  void close() {}
+}
+
+class FakeOmlxInferenceRepository extends OmlxInferenceRepository {
+  FakeOmlxInferenceRepository(this._results);
+
+  final List<Future<List<KnownModel>> Function()> _results;
+  final calls = <({String baseUrl, String apiKey})>[];
+  var _index = 0;
+
+  @override
+  Future<List<KnownModel>> listModels({
+    required String baseUrl,
+    String apiKey = '',
     Duration timeout = const Duration(seconds: 15),
   }) {
     calls.add((baseUrl: baseUrl, apiKey: apiKey));

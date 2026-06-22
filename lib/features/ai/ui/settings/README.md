@@ -204,27 +204,40 @@ Persisted rows that predate the field deserialize with
 #### Dynamic Provider Catalogs
 
 The provider edit form normally renders the static `knownModelsByProvider`
-catalog for the selected provider type. Melious.ai is the exception: when
-editing a saved Melious provider, `AvailableModelsSection` fetches the live
-catalog from the provider's configured base URL using the saved API key. The
-response is translated by `MeliousInferenceRepository.listModels()` into the
-same `KnownModel` shape used by static catalogs, so the UI can reuse the
-existing install tile and "Added" state.
+catalog for the selected provider type. Melious.ai and oMLX are the dynamic
+exceptions: for saved providers of either type, `AvailableModelsSection`
+fetches the live catalog from the provider's configured base URL. The same
+section is also embedded in the provider detail page before the installed
+`Models · N` list, so the endpoint-backed catalog is visible where users manage
+that provider. Melious uses the saved API key and `/models?include_meta=true`;
+oMLX calls the local OpenAI-compatible `/models` endpoint and only sends bearer
+auth when an API key is configured. The responses are translated into the same
+`KnownModel` shape used by static catalogs, so the UI can reuse the existing
+install tile and "Added" state.
 
 ```mermaid
 sequenceDiagram
-  participant Form as Provider edit form
+  participant UI as Provider detail/edit UI
   participant Repo as AiConfigRepository
   participant Melious as MeliousInferenceRepository
+  participant Omlx as OmlxInferenceRepository
   participant API as Melious /models
+  participant Local as oMLX /models
 
-  Form->>Repo: load saved provider by ID
-  Repo-->>Form: base URL + API key
-  Form->>Melious: listModels(baseUrl, apiKey)
+  UI->>Repo: load saved provider by ID
+  Repo-->>UI: base URL + API key
+  alt Melious.ai
+  UI->>Melious: listModels(baseUrl, apiKey)
   Melious->>API: GET /models?include_meta=true
   API-->>Melious: data[] with _meta capabilities
-  Melious-->>Form: KnownModel[]
-  Form->>Repo: save AiConfig.model when user taps Add
+  Melious-->>UI: KnownModel[]
+  else oMLX
+  UI->>Omlx: listModels(baseUrl, apiKey?)
+  Omlx->>Local: GET /models
+  Local-->>Omlx: OpenAI-compatible data[] model IDs
+  Omlx-->>UI: KnownModel[]
+  end
+  UI->>Repo: save AiConfig.model when user taps Add
 ```
 
 #### Per-tab body builders (`ai_settings_tab_builders.dart`)

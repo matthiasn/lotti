@@ -243,6 +243,16 @@ and image recognition, `deepseek-v4-pro` for the high-end thinking slot, and
 `whisper-large-v3-turbo` for transcription. FTUE setup creates both Whisper
 rows so users can switch between the regular and Turbo variants.
 
+Melious and oMLX provider settings also use live catalogs. The provider detail
+page and edit form render the same `AvailableModelsSection`, so endpoint-backed
+rows can be installed from the screen that also shows the provider's configured
+`Models · N` count. oMLX calls `GET /models` on the configured local
+OpenAI-compatible base URL, then maps returned IDs into installable
+`KnownModel` rows. IDs that match the bundled oMLX catalog keep their curated
+modality and reasoning metadata; Whisper/ASR/STT-looking IDs are treated as
+audio-to-text transcription models; unknown local IDs remain installable as text
+models.
+
 ## Developer Eval Tool
 
 `tool/qwen_local_inference_eval.sh` is a narrow local oMLX/OpenAI-compatible

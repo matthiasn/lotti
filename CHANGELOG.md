@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   routes voice-note transcription through the local OpenAI-compatible
   `/audio/transcriptions` endpoint instead of chat completions. Untouched local
   oMLX default profiles now use Whisper Large v3 Turbo for transcription.
+- oMLX provider settings now fetch the local `/models` endpoint in the
+  Available Models section, so any model exposed by the running oMLX server can
+  be installed directly from the provider edit page.
 
 ### Changed
 - **Accepting or dismissing an AI suggestion is now smooth and calm instead of

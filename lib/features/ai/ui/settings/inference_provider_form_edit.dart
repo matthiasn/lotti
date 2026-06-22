@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/ai/repository/omlx_inference_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit_setup.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
@@ -26,30 +27,44 @@ final meliousInferenceRepositoryProvider =
       return repository;
     });
 
+// Riverpod 3 keeps the concrete auto-dispose provider type internal.
+// ignore: specify_nonobvious_property_types
+final omlxInferenceRepositoryProvider =
+    Provider.autoDispose<OmlxInferenceRepository>((ref) {
+      final repository = OmlxInferenceRepository();
+      ref.onDispose(repository.close);
+      return repository;
+    });
+
 // Riverpod 3 keeps the concrete provider-family type internal, so this family
 // has to rely on inference to remain callable and invalidatable.
 // ignore: specify_nonobvious_property_types
-final _meliousKnownModelsProvider = FutureProvider.autoDispose
+final _dynamicKnownModelsProvider = FutureProvider.autoDispose
     .family<List<KnownModel>, String>((
       ref,
       providerId,
     ) async {
       final repository = ref.read(aiConfigRepositoryProvider);
       final config = await repository.getConfigById(providerId);
-      if (config is! AiConfigInferenceProvider ||
-          config.inferenceProviderType != InferenceProviderType.melious) {
+      if (config is! AiConfigInferenceProvider) {
         return const <KnownModel>[];
       }
 
-      final meliousRepository = ref.read(meliousInferenceRepositoryProvider);
       final baseUrl = config.baseUrl.trim().isEmpty
           ? ProviderConfig.getDefaultBaseUrl(config.inferenceProviderType)
           : config.baseUrl.trim();
 
-      return meliousRepository.listModels(
-        baseUrl: baseUrl,
-        apiKey: config.apiKey,
-      );
+      return switch (config.inferenceProviderType) {
+        InferenceProviderType.melious =>
+          ref
+              .read(meliousInferenceRepositoryProvider)
+              .listModels(baseUrl: baseUrl, apiKey: config.apiKey),
+        InferenceProviderType.omlx =>
+          ref
+              .read(omlxInferenceRepositoryProvider)
+              .listModels(baseUrl: baseUrl, apiKey: config.apiKey),
+        _ => const <KnownModel>[],
+      };
     }, retry: (_, _) => null);
 
 /// Read-only field used to surface the currently-selected provider type
@@ -204,7 +219,8 @@ class AvailableModelsSection extends ConsumerWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
 
-    if (providerType == InferenceProviderType.melious) {
+    if (providerType == InferenceProviderType.melious ||
+        providerType == InferenceProviderType.omlx) {
       return _DynamicAvailableModelsSection(providerId: providerId);
     }
 
@@ -277,7 +293,7 @@ class _DynamicAvailableModelsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final catalogAsync = ref.watch(_meliousKnownModelsProvider(providerId));
+    final catalogAsync = ref.watch(_dynamicKnownModelsProvider(providerId));
     final allModelsAsync = ref.watch(
       aiConfigByTypeControllerProvider(configType: AiConfigType.model),
     );
@@ -405,7 +421,7 @@ class _DynamicModelsError extends ConsumerWidget {
           SizedBox(width: tokens.spacing.step2),
           IconButton(
             onPressed: () =>
-                ref.invalidate(_meliousKnownModelsProvider(providerId)),
+                ref.invalidate(_dynamicKnownModelsProvider(providerId)),
             tooltip: messages.aiProviderConnectionRetryButton,
             icon: const Icon(Icons.refresh_rounded),
           ),

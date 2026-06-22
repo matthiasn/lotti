@@ -1,13 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
+    show meliousInferenceRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -140,13 +144,17 @@ void main() {
     required String providerId,
     bool focusApiKey = false,
     List<NavigatorObserver> navigatorObservers = const [],
+    List<Override> overrides = const [],
   }) {
     return makeTestableWidgetNoScroll(
       AiProviderDetailPage(
         providerId: providerId,
         focusApiKey: focusApiKey,
       ),
-      overrides: [aiConfigRepositoryProvider.overrideWithValue(mockRepository)],
+      overrides: [
+        aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+        ...overrides,
+      ],
       navigatorObservers: navigatorObservers,
     );
   }
@@ -158,6 +166,7 @@ void main() {
     required List<AiConfig> profiles,
     bool focusApiKey = false,
     List<NavigatorObserver> navigatorObservers = const [],
+    List<Override> overrides = const [],
   }) async {
     when(
       () => mockRepository.getConfigById(provider?.id ?? 'provider-1'),
@@ -168,6 +177,7 @@ void main() {
         providerId: provider?.id ?? 'provider-1',
         focusApiKey: focusApiKey,
         navigatorObservers: navigatorObservers,
+        overrides: overrides,
       ),
     );
     await tester.pump();
@@ -803,6 +813,90 @@ void main() {
         );
         expect(pushed.configId, isNull);
         expect(pushed.preselectedProviderId, 'gemini-detail-1');
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'Melious detail page exposes fetched provider models as installable '
+      'rows before the configured model list',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = buildProvider(
+          id: 'melious-detail-1',
+          type: InferenceProviderType.melious,
+          name: 'Melious',
+          apiKey: 'sk-mel-test',
+          baseUrl: 'https://api.melious.ai/v1',
+        );
+        final existingModel = buildModel(
+          id: 'configured-melious-model',
+          providerId: provider.id,
+          name: 'Configured Turbo',
+          providerModelId: 'melious-installed',
+        );
+        final fakeMeliousRepo = FakeMeliousInferenceRepository([
+          () async => const [
+            KnownModel(
+              providerModelId: 'melious-installed',
+              name: 'Configured Turbo',
+              inputModalities: [Modality.text],
+              outputModalities: [Modality.text],
+              isReasoningModel: false,
+              description: 'Already configured from the provider catalog.',
+            ),
+            KnownModel(
+              providerModelId: 'melious-live-model',
+              name: 'Melious Live Model',
+              inputModalities: [Modality.text, Modality.image],
+              outputModalities: [Modality.text],
+              isReasoningModel: true,
+              description: 'Fetched from the Melious models endpoint.',
+            ),
+          ],
+        ]);
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: [existingModel],
+          profiles: const <AiConfig>[],
+          overrides: [
+            meliousInferenceRepositoryProvider.overrideWithValue(
+              fakeMeliousRepo,
+            ),
+          ],
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump();
+
+        expect(find.text('Available Models'), findsOneWidget);
+        expect(find.text('Melious Live Model'), findsOneWidget);
+        expect(find.text('Configured Turbo'), findsNWidgets(2));
+        expect(find.text('Added'), findsOneWidget);
+        expect(find.text('Models · 1'), findsOneWidget);
+        expect(fakeMeliousRepo.calls, [
+          (baseUrl: 'https://api.melious.ai/v1', apiKey: 'sk-mel-test'),
+        ]);
+
+        await tester.tap(find.byTooltip('Add this model to your provider'));
+        await tester.pump();
+
+        final captured =
+            verify(
+                  () => mockRepository.saveConfig(captureAny()),
+                ).captured.single
+                as AiConfigModel;
+        expect(captured.inferenceProviderId, provider.id);
+        expect(captured.providerModelId, 'melious-live-model');
+        expect(captured.name, 'Melious Live Model');
+        expect(captured.inputModalities, [Modality.text, Modality.image]);
+        expect(captured.outputModalities, [Modality.text]);
+        expect(captured.isReasoningModel, isTrue);
+
         await settleTimers(tester);
       },
     );

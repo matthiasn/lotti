@@ -17,7 +17,10 @@ import 'package:lotti/features/ai/repository/melious_inference_repository.dart'
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
-    show AvailableModelsSection, meliousInferenceRepositoryProvider;
+    show
+        AvailableModelsSection,
+        meliousInferenceRepositoryProvider,
+        omlxInferenceRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -1443,6 +1446,85 @@ void main() {
         'https://api.melious.ai/v1',
       );
       expect(fakeMeliousRepository.calls.single.apiKey, 'sk-mel-test');
+    });
+
+    testWidgets('renders dynamic oMLX models and existing Added state', (
+      WidgetTester tester,
+    ) async {
+      await _setTestSurface(tester, height: 1600);
+
+      final omlxProvider = AiConfig.inferenceProvider(
+        id: 'omlx-provider-id',
+        name: 'oMLX',
+        baseUrl: '',
+        apiKey: 'local-key',
+        createdAt: DateTime(2024, 3, 15),
+        inferenceProviderType: InferenceProviderType.omlx,
+      );
+      final existingModel = AiConfig.model(
+        id: 'existing-omlx-whisper',
+        name: 'Whisper Large v3 Turbo (oMLX)',
+        providerModelId: omlxWhisperLargeV3TurboModelId,
+        inferenceProviderId: 'omlx-provider-id',
+        createdAt: DateTime(2024, 3, 15),
+        inputModalities: [Modality.audio],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      );
+      final fakeOmlxRepository = FakeOmlxInferenceRepository([
+        () async => const [
+          KnownModel(
+            providerModelId: omlxQwen36A35bA3b4BitModelId,
+            name: 'Qwen 3.6 35B-A3B (oMLX 4-bit)',
+            inputModalities: [Modality.text, Modality.image],
+            outputModalities: [Modality.text],
+            isReasoningModel: true,
+            supportsFunctionCalling: true,
+            description: 'Local multimodal thinking model.',
+          ),
+          KnownModel(
+            providerModelId: omlxWhisperLargeV3TurboModelId,
+            name: 'Whisper Large v3 Turbo (oMLX)',
+            inputModalities: [Modality.audio],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+            description: 'Local audio transcription model.',
+          ),
+        ],
+      ]);
+
+      when(
+        () => mockRepository.getConfigById('omlx-provider-id'),
+      ).thenAnswer((_) async => omlxProvider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value([existingModel]));
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'omlx-provider-id',
+          additionalOverrides: [
+            omlxInferenceRepositoryProvider.overrideWithValue(
+              fakeOmlxRepository,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.ensureVisible(find.text('Available Models'));
+      await tester.pump();
+
+      expect(find.text('Qwen 3.6 35B-A3B (oMLX 4-bit)'), findsOneWidget);
+      expect(find.text('Whisper Large v3 Turbo (oMLX)'), findsOneWidget);
+      expect(find.text('Added'), findsOneWidget);
+      expect(fakeOmlxRepository.calls, hasLength(1));
+      expect(
+        fakeOmlxRepository.calls.single.baseUrl,
+        'http://127.0.0.1:8003/v1',
+      );
+      expect(fakeOmlxRepository.calls.single.apiKey, 'local-key');
     });
 
     testWidgets('shows loading state while Melious catalog is pending', (
