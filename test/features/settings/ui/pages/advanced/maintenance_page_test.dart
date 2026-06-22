@@ -154,7 +154,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
+      // Both welcome CTAs are present — the FTUE welcome step, not some other
+      // surface. (The dim modal is transparent, so the maintenance list stays
+      // in the tree behind it; asserting its absence would be wrong.)
       expect(find.text('Connect your brain'), findsOneWidget);
+      expect(find.text('Look around first'), findsOneWidget);
     });
 
     testWidgets('Onboarding animation gallery pushes the gallery page', (
@@ -174,7 +178,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
+      // The gallery page is on top: its title plus the hero-style and step
+      // chips that only it renders.
       expect(find.text('Onboarding animations'), findsOneWidget);
+      expect(find.text('Constellation'), findsOneWidget);
+      expect(find.text('API key'), findsOneWidget);
     });
 
     testWidgets('page displays expected maintenance options', (tester) async {

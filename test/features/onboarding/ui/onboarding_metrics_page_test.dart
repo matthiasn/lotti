@@ -100,6 +100,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 20));
     }
 
+    // Chrome contract: the page wraps the body and shows the titled header.
+    expect(find.byType(OnboardingMetricsBody), findsOneWidget);
+    expect(find.text('Onboarding Metrics'), findsOneWidget);
+    // ...and the body's derived funnel still renders inside that chrome.
     expect(find.text('Reached real aha'), findsOneWidget);
   });
 
