@@ -131,13 +131,19 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   /// external check-off (an accepted AI proposal, a sync) routed through the
   /// data listener — same sparks, no haptic.
   void _celebrateCheck({required bool interactive}) {
-    // A direct tap also gets a haptic (feedback, not motion). The data-listener
-    // suppression flag is set by the caller *before* it writes the check, so it
-    // is already in place when the change lands back through the listener.
-    if (interactive) unawaited(HapticFeedback.lightImpact());
-    // The visual pop + spark burst honour the user's "celebrate checklist
-    // items" switch and the system reduced-motion setting.
-    if (!ref.read(celebrationPreferencesProvider).checklistItems) return;
+    // Can be driven by the data listener (an accepted AI proposal, a sync), so
+    // the row may already be gone by the time it runs — bail before touching
+    // ref/context on an unmounted state.
+    if (!mounted) return;
+    final prefs = ref.read(celebrationPreferencesProvider);
+    // A direct tap also gets a haptic (feedback, not motion), honouring the
+    // independent haptics switch. The data-listener suppression flag is set by
+    // the caller *before* it writes the check, so it is already in place when
+    // the change lands back through the listener.
+    if (interactive && prefs.haptics) unawaited(HapticFeedback.lightImpact());
+    // The visual pop + spark burst honour the master switch + the "celebrate
+    // checklist items" switch and the system reduced-motion setting.
+    if (!prefs.animateChecklistItems) return;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     if (reduceMotion) return;
@@ -151,6 +157,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     if (checkboxContext != null && _checkboxIsInViewport(checkboxContext)) {
       spawnCompletionBurst(
         checkboxContext,
+        variant: prefs.checklistItemsVariant,
         count: 16,
         sizeScale: 0.7,
         clearCenter: 0.3,
@@ -505,9 +512,10 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                             done: isStrikethrough,
                             // Off → the strike-through still shows, but
                             // applies instantly with no left-to-right wipe.
+                            // Folds in the master switch.
                             animate: ref
                                 .watch(celebrationPreferencesProvider)
-                                .checklistItems,
+                                .animateChecklistItems,
                             text: item.data.title,
                             baseStyle: tokens.typography.styles.body.bodySmall
                                 .copyWith(

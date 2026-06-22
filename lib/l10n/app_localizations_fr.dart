@@ -4969,10 +4969,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Ajouter une photo de couverture';
 
   @override
-  String get eventsChangeCover => 'Changer la couverture';
+  String get eventsAddLabel => 'Ajouter';
 
   @override
-  String get eventsAddLabel => 'Ajouter';
+  String get eventsChangeCover => 'Changer la couverture';
 
   @override
   String get eventsDeleteEvent => 'Supprimer l\'événement';
@@ -7408,6 +7408,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsCelebrationsChecklistTitle => 'Éléments de liste';
 
   @override
+  String get settingsCelebrationsEnabledDescription =>
+      'Interrupteur principal des effets de fin. Désactivé, il masque toutes les animations ; le retour haptique garde son propre réglage.';
+
+  @override
+  String get settingsCelebrationsEnabledTitle => 'Animations de fin';
+
+  @override
   String get settingsCelebrationsHabitsDescription =>
       'Lueur et étincelles quand tu accomplis une habitude';
 
@@ -7415,11 +7422,41 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsCelebrationsHabitsTitle => 'Habitudes';
 
   @override
+  String get settingsCelebrationsHapticsDescription =>
+      'Une brève vibration quand tu termines quelque chose, indépendante de l\'animation.';
+
+  @override
+  String get settingsCelebrationsHapticsTitle => 'Retour haptique de fin';
+
+  @override
+  String get settingsCelebrationsPreviewChecklistItem => 'Coche-moi';
+
+  @override
+  String get settingsCelebrationsPreviewDescription =>
+      'Touche un contrôle pour jouer ton style.';
+
+  @override
+  String get settingsCelebrationsPreviewDone => 'Terminé';
+
+  @override
+  String get settingsCelebrationsPreviewHabit => 'Habitude';
+
+  @override
+  String get settingsCelebrationsPreviewTitle => 'Essayer';
+
+  @override
   String get settingsCelebrationsSectionDescription =>
       'Une petite touche festive quand tu termines quelque chose. Si tu en désactives une, l\'achèvement et son retour haptique restent — seule l\'animation est ignorée.';
 
   @override
   String get settingsCelebrationsSectionTitle => 'Célébrations de fin';
+
+  @override
+  String get settingsCelebrationsStyleDescription =>
+      'Touche une carte pour prévisualiser un style et le choisir.';
+
+  @override
+  String get settingsCelebrationsStyleTitle => 'Style';
 
   @override
   String get settingsCelebrationsSubtitle => 'Célébrations de fin';
@@ -7433,6 +7470,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsCelebrationsTitle => 'Animations';
+
+  @override
+  String get settingsCelebrationsVariantBubbles => 'Bulles';
+
+  @override
+  String get settingsCelebrationsVariantConfetti => 'Confettis';
+
+  @override
+  String get settingsCelebrationsVariantEmbers => 'Braises';
+
+  @override
+  String get settingsCelebrationsVariantFireworks => 'Feux d\'artifice';
+
+  @override
+  String get settingsCelebrationsVariantSparks => 'Étincelles';
 
   @override
   String get settingsConflictsTitle => 'Conflits de synchronisation';

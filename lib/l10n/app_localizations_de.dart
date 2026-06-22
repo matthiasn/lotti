@@ -4928,10 +4928,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Titelbild hinzufügen';
 
   @override
-  String get eventsChangeCover => 'Titelbild ändern';
+  String get eventsAddLabel => 'Hinzufügen';
 
   @override
-  String get eventsAddLabel => 'Hinzufügen';
+  String get eventsChangeCover => 'Titelbild ändern';
 
   @override
   String get eventsDeleteEvent => 'Event löschen';
@@ -7306,6 +7306,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCelebrationsChecklistTitle => 'Checklisten-Einträge';
 
   @override
+  String get settingsCelebrationsEnabledDescription =>
+      'Hauptschalter für alle Abschluss-Effekte. Aus blendet jede Animation aus; Haptik hat ihren eigenen Schalter.';
+
+  @override
+  String get settingsCelebrationsEnabledTitle => 'Abschluss-Animationen';
+
+  @override
   String get settingsCelebrationsHabitsDescription =>
       'Leuchten und Funken, wenn du eine Gewohnheit abschließt';
 
@@ -7313,11 +7320,41 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCelebrationsHabitsTitle => 'Gewohnheiten';
 
   @override
+  String get settingsCelebrationsHapticsDescription =>
+      'Ein kurzes Vibrieren, wenn du etwas abschließt – unabhängig von der Animation.';
+
+  @override
+  String get settingsCelebrationsHapticsTitle => 'Abschluss-Haptik';
+
+  @override
+  String get settingsCelebrationsPreviewChecklistItem => 'Hak mich ab';
+
+  @override
+  String get settingsCelebrationsPreviewDescription =>
+      'Tippe ein Element an, um deinen Stil abzuspielen.';
+
+  @override
+  String get settingsCelebrationsPreviewDone => 'Erledigt';
+
+  @override
+  String get settingsCelebrationsPreviewHabit => 'Gewohnheit';
+
+  @override
+  String get settingsCelebrationsPreviewTitle => 'Ausprobieren';
+
+  @override
   String get settingsCelebrationsSectionDescription =>
       'Eine kleine Feier, wenn du etwas abschließt. Schaltest du eine aus, bleibt der Abschluss samt Haptik erhalten – nur die Animation entfällt.';
 
   @override
   String get settingsCelebrationsSectionTitle => 'Feiern beim Abschließen';
+
+  @override
+  String get settingsCelebrationsStyleDescription =>
+      'Tippe eine Karte an, um einen Stil vorzuschauen und auszuwählen.';
+
+  @override
+  String get settingsCelebrationsStyleTitle => 'Stil';
 
   @override
   String get settingsCelebrationsSubtitle => 'Feiern beim Abschließen';
@@ -7331,6 +7368,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsCelebrationsTitle => 'Animationen';
+
+  @override
+  String get settingsCelebrationsVariantBubbles => 'Blasen';
+
+  @override
+  String get settingsCelebrationsVariantConfetti => 'Konfetti';
+
+  @override
+  String get settingsCelebrationsVariantEmbers => 'Glut';
+
+  @override
+  String get settingsCelebrationsVariantFireworks => 'Feuerwerk';
+
+  @override
+  String get settingsCelebrationsVariantSparks => 'Funken';
 
   @override
   String get settingsConflictsTitle => 'Synchronisierungskonflikte';

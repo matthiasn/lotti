@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
+import 'package:lotti/themes/colors.dart';
 
 /// Wraps [child] with the staged completion celebration used across the app: a
 /// soft accent glow that blooms behind the content, then a burst of sparks
@@ -37,6 +39,7 @@ class CompletionCelebration extends StatefulWidget {
     this.burstSizeScale = 0.8,
     this.burstClearCenter = 0.45,
     this.burstReach = 2.2,
+    this.variant = CelebrationVariant.defaultVariant,
     this.onCelebrate,
     super.key,
   });
@@ -72,6 +75,9 @@ class CompletionCelebration extends StatefulWidget {
   final double burstSizeScale;
   final double burstClearCenter;
   final double burstReach;
+
+  /// Which particle language the burst speaks, and whether the glow runs warm.
+  final CelebrationVariant variant;
 
   /// When true, the [child] itself pops — a single overshoot scale (1 → 1.12 →
   /// 1) in the first quarter of the timeline, landing with the glow bloom.
@@ -127,6 +133,7 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
           // the burst in the overlay — see [spawnCompletionBurst].
           spawnCompletionBurst(
             context,
+            variant: widget.variant,
             origin: widget.burstOrigin,
             count: widget.burstCount,
             sizeScale: widget.burstSizeScale,
@@ -190,6 +197,8 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
                         value: v,
                         staticGlow: reduceMotion,
                         intensity: widget.glowIntensity,
+                        // A warm variant blooms warm; the rest keep the accent.
+                        color: widget.variant.isWarm ? starredGold : null,
                       );
               },
             ),
@@ -219,6 +228,7 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
 /// multiplies the anchor height to set how far the sparks fly.
 void spawnCompletionBurst(
   BuildContext context, {
+  CelebrationVariant variant = CelebrationVariant.defaultVariant,
   Alignment origin = Alignment.center,
   int count = 50,
   double sizeScale = 0.8,
@@ -231,6 +241,10 @@ void spawnCompletionBurst(
   final overlay = Overlay.maybeOf(context);
   final box = context.findRenderObject() as RenderBox?;
   if (overlay == null || box == null || !box.hasSize) return;
+  // Stretch the burst window for variants whose motion reads too fast at the
+  // base timing (bubbles). Centralised here so every call site — task done,
+  // checklist item, the settings preview — picks it up without its own tuning.
+  final scaledDuration = duration * variant.durationScale;
   final size = box.size;
   // Anchor in the overlay's own coordinate space, not the screen's. The
   // nearest Overlay may be a nested one — e.g. the desktop task-detail pane,
@@ -252,10 +266,11 @@ void spawnCompletionBurst(
       builder: (_) => _OverlayBurst(
         center: center,
         reach: reach,
+        variant: variant,
         count: count,
         sizeScale: sizeScale,
         clearCenter: clearCenter,
-        duration: duration,
+        duration: scaledDuration,
         // Guard remove(): the entry may already be gone if the overlay was
         // torn down (e.g. the route popped) before the burst finished.
         onDone: () {
@@ -277,6 +292,7 @@ class _OverlayBurst extends StatefulWidget {
   const _OverlayBurst({
     required this.center,
     required this.reach,
+    required this.variant,
     required this.count,
     required this.sizeScale,
     required this.clearCenter,
@@ -286,6 +302,7 @@ class _OverlayBurst extends StatefulWidget {
 
   final Offset center;
   final double reach;
+  final CelebrationVariant variant;
   final int count;
   final double sizeScale;
   final double clearCenter;
@@ -338,6 +355,7 @@ class _OverlayBurstState extends State<_OverlayBurst>
                 // (the checkbox / pill), not offset to one side.
                 : CompletionBurst(
                     progress: p,
+                    variant: widget.variant,
                     origin: Alignment.center,
                     count: widget.count,
                     sizeScale: widget.sizeScale,

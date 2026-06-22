@@ -1249,10 +1249,8 @@ void main() {
     testWidgets('no glow when checklist celebrations are off', (tester) async {
       final overrides = [
         celebrationPreferencesProvider.overrideWithValue(
-          const CelebrationPreferences(
-            habits: true,
+          const CelebrationPreferences.allEnabled().copyWith(
             checklistItems: false,
-            tasks: true,
           ),
         ),
       ];
@@ -1264,6 +1262,35 @@ void main() {
         extraOverrides: overrides,
       );
       // Cross to 100% with checklist celebrations off → no glow bloom.
+      await _pump(
+        tester,
+        completionRate: 1,
+        totalCount: 3,
+        initiallyExpanded: false,
+        extraOverrides: overrides,
+      );
+      await tester.pump(const Duration(milliseconds: 560));
+      expect(find.byType(CompletionGlow), findsNothing);
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('no glow when the master switch is off (checklist on)', (
+      tester,
+    ) async {
+      final overrides = [
+        celebrationPreferencesProvider.overrideWithValue(
+          // Checklist switch stays on, but the master switch is off.
+          const CelebrationPreferences.allEnabled().copyWith(enabled: false),
+        ),
+      ];
+      await _pump(
+        tester,
+        completionRate: 0.5,
+        totalCount: 3,
+        initiallyExpanded: false,
+        extraOverrides: overrides,
+      );
       await _pump(
         tester,
         completionRate: 1,

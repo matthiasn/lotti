@@ -44,6 +44,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Checking off a checklist item now plays the same little spark burst no matter
   how it happens — a direct tap, an accepted AI "check off" suggestion, or a
   sync from another device — so completing an item always feels rewarding.
+- **Completion celebrations are now yours to shape.** A new master switch in
+  Settings → Advanced → Animations turns every completion flourish on or off at
+  once, and you can give each kind of moment its own style — choose from Sparks,
+  Fireworks, Confetti, Embers and Bubbles for finishing a task, keeping a habit,
+  and ticking off a checklist item (they start out as sparks, confetti and
+  bubbles). Pick a surface to see the style it's set to, and the picker plays a
+  preview as you choose; a "Try it" row fires each one on a dummy Done button,
+  checklist item and habit before you commit. And the completion buzz now has its
+  own switch, independent of the animation — keep the haptic with the flash off,
+  or the flash with the buzz off.
 - Dashboard charts with no data in the selected range now collapse to a compact
   one-line notice under their title instead of holding open a full-height empty
   card. On a dashboard with several charts, the ones that actually have data get

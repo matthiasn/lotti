@@ -206,14 +206,18 @@ class TaskHeaderStatusPill extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final prefs = ref.watch(celebrationPreferencesProvider);
     return CompletionCelebration(
       completed: status is TaskDone,
       burstOrigin: Alignment.center,
       anchorScale: true,
-      // The heavy haptic still fires; the glow + burst + pop honour the
-      // user's "celebrate task completion" switch.
-      animate: ref.watch(celebrationPreferencesProvider).tasks,
-      onCelebrate: () => unawaited(HapticFeedback.heavyImpact()),
+      variant: prefs.tasksVariant,
+      // The visual celebration honours the master switch + the task switch; the
+      // heavy haptic honours the independent haptics switch.
+      animate: prefs.animateTasks,
+      onCelebrate: prefs.haptics
+          ? () => unawaited(HapticFeedback.heavyImpact())
+          : null,
       child: _StatusPill(status: status, onTap: onTap),
     );
   }
