@@ -15,10 +15,12 @@ import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart'
     show OllamaPullProgress;
+import 'package:lotti/features/ai/repository/omlx_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/utils/uuid.dart';
 import 'package:mocktail/mocktail.dart';
@@ -32,6 +34,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(Uri.parse('http://example.com'));
+    registerFallbackValue(FakeBaseRequest());
     registerFallbackValue(FakeAiConfigInferenceProvider());
   });
 
@@ -43,6 +46,7 @@ void main() {
   late MeliousInferenceRepository meliousRepo;
   late MistralTranscriptionRepository mistralTranscriptionRepo;
   late WhisperInferenceRepository whisperRepo;
+  late OmlxTranscriptionRepository omlxTranscriptionRepo;
   late VoxtralInferenceRepository voxtralRepo;
   late OpenAiTranscriptionRepository openAiTranscriptionRepo;
   late ProviderContainer container;
@@ -66,6 +70,7 @@ void main() {
 
   CloudInferenceGenerateMore createGenerateMore({
     MeliousInferenceRepository? meliousRepository,
+    OmlxTranscriptionRepository? omlxRepository,
   }) {
     return CloudInferenceGenerateMore(
       ref: container.read(testRefProvider),
@@ -76,6 +81,7 @@ void main() {
       meliousRepository: meliousRepository ?? meliousRepo,
       mistralTranscriptionRepository: mistralTranscriptionRepo,
       whisperRepository: whisperRepo,
+      omlxTranscriptionRepository: omlxRepository ?? omlxTranscriptionRepo,
       voxtralRepository: voxtralRepo,
       openAiTranscriptionRepository: openAiTranscriptionRepo,
       helpers: const CloudInferenceRequestHelpers(),
@@ -93,6 +99,9 @@ void main() {
       httpClient: httpClient,
     );
     whisperRepo = WhisperInferenceRepository(httpClient: httpClient);
+    omlxTranscriptionRepo = OmlxTranscriptionRepository(
+      httpClient: httpClient,
+    );
     voxtralRepo = VoxtralInferenceRepository(httpClient: httpClient);
     openAiTranscriptionRepo = OpenAiTranscriptionRepository(
       httpClient: httpClient,
@@ -144,6 +153,50 @@ void main() {
             body: jsonEncode({'model': model, 'audio': audioBase64}),
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'routes oMLX Whisper through the OpenAI-compatible transcription endpoint',
+      () async {
+        const audioBase64 = 'audio-base64';
+        const transcript = 'the oMLX whisper transcript';
+        final omlxProvider = providerOfType(
+          InferenceProviderType.omlx,
+        ).copyWith(baseUrl: 'http://127.0.0.1:8003/v1');
+
+        when(() => httpClient.send(any())).thenAnswer((_) async {
+          return http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode({'text': transcript}))),
+            200,
+          );
+        });
+
+        final response = await generateMore
+            .generateWithAudio(
+              prompt,
+              model: omlxWhisperLargeV3ModelId,
+              audioBase64: audioBase64,
+              baseUrl: omlxProvider.baseUrl,
+              apiKey: omlxProvider.apiKey,
+              provider: omlxProvider,
+            )
+            .first;
+
+        expect(response.id, startsWith('omlx-transcription-'));
+        expect(response.choices?.single.delta?.content, transcript);
+
+        final captured = verify(
+          () => httpClient.send(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final request = captured.single as http.MultipartRequest;
+        expect(
+          request.url.toString(),
+          equals('http://127.0.0.1:8003/v1/audio/transcriptions'),
+        );
+        expect(request.headers['Authorization'], equals('Bearer key'));
+        expect(request.fields['model'], equals(omlxWhisperLargeV3ModelId));
       },
     );
 

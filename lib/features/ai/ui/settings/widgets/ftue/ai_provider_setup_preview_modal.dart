@@ -52,6 +52,7 @@ class AiProviderSetupPreviewModal extends StatefulWidget {
     return switch (type) {
       InferenceProviderType.gemini => geminiPreset(),
       InferenceProviderType.openAi => openAiPreset(),
+      InferenceProviderType.melious => meliousPreset(),
       InferenceProviderType.mistral => mistralPreset(),
       InferenceProviderType.alibaba => alibabaPreset(),
       InferenceProviderType.anthropic => anthropicPreset(),

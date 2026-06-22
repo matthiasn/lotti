@@ -1,6 +1,90 @@
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
+/// Curated Melious.ai defaults.
+///
+/// Melious exposes a larger live model catalog through `/models`, but these
+/// rows are seeded immediately when the provider is added. The set mirrors the
+/// default Melious profile: fast general thinking, high-end thinking, image
+/// recognition, and Whisper transcription.
+const List<KnownModel> meliousModels = [
+  KnownModel(
+    providerModelId: meliousDeepseekV4ProModelId,
+    name: 'DeepSeek V4 Pro',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'High-end Melious-hosted DeepSeek reasoning model for advanced '
+        'thinking, analysis, and complex task planning.',
+  ),
+  KnownModel(
+    providerModelId: meliousGemma426bA4bModelId,
+    name: 'Gemma 4 26B A4B',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Melious-hosted multimodal Gemma reasoning model for text and image '
+        'understanding workloads.',
+  ),
+  KnownModel(
+    providerModelId: meliousMinimaxM27ModelId,
+    name: 'MiniMax M2.7',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Fast Melious-hosted thinking model for day-to-day reasoning, '
+        'summaries, and high-throughput text tasks.',
+  ),
+  KnownModel(
+    providerModelId: meliousMistralSmall4119BInstructModelId,
+    name: 'Mistral Small 4 119B Instruct',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Default Melious thinking and image-recognition model. Multimodal '
+        'Mistral Small 4 119B Instruct hosted on Melious infrastructure.',
+  ),
+  KnownModel(
+    providerModelId: meliousDeepseekV4FlashModelId,
+    name: 'DeepSeek V4 Flash',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Fast Melious-hosted DeepSeek reasoning model for lower-latency '
+        'thinking tasks.',
+  ),
+  KnownModel(
+    providerModelId: meliousWhisperLargeV3ModelId,
+    name: 'Whisper Large v3',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Melious-hosted Whisper Large v3 transcription through the '
+        'OpenAI-compatible audio transcriptions endpoint.',
+  ),
+  KnownModel(
+    providerModelId: meliousWhisperLargeV3TurboModelId,
+    name: 'Whisper Large v3 Turbo',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Default Melious transcription model. Turbo Whisper Large v3 variant '
+        'for faster speech-to-text through the OpenAI-compatible endpoint.',
+  ),
+];
+
 /// MLX Audio models embedded via the Apple Swift SDK.
 ///
 /// These run in-process on Apple Silicon through `mlx-audio-swift` rather than
@@ -87,6 +171,8 @@ const List<KnownModel> mlxAudioModels = [
 ///
 /// Qwen3.6-35B-A3B and Gemma 4 26B A4B are multimodal, so these local MLX
 /// variants are cataloged for both thinking and image recognition slots.
+/// Whisper Large v3 is cataloged separately as an audio transcription model
+/// routed through the OpenAI-compatible `/audio/transcriptions` endpoint.
 const List<KnownModel> omlxModels = [
   KnownModel(
     providerModelId: omlxQwen36A35bA3b4BitModelId,
@@ -132,6 +218,16 @@ const List<KnownModel> omlxModels = [
         'QAT 4-bit MLX conversion for local oMLX serving. 26B total '
         'parameters with about 4B active, cataloged as a separate local '
         'Gemma reasoning and image-recognition option.',
+  ),
+  KnownModel(
+    providerModelId: omlxWhisperLargeV3ModelId,
+    name: 'Whisper Large v3 (oMLX)',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Local Whisper Large v3 transcription served by oMLX on Apple '
+        'Silicon through the OpenAI-compatible audio transcriptions endpoint.',
   ),
 ];
 

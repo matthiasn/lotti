@@ -73,6 +73,19 @@ class AiProviderSetupResultData {
     errors: result.errors,
   );
 
+  factory AiProviderSetupResultData.fromMelious({
+    required MeliousFtueResult result,
+  }) => AiProviderSetupResultData(
+    providerName: 'Melious.ai',
+    providerType: InferenceProviderType.melious,
+    modelsCreated: result.modelsCreated,
+    modelsVerified: result.modelsVerified,
+    profileName: 'Melious.ai',
+    categoryName: result.categoryName,
+    categoryCreated: result.categoryCreated,
+    errors: result.errors,
+  );
+
   factory AiProviderSetupResultData.fromAlibaba({
     required AlibabaFtueResult result,
   }) => AiProviderSetupResultData(
@@ -124,6 +137,9 @@ class AiProviderSetupResultData {
         result: result,
       ),
       MistralFtueResult() => AiProviderSetupResultData.fromMistral(
+        result: result,
+      ),
+      MeliousFtueResult() => AiProviderSetupResultData.fromMelious(
         result: result,
       ),
       AlibabaFtueResult() => AiProviderSetupResultData.fromAlibaba(

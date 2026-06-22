@@ -84,6 +84,12 @@ Future<AiFtueResult?> runFtueSetupForType({
       provider: config,
       excludedProviderModelIds: excludedProviderModelIds,
     ),
+    InferenceProviderType.melious => setupService.performMeliousFtueSetup(
+      context: context,
+      ref: ref,
+      provider: config,
+      excludedProviderModelIds: excludedProviderModelIds,
+    ),
     InferenceProviderType.mistral => setupService.performMistralFtueSetup(
       context: context,
       ref: ref,

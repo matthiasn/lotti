@@ -372,6 +372,25 @@ AiProviderSetupPreviewPreset? mistralPreset() {
   );
 }
 
+/// FTUE preset for Melious: the default Melious profile plus thinking,
+/// high-end thinking, and Whisper transcription models.
+AiProviderSetupPreviewPreset? meliousPreset() {
+  final known = getMeliousFtueKnownModels();
+  assert(known != null, 'Melious FTUE known-model lookup returned null');
+  if (known == null) return null;
+  return AiProviderSetupPreviewPreset(
+    providerName: 'Melious.ai',
+    profileName: 'Melious.ai',
+    categoryName: ftueMeliousCategoryName,
+    models: <KnownModel>[
+      known.thinking,
+      known.advancedThinking,
+      known.whisperTurbo,
+      known.whisper,
+    ],
+  );
+}
+
 /// FTUE preset for Alibaba Cloud (Qwen): the "Chinese AI Profile" plus the
 /// flash, reasoning, vision, audio, and image models. Null on lookup failure.
 AiProviderSetupPreviewPreset? alibabaPreset() {

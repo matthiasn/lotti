@@ -234,6 +234,15 @@ flowchart TD
   Route -->|image output| Image["/images/generations"]
 ```
 
+Melious also has a small curated static catalog used for immediate provider
+setup before a user installs additional live-catalog rows: `deepseek-v4-pro`,
+`gemma-4-26b-a4b`, `minimax-m2.7`, `mistral-small-4-119b-instruct`,
+`deepseek-v4-flash`, `whisper-large-v3`, and `whisper-large-v3-turbo`.
+The default Melious profile uses `mistral-small-4-119b-instruct` for thinking
+and image recognition, `deepseek-v4-pro` for the high-end thinking slot, and
+`whisper-large-v3-turbo` for transcription. FTUE setup creates both Whisper
+rows so users can switch between the regular and Turbo variants.
+
 ## Developer Eval Tool
 
 `tool/qwen_local_inference_eval.sh` is a narrow local oMLX/OpenAI-compatible
@@ -502,11 +511,19 @@ It is now a thin **facade**: every public method delegates to one of two collabo
 | --- | --- | --- |
 | `generate()` | Ollama, Gemini, Mistral | OpenAI-compatible chat streaming |
 | `generateWithImages()` | Ollama | OpenAI-compatible multimodal chat; Gemini receives `reasoning_effort` for its thinking mode |
-| `generateWithAudio()` | Whisper, Voxtral, MLX Audio native bridge, OpenAI transcription endpoint, Mistral transcription endpoint | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` for its thinking mode |
+| `generateWithAudio()` | Whisper, Voxtral, MLX Audio native bridge, oMLX transcription endpoint, OpenAI transcription endpoint, Mistral transcription endpoint, Melious transcription endpoint | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` for its thinking mode |
 | `generateWithMessages()` | Gemini, Ollama, Mistral | OpenAI-compatible full-history chat |
 | `generateImage()` | Gemini, Alibaba DashScope | Unsupported for all other provider types |
 
 This routing is implemented in code, not inferred from documentation. If a provider type is not branched explicitly for an operation, it falls through to the compatibility client or throws `UnsupportedError`.
+
+For oMLX, the audio branch is model-sensitive. Regular oMLX Qwen and Gemma
+rows still use OpenAI-compatible chat or vision chat routes, while
+Whisper/ASR/STT-shaped oMLX model ids use the configured provider base URL plus
+`/audio/transcriptions` with multipart audio and bearer authentication. The
+static oMLX catalog includes `openai/whisper-large-v3` as an audio-input,
+text-output model so it can be selected for inference-profile transcription
+slots on Apple Silicon oMLX installations.
 
 ### Gemini Thinking Mode
 
@@ -659,6 +676,7 @@ Grounded implementation notes:
 - `Gemini Pro`
 - `OpenAI`
 - `Mistral (EU)`
+- `Melious.ai`
 - `Chinese AI Profile`
 - `Anthropic Claude`
 - `Local (Ollama)`
@@ -673,6 +691,7 @@ Operational details from the seeded definitions:
 - `Local (Ollama)` and `Local Gemma 4 (Ollama)` ship with image-analysis automation but no transcription slot
 - `Local Power (oMLX)` uses `Qwen3.6-35B-A3B-4bit` for both thinking and image recognition
 - `Local Gemma 4 (oMLX)` uses `gemma-4-26B-A4B-it-QAT-MLX-4bit` for both thinking and image recognition
+- `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, DeepSeek V4 Pro for high-end thinking, and Whisper Large v3 Turbo for transcription
 - `Local Power (oMLX)`, `Local Gemma 4 (oMLX)`, and `Local Gemma 4 Power (Ollama)` currently ship with no default skill assignments
 
 `seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.

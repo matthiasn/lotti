@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/omlx_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
@@ -42,6 +43,7 @@ class CloudInferenceGenerateMore {
     required this._meliousRepository,
     required this._mistralTranscriptionRepository,
     required this._whisperRepository,
+    required this._omlxTranscriptionRepository,
     required this._voxtralRepository,
     required this._openAiTranscriptionRepository,
     required this._helpers,
@@ -55,6 +57,7 @@ class CloudInferenceGenerateMore {
   final MeliousInferenceRepository _meliousRepository;
   final MistralTranscriptionRepository _mistralTranscriptionRepository;
   final WhisperInferenceRepository _whisperRepository;
+  final OmlxTranscriptionRepository _omlxTranscriptionRepository;
   final VoxtralInferenceRepository _voxtralRepository;
   final OpenAiTranscriptionRepository _openAiTranscriptionRepository;
   final CloudInferenceRequestHelpers _helpers;
@@ -183,6 +186,21 @@ class CloudInferenceGenerateMore {
         audioBase64: audioBase64,
         baseUrl: baseUrl,
         apiKey: apiKey,
+      );
+    }
+
+    if (provider.inferenceProviderType == InferenceProviderType.omlx &&
+        OmlxTranscriptionRepository.isOmlxTranscriptionModel(model)) {
+      developer.log(
+        'Using oMLX transcription endpoint for model: $model',
+        name: 'CloudInferenceRepository',
+      );
+      return _omlxTranscriptionRepository.transcribeAudio(
+        model: model,
+        audioBase64: audioBase64,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        prompt: prompt,
       );
     }
 
@@ -468,6 +486,7 @@ class CloudInferenceGenerateMore {
     _meliousRepository.close();
     _mistralTranscriptionRepository.close();
     _whisperRepository.close();
+    _omlxTranscriptionRepository.close();
     _voxtralRepository.close();
     _openAiTranscriptionRepository.close();
   }

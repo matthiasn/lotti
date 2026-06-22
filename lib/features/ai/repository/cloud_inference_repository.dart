@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/omlx_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
@@ -48,6 +49,9 @@ class CloudInferenceRepository {
     final whisperRepository = WhisperInferenceRepository(
       httpClient: httpClient,
     );
+    final omlxTranscriptionRepository = OmlxTranscriptionRepository(
+      httpClient: httpClient,
+    );
     final voxtralRepository = VoxtralInferenceRepository(
       httpClient: httpClient,
     );
@@ -74,6 +78,7 @@ class CloudInferenceRepository {
       meliousRepository: meliousRepository,
       mistralTranscriptionRepository: mistralTranscriptionRepository,
       whisperRepository: whisperRepository,
+      omlxTranscriptionRepository: omlxTranscriptionRepository,
       voxtralRepository: voxtralRepository,
       openAiTranscriptionRepository: openAiTranscriptionRepository,
       helpers: helpers,

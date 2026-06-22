@@ -63,6 +63,25 @@ void main() {
       expect(preset.models, hasLength(3));
     });
 
+    test('returns models for Melious', () {
+      final preset = AiProviderSetupPreviewModal.presetFor(
+        InferenceProviderType.melious,
+      );
+      expect(preset, isNotNull);
+      expect(preset!.providerName, equals('Melious.ai'));
+      expect(preset.profileName, equals('Melious.ai'));
+      expect(preset.categoryName, equals(ftueMeliousCategoryName));
+      expect(
+        preset.models.map((model) => model.providerModelId),
+        containsAll([
+          meliousMistralSmall4119BInstructModelId,
+          meliousDeepseekV4ProModelId,
+          meliousWhisperLargeV3TurboModelId,
+          meliousWhisperLargeV3ModelId,
+        ]),
+      );
+    });
+
     test('returns models for Alibaba', () {
       final preset = AiProviderSetupPreviewModal.presetFor(
         InferenceProviderType.alibaba,
@@ -120,6 +139,7 @@ void main() {
       for (final type in const [
         InferenceProviderType.gemini,
         InferenceProviderType.openAi,
+        InferenceProviderType.melious,
         InferenceProviderType.mistral,
         InferenceProviderType.alibaba,
         InferenceProviderType.anthropic,

@@ -7,7 +7,7 @@
 /// The models are organized by provider:
 /// - Gemini: Google's models with multi-modal capabilities
 /// - Nebius: High-performance models for text and image tasks
-/// - oMLX: Local OpenAI-compatible Qwen and Gemma models served via MLX
+/// - oMLX: Local OpenAI-compatible Qwen, Gemma, and Whisper models served via MLX
 /// - Ollama: Local models for text processing
 /// - OpenAI: Advanced language and multimodal models
 library;
@@ -66,6 +66,7 @@ class KnownModel {
 const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.alibaba: alibabaModels,
   InferenceProviderType.gemini: geminiModels,
+  InferenceProviderType.melious: meliousModels,
   InferenceProviderType.mistral: mistralModels,
   InferenceProviderType.mlxAudio: mlxAudioModels,
   InferenceProviderType.nebiusAiStudio: nebiusModels,
@@ -90,6 +91,21 @@ const String mlxAudioRecommendedSttModelId = mlxAudioQwenAsr17B8BitModelId;
 const mlxAudioParakeetModelId = 'mlx-community/parakeet-tdt-0.6b-v3';
 const mlxAudioDefaultTtsModelId = 'mlx-community/Qwen3-TTS-12Hz-0.6B-Base-8bit';
 
+/// Canonical Melious.ai model identifiers used by the curated default setup.
+///
+/// Melious also exposes a live `/models?include_meta=true` catalog. These IDs
+/// are the small default set seeded immediately when a Melious provider is
+/// added, so transcription and profile slots are usable before browsing the
+/// full remote catalog.
+const String meliousDeepseekV4ProModelId = 'deepseek-v4-pro';
+const String meliousGemma426bA4bModelId = 'gemma-4-26b-a4b';
+const String meliousMinimaxM27ModelId = 'minimax-m2.7';
+const String meliousMistralSmall4119BInstructModelId =
+    'mistral-small-4-119b-instruct';
+const String meliousDeepseekV4FlashModelId = 'deepseek-v4-flash';
+const String meliousWhisperLargeV3ModelId = 'whisper-large-v3';
+const String meliousWhisperLargeV3TurboModelId = 'whisper-large-v3-turbo';
+
 /// Canonical oMLX model identifiers used by the local OpenAI-compatible
 /// server profile.
 const String omlxQwen36A35bA3bTurboQuantMlx4BitModelId =
@@ -99,6 +115,7 @@ const String omlxQwen36A35bA3bMlx8BitModelId = 'Qwen3.6-35B-A3B-MLX-8bit';
 const String omlxGemma426BA4BItQatMlx4BitModelId =
     'gemma-4-26B-A4B-it-QAT-MLX-4bit';
 const String omlxRecommendedMultimodalModelId = omlxQwen36A35bA3b4BitModelId;
+const String omlxWhisperLargeV3ModelId = 'openai/whisper-large-v3';
 
 /// Whether [providerModelId] is a Qwen3-ASR checkpoint converted for MLX Audio.
 bool isMlxAudioQwenAsrModelId(String providerModelId) {

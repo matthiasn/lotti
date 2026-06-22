@@ -486,18 +486,75 @@ void main() {
       });
     });
 
+    group('Melious known models', () {
+      test('curated defaults include thinking, vision, and Whisper models', () {
+        final ids = meliousModels.map((model) => model.providerModelId).toSet();
+
+        expect(
+          ids,
+          containsAll({
+            meliousDeepseekV4ProModelId,
+            meliousGemma426bA4bModelId,
+            meliousMinimaxM27ModelId,
+            meliousMistralSmall4119BInstructModelId,
+            meliousDeepseekV4FlashModelId,
+            meliousWhisperLargeV3ModelId,
+            meliousWhisperLargeV3TurboModelId,
+          }),
+        );
+      });
+
+      test('Whisper defaults are audio-to-text transcription models', () {
+        final whisper = findMeliousKnownModel(meliousWhisperLargeV3ModelId);
+        final turbo = findMeliousKnownModel(
+          meliousWhisperLargeV3TurboModelId,
+        );
+
+        for (final model in [whisper, turbo]) {
+          expect(model, isNotNull);
+          expect(model!.inputModalities, contains(Modality.audio));
+          expect(model.outputModalities, contains(Modality.text));
+          expect(model.isReasoningModel, isFalse);
+        }
+      });
+
+      test('getMeliousFtueKnownModels returns profile defaults', () {
+        final models = getMeliousFtueKnownModels();
+
+        expect(models, isNotNull);
+        expect(
+          models!.thinking.providerModelId,
+          meliousMistralSmall4119BInstructModelId,
+        );
+        expect(
+          models.advancedThinking.providerModelId,
+          meliousDeepseekV4ProModelId,
+        );
+        expect(
+          models.whisper.providerModelId,
+          meliousWhisperLargeV3ModelId,
+        );
+        expect(
+          models.whisperTurbo.providerModelId,
+          meliousWhisperLargeV3TurboModelId,
+        );
+      });
+    });
+
     group('knownModelsByProvider', () {
       test('should contain all provider types', () {
         // `genericOpenAi` is intentionally absent: it represents an
         // arbitrary OpenAI-compatible endpoint where Lotti cannot
-        // assume a fixed model catalog. Melious is also intentionally
-        // absent: it exposes its catalog dynamically via /models.
+        // assume a fixed model catalog. Melious is present with a curated
+        // default subset while the settings UI can still explore its live
+        // catalog dynamically via /models.
         // Every concrete provider with a curated model list belongs here.
         expect(
           knownModelsByProvider.keys.toSet(),
           containsAll([
             InferenceProviderType.alibaba,
             InferenceProviderType.gemini,
+            InferenceProviderType.melious,
             InferenceProviderType.nebiusAiStudio,
             InferenceProviderType.omlx,
             InferenceProviderType.ollama,
@@ -637,25 +694,41 @@ void main() {
         );
       });
 
-      test('catalogs all bundled local oMLX variants as text and image', () {
-        final modelIds = omlxModels.map((m) => m.providerModelId).toSet();
+      test(
+        'catalogs bundled local oMLX reasoning and transcription variants',
+        () {
+          final modelIds = omlxModels.map((m) => m.providerModelId).toSet();
 
-        expect(modelIds, contains(omlxQwen36A35bA3b4BitModelId));
-        expect(
-          modelIds,
-          contains(omlxQwen36A35bA3bTurboQuantMlx4BitModelId),
-        );
-        expect(modelIds, contains(omlxQwen36A35bA3bMlx8BitModelId));
-        expect(modelIds, contains(omlxGemma426BA4BItQatMlx4BitModelId));
+          expect(modelIds, contains(omlxQwen36A35bA3b4BitModelId));
+          expect(
+            modelIds,
+            contains(omlxQwen36A35bA3bTurboQuantMlx4BitModelId),
+          );
+          expect(modelIds, contains(omlxQwen36A35bA3bMlx8BitModelId));
+          expect(modelIds, contains(omlxGemma426BA4BItQatMlx4BitModelId));
+          expect(modelIds, contains(omlxWhisperLargeV3ModelId));
 
-        for (final model in omlxModels) {
-          expect(model.inputModalities, contains(Modality.text));
-          expect(model.inputModalities, contains(Modality.image));
-          expect(model.outputModalities, equals([Modality.text]));
-          expect(model.isReasoningModel, isTrue);
-          expect(model.supportsFunctionCalling, isTrue);
-        }
-      });
+          final reasoningModels = omlxModels.where(
+            (m) => m.providerModelId != omlxWhisperLargeV3ModelId,
+          );
+          for (final model in reasoningModels) {
+            expect(model.inputModalities, contains(Modality.text));
+            expect(model.inputModalities, contains(Modality.image));
+            expect(model.outputModalities, equals([Modality.text]));
+            expect(model.isReasoningModel, isTrue);
+            expect(model.supportsFunctionCalling, isTrue);
+          }
+
+          final whisper = omlxModels.firstWhere(
+            (m) => m.providerModelId == omlxWhisperLargeV3ModelId,
+          );
+          expect(whisper.name, equals('Whisper Large v3 (oMLX)'));
+          expect(whisper.inputModalities, equals([Modality.audio]));
+          expect(whisper.outputModalities, equals([Modality.text]));
+          expect(whisper.isReasoningModel, isFalse);
+          expect(whisper.supportsFunctionCalling, isFalse);
+        },
+      );
 
       test('Gemma 4 26B A4B QAT oMLX is a multimodal reasoning model', () {
         final model = omlxModels.firstWhere(

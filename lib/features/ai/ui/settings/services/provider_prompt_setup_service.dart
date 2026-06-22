@@ -18,6 +18,7 @@ part 'alibaba_ftue_setup.dart';
 part 'anthropic_ftue_setup.dart';
 part 'ftue_helpers.dart';
 part 'gemini_ftue_setup.dart';
+part 'melious_ftue_setup.dart';
 part 'mistral_ftue_setup.dart';
 part 'ollama_ftue_setup.dart';
 part 'openai_ftue_setup.dart';

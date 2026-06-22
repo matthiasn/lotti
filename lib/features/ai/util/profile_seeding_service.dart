@@ -13,6 +13,7 @@ const profileGeminiFlashId = 'profile-gemini-flash-001';
 const profileGeminiProId = 'profile-gemini-pro-001';
 const profileOpenAiId = 'profile-openai-001';
 const profileMistralEuId = 'profile-mistral-eu-001';
+const profileMeliousId = 'profile-melious-001';
 const profileAlibabaId = 'profile-alibaba-001';
 const profileAnthropicId = 'profile-anthropic-001';
 const profileLocalId = 'profile-local-001';
@@ -332,6 +333,17 @@ class ProfileSeedingService {
       imageRecognitionModelId: 'mistral-medium-latest',
       transcriptionModelId: 'voxtral-mini-latest',
       skillAssignments: _mistralSkillAssignments,
+      isDefault: true,
+      createdAt: DateTime(2026),
+    ),
+    AiConfigInferenceProfile(
+      id: profileMeliousId,
+      name: 'Melious.ai',
+      thinkingModelId: meliousMistralSmall4119BInstructModelId,
+      thinkingHighEndModelId: meliousDeepseekV4ProModelId,
+      imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
+      transcriptionModelId: meliousWhisperLargeV3TurboModelId,
+      skillAssignments: _defaultSkillAssignments,
       isDefault: true,
       createdAt: DateTime(2026),
     ),
