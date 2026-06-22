@@ -6520,6 +6520,32 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Se verifică…';
 
   @override
+  String get onboardingCategoryAddOwn => 'Adăugați propria';
+
+  @override
+  String get onboardingCategoryContinue => 'Continuați';
+
+  @override
+  String onboardingCategoryExplanation(String provider) {
+    return 'Lotti folosește o AI diferită pentru fiecare zonă a vieții. Alegeți unde să ajute $provider — puteți schimba oricând.';
+  }
+
+  @override
+  String get onboardingCategoryFamily => 'Familie';
+
+  @override
+  String get onboardingCategoryFitness => 'Fitness';
+
+  @override
+  String get onboardingCategoryFriends => 'Prieteni';
+
+  @override
+  String get onboardingCategoryTitle => 'Unde să lucreze AI-ul dvs.?';
+
+  @override
+  String get onboardingCategoryWork => 'Muncă';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override

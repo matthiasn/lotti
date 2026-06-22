@@ -11122,6 +11122,54 @@ abstract class AppLocalizations {
   /// **'Verifying…'**
   String get onboardingApiKeyVerifying;
 
+  /// No description provided for @onboardingCategoryAddOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your own'**
+  String get onboardingCategoryAddOwn;
+
+  /// No description provided for @onboardingCategoryContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get onboardingCategoryContinue;
+
+  /// No description provided for @onboardingCategoryExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti uses a different AI for each area of your life. Pick where {provider} should help — you can change this anytime.'**
+  String onboardingCategoryExplanation(String provider);
+
+  /// No description provided for @onboardingCategoryFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get onboardingCategoryFamily;
+
+  /// No description provided for @onboardingCategoryFitness.
+  ///
+  /// In en, this message translates to:
+  /// **'Fitness'**
+  String get onboardingCategoryFitness;
+
+  /// No description provided for @onboardingCategoryFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get onboardingCategoryFriends;
+
+  /// No description provided for @onboardingCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where should your AI work?'**
+  String get onboardingCategoryTitle;
+
+  /// No description provided for @onboardingCategoryWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get onboardingCategoryWork;
+
   /// No description provided for @onboardingConnectGeminiName.
   ///
   /// In en, this message translates to:

@@ -6363,6 +6363,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Verifying…';
 
   @override
+  String get onboardingCategoryAddOwn => 'Add your own';
+
+  @override
+  String get onboardingCategoryContinue => 'Continue';
+
+  @override
+  String onboardingCategoryExplanation(String provider) {
+    return 'Lotti uses a different AI for each area of your life. Pick where $provider should help — you can change this anytime.';
+  }
+
+  @override
+  String get onboardingCategoryFamily => 'Family';
+
+  @override
+  String get onboardingCategoryFitness => 'Fitness';
+
+  @override
+  String get onboardingCategoryFriends => 'Friends';
+
+  @override
+  String get onboardingCategoryTitle => 'Where should your AI work?';
+
+  @override
+  String get onboardingCategoryWork => 'Work';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override

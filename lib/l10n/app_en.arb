@@ -3206,6 +3206,21 @@
     }
   },
   "onboardingApiKeyVerifying": "Verifying…",
+  "onboardingCategoryAddOwn": "Add your own",
+  "onboardingCategoryContinue": "Continue",
+  "onboardingCategoryExplanation": "Lotti uses a different AI for each area of your life. Pick where {provider} should help — you can change this anytime.",
+  "@onboardingCategoryExplanation": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingCategoryFamily": "Family",
+  "onboardingCategoryFitness": "Fitness",
+  "onboardingCategoryFriends": "Friends",
+  "onboardingCategoryTitle": "Where should your AI work?",
+  "onboardingCategoryWork": "Work",
   "onboardingConnectGeminiName": "Gemini",
   "onboardingConnectGeminiTagline": "United States",
   "onboardingConnectLessOptions": "Fewer options",

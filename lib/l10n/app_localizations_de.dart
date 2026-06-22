@@ -6445,6 +6445,32 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Wird geprüft…';
 
   @override
+  String get onboardingCategoryAddOwn => 'Eigene hinzufügen';
+
+  @override
+  String get onboardingCategoryContinue => 'Weiter';
+
+  @override
+  String onboardingCategoryExplanation(String provider) {
+    return 'Lotti nutzt für jeden Lebensbereich eine eigene KI. Wähle, wo $provider helfen soll — du kannst das jederzeit ändern.';
+  }
+
+  @override
+  String get onboardingCategoryFamily => 'Familie';
+
+  @override
+  String get onboardingCategoryFitness => 'Fitness';
+
+  @override
+  String get onboardingCategoryFriends => 'Freunde';
+
+  @override
+  String get onboardingCategoryTitle => 'Wo soll deine KI arbeiten?';
+
+  @override
+  String get onboardingCategoryWork => 'Arbeit';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override

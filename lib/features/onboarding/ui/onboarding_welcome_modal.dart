@@ -1,16 +1,32 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// The seeded inference profile attached to categories created for a freshly
+/// connected provider — so each chosen category resolves to a real model.
+String? onboardingSeededProfileId(InferenceProviderType type) => switch (type) {
+  InferenceProviderType.gemini => profileGeminiFlashId,
+  InferenceProviderType.mistral => profileMistralEuId,
+  InferenceProviderType.alibaba => profileAlibabaId,
+  InferenceProviderType.openAi => profileOpenAiId,
+  InferenceProviderType.ollama => profileLocalId,
+  _ => null,
+};
 
 /// The FTUE "connect your brain" front door: a full-screen cinematic route that
 /// crossfades through three steps — a welcome (animated `heroStyle` hero), a
@@ -164,7 +180,7 @@ class _OnboardingScaffold extends StatelessWidget {
   }
 }
 
-enum _FlowStep { welcome, connect, apiKey, success }
+enum _FlowStep { welcome, connect, apiKey, success, category }
 
 /// Internal three-step flow swapped with a crossfade + height animation. Owning
 /// the step locally keeps the in-panel back buttons hittable.
@@ -261,8 +277,144 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           title: context.messages.onboardingSuccessTitle,
           subtitle: context.messages.onboardingSuccessSubtitle,
           continueLabel: context.messages.onboardingSuccessContinue,
-          onContinue: widget.onComplete,
+          onContinue: () => setState(() => _step = _FlowStep.category),
+        );
+      case _FlowStep.category:
+        return _OnboardingCategoryStep(
+          key: const ValueKey('onboarding-category'),
+          type: _type,
+          onDone: widget.onComplete,
         );
     }
+  }
+}
+
+/// The category step: the user picks the life areas the just-connected provider
+/// should power; on continue each selected area becomes a real category bound
+/// to the provider's seeded inference profile (so it can actually run).
+class _OnboardingCategoryStep extends ConsumerStatefulWidget {
+  const _OnboardingCategoryStep({
+    required this.type,
+    required this.onDone,
+    super.key,
+  });
+
+  final InferenceProviderType type;
+  final VoidCallback onDone;
+
+  @override
+  ConsumerState<_OnboardingCategoryStep> createState() =>
+      _OnboardingCategoryStepState();
+}
+
+class _OnboardingCategoryStepState
+    extends ConsumerState<_OnboardingCategoryStep> {
+  final _selected = <String>{};
+  final _custom = <OnboardingCategoryOption>[];
+  var _busy = false;
+
+  // Starter colours for the created categories (category colours are data the
+  // user can recolour later, not design tokens).
+  static const _palette = [
+    '#5ED4B7',
+    '#4285F4',
+    '#FF7043',
+    '#AB47BC',
+    '#66BB6A',
+    '#FFA726',
+  ];
+
+  List<OnboardingCategoryOption> _options(AppLocalizations m) => [
+    OnboardingCategoryOption(
+      label: m.onboardingCategoryWork,
+      icon: Icons.work_outline_rounded,
+    ),
+    OnboardingCategoryOption(
+      label: m.onboardingCategoryFitness,
+      icon: Icons.fitness_center_rounded,
+    ),
+    OnboardingCategoryOption(
+      label: m.onboardingCategoryFamily,
+      icon: Icons.home_rounded,
+    ),
+    OnboardingCategoryOption(
+      label: m.onboardingCategoryFriends,
+      icon: Icons.group_rounded,
+    ),
+    ..._custom,
+  ];
+
+  void _toggle(String label) => setState(() {
+    if (!_selected.remove(label)) _selected.add(label);
+  });
+
+  Future<void> _addOwn() async {
+    final controller = TextEditingController();
+    final material = MaterialLocalizations.of(context);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.messages.onboardingCategoryAddOwn),
+        content: TextField(controller: controller, autofocus: true),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(material.cancelButtonLabel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: Text(material.okButtonLabel),
+          ),
+        ],
+      ),
+    );
+    if (name == null || name.isEmpty || !mounted) return;
+    setState(() {
+      if (_options(context.messages).every((o) => o.label != name)) {
+        _custom.add(
+          OnboardingCategoryOption(
+            label: name,
+            icon: Icons.label_outline_rounded,
+          ),
+        );
+      }
+      _selected.add(name);
+    });
+  }
+
+  Future<void> _continue(List<OnboardingCategoryOption> options) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final repository = ref.read(categoryRepositoryProvider);
+    final profileId = onboardingSeededProfileId(widget.type);
+    final chosen = options.where((o) => _selected.contains(o.label)).toList();
+    for (var i = 0; i < chosen.length; i++) {
+      await repository.createCategory(
+        name: chosen[i].label,
+        color: _palette[i % _palette.length],
+        defaultProfileId: profileId,
+      );
+    }
+    widget.onDone();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    final options = _options(messages);
+    return OnboardingCategoryView(
+      accent: dsTokensDark.colors.interactive.enabled,
+      title: messages.onboardingCategoryTitle,
+      explanation: messages.onboardingCategoryExplanation(
+        onboardingProviderName(messages, widget.type),
+      ),
+      continueLabel: messages.onboardingCategoryContinue,
+      addOwnLabel: messages.onboardingCategoryAddOwn,
+      options: options,
+      selected: _selected,
+      onToggle: _toggle,
+      onAddOwn: _addOwn,
+      onContinue: () => _continue(options),
+    );
   }
 }

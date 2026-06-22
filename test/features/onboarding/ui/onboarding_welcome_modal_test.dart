@@ -6,6 +6,7 @@ import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
@@ -258,11 +259,25 @@ void main() {
     await tester.tap(find.text('Get started'));
     await tester.pumpAndSettle();
 
-    // Completing the success beat pops the modal; provider creation + FTUE
-    // setup ran; event recorded.
+    // Success leads into the category step; pick an area and continue.
+    expect(find.text('Where should your AI work?'), findsOneWidget);
+    await tester.tap(find.text('Work'));
+    await tester.pump();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    // Completing the category step pops the modal; provider creation + FTUE
+    // setup ran; the chosen area became a category bound to the provider's
+    // seeded inference profile; the connected event is recorded.
     expect(find.text('Connect your brain'), findsNothing);
-    expect(find.text('Get started'), findsNothing);
     verify(() => aiRepo.saveConfig(any())).called(1);
+    verify(
+      () => catRepo.createCategory(
+        name: 'Work',
+        color: any(named: 'color'),
+        defaultProfileId: profileLocalId,
+      ),
+    ).called(1);
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.providerConnected), isTrue);
   });

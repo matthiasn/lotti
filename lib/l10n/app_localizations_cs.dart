@@ -6475,6 +6475,32 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Ověřuji…';
 
   @override
+  String get onboardingCategoryAddOwn => 'Přidat vlastní';
+
+  @override
+  String get onboardingCategoryContinue => 'Pokračovat';
+
+  @override
+  String onboardingCategoryExplanation(String provider) {
+    return 'Lotti používá pro každou oblast tvého života jinou AI. Vyber, kde má $provider pomáhat — kdykoli to můžeš změnit.';
+  }
+
+  @override
+  String get onboardingCategoryFamily => 'Rodina';
+
+  @override
+  String get onboardingCategoryFitness => 'Fitness';
+
+  @override
+  String get onboardingCategoryFriends => 'Přátelé';
+
+  @override
+  String get onboardingCategoryTitle => 'Kde má tvoje AI pracovat?';
+
+  @override
+  String get onboardingCategoryWork => 'Práce';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
