@@ -38,7 +38,7 @@ class _LockInSceneState extends State<LockInScene>
     _controller = AnimationController(
       vsync: this,
       duration: widget.totalDuration,
-    )..addStatusListener(_onStatusChanged);
+    );
   }
 
   @override
@@ -56,22 +56,16 @@ class _LockInSceneState extends State<LockInScene>
         if (mounted) widget.onComplete();
       });
     } else {
-      _controller.forward();
-    }
-  }
-
-  void _onStatusChanged(AnimationStatus status) {
-    if (status == AnimationStatus.completed) {
-      widget.onComplete();
+      _controller.forward().whenComplete(() {
+        if (mounted) widget.onComplete();
+      });
     }
   }
 
   @override
   void dispose() {
     _reduceMotionTimer?.cancel();
-    _controller
-      ..removeStatusListener(_onStatusChanged)
-      ..dispose();
+    _controller.dispose();
     super.dispose();
   }
 
