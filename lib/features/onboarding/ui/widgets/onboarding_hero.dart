@@ -172,7 +172,9 @@ class OnboardingHeroPanel extends StatelessWidget {
                 tokens.spacing.step5,
                 tokens.spacing.step4,
                 tokens.spacing.step5,
-                tokens.spacing.step5,
+                // Clear the home indicator when flush to the screen bottom as a
+                // full-width sheet; 0 in the centred dialog / gallery contexts.
+                tokens.spacing.step5 + MediaQuery.paddingOf(context).bottom,
               ),
               child: StaggeredEntrance(
                 crossAxisAlignment: CrossAxisAlignment.center,

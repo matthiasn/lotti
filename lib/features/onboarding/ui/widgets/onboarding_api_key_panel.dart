@@ -282,7 +282,8 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
               tokens.spacing.step5,
               tokens.spacing.step5,
               tokens.spacing.step5,
-              tokens.spacing.step6,
+              // Clear the home indicator when flush to the bottom as a sheet.
+              tokens.spacing.step6 + MediaQuery.paddingOf(context).bottom,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

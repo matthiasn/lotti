@@ -106,26 +106,46 @@ class _OnboardingScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Transparent scaffold so the dim barrier (and the app behind it) shows
-    // around the panel; the panel supplies its own dark surface. Anchored to
-    // the bottom as a sheet on phones, centered as a dialog on wide screens.
-    final wide = MediaQuery.sizeOf(context).width >= 600;
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: Align(
-          alignment: wide ? Alignment.center : Alignment.bottomCenter,
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(wide ? 24 : 8),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: _OnboardingFlow(
-                heroStyle: heroStyle,
-                onProviderModalShown: onProviderModalShown,
-                onConnected: onConnected,
-                onSkip: onSkip,
+    // around the panel; the panel supplies its own dark surface.
+    final mq = MediaQuery.of(context);
+    final wide = mq.size.width >= 600;
+    final flow = _OnboardingFlow(
+      heroStyle: heroStyle,
+      onProviderModalShown: onProviderModalShown,
+      onConnected: onConnected,
+      onSkip: onSkip,
+    );
+
+    if (wide) {
+      // Desktop: a centred dialog capped at a comfortable width.
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: flow,
               ),
             ),
           ),
+        ),
+      );
+    }
+
+    // Phone: a full-width sheet flush to the bottom edge — it covers the app's
+    // bottom navigation (no SafeArea bottom inset, no horizontal margin). The
+    // panel's own content carries the bottom safe-area padding so controls
+    // clear the home indicator while the surface still reaches the screen edge.
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      resizeToAvoidBottomInset: false,
+      body: Align(
+        alignment: Alignment.bottomCenter,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(top: mq.padding.top),
+          child: flow,
         ),
       ),
     );
@@ -159,39 +179,29 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
 
   @override
   Widget build(BuildContext context) {
-    // All three steps render at ONE fixed height so the modal never resizes
-    // between steps — the source of the screen-to-screen "jump". ~72% of the
-    // viewport (clamped) comfortably fits the tallest step (welcome) while
-    // keeping the shorter steps from looking stranded. With every step the same
-    // height, the crossfade is a pure opacity blend (identical dark
-    // backgrounds, no colour seam) with zero layout movement.
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    // The welcome (first) step is the tallest and is the height the user wants
-    // every step to share. Its hero + promise + CTAs run ≈ 760 at phone width,
-    // so the common height tracks the viewport but floors high enough to fit
-    // the welcome without clipping; the shorter steps fill the rest with their
-    // own backdrop (the constellation animation reads nicely in that space).
-    final panelHeight = (screenHeight * 0.9).clamp(790.0, 900.0);
-    return AnimatedSwitcher(
+    // Each step is its own natural height (a bottom sheet on phones), and
+    // AnimatedSize eases the height between steps so the transition is smooth
+    // without forcing every step to the tallest one's height (which made the
+    // shorter steps balloon to near-fullscreen).
+    return AnimatedSize(
       duration: MotionDurations.medium4,
-      switchInCurve: MotionCurves.emphasizedDecelerate,
-      switchOutCurve: MotionCurves.emphasizedDecelerate,
-      layoutBuilder: (currentChild, previousChildren) => Stack(
-        alignment: Alignment.topCenter,
-        children: [
-          // Equal-height children, so a plain fill never clips or overflows.
-          for (final child in previousChildren) Positioned.fill(child: child),
-          ?currentChild,
-        ],
-      ),
-      child: SizedBox(
-        // Key by step (+ provider for the key step) so the switcher crossfades
-        // on every real navigation, including re-entering the key step for a
-        // different provider.
-        key: ValueKey(
-          _step == _FlowStep.apiKey ? 'apiKey-${_type.name}' : _step.name,
+      curve: MotionCurves.emphasizedDecelerate,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: MotionDurations.medium4,
+        switchInCurve: MotionCurves.emphasizedDecelerate,
+        switchOutCurve: MotionCurves.emphasizedDecelerate,
+        // Outgoing steps are pinned top at their own (loose) height — NOT
+        // Positioned.fill, which would stretch a taller outgoing step into a
+        // shorter incoming box and overflow it while the height eases.
+        layoutBuilder: (currentChild, previousChildren) => Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            for (final child in previousChildren)
+              Positioned(top: 0, left: 0, right: 0, child: child),
+            ?currentChild,
+          ],
         ),
-        height: panelHeight,
         child: _buildStep(),
       ),
     );
