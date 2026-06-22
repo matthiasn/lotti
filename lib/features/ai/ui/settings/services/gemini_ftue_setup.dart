@@ -28,6 +28,7 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     required WidgetRef ref,
     required AiConfigInferenceProvider provider,
     Set<String> excludedProviderModelIds = const {},
+    bool createDefaultCategory = true,
   }) async {
     if (provider.inferenceProviderType != InferenceProviderType.gemini) {
       return null;
@@ -71,13 +72,17 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
       excludedProviderModelIds: excludedProviderModelIds,
     );
 
-    final (category, categoryWasCreated) = await _createOrReuseCategory(
-      categoryRepository: categoryRepository,
-      categoryName: ftueGeminiCategoryName,
-      categoryColor: ftueGeminiCategoryColor,
-      defaultProfileId: profileGeminiFlashId,
-      defaultTemplateId: lauraTemplateId,
-    );
+    CategoryDefinition? category;
+    var categoryWasCreated = false;
+    if (createDefaultCategory) {
+      (category, categoryWasCreated) = await _createOrReuseCategory(
+        categoryRepository: categoryRepository,
+        categoryName: ftueGeminiCategoryName,
+        categoryColor: ftueGeminiCategoryColor,
+        defaultProfileId: profileGeminiFlashId,
+        defaultTemplateId: lauraTemplateId,
+      );
+    }
 
     return GeminiFtueResult(
       modelsCreated: modelResult.created.length,

@@ -38,6 +38,7 @@ extension OllamaFtueSetup on ProviderPromptSetupService {
     required WidgetRef ref,
     required AiConfigInferenceProvider provider,
     Set<String> excludedProviderModelIds = const {},
+    bool createDefaultCategory = true,
   }) async {
     if (provider.inferenceProviderType != InferenceProviderType.ollama) {
       return null;
@@ -45,12 +46,16 @@ extension OllamaFtueSetup on ProviderPromptSetupService {
 
     final categoryRepository = ref.read(categoryRepositoryProvider);
 
-    final (category, categoryWasCreated) = await _createOrReuseCategory(
-      categoryRepository: categoryRepository,
-      categoryName: ftueOllamaCategoryName,
-      categoryColor: ftueOllamaCategoryColor,
-      defaultProfileId: profileLocalId,
-    );
+    CategoryDefinition? category;
+    var categoryWasCreated = false;
+    if (createDefaultCategory) {
+      (category, categoryWasCreated) = await _createOrReuseCategory(
+        categoryRepository: categoryRepository,
+        categoryName: ftueOllamaCategoryName,
+        categoryColor: ftueOllamaCategoryColor,
+        defaultProfileId: profileLocalId,
+      );
+    }
 
     return OllamaFtueResult(
       categoryCreated: categoryWasCreated,
