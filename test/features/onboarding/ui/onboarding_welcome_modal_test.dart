@@ -4,6 +4,7 @@ import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
+import 'package:lotti/get_it.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -112,6 +113,24 @@ void main() {
     expect(find.text('Paste your API key'), findsOneWidget);
   });
 
+  testWidgets('back from the API-key step returns to the providers', (
+    tester,
+  ) async {
+    await openWelcome(tester);
+    await tester.tap(find.text('Connect your brain'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mistral'));
+    await tester.pumpAndSettle();
+    expect(find.text('Paste your API key'), findsOneWidget);
+
+    // The key step's back arrow returns to the provider list.
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Paste your API key'), findsNothing);
+    expect(find.text('Gemini'), findsOneWidget);
+  });
+
   testWidgets('skipping invokes onDismiss and records welcomeSkipped', (
     tester,
   ) async {
@@ -123,5 +142,32 @@ void main() {
     expect(dismissed, isTrue);
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.welcomeSkipped), isTrue);
+  });
+
+  testWidgets('falls back to the getIt-registered metrics repo', (
+    tester,
+  ) async {
+    // No `metrics:` argument → show() resolves the repo from getIt.
+    getIt.registerSingleton<OnboardingMetricsRepository>(repo);
+    addTearDown(() => getIt.unregister<OnboardingMetricsRepository>());
+
+    await tester.pumpWidget(
+      makeTestableWidget(
+        Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () =>
+                OnboardingWelcomeModal.show(context, onDismiss: () {}),
+            child: const Text('open'),
+          ),
+        ),
+        mediaQueryData: mq,
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
+    final state = await repo.funnelState();
+    expect(state.reached(OnboardingEventName.welcomeShown), isTrue);
   });
 }

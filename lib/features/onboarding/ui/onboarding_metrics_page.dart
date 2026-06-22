@@ -56,7 +56,9 @@ class _OnboardingMetricsBodyState extends State<OnboardingMetricsBody> {
     return _FunnelReport(state: state, eventCount: events.length);
   }
 
-  void _refresh() => setState(() => _future = _load());
+  void _refresh() => setState(() {
+    _future = _load();
+  });
 
   Future<void> _clearAll() async {
     final confirmed = await showConfirmationModal(

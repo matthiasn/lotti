@@ -137,6 +137,46 @@ void main() {
 
     tearDown(getIt.reset);
 
+    testWidgets('Show onboarding welcome opens the FTUE welcome', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _constrainedMaintenancePage(),
+          mediaQueryData: const MediaQueryData(
+            size: Size(800, 1200),
+            disableAnimations: true,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Show onboarding welcome'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Connect your brain'), findsOneWidget);
+    });
+
+    testWidgets('Onboarding animation gallery pushes the gallery page', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _constrainedMaintenancePage(),
+          mediaQueryData: const MediaQueryData(
+            size: Size(800, 1200),
+            disableAnimations: true,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Onboarding animation gallery'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Onboarding animations'), findsOneWidget);
+    });
+
     testWidgets('page displays expected maintenance options', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(_constrainedMaintenancePage()),
