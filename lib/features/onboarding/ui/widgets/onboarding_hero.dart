@@ -84,6 +84,9 @@ class OnboardingBackdrop extends StatelessWidget {
               0.35,
             )!.withValues(alpha: 0.7),
             nodeCount: nodeCount,
+            // Match the welcome hero's toned bloom so the connect + key steps
+            // share one coherent lighting language (design-panel note).
+            glow: 0.8,
           ),
         ],
       ),
