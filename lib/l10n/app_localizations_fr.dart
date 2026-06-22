@@ -6531,7 +6531,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboardingCategoryExplanation =>
-      'Lotti garde chaque domaine de ta vie dans son propre espace, pour que les tâches et suggestions restent pertinentes. Choisis-en quelques-uns pour commencer — tu peux les changer à tout moment.';
+      'Chaque domaine de ta vie a son propre espace. Choisis ce qui te convient — ou ajoute les tiens.';
 
   @override
   String get onboardingCategoryFamily => 'Famille';

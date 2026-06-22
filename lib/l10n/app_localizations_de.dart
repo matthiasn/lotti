@@ -6452,7 +6452,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get onboardingCategoryExplanation =>
-      'Lotti hält jeden Lebensbereich in einem eigenen Raum, damit Aufgaben und Vorschläge relevant bleiben. Wähle ein paar zum Start — du kannst sie jederzeit ändern.';
+      'Jeder Lebensbereich bekommt seinen eigenen Raum. Wähle, was passt — oder füge eigene hinzu.';
 
   @override
   String get onboardingCategoryFamily => 'Familie';

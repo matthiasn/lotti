@@ -11137,7 +11137,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingCategoryExplanation.
   ///
   /// In en, this message translates to:
-  /// **'Lotti keeps each area of your life in its own space, so tasks and suggestions stay relevant. Pick a few to start — you can change them anytime.'**
+  /// **'Each area of your life gets its own space. Pick any that fit — or add your own.'**
   String get onboardingCategoryExplanation;
 
   /// No description provided for @onboardingCategoryFamily.

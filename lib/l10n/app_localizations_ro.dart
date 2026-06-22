@@ -6527,7 +6527,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingCategoryExplanation =>
-      'Lotti păstrează fiecare zonă a vieții în spațiul ei, astfel încât sarcinile și sugestiile să rămână relevante. Alegeți câteva pentru început — le puteți schimba oricând.';
+      'Fiecare zonă a vieții are spațiul ei. Alegeți ce se potrivește sau adăugați-vă propriile.';
 
   @override
   String get onboardingCategoryFamily => 'Familie';

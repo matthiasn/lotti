@@ -6523,7 +6523,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingCategoryExplanation =>
-      'Lotti mantiene cada área de tu vida en su propio espacio, para que las tareas y sugerencias sigan siendo relevantes. Elige algunas para empezar; puedes cambiarlas cuando quieras.';
+      'Cada área de tu vida tiene su propio espacio. Elige las que encajen o añade las tuyas.';
 
   @override
   String get onboardingCategoryFamily => 'Familia';

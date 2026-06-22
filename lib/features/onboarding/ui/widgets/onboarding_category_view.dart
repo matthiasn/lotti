@@ -74,6 +74,9 @@ class OnboardingCategoryView extends StatelessWidget {
       child: Stack(
         children: [
           const Positioned.fill(child: OnboardingBackdrop()),
+          // Calm, near-solid backing so the chip grid + secondary text read
+          // cleanly — the alive backdrop stays a faint hint at the top edge
+          // rather than bleeding sparkles behind small interactive targets.
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -81,8 +84,8 @@ class OnboardingCategoryView extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    panelBg.withValues(alpha: 0),
-                    panelBg.withValues(alpha: 0.55),
+                    panelBg.withValues(alpha: 0.45),
+                    panelBg.withValues(alpha: 0.92),
                   ],
                 ),
               ),
@@ -133,24 +136,14 @@ class OnboardingCategoryView extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: tokens.spacing.step4),
-                Wrap(
-                  spacing: tokens.spacing.step3,
-                  runSpacing: tokens.spacing.step3,
-                  children: [
-                    for (final option in options)
-                      _CategoryChip(
-                        tokens: tokens,
-                        accent: accent,
-                        option: option,
-                        selected: selected.contains(option.label),
-                        onTap: () => onToggle(option.label),
-                      ),
-                    _AddOwnChip(
-                      tokens: tokens,
-                      label: addOwnLabel,
-                      onTap: onAddOwn,
-                    ),
-                  ],
+                _CategoryGrid(
+                  tokens: tokens,
+                  accent: accent,
+                  options: options,
+                  selected: selected,
+                  onToggle: onToggle,
+                  addOwnLabel: addOwnLabel,
+                  onAddOwn: onAddOwn,
                 ),
                 SizedBox(height: tokens.spacing.step7),
                 DesignSystemButton(
@@ -167,6 +160,82 @@ class OnboardingCategoryView extends StatelessWidget {
   }
 }
 
+/// A tidy uniform grid of selectable area chips: the options laid out in rows
+/// of two equal-width cells (`Expanded`), with the "+ Add your own" chip on its
+/// own full-width row below. Every chip shares the same height + padding so the
+/// grid never looks ragged (the review-panel blocker). An odd final option pairs
+/// with an empty spacer so the column edges stay aligned.
+class _CategoryGrid extends StatelessWidget {
+  const _CategoryGrid({
+    required this.tokens,
+    required this.accent,
+    required this.options,
+    required this.selected,
+    required this.onToggle,
+    required this.addOwnLabel,
+    required this.onAddOwn,
+  });
+
+  final DsTokens tokens;
+  final Color accent;
+  final List<OnboardingCategoryOption> options;
+  final Set<String> selected;
+  final void Function(String label) onToggle;
+  final String addOwnLabel;
+  final VoidCallback onAddOwn;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = tokens.spacing.step3;
+    final rows = <Widget>[];
+    for (var i = 0; i < options.length; i += 2) {
+      if (i > 0) rows.add(SizedBox(height: gap));
+      final left = options[i];
+      final right = i + 1 < options.length ? options[i + 1] : null;
+      rows.add(
+        Row(
+          children: [
+            Expanded(
+              child: _CategoryChip(
+                tokens: tokens,
+                accent: accent,
+                option: left,
+                selected: selected.contains(left.label),
+                onTap: () => onToggle(left.label),
+              ),
+            ),
+            SizedBox(width: gap),
+            Expanded(
+              child: right == null
+                  ? const SizedBox.shrink()
+                  : _CategoryChip(
+                      tokens: tokens,
+                      accent: accent,
+                      option: right,
+                      selected: selected.contains(right.label),
+                      onTap: () => onToggle(right.label),
+                    ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (rows.isNotEmpty) rows.add(SizedBox(height: gap));
+    rows.add(
+      _AddOwnChip(tokens: tokens, label: addOwnLabel, onTap: onAddOwn),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: rows,
+    );
+  }
+}
+
+/// One uniform area chip. Unselected reads as *available* — a neutral raised
+/// surface with a bright border and full-white label, centred label only (no
+/// per-category icon, which killed the mixed-metaphor icon set). Selected fills
+/// solid brand and gains a leading check with a dark label.
 class _CategoryChip extends StatelessWidget {
   const _CategoryChip({
     required this.tokens,
@@ -197,30 +266,37 @@ class _CategoryChip extends StatelessWidget {
           curve: MotionCurves.standard,
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacing.step4,
-            vertical: tokens.spacing.step3,
+            vertical: tokens.spacing.step4,
           ),
           decoration: BoxDecoration(
             // Unselected reads as *available* (a neutral raised surface), not a
             // faint teal that looks disabled; selected fills solid brand.
-            color: selected ? accent : textHigh.withValues(alpha: 0.1),
+            color: selected ? accent : textHigh.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(tokens.radii.m),
             border: Border.all(
-              color: selected ? accent : textHigh.withValues(alpha: 0.32),
+              color: selected ? accent : textHigh.withValues(alpha: 0.62),
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                selected ? Icons.check_rounded : option.icon,
-                size: tokens.spacing.step5,
-                color: fg,
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                option.label,
-                style: tokens.typography.styles.body.bodyLarge.copyWith(
+              if (selected) ...[
+                Icon(
+                  Icons.check_rounded,
+                  size: tokens.spacing.step5,
                   color: fg,
+                ),
+                SizedBox(width: tokens.spacing.step2),
+              ],
+              Flexible(
+                child: Text(
+                  option.label,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.body.bodyLarge.copyWith(
+                    color: fg,
+                  ),
                 ),
               ),
             ],
@@ -231,6 +307,9 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
+/// The full-width "+ Add your own" chip. Shares the option chips' height +
+/// padding so the grid stays uniform; rendered as an available neutral surface
+/// (matching the unselected option chips) with a leading add glyph.
 class _AddOwnChip extends StatelessWidget {
   const _AddOwnChip({
     required this.tokens,
@@ -253,14 +332,18 @@ class _AddOwnChip extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacing.step4,
-            vertical: tokens.spacing.step3,
+            vertical: tokens.spacing.step4,
           ),
+          // Secondary affordance, distinct from the selectable presets: no
+          // fill, a dimmer border + label so it reads as "add" rather than a
+          // peer option.
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(tokens.radii.m),
-            border: Border.all(color: textMedium.withValues(alpha: 0.4)),
+            border: Border.all(color: textMedium.withValues(alpha: 0.32)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.add_rounded,
@@ -268,10 +351,14 @@ class _AddOwnChip extends StatelessWidget {
                 color: textMedium,
               ),
               SizedBox(width: tokens.spacing.step2),
-              Text(
-                label,
-                style: tokens.typography.styles.body.bodyLarge.copyWith(
-                  color: textMedium,
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.body.bodyLarge.copyWith(
+                    color: textMedium,
+                  ),
                 ),
               ),
             ],

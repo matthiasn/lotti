@@ -76,28 +76,74 @@ void main() {
     expect(whys, 1);
   });
 
-  testWidgets('selected options show a check; unselected show their icon', (
-    tester,
-  ) async {
+  testWidgets('only the selected chip shows a check; unselected chips are '
+      'label-only (no per-category icons)', (tester) async {
     await pumpView(tester, selected: const {'Work'});
 
-    // The selected chip swaps its category icon for a check.
+    // Exactly one chip — the selected one — gains a leading check.
     expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-    // Unselected options keep their own icons.
-    expect(find.byIcon(Icons.fitness_center_rounded), findsOneWidget);
+    // The mixed-metaphor per-category icons are gone entirely: unselected
+    // chips render their label only.
+    expect(find.byIcon(Icons.fitness_center_rounded), findsNothing);
     expect(find.byIcon(Icons.work_outline_rounded), findsNothing);
+    expect(find.byIcon(Icons.home_rounded), findsNothing);
+    expect(find.byIcon(Icons.group_rounded), findsNothing);
+    // Only the "add your own" chip keeps a glyph (the add affordance).
+    expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+    // Every label still renders regardless of selection.
+    for (final option in options) {
+      expect(find.text(option.label), findsOneWidget);
+    }
   });
 
-  testWidgets('tapping an option reports the toggle', (tester) async {
-    String? toggled;
+  testWidgets(
+    'with no selection no chip shows a check and labels still render',
+    (tester) async {
+      await pumpView(tester, selected: const {});
+
+      expect(find.byIcon(Icons.check_rounded), findsNothing);
+      for (final option in options) {
+        expect(find.text(option.label), findsOneWidget);
+      }
+    },
+  );
+
+  testWidgets(
+    'option chips lay out as a uniform two-column grid with equal widths',
+    (tester) async {
+      await pumpView(tester, selected: const {'Work'});
+
+      // Rows of two: Work/Fitness on one row, Family/Friends below, sharing
+      // identical width (the Expanded cells) — the tidy-grid blocker.
+      final workRect = tester.getRect(find.text('Work'));
+      final fitnessRect = tester.getRect(find.text('Fitness'));
+      final familyRect = tester.getRect(find.text('Family'));
+      final friendsRect = tester.getRect(find.text('Friends'));
+
+      // Two columns: left labels share a left edge; right labels another.
+      expect(fitnessRect.center.dx, greaterThan(workRect.center.dx));
+      expect(friendsRect.center.dx, greaterThan(familyRect.center.dx));
+      // Two rows: the second pair sits below the first.
+      expect(familyRect.top, greaterThan(workRect.top));
+      expect(friendsRect.top, greaterThan(fitnessRect.top));
+    },
+  );
+
+  testWidgets('tapping an option in either column reports the toggle', (
+    tester,
+  ) async {
+    final toggled = <String>[];
     await pumpView(
       tester,
       selected: const {},
-      onToggle: (label) => toggled = label,
+      onToggle: toggled.add,
     );
 
+    // A left-column option (Work, index 0) and a right-column one (Fitness,
+    // index 1) — exercising both per-cell toggle closures.
+    await tester.tap(find.text('Work'));
     await tester.tap(find.text('Fitness'));
-    expect(toggled, 'Fitness');
+    expect(toggled, ['Work', 'Fitness']);
   });
 
   testWidgets('add-your-own reports its tap', (tester) async {

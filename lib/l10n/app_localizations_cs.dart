@@ -6482,7 +6482,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get onboardingCategoryExplanation =>
-      'Lotti udržuje každou oblast tvého života v jejím vlastním prostoru, aby úkoly a návrhy zůstaly relevantní. Vyber si pár na začátek — kdykoli je můžeš změnit.';
+      'Každá oblast života má vlastní prostor. Vyber, co se hodí — nebo přidej vlastní.';
 
   @override
   String get onboardingCategoryFamily => 'Rodina';
