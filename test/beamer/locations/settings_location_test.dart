@@ -20,6 +20,7 @@ import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
@@ -1205,6 +1206,23 @@ void main() {
         'advanced',
       );
       expect(pages[2].child, isA<MaintenancePage>());
+    });
+
+    test('buildPages builds OnboardingMetricsPage', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/advanced/onboarding_metrics'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(mockBuildContext, beamState);
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'advanced',
+      );
+      expect(pages[2].child, isA<OnboardingMetricsPage>());
     });
 
     test('buildPages builds SoulEvolutionReviewPage for soul review', () {

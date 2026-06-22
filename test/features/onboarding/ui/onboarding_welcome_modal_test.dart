@@ -1,12 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/get_it.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../categories/test_utils.dart';
+
+/// Canned probe so the API-key step's live verification resolves without a
+/// network call.
+class _FakeProbe extends ConnectionProbe {
+  _FakeProbe(this.result);
+  final ConnectionCheckState result;
+  @override
+  Future<ConnectionCheckState> probe({
+    required Uri baseUri,
+    required String apiKey,
+    required Duration timeout,
+    required http.Client client,
+  }) async => result;
+}
 
 void main() {
   late OnboardingMetricsDb db;
@@ -16,6 +40,8 @@ void main() {
   // Reduced motion so the looping constellation controller stops and
   // pumpAndSettle can complete.
   const mq = MediaQueryData(size: Size(390, 844), disableAnimations: true);
+
+  setUpAll(registerAllFallbackValues);
 
   setUp(() {
     idSeq = 0;
@@ -146,6 +172,83 @@ void main() {
     expect(dismissed, isTrue);
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.welcomeSkipped), isTrue);
+  });
+
+  testWidgets('connecting a provider pops the modal and records '
+      'providerConnected', (tester) async {
+    // Drive the full flow welcome → connect → Ollama → verified → Connect,
+    // exercising the modal's onConnected glue (connectedType + the
+    // providerConnected event). Ollama needs no key and its FTUE setup only
+    // touches the category repository, so it's the cheapest provider to drive.
+    final aiRepo = MockAiConfigRepository();
+    when(() => aiRepo.saveConfig(any())).thenAnswer((_) async {});
+    final catRepo = MockCategoryRepository();
+    when(catRepo.getAllCategories).thenAnswer((_) async => []);
+    when(
+      () => catRepo.createCategory(
+        name: any(named: 'name'),
+        color: any(named: 'color'),
+        defaultProfileId: any(named: 'defaultProfileId'),
+        defaultTemplateId: any(named: 'defaultTemplateId'),
+      ),
+    ).thenAnswer(
+      (_) async => CategoryTestUtils.createTestCategory(id: 'c1', name: 'AI'),
+    );
+
+    // Match the render surface to the 844-tall MediaQuery so the lower tiles /
+    // Connect button are on-screen and hit-testable.
+    tester.view
+      ..physicalSize = const Size(390, 844)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      makeTestableWidget(
+        host(),
+        mediaQueryData: mq,
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(aiRepo),
+          categoryRepositoryProvider.overrideWithValue(catRepo),
+          connectionVerifierClientProvider.overrideWith(
+            (ref) =>
+                () => MockClient((_) async => http.Response('', 200)),
+          ),
+          connectionProbeRegistryProvider.overrideWith(
+            (ref) => {
+              InferenceProviderType.ollama: _FakeProbe(
+                const ConnectionCheckVerified(
+                  modelCount: 2,
+                  latency: Duration(milliseconds: 5),
+                ),
+              ),
+            },
+          ),
+        ],
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Connect your brain'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('More options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ollama'));
+    await tester.pumpAndSettle();
+
+    // Ollama probes reachability on open; let the ≥1s checking dwell elapse.
+    await tester.pump(const Duration(milliseconds: 1100));
+    await tester.pumpAndSettle();
+    expect(find.text('Connection verified'), findsOneWidget);
+
+    await tester.tap(find.text('Connect'));
+    await tester.pumpAndSettle();
+
+    // Modal popped; provider creation + FTUE setup ran; event recorded.
+    expect(find.text('Connect your brain'), findsNothing);
+    verify(() => aiRepo.saveConfig(any())).called(1);
+    final state = await repo.funnelState();
+    expect(state.reached(OnboardingEventName.providerConnected), isTrue);
   });
 
   testWidgets('falls back to the getIt-registered metrics repo', (

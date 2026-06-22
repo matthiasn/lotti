@@ -6,7 +6,9 @@ import 'package:lotti/features/onboarding/repository/onboarding_metrics_reposito
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -123,5 +125,36 @@ void main() {
 
     // The confirm path cleared the store and the page refreshed.
     expect(await db.getAllEvents(), isEmpty);
+  });
+
+  testWidgets('surfaces a load error instead of spinning forever', (
+    tester,
+  ) async {
+    // A repository whose funnelState fails drives the FutureBuilder into its
+    // error branch (the "Failed to load" tile with tap-to-retry).
+    final mockRepo = MockOnboardingMetricsRepository();
+    when(mockRepo.funnelState).thenAnswer((_) async => throw Exception('boom'));
+    getIt
+      ..unregister<OnboardingMetricsRepository>()
+      ..registerSingleton<OnboardingMetricsRepository>(mockRepo);
+
+    await pumpUntilLoaded(
+      tester,
+      find.text('Failed to load onboarding metrics'),
+    );
+
+    expect(find.text('Failed to load onboarding metrics'), findsOneWidget);
+    // The error detail is surfaced rather than hidden behind a spinner.
+    expect(find.textContaining('boom'), findsOneWidget);
+
+    // FutureBuilder records the handled future error on the test binding;
+    // drain the expected ones so the end-of-test invariant doesn't flag them.
+    for (
+      var ex = tester.takeException();
+      ex != null;
+      ex = tester.takeException()
+    ) {
+      expect(ex.toString(), contains('boom'));
+    }
   });
 }

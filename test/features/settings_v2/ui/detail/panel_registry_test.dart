@@ -15,6 +15,7 @@ import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
@@ -201,6 +202,10 @@ void main() {
         expect(build('theming'), isA<ThemingBody>());
         expect(build('advanced-about'), isA<AboutBody>());
         expect(build('advanced-maintenance'), isA<MaintenanceBody>());
+        expect(
+          build('advanced-onboarding-metrics'),
+          isA<OnboardingMetricsBody>(),
+        );
         expect(build('advanced-logging'), isA<LoggingSettingsBody>());
         // Backfill is wrapped in a desktop-only horizontal inset so its
         // content doesn't run edge-to-edge (matching the Stats card margin).

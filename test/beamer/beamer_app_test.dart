@@ -348,6 +348,7 @@ Future<void> _pumpAppScreenCustomProviders(
   AiSetupPromptService Function()? aiSetupPromptOverride,
   WhatsNewController Function()? whatsNewOverride,
   List<Override> extraOverrides = const [],
+  bool ftueEnabled = false,
 }) async {
   _useViewport(tester, viewportSize);
 
@@ -375,10 +376,10 @@ Future<void> _pumpAppScreenCustomProviders(
   );
 
   final mockJournalDb = MockJournalDb();
-  // FTUE gate off → first-run AI setup uses the provider-selection modal.
+  // FTUE gate: off → provider-selection modal; on → the FTUE welcome.
   when(
     () => mockJournalDb.getConfigFlag(enableOnboardingFtueFlag),
-  ).thenAnswer((_) async => false);
+  ).thenAnswer((_) async => ftueEnabled);
 
   await tester.pumpWidget(
     ProviderScope(
@@ -2413,6 +2414,44 @@ void main() {
         await tester.tapAt(const Offset(5, 5));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'aiSetupPrompt data(true) with the FTUE flag on opens the FTUE welcome',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        // FTUE flag on → _showAiSetupPrompt opens OnboardingWelcomeModal
+        // instead of the legacy provider-selection modal.
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          aiSetupPromptOverride: _ShowAiSetupPromptService.new,
+          whatsNewOverride: _StableUnseenWhatsNewController.new,
+          ftueEnabled: true,
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        // Let the staggered entrance settle so the CTA is present.
+        await tester.pump(const Duration(milliseconds: 800));
+
+        expect(find.byType(AiProviderSelectionModal), findsNothing);
+        expect(find.text('Connect your brain'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();

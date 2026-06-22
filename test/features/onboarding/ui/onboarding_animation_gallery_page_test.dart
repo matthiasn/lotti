@@ -1,12 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_animation_gallery_page.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../categories/test_utils.dart';
+
+/// Canned probe so the API-key step verifies without a network call.
+class _FakeProbe extends ConnectionProbe {
+  _FakeProbe(this.result);
+  final ConnectionCheckState result;
+  @override
+  Future<ConnectionCheckState> probe({
+    required Uri baseUri,
+    required String apiKey,
+    required Duration timeout,
+    required http.Client client,
+  }) async => result;
+}
 
 void main() {
   // Tall canvas so the chip row + the panel both fit, and reduced motion so the
@@ -14,7 +36,12 @@ void main() {
   // pumping forever.
   const mq = MediaQueryData(size: Size(900, 1200), disableAnimations: true);
 
-  Future<void> pumpGallery(WidgetTester tester) async {
+  setUpAll(registerAllFallbackValues);
+
+  Future<void> pumpGallery(
+    WidgetTester tester, {
+    List<Override> extraOverrides = const [],
+  }) async {
     // The page's Scaffold body lays out against the physical test surface, not
     // the MediaQuery — size the surface so the tall chip row + scrolling panel
     // (incl. the crystallize hero's CustomMultiChildLayout) have bounded space.
@@ -41,6 +68,7 @@ void main() {
             (ref) =>
                 () => MockClient((_) async => http.Response('', 200)),
           ),
+          ...extraOverrides,
         ],
       ),
     );
@@ -254,5 +282,64 @@ void main() {
     );
     expect(chipWithLabel(tester, 'Connect').selected, isTrue);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a completed connect returns the gallery to the welcome view', (
+    tester,
+  ) async {
+    // Drive a full Ollama connect from the gallery so the API-key panel's
+    // onConnected fires, flipping the gallery back to the welcome view.
+    final aiRepo = MockAiConfigRepository();
+    when(() => aiRepo.saveConfig(any())).thenAnswer((_) async {});
+    final catRepo = MockCategoryRepository();
+    when(catRepo.getAllCategories).thenAnswer((_) async => []);
+    when(
+      () => catRepo.createCategory(
+        name: any(named: 'name'),
+        color: any(named: 'color'),
+        defaultProfileId: any(named: 'defaultProfileId'),
+        defaultTemplateId: any(named: 'defaultTemplateId'),
+      ),
+    ).thenAnswer(
+      (_) async => CategoryTestUtils.createTestCategory(id: 'c1', name: 'AI'),
+    );
+
+    await pumpGallery(
+      tester,
+      extraOverrides: [
+        aiConfigRepositoryProvider.overrideWithValue(aiRepo),
+        categoryRepositoryProvider.overrideWithValue(catRepo),
+        connectionProbeRegistryProvider.overrideWith(
+          (ref) => {
+            InferenceProviderType.ollama: _FakeProbe(
+              const ConnectionCheckVerified(
+                modelCount: 2,
+                latency: Duration(milliseconds: 5),
+              ),
+            ),
+          },
+        ),
+      ],
+    );
+
+    await tester.tap(find.text('Connect'));
+    await settlePanelSwap(tester);
+    await tester.tap(find.text('More options'));
+    await settlePanelSwap(tester);
+    await tester.tap(find.text('Ollama'));
+    await settlePanelSwap(tester);
+
+    // Ollama probes on open; let the ≥1s checking dwell elapse, then connect.
+    await tester.pump(const Duration(milliseconds: 1100));
+    await settlePanelSwap(tester);
+    expect(find.text('Connection verified'), findsOneWidget);
+
+    // Target the panel's Connect button (the gallery view chip is also "Connect").
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Connect'));
+    await settlePanelSwap(tester);
+
+    // onConnected flipped the gallery back to the welcome view.
+    expect(find.textContaining('Connect your AI brain'), findsOneWidget);
+    expect(chipWithLabel(tester, 'Constellation').selected, isTrue);
   });
 }

@@ -19,7 +19,8 @@ import 'package:lotti/get_it.dart';
 /// reliably hittable and gives the keyboard step room. `onDismiss` fires only
 /// when the user backs out without connecting.
 class OnboardingWelcomeModal {
-  OnboardingWelcomeModal._();
+  // Uninstantiable namespace — only the static [show] is ever used.
+  OnboardingWelcomeModal._(); // coverage:ignore-line
 
   static Future<void> show(
     BuildContext context, {
