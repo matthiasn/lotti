@@ -2,11 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// One option of a [DsSegmentedToggle].
+///
+/// Renders [label] as text by default. When [icon] is supplied the segment
+/// shows the glyph instead (with [activeIcon] swapped in while selected, and
+/// the teal tint carrying the selected state), and [label] becomes the
+/// tooltip + accessibility label — e.g. the theming mode switch's sun / auto /
+/// moon icons.
 class DsSegment<T> {
-  const DsSegment(this.value, this.label);
+  const DsSegment(this.value, this.label, {this.icon, this.activeIcon});
 
   final T value;
   final String label;
+
+  /// Optional glyph; when set the segment renders this icon instead of the
+  /// text [label]. [label] still drives the tooltip + semantics.
+  final IconData? icon;
+
+  /// Optional glyph used while the segment is selected (falls back to [icon]).
+  final IconData? activeIcon;
 }
 
 /// Pill-shaped segmented control for switching between mutually exclusive
@@ -57,6 +70,8 @@ class DsSegmentedToggle<T> extends StatelessWidget {
               Expanded(
                 child: _DsSegmentItem(
                   label: segment.label,
+                  icon: segment.icon,
+                  activeIcon: segment.activeIcon,
                   isSelected: segment.value == selected,
                   onTap: () => onChanged(segment.value),
                   dense: true,
@@ -65,6 +80,8 @@ class DsSegmentedToggle<T> extends StatelessWidget {
             else
               _DsSegmentItem(
                 label: segment.label,
+                icon: segment.icon,
+                activeIcon: segment.activeIcon,
                 isSelected: segment.value == selected,
                 onTap: () => onChanged(segment.value),
               ),
@@ -79,10 +96,14 @@ class _DsSegmentItem extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.icon,
+    this.activeIcon,
     this.dense = false,
   });
 
   final String label;
+  final IconData? icon;
+  final IconData? activeIcon;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -102,12 +123,55 @@ class _DsSegmentItem extends StatelessWidget {
       color: tokens.colors.text.mediumEmphasis,
       fontWeight: FontWeight.w500,
     );
+
+    final Widget content;
+    if (icon != null) {
+      // Icon segment: the teal tint + fill carry the selected state and the
+      // active glyph swaps in while selected. No ghost is needed — the icon's
+      // footprint is identical in both states.
+      content = Icon(
+        isSelected ? (activeIcon ?? icon!) : icon!,
+        size: tokens.spacing.step6,
+        color: isSelected ? teal : tokens.colors.text.mediumEmphasis,
+      );
+    } else {
+      content = Stack(
+        alignment: Alignment.center,
+        children: [
+          // Invisible ghost at the selected weight reserves the width so the
+          // control's size never changes with the selection (a bold label is
+          // wider) — callers can measure it and the row won't jump on tap.
+          // Hidden from semantics so the label isn't read twice.
+          ExcludeSemantics(
+            child: Opacity(
+              opacity: 0,
+              child: Text(
+                label,
+                style: selectedStyle,
+                maxLines: 1,
+                softWrap: false,
+              ),
+            ),
+          ),
+          Text(
+            label,
+            style: isSelected ? selectedStyle : unselectedStyle,
+            maxLines: 1,
+            softWrap: false,
+          ),
+        ],
+      );
+    }
+
     // Material + InkWell + Semantics (the codebase's button pattern) so each
     // segment is Tab-focusable, Enter/Space-activatable, and announced as a
     // selected/unselected button — GestureDetector alone gave none of that.
-    return Semantics(
+    // Icon segments carry no visible text, so the label rides the semantics +
+    // a tooltip instead.
+    final segment = Semantics(
       button: true,
       selected: isSelected,
+      label: icon != null ? label : null,
       child: Material(
         type: MaterialType.transparency,
         child: InkWell(
@@ -125,36 +189,12 @@ class _DsSegmentItem extends StatelessWidget {
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Invisible ghost at the selected weight reserves the width so
-                // the control's size never changes with the selection (a bold
-                // label is wider) — callers can measure it and the row won't
-                // jump on tap. Hidden from semantics so the label isn't read
-                // twice.
-                ExcludeSemantics(
-                  child: Opacity(
-                    opacity: 0,
-                    child: Text(
-                      label,
-                      style: selectedStyle,
-                      maxLines: 1,
-                      softWrap: false,
-                    ),
-                  ),
-                ),
-                Text(
-                  label,
-                  style: isSelected ? selectedStyle : unselectedStyle,
-                  maxLines: 1,
-                  softWrap: false,
-                ),
-              ],
-            ),
+            child: content,
           ),
         ),
       ),
     );
+
+    return icon != null ? Tooltip(message: label, child: segment) : segment;
   }
 }

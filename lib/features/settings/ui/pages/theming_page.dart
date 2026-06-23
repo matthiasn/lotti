@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/features/theming/model/theme_definitions.dart';
@@ -37,27 +38,6 @@ class ThemingBody extends ConsumerWidget {
     final themingState = ref.watch(themingControllerProvider);
     final controller = ref.read(themingControllerProvider.notifier);
 
-    ButtonSegment<ThemeMode> segment({
-      required ThemeMode filter,
-      required IconData icon,
-      required IconData activeIcon,
-      required String semanticLabel,
-    }) {
-      final active = themingState.themeMode == filter;
-      return ButtonSegment<ThemeMode>(
-        value: filter,
-        label: Tooltip(
-          message: semanticLabel,
-          child: Icon(
-            active ? activeIcon : icon,
-            semanticLabel: semanticLabel,
-            color: context.textTheme.titleLarge?.color ?? Colors.grey,
-            size: 25,
-          ),
-        ),
-      );
-    }
-
     if (themingState.darkTheme == null) {
       return const SizedBox.shrink();
     }
@@ -70,30 +50,30 @@ class ThemingBody extends ConsumerWidget {
             padding: const EdgeInsets.all(25),
             child: Column(
               children: [
-                SegmentedButton<ThemeMode>(
-                  selected: {themingState.themeMode},
-                  showSelectedIcon: false,
-                  onSelectionChanged: controller.onThemeSelectionChanged,
+                DsSegmentedToggle<ThemeMode>(
+                  selected: themingState.themeMode,
+                  onChanged: (mode) =>
+                      controller.onThemeSelectionChanged({mode}),
                   segments: [
-                    segment(
-                      filter: ThemeMode.dark,
+                    DsSegment(
+                      ThemeMode.dark,
+                      context.messages.settingsThemingDark,
                       icon: Icons.nightlight_outlined,
                       activeIcon: Icons.nightlight,
-                      semanticLabel: context.messages.settingsThemingDark,
                     ),
-                    segment(
-                      filter: ThemeMode.system,
+                    DsSegment(
+                      ThemeMode.system,
+                      context.messages.settingsThemingAutomatic,
                       icon: isMobile ? Icons.smartphone : Icons.laptop,
                       activeIcon: isMobile
                           ? Icons.smartphone_outlined
                           : Icons.laptop_outlined,
-                      semanticLabel: context.messages.settingsThemingAutomatic,
                     ),
-                    segment(
-                      filter: ThemeMode.light,
+                    DsSegment(
+                      ThemeMode.light,
+                      context.messages.settingsThemingLight,
                       icon: Icons.wb_sunny_outlined,
                       activeIcon: Icons.sunny,
-                      semanticLabel: context.messages.settingsThemingLight,
                     ),
                   ],
                 ),
