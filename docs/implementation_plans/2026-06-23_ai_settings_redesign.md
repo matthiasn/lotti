@@ -56,7 +56,7 @@ The redesign commits to six principles, derived from convergent panel feedback (
 
 ## 4. Global chrome (search / tab bar / filter chips / FAB)
 
-- **Put the search bar on the design system.** WHAT: the AI-settings field wraps `LottiSearchBar`, which hardcodes height (36/48), `borderRadius` (12/16), `fontSize`, a dark-mode gradient, and a **purple** (`colorScheme.primary`) search icon and border. Build the field on tokens: `background.level02` surface, `radii.l`, teal `interactive.enabled` icon, no Material-primary border — or extend `LottiSearchBar` to accept a token-driven accent/radius. WHY: Visual expert's **#1 priority** — the most prominent chrome element is the only one off-token and off-accent (purple icon beside a teal tab indicator is the clearest "bolted-together" tell). **[P0]**
+- **Put the search bar on the design system — by adopting `DesignSystemSearch` app-wide (decision 2026-06-23).** WHAT: the AI-settings field wraps `LottiSearchBar`, which hardcodes height (36/48), `borderRadius` (12/16), `fontSize`, a dark-mode gradient, and a **purple** (`colorScheme.primary`) search icon and border. `LottiSearchBar` is the app's *legacy* search; the design system already ships `DesignSystemSearch` (token/teal), used in flags, definitions, projects, task list, entity picker, dashboards, and this feature's profile-slot field. **Resolution (user choice "migrate all search bars to DS"): retire `LottiSearchBar` entirely** — migrate its remaining call sites (journal app bar, habits search, link-task modal, language modal, AI settings wrapper) to `DesignSystemSearch`, delete the widget + its dedicated tests, update finders. Only `isCompact` is in use anywhere (AI settings) and maps to `DesignSystemSearchSize`; `textCapitalization`/`useGradientInDark` are unused, so no API gap. WHY: Visual expert's **#1 priority**, and it makes *every* search bar in the app token-consistent in one move rather than diverging the AI page from the rest. **[P0]**
 - **Localize the search placeholder + fix the vocabulary.** WHAT: the placeholder hardcodes English `"Search AI configurations..."`. Add `aiSettingsSearchHint` to all six arb files (informal tone), pass `context.messages.aiSettingsSearchHint`, copy = `"Search providers, models, profiles…"` ("configurations" is internal `AiConfig` jargon). WHY: violates the project's own l10n rule on the most prominent string; Onboarding flags the jargon. **[P0 l10n, P1 copy]**
 - **Standardize the page gutter on `step5`.** WHAT: the filter chips use raw `EdgeInsets.symmetric(horizontal: 16)`; cards/list use `step5`. Search bar, filter chips, and card lists share one left edge via `tokens.spacing.step5`. WHY: Visual + IA — three elements currently sit on three different gutters. **[P1]**
 - **FAB: fix occlusion globally + make "add" legible + survive text scaling.** WHAT: (a) reserve bottom scroll padding equal to the FAB footprint on **every** tab list so cards never render under the FAB (occludes the Ollama "Offline" row and the Gemini 3 Flash row today), and verify the reservation holds at `textScaler` up to 2.0. (b) Replace the three unrelated glyphs (`add_link` / `auto_awesome` / `tune`) with a single consistent additive glyph (`+`), keeping the per-tab `semanticLabel`. WHY: A11y rates the occlusion **critical**; 4 experts flag the icon vocabulary as unlearnable. **[P0 occlusion, P1 icon]**
@@ -84,6 +84,19 @@ The redesign commits to six principles, derived from convergent panel feedback (
 - **`thinkingHighEnd` resolved to a Thinking-slot override (4 slots).** WHAT: documented and surfaced as an override inside the Thinking slot editor; the card renders four slots; "N of 4 configured" is honest. WHY: IA + Onboarding — resolution logic and displayed slots now agree, and the completeness denominator is defined. **[P1 — decided, not punted.]**
 
 ---
+
+## Design-system component reuse (audit 2026-06-23)
+
+The original plan was token-strong but under-specified **component** reuse. A DS-component audit found the chrome rebuilds widgets the design system already ships. Mandate: prefer the DS component over raw Material wherever one exists.
+
+- **Search →** retire `LottiSearchBar`, adopt **`DesignSystemSearch`** app-wide (see §4).
+- **Filter / capability chips →** replace Material `FilterChip` / `ActionChip` (`ai_settings_filter_chips.dart`) with **`DesignSystemChip`** (already used in this feature's `inference_profile_slot_field.dart`).
+- **Card "⋯" overflow menu →** replace `PopupMenuButton` (`ai_card_action_menu.dart`) with **`DesignSystemContextMenu`** (handles token resolution + sizing; also fixes the ≥48px target).
+- **"Fix →" affordance →** **`DesignSystemButton`** (small text/secondary) instead of a bare `InkWell` + `Text`.
+- **Edit-form fields →** the forms use the AI-specific `AiTextField`; evaluate migrating to **`DesignSystemTextInput`/`DesignSystemTextarea`** when the forms are tackled (P1) — decision deferred to form-time after checking behavioral parity (validation, API-key visibility toggle, connection verifier).
+- **Already good DS citizens (keep):** `DesignSystemFloatingActionButton` (FAB), `DesignSystemBadge` (status / DRAFT / Active).
+
+Note on the two color systems: Material `colorScheme.primary` is **purple** (FlexColorScheme, the active theme) while DS `tokens.colors.interactive.enabled` is **teal `0xFF1F7963`**. DS teal is the documented migration destination; this rework moves chrome onto DS components/tokens rather than the legacy Material colorScheme.
 
 ## Design-system & tokens
 
