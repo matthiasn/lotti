@@ -3207,6 +3207,7 @@
   },
   "onboardingApiKeyVerifying": "Verifying…",
   "onboardingCaptureAccept": "Looks good",
+  "onboardingCaptureCategoryPrompt": "Where should this land?",
   "onboardingCaptureEditHint": "Tap any line to edit",
   "onboardingCaptureListening": "Listening… tap when you're done",
   "onboardingCaptureOrbLabel": "Record your thought",

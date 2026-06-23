@@ -2757,6 +2757,7 @@
   "onboardingApiKeyUnreachable": "No se pudo conectar con {providerName}. Revisa la clave o tu conexión e inténtalo de nuevo.",
   "onboardingApiKeyVerifying": "Verificando…",
   "onboardingCaptureAccept": "Se ve bien",
+  "onboardingCaptureCategoryPrompt": "¿Dónde debería ir esto?",
   "onboardingCaptureEditHint": "Toca cualquier línea para editarla",
   "onboardingCaptureListening": "Escuchando… toca cuando termines",
   "onboardingCaptureOrbLabel": "Graba tu idea",

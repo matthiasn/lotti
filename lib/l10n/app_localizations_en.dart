@@ -6366,6 +6366,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingCaptureAccept => 'Looks good';
 
   @override
+  String get onboardingCaptureCategoryPrompt => 'Where should this land?';
+
+  @override
   String get onboardingCaptureEditHint => 'Tap any line to edit';
 
   @override

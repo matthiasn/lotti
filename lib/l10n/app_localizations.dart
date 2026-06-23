@@ -11128,6 +11128,12 @@ abstract class AppLocalizations {
   /// **'Looks good'**
   String get onboardingCaptureAccept;
 
+  /// No description provided for @onboardingCaptureCategoryPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Where should this land?'**
+  String get onboardingCaptureCategoryPrompt;
+
   /// No description provided for @onboardingCaptureEditHint.
   ///
   /// In en, this message translates to:

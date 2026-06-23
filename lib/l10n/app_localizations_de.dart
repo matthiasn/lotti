@@ -6448,6 +6448,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingCaptureAccept => 'Sieht gut aus';
 
   @override
+  String get onboardingCaptureCategoryPrompt => 'Wo soll das landen?';
+
+  @override
   String get onboardingCaptureEditHint =>
       'Tippe eine Zeile an, um sie zu bearbeiten';
 

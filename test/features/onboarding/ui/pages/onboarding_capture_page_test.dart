@@ -105,6 +105,7 @@ void main() {
   Future<void> pumpPage(
     WidgetTester tester, {
     VoidCallback? onDone,
+    List<OnboardingCaptureCategory>? categories,
   }) async {
     // The full-screen page uses Spacers (needs a bounded viewport) and pins the
     // "Rather type?" escape hatch near the bottom; size the surface to the
@@ -118,8 +119,11 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         OnboardingCapturePage(
-          categoryId: categoryId,
-          categoryLabel: categoryLabel,
+          categories:
+              categories ??
+              const [
+                OnboardingCaptureCategory(id: categoryId, label: categoryLabel),
+              ],
           providerName: providerName,
           onDone: onDone ?? () {},
         ),
@@ -459,5 +463,104 @@ void main() {
     // The prompt frame is shown again so the orb is tappable to retry.
     expect(find.text("What's on your mind?"), findsOneWidget);
     expect(find.byType(VoiceOrbZone), findsOneWidget);
+  });
+
+  testWidgets('a single area shows no destination picker', (tester) async {
+    await pumpPage(tester);
+
+    // Nothing to choose between → the picker prompt never renders.
+    expect(find.text('Where should this land?'), findsNothing);
+  });
+
+  testWidgets(
+    'with more than one area the picker routes the task to the chosen area',
+    (tester) async {
+      when(
+        () => service.createTaskFromTranscript(
+          transcript: any(named: 'transcript'),
+          categoryId: any(named: 'categoryId'),
+          providerName: any(named: 'providerName'),
+        ),
+      ).thenAnswer((_) async => realAha());
+
+      await pumpPage(
+        tester,
+        categories: const [
+          OnboardingCaptureCategory(id: 'cat-work', label: 'Work'),
+          OnboardingCaptureCategory(id: 'cat-family', label: 'Family'),
+        ],
+      );
+
+      // The picker offers both areas; the first is pre-selected.
+      expect(find.text('Where should this land?'), findsOneWidget);
+      expect(find.text('Work'), findsOneWidget);
+      expect(find.text('Family'), findsOneWidget);
+
+      // Choose the second area, then capture.
+      await tester.tap(find.text('Family'));
+      await tester.pump();
+
+      controller.emit(
+        const CaptureState(
+          phase: CapturePhase.captured,
+          transcript: transcript,
+          amplitudes: <double>[],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // The task is structured into the chosen area, and its label rides the
+      // resolved card (which is the only 'Family' left — the picker is gone).
+      verify(
+        () => service.createTaskFromTranscript(
+          transcript: transcript,
+          categoryId: 'cat-family',
+          providerName: providerName,
+        ),
+      ).called(1);
+      expect(find.text('Where should this land?'), findsNothing);
+      expect(find.text('Family'), findsOneWidget);
+    },
+  );
+
+  testWidgets('the destination picker is hidden once structuring starts', (
+    tester,
+  ) async {
+    // Hold the orchestrator open so the thinking frame (post-capture) is the
+    // observed state.
+    final gate = Completer<OnboardingCaptureResult>();
+    when(
+      () => service.createTaskFromTranscript(
+        transcript: any(named: 'transcript'),
+        categoryId: any(named: 'categoryId'),
+        providerName: any(named: 'providerName'),
+      ),
+    ).thenAnswer((_) => gate.future);
+
+    await pumpPage(
+      tester,
+      categories: const [
+        OnboardingCaptureCategory(id: 'cat-work', label: 'Work'),
+        OnboardingCaptureCategory(id: 'cat-family', label: 'Family'),
+      ],
+    );
+    expect(find.text('Where should this land?'), findsOneWidget);
+
+    controller.emit(
+      const CaptureState(
+        phase: CapturePhase.captured,
+        transcript: transcript,
+        amplitudes: <double>[],
+      ),
+    );
+    await tester.pump();
+
+    // Structuring is in flight: the destination is locked, so the picker hides.
+    expect(find.text('Turning your words into a task…'), findsOneWidget);
+    expect(find.text('Where should this land?'), findsNothing);
+
+    gate.complete(realAha());
+    await tester.pump();
   });
 }

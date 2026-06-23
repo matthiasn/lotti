@@ -2757,6 +2757,7 @@
   "onboardingApiKeyUnreachable": "Nu s-a putut contacta {providerName}. Verificați cheia sau conexiunea și încercați din nou.",
   "onboardingApiKeyVerifying": "Se verifică…",
   "onboardingCaptureAccept": "Arată bine",
+  "onboardingCaptureCategoryPrompt": "Unde doriți să ajungă?",
   "onboardingCaptureEditHint": "Atingeți orice rând pentru a-l edita",
   "onboardingCaptureListening": "Ascult… atingeți când ați terminat",
   "onboardingCaptureOrbLabel": "Înregistrați-vă gândul",

@@ -34,21 +34,29 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// records [OnboardingEventName.firstAudioCaptured] once, then calls the
 /// orchestrator exactly once per capture (guarded so it never double-fires)
 /// and reveals the structured title + checklist with the celebration burst.
+/// One area the user created in the onboarding category step, offered as a
+/// destination for the first captured task. Carried from the category step into
+/// the capture page so the user chooses *which* area the task lands in.
+@immutable
+class OnboardingCaptureCategory {
+  const OnboardingCaptureCategory({required this.id, required this.label});
+
+  final String id;
+  final String label;
+}
+
 class OnboardingCapturePage extends ConsumerStatefulWidget {
   const OnboardingCapturePage({
-    required this.categoryId,
-    required this.categoryLabel,
+    required this.categories,
     required this.onDone,
     this.providerName,
     super.key,
-  });
+  }) : assert(categories.length > 0, 'at least one category is required');
 
-  /// The category the structured task lands in (the first area the user
-  /// created in the onboarding category step).
-  final String categoryId;
-
-  /// Human-readable name of [categoryId], shown on the resolved card.
-  final String categoryLabel;
+  /// The areas the user created in the onboarding category step. The first is
+  /// pre-selected; when there is more than one the page shows a destination
+  /// picker so the user chooses which area the structured task lands in.
+  final List<OnboardingCaptureCategory> categories;
 
   /// Optional low-cardinality provider funnel dimension (e.g. "Gemini").
   final String? providerName;
@@ -74,6 +82,23 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
 
   /// The resolved structuring outcome, or null until the reveal.
   OnboardingCaptureResult? _result;
+
+  /// The area the structured task lands in. Pre-selected to the first created
+  /// area; when more than one exists the user can re-pick via the destination
+  /// picker until structuring starts.
+  late String _selectedCategoryId;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCategoryId = widget.categories.first.id;
+  }
+
+  OnboardingCaptureCategory get _selectedCategory =>
+      widget.categories.firstWhere(
+        (c) => c.id == _selectedCategoryId,
+        orElse: () => widget.categories.first,
+      );
 
   OnboardingMetricsRepository? get _metrics =>
       getIt.isRegistered<OnboardingMetricsRepository>()
@@ -129,7 +154,7 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
                     orbSemanticLabel:
                         context.messages.onboardingCaptureOrbLabel,
                     editHint: context.messages.onboardingCaptureEditHint,
-                    categoryLabel: widget.categoryLabel,
+                    categoryLabel: _selectedCategory.label,
                     transcript: _displayTranscript(captureState),
                     amplitudes: captureState.amplitudes,
                     dbfs: captureState.dbfs,
@@ -155,6 +180,26 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
                       onPressed: widget.onDone,
                     ),
                   ),
+                  // When the user created more than one area, let them choose
+                  // which one this first task lands in. Shown only while the
+                  // capture is still being composed (prompt / listening) — once
+                  // structuring starts the destination is locked and surfaced
+                  // on the resolved card instead.
+                  if (_showCategoryPicker(captureState.phase))
+                    Positioned(
+                      top: tokens.spacing.step10,
+                      left: tokens.spacing.step6,
+                      right: tokens.spacing.step6,
+                      child: _CategoryPicker(
+                        prompt:
+                            context.messages.onboardingCaptureCategoryPrompt,
+                        categories: widget.categories,
+                        selectedId: _selectedCategoryId,
+                        accent: tokens.colors.interactive.enabled,
+                        onSelect: (id) =>
+                            setState(() => _selectedCategoryId = id),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -190,6 +235,16 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
     };
   }
 
+  /// The destination picker only appears when there is a real choice to make
+  /// (more than one created area) and only before structuring starts — while
+  /// the orb is idle/listening. After capture the destination is fixed.
+  bool _showCategoryPicker(CapturePhase phase) {
+    if (widget.categories.length < 2) return false;
+    final viewPhase = _viewPhase(phase);
+    return viewPhase == OnboardingCapturePhase.prompt ||
+        viewPhase == OnboardingCapturePhase.listening;
+  }
+
   void _onOrbTap() {
     // The controller's own toggle drives the mic lifecycle; from an error it
     // re-begins listening, which is exactly the retry affordance we want.
@@ -220,7 +275,7 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
     final service = ref.read(onboardingCaptureToTaskServiceProvider);
     final result = await service.createTaskFromTranscript(
       transcript: transcript,
-      categoryId: widget.categoryId,
+      categoryId: _selectedCategoryId,
       providerName: widget.providerName,
     );
     if (!mounted) return;
@@ -276,6 +331,116 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
             child: Text(material.okButtonLabel),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The first-capture destination picker: a short prompt over a centred wrap of
+/// pills naming the areas the user created, so they choose which one the
+/// structured task lands in. Selection is colour-led (a solid brand fill for the
+/// chosen area, an outline for the rest) so it stays legible on the dark hero.
+class _CategoryPicker extends StatelessWidget {
+  const _CategoryPicker({
+    required this.prompt,
+    required this.categories,
+    required this.selectedId,
+    required this.accent,
+    required this.onSelect,
+  });
+
+  final String prompt;
+  final List<OnboardingCaptureCategory> categories;
+  final String selectedId;
+  final Color accent;
+  final void Function(String id) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          prompt,
+          textAlign: TextAlign.center,
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: tokens.spacing.step2,
+          runSpacing: tokens.spacing.step2,
+          children: [
+            for (final category in categories)
+              _PickerChip(
+                tokens: tokens,
+                accent: accent,
+                label: category.label,
+                selected: category.id == selectedId,
+                onTap: () => onSelect(category.id),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// One destination pill. Selected fills solid brand with a dark label; the rest
+/// are a quiet outline with a light label.
+class _PickerChip extends StatelessWidget {
+  const _PickerChip({
+    required this.tokens,
+    required this.accent,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final DsTokens tokens;
+  final Color accent;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected
+        ? tokens.colors.background.level01
+        : tokens.colors.text.highEmphasis;
+    final radius = BorderRadius.circular(tokens.radii.l);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: selected ? accent : Colors.transparent,
+            borderRadius: radius,
+            border: Border.all(
+              color: selected
+                  ? accent
+                  : tokens.colors.text.mediumEmphasis.withValues(alpha: 0.5),
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step4,
+              vertical: tokens.spacing.step2,
+            ),
+            child: Text(
+              label,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: fg,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -6478,6 +6478,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingCaptureAccept => 'Vypadá to dobře';
 
   @override
+  String get onboardingCaptureCategoryPrompt => 'Kam to má patřit?';
+
+  @override
   String get onboardingCaptureEditHint => 'Klepnutím na řádek jej upravíš';
 
   @override

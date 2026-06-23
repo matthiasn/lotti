@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -30,17 +29,16 @@ String? onboardingSeededProfileId(InferenceProviderType type) => switch (type) {
   _ => null,
 };
 
-/// The first category created in the onboarding category step, handed to the
-/// live first-capture page so the structured task lands in a real place.
+/// The areas created in the onboarding category step, handed to the live
+/// first-capture page so the structured task lands in a real place — and so the
+/// user can pick which one when they created more than one.
 class OnboardingFirstCapture {
   const OnboardingFirstCapture({
-    required this.categoryId,
-    required this.categoryLabel,
+    required this.categories,
     this.providerName,
   });
 
-  final String categoryId;
-  final String categoryLabel;
+  final List<OnboardingCaptureCategory> categories;
   final String? providerName;
 }
 
@@ -142,8 +140,7 @@ class OnboardingWelcomeModal {
         await rootNavigator.push(
           MaterialPageRoute<void>(
             builder: (captureContext) => OnboardingCapturePage(
-              categoryId: capture.categoryId,
-              categoryLabel: capture.categoryLabel,
+              categories: capture.categories,
               providerName: capture.providerName,
               onDone: () => Navigator.of(captureContext).pop(),
             ),
@@ -449,23 +446,25 @@ class _OnboardingCategoryStepState
     final providerName = onboardingProviderName(context.messages, widget.type);
     final chosen = options.where((o) => _selected.contains(o.label)).toList();
 
-    CategoryDefinition? firstCreated;
+    final created = <OnboardingCaptureCategory>[];
     for (var i = 0; i < chosen.length; i++) {
-      final created = await repository.createCategory(
+      final category = await repository.createCategory(
         name: chosen[i].label,
         color: _palette[i % _palette.length],
         defaultProfileId: profileId,
       );
-      firstCreated ??= created;
+      created.add(
+        OnboardingCaptureCategory(id: category.id, label: category.name),
+      );
     }
 
-    if (firstCreated != null) {
-      // Hand the first area to the live first-capture aha; the modal pops and
-      // pushes the capture page in its place.
+    if (created.isNotEmpty) {
+      // Hand every created area to the live first-capture aha; the modal pops
+      // and pushes the capture page in its place. With more than one area the
+      // page lets the user pick which one the task lands in.
       widget.onStartCapture(
         OnboardingFirstCapture(
-          categoryId: firstCreated.id,
-          categoryLabel: firstCreated.name,
+          categories: created,
           providerName: providerName,
         ),
       );

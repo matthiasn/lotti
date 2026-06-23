@@ -2549,6 +2549,7 @@
   "onboardingApiKeyUnreachable": "Nepodařilo se spojit s {providerName}. Zkontroluj klíč nebo připojení a zkus to znovu.",
   "onboardingApiKeyVerifying": "Ověřuji…",
   "onboardingCaptureAccept": "Vypadá to dobře",
+  "onboardingCaptureCategoryPrompt": "Kam to má patřit?",
   "onboardingCaptureEditHint": "Klepnutím na řádek jej upravíš",
   "onboardingCaptureListening": "Poslouchám… klepni, až budeš hotov",
   "onboardingCaptureOrbLabel": "Nahraj svou myšlenku",

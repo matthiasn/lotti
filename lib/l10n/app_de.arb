@@ -2757,6 +2757,7 @@
   "onboardingApiKeyUnreachable": "{providerName} ist nicht erreichbar. Prüf den Schlüssel oder deine Verbindung und versuch es noch mal.",
   "onboardingApiKeyVerifying": "Wird geprüft…",
   "onboardingCaptureAccept": "Sieht gut aus",
+  "onboardingCaptureCategoryPrompt": "Wo soll das landen?",
   "onboardingCaptureEditHint": "Tippe eine Zeile an, um sie zu bearbeiten",
   "onboardingCaptureListening": "Ich höre zu … tippe, wenn du fertig bist",
   "onboardingCaptureOrbLabel": "Deinen Gedanken aufnehmen",

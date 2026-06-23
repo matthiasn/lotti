@@ -6523,6 +6523,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingCaptureAccept => 'Arată bine';
 
   @override
+  String get onboardingCaptureCategoryPrompt => 'Unde doriți să ajungă?';
+
+  @override
   String get onboardingCaptureEditHint =>
       'Atingeți orice rând pentru a-l edita';
 

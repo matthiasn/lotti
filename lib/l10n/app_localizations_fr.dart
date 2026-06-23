@@ -6527,6 +6527,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingCaptureAccept => 'C\'est parfait';
 
   @override
+  String get onboardingCaptureCategoryPrompt => 'Où ranger ça ?';
+
+  @override
   String get onboardingCaptureEditHint => 'Touche une ligne pour la modifier';
 
   @override
