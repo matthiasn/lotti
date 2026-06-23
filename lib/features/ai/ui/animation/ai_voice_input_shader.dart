@@ -57,11 +57,26 @@ class _AiVoiceInputShaderState extends State<AiVoiceInputShader>
   late final AnimationController _controller;
   late Future<ui.FragmentProgram> _programFuture;
 
+  /// Whether the OS "reduce motion" accessibility setting is on. When true the
+  /// continuous time ticker is held still and the shader renders one calm
+  /// static frame — still tinted by the live voice level, which is direct
+  /// feedback rather than decorative motion (mirroring how `VoiceButton` keeps
+  /// its dBFS-driven core swell while dropping its idle-breath ticker).
+  bool _reducedMotion = false;
+
   @override
   void initState() {
     super.initState();
     _programFuture = _loadProgram();
     _controller = AnimationController(vsync: this, duration: _animationLoop);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // didChangeDependencies (not initState) so the reduced-motion setting is
+    // readable here, and a later toggle of it re-syncs the ticker.
+    _reducedMotion = MediaQuery.disableAnimationsOf(context);
     _syncController();
   }
 
@@ -87,16 +102,18 @@ class _AiVoiceInputShaderState extends State<AiVoiceInputShader>
   }
 
   void _syncController() {
-    if (widget.timeOverride == null) {
-      if (!_controller.isAnimating) {
-        _controller.repeat();
-      }
+    // The time ticker drives the continuous swirl. Hold it still when a frame
+    // is pinned for golden tests ([timeOverride]) or when the user asked for
+    // reduced motion — the shader then renders one calm, static frame.
+    final shouldAnimate = widget.timeOverride == null && !_reducedMotion;
+    if (shouldAnimate) {
+      if (!_controller.isAnimating) _controller.repeat();
       return;
     }
-
-    if (_controller.isAnimating) {
-      _controller.stop();
-    }
+    if (_controller.isAnimating) _controller.stop();
+    // Pin a deterministic static frame for reduced motion (golden tests supply
+    // their own [timeOverride], so only touch the controller when they don't).
+    if (_reducedMotion && widget.timeOverride == null) _controller.value = 0;
   }
 
   double get _timeSeconds {

@@ -241,6 +241,56 @@ void main() {
     },
   );
 
+  testWidgets(
+    'reduced motion: the listening orb settles (no perpetual ticker) yet the '
+    'core still tracks the live voice level',
+    (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(800, 600),
+              disableAnimations: true,
+            ),
+            child: Center(
+              child: VoiceButton(
+                phase: CapturePhase.listening,
+                dbfs: -8,
+                size: 132,
+                semanticLabel: 'Record voice',
+                onTap: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // With reduced motion BOTH the idle-breath ticker and the shader's time
+      // ticker are held still, so the listening frame has no perpetual
+      // animation: pumpAndSettle returns instead of timing out.
+      await tester.pumpAndSettle();
+
+      // The voice field is still mounted (it just no longer swirls) and the
+      // core still rests at the dBFS-driven scale — direct feedback is kept,
+      // only the decorative motion is dropped.
+      expect(find.byType(AiVoiceInputShader), findsOneWidget);
+      final scaleEnd = tester
+          .widget<TweenAnimationBuilder<double>>(
+            find.byKey(VoiceButton.pressScaleKey),
+          )
+          .tween
+          .end!;
+      expect(
+        scaleEnd,
+        closeTo(
+          VoiceButton.listeningCoreScale +
+              VoiceButton.listeningBreathSpan * 0.9,
+          1e-9,
+        ),
+      );
+    },
+  );
+
   testWidgets('ink ripple is configured above the gradient surface', (
     tester,
   ) async {
