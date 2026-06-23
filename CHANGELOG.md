@@ -64,7 +64,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   change something (the same pattern as the note editor). The toggles,
   checkboxes and the light / auto / dark theme switch use the design-system
   controls too, with teal accents and consistent shapes in place of the old
-  purple Material widgets.
+  purple Material widgets. The category chips on a label now carry their
+  category's colour as a soft tint (instead of a heavy solid fill), and small
+  status tags — a profile's "Desktop only", a sync node's capabilities — use
+  the design-system badge.
 - **Accepting or dismissing an AI suggestion is now smooth and calm instead of
   jumpy.** The row you tap stays put and confirms in place — a clear filled
   badge with the plain word *Confirmed* or *Dismissed* and a light haptic — then

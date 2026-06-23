@@ -6,6 +6,7 @@ import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart'
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/labels/constants/label_color_presets.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
+import 'package:lotti/features/labels/ui/widgets/category_selection_chip.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -215,36 +216,19 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                         runSpacing: 8,
                         children: [
                           for (final category in chips)
-                            Builder(
-                              builder: (context) {
-                                final bg = colorFromCssHex(
-                                  category.color,
-                                  substitute: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
-                                );
-                                final isDark =
-                                    ThemeData.estimateBrightnessForColor(bg) ==
-                                    Brightness.dark;
-                                final fg = isDark ? Colors.white : Colors.black;
-                                return InputChip(
-                                  label: Text(category.name),
-                                  labelStyle: Theme.of(
-                                    context,
-                                  ).textTheme.labelSmall?.copyWith(color: fg),
-                                  backgroundColor: bg,
-                                  onDeleted: () =>
-                                      controller.removeCategoryId(category.id),
-                                  deleteIcon: const Icon(
-                                    Icons.close_rounded,
-                                    size: 16,
-                                  ),
-                                  deleteIconColor: fg,
-                                  deleteButtonTooltipMessage: context
-                                      .messages
-                                      .settingsLabelsCategoriesRemoveTooltip,
-                                );
-                              },
+                            CategorySelectionChip(
+                              name: category.name,
+                              color: colorFromCssHex(
+                                category.color,
+                                substitute: Theme.of(
+                                  context,
+                                ).colorScheme.primary,
+                              ),
+                              onRemove: () =>
+                                  controller.removeCategoryId(category.id),
+                              removeTooltip: context
+                                  .messages
+                                  .settingsLabelsCategoriesRemoveTooltip,
                             ),
                         ],
                       ),

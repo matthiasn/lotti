@@ -14,6 +14,7 @@ import 'package:lotti/features/design_system/components/toggles/design_system_to
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
+import 'package:lotti/features/labels/ui/widgets/category_selection_chip.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -736,10 +737,10 @@ void main() {
       expect(find.text('Life'), findsWidgets);
 
       // Tap delete icon on the 'Work' chip
-      final workChip = find.widgetWithText(InputChip, 'Work');
+      final workChip = find.widgetWithText(CategorySelectionChip, 'Work');
       await tester.ensureVisible(workChip);
       final deleteIcon = find.descendant(
-        of: find.widgetWithText(InputChip, 'Work'),
+        of: find.widgetWithText(CategorySelectionChip, 'Work'),
         matching: find.byIcon(Icons.close_rounded),
       );
       expect(deleteIcon, findsOneWidget);
@@ -891,7 +892,7 @@ void main() {
         );
 
         // No chips initially.
-        expect(find.byType(InputChip), findsNothing);
+        expect(find.byType(CategorySelectionChip), findsNothing);
 
         // Open the category selection modal.
         final addButton = find.byIcon(Icons.add);
@@ -914,7 +915,7 @@ void main() {
         ]);
         // ...and the resulting chip is now rendered.
         expect(
-          find.widgetWithText(InputChip, 'Mindfulness'),
+          find.widgetWithText(CategorySelectionChip, 'Mindfulness'),
           findsOneWidget,
         );
       },

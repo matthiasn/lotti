@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/ui/widgets/category_selection_chip.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -141,7 +143,10 @@ void main() {
     await addCategoriesViaModal(tester, ['Work']);
 
     // Chip rendered with Work
-    expect(find.widgetWithText(InputChip, 'Work'), findsOneWidget);
+    expect(
+      find.widgetWithText(CategorySelectionChip, 'Work'),
+      findsOneWidget,
+    );
     expect(find.text('Applies to all categories'), findsNothing);
 
     // Remove the chip via its delete action
@@ -175,9 +180,12 @@ void main() {
 
     // Add category via modal and save
     await addCategoriesViaModal(tester, ['Work']);
-    expect(find.widgetWithText(InputChip, 'Work'), findsOneWidget);
+    expect(
+      find.widgetWithText(CategorySelectionChip, 'Work'),
+      findsOneWidget,
+    );
 
-    final createButton = find.widgetWithText(FilledButton, 'Create');
+    final createButton = find.widgetWithText(DesignSystemButton, 'Create');
     await tester.ensureVisible(createButton);
     await tester.tap(createButton);
     await tester.pump();
@@ -213,7 +221,7 @@ void main() {
     await addCategoriesViaModal(tester, ['Work', 'Home']);
 
     // Save
-    final createButton = find.widgetWithText(FilledButton, 'Create');
+    final createButton = find.widgetWithText(DesignSystemButton, 'Create');
     await tester.ensureVisible(createButton);
     await tester.tap(createButton);
     await tester.pump();
@@ -234,7 +242,7 @@ void main() {
     expect(ids.toSet(), {'home', 'work'});
   });
 
-  testWidgets('chips use category color and contrast-aware text', (
+  testWidgets('chips carry each category color as a DsPill tint', (
     tester,
   ) async {
     // Override cache with light and dark categories to validate styling.
@@ -268,21 +276,15 @@ void main() {
     // Add both categories via the modal (multi-select now)
     await addCategoriesViaModal(tester, ['Bright', 'Deep']);
 
-    final brightChip = tester.widget<InputChip>(
-      find.widgetWithText(InputChip, 'Bright'),
+    final brightChip = tester.widget<CategorySelectionChip>(
+      find.widgetWithText(CategorySelectionChip, 'Bright'),
     );
-    final deepChip = tester.widget<InputChip>(
-      find.widgetWithText(InputChip, 'Deep'),
+    final deepChip = tester.widget<CategorySelectionChip>(
+      find.widgetWithText(CategorySelectionChip, 'Deep'),
     );
 
-    // Background colors reflect category colors
-    expect(brightChip.backgroundColor, const Color(0xFFF9F871));
-    expect(deepChip.backgroundColor, const Color(0xFF3D0066));
-
-    // Foreground contrast: light bg -> black; dark bg -> white
-    expect(brightChip.labelStyle?.color, Colors.black);
-    expect(brightChip.deleteIconColor, Colors.black);
-    expect(deepChip.labelStyle?.color, Colors.white);
-    expect(deepChip.deleteIconColor, Colors.white);
+    // Each chip is tinted with its own category colour.
+    expect(brightChip.color, const Color(0xFFF9F871));
+    expect(deepChip.color, const Color(0xFF3D0066));
   });
 }

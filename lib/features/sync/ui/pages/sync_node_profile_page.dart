@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
@@ -212,7 +213,10 @@ class _CapabilityChips extends StatelessWidget {
       runSpacing: 8,
       children: [
         for (final cap in caps)
-          Chip(label: Text(_capabilityLabel(context, cap))),
+          DesignSystemBadge.outlined(
+            label: _capabilityLabel(context, cap),
+            tone: DesignSystemBadgeTone.secondary,
+          ),
       ],
     );
   }
