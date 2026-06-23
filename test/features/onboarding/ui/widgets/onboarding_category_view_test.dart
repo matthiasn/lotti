@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -94,6 +96,130 @@ void main() {
       expect(find.text(option.label), findsOneWidget);
     }
   });
+
+  testWidgets(
+    'unselected + add-own chips are frosted glass (BackdropFilter); the '
+    'selected chip stays solid (no blur)',
+    (tester) async {
+      await pumpView(tester, selected: const {'Work'});
+
+      // Three unselected option chips (Fitness/Family/Friends) + the
+      // "add your own" chip are frosted glass, each carrying a blur layer.
+      // The selected "Work" chip is a solid brand fill with no BackdropFilter.
+      expect(find.byType(BackdropFilter), findsNWidgets(4));
+      for (final filter in tester.widgetList<BackdropFilter>(
+        find.byType(BackdropFilter),
+      )) {
+        expect(filter.filter, isA<ui.ImageFilter>());
+      }
+
+      // Every blur is clipped to a rounded rect — each BackdropFilter sits
+      // inside a ClipRRect so the frost never bleeds past the chip edge.
+      expect(
+        find.descendant(
+          of: find.byType(ClipRRect),
+          matching: find.byType(BackdropFilter),
+        ),
+        findsNWidgets(4),
+      );
+    },
+  );
+
+  testWidgets(
+    'with nothing selected every option chip is frosted glass (no solid '
+    'selected chip)',
+    (tester) async {
+      await pumpView(tester, selected: const {});
+
+      // Four option chips + the add-own chip are all frosted glass.
+      expect(find.byType(BackdropFilter), findsNWidgets(5));
+    },
+  );
+
+  testWidgets(
+    'an ambient colour-glow layer sits behind the chips so the frost picks '
+    'up real brand colour',
+    (tester) async {
+      await pumpView(tester, selected: const {});
+
+      // The glow layer feathers its radial glows through a blur so they melt
+      // into one soft wash (rather than two hard radial blobs). The chip
+      // backdrop blurs are BackdropFilters, so the only ImageFiltered in the
+      // tree is the ambient glow layer.
+      final glowLayer = find.byType(ImageFiltered);
+      expect(glowLayer, findsOneWidget);
+
+      // Two heavily-feathered radial glows live inside that layer: the teal
+      // brand glow and one cooler companion. Each is a RadialGradient that
+      // fades fully transparent at its edge (a wash, not a hard disc).
+      final glows = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(of: glowLayer, matching: find.byType(DecoratedBox)),
+          )
+          .where((d) => d.decoration is BoxDecoration)
+          .map((d) => (d.decoration as BoxDecoration).gradient)
+          .whereType<RadialGradient>()
+          .toList();
+      expect(glows, hasLength(2));
+      for (final gradient in glows) {
+        // Brand-led, low-opacity at the core and fully transparent at the
+        // rim — a soft ambient wash, never an opaque rainbow blob.
+        expect(gradient.colors.first.a, lessThan(0.3));
+        expect(gradient.colors.first.a, greaterThan(0));
+        expect(gradient.colors.last.a, 0);
+      }
+    },
+  );
+
+  testWidgets(
+    'unselected chips are teal-tinted translucent glass — the colour lives in '
+    'the material (not a neutral grey/milky fill), so they read as coloured '
+    'frosted glass',
+    (tester) async {
+      await pumpView(tester, selected: const {});
+
+      // Each frosted chip is a BackdropFilter wrapping a single tinted surface:
+      // a translucent teal gradient + a crisp hairline. There is no second
+      // opaque wash box — that neutral dark wash is what greyed the chips out
+      // before, so its absence (one DecoratedBox per BackdropFilter) is part of
+      // the fix.
+      final surfaces = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: find.byType(BackdropFilter),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((d) => d.decoration)
+          .whereType<BoxDecoration>()
+          .toList();
+      // One tinted surface per frosted chip (4 options + add-own), no extra
+      // wash layer.
+      expect(surfaces, hasLength(5));
+
+      for (final decoration in surfaces) {
+        // The fill is a vertical gradient (glass catching light at the top),
+        // never a flat solid colour.
+        final gradient = decoration.gradient! as LinearGradient;
+        expect(gradient.colors, hasLength(2));
+        for (final color in gradient.colors) {
+          // Translucent — comfortably under the milky 0.55 that read as a
+          // solid wall, so the blurred backdrop still shows through.
+          expect(color.a, greaterThan(0));
+          expect(color.a, lessThan(0.45));
+          // The tint is brand teal, not neutral grey: green and blue clearly
+          // lead red (a grey or white sheen would have r ≈ g ≈ b).
+          expect(color.g, greaterThan(color.r + 0.2));
+          expect(color.b, greaterThan(color.r + 0.2));
+        }
+        // A crisp hairline defines the glass edge — bright enough to mark the
+        // tap-target boundary, still a hairline (not an opaque outline).
+        final side = (decoration.border! as Border).top;
+        expect(side.color.a, greaterThan(0.1));
+        expect(side.color.a, lessThan(0.5));
+      }
+    },
+  );
 
   testWidgets(
     'with no selection no chip shows a check and labels still render',
