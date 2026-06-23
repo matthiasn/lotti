@@ -2475,7 +2475,7 @@ void main() {
       expect(find.text('Alpha Model'), findsOneWidget);
       expect(find.text('Beta Model'), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.clear_rounded));
+      await tester.tap(find.byIcon(Icons.cancel_rounded));
       await tester.pump();
 
       expect(find.text('Alpha Model'), findsOneWidget);

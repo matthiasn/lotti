@@ -69,7 +69,6 @@ lib/features/ai/ui/settings/
 │   ├── ai_settings_floating_action_button.dart # Contextual FAB
 │   ├── ai_settings_tab_bar.dart            # Legacy tab bar (unused by page)
 │   ├── ai_settings_config_sliver.dart      # Legacy sliver config list (unused)
-│   ├── ai_settings_fixed_header.dart       # Legacy fixed header (unused)
 │   ├── config_empty_state.dart             # Legacy empty state (unused by page)
 │   ├── dismiss_background.dart             # Legacy swipe-to-delete background
 │   ├── dismissible_config_card.dart        # Legacy dismissible card wrapper
@@ -270,9 +269,7 @@ Search and tab navigation are two separate, non-pinned slivers:
 
 > Note: `AiSettingsConfigSliver` (`widgets/ai_settings_config_sliver.dart`,
 > with its `ConfigEmptyState` / `DismissibleConfigCard` / swipe-to-delete
-> chrome) and `AiSettingsFixedHeader`
-> (`widgets/ai_settings_fixed_header.dart`, a pinned search+tabs+filters
-> header) are legacy widgets that the live page no longer uses.
+> chrome) is a legacy widget that the live page no longer uses.
 
 #### `AiSettingsFloatingActionButton`
 A context-aware FAB that changes based on the active tab.
@@ -633,7 +630,7 @@ The AI Settings module follows a consistent pattern of extracting reusable widge
    - Combine multiple UI elements
    - Encapsulate complex behavior
    - Reduce parent widget complexity
-   - (`AiSettingsFixedHeader` / `DismissibleConfigCard` are legacy.)
+   - (`DismissibleConfigCard` is legacy.)
 
 3. **Behavioral Widgets**: `AiSettingsFloatingActionButton`
    - Per-tab icon + semantic label

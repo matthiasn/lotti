@@ -515,8 +515,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         return [_buildProvidersGrid(providers, models)];
       case AiSettingsTab.models:
         return [
-          // Filter strip on the Models tab — same wiring main's
-          // `AiSettingsFixedHeader._buildFilterSection` uses: wrap
+          // Filter strip on the Models tab — wrap
           // `AiSettingsFilterChips` in a horizontal
           // `SingleChildScrollView` so each of the widget's two
           // inner `Wrap`s (providers row, capabilities row) gets

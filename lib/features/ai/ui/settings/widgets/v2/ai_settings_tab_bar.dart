@@ -8,9 +8,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// Layout from the populated D1 PNGs: each tab label carries its
 /// counter inline ("Providers 2", "Models 5", "Profiles 2"). The
 /// active tab gets the brand-teal underline. Plays the role of the
-/// v1 `AiSettingsFixedHeader`'s `TabBar` row — but without the
-/// search field or capability filters, which the redesigned page
-/// either lifts into the page header or drops entirely.
+/// old v1 tab row — but without the search field or capability
+/// filters, which the redesigned page either lifts into the page
+/// header or drops entirely.
 class AiSettingsTabBar extends StatelessWidget {
   const AiSettingsTabBar({
     required this.tabController,
