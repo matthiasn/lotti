@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/labels/constants/label_color_presets.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -291,17 +292,25 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
+                  child: DesignSystemButton(
+                    label: context.messages.cancelButton,
+                    variant: DesignSystemButtonVariant.secondary,
+                    fullWidth: true,
                     onPressed: state.isSaving
                         ? null
                         : () => Navigator.of(context).pop(),
-                    child: Text(context.messages.cancelButton),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: FilledButton(
-                    onPressed: saveEnabled
+                  // Disabled while saving in lieu of an in-button spinner
+                  // (DesignSystemButton has no loading affordance yet).
+                  child: DesignSystemButton(
+                    label: widget.label == null
+                        ? context.messages.createButton
+                        : context.messages.saveButton,
+                    fullWidth: true,
+                    onPressed: (saveEnabled && !state.isSaving)
                         ? () async {
                             final navigator = Navigator.of(context);
                             final result = await controller.save();
@@ -312,17 +321,6 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                             }
                           }
                         : null,
-                    child: state.isSaving
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(
-                            widget.label == null
-                                ? context.messages.createButton
-                                : context.messages.saveButton,
-                          ),
                   ),
                 ),
               ],

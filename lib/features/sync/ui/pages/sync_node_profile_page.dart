@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
@@ -115,9 +116,15 @@ class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
       appBar: AppBar(
         title: Text(messages.settingsSyncNodeProfileTitle),
         actions: [
-          TextButton(
-            onPressed: (_isSaving || !_hasUnsavedChanges) ? null : _save,
-            child: Text(messages.settingsSyncNodeProfileSaveButton),
+          Tooltip(
+            message: _hasUnsavedChanges
+                ? messages.settingsSyncNodeProfileSaveButton
+                : messages.aiFormNoChanges,
+            child: DesignSystemButton(
+              label: messages.settingsSyncNodeProfileSaveButton,
+              leadingIcon: Icons.save_rounded,
+              onPressed: (_isSaving || !_hasUnsavedChanges) ? null : _save,
+            ),
           ),
         ],
       ),

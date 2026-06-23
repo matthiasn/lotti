@@ -118,13 +118,15 @@ class ProvisionedStatusWidget extends ConsumerWidget {
                 builder: (dialogContext) => AlertDialog(
                   title: Text(messages.syncDeleteConfigQuestion),
                   actions: [
-                    TextButton(
+                    DesignSystemButton(
+                      label: messages.settingsMatrixCancel,
+                      variant: DesignSystemButtonVariant.tertiary,
                       onPressed: () => Navigator.of(dialogContext).pop(false),
-                      child: Text(messages.settingsMatrixCancel),
                     ),
-                    TextButton(
+                    DesignSystemButton(
+                      label: messages.syncDeleteConfigConfirm,
+                      variant: DesignSystemButtonVariant.danger,
                       onPressed: () => Navigator.of(dialogContext).pop(true),
-                      child: Text(messages.syncDeleteConfigConfirm),
                     ),
                   ],
                 ),
