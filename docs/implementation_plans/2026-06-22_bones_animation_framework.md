@@ -62,7 +62,7 @@ This is the one place the panel split, and it directly drives the fidelity-vs-pe
 
 ### 3.1 Pipeline
 
-```
+```text
 Generate SVG (AI, contract-conformant)
    → Validate (linter: required groups, unique ids, pivots, z, subset whitelist)
    → Normalize (bake transforms, resolve use/defs, enforce viewBox/units)
