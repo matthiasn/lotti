@@ -140,10 +140,16 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
           // design-system button that stays quiet/disabled until the form is
           // dirty, then wakes to the teal accent. `_save` still validates
           // (name + thinking model) and surfaces inline / toast errors on tap.
-          DesignSystemButton(
-            label: messages.inferenceProfileSaveButton,
-            leadingIcon: Icons.save_rounded,
-            onPressed: _isDirty && !_isSaving ? _save : null,
+          // The tooltip explains a quiet Save (no status line in the AppBar).
+          Tooltip(
+            message: _isDirty
+                ? messages.inferenceProfileSaveButton
+                : messages.aiFormNoChanges,
+            child: DesignSystemButton(
+              label: messages.inferenceProfileSaveButton,
+              leadingIcon: Icons.save_rounded,
+              onPressed: _isDirty && !_isSaving ? _save : null,
+            ),
           ),
           SizedBox(width: tokens.spacing.step2),
         ],

@@ -137,11 +137,22 @@ class _InferenceModelEditPageState
             // design-system button that stays quiet/disabled until the
             // form is saveable (valid, and — when editing — dirty), then
             // wakes to the teal accent. The leading save glyph keeps the
-            // clean→active change from being carried by hue alone.
-            DesignSystemButton(
-              label: messages.modelEditSaveButton,
-              leadingIcon: Icons.save_rounded,
-              onPressed: isFormValid && !_isSaving ? handleSave : null,
+            // clean→active change from being carried by hue alone. A tooltip
+            // explains WHY it's disabled (no changes vs fix errors), since the
+            // AppBar has no status line like the provider form's FormBottomBar.
+            Tooltip(
+              message: isFormValid
+                  ? messages.modelEditSaveButton
+                  : (widget.configId != null &&
+                        formState != null &&
+                        !formState.isDirty)
+                  ? messages.aiFormNoChanges
+                  : messages.aiFormFixErrors,
+              child: DesignSystemButton(
+                label: messages.modelEditSaveButton,
+                leadingIcon: Icons.save_rounded,
+                onPressed: isFormValid && !_isSaving ? handleSave : null,
+              ),
             ),
             SizedBox(width: tokens.spacing.step2),
           ],
