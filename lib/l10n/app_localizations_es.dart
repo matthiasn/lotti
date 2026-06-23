@@ -6626,6 +6626,26 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elige el cerebro que convierte tus palabras en tareas';
 
   @override
+  String get onboardingRecordingStyleAnalogue => 'Analógico — vúmetro';
+
+  @override
+  String get onboardingRecordingStyleContinue => 'Continuar';
+
+  @override
+  String get onboardingRecordingStyleExplanation =>
+      'Elige un estilo para el micro. Puedes cambiarlo cuando quieras en Ajustes.';
+
+  @override
+  String get onboardingRecordingStyleModern => 'Moderno — orbe de energía';
+
+  @override
+  String get onboardingRecordingStyleTitle =>
+      '¿Cómo quieres que se vea la grabación?';
+
+  @override
+  String get onboardingRecordingStyleTryVoice => 'Pruébalo con tu voz';
+
+  @override
   String get onboardingSuccessContinue => 'Empezar';
 
   @override

@@ -225,10 +225,13 @@ class _StyleCard extends StatelessWidget {
                           : textHigh.withValues(alpha: 0.5),
                     ),
                     SizedBox(width: tokens.spacing.step3),
-                    Text(
-                      label,
-                      style: tokens.typography.styles.subtitle.subtitle1
-                          .copyWith(color: textHigh),
+                    Expanded(
+                      child: Text(
+                        label,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.subtitle.subtitle1
+                            .copyWith(color: textHigh),
+                      ),
                     ),
                   ],
                 ),

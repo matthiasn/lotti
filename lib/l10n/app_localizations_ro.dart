@@ -6631,6 +6631,26 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alegeți creierul care vă transformă cuvintele în sarcini';
 
   @override
+  String get onboardingRecordingStyleAnalogue => 'Analogic — VU-metru';
+
+  @override
+  String get onboardingRecordingStyleContinue => 'Continuați';
+
+  @override
+  String get onboardingRecordingStyleExplanation =>
+      'Alegeți un aspect pentru microfon. Îl puteți schimba oricând în Setări.';
+
+  @override
+  String get onboardingRecordingStyleModern => 'Modern — orb de energie';
+
+  @override
+  String get onboardingRecordingStyleTitle =>
+      'Cum doriți să arate înregistrarea?';
+
+  @override
+  String get onboardingRecordingStyleTryVoice => 'Încercați cu vocea';
+
+  @override
   String get onboardingSuccessContinue => 'Începeți';
 
   @override

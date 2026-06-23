@@ -11326,6 +11326,42 @@ abstract class AppLocalizations {
   /// **'Pick the brain that turns your words into tasks'**
   String get onboardingConnectTitle;
 
+  /// No description provided for @onboardingRecordingStyleAnalogue.
+  ///
+  /// In en, this message translates to:
+  /// **'Analogue — VU meter'**
+  String get onboardingRecordingStyleAnalogue;
+
+  /// No description provided for @onboardingRecordingStyleContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get onboardingRecordingStyleContinue;
+
+  /// No description provided for @onboardingRecordingStyleExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a look for the mic. You can change it any time in Settings.'**
+  String get onboardingRecordingStyleExplanation;
+
+  /// No description provided for @onboardingRecordingStyleModern.
+  ///
+  /// In en, this message translates to:
+  /// **'Modern — energy orb'**
+  String get onboardingRecordingStyleModern;
+
+  /// No description provided for @onboardingRecordingStyleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How should recording feel?'**
+  String get onboardingRecordingStyleTitle;
+
+  /// No description provided for @onboardingRecordingStyleTryVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Try with your voice'**
+  String get onboardingRecordingStyleTryVoice;
+
   /// No description provided for @onboardingSuccessContinue.
   ///
   /// In en, this message translates to:

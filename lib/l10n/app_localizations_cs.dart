@@ -6583,6 +6583,25 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyber mozek, který promění tvá slova v úkoly';
 
   @override
+  String get onboardingRecordingStyleAnalogue => 'Analogový — VU metr';
+
+  @override
+  String get onboardingRecordingStyleContinue => 'Pokračovat';
+
+  @override
+  String get onboardingRecordingStyleExplanation =>
+      'Vyber vzhled pro mikrofon. Kdykoli ho můžeš změnit v Nastavení.';
+
+  @override
+  String get onboardingRecordingStyleModern => 'Moderní — energetická koule';
+
+  @override
+  String get onboardingRecordingStyleTitle => 'Jak má nahrávání vypadat?';
+
+  @override
+  String get onboardingRecordingStyleTryVoice => 'Vyzkoušej svým hlasem';
+
+  @override
   String get onboardingSuccessContinue => 'Začít';
 
   @override
