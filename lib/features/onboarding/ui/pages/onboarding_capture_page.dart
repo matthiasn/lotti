@@ -49,6 +49,7 @@ class OnboardingCapturePage extends ConsumerStatefulWidget {
   const OnboardingCapturePage({
     required this.categories,
     required this.onDone,
+    required this.onTaskCreated,
     this.providerName,
     super.key,
   }) : assert(categories.length > 0, 'at least one category is required');
@@ -61,8 +62,14 @@ class OnboardingCapturePage extends ConsumerStatefulWidget {
   /// Optional low-cardinality provider funnel dimension (e.g. "Gemini").
   final String? providerName;
 
-  /// Fired when the user accepts the revealed task ("Looks good").
+  /// Fired when the user closes the capture without producing a task (the close
+  /// affordance, or a total structuring failure) — finishes onboarding.
   final VoidCallback onDone;
+
+  /// Fired with the new task's id once structuring lands a real (in-progress)
+  /// task. The host navigates to that task's detail page; injected so the page
+  /// stays decoupled from the task UI and testable.
+  final void Function(String taskId) onTaskCreated;
 
   @override
   ConsumerState<OnboardingCapturePage> createState() =>
@@ -75,13 +82,10 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
   /// or after it has resolved — structuring runs exactly once per capture.
   String? _structuringForTranscript;
 
-  /// True from the moment structuring starts until the reveal lands, so the
-  /// view stays on the thinking frame across the orchestrator round-trip even
+  /// True from the moment structuring starts until the task page is pushed, so
+  /// the view holds the thinking frame across the orchestrator round-trip even
   /// though the controller has already settled on [CapturePhase.captured].
   bool _structuring = false;
-
-  /// The resolved structuring outcome, or null until the reveal.
-  OnboardingCaptureResult? _result;
 
   /// The area the structured task lands in. Pre-selected to the first created
   /// area; when more than one exists the user can re-pick via the destination
@@ -93,12 +97,6 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
     super.initState();
     _selectedCategoryId = widget.categories.first.id;
   }
-
-  OnboardingCaptureCategory get _selectedCategory =>
-      widget.categories.firstWhere(
-        (c) => c.id == _selectedCategoryId,
-        orElse: () => widget.categories.first,
-      );
 
   OnboardingMetricsRepository? get _metrics =>
       getIt.isRegistered<OnboardingMetricsRepository>()
@@ -133,14 +131,7 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
                   OnboardingCaptureView(
                     phase: _viewPhase(captureState.phase),
                     accent: tokens.colors.interactive.enabled,
-                    // The resolved card is a light surface lifted onto the dark
-                    // hero, mirroring the crystallize hero's contrast.
-                    cardColor: dsTokensLight.colors.background.level01,
-                    onCardColor: dsTokensLight.colors.text.highEmphasis,
-                    ghostColor: tokens.colors.text.mediumEmphasis,
                     promptHeadline: context.messages.onboardingCapturePrompt,
-                    revealedHeadline:
-                        context.messages.onboardingCaptureRevealed,
                     promptHint: context.messages.onboardingCapturePromptHint,
                     listeningCaption:
                         context.messages.onboardingCaptureListening,
@@ -150,20 +141,13 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
                         context.messages.onboardingCaptureReassurance,
                     ratherTypeLabel:
                         context.messages.onboardingCaptureRatherType,
-                    acceptLabel: context.messages.onboardingCaptureAccept,
                     orbSemanticLabel:
                         context.messages.onboardingCaptureOrbLabel,
-                    editHint: context.messages.onboardingCaptureEditHint,
-                    categoryLabel: _selectedCategory.label,
                     transcript: _displayTranscript(captureState),
                     amplitudes: captureState.amplitudes,
                     dbfs: captureState.dbfs,
-                    title: _result?.title ?? '',
-                    items: _result?.checklistItems ?? const [],
-                    celebrate: _result?.isRealAha ?? false,
                     onOrbTap: _onOrbTap,
                     onRatherType: _onRatherType,
-                    onAccept: widget.onDone,
                   ),
                   // The capture page is full-screen (no barrier to tap), so an
                   // always-available close is the escape hatch — it finishes
@@ -217,11 +201,11 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
     return state.partialTranscript;
   }
 
-  /// Resolves the visible frame. Once structuring is in flight (or has landed)
-  /// the controller's [CapturePhase.captured] maps to thinking → revealed; the
-  /// raw phase only drives the pre-structuring frames.
+  /// Resolves the visible frame. Once structuring is in flight the controller's
+  /// [CapturePhase.captured] maps to thinking; the raw phase only drives the
+  /// pre-structuring frames. When structuring lands, the page navigates to the
+  /// real task — there is no in-page reveal.
   OnboardingCapturePhase _viewPhase(CapturePhase phase) {
-    if (_result != null) return OnboardingCapturePhase.revealed;
     if (_structuring) return OnboardingCapturePhase.thinking;
     return switch (phase) {
       CapturePhase.idle => OnboardingCapturePhase.prompt,
@@ -260,10 +244,7 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
     if (_structuringForTranscript == transcript) return;
 
     _structuringForTranscript = transcript;
-    setState(() {
-      _structuring = true;
-      _result = null;
-    });
+    setState(() => _structuring = true);
     unawaited(_structure(transcript));
   }
 
@@ -279,10 +260,17 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
       providerName: widget.providerName,
     );
     if (!mounted) return;
-    setState(() {
-      _structuring = false;
-      _result = result;
-    });
+    final task = result.task;
+    if (task != null) {
+      // The real payoff: hand the new in-progress task to the host, which lands
+      // the user straight on its detail page (its own animated checklist + audio
+      // affordance) instead of any synthetic reveal.
+      widget.onTaskCreated(task.meta.id);
+    } else {
+      // Couldn't persist even a title-only floor task — leave onboarding rather
+      // than strand the user on the thinking frame.
+      widget.onDone();
+    }
   }
 
   /// The "Rather type?" escape hatch: open the typed-capture path on the

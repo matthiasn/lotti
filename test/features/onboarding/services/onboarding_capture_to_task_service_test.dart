@@ -134,11 +134,12 @@ void main() {
       expect(result.title, 'Call the dentist');
       expect(result.checklistItems, ['Find number', 'Book slot']);
 
-      // The created task carries the structured title and a fresh open status.
+      // The created task carries the structured title and lands already in
+      // progress (the user spoke it into being and is dropped onto it).
       final data = capturedTaskData();
       expect(data.title, 'Call the dentist');
       expect(
-        data.status.maybeMap(open: (_) => true, orElse: () => false),
+        data.status.maybeMap(inProgress: (_) => true, orElse: () => false),
         isTrue,
       );
 

@@ -188,7 +188,10 @@ class OnboardingCaptureToTaskService {
     final now = _clock();
     final task = await _persistenceLogic.createTaskEntry(
       data: TaskData(
-        status: TaskStatus.open(
+        // The onboarding task lands already in progress — the user just spoke it
+        // into being and is dropped straight onto it, so "in progress" reads
+        // truer than "open" and the task page opens mid-flow.
+        status: TaskStatus.inProgress(
           id: _uuid.v4(),
           createdAt: now,
           utcOffset: now.timeZoneOffset.inMinutes,

@@ -5,12 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/pages/onboarding_capture_page.dart';
-import 'package:lotti/features/onboarding/ui/widgets/crystallize_hero.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -64,15 +62,28 @@ void main() {
   late MockOnboardingCaptureToTaskService service;
   late MockOnboardingMetricsRepository metrics;
 
-  // Reduced motion so the orb breath / shimmer / celebration tickers settle.
+  // Reduced motion so the orb breath / shimmer tickers settle.
   const mq = MediaQueryData(size: Size(390, 844), disableAnimations: true);
 
-  OnboardingCaptureResult realAha() => const OnboardingCaptureResult(
-    task: null,
-    title: 'Car & health errands',
-    checklistItems: ['Call the dentist', 'Book the car service'],
-    isRealAha: true,
-  );
+  // A real (in-progress) task landed; `task` carries the id the page hands to
+  // onTaskCreated.
+  OnboardingCaptureResult realAha({String taskId = 'task-1'}) =>
+      OnboardingCaptureResult(
+        task: MockTask(id: taskId),
+        title: 'Car & health errands',
+        checklistItems: const ['Call the dentist', 'Book the car service'],
+        isRealAha: true,
+      );
+
+  void stubStructuring(OnboardingCaptureResult result) {
+    when(
+      () => service.createTaskFromTranscript(
+        transcript: any(named: 'transcript'),
+        categoryId: any(named: 'categoryId'),
+        providerName: any(named: 'providerName'),
+      ),
+    ).thenAnswer((_) async => result);
+  }
 
   setUp(() {
     controller = _FakeCaptureController();
@@ -105,6 +116,7 @@ void main() {
   Future<void> pumpPage(
     WidgetTester tester, {
     VoidCallback? onDone,
+    void Function(String taskId)? onTaskCreated,
     List<OnboardingCaptureCategory>? categories,
   }) async {
     // The full-screen page uses Spacers (needs a bounded viewport) and pins the
@@ -126,6 +138,7 @@ void main() {
               ],
           providerName: providerName,
           onDone: onDone ?? () {},
+          onTaskCreated: onTaskCreated ?? (_) {},
         ),
         mediaQueryData: mq,
         overrides: [
@@ -143,12 +156,6 @@ void main() {
     expect(find.text("What's on your mind?"), findsOneWidget);
     expect(find.byType(VoiceOrbZone), findsOneWidget);
     expect(find.text('Rather type?'), findsOneWidget);
-    // No reveal chrome before a capture.
-    expect(find.byType(CrystallizeHero), findsNothing);
-    expect(
-      find.widgetWithText(DesignSystemButton, 'Looks good'),
-      findsNothing,
-    );
   });
 
   testWidgets('orb tap delegates to the controller toggle', (tester) async {
@@ -178,10 +185,8 @@ void main() {
   });
 
   testWidgets(
-    'reaching captured structures once and reveals the returned task',
+    'reaching captured structures once and hands the new task to the host',
     (tester) async {
-      // Hold the orchestrator open so the thinking frame is observable before
-      // the reveal lands.
       final gate = Completer<OnboardingCaptureResult>();
       when(
         () => service.createTaskFromTranscript(
@@ -191,9 +196,9 @@ void main() {
         ),
       ).thenAnswer((_) => gate.future);
 
-      await pumpPage(tester);
+      final created = <String>[];
+      await pumpPage(tester, onTaskCreated: created.add);
 
-      // Drive idle → captured with a real transcript.
       controller.emit(
         const CaptureState(
           phase: CapturePhase.captured,
@@ -203,22 +208,16 @@ void main() {
       );
       await tester.pump();
 
-      // Thinking frame while structuring is in flight.
+      // The thinking frame holds while structuring is in flight; no task yet.
       expect(find.text('Turning your words into a task…'), findsOneWidget);
-      expect(find.byType(CrystallizeHero), findsNothing);
+      expect(created, isEmpty);
 
-      // Resolve the orchestrator and let the reveal land.
       gate.complete(realAha());
       await tester.pump();
       await tester.pump();
 
-      expect(find.text("Here's your first task"), findsOneWidget);
-      expect(find.byType(CrystallizeHero), findsOneWidget);
-      expect(find.text('Car & health errands'), findsOneWidget);
-      expect(find.text('Call the dentist'), findsOneWidget);
-      expect(find.text(categoryLabel), findsOneWidget);
-
-      // Exactly one orchestrator call, carrying the right category + provider.
+      // The page hands the new task's id to the host (which navigates to it).
+      expect(created, ['task-1']);
       verify(
         () => service.createTaskFromTranscript(
           transcript: transcript,
@@ -226,8 +225,6 @@ void main() {
           providerName: providerName,
         ),
       ).called(1);
-
-      // firstAudioCaptured was recorded for the capture.
       verify(
         () => metrics.recordEvent(
           OnboardingEventName.firstAudioCaptured,
@@ -237,17 +234,43 @@ void main() {
     },
   );
 
+  testWidgets('a total structuring failure (no task) finishes onboarding', (
+    tester,
+  ) async {
+    stubStructuring(
+      const OnboardingCaptureResult(
+        task: null,
+        title: '',
+        checklistItems: [],
+        isRealAha: false,
+      ),
+    );
+    var dones = 0;
+    final created = <String>[];
+    await pumpPage(
+      tester,
+      onDone: () => dones++,
+      onTaskCreated: created.add,
+    );
+
+    controller.emit(
+      const CaptureState(
+        phase: CapturePhase.captured,
+        transcript: transcript,
+        amplitudes: <double>[],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(created, isEmpty);
+    expect(dones, 1);
+  });
+
   testWidgets('does not re-structure when the captured state re-emits', (
     tester,
   ) async {
-    when(
-      () => service.createTaskFromTranscript(
-        transcript: any(named: 'transcript'),
-        categoryId: any(named: 'categoryId'),
-        providerName: any(named: 'providerName'),
-      ),
-    ).thenAnswer((_) async => realAha());
-
+    stubStructuring(realAha());
     await pumpPage(tester);
 
     const captured = CaptureState(
@@ -258,13 +281,8 @@ void main() {
     controller.emit(captured);
     await tester.pump();
     await tester.pump();
-    await tester.pump();
 
-    // Re-emitting an equivalent captured state (e.g. a late meter tick) must
-    // not fire a second structuring pass for the same transcript.
-    controller.emit(
-      captured.copyWith(amplitudes: const [0.1]),
-    );
+    controller.emit(captured.copyWith(amplitudes: const [0.1]));
     await tester.pump();
 
     verify(
@@ -298,41 +316,12 @@ void main() {
     );
   });
 
-  testWidgets('Looks good on the reveal fires onDone', (tester) async {
-    when(
-      () => service.createTaskFromTranscript(
-        transcript: any(named: 'transcript'),
-        categoryId: any(named: 'categoryId'),
-        providerName: any(named: 'providerName'),
-      ),
-    ).thenAnswer((_) async => realAha());
-
-    var done = 0;
-    await pumpPage(tester, onDone: () => done++);
-
-    controller.emit(
-      const CaptureState(
-        phase: CapturePhase.captured,
-        transcript: transcript,
-        amplitudes: <double>[],
-      ),
-    );
-    await tester.pump();
-    await tester.pump();
-    await tester.pump();
-
-    await tester.tap(find.widgetWithText(DesignSystemButton, 'Looks good'));
-    expect(done, 1);
-  });
-
   testWidgets('the close affordance fires onDone (escape from any phase)', (
     tester,
   ) async {
     var done = 0;
     await pumpPage(tester, onDone: () => done++);
 
-    // At rest (prompt phase, before any capture) the full-screen page is still
-    // dismissable via the always-present close button.
     await tester.tap(find.byIcon(Icons.close_rounded));
     expect(done, 1);
   });
@@ -341,22 +330,9 @@ void main() {
     tester,
   ) async {
     const typed = 'water the plants on the balcony';
-    when(
-      () => service.createTaskFromTranscript(
-        transcript: any(named: 'transcript'),
-        categoryId: any(named: 'categoryId'),
-        providerName: any(named: 'providerName'),
-      ),
-    ).thenAnswer(
-      (_) async => const OnboardingCaptureResult(
-        task: null,
-        title: 'Balcony care',
-        checklistItems: ['Water the plants'],
-        isRealAha: true,
-      ),
-    );
-
-    await pumpPage(tester);
+    stubStructuring(realAha());
+    final created = <String>[];
+    await pumpPage(tester, onTaskCreated: created.add);
 
     // The orb's breath/shader tickers never settle, so step the dialog
     // route open/close with bounded pumps rather than pumpAndSettle.
@@ -364,11 +340,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    // The typed-capture dialog opened.
     expect(find.text('Type your thought'), findsOneWidget);
     await tester.enterText(find.byType(TextField), typed);
-    // Submit via the keyboard action (the field's onSubmitted), not the OK
-    // button, so both confirmation paths are exercised.
+    // Submit via the keyboard action (the field's onSubmitted).
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -380,29 +354,16 @@ void main() {
         providerName: providerName,
       ),
     ).called(1);
-    expect(find.text('Balcony care'), findsOneWidget);
+    expect(created, ['task-1']);
   });
 
   testWidgets('Rather type? confirmed via OK structures the typed text', (
     tester,
   ) async {
     const typed = 'review the quarterly budget';
-    when(
-      () => service.createTaskFromTranscript(
-        transcript: any(named: 'transcript'),
-        categoryId: any(named: 'categoryId'),
-        providerName: any(named: 'providerName'),
-      ),
-    ).thenAnswer(
-      (_) async => const OnboardingCaptureResult(
-        task: null,
-        title: 'Budget review',
-        checklistItems: [],
-        isRealAha: true,
-      ),
-    );
-
-    await pumpPage(tester);
+    stubStructuring(realAha(taskId: 'budget-task'));
+    final created = <String>[];
+    await pumpPage(tester, onTaskCreated: created.add);
 
     await tester.tap(find.text('Rather type?'));
     await tester.pump();
@@ -419,7 +380,7 @@ void main() {
         providerName: providerName,
       ),
     ).called(1);
-    expect(find.text('Budget review'), findsOneWidget);
+    expect(created, ['budget-task']);
   });
 
   testWidgets('Rather type? cancelled resets without structuring', (
@@ -430,7 +391,6 @@ void main() {
     await tester.tap(find.text('Rather type?'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    // Cancel the dialog without typing.
     await tester.tap(find.text('Cancel'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -460,7 +420,6 @@ void main() {
     );
     await tester.pump();
 
-    // The prompt frame is shown again so the orb is tappable to retry.
     expect(find.text("What's on your mind?"), findsOneWidget);
     expect(find.byType(VoiceOrbZone), findsOneWidget);
   });
@@ -468,35 +427,27 @@ void main() {
   testWidgets('a single area shows no destination picker', (tester) async {
     await pumpPage(tester);
 
-    // Nothing to choose between → the picker prompt never renders.
     expect(find.text('Where should this land?'), findsNothing);
   });
 
   testWidgets(
     'with more than one area the picker routes the task to the chosen area',
     (tester) async {
-      when(
-        () => service.createTaskFromTranscript(
-          transcript: any(named: 'transcript'),
-          categoryId: any(named: 'categoryId'),
-          providerName: any(named: 'providerName'),
-        ),
-      ).thenAnswer((_) async => realAha());
-
+      stubStructuring(realAha());
+      final created = <String>[];
       await pumpPage(
         tester,
+        onTaskCreated: created.add,
         categories: const [
           OnboardingCaptureCategory(id: 'cat-work', label: 'Work'),
           OnboardingCaptureCategory(id: 'cat-family', label: 'Family'),
         ],
       );
 
-      // The picker offers both areas; the first is pre-selected.
       expect(find.text('Where should this land?'), findsOneWidget);
       expect(find.text('Work'), findsOneWidget);
       expect(find.text('Family'), findsOneWidget);
 
-      // Choose the second area, then capture.
       await tester.tap(find.text('Family'));
       await tester.pump();
 
@@ -510,8 +461,6 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // The task is structured into the chosen area, and its label rides the
-      // resolved card (which is the only 'Family' left — the picker is gone).
       verify(
         () => service.createTaskFromTranscript(
           transcript: transcript,
@@ -519,16 +468,13 @@ void main() {
           providerName: providerName,
         ),
       ).called(1);
-      expect(find.text('Where should this land?'), findsNothing);
-      expect(find.text('Family'), findsOneWidget);
+      expect(created, ['task-1']);
     },
   );
 
   testWidgets('the destination picker is hidden once structuring starts', (
     tester,
   ) async {
-    // Hold the orchestrator open so the thinking frame (post-capture) is the
-    // observed state.
     final gate = Completer<OnboardingCaptureResult>();
     when(
       () => service.createTaskFromTranscript(
@@ -556,7 +502,6 @@ void main() {
     );
     await tester.pump();
 
-    // Structuring is in flight: the destination is locked, so the picker hides.
     expect(find.text('Turning your words into a task…'), findsOneWidget);
     expect(find.text('Where should this land?'), findsNothing);
 

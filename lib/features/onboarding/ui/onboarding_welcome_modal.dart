@@ -14,9 +14,11 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.da
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
+import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 
 /// The seeded inference profile attached to categories created for a freshly
 /// connected provider — so each chosen category resolves to a real model.
@@ -143,6 +145,8 @@ class OnboardingWelcomeModal {
               categories: capture.categories,
               providerName: capture.providerName,
               onDone: () => Navigator.of(captureContext).pop(),
+              onTaskCreated: (taskId) =>
+                  _openCreatedTask(captureContext, taskId),
             ),
           ),
         );
@@ -151,6 +155,23 @@ class OnboardingWelcomeModal {
       unawaited(repo?.recordEvent(OnboardingEventName.welcomeSkipped));
       onDismiss();
     }
+  }
+}
+
+/// Lands the user on their freshly created task, replacing the capture route so
+/// backing out returns to the app rather than the capture screen. Mirrors
+/// `task_navigation.dart`'s mobile/desktop split.
+void _openCreatedTask(BuildContext captureContext, String taskId) {
+  final navService = getIt<NavService>();
+  if (navService.isDesktopMode) {
+    navService.pushDesktopTaskDetail(taskId);
+    Navigator.of(captureContext).pop();
+  } else {
+    Navigator.of(captureContext).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => TaskDetailsPage(taskId: taskId),
+      ),
+    );
   }
 }
 
