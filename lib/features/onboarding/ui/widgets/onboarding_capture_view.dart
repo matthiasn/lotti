@@ -1,5 +1,6 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:lotti/features/ai/ui/animation/ai_thinking_line_shader.dart';
 import 'package:lotti/features/daily_os_next/state/capture_state.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -217,22 +218,17 @@ class _ThinkingCluster extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // A teal "processing" pulse keeps a hero presence through the wait —
+          // the orb's energy carries into the thinking beat rather than
+          // deflating to a bare progress bar.
+          _ThinkingPulse(color: accent, size: tokens.spacing.step11),
+          SizedBox(height: tokens.spacing.step6),
           Text(
             '"$transcript"',
             textAlign: TextAlign.center,
             style: tokens.typography.styles.body.bodyLarge.copyWith(
               color: tokens.colors.text.highEmphasis,
               fontStyle: FontStyle.italic,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step6),
-          AiThinkingLineShader(
-            width: 220,
-            height: 30,
-            primaryColor: accent,
-            secondaryColor: tokens.colors.text.highEmphasis,
-            backgroundColor: tokens.colors.background.level01.withValues(
-              alpha: 0,
             ),
           ),
           SizedBox(height: tokens.spacing.step5),
@@ -247,4 +243,93 @@ class _ThinkingCluster extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A calm teal "processing" pulse: a breathing core under an expanding sonar
+/// ring. Reads as *working* (distinct from the mic orb) and keeps a teal hero
+/// in the thinking frame. Holds a static frame under reduced motion.
+class _ThinkingPulse extends StatefulWidget {
+  const _ThinkingPulse({required this.color, required this.size});
+
+  final Color color;
+  final double size;
+
+  @override
+  State<_ThinkingPulse> createState() => _ThinkingPulseState();
+}
+
+class _ThinkingPulseState extends State<_ThinkingPulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1700),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduceMotion) {
+      if (_c.isAnimating) _c.stop();
+      _c.value = 0.5;
+    } else if (!_c.isAnimating) {
+      _c.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: widget.size,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) =>
+            CustomPaint(painter: _ThinkingPulsePainter(widget.color, _c.value)),
+      ),
+    );
+  }
+}
+
+class _ThinkingPulsePainter extends CustomPainter {
+  _ThinkingPulsePainter(this.color, this.t);
+
+  final Color color;
+  final double t;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final maxR = size.shortestSide / 2;
+    // Expanding sonar ring, fading as it grows.
+    canvas.drawCircle(
+      center,
+      maxR * (0.42 + 0.58 * t),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = color.withValues(alpha: (1 - t) * 0.6),
+    );
+    // Breathing core (glow + crisp dot).
+    final breath = 0.5 + 0.5 * math.sin(t * 2 * math.pi);
+    canvas
+      ..drawCircle(
+        center,
+        maxR * 0.26 * (0.85 + 0.3 * breath),
+        Paint()
+          ..color = color.withValues(alpha: 0.9)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+      )
+      ..drawCircle(center, maxR * 0.18, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_ThinkingPulsePainter old) =>
+      old.t != t || old.color != color;
 }

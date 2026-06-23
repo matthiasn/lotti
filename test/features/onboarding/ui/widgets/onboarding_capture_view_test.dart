@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/ai/ui/animation/ai_thinking_line_shader.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_capture_view.dart';
@@ -101,7 +100,9 @@ void main() {
       find.text('"call the dentist and book the car service"'),
       findsOneWidget,
     );
-    expect(find.byType(AiThinkingLineShader), findsOneWidget);
+    // The captured words are echoed and the reassurance shows; a teal
+    // "processing" pulse (a CustomPaint) holds the hero presence.
+    expect(find.byType(CustomPaint), findsWidgets);
     expect(find.text('You can edit everything next'), findsOneWidget);
     // No escape hatch once we're past listening — the page navigates to the
     // real task from here, there is no in-page reveal.
