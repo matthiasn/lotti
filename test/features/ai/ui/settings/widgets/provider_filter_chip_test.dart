@@ -3,366 +3,125 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chip.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
+import '../../../../../widget_test_utils.dart';
+
+AiConfigInferenceProvider _provider({
+  String name = 'Test Provider',
+  InferenceProviderType type = InferenceProviderType.anthropic,
+}) => AiConfigInferenceProvider(
+  id: 'provider1',
+  name: name,
+  baseUrl: 'https://example.com',
+  apiKey: 'test-key',
+  createdAt: DateTime(2024, 3, 15),
+  inferenceProviderType: type,
+);
+
 void main() {
-  group('Provider Filter Chip Color Tests', () {
-    testWidgets('Anthropic provider has bronze color in light theme', (
-      tester,
-    ) async {
-      final provider = AiConfigInferenceProvider(
-        id: 'provider1',
-        name: 'Anthropic',
-        baseUrl: 'https://api.anthropic.com',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.anthropic,
-      );
-
-      var tapCalled = false;
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            aiConfigByIdProvider(
-              'provider1',
-            ).overrideWith((ref) async => provider),
-          ],
-          child: MaterialApp(
-            theme: ThemeData.light(),
-            home: Scaffold(
-              body: ProviderFilterChip(
-                providerId: 'provider1',
-                isSelected: false,
-                onTap: () => tapCalled = true,
-              ),
+  Future<void> pumpChip(
+    WidgetTester tester, {
+    required AiConfig? config,
+    bool isSelected = false,
+    VoidCallback? onTap,
+    ThemeData? theme,
+  }) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          aiConfigByIdProvider('provider1').overrideWith((ref) async => config),
+        ],
+        child: MaterialApp(
+          theme: resolveTestTheme(theme),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ProviderFilterChip(
+              providerId: 'provider1',
+              isSelected: isSelected,
+              onTap: onTap ?? () {},
             ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
           ),
         ),
-      );
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
-      await tester.pumpAndSettle();
+  DesignSystemChip chipOf(WidgetTester tester) =>
+      tester.widget<DesignSystemChip>(find.byType(DesignSystemChip));
 
-      // Verify provider name is displayed
-      expect(find.text('Anthropic'), findsOneWidget);
+  Color avatarColorOf(WidgetTester tester) {
+    final avatar = chipOf(tester).avatar! as DecoratedBox;
+    final gradient =
+        (avatar.decoration as BoxDecoration).gradient! as LinearGradient;
+    return gradient.colors.first;
+  }
 
-      // Verify colored dot is rendered
-      final containerFinder = find.byType(Container);
-      expect(containerFinder, findsWidgets);
+  group('ProviderFilterChip', () {
+    testWidgets('renders the provider name in a DesignSystemChip', (
+      tester,
+    ) async {
+      await pumpChip(tester, config: _provider());
 
-      // Find the FilterChip and verify tap works
-      final filterChip = find.byType(FilterChip);
-      expect(filterChip, findsOneWidget);
+      expect(find.byType(DesignSystemChip), findsOneWidget);
+      expect(find.text('Test Provider'), findsOneWidget);
+    });
 
-      await tester.tap(filterChip);
+    testWidgets('reflects the selected / unselected state on the chip', (
+      tester,
+    ) async {
+      await pumpChip(tester, config: _provider(), isSelected: true);
+      expect(chipOf(tester).selected, isTrue);
+
+      await pumpChip(tester, config: _provider());
+      expect(chipOf(tester).selected, isFalse);
+    });
+
+    testWidgets('tapping invokes onTap, including rapid taps', (tester) async {
+      var taps = 0;
+      await pumpChip(tester, config: _provider(), onTap: () => taps++);
+
+      await tester.tap(find.byType(DesignSystemChip));
+      await tester.pump();
+      await tester.tap(find.byType(DesignSystemChip));
+      await tester.pump();
+      await tester.tap(find.byType(DesignSystemChip));
       await tester.pump();
 
-      expect(tapCalled, isTrue);
+      expect(taps, 3);
     });
 
-    testWidgets('OpenAI provider has green color in dark theme', (
+    testWidgets('carries the provider colour on its gradient avatar dot', (
       tester,
     ) async {
-      final provider = AiConfigInferenceProvider(
-        id: 'provider2',
-        name: 'OpenAI',
-        baseUrl: 'https://api.openai.com',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.openAi,
+      await pumpChip(
+        tester,
+        config: _provider(type: InferenceProviderType.openAi),
+        theme: ThemeData.light(),
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            aiConfigByIdProvider(
-              'provider2',
-            ).overrideWith((ref) async => provider),
-          ],
-          child: MaterialApp(
-            theme: ThemeData.dark(),
-            home: Scaffold(
-              body: ProviderFilterChip(
-                providerId: 'provider2',
-                isSelected: false,
-                onTap: () {},
-              ),
-            ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text('OpenAI'), findsOneWidget);
-      expect(find.byType(Container), findsWidgets);
-    });
-
-    testWidgets('Gemini provider has blue color', (tester) async {
-      final provider = AiConfigInferenceProvider(
-        id: 'provider3',
-        name: 'Gemini',
-        baseUrl: 'https://api.google.com',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            aiConfigByIdProvider(
-              'provider3',
-            ).overrideWith((ref) async => provider),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: ProviderFilterChip(
-                providerId: 'provider3',
-                isSelected: false,
-                onTap: () {},
-              ),
-            ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-      expect(find.text('Gemini'), findsOneWidget);
-    });
-
-    testWidgets('Ollama provider has orange color', (tester) async {
-      final provider = AiConfigInferenceProvider(
-        id: 'provider4',
-        name: 'Ollama',
-        baseUrl: 'http://localhost:11434',
-        apiKey: '',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.ollama,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            aiConfigByIdProvider(
-              'provider4',
-            ).overrideWith((ref) async => provider),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: ProviderFilterChip(
-                providerId: 'provider4',
-                isSelected: false,
-                onTap: () {},
-              ),
-            ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-      expect(find.text('Ollama'), findsOneWidget);
-    });
-
-    testWidgets('All provider types render correctly', (tester) async {
-      final providers = [
-        (InferenceProviderType.anthropic, 'Anthropic'),
-        (InferenceProviderType.openAi, 'OpenAI'),
-        (InferenceProviderType.gemini, 'Gemini'),
-        (InferenceProviderType.ollama, 'Ollama'),
-        (InferenceProviderType.openRouter, 'OpenRouter'),
-        (InferenceProviderType.genericOpenAi, 'Generic OpenAI'),
-        (InferenceProviderType.nebiusAiStudio, 'Nebius'),
-        (InferenceProviderType.omlx, 'oMLX'),
-        (InferenceProviderType.mlxAudio, 'MLX Audio'),
-        (InferenceProviderType.whisper, 'Whisper'),
-        (InferenceProviderType.voxtral, 'Voxtral'),
-      ];
-
-      for (final (type, name) in providers) {
-        final provider = AiConfigInferenceProvider(
-          id: 'provider_${type.name}',
-          name: name,
-          baseUrl: 'https://example.com',
-          apiKey: 'test-key',
-          createdAt: DateTime(2024, 3, 15),
-          inferenceProviderType: type,
-        );
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              aiConfigByIdProvider(
-                'provider_${type.name}',
-              ).overrideWith((ref) async => provider),
-            ],
-            child: MaterialApp(
-              home: Scaffold(
-                body: ProviderFilterChip(
-                  providerId: 'provider_${type.name}',
-                  isSelected: false,
-                  onTap: () {},
-                ),
-              ),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        expect(find.text(name), findsOneWidget);
-
-        // Clean up between iterations
-        await tester.pumpWidget(Container());
-        await tester.pump();
-      }
-    });
-  });
-
-  group('Provider Filter Chip Selection State Tests', () {
-    testWidgets('Selected chip shows checkmark', (tester) async {
-      final provider = AiConfigInferenceProvider(
-        id: 'provider1',
-        name: 'Test Provider',
-        baseUrl: 'https://example.com',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.anthropic,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            aiConfigByIdProvider(
-              'provider1',
-            ).overrideWith((ref) async => provider),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: ProviderFilterChip(
-                providerId: 'provider1',
-                isSelected: true,
-                onTap: () {},
-              ),
-            ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Verify FilterChip is selected and shows checkmark icon
-      final filterChip = tester.widget<FilterChip>(find.byType(FilterChip));
-      expect(filterChip.selected, isTrue);
-      expect(filterChip.showCheckmark, isFalse);
-      expect(find.byIcon(Icons.check), findsOneWidget);
-      expect(find.text('Test Provider'), findsOneWidget);
-    });
-
-    testWidgets('Unselected chip does not show checkmark', (tester) async {
-      final provider = AiConfigInferenceProvider(
-        id: 'provider1',
-        name: 'Test Provider',
-        baseUrl: 'https://example.com',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.anthropic,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            aiConfigByIdProvider(
-              'provider1',
-            ).overrideWith((ref) async => provider),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: ProviderFilterChip(
-                providerId: 'provider1',
-                isSelected: false,
-                onTap: () {},
-              ),
-            ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Verify FilterChip is not selected and does not show checkmark icon
-      final filterChip = tester.widget<FilterChip>(find.byType(FilterChip));
-      expect(filterChip.selected, isFalse);
-      expect(filterChip.showCheckmark, isFalse);
-      expect(find.byIcon(Icons.check), findsNothing);
-      expect(find.text('Test Provider'), findsOneWidget);
-    });
-
-    testWidgets('Colored dot always displays', (tester) async {
-      final provider = AiConfigInferenceProvider(
-        id: 'provider1',
-        name: 'Test Provider',
-        baseUrl: 'https://example.com',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.anthropic,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            aiConfigByIdProvider(
-              'provider1',
-            ).overrideWith((ref) async => provider),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: ProviderFilterChip(
-                providerId: 'provider1',
-                isSelected: false,
-                onTap: () {},
-              ),
-            ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Verify Container with decoration (colored dot) exists
-      final containers = tester.widgetList<Container>(find.byType(Container));
       expect(
-        containers.any(
-          (c) {
-            final decoration = c.decoration;
-            return decoration is BoxDecoration &&
-                decoration.shape == BoxShape.circle;
-          },
+        avatarColorOf(tester),
+        ProviderChipConstants.getProviderColor(
+          InferenceProviderType.openAi,
+          isDark: false,
         ),
-        isTrue,
       );
+    });
+
+    testWidgets('renders nothing when the provider is missing', (tester) async {
+      await pumpChip(tester, config: null);
+      expect(find.byType(DesignSystemChip), findsNothing);
     });
   });
 
-  group('Provider Filter Chip Data Tests', () {
+  group('ProviderFilterChip data state', () {
     test('Null provider returns null from async state', () async {
-      // Test the data logic directly
       final container = ProviderContainer(
         overrides: [
           aiConfigByIdProvider('provider1').overrideWith((ref) async => null),
@@ -395,15 +154,7 @@ void main() {
     });
 
     test('Valid provider returns correct data', () async {
-      final provider = AiConfigInferenceProvider(
-        id: 'provider1',
-        name: 'Test Provider',
-        baseUrl: 'https://example.com',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.anthropic,
-      );
-
+      final provider = _provider();
       final container = ProviderContainer(
         overrides: [
           aiConfigByIdProvider(
@@ -416,189 +167,8 @@ void main() {
         aiConfigByIdProvider('provider1').future,
       );
       expect(result, equals(provider));
-      expect(result?.name, equals('Test Provider'));
-
-      // Cast to AiConfigInferenceProvider to access type-specific fields
-      if (result is AiConfigInferenceProvider) {
-        expect(
-          result.inferenceProviderType,
-          equals(InferenceProviderType.anthropic),
-        );
-      }
 
       container.dispose();
-    });
-  });
-
-  group('Provider Filter Chip Theme Tests', () {
-    testWidgets('Text color is white in dark theme', (tester) async {
-      final provider = AiConfigInferenceProvider(
-        id: 'provider1',
-        name: 'Test Provider',
-        baseUrl: 'https://example.com',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.anthropic,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            aiConfigByIdProvider(
-              'provider1',
-            ).overrideWith((ref) async => provider),
-          ],
-          child: MaterialApp(
-            theme: ThemeData.dark(),
-            home: Scaffold(
-              body: ProviderFilterChip(
-                providerId: 'provider1',
-                isSelected: false,
-                onTap: () {},
-              ),
-            ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final filterChip = tester.widget<FilterChip>(find.byType(FilterChip));
-      expect(filterChip.labelStyle?.color, equals(Colors.white));
-    });
-
-    testWidgets('Text color is black in light theme', (tester) async {
-      final provider = AiConfigInferenceProvider(
-        id: 'provider1',
-        name: 'Test Provider',
-        baseUrl: 'https://example.com',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.anthropic,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            aiConfigByIdProvider(
-              'provider1',
-            ).overrideWith((ref) async => provider),
-          ],
-          child: MaterialApp(
-            theme: ThemeData.light(),
-            home: Scaffold(
-              body: ProviderFilterChip(
-                providerId: 'provider1',
-                isSelected: false,
-                onTap: () {},
-              ),
-            ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final filterChip = tester.widget<FilterChip>(find.byType(FilterChip));
-      expect(filterChip.labelStyle?.color, equals(Colors.black));
-    });
-  });
-
-  group('Provider Filter Chip Interaction Tests', () {
-    testWidgets('Multiple rapid taps handled correctly', (tester) async {
-      final provider = AiConfigInferenceProvider(
-        id: 'provider1',
-        name: 'Test Provider',
-        baseUrl: 'https://example.com',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.anthropic,
-      );
-
-      var tapCount = 0;
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            aiConfigByIdProvider(
-              'provider1',
-            ).overrideWith((ref) async => provider),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: ProviderFilterChip(
-                providerId: 'provider1',
-                isSelected: false,
-                onTap: () => tapCount++,
-              ),
-            ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final filterChip = find.byType(FilterChip);
-
-      // Rapid taps
-      await tester.tap(filterChip);
-      await tester.pump();
-      await tester.tap(filterChip);
-      await tester.pump();
-      await tester.tap(filterChip);
-      await tester.pump();
-
-      expect(tapCount, equals(3));
-    });
-
-    testWidgets('Border radius is correct', (tester) async {
-      final provider = AiConfigInferenceProvider(
-        id: 'provider1',
-        name: 'Test Provider',
-        baseUrl: 'https://example.com',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.anthropic,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            aiConfigByIdProvider(
-              'provider1',
-            ).overrideWith((ref) async => provider),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: ProviderFilterChip(
-                providerId: 'provider1',
-                isSelected: false,
-                onTap: () {},
-              ),
-            ),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final filterChip = tester.widget<FilterChip>(find.byType(FilterChip));
-      expect(
-        filterChip.shape,
-        equals(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
-      );
     });
   });
 }

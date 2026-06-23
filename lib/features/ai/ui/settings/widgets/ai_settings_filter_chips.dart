@@ -4,6 +4,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chips_row.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -83,35 +84,16 @@ class AiSettingsFilterChips extends ConsumerWidget {
               );
             },
             child: filterState.hasActiveFilters
-                ? ActionChip(
+                ? Tooltip(
                     key: const ValueKey('clear_button'),
-                    avatar: Icon(
-                      Icons.clear,
-                      size: 14,
-                      color: context.colorScheme.error.withValues(alpha: 0.7),
+                    message: context.messages.aiSettingsClearAllFiltersTooltip,
+                    child: DesignSystemChip(
+                      label: context.messages.aiSettingsClearFiltersButton,
+                      leadingIcon: Icons.clear,
+                      onPressed: () {
+                        onFilterChanged(filterState.resetCurrentTabFilters());
+                      },
                     ),
-                    label: Text(
-                      context.messages.aiSettingsClearFiltersButton,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: context.colorScheme.error.withValues(alpha: 0.8),
-                      ),
-                    ),
-                    onPressed: () {
-                      onFilterChanged(filterState.resetCurrentTabFilters());
-                    },
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    backgroundColor: Colors.transparent,
-                    side: BorderSide(
-                      color: context.colorScheme.error.withValues(alpha: 0.3),
-                      width: 0.8,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.filterChipPaddingHorizontal,
-                      vertical: AppTheme.filterChipPaddingVertical,
-                    ),
-                    tooltip: context.messages.aiSettingsClearAllFiltersTooltip,
                   )
                 : const SizedBox.shrink(key: ValueKey('no_clear_button')),
           ),
@@ -145,108 +127,48 @@ class AiSettingsFilterChips extends ConsumerWidget {
           final isSelected = filterState.selectedCapabilities.contains(
             modality,
           );
-          return FilterChip(
-            avatar: Icon(icon, size: AppTheme.filterChipIconSize),
-            label: Text(label),
-            selected: isSelected,
-            onSelected: (selected) {
-              final newCapabilities = Set<Modality>.from(
-                filterState.selectedCapabilities,
-              );
-              if (selected) {
-                newCapabilities.add(modality);
-              } else {
-                newCapabilities.remove(modality);
-              }
-              onFilterChanged(
-                filterState.copyWith(
-                  selectedCapabilities: newCapabilities,
-                ),
-              );
-            },
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            backgroundColor: context.colorScheme.surfaceContainerHigh
-                .withValues(alpha: AppTheme.alphaFilterChipBackground),
-            selectedColor: context.colorScheme.primaryContainer.withValues(
-              alpha: AppTheme.alphaFilterChipSelected,
-            ),
-            checkmarkColor: context.colorScheme.onPrimaryContainer,
-            side: BorderSide(
-              color: isSelected
-                  ? context.colorScheme.primary.withValues(
-                      alpha: AppTheme.alphaFilterChipBorderSelected,
-                    )
-                  : context.colorScheme.primaryContainer.withValues(
-                      alpha: AppTheme.alphaFilterChipBorderUnselected,
-                    ),
-            ),
-            labelStyle: TextStyle(
-              fontSize: AppTheme.filterChipFontSize,
-              fontWeight: FontWeight.w600,
-              letterSpacing: AppTheme.filterChipLetterSpacing,
-              color: isSelected
-                  ? context.colorScheme.onPrimaryContainer
-                  : context.colorScheme.onSurfaceVariant.withValues(
-                      alpha: AppTheme.alphaFilterChipTextUnselected,
-                    ),
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.filterChipPaddingHorizontal,
-              vertical: AppTheme.filterChipPaddingVertical,
-            ),
-            tooltip: context.messages.aiSettingsFilterByCapabilityTooltip(
+          return Tooltip(
+            message: context.messages.aiSettingsFilterByCapabilityTooltip(
               label,
+            ),
+            child: DesignSystemChip(
+              leadingIcon: icon,
+              label: label,
+              selected: isSelected,
+              onPressed: () {
+                final newCapabilities = Set<Modality>.from(
+                  filterState.selectedCapabilities,
+                );
+                if (isSelected) {
+                  newCapabilities.remove(modality);
+                } else {
+                  newCapabilities.add(modality);
+                }
+                onFilterChanged(
+                  filterState.copyWith(
+                    selectedCapabilities: newCapabilities,
+                  ),
+                );
+              },
             ),
           );
         }),
 
         // Reasoning filter
-        FilterChip(
-          avatar: const Icon(
-            Icons.psychology,
-            size: AppTheme.filterChipIconSize,
+        Tooltip(
+          message: context.messages.aiSettingsFilterByReasoningTooltip,
+          child: DesignSystemChip(
+            leadingIcon: Icons.psychology,
+            label: context.messages.aiSettingsReasoningLabel,
+            selected: filterState.reasoningFilter,
+            onPressed: () {
+              onFilterChanged(
+                filterState.copyWith(
+                  reasoningFilter: !filterState.reasoningFilter,
+                ),
+              );
+            },
           ),
-          label: Text(context.messages.aiSettingsReasoningLabel),
-          selected: filterState.reasoningFilter,
-          onSelected: (selected) {
-            onFilterChanged(
-              filterState.copyWith(
-                reasoningFilter: selected,
-              ),
-            );
-          },
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          backgroundColor: context.colorScheme.surfaceContainerHigh.withValues(
-            alpha: AppTheme.alphaFilterChipBackground,
-          ),
-          selectedColor: context.colorScheme.primaryContainer.withValues(
-            alpha: AppTheme.alphaFilterChipSelected,
-          ),
-          checkmarkColor: context.colorScheme.onPrimaryContainer,
-          side: BorderSide(
-            color: filterState.reasoningFilter
-                ? context.colorScheme.primary.withValues(
-                    alpha: AppTheme.alphaFilterChipBorderSelected,
-                  )
-                : context.colorScheme.primaryContainer.withValues(
-                    alpha: AppTheme.alphaFilterChipBorderUnselected,
-                  ),
-          ),
-          labelStyle: TextStyle(
-            fontSize: AppTheme.filterChipFontSize,
-            fontWeight: FontWeight.w600,
-            letterSpacing: AppTheme.filterChipLetterSpacing,
-            color: filterState.reasoningFilter
-                ? context.colorScheme.onPrimaryContainer
-                : context.colorScheme.onSurfaceVariant.withValues(
-                    alpha: AppTheme.alphaFilterChipTextUnselected,
-                  ),
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.filterChipPaddingHorizontal,
-            vertical: AppTheme.filterChipPaddingVertical,
-          ),
-          tooltip: context.messages.aiSettingsFilterByReasoningTooltip,
         ),
       ],
     );

@@ -1,48 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 
-/// Constants for provider filter chip styling
+/// Provider colour identity + the two layout constants still used by the AI
+/// provider / capability filter chips.
+///
+/// The chips themselves are design-system `DesignSystemChip`s now, so the chip
+/// surface, border, label and selected styling all come from design tokens.
+/// What remains here is the per-provider colour (carried on the chip's avatar
+/// dot) and the row spacing.
 class ProviderChipConstants {
-  // Modal sizing
-  static const double modalHeightFactor = 0.65;
-
-  // Chip styling
-  static const double chipFontSize = 13;
-  static const double chipBorderRadius = 20;
-  static const double chipHorizontalPadding = 12;
-  static const double chipVerticalPadding = 6;
-  static const double chipBorderWidth = 1.5;
-  static const double chipLetterSpacing = 0.2;
-  static const FontWeight chipFontWeight = FontWeight.w600;
-
-  // Spacing
+  /// Gap (and run-gap) between chips in the provider / capability filter rows.
   static const double chipSpacing = 6;
 
-  // Alpha values for backgrounds
-  static const double surfaceAlpha = 0.5;
-  static const double primaryContainerAlpha = 0.7;
-  static const double primaryAlpha = 0.8;
-  static const double primaryContainerBorderAlpha = 0.3;
-  static const double onSurfaceVariantAlpha = 0.8;
-
-  // Provider-specific colors - selected state
-  static const double selectedAlphaDark = 0.35;
-  static const double selectedAlphaLight = 0.22;
-
-  // Provider-specific colors - unselected state
-  static const double unselectedAlphaDark = 0.25;
-  static const double unselectedAlphaLight = 0.15;
-
-  // Border alpha values
-  static const double selectedBorderAlpha = 0.55;
-  static const double unselectedBorderAlpha = 0.35;
-
-  // Avatar styling
-  static const double avatarSize = 8;
+  /// Alpha applied to the trailing stop of the avatar dot's gradient, so the
+  /// provider colour fades slightly across the dot.
   static const double avatarGradientAlpha = 0.75;
-  static const double avatarShadowAlpha = 0.35;
-  static const double avatarShadowBlurRadius = 4;
-  static const Offset avatarShadowOffset = Offset(0, 2);
 
   /// Provider-specific colors that work in both light and dark themes
   static const Map<InferenceProviderType, ({Color dark, Color light})>

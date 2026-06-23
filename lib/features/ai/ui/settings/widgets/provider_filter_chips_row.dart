@@ -4,6 +4,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chip.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Reusable widget for displaying provider filter chips
@@ -103,162 +104,55 @@ class ProviderFilterChipsRow extends ConsumerWidget {
           spacing: ProviderChipConstants.chipSpacing,
           runSpacing: ProviderChipConstants.chipSpacing,
           children: [
-            // Optional "All" chip
+            // Optional "All" chip clears the selection.
             if (showAllChip)
-              FilterChip(
-                label: Text(context.messages.tasksLabelFilterAll),
+              DesignSystemChip(
+                label: context.messages.tasksLabelFilterAll,
                 selected: selectedProviderIds.isEmpty,
-                onSelected: (_) => onChanged({}),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHigh
-                    .withValues(alpha: ProviderChipConstants.surfaceAlpha),
-                selectedColor: Theme.of(context).colorScheme.primaryContainer
-                    .withValues(
-                      alpha: ProviderChipConstants.primaryContainerAlpha,
-                    ),
-                checkmarkColor: Theme.of(
-                  context,
-                ).colorScheme.onPrimaryContainer,
-                side: BorderSide(
-                  color: selectedProviderIds.isEmpty
-                      ? Theme.of(context).colorScheme.primary.withValues(
-                          alpha: ProviderChipConstants.primaryAlpha,
-                        )
-                      : Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withValues(
-                          alpha:
-                              ProviderChipConstants.primaryContainerBorderAlpha,
-                        ),
-                ),
-                labelStyle: TextStyle(
-                  fontSize: ProviderChipConstants.chipFontSize,
-                  fontWeight: ProviderChipConstants.chipFontWeight,
-                  letterSpacing: ProviderChipConstants.chipLetterSpacing,
-                  color: selectedProviderIds.isEmpty
-                      ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Theme.of(
-                          context,
-                        ).colorScheme.onSurfaceVariant.withValues(
-                          alpha: ProviderChipConstants.onSurfaceVariantAlpha,
-                        ),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: ProviderChipConstants.chipHorizontalPadding,
-                  vertical: ProviderChipConstants.chipVerticalPadding,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    ProviderChipConstants.chipBorderRadius,
-                  ),
-                ),
+                onPressed: () => onChanged(const {}),
               ),
 
-            // Provider chips - styled or plain based on useStyledChips parameter
+            // Provider chips — styled (colour-coded avatar) or plain, both
+            // sharing the same toggle logic.
             ...providerConfigs.map((provider) {
               final isSelected = selectedProviderIds.contains(provider.id);
 
+              void toggle() {
+                final newSelection = Set<String>.from(selectedProviderIds);
+                if (allowMultiSelect) {
+                  if (isSelected) {
+                    newSelection.remove(provider.id);
+                  } else {
+                    newSelection.add(provider.id);
+                  }
+                } else {
+                  if (isSelected) {
+                    newSelection.clear();
+                  } else {
+                    newSelection
+                      ..clear()
+                      ..add(provider.id);
+                  }
+                }
+                onChanged(newSelection);
+              }
+
               if (useStyledChips) {
-                // Use styled ProviderFilterChip with colors and avatars
                 return ProviderFilterChip(
                   providerId: provider.id,
                   isSelected: isSelected,
-                  onTap: () {
-                    final newSelection = Set<String>.from(selectedProviderIds);
-                    if (allowMultiSelect) {
-                      if (isSelected) {
-                        newSelection.remove(provider.id);
-                      } else {
-                        newSelection.add(provider.id);
-                      }
-                    } else {
-                      if (isSelected) {
-                        newSelection.clear();
-                      } else {
-                        newSelection
-                          ..clear()
-                          ..add(provider.id);
-                      }
-                    }
-                    onChanged(newSelection);
-                  },
+                  onTap: toggle,
                 );
               }
 
-              // Use plain FilterChip
-              return FilterChip(
-                label: Text(provider.name),
-                selected: isSelected,
-                onSelected: (selected) {
-                  final newSelection = Set<String>.from(selectedProviderIds);
-                  if (allowMultiSelect) {
-                    // Multi-select mode: toggle provider
-                    if (selected) {
-                      newSelection.add(provider.id);
-                    } else {
-                      newSelection.remove(provider.id);
-                    }
-                  } else {
-                    // Single-select mode: replace selection
-                    if (selected) {
-                      newSelection
-                        ..clear()
-                        ..add(provider.id);
-                    } else {
-                      newSelection.clear();
-                    }
-                  }
-                  onChanged(newSelection);
-                },
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHigh
-                    .withValues(alpha: ProviderChipConstants.surfaceAlpha),
-                selectedColor: Theme.of(context).colorScheme.primaryContainer
-                    .withValues(
-                      alpha: ProviderChipConstants.primaryContainerAlpha,
-                    ),
-                checkmarkColor: Theme.of(
-                  context,
-                ).colorScheme.onPrimaryContainer,
-                side: BorderSide(
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary.withValues(
-                          alpha: ProviderChipConstants.primaryAlpha,
-                        )
-                      : Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withValues(
-                          alpha:
-                              ProviderChipConstants.primaryContainerBorderAlpha,
-                        ),
-                ),
-                labelStyle: TextStyle(
-                  fontSize: ProviderChipConstants.chipFontSize,
-                  fontWeight: ProviderChipConstants.chipFontWeight,
-                  letterSpacing: ProviderChipConstants.chipLetterSpacing,
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Theme.of(
-                          context,
-                        ).colorScheme.onSurfaceVariant.withValues(
-                          alpha: ProviderChipConstants.onSurfaceVariantAlpha,
-                        ),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: ProviderChipConstants.chipHorizontalPadding,
-                  vertical: ProviderChipConstants.chipVerticalPadding,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    ProviderChipConstants.chipBorderRadius,
-                  ),
-                ),
-                tooltip: context.messages.aiSettingsFilterByProviderTooltip(
+              return Tooltip(
+                message: context.messages.aiSettingsFilterByProviderTooltip(
                   provider.name,
+                ),
+                child: DesignSystemChip(
+                  label: provider.name,
+                  selected: isSelected,
+                  onPressed: toggle,
                 ),
               );
             }),

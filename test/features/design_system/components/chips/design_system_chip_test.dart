@@ -159,6 +159,39 @@ void main() {
       expect(semantics.properties.selected, isTrue);
     });
 
+    testWidgets('selected: true renders the activated look and stays '
+        'interactive', (tester) async {
+      var tapCount = 0;
+
+      await _pumpChip(
+        tester,
+        DesignSystemChip(
+          label: 'Filter',
+          selected: true,
+          onPressed: () => tapCount++,
+        ),
+      );
+
+      final semantics = tester.widget<Semantics>(
+        find.byWidgetPredicate(
+          (widget) => widget is Semantics && widget.properties.button == true,
+        ),
+      );
+
+      // selected drives the activated background + selected semantics, without
+      // needing forcedState, and the chip still reports taps (so a filter chip
+      // can be toggled off).
+      expect(
+        _chipDecoration(tester).color,
+        dsTokensLight.colors.surface.active,
+      );
+      expect(semantics.properties.selected, isTrue);
+
+      await tester.tap(find.byType(DesignSystemChip));
+      await tester.pump();
+      expect(tapCount, 1);
+    });
+
     testWidgets('applies token-driven disabled opacity', (tester) async {
       await _pumpChip(
         tester,

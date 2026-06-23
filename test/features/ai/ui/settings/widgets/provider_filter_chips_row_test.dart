@@ -5,7 +5,10 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chip.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chips_row.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+
+import '../../../../../widget_test_utils.dart';
 
 // Test controller for overriding provider data
 class TestAiConfigByTypeController extends AiConfigByTypeController {
@@ -84,6 +87,7 @@ void main() {
           ).overrideWith(() => TestAiConfigByTypeController(mockProviders)),
         ],
         child: MaterialApp(
+          theme: resolveTestTheme(),
           home: Scaffold(
             body: ProviderFilterChipsRow(
               selectedProviderIds: selectedProviderIds,
@@ -121,6 +125,7 @@ void main() {
             ).overrideWith((ref) async => provider),
         ],
         child: MaterialApp(
+          theme: resolveTestTheme(),
           home: Scaffold(
             body: ProviderFilterChipsRow(
               selectedProviderIds: selectedProviderIds,
@@ -158,7 +163,7 @@ void main() {
         expect(find.text('Gemini'), findsOneWidget);
 
         // Verify 3 FilterChip widgets are found
-        expect(find.byType(FilterChip), findsNWidgets(3));
+        expect(find.byType(DesignSystemChip), findsNWidgets(3));
       });
 
       testWidgets('shows All chip when showAllChip is true', (tester) async {
@@ -179,7 +184,7 @@ void main() {
         expect(find.text('All'), findsOneWidget);
 
         // Verify 4 FilterChip widgets (3 providers + All)
-        expect(find.byType(FilterChip), findsNWidgets(4));
+        expect(find.byType(DesignSystemChip), findsNWidgets(4));
       });
 
       testWidgets('hides All chip when showAllChip is false', (tester) async {
@@ -199,7 +204,7 @@ void main() {
         expect(find.text('All'), findsNothing);
 
         // Verify only 3 FilterChip widgets (just providers)
-        expect(find.byType(FilterChip), findsNWidgets(3));
+        expect(find.byType(DesignSystemChip), findsNWidgets(3));
       });
 
       testWidgets('renders empty when no providers available', (tester) async {
@@ -214,7 +219,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
 
         // Verify no FilterChip widgets are found
-        expect(find.byType(FilterChip), findsNothing);
+        expect(find.byType(DesignSystemChip), findsNothing);
 
         // Verify no provider names appear
         expect(find.text('Anthropic'), findsNothing);
@@ -418,9 +423,9 @@ void main() {
         // All chip should show as selected when selection is empty
         final allChipFinder = find.ancestor(
           of: find.text('All'),
-          matching: find.byType(FilterChip),
+          matching: find.byType(DesignSystemChip),
         );
-        final allChip = tester.widget<FilterChip>(allChipFinder.first);
+        final allChip = tester.widget<DesignSystemChip>(allChipFinder.first);
         expect(allChip.selected, isTrue);
       });
     });
@@ -449,6 +454,7 @@ void main() {
               ).overrideWith((ref) async => mockProviders[2]),
             ],
             child: MaterialApp(
+              theme: resolveTestTheme(),
               home: Scaffold(
                 body: ProviderFilterChipsRow(
                   selectedProviderIds: const {},
@@ -471,7 +477,7 @@ void main() {
 
         // Note: FilterChip will still be found because ProviderFilterChip
         // uses FilterChip internally. We just verify ProviderFilterChip exists.
-        expect(find.byType(FilterChip), findsNWidgets(3));
+        expect(find.byType(DesignSystemChip), findsNWidgets(3));
       });
 
       testWidgets('uses plain FilterChip when useStyledChips is false', (
@@ -490,7 +496,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
 
         // Verify FilterChip widgets are found
-        expect(find.byType(FilterChip), findsNWidgets(3));
+        expect(find.byType(DesignSystemChip), findsNWidgets(3));
 
         // Verify ProviderFilterChip is NOT found
         expect(find.byType(ProviderFilterChip), findsNothing);
@@ -515,7 +521,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
 
         // Verify only 2 chips are rendered
-        expect(find.byType(FilterChip), findsNWidgets(2));
+        expect(find.byType(DesignSystemChip), findsNWidgets(2));
 
         // Verify provider1 and provider3 names appear
         expect(find.text('Anthropic'), findsOneWidget);
@@ -541,7 +547,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
 
         // Verify all 3 provider chips are rendered
-        expect(find.byType(FilterChip), findsNWidgets(3));
+        expect(find.byType(DesignSystemChip), findsNWidgets(3));
         expect(find.text('Anthropic'), findsOneWidget);
         expect(find.text('OpenAI'), findsOneWidget);
         expect(find.text('Gemini'), findsOneWidget);
@@ -567,7 +573,7 @@ void main() {
           expect(find.byType(SizedBox), findsOneWidget);
 
           // Verify no chips are rendered
-          expect(find.byType(FilterChip), findsNothing);
+          expect(find.byType(DesignSystemChip), findsNothing);
         },
       );
     });
@@ -589,9 +595,11 @@ void main() {
         // Get the FilterChip for provider1 and verify it's selected
         final provider1Chips = find.ancestor(
           of: find.text('Anthropic'),
-          matching: find.byType(FilterChip),
+          matching: find.byType(DesignSystemChip),
         );
-        final provider1Chip = tester.widget<FilterChip>(provider1Chips.first);
+        final provider1Chip = tester.widget<DesignSystemChip>(
+          provider1Chips.first,
+        );
         expect(provider1Chip.selected, isTrue);
 
         // Trigger rebuild with same selection
@@ -606,7 +614,7 @@ void main() {
         await tester.pump();
 
         // Verify provider1 chip still shows as selected
-        final provider1ChipAfterRebuild = tester.widget<FilterChip>(
+        final provider1ChipAfterRebuild = tester.widget<DesignSystemChip>(
           provider1Chips.first,
         );
         expect(provider1ChipAfterRebuild.selected, isTrue);
@@ -631,9 +639,11 @@ void main() {
         // Verify provider1 is selected
         final provider1Chips = find.ancestor(
           of: find.text('Anthropic'),
-          matching: find.byType(FilterChip),
+          matching: find.byType(DesignSystemChip),
         );
-        var provider1Chip = tester.widget<FilterChip>(provider1Chips.first);
+        var provider1Chip = tester.widget<DesignSystemChip>(
+          provider1Chips.first,
+        );
         expect(provider1Chip.selected, isTrue);
 
         // Rebuild with provider2 selected instead
@@ -650,13 +660,15 @@ void main() {
         // Verify provider2 chip is now selected
         final provider2Chips = find.ancestor(
           of: find.text('OpenAI'),
-          matching: find.byType(FilterChip),
+          matching: find.byType(DesignSystemChip),
         );
-        final provider2Chip = tester.widget<FilterChip>(provider2Chips.first);
+        final provider2Chip = tester.widget<DesignSystemChip>(
+          provider2Chips.first,
+        );
         expect(provider2Chip.selected, isTrue);
 
         // Verify provider1 chip is not selected
-        provider1Chip = tester.widget<FilterChip>(provider1Chips.first);
+        provider1Chip = tester.widget<DesignSystemChip>(provider1Chips.first);
         expect(provider1Chip.selected, isFalse);
       });
     });
@@ -671,6 +683,7 @@ void main() {
               ).overrideWith(LoadingTestAiConfigByTypeController.new),
             ],
             child: MaterialApp(
+              theme: resolveTestTheme(),
               home: Scaffold(
                 body: ProviderFilterChipsRow(
                   selectedProviderIds: const {},
@@ -688,7 +701,7 @@ void main() {
 
         // Verify loading state shows SizedBox.shrink
         expect(find.byType(SizedBox), findsOneWidget);
-        expect(find.byType(FilterChip), findsNothing);
+        expect(find.byType(DesignSystemChip), findsNothing);
       });
 
       testWidgets('shows empty state on error', (tester) async {
@@ -700,6 +713,7 @@ void main() {
               ).overrideWith(ErrorTestAiConfigByTypeController.new),
             ],
             child: MaterialApp(
+              theme: resolveTestTheme(),
               home: Scaffold(
                 body: ProviderFilterChipsRow(
                   selectedProviderIds: const {},
@@ -716,7 +730,7 @@ void main() {
 
         // Verify error state shows SizedBox.shrink
         expect(find.byType(SizedBox), findsOneWidget);
-        expect(find.byType(FilterChip), findsNothing);
+        expect(find.byType(DesignSystemChip), findsNothing);
       });
 
       testWidgets('displays providers after successful load', (tester) async {
@@ -733,7 +747,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
 
         // Verify all chips render correctly
-        expect(find.byType(FilterChip), findsNWidgets(3));
+        expect(find.byType(DesignSystemChip), findsNWidgets(3));
         expect(find.text('Anthropic'), findsOneWidget);
         expect(find.text('OpenAI'), findsOneWidget);
         expect(find.text('Gemini'), findsOneWidget);

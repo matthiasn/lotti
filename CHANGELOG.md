@@ -67,7 +67,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   purple Material widgets. The category chips on a label now carry their
   category's colour as a soft tint (instead of a heavy solid fill), and small
   status tags — a profile's "Desktop only", a sync node's capabilities — use
-  the design-system badge.
+  the design-system badge. The AI model filters (provider, capability and
+  reasoning) on the Models tab are design-system chips now, each provider
+  keeping its colour on a small avatar dot.
 - **Accepting or dismissing an AI suggestion is now smooth and calm instead of
   jumpy.** The row you tap stays put and confirms in place — a clear filled
   badge with the plain word *Confirmed* or *Dismissed* and a light haptic — then
