@@ -103,35 +103,59 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
           return Scaffold(
             backgroundColor: tokens.colors.background.level01,
             body: SafeArea(
-              child: OnboardingCaptureView(
-                phase: _viewPhase(captureState.phase),
-                accent: tokens.colors.interactive.enabled,
-                // The resolved card is a light surface lifted onto the dark
-                // hero, mirroring the crystallize hero's contrast.
-                cardColor: dsTokensLight.colors.background.level01,
-                onCardColor: dsTokensLight.colors.text.highEmphasis,
-                ghostColor: tokens.colors.text.mediumEmphasis,
-                promptHeadline: context.messages.onboardingCapturePrompt,
-                revealedHeadline: context.messages.onboardingCaptureRevealed,
-                promptHint: context.messages.onboardingCapturePromptHint,
-                listeningCaption: context.messages.onboardingCaptureListening,
-                thinkingHeadline: context.messages.onboardingCaptureThinking,
-                thinkingReassurance:
-                    context.messages.onboardingCaptureReassurance,
-                ratherTypeLabel: context.messages.onboardingCaptureRatherType,
-                acceptLabel: context.messages.onboardingCaptureAccept,
-                orbSemanticLabel: context.messages.onboardingCaptureOrbLabel,
-                editHint: context.messages.onboardingCaptureEditHint,
-                categoryLabel: widget.categoryLabel,
-                transcript: _displayTranscript(captureState),
-                amplitudes: captureState.amplitudes,
-                dbfs: captureState.dbfs,
-                title: _result?.title ?? '',
-                items: _result?.checklistItems ?? const [],
-                celebrate: _result?.isRealAha ?? false,
-                onOrbTap: _onOrbTap,
-                onRatherType: _onRatherType,
-                onAccept: widget.onDone,
+              child: Stack(
+                children: [
+                  OnboardingCaptureView(
+                    phase: _viewPhase(captureState.phase),
+                    accent: tokens.colors.interactive.enabled,
+                    // The resolved card is a light surface lifted onto the dark
+                    // hero, mirroring the crystallize hero's contrast.
+                    cardColor: dsTokensLight.colors.background.level01,
+                    onCardColor: dsTokensLight.colors.text.highEmphasis,
+                    ghostColor: tokens.colors.text.mediumEmphasis,
+                    promptHeadline: context.messages.onboardingCapturePrompt,
+                    revealedHeadline:
+                        context.messages.onboardingCaptureRevealed,
+                    promptHint: context.messages.onboardingCapturePromptHint,
+                    listeningCaption:
+                        context.messages.onboardingCaptureListening,
+                    thinkingHeadline:
+                        context.messages.onboardingCaptureThinking,
+                    thinkingReassurance:
+                        context.messages.onboardingCaptureReassurance,
+                    ratherTypeLabel:
+                        context.messages.onboardingCaptureRatherType,
+                    acceptLabel: context.messages.onboardingCaptureAccept,
+                    orbSemanticLabel:
+                        context.messages.onboardingCaptureOrbLabel,
+                    editHint: context.messages.onboardingCaptureEditHint,
+                    categoryLabel: widget.categoryLabel,
+                    transcript: _displayTranscript(captureState),
+                    amplitudes: captureState.amplitudes,
+                    dbfs: captureState.dbfs,
+                    title: _result?.title ?? '',
+                    items: _result?.checklistItems ?? const [],
+                    celebrate: _result?.isRealAha ?? false,
+                    onOrbTap: _onOrbTap,
+                    onRatherType: _onRatherType,
+                    onAccept: widget.onDone,
+                  ),
+                  // The capture page is full-screen (no barrier to tap), so an
+                  // always-available close is the escape hatch — it finishes
+                  // onboarding; the user can capture later.
+                  Positioned(
+                    top: tokens.spacing.step2,
+                    left: tokens.spacing.step2,
+                    child: IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      color: tokens.colors.text.mediumEmphasis,
+                      tooltip: MaterialLocalizations.of(
+                        themedContext,
+                      ).closeButtonTooltip,
+                      onPressed: widget.onDone,
+                    ),
+                  ),
+                ],
               ),
             ),
           );

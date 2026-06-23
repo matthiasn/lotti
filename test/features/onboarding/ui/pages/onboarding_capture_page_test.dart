@@ -321,6 +321,18 @@ void main() {
     expect(done, 1);
   });
 
+  testWidgets('the close affordance fires onDone (escape from any phase)', (
+    tester,
+  ) async {
+    var done = 0;
+    await pumpPage(tester, onDone: () => done++);
+
+    // At rest (prompt phase, before any capture) the full-screen page is still
+    // dismissable via the always-present close button.
+    await tester.tap(find.byIcon(Icons.close_rounded));
+    expect(done, 1);
+  });
+
   testWidgets('Rather type? collects typed text and structures it', (
     tester,
   ) async {
