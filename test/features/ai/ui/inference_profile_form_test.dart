@@ -207,7 +207,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Tap save without entering a name.
+      // Save stays disabled until the form is dirty, so dirty it via the
+      // description (leaving the name empty), then save — the name validator
+      // should reject the empty name.
+      await tester.enterText(find.byType(TextFormField).at(1), 'a description');
+      await tester.pump();
       await tester.tap(find.text('Save'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -279,6 +283,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Profile Name'),
         'Test Profile',
       );
+      await tester.pump();
 
       // Tap save — no thinking model selected.
       await tester.tap(find.text('Save'));
@@ -372,6 +377,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
+      // Dirty the form (Save is disabled until then), then trigger the
+      // failing save.
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Profile Name'),
+        'Existing edited',
+      );
+      await tester.pump();
       // Tap save — has name and thinking model from existing profile.
       await tester.tap(find.text('Save'));
       await tester.pump();
@@ -1027,7 +1039,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Save without changes.
+        // Make an unrelated edit (rename) so Save enables, then save — the
+        // pin must still carry through.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'Pinned Studio renamed',
+        );
+        await tester.pump();
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1265,7 +1283,18 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Save without changes.
+        // Scroll back to the name field, make an unrelated edit so Save
+        // enables, then save — the existing skill assignment must survive.
+        await tester.scrollUntilVisible(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          -200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'With Skills renamed',
+        );
+        await tester.pump();
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1490,7 +1519,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Tap save — has name and thinking model from existing profile.
+      // Make an unrelated edit (rename) so Save enables, then save — the ID
+      // must be preserved.
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Profile Name'),
+        'Original renamed',
+      );
+      await tester.pump();
       await tester.tap(find.text('Save'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -1800,6 +1835,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        // Make an unrelated edit (rename) so Save enables, then save.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'Image Skill Profile renamed',
+        );
+        await tester.pump();
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1840,6 +1881,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        // Make an unrelated edit (rename) so Save enables, then save — the
+        // ambiguous thinking slot must still abort the save.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'Ambiguous Profile renamed',
+        );
+        await tester.pump();
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1957,7 +2005,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Save without changes.
+        // Make an unrelated edit (rename) so Save enables, then save.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'Unknown Skill renamed',
+        );
+        await tester.pump();
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -2000,6 +2053,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        // Make an unrelated edit (rename) so Save enables, then save.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'Has Model renamed',
+        );
+        await tester.pump();
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));

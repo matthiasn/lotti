@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_slot_field.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -47,6 +49,33 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
 
   bool get _isEditing => widget.existingProfile != null;
 
+  // Rebuild so the Save button re-evaluates its dirty state as the user types.
+  // (Model-slot / toggle changes already setState through their own callbacks.)
+  void _onFieldChanged() => setState(() {});
+
+  /// Whether the form differs from the profile it loaded — or, when creating,
+  /// whether the user has entered anything worth saving. Drives the Save
+  /// button's quiet→active state, mirroring the note editor's toolbar Save
+  /// ("non-active is not primary, on when dirty").
+  bool get _isDirty {
+    final p = widget.existingProfile;
+    if (p == null) {
+      return _nameController.text.trim().isNotEmpty ||
+          _descriptionController.text.trim().isNotEmpty ||
+          _thinkingModelId != null;
+    }
+    return _nameController.text != p.name ||
+        _descriptionController.text != (p.description ?? '') ||
+        _thinkingModelId != p.thinkingModelId ||
+        _thinkingHighEndModelId != p.thinkingHighEndModelId ||
+        _imageRecognitionModelId != p.imageRecognitionModelId ||
+        _transcriptionModelId != p.transcriptionModelId ||
+        _imageGenerationModelId != p.imageGenerationModelId ||
+        _desktopOnly != p.desktopOnly ||
+        _pinnedHostId != p.pinnedHostId ||
+        !listEquals(_skillAssignments, p.skillAssignments);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +90,8 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     _pinnedHostId = p?.pinnedHostId;
     _desktopOnly = p?.desktopOnly ?? false;
     _skillAssignments = List.of(p?.skillAssignments ?? []);
+    _nameController.addListener(_onFieldChanged);
+    _descriptionController.addListener(_onFieldChanged);
   }
 
   @override
@@ -105,9 +136,14 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: _isSaving ? null : _save,
-            child: Text(messages.inferenceProfileSaveButton),
+          // Save mirrors the note editor's toolbar Save: a primary
+          // design-system button that stays quiet/disabled until the form is
+          // dirty, then wakes to the teal accent. `_save` still validates
+          // (name + thinking model) and surfaces inline / toast errors on tap.
+          DesignSystemButton(
+            label: messages.inferenceProfileSaveButton,
+            leadingIcon: Icons.save_rounded,
+            onPressed: _isDirty && !_isSaving ? _save : null,
           ),
           SizedBox(width: tokens.spacing.step2),
         ],
