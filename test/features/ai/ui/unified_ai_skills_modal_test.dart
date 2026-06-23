@@ -20,7 +20,6 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/ai/ui/unified_ai_skills_modal.dart';
-import 'package:lotti/features/ai/ui/widgets/inference_model_picker_modal.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -945,8 +944,7 @@ void main() {
         await tester.tap(find.text('Prompt Generation Skill'));
         await tester.pumpAndSettle();
 
-        // Picker shows both text-capable rows.
-        expect(find.byType(InferenceModelPickerModal), findsOneWidget);
+        // Single provider -> straight to the model list with both rows.
         expect(find.text('Default Thinker'), findsOneWidget);
         expect(find.text('Other Thinker'), findsOneWidget);
 
@@ -998,6 +996,9 @@ void main() {
                 linkedFromId: null,
               )).overrideWith(
                 (ref) => Future.value([imageGenSkill]),
+              ),
+              aiConfigRepositoryProvider.overrideWithValue(
+                _StubAiConfigRepository(const <AiConfig>[]),
               ),
             ],
           ),
@@ -1085,6 +1086,9 @@ void main() {
               )).overrideWith(
                 (ref) => Future.value([imageGenSkill]),
               ),
+              aiConfigRepositoryProvider.overrideWithValue(
+                _StubAiConfigRepository(const <AiConfig>[]),
+              ),
             ],
           ),
         );
@@ -1111,6 +1115,166 @@ void main() {
         expect(find.byType(UnifiedAiSkillsList), findsNothing);
       },
     );
+
+    testWidgets(
+      'image generation with 2+ image models opens the model picker, then '
+      'the cover art modal once a model is chosen',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 10);
+        final imageGenSkill = _imageGenSkill(now);
+        final imgProvider = _buildProvider(
+          id: 'p-img',
+          name: 'Image Co',
+          t: now,
+        );
+        final modelA = _imageOutputModel(
+          id: 'img-a',
+          name: 'Nano Banana',
+          wire: 'wire-img-a',
+          t: now,
+        );
+        final modelB = _imageOutputModel(
+          id: 'img-b',
+          name: 'Imagen Ultra',
+          wire: 'wire-img-b',
+          t: now,
+        );
+        when(
+          () => mockJournalDb.getLinkedEntities(testAudioEntity.id),
+        ).thenAnswer((_) async => [_imageGenLinkedTask(now)]);
+
+        // Profile points its image-generation slot at modelA, so the picker
+        // marks modelA as the default; the user picks the non-default modelB.
+        final profile = ResolvedProfile(
+          thinkingModelId: 'thinking',
+          thinkingProvider: imgProvider,
+          imageGenerationProvider: imgProvider,
+          imageGenerationModelId: 'wire-img-a',
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testAudioEntity,
+              linkedFromId: null,
+            ),
+            overrides: [
+              hasAvailableSkillsProvider((
+                entityId: testAudioEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => Future.value(true)),
+              availableSkillsForEntityProvider((
+                entityId: testAudioEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => Future.value([imageGenSkill])),
+              profileAutomationResolverProvider.overrideWithValue(
+                _FixedProfileResolver(profile),
+              ),
+              aiConfigRepositoryProvider.overrideWithValue(
+                _StubAiConfigRepository([modelA, modelB, imgProvider]),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Generate Cover Art'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Single image provider -> straight to the model list with both rows.
+        expect(find.text('Nano Banana'), findsOneWidget);
+        expect(find.text('Imagen Ultra'), findsOneWidget);
+
+        // Pick the non-default model; the picker resolves and the cover art
+        // modal opens.
+        await tester.tap(find.text('Imagen Ultra'));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(find.text('Imagen Ultra'), findsNothing); // picker gone
+        expect(find.text('Generate Cover Art'), findsOneWidget); // cover art up
+      },
+    );
+
+    testWidgets(
+      'dismissing the image-model picker (2+ models) aborts before the cover '
+      'art modal opens',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 10);
+        final imageGenSkill = _imageGenSkill(now);
+        final imgProvider = _buildProvider(
+          id: 'p-img',
+          name: 'Image Co',
+          t: now,
+        );
+        when(
+          () => mockJournalDb.getLinkedEntities(testAudioEntity.id),
+        ).thenAnswer((_) async => [_imageGenLinkedTask(now)]);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testAudioEntity,
+              linkedFromId: null,
+            ),
+            overrides: [
+              hasAvailableSkillsProvider((
+                entityId: testAudioEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => Future.value(true)),
+              availableSkillsForEntityProvider((
+                entityId: testAudioEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => Future.value([imageGenSkill])),
+              profileAutomationResolverProvider.overrideWithValue(
+                _NullProfileResolver(),
+              ),
+              aiConfigRepositoryProvider.overrideWithValue(
+                _StubAiConfigRepository([
+                  _imageOutputModel(
+                    id: 'img-a',
+                    name: 'Nano Banana',
+                    wire: 'wire-img-a',
+                    t: now,
+                  ),
+                  _imageOutputModel(
+                    id: 'img-b',
+                    name: 'Imagen Ultra',
+                    wire: 'wire-img-b',
+                    t: now,
+                  ),
+                  imgProvider,
+                ]),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Generate Cover Art'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Nano Banana'), findsOneWidget); // picker shown
+
+        // Dismiss the picker — the handler must abort, never opening cover art.
+        await tester.tap(find.byIcon(Icons.close_rounded).first);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(find.text('Nano Banana'), findsNothing); // picker gone
+        expect(find.text('Generate Cover Art'), findsNothing); // no cover art
+      },
+    );
   });
 
   // Same dispatch shape covers transcription + image-analysis; the
@@ -1122,7 +1286,7 @@ void main() {
       group(variant.label, () {
         testWidgets(
           'tapping the skill with two slot-capable models opens the '
-          'InferenceModelPickerModal — proves the popup inserts the '
+          'model picker — proves the popup inserts the '
           'picker step before firing the trigger, and proves the '
           'picker is fed the slot-capable list (the decoy model whose '
           'inputModalities do NOT match the slot modality is filtered '
@@ -1158,7 +1322,6 @@ void main() {
             // the wrong-modality decoy is absent because the popup
             // filters by `inputModalities.contains(variant.modality)`
             // before calling the picker.
-            expect(find.byType(InferenceModelPickerModal), findsOneWidget);
             expect(find.text(fx.modelA.name), findsOneWidget);
             expect(find.text(fx.modelB.name), findsOneWidget);
             expect(find.text(fx.decoy.name), findsNothing);
@@ -1208,7 +1371,7 @@ void main() {
 
             // No picker — short-circuit took the single-model path.
             // Skills list closed as part of the tap handler.
-            expect(find.byType(InferenceModelPickerModal), findsNothing);
+            expect(find.text(fx.modelA.name), findsNothing);
             expect(find.byType(UnifiedAiSkillsList), findsNothing);
             // Trigger fired with the lone model id forwarded as the
             // override — the short-circuit isn't a silent no-op.
@@ -1265,7 +1428,7 @@ void main() {
             // Tap the default-badged row (modelA) — the popup should
             // fire the trigger with overrideModelId: null because the
             // picked id matches the computed defaultModelId.
-            expect(find.byType(InferenceModelPickerModal), findsOneWidget);
+            expect(find.text(fx.modelA.name), findsOneWidget);
             await tester.tap(find.text(fx.modelA.name));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
@@ -1351,7 +1514,7 @@ void main() {
           id: 'm-b',
           name: 'Mistral Cloud',
           providerModelId: 'wire-b',
-          providerId: 'p-b',
+          providerId: 'p-a',
           modality: Modality.audio,
           t: t,
         );
@@ -1423,7 +1586,7 @@ void main() {
 
         // Picker is open; tapping the default-badged row (modelA) collapses
         // the override to null because it matches the resolved default.
-        expect(find.byType(InferenceModelPickerModal), findsOneWidget);
+        expect(find.text(modelA.name), findsOneWidget);
         await tester.tap(find.text(modelA.name));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1792,7 +1955,7 @@ class _OverrideFixture {
         id: 'm-b',
         name: variant.modelBName,
         providerModelId: 'wire-b',
-        providerId: 'p-b',
+        providerId: 'p-a',
         modality: variant.modelModality,
         t: t,
       ),
@@ -1861,7 +2024,9 @@ class _OverrideFixture {
       id: 'm-b',
       name: variant.modelBName,
       providerModelId: 'wire-b',
-      providerId: 'p-b',
+      // Same provider as modelA so the picker short-circuits to the model
+      // list (the multi-provider UI is covered by the dedicated picker test).
+      providerId: 'p-a',
       modality: variant.modelModality,
       t: t,
     );
@@ -1951,6 +2116,56 @@ AiConfigInferenceProvider _buildProvider({
           createdAt: t,
         )
         as AiConfigInferenceProvider;
+
+AiConfigSkill _imageGenSkill(DateTime t) =>
+    AiConfig.skill(
+          id: 'skill-cover-art',
+          name: 'Generate Cover Art',
+          createdAt: t,
+          skillType: SkillType.imageGeneration,
+          requiredInputModalities: const [Modality.text],
+          systemInstructions: 'Generate cover art',
+          userInstructions: 'Create an image',
+        )
+        as AiConfigSkill;
+
+/// A model that *outputs* images (the filter the cover-art picker applies),
+/// all under one provider so the picker short-circuits to the model list.
+AiConfigModel _imageOutputModel({
+  required String id,
+  required String name,
+  required String wire,
+  required DateTime t,
+}) =>
+    AiConfig.model(
+          id: id,
+          name: name,
+          providerModelId: wire,
+          inferenceProviderId: 'p-img',
+          createdAt: t,
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.image],
+          isReasoningModel: false,
+        )
+        as AiConfigModel;
+
+Task _imageGenLinkedTask(DateTime t) => Task(
+  meta: Metadata(
+    id: 'linked-task-img',
+    createdAt: t,
+    updatedAt: t,
+    dateFrom: t,
+    dateTo: t.add(const Duration(hours: 1)),
+    categoryId: 'cat-1',
+  ),
+  data: TaskData(
+    title: 'Linked Task',
+    status: TaskStatus.open(id: 'status-1', createdAt: t, utcOffset: 0),
+    dateFrom: t,
+    dateTo: t.add(const Duration(hours: 1)),
+    statusHistory: const [],
+  ),
+);
 
 /// Builds the Riverpod override list every parameterised override
 /// test needs: the popup must see a single skill for [entity],

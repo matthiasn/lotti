@@ -372,7 +372,7 @@ The seeded task-context skills (`Transcribe (Task Context)`, `Analyze Image (Tas
 
 ### Per-Invocation Model Overrides
 
-Skill types with a per-invocation override slot (today: transcription, image analysis, prompt generation, and image-prompt generation) open the same `InferenceModelPickerModal` before firing `triggerSkillProvider`, so the user can route a single voice note, photo, or prompt-generation run to any modality-capable model without editing the inference profile. The flow is one parameterised path — the variant table `_modelOverrideConfigs` in `unified_ai_skills_modal.dart` (four entries: `transcription`, `imageAnalysis`, `promptGeneration`, `imagePromptGeneration`) plugs in the per-slot modality filter, profile-slot accessor, and l10n strings. Adding another per-invocation override slot is a one-line entry in that map plus a corresponding `_resolveOverrideTarget` call on the runner.
+Skill types with a per-invocation override slot (today: transcription, image analysis, prompt generation, and image-prompt generation) open the `InferenceProviderModelPickerModal` before firing `triggerSkillProvider`, so the user can route a single voice note, photo, or prompt-generation run to any modality-capable model without editing the inference profile. The picker filters **first by provider, then by model**: a user with models spread across several providers picks a provider, then one of its models, with a one-tap "Current default" shortcut pinned on top. It is adaptive — no modal for a single capable model, and the provider step is skipped when a single provider owns all the capable models. The flow is one parameterised path — the variant table `_modelOverrideConfigs` in `unified_ai_skills_modal.dart` (four entries: `transcription`, `imageAnalysis`, `promptGeneration`, `imagePromptGeneration`) plugs in the per-slot modality filter, profile-slot accessor, and l10n strings. Adding another per-invocation override slot is a one-line entry in that map plus a corresponding `_resolveOverrideTarget` call on the runner.
 
 The user's choice threads through as the optional `overrideModelId` field on `TriggerSkillParams`. `SkillInferenceRunner` dispatches on `skill.skillType` and forwards `overrideModelId` to `runTranscription`, `runImageAnalysis`, or `runPromptGeneration` (the last serves both `promptGeneration` and `imagePromptGeneration`); each one calls its per-slot resolver (`_resolveTranscriptionTarget` / `_resolveImageAnalysisTarget` / `_resolvePromptGenerationTarget`), which delegates to the shared `_resolveOverrideTarget` helper. Each resolver returns an `_InferenceTarget` record of `(AiConfigInferenceProvider? provider, String? modelId, AiConfigModel? model)` — the `model` field carries the resolved `AiConfigModel` row so per-model settings (e.g. Gemini thinking mode) survive resolution — preferring the override when it resolves to a real `AiConfigModel` + parent `AiConfigInferenceProvider`, falling back to the profile slot (with a warning log keyed by `_OverrideSlotKind`) otherwise.
 
@@ -393,7 +393,7 @@ stateDiagram-v2
   ComputeDefault --> Many: 2+ slot-capable models
   Empty --> [*]: no-op
   Single --> FireTrigger: overrideModelId = lone id
-  Many --> Picker: InferenceModelPickerModal.show
+  Many --> Picker: InferenceProviderModelPickerModal.show (pick provider → model)
   Picker --> Dismissed: user cancels / dismisses
   Picker --> PickedDefault: tap default-badged row
   Picker --> PickedOther: tap any other row
@@ -409,6 +409,10 @@ stateDiagram-v2
   FallBack --> Inference: generateWithAudio / generateWithImages / generate\n(profile slot)
   Inference --> [*]
 ```
+
+### Cover-Art Model Selection
+
+Cover-art image generation is a separate path (`_handleImageGenerationSkill` → `CoverArtSkillModal`) but now offers the same provider→model choice. Before the reference-image step, the handler loads every model that *outputs* images and opens the same `InferenceProviderModelPickerModal`; the chosen `AiConfigModel.id` threads through `CoverArtSkillModal` → `triggerSkillProvider` → `runImageGeneration` as `overrideModelId`, which `_resolveImageGenerationTarget` resolves against the override (falling back to the profile's `imageGeneration` slot, with a warning log keyed by `_OverrideSlotKind.imageGeneration`) exactly like the other slots. The same short-circuits apply: with fewer than two image-output models the picker is skipped and generation runs on the profile slot as before.
 
 ## Conversation and Tool Calling
 

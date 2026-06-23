@@ -17,7 +17,22 @@ class DesignSystemListPalette {
   /// established treatment.
   static const double activatedFillAlpha = 0.12;
 
+  /// Stronger alpha for surfaces where the activated row is *the* semantic
+  /// signal a user scans for (e.g. the current-default model in the AI model
+  /// picker), and the gentle [activatedFillAlpha] loses too much of the
+  /// interactive accent's chroma over a near-black background to read as
+  /// "selected". Opt in per call site via [activatedFillStrong].
+  static const double activatedFillStrongAlpha = 0.18;
+
   /// Computed default fill used when a list row is activated/selected.
   static Color activatedFill(DsTokens tokens) =>
       tokens.colors.interactive.enabled.withValues(alpha: activatedFillAlpha);
+
+  /// Computed stronger fill for rows whose activated state carries primary
+  /// meaning. See [activatedFillStrongAlpha].
+  static Color activatedFillStrong(DsTokens tokens) => tokens
+      .colors
+      .interactive
+      .enabled
+      .withValues(alpha: activatedFillStrongAlpha);
 }

@@ -135,6 +135,46 @@ void main() {
     );
 
     testWidgets(
+      'threads overrideModelId to triggerSkillProvider when the user picked '
+      'a non-default image model in the provider->model picker',
+      (tester) async {
+        TriggerSkillParams? capturedParams;
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              referenceImageSelectionControllerProvider(
+                taskId: testLinkedTaskId,
+              ).overrideWith(
+                () => FakeReferenceImageSelectionController(
+                  const ReferenceImageSelectionState(),
+                ),
+              ),
+              triggerSkillProvider.overrideWith((ref, params) {
+                capturedParams = params;
+                return Future<void>.value();
+              }),
+            ],
+            child: const _CoverArtSkillModalHost(
+              entityId: testEntityId,
+              skillId: testSkillId,
+              linkedTaskId: testLinkedTaskId,
+              overrideModelId: 'picked-image-model',
+            ),
+          ),
+        );
+
+        // Auto-skip (no reference images) fires the trigger.
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(capturedParams, isNotNull);
+        expect(capturedParams!.overrideModelId, 'picked-image-model');
+      },
+    );
+
+    testWidgets(
       'continue with images triggers provider and shows progress',
       (tester) async {
         TriggerSkillParams? capturedParams;
@@ -589,11 +629,13 @@ class _CoverArtSkillModalHost extends ConsumerWidget {
     required this.entityId,
     required this.skillId,
     required this.linkedTaskId,
+    this.overrideModelId,
   });
 
   final String entityId;
   final String skillId;
   final String linkedTaskId;
+  final String? overrideModelId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -602,6 +644,7 @@ class _CoverArtSkillModalHost extends ConsumerWidget {
       skillId: skillId,
       linkedTaskId: linkedTaskId,
       parentRef: ref,
+      overrideModelId: overrideModelId,
     );
   }
 }

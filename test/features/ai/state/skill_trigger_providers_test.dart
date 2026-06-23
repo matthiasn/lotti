@@ -1897,6 +1897,89 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'threads overrideModelId from TriggerSkillParams to runImageGeneration '
+      '— the cover-art provider->model picker sets this field when the user '
+      'routes one generation to a non-default image model, and the trigger '
+      'must forward it so the per-invocation override takes effect',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-imggen-override',
+                  name: 'Generate Cover Art',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.imageGeneration,
+                  requiredInputModalities: const [Modality.text],
+                  contextPolicy: ContextPolicy.fullTask,
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+
+        final imageGenProvider =
+            AiConfig.inferenceProvider(
+                  id: 'gemini-prov',
+                  name: 'Gemini',
+                  inferenceProviderType: InferenceProviderType.gemini,
+                  apiKey: 'key',
+                  baseUrl: 'https://generativelanguage.googleapis.com',
+                  createdAt: DateTime(2024, 3, 15),
+                )
+                as AiConfigInferenceProvider;
+
+        final resolvedProfile = ResolvedProfile(
+          thinkingModelId: 'flash',
+          thinkingProvider: imageGenProvider,
+          imageGenerationModelId: 'imagen-model',
+          imageGenerationProvider: imageGenProvider,
+        );
+
+        when(
+          () => mockResolver.resolveForTask('task-imggen-override'),
+        ).thenAnswer((_) async => resolvedProfile);
+
+        when(
+          () => mockRunner.runImageGeneration(
+            entryId: any(named: 'entryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            referenceImages: any(named: 'referenceImages'),
+            overrideModelId: any(named: 'overrideModelId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'audio-entry-override',
+            skillId: 'skill-imggen-override',
+            linkedTaskId: 'task-imggen-override',
+            referenceImages: null,
+            overrideModelId: 'override-img-model',
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        verify(
+          () => mockRunner.runImageGeneration(
+            entryId: 'audio-entry-override',
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: 'task-imggen-override',
+            referenceImages: any(named: 'referenceImages'),
+            overrideModelId: 'override-img-model',
+          ),
+        ).called(1);
+      },
+    );
+
     test('passes reference images to image generation runner', () async {
       final skill =
           AiConfig.skill(

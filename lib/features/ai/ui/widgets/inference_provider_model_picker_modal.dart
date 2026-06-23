@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Bottom-sheet / dialog picker for choosing which model handles one
@@ -27,15 +26,14 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 ///   one-tap "Current default" shortcut at the top), page 2 lists the chosen
 ///   provider's models with a back button.
 ///
-/// The profile default is marked with a single `tokens.colors.interactive`
-/// accent (a check + the supplied badge label) — never a second hue — gets the
-/// same `activated` tint on both steps, and is ordered first within its
-/// provider. On wide layouts the content column is capped at the modal page
-/// breakpoint so rows read at a comfortable measure instead of spanning the
-/// whole dialog.
+/// The profile default is rendered as a **model row** (a single-accent
+/// `interactive` selection dot + name + wire id + a `Default ✓` marker + a
+/// stronger activated tint) identically wherever it appears — pinned on page 1
+/// and first in its provider's list on page 2 — so it reads as one model with a
+/// shortcut rather than a duplicate provider entry. Non-default model rows lead
+/// with their provider's brand-accent dot instead. The body is full-bleed,
+/// aligned with the modal's top bar, on every layout.
 class InferenceProviderModelPickerModal {
-  const InferenceProviderModelPickerModal._();
-
   /// Opens the picker and resolves with the chosen model's id, or `null` when
   /// the user dismisses it (or there was nothing to pick). See the class doc
   /// for the adaptive short-circuits.
@@ -73,14 +71,14 @@ class InferenceProviderModelPickerModal {
     // branded with the provider identity so the user always knows whose
     // models they are looking at.
     if (providerOrder.length == 1) {
+      final onlyProvider = providersById[providerOrder.first];
       return ModalUtils.showSinglePageModal<String>(
         context: context,
-        titleWidget: _ProviderPageTitle(
-          provider: providersById[providerOrder.first],
-        ),
+        titleWidget: _ProviderPageTitle(provider: onlyProvider),
         padding: const EdgeInsets.symmetric(vertical: 20),
         builder: (modalContext) => _ModelList(
           models: orderModelsDefaultFirst(models, defaultModelId),
+          providerType: onlyProvider?.inferenceProviderType,
           defaultModelId: defaultModelId,
           defaultBadgeLabel: defaultBadgeLabel,
           onSelected: (id) => Navigator.of(modalContext).pop(id),
@@ -115,6 +113,7 @@ class InferenceProviderModelPickerModal {
               defaultProvider: defaultModel == null
                   ? null
                   : providersById[defaultModel.inferenceProviderId],
+              defaultBadgeLabel: defaultBadgeLabel,
               onDefaultSelected: () =>
                   Navigator.of(modalContext).pop(defaultModel!.id),
               onProviderSelected: (provider) {
@@ -144,6 +143,7 @@ class InferenceProviderModelPickerModal {
                     modelsByProvider[provider.id] ?? const [],
                     defaultModelId,
                   ),
+                  providerType: provider.inferenceProviderType,
                   defaultModelId: defaultModelId,
                   defaultBadgeLabel: defaultBadgeLabel,
                   onSelected: (id) => Navigator.of(modalContext).pop(id),
@@ -179,26 +179,17 @@ class InferenceProviderModelPickerModal {
   }
 }
 
-/// Caps the content column at the modal page breakpoint on wide layouts and
-/// centres it, so rows read at a comfortable measure instead of spanning the
-/// whole dialog (on phones the cap is wider than the screen, so it is a no-op).
-class _ConstrainedBody extends StatelessWidget {
-  const _ConstrainedBody({required this.child});
+/// Scrolls the picker body. The content stays full-bleed (aligned with the
+/// modal's own full-width top bar) rather than capped/centred, so the rows
+/// don't float inside the dialog on wide layouts.
+class _PickerScrollView extends StatelessWidget {
+  const _PickerScrollView({required this.child});
 
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: WoltModalConfig.pageBreakpoint * 1.0,
-          ),
-          child: child,
-        ),
-      ),
-    );
+    return SingleChildScrollView(child: child);
   }
 }
 
@@ -211,6 +202,7 @@ class _ProviderPage extends StatelessWidget {
     required this.providersById,
     required this.defaultModel,
     required this.defaultProvider,
+    required this.defaultBadgeLabel,
     required this.onDefaultSelected,
     required this.onProviderSelected,
   });
@@ -220,6 +212,7 @@ class _ProviderPage extends StatelessWidget {
   final Map<String, AiConfigInferenceProvider> providersById;
   final AiConfigModel? defaultModel;
   final AiConfigInferenceProvider? defaultProvider;
+  final String defaultBadgeLabel;
   final VoidCallback onDefaultSelected;
   final ValueChanged<AiConfigInferenceProvider> onProviderSelected;
 
@@ -228,7 +221,7 @@ class _ProviderPage extends StatelessWidget {
     final tokens = context.designTokens;
     final defaultModel = this.defaultModel;
 
-    return _ConstrainedBody(
+    return _PickerScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -237,23 +230,24 @@ class _ProviderPage extends StatelessWidget {
             _SectionLabel(
               text: context.messages.aiModelPickerCurrentDefaultLabel,
             ),
-            // The default reads as a *model* (name + wire id + check), not a
-            // provider — so it can't be mistaken for the provider row below.
-            DesignSystemListItem(
-              title: defaultModel.name,
-              subtitle: defaultModel.providerModelId.isNotEmpty
-                  ? defaultModel.providerModelId
-                  : null,
-              leading: _ProviderTile(
-                type: defaultProvider?.inferenceProviderType,
-              ),
-              trailing: Icon(
-                Icons.check_rounded,
-                color: tokens.colors.interactive.enabled,
-                size: tokens.spacing.step6,
-              ),
-              activated: true,
+            // The default renders as the same model-row lockup it gets on
+            // page 2 (accent dot + name + wire id + Default marker), so it
+            // reads as a model with a shortcut — never a duplicate provider.
+            _ModelRow(
+              model: defaultModel,
+              providerType: defaultProvider?.inferenceProviderType,
+              isDefault: true,
+              defaultBadgeLabel: defaultBadgeLabel,
               onTap: onDefaultSelected,
+            ),
+            // A hairline structurally separates the one-tap default zone from
+            // the browse-by-provider list, so the shortcut doesn't rely on its
+            // tint alone to read as "skip the steps".
+            Divider(
+              height: 1,
+              thickness: 1,
+              indent: tokens.spacing.step5,
+              color: tokens.colors.decorative.level01,
             ),
             _SectionLabel(
               text: context.messages.aiModelPickerByProviderLabel,
@@ -294,6 +288,7 @@ class _ProviderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return DesignSystemListItem(
+      size: DesignSystemListItemSize.small,
       title: aiProviderDisplayName(
         type: provider?.inferenceProviderType,
         messages: context.messages,
@@ -312,47 +307,89 @@ class _ProviderRow extends StatelessWidget {
 }
 
 /// Page 2 of the multi-provider flow (and the whole body in the single-provider
-/// case): the model rows for one provider. Rows carry a step8 leading spacer so
-/// their titles align with the provider step's text column (no left jump on
-/// drill-in).
+/// case): the model rows for one provider.
 class _ModelList extends StatelessWidget {
   const _ModelList({
     required this.models,
+    required this.providerType,
     required this.defaultModelId,
     required this.defaultBadgeLabel,
     required this.onSelected,
   });
 
   final List<AiConfigModel> models;
+  final InferenceProviderType? providerType;
   final String? defaultModelId;
   final String defaultBadgeLabel;
   final ValueChanged<String> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return _ConstrainedBody(
+    return _PickerScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final (index, model) in models.indexed)
-            DesignSystemListItem(
-              title: model.name,
-              subtitle: model.providerModelId.isNotEmpty
-                  ? model.providerModelId
-                  : null,
-              leading: SizedBox(width: tokens.spacing.step8),
-              trailing: model.id == defaultModelId
-                  ? _DefaultMarker(label: defaultBadgeLabel)
-                  : null,
-              activated: model.id == defaultModelId,
-              selected: model.id == defaultModelId,
-              showDivider: index < models.length - 1,
+          // No per-row hairlines on this short list — the row rhythm plus the
+          // default's activated band carry the structure, and a divider would
+          // collide with that band.
+          for (final model in models)
+            _ModelRow(
+              model: model,
+              providerType: providerType,
+              isDefault: model.id == defaultModelId,
+              defaultBadgeLabel: defaultBadgeLabel,
               onTap: () => onSelected(model.id),
             ),
         ],
       ),
+    );
+  }
+}
+
+/// One selectable model — used identically for the page-1 default shortcut and
+/// every page-2 model row, so the default reads as the same object in both
+/// places. A small provider-accent dot fills the leading rail (aligning the
+/// text column and carrying the provider brand the header promises); the
+/// default gets the single-accent marker plus a stronger activated tint.
+class _ModelRow extends StatelessWidget {
+  const _ModelRow({
+    required this.model,
+    required this.providerType,
+    required this.isDefault,
+    required this.defaultBadgeLabel,
+    required this.onTap,
+  });
+
+  final AiConfigModel model;
+  final InferenceProviderType? providerType;
+  final bool isDefault;
+  final String defaultBadgeLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DesignSystemListItem(
+      size: DesignSystemListItemSize.small,
+      title: model.name,
+      subtitle: model.providerModelId.isNotEmpty ? model.providerModelId : null,
+      subtitleMaxLines: 2,
+      // The default leads with the single selection accent (matching its band
+      // + marker) so the strongest scan position reinforces "selected"; other
+      // rows lead with their provider's brand accent for grouping.
+      leading: _LeadingDot(
+        color: isDefault
+            ? tokens.colors.interactive.enabled
+            : aiProviderAccent(type: providerType, tokens: tokens),
+      ),
+      trailing: isDefault ? _DefaultMarker(label: defaultBadgeLabel) : null,
+      activated: isDefault,
+      selected: isDefault,
+      activatedBackgroundColor: isDefault
+          ? DesignSystemListPalette.activatedFillStrong(tokens)
+          : null,
+      onTap: onTap,
     );
   }
 }
@@ -384,9 +421,33 @@ class _ProviderTile extends StatelessWidget {
   }
 }
 
+/// Small coloured dot occupying a model row's leading rail — keeps model titles
+/// on the same column as the provider step. The [color] carries either the
+/// provider's brand accent (grouping) or the selection accent (the default).
+class _LeadingDot extends StatelessWidget {
+  const _LeadingDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return SizedBox(
+      width: tokens.spacing.step8,
+      child: Center(
+        child: Container(
+          width: tokens.spacing.step5,
+          height: tokens.spacing.step5,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+      ),
+    );
+  }
+}
+
 /// Reactive top-bar title for the model page: the chosen provider's icon + name.
-/// Matches the modal's own title slot styling so the header reads as one
-/// consistent slot across both pages of the flow.
+/// Uses the shared [ModalUtils.modalTitleStyle] so the branded page-2 header
+/// matches the plain page-1 title exactly.
 class _ProviderPageTitle extends StatelessWidget {
   const _ProviderPageTitle({required this.provider});
 
@@ -412,11 +473,7 @@ class _ProviderPageTitle extends StatelessWidget {
               aiProviderDisplayName(type: type, messages: context.messages),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: context.textTheme.titleMedium?.copyWith(
-                color: context.colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.2,
-              ),
+              style: ModalUtils.modalTitleStyle(context),
             ),
           ),
         ],
