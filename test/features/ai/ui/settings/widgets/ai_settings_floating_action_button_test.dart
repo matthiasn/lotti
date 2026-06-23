@@ -54,7 +54,7 @@ void main() {
     );
 
     testWidgets(
-      'each tab uses its own icon and its exact localized label',
+      'every tab uses the additive + glyph and its exact localized label',
       (tester) async {
         // Resolve the live ARB bundle from the running tree so the asserts
         // track copy changes instead of inlining English strings.
@@ -62,27 +62,25 @@ void main() {
           tester.element(find.byType(AiSettingsFloatingActionButton)),
         )!;
 
-        for (final (tab, icon, label) in [
+        for (final (tab, label) in [
           (
             AiSettingsTab.providers,
-            Icons.add_link_rounded,
             (AppLocalizations m) => m.aiSettingsAddProviderButton,
           ),
           (
             AiSettingsTab.models,
-            Icons.auto_awesome_rounded,
             (AppLocalizations m) => m.aiSettingsAddModelButton,
           ),
           (
             AiSettingsTab.profiles,
-            Icons.tune_rounded,
             (AppLocalizations m) => m.aiSettingsAddProfileButton,
           ),
         ]) {
           await pumpFab(tester, activeTab: tab);
 
           final fab = readFab(tester);
-          expect(fab.icon, icon, reason: 'icon for $tab');
+          // The glyph is intentionally the same on every tab now.
+          expect(fab.icon, Icons.add_rounded, reason: 'glyph for $tab');
           expect(fab.semanticLabel, label(l10n()), reason: 'label for $tab');
         }
       },
@@ -109,16 +107,18 @@ void main() {
       expect(buttonPressed, isTrue);
     });
 
-    testWidgets('changing active tab swaps the rendered icon', (tester) async {
+    testWidgets('changing active tab keeps the + glyph but swaps the label', (
+      tester,
+    ) async {
       await pumpFab(tester, activeTab: AiSettingsTab.providers);
-
-      expect(find.byIcon(Icons.add_link_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
+      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      final providersLabel = readFab(tester).semanticLabel;
 
       await pumpFab(tester, activeTab: AiSettingsTab.models);
+      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      final modelsLabel = readFab(tester).semanticLabel;
 
-      expect(find.byIcon(Icons.add_link_rounded), findsNothing);
-      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
+      expect(providersLabel, isNot(modelsLabel));
     });
   });
 }

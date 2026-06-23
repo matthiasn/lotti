@@ -1176,6 +1176,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiCardMenuActionEdit => 'Modifier';
 
   @override
+  String get aiCardMenuTooltip => 'Plus d\'actions';
+
+  @override
   String get aiCardOpenAgentInternals =>
       'Ouvrir les détails internes de l\'agent';
 
@@ -1448,9 +1451,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiProviderCardFixButton => 'Corriger';
-
-  @override
-  String get aiProviderCardMenuTooltip => 'Plus d\'actions';
 
   @override
   String aiProviderCardModelCount(int count) {
@@ -1947,7 +1947,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiSettingsReasoningLabel => 'Raisonnement';
 
   @override
-  String get aiSettingsSearchHint => 'Rechercher des configurations AI...';
+  String get aiSettingsSearchHint =>
+      'Rechercher fournisseurs, modèles, profils...';
 
   @override
   String get aiSettingsSearchHintShort => 'Rechercher';

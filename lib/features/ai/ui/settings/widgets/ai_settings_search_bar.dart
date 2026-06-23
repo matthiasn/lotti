@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/widgets/search/index.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 
-/// A specialized search bar widget for AI Settings page
+/// AI Settings search field.
 ///
-/// This widget wraps the LottiSearchBar with AI-specific defaults.
+/// Thin adapter over the design system's [DesignSystemSearch] so the AI
+/// settings search shares one token-styled component with the rest of the
+/// app. [isCompact] maps to [DesignSystemSearchSize.small].
 class AiSettingsSearchBar extends StatelessWidget {
   const AiSettingsSearchBar({
     required this.controller,
+    required this.hintText,
     this.onChanged,
     this.onClear,
-    this.hintText = 'Search AI configurations...',
     this.isCompact = false,
     super.key,
   });
@@ -26,17 +28,19 @@ class AiSettingsSearchBar extends StatelessWidget {
   /// Hint text displayed when field is empty
   final String hintText;
 
-  /// Whether to use a more compact style (for app bar)
+  /// Whether to use the compact (small) size variant
   final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
-    return LottiSearchBar(
+    return DesignSystemSearch(
       controller: controller,
+      hintText: hintText,
       onChanged: onChanged,
       onClear: onClear,
-      hintText: hintText,
-      isCompact: isCompact,
+      size: isCompact
+          ? DesignSystemSearchSize.small
+          : DesignSystemSearchSize.medium,
     );
   }
 }

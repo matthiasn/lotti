@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
@@ -499,10 +500,10 @@ void main() {
         await tester.pump();
 
         // While in flight the Save button onPressed must be null (disabled).
-        final saveButton = tester.widget<TextButton>(
+        final saveButton = tester.widget<DesignSystemButton>(
           find.ancestor(
             of: find.text('Save'),
-            matching: find.byType(TextButton),
+            matching: find.byType(DesignSystemButton),
           ),
         );
         expect(saveButton.onPressed, isNull);

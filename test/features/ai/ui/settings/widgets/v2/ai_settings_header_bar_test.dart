@@ -61,9 +61,9 @@ void main() {
         await tester.pump();
         expect(controller.text, equals('anthropic'));
 
-        // LottiSearchBar exposes the clear affordance once the field
+        // DesignSystemSearch exposes the clear affordance once the field
         // has text. Tap it and assert the page callback fires.
-        await tester.tap(find.byIcon(Icons.clear_rounded));
+        await tester.tap(find.byIcon(Icons.cancel_rounded));
         await tester.pump();
         expect(clears, equals(1));
       },

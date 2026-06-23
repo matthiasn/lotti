@@ -51,6 +51,8 @@
           <p>Dragging a planned block on the Day timeline now settles smoothly. When you let go, the block eases into its snapped 15-minute slot instead of teleporting to it.</p>
           <p>Checklist cards in the journal feed no longer grow a step taller a moment after they appear — their progress chip and bar hold their space from the first frame, so the list doesn't shuffle under you as you scroll.</p>
           <p>Fixed: an inference profile whose model's provider had been deleted no longer shows a garbled raw model id in its slots. The slot now reads "Model unavailable — its provider may have been removed" and keeps its clear button so you can reset the dangling reference.</p>
+          <p>The search field in Settings → AI now matches every other search box in the app — one consistent design-system search instead of a one-off styled field — and its placeholder reads "Search providers, models, profiles…" instead of the internal "Search AI configurations…".</p>
+          <p>The AI settings "add" button and card menus are clearer and easier to hit: the floating add button shows one unmistakable + on every tab instead of three different icons, the ⋯ menu on each card is a full-size touch target, and the add button no longer hides the last item in the list on phones.</p>
       </description>
     </release>
     <release version="0.9.1030" date="2026-06-20">

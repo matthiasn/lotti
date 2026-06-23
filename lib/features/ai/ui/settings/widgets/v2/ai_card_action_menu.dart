@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Single row of the `⋯` overflow menu that lives in the top-right of
-/// every v2 AI Settings card (Provider, Model, Profile). Cards used to
-/// expose a bare `onMenuTap` callback that the page never wired up —
-/// so the icon looked actionable but did nothing different from a
-/// card tap. This data class replaces that pattern so each surface
-/// can declare an explicit list of menu rows.
+/// One row of the `⋯` overflow menu that lives in the top-right of every v2 AI
+/// Settings card (Provider, Model, Profile). Cards used to expose a bare
+/// `onMenuTap` callback that the page never wired up — so the icon looked
+/// actionable but did nothing different from a card tap. This data class
+/// replaces that pattern so each surface can declare an explicit list of menu
+/// rows.
 class AiCardMenuAction {
   const AiCardMenuAction({
     required this.icon,
@@ -25,74 +27,42 @@ class AiCardMenuAction {
   final bool isDestructive;
 }
 
-/// Compact `⋯` overflow trigger used by the v2 cards. Wraps Material's
-/// [PopupMenuButton] in fixed-size chrome so the cards can't drift
-/// on hit-target size, icon weight, or padding.
+/// Compact `⋯` overflow trigger used by the v2 cards.
+///
+/// A thin adapter over the design system's [DesignSystemContextMenuButton]
+/// (trigger + popover + dismissal) and [DesignSystemContextMenu] (the styled
+/// rows), so all three cards share one menu component instead of a bespoke
+/// `PopupMenuButton` wrapper. Renders nothing when [actions] is empty. [tooltip]
+/// defaults to the generic, surface-neutral "More actions" so the same trigger
+/// reads correctly on provider, model and profile cards.
 class AiCardActionMenuButton extends StatelessWidget {
-  const AiCardActionMenuButton({required this.actions, super.key});
+  const AiCardActionMenuButton({
+    required this.actions,
+    this.tooltip,
+    super.key,
+  });
 
   final List<AiCardMenuAction> actions;
+
+  /// Overrides the trigger tooltip; defaults to `aiCardMenuTooltip`.
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
     if (actions.isEmpty) return const SizedBox.shrink();
     final tokens = context.designTokens;
     final messages = context.messages;
-    return SizedBox(
-      width: tokens.spacing.step7,
-      height: tokens.spacing.step7,
-      child: PopupMenuButton<int>(
-        tooltip: messages.aiProviderCardMenuTooltip,
-        padding: EdgeInsets.zero,
-        iconSize: 18,
-        icon: Icon(
-          Icons.more_horiz_rounded,
-          color: tokens.colors.text.lowEmphasis,
-        ),
-        position: PopupMenuPosition.under,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-        ),
-        onSelected: (index) => actions[index].onSelected(),
-        itemBuilder: (context) {
-          return [
-            for (var i = 0; i < actions.length; i++)
-              PopupMenuItem<int>(
-                value: i,
-                child: _MenuRow(action: actions[i]),
-              ),
-          ];
-        },
-      ),
-    );
-  }
-}
-
-class _MenuRow extends StatelessWidget {
-  const _MenuRow({required this.action});
-
-  final AiCardMenuAction action;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final color = action.isDestructive
-        ? tokens.colors.alert.error.defaultColor
-        : tokens.colors.text.highEmphasis;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(action.icon, size: 18, color: color),
-        SizedBox(width: tokens.spacing.step3),
-        Text(
-          action.label,
-          style: tokens.typography.styles.body.bodyMedium.copyWith(
-            color: color,
-            fontWeight: action.isDestructive
-                ? tokens.typography.weight.semiBold
-                : tokens.typography.weight.regular,
+    return DesignSystemContextMenuButton(
+      tooltip: tooltip ?? messages.aiCardMenuTooltip,
+      iconColor: tokens.colors.text.lowEmphasis,
+      items: [
+        for (final action in actions)
+          DesignSystemContextMenuItem(
+            label: action.label,
+            icon: action.icon,
+            isDestructive: action.isDestructive,
+            onTap: action.onSelected,
           ),
-        ),
       ],
     );
   }

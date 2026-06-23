@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Page-header search row shown directly below the page's
 /// `SettingsPageHeader` title. Just a single `AiSettingsSearchBar`
-/// (the same widget the pre-v3 page used, which itself wraps
-/// `LottiSearchBar`) so the search styling and placeholder match
+/// (the same widget the pre-v3 page used, which now wraps the design
+/// system's `DesignSystemSearch`) so the search styling and placeholder match
 /// every other search field in the app. The previous v3 prototype
 /// shipped a subtitle paragraph and a custom design-system text
 /// input here — both removed: the subtitle is duplicative of the
@@ -38,6 +39,7 @@ class AiSettingsHeaderBar extends StatelessWidget {
       ),
       child: AiSettingsSearchBar(
         controller: searchController,
+        hintText: context.messages.aiSettingsSearchHint,
         onClear: onSearchClear,
       ),
     );

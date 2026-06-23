@@ -69,7 +69,6 @@ lib/features/ai/ui/settings/
 │   ├── ai_settings_floating_action_button.dart # Contextual FAB
 │   ├── ai_settings_tab_bar.dart            # Legacy tab bar (unused by page)
 │   ├── ai_settings_config_sliver.dart      # Legacy sliver config list (unused)
-│   ├── ai_settings_fixed_header.dart       # Legacy fixed header (unused)
 │   ├── config_empty_state.dart             # Legacy empty state (unused by page)
 │   ├── dismiss_background.dart             # Legacy swipe-to-delete background
 │   ├── dismissible_config_card.dart        # Legacy dismissible card wrapper
@@ -270,23 +269,22 @@ Search and tab navigation are two separate, non-pinned slivers:
 
 > Note: `AiSettingsConfigSliver` (`widgets/ai_settings_config_sliver.dart`,
 > with its `ConfigEmptyState` / `DismissibleConfigCard` / swipe-to-delete
-> chrome) and `AiSettingsFixedHeader`
-> (`widgets/ai_settings_fixed_header.dart`, a pinned search+tabs+filters
-> header) are legacy widgets that the live page no longer uses.
+> chrome) is a legacy widget that the live page no longer uses.
 
 #### `AiSettingsFloatingActionButton`
 A context-aware FAB that changes based on the active tab.
 
 **Features:**
 - Circular design-system FAB (`DesignSystemFloatingActionButton`)
-- Per-tab icon; the per-tab text is carried as the FAB's `semanticLabel`
-  (screen readers / tooltips), not as a visible inline label
+- A single additive `+` glyph on every tab; the per-tab meaning is carried as
+  the FAB's `semanticLabel` (screen readers / tooltips), not as a visible inline
+  label and not as a per-tab glyph
 - Wrapped in shared bottom-navigation clearance so it stays above the floating shell
 
-**Tab Configurations:**
-- Providers: "Add Provider" with link icon
-- Models: "Add Model" with auto-awesome icon
-- Profiles: "Add Profile" with tune icon
+**Tab Configurations (label only — the glyph is always `+`):**
+- Providers: "Add Provider"
+- Models: "Add Model"
+- Profiles: "Add Profile"
 
 ### State Management
 
@@ -507,12 +505,16 @@ testWidgets('search bar shows clear button when text present', (tester) async {
   final controller = TextEditingController(text: 'test');
 
   await tester.pumpWidget(
-    MaterialApp(
-      home: AiSettingsSearchBar(controller: controller),
+    makeTestableWidgetWithScaffold(
+      AiSettingsSearchBar(
+        controller: controller,
+        hintText: 'Search providers, models, profiles...',
+      ),
     ),
   );
 
-  expect(find.byIcon(Icons.clear), findsOneWidget);
+  // AiSettingsSearchBar wraps the design system's DesignSystemSearch.
+  expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
 });
 ```
 
@@ -628,7 +630,7 @@ The AI Settings module follows a consistent pattern of extracting reusable widge
    - Combine multiple UI elements
    - Encapsulate complex behavior
    - Reduce parent widget complexity
-   - (`AiSettingsFixedHeader` / `DismissibleConfigCard` are legacy.)
+   - (`DismissibleConfigCard` is legacy.)
 
 3. **Behavioral Widgets**: `AiSettingsFloatingActionButton`
    - Per-tab icon + semantic label

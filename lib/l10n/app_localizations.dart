@@ -2107,6 +2107,12 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get aiCardMenuActionEdit;
 
+  /// No description provided for @aiCardMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get aiCardMenuTooltip;
+
   /// No description provided for @aiCardOpenAgentInternals.
   ///
   /// In en, this message translates to:
@@ -2586,12 +2592,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fix'**
   String get aiProviderCardFixButton;
-
-  /// No description provided for @aiProviderCardMenuTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'More actions'**
-  String get aiProviderCardMenuTooltip;
 
   /// Right-side meta on a connected provider card when no last-used data is available.
   ///
@@ -3388,7 +3388,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiSettingsSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search AI configurations...'**
+  /// **'Search providers, models, profiles...'**
   String get aiSettingsSearchHint;
 
   /// No description provided for @aiSettingsSearchHintShort.

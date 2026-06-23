@@ -47,6 +47,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   be installed directly from the provider edit page.
 
 ### Changed
+- **AI settings search now matches the rest of the app.** The search field in
+  Settings → AI uses the same design-system search component as the journal,
+  habits, task-linking and language pickers — one consistent look instead of a
+  one-off purple-tinted field — and its placeholder now reads *Search providers,
+  models, profiles…* instead of the internal *Search AI configurations…*.
+- **The AI settings "add" button and card menus are clearer and easier to hit.**
+  The floating add button shows one unmistakable **+** on every tab (instead of
+  three different icons), the **⋯** menu on each provider / model / profile card
+  is a full-size touch target, and the add button no longer hides the last item
+  in the list on phones.
 - **Accepting or dismissing an AI suggestion is now smooth and calm instead of
   jumpy.** The row you tap stays put and confirms in place — a clear filled
   badge with the plain word *Confirmed* or *Dismissed* and a light haptic — then

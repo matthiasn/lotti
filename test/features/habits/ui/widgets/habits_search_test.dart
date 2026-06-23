@@ -5,12 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_search.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/widgets/search/lotti_search_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -73,7 +73,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(LottiSearchBar), findsOneWidget);
+      expect(find.byType(DesignSystemSearch), findsOneWidget);
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     });
 
@@ -110,14 +110,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Initially no clear button visible
-      expect(find.byIcon(Icons.clear_rounded), findsNothing);
+      expect(find.byIcon(Icons.cancel_rounded), findsNothing);
 
       // Enter search text
       await tester.enterText(find.byType(TextField), 'test');
       await tester.pump();
 
       // Clear button should now be visible
-      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
     });
 
     testWidgets('clear button clears search text and state', (tester) async {
@@ -146,7 +146,7 @@ void main() {
       );
 
       // Tap clear button
-      await tester.tap(find.byIcon(Icons.clear_rounded));
+      await tester.tap(find.byIcon(Icons.cancel_rounded));
       await tester.pump(const Duration(milliseconds: 100));
 
       // Verify state was cleared
