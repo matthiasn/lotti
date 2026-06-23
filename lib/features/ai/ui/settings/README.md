@@ -279,14 +279,15 @@ A context-aware FAB that changes based on the active tab.
 
 **Features:**
 - Circular design-system FAB (`DesignSystemFloatingActionButton`)
-- Per-tab icon; the per-tab text is carried as the FAB's `semanticLabel`
-  (screen readers / tooltips), not as a visible inline label
+- A single additive `+` glyph on every tab; the per-tab meaning is carried as
+  the FAB's `semanticLabel` (screen readers / tooltips), not as a visible inline
+  label and not as a per-tab glyph
 - Wrapped in shared bottom-navigation clearance so it stays above the floating shell
 
-**Tab Configurations:**
-- Providers: "Add Provider" with link icon
-- Models: "Add Model" with auto-awesome icon
-- Profiles: "Add Profile" with tune icon
+**Tab Configurations (label only — the glyph is always `+`):**
+- Providers: "Add Provider"
+- Models: "Add Model"
+- Profiles: "Add Profile"
 
 ### State Management
 

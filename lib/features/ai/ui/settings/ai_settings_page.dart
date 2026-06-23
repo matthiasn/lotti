@@ -28,6 +28,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 part 'ai_settings_tab_builders.dart';
 
@@ -392,7 +393,18 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
             ),
           ),
           ..._buildBodySlivers(),
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          SliverToBoxAdapter(
+            // Reserve room so the floating "add" button never lands on top
+            // of the last card. The FAB is lifted above the bottom nav by
+            // `occupiedHeight`, so the scroll content must clear that plus
+            // the FAB's own footprint (step12). Fixes the phone occlusion
+            // where the FAB covered the last provider/model row.
+            child: SizedBox(
+              height:
+                  DesignSystemBottomNavigationBar.occupiedHeight(context) +
+                  tokens.spacing.step12,
+            ),
+          ),
         ],
       ),
     );

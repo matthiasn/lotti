@@ -39,8 +39,11 @@ class AiCardActionMenuButton extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     return SizedBox(
-      width: tokens.spacing.step7,
-      height: tokens.spacing.step7,
+      // WCAG 2.5.5 minimum interactive size: the trigger used to be a
+      // 32px (step7) square. step9 (48) gives a real touch target while
+      // the glyph itself stays visually compact at 18px.
+      width: tokens.spacing.step9,
+      height: tokens.spacing.step9,
       child: PopupMenuButton<int>(
         tooltip: messages.aiProviderCardMenuTooltip,
         padding: EdgeInsets.zero,

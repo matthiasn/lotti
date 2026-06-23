@@ -21,6 +21,29 @@ void main() {
       expect(find.byType(PopupMenuButton<int>), findsNothing);
     });
 
+    testWidgets('the `⋯` trigger meets the 48px minimum touch target', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          AiCardActionMenuButton(
+            actions: [
+              AiCardMenuAction(
+                icon: Icons.edit_outlined,
+                label: 'Edit',
+                onSelected: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // WCAG 2.5.5 — the compact 18px glyph sits inside a >=48px target.
+      final size = tester.getSize(find.byType(PopupMenuButton<int>));
+      expect(size.width, greaterThanOrEqualTo(48));
+      expect(size.height, greaterThanOrEqualTo(48));
+    });
+
     testWidgets(
       'tap on the `⋯` icon opens the menu with one row per action and '
       'the destructive row is styled with the alert/error color',
