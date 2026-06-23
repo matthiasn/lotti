@@ -20,6 +20,7 @@ class LiveWaveform extends StatelessWidget {
     this.barCount = 28,
     this.width = 240,
     this.height = 28,
+    this.color,
     super.key,
   });
 
@@ -31,9 +32,14 @@ class LiveWaveform extends StatelessWidget {
   final double width;
   final double height;
 
+  /// Bar colour. Defaults to the brand interactive (teal) when null, so
+  /// existing callers are unchanged; the recording-style picker passes a
+  /// per-style tint.
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
-    final teal = context.designTokens.colors.interactive.enabled;
+    final teal = color ?? context.designTokens.colors.interactive.enabled;
     // Reduced motion: the strip stops dancing with the live signal and rests on
     // a calm static baseline. The orb and the "Listening…" caption still carry
     // the recording state, so no information is lost — only the motion.
