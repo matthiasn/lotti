@@ -168,6 +168,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   garbled raw model id in its slots. The slot now reads "Model unavailable — its
   provider may have been removed" and keeps its clear (×) button so you can reset
   the dangling reference.
+- On phones, the back button on a settings sub-page (e.g. Advanced →
+  Maintenance) could fail to return to the previous screen. It now follows the
+  visible navigation stack — the same as the system back gesture.
 
 ## [0.9.1030]
 ### Changed
