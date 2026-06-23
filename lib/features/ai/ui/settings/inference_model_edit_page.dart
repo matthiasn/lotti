@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error
 import 'package:lotti/features/ai/ui/settings/widgets/modality_selection_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_selection_modal.dart';
 import 'package:lotti/features/ai/ui/widgets/gemini_thinking_mode_picker_modal.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -132,9 +133,15 @@ class _InferenceModelEditPageState
             ),
           ),
           actions: [
-            TextButton(
+            // Save mirrors the note editor's toolbar Save: a primary
+            // design-system button that stays quiet/disabled until the
+            // form is saveable (valid, and — when editing — dirty), then
+            // wakes to the teal accent. The leading save glyph keeps the
+            // clean→active change from being carried by hue alone.
+            DesignSystemButton(
+              label: messages.modelEditSaveButton,
+              leadingIcon: Icons.save_rounded,
               onPressed: isFormValid && !_isSaving ? handleSave : null,
-              child: Text(messages.modelEditSaveButton),
             ),
             SizedBox(width: tokens.spacing.step2),
           ],
