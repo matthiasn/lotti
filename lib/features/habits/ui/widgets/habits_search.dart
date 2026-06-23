@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
 /// Search bar for filtering the habits list by name/description.
 ///
@@ -62,7 +62,7 @@ class _HabitsSearchWidgetState extends ConsumerState<HabitsSearchWidget> {
       padding:
           widget.padding ??
           const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: LottiSearchBar(
+      child: DesignSystemSearch(
         controller: _controller,
         hintText: context.messages.searchHint,
         onChanged: habitsController.setSearchString,

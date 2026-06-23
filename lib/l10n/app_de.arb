@@ -880,7 +880,7 @@
   "aiSettingsPageLead": "Richte KI-Anbieter ein, die Modelle, die Lotti nutzen kann, und die Inferenzprofile, die entscheiden, welches Modell welche Aufgabe übernimmt.",
   "aiSettingsPageTitle": "AI-Einstellungen",
   "aiSettingsReasoningLabel": "Schlussfolgerung",
-  "aiSettingsSearchHint": "AI-Konfigurationen suchen...",
+  "aiSettingsSearchHint": "Anbieter, Modelle, Profile durchsuchen...",
   "aiSettingsSearchHintShort": "Suchen",
   "aiSettingsTabModels": "Modelle",
   "aiSettingsTabProfiles": "Profile",

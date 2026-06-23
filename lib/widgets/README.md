@@ -312,8 +312,12 @@ choice pills the tasks filter uses, each carrying the type's feed glyph (via
 pills use the shared teal accent; long-pressing a pill isolates the filter to that
 single type.
 
-### LottiSearchBar
-Main search widget with text input and search functionality.
+### Search
+App-wide text search uses the design system's `DesignSystemSearch`
+(`lib/features/design_system/components/search/design_system_search.dart`). The
+former `LottiSearchBar` was retired; every call site (journal app bar, habits,
+task linking, language picker, AI settings) now renders the token-styled DS
+field. `lib/widgets/search/` keeps only the entry-type filter widgets above.
 
 ## Selection Widgets
 

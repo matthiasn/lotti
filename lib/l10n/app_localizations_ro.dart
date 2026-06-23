@@ -1945,7 +1945,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSettingsReasoningLabel => 'Raționament';
 
   @override
-  String get aiSettingsSearchHint => 'Caută configurații AI...';
+  String get aiSettingsSearchHint => 'Caută furnizori, modele, profiluri...';
 
   @override
   String get aiSettingsSearchHintShort => 'Căutați';

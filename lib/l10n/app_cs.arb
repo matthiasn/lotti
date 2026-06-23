@@ -720,7 +720,7 @@
   "aiSettingsPageLead": "Nakonfiguruj AI poskytovatele, modely, které Lotti může volat, a inferenční profily, které rozhodují, který model zpracovává který úkol.",
   "aiSettingsPageTitle": "Nastavení AI",
   "aiSettingsReasoningLabel": "Uvažování",
-  "aiSettingsSearchHint": "Hledat konfigurace AI...",
+  "aiSettingsSearchHint": "Hledat poskytovatele, modely, profily...",
   "aiSettingsSearchHintShort": "Hledat",
   "aiSettingsTabModels": "Modely",
   "aiSettingsTabProfiles": "Profily",

@@ -880,7 +880,7 @@
   "aiSettingsPageLead": "Configura los proveedores de IA, los modelos que Lotti puede usar y los perfiles de inferencia que deciden qué modelo gestiona cada tarea.",
   "aiSettingsPageTitle": "Ajustes AI",
   "aiSettingsReasoningLabel": "Razonamiento",
-  "aiSettingsSearchHint": "Buscar configuraciones AI...",
+  "aiSettingsSearchHint": "Busca proveedores, modelos, perfiles...",
   "aiSettingsSearchHintShort": "Buscar",
   "aiSettingsTabModels": "Modelos",
   "aiSettingsTabProfiles": "Perfiles",

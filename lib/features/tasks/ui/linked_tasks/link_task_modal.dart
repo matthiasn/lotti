@@ -5,13 +5,13 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
 /// Modal for searching and selecting a task to link to the current task.
 ///
@@ -207,7 +207,7 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
             // Search field
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: LottiSearchBar(
+              child: DesignSystemSearch(
                 controller: _searchController,
                 focusNode: _focusNode,
                 hintText: context.messages.searchTasksHint,

@@ -3388,7 +3388,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiSettingsSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search AI configurations...'**
+  /// **'Search providers, models, profiles...'**
   String get aiSettingsSearchHint;
 
   /// No description provided for @aiSettingsSearchHintShort.

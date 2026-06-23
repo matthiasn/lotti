@@ -507,12 +507,16 @@ testWidgets('search bar shows clear button when text present', (tester) async {
   final controller = TextEditingController(text: 'test');
 
   await tester.pumpWidget(
-    MaterialApp(
-      home: AiSettingsSearchBar(controller: controller),
+    makeTestableWidgetWithScaffold(
+      AiSettingsSearchBar(
+        controller: controller,
+        hintText: 'Search providers, models, profiles...',
+      ),
     ),
   );
 
-  expect(find.byIcon(Icons.clear), findsOneWidget);
+  // AiSettingsSearchBar wraps the design system's DesignSystemSearch.
+  expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
 });
 ```
 

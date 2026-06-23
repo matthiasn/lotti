@@ -535,7 +535,7 @@ void main() {
         await tester.pump();
         expect(find.byType(AiProviderCard), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.clear_rounded));
+        await tester.tap(find.byIcon(Icons.cancel_rounded));
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pump();
 

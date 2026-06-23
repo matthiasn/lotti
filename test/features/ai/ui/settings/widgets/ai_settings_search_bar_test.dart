@@ -1,463 +1,81 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 
 import '../../../../../widget_test_utils.dart';
 
 void main() {
   group('AiSettingsSearchBar', () {
     late TextEditingController controller;
-    var onChangedCalled = false;
-    var onClearCalled = false;
-    var lastChangedValue = '';
 
-    setUp(() {
-      controller = TextEditingController();
-      onChangedCalled = false;
-      onClearCalled = false;
-      lastChangedValue = '';
-    });
+    setUp(() => controller = TextEditingController());
+    tearDown(() => controller.dispose());
 
-    tearDown(() {
-      controller.dispose();
-    });
-
-    Widget createWidget({
-      String? hintText,
-      VoidCallback? onClear,
-      ValueChanged<String>? onChanged,
+    Widget build({
       bool isCompact = false,
-      ThemeData? theme,
+      ValueChanged<String>? onChanged,
+      VoidCallback? onClear,
     }) {
       return makeTestableWidgetWithScaffold(
         AiSettingsSearchBar(
           controller: controller,
-          hintText: hintText ?? 'Search AI configurations...',
+          hintText: 'Search providers, models, profiles...',
           isCompact: isCompact,
-          onClear:
-              onClear ??
-              () {
-                onClearCalled = true;
-              },
-          onChanged:
-              onChanged ??
-              (value) {
-                onChangedCalled = true;
-                lastChangedValue = value;
-              },
+          onChanged: onChanged,
+          onClear: onClear,
         ),
-        theme: theme,
       );
     }
 
-    testWidgets('displays correctly with default styling', (
-      WidgetTester tester,
+    DesignSystemSearch search(WidgetTester tester) =>
+        tester.widget<DesignSystemSearch>(find.byType(DesignSystemSearch));
+
+    testWidgets('renders the design-system search with the supplied hint', (
+      tester,
     ) async {
-      await tester.pumpWidget(createWidget());
+      await tester.pumpWidget(build());
 
-      expect(find.byType(TextField), findsOneWidget);
-      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(find.text('Search AI configurations...'), findsOneWidget);
+      expect(find.byType(DesignSystemSearch), findsOneWidget);
+      expect(search(tester).hintText, 'Search providers, models, profiles...');
+      // Default (non-compact) maps to the medium size variant.
+      expect(search(tester).size, DesignSystemSearchSize.medium);
     });
 
-    testWidgets('shows custom hint text', (WidgetTester tester) async {
-      const customHint = 'Search AI configurations...';
-      await tester.pumpWidget(createWidget(hintText: customHint));
+    testWidgets('isCompact maps to the small size variant', (tester) async {
+      await tester.pumpWidget(build(isCompact: true));
 
-      expect(find.text(customHint), findsOneWidget);
+      expect(search(tester).size, DesignSystemSearchSize.small);
     });
 
-    testWidgets('calls onChanged when text is entered', (
-      WidgetTester tester,
+    testWidgets('typing drives the controller and reports onChanged', (
+      tester,
     ) async {
-      await tester.pumpWidget(createWidget());
+      var last = '';
+      await tester.pumpWidget(build(onChanged: (v) => last = v));
 
-      const testText = 'test query';
-      await tester.enterText(find.byType(TextField), testText);
+      await tester.enterText(find.byType(TextField), 'anthropic');
+      await tester.pump();
 
-      expect(onChangedCalled, isTrue);
-      expect(lastChangedValue, testText);
+      expect(controller.text, 'anthropic');
+      expect(last, 'anthropic');
     });
 
-    testWidgets('shows clear button when text is present', (
-      WidgetTester tester,
+    testWidgets('clear affordance clears the field and fires onClear', (
+      tester,
     ) async {
-      await tester.pumpWidget(createWidget());
+      var cleared = 0;
+      await tester.pumpWidget(build(onClear: () => cleared++));
 
-      // Initially no clear button
-      expect(find.byIcon(Icons.clear_rounded), findsNothing);
-
-      // Enter text
-      await tester.enterText(find.byType(TextField), 'test');
+      await tester.enterText(find.byType(TextField), 'anthropic');
       await tester.pump();
 
-      // Clear button should appear
-      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
-    });
-
-    testWidgets('hides clear button when text is empty', (
-      WidgetTester tester,
-    ) async {
-      controller.text = 'test';
-      await tester.pumpWidget(createWidget());
-
-      // Clear button should be visible
-      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
-
-      // Clear the text
-      await tester.enterText(find.byType(TextField), '');
+      // The clear affordance only appears once the field has text.
+      await tester.tap(find.byIcon(Icons.cancel_rounded));
       await tester.pump();
 
-      // Clear button should be hidden
-      expect(find.byIcon(Icons.clear_rounded), findsNothing);
-    });
-
-    testWidgets('calls onClear when clear button is tapped', (
-      WidgetTester tester,
-    ) async {
-      controller.text = 'test';
-      await tester.pumpWidget(createWidget());
-
-      // Tap clear button
-      await tester.tap(find.byIcon(Icons.clear_rounded));
-      await tester.pump();
-
-      expect(onClearCalled, isTrue);
-    });
-
-    testWidgets('clears text when clear button is tapped', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(createWidget());
-
-      // Enter text
-      await tester.enterText(find.byType(TextField), 'test query');
-      await tester.pump();
-
-      expect(controller.text, 'test query');
-
-      // Tap clear button
-      await tester.tap(find.byIcon(Icons.clear_rounded));
-      await tester.pump();
-
-      // Text should be cleared (assuming onClear implementation clears it)
-      expect(find.byIcon(Icons.clear_rounded), findsNothing);
-    });
-
-    testWidgets('has proper accessibility properties', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(createWidget());
-
-      final textField = find.byType(TextField);
-      expect(textField, findsOneWidget);
-
-      // Check that the text field is focusable
-      await tester.tap(textField);
-      await tester.pump();
-
-      final textFieldWidget = tester.widget<TextField>(textField);
-      expect(textFieldWidget.decoration?.hintText, isNotNull);
-    });
-
-    testWidgets('responds to controller changes externally', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(createWidget());
-
-      // Change controller text externally
-      controller.text = 'external change';
-      await tester.pump();
-
-      expect(find.text('external change'), findsOneWidget);
-      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
-    });
-
-    testWidgets('handles empty hint text gracefully', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(createWidget(hintText: ''));
-
-      expect(find.byType(TextField), findsOneWidget);
-      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-    });
-
-    testWidgets('maintains focus state correctly', (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget());
-
-      final textField = find.byType(TextField);
-
-      // Focus the text field
-      await tester.tap(textField);
-      await tester.pump();
-
-      // Enter some text
-      await tester.enterText(textField, 'test');
-      await tester.pump();
-
-      // The text should remain and clear button should be visible
-      expect(find.text('test'), findsOneWidget);
-      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
-    });
-
-    testWidgets('handles rapid text changes', (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget());
-
-      final textField = find.byType(TextField);
-
-      // Rapidly change text multiple times
-      await tester.enterText(textField, 'a');
-      await tester.enterText(textField, 'ab');
-      await tester.enterText(textField, 'abc');
-      await tester.pump();
-
-      expect(controller.text, 'abc');
-      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
-    });
-
-    group('keyboard navigation', () {
-      testWidgets('can be focused with tab', (WidgetTester tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            Column(
-              children: [
-                const TextField(),
-                AiSettingsSearchBar(
-                  controller: controller,
-                  hintText: 'Search...',
-                  onClear: () {},
-                  onChanged: (_) {},
-                ),
-              ],
-            ),
-          ),
-        );
-
-        // Tab to the search bar
-        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-        await tester.pump();
-
-        // Search bar should be focusable
-        expect(find.byType(AiSettingsSearchBar), findsOneWidget);
-      });
-    });
-
-    group('edge cases', () {
-      testWidgets('handles null callbacks gracefully', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            AiSettingsSearchBar(
-              controller: controller,
-              hintText: 'Search...',
-              onClear: () {}, // Required callback
-              onChanged: (_) {}, // Required callback
-            ),
-          ),
-        );
-
-        // Should not throw when text is entered
-        await tester.enterText(find.byType(TextField), 'test');
-        await tester.pump();
-
-        expect(find.text('test'), findsOneWidget);
-      });
-
-      testWidgets('handles very long text input', (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget());
-
-        const longText =
-            'This is a very long search query that might overflow the text field and test how well the widget handles extensive user input without breaking the layout or functionality';
-
-        await tester.enterText(find.byType(TextField), longText);
-        await tester.pump();
-
-        expect(controller.text, longText);
-        expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
-      });
-    });
-
-    group('compact mode', () {
-      testWidgets('displays correctly in compact mode', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(createWidget(isCompact: true));
-
-        expect(find.byType(TextField), findsOneWidget);
-        expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-
-        // Check that container has correct height
-        final container = find.byType(Container).first;
-        final containerBox = tester.renderObject<RenderBox>(container);
-        expect(containerBox.size.height, 36);
-      });
-
-      testWidgets('shows smaller text in compact mode', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(createWidget(isCompact: true));
-
-        await tester.enterText(find.byType(TextField), 'test');
-        await tester.pump();
-
-        final textField = tester.widget<TextField>(find.byType(TextField));
-        expect(textField.style?.fontSize, 14);
-      });
-
-      testWidgets('clear button works in compact mode', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(createWidget(isCompact: true));
-
-        await tester.enterText(find.byType(TextField), 'test');
-        await tester.pump();
-
-        expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
-
-        await tester.tap(find.byIcon(Icons.clear_rounded));
-        await tester.pump();
-
-        expect(onClearCalled, isTrue);
-      });
-    });
-
-    group('theme variations', () {
-      testWidgets('displays correctly in dark mode', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(
-          createWidget(
-            theme: ThemeData.dark(),
-          ),
-        );
-
-        expect(find.byType(TextField), findsOneWidget);
-        expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-
-        // Should render without errors in dark mode
-        final container = find.byType(Container).first;
-        expect(container, findsOneWidget);
-      });
-
-      testWidgets('displays correctly in light mode', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(
-          createWidget(
-            theme: ThemeData.light(),
-          ),
-        );
-
-        expect(find.byType(TextField), findsOneWidget);
-        expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-
-        // Should render without errors in light mode
-        final container = find.byType(Container).first;
-        expect(container, findsOneWidget);
-      });
-
-      testWidgets('compact mode works in dark theme', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(
-          createWidget(
-            isCompact: true,
-            theme: ThemeData.dark(),
-          ),
-        );
-
-        expect(find.byType(TextField), findsOneWidget);
-
-        // Check that container has correct height
-        final container = find.byType(Container).first;
-        final containerWidget = tester.widget<Container>(container);
-        expect(containerWidget.constraints?.maxHeight, 36);
-      });
-    });
-
-    group('widget lifecycle', () {
-      testWidgets('disposes properly when removed from tree', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(createWidget());
-
-        // Verify widget is rendered
-        expect(find.byType(AiSettingsSearchBar), findsOneWidget);
-
-        // Remove widget from tree
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const SizedBox()),
-        );
-
-        // Widget should be disposed
-        expect(find.byType(AiSettingsSearchBar), findsNothing);
-      });
-
-      testWidgets('handles controller listener properly across rebuilds', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(createWidget());
-
-        // Change controller text
-        controller.text = 'test1';
-        await tester.pump();
-        expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
-
-        // Rebuild widget with same controller
-        await tester.pumpWidget(createWidget());
-
-        // Change controller text again
-        controller.text = 'test2';
-        await tester.pump();
-        expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
-
-        // Clear text
-        controller.text = '';
-        await tester.pump();
-        expect(find.byIcon(Icons.clear_rounded), findsNothing);
-      });
-
-      testWidgets('text input action is set to search', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(createWidget());
-
-        final textField = tester.widget<TextField>(find.byType(TextField));
-        expect(textField.textInputAction, TextInputAction.search);
-      });
-
-      testWidgets('keyboard type is set to text', (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget());
-
-        final textField = tester.widget<TextField>(find.byType(TextField));
-        expect(textField.keyboardType, TextInputType.text);
-      });
-    });
-
-    group('accessibility', () {
-      testWidgets('semantic labels are properly set', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(createWidget());
-
-        // Search icon should have semantic label
-        final searchIcon = tester.widget<Icon>(
-          find.byIcon(Icons.search_rounded),
-        );
-        expect(searchIcon.semanticLabel, 'Search icon');
-
-        // Enter text to show clear button
-        await tester.enterText(find.byType(TextField), 'test');
-        await tester.pump();
-
-        // Clear icon should have semantic label
-        final clearIcon = tester.widget<Icon>(
-          find.byIcon(Icons.clear_rounded),
-        );
-        expect(clearIcon.semanticLabel, 'Clear search');
-      });
+      expect(controller.text, isEmpty);
+      expect(cleared, 1);
     });
   });
 }

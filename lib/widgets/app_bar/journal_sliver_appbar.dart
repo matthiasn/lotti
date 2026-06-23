@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/ai_chat_icon.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -14,7 +15,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
-import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
 class JournalSliverAppBar extends ConsumerStatefulWidget {
   const JournalSliverAppBar({
@@ -69,7 +69,7 @@ class _JournalSliverAppBarState extends ConsumerState<JournalSliverAppBar> {
                     vertical: AppTheme.spacingMedium,
                     horizontal: AppTheme.spacingSmall,
                   ),
-                  child: LottiSearchBar(
+                  child: DesignSystemSearch(
                     controller: _searchController,
                     hintText: context.messages.searchHint,
                     onChanged: controller.setSearchString,

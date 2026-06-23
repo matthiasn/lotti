@@ -880,7 +880,7 @@
   "aiSettingsPageLead": "Configurați furnizorii AI, modelele pe care Lotti le poate apela și profilurile de inferență care decid ce model gestionează fiecare sarcină.",
   "aiSettingsPageTitle": "Setări AI",
   "aiSettingsReasoningLabel": "Raționament",
-  "aiSettingsSearchHint": "Caută configurații AI...",
+  "aiSettingsSearchHint": "Caută furnizori, modele, profiluri...",
   "aiSettingsSearchHintShort": "Căutați",
   "aiSettingsTabModels": "Modele",
   "aiSettingsTabProfiles": "Profile",

@@ -1936,7 +1936,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiSettingsReasoningLabel => 'Uvažování';
 
   @override
-  String get aiSettingsSearchHint => 'Hledat konfigurace AI...';
+  String get aiSettingsSearchHint => 'Hledat poskytovatele, modely, profily...';
 
   @override
   String get aiSettingsSearchHintShort => 'Hledat';

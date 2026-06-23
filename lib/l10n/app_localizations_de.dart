@@ -1936,7 +1936,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiSettingsReasoningLabel => 'Schlussfolgerung';
 
   @override
-  String get aiSettingsSearchHint => 'AI-Konfigurationen suchen...';
+  String get aiSettingsSearchHint =>
+      'Anbieter, Modelle, Profile durchsuchen...';
 
   @override
   String get aiSettingsSearchHintShort => 'Suchen';

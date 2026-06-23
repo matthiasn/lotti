@@ -1910,7 +1910,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSettingsReasoningLabel => 'Reasoning';
 
   @override
-  String get aiSettingsSearchHint => 'Search AI configurations...';
+  String get aiSettingsSearchHint => 'Search providers, models, profiles...';
 
   @override
   String get aiSettingsSearchHintShort => 'Search';

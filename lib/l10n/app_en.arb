@@ -1076,7 +1076,7 @@
   "aiSettingsPageLead": "Configure AI providers, the models Lotti can call, and the inference profiles that decide which model handles which task.",
   "aiSettingsPageTitle": "AI Settings",
   "aiSettingsReasoningLabel": "Reasoning",
-  "aiSettingsSearchHint": "Search AI configurations...",
+  "aiSettingsSearchHint": "Search providers, models, profiles...",
   "aiSettingsSearchHintShort": "Search",
   "aiSettingsTabModels": "Models",
   "aiSettingsTabProfiles": "Profiles",

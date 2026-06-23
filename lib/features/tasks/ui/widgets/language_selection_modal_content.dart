@@ -2,11 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/supported_language.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/flags/language_flag.dart';
-import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
 /// Invoked when a language is chosen in the picker; `null` signals clearing
 /// the current selection.
@@ -128,14 +128,14 @@ class LanguageSelectionModalContent extends ConsumerWidget {
     );
   }
 
-  /// Builds the modal's sticky search header — a `LottiSearchBar` that pushes
+  /// Builds the modal's sticky search header — a `DesignSystemSearch` that pushes
   /// its text into `queryNotifier`, which the body listens to for filtering.
   static Widget buildHeader({
     required BuildContext context,
     required TextEditingController controller,
     required ValueNotifier<String> queryNotifier,
   }) {
-    return LottiSearchBar(
+    return DesignSystemSearch(
       controller: controller,
       hintText: '',
       onChanged: (value) => queryNotifier.value = value,

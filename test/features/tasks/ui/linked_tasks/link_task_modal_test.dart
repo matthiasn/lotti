@@ -167,7 +167,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      expect(find.text('Search tasks...'), findsOneWidget);
+      // DesignSystemSearch renders the hint both as a visible overlay and as
+      // the (transparent) TextField hint, so allow more than one match.
+      expect(find.text('Search tasks...'), findsWidgets);
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     });
 
@@ -676,10 +678,10 @@ void main() {
       await tester.pump();
 
       // Clear button should appear
-      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
 
       // Tap clear button
-      await tester.tap(find.byIcon(Icons.clear_rounded));
+      await tester.tap(find.byIcon(Icons.cancel_rounded));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 

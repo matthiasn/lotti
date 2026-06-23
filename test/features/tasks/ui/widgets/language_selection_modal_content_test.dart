@@ -170,7 +170,6 @@ void main() {
       await pumpHarness(tester);
 
       final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.decoration?.prefixIcon, isNotNull);
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
       expect(textField.decoration?.hintText, isEmpty);
     });
