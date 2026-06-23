@@ -6363,6 +6363,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Verifying…';
 
   @override
+  String get onboardingCaptureAccept => 'Looks good';
+
+  @override
+  String get onboardingCaptureEditHint => 'Tap any line to edit';
+
+  @override
+  String get onboardingCaptureListening => 'Listening… tap when you\'re done';
+
+  @override
+  String get onboardingCaptureOrbLabel => 'Record your thought';
+
+  @override
+  String get onboardingCapturePrompt => 'What\'s on your mind?';
+
+  @override
+  String get onboardingCapturePromptHint =>
+      'Try: remind me to call the dentist and book the car service';
+
+  @override
+  String get onboardingCaptureRatherType => 'Rather type?';
+
+  @override
+  String get onboardingCaptureReassurance =>
+      'You\'ll be able to edit everything next.';
+
+  @override
+  String get onboardingCaptureRevealed => 'Here\'s your first task';
+
+  @override
+  String get onboardingCaptureThinking => 'Turning your words into a task…';
+
+  @override
+  String get onboardingCaptureTypePrompt => 'Type your thought';
+
+  @override
   String get onboardingCategoryAddOwn => 'Add your own';
 
   @override

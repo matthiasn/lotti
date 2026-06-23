@@ -6520,6 +6520,43 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Se verifică…';
 
   @override
+  String get onboardingCaptureAccept => 'Arată bine';
+
+  @override
+  String get onboardingCaptureEditHint =>
+      'Atingeți orice rând pentru a-l edita';
+
+  @override
+  String get onboardingCaptureListening => 'Ascult… atingeți când ați terminat';
+
+  @override
+  String get onboardingCaptureOrbLabel => 'Înregistrați-vă gândul';
+
+  @override
+  String get onboardingCapturePrompt => 'La ce vă gândiți?';
+
+  @override
+  String get onboardingCapturePromptHint =>
+      'Încercați: amintește-mi să sun la dentist și să programez mașina la service';
+
+  @override
+  String get onboardingCaptureRatherType => 'Preferați să scrieți?';
+
+  @override
+  String get onboardingCaptureReassurance =>
+      'Veți putea edita totul în continuare.';
+
+  @override
+  String get onboardingCaptureRevealed => 'Iată prima dvs. sarcină';
+
+  @override
+  String get onboardingCaptureThinking =>
+      'Vă transform cuvintele într-o sarcină…';
+
+  @override
+  String get onboardingCaptureTypePrompt => 'Scrieți-vă gândul';
+
+  @override
   String get onboardingCategoryAddOwn => 'Adăugați propria';
 
   @override

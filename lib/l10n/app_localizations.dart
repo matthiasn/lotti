@@ -11122,6 +11122,72 @@ abstract class AppLocalizations {
   /// **'Verifying…'**
   String get onboardingApiKeyVerifying;
 
+  /// No description provided for @onboardingCaptureAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks good'**
+  String get onboardingCaptureAccept;
+
+  /// No description provided for @onboardingCaptureEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap any line to edit'**
+  String get onboardingCaptureEditHint;
+
+  /// No description provided for @onboardingCaptureListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening… tap when you\'re done'**
+  String get onboardingCaptureListening;
+
+  /// No description provided for @onboardingCaptureOrbLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Record your thought'**
+  String get onboardingCaptureOrbLabel;
+
+  /// No description provided for @onboardingCapturePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s on your mind?'**
+  String get onboardingCapturePrompt;
+
+  /// No description provided for @onboardingCapturePromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Try: remind me to call the dentist and book the car service'**
+  String get onboardingCapturePromptHint;
+
+  /// No description provided for @onboardingCaptureRatherType.
+  ///
+  /// In en, this message translates to:
+  /// **'Rather type?'**
+  String get onboardingCaptureRatherType;
+
+  /// No description provided for @onboardingCaptureReassurance.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll be able to edit everything next.'**
+  String get onboardingCaptureReassurance;
+
+  /// No description provided for @onboardingCaptureRevealed.
+  ///
+  /// In en, this message translates to:
+  /// **'Here\'s your first task'**
+  String get onboardingCaptureRevealed;
+
+  /// No description provided for @onboardingCaptureThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning your words into a task…'**
+  String get onboardingCaptureThinking;
+
+  /// No description provided for @onboardingCaptureTypePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your thought'**
+  String get onboardingCaptureTypePrompt;
+
   /// No description provided for @onboardingCategoryAddOwn.
   ///
   /// In en, this message translates to:

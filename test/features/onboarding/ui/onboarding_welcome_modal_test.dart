@@ -8,8 +8,10 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,6 +20,16 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
+
+/// Inert [CaptureController] so the live first-capture page (pushed after the
+/// category step) renders without touching the real mic / realtime services.
+class _FakeCaptureController extends CaptureController {
+  @override
+  CaptureState build() => const CaptureState.idle();
+
+  @override
+  Future<void> toggle() async {}
+}
 
 /// Canned probe so the API-key step's live verification resolves without a
 /// network call.
@@ -220,6 +232,13 @@ void main() {
         overrides: [
           aiConfigRepositoryProvider.overrideWithValue(aiRepo),
           categoryRepositoryProvider.overrideWithValue(catRepo),
+          // The category step now hands off to the live first-capture page;
+          // override its providers so the page renders without the real mic
+          // pipeline or a live structuring round-trip.
+          captureControllerProvider.overrideWith(_FakeCaptureController.new),
+          onboardingCaptureToTaskServiceProvider.overrideWithValue(
+            MockOnboardingCaptureToTaskService(),
+          ),
           connectionVerifierClientProvider.overrideWith(
             (ref) =>
                 () => MockClient((_) async => http.Response('', 200)),
@@ -272,12 +291,19 @@ void main() {
     await tester.tap(find.text('Work'));
     await tester.pump();
     await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
+    // The modal pops and the live first-capture page is pushed in its place.
+    // The capture page's orb tickers never settle, so step the route
+    // transition with bounded pumps rather than pumpAndSettle.
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
-    // Completing the category step pops the modal; provider creation + FTUE
-    // setup ran; the chosen area became a category bound to the provider's
-    // seeded inference profile; the connected event is recorded.
+    // Completing the category step pops the modal and reveals the live
+    // first-capture page; provider creation + FTUE setup ran; the chosen area
+    // became a category bound to the provider's seeded inference profile; the
+    // connected event is recorded.
     expect(find.text('Connect your brain'), findsNothing);
+    expect(find.text("What's on your mind?"), findsOneWidget);
     verify(() => aiRepo.saveConfig(any())).called(1);
     verify(
       () => catRepo.createCategory(

@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/ui/pages/onboarding_capture_page.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
@@ -27,6 +29,20 @@ String? onboardingSeededProfileId(InferenceProviderType type) => switch (type) {
   InferenceProviderType.ollama => profileLocalId,
   _ => null,
 };
+
+/// The first category created in the onboarding category step, handed to the
+/// live first-capture page so the structured task lands in a real place.
+class OnboardingFirstCapture {
+  const OnboardingFirstCapture({
+    required this.categoryId,
+    required this.categoryLabel,
+    this.providerName,
+  });
+
+  final String categoryId;
+  final String categoryLabel;
+  final String? providerName;
+}
 
 /// The FTUE "connect your brain" front door: a full-screen cinematic route that
 /// crossfades through three steps — a welcome (animated `heroStyle` hero), a
@@ -54,11 +70,16 @@ class OnboardingWelcomeModal {
     unawaited(repo?.recordEvent(OnboardingEventName.welcomeShown));
 
     InferenceProviderType? connectedType;
+    // The first category created in the category step — carried out of the
+    // modal route so the live first-capture page can be pushed after the modal
+    // pops (a full-screen route, not a child of the transparent modal).
+    OnboardingFirstCapture? firstCapture;
     final dismissLabel = MaterialLocalizations.of(
       context,
     ).modalBarrierDismissLabel;
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
 
-    await Navigator.of(context, rootNavigator: true).push(
+    await rootNavigator.push(
       PageRouteBuilder<void>(
         // Transparent route + dim barrier: the app stays visible (dimmed)
         // behind the floating panel rather than being replaced by a solid
@@ -90,6 +111,13 @@ class OnboardingWelcomeModal {
                 // it now so it counts even if the user dismisses on the success
                 // beat; the route stays open to show that beat.
                 onConnected: (type) => connectedType = type,
+                // The category step finished with at least one created area —
+                // remember it and pop the modal; the capture page is pushed
+                // below once the modal route is gone.
+                onStartCapture: (capture) {
+                  firstCapture = capture;
+                  Navigator.of(routeContext).pop();
+                },
                 onComplete: () => Navigator.of(routeContext).pop(),
                 onSkip: () => Navigator.of(routeContext).pop(),
               ),
@@ -106,6 +134,22 @@ class OnboardingWelcomeModal {
           provider: connectedType!.name,
         ),
       );
+      // The user connected a provider and created at least one area: drop them
+      // straight into the live first-capture aha on a full-screen route. Its
+      // onDone pops back to the app.
+      final capture = firstCapture;
+      if (capture != null) {
+        await rootNavigator.push(
+          MaterialPageRoute<void>(
+            builder: (captureContext) => OnboardingCapturePage(
+              categoryId: capture.categoryId,
+              categoryLabel: capture.categoryLabel,
+              providerName: capture.providerName,
+              onDone: () => Navigator.of(captureContext).pop(),
+            ),
+          ),
+        );
+      }
     } else {
       unawaited(repo?.recordEvent(OnboardingEventName.welcomeSkipped));
       onDismiss();
@@ -120,6 +164,7 @@ class _OnboardingScaffold extends StatelessWidget {
     required this.heroStyle,
     required this.onProviderModalShown,
     required this.onConnected,
+    required this.onStartCapture,
     required this.onComplete,
     required this.onSkip,
   });
@@ -127,6 +172,7 @@ class _OnboardingScaffold extends StatelessWidget {
   final OnboardingHeroStyle heroStyle;
   final VoidCallback onProviderModalShown;
   final void Function(InferenceProviderType) onConnected;
+  final void Function(OnboardingFirstCapture) onStartCapture;
   final VoidCallback onComplete;
   final VoidCallback onSkip;
 
@@ -140,6 +186,7 @@ class _OnboardingScaffold extends StatelessWidget {
       heroStyle: heroStyle,
       onProviderModalShown: onProviderModalShown,
       onConnected: onConnected,
+      onStartCapture: onStartCapture,
       onComplete: onComplete,
       onSkip: onSkip,
     );
@@ -189,6 +236,7 @@ class _OnboardingFlow extends StatefulWidget {
     required this.heroStyle,
     required this.onProviderModalShown,
     required this.onConnected,
+    required this.onStartCapture,
     required this.onComplete,
     required this.onSkip,
   });
@@ -196,6 +244,7 @@ class _OnboardingFlow extends StatefulWidget {
   final OnboardingHeroStyle heroStyle;
   final VoidCallback onProviderModalShown;
   final void Function(InferenceProviderType) onConnected;
+  final void Function(OnboardingFirstCapture) onStartCapture;
   final VoidCallback onComplete;
   final VoidCallback onSkip;
 
@@ -283,6 +332,7 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
         return _OnboardingCategoryStep(
           key: const ValueKey('onboarding-category'),
           type: _type,
+          onStartCapture: widget.onStartCapture,
           onDone: widget.onComplete,
         );
     }
@@ -295,11 +345,19 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
 class _OnboardingCategoryStep extends ConsumerStatefulWidget {
   const _OnboardingCategoryStep({
     required this.type,
+    required this.onStartCapture,
     required this.onDone,
     super.key,
   });
 
   final InferenceProviderType type;
+
+  /// Invoked with the first created area when the user finishes with at least
+  /// one selection — the modal pops and hands these to the live capture page.
+  final void Function(OnboardingFirstCapture) onStartCapture;
+
+  /// Invoked when the step completes with no area created (nothing selected) —
+  /// just pops the modal back to the app.
   final VoidCallback onDone;
 
   @override
@@ -387,15 +445,34 @@ class _OnboardingCategoryStepState
     setState(() => _busy = true);
     final repository = ref.read(categoryRepositoryProvider);
     final profileId = onboardingSeededProfileId(widget.type);
+    // Resolved before the await gap so no BuildContext is touched afterwards.
+    final providerName = onboardingProviderName(context.messages, widget.type);
     final chosen = options.where((o) => _selected.contains(o.label)).toList();
+
+    CategoryDefinition? firstCreated;
     for (var i = 0; i < chosen.length; i++) {
-      await repository.createCategory(
+      final created = await repository.createCategory(
         name: chosen[i].label,
         color: _palette[i % _palette.length],
         defaultProfileId: profileId,
       );
+      firstCreated ??= created;
     }
-    widget.onDone();
+
+    if (firstCreated != null) {
+      // Hand the first area to the live first-capture aha; the modal pops and
+      // pushes the capture page in its place.
+      widget.onStartCapture(
+        OnboardingFirstCapture(
+          categoryId: firstCreated.id,
+          categoryLabel: firstCreated.name,
+          providerName: providerName,
+        ),
+      );
+    } else {
+      // No area selected — nothing to capture into, so just finish.
+      widget.onDone();
+    }
   }
 
   @override

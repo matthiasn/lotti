@@ -6475,6 +6475,40 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Ověřuji…';
 
   @override
+  String get onboardingCaptureAccept => 'Vypadá to dobře';
+
+  @override
+  String get onboardingCaptureEditHint => 'Klepnutím na řádek jej upravíš';
+
+  @override
+  String get onboardingCaptureListening => 'Poslouchám… klepni, až budeš hotov';
+
+  @override
+  String get onboardingCaptureOrbLabel => 'Nahraj svou myšlenku';
+
+  @override
+  String get onboardingCapturePrompt => 'Co máš na mysli?';
+
+  @override
+  String get onboardingCapturePromptHint =>
+      'Zkus: připomeň mi zavolat zubaři a objednat servis auta';
+
+  @override
+  String get onboardingCaptureRatherType => 'Raději psát?';
+
+  @override
+  String get onboardingCaptureReassurance => 'Vše budeš moct následně upravit.';
+
+  @override
+  String get onboardingCaptureRevealed => 'Tady je tvůj první úkol';
+
+  @override
+  String get onboardingCaptureThinking => 'Měním tvá slova v úkol…';
+
+  @override
+  String get onboardingCaptureTypePrompt => 'Napiš svou myšlenku';
+
+  @override
   String get onboardingCategoryAddOwn => 'Přidat vlastní';
 
   @override

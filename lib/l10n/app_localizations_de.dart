@@ -6445,6 +6445,44 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Wird geprüft…';
 
   @override
+  String get onboardingCaptureAccept => 'Sieht gut aus';
+
+  @override
+  String get onboardingCaptureEditHint =>
+      'Tippe eine Zeile an, um sie zu bearbeiten';
+
+  @override
+  String get onboardingCaptureListening =>
+      'Ich höre zu … tippe, wenn du fertig bist';
+
+  @override
+  String get onboardingCaptureOrbLabel => 'Deinen Gedanken aufnehmen';
+
+  @override
+  String get onboardingCapturePrompt => 'Was beschäftigt dich?';
+
+  @override
+  String get onboardingCapturePromptHint =>
+      'Versuch: erinnere mich daran, beim Zahnarzt anzurufen und den Wagen zum Service zu bringen';
+
+  @override
+  String get onboardingCaptureRatherType => 'Lieber tippen?';
+
+  @override
+  String get onboardingCaptureReassurance =>
+      'Du kannst danach noch alles bearbeiten.';
+
+  @override
+  String get onboardingCaptureRevealed => 'Hier ist deine erste Aufgabe';
+
+  @override
+  String get onboardingCaptureThinking =>
+      'Ich verwandle deine Worte in eine Aufgabe…';
+
+  @override
+  String get onboardingCaptureTypePrompt => 'Tippe deinen Gedanken';
+
+  @override
   String get onboardingCategoryAddOwn => 'Eigene hinzufügen';
 
   @override
