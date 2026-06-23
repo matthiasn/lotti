@@ -179,46 +179,63 @@ class _OnboardingScaffold extends StatelessWidget {
     // around the panel; the panel supplies its own dark surface.
     final mq = MediaQuery.of(context);
     final wide = mq.size.width >= 600;
-    final flow = _OnboardingFlow(
-      heroStyle: heroStyle,
-      onProviderModalShown: onProviderModalShown,
-      onConnected: onConnected,
-      onStartCapture: onStartCapture,
-      onComplete: onComplete,
-      onSkip: onSkip,
+    // The panel swallows its own taps (an opaque no-op tap) so tapping it never
+    // reaches the surrounding dismiss layer. The scroll view around it fills the
+    // screen and would otherwise absorb taps before they reach the route's modal
+    // barrier, so the route's `barrierDismissible` alone never fired — instead an
+    // explicit dismiss layer wraps the body and pops on a tap outside the panel
+    // (matching the app's tap-outside-to-close convention).
+    final panel = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {},
+      child: _OnboardingFlow(
+        heroStyle: heroStyle,
+        onProviderModalShown: onProviderModalShown,
+        onConnected: onConnected,
+        onStartCapture: onStartCapture,
+        onComplete: onComplete,
+        onSkip: onSkip,
+      ),
     );
 
+    final Widget content;
     if (wide) {
       // Desktop: a centred dialog capped at a comfortable width.
-      return Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: flow,
-              ),
+      content = SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: panel,
             ),
           ),
         ),
       );
-    }
-
-    // Phone: a full-width sheet flush to the bottom edge — it covers the app's
-    // bottom navigation (no SafeArea bottom inset, no horizontal margin). The
-    // panel's own content carries the bottom safe-area padding so controls
-    // clear the home indicator while the surface still reaches the screen edge.
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      resizeToAvoidBottomInset: false,
-      body: Align(
+    } else {
+      // Phone: a full-width sheet flush to the bottom edge — it covers the app's
+      // bottom navigation (no SafeArea bottom inset, no horizontal margin). The
+      // panel's own content carries the bottom safe-area padding so controls
+      // clear the home indicator while the surface still reaches the screen edge.
+      content = Align(
         alignment: Alignment.bottomCenter,
         child: SingleChildScrollView(
           padding: EdgeInsets.only(top: mq.padding.top),
-          child: flow,
+          child: panel,
         ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      resizeToAvoidBottomInset: false,
+      // Tapping anywhere outside the panel closes the flow, the same as tapping
+      // the dim barrier — `onSkip` pops the route and the post-pop logic records
+      // skip vs. connected appropriately.
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onSkip,
+        child: content,
       ),
     );
   }

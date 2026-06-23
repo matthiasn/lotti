@@ -195,6 +195,31 @@ void main() {
     expect(state.reached(OnboardingEventName.welcomeSkipped), isTrue);
   });
 
+  testWidgets(
+    'tapping outside the panel closes the flow (tap-outside-to-dismiss)',
+    (tester) async {
+      var dismissed = false;
+      await openWelcome(tester, child: host(onDismiss: () => dismissed = true));
+      expect(find.text('Connect your brain'), findsOneWidget);
+
+      // The sheet shrink-wraps to its content at the bottom, leaving empty
+      // space above it. A tap there must close the flow — the route's modal
+      // barrier alone never received the tap (the full-screen scroll view sat
+      // on top of it), so the scaffold dismisses explicitly.
+      final panelTop = tester
+          .getTopLeft(find.byKey(const ValueKey('onboarding-welcome')))
+          .dy;
+      expect(panelTop, greaterThan(30));
+      await tester.tapAt(Offset(195, panelTop - 20));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Connect your brain'), findsNothing);
+      expect(dismissed, isTrue);
+      final state = await repo.funnelState();
+      expect(state.reached(OnboardingEventName.welcomeSkipped), isTrue);
+    },
+  );
+
   testWidgets('connecting reveals the success beat, then completing pops and '
       'records providerConnected', (tester) async {
     // Drive the full flow welcome → connect → Ollama → verified → Connect →
