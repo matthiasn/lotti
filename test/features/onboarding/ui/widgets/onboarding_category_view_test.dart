@@ -216,7 +216,7 @@ void main() {
         // tap-target boundary, still a hairline (not an opaque outline).
         final side = (decoration.border! as Border).top;
         expect(side.color.a, greaterThan(0.1));
-        expect(side.color.a, lessThan(0.5));
+        expect(side.color.a, lessThan(0.6));
       }
     },
   );

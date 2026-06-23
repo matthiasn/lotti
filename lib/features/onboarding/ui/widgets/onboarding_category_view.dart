@@ -31,9 +31,10 @@ const double _kAddOwnTintBottomAlpha = 0.05;
 
 /// Crisp white hairline that defines the glass edge and catches light — bright
 /// enough that the unselected chips' tap-target boundary is unmistakable
-/// against the dark gradient (the low-vision soft spot in review). The add-own
-/// chip uses a quieter hairline to match its lower tint.
-const double _kChipBorderAlpha = 0.44;
+/// against the dark gradient — and against the busy constellation backdrop —
+/// even for low-vision users. The add-own chip uses a quieter hairline to match
+/// its lower tint.
+const double _kChipBorderAlpha = 0.52;
 const double _kAddOwnBorderAlpha = 0.24;
 
 /// Ambient-glow opacities. Kept low so the layer reads as a premium colour
@@ -370,12 +371,19 @@ class _FrostedGlass extends StatelessWidget {
     required this.borderColor,
     required this.radius,
     required this.child,
+    this.borderWidth = 1,
   });
 
   final Color tint;
   final double topAlpha;
   final double bottomAlpha;
   final Color borderColor;
+
+  /// Stroke width of the glass edge. The option chips use a slightly thicker
+  /// stroke so the tap-target boundary holds up against the busy constellation
+  /// backdrop (the low-vision edge-legibility ask); the add-own chip keeps the
+  /// default hairline so it stays quiet.
+  final double borderWidth;
   final BorderRadius radius;
   final Widget child;
 
@@ -399,7 +407,7 @@ class _FrostedGlass extends StatelessWidget {
               ],
             ),
             borderRadius: radius,
-            border: Border.all(color: borderColor),
+            border: Border.all(color: borderColor, width: borderWidth),
           ),
           child: child,
         ),
@@ -450,7 +458,7 @@ class _CategoryChip extends StatelessWidget {
           size: tokens.spacing.step5,
           color: selected
               ? fg
-              : Color.lerp(accent, const Color(0xFFFFFFFF), 0.35),
+              : Color.lerp(accent, const Color(0xFFFFFFFF), 0.5),
         ),
         SizedBox(width: tokens.spacing.step3),
         Expanded(
@@ -489,6 +497,7 @@ class _CategoryChip extends StatelessWidget {
             topAlpha: _kChipTintTopAlpha,
             bottomAlpha: _kChipTintBottomAlpha,
             borderColor: textHigh.withValues(alpha: _kChipBorderAlpha),
+            borderWidth: 1.5,
             radius: radius,
             child: Padding(padding: padding, child: row),
           );
