@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -249,13 +250,17 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
             const SizedBox(height: 24),
 
             // Desktop only toggle
-            SwitchListTile(
+            ListTile(
               title: Text(context.messages.inferenceProfileDesktopOnly),
               subtitle: Text(
                 context.messages.inferenceProfileDesktopOnlyDescription,
               ),
-              value: _desktopOnly,
-              onChanged: (value) => setState(() => _desktopOnly = value),
+              trailing: DesignSystemToggle(
+                value: _desktopOnly,
+                semanticsLabel: context.messages.inferenceProfileDesktopOnly,
+                onChanged: (value) => setState(() => _desktopOnly = value),
+              ),
+              onTap: () => setState(() => _desktopOnly = !_desktopOnly),
             ),
             const SizedBox(height: 24),
 
@@ -559,11 +564,16 @@ class _SkillAssignmentTile extends StatelessWidget {
         ? context.messages.inferenceProfileSkillUsesModel(slotName)
         : context.messages.inferenceProfileSkillModelRequired(slotName);
 
-    return SwitchListTile(
+    return ListTile(
       title: Text(skill.name),
       subtitle: Text(subtitle),
-      value: isAutomated && hasModel,
-      onChanged: hasModel ? onChanged : null,
+      trailing: DesignSystemToggle(
+        value: isAutomated && hasModel,
+        semanticsLabel: skill.name,
+        enabled: hasModel,
+        onChanged: hasModel ? onChanged : (_) {},
+      ),
+      onTap: hasModel ? () => onChanged(!(isAutomated && hasModel)) : null,
     );
   }
 }

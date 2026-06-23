@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -19,6 +20,11 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
+
+DesignSystemToggle _toggleIn(WidgetTester tester, Finder rowFinder) =>
+    tester.widget<DesignSystemToggle>(
+      find.descendant(of: rowFinder, matching: find.byType(DesignSystemToggle)),
+    );
 
 void main() {
   late StreamController<List<AiConfig>> profileStreamController;
@@ -112,7 +118,7 @@ void main() {
 
       // Scroll down to the desktop toggle.
       final desktopToggle = find.widgetWithText(
-        SwitchListTile,
+        ListTile,
         'Desktop Only',
       );
       await tester.scrollUntilVisible(
@@ -124,7 +130,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Desktop toggle should be on.
-      final switchTile = tester.widget<SwitchListTile>(desktopToggle);
+      final switchTile = _toggleIn(tester, desktopToggle);
       expect(switchTile.value, isTrue);
     });
 
@@ -544,7 +550,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       final desktopToggle = find.widgetWithText(
-        SwitchListTile,
+        ListTile,
         'Desktop Only',
       );
 
@@ -558,7 +564,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Initially off.
-      var switchTile = tester.widget<SwitchListTile>(desktopToggle);
+      var switchTile = _toggleIn(tester, desktopToggle);
       expect(switchTile.value, isFalse);
 
       // Toggle on.
@@ -566,7 +572,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      switchTile = tester.widget<SwitchListTile>(desktopToggle);
+      switchTile = _toggleIn(tester, desktopToggle);
       expect(switchTile.value, isTrue);
     });
 
@@ -988,7 +994,7 @@ void main() {
 
       // Scroll down and enable desktop-only toggle.
       final desktopToggle = find.widgetWithText(
-        SwitchListTile,
+        ListTile,
         'Desktop Only',
       );
       await tester.scrollUntilVisible(
@@ -1104,11 +1110,11 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // All SwitchListTiles for skills should be disabled (no model set).
+        // All skill toggles should be disabled (no model set).
         // Find skill tiles (not the desktop-only toggle).
         final skillTiles = tester
-            .widgetList<SwitchListTile>(find.byType(SwitchListTile))
-            .where((t) => t.onChanged == null)
+            .widgetList<DesignSystemToggle>(find.byType(DesignSystemToggle))
+            .where((t) => !t.enabled)
             .toList();
 
         // All skill tiles should be disabled since no model slots are set.
@@ -1150,10 +1156,10 @@ void main() {
             (s) => s.skillType == SkillType.transcription,
           );
           for (final skill in transcriptionSkills) {
-            final tileFinder = find.widgetWithText(SwitchListTile, skill.name);
+            final tileFinder = find.widgetWithText(ListTile, skill.name);
             expect(tileFinder, findsOneWidget);
-            final tile = tester.widget<SwitchListTile>(tileFinder);
-            expect(tile.onChanged, isNotNull);
+            final tile = _toggleIn(tester, tileFinder);
+            expect(tile.enabled, isTrue);
           }
         },
       );
@@ -1207,7 +1213,7 @@ void main() {
 
           // Toggle the skill on.
           await tester.tap(
-            find.widgetWithText(SwitchListTile, firstTranscriptionSkill.name),
+            find.widgetWithText(ListTile, firstTranscriptionSkill.name),
           );
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
@@ -1267,11 +1273,11 @@ void main() {
 
         // The toggle for the transcribe skill should be on.
         final tileFinder = find.widgetWithText(
-          SwitchListTile,
+          ListTile,
           'Transcribe Audio',
         );
         expect(tileFinder, findsOneWidget);
-        final tile = tester.widget<SwitchListTile>(tileFinder);
+        final tile = _toggleIn(tester, tileFinder);
         expect(tile.value, isTrue);
 
         // Scroll back to Save.
@@ -2129,10 +2135,10 @@ void main() {
 
         // Verify the toggle is currently ON.
         final tileFinder = find.widgetWithText(
-          SwitchListTile,
+          ListTile,
           'Transcribe Audio',
         );
-        var tile = tester.widget<SwitchListTile>(tileFinder);
+        var tile = _toggleIn(tester, tileFinder);
         expect(tile.value, isTrue);
 
         // Toggle it OFF.
@@ -2140,7 +2146,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        tile = tester.widget<SwitchListTile>(tileFinder);
+        tile = _toggleIn(tester, tileFinder);
         expect(tile.value, isFalse);
 
         // Scroll to save.
@@ -2213,7 +2219,7 @@ void main() {
         // That skill is the same SkillType.transcription, so the first
         // skill must be removed (line 376).
         final contextTileFinder = find.widgetWithText(
-          SwitchListTile,
+          ListTile,
           'Transcribe (Task Context)',
         );
         await tester.ensureVisible(contextTileFinder);
