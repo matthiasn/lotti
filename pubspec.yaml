@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.1031+4163
+version: 0.9.1031+4164
 
 msix_config:
   display_name: LottiApp
@@ -52,7 +52,7 @@ dependencies:
   flutter_form_builder: ^10.0.1
   flutter_image_compress: ^2.0.3
   flutter_linkify: ^6.0.0
-  flutter_local_notifications: ^21.0.0
+  flutter_local_notifications: ^22.0.1
   flutter_localizations:
     sdk: flutter
   flutter_map: ^8.0.0
@@ -70,7 +70,7 @@ dependencies:
   formz: ^0.8.0
   freezed_annotation: ^3.1.0
   genui: ^0.9.0
-  get_it: ^8.0.2
+  get_it: ^9.2.1
   glass_kit: ^4.0.1
   google_fonts: ^8.1.0
   gpt_markdown: ^1.0.20
@@ -104,7 +104,7 @@ dependencies:
   pie_chart: ^5.3.2
   qr_flutter: ^4.0.0
   quiver: ^3.2.1
-  record: ^6.0.0
+  record: ^7.1.0
   research_package:
     git:
       url: https://github.com/matthiasn/research.package
@@ -138,7 +138,6 @@ dependency_overrides:
   # See third_party/flutter_onnxruntime/LOTTI_PATCHES.md.
   flutter_onnxruntime:
     path: third_party/flutter_onnxruntime
-  get_it: ^8.0.2
   intl: ^0.20.2
   # Downgrade to avoid objective_c.framework malformed bundle issue (ITMS-90291)
   # See: https://github.com/flutter/flutter/issues/178915
