@@ -12,6 +12,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
 /// Bottom-sheet form for creating or editing a label.
 ///
@@ -233,35 +234,38 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                         ],
                       ),
                     const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.add),
-                      label: Text(context.messages.settingsLabelsCategoriesAdd),
-                      onPressed: () async {
-                        final result = await showCategoryMultiPicker(
-                          context: context,
-                          title: context.messages.settingsLabelsCategoriesAdd,
-                          initialSelectedIds: state.selectedCategoryIds,
-                        );
-                        if (result == null) return;
-                        // The picker is seeded with the current set and returns
-                        // the full edited set, so replace it wholesale —
-                        // applying the user's additions and removals together.
-                        controller.setCategoryIds(result.ids);
-                      },
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: DesignSystemButton(
+                        label: context.messages.settingsLabelsCategoriesAdd,
+                        leadingIcon: Icons.add,
+                        variant: DesignSystemButtonVariant.secondary,
+                        onPressed: () async {
+                          final result = await showCategoryMultiPicker(
+                            context: context,
+                            title: context.messages.settingsLabelsCategoriesAdd,
+                            initialSelectedIds: state.selectedCategoryIds,
+                          );
+                          if (result == null) return;
+                          // The picker is seeded with the current set and
+                          // returns the full edited set, so replace it
+                          // wholesale — applying additions and removals
+                          // together.
+                          controller.setCategoryIds(result.ids);
+                        },
+                      ),
                     ),
                   ],
                 );
               },
             ),
             const SizedBox(height: 24),
-            SwitchListTile.adaptive(
+            SettingsSwitchRow(
+              title: context.messages.settingsLabelsPrivateTitle,
+              subtitle: context.messages.settingsLabelsPrivateDescription,
               value: state.isPrivate,
               onChanged: (value) =>
                   controller.setPrivate(isPrivateValue: value),
-              title: Text(context.messages.settingsLabelsPrivateTitle),
-              subtitle: Text(
-                context.messages.settingsLabelsPrivateDescription,
-              ),
             ),
             if (state.errorMessage != null) ...[
               const SizedBox(height: 12),

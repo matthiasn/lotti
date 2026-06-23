@@ -9,6 +9,7 @@ import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -320,7 +321,10 @@ void main() {
       await tester.pump();
 
       final createButton = find.widgetWithText(DesignSystemButton, 'Create');
-      expect(tester.widget<DesignSystemButton>(createButton).onPressed, isNotNull);
+      expect(
+        tester.widget<DesignSystemButton>(createButton).onPressed,
+        isNotNull,
+      );
     });
 
     testWidgets('renders the duplicate-name error from save()', (
@@ -369,7 +373,7 @@ void main() {
         isFalse,
       );
 
-      final toggleFinder = find.byType(SwitchListTile);
+      final toggleFinder = find.byType(SettingsSwitchRow);
       expect(toggleFinder, findsOneWidget);
       await tester.ensureVisible(toggleFinder);
       await tester.pump();
