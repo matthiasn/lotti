@@ -7,6 +7,19 @@ import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 
+/// Resting level for the *unselected* card's preview, so only the chosen style
+/// animates with the live signal.
+const double _idleDbfs = -80;
+const double _idleVu = -20;
+
+/// A gentle, *static* low waveform for the unselected card — calm and clearly
+/// subordinate to the live card, but present enough to read as "ready" rather
+/// than an off/disabled state (a flat baseline read as dead in review).
+final List<double> _idleAmplitudes = List<double>.generate(
+  28,
+  (i) => 0.12 + 0.06 * ((i % 4) / 3),
+);
+
 /// The "pick your recording look" step: the user chooses between two themed
 /// pairs of live recording visualizers, previewed alive on one page.
 ///
@@ -72,6 +85,8 @@ class OnboardingRecordingStyleView extends StatelessWidget {
     final textHigh = dsTokensDark.colors.text.highEmphasis;
     final textMedium = dsTokensDark.colors.text.mediumEmphasis;
     final panelBg = dsTokensDark.colors.background.level01;
+    final modernActive = selected == RecordingStyle.modern;
+    final analogueActive = selected == RecordingStyle.analogue;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -117,17 +132,19 @@ class OnboardingRecordingStyleView extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: tokens.spacing.step5),
+                // Only the selected card's preview rides the live level; the
+                // other rests quiet so the screen isn't two competing motions.
                 _StyleCard(
                   tokens: tokens,
                   accent: accent,
                   label: modernLabel,
-                  selected: selected == RecordingStyle.modern,
+                  selected: modernActive,
                   onTap: () => onSelect(RecordingStyle.modern),
                   preview: _ModernPair(
                     tokens: tokens,
                     accent: accent,
-                    dBFS: dBFS,
-                    amplitudes: amplitudes,
+                    dBFS: modernActive ? dBFS : _idleDbfs,
+                    amplitudes: modernActive ? amplitudes : _idleAmplitudes,
                   ),
                 ),
                 SizedBox(height: tokens.spacing.step4),
@@ -135,14 +152,14 @@ class OnboardingRecordingStyleView extends StatelessWidget {
                   tokens: tokens,
                   accent: accent,
                   label: analogueLabel,
-                  selected: selected == RecordingStyle.analogue,
+                  selected: analogueActive,
                   onTap: () => onSelect(RecordingStyle.analogue),
                   preview: _AnaloguePair(
                     tokens: tokens,
                     colorScheme: colorScheme,
-                    vu: vu,
-                    dBFS: dBFS,
-                    amplitudes: amplitudes,
+                    vu: analogueActive ? vu : _idleVu,
+                    dBFS: analogueActive ? dBFS : _idleDbfs,
+                    amplitudes: analogueActive ? amplitudes : _idleAmplitudes,
                   ),
                 ),
                 SizedBox(height: tokens.spacing.step5),
@@ -204,7 +221,7 @@ class _StyleCard extends StatelessWidget {
             ),
             borderRadius: radius,
             border: Border.all(
-              color: selected ? accent : textHigh.withValues(alpha: 0.18),
+              color: selected ? accent : textHigh.withValues(alpha: 0.32),
               width: selected ? 2 : 1,
             ),
           ),
@@ -222,7 +239,7 @@ class _StyleCard extends StatelessWidget {
                       size: tokens.spacing.step5,
                       color: selected
                           ? accent
-                          : textHigh.withValues(alpha: 0.5),
+                          : textHigh.withValues(alpha: 0.7),
                     ),
                     SizedBox(width: tokens.spacing.step3),
                     Expanded(
@@ -301,7 +318,9 @@ class _AnaloguePair extends StatelessWidget {
         AnalogVuMeter(
           vu: vu,
           dBFS: dBFS,
-          size: tokens.spacing.step11 * 2,
+          // Sized so its height matches the orb's, peer-weighting the two
+          // previews (the meter's height is width * 0.4).
+          size: tokens.spacing.step11 * 3,
           colorScheme: colorScheme,
         ),
         SizedBox(height: tokens.spacing.step3),
