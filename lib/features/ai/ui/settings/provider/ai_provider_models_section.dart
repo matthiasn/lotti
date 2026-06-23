@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_widgets.dart';
+import 'package:lotti/features/ai/ui/settings/util/active_profile.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/util/mlx_audio_model_progress_store.dart';
@@ -105,9 +106,7 @@ class ActiveProfileSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    final modelNamesById = <String, String>{
-      for (final m in models) m.providerModelId: m.name,
-    };
+    final modelsBySlotId = modelByProfileSlotId(models);
     return Section(
       title: messages.aiProviderDetailActiveProfileTitle,
       child: AiProfileCard(
@@ -117,7 +116,7 @@ class ActiveProfileSection extends StatelessWidget {
         // Active badge always applies here.
         isActive: true,
         providerTypeFor: () => providerType,
-        modelLookup: (id) => modelNamesById[id],
+        modelLookup: (id) => modelsBySlotId[id]?.name,
         onTap: () => onProfileTap(profile),
       ),
     );

@@ -31,15 +31,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   provider. The provider setup can fetch Melious' live model catalog, including
   chat, reasoning, vision, audio, image, embedding and rerank models, and add any
   returned model as a saved Lotti model row instead of relying on a hard-coded
-  static list. New Melious setups also seed a ready-to-use default profile with
-  Mistral Small 4 119B Instruct for thinking and image recognition, DeepSeek V4
-  Pro for advanced thinking, and Whisper Large v3 Turbo for transcription.
+  static list. Large live catalogs are searchable in the Available Models
+  section instead of expanding into one long page. New Melious setups also seed a
+  ready-to-use default profile with Mistral Small 4 119B Instruct for thinking
+  and image recognition, DeepSeek V4 Pro for advanced thinking, and Whisper
+  Large v3 Turbo for transcription.
 - oMLX can now be used for local Whisper Large v3 transcription on Apple
   Silicon. The oMLX model catalog includes Whisper Large v3, Whisper Large v3
   MLX, and Whisper Large v3 Turbo as audio-to-text models, and selecting one
   routes voice-note transcription through the local OpenAI-compatible
   `/audio/transcriptions` endpoint instead of chat completions. Untouched local
   oMLX default profiles now use Whisper Large v3 Turbo for transcription.
+- oMLX provider settings now fetch the local `/models` endpoint in the
+  Available Models section, so any model exposed by the running oMLX server can
+  be installed directly from the provider edit page.
 
 ### Changed
 - **Accepting or dismissing an AI suggestion is now smooth and calm instead of

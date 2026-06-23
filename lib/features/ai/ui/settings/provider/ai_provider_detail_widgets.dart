@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_connection_section.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_models_section.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
@@ -44,6 +45,9 @@ class DetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final showsDynamicModelCatalog =
+        provider.inferenceProviderType == InferenceProviderType.melious ||
+        provider.inferenceProviderType == InferenceProviderType.omlx;
     // Pad the bottom by the height the app's bottom nav bar occupies
     // (zero on desktop, ~88pt on mobile with the home indicator) plus
     // the page's normal step6 gap, so the danger-zone card always
@@ -63,6 +67,13 @@ class DetailBody extends StatelessWidget {
         SizedBox(height: tokens.spacing.step5),
         ConnectionSection(provider: provider, onEdit: onEdit),
         SizedBox(height: tokens.spacing.step6),
+        if (showsDynamicModelCatalog) ...[
+          AvailableModelsSection(
+            providerId: provider.id,
+            providerType: provider.inferenceProviderType,
+          ),
+          SizedBox(height: tokens.spacing.step6),
+        ],
         ModelsSection(
           provider: provider,
           models: models,

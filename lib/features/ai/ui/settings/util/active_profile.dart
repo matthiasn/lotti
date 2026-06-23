@@ -1,6 +1,34 @@
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_status.dart';
 
+/// Builds the model resolver used by profile slots.
+///
+/// New profile slots store [AiConfigModel.id]. Older/backfilled rows may still
+/// carry [AiConfigModel.providerModelId] instead. The provider-native fallback
+/// is only included when it is unique in [models], so an ambiguous provider id
+/// cannot resolve to an arbitrary row.
+Map<String, AiConfigModel> modelByProfileSlotId(
+  Iterable<AiConfigModel> models,
+) {
+  final bySlotId = <String, AiConfigModel>{};
+  final byProviderModelId = <String, List<AiConfigModel>>{};
+
+  for (final model in models) {
+    bySlotId[model.id] = model;
+    (byProviderModelId[model.providerModelId] ??= <AiConfigModel>[]).add(
+      model,
+    );
+  }
+
+  for (final entry in byProviderModelId.entries) {
+    if (entry.value.length == 1) {
+      bySlotId.putIfAbsent(entry.key, () => entry.value.single);
+    }
+  }
+
+  return bySlotId;
+}
+
 /// Picks the inference profile that best represents the "active
 /// profile for this provider". Heuristic:
 /// 1. If any default-marked profile has at least one of its slots
@@ -21,10 +49,7 @@ AiConfigInferenceProfile? pickActiveProfileForProvider({
   required List<AiConfigModel> providerModels,
 }) {
   if (providerModels.isEmpty || profiles.isEmpty) return null;
-  final profileSlotIds = <String>{
-    for (final model in providerModels) model.id,
-    for (final model in providerModels) model.providerModelId,
-  };
+  final profileSlotIds = modelByProfileSlotId(providerModels).keys.toSet();
 
   AiConfigInferenceProfile? firstTouching;
   for (final p in profiles) {

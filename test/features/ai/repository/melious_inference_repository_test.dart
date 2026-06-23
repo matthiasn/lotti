@@ -186,6 +186,242 @@ void main() {
       expect(models[4].description, contains('rerank model'));
     });
 
+    test(
+      'listModels accepts top-level arrays and plain string model IDs',
+      () async {
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((request) async {
+            expect(request.url.path, equals('/v1/models'));
+            expect(request.url.queryParameters['include_meta'], equals('true'));
+
+            return http.Response(
+              jsonEncode([
+                'deepseek-v4-pro',
+                {
+                  'id': 'gemma-4-26b-a4b',
+                  'owned_by': 'google',
+                  '_meta': {
+                    'capabilities': {'vision': true, 'reasoning': true},
+                  },
+                },
+              ]),
+              200,
+            );
+          }),
+        );
+        addTearDown(repository.close);
+
+        final models = await repository.listModels(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
+
+        expect(models, hasLength(2));
+        expect(models.first.providerModelId, 'deepseek-v4-pro');
+        expect(models.first.name, 'DeepSeek V4 Pro');
+        expect(models.first.inputModalities, [Modality.text]);
+        expect(models.first.outputModalities, [Modality.text]);
+        expect(models.first.isReasoningModel, isTrue);
+        expect(models.first.supportsFunctionCalling, isTrue);
+
+        expect(models.last.providerModelId, 'gemma-4-26b-a4b');
+        expect(models.last.inputModalities, contains(Modality.image));
+        expect(models.last.isReasoningModel, isTrue);
+      },
+    );
+
+    test(
+      'listModels merges live Melious metadata with curated capabilities',
+      () async {
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((request) async {
+            expect(request.url.queryParameters['include_meta'], equals('true'));
+
+            return http.Response(
+              jsonEncode({
+                'object': 'list',
+                'data': [
+                  {
+                    'id': 'deepseek-v4-pro',
+                    'object': 'model',
+                    'owned_by': 'melious',
+                    '_meta': {
+                      'type': 'chat',
+                      'input_modalities': ['text'],
+                      'output_modalities': ['text'],
+                      'capabilities': {
+                        'streaming': true,
+                        'json_schema': true,
+                        'function_calling': true,
+                        'structured_output': true,
+                      },
+                      'context_length': 1000000,
+                    },
+                  },
+                  {
+                    'id': 'flux-2-dev',
+                    'object': 'model',
+                    'owned_by': 'melious',
+                    '_meta': {
+                      'type': 'image',
+                      'input_modalities': ['text', 'image'],
+                      'output_modalities': ['image'],
+                      'capabilities': {
+                        'text_to_image': true,
+                        'image_to_image': true,
+                      },
+                    },
+                  },
+                  {
+                    'id': 'voxtral-small-24b-2507',
+                    'object': 'model',
+                    'owned_by': 'melious',
+                    '_meta': {
+                      'type': 'chat',
+                      'input_modalities': ['text', 'audio'],
+                      'output_modalities': ['text'],
+                      'capabilities': {
+                        'supports_audio': true,
+                        'vision': true,
+                      },
+                    },
+                  },
+                  {
+                    'id': 'whisper-large-v3-turbo',
+                    'object': 'model',
+                    'owned_by': 'melious',
+                    '_meta': {
+                      'type': 'audio',
+                      'input_modalities': ['audio'],
+                      'output_modalities': ['text'],
+                      'capabilities': {
+                        'transcription': true,
+                        'translation': true,
+                      },
+                    },
+                  },
+                  {
+                    'id': 'qwen3-next-80b-a3b-thinking',
+                    'object': 'model',
+                    'owned_by': 'melious',
+                    '_meta': {
+                      'type': 'chat',
+                      'input_modalities': ['text'],
+                      'output_modalities': ['text'],
+                      'capabilities': {
+                        'function_calling': true,
+                      },
+                    },
+                  },
+                ],
+              }),
+              200,
+            );
+          }),
+        );
+        addTearDown(repository.close);
+
+        final models = await repository.listModels(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
+
+        final deepseek = models.singleWhere(
+          (model) => model.providerModelId == 'deepseek-v4-pro',
+        );
+        expect(deepseek.name, 'DeepSeek V4 Pro');
+        expect(
+          deepseek.isReasoningModel,
+          isTrue,
+          reason:
+              'The live catalog currently omits a reasoning flag for this '
+              'known Melious default, so curated capabilities must be merged.',
+        );
+        expect(deepseek.supportsFunctionCalling, isTrue);
+        expect(deepseek.description, contains('Context: 1000000 tokens'));
+
+        final image = models.singleWhere(
+          (model) => model.providerModelId == 'flux-2-dev',
+        );
+        expect(
+          image.inputModalities,
+          containsAll([Modality.text, Modality.image]),
+        );
+        expect(image.outputModalities, contains(Modality.image));
+        expect(image.description, contains('text to image'));
+        expect(image.description, contains('image to image'));
+
+        final audioChat = models.singleWhere(
+          (model) => model.providerModelId == 'voxtral-small-24b-2507',
+        );
+        expect(
+          audioChat.inputModalities,
+          containsAll([Modality.text, Modality.audio, Modality.image]),
+        );
+        expect(audioChat.outputModalities, contains(Modality.text));
+
+        final whisper = models.singleWhere(
+          (model) => model.providerModelId == 'whisper-large-v3-turbo',
+        );
+        expect(whisper.name, 'Whisper Large v3 Turbo');
+        expect(whisper.inputModalities, contains(Modality.audio));
+        expect(whisper.outputModalities, contains(Modality.text));
+        expect(whisper.description, contains('transcription'));
+        expect(whisper.description, contains('translation'));
+
+        final namedThinkingModel = models.singleWhere(
+          (model) => model.providerModelId == 'qwen3-next-80b-a3b-thinking',
+        );
+        expect(namedThinkingModel.isReasoningModel, isTrue);
+      },
+    );
+
+    test(
+      'listModels falls back to plain /models when include_meta fails',
+      () async {
+        var call = 0;
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((request) async {
+            call++;
+            if (call == 1) {
+              expect(
+                request.url.queryParameters['include_meta'],
+                equals('true'),
+              );
+              return http.Response(
+                jsonEncode({
+                  'error': {'message': 'include_meta is not supported'},
+                }),
+                400,
+              );
+            }
+
+            expect(
+              request.url.queryParameters,
+              isNot(contains('include_meta')),
+            );
+            return http.Response(
+              jsonEncode({
+                'data': ['deepseek-v4-pro'],
+              }),
+              200,
+            );
+          }),
+        );
+        addTearDown(repository.close);
+
+        final models = await repository.listModels(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
+
+        expect(call, 2);
+        expect(models, hasLength(1));
+        expect(models.single.providerModelId, 'deepseek-v4-pro');
+        expect(models.single.isReasoningModel, isTrue);
+      },
+    );
+
     test('generateText streams text and sends prompt request body', () async {
       final probe = _ChatStreamProbe(content: 'melious response');
       final repository = MeliousInferenceRepository(
@@ -360,7 +596,7 @@ void main() {
           isA<MeliousInferenceException>().having(
             (e) => e.message,
             'message',
-            'Melious model list response was not valid JSON',
+            contains('Melious model list response was not valid JSON'),
           ),
         ),
       );
@@ -384,25 +620,29 @@ void main() {
             isA<MeliousInferenceException>().having(
               (e) => e.message,
               'message',
-              message,
+              contains(message),
             ),
           ),
         );
       }
 
       await expectMessage(
-        payload: const [],
-        message: 'Melious model list response must be a JSON object',
+        payload: 'not-a-list',
+        message:
+            'Melious model list response must be a JSON object with '
+            'data[] or a JSON array',
       );
       await expectMessage(
         payload: const <String, Object?>{},
-        message: 'Melious model list response is missing the data array',
+        message:
+            'Melious model list response must be a JSON object with '
+            'data[] or a JSON array',
       );
       await expectMessage(
         payload: const {
-          'data': ['not-a-model-object'],
+          'data': [42],
         },
-        message: 'Melious model entry must be a JSON object',
+        message: 'Melious model entry must be a JSON object or string id',
       );
       await expectMessage(
         payload: const {
@@ -525,7 +765,7 @@ void main() {
             isA<MeliousInferenceException>().having(
               (e) => e.message,
               'message',
-              'top-level Melious failure',
+              contains('top-level Melious failure'),
             ),
           ),
         );
@@ -533,8 +773,12 @@ void main() {
     );
 
     test('listModels wraps timeout and transport failures', () async {
+      var timeoutCalls = 0;
       final timeoutRepository = MeliousInferenceRepository(
-        httpClient: MockClient((_) => Completer<http.Response>().future),
+        httpClient: MockClient((_) {
+          timeoutCalls++;
+          return Completer<http.Response>().future;
+        }),
       );
       addTearDown(timeoutRepository.close);
 
@@ -548,13 +792,16 @@ void main() {
           isA<MeliousInferenceException>().having(
             (e) => e.message,
             'message',
-            'Melious model list request timed out',
+            contains('Melious model list request timed out'),
           ),
         ),
       );
+      expect(timeoutCalls, 1);
 
+      var failingCalls = 0;
       final failingRepository = MeliousInferenceRepository(
         httpClient: MockClient((_) async {
+          failingCalls++;
           throw Exception('socket closed');
         }),
       );
@@ -570,6 +817,7 @@ void main() {
           ),
         ),
       );
+      expect(failingCalls, 1);
     });
 
     test('listModels clips raw non-JSON error bodies', () async {
@@ -585,8 +833,21 @@ void main() {
         throwsA(
           isA<MeliousInferenceException>()
               .having((e) => e.statusCode, 'statusCode', 500)
-              .having((e) => e.message.length, 'message length', 243)
-              .having((e) => e.message, 'message suffix', endsWith('...')),
+              .having(
+                (e) => e.message,
+                'message prefix',
+                startsWith('include_meta failed:'),
+              )
+              .having(
+                (e) => e.message,
+                'raw body is clipped',
+                contains('${'x' * 240}...'),
+              )
+              .having(
+                (e) => e.message,
+                'plain fallback failure',
+                contains('plain /models failed:'),
+              ),
         ),
       );
     });
@@ -1016,6 +1277,89 @@ void main() {
           'qwen/qwen3-vl-plus',
         ),
         isFalse,
+      );
+    });
+
+    test(
+      'listModels falls back to top-level capabilities and metadata key',
+      () async {
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((_) async {
+            return http.Response(
+              jsonEncode({
+                'data': [
+                  {
+                    'id': 'custom-metadata-model',
+                    'owned_by': 'custom',
+                    // Top-level capabilities with no capabilities inside
+                    // `metadata` forces the capability fallback path.
+                    'capabilities': {
+                      'function_calling': true,
+                      'reasoning': true,
+                    },
+                    // `metadata` (not `_meta`) forces the alternate metadata key
+                    // in both the model mapping and the description builder.
+                    'metadata': {
+                      'type': 'chat',
+                      'input_modalities': ['text'],
+                      'output_modalities': ['text'],
+                      'context_length': 8192,
+                    },
+                  },
+                ],
+              }),
+              200,
+            );
+          }),
+        );
+        addTearDown(repository.close);
+
+        final model = (await repository.listModels(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        )).single;
+
+        expect(model.providerModelId, 'custom-metadata-model');
+        expect(model.supportsFunctionCalling, isTrue);
+        expect(model.isReasoningModel, isTrue);
+        expect(model.description, contains('Context: 8192 tokens'));
+      },
+    );
+
+    test('listModels logs rich, clipped summaries for malformed rows', () async {
+      // A row that throws (no string id) but still carries `_meta.capabilities`
+      // and a >800-character JSON body exercises the metaKeys/capabilityKeys
+      // branches and the clip path of the catalog-row error summary logger.
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'data': [
+                {
+                  'object': 'model',
+                  '_meta': {
+                    'capabilities': {
+                      'padding': 'x' * 900,
+                    },
+                  },
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+      addTearDown(repository.close);
+
+      await expectLater(
+        repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
+        throwsA(
+          isA<MeliousInferenceException>().having(
+            (e) => e.message,
+            'message',
+            contains('Melious model entry is missing a string id'),
+          ),
+        ),
       );
     });
 
