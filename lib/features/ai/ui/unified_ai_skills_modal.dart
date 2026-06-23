@@ -13,7 +13,7 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
 import 'package:lotti/features/ai/ui/widgets/gemini_thinking_mode_picker_modal.dart';
-import 'package:lotti/features/ai/ui/widgets/inference_model_picker_modal.dart';
+import 'package:lotti/features/ai/ui/widgets/inference_provider_model_picker_modal.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -206,9 +206,15 @@ class UnifiedAiModal {
     );
   }
 
-  /// Handles image generation skills by opening the cover art skill modal
-  /// for reference image selection, then triggering generation in the
-  /// background.
+  /// Handles image generation skills by letting the user pick which image
+  /// model runs (provider-first, like the other skills), then opening the
+  /// cover art skill modal for reference image selection and triggering
+  /// generation in the background.
+  ///
+  /// The picker is filtered to models that *output* images. When fewer than
+  /// two are configured there is no choice to offer, so generation falls
+  /// straight through to the profile's image-generation slot (preserving the
+  /// prior behaviour, including its in-modal error when none is set).
   static Future<void> _handleImageGenerationSkill({
     required BuildContext context,
     required JournalEntity journalEntity,
@@ -231,6 +237,48 @@ class UnifiedAiModal {
       return;
     }
 
+    final repo = ref.read(aiConfigRepositoryProvider);
+    final imageModels = (await repo.getConfigsByType(AiConfigType.model))
+        .whereType<AiConfigModel>()
+        .where((model) => model.outputModalities.contains(Modality.image))
+        .toList();
+
+    String? overrideModelId;
+    if (imageModels.isNotEmpty) {
+      final resolver = ref.read(profileAutomationResolverProvider);
+      final resolvedProfile = await resolver.resolveForTask(linkedTask.id);
+      final providerConfigs = await repo.getConfigsByType(
+        AiConfigType.inferenceProvider,
+      );
+
+      final defaultModelId = resolvedProfile == null
+          ? null
+          : _matchDefaultModelId(
+              models: imageModels,
+              configId: resolvedProfile.imageGenerationModel?.id,
+              providerModelId: resolvedProfile.imageGenerationModelId,
+              providerId: resolvedProfile.imageGenerationProvider?.id,
+            );
+
+      if (!context.mounted) return;
+      final messages = context.messages;
+      final picked = await InferenceProviderModelPickerModal.show(
+        context: context,
+        defaultModelId: defaultModelId,
+        models: imageModels,
+        providers: providerConfigs
+            .whereType<AiConfigInferenceProvider>()
+            .toList(),
+        title: messages.aiImageGenerationPickerTitle,
+        defaultBadgeLabel: messages.designSystemDefaultLabel,
+      );
+
+      // A null result is a dismissal only when a choice was actually shown
+      // (2+ models). With one model the picker resolves to it without a modal.
+      if (picked == null && imageModels.length > 1) return;
+      overrideModelId = picked == defaultModelId ? null : picked;
+    }
+
     if (!context.mounted) return;
 
     await CoverArtSkillModal.show(
@@ -238,6 +286,7 @@ class UnifiedAiModal {
       entityId: journalEntity.id,
       skillId: skill.id,
       linkedTaskId: linkedTask.id,
+      overrideModelId: overrideModelId,
       ref: ref,
     );
   }
@@ -299,35 +348,20 @@ class UnifiedAiModal {
         provider.id: provider,
     };
 
-    // Match the profile's resolved AiConfigModel.id exactly, then fall
-    // back to translating the wire-level providerModelId for slots that
-    // resolved without a model row. A missing match (deleted model,
-    // empty slot) leaves defaultModelId null; the picker renders the
-    // list without a default row.
+    // Match the profile's resolved slot to one of the offered models so the
+    // picker can mark it default (exact AiConfigModel.id first, wire-level
+    // providerModelId+providerId as a legacy fallback). A missing match
+    // (deleted model, empty slot) leaves defaultModelId null; the picker
+    // renders the list without a default row.
     String? defaultModelId;
     if (resolvedProfile != null) {
       final slot = config.slotAccessor(resolvedProfile);
-      final configId = slot.configId;
-      if (configId != null) {
-        defaultModelId = modalityCapable
-            .where((m) => m.id == configId)
-            .firstOrNull
-            ?.id;
-      }
-      final providerModelId = slot.modelId;
-      final providerId = slot.providerId;
-      if (defaultModelId == null &&
-          providerModelId != null &&
-          providerId != null) {
-        defaultModelId = modalityCapable
-            .where(
-              (m) =>
-                  m.providerModelId == providerModelId &&
-                  m.inferenceProviderId == providerId,
-            )
-            .firstOrNull
-            ?.id;
-      }
+      defaultModelId = _matchDefaultModelId(
+        models: modalityCapable,
+        configId: slot.configId,
+        providerModelId: slot.modelId,
+        providerId: slot.providerId,
+      );
     }
 
     if (!context.mounted) return;
@@ -335,10 +369,13 @@ class UnifiedAiModal {
     // picker — the surrounding widget may be disposed while the
     // picker is open, after which `context.messages` would throw.
     final messages = context.messages;
-    final picked = await InferenceModelPickerModal.show(
+    final picked = await InferenceProviderModelPickerModal.show(
       context: context,
       defaultModelId: defaultModelId,
       models: modalityCapable,
+      providers: providerConfigs
+          .whereType<AiConfigInferenceProvider>()
+          .toList(),
       title: config.titleSelector(messages),
       defaultBadgeLabel: config.defaultBadgeSelector(messages),
     );
@@ -386,6 +423,33 @@ class UnifiedAiModal {
         )).future,
       ),
     );
+  }
+
+  /// Resolves which of [models] the profile slot points at, so the picker can
+  /// mark it as the default. Matches the resolved `AiConfigModel.id` exactly
+  /// first, then falls back to the wire-level `providerModelId` + `providerId`
+  /// pair for slots that resolved without a model row. Returns `null` when
+  /// nothing matches (deleted model or empty slot).
+  static String? _matchDefaultModelId({
+    required List<AiConfigModel> models,
+    required String? configId,
+    required String? providerModelId,
+    required String? providerId,
+  }) {
+    if (configId != null) {
+      final byId = models.firstWhereOrNull((m) => m.id == configId);
+      if (byId != null) return byId.id;
+    }
+    if (providerModelId != null && providerId != null) {
+      return models
+          .firstWhereOrNull(
+            (m) =>
+                m.providerModelId == providerModelId &&
+                m.inferenceProviderId == providerId,
+          )
+          ?.id;
+    }
+    return null;
   }
 
   /// Resolves the linked task for an entity.

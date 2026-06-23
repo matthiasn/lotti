@@ -1286,6 +1286,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImageAnalysisPickerTitle => 'Vyber model pro analýzu obrázků';
 
   @override
+  String get aiImageGenerationPickerTitle =>
+      'Vyber model pro generování obrázků';
+
+  @override
   String get aiInferenceErrorAuthenticationTitle => 'Autentizace selhala';
 
   @override
@@ -1372,6 +1376,23 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiModelInstallChoiceTitle => 'Vybrat model MLX Audio';
+
+  @override
+  String get aiModelPickerByProviderLabel => 'Vyber poskytovatele';
+
+  @override
+  String get aiModelPickerCurrentDefaultLabel => 'Aktuální výchozí';
+
+  @override
+  String aiModelPickerProviderModelCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modely',
+      one: '1 model',
+    );
+    return '$_temp0';
+  }
 
   @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {

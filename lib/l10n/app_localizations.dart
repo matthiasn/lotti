@@ -2317,6 +2317,12 @@ abstract class AppLocalizations {
   /// **'Pick an image analysis model'**
   String get aiImageAnalysisPickerTitle;
 
+  /// No description provided for @aiImageGenerationPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick an image generation model'**
+  String get aiImageGenerationPickerTitle;
+
   /// No description provided for @aiInferenceErrorAuthenticationTitle.
   ///
   /// In en, this message translates to:
@@ -2478,6 +2484,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose MLX Audio model'**
   String get aiModelInstallChoiceTitle;
+
+  /// No description provided for @aiModelPickerByProviderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a provider'**
+  String get aiModelPickerByProviderLabel;
+
+  /// No description provided for @aiModelPickerCurrentDefaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current default'**
+  String get aiModelPickerCurrentDefaultLabel;
+
+  /// No description provided for @aiModelPickerProviderModelCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 model} other{{count} models}}'**
+  String aiModelPickerProviderModelCount(int count);
 
   /// No description provided for @aiOllamaModelInstalledSuccessfully.
   ///

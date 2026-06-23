@@ -143,6 +143,23 @@ function personaPrompt(p) {
 }
 
 // ---------------------------------------------------------------------------
+// Loud guard. Some harnesses do NOT thread the Workflow tool's `args` into the
+// script's global `args` when invoked via `scriptPath` — in that case SHOTS is
+// empty and every agent scores ~1 with "no screenshots to review". If you see
+// this warning, do NOT trust the scores: either pass args a way your harness
+// threads, or (the proven pattern, matching every reference script) COPY this
+// file to a scratch path and inline SHOTS / SURFACE / EXPERTS / PERSONAS as
+// top-level constants instead of reading them from `args`.
+log('config — surface="' + SURFACE.slice(0, 70) + '" shots=' + SHOTS.length +
+    ' files=' + FILES.length + ' experts=' + EXPERTS.length +
+    ' personas=' + (INCLUDE_PERSONAS ? PERSONAS.length : 0) + ' round=' + ROUND)
+if (!SHOTS.length) {
+  log('⚠️  0 SCREENSHOTS CONFIGURED — agents will have nothing to Read and will ' +
+      'score ~1. args did not thread (scriptPath harness limitation). Inline SHOTS ' +
+      'in a copy of this script, then re-run. Aborting before burning a full panel.')
+  return { aborted: true, reason: 'no screenshots configured', round: ROUND }
+}
+
 phase('Experts')
 log('Round ' + ROUND + ': ' + EXPERTS.length + ' design experts rating ' + SHOTS.length + ' screenshots...')
 const expertResults = (
