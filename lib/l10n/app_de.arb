@@ -522,6 +522,7 @@
   },
   "aiCardMenuActionDelete": "Löschen",
   "aiCardMenuActionEdit": "Bearbeiten",
+  "aiCardMenuTooltip": "Weitere Aktionen",
   "aiCardOpenAgentInternals": "Agent-Internes öffnen",
   "aiCardProposalConfirmed": "Bestätigt",
   "aiCardProposalDismissed": "Abgelehnt",
@@ -647,7 +648,6 @@
   "aiProviderAnthropicName": "Anthropic Claude",
   "aiProviderCardDraftBadge": "ENTWURF",
   "aiProviderCardFixButton": "Beheben",
-  "aiProviderCardMenuTooltip": "Weitere Aktionen",
   "aiProviderCardModelCount": "{count, plural, =1{1 Modell} other{{count} Modelle}}",
   "@aiProviderCardModelCount": {
     "description": "Right-side meta on a connected provider card when no last-used data is available.",

@@ -522,6 +522,7 @@
   },
   "aiCardMenuActionDelete": "Ștergere",
   "aiCardMenuActionEdit": "Editare",
+  "aiCardMenuTooltip": "Mai multe acțiuni",
   "aiCardOpenAgentInternals": "Deschideți componentele interne ale agentului",
   "aiCardProposalConfirmed": "Confirmată",
   "aiCardProposalDismissed": "Respinsă",
@@ -647,7 +648,6 @@
   "aiProviderAnthropicName": "Anthropic Claude",
   "aiProviderCardDraftBadge": "SCHIȚĂ",
   "aiProviderCardFixButton": "Remediați",
-  "aiProviderCardMenuTooltip": "Mai multe acțiuni",
   "aiProviderCardModelCount": "{count, plural, =1{1 model} few{{count} modele} other{{count} de modele}}",
   "@aiProviderCardModelCount": {
     "description": "Right-side meta on a connected provider card when no last-used data is available.",

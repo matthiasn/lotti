@@ -137,7 +137,7 @@ class LanguageSelectionModalContent extends ConsumerWidget {
   }) {
     return DesignSystemSearch(
       controller: controller,
-      hintText: '',
+      hintText: context.messages.searchHint,
       onChanged: (value) => queryNotifier.value = value,
       onClear: () => queryNotifier.value = '',
     );

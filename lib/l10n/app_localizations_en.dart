@@ -1155,6 +1155,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiCardMenuActionEdit => 'Edit';
 
   @override
+  String get aiCardMenuTooltip => 'More actions';
+
+  @override
   String get aiCardOpenAgentInternals => 'Open agent internals';
 
   @override
@@ -1419,9 +1422,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiProviderCardFixButton => 'Fix';
-
-  @override
-  String get aiProviderCardMenuTooltip => 'More actions';
 
   @override
   String aiProviderCardModelCount(int count) {

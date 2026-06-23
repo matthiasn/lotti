@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../test_helper.dart';
 
@@ -170,8 +171,11 @@ void main() {
       await pumpHarness(tester);
 
       final textField = tester.widget<TextField>(find.byType(TextField));
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(TextField)),
+      )!;
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(textField.decoration?.hintText, isEmpty);
+      expect(textField.decoration?.hintText, l10n.searchHint);
     });
 
     testWidgets('lists languages alphabetically by display name', (

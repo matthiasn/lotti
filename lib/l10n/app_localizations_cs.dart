@@ -1165,6 +1165,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCardMenuActionEdit => 'Upravit';
 
   @override
+  String get aiCardMenuTooltip => 'Další akce';
+
+  @override
   String get aiCardOpenAgentInternals => 'Otevřít interní informace agenta';
 
   @override
@@ -1433,9 +1436,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiProviderCardFixButton => 'Opravit';
-
-  @override
-  String get aiProviderCardMenuTooltip => 'Další akce';
 
   @override
   String aiProviderCardModelCount(int count) {
