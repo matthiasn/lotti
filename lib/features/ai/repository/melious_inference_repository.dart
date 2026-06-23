@@ -802,7 +802,10 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     final shape = switch (decoded) {
       final Map<String, dynamic> map => 'object keys=${map.keys.join(',')}',
       final List<dynamic> _ => 'array',
-      _ => decoded.runtimeType.toString(),
+      // Unreachable: callers only invoke this after the catalog shape switch
+      // has already narrowed `decoded` to a map-with-data or a list. Required
+      // for switch exhaustiveness over Object?.
+      _ => decoded.runtimeType.toString(), // coverage:ignore-line
     };
     developer.log(
       'Melious model catalog payload from $uri: shape=$shape, '

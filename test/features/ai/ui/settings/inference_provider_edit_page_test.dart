@@ -14,6 +14,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart'
     show MeliousInferenceException;
+import 'package:lotti/features/ai/repository/omlx_inference_repository.dart'
+    show OmlxInferenceException;
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
@@ -2291,6 +2293,194 @@ void main() {
         expect(find.text('Available Models'), findsNothing);
       },
     );
+
+    // Renders AvailableModelsSection directly so the dynamic catalog can be
+    // driven into specific error/data states via the fake repositories.
+    Future<AppLocalizations> pumpDynamicCatalog(
+      WidgetTester tester, {
+      required InferenceProviderType providerType,
+      required Future<List<KnownModel>> Function() result,
+    }) async {
+      await _setTestSurface(tester, height: 1200);
+
+      final provider = AiConfig.inferenceProvider(
+        id: 'dynamic-provider-id',
+        name: 'Dynamic Provider',
+        baseUrl: 'https://api.example/v1',
+        apiKey: 'sk-dynamic-test',
+        createdAt: DateTime(2024, 3, 15),
+        inferenceProviderType: providerType,
+      );
+
+      when(
+        () => mockRepository.getConfigById('dynamic-provider-id'),
+      ).thenAnswer((_) async => provider);
+      when(
+        () => mockRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value(<AiConfig>[]));
+
+      // Override both repositories so the override list keeps a constant shape
+      // across re-pumps within a single test; only the one matching
+      // [providerType] is exercised by the dynamic catalog provider.
+      final isOmlx = providerType == InferenceProviderType.omlx;
+      Future<List<KnownModel>> empty() async => const <KnownModel>[];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+            meliousInferenceRepositoryProvider.overrideWithValue(
+              FakeMeliousInferenceRepository([
+                if (isOmlx) empty else result,
+              ]),
+            ),
+            omlxInferenceRepositoryProvider.overrideWithValue(
+              FakeOmlxInferenceRepository([
+                if (isOmlx) result else empty,
+              ]),
+            ),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(
+              useMaterial3: true,
+              extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+            ),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: AvailableModelsSection(
+                providerId: 'dynamic-provider-id',
+                providerType: providerType,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      return AppLocalizations.of(
+        tester.element(find.byType(AvailableModelsSection)),
+      )!;
+    }
+
+    testWidgets('dynamic catalog renders the detail for each error shape', (
+      WidgetTester tester,
+    ) async {
+      final cases =
+          <
+            ({
+              InferenceProviderType type,
+              Future<List<KnownModel>> Function() result,
+              String expected,
+            })
+          >[
+            (
+              type: InferenceProviderType.melious,
+              result: () async => throw const MeliousInferenceException(
+                'Rate limited',
+                statusCode: 429,
+              ),
+              expected: 'Rate limited (HTTP 429)',
+            ),
+            (
+              type: InferenceProviderType.omlx,
+              result: () async => throw const OmlxInferenceException(
+                'oMLX is down',
+                statusCode: 503,
+              ),
+              expected: 'oMLX is down (HTTP 503)',
+            ),
+            (
+              type: InferenceProviderType.melious,
+              result: () async => throw ArgumentError('bad base url'),
+              expected: 'bad base url',
+            ),
+            (
+              type: InferenceProviderType.melious,
+              result: () async => throw StateError('unexpected state'),
+              expected: 'unexpected state',
+            ),
+          ];
+
+      for (final testCase in cases) {
+        final strings = await pumpDynamicCatalog(
+          tester,
+          providerType: testCase.type,
+          result: testCase.result,
+        );
+
+        expect(
+          find.textContaining(strings.aiConfigFailedToLoadModelsGeneric),
+          findsOneWidget,
+        );
+        expect(find.textContaining(testCase.expected), findsOneWidget);
+      }
+    });
+
+    testWidgets('dynamic catalog clips very long error details', (
+      WidgetTester tester,
+    ) async {
+      await pumpDynamicCatalog(
+        tester,
+        providerType: InferenceProviderType.melious,
+        result: () async => throw MeliousInferenceException('x' * 400),
+      );
+
+      expect(find.textContaining('${'x' * 280}...'), findsOneWidget);
+      expect(find.textContaining('x' * 281), findsNothing);
+    });
+
+    testWidgets('clearing the dynamic catalog search restores all models', (
+      WidgetTester tester,
+    ) async {
+      await pumpDynamicCatalog(
+        tester,
+        providerType: InferenceProviderType.melious,
+        result: () async => const [
+          KnownModel(
+            providerModelId: 'alpha-model',
+            name: 'Alpha Model',
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+            description: 'First model.',
+          ),
+          KnownModel(
+            providerModelId: 'beta-model',
+            name: 'Beta Model',
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+            description: 'Second model.',
+          ),
+        ],
+      );
+
+      expect(find.text('Alpha Model'), findsOneWidget);
+      expect(find.text('Beta Model'), findsOneWidget);
+
+      final searchField = find.descendant(
+        of: find.byKey(const ValueKey('dynamic-model-catalog-search')),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(searchField, 'alpha');
+      await tester.pump();
+
+      expect(find.text('Alpha Model'), findsOneWidget);
+      expect(find.text('Beta Model'), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.clear_rounded));
+      await tester.pump();
+
+      expect(find.text('Alpha Model'), findsOneWidget);
+      expect(find.text('Beta Model'), findsOneWidget);
+    });
   });
 
   group('AI Setup Wizard Section', () {

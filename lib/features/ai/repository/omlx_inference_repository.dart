@@ -111,14 +111,22 @@ class OmlxInferenceRepository {
     }
 
     final meta = _asMap(model['_meta']) ?? _asMap(model['metadata']);
-    final capabilities =
-        _asMap(meta?['capabilities']) ?? _asMap(model['capabilities']);
-    final inputModalities = _modalitiesFrom(
-      meta?['input_modalities'] ?? model['input_modalities'],
-    );
-    final outputModalities = _modalitiesFrom(
-      meta?['output_modalities'] ?? model['output_modalities'],
-    );
+    // Merge top-level and metadata capability/modality fields rather than
+    // letting one source shadow the other: a partially populated metadata
+    // object would otherwise drop provider-supplied flags. Metadata wins on
+    // key collisions for capabilities.
+    final capabilities = <String, dynamic>{
+      ..._asMap(model['capabilities']) ?? const <String, dynamic>{},
+      ..._asMap(meta?['capabilities']) ?? const <String, dynamic>{},
+    };
+    final inputModalities = _modalitiesFrom(model['input_modalities']);
+    for (final modality in _modalitiesFrom(meta?['input_modalities'])) {
+      _addUnique(inputModalities, modality);
+    }
+    final outputModalities = _modalitiesFrom(model['output_modalities']);
+    for (final modality in _modalitiesFrom(meta?['output_modalities'])) {
+      _addUnique(outputModalities, modality);
+    }
 
     _applyInferredModalities(
       providerModelId: providerModelId,
@@ -127,9 +135,9 @@ class OmlxInferenceRepository {
       outputModalities: outputModalities,
     );
 
-    final supportsFunctionCalling = _truthy(capabilities?['function_calling']);
+    final supportsFunctionCalling = _truthy(capabilities['function_calling']);
     final isReasoningModel =
-        _truthy(capabilities?['reasoning']) ||
+        _truthy(capabilities['reasoning']) ||
         _looksLikeReasoningModel(providerModelId);
 
     return KnownModel(
@@ -286,11 +294,18 @@ class OmlxInferenceRepository {
   }
 
   static Uri _buildEndpointUri(String baseUrl, String endpointPath) {
-    final baseUri = Uri.parse(baseUrl.trim());
-    final basePath = baseUri.path.replaceAll(RegExp(r'/+$'), '');
-    final normalizedEndpoint = endpointPath.replaceAll(RegExp('^/+'), '');
+    try {
+      final baseUri = Uri.parse(baseUrl.trim());
+      final basePath = baseUri.path.replaceAll(RegExp(r'/+$'), '');
+      final normalizedEndpoint = endpointPath.replaceAll(RegExp('^/+'), '');
 
-    return baseUri.replace(path: '$basePath/$normalizedEndpoint');
+      return baseUri.replace(path: '$basePath/$normalizedEndpoint');
+    } on FormatException catch (e) {
+      throw OmlxInferenceException(
+        'Invalid base URL: $baseUrl',
+        originalError: e,
+      );
+    }
   }
 
   static String _extractErrorMessage(String body, int statusCode) {

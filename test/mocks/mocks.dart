@@ -948,7 +948,8 @@ class MockTaskToolDispatcher extends Mock implements TaskToolDispatcher {}
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class FakeMeliousInferenceRepository extends MeliousInferenceRepository {
-  FakeMeliousInferenceRepository(this._results);
+  FakeMeliousInferenceRepository(this._results)
+    : assert(_results.isNotEmpty, 'Provide at least one result factory');
 
   final List<Future<List<KnownModel>> Function()> _results;
   final calls = <({String baseUrl, String apiKey})>[];
@@ -972,7 +973,8 @@ class FakeMeliousInferenceRepository extends MeliousInferenceRepository {
 }
 
 class FakeOmlxInferenceRepository extends OmlxInferenceRepository {
-  FakeOmlxInferenceRepository(this._results);
+  FakeOmlxInferenceRepository(this._results)
+    : assert(_results.isNotEmpty, 'Provide at least one result factory');
 
   final List<Future<List<KnownModel>> Function()> _results;
   final calls = <({String baseUrl, String apiKey})>[];

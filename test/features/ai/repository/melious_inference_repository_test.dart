@@ -1280,6 +1280,89 @@ void main() {
       );
     });
 
+    test(
+      'listModels falls back to top-level capabilities and metadata key',
+      () async {
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((_) async {
+            return http.Response(
+              jsonEncode({
+                'data': [
+                  {
+                    'id': 'custom-metadata-model',
+                    'owned_by': 'custom',
+                    // Top-level capabilities with no capabilities inside
+                    // `metadata` forces the capability fallback path.
+                    'capabilities': {
+                      'function_calling': true,
+                      'reasoning': true,
+                    },
+                    // `metadata` (not `_meta`) forces the alternate metadata key
+                    // in both the model mapping and the description builder.
+                    'metadata': {
+                      'type': 'chat',
+                      'input_modalities': ['text'],
+                      'output_modalities': ['text'],
+                      'context_length': 8192,
+                    },
+                  },
+                ],
+              }),
+              200,
+            );
+          }),
+        );
+        addTearDown(repository.close);
+
+        final model = (await repository.listModels(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        )).single;
+
+        expect(model.providerModelId, 'custom-metadata-model');
+        expect(model.supportsFunctionCalling, isTrue);
+        expect(model.isReasoningModel, isTrue);
+        expect(model.description, contains('Context: 8192 tokens'));
+      },
+    );
+
+    test('listModels logs rich, clipped summaries for malformed rows', () async {
+      // A row that throws (no string id) but still carries `_meta.capabilities`
+      // and a >800-character JSON body exercises the metaKeys/capabilityKeys
+      // branches and the clip path of the catalog-row error summary logger.
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'data': [
+                {
+                  'object': 'model',
+                  '_meta': {
+                    'capabilities': {
+                      'padding': 'x' * 900,
+                    },
+                  },
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+      addTearDown(repository.close);
+
+      await expectLater(
+        repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
+        throwsA(
+          isA<MeliousInferenceException>().having(
+            (e) => e.message,
+            'message',
+            contains('Melious model entry is missing a string id'),
+          ),
+        ),
+      );
+    });
+
     test('MeliousInferenceException includes status and cause in toString', () {
       expect(
         const MeliousInferenceException(

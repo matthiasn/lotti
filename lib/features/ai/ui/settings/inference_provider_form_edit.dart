@@ -263,6 +263,7 @@ class AvailableModelsSection extends ConsumerWidget {
                   return Padding(
                     padding: EdgeInsets.only(bottom: tokens.spacing.step4),
                     child: _KnownModelTile(
+                      key: ValueKey(knownModel.providerModelId),
                       knownModel: knownModel,
                       providerId: providerId,
                       isAdded: isAdded,
@@ -331,6 +332,7 @@ class _DynamicAvailableModelsSectionState
           description: messages.apiKeyAvailableModelsDescription,
           children: [
             allModelsAsync.when(
+              skipLoadingOnReload: true,
               data: (allModels) {
                 final existingModelIds = allModels
                     .whereType<AiConfigModel>()
@@ -339,6 +341,7 @@ class _DynamicAvailableModelsSectionState
                     .toSet();
 
                 return catalogAsync.when(
+                  skipLoadingOnReload: true,
                   data: (knownModels) {
                     if (knownModels.isEmpty) {
                       return Padding(
@@ -474,6 +477,7 @@ class _DynamicModelsColumn extends StatelessWidget {
           return Padding(
             padding: EdgeInsets.only(bottom: tokens.spacing.step4),
             child: _KnownModelTile(
+              key: ValueKey(knownModel.providerModelId),
               knownModel: knownModel,
               providerId: providerId,
               isAdded: isAdded,
@@ -510,6 +514,7 @@ class _DynamicModelsScrollableList extends StatelessWidget {
         itemBuilder: (context, index) {
           final knownModel = models[index];
           return _KnownModelTile(
+            key: ValueKey(knownModel.providerModelId),
             knownModel: knownModel,
             providerId: providerId,
             isAdded: existingModelIds.contains(knownModel.providerModelId),
@@ -616,6 +621,7 @@ class _KnownModelTile extends ConsumerStatefulWidget {
     required this.knownModel,
     required this.providerId,
     required this.isAdded,
+    super.key,
   });
 
   final KnownModel knownModel;
