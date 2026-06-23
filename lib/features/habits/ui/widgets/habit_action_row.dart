@@ -87,6 +87,11 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
   /// time [dispose] runs — even for a missing habit whose `build` returns early.
   late final AnimationController _celebrate;
 
+  /// The base habit-celebration timeline; the active habit variant's
+  /// `durationScale` stretches it (bubbles run slower) right before each play so
+  /// the burst doesn't read too fast.
+  static const _celebrateBaseDuration = Duration(milliseconds: 1400);
+
   /// True between an optimistic (tap-time) celebration and the matching
   /// data-driven `completedToday` flip, so the flip doesn't restart the
   /// animation that's already playing.
@@ -97,8 +102,18 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
     super.initState();
     _celebrate = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: _celebrateBaseDuration,
     );
+  }
+
+  /// Re-times [_celebrate] to the active habit variant before it plays, so a
+  /// slower-feeling variant (bubbles) gets a longer window everywhere it fires.
+  void _scaleCelebrateDuration() {
+    final scale = ref
+        .read(celebrationPreferencesProvider)
+        .habitsVariant
+        .durationScale;
+    _celebrate.duration = _celebrateBaseDuration * scale;
   }
 
   @override
@@ -109,11 +124,12 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
         // A tap on this row already started the timeline; the provider just
         // caught up. Don't restart it — let the in-flight animation continue.
         _optimisticCelebration = false;
-      } else if (ref.read(celebrationPreferencesProvider).habits) {
+      } else if (ref.read(celebrationPreferencesProvider).animateHabits) {
         // Completed from elsewhere (the dialog, a sync). Run the timeline; the
         // builders decide what it *looks* like — an opacity-only glow under
         // reduced motion, the full staged celebration otherwise. Skipped when
         // the user turned habit celebrations off.
+        _scaleCelebrateDuration();
         _celebrate.forward(from: 0);
       }
     }
@@ -177,13 +193,19 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
     // later"). Only a fresh success flips the row to done, so only that case
     // celebrates; [didUpdateWidget] won't double-fire it (see
     // [_optimisticCelebration]).
-    if (completionType == HabitCompletionType.success &&
-        !widget.completedToday &&
-        ref.read(celebrationPreferencesProvider).habits) {
+    final prefs = ref.read(celebrationPreferencesProvider);
+    final isSuccess = completionType == HabitCompletionType.success;
+    if (isSuccess && !widget.completedToday && prefs.animateHabits) {
       _optimisticCelebration = true;
+      _scaleCelebrateDuration();
       unawaited(_celebrate.forward(from: 0));
     }
-    await HapticFeedback.lightImpact();
+    // A success completion honours the independent haptics switch; the "missed"
+    // (fail) swipe always buzzes — that is corrective feedback, not a
+    // celebration. Fire-and-forget so it never delays the persist + recompute.
+    if (!isSuccess || prefs.haptics) {
+      unawaited(HapticFeedback.lightImpact());
+    }
     final now = DateTime.now();
     final saved = await getIt<PersistenceLogic>().createHabitCompletionEntry(
       data: HabitCompletionData(
@@ -243,11 +265,12 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
     final doneColor = habitCompletionColor(HabitCompletionType.success);
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    // The user's "celebrate habit completion" switch. Off → no glow/burst/
-    // streak pop (the glow/burst controller is simply never started above; the
-    // burst builder and the streak pop also check this so a late rebuild can't
-    // re-introduce them). The completion haptic is unaffected.
-    final celebrate = ref.watch(celebrationPreferencesProvider).habits;
+    // The master switch + the "celebrate habit completion" switch. Off → no
+    // glow/burst/streak pop (the glow/burst controller is simply never started
+    // above; the burst builder and the streak pop also check this so a late
+    // rebuild can't re-introduce them). The completion haptic is unaffected.
+    final prefs = ref.watch(celebrationPreferencesProvider);
+    final celebrate = prefs.animateHabits;
 
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
@@ -271,6 +294,10 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
                           key: const ValueKey('habit-completion-flash'),
                           value: v,
                           staticGlow: reduceMotion,
+                          // A warm variant blooms warm; the rest keep the accent.
+                          color: prefs.habitsVariant.isWarm
+                              ? starredGold
+                              : null,
                         );
                 },
               ),
@@ -347,6 +374,7 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
                             ? const SizedBox.shrink()
                             : CompletionBurst(
                                 progress: p,
+                                variant: prefs.habitsVariant,
                                 origin: Alignment(originX, 0),
                               );
                       },

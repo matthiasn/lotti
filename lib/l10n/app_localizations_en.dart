@@ -7341,6 +7341,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCelebrationsChecklistTitle => 'Checklist items';
 
   @override
+  String get settingsCelebrationsEnabledDescription =>
+      'Master switch for completion flourishes. Off hides every animation; haptics keep their own switch.';
+
+  @override
+  String get settingsCelebrationsEnabledTitle => 'Celebration animations';
+
+  @override
   String get settingsCelebrationsHabitsDescription =>
       'Glow and sparks when you complete a habit';
 
@@ -7348,11 +7355,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCelebrationsHabitsTitle => 'Habits';
 
   @override
+  String get settingsCelebrationsHapticsDescription =>
+      'A short buzz when you finish something — independent of the animation.';
+
+  @override
+  String get settingsCelebrationsHapticsTitle => 'Completion haptics';
+
+  @override
+  String get settingsCelebrationsPreviewChecklistItem => 'Check me';
+
+  @override
+  String get settingsCelebrationsPreviewDescription =>
+      'Tap a control to play your selected style.';
+
+  @override
+  String get settingsCelebrationsPreviewDone => 'Done';
+
+  @override
+  String get settingsCelebrationsPreviewHabit => 'Habit';
+
+  @override
+  String get settingsCelebrationsPreviewTitle => 'Try it';
+
+  @override
   String get settingsCelebrationsSectionDescription =>
       'Play a flourish when you finish something. Switching one off keeps the completion and its haptic — it just skips the animation.';
 
   @override
   String get settingsCelebrationsSectionTitle => 'Completion celebrations';
+
+  @override
+  String get settingsCelebrationsStyleDescription =>
+      'Tap a card to preview a celebration style and make it yours.';
+
+  @override
+  String get settingsCelebrationsStyleTitle => 'Style';
 
   @override
   String get settingsCelebrationsSubtitle => 'Completion celebrations';
@@ -7366,6 +7403,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCelebrationsTitle => 'Animations';
+
+  @override
+  String get settingsCelebrationsVariantBubbles => 'Bubbles';
+
+  @override
+  String get settingsCelebrationsVariantConfetti => 'Confetti';
+
+  @override
+  String get settingsCelebrationsVariantEmbers => 'Embers';
+
+  @override
+  String get settingsCelebrationsVariantFireworks => 'Fireworks';
+
+  @override
+  String get settingsCelebrationsVariantSparks => 'Sparks';
 
   @override
   String get settingsConflictsTitle => 'Sync Conflicts';

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_burst_painters.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -10,6 +12,10 @@ void main() {
     matching: find.byType(CustomPaint),
   );
 
+  CelebrationBurstPainter? painterOf(WidgetTester tester) =>
+      tester.widget<CustomPaint>(burstPaint()).painter
+          as CelebrationBurstPainter?;
+
   Future<void> pump(WidgetTester tester, double progress) => tester.pumpWidget(
     makeTestableWidget(CompletionBurst(progress: progress)),
   );
@@ -17,6 +23,33 @@ void main() {
   testWidgets('paints sparks only while mid-burst', (tester) async {
     await pump(tester, 0.5);
     expect(burstPaint(), findsOneWidget);
+  });
+
+  testWidgets('defaults to the sparks variant painter', (tester) async {
+    await pump(tester, 0.5);
+    expect(painterOf(tester), isA<SparksBurstPainter>());
+  });
+
+  testWidgets('builds the painter that matches the selected variant', (
+    tester,
+  ) async {
+    for (final entry in const {
+      CelebrationVariant.fireworks: FireworksBurstPainter,
+      CelebrationVariant.confetti: ConfettiBurstPainter,
+      CelebrationVariant.embers: EmbersBurstPainter,
+      CelebrationVariant.bubbles: BubblesBurstPainter,
+    }.entries) {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          CompletionBurst(progress: 0.5, variant: entry.key),
+        ),
+      );
+      expect(
+        painterOf(tester).runtimeType,
+        entry.value,
+        reason: entry.key.name,
+      );
+    }
   });
 
   testWidgets('paints nothing at the burst endpoints (rest / spent)', (

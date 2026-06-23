@@ -1,5 +1,10 @@
 const checklistActionIconFadeDuration = Duration(milliseconds: 300);
-const checklistCompletionAnimationDuration = Duration(milliseconds: 1000);
+
+/// How long a just-checked item lingers (showing its checkmark + strike-through)
+/// before the Open filter hides it. Held a touch past 1s so the completed state
+/// is legible — the checkbox doesn't vanish the instant it's ticked — without
+/// stalling the list.
+const checklistCompletionAnimationDuration = Duration(milliseconds: 1150);
 const checklistCompletionFadeDuration = Duration(milliseconds: 300);
 
 // Nano Banana design animations

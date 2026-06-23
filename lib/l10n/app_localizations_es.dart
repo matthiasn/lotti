@@ -7522,6 +7522,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsCelebrationsChecklistTitle => 'Elementos de lista';
 
   @override
+  String get settingsCelebrationsEnabledDescription =>
+      'Interruptor principal de los efectos de finalización. Al apagarlo se ocultan todas las animaciones; la vibración tiene su propio interruptor.';
+
+  @override
+  String get settingsCelebrationsEnabledTitle => 'Animaciones de finalización';
+
+  @override
   String get settingsCelebrationsHabitsDescription =>
       'Brillo y chispas cuando completas un hábito';
 
@@ -7529,11 +7536,41 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsCelebrationsHabitsTitle => 'Hábitos';
 
   @override
+  String get settingsCelebrationsHapticsDescription =>
+      'Una breve vibración cuando terminas algo, independiente de la animación.';
+
+  @override
+  String get settingsCelebrationsHapticsTitle => 'Vibración al completar';
+
+  @override
+  String get settingsCelebrationsPreviewChecklistItem => 'Márcame';
+
+  @override
+  String get settingsCelebrationsPreviewDescription =>
+      'Toca un control para reproducir tu estilo.';
+
+  @override
+  String get settingsCelebrationsPreviewDone => 'Hecho';
+
+  @override
+  String get settingsCelebrationsPreviewHabit => 'Hábito';
+
+  @override
+  String get settingsCelebrationsPreviewTitle => 'Pruébalo';
+
+  @override
   String get settingsCelebrationsSectionDescription =>
       'Una pequeña celebración cuando terminas algo. Si desactivas una, la finalización y su vibración se mantienen; solo se omite la animación.';
 
   @override
   String get settingsCelebrationsSectionTitle => 'Celebraciones al completar';
+
+  @override
+  String get settingsCelebrationsStyleDescription =>
+      'Toca una tarjeta para previsualizar un estilo y elegirlo.';
+
+  @override
+  String get settingsCelebrationsStyleTitle => 'Estilo';
 
   @override
   String get settingsCelebrationsSubtitle => 'Celebraciones al completar';
@@ -7547,6 +7584,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsCelebrationsTitle => 'Animaciones';
+
+  @override
+  String get settingsCelebrationsVariantBubbles => 'Burbujas';
+
+  @override
+  String get settingsCelebrationsVariantConfetti => 'Confeti';
+
+  @override
+  String get settingsCelebrationsVariantEmbers => 'Brasas';
+
+  @override
+  String get settingsCelebrationsVariantFireworks => 'Fuegos artificiales';
+
+  @override
+  String get settingsCelebrationsVariantSparks => 'Chispas';
 
   @override
   String get settingsConflictsTitle => 'Conflictos de Sincronización';

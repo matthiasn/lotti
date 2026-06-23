@@ -205,13 +205,18 @@ class _ChecklistCardState extends ConsumerState<ChecklistCard> {
     // The glow runs at a low intensity: the per-item bursts already carry the
     // celebration, so a full-strength bloom across the whole card read as a
     // blinding flash. This is a soft acknowledgement layered under the sparks.
+    final prefs = ref.watch(celebrationPreferencesProvider);
     return CompletionCelebration(
       completed: total > 0 && widget.completionRate >= 1.0,
       showBurst: false,
       glowIntensity: 0.1,
-      // The medium haptic still fires; the glow honours the checklist switch.
-      animate: ref.watch(celebrationPreferencesProvider).checklistItems,
-      onCelebrate: () => unawaited(HapticFeedback.mediumImpact()),
+      variant: prefs.checklistItemsVariant,
+      // The glow honours the master switch + the checklist switch; the medium
+      // haptic honours the independent haptics switch.
+      animate: prefs.animateChecklistItems,
+      onCelebrate: prefs.haptics
+          ? () => unawaited(HapticFeedback.mediumImpact())
+          : null,
       child: Material(
         color: Colors.transparent,
         child: Column(

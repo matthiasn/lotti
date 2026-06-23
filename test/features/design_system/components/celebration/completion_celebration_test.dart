@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
+import 'package:lotti/themes/colors.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -179,6 +181,54 @@ void main() {
     expect(find.byType(CompletionBurst), findsNothing);
 
     await tester.pumpAndSettle();
+  });
+
+  group('variant', () {
+    // Flips to complete and pumps into the window where both beats are live,
+    // returning once the overlay burst exists.
+    Future<void> celebrate(
+      WidgetTester tester, {
+      required CelebrationVariant variant,
+    }) async {
+      Widget tree({required bool completed}) => makeTestableWidget(
+        CompletionCelebration(
+          completed: completed,
+          variant: variant,
+          child: child(),
+        ),
+      );
+      await tester.pumpWidget(tree(completed: false));
+      await tester.pumpWidget(tree(completed: true));
+      await tester.pump(const Duration(milliseconds: 200)); // build overlay
+      await tester.pump(const Duration(milliseconds: 300)); // into the window
+    }
+
+    testWidgets('flows the selected variant through to the burst', (
+      tester,
+    ) async {
+      await celebrate(tester, variant: CelebrationVariant.confetti);
+      final burst = tester.widget<CompletionBurst>(
+        find.byType(CompletionBurst),
+      );
+      expect(burst.variant, CelebrationVariant.confetti);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a warm variant blooms a warm glow', (tester) async {
+      await celebrate(tester, variant: CelebrationVariant.embers);
+      final glow = tester.widget<CompletionGlow>(find.byType(CompletionGlow));
+      expect(glow.color, starredGold);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a cool variant leaves the glow on the default accent', (
+      tester,
+    ) async {
+      await celebrate(tester, variant: CelebrationVariant.fireworks);
+      final glow = tester.widget<CompletionGlow>(find.byType(CompletionGlow));
+      expect(glow.color, isNull);
+      await tester.pumpAndSettle();
+    });
   });
 
   group('spawnCompletionBurst', () {

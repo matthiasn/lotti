@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -1376,11 +1377,7 @@ void main() {
     ) async {
       final overrides = [
         celebrationPreferencesProvider.overrideWithValue(
-          const CelebrationPreferences(
-            habits: true,
-            checklistItems: true,
-            tasks: false,
-          ),
+          const CelebrationPreferences.allEnabled().copyWith(tasks: false),
         ),
       ];
       await _pumpDesktop(tester, header(open()), overrides: overrides);
@@ -1391,6 +1388,92 @@ void main() {
       expect(find.byType(CompletionBurst), findsNothing);
 
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('stays silent when the master switch is off (tasks on)', (
+      tester,
+    ) async {
+      final overrides = [
+        celebrationPreferencesProvider.overrideWithValue(
+          // Tasks still on, but the whole celebration system is off.
+          const CelebrationPreferences.allEnabled().copyWith(enabled: false),
+        ),
+      ];
+      await _pumpDesktop(tester, header(open()), overrides: overrides);
+      await _pumpDesktop(tester, header(done()), overrides: overrides);
+      await tester.pump(const Duration(milliseconds: 560));
+      expect(find.byType(CompletionGlow), findsNothing);
+      expect(find.byType(CompletionBurst), findsNothing);
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('flows the selected variant into the burst', (tester) async {
+      final overrides = [
+        celebrationPreferencesProvider.overrideWithValue(
+          const CelebrationPreferences.allEnabled().copyWith(
+            tasksVariant: CelebrationVariant.fireworks,
+          ),
+        ),
+      ];
+      await _pumpDesktop(tester, header(open()), overrides: overrides);
+      await _pumpDesktop(tester, header(done()), overrides: overrides);
+      await tester.pump(const Duration(milliseconds: 560));
+
+      final burst = tester.widget<CompletionBurst>(
+        find.byType(CompletionBurst),
+      );
+      expect(burst.variant, CelebrationVariant.fireworks);
+      await tester.pumpAndSettle();
+    });
+
+    group('completion haptic honours the independent haptics switch', () {
+      late List<String> haptics;
+
+      setUp(() => haptics = <String>[]);
+
+      void captureHaptics(WidgetTester tester) {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'HapticFeedback.vibrate') {
+              haptics.add(call.arguments as String? ?? '');
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+      }
+
+      testWidgets('fires the heavy impact when haptics are on', (tester) async {
+        captureHaptics(tester);
+        await _pumpDesktop(tester, header(open()));
+        await _pumpDesktop(tester, header(done()));
+        await tester.pump();
+
+        expect(haptics, contains('HapticFeedbackType.heavyImpact'));
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('stays silent when haptics are off', (tester) async {
+        captureHaptics(tester);
+        final overrides = [
+          celebrationPreferencesProvider.overrideWithValue(
+            const CelebrationPreferences.allEnabled().copyWith(haptics: false),
+          ),
+        ];
+        await _pumpDesktop(tester, header(open()), overrides: overrides);
+        await _pumpDesktop(tester, header(done()), overrides: overrides);
+        await tester.pump();
+
+        expect(haptics, isEmpty);
+        await tester.pumpAndSettle();
+      });
     });
   });
 }

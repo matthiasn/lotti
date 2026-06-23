@@ -49,4 +49,34 @@ void main() {
     expect(dim.blurRadius, full.blurRadius);
     expect(dim.spreadRadius, full.spreadRadius);
   });
+
+  testWidgets('a custom color tints the halo (warm variants)', (tester) async {
+    const warm = Color(0xFFFFD700);
+    await tester.pumpWidget(
+      makeTestableWidget(const CompletionGlow(value: 0, color: warm)),
+    );
+    final box = tester.widget<DecoratedBox>(
+      find.descendant(
+        of: find.byType(CompletionGlow),
+        matching: find.byType(DecoratedBox),
+      ),
+    );
+    final shadow = (box.decoration as BoxDecoration).boxShadow!.first;
+    // Same RGB as the requested tint; only the alpha is driven by `value`.
+    expect(shadow.color.r, warm.r);
+    expect(shadow.color.g, warm.g);
+    expect(shadow.color.b, warm.b);
+    expect(shadow.color.a, greaterThan(0));
+  });
+
+  testWidgets(
+    'falls back to a non-transparent accent tint when color is null',
+    (
+      tester,
+    ) async {
+      final shadow = await shadowAt(tester, 0);
+      // The default path still produces a visible (opaque-ish) halo.
+      expect(shadow.color.a, greaterThan(0));
+    },
+  );
 }

@@ -9,6 +9,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
@@ -705,10 +706,8 @@ void main() {
         tester,
         extraOverrides: [
           celebrationPreferencesProvider.overrideWithValue(
-            const CelebrationPreferences(
-              habits: true,
+            const CelebrationPreferences.allEnabled().copyWith(
               checklistItems: false,
-              tasks: true,
             ),
           ),
         ],
@@ -721,6 +720,94 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       // The item still checks (the controller was called) but no sparks fly.
       expect(find.byType(CompletionBurst), findsNothing);
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('no spark burst when the master switch is off (checklist on)', (
+      tester,
+    ) async {
+      await _pumpWithControllers(
+        tester,
+        extraOverrides: [
+          celebrationPreferencesProvider.overrideWithValue(
+            const CelebrationPreferences.allEnabled().copyWith(enabled: false),
+          ),
+        ],
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(Checkbox));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(CompletionBurst), findsNothing);
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('flows the selected variant into the spark burst', (
+      tester,
+    ) async {
+      await _pumpWithControllers(
+        tester,
+        extraOverrides: [
+          celebrationPreferencesProvider.overrideWithValue(
+            const CelebrationPreferences.allEnabled().copyWith(
+              checklistItemsVariant: CelebrationVariant.embers,
+            ),
+          ),
+        ],
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(Checkbox));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final burst = tester.widget<CompletionBurst>(
+        find.byType(CompletionBurst),
+      );
+      expect(burst.variant, CelebrationVariant.embers);
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('tap haptic honours the independent haptics switch', (
+      tester,
+    ) async {
+      final haptics = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            haptics.add(call.arguments as String? ?? '');
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      // Haptics off: visuals can still play, but the tap must not buzz.
+      await _pumpWithControllers(
+        tester,
+        extraOverrides: [
+          celebrationPreferencesProvider.overrideWithValue(
+            const CelebrationPreferences.allEnabled().copyWith(haptics: false),
+          ),
+        ],
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(Checkbox));
+      await tester.pump();
+      expect(haptics, isEmpty);
 
       await tester.pumpAndSettle();
     });
@@ -833,8 +920,8 @@ void main() {
           await tester.tap(find.byType(Checkbox));
           await tester.pump();
 
-          // After 1100ms the hold timer (1000ms) fires and hides the row.
-          await tester.pump(const Duration(milliseconds: 1100));
+          // After the hold timer (1150ms) fires, the row hides. Pump past it.
+          await tester.pump(const Duration(milliseconds: 1250));
 
           final crossFadeAfter = tester.widget<AnimatedCrossFade>(
             find.byType(AnimatedCrossFade),

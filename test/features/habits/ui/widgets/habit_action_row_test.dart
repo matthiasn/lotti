@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
@@ -357,11 +358,7 @@ void main() {
         tester,
         extraOverrides: [
           celebrationPreferencesProvider.overrideWithValue(
-            const CelebrationPreferences(
-              habits: false,
-              checklistItems: true,
-              tasks: true,
-            ),
+            const CelebrationPreferences.allEnabled().copyWith(habits: false),
           ),
         ],
       );
@@ -376,6 +373,115 @@ void main() {
       expect(find.byType(CompletionGlow), findsNothing);
 
       await tester.pump(const Duration(milliseconds: 1400)); // settle
+    });
+
+    testWidgets('no celebration when the master switch is off (habits on)', (
+      tester,
+    ) async {
+      await pumpRow(
+        tester,
+        extraOverrides: [
+          celebrationPreferencesProvider.overrideWithValue(
+            // Habit switch on, but the master switch is off.
+            const CelebrationPreferences.allEnabled().copyWith(enabled: false),
+          ),
+        ],
+      );
+
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 220));
+      expect(find.byType(CompletionBurst), findsNothing);
+      expect(find.byType(CompletionGlow), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 1400)); // settle
+    });
+
+    testWidgets('flows the selected variant into burst and glow', (
+      tester,
+    ) async {
+      await pumpRow(
+        tester,
+        extraOverrides: [
+          celebrationPreferencesProvider.overrideWithValue(
+            const CelebrationPreferences.allEnabled().copyWith(
+              habitsVariant: CelebrationVariant.embers,
+            ),
+          ),
+        ],
+      );
+
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 220));
+
+      final burst = tester.widget<CompletionBurst>(
+        find.byType(CompletionBurst),
+      );
+      expect(burst.variant, CelebrationVariant.embers);
+      // Embers is a warm variant, so the glow blooms warm (gold), not accent.
+      final glow = tester.widget<CompletionGlow>(find.byType(CompletionGlow));
+      expect(glow.color, starredGold);
+
+      await tester.pump(const Duration(milliseconds: 1400)); // settle
+    });
+
+    group('completion haptic honours the independent haptics switch', () {
+      late List<String> haptics;
+
+      void captureHaptics(WidgetTester tester) {
+        haptics = <String>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'HapticFeedback.vibrate') {
+              haptics.add(call.arguments as String? ?? '');
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+      }
+
+      testWidgets('a success completion buzzes when haptics are on', (
+        tester,
+      ) async {
+        captureHaptics(tester);
+        await pumpRow(tester);
+
+        await tester.tap(find.byIcon(Icons.add_rounded));
+        await tester.pump();
+        expect(haptics, contains('HapticFeedbackType.lightImpact'));
+
+        await tester.pump(const Duration(milliseconds: 1400));
+      });
+
+      testWidgets('a success completion stays silent when haptics are off', (
+        tester,
+      ) async {
+        captureHaptics(tester);
+        await pumpRow(
+          tester,
+          extraOverrides: [
+            celebrationPreferencesProvider.overrideWithValue(
+              const CelebrationPreferences.allEnabled().copyWith(
+                haptics: false,
+              ),
+            ),
+          ],
+        );
+
+        await tester.tap(find.byIcon(Icons.add_rounded));
+        await tester.pump();
+        expect(haptics, isEmpty);
+
+        await tester.pump(const Duration(milliseconds: 1400));
+      });
     });
 
     testWidgets('a failed persist clears the flag so a later one celebrates', (

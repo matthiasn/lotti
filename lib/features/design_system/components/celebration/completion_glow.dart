@@ -19,11 +19,16 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// that should be a soft acknowledgement rather than a celebration in its own
 /// right — e.g. a whole-section completion that already has per-item bursts, so
 /// a full-strength bloom would read as blinding.
+///
+/// [color] tints the halo; when null it uses the app accent. A warm celebration
+/// variant (embers) passes a warm tone so the bloom matches its particles
+/// instead of reading as the cool accent.
 class CompletionGlow extends StatelessWidget {
   const CompletionGlow({
     required this.value,
     this.staticGlow = false,
     this.intensity = 1.0,
+    this.color,
     super.key,
   });
 
@@ -36,6 +41,9 @@ class CompletionGlow extends StatelessWidget {
   /// Multiplier on the peak opacity (1.0 = full strength).
   final double intensity;
 
+  /// Halo tint; defaults to the app accent when null.
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -45,7 +53,9 @@ class CompletionGlow extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radii.m),
         boxShadow: [
           BoxShadow(
-            color: tokens.colors.interactive.enabled.withValues(alpha: alpha),
+            color: (color ?? tokens.colors.interactive.enabled).withValues(
+              alpha: alpha,
+            ),
             blurRadius: staticGlow ? 18 : 8 + 20 * value,
             spreadRadius: staticGlow ? 6 : 1 + 12 * value,
           ),

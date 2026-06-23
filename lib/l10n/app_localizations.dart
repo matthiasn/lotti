@@ -12658,6 +12658,18 @@ abstract class AppLocalizations {
   /// **'Checklist items'**
   String get settingsCelebrationsChecklistTitle;
 
+  /// No description provided for @settingsCelebrationsEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Master switch for completion flourishes. Off hides every animation; haptics keep their own switch.'**
+  String get settingsCelebrationsEnabledDescription;
+
+  /// No description provided for @settingsCelebrationsEnabledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Celebration animations'**
+  String get settingsCelebrationsEnabledTitle;
+
   /// No description provided for @settingsCelebrationsHabitsDescription.
   ///
   /// In en, this message translates to:
@@ -12670,6 +12682,48 @@ abstract class AppLocalizations {
   /// **'Habits'**
   String get settingsCelebrationsHabitsTitle;
 
+  /// No description provided for @settingsCelebrationsHapticsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A short buzz when you finish something — independent of the animation.'**
+  String get settingsCelebrationsHapticsDescription;
+
+  /// No description provided for @settingsCelebrationsHapticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion haptics'**
+  String get settingsCelebrationsHapticsTitle;
+
+  /// No description provided for @settingsCelebrationsPreviewChecklistItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Check me'**
+  String get settingsCelebrationsPreviewChecklistItem;
+
+  /// No description provided for @settingsCelebrationsPreviewDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a control to play your selected style.'**
+  String get settingsCelebrationsPreviewDescription;
+
+  /// No description provided for @settingsCelebrationsPreviewDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get settingsCelebrationsPreviewDone;
+
+  /// No description provided for @settingsCelebrationsPreviewHabit.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit'**
+  String get settingsCelebrationsPreviewHabit;
+
+  /// No description provided for @settingsCelebrationsPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try it'**
+  String get settingsCelebrationsPreviewTitle;
+
   /// No description provided for @settingsCelebrationsSectionDescription.
   ///
   /// In en, this message translates to:
@@ -12681,6 +12735,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Completion celebrations'**
   String get settingsCelebrationsSectionTitle;
+
+  /// No description provided for @settingsCelebrationsStyleDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a card to preview a celebration style and make it yours.'**
+  String get settingsCelebrationsStyleDescription;
+
+  /// No description provided for @settingsCelebrationsStyleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Style'**
+  String get settingsCelebrationsStyleTitle;
 
   /// No description provided for @settingsCelebrationsSubtitle.
   ///
@@ -12705,6 +12771,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Animations'**
   String get settingsCelebrationsTitle;
+
+  /// No description provided for @settingsCelebrationsVariantBubbles.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles'**
+  String get settingsCelebrationsVariantBubbles;
+
+  /// No description provided for @settingsCelebrationsVariantConfetti.
+  ///
+  /// In en, this message translates to:
+  /// **'Confetti'**
+  String get settingsCelebrationsVariantConfetti;
+
+  /// No description provided for @settingsCelebrationsVariantEmbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Embers'**
+  String get settingsCelebrationsVariantEmbers;
+
+  /// No description provided for @settingsCelebrationsVariantFireworks.
+  ///
+  /// In en, this message translates to:
+  /// **'Fireworks'**
+  String get settingsCelebrationsVariantFireworks;
+
+  /// No description provided for @settingsCelebrationsVariantSparks.
+  ///
+  /// In en, this message translates to:
+  /// **'Sparks'**
+  String get settingsCelebrationsVariantSparks;
 
   /// No description provided for @settingsConflictsTitle.
   ///

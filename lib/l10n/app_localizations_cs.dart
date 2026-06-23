@@ -7483,6 +7483,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCelebrationsChecklistTitle => 'Položky seznamu';
 
   @override
+  String get settingsCelebrationsEnabledDescription =>
+      'Hlavní vypínač efektů dokončení. Vypnuto skryje všechny animace; haptika má vlastní přepínač.';
+
+  @override
+  String get settingsCelebrationsEnabledTitle => 'Animace dokončení';
+
+  @override
   String get settingsCelebrationsHabitsDescription =>
       'Záře a jiskry, když dokončíš návyk';
 
@@ -7490,11 +7497,41 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCelebrationsHabitsTitle => 'Návyky';
 
   @override
+  String get settingsCelebrationsHapticsDescription =>
+      'Krátké zavibrování, když něco dokončíš – nezávislé na animaci.';
+
+  @override
+  String get settingsCelebrationsHapticsTitle => 'Haptika při dokončení';
+
+  @override
+  String get settingsCelebrationsPreviewChecklistItem => 'Odškrtni mě';
+
+  @override
+  String get settingsCelebrationsPreviewDescription =>
+      'Klepnutím na ovládací prvek přehraješ svůj styl.';
+
+  @override
+  String get settingsCelebrationsPreviewDone => 'Hotovo';
+
+  @override
+  String get settingsCelebrationsPreviewHabit => 'Návyk';
+
+  @override
+  String get settingsCelebrationsPreviewTitle => 'Vyzkoušet';
+
+  @override
   String get settingsCelebrationsSectionDescription =>
       'Malá oslava, když něco dokončíš. Když některou vypneš, dokončení (i jeho vibrace) zůstane — jen se vynechá animace.';
 
   @override
   String get settingsCelebrationsSectionTitle => 'Oslavy při dokončení';
+
+  @override
+  String get settingsCelebrationsStyleDescription =>
+      'Klepnutím na kartu zobrazíš náhled stylu a vybereš ho.';
+
+  @override
+  String get settingsCelebrationsStyleTitle => 'Styl';
 
   @override
   String get settingsCelebrationsSubtitle => 'Oslavy při dokončení';
@@ -7508,6 +7545,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsCelebrationsTitle => 'Animace';
+
+  @override
+  String get settingsCelebrationsVariantBubbles => 'Bubliny';
+
+  @override
+  String get settingsCelebrationsVariantConfetti => 'Konfety';
+
+  @override
+  String get settingsCelebrationsVariantEmbers => 'Žhavé uhlíky';
+
+  @override
+  String get settingsCelebrationsVariantFireworks => 'Ohňostroj';
+
+  @override
+  String get settingsCelebrationsVariantSparks => 'Jiskry';
 
   @override
   String get settingsConflictsTitle => 'Konflikty synchronizace';

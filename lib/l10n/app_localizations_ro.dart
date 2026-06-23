@@ -7527,6 +7527,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCelebrationsChecklistTitle => 'Elemente din listă';
 
   @override
+  String get settingsCelebrationsEnabledDescription =>
+      'Comutatorul principal pentru efectele de finalizare. Dezactivat, ascunde toate animațiile; vibrațiile au propriul comutator.';
+
+  @override
+  String get settingsCelebrationsEnabledTitle => 'Animații de finalizare';
+
+  @override
   String get settingsCelebrationsHabitsDescription =>
       'Strălucire și scântei când finalizați un obicei';
 
@@ -7534,11 +7541,41 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCelebrationsHabitsTitle => 'Obiceiuri';
 
   @override
+  String get settingsCelebrationsHapticsDescription =>
+      'O scurtă vibrație când terminați ceva, independentă de animație.';
+
+  @override
+  String get settingsCelebrationsHapticsTitle => 'Vibrații la finalizare';
+
+  @override
+  String get settingsCelebrationsPreviewChecklistItem => 'Bifați-mă';
+
+  @override
+  String get settingsCelebrationsPreviewDescription =>
+      'Atingeți un control pentru a reda stilul ales.';
+
+  @override
+  String get settingsCelebrationsPreviewDone => 'Gata';
+
+  @override
+  String get settingsCelebrationsPreviewHabit => 'Obicei';
+
+  @override
+  String get settingsCelebrationsPreviewTitle => 'Încercați';
+
+  @override
   String get settingsCelebrationsSectionDescription =>
       'O mică festivitate când finalizați ceva. Dacă dezactivați una, finalizarea și vibrația rămân — doar animația este omisă.';
 
   @override
   String get settingsCelebrationsSectionTitle => 'Celebrări la finalizare';
+
+  @override
+  String get settingsCelebrationsStyleDescription =>
+      'Atingeți un card pentru a previzualiza un stil și a-l alege.';
+
+  @override
+  String get settingsCelebrationsStyleTitle => 'Stil';
 
   @override
   String get settingsCelebrationsSubtitle => 'Celebrări la finalizare';
@@ -7552,6 +7589,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsCelebrationsTitle => 'Animații';
+
+  @override
+  String get settingsCelebrationsVariantBubbles => 'Bule';
+
+  @override
+  String get settingsCelebrationsVariantConfetti => 'Confeti';
+
+  @override
+  String get settingsCelebrationsVariantEmbers => 'Jar';
+
+  @override
+  String get settingsCelebrationsVariantFireworks => 'Artificii';
+
+  @override
+  String get settingsCelebrationsVariantSparks => 'Scântei';
 
   @override
   String get settingsConflictsTitle => 'Sync cu conflicte';
