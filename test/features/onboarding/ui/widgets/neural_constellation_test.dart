@@ -180,4 +180,66 @@ void main() {
       },
     );
   });
+
+  group('loop seam continuity', () {
+    const size = Size(320, 240);
+
+    test(
+      'node drift + breath return to their start at the wrap (t01 1 == 0)',
+      () {
+        // A few representative nodes with assorted integer cycle counts.
+        const nodes = [
+          NeuralNode(
+            base: Offset(0.3, 0.6),
+            driftX: 0.04,
+            driftY: 0.03,
+            phase: 1.2,
+            driftCycles: 1,
+            breathCycles: 1,
+            radius: 2,
+          ),
+          NeuralNode(
+            base: Offset(0.7, 0.2),
+            driftX: 0.02,
+            driftY: 0.05,
+            phase: 4.9,
+            driftCycles: 3,
+            breathCycles: 2,
+            radius: 1.6,
+          ),
+        ];
+        for (final node in nodes) {
+          final start = node.positionAt(0, size);
+          final end = node.positionAt(1, size);
+          // The frame at the loop end is the same as at the start — no snap.
+          expect(end.dx, closeTo(start.dx, 1e-9));
+          expect(end.dy, closeTo(start.dy, 1e-9));
+          expect(node.breathAt(1), closeTo(node.breathAt(0), 1e-9));
+        }
+      },
+    );
+
+    test('every pulse is fully faded out at the seam, alive mid-loop', () {
+      const pulseCycles = 7; // e.g. a 24s loop
+      for (var k = 0; k < 4; k++) {
+        // Envelope is exactly zero at both ends of the loop, so no pulse jumps.
+        expect(neuralPulseEnvAt(0, pulseCycles, k), closeTo(0, 1e-9));
+        expect(neuralPulseEnvAt(1, pulseCycles, k), closeTo(0, 1e-9));
+      }
+      // Mid-loop the pulses do light up (so the effect isn't simply absent).
+      final anyAlive = [
+        for (var k = 0; k < 4; k++) neuralPulseEnvAt(0.5, pulseCycles, k),
+      ].any((env) => env > 0.1);
+      expect(anyAlive, isTrue);
+    });
+
+    test('pulse cycles per loop is a whole number >= 1', () {
+      expect(neuralPulseCyclesForLoop(const Duration(seconds: 24)), 7);
+      expect(neuralPulseCyclesForLoop(const Duration(seconds: 14)), 4);
+      expect(
+        neuralPulseCyclesForLoop(const Duration(milliseconds: 500)),
+        greaterThanOrEqualTo(1),
+      );
+    });
+  });
 }
