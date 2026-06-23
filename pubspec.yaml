@@ -70,7 +70,7 @@ dependencies:
   formz: ^0.8.0
   freezed_annotation: ^3.1.0
   genui: ^0.9.0
-  get_it: ^8.0.2
+  get_it: ^9.2.1
   glass_kit: ^4.0.1
   google_fonts: ^8.1.0
   gpt_markdown: ^1.0.20
@@ -138,7 +138,6 @@ dependency_overrides:
   # See third_party/flutter_onnxruntime/LOTTI_PATCHES.md.
   flutter_onnxruntime:
     path: third_party/flutter_onnxruntime
-  get_it: ^8.0.2
   intl: ^0.20.2
   # Downgrade to avoid objective_c.framework malformed bundle issue (ITMS-90291)
   # See: https://github.com/flutter/flutter/issues/178915
