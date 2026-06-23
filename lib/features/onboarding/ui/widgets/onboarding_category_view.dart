@@ -145,7 +145,7 @@ class OnboardingCategoryView extends StatelessWidget {
                   addOwnLabel: addOwnLabel,
                   onAddOwn: onAddOwn,
                 ),
-                SizedBox(height: tokens.spacing.step7),
+                SizedBox(height: tokens.spacing.step6),
                 DesignSystemButton(
                   label: continueLabel,
                   onPressed: selected.isEmpty ? null : onContinue,
@@ -271,34 +271,42 @@ class _CategoryChip extends StatelessWidget {
           decoration: BoxDecoration(
             // Unselected reads as *available* (a neutral raised surface), not a
             // faint teal that looks disabled; selected fills solid brand.
-            color: selected ? accent : textHigh.withValues(alpha: 0.2),
+            color: selected ? accent : textHigh.withValues(alpha: 0.24),
             borderRadius: BorderRadius.circular(tokens.radii.m),
             border: Border.all(
-              color: selected ? accent : textHigh.withValues(alpha: 0.62),
+              color: selected ? accent : textHigh.withValues(alpha: 0.7),
             ),
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (selected) ...[
-                Icon(
-                  Icons.check_rounded,
-                  size: tokens.spacing.step5,
-                  color: fg,
-                ),
-                SizedBox(width: tokens.spacing.step2),
-              ],
-              Flexible(
+              // The category icon gives each chip identity; a bright mint on
+              // the unselected surface (legible brand pop), dark once it fills.
+              Icon(
+                option.icon,
+                size: tokens.spacing.step5,
+                color: selected
+                    ? fg
+                    : Color.lerp(accent, const Color(0xFFFFFFFF), 0.35),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
                 child: Text(
                   option.label,
-                  textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                   style: tokens.typography.styles.body.bodyLarge.copyWith(
                     color: fg,
                   ),
                 ),
               ),
+              // Trailing check is the non-colour selection cue (accessibility).
+              if (selected) ...[
+                SizedBox(width: tokens.spacing.step2),
+                Icon(
+                  Icons.check_rounded,
+                  size: tokens.spacing.step5,
+                  color: fg,
+                ),
+              ],
             ],
           ),
         ),

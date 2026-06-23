@@ -76,21 +76,20 @@ void main() {
     expect(whys, 1);
   });
 
-  testWidgets('only the selected chip shows a check; unselected chips are '
-      'label-only (no per-category icons)', (tester) async {
+  testWidgets('every chip shows its category icon; selected adds a check', (
+    tester,
+  ) async {
     await pumpView(tester, selected: const {'Work'});
 
-    // Exactly one chip — the selected one — gains a leading check.
+    // Each option carries its own (consistent) category icon for identity.
+    expect(find.byIcon(Icons.work_outline_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.fitness_center_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.group_rounded), findsOneWidget);
+    // The selected chip additionally shows the trailing check (selection cue).
     expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-    // The mixed-metaphor per-category icons are gone entirely: unselected
-    // chips render their label only.
-    expect(find.byIcon(Icons.fitness_center_rounded), findsNothing);
-    expect(find.byIcon(Icons.work_outline_rounded), findsNothing);
-    expect(find.byIcon(Icons.home_rounded), findsNothing);
-    expect(find.byIcon(Icons.group_rounded), findsNothing);
-    // Only the "add your own" chip keeps a glyph (the add affordance).
+    // The "add your own" chip keeps its add glyph.
     expect(find.byIcon(Icons.add_rounded), findsOneWidget);
-    // Every label still renders regardless of selection.
     for (final option in options) {
       expect(find.text(option.label), findsOneWidget);
     }
