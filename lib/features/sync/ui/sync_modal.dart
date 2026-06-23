@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
@@ -42,11 +43,9 @@ class SyncModal extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               for (final step in orderedSteps)
-                CheckboxListTile(
+                DesignSystemCheckbox(
                   value: selectedSteps.contains(step),
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.trailing,
-                  title: Text(_getStepName(context, step)),
+                  label: _getStepName(context, step),
                   onChanged: (value) {
                     final updated = Set<SyncStep>.from(
                       selectedStepsNotifier.value,

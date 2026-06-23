@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
@@ -392,10 +393,10 @@ void main() {
     var confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
     expect(confirmButton.onPressed, isNotNull);
 
-    final checkboxFinder = find.byType(CheckboxListTile);
+    final checkboxFinder = find.byType(DesignSystemCheckbox);
     final tiles = checkboxFinder.evaluate().toList();
     for (final el in tiles) {
-      final tile = el.widget as CheckboxListTile;
+      final tile = el.widget as DesignSystemCheckbox;
       tile.onChanged?.call(false);
       await tester.pump();
     }
@@ -405,7 +406,7 @@ void main() {
 
     // Re-enable by selecting the first option again.
     // Re-enable by selecting the first option again via callback
-    final firstTile = tester.widget<CheckboxListTile>(checkboxFinder.first);
+    final firstTile = tester.widget<DesignSystemCheckbox>(checkboxFinder.first);
     firstTile.onChanged?.call(true);
     await tester.pump();
     confirmButton = tester.widget<DesignSystemButton>(confirmFinder);

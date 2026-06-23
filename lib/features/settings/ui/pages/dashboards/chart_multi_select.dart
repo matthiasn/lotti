@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -159,8 +160,9 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
                       final item = _filteredItems[index];
                       final isSelected = _selected.contains(item.value);
 
-                      return CheckboxListTile(
+                      return DesignSystemCheckbox(
                         value: isSelected,
+                        label: item.label,
                         onChanged: (checked) {
                           setState(() {
                             if (checked ?? false) {
@@ -170,16 +172,6 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
                             }
                           });
                         },
-                        title: Text(
-                          item.label,
-                          style: context.textTheme.bodyLarge,
-                        ),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        contentPadding: EdgeInsets.zero,
-                        activeColor: colorScheme.primary,
-                        checkboxShape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
                       );
                     },
                   ),

@@ -53,6 +53,7 @@
           <p>Fixed: an inference profile whose model's provider had been deleted no longer shows a garbled raw model id in its slots. The slot now reads "Model unavailable — its provider may have been removed" and keeps its clear button so you can reset the dangling reference.</p>
           <p>The search field in Settings → AI now matches every other search box in the app — one consistent design-system search instead of a one-off styled field — and its placeholder reads "Search providers, models, profiles…" instead of the internal "Search AI configurations…".</p>
           <p>The AI settings "add" button and card menus are clearer and easier to hit: the floating add button shows one unmistakable + on every tab instead of three different icons, the ⋯ menu on each card is a full-size touch target, and the add button no longer hides the last item in the list on phones.</p>
+          <p>Settings controls now speak the same visual language as the rest of the app. Save and Cancel buttons across the settings pages — AI providers, models and profiles, sync and labels — use the design-system button: quiet and greyed when there's nothing to save, waking to a teal accent the moment you change something (the same pattern as the note editor). The toggles, checkboxes and the light / auto / dark theme switch use the design-system controls too, with teal accents and consistent shapes in place of the old purple Material widgets.</p>
       </description>
     </release>
     <release version="0.9.1030" date="2026-06-20">

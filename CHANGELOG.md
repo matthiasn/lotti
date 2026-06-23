@@ -57,6 +57,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   three different icons), the **⋯** menu on each provider / model / profile card
   is a full-size touch target, and the add button no longer hides the last item
   in the list on phones.
+- **Settings controls now speak the same visual language as the rest of the
+  app.** Save and Cancel buttons across the settings pages — AI providers,
+  models and profiles, sync and labels — use the design-system button: quiet and
+  greyed when there's nothing to save, waking to a teal accent the moment you
+  change something (the same pattern as the note editor). The toggles,
+  checkboxes and the light / auto / dark theme switch use the design-system
+  controls too, with teal accents and consistent shapes in place of the old
+  purple Material widgets.
 - **Accepting or dismissing an AI suggestion is now smooth and calm instead of
   jumpy.** The row you tap stays put and confirms in place — a clear filled
   badge with the plain word *Confirmed* or *Dismissed* and a light haptic — then
