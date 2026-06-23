@@ -24,11 +24,11 @@ flowchart TD
     WL -->|Look around first| SK[skip → dismissPrompt]
     CN -->|pick provider| AK[apiKey · paste + verify]
     AK -->|verified: provider + models + profile| SU[success beat]
-    SU -->|Get started| CAT[category · pick life areas]
+    SU -->|Get started| RS[recording style · pick analogue / modern]
+    RS -->|Continue · style persisted| CAT[category · pick life areas]
     CAT -->|≥1 area created → modal pops| CAP[OnboardingCapturePage · full screen]
     CAT -->|nothing selected| DONE[done]
-    CAP -->|speak / type → structure| REV[crystallize hero + celebration]
-    REV -->|Looks good| DONE
+    CAP -->|speak / type → structure| TASK[real in-progress TaskDetailsPage]
 ```
 
 The welcome → category steps live inside **one transparent, barrier-dismissible
@@ -157,6 +157,25 @@ through; the selected chip fills solid brand with a trailing check. The shared
 `_FrostedGlass` surface is reused by the quieter "+ Add your own" chip so the grid
 reads as one glass family.
 
+## Recording-style step
+
+Between the success beat and the category step, a personalization step lets the
+user pick how the mic looks during capture — and persists the choice for the real
+capture (and a future Settings toggle).
+
+- **`OnboardingRecordingStyleStep`** (`ui/widgets/`, ConsumerStatefulWidget) hosts
+  the presentational **`OnboardingRecordingStyleView`** and owns the level source:
+  a looping **simulated** signal by default (gated off under reduced motion), or
+  the **live mic** when "Try with your voice" is on — recorded to a throwaway file
+  via `AudioRecorderRepository` (levels only, never transcribed/saved; deleted on
+  stop), falling back to the simulation if the mic can't start.
+- Two themed pairs, each a live recording visual: **Modern** (the
+  `AiVoiceInputShader` orb + a brand-tinted `LiveWaveform`) and **Analogue** (the
+  skeuomorphic `AnalogVuMeter` + a neutral `LiveWaveform`). Only the selected card
+  animates; the other rests on a calm static waveform.
+- The choice is persisted by **`recordingStyleProvider`** (`state/recording_style.dart`,
+  an `AsyncNotifier` over `AppPrefs`, default `modern`).
+
 ## Phase 2 — the live voice→task aha
 
 `OnboardingCapturePage` (`ui/pages/`) hosts the presentational
@@ -171,27 +190,29 @@ stateDiagram-v2
     prompt --> listening: tap orb (mic opens)
     listening --> thinking: tap to stop (captured, transcript)
     prompt --> prompt: mic error → re-arm on next tap
-    thinking --> revealed: structuring resolves (real task or floor)
-    revealed --> [*]: Looks good (onDone)
+    thinking --> [*]: structuring resolves → push real task page
 ```
 
 The page maps the controller's `CapturePhase` onto the view's
-`OnboardingCapturePhase` (prompt / listening / thinking / revealed). On reaching
-`captured` with a non-empty transcript it records `firstAudioCaptured` once, then
-calls the orchestrator **exactly once per capture** (guarded against double-fire)
-and reveals the structured title + checklist with the celebration burst.
+`OnboardingCapturePhase` (prompt / listening / thinking). On reaching `captured`
+with a non-empty transcript it records `firstAudioCaptured` once, then calls the
+orchestrator **exactly once per capture** (guarded against double-fire). There is
+no in-page reveal: when a real task lands, the page hands its id to `onTaskCreated`
+and the host navigates to the **real `TaskDetailsPage`**.
 
 - **Structuring** — `OnboardingTaskStructuringService` resolves the chosen
   category → profile → thinking model → provider and runs a single-shot
   `CloudInferenceRepository.generate` returning `{title, checklist[]}`.
-  `OnboardingCaptureToTaskService` then materializes a real task
-  (`PersistenceLogic.createTaskEntry` + `AutoChecklistService`) and emits the
-  funnel events (`makeTaskTapped`, `realAha`, `structuringFailed`,
-  `structuringFloorUsed`). On LLM failure it **soft-lands** on a title-only task
-  (tagged `floor`, never counted as the real aha).
-- **Crystallize hero** — `CrystallizeHero` + `CompletionCelebration` deliver the
-  reveal (category pill, contact-frame title/checklist) and the burst, which fires
-  **only** on a real structured task.
+  `OnboardingCaptureToTaskService` then materializes a real task **already in
+  progress** (`PersistenceLogic.createTaskEntry` with `TaskStatus.inProgress` +
+  `AutoChecklistService`) and emits the funnel events (`makeTaskTapped`, `realAha`,
+  `structuringFailed`, `structuringFloorUsed`). On LLM failure it **soft-lands** on
+  a title-only task (tagged `floor`, never counted as the real aha).
+- **Real-task payoff** — the page navigates (replacing the capture route) to the
+  in-app `TaskDetailsPage` for the new task — its own animated checklist + audio
+  affordance — rather than a synthetic reveal, so the user lands on the real thing
+  they just made. (`CrystallizeHero` lives on only as the hero-gallery
+  `crystallize` style.)
 - **Destination picker** — when the user created more than one area, a compact
   `_CategoryPicker` ("Where should this land?") appears above the prompt so they
   choose which area the task lands in. It shows only while the capture is still
@@ -213,6 +234,14 @@ feedback** (a volume response is information, not decoration):
   frame (still tinted by the live level).
 - **`LiveWaveform`** ignores the live amplitudes and rests on a flat baseline
   (`LiveWaveformPainter.reducedMotion`), so the strip never dances.
+- **`OnboardingRecordingStyleStep`** holds its simulated previews on a static
+  frame under reduced motion.
 
 The welcome hero (`NeuralConstellation`) and `CompletionCelebration` already carry
 their own reduced-motion fallbacks.
+
+`NeuralConstellation` also loops **seamlessly**: every oscillation (node drift,
+breath, the travelling pulses) runs an integer number of cycles per loop and is
+driven off the controller's normalized value, so the frame at the loop wrap is
+identical to the start — no snap (`neuralPulseCyclesForLoop`, `NeuralNode`,
+`neuralPulseEnvAt`).
