@@ -1,22 +1,19 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
-import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/onboarding/ui/pages/onboarding_capture_page.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
-import 'package:lotti/features/onboarding/ui/widgets/onboarding_recording_style_view.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_recording_style_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/get_it.dart';
@@ -368,7 +365,7 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           onContinue: () => setState(() => _step = _FlowStep.recordingStyle),
         );
       case _FlowStep.recordingStyle:
-        return _OnboardingRecordingStyleStep(
+        return OnboardingRecordingStyleStep(
           key: const ValueKey('onboarding-recording-style'),
           onContinue: () => setState(() => _step = _FlowStep.category),
         );
@@ -380,117 +377,6 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           onDone: widget.onComplete,
         );
     }
-  }
-}
-
-/// The recording-style step: previews both themed pairs (analogue VU meter +
-/// modern orb), each driven by a looping simulated level, and persists the
-/// chosen style. A live-mic "Try with your voice" toggle is exposed; the
-/// simulated signal keeps the previews alive without a permission prompt.
-class _OnboardingRecordingStyleStep extends ConsumerStatefulWidget {
-  const _OnboardingRecordingStyleStep({required this.onContinue, super.key});
-
-  /// Advances to the category step once the style is chosen + persisted.
-  final VoidCallback onContinue;
-
-  @override
-  ConsumerState<_OnboardingRecordingStyleStep> createState() =>
-      _OnboardingRecordingStyleStepState();
-}
-
-class _OnboardingRecordingStyleStepState
-    extends ConsumerState<_OnboardingRecordingStyleStep>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _sim;
-  late final ColorScheme _darkScheme = DesignSystemTheme.dark().colorScheme;
-  RecordingStyle _selected = RecordingStyle.modern;
-  bool _tryingWithVoice = false;
-
-  static const _bars = 28;
-
-  @override
-  void initState() {
-    super.initState();
-    _sim = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2600),
-    );
-    final current = ref.read(recordingStyleProvider).asData?.value;
-    if (current != null) _selected = current;
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Reduced motion: hold the previews on a representative static frame rather
-    // than looping the simulated level.
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduceMotion) {
-      if (_sim.isAnimating) _sim.stop();
-      _sim.value = 0.3;
-    } else if (!_sim.isAnimating) {
-      _sim.repeat();
-    }
-  }
-
-  @override
-  void dispose() {
-    _sim.dispose();
-    super.dispose();
-  }
-
-  /// A lively but bounded synthetic "speech" level derived from the looping
-  /// controller phase, so both previews animate without touching the mic.
-  ({double vu, double dbfs, List<double> amplitudes}) _simulatedLevel() {
-    final t = _sim.value;
-    final env =
-        (0.45 +
-                0.4 *
-                    math.sin(2 * math.pi * t) *
-                    math.sin(2 * math.pi * 3 * t + 0.7))
-            .clamp(0.05, 1.0);
-    final amplitudes = [
-      for (var i = 0; i < _bars; i++)
-        (env * (0.5 + 0.5 * math.sin(i * 0.5 + 2 * math.pi * 2 * t))).clamp(
-          0.0,
-          1.0,
-        ),
-    ];
-    return (vu: -20 + 23 * env, dbfs: -45 + 39 * env, amplitudes: amplitudes);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final messages = context.messages;
-    return AnimatedBuilder(
-      animation: _sim,
-      builder: (context, _) {
-        final level = _simulatedLevel();
-        return OnboardingRecordingStyleView(
-          accent: dsTokensDark.colors.interactive.enabled,
-          colorScheme: _darkScheme,
-          title: messages.onboardingRecordingStyleTitle,
-          explanation: messages.onboardingRecordingStyleExplanation,
-          analogueLabel: messages.onboardingRecordingStyleAnalogue,
-          modernLabel: messages.onboardingRecordingStyleModern,
-          tryWithVoiceLabel: messages.onboardingRecordingStyleTryVoice,
-          continueLabel: messages.onboardingRecordingStyleContinue,
-          selected: _selected,
-          onSelect: (style) => setState(() => _selected = style),
-          tryingWithVoice: _tryingWithVoice,
-          onToggleTryWithVoice: (value) =>
-              setState(() => _tryingWithVoice = value),
-          onContinue: () async {
-            await ref.read(recordingStyleProvider.notifier).setStyle(_selected);
-            widget.onContinue();
-          },
-          vu: level.vu,
-          dBFS: level.dbfs,
-          amplitudes: level.amplitudes,
-        );
-      },
-    );
   }
 }
 
