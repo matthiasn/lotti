@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/embedding_backfill_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -75,17 +76,16 @@ class _MultiCategoryPicker extends StatelessWidget {
                 allCategoryIds.every(selectedIds.contains);
             return Align(
               alignment: Alignment.centerRight,
-              child: TextButton(
+              child: DesignSystemButton(
+                variant: DesignSystemButtonVariant.tertiary,
+                label: allSelected
+                    ? context.messages.embeddingUnselectAll
+                    : context.messages.embeddingSelectAll,
                 onPressed: () {
                   selectedIdsNotifier.value = allSelected
                       ? {}
                       : Set.of(allCategoryIds);
                 },
-                child: Text(
-                  allSelected
-                      ? context.messages.embeddingUnselectAll
-                      : context.messages.embeddingSelectAll,
-                ),
               ),
             );
           },

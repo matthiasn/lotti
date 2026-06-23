@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 
 class MetricsActions extends StatelessWidget {
   const MetricsActions({
@@ -23,43 +24,48 @@ class MetricsActions extends StatelessWidget {
         Tooltip(
           message:
               'Legend:\n• processed.<type> = processed sync messages by payload type\n• droppedByType.<type> = per‑type drops after retries/older ignores\n• dbApplied = DB rows written\n• dbIgnoredByVectorClock = incoming older/same ignored by DB\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting missing dependency/base row\n• staleAttachmentPurges = cached stale descriptors purged before refresh',
-          child: OutlinedButton.icon(
-            icon: const Icon(Icons.info_outline_rounded, size: 18),
-            label: const Text('Legend'),
+          child: DesignSystemButton(
+            label: 'Legend',
+            leadingIcon: Icons.info_outline_rounded,
+            variant: DesignSystemButtonVariant.secondary,
             onPressed: () {},
           ),
         ),
         Tooltip(
           message: 'Force rescan and catch-up now',
-          child: OutlinedButton.icon(
+          child: DesignSystemButton(
             key: const Key('matrixStats.forceRescan'),
-            icon: const Icon(Icons.sync_rounded),
-            label: const Text('Force Rescan'),
+            label: 'Force Rescan',
+            leadingIcon: Icons.sync_rounded,
+            variant: DesignSystemButtonVariant.secondary,
             onPressed: onForceRescan,
           ),
         ),
         Tooltip(
           message: 'Retry pending failures now',
-          child: OutlinedButton.icon(
+          child: DesignSystemButton(
             key: const Key('matrixStats.retryNow'),
-            icon: const Icon(Icons.flash_on_rounded),
-            label: const Text('Retry Now'),
+            label: 'Retry Now',
+            leadingIcon: Icons.flash_on_rounded,
+            variant: DesignSystemButtonVariant.secondary,
             onPressed: onRetryNow,
           ),
         ),
         Tooltip(
           message: 'Copy sync diagnostics to clipboard',
-          child: OutlinedButton.icon(
+          child: DesignSystemButton(
             key: const Key('matrixStats.copyDiagnostics'),
-            icon: const Icon(Icons.copy_all_rounded),
-            label: const Text('Copy Diagnostics'),
+            label: 'Copy Diagnostics',
+            leadingIcon: Icons.copy_all_rounded,
+            variant: DesignSystemButtonVariant.secondary,
             onPressed: onCopyDiagnostics,
           ),
         ),
-        OutlinedButton.icon(
+        DesignSystemButton(
           key: const Key('matrixStats.refresh.metrics'),
-          icon: const Icon(Icons.refresh_rounded),
-          label: const Text('Refresh'),
+          label: 'Refresh',
+          leadingIcon: Icons.refresh_rounded,
+          variant: DesignSystemButtonVariant.secondary,
           onPressed: onRefresh,
         ),
       ],
