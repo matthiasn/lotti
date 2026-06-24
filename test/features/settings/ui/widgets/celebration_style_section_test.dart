@@ -53,6 +53,11 @@ void main() {
     matching: find.text(label),
   );
 
+  // DsSegmentedToggle renders each label twice — an invisible width-ghost plus
+  // the visible Text (the Stack's last child) — so a plain find.text matches
+  // two. Tap / read the visible one.
+  Finder segment(String label) => find.text(label).last;
+
   testWidgets('shows one picker, not one per surface', (tester) async {
     await pump(tester);
     // The whole point of the redesign: a single picker, re-bound by surface.
@@ -61,24 +66,21 @@ void main() {
     expect(find.byType(CelebrationVariantCard), findsNWidgets(5));
   });
 
-  testWidgets('each surface segment summarizes its assigned style', (
+  testWidgets('lists the three surfaces without echoing assigned styles', (
     tester,
   ) async {
     await pump(tester);
 
-    // All three surfaces are listed with the style currently assigned to them.
+    // All three surfaces are listed as single-line segments.
     for (final label in const ['Tasks', 'Habits', 'Checklist items']) {
-      expect(find.text(label), findsOneWidget, reason: label);
+      expect(segment(label), findsOneWidget, reason: label);
     }
-    // The selector echoes each surface's variant name (Tasks=Sparks card label
-    // is excluded by scoping to text outside the picker cards).
-    expect(
-      find.descendant(
-        of: find.byType(CelebrationStyleSection),
-        matching: find.text('Confetti'),
-      ),
-      findsWidgets,
-    );
+    // The assigned style names appear only as picker cards now (one each), not
+    // duplicated as a segment subtitle — that summary was dropped when the
+    // selector moved to the shared single-line segmented control.
+    for (final variant in const ['Sparks', 'Confetti', 'Bubbles']) {
+      expect(find.text(variant), findsOneWidget, reason: variant);
+    }
   });
 
   testWidgets('the picker binds to the active surface (tasks by default)', (
@@ -93,11 +95,11 @@ void main() {
   ) async {
     await pump(tester);
 
-    await tester.tap(find.text('Habits'));
+    await tester.tap(segment('Habits'));
     await tester.pump();
     expect(picker(tester).selected, CelebrationVariant.confetti);
 
-    await tester.tap(find.text('Checklist items'));
+    await tester.tap(segment('Checklist items'));
     await tester.pump();
     expect(picker(tester).selected, CelebrationVariant.bubbles);
   });
@@ -108,7 +110,7 @@ void main() {
     await pump(tester);
 
     // Switch to Habits, then pick Embers from the single picker.
-    await tester.tap(find.text('Habits'));
+    await tester.tap(segment('Habits'));
     await tester.pump();
     await tester.tap(cardLabel('Embers'));
     await tester.pump();
@@ -129,7 +131,7 @@ void main() {
     expect(picker(tester).enabled, isFalse);
     // The surface selector is also inert: tapping a segment does not change the
     // bound variant (still the default-active tasks → sparks).
-    await tester.tap(find.text('Habits'), warnIfMissed: false);
+    await tester.tap(segment('Habits'), warnIfMissed: false);
     await tester.pump();
     expect(picker(tester).selected, CelebrationVariant.sparks);
   });
