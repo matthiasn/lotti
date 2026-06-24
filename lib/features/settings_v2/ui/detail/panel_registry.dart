@@ -143,7 +143,8 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
         build: _syncProvisionedPanel,
         scrollable: true,
       ),
-      // SyncNodeProfilePage owns its Scaffold; don't wrap.
+      // SyncNodeProfileBody is headerless and owns its own ListView — the
+      // breadcrumb supplies the title, so it renders straight into the pane.
       'sync-node-profile': SettingsPanelSpec(build: _syncNodeProfilePanel),
       'sync-backfill': SettingsPanelSpec(
         build: _syncBackfillPanel,
@@ -264,7 +265,7 @@ Widget _syncBackfillPanel(BuildContext context) {
 Widget _syncStatsPanel(BuildContext context) => const SyncStatsBody();
 Widget _syncOutboxPanel(BuildContext context) => const OutboxMonitorBody();
 Widget _syncNodeProfilePanel(BuildContext context) =>
-    const SyncNodeProfilePage();
+    const SyncNodeProfileBody();
 Widget _syncMatrixMaintenancePanel(BuildContext context) =>
     const MatrixSyncMaintenanceBody();
 

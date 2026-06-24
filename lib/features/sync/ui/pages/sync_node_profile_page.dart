@@ -2,33 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Settings page for the local sync-node profile and the directory of known
-/// peer profiles.
+/// The local sync-node profile form: rename this device (the name appears in
+/// other devices' pinning UI), review the auto-detected capabilities, and see
+/// which peers have advertised their own profiles.
 ///
-/// Lets the user rename this device (the name appears in other devices'
-/// pinning UI), surface the auto-detected capabilities, and review which
-/// peers have advertised their own profiles.
+/// Rendered headerless so it can host directly inside the settings detail pane
+/// (the shared breadcrumb already supplies the "This device" title);
+/// [SyncNodeProfilePage] wraps it in a Scaffold + AppBar for the standalone
+/// mobile route. Save lives at the top of the form rather than as an AppBar
+/// action so it reads the same in both hosts and never renders a redundant,
+/// near-black second title bar in the desktop pane.
 ///
 /// All save actions go through `SyncNodeProfileBroadcaster.broadcastIfChanged`
 /// — that path re-broadcasts on a real name change but suppresses a no-op
 /// re-save, matching how `inference_profile_form.dart` preserves the pin on
 /// unrelated edits.
-class SyncNodeProfilePage extends ConsumerStatefulWidget {
-  const SyncNodeProfilePage({super.key});
+class SyncNodeProfileBody extends ConsumerStatefulWidget {
+  const SyncNodeProfileBody({super.key});
 
   @override
-  ConsumerState<SyncNodeProfilePage> createState() =>
-      _SyncNodeProfilePageState();
+  ConsumerState<SyncNodeProfileBody> createState() =>
+      _SyncNodeProfileBodyState();
 }
 
-class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
+class _SyncNodeProfileBodyState extends ConsumerState<SyncNodeProfileBody> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   bool _isSaving = false;
@@ -90,7 +93,6 @@ class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    final tokens = context.designTokens;
     final selfAsync = ref.watch(localSyncNodeSelfProvider);
     final directoryAsync = ref.watch(knownSyncNodesProvider);
 
@@ -115,73 +117,88 @@ class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
       orElse: () => const <SyncNodeProfile>[],
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: tokens.colors.background.level02,
-        title: Text(messages.settingsSyncNodeProfileTitle),
-        actions: [
-          Tooltip(
-            message: _hasUnsavedChanges
-                ? messages.settingsSyncNodeProfileSaveButton
-                : messages.aiFormNoChanges,
-            child: DesignSystemButton(
-              label: messages.settingsSyncNodeProfileSaveButton,
-              leadingIcon: Icons.save_rounded,
-              onPressed: (_isSaving || !_hasUnsavedChanges) ? null : _save,
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Save lives at the top-right of the form (not in an AppBar action),
+          // so the desktop detail pane — which already shows the breadcrumb
+          // title — doesn't render a second, near-black title bar.
+          Align(
+            alignment: Alignment.centerRight,
+            child: Tooltip(
+              message: _hasUnsavedChanges
+                  ? messages.settingsSyncNodeProfileSaveButton
+                  : messages.aiFormNoChanges,
+              child: DesignSystemButton(
+                label: messages.settingsSyncNodeProfileSaveButton,
+                leadingIcon: Icons.save_rounded,
+                onPressed: (_isSaving || !_hasUnsavedChanges) ? null : _save,
+              ),
             ),
           ),
-          SizedBox(width: tokens.spacing.step2),
+          const SizedBox(height: 16),
+          Text(
+            messages.settingsSyncNodeProfileSubtitle,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              labelText: messages.settingsSyncNodeProfileDisplayNameLabel,
+              helperText: messages.settingsSyncNodeProfileDisplayNameHelper,
+              border: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return messages.settingsSyncNodeProfileDisplayNameLabel;
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 24),
+          Text(
+            messages.settingsSyncNodeProfileCapabilitiesLabel,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          _CapabilityChips(self: self),
+          const SizedBox(height: 24),
+          Text(
+            messages.settingsSyncNodeProfileKnownNodesTitle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          if (knownNodes.isEmpty)
+            Text(
+              messages.settingsSyncNodeProfileKnownNodesEmpty,
+              style: Theme.of(context).textTheme.bodySmall,
+            )
+          else
+            ...knownNodes.map(_KnownNodeTile.new),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              messages.settingsSyncNodeProfileSubtitle,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: messages.settingsSyncNodeProfileDisplayNameLabel,
-                helperText: messages.settingsSyncNodeProfileDisplayNameHelper,
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return messages.settingsSyncNodeProfileDisplayNameLabel;
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 24),
-            Text(
-              messages.settingsSyncNodeProfileCapabilitiesLabel,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            _CapabilityChips(self: self),
-            const SizedBox(height: 24),
-            Text(
-              messages.settingsSyncNodeProfileKnownNodesTitle,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            if (knownNodes.isEmpty)
-              Text(
-                messages.settingsSyncNodeProfileKnownNodesEmpty,
-                style: Theme.of(context).textTheme.bodySmall,
-              )
-            else
-              ...knownNodes.map(_KnownNodeTile.new),
-          ],
-        ),
+    );
+  }
+}
+
+/// Standalone mobile route wrapper: a Scaffold + AppBar (back + title) around
+/// [SyncNodeProfileBody]. On desktop the settings detail pane renders the body
+/// directly, beneath the shared breadcrumb header, so no AppBar is needed.
+class SyncNodeProfilePage extends StatelessWidget {
+  const SyncNodeProfilePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(context.messages.settingsSyncNodeProfileTitle),
       ),
+      body: const SyncNodeProfileBody(),
     );
   }
 }
