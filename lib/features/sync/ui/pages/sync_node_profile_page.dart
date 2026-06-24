@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
@@ -89,6 +90,7 @@ class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
+    final tokens = context.designTokens;
     final selfAsync = ref.watch(localSyncNodeSelfProvider);
     final directoryAsync = ref.watch(knownSyncNodesProvider);
 
@@ -127,6 +129,7 @@ class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
               onPressed: (_isSaving || !_hasUnsavedChanges) ? null : _save,
             ),
           ),
+          SizedBox(width: tokens.spacing.step2),
         ],
       ),
       body: Form(
