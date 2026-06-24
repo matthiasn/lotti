@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 /// Base height of every Settings header at standard text size (status-bar
@@ -59,10 +61,28 @@ class SettingsHeaderBar extends StatelessWidget {
   final String? subtitle;
   final bool showBackButton;
 
-  /// Override for the back action; defaults to `NavService.beamBack()`
-  /// (see `BackWidget`).
+  /// Override for the back action. When null, the header pops the visible
+  /// settings page stack (see [_handleBack]).
   final VoidCallback? onBack;
   final List<Widget>? actions;
+
+  /// The default settings back action.
+  ///
+  /// The mobile settings surfaces are a Beamer page stack (root → branch →
+  /// leaf), so the visible "back" is a page pop — exactly what the system back
+  /// gesture does. Pop the local navigator when it can; only fall back to
+  /// `NavService.beamBack()` (URL-history back) at the root, where there is no
+  /// page to pop. The previous default went straight to `beamBack()`, which
+  /// follows URL history rather than the visible stack and could no-op on the
+  /// drill-down — so the button did nothing while the back gesture worked.
+  void _handleBack(BuildContext context) {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      getIt<NavService>().beamBack();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +97,8 @@ class SettingsHeaderBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          if (showBackButton) BackWidget(onPressed: onBack),
+          if (showBackButton)
+            BackWidget(onPressed: onBack ?? () => _handleBack(context)),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,

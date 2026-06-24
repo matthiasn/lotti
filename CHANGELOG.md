@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1031]
 ### Added
+- A guided **first-time onboarding** (behind the "New onboarding (FTUE)" flag in
+  Settings → Advanced → Flags). With the flag on, a fresh install replaces the
+  bare provider picker with a short, skippable, cinematic flow: a welcome that
+  frames AI setup as "connect your brain"; a provider step (Gemini, Mistral and
+  Qwen as equals, with OpenAI and Ollama behind "More options") that pastes a key
+  and creates the provider, its known models and a ready-to-use inference profile
+  in place; a quiet "connected" beat; a step to pick the life areas (Work,
+  Fitness, Family, Friends, or your own) the AI should power — teaching that the
+  provider is chosen per category; and a playful step to pick how recording looks
+  (a modern energy orb or an analogue VU meter, previewed live — try it with your
+  voice). It ends in the real payoff: you speak a thought, watch it become a
+  structured task with a checklist, and land straight on that task — already in
+  progress, in the area you pick — instead of a dead end. A "Rather type?" path, a
+  one-tap retry, and a soft-landing title-only task when structuring fails keep it
+  robust, and the whole flow honors reduce motion.
 - A first-class **Events** experience (behind the "Enable Events" flag in
   Settings → Advanced → Flags). Events — birthdays, trips, milestones — now get
   their own destination (under *More* on mobile, the sidebar on desktop) with a
@@ -159,6 +174,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   garbled raw model id in its slots. The slot now reads "Model unavailable — its
   provider may have been removed" and keeps its clear (×) button so you can reset
   the dangling reference.
+- On phones, the back button on a settings sub-page (e.g. Advanced →
+  Maintenance) could fail to return to the previous screen. It now follows the
+  visible navigation stack — the same as the system back gesture.
 
 ## [0.9.1030]
 ### Changed

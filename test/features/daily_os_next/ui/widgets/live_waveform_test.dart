@@ -9,6 +9,7 @@ void main() {
     WidgetTester tester, {
     List<double> amplitudes = const [],
     int barCount = 28,
+    bool reducedMotion = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -19,6 +20,10 @@ void main() {
               barCount: barCount,
             ),
           ),
+        ),
+        mediaQueryData: MediaQueryData(
+          size: const Size(800, 600),
+          disableAnimations: reducedMotion,
         ),
       ),
     );
@@ -79,6 +84,54 @@ void main() {
         barCount: 12,
       );
       expect(fourth.painter!.shouldRepaint(firstPainter), isTrue);
+    });
+
+    testWidgets(
+      'reduced motion rests on a static baseline and ignores the live signal',
+      (tester) async {
+        // Loud samples that WOULD make the bars dance — but reduced motion is
+        // on, so the painter must run in its static-baseline mode.
+        final loud = await pumpWaveform(
+          tester,
+          amplitudes: const [1, 1, 1, 1],
+          reducedMotion: true,
+        );
+        final painter = loud.painter! as LiveWaveformPainter;
+        expect(painter.reducedMotion, isTrue);
+        expect(tester.takeException(), isNull);
+
+        // A fresh, louder, differently-shaped sample tick must NOT request a
+        // repaint under reduced motion — the baseline is independent of the
+        // live signal, so the strip never animates.
+        await tester.pumpWidget(const SizedBox.shrink());
+        final next = await pumpWaveform(
+          tester,
+          amplitudes: const [0.2, 0.9, 0.3, 0.7],
+          reducedMotion: true,
+        );
+        expect(
+          (next.painter! as LiveWaveformPainter).shouldRepaint(painter),
+          isFalse,
+        );
+      },
+    );
+
+    testWidgets('toggling reduced motion forces a repaint', (tester) async {
+      final moving = await pumpWaveform(tester, amplitudes: const [0.5]);
+      final movingPainter = moving.painter! as LiveWaveformPainter;
+      expect(movingPainter.reducedMotion, isFalse);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      final still = await pumpWaveform(
+        tester,
+        amplitudes: const [0.5],
+        reducedMotion: true,
+      );
+      // The motion ⇄ static switch is a visual change, so it always repaints.
+      expect(
+        (still.painter! as LiveWaveformPainter).shouldRepaint(movingPainter),
+        isTrue,
+      );
     });
   });
 }

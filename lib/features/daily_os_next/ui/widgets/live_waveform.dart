@@ -20,6 +20,7 @@ class LiveWaveform extends StatelessWidget {
     this.barCount = 28,
     this.width = 240,
     this.height = 28,
+    this.color,
     super.key,
   });
 
@@ -31,27 +32,41 @@ class LiveWaveform extends StatelessWidget {
   final double width;
   final double height;
 
+  /// Bar colour. Defaults to the brand interactive (teal) when null, so
+  /// existing callers are unchanged; the recording-style picker passes a
+  /// per-style tint.
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
-    final teal = context.designTokens.colors.interactive.enabled;
+    final teal = color ?? context.designTokens.colors.interactive.enabled;
+    // Reduced motion: the strip stops dancing with the live signal and rests on
+    // a calm static baseline. The orb and the "Listening…" caption still carry
+    // the recording state, so no information is lost — only the motion.
+    final reducedMotion = MediaQuery.disableAnimationsOf(context);
     return RepaintBoundary(
       child: CustomPaint(
         size: Size(width, height),
-        painter: _WaveformPainter(
+        painter: LiveWaveformPainter(
           barCount: barCount,
           color: teal,
           amplitudes: amplitudes,
+          reducedMotion: reducedMotion,
         ),
       ),
     );
   }
 }
 
-class _WaveformPainter extends CustomPainter {
-  _WaveformPainter({
+/// Paints the [LiveWaveform] bars. When [reducedMotion] is set it ignores the
+/// live [amplitudes] entirely and draws a flat resting baseline, so the strip
+/// never animates for a reduced-motion user.
+class LiveWaveformPainter extends CustomPainter {
+  LiveWaveformPainter({
     required this.barCount,
     required this.color,
     required this.amplitudes,
+    this.reducedMotion = false,
   });
 
   /// Minimum bar height fraction. Keeps every slot visibly present
@@ -61,6 +76,7 @@ class _WaveformPainter extends CustomPainter {
   final int barCount;
   final Color color;
   final List<double> amplitudes;
+  final bool reducedMotion;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -70,18 +86,26 @@ class _WaveformPainter extends CustomPainter {
 
     final spacing = size.width / barCount;
     final barWidth = math.max(spacing * 0.45, 1.5);
-    final sliceStart = math.max(0, amplitudes.length - barCount);
-    final slice = amplitudes.sublist(sliceStart);
+    // Under reduced motion the live signal is ignored, so the slice is unused.
+    final slice = reducedMotion
+        ? const <double>[]
+        : amplitudes.sublist(math.max(0, amplitudes.length - barCount));
 
     for (var i = 0; i < barCount; i++) {
-      // Right-align the live samples so newer values stay on the right
-      // (matches how voice waveforms read in iOS / standard recorders).
-      final ageFromRight = barCount - 1 - i;
-      final sampleIndex = slice.length - 1 - ageFromRight;
-      final value = (sampleIndex >= 0 && sampleIndex < slice.length)
-          ? slice[sampleIndex].clamp(0.0, 1.0)
-          : 0.0;
-      final fraction = math.max(_idleFraction, value);
+      final double fraction;
+      if (reducedMotion) {
+        // Static resting baseline — every bar at the idle minimum.
+        fraction = _idleFraction;
+      } else {
+        // Right-align the live samples so newer values stay on the right
+        // (matches how voice waveforms read in iOS / standard recorders).
+        final ageFromRight = barCount - 1 - i;
+        final sampleIndex = slice.length - 1 - ageFromRight;
+        final value = (sampleIndex >= 0 && sampleIndex < slice.length)
+            ? slice[sampleIndex].clamp(0.0, 1.0)
+            : 0.0;
+        fraction = math.max(_idleFraction, value);
+      }
       final h = size.height * fraction;
       final x = i * spacing + (spacing - barWidth) / 2;
       final y = (size.height - h) / 2;
@@ -94,7 +118,13 @@ class _WaveformPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _WaveformPainter old) {
+  bool shouldRepaint(covariant LiveWaveformPainter old) {
+    if (old.reducedMotion != reducedMotion) return true;
+    // The static baseline ignores the live signal, so amplitude churn must not
+    // force a repaint for a reduced-motion user.
+    if (reducedMotion) {
+      return old.color != color || old.barCount != barCount;
+    }
     return old.color != color ||
         old.barCount != barCount ||
         !identical(old.amplitudes, amplitudes);

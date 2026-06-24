@@ -6445,6 +6445,80 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Wird geprüft…';
 
   @override
+  String get onboardingCaptureAccept => 'Sieht gut aus';
+
+  @override
+  String get onboardingCaptureCategoryPrompt => 'Wo soll das landen?';
+
+  @override
+  String get onboardingCaptureEditHint =>
+      'Tippe eine Zeile an, um sie zu bearbeiten';
+
+  @override
+  String get onboardingCaptureListening =>
+      'Ich höre zu … tippe, wenn du fertig bist';
+
+  @override
+  String get onboardingCaptureOrbLabel => 'Deinen Gedanken aufnehmen';
+
+  @override
+  String get onboardingCapturePrompt => 'Was beschäftigt dich?';
+
+  @override
+  String get onboardingCapturePromptHint =>
+      'Versuch: erinnere mich daran, beim Zahnarzt anzurufen und den Wagen zum Service zu bringen';
+
+  @override
+  String get onboardingCaptureRatherType => 'Lieber tippen?';
+
+  @override
+  String get onboardingCaptureReassurance =>
+      'Du kannst danach noch alles bearbeiten.';
+
+  @override
+  String get onboardingCaptureRevealed => 'Hier ist deine erste Aufgabe';
+
+  @override
+  String get onboardingCaptureThinking =>
+      'Ich verwandle deine Worte in eine Aufgabe…';
+
+  @override
+  String get onboardingCaptureTypePrompt => 'Tippe deinen Gedanken';
+
+  @override
+  String get onboardingCategoryAddOwn => 'Eigene hinzufügen';
+
+  @override
+  String get onboardingCategoryContinue => 'Weiter';
+
+  @override
+  String get onboardingCategoryExplanation =>
+      'Jeder Lebensbereich bekommt seinen eigenen Raum. Wähle, was passt — oder füge eigene hinzu.';
+
+  @override
+  String get onboardingCategoryFamily => 'Familie';
+
+  @override
+  String get onboardingCategoryFitness => 'Fitness';
+
+  @override
+  String get onboardingCategoryFriends => 'Freunde';
+
+  @override
+  String get onboardingCategoryTitle => 'Wo soll deine KI arbeiten?';
+
+  @override
+  String get onboardingCategoryWhy => 'Warum Bereiche?';
+
+  @override
+  String onboardingCategoryWhyDetail(String provider) {
+    return 'Jeder Bereich kann seine eigene KI nutzen. $provider betreibt die hier gewählten Bereiche — später kannst du verschiedenen Bereichen verschiedene KIs geben.';
+  }
+
+  @override
+  String get onboardingCategoryWork => 'Arbeit';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
@@ -6481,6 +6555,35 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get onboardingConnectTitle =>
       'Wähle das Gehirn, das deine Worte in Aufgaben verwandelt';
+
+  @override
+  String get onboardingRecordingStyleAnalogue => 'Analog — VU-Meter';
+
+  @override
+  String get onboardingRecordingStyleContinue => 'Weiter';
+
+  @override
+  String get onboardingRecordingStyleExplanation =>
+      'Wähl einen Look fürs Mikro. Du kannst ihn jederzeit in den Einstellungen ändern.';
+
+  @override
+  String get onboardingRecordingStyleModern => 'Modern — Energie-Orb';
+
+  @override
+  String get onboardingRecordingStyleTitle => 'Wie soll die Aufnahme wirken?';
+
+  @override
+  String get onboardingRecordingStyleTryVoice => 'Mit deiner Stimme testen';
+
+  @override
+  String get onboardingSuccessContinue => 'Los geht\'s';
+
+  @override
+  String get onboardingSuccessSubtitle =>
+      'Dein KI-Gehirn ist verbunden und verwandelt deine Worte in Aufgaben.';
+
+  @override
+  String get onboardingSuccessTitle => 'Alles bereit';
 
   @override
   String get onboardingWelcomeConnectButton => 'Gehirn verbinden';

@@ -6,17 +6,31 @@ import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
+
+/// Inert [CaptureController] so the live first-capture page (pushed after the
+/// category step) renders without touching the real mic / realtime services.
+class _FakeCaptureController extends CaptureController {
+  @override
+  CaptureState build() => const CaptureState.idle();
+
+  @override
+  Future<void> toggle() async {}
+}
 
 /// Canned probe so the API-key step's live verification resolves without a
 /// network call.
@@ -182,12 +196,38 @@ void main() {
     expect(state.reached(OnboardingEventName.welcomeSkipped), isTrue);
   });
 
-  testWidgets('connecting a provider pops the modal and records '
-      'providerConnected', (tester) async {
-    // Drive the full flow welcome → connect → Ollama → verified → Connect,
-    // exercising the modal's onConnected glue (connectedType + the
-    // providerConnected event). Ollama needs no key and its FTUE setup only
-    // touches the category repository, so it's the cheapest provider to drive.
+  testWidgets(
+    'tapping outside the panel closes the flow (tap-outside-to-dismiss)',
+    (tester) async {
+      var dismissed = false;
+      await openWelcome(tester, child: host(onDismiss: () => dismissed = true));
+      expect(find.text('Connect your brain'), findsOneWidget);
+
+      // The sheet shrink-wraps to its content at the bottom, leaving empty
+      // space above it. A tap there must close the flow — the route's modal
+      // barrier alone never received the tap (the full-screen scroll view sat
+      // on top of it), so the scaffold dismisses explicitly.
+      final panelTop = tester
+          .getTopLeft(find.byKey(const ValueKey('onboarding-welcome')))
+          .dy;
+      expect(panelTop, greaterThan(30));
+      await tester.tapAt(Offset(195, panelTop - 20));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Connect your brain'), findsNothing);
+      expect(dismissed, isTrue);
+      final state = await repo.funnelState();
+      expect(state.reached(OnboardingEventName.welcomeSkipped), isTrue);
+    },
+  );
+
+  testWidgets('connecting reveals the success beat, then completing pops and '
+      'records providerConnected', (tester) async {
+    // Drive the full flow welcome → connect → Ollama → verified → Connect →
+    // success → Get started, exercising the modal's onConnected glue
+    // (connectedType + the providerConnected event). Ollama needs no key and
+    // its FTUE setup only touches the category repository, so it's the cheapest
+    // provider to drive.
     final aiRepo = MockAiConfigRepository();
     when(() => aiRepo.saveConfig(any())).thenAnswer((_) async {});
     final catRepo = MockCategoryRepository();
@@ -218,6 +258,13 @@ void main() {
         overrides: [
           aiConfigRepositoryProvider.overrideWithValue(aiRepo),
           categoryRepositoryProvider.overrideWithValue(catRepo),
+          // The category step now hands off to the live first-capture page;
+          // override its providers so the page renders without the real mic
+          // pipeline or a live structuring round-trip.
+          captureControllerProvider.overrideWith(_FakeCaptureController.new),
+          onboardingCaptureToTaskServiceProvider.overrideWithValue(
+            MockOnboardingCaptureToTaskService(),
+          ),
           connectionVerifierClientProvider.overrideWith(
             (ref) =>
                 () => MockClient((_) async => http.Response('', 200)),
@@ -252,11 +299,74 @@ void main() {
     await tester.tap(find.text('Connect'));
     await tester.pumpAndSettle();
 
-    // Modal popped; provider creation + FTUE setup ran; event recorded.
+    // Connect now reveals the success beat instead of dropping silently.
+    expect(find.text('Get started'), findsOneWidget);
+    await tester.tap(find.text('Get started'));
+    await tester.pumpAndSettle();
+
+    // Success leads into the recording-style step. Its previews loop, so step
+    // it with bounded pumps and continue with the default style.
+    expect(find.text('How should recording feel?'), findsOneWidget);
+    await tester.tap(find.text('Continue'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Then the category step; the "why areas?" disclosure opens the
+    // per-category-AI explanation, then dismisses.
+    expect(find.text('Where should your AI work?'), findsOneWidget);
+    await tester.tap(find.text('Why areas?'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('own AI'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    // "Add your own" opens a dialog. Cancelling adds nothing…
+    await tester.tap(find.text('Add your own'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hobbies'), findsNothing);
+
+    // …while a typed name becomes a selected custom area.
+    await tester.tap(find.text('Add your own'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Hobbies');
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hobbies'), findsOneWidget);
+
+    // Pick a preset area too, then continue with both selected.
+    await tester.tap(find.text('Work'));
+    await tester.pump();
+    await tester.tap(find.text('Continue'));
+    // The modal pops and the live first-capture page is pushed in its place.
+    // The capture page's orb tickers never settle, so step the route
+    // transition with bounded pumps rather than pumpAndSettle.
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Completing the category step pops the modal and reveals the live
+    // first-capture page; provider creation + FTUE setup ran; the chosen area
+    // became a category bound to the provider's seeded inference profile; the
+    // connected event is recorded.
     expect(find.text('Connect your brain'), findsNothing);
+    expect(find.text("What's on your mind?"), findsOneWidget);
     verify(() => aiRepo.saveConfig(any())).called(1);
+    verify(
+      () => catRepo.createCategory(
+        name: 'Work',
+        color: any(named: 'color'),
+        defaultProfileId: profileLocalId,
+      ),
+    ).called(1);
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.providerConnected), isTrue);
+
+    // The capture page's close affordance finishes onboarding (pops the page).
+    await tester.tap(find.byIcon(Icons.close_rounded), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.text("What's on your mind?"), findsNothing);
   });
 
   testWidgets('falls back to the getIt-registered metrics repo', (
@@ -285,4 +395,84 @@ void main() {
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.welcomeShown), isTrue);
   });
+
+  testWidgets('renders the desktop (centred) layout on a wide viewport', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(1000, 800)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      makeTestableWidget(
+        host(),
+        mediaQueryData: const MediaQueryData(
+          size: Size(1000, 800),
+          disableAnimations: true,
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // The wide branch of the scaffold renders the centred panel.
+    expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
+
+    // Tapping a non-interactive area of the panel is swallowed (the panel's
+    // opaque no-op tap), so the flow stays open — not dismissed.
+    await tester.tap(find.text('Talk. Lotti turns it into a plan.'));
+    await tester.pumpAndSettle();
+    expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
+  });
+
+  testWidgets(
+    'openOnboardingCreatedTask (desktop) opens the task and pops the capture '
+    'route',
+    (tester) async {
+      final nav = MockNavService();
+      when(() => nav.isDesktopMode).thenReturn(true);
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
+      getIt.registerSingleton<NavService>(nav);
+      addTearDown(() => getIt.unregister<NavService>());
+
+      late BuildContext captureContext;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (rootContext) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(rootContext).push(
+                    MaterialPageRoute<void>(
+                      builder: (capCtx) {
+                        captureContext = capCtx;
+                        return const Scaffold(body: Text('capture'));
+                      },
+                    ),
+                  ),
+                  child: const Text('push'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('push'));
+      await tester.pumpAndSettle();
+      expect(find.text('capture'), findsOneWidget);
+
+      openOnboardingCreatedTask(captureContext, 'task-9');
+      await tester.pumpAndSettle();
+
+      // Desktop: hands the task to the detail stack and pops the capture route
+      // (back to the app), without pushing a TaskDetailsPage route here.
+      verify(() => nav.pushDesktopTaskDetail('task-9')).called(1);
+      expect(find.text('capture'), findsNothing);
+      expect(find.text('push'), findsOneWidget);
+    },
+  );
 }

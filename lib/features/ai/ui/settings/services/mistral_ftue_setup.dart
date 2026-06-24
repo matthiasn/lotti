@@ -29,6 +29,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     required WidgetRef ref,
     required AiConfigInferenceProvider provider,
     Set<String> excludedProviderModelIds = const {},
+    bool createDefaultCategory = true,
   }) async {
     if (provider.inferenceProviderType != InferenceProviderType.mistral) {
       return null;
@@ -70,11 +71,15 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       excludedProviderModelIds: excludedProviderModelIds,
     );
 
-    final (category, categoryWasCreated) = await _createOrReuseCategory(
-      categoryRepository: categoryRepository,
-      categoryName: ftueMistralCategoryName,
-      categoryColor: ftueMistralCategoryColor,
-    );
+    CategoryDefinition? category;
+    var categoryWasCreated = false;
+    if (createDefaultCategory) {
+      (category, categoryWasCreated) = await _createOrReuseCategory(
+        categoryRepository: categoryRepository,
+        categoryName: ftueMistralCategoryName,
+        categoryColor: ftueMistralCategoryColor,
+      );
+    }
 
     return MistralFtueResult(
       modelsCreated: modelResult.created.length,

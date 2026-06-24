@@ -6363,6 +6363,77 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Verifying…';
 
   @override
+  String get onboardingCaptureAccept => 'Looks good';
+
+  @override
+  String get onboardingCaptureCategoryPrompt => 'Where should this land?';
+
+  @override
+  String get onboardingCaptureEditHint => 'Tap any line to edit';
+
+  @override
+  String get onboardingCaptureListening => 'Listening… tap when you\'re done';
+
+  @override
+  String get onboardingCaptureOrbLabel => 'Record your thought';
+
+  @override
+  String get onboardingCapturePrompt => 'What\'s on your mind?';
+
+  @override
+  String get onboardingCapturePromptHint =>
+      'Try: remind me to call the dentist and book the car service';
+
+  @override
+  String get onboardingCaptureRatherType => 'Rather type?';
+
+  @override
+  String get onboardingCaptureReassurance =>
+      'You\'ll be able to edit everything next.';
+
+  @override
+  String get onboardingCaptureRevealed => 'Here\'s your first task';
+
+  @override
+  String get onboardingCaptureThinking => 'Turning your words into a task…';
+
+  @override
+  String get onboardingCaptureTypePrompt => 'Type your thought';
+
+  @override
+  String get onboardingCategoryAddOwn => 'Add your own';
+
+  @override
+  String get onboardingCategoryContinue => 'Continue';
+
+  @override
+  String get onboardingCategoryExplanation =>
+      'Each area of your life gets its own space. Pick any that fit — or add your own.';
+
+  @override
+  String get onboardingCategoryFamily => 'Family';
+
+  @override
+  String get onboardingCategoryFitness => 'Fitness';
+
+  @override
+  String get onboardingCategoryFriends => 'Friends';
+
+  @override
+  String get onboardingCategoryTitle => 'Where should your AI work?';
+
+  @override
+  String get onboardingCategoryWhy => 'Why areas?';
+
+  @override
+  String onboardingCategoryWhyDetail(String provider) {
+    return 'Each area can use its own AI. $provider will power the areas you pick here — later you can give different areas different AIs.';
+  }
+
+  @override
+  String get onboardingCategoryWork => 'Work';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
@@ -6399,6 +6470,35 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get onboardingConnectTitle =>
       'Pick the brain that turns your words into tasks';
+
+  @override
+  String get onboardingRecordingStyleAnalogue => 'Analogue — VU meter';
+
+  @override
+  String get onboardingRecordingStyleContinue => 'Continue';
+
+  @override
+  String get onboardingRecordingStyleExplanation =>
+      'Pick a look for the mic. You can change it any time in Settings.';
+
+  @override
+  String get onboardingRecordingStyleModern => 'Modern — energy orb';
+
+  @override
+  String get onboardingRecordingStyleTitle => 'How should recording feel?';
+
+  @override
+  String get onboardingRecordingStyleTryVoice => 'Try with your voice';
+
+  @override
+  String get onboardingSuccessContinue => 'Get started';
+
+  @override
+  String get onboardingSuccessSubtitle =>
+      'Your AI brain is connected and ready to turn your words into tasks.';
+
+  @override
+  String get onboardingSuccessTitle => 'You\'re all set';
 
   @override
   String get onboardingWelcomeConnectButton => 'Connect your brain';

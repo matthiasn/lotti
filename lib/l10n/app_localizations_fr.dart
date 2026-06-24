@@ -6524,6 +6524,77 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Vérification…';
 
   @override
+  String get onboardingCaptureAccept => 'C\'est parfait';
+
+  @override
+  String get onboardingCaptureCategoryPrompt => 'Où ranger ça ?';
+
+  @override
+  String get onboardingCaptureEditHint => 'Touche une ligne pour la modifier';
+
+  @override
+  String get onboardingCaptureListening => 'J\'écoute… touche quand tu as fini';
+
+  @override
+  String get onboardingCaptureOrbLabel => 'Enregistre ta pensée';
+
+  @override
+  String get onboardingCapturePrompt => 'À quoi penses-tu ?';
+
+  @override
+  String get onboardingCapturePromptHint =>
+      'Essaie : rappelle-moi d\'appeler le dentiste et de réserver la révision de la voiture';
+
+  @override
+  String get onboardingCaptureRatherType => 'Plutôt écrire ?';
+
+  @override
+  String get onboardingCaptureReassurance =>
+      'Tu pourras tout modifier ensuite.';
+
+  @override
+  String get onboardingCaptureRevealed => 'Voici ta première tâche';
+
+  @override
+  String get onboardingCaptureThinking => 'Je transforme tes mots en tâche…';
+
+  @override
+  String get onboardingCaptureTypePrompt => 'Écris ta pensée';
+
+  @override
+  String get onboardingCategoryAddOwn => 'Ajouter la tienne';
+
+  @override
+  String get onboardingCategoryContinue => 'Continuer';
+
+  @override
+  String get onboardingCategoryExplanation =>
+      'Chaque domaine de ta vie a son propre espace. Choisis ce qui te convient — ou ajoute les tiens.';
+
+  @override
+  String get onboardingCategoryFamily => 'Famille';
+
+  @override
+  String get onboardingCategoryFitness => 'Forme';
+
+  @override
+  String get onboardingCategoryFriends => 'Amis';
+
+  @override
+  String get onboardingCategoryTitle => 'Où ton IA doit-elle aider ?';
+
+  @override
+  String get onboardingCategoryWhy => 'Pourquoi des domaines ?';
+
+  @override
+  String onboardingCategoryWhyDetail(String provider) {
+    return 'Chaque domaine peut utiliser sa propre IA. $provider animera les domaines choisis ici — plus tard, tu pourras attribuer différentes IA à différents domaines.';
+  }
+
+  @override
+  String get onboardingCategoryWork => 'Travail';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
@@ -6560,6 +6631,36 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get onboardingConnectTitle =>
       'Choisis le cerveau qui transforme tes mots en tâches';
+
+  @override
+  String get onboardingRecordingStyleAnalogue => 'Analogique — VU-mètre';
+
+  @override
+  String get onboardingRecordingStyleContinue => 'Continuer';
+
+  @override
+  String get onboardingRecordingStyleExplanation =>
+      'Choisis un style pour le micro. Tu peux le changer à tout moment dans les Réglages.';
+
+  @override
+  String get onboardingRecordingStyleModern => 'Moderne — orbe d’énergie';
+
+  @override
+  String get onboardingRecordingStyleTitle =>
+      'Quel style pour l’enregistrement ?';
+
+  @override
+  String get onboardingRecordingStyleTryVoice => 'Essaie avec ta voix';
+
+  @override
+  String get onboardingSuccessContinue => 'C\'est parti';
+
+  @override
+  String get onboardingSuccessSubtitle =>
+      'Ton cerveau IA est connecté, prêt à transformer tes mots en tâches.';
+
+  @override
+  String get onboardingSuccessTitle => 'Tout est prêt';
 
   @override
   String get onboardingWelcomeConnectButton => 'Connecter ton cerveau';

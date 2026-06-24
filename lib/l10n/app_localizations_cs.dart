@@ -6475,6 +6475,76 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Ověřuji…';
 
   @override
+  String get onboardingCaptureAccept => 'Vypadá to dobře';
+
+  @override
+  String get onboardingCaptureCategoryPrompt => 'Kam to má patřit?';
+
+  @override
+  String get onboardingCaptureEditHint => 'Klepnutím na řádek jej upravíš';
+
+  @override
+  String get onboardingCaptureListening => 'Poslouchám… klepni, až budeš hotov';
+
+  @override
+  String get onboardingCaptureOrbLabel => 'Nahraj svou myšlenku';
+
+  @override
+  String get onboardingCapturePrompt => 'Co máš na mysli?';
+
+  @override
+  String get onboardingCapturePromptHint =>
+      'Zkus: připomeň mi zavolat zubaři a objednat servis auta';
+
+  @override
+  String get onboardingCaptureRatherType => 'Raději psát?';
+
+  @override
+  String get onboardingCaptureReassurance => 'Vše budeš moct následně upravit.';
+
+  @override
+  String get onboardingCaptureRevealed => 'Tady je tvůj první úkol';
+
+  @override
+  String get onboardingCaptureThinking => 'Měním tvá slova v úkol…';
+
+  @override
+  String get onboardingCaptureTypePrompt => 'Napiš svou myšlenku';
+
+  @override
+  String get onboardingCategoryAddOwn => 'Přidat vlastní';
+
+  @override
+  String get onboardingCategoryContinue => 'Pokračovat';
+
+  @override
+  String get onboardingCategoryExplanation =>
+      'Každá oblast života má vlastní prostor. Vyber, co se hodí — nebo přidej vlastní.';
+
+  @override
+  String get onboardingCategoryFamily => 'Rodina';
+
+  @override
+  String get onboardingCategoryFitness => 'Fitness';
+
+  @override
+  String get onboardingCategoryFriends => 'Přátelé';
+
+  @override
+  String get onboardingCategoryTitle => 'Kde má tvoje AI pracovat?';
+
+  @override
+  String get onboardingCategoryWhy => 'Proč oblasti?';
+
+  @override
+  String onboardingCategoryWhyDetail(String provider) {
+    return 'Každá oblast může používat vlastní AI. $provider bude pohánět oblasti, které zde vybereš — později můžeš různým oblastem přiřadit různé AI.';
+  }
+
+  @override
+  String get onboardingCategoryWork => 'Práce';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
@@ -6511,6 +6581,35 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get onboardingConnectTitle =>
       'Vyber mozek, který promění tvá slova v úkoly';
+
+  @override
+  String get onboardingRecordingStyleAnalogue => 'Analogový — VU metr';
+
+  @override
+  String get onboardingRecordingStyleContinue => 'Pokračovat';
+
+  @override
+  String get onboardingRecordingStyleExplanation =>
+      'Vyber vzhled pro mikrofon. Kdykoli ho můžeš změnit v Nastavení.';
+
+  @override
+  String get onboardingRecordingStyleModern => 'Moderní — energetická koule';
+
+  @override
+  String get onboardingRecordingStyleTitle => 'Jak má nahrávání vypadat?';
+
+  @override
+  String get onboardingRecordingStyleTryVoice => 'Vyzkoušej svým hlasem';
+
+  @override
+  String get onboardingSuccessContinue => 'Začít';
+
+  @override
+  String get onboardingSuccessSubtitle =>
+      'Tvůj AI mozek je připojený a promění tvá slova v úkoly.';
+
+  @override
+  String get onboardingSuccessTitle => 'Vše připraveno';
 
   @override
   String get onboardingWelcomeConnectButton => 'Připojit mozek';

@@ -52,6 +52,7 @@ Future<AiFtueResult?> runFtueSetupForType({
   required AiConfigInferenceProvider config,
   required ProviderPromptSetupService setupService,
   Set<String> excludedProviderModelIds = const {},
+  bool createDefaultCategory = true,
 }) async {
   return switch (providerType) {
     InferenceProviderType.alibaba => setupService.performAlibabaFtueSetup(
@@ -59,42 +60,49 @@ Future<AiFtueResult?> runFtueSetupForType({
       ref: ref,
       provider: config,
       excludedProviderModelIds: excludedProviderModelIds,
+      createDefaultCategory: createDefaultCategory,
     ),
     InferenceProviderType.anthropic => setupService.performAnthropicFtueSetup(
       context: context,
       ref: ref,
       provider: config,
       excludedProviderModelIds: excludedProviderModelIds,
+      createDefaultCategory: createDefaultCategory,
     ),
     InferenceProviderType.gemini => setupService.performGeminiFtueSetup(
       context: context,
       ref: ref,
       provider: config,
       excludedProviderModelIds: excludedProviderModelIds,
+      createDefaultCategory: createDefaultCategory,
     ),
     InferenceProviderType.ollama => setupService.performOllamaFtueSetup(
       context: context,
       ref: ref,
       provider: config,
       excludedProviderModelIds: excludedProviderModelIds,
+      createDefaultCategory: createDefaultCategory,
     ),
     InferenceProviderType.openAi => setupService.performOpenAiFtueSetup(
       context: context,
       ref: ref,
       provider: config,
       excludedProviderModelIds: excludedProviderModelIds,
+      createDefaultCategory: createDefaultCategory,
     ),
     InferenceProviderType.melious => setupService.performMeliousFtueSetup(
       context: context,
       ref: ref,
       provider: config,
       excludedProviderModelIds: excludedProviderModelIds,
+      createDefaultCategory: createDefaultCategory,
     ),
     InferenceProviderType.mistral => setupService.performMistralFtueSetup(
       context: context,
       ref: ref,
       provider: config,
       excludedProviderModelIds: excludedProviderModelIds,
+      createDefaultCategory: createDefaultCategory,
     ),
     _ => null,
   };

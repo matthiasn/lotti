@@ -6520,6 +6520,79 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Se verifică…';
 
   @override
+  String get onboardingCaptureAccept => 'Arată bine';
+
+  @override
+  String get onboardingCaptureCategoryPrompt => 'Unde doriți să ajungă?';
+
+  @override
+  String get onboardingCaptureEditHint =>
+      'Atingeți orice rând pentru a-l edita';
+
+  @override
+  String get onboardingCaptureListening => 'Ascult… atingeți când ați terminat';
+
+  @override
+  String get onboardingCaptureOrbLabel => 'Înregistrați-vă gândul';
+
+  @override
+  String get onboardingCapturePrompt => 'La ce vă gândiți?';
+
+  @override
+  String get onboardingCapturePromptHint =>
+      'Încercați: amintește-mi să sun la dentist și să programez mașina la service';
+
+  @override
+  String get onboardingCaptureRatherType => 'Preferați să scrieți?';
+
+  @override
+  String get onboardingCaptureReassurance =>
+      'Veți putea edita totul în continuare.';
+
+  @override
+  String get onboardingCaptureRevealed => 'Iată prima dvs. sarcină';
+
+  @override
+  String get onboardingCaptureThinking =>
+      'Vă transform cuvintele într-o sarcină…';
+
+  @override
+  String get onboardingCaptureTypePrompt => 'Scrieți-vă gândul';
+
+  @override
+  String get onboardingCategoryAddOwn => 'Adăugați propria';
+
+  @override
+  String get onboardingCategoryContinue => 'Continuați';
+
+  @override
+  String get onboardingCategoryExplanation =>
+      'Fiecare zonă a vieții are spațiul ei. Alegeți ce se potrivește sau adăugați-vă propriile.';
+
+  @override
+  String get onboardingCategoryFamily => 'Familie';
+
+  @override
+  String get onboardingCategoryFitness => 'Fitness';
+
+  @override
+  String get onboardingCategoryFriends => 'Prieteni';
+
+  @override
+  String get onboardingCategoryTitle => 'Unde să lucreze AI-ul dvs.?';
+
+  @override
+  String get onboardingCategoryWhy => 'De ce zone?';
+
+  @override
+  String onboardingCategoryWhyDetail(String provider) {
+    return 'Fiecare zonă poate folosi propria AI. $provider va alimenta zonele alese aici — mai târziu puteți atribui AI diferite pentru zone diferite.';
+  }
+
+  @override
+  String get onboardingCategoryWork => 'Muncă';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
@@ -6556,6 +6629,36 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get onboardingConnectTitle =>
       'Alegeți creierul care vă transformă cuvintele în sarcini';
+
+  @override
+  String get onboardingRecordingStyleAnalogue => 'Analogic — VU-metru';
+
+  @override
+  String get onboardingRecordingStyleContinue => 'Continuați';
+
+  @override
+  String get onboardingRecordingStyleExplanation =>
+      'Alegeți un aspect pentru microfon. Îl puteți schimba oricând în Setări.';
+
+  @override
+  String get onboardingRecordingStyleModern => 'Modern — orb de energie';
+
+  @override
+  String get onboardingRecordingStyleTitle =>
+      'Cum doriți să arate înregistrarea?';
+
+  @override
+  String get onboardingRecordingStyleTryVoice => 'Încercați cu vocea';
+
+  @override
+  String get onboardingSuccessContinue => 'Începeți';
+
+  @override
+  String get onboardingSuccessSubtitle =>
+      'Creierul AI este conectat și pregătit să vă transforme cuvintele în sarcini.';
+
+  @override
+  String get onboardingSuccessTitle => 'Gata de start';
 
   @override
   String get onboardingWelcomeConnectButton => 'Conectați-vă creierul';

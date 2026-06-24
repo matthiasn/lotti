@@ -29,6 +29,7 @@ extension AnthropicFtueSetup on ProviderPromptSetupService {
     required WidgetRef ref,
     required AiConfigInferenceProvider provider,
     Set<String> excludedProviderModelIds = const {},
+    bool createDefaultCategory = true,
   }) async {
     if (provider.inferenceProviderType != InferenceProviderType.anthropic) {
       return null;
@@ -69,12 +70,16 @@ extension AnthropicFtueSetup on ProviderPromptSetupService {
       excludedProviderModelIds: excludedProviderModelIds,
     );
 
-    final (category, categoryWasCreated) = await _createOrReuseCategory(
-      categoryRepository: categoryRepository,
-      categoryName: ftueAnthropicCategoryName,
-      categoryColor: ftueAnthropicCategoryColor,
-      defaultProfileId: profileAnthropicId,
-    );
+    CategoryDefinition? category;
+    var categoryWasCreated = false;
+    if (createDefaultCategory) {
+      (category, categoryWasCreated) = await _createOrReuseCategory(
+        categoryRepository: categoryRepository,
+        categoryName: ftueAnthropicCategoryName,
+        categoryColor: ftueAnthropicCategoryColor,
+        defaultProfileId: profileAnthropicId,
+      );
+    }
 
     return AnthropicFtueResult(
       modelsCreated: modelResult.created.length,

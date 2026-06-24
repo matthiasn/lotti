@@ -119,6 +119,13 @@ Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {
         cardColor: dsTokensLight.colors.background.level01,
         onCardColor: dsTokensLight.colors.text.highEmphasis,
         ghostColor: dsTokensDark.colors.text.mediumEmphasis,
+        title: 'Car & health errands',
+        items: const ['Call the dentist', 'Book the car service'],
+        spokenLines: const [
+          '"remind me to call the dentist"',
+          '"and book the car service"',
+        ],
+        loop: true,
       );
     case OnboardingHeroStyle.aurora:
       return AuroraHero(colors: onboardingAuroraColors(accent));

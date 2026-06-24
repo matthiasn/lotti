@@ -11122,6 +11122,138 @@ abstract class AppLocalizations {
   /// **'Verifying…'**
   String get onboardingApiKeyVerifying;
 
+  /// No description provided for @onboardingCaptureAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks good'**
+  String get onboardingCaptureAccept;
+
+  /// No description provided for @onboardingCaptureCategoryPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Where should this land?'**
+  String get onboardingCaptureCategoryPrompt;
+
+  /// No description provided for @onboardingCaptureEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap any line to edit'**
+  String get onboardingCaptureEditHint;
+
+  /// No description provided for @onboardingCaptureListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening… tap when you\'re done'**
+  String get onboardingCaptureListening;
+
+  /// No description provided for @onboardingCaptureOrbLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Record your thought'**
+  String get onboardingCaptureOrbLabel;
+
+  /// No description provided for @onboardingCapturePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s on your mind?'**
+  String get onboardingCapturePrompt;
+
+  /// No description provided for @onboardingCapturePromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Try: remind me to call the dentist and book the car service'**
+  String get onboardingCapturePromptHint;
+
+  /// No description provided for @onboardingCaptureRatherType.
+  ///
+  /// In en, this message translates to:
+  /// **'Rather type?'**
+  String get onboardingCaptureRatherType;
+
+  /// No description provided for @onboardingCaptureReassurance.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll be able to edit everything next.'**
+  String get onboardingCaptureReassurance;
+
+  /// No description provided for @onboardingCaptureRevealed.
+  ///
+  /// In en, this message translates to:
+  /// **'Here\'s your first task'**
+  String get onboardingCaptureRevealed;
+
+  /// No description provided for @onboardingCaptureThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning your words into a task…'**
+  String get onboardingCaptureThinking;
+
+  /// No description provided for @onboardingCaptureTypePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your thought'**
+  String get onboardingCaptureTypePrompt;
+
+  /// No description provided for @onboardingCategoryAddOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your own'**
+  String get onboardingCategoryAddOwn;
+
+  /// No description provided for @onboardingCategoryContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get onboardingCategoryContinue;
+
+  /// No description provided for @onboardingCategoryExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Each area of your life gets its own space. Pick any that fit — or add your own.'**
+  String get onboardingCategoryExplanation;
+
+  /// No description provided for @onboardingCategoryFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get onboardingCategoryFamily;
+
+  /// No description provided for @onboardingCategoryFitness.
+  ///
+  /// In en, this message translates to:
+  /// **'Fitness'**
+  String get onboardingCategoryFitness;
+
+  /// No description provided for @onboardingCategoryFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get onboardingCategoryFriends;
+
+  /// No description provided for @onboardingCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where should your AI work?'**
+  String get onboardingCategoryTitle;
+
+  /// No description provided for @onboardingCategoryWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Why areas?'**
+  String get onboardingCategoryWhy;
+
+  /// No description provided for @onboardingCategoryWhyDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Each area can use its own AI. {provider} will power the areas you pick here — later you can give different areas different AIs.'**
+  String onboardingCategoryWhyDetail(String provider);
+
+  /// No description provided for @onboardingCategoryWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get onboardingCategoryWork;
+
   /// No description provided for @onboardingConnectGeminiName.
   ///
   /// In en, this message translates to:
@@ -11193,6 +11325,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pick the brain that turns your words into tasks'**
   String get onboardingConnectTitle;
+
+  /// No description provided for @onboardingRecordingStyleAnalogue.
+  ///
+  /// In en, this message translates to:
+  /// **'Analogue — VU meter'**
+  String get onboardingRecordingStyleAnalogue;
+
+  /// No description provided for @onboardingRecordingStyleContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get onboardingRecordingStyleContinue;
+
+  /// No description provided for @onboardingRecordingStyleExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a look for the mic. You can change it any time in Settings.'**
+  String get onboardingRecordingStyleExplanation;
+
+  /// No description provided for @onboardingRecordingStyleModern.
+  ///
+  /// In en, this message translates to:
+  /// **'Modern — energy orb'**
+  String get onboardingRecordingStyleModern;
+
+  /// No description provided for @onboardingRecordingStyleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How should recording feel?'**
+  String get onboardingRecordingStyleTitle;
+
+  /// No description provided for @onboardingRecordingStyleTryVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Try with your voice'**
+  String get onboardingRecordingStyleTryVoice;
+
+  /// No description provided for @onboardingSuccessContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get onboardingSuccessContinue;
+
+  /// No description provided for @onboardingSuccessSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI brain is connected and ready to turn your words into tasks.'**
+  String get onboardingSuccessSubtitle;
+
+  /// No description provided for @onboardingSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all set'**
+  String get onboardingSuccessTitle;
 
   /// No description provided for @onboardingWelcomeConnectButton.
   ///

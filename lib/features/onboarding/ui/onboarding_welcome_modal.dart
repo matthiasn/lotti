@@ -1,14 +1,49 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/ui/pages/onboarding_capture_page.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_recording_style_step.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
+import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
+
+/// The seeded inference profile attached to categories created for a freshly
+/// connected provider — so each chosen category resolves to a real model.
+String? onboardingSeededProfileId(InferenceProviderType type) => switch (type) {
+  InferenceProviderType.gemini => profileGeminiFlashId,
+  InferenceProviderType.mistral => profileMistralEuId,
+  InferenceProviderType.alibaba => profileAlibabaId,
+  InferenceProviderType.openAi => profileOpenAiId,
+  InferenceProviderType.ollama => profileLocalId,
+  _ => null,
+};
+
+/// The areas created in the onboarding category step, handed to the live
+/// first-capture page so the structured task lands in a real place — and so the
+/// user can pick which one when they created more than one.
+class OnboardingFirstCapture {
+  const OnboardingFirstCapture({
+    required this.categories,
+    this.providerName,
+  });
+
+  final List<OnboardingCaptureCategory> categories;
+  final String? providerName;
+}
 
 /// The FTUE "connect your brain" front door: a full-screen cinematic route that
 /// crossfades through three steps — a welcome (animated `heroStyle` hero), a
@@ -36,13 +71,24 @@ class OnboardingWelcomeModal {
     unawaited(repo?.recordEvent(OnboardingEventName.welcomeShown));
 
     InferenceProviderType? connectedType;
+    // The first category created in the category step — carried out of the
+    // modal route so the live first-capture page can be pushed after the modal
+    // pops (a full-screen route, not a child of the transparent modal).
+    OnboardingFirstCapture? firstCapture;
+    final dismissLabel = MaterialLocalizations.of(
+      context,
+    ).modalBarrierDismissLabel;
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
 
-    await Navigator.of(context, rootNavigator: true).push(
+    await rootNavigator.push(
       PageRouteBuilder<void>(
         // Transparent route + dim barrier: the app stays visible (dimmed)
         // behind the floating panel rather than being replaced by a solid
-        // takeover.
+        // takeover. Tapping the dim barrier closes it, matching the app's
+        // modal convention.
         opaque: false,
+        barrierDismissible: true,
+        barrierLabel: dismissLabel,
         barrierColor: Colors.black.withValues(alpha: 0.6),
         reverseTransitionDuration: MotionDurations.short4,
         pageBuilder: (routeContext, animation, _) {
@@ -62,10 +108,21 @@ class OnboardingWelcomeModal {
                 onProviderModalShown: () => unawaited(
                   repo?.recordEvent(OnboardingEventName.providerModalShown),
                 ),
-                onConnected: (type) {
-                  connectedType = type;
+                // The connection succeeded (provider + models created) — record
+                // it now so it counts even if the user dismisses on the success
+                // beat; the route stays open to show that beat.
+                onConnected: (type) => connectedType = type,
+                // The category step finished with at least one created area —
+                // remember it and pop the modal; the capture page is pushed
+                // below once the modal route is gone.
+                onStartCapture: (capture) {
+                  firstCapture = capture;
                   Navigator.of(routeContext).pop();
                 },
+                // Reached only via the category step's no-area branch, which
+                // the disabled Continue button makes unreachable.
+                onComplete: () =>
+                    Navigator.of(routeContext).pop(), // coverage:ignore-line
                 onSkip: () => Navigator.of(routeContext).pop(),
               ),
             ),
@@ -81,10 +138,53 @@ class OnboardingWelcomeModal {
           provider: connectedType!.name,
         ),
       );
+      // The user connected a provider and created at least one area: drop them
+      // straight into the live first-capture aha on a full-screen route. Its
+      // onDone pops back to the app.
+      final capture = firstCapture;
+      if (capture != null) {
+        await rootNavigator.push(
+          MaterialPageRoute<void>(
+            builder: (captureContext) => OnboardingCapturePage(
+              categories: capture.categories,
+              providerName: capture.providerName,
+              onDone: () => Navigator.of(captureContext).pop(),
+              // Forwards to openOnboardingCreatedTask (unit-tested); fired by
+              // the live capture pipeline landing a task.
+              // coverage:ignore-start
+              onTaskCreated: (taskId) =>
+                  openOnboardingCreatedTask(captureContext, taskId),
+              // coverage:ignore-end
+            ),
+          ),
+        );
+      }
     } else {
       unawaited(repo?.recordEvent(OnboardingEventName.welcomeSkipped));
       onDismiss();
     }
+  }
+}
+
+/// Lands the user on their freshly created task, replacing the capture route so
+/// backing out returns to the app rather than the capture screen. Mirrors
+/// `task_navigation.dart`'s mobile/desktop split.
+@visibleForTesting
+void openOnboardingCreatedTask(BuildContext captureContext, String taskId) {
+  final navService = getIt<NavService>();
+  if (navService.isDesktopMode) {
+    navService.pushDesktopTaskDetail(taskId);
+    Navigator.of(captureContext).pop();
+  } else {
+    // coverage:ignore-start
+    // Pushes the full TaskDetailsPage, which needs the entire task/journal
+    // provider graph to build — exercised via the live app, not a unit test.
+    Navigator.of(captureContext).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => TaskDetailsPage(taskId: taskId),
+      ),
+    );
+    // coverage:ignore-end
   }
 }
 
@@ -95,12 +195,16 @@ class _OnboardingScaffold extends StatelessWidget {
     required this.heroStyle,
     required this.onProviderModalShown,
     required this.onConnected,
+    required this.onStartCapture,
+    required this.onComplete,
     required this.onSkip,
   });
 
   final OnboardingHeroStyle heroStyle;
   final VoidCallback onProviderModalShown;
   final void Function(InferenceProviderType) onConnected;
+  final void Function(OnboardingFirstCapture) onStartCapture;
+  final VoidCallback onComplete;
   final VoidCallback onSkip;
 
   @override
@@ -109,50 +213,69 @@ class _OnboardingScaffold extends StatelessWidget {
     // around the panel; the panel supplies its own dark surface.
     final mq = MediaQuery.of(context);
     final wide = mq.size.width >= 600;
-    final flow = _OnboardingFlow(
-      heroStyle: heroStyle,
-      onProviderModalShown: onProviderModalShown,
-      onConnected: onConnected,
-      onSkip: onSkip,
+    // The panel swallows its own taps (an opaque no-op tap) so tapping it never
+    // reaches the surrounding dismiss layer. The scroll view around it fills the
+    // screen and would otherwise absorb taps before they reach the route's modal
+    // barrier, so the route's `barrierDismissible` alone never fired — instead an
+    // explicit dismiss layer wraps the body and pops on a tap outside the panel
+    // (matching the app's tap-outside-to-close convention).
+    final panel = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {},
+      child: _OnboardingFlow(
+        heroStyle: heroStyle,
+        onProviderModalShown: onProviderModalShown,
+        onConnected: onConnected,
+        onStartCapture: onStartCapture,
+        onComplete: onComplete,
+        onSkip: onSkip,
+      ),
     );
 
+    final Widget content;
     if (wide) {
       // Desktop: a centred dialog capped at a comfortable width.
-      return Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: flow,
-              ),
+      content = SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: panel,
             ),
           ),
         ),
       );
-    }
-
-    // Phone: a full-width sheet flush to the bottom edge — it covers the app's
-    // bottom navigation (no SafeArea bottom inset, no horizontal margin). The
-    // panel's own content carries the bottom safe-area padding so controls
-    // clear the home indicator while the surface still reaches the screen edge.
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      resizeToAvoidBottomInset: false,
-      body: Align(
+    } else {
+      // Phone: a full-width sheet flush to the bottom edge — it covers the app's
+      // bottom navigation (no SafeArea bottom inset, no horizontal margin). The
+      // panel's own content carries the bottom safe-area padding so controls
+      // clear the home indicator while the surface still reaches the screen edge.
+      content = Align(
         alignment: Alignment.bottomCenter,
         child: SingleChildScrollView(
           padding: EdgeInsets.only(top: mq.padding.top),
-          child: flow,
+          child: panel,
         ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      resizeToAvoidBottomInset: false,
+      // Tapping anywhere outside the panel closes the flow, the same as tapping
+      // the dim barrier — `onSkip` pops the route and the post-pop logic records
+      // skip vs. connected appropriately.
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onSkip,
+        child: content,
       ),
     );
   }
 }
 
-enum _FlowStep { welcome, connect, apiKey }
+enum _FlowStep { welcome, connect, apiKey, success, recordingStyle, category }
 
 /// Internal three-step flow swapped with a crossfade + height animation. Owning
 /// the step locally keeps the in-panel back buttons hittable.
@@ -161,12 +284,16 @@ class _OnboardingFlow extends StatefulWidget {
     required this.heroStyle,
     required this.onProviderModalShown,
     required this.onConnected,
+    required this.onStartCapture,
+    required this.onComplete,
     required this.onSkip,
   });
 
   final OnboardingHeroStyle heroStyle;
   final VoidCallback onProviderModalShown;
   final void Function(InferenceProviderType) onConnected;
+  final void Function(OnboardingFirstCapture) onStartCapture;
+  final VoidCallback onComplete;
   final VoidCallback onSkip;
 
   @override
@@ -233,8 +360,225 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           key: ValueKey('onboarding-apikey-${_type.name}'),
           type: _type,
           onBack: () => setState(() => _step = _FlowStep.connect),
-          onConnected: () => widget.onConnected(_type),
+          onConnected: () {
+            // Provider + models are created — record the win and reveal the
+            // success beat instead of dropping silently into the app.
+            widget.onConnected(_type);
+            setState(() => _step = _FlowStep.success);
+          },
+        );
+      case _FlowStep.success:
+        return OnboardingSuccessView(
+          key: const ValueKey('onboarding-success'),
+          accent: dsTokensDark.colors.interactive.enabled,
+          title: context.messages.onboardingSuccessTitle,
+          subtitle: context.messages.onboardingSuccessSubtitle,
+          continueLabel: context.messages.onboardingSuccessContinue,
+          onContinue: () => setState(() => _step = _FlowStep.recordingStyle),
+        );
+      case _FlowStep.recordingStyle:
+        return OnboardingRecordingStyleStep(
+          key: const ValueKey('onboarding-recording-style'),
+          onContinue: () => setState(() => _step = _FlowStep.category),
+        );
+      case _FlowStep.category:
+        return _OnboardingCategoryStep(
+          key: const ValueKey('onboarding-category'),
+          type: _type,
+          onStartCapture: widget.onStartCapture,
+          onDone: widget.onComplete,
         );
     }
+  }
+}
+
+/// The category step: the user picks the life areas the just-connected provider
+/// should power; on continue each selected area becomes a real category bound
+/// to the provider's seeded inference profile (so it can actually run).
+class _OnboardingCategoryStep extends ConsumerStatefulWidget {
+  const _OnboardingCategoryStep({
+    required this.type,
+    required this.onStartCapture,
+    required this.onDone,
+    super.key,
+  });
+
+  final InferenceProviderType type;
+
+  /// Invoked with the first created area when the user finishes with at least
+  /// one selection — the modal pops and hands these to the live capture page.
+  final void Function(OnboardingFirstCapture) onStartCapture;
+
+  /// Invoked when the step completes with no area created (nothing selected) —
+  /// just pops the modal back to the app.
+  final VoidCallback onDone;
+
+  @override
+  ConsumerState<_OnboardingCategoryStep> createState() =>
+      _OnboardingCategoryStepState();
+}
+
+class _OnboardingCategoryStepState
+    extends ConsumerState<_OnboardingCategoryStep> {
+  final _selected = <String>{};
+  final _custom = <OnboardingCategoryOption>[];
+  var _busy = false;
+
+  // Starter colours for the created categories (category colours are data the
+  // user can recolour later, not design tokens).
+  static const _palette = [
+    '#5ED4B7',
+    '#4285F4',
+    '#FF7043',
+    '#AB47BC',
+    '#66BB6A',
+    '#FFA726',
+  ];
+
+  List<OnboardingCategoryOption> _options(AppLocalizations m) => [
+    OnboardingCategoryOption(
+      label: m.onboardingCategoryWork,
+      icon: Icons.work_outline_rounded,
+    ),
+    OnboardingCategoryOption(
+      label: m.onboardingCategoryFitness,
+      icon: Icons.fitness_center_rounded,
+    ),
+    OnboardingCategoryOption(
+      label: m.onboardingCategoryFamily,
+      icon: Icons.home_rounded,
+    ),
+    OnboardingCategoryOption(
+      label: m.onboardingCategoryFriends,
+      icon: Icons.group_rounded,
+    ),
+    ..._custom,
+  ];
+
+  void _toggle(String label) => setState(() {
+    if (!_selected.remove(label)) _selected.add(label);
+  });
+
+  Future<void> _addOwn() async {
+    final controller = TextEditingController();
+    final material = MaterialLocalizations.of(context);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.messages.onboardingCategoryAddOwn),
+        content: TextField(controller: controller, autofocus: true),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(material.cancelButtonLabel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: Text(material.okButtonLabel),
+          ),
+        ],
+      ),
+    );
+    if (name == null || name.isEmpty || !mounted) return;
+    setState(() {
+      if (_options(context.messages).every((o) => o.label != name)) {
+        _custom.add(
+          OnboardingCategoryOption(
+            label: name,
+            icon: Icons.label_outline_rounded,
+          ),
+        );
+      }
+      _selected.add(name);
+    });
+  }
+
+  Future<void> _continue(List<OnboardingCategoryOption> options) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final repository = ref.read(categoryRepositoryProvider);
+      final profileId = onboardingSeededProfileId(widget.type);
+      // Resolved before the await gap so no BuildContext is touched afterwards.
+      final providerName = onboardingProviderName(
+        context.messages,
+        widget.type,
+      );
+      final chosen = options.where((o) => _selected.contains(o.label)).toList();
+
+      final created = <OnboardingCaptureCategory>[];
+      for (var i = 0; i < chosen.length; i++) {
+        final category = await repository.createCategory(
+          name: chosen[i].label,
+          color: _palette[i % _palette.length],
+          defaultProfileId: profileId,
+        );
+        created.add(
+          OnboardingCaptureCategory(id: category.id, label: category.name),
+        );
+      }
+
+      if (created.isNotEmpty) {
+        // Hand every created area to the live first-capture aha; the modal pops
+        // and pushes the capture page in its place. With more than one area the
+        // page lets the user pick which one the task lands in.
+        widget.onStartCapture(
+          OnboardingFirstCapture(
+            categories: created,
+            providerName: providerName,
+          ),
+        );
+      } else {
+        // No area selected — nothing to capture into, so just finish.
+        // Defensive: Continue is disabled until at least one area is selected.
+        widget.onDone(); // coverage:ignore-line
+      }
+    } finally {
+      // Release the lock if a repository write threw. On success the modal has
+      // already popped (widget unmounted), so guard with mounted.
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    final options = _options(messages);
+    return OnboardingCategoryView(
+      accent: dsTokensDark.colors.interactive.enabled,
+      title: messages.onboardingCategoryTitle,
+      explanation: messages.onboardingCategoryExplanation,
+      whyLabel: messages.onboardingCategoryWhy,
+      continueLabel: messages.onboardingCategoryContinue,
+      addOwnLabel: messages.onboardingCategoryAddOwn,
+      options: options,
+      selected: _selected,
+      onToggle: _toggle,
+      onWhy: _explainWhy,
+      onAddOwn: _addOwn,
+      onContinue: () => _continue(options),
+    );
+  }
+
+  Future<void> _explainWhy() async {
+    final messages = context.messages;
+    final material = MaterialLocalizations.of(context);
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(messages.onboardingCategoryWhy),
+        content: Text(
+          messages.onboardingCategoryWhyDetail(
+            onboardingProviderName(messages, widget.type),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(material.okButtonLabel),
+          ),
+        ],
+      ),
+    );
   }
 }

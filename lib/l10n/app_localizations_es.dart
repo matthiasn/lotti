@@ -6516,6 +6516,78 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Verificando…';
 
   @override
+  String get onboardingCaptureAccept => 'Se ve bien';
+
+  @override
+  String get onboardingCaptureCategoryPrompt => '¿Dónde debería ir esto?';
+
+  @override
+  String get onboardingCaptureEditHint => 'Toca cualquier línea para editarla';
+
+  @override
+  String get onboardingCaptureListening => 'Escuchando… toca cuando termines';
+
+  @override
+  String get onboardingCaptureOrbLabel => 'Graba tu idea';
+
+  @override
+  String get onboardingCapturePrompt => '¿Qué tienes en mente?';
+
+  @override
+  String get onboardingCapturePromptHint =>
+      'Prueba: recuérdame llamar al dentista y reservar el servicio del coche';
+
+  @override
+  String get onboardingCaptureRatherType => '¿Prefieres escribir?';
+
+  @override
+  String get onboardingCaptureReassurance =>
+      'Podrás editar todo a continuación.';
+
+  @override
+  String get onboardingCaptureRevealed => 'Aquí está tu primera tarea';
+
+  @override
+  String get onboardingCaptureThinking =>
+      'Convirtiendo tus palabras en una tarea…';
+
+  @override
+  String get onboardingCaptureTypePrompt => 'Escribe tu idea';
+
+  @override
+  String get onboardingCategoryAddOwn => 'Añadir la tuya';
+
+  @override
+  String get onboardingCategoryContinue => 'Continuar';
+
+  @override
+  String get onboardingCategoryExplanation =>
+      'Cada área de tu vida tiene su propio espacio. Elige las que encajen o añade las tuyas.';
+
+  @override
+  String get onboardingCategoryFamily => 'Familia';
+
+  @override
+  String get onboardingCategoryFitness => 'Fitness';
+
+  @override
+  String get onboardingCategoryFriends => 'Amigos';
+
+  @override
+  String get onboardingCategoryTitle => '¿Dónde quieres que trabaje tu IA?';
+
+  @override
+  String get onboardingCategoryWhy => '¿Por qué áreas?';
+
+  @override
+  String onboardingCategoryWhyDetail(String provider) {
+    return 'Cada área puede usar su propia IA. $provider impulsará las áreas que elijas aquí; más adelante puedes asignar diferentes IA a diferentes áreas.';
+  }
+
+  @override
+  String get onboardingCategoryWork => 'Trabajo';
+
+  @override
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
@@ -6552,6 +6624,36 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get onboardingConnectTitle =>
       'Elige el cerebro que convierte tus palabras en tareas';
+
+  @override
+  String get onboardingRecordingStyleAnalogue => 'Analógico — vúmetro';
+
+  @override
+  String get onboardingRecordingStyleContinue => 'Continuar';
+
+  @override
+  String get onboardingRecordingStyleExplanation =>
+      'Elige un estilo para el micro. Puedes cambiarlo cuando quieras en Ajustes.';
+
+  @override
+  String get onboardingRecordingStyleModern => 'Moderno — orbe de energía';
+
+  @override
+  String get onboardingRecordingStyleTitle =>
+      '¿Cómo quieres que se vea la grabación?';
+
+  @override
+  String get onboardingRecordingStyleTryVoice => 'Pruébalo con tu voz';
+
+  @override
+  String get onboardingSuccessContinue => 'Empezar';
+
+  @override
+  String get onboardingSuccessSubtitle =>
+      'Tu cerebro de IA está conectado y listo para convertir tus palabras en tareas.';
+
+  @override
+  String get onboardingSuccessTitle => '¡Todo listo!';
 
   @override
   String get onboardingWelcomeConnectButton => 'Conecta tu cerebro';

@@ -25,6 +25,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -178,8 +179,10 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeChatSession());
   registerFallbackValue(FakeChecklistData());
   registerFallbackValue(FakeChecklistItemData());
+  registerFallbackValue(<ChecklistItemData>[]);
   registerFallbackValue(fallbackChecklist);
   registerFallbackValue(fallbackChecklistItem);
+  registerFallbackValue(OnboardingEventName.appFirstSeen);
 
   // Agent domain entity fallbacks
   registerFallbackValue(

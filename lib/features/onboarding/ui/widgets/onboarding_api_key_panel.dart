@@ -192,6 +192,7 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
         providerType: widget.type,
         config: config,
         setupService: ref.read(providerPromptSetupServiceProvider),
+        createDefaultCategory: false,
       );
       if (!mounted) return;
       widget.onConnected();
