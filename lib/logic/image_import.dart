@@ -187,7 +187,6 @@ Future<void> importImageXFiles(
 }) async {
   for (final file in files) {
     try {
-      final lastModified = await file.lastModified();
       final id = uuid.v1();
       final srcPath = file.path;
       final fileExtension = file.name.split('.').last.toLowerCase();
@@ -197,7 +196,7 @@ Future<void> importImageXFiles(
         continue;
       }
 
-      // Validate file size
+      // Validate file size before reading the bytes into memory.
       final fileSize = await File(srcPath).length();
       if (fileSize > ImageImportConstants.maxFileSizeBytes) {
         getIt<DomainLogger>().error(
@@ -208,9 +207,23 @@ Future<void> importImageXFiles(
         continue;
       }
 
+      final bytes = await File(srcPath).readAsBytes();
+      final lastModified = await file.lastModified();
+
+      // Prefer the photo's original capture time from EXIF; fall back to the
+      // file's last-modified time when the image carries no timestamp. Drag and
+      // drop streams each file into a fresh temp file, so its mtime is the drop
+      // time rather than when the photo was taken — only the EXIF metadata
+      // preserves the real moment.
+      final capturedAt = await _extractImageTimestamp(
+        bytes,
+        fallback: lastModified,
+      );
+      final geolocation = await extractGpsCoordinates(bytes, capturedAt);
+
       final day = DateFormat(
         AudioRecorderConstants.directoryDateFormat,
-      ).format(lastModified);
+      ).format(capturedAt);
       final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
       final directory = await createAssetDirectory(relativePath);
       final targetFileName = '$id.$fileExtension';
@@ -222,7 +235,8 @@ Future<void> importImageXFiles(
         imageId: id,
         imageFile: targetFileName,
         imageDirectory: relativePath,
-        capturedAt: lastModified,
+        capturedAt: capturedAt,
+        geolocation: geolocation,
       );
 
       await JournalRepository.createImageEntry(
@@ -249,8 +263,12 @@ Future<void> importImageXFiles(
 /// Extracts original timestamp from image EXIF data
 ///
 /// Attempts to read DateTimeOriginal or DateTime from EXIF metadata.
-/// Returns the parsed DateTime if found, otherwise returns current time.
-Future<DateTime> _extractImageTimestamp(Uint8List data) async {
+/// Returns the parsed DateTime if found, otherwise returns [fallback] when
+/// provided (e.g. the file's last-modified time), or the current time.
+Future<DateTime> _extractImageTimestamp(
+  Uint8List data, {
+  DateTime? fallback,
+}) async {
   try {
     final exifData = await readExifFromBytes(data);
     final timestamp = ExifDataExtractor.extractTimestamp(exifData);
@@ -258,7 +276,7 @@ Future<DateTime> _extractImageTimestamp(Uint8List data) async {
       return timestamp;
     }
   } catch (exception, stackTrace) {
-    // Log but don't fail - return current time as fallback
+    // Log but don't fail - return the fallback timestamp instead.
     getIt<DomainLogger>().error(
       LogDomain.ai,
       exception,
@@ -267,8 +285,8 @@ Future<DateTime> _extractImageTimestamp(Uint8List data) async {
     );
   }
 
-  // Fallback to current time if EXIF extraction fails
-  return DateTime.now();
+  // Fallback when no EXIF timestamp is available.
+  return fallback ?? DateTime.now();
 }
 
 /// Parses a rational number from EXIF format

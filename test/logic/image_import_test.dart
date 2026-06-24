@@ -296,6 +296,39 @@ Uint8List _createJpegWithMalformedDateTime() {
   ]);
 }
 
+/// Builds a minimal but byte-correct JPEG carrying an EXIF `Image DateTime`
+/// tag (0x0132) with the given [dateTime] string (EXIF format
+/// `yyyy:MM:dd HH:mm:ss`).
+///
+/// Unlike the hand-coded fixtures above — whose TIFF value offsets are off by
+/// the EXIF header size and therefore parse to garbage — every offset here is
+/// TIFF-relative and computed by construction, so the real `exif` package reads
+/// the timestamp back exactly. Used to prove the drop importer prefers the
+/// embedded capture time over the file's modified (drop) time.
+Uint8List buildExifJpegWithDateTime(String dateTime) {
+  final value = <int>[...dateTime.codeUnits, 0x00]; // NUL-terminated ASCII
+  final tiff = <int>[
+    0x49, 0x49, 0x2A, 0x00, // little-endian, TIFF magic 42
+    0x08, 0x00, 0x00, 0x00, // IFD0 starts at TIFF offset 8
+    0x01, 0x00, // one entry
+    0x32, 0x01, // tag 0x0132 (DateTime)
+    0x02, 0x00, // type ASCII
+    value.length, 0x00, 0x00, 0x00, // value count
+    0x1A, 0x00, 0x00, 0x00, // value at TIFF offset 26 (right after this IFD)
+    0x00, 0x00, 0x00, 0x00, // no next IFD
+    ...value,
+  ];
+  final app1Len = 2 + 6 + tiff.length; // length field + "Exif\0\0" + TIFF
+  return Uint8List.fromList([
+    0xFF, 0xD8, // SOI
+    0xFF, 0xE1, // APP1
+    (app1Len >> 8) & 0xFF, app1Len & 0xFF,
+    0x45, 0x78, 0x69, 0x66, 0x00, 0x00, // "Exif\0\0"
+    ...tiff,
+    0xFF, 0xD9, // EOI
+  ]);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -620,6 +653,63 @@ void main() {
           ),
         ).called(2);
       });
+
+      test(
+        'dates the entry from EXIF capture time, not the drop time',
+        () async {
+          // A dropped file is streamed into a fresh temp file, so its mtime is
+          // the drop time. The entry must instead carry the photo's original
+          // capture time read from EXIF.
+          final file = File(path.join(tempDir.path, 'photo.jpg'));
+          await file.writeAsBytes(
+            buildExifJpegWithDateTime('2024:01:15 10:20:30'),
+          );
+          // Make the mtime clearly different from the EXIF time so a regression
+          // that falls back to mtime (the old bug) would be caught.
+          await file.setLastModified(DateTime(2025, 6, 1, 8));
+
+          await importImageXFiles([XFile(file.path)]);
+
+          final captured = verify(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: captureAny(named: 'dateFrom'),
+              dateTo: captureAny(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              categoryId: any(named: 'categoryId'),
+              flag: any(named: 'flag'),
+            ),
+          ).captured;
+
+          expect(captured[0], DateTime(2024, 1, 15, 10, 20, 30));
+          expect(captured[1], DateTime(2024, 1, 15, 10, 20, 30));
+        },
+      );
+
+      test(
+        'falls back to the file modified time when EXIF has no timestamp',
+        () async {
+          // A plain (EXIF-less) image keeps the previous behaviour: the entry is
+          // dated from the file's modified time, not DateTime.now().
+          final file = await createTestImageFile('plain.jpg', 1024);
+          final modified = DateTime(2025, 6, 1, 8, 30, 15);
+          await file.setLastModified(modified);
+
+          await importImageXFiles([XFile(file.path)]);
+
+          final captured = verify(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: captureAny(named: 'dateFrom'),
+              dateTo: captureAny(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              categoryId: any(named: 'categoryId'),
+              flag: any(named: 'flag'),
+            ),
+          ).captured;
+
+          expect(captured[0], modified);
+          expect(captured[1], modified);
+        },
+      );
 
       test('handles exception during import and continues', () async {
         // Use a non-existent file path to trigger an exception
