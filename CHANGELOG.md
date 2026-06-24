@@ -151,6 +151,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   after they appear — their progress chip and bar hold their space from the
   first frame, so the list doesn't shuffle under you as you scroll.
 ### Fixed
+- Photos dragged into Lotti now keep the moment they were taken. They were being
+  dated to the time of the drop; the importer now reads the original capture time
+  from the image's EXIF metadata (and its GPS location, when present), falling
+  back to the file's modified time only when the photo carries no timestamp.
 - An inference profile whose model's provider had been deleted no longer shows a
   garbled raw model id in its slots. The slot now reads "Model unavailable — its
   provider may have been removed" and keeps its clear (×) button so you can reset
