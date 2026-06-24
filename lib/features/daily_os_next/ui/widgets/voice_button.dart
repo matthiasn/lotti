@@ -244,9 +244,10 @@ class _VoiceButtonState extends State<VoiceButton>
     final listening = widget.phase == CapturePhase.listening;
     final glyphColor = outlined || listening ? teal : onTeal;
     // Without the disc behind it the inverted stop mark reads small, so it is
-    // drawn at roughly double the mic glyph; the core's circular clip is
-    // dropped while listening so the larger square's corners are not shaved.
-    final glyphSize = size * (listening ? 0.76 : 0.38);
+    // drawn larger than the mic glyph (about halfway to filling the orb); the
+    // core's circular clip is dropped while listening so the larger square's
+    // corners are not shaved.
+    final glyphSize = size * (listening ? 0.57 : 0.38);
     final coreDecoration = outlined
         ? BoxDecoration(
             shape: BoxShape.circle,
