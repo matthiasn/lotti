@@ -100,7 +100,7 @@ class _SettingsHeaderDelegate extends SliverPersistentHeaderDelegate {
     final accessory = bottom;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level01,
+        color: tokens.colors.background.level02,
         border: Border(
           bottom: BorderSide(color: tokens.colors.decorative.level01),
         ),

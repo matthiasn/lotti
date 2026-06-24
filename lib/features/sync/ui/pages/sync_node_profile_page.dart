@@ -117,6 +117,7 @@ class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: tokens.colors.background.level02,
         title: Text(messages.settingsSyncNodeProfileTitle),
         actions: [
           Tooltip(
