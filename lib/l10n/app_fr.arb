@@ -574,6 +574,7 @@
   "aiFormNoChanges": "Aucune modification non enregistrée",
   "aiImageAnalysisPickerDefaultBadge": "Par défaut",
   "aiImageAnalysisPickerTitle": "Choisis un modèle d'analyse d'image",
+  "aiImageGenerationPickerTitle": "Choisis un modèle de génération d'images",
   "aiInferenceErrorAuthenticationTitle": "Échec de l'authentification",
   "aiInferenceErrorConnectionFailedTitle": "Échec de la connexion",
   "aiInferenceErrorInvalidRequestTitle": "Requête invalide",
@@ -622,6 +623,9 @@
   "aiModelInstallChoiceInstallButton": "Installer le modèle",
   "aiModelInstallChoiceRecommended": "Recommandé",
   "aiModelInstallChoiceTitle": "Choisir le modèle MLX Audio",
+  "aiModelPickerByProviderLabel": "Choisis un fournisseur",
+  "aiModelPickerCurrentDefaultLabel": "Modèle par défaut actuel",
+  "aiModelPickerProviderModelCount": "{count, plural, =1{1 modèle} other{{count} modèles}}",
   "aiOllamaModelInstalledSuccessfully": "Modèle « {modelName} » installé avec succès !",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {

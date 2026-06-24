@@ -1298,6 +1298,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choisis un modèle d\'analyse d\'image';
 
   @override
+  String get aiImageGenerationPickerTitle =>
+      'Choisis un modèle de génération d\'images';
+
+  @override
   String get aiInferenceErrorAuthenticationTitle =>
       'Échec de l\'authentification';
 
@@ -1387,6 +1391,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiModelInstallChoiceTitle => 'Choisir le modèle MLX Audio';
+
+  @override
+  String get aiModelPickerByProviderLabel => 'Choisis un fournisseur';
+
+  @override
+  String get aiModelPickerCurrentDefaultLabel => 'Modèle par défaut actuel';
+
+  @override
+  String aiModelPickerProviderModelCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modèles',
+      one: '1 modèle',
+    );
+    return '$_temp0';
+  }
 
   @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {

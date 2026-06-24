@@ -163,6 +163,26 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
     );
   }
 
+  /// Resolves the `(provider, modelId, model)` target used by cover-art image
+  /// generation. The profile fallback is the image-generation slot. Override
+  /// resolution is identical to the other slots: the override must point at a
+  /// real `AiConfigModel` with a resolvable parent provider, otherwise we fall
+  /// back to the profile slot with a warning log.
+  Future<_InferenceTarget> _resolveImageGenerationTarget({
+    required ResolvedProfile profile,
+    required String? overrideModelId,
+  }) {
+    return _resolveOverrideTarget(
+      overrideModelId: overrideModelId,
+      slotKind: _OverrideSlotKind.imageGeneration,
+      fallback: () => (
+        provider: profile.imageGenerationProvider,
+        modelId: profile.imageGenerationModelId,
+        model: profile.imageGenerationModel,
+      ),
+    );
+  }
+
   /// Shared override-or-fallback resolver used by all per-slot resolvers.
   /// Keeps the override → fallback flow in one place so the warning
   /// log shape and resolution rules stay aligned across slot kinds.

@@ -567,6 +567,7 @@ class SkillInferenceRunner {
     required AutomationResult automationResult,
     required String linkedTaskId,
     List<ProcessedReferenceImage>? referenceImages,
+    String? overrideModelId,
   }) async {
     // Derive the response type from the skill when present so future skill
     // variants (or test stubs) drive the status controller correctly.
@@ -613,8 +614,15 @@ class SkillInferenceRunner {
             'skill=${skill != null}, profile=${profile != null}',
           );
         }
-        final provider = profile.imageGenerationProvider;
-        final modelId = profile.imageGenerationModelId;
+        // Honour the per-invocation model override (chosen in the
+        // provider→model picker) when it resolves, otherwise fall back to the
+        // profile's image-generation slot.
+        final target = await _resolveImageGenerationTarget(
+          profile: profile,
+          overrideModelId: overrideModelId,
+        );
+        final provider = target.provider;
+        final modelId = target.modelId;
         if (provider == null || modelId == null) {
           throw StateError(
             'Profile missing image generation provider/model for '
@@ -752,7 +760,8 @@ typedef _InferenceTarget = ({
 enum _OverrideSlotKind {
   transcription('transcription'),
   imageAnalysis('image analysis'),
-  promptGeneration('prompt generation');
+  promptGeneration('prompt generation'),
+  imageGeneration('image generation');
 
   const _OverrideSlotKind(this.label);
 

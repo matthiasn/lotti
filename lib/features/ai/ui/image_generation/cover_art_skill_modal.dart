@@ -27,6 +27,7 @@ class CoverArtSkillModal extends ConsumerStatefulWidget {
     required this.skillId,
     required this.linkedTaskId,
     required this.parentRef,
+    this.overrideModelId,
     super.key,
   });
 
@@ -39,7 +40,10 @@ class CoverArtSkillModal extends ConsumerStatefulWidget {
   /// The ID of the task to which the cover art will be assigned.
   final String linkedTaskId;
 
-  /// Optional category ID for the generated image entry.
+  /// Per-invocation image model override (an `AiConfigModel.id`) chosen by the
+  /// user in the provider→model picker. `null` means "use the profile's
+  /// image-generation slot".
+  final String? overrideModelId;
 
   /// A [WidgetRef] from the parent context, used to trigger the skill
   /// provider after the modal closes.
@@ -52,6 +56,7 @@ class CoverArtSkillModal extends ConsumerStatefulWidget {
     required String skillId,
     required String linkedTaskId,
     required WidgetRef ref,
+    String? overrideModelId,
   }) async {
     await ModalUtils.showSinglePageModal<void>(
       context: context,
@@ -61,6 +66,7 @@ class CoverArtSkillModal extends ConsumerStatefulWidget {
         skillId: skillId,
         linkedTaskId: linkedTaskId,
         parentRef: ref,
+        overrideModelId: overrideModelId,
       ),
     );
   }
@@ -102,7 +108,7 @@ class _CoverArtSkillModalState extends ConsumerState<CoverArtSkillModal> {
           skillId: widget.skillId,
           linkedTaskId: widget.linkedTaskId,
           referenceImages: referenceImages.isNotEmpty ? referenceImages : null,
-          overrideModelId: null,
+          overrideModelId: widget.overrideModelId,
           geminiThinkingMode: null,
         )).future,
       ),

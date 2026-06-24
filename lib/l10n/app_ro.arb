@@ -574,6 +574,7 @@
   "aiFormNoChanges": "Nu există modificări nesalvate",
   "aiImageAnalysisPickerDefaultBadge": "Implicit",
   "aiImageAnalysisPickerTitle": "Alegeți un model pentru analiza imaginilor",
+  "aiImageGenerationPickerTitle": "Alegeți un model pentru generarea imaginilor",
   "aiInferenceErrorAuthenticationTitle": "Autentificare eșuată",
   "aiInferenceErrorConnectionFailedTitle": "Conexiune eșuată",
   "aiInferenceErrorInvalidRequestTitle": "Cerere invalidă",
@@ -622,6 +623,9 @@
   "aiModelInstallChoiceInstallButton": "Instalați modelul",
   "aiModelInstallChoiceRecommended": "Recomandat",
   "aiModelInstallChoiceTitle": "Alegeți modelul MLX Audio",
+  "aiModelPickerByProviderLabel": "Alegeți un furnizor",
+  "aiModelPickerCurrentDefaultLabel": "Modelul implicit actual",
+  "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} few{{count} modele} other{{count} de modele}}",
   "aiOllamaModelInstalledSuccessfully": "Modelul „{modelName}” a fost instalat cu succes!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {

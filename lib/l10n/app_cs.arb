@@ -414,6 +414,7 @@
   "aiFormNoChanges": "Žádné neuložené změny",
   "aiImageAnalysisPickerDefaultBadge": "Výchozí",
   "aiImageAnalysisPickerTitle": "Vyber model pro analýzu obrázků",
+  "aiImageGenerationPickerTitle": "Vyber model pro generování obrázků",
   "aiInferenceErrorAuthenticationTitle": "Autentizace selhala",
   "aiInferenceErrorConnectionFailedTitle": "Připojení selhalo",
   "aiInferenceErrorInvalidRequestTitle": "Neplatný požadavek",
@@ -462,6 +463,9 @@
   "aiModelInstallChoiceInstallButton": "Instalovat model",
   "aiModelInstallChoiceRecommended": "Doporučeno",
   "aiModelInstallChoiceTitle": "Vybrat model MLX Audio",
+  "aiModelPickerByProviderLabel": "Vyber poskytovatele",
+  "aiModelPickerCurrentDefaultLabel": "Aktuální výchozí",
+  "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} few{{count} modely} other{{count} modelů}}",
   "aiOllamaModelInstalledSuccessfully": "Model „{modelName}“ byl úspěšně nainstalován",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {

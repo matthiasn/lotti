@@ -35,6 +35,16 @@ class ModalUtils {
     bottom: 40,
   );
 
+  /// Shared text style for a modal's top-bar title, so plain-string titles and
+  /// bespoke `titleWidget`s (e.g. a branded provider header) render identically
+  /// and can't drift apart one tap into a multi-page flow.
+  static TextStyle? modalTitleStyle(BuildContext context) =>
+      context.textTheme.titleMedium?.copyWith(
+        color: context.colorScheme.onSurface,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.2,
+      );
+
   /// Creates a modern styled modal sheet page with enhanced visual effects
   static WoltModalSheetPage modalSheetPage({
     required BuildContext context,
@@ -65,11 +75,7 @@ class ModalUtils {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     title,
-                    style: context.textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                    ),
+                    style: modalTitleStyle(context),
                   ),
                 )
               : null),
@@ -251,11 +257,7 @@ class ModalUtils {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     title,
-                    style: context.textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                    ),
+                    style: modalTitleStyle(context),
                   ),
                 )
               : null),

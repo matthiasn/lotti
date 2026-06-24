@@ -3565,6 +3565,138 @@ void main() {
         },
       );
 
+      test(
+        'overrideModelId routes image generation to the override model + '
+        'provider instead of the profile slot — the cover-art picker uses '
+        'this seam to generate one cover with a non-default image model',
+        () async {
+          final textEntry = makeTextEntry(
+            id: 'text-override',
+            markdown: 'A neon city at night',
+            categoryId: 'cat-img',
+          );
+          final taskEntity = makeTaskEntity('task-override-img');
+
+          final overrideProvider =
+              AiConfig.inferenceProvider(
+                    id: 'p-override-img',
+                    baseUrl: 'https://override-img.example.com',
+                    name: 'Override Image Provider',
+                    inferenceProviderType: InferenceProviderType.openAi,
+                    apiKey: 'override-key',
+                    createdAt: DateTime(2024),
+                  )
+                  as AiConfigInferenceProvider;
+          final overrideModel =
+              AiConfig.model(
+                    id: 'override-img-model',
+                    name: 'Nano Banana',
+                    providerModelId: 'nano-banana-v2',
+                    inferenceProviderId: 'p-override-img',
+                    createdAt: DateTime(2024),
+                    inputModalities: const [Modality.text],
+                    outputModalities: const [Modality.image],
+                    isReasoningModel: false,
+                  )
+                  as AiConfigModel;
+
+          when(
+            () => mockAiConfigRepo.getConfigById('override-img-model'),
+          ).thenAnswer((_) async => overrideModel);
+          when(
+            () => mockAiConfigRepo.getConfigById('p-override-img'),
+          ).thenAnswer((_) async => overrideProvider);
+
+          when(
+            () => mockAiInputRepo.getEntity('text-override'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-override-img'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-override-img'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockTaskSummaryResolver.resolve('task-override-img'),
+          ).thenAnswer((_) async => 'brief');
+          when(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).thenAnswer(
+            (_) async => const GeneratedImage(
+              bytes: [0x89, 0x50, 0x4E, 0x47],
+              mimeType: 'image/png',
+            ),
+          );
+
+          final mockPersistenceLogic = MockPersistenceLogic();
+          getIt
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..unregister<DomainLogger>()
+            ..registerSingleton<DomainLogger>(mockLoggingService);
+          when(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (_) async => Metadata(
+              id: 'gen-img',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+              categoryId: 'cat-img',
+            ),
+          );
+          when(
+            () => mockPersistenceLogic.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+              shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+              enqueueSync: any(named: 'enqueueSync'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.getJournalEntityById('task-override-img'),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockPersistenceLogic.updateTask(
+              journalEntityId: any(named: 'journalEntityId'),
+              taskData: any(named: 'taskData'),
+            ),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runImageGeneration(
+            entryId: 'text-override',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-override-img',
+            overrideModelId: 'override-img-model',
+          );
+
+          // Generation targeted the override model + provider, NOT the
+          // profile slot's `models/gemini-image` / `p-image`.
+          verify(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: 'nano-banana-v2',
+              provider: overrideProvider,
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).called(1);
+        },
+      );
+
       String? imageGenError(String id) =>
           container.read(imageGenerationErrorControllerProvider(id: id));
 

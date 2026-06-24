@@ -21,11 +21,13 @@ export const meta = {
 //   target:     number (default 8)         — the avg bar both panels must clear.
 //   round:      number|string              — label for this rating pass.
 // ---------------------------------------------------------------------------
-const A = args || {}
+const A = typeof args !== 'undefined' && args ? args : {}
+// Accept an array, a single string, or undefined for each path list.
+const asList = (v) => (Array.isArray(v) ? v.filter(Boolean) : v ? [v] : [])
 const SURFACE = A.surface || 'the UI surface under review'
-const SHOTS = (A.screenshots || []).filter(Boolean)
-const FILES = (A.files || []).filter(Boolean)
-const IGNORE = (A.ignore || []).filter(Boolean)
+const SHOTS = asList(A.screenshots)
+const FILES = asList(A.files)
+const IGNORE = asList(A.ignore)
 const INCLUDE_PERSONAS = A.includePersonas !== false
 const TARGET = typeof A.target === 'number' ? A.target : 8
 const ROUND = A.round != null ? String(A.round) : 'baseline'
@@ -143,6 +145,23 @@ function personaPrompt(p) {
 }
 
 // ---------------------------------------------------------------------------
+// Loud guard. Some harnesses do NOT thread the Workflow tool's `args` into the
+// script's global `args` when invoked via `scriptPath` — in that case SHOTS is
+// empty and every agent scores ~1 with "no screenshots to review". If you see
+// this warning, do NOT trust the scores: either pass args a way your harness
+// threads, or (the proven pattern, matching every reference script) COPY this
+// file to a scratch path and inline SHOTS / SURFACE / EXPERTS / PERSONAS as
+// top-level constants instead of reading them from `args`.
+log('config — surface="' + SURFACE.slice(0, 70) + '" shots=' + SHOTS.length +
+    ' files=' + FILES.length + ' experts=' + EXPERTS.length +
+    ' personas=' + (INCLUDE_PERSONAS ? PERSONAS.length : 0) + ' round=' + ROUND)
+if (!SHOTS.length) {
+  log('⚠️  0 SCREENSHOTS CONFIGURED — agents will have nothing to Read and will ' +
+      'score ~1. args did not thread (scriptPath harness limitation). Inline SHOTS ' +
+      'in a copy of this script, then re-run. Aborting before burning a full panel.')
+  return { aborted: true, reason: 'no screenshots configured', round: ROUND }
+}
+
 phase('Experts')
 log('Round ' + ROUND + ': ' + EXPERTS.length + ' design experts rating ' + SHOTS.length + ' screenshots...')
 const expertResults = (
@@ -150,6 +169,10 @@ const expertResults = (
     EXPERTS.map((e) => () =>
       agent(expertPrompt(e), { label: 'expert:' + e.key, phase: 'Experts', schema: EXPERT_SCHEMA, effort: 'high' })
         .then((r) => (r ? { key: e.key, ...r } : null))
+        .catch((err) => {
+          log('expert ' + e.key + ' failed: ' + err)
+          return null
+        })
     )
   )
 ).filter(Boolean)
@@ -163,9 +186,21 @@ if (INCLUDE_PERSONAS) {
       PERSONAS.map((p) => () =>
         agent(personaPrompt(p), { label: 'persona:' + p.key, phase: 'Personas', schema: PERSONA_SCHEMA, effort: 'high' })
           .then((r) => (r ? { key: p.key, ...r } : null))
+          .catch((err) => {
+            log('persona ' + p.key + ' failed: ' + err)
+            return null
+          })
       )
     )
   ).filter(Boolean)
+}
+
+// If every agent failed or returned empty, don't waste the synthesis call on
+// an empty panel — abort with a clear reason instead.
+if (!expertResults.length || (INCLUDE_PERSONAS && !personaResults.length)) {
+  log('⚠️  No usable reviews returned (all agents failed or returned empty). ' +
+      'Aborting before the synthesis phase to avoid a meaningless verdict.')
+  return { aborted: true, reason: 'no usable reviews', round: ROUND }
 }
 
 function avg(nums) {

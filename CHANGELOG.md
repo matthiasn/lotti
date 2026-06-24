@@ -47,6 +47,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   be installed directly from the provider edit page.
 
 ### Changed
+- **Choosing a model for a one-off AI run is calmer.** When you run an AI
+  action from the sparkle menu (transcribe a voice note, analyze a photo,
+  generate a prompt or cover art) and you have more than one capable model, the
+  picker no longer drops you into one long flat list. It now groups your models
+  **by provider** — pick a provider (Anthropic, OpenAI, Gemini, Mistral, a local
+  Ollama…), then a model within it — with a one-tap shortcut to your current
+  default pinned on top. If you only have one capable model it runs straight
+  away, and if all your models live under a single provider the picker skips
+  straight to them. **Cover-art generation now lets you pick which image model
+  to use, too** — previously it always used your profile's image model. None of
+  this changes your saved profile; the choice applies to that one run.
 - **AI settings search now matches the rest of the app.** The search field in
   Settings → AI uses the same design-system search component as the journal,
   habits, task-linking and language pickers — one consistent look instead of a
