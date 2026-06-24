@@ -140,10 +140,12 @@ void main() {
       final teal = tokens.colors.interactive.enabled;
 
       // The stop square is drawn in the orb's own teal (inverted), not the
-      // light on-interactive color it used to punch out of the disc.
+      // light on-interactive color it used to punch out of the disc, and at
+      // roughly double the mic glyph since there is no disc to sit inside.
       final stopIcon = tester.widget<Icon>(find.byIcon(Icons.stop_rounded));
       expect(stopIcon.color, teal);
       expect(stopIcon.color, isNot(tokens.colors.text.onInteractiveAlert));
+      expect(stopIcon.size, 132 * 0.76);
 
       // The filled disc is gone: the core decoration has no fill and no
       // shadow while listening — just the teal square sits in the field.

@@ -243,6 +243,10 @@ class _VoiceButtonState extends State<VoiceButton>
     // rather than a light glyph punched out of a teal disc.
     final listening = widget.phase == CapturePhase.listening;
     final glyphColor = outlined || listening ? teal : onTeal;
+    // Without the disc behind it the inverted stop mark reads small, so it is
+    // drawn at roughly double the mic glyph; the core's circular clip is
+    // dropped while listening so the larger square's corners are not shaved.
+    final glyphSize = size * (listening ? 0.76 : 0.38);
     final coreDecoration = outlined
         ? BoxDecoration(
             shape: BoxShape.circle,
@@ -364,7 +368,7 @@ class _VoiceButtonState extends State<VoiceButton>
                 child: Material(
                   color: Colors.transparent,
                   shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
+                  clipBehavior: listening ? Clip.none : Clip.antiAlias,
                   child: Ink(
                     decoration: coreDecoration,
                     child: InkWell(
@@ -397,7 +401,7 @@ class _VoiceButtonState extends State<VoiceButton>
                           child: Icon(
                             _glyph,
                             key: ValueKey<IconData>(_glyph),
-                            size: size * 0.38,
+                            size: glyphSize,
                             color: glyphColor,
                           ),
                         ),
