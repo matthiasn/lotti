@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold_widgets.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -429,8 +430,11 @@ class _SyncListScaffoldState<T, F extends Enum>
 
         final onRefresh = widget.onRefresh;
         return Scaffold(
-          // No explicit background: falls through to the app's dark scaffold
-          // default (background.level02). The list cards step up to level03.
+          // Match the rest of the settings chrome — the SettingsV2Page, its
+          // tree column and detail pane all sit on background.level01 — instead
+          // of falling through to the near-black ambient scaffold. The list
+          // cards step up to level02 above this.
+          backgroundColor: context.designTokens.colors.background.level01,
           body: onRefresh == null
               ? scrollView
               : RefreshIndicator(

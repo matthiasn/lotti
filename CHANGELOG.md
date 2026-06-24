@@ -69,12 +69,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   status tags — a profile's "Desktop only", a sync node's capabilities — use
   the design-system badge. The AI model filters (provider, capability and
   reasoning) on the Models tab are design-system chips now, each provider
-  keeping its colour on a small avatar dot. In dark mode the app's
-  backgrounds now read as a deliberate dark grey rather than a flat
-  near-black, with the settings header and list cards stepping up from there
-  so they read as elevated; and the Sync Outbox row shows its pending count
-  as a clean badge rather than a postbox glyph with the number squeezed on
-  top.
+  keeping its colour on a small avatar dot. The Sync conflicts and outbox
+  lists now sit on the same dark background as the rest of Settings instead
+  of a near-black sheet (with their cards reading as elevated), and the Sync
+  Outbox row shows its pending count as a clean badge rather than a postbox
+  glyph with the number squeezed on top.
 - **Accepting or dismissing an AI suggestion is now smooth and calm instead of
   jumpy.** The row you tap stays put and confirms in place — a clear filled
   badge with the plain word *Confirmed* or *Dismissed* and a light haptic — then
