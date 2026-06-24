@@ -465,7 +465,7 @@
   "aiModelInstallChoiceTitle": "Vybrat model MLX Audio",
   "aiModelPickerByProviderLabel": "Vyber poskytovatele",
   "aiModelPickerCurrentDefaultLabel": "Aktuální výchozí",
-  "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} other{{count} modely}}",
+  "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} few{{count} modely} other{{count} modelů}}",
   "aiOllamaModelInstalledSuccessfully": "Model „{modelName}“ byl úspěšně nainstalován",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {

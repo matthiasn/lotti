@@ -1388,7 +1388,8 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count modely',
+      other: '$count modelů',
+      few: '$count modely',
       one: '1 model',
     );
     return '$_temp0';

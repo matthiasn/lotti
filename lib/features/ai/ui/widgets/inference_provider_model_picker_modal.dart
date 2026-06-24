@@ -45,18 +45,24 @@ class InferenceProviderModelPickerModal {
     required String title,
     required String defaultBadgeLabel,
   }) async {
-    if (models.isEmpty) return null;
-    if (models.length == 1) return models.first.id;
-
     final providersById = <String, AiConfigInferenceProvider>{
       for (final provider in providers) provider.id: provider,
     };
+
+    // Drop models whose provider is missing or has been deleted: they can't be
+    // routed (the runner needs a provider) and would otherwise render as dead
+    // rows whose tap does nothing.
+    final validModels = models
+        .where((m) => providersById.containsKey(m.inferenceProviderId))
+        .toList();
+    if (validModels.isEmpty) return null;
+    if (validModels.length == 1) return validModels.first.id;
 
     // Group models under their provider, preserving first-seen order so the
     // provider list is stable and matches the order the caller supplied.
     final providerOrder = <String>[];
     final modelsByProvider = <String, List<AiConfigModel>>{};
-    for (final model in models) {
+    for (final model in validModels) {
       final providerId = model.inferenceProviderId;
       final bucket = modelsByProvider[providerId];
       if (bucket == null) {
@@ -77,7 +83,7 @@ class InferenceProviderModelPickerModal {
         titleWidget: _ProviderPageTitle(provider: onlyProvider),
         padding: const EdgeInsets.symmetric(vertical: 20),
         builder: (modalContext) => _ModelList(
-          models: orderModelsDefaultFirst(models, defaultModelId),
+          models: orderModelsDefaultFirst(validModels, defaultModelId),
           providerType: onlyProvider?.inferenceProviderType,
           defaultModelId: defaultModelId,
           defaultBadgeLabel: defaultBadgeLabel,
@@ -93,7 +99,7 @@ class InferenceProviderModelPickerModal {
     // a one-tap shortcut at the top of the provider page.
     final defaultModel = defaultModelId == null
         ? null
-        : models.firstWhereOrNull((model) => model.id == defaultModelId);
+        : validModels.firstWhereOrNull((model) => model.id == defaultModelId);
 
     try {
       return await ModalUtils.showMultiPageModal<String>(

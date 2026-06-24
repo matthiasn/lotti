@@ -1304,7 +1304,7 @@ void main() {
                   skill: fx.skill,
                   models: fx.allModels,
                   resolver: _NullProfileResolver(),
-                  configs: fx.allModels,
+                  configs: [...fx.allModels, ...fx.providers],
                 ),
               ),
             );
@@ -1351,7 +1351,7 @@ void main() {
                     skill: fx.skill,
                     models: fx.allModels,
                     resolver: _NullProfileResolver(),
-                    configs: fx.allModels,
+                    configs: [...fx.allModels, ...fx.providers],
                   ),
                   triggerSkillProvider.overrideWith((ref, params) async {
                     capturedParams = params;
@@ -1967,7 +1967,7 @@ class _OverrideFixture {
         modality: variant.decoyModality,
         t: t,
       ),
-      providers: const <AiConfigInferenceProvider>[],
+      providers: [_buildProvider(id: 'p-a', name: 'Provider A', t: t)],
       profile: null,
     );
   }
@@ -2003,7 +2003,7 @@ class _OverrideFixture {
       ),
       modelB: wrongModalityDecoy('b'),
       decoy: wrongModalityDecoy('c'),
-      providers: const <AiConfigInferenceProvider>[],
+      providers: [_buildProvider(id: 'p-only', name: 'Only Provider', t: t)],
       profile: null,
     );
   }

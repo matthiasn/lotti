@@ -12,7 +12,8 @@ optionally, **user personas** (cognitive styles) — and drives them against
 **real screenshots the agents actually `Read`**, iterating to a numeric target.
 
 This is how the user wants UI/design tasks run. The numeric target is the
-success condition: keep iterating until every reviewer clears the bar.
+success condition: keep iterating until both panel averages clear the bar
+(the workflow's `cleared` flag).
 
 ## The loop
 
@@ -23,8 +24,8 @@ stateDiagram-v2
     RateBaseline --> Implement: both panels score the current state
     Implement --> Rescreenshot: apply highest-leverage fixes (design-system tokens only)
     Rescreenshot --> Rerate: regenerate the SAME shots
-    Rerate --> Implement: any reviewer < target
-    Rerate --> Harden: all reviewers ≥ target
+    Rerate --> Implement: either panel average < target
+    Rerate --> Harden: both panel averages ≥ target
     Harden --> [*]: tests, l10n, README, CHANGELOG+flatpak, analyzer clean, PR
 ```
 

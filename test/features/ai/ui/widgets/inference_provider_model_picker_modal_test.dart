@@ -141,6 +141,38 @@ void main() {
     });
 
     testWidgets(
+      'filters out models whose provider is missing, then short-circuits to '
+      'the single remaining valid model',
+      (tester) async {
+        String? result;
+        var called = false;
+        await pumpHost(
+          tester,
+          models: [
+            _model(id: 'm1', name: 'Model One', providerModelId: 'p/one'),
+            _model(
+              id: 'm2',
+              name: 'Model Two',
+              providerModelId: 'p/two',
+              inferenceProviderId: 'missing-provider',
+            ),
+          ],
+          providers: [_provider(id: 'openai')],
+          onResult: (r) {
+            result = r;
+            called = true;
+          },
+        );
+        // m2's provider isn't configured -> dropped -> only m1 is valid ->
+        // single-model short-circuit, no modal.
+        expect(called, isTrue);
+        expect(result, 'm1');
+        expect(find.text('Model One'), findsNothing);
+        expect(find.text('Model Two'), findsNothing);
+      },
+    );
+
+    testWidgets(
       'single provider: skips the provider step and selects a model directly',
       (tester) async {
         String? result;

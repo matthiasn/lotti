@@ -243,8 +243,12 @@ class UnifiedAiModal {
         .where((model) => model.outputModalities.contains(Modality.image))
         .toList();
 
+    // Only offer the picker when there is a genuine choice (2+ image models).
+    // With zero or one, no picker is shown and generation falls through to the
+    // profile's image-generation slot — the prior cover-art behaviour, so a
+    // single configured model never silently overrides an unset/other slot.
     String? overrideModelId;
-    if (imageModels.isNotEmpty) {
+    if (imageModels.length > 1) {
       final resolver = ref.read(profileAutomationResolverProvider);
       final resolvedProfile = await resolver.resolveForTask(linkedTask.id);
       final providerConfigs = await repo.getConfigsByType(
@@ -273,9 +277,8 @@ class UnifiedAiModal {
         defaultBadgeLabel: messages.designSystemDefaultLabel,
       );
 
-      // A null result is a dismissal only when a choice was actually shown
-      // (2+ models). With one model the picker resolves to it without a modal.
-      if (picked == null && imageModels.length > 1) return;
+      // The picker was shown (2+ models), so a null result is a dismissal.
+      if (picked == null) return;
       overrideModelId = picked == defaultModelId ? null : picked;
     }
 

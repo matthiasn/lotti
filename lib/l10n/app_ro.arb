@@ -625,7 +625,7 @@
   "aiModelInstallChoiceTitle": "Alegeți modelul MLX Audio",
   "aiModelPickerByProviderLabel": "Alegeți un furnizor",
   "aiModelPickerCurrentDefaultLabel": "Modelul implicit actual",
-  "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} other{{count} modele}}",
+  "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} few{{count} modele} other{{count} de modele}}",
   "aiOllamaModelInstalledSuccessfully": "Modelul „{modelName}” a fost instalat cu succes!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
