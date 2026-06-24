@@ -349,9 +349,11 @@ stateDiagram-v2
   shader voice affordance. `VoiceButton` mounts the AI tension-loop shader only
   during `listening`, wraps it around the record button, and removes the
   shader subtree for the other phases. The glyph is bound to the state
-  machine — mic (idle/error), stop square (listening), dimmed mic
-  (transcribing), outlined mic (captured — demoted so the advance CTA carries
-  the primary weight). Presses scale the core down with an overshoot release
+  machine — mic (idle/error), an inverted stop mark (listening — the filled
+  teal disc drops away and the stop square is itself drawn in the orb's teal,
+  sitting in the shader field), dimmed mic (transcribing), outlined mic
+  (captured — demoted so the advance CTA carries the primary weight). Presses
+  scale the core down with an overshoot release
   and the ink ripple paints *above* the gradient (via `Ink`), so taps read as
   alive.
 - The modal's sticky glass bar is populated in every phase: idle/error →
