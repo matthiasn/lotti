@@ -63,7 +63,14 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     if (p == null) {
       return _nameController.text.trim().isNotEmpty ||
           _descriptionController.text.trim().isNotEmpty ||
-          _thinkingModelId != null;
+          _thinkingModelId != null ||
+          _thinkingHighEndModelId != null ||
+          _imageRecognitionModelId != null ||
+          _transcriptionModelId != null ||
+          _imageGenerationModelId != null ||
+          _desktopOnly ||
+          _pinnedHostId != null ||
+          _skillAssignments.any((a) => a.automate);
     }
     return _nameController.text != p.name ||
         _descriptionController.text != (p.description ?? '') ||

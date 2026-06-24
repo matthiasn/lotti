@@ -122,8 +122,15 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
                 child: Semantics(
                   button: true,
                   enabled: enabled,
+                  // Selection is a logical state, independent of the transient
+                  // pressed/hover visuals: a selected chip pressed during a tap
+                  // resolves to `pressed`, but assistive tech must still hear it
+                  // as selected. `forcedState: activated` covers widgetbook/tests
+                  // that pin the activated look without the runtime flag.
                   selected:
-                      visualState == DesignSystemChipVisualState.activated,
+                      widget.selected ||
+                      widget.forcedState ==
+                          DesignSystemChipVisualState.activated,
                   label: widget.semanticsLabel ?? widget.label,
                   child: _ChipContent(
                     label: widget.label,

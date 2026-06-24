@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
@@ -589,6 +590,39 @@ void main() {
       switchTile = _toggleIn(tester, desktopToggle);
       expect(switchTile.value, isFalse);
     });
+
+    testWidgets(
+      'create mode: toggling desktop-only alone marks the form dirty',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        DesignSystemButton saveButton() => tester.widget<DesignSystemButton>(
+          find.widgetWithIcon(DesignSystemButton, Icons.save_rounded),
+        );
+
+        // A blank create form is not dirty -> Save disabled.
+        expect(saveButton().onPressed, isNull);
+
+        // Toggle desktop-only without touching the name or any model slot.
+        final desktopToggle = find.widgetWithText(ListTile, 'Desktop Only');
+        await tester.scrollUntilVisible(
+          desktopToggle,
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(desktopToggle);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Even though nothing else was set, the form now reports dirty, so Save
+        // is enabled (validity is enforced separately, inside _save).
+        expect(saveButton().onPressed, isNotNull);
+      },
+    );
 
     testWidgets('description field is shown and editable', (tester) async {
       await tester.pumpWidget(buildSubject());

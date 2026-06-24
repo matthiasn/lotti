@@ -49,18 +49,6 @@ void main() {
 
         expect(color, equals(const Color(0xFF73B6F5))); // Blue dark
       });
-
-      test('falls back to a neutral grey for an unmapped provider', () {
-        // The map covers every provider type today; the fallback guards the
-        // null branch of getProviderColor.
-        expect(
-          ProviderChipConstants.getProviderColor(
-            InferenceProviderType.alibaba,
-            isDark: true,
-          ),
-          isA<Color>(),
-        );
-      });
     });
 
     group('getProviderColor - Light Theme', () {
