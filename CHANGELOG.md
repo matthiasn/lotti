@@ -170,6 +170,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dated to the time of the drop; the importer now reads the original capture time
   from the image's EXIF metadata (and its GPS location, when present), falling
   back to the file's modified time only when the photo carries no timestamp.
+- The celebration **Style** settings got a small polish pass. Each style's
+  preview is now a single crisp play button instead of a blurry triangle and dot
+  layered on top of each other, and the Tasks / Habits / Checklist items selector
+  above it uses the same aligned segmented control as the rest of the app, so its
+  rounded corners line up with the selected segment.
 - An inference profile whose model's provider had been deleted no longer shows a
   garbled raw model id in its slots. The slot now reads "Model unavailable — its
   provider may have been removed" and keeps its clear (×) button so you can reset

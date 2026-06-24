@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
@@ -93,6 +94,7 @@ class _SyncNodeProfileBodyState extends ConsumerState<SyncNodeProfileBody> {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
+    final tokens = context.designTokens;
     final selfAsync = ref.watch(localSyncNodeSelfProvider);
     final directoryAsync = ref.watch(knownSyncNodesProvider);
 
@@ -120,7 +122,7 @@ class _SyncNodeProfileBodyState extends ConsumerState<SyncNodeProfileBody> {
     return Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(tokens.spacing.step6),
         children: [
           // Save lives at the top-right of the form (not in an AppBar action),
           // so the desktop detail pane — which already shows the breadcrumb

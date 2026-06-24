@@ -27,7 +27,7 @@ loop possible.
 | `completion_celebration.dart` | `CompletionCelebration` — wraps a child, runs the timeline on the `false → true` "completed" edge, renders the glow inline and fires the burst into the app `Overlay` via `spawnCompletionBurst()`. |
 | `../../settings/state/celebration_preferences_controller.dart` | `CelebrationPreferences` + controller: the master switch, per-event switches, the independent haptics switch, and a **per-content-type variant** (`tasksVariant` / `habitsVariant` / `checklistItemsVariant`), persisted in `SettingsDb`. |
 | `../../settings/ui/widgets/celebration_variant_picker.dart` | The (presentational) style picker — one live-preview card per variant; takes a `selected` + `onSelect`. |
-| `../../settings/ui/widgets/celebration_style_section.dart` | The Style assignment UI: a surface selector (Tasks / Habits / Checklist items, each showing its assigned style) over a single picker re-bound to the selected surface. |
+| `../../settings/ui/widgets/celebration_style_section.dart` | The Style assignment UI: a shared `DsSegmentedToggle` surface selector (Tasks / Habits / Checklist items) over a single picker re-bound to the selected surface. |
 | `../../settings/ui/widgets/celebration_preview_stage.dart` | The "Try it" stage — dummy Done / checklist / habit controls that each replay their own content type's variant. |
 
 ## Where it fires
@@ -129,13 +129,15 @@ per-event + the independent haptics), the **style section**
 their own content type's variant).
 
 The style section avoids stacking one full picker per content type (three
-near-identical 5-card grids). Instead a **surface selector** (Tasks / Habits /
-Checklist items — each segment showing the style currently assigned to it) sits
-above a **single** `CelebrationVariantPicker` that re-binds to whichever surface
-is selected; tapping a card assigns it to that surface and plays the preview. So
-all three assignments are visible at a glance while only five style cards are ever
-on screen. The selector, picker, and preview grey out and stop responding when the
-master switch is off; the haptics switch stays live.
+near-identical 5-card grids). Instead a **surface selector** — the shared
+`DsSegmentedToggle` (Tasks / Habits / Checklist items), the same segmented
+control the Time Analysis and Daily OS switches use, so its radii and selected
+fill line up — sits above a **single** `CelebrationVariantPicker` that re-binds
+to whichever surface is selected; tapping a card assigns it to that surface and
+plays the preview. Only five style cards are ever on screen, and the selected
+card's ring shows the active surface's assignment. The selector, picker, and
+preview grey out and stop responding when the master switch is off; the haptics
+switch stays live.
 
 ## Filmstrip harness (for review)
 

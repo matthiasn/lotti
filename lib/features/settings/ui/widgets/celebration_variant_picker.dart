@@ -165,23 +165,29 @@ class _CelebrationVariantCardState extends State<CelebrationVariantCard>
                           alignment: Alignment.center,
                           clipBehavior: Clip.none,
                           children: [
-                            // Resting "source" dot — the thing being celebrated.
+                            // A crisp solid play disc — the source being
+                            // celebrated. It holds a single centered, opaque play
+                            // triangle at rest and dims to become the burst's
+                            // origin while playing (no overlapping translucent
+                            // shapes, so it reads sharp at this small size).
                             Container(
-                              width: tokens.spacing.step4,
-                              height: tokens.spacing.step4,
+                              width: tokens.spacing.step7,
+                              height: tokens.spacing.step7,
+                              alignment: Alignment.center,
                               decoration: BoxDecoration(
                                 color: accent.withValues(
-                                  alpha: playing ? 0.4 : 0.9,
+                                  alpha: playing ? 0.4 : 1,
                                 ),
                                 shape: BoxShape.circle,
                               ),
+                              child: playing
+                                  ? null
+                                  : Icon(
+                                      Icons.play_arrow_rounded,
+                                      size: tokens.spacing.step5,
+                                      color: tokens.colors.surface.enabled,
+                                    ),
                             ),
-                            if (!playing)
-                              Icon(
-                                Icons.play_arrow_rounded,
-                                size: tokens.spacing.step7,
-                                color: tokens.colors.text.lowEmphasis,
-                              ),
                             if (playing)
                               Positioned.fill(
                                 child: IgnorePointer(
