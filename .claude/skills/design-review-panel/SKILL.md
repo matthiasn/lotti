@@ -104,9 +104,10 @@ Workflow({ scriptPath: ".claude/skills/design-review-panel/panel_workflow.js", a
 ```
 
 Read the returned synthesis, apply the must-fixes, regenerate the same
-screenshots, and re-run until `finalMinAvg ≥ target`. Then delete the scratch
-capture test and `test/screenshots/` (per the app-screenshots skill) unless the
-user asks to keep them.
+screenshots, and re-run until the returned `cleared` is `true` (both panel
+averages meet the `target`). Then delete the scratch capture test and
+`test/screenshots/` (per the app-screenshots skill) unless the user asks to
+keep them.
 
 ## See also
 - `app-screenshots` — the reproducible capture harness this skill depends on.
