@@ -321,13 +321,14 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
           messages.backfillAskPeersConfirmContent(unresolvable),
         ),
         actions: [
-          TextButton(
+          DesignSystemButton(
+            label: messages.cancelButton,
+            variant: DesignSystemButtonVariant.tertiary,
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(messages.cancelButton),
           ),
-          FilledButton(
+          DesignSystemButton(
+            label: messages.backfillAskPeersConfirmAccept,
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(messages.backfillAskPeersConfirmAccept),
           ),
         ],
       ),
@@ -351,13 +352,14 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
           messages.backfillRetireStuckConfirmContent(openCount),
         ),
         actions: [
-          TextButton(
+          DesignSystemButton(
+            label: messages.cancelButton,
+            variant: DesignSystemButtonVariant.tertiary,
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(messages.cancelButton),
           ),
-          FilledButton(
+          DesignSystemButton(
+            label: messages.backfillRetireStuckConfirmAccept,
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(messages.backfillRetireStuckConfirmAccept),
           ),
         ],
       ),

@@ -204,5 +204,51 @@ void main() {
       expect(_visible('Per day'), findsOneWidget);
       expect(_visible('Running total'), findsOneWidget);
     });
+
+    testWidgets(
+      'icon segments render the active glyph when selected (the base glyph '
+      'otherwise), put the label on a tooltip, and report taps',
+      (tester) async {
+        _Mode? received;
+        await tester.pumpWidget(
+          _wrap(
+            DsSegmentedToggle<_Mode>(
+              selected: _Mode.first,
+              onChanged: (v) => received = v,
+              segments: const [
+                DsSegment(
+                  _Mode.first,
+                  'Day',
+                  icon: Icons.wb_sunny_outlined,
+                  activeIcon: Icons.sunny,
+                ),
+                DsSegment(
+                  _Mode.second,
+                  'Night',
+                  icon: Icons.nightlight_outlined,
+                  activeIcon: Icons.nightlight,
+                ),
+              ],
+            ),
+          ),
+        );
+
+        // Selected → active glyph; unselected → the base glyph. No text.
+        expect(find.byIcon(Icons.sunny), findsOneWidget);
+        expect(find.byIcon(Icons.wb_sunny_outlined), findsNothing);
+        expect(find.byIcon(Icons.nightlight_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.nightlight), findsNothing);
+        expect(find.text('Day'), findsNothing);
+
+        // The label rides a tooltip instead of visible text.
+        expect(find.byTooltip('Day'), findsOneWidget);
+        expect(find.byTooltip('Night'), findsOneWidget);
+
+        // Tapping the inactive segment reports its value.
+        await tester.tap(find.byIcon(Icons.nightlight_outlined));
+        await tester.pump();
+        expect(received, _Mode.second);
+      },
+    );
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -75,7 +76,7 @@ void main() {
 
       // Modal should be open - verify by checking for modal content
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(find.byType(CheckboxListTile), findsWidgets);
+      expect(find.byType(DesignSystemCheckbox), findsWidgets);
     });
 
     testWidgets('modal displays search field and items', (tester) async {
@@ -130,7 +131,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select First Item
-      await tester.tap(find.widgetWithText(CheckboxListTile, 'First Item'));
+      await tester.tap(find.widgetWithText(DesignSystemCheckbox, 'First Item'));
       await tester.pumpAndSettle();
 
       // Tap Add button (should show "Add (1)")
@@ -197,7 +198,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select an item first
-      await tester.tap(find.widgetWithText(CheckboxListTile, 'First Item'));
+      await tester.tap(find.widgetWithText(DesignSystemCheckbox, 'First Item'));
       await tester.pumpAndSettle();
 
       // Tap Cancel button
@@ -292,12 +293,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select First Item
-      await tester.tap(find.widgetWithText(CheckboxListTile, 'First Item'));
+      await tester.tap(find.widgetWithText(DesignSystemCheckbox, 'First Item'));
       await tester.pumpAndSettle();
       expect(find.text('Add (1)'), findsOneWidget);
 
       // Deselect First Item
-      await tester.tap(find.widgetWithText(CheckboxListTile, 'First Item'));
+      await tester.tap(find.widgetWithText(DesignSystemCheckbox, 'First Item'));
       await tester.pumpAndSettle();
 
       // Should show "Add" without count

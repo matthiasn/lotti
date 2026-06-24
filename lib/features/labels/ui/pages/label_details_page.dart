@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
+import 'package:lotti/features/labels/ui/widgets/category_selection_chip.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -331,29 +332,15 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
             runSpacing: tokens.spacing.step2,
             children: [
               for (final category in chips)
-                Builder(
-                  builder: (context) {
-                    final bg = colorFromCssHex(
-                      category.color,
-                      substitute: Theme.of(context).colorScheme.primary,
-                    );
-                    final isDark =
-                        ThemeData.estimateBrightnessForColor(bg) ==
-                        Brightness.dark;
-                    final fg = isDark ? Colors.white : Colors.black;
-                    return InputChip(
-                      label: Text(category.name),
-                      labelStyle: tokens.typography.styles.others.caption
-                          .copyWith(color: fg),
-                      backgroundColor: bg,
-                      onDeleted: () => controller.removeCategoryId(category.id),
-                      deleteIcon: const Icon(Icons.close_rounded, size: 16),
-                      deleteIconColor: fg,
-                      deleteButtonTooltipMessage: context
-                          .messages
-                          .settingsLabelsCategoriesRemoveTooltip,
-                    );
-                  },
+                CategorySelectionChip(
+                  name: category.name,
+                  color: colorFromCssHex(
+                    category.color,
+                    substitute: Theme.of(context).colorScheme.primary,
+                  ),
+                  onRemove: () => controller.removeCategoryId(category.id),
+                  removeTooltip:
+                      context.messages.settingsLabelsCategoriesRemoveTooltip,
                 ),
             ],
           ),

@@ -35,7 +35,10 @@ class DiagnosticInfoButton extends ConsumerWidget {
               ),
             ),
             actions: [
-              TextButton(
+              DesignSystemButton(
+                label: context.messages.settingsMatrixDiagnosticCopyButton,
+                variant: DesignSystemButtonVariant.secondary,
+                leadingIcon: Icons.copy_rounded,
                 onPressed: () async {
                   await Clipboard.setData(ClipboardData(text: prettyJson));
                   if (dialogContext.mounted) {
@@ -46,13 +49,11 @@ class DiagnosticInfoButton extends ConsumerWidget {
                     );
                   }
                 },
-                child: Text(
-                  context.messages.settingsMatrixDiagnosticCopyButton,
-                ),
               ),
-              TextButton(
+              DesignSystemButton(
+                label: context.messages.tasksLabelsDialogClose,
+                variant: DesignSystemButtonVariant.tertiary,
                 onPressed: () => Navigator.of(dialogContext).pop(),
-                child: Text(context.messages.tasksLabelsDialogClose),
               ),
             ],
           ),

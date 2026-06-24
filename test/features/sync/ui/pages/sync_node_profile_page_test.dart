@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
@@ -106,7 +108,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(Chip), findsNWidgets(2));
+      expect(find.byType(DesignSystemBadge), findsNWidgets(2));
       expect(find.text('MLX Audio (local)'), findsOneWidget);
       expect(find.text('Ollama LLM'), findsOneWidget);
     },
@@ -124,7 +126,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(Chip), findsNothing);
+      expect(find.byType(DesignSystemBadge), findsNothing);
       expect(
         find.textContaining('auto-trigger of synced audio inference will not'),
         findsOneWidget,
@@ -248,10 +250,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      TextButton saveButton() => tester.widget<TextButton>(
+      DesignSystemButton saveButton() => tester.widget<DesignSystemButton>(
         find.ancestor(
           of: find.text('Save'),
-          matching: find.byType(TextButton),
+          matching: find.byType(DesignSystemButton),
         ),
       );
 
@@ -283,10 +285,10 @@ void main() {
       await tester.enterText(find.byType(TextFormField), '   ');
       await tester.pump();
 
-      final saveButton = tester.widget<TextButton>(
+      final saveButton = tester.widget<DesignSystemButton>(
         find.ancestor(
           of: find.text('Save'),
-          matching: find.byType(TextButton),
+          matching: find.byType(DesignSystemButton),
         ),
       );
       expect(saveButton.onPressed, isNull);
@@ -308,10 +310,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final saveButton = tester.widget<TextButton>(
+      final saveButton = tester.widget<DesignSystemButton>(
         find.ancestor(
           of: find.text('Save'),
-          matching: find.byType(TextButton),
+          matching: find.byType(DesignSystemButton),
         ),
       );
       // After saving, the seeded baseline updates to the new value so
@@ -350,7 +352,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(Chip), findsNWidgets(5));
+      expect(find.byType(DesignSystemBadge), findsNWidgets(5));
       expect(find.text('MLX Audio (local)'), findsOneWidget);
       expect(find.text('oMLX LLM'), findsOneWidget);
       expect(find.text('Ollama LLM'), findsOneWidget);

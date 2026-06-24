@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/labels/constants/label_color_presets.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
+import 'package:lotti/features/labels/ui/widgets/category_selection_chip.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
 /// Bottom-sheet form for creating or editing a label.
 ///
@@ -214,69 +217,55 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                         runSpacing: 8,
                         children: [
                           for (final category in chips)
-                            Builder(
-                              builder: (context) {
-                                final bg = colorFromCssHex(
-                                  category.color,
-                                  substitute: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
-                                );
-                                final isDark =
-                                    ThemeData.estimateBrightnessForColor(bg) ==
-                                    Brightness.dark;
-                                final fg = isDark ? Colors.white : Colors.black;
-                                return InputChip(
-                                  label: Text(category.name),
-                                  labelStyle: Theme.of(
-                                    context,
-                                  ).textTheme.labelSmall?.copyWith(color: fg),
-                                  backgroundColor: bg,
-                                  onDeleted: () =>
-                                      controller.removeCategoryId(category.id),
-                                  deleteIcon: const Icon(
-                                    Icons.close_rounded,
-                                    size: 16,
-                                  ),
-                                  deleteIconColor: fg,
-                                  deleteButtonTooltipMessage: context
-                                      .messages
-                                      .settingsLabelsCategoriesRemoveTooltip,
-                                );
-                              },
+                            CategorySelectionChip(
+                              name: category.name,
+                              color: colorFromCssHex(
+                                category.color,
+                                substitute: Theme.of(
+                                  context,
+                                ).colorScheme.primary,
+                              ),
+                              onRemove: () =>
+                                  controller.removeCategoryId(category.id),
+                              removeTooltip: context
+                                  .messages
+                                  .settingsLabelsCategoriesRemoveTooltip,
                             ),
                         ],
                       ),
                     const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.add),
-                      label: Text(context.messages.settingsLabelsCategoriesAdd),
-                      onPressed: () async {
-                        final result = await showCategoryMultiPicker(
-                          context: context,
-                          title: context.messages.settingsLabelsCategoriesAdd,
-                          initialSelectedIds: state.selectedCategoryIds,
-                        );
-                        if (result == null) return;
-                        // The picker is seeded with the current set and returns
-                        // the full edited set, so replace it wholesale —
-                        // applying the user's additions and removals together.
-                        controller.setCategoryIds(result.ids);
-                      },
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: DesignSystemButton(
+                        label: context.messages.settingsLabelsCategoriesAdd,
+                        leadingIcon: Icons.add,
+                        variant: DesignSystemButtonVariant.secondary,
+                        onPressed: () async {
+                          final result = await showCategoryMultiPicker(
+                            context: context,
+                            title: context.messages.settingsLabelsCategoriesAdd,
+                            initialSelectedIds: state.selectedCategoryIds,
+                          );
+                          if (result == null) return;
+                          // The picker is seeded with the current set and
+                          // returns the full edited set, so replace it
+                          // wholesale — applying additions and removals
+                          // together.
+                          controller.setCategoryIds(result.ids);
+                        },
+                      ),
                     ),
                   ],
                 );
               },
             ),
             const SizedBox(height: 24),
-            SwitchListTile.adaptive(
+            SettingsSwitchRow(
+              title: context.messages.settingsLabelsPrivateTitle,
+              subtitle: context.messages.settingsLabelsPrivateDescription,
               value: state.isPrivate,
               onChanged: (value) =>
                   controller.setPrivate(isPrivateValue: value),
-              title: Text(context.messages.settingsLabelsPrivateTitle),
-              subtitle: Text(
-                context.messages.settingsLabelsPrivateDescription,
-              ),
             ),
             if (state.errorMessage != null) ...[
               const SizedBox(height: 12),
@@ -291,17 +280,25 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
+                  child: DesignSystemButton(
+                    label: context.messages.cancelButton,
+                    variant: DesignSystemButtonVariant.secondary,
+                    fullWidth: true,
                     onPressed: state.isSaving
                         ? null
                         : () => Navigator.of(context).pop(),
-                    child: Text(context.messages.cancelButton),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: FilledButton(
-                    onPressed: saveEnabled
+                  // Disabled while saving in lieu of an in-button spinner
+                  // (DesignSystemButton has no loading affordance yet).
+                  child: DesignSystemButton(
+                    label: widget.label == null
+                        ? context.messages.createButton
+                        : context.messages.saveButton,
+                    fullWidth: true,
+                    onPressed: (saveEnabled && !state.isSaving)
                         ? () async {
                             final navigator = Navigator.of(context);
                             final result = await controller.save();
@@ -312,17 +309,6 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                             }
                           }
                         : null,
-                    child: state.isSaving
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(
-                            widget.label == null
-                                ? context.messages.createButton
-                                : context.messages.saveButton,
-                          ),
                   ),
                 ),
               ],

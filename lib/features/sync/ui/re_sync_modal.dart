@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
@@ -67,11 +68,9 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
             context.messages.maintenanceReSyncEntityTypes,
             style: Theme.of(context).textTheme.titleSmall,
           ),
-          CheckboxListTile(
+          DesignSystemCheckbox(
             key: const Key('reSyncJournalEntitiesCheckbox'),
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-            title: Text(context.messages.maintenanceReSyncJournalEntities),
+            label: context.messages.maintenanceReSyncJournalEntities,
             value: _includeJournalEntities,
             onChanged: (value) {
               setState(() {
@@ -79,11 +78,9 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
               });
             },
           ),
-          CheckboxListTile(
+          DesignSystemCheckbox(
             key: const Key('reSyncAgentEntitiesCheckbox'),
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-            title: Text(context.messages.maintenanceReSyncAgentEntities),
+            label: context.messages.maintenanceReSyncAgentEntities,
             value: _includeAgentEntities,
             onChanged: (value) {
               setState(() {

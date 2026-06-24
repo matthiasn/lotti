@@ -15,9 +15,10 @@ enum DesignSystemChipVisualState {
 ///
 /// Shows [label] with either a [leadingIcon] or an [avatar] (not both), and an
 /// optional trailing remove "x" when [showRemove] is set. Tracks
-/// hover/pressed/activated visuals from design tokens; [forcedState] pins a
-/// [DesignSystemChipVisualState] for widgetbook/tests, and a `null` [onPressed]
-/// disables it. Requires a visible [label] or a [semanticsLabel].
+/// hover/pressed/activated visuals from design tokens; [selected] pins the
+/// activated (selected) look for two-state filter/toggle chips; [forcedState]
+/// pins a [DesignSystemChipVisualState] for widgetbook/tests, and a `null`
+/// [onPressed] disables it. Requires a visible [label] or a [semanticsLabel].
 class DesignSystemChip extends StatefulWidget {
   const DesignSystemChip({
     required this.label,
@@ -25,6 +26,7 @@ class DesignSystemChip extends StatefulWidget {
     this.leadingIcon,
     this.avatar,
     this.showRemove = false,
+    this.selected = false,
     this.semanticsLabel,
     this.forcedState,
     super.key,
@@ -42,6 +44,12 @@ class DesignSystemChip extends StatefulWidget {
   final IconData? leadingIcon;
   final Widget? avatar;
   final bool showRemove;
+
+  /// When true the chip renders its activated (selected) look — the two-state
+  /// filter/toggle behaviour. Dominates hover so a selected chip always reads
+  /// as selected; a tap still shows the pressed feedback. [forcedState] still
+  /// wins for widgetbook/tests.
+  final bool selected;
   final String? semanticsLabel;
   final DesignSystemChipVisualState? forcedState;
 
@@ -114,8 +122,15 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
                 child: Semantics(
                   button: true,
                   enabled: enabled,
+                  // Selection is a logical state, independent of the transient
+                  // pressed/hover visuals: a selected chip pressed during a tap
+                  // resolves to `pressed`, but assistive tech must still hear it
+                  // as selected. `forcedState: activated` covers widgetbook/tests
+                  // that pin the activated look without the runtime flag.
                   selected:
-                      visualState == DesignSystemChipVisualState.activated,
+                      widget.selected ||
+                      widget.forcedState ==
+                          DesignSystemChipVisualState.activated,
                   label: widget.semanticsLabel ?? widget.label,
                   child: _ChipContent(
                     label: widget.label,
@@ -145,6 +160,9 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
     }
     if (_pressed) {
       return DesignSystemChipVisualState.pressed;
+    }
+    if (widget.selected) {
+      return DesignSystemChipVisualState.activated;
     }
     if (_hovered) {
       return DesignSystemChipVisualState.hover;

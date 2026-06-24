@@ -92,11 +92,23 @@ class FormBottomBar extends StatelessWidget {
                 size: DesignSystemButtonSize.large,
               ),
               const SizedBox(width: 20),
-              DesignSystemButton(
-                label: context.messages.saveLabel,
-                onPressed: showSaveButton && !isLoading ? onSave : null,
-                leadingIcon: Icons.save_rounded,
-                size: DesignSystemButtonSize.large,
+              // The visible status line on the left explains a disabled Save
+              // sighted, but it isn't linked to the button — mirror the reason
+              // into a tooltip + semantics so it's perceivable on hover and by
+              // screen readers (parity with the AppBar forms that have no
+              // status line).
+              Tooltip(
+                message: !isDirty
+                    ? context.messages.aiFormNoChanges
+                    : !isFormValid
+                    ? context.messages.aiFormFixErrors
+                    : context.messages.saveLabel,
+                child: DesignSystemButton(
+                  label: context.messages.saveLabel,
+                  onPressed: showSaveButton && !isLoading ? onSave : null,
+                  leadingIcon: Icons.save_rounded,
+                  size: DesignSystemButtonSize.large,
+                ),
               ),
             ],
           ),

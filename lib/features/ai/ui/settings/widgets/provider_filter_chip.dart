@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 
 /// A styled filter chip for AI inference providers with color-coded visual identity
 ///
@@ -40,50 +41,14 @@ class ProviderFilterChip extends ConsumerWidget {
           isDark: isDark,
         );
 
-        final backgroundColor = isSelected
-            ? providerColor.withValues(
-                alpha: isDark
-                    ? ProviderChipConstants.selectedAlphaDark
-                    : ProviderChipConstants.selectedAlphaLight,
-              )
-            : providerColor.withValues(
-                alpha: isDark
-                    ? ProviderChipConstants.unselectedAlphaDark
-                    : ProviderChipConstants.unselectedAlphaLight,
-              );
-
-        final borderColor = isSelected
-            ? providerColor.withValues(
-                alpha: ProviderChipConstants.selectedBorderAlpha,
-              )
-            : providerColor.withValues(
-                alpha: ProviderChipConstants.unselectedBorderAlpha,
-              );
-
-        final textColor = isDark ? Colors.white : Colors.black;
-
-        return FilterChip(
+        return DesignSystemChip(
+          label: provider.name,
           selected: isSelected,
-          onSelected: (_) => onTap(),
-          label: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isSelected) ...[
-                Icon(
-                  Icons.check,
-                  size: 14,
-                  color: textColor,
-                ),
-                const SizedBox(width: 4),
-              ],
-              Text(provider.name),
-            ],
-          ),
-          avatar: Container(
-            width: ProviderChipConstants.avatarSize,
-            height: ProviderChipConstants.avatarSize,
+          onPressed: onTap,
+          // The provider's colour identity rides a gradient avatar dot; the
+          // chip's selected / idle surface comes from the design system.
+          avatar: DecoratedBox(
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
               gradient: LinearGradient(
                 colors: [
                   providerColor,
@@ -94,34 +59,6 @@ class ProviderFilterChip extends ConsumerWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: providerColor.withValues(
-                    alpha: ProviderChipConstants.avatarShadowAlpha,
-                  ),
-                  blurRadius: ProviderChipConstants.avatarShadowBlurRadius,
-                  offset: ProviderChipConstants.avatarShadowOffset,
-                ),
-              ],
-            ),
-          ),
-          checkmarkColor: textColor,
-          backgroundColor: backgroundColor,
-          selectedColor: backgroundColor,
-          side: BorderSide(
-            color: borderColor,
-            width: ProviderChipConstants.chipBorderWidth,
-          ),
-          labelStyle: TextStyle(
-            fontSize: ProviderChipConstants.chipFontSize,
-            fontWeight: ProviderChipConstants.chipFontWeight,
-            letterSpacing: ProviderChipConstants.chipLetterSpacing,
-            color: textColor,
-          ),
-          showCheckmark: false,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              ProviderChipConstants.chipBorderRadius,
             ),
           ),
         );

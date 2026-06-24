@@ -11,7 +11,9 @@ import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -19,6 +21,11 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
+
+DesignSystemToggle _toggleIn(WidgetTester tester, Finder rowFinder) =>
+    tester.widget<DesignSystemToggle>(
+      find.descendant(of: rowFinder, matching: find.byType(DesignSystemToggle)),
+    );
 
 void main() {
   late StreamController<List<AiConfig>> profileStreamController;
@@ -112,7 +119,7 @@ void main() {
 
       // Scroll down to the desktop toggle.
       final desktopToggle = find.widgetWithText(
-        SwitchListTile,
+        ListTile,
         'Desktop Only',
       );
       await tester.scrollUntilVisible(
@@ -124,7 +131,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Desktop toggle should be on.
-      final switchTile = tester.widget<SwitchListTile>(desktopToggle);
+      final switchTile = _toggleIn(tester, desktopToggle);
       expect(switchTile.value, isTrue);
     });
 
@@ -207,7 +214,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Tap save without entering a name.
+      // Save stays disabled until the form is dirty, so dirty it via the
+      // description (leaving the name empty), then save — the name validator
+      // should reject the empty name.
+      await tester.enterText(find.byType(TextFormField).at(1), 'a description');
+      await tester.pump();
       await tester.tap(find.text('Save'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -279,6 +290,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Profile Name'),
         'Test Profile',
       );
+      await tester.pump();
 
       // Tap save — no thinking model selected.
       await tester.tap(find.text('Save'));
@@ -372,6 +384,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
+      // Dirty the form (Save is disabled until then), then trigger the
+      // failing save.
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Profile Name'),
+        'Existing edited',
+      );
+      await tester.pump();
       // Tap save — has name and thinking model from existing profile.
       await tester.tap(find.text('Save'));
       await tester.pump();
@@ -532,7 +551,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       final desktopToggle = find.widgetWithText(
-        SwitchListTile,
+        ListTile,
         'Desktop Only',
       );
 
@@ -546,17 +565,64 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Initially off.
-      var switchTile = tester.widget<SwitchListTile>(desktopToggle);
+      var switchTile = _toggleIn(tester, desktopToggle);
       expect(switchTile.value, isFalse);
 
-      // Toggle on.
+      // Toggle on by tapping the row (ListTile.onTap).
       await tester.tap(desktopToggle);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      switchTile = tester.widget<SwitchListTile>(desktopToggle);
+      switchTile = _toggleIn(tester, desktopToggle);
       expect(switchTile.value, isTrue);
+
+      // Toggle back off by tapping the DesignSystemToggle itself (its
+      // onChanged), not the row.
+      await tester.tap(
+        find.descendant(
+          of: desktopToggle,
+          matching: find.byType(DesignSystemToggle),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      switchTile = _toggleIn(tester, desktopToggle);
+      expect(switchTile.value, isFalse);
     });
+
+    testWidgets(
+      'create mode: toggling desktop-only alone marks the form dirty',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        DesignSystemButton saveButton() => tester.widget<DesignSystemButton>(
+          find.widgetWithIcon(DesignSystemButton, Icons.save_rounded),
+        );
+
+        // A blank create form is not dirty -> Save disabled.
+        expect(saveButton().onPressed, isNull);
+
+        // Toggle desktop-only without touching the name or any model slot.
+        final desktopToggle = find.widgetWithText(ListTile, 'Desktop Only');
+        await tester.scrollUntilVisible(
+          desktopToggle,
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(desktopToggle);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Even though nothing else was set, the form now reports dirty, so Save
+        // is enabled (validity is enforced separately, inside _save).
+        expect(saveButton().onPressed, isNotNull);
+      },
+    );
 
     testWidgets('description field is shown and editable', (tester) async {
       await tester.pumpWidget(buildSubject());
@@ -976,7 +1042,7 @@ void main() {
 
       // Scroll down and enable desktop-only toggle.
       final desktopToggle = find.widgetWithText(
-        SwitchListTile,
+        ListTile,
         'Desktop Only',
       );
       await tester.scrollUntilVisible(
@@ -1027,7 +1093,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Save without changes.
+        // Make an unrelated edit (rename) so Save enables, then save — the
+        // pin must still carry through.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'Pinned Studio renamed',
+        );
+        await tester.pump();
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1086,11 +1158,11 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // All SwitchListTiles for skills should be disabled (no model set).
+        // All skill toggles should be disabled (no model set).
         // Find skill tiles (not the desktop-only toggle).
         final skillTiles = tester
-            .widgetList<SwitchListTile>(find.byType(SwitchListTile))
-            .where((t) => t.onChanged == null)
+            .widgetList<DesignSystemToggle>(find.byType(DesignSystemToggle))
+            .where((t) => !t.enabled)
             .toList();
 
         // All skill tiles should be disabled since no model slots are set.
@@ -1132,10 +1204,10 @@ void main() {
             (s) => s.skillType == SkillType.transcription,
           );
           for (final skill in transcriptionSkills) {
-            final tileFinder = find.widgetWithText(SwitchListTile, skill.name);
+            final tileFinder = find.widgetWithText(ListTile, skill.name);
             expect(tileFinder, findsOneWidget);
-            final tile = tester.widget<SwitchListTile>(tileFinder);
-            expect(tile.onChanged, isNotNull);
+            final tile = _toggleIn(tester, tileFinder);
+            expect(tile.enabled, isTrue);
           }
         },
       );
@@ -1189,7 +1261,7 @@ void main() {
 
           // Toggle the skill on.
           await tester.tap(
-            find.widgetWithText(SwitchListTile, firstTranscriptionSkill.name),
+            find.widgetWithText(ListTile, firstTranscriptionSkill.name),
           );
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
@@ -1249,11 +1321,11 @@ void main() {
 
         // The toggle for the transcribe skill should be on.
         final tileFinder = find.widgetWithText(
-          SwitchListTile,
+          ListTile,
           'Transcribe Audio',
         );
         expect(tileFinder, findsOneWidget);
-        final tile = tester.widget<SwitchListTile>(tileFinder);
+        final tile = _toggleIn(tester, tileFinder);
         expect(tile.value, isTrue);
 
         // Scroll back to Save.
@@ -1265,7 +1337,18 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Save without changes.
+        // Scroll back to the name field, make an unrelated edit so Save
+        // enables, then save — the existing skill assignment must survive.
+        await tester.scrollUntilVisible(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          -200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'With Skills renamed',
+        );
+        await tester.pump();
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1490,7 +1573,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Tap save — has name and thinking model from existing profile.
+      // Make an unrelated edit (rename) so Save enables, then save — the ID
+      // must be preserved.
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Profile Name'),
+        'Original renamed',
+      );
+      await tester.pump();
       await tester.tap(find.text('Save'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -1800,6 +1889,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        // Make an unrelated edit (rename) so Save enables, then save.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'Image Skill Profile renamed',
+        );
+        await tester.pump();
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1840,6 +1935,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        // Make an unrelated edit (rename) so Save enables, then save — the
+        // ambiguous thinking slot must still abort the save.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'Ambiguous Profile renamed',
+        );
+        await tester.pump();
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1957,7 +2059,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Save without changes.
+        // Make an unrelated edit (rename) so Save enables, then save.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'Unknown Skill renamed',
+        );
+        await tester.pump();
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -2000,6 +2107,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        // Make an unrelated edit (rename) so Save enables, then save.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'Has Model renamed',
+        );
+        await tester.pump();
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -2014,6 +2127,53 @@ void main() {
           ),
           isTrue,
         );
+      },
+    );
+
+    testWidgets(
+      'automated skill whose model slot is empty is reset to manual on save',
+      (tester) async {
+        // automate: true but no transcription model → `hasModel` is false, so
+        // the assignment is rebuilt without automation (line 373).
+        const transcribeAssignment = SkillAssignment(
+          skillId: skillTranscribeId,
+          automate: true,
+        );
+
+        // No transcriptionModelId: the automated skill has lost its slot
+        // (e.g. a migrated/stale profile).
+        final profile = testInferenceProfile(
+          id: 'no-model-p',
+          name: 'No Model',
+          skillAssignments: [transcribeAssignment],
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            existingProfile: profile,
+            models: [thinkingModel],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Make an unrelated edit (rename) so Save enables, then save.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'No Model renamed',
+        );
+        await tester.pump();
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        final saved = fakeProfileController.savedProfiles.first;
+        // The assignment survives sanitization but is no longer automated.
+        final assignment = saved.skillAssignments.firstWhere(
+          (a) => a.skillId == skillTranscribeId,
+        );
+        expect(assignment.automate, isFalse);
       },
     );
   });
@@ -2070,10 +2230,10 @@ void main() {
 
         // Verify the toggle is currently ON.
         final tileFinder = find.widgetWithText(
-          SwitchListTile,
+          ListTile,
           'Transcribe Audio',
         );
-        var tile = tester.widget<SwitchListTile>(tileFinder);
+        var tile = _toggleIn(tester, tileFinder);
         expect(tile.value, isTrue);
 
         // Toggle it OFF.
@@ -2081,7 +2241,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        tile = tester.widget<SwitchListTile>(tileFinder);
+        tile = _toggleIn(tester, tileFinder);
         expect(tile.value, isFalse);
 
         // Scroll to save.
@@ -2154,7 +2314,7 @@ void main() {
         // That skill is the same SkillType.transcription, so the first
         // skill must be removed (line 376).
         final contextTileFinder = find.widgetWithText(
-          SwitchListTile,
+          ListTile,
           'Transcribe (Task Context)',
         );
         await tester.ensureVisible(contextTileFinder);

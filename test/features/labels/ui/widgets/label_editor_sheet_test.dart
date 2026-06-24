@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -248,7 +250,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(LabelEditorSheet), findsOneWidget);
 
-      final cancelButton = find.widgetWithText(OutlinedButton, 'Cancel');
+      final cancelButton = find.widgetWithText(DesignSystemButton, 'Cancel');
       await tester.ensureVisible(cancelButton);
       await tester.pump();
       await tester.tap(cancelButton);
@@ -285,7 +287,7 @@ void main() {
         await tester.pump();
 
         // 'Create label' is the title; the FilledButton label is just 'Create'.
-        final createButton = find.widgetWithText(FilledButton, 'Create');
+        final createButton = find.widgetWithText(DesignSystemButton, 'Create');
         await tester.ensureVisible(createButton);
         await tester.pump();
         await tester.tap(createButton);
@@ -307,9 +309,9 @@ void main() {
     testWidgets('is disabled while the name is empty', (tester) async {
       await pumpSheet(tester);
 
-      final createButton = find.widgetWithText(FilledButton, 'Create');
+      final createButton = find.widgetWithText(DesignSystemButton, 'Create');
       expect(createButton, findsOneWidget);
-      expect(tester.widget<FilledButton>(createButton).onPressed, isNull);
+      expect(tester.widget<DesignSystemButton>(createButton).onPressed, isNull);
     });
 
     testWidgets('becomes enabled once a name is entered', (tester) async {
@@ -318,8 +320,11 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'Release blocker');
       await tester.pump();
 
-      final createButton = find.widgetWithText(FilledButton, 'Create');
-      expect(tester.widget<FilledButton>(createButton).onPressed, isNotNull);
+      final createButton = find.widgetWithText(DesignSystemButton, 'Create');
+      expect(
+        tester.widget<DesignSystemButton>(createButton).onPressed,
+        isNotNull,
+      );
     });
 
     testWidgets('renders the duplicate-name error from save()', (
@@ -335,7 +340,7 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'Release blocker');
       await tester.pump();
 
-      final createButton = find.widgetWithText(FilledButton, 'Create');
+      final createButton = find.widgetWithText(DesignSystemButton, 'Create');
       await tester.ensureVisible(createButton);
       await tester.pump();
       await tester.tap(createButton);
@@ -368,7 +373,7 @@ void main() {
         isFalse,
       );
 
-      final toggleFinder = find.byType(SwitchListTile);
+      final toggleFinder = find.byType(SettingsSwitchRow);
       expect(toggleFinder, findsOneWidget);
       await tester.ensureVisible(toggleFinder);
       await tester.pump();

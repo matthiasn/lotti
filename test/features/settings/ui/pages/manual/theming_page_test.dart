@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -113,7 +114,7 @@ void main() {
       expect(find.text(l10n.settingsThemingTitle), findsOneWidget);
 
       // Verify the segmented button for theme mode is present
-      expect(find.byType(SegmentedButton<ThemeMode>), findsOneWidget);
+      expect(find.byType(DsSegmentedToggle<ThemeMode>), findsOneWidget);
 
       // Verify the theme selection input decorators are present
       expect(find.byType(InputDecorator), findsNWidgets(2));
@@ -130,7 +131,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the segmented button
-      final segmentedButton = find.byType(SegmentedButton<ThemeMode>);
+      final segmentedButton = find.byType(DsSegmentedToggle<ThemeMode>);
       expect(segmentedButton, findsOneWidget);
 
       // Tap on the light theme segment
@@ -252,7 +253,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify that the segmented button contains icons
-      final segmentedButton = find.byType(SegmentedButton<ThemeMode>);
+      final segmentedButton = find.byType(DsSegmentedToggle<ThemeMode>);
       expect(segmentedButton, findsOneWidget);
 
       // Verify icons are present within the segmented button

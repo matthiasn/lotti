@@ -156,7 +156,7 @@ void main() {
   group('ConflictListItem (card surface)', () {
     testWidgets(
       'renders a level02 card with a decorative hairline border so the row '
-      'lifts off the near-black scaffold',
+      'lifts off the level01 list background',
       (tester) async {
         final conflict = _buildConflict(status: ConflictStatus.unresolved);
         await _pump(tester, conflict: conflict, surface: _wideSurface);

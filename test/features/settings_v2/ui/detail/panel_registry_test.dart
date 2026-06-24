@@ -309,9 +309,9 @@ void main() {
         expect(build('agents-souls'), isA<DetailIdDispatch>());
         expect(build('agents-instances'), isA<DetailIdDispatch>());
 
-        // The remaining two registered builders: the node-profile page and
-        // the provisioned-sync consumer wrapper.
-        expect(build('sync-node-profile'), isA<SyncNodeProfilePage>());
+        // The remaining two registered builders: the headerless node-profile
+        // body and the provisioned-sync consumer wrapper.
+        expect(build('sync-node-profile'), isA<SyncNodeProfileBody>());
         expect(build('sync-provisioned'), isA<Consumer>());
       },
     );

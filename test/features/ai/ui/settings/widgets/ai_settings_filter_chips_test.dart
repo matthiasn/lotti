@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_filter_chips.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 
 import '../../../test_utils.dart';
 
@@ -99,7 +100,7 @@ void main() {
         // Find the FilterChip that contains the Vision text
         final visionChipFinder = find.ancestor(
           of: find.text('Vision'),
-          matching: find.byType(FilterChip),
+          matching: find.byType(DesignSystemChip),
         );
 
         // Verify the chip exists
@@ -121,7 +122,7 @@ void main() {
         // Find the FilterChip that contains the Audio text
         final audioChipFinder = find.ancestor(
           of: find.text('Audio'),
-          matching: find.byType(FilterChip),
+          matching: find.byType(DesignSystemChip),
         );
 
         // Verify the chip exists
@@ -143,7 +144,7 @@ void main() {
         // Find the FilterChip that contains the Text text
         final textChipFinder = find.ancestor(
           of: find.text('Text'),
-          matching: find.byType(FilterChip),
+          matching: find.byType(DesignSystemChip),
         );
 
         // Verify the chip exists
@@ -165,7 +166,7 @@ void main() {
         // Select vision first
         final visionChipFinder = find.ancestor(
           of: find.text('Vision'),
-          matching: find.byType(FilterChip),
+          matching: find.byType(DesignSystemChip),
         );
         await tester.tap(visionChipFinder);
         await tester.pump();
@@ -177,7 +178,7 @@ void main() {
         // Select audio as well
         final audioChipFinder = find.ancestor(
           of: find.text('Audio'),
-          matching: find.byType(FilterChip),
+          matching: find.byType(DesignSystemChip),
         );
         await tester.tap(audioChipFinder);
         await tester.pump();
@@ -201,7 +202,7 @@ void main() {
         // Vision should be selected (test visual state)
         final visionChip = find.ancestor(
           of: find.text('Vision'),
-          matching: find.byType(FilterChip),
+          matching: find.byType(DesignSystemChip),
         );
         expect(visionChip, findsOneWidget);
 
@@ -291,22 +292,22 @@ void main() {
         await tester.pumpWidget(createWidget(filterState: filterState));
 
         // Find FilterChip widgets
-        final visionChip = tester.widget<FilterChip>(
+        final visionChip = tester.widget<DesignSystemChip>(
           find.ancestor(
             of: find.text('Vision'),
-            matching: find.byType(FilterChip),
+            matching: find.byType(DesignSystemChip),
           ),
         );
-        final audioChip = tester.widget<FilterChip>(
+        final audioChip = tester.widget<DesignSystemChip>(
           find.ancestor(
             of: find.text('Audio'),
-            matching: find.byType(FilterChip),
+            matching: find.byType(DesignSystemChip),
           ),
         );
-        final textChip = tester.widget<FilterChip>(
+        final textChip = tester.widget<DesignSystemChip>(
           find.ancestor(
             of: find.text('Text'),
-            matching: find.byType(FilterChip),
+            matching: find.byType(DesignSystemChip),
           ),
         );
 
@@ -324,10 +325,10 @@ void main() {
 
         await tester.pumpWidget(createWidget(filterState: filterState));
 
-        final reasoningChip = tester.widget<FilterChip>(
+        final reasoningChip = tester.widget<DesignSystemChip>(
           find.ancestor(
             of: find.text('Reasoning'),
-            matching: find.byType(FilterChip),
+            matching: find.byType(DesignSystemChip),
           ),
         );
 
@@ -398,7 +399,7 @@ void main() {
         await tester.pumpAndSettle(); // Allow AnimatedSwitcher to complete
 
         // All chips should be selected (providers load async, so just check capability + reasoning)
-        final chips = find.byType(FilterChip);
+        final chips = find.byType(DesignSystemChip);
         expect(
           chips,
           findsAtLeastNWidgets(4),
@@ -416,7 +417,7 @@ void main() {
         await tester.pumpWidget(createWidget(filterState: emptyState));
 
         expect(
-          find.byType(FilterChip),
+          find.byType(DesignSystemChip),
           findsAtLeastNWidgets(4),
         ); // At least 3 capabilities + 1 reasoning
         expect(find.text('Clear'), findsNothing);
@@ -445,7 +446,7 @@ void main() {
 
         // Should show at least the capability chips (3 capabilities + 1 reasoning)
         expect(
-          find.byType(FilterChip),
+          find.byType(DesignSystemChip),
           findsAtLeastNWidgets(4),
         ); // At least 3 capabilities + 1 reasoning
       });
@@ -461,7 +462,7 @@ void main() {
           findsAtLeastNWidgets(1),
         ); // Provider and capability sections each use Wrap
         expect(
-          find.byType(FilterChip),
+          find.byType(DesignSystemChip),
           findsAtLeastNWidgets(4),
         ); // At least 3 capabilities + 1 reasoning
       });

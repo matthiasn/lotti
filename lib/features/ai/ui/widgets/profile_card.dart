@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -45,13 +46,9 @@ class ProfileCard extends StatelessWidget {
                     ),
                   ),
                   if (profile.desktopOnly)
-                    Chip(
-                      label: Text(
-                        context.messages.inferenceProfileDesktopOnly,
-                        style: context.textTheme.labelSmall,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
+                    DesignSystemBadge.outlined(
+                      label: context.messages.inferenceProfileDesktopOnly,
+                      tone: DesignSystemBadgeTone.secondary,
                     ),
                   if (profile.isDefault)
                     Padding(
