@@ -38,7 +38,8 @@ class ConflictListItem extends StatelessWidget {
       // in dark mode, so the list read as one flat, almost-black sheet. The
       // border rides on the Material's shape so the ink splash clips to it.
       child: Material(
-        color: colors.background.level02,
+        // Step above the level02 page background so the card reads as elevated.
+        color: colors.background.level03,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: radius,

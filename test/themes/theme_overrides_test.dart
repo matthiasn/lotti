@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -72,14 +73,16 @@ void main() {
       final baseTheme = ThemeData.dark();
       final themedData = withOverrides(baseTheme);
 
-      // In dark mode, scaffold should use surface color
+      // In dark mode, scaffold/canvas anchor on the design-system level02
+      // background token (a deliberate dark grey) rather than the scheme's
+      // near-black surface.
       expect(
         themedData.scaffoldBackgroundColor,
-        equals(baseTheme.colorScheme.surface),
+        equals(dsTokensDark.colors.background.level02),
       );
       expect(
         themedData.canvasColor,
-        equals(baseTheme.colorScheme.surface),
+        equals(dsTokensDark.colors.background.level02),
       );
     });
 

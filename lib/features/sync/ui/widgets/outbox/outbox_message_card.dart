@@ -55,7 +55,8 @@ class _OutboxMessageCardState extends State<OutboxMessageCard> {
     return Semantics(
       label: '$statusLabel, ${vm.timestampLabel}, ${vm.payloadKindLabel}',
       child: Material(
-        color: colors.background.level02,
+        // Step above the level02 page background so the card reads as elevated.
+        color: colors.background.level03,
         borderRadius: BorderRadius.circular(tokens.radii.m),
         child: InkWell(
           borderRadius: BorderRadius.circular(tokens.radii.m),

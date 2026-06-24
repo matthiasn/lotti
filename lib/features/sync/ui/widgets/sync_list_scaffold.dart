@@ -429,6 +429,8 @@ class _SyncListScaffoldState<T, F extends Enum>
 
         final onRefresh = widget.onRefresh;
         return Scaffold(
+          // No explicit background: falls through to the app's dark scaffold
+          // default (background.level02). The list cards step up to level03.
           body: onRefresh == null
               ? scrollView
               : RefreshIndicator(

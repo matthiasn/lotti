@@ -9,10 +9,15 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 ThemeData withOverrides(ThemeData themeData) {
   final isDark = themeData.brightness == Brightness.dark;
 
-  // LIGHT MODE: Force clean white backgrounds instead of grey
-  // DARK MODE: Use scheme-derived surface for consistency
+  // LIGHT MODE: Force clean white backgrounds instead of grey.
+  // DARK MODE: anchor the scaffold / canvas / app-bar fall-through on the
+  // design-system `background.level02` token (0xFF222222) rather than the
+  // scheme's near-black surface, so screens that don't set their own
+  // background read as a deliberate dark grey instead of a flat black. Pages
+  // that anchor a darker body for card contrast (definitions, about) keep
+  // their own override; elevated surfaces step up to level03 above this.
   final scaffoldColor = isDark
-      ? themeData.colorScheme.surface
+      ? dsTokensDark.colors.background.level02
       : LightModeSurfaces.surface;
 
   // Update colorScheme for light mode to use white surfaces

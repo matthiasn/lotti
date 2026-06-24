@@ -155,8 +155,8 @@ void main() {
 
   group('ConflictListItem (card surface)', () {
     testWidgets(
-      'renders a level02 card with a decorative hairline border so the row '
-      'lifts off the near-black scaffold',
+      'renders a level03 card with a decorative hairline border so the row '
+      'lifts off the level02 list background',
       (tester) async {
         final conflict = _buildConflict(status: ConflictStatus.unresolved);
         await _pump(tester, conflict: conflict, surface: _wideSurface);
@@ -169,7 +169,7 @@ void main() {
           ),
         );
 
-        expect(material.color, tokens.colors.background.level02);
+        expect(material.color, tokens.colors.background.level03);
         final shape = material.shape! as RoundedRectangleBorder;
         expect(shape.side.color, tokens.colors.decorative.level01);
       },
