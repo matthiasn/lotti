@@ -567,13 +567,27 @@ void main() {
       var switchTile = _toggleIn(tester, desktopToggle);
       expect(switchTile.value, isFalse);
 
-      // Toggle on.
+      // Toggle on by tapping the row (ListTile.onTap).
       await tester.tap(desktopToggle);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       switchTile = _toggleIn(tester, desktopToggle);
       expect(switchTile.value, isTrue);
+
+      // Toggle back off by tapping the DesignSystemToggle itself (its
+      // onChanged), not the row.
+      await tester.tap(
+        find.descendant(
+          of: desktopToggle,
+          matching: find.byType(DesignSystemToggle),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      switchTile = _toggleIn(tester, desktopToggle);
+      expect(switchTile.value, isFalse);
     });
 
     testWidgets('description field is shown and editable', (tester) async {
@@ -2079,6 +2093,53 @@ void main() {
           ),
           isTrue,
         );
+      },
+    );
+
+    testWidgets(
+      'automated skill whose model slot is empty is reset to manual on save',
+      (tester) async {
+        // automate: true but no transcription model → `hasModel` is false, so
+        // the assignment is rebuilt without automation (line 373).
+        const transcribeAssignment = SkillAssignment(
+          skillId: skillTranscribeId,
+          automate: true,
+        );
+
+        // No transcriptionModelId: the automated skill has lost its slot
+        // (e.g. a migrated/stale profile).
+        final profile = testInferenceProfile(
+          id: 'no-model-p',
+          name: 'No Model',
+          skillAssignments: [transcribeAssignment],
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            existingProfile: profile,
+            models: [thinkingModel],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Make an unrelated edit (rename) so Save enables, then save.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Profile Name'),
+          'No Model renamed',
+        );
+        await tester.pump();
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        final saved = fakeProfileController.savedProfiles.first;
+        // The assignment survives sanitization but is no longer automated.
+        final assignment = saved.skillAssignments.firstWhere(
+          (a) => a.skillId == skillTranscribeId,
+        );
+        expect(assignment.automate, isFalse);
       },
     );
   });
