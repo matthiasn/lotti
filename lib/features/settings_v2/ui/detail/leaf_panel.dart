@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/detail/default_panel.dart';
 import 'package:lotti/features/settings_v2/ui/detail/panel_registry.dart';
@@ -15,14 +16,14 @@ import 'package:lotti/features/settings_v2/ui/detail/panel_registry.dart';
 ///   Without this, the `AnimatedSwitcher` above `SettingsDetailPane`
 ///   would tear down each body on every leaf change.
 ///
-/// The body fills the full detail-pane width *and height* — there is
-/// no in-pane breadcrumb, page title, or outer gutter. The page-level
-/// breadcrumb in `SettingsV2Page._SettingsV2Header` is the sole source
-/// of "where am I" context, and the registered panels own their own
-/// padding (or wrap themselves in a `SingleChildScrollView` when
-/// `SettingsPanelSpec.scrollable` is true). Anything we add here
-/// would be subtracted from the panel's usable width — see
-/// `docs/design/settings/settings_v2_implementation_plan.md` and the
+/// There is no in-pane breadcrumb or page title — the page-level breadcrumb
+/// in `SettingsV2Page._SettingsV2Header` is the sole source of "where am I"
+/// context. Padding is split by panel kind: `scrollable: true` (Column-based)
+/// panels are wrapped in a `SingleChildScrollView` with a consistent `step6`
+/// gutter here, so their headings and cards don't bleed against the
+/// detail-pane edges. `scrollable: false` list / scaffold panels fill the full
+/// width and own their (often responsive) padding, so they are left untouched.
+/// See `docs/design/settings/settings_v2_implementation_plan.md` and the
 /// related screenshot review for context.
 ///
 /// Ancestor information is still passed in (rather than just the leaf
@@ -101,7 +102,21 @@ class _LeafPanelState extends State<LeafPanel> {
     final spec = panelSpecFor(leaf.panel);
     if (spec == null) return DefaultPanel(node: leaf);
     final body = Builder(builder: spec.build);
-    return spec.scrollable ? SingleChildScrollView(child: body) : body;
+    if (!spec.scrollable) return body;
+    // Column-based panels get a consistent gutter so their headings and cards
+    // don't bleed against the detail-pane edges (the divider on the left, the
+    // pane edge on the right) or sit flush under the breadcrumb. The
+    // `scrollable: false` list / scaffold panels are left untouched — they own
+    // their own (often full-width, responsive) padding.
+    return Builder(
+      builder: (context) {
+        final gutter = context.designTokens.spacing.step6;
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(gutter),
+          child: body,
+        );
+      },
+    );
   }
 
   @override
