@@ -523,6 +523,66 @@ void main() {
       final labelCenter = tester.getCenter(find.text('Wide')).dx;
       expect((labelCenter - buttonCenter).abs(), lessThan(1));
     });
+
+    testWidgets('isLoading shows a spinner, stays branded, and ignores taps', (
+      tester,
+    ) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DesignSystemButton(
+            label: 'Run',
+            leadingIcon: Icons.auto_awesome,
+            isLoading: true,
+            onPressed: () => taps++,
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+      await tester.pump();
+
+      // The spinner replaces the leading glyph...
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.auto_awesome), findsNothing);
+      expect(find.text('Run'), findsOneWidget);
+
+      // ...the fill stays the branded (enabled) colour, not the disabled grey...
+      final decoration = _buttonInk(tester).decoration! as ShapeDecoration;
+      expect(decoration.color, dsTokensLight.colors.interactive.enabled);
+
+      // ...and a tap does nothing while loading.
+      await tester.tap(find.byType(DesignSystemButton));
+      await tester.pump();
+      expect(taps, 0);
+    });
+
+    testWidgets('clearing isLoading restores the icon and re-enables taps', (
+      tester,
+    ) async {
+      var taps = 0;
+      Widget build({required bool loading}) => makeTestableWidgetWithScaffold(
+        DesignSystemButton(
+          label: 'Run',
+          leadingIcon: Icons.auto_awesome,
+          isLoading: loading,
+          onPressed: () => taps++,
+        ),
+        theme: DesignSystemTheme.light(),
+      );
+
+      await tester.pumpWidget(build(loading: true));
+      await tester.pump();
+
+      await tester.pumpWidget(build(loading: false));
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+
+      await tester.tap(find.byType(DesignSystemButton));
+      await tester.pump();
+      expect(taps, 1);
+    });
   });
 }
 

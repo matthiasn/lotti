@@ -30,7 +30,9 @@ enum DesignSystemButtonVisualState {
 /// [DesignSystemButtonSize], optionally with leading/trailing icons, and
 /// resolves all colors/spacing/typography from design tokens. A `null`
 /// [onPressed] is the disabled state; [forcedState] pins a visual state for
-/// widgetbook/tests; [fullWidth] stretches it to the parent width. Asserts that
+/// widgetbook/tests; [fullWidth] stretches it to the parent width. When
+/// [isLoading] is true the button keeps its branded colour but stops
+/// responding to taps and swaps its leading glyph for a spinner. Asserts that
 /// an icon-only button still supplies a [semanticsLabel].
 class DesignSystemButton extends StatefulWidget {
   const DesignSystemButton({
@@ -43,6 +45,7 @@ class DesignSystemButton extends StatefulWidget {
     this.semanticsLabel,
     this.forcedState,
     this.fullWidth = false,
+    this.isLoading = false,
     super.key,
   }) : assert(
          label != '' || semanticsLabel != null,
@@ -57,6 +60,12 @@ class DesignSystemButton extends StatefulWidget {
   final IconData? trailingIcon;
   final String? semanticsLabel;
   final DesignSystemButtonVisualState? forcedState;
+
+  /// When true, the button shows a spinner in place of its leading glyph and
+  /// ignores taps, while keeping the enabled (branded) styling — the standard
+  /// "work in progress" affordance. Pass the real [onPressed] alongside it; the
+  /// button suppresses the tap itself, so the caller need not null it out.
+  final bool isLoading;
 
   /// When true, the button expands to fill its parent's width (use inside an
   /// [Expanded]/[SizedBox]) and its content is centered rather than left
@@ -77,6 +86,7 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
 
     final interactionModeChanged =
         oldWidget.forcedState != widget.forcedState ||
+        oldWidget.isLoading != widget.isLoading ||
         (oldWidget.onPressed == null) != (widget.onPressed == null);
 
     if (interactionModeChanged) {
@@ -88,14 +98,18 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final enabled = widget.onPressed != null;
-    final visualState = _resolveVisualState(enabled);
+    // A button with a callback styles as enabled (branded) even while loading;
+    // `interactable` gates taps/hover so a loading button looks active but
+    // doesn't fire.
+    final hasCallback = widget.onPressed != null;
+    final interactable = hasCallback && !widget.isLoading;
+    final visualState = _resolveVisualState(interactable);
     final sizeSpec = _ButtonSizeSpec.fromTokens(tokens, widget.size);
     final variantSpec = _ButtonVariantSpec.fromTokens(
       tokens: tokens,
       variant: widget.variant,
       visualState: visualState,
-      enabled: enabled,
+      enabled: hasCallback,
     );
     final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
@@ -110,11 +124,11 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
-          onTap: widget.onPressed,
-          onHover: widget.forcedState == null && enabled
+          onTap: interactable ? widget.onPressed : null,
+          onHover: widget.forcedState == null && interactable
               ? (value) => setState(() => _hovered = value)
               : null,
-          onHighlightChanged: widget.forcedState == null && enabled
+          onHighlightChanged: widget.forcedState == null && interactable
               ? (value) => setState(() => _pressed = value)
               : null,
           child: Padding(
@@ -134,7 +148,7 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
                 child: Semantics(
                   button: true,
                   label: widget.semanticsLabel,
-                  enabled: enabled,
+                  enabled: interactable,
                   child: widget.fullWidth
                       ? Center(
                           child: _ButtonContent(
@@ -142,6 +156,7 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
                             leadingIcon: widget.leadingIcon,
                             trailingIcon: widget.trailingIcon,
                             gap: sizeSpec.itemGap,
+                            isLoading: widget.isLoading,
                           ),
                         )
                       : _ButtonContent(
@@ -149,6 +164,7 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
                           leadingIcon: widget.leadingIcon,
                           trailingIcon: widget.trailingIcon,
                           gap: sizeSpec.itemGap,
+                          isLoading: widget.isLoading,
                         ),
                 ),
               ),
@@ -185,18 +201,34 @@ class _ButtonContent extends StatelessWidget {
     required this.gap,
     this.leadingIcon,
     this.trailingIcon,
+    this.isLoading = false,
   });
 
   final String label;
   final IconData? leadingIcon;
   final IconData? trailingIcon;
   final double gap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
     final children = <Widget>[];
+    // The spinner takes the leading slot at the icon's footprint (from the
+    // ambient IconTheme), so toggling loading on an icon button never resizes
+    // it, and it inherits the foreground colour.
+    final iconTheme = IconTheme.of(context);
 
-    if (leadingIcon != null) {
+    if (isLoading) {
+      children.add(
+        SizedBox.square(
+          dimension: iconTheme.size ?? 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: iconTheme.color,
+          ),
+        ),
+      );
+    } else if (leadingIcon != null) {
       children.add(Icon(leadingIcon));
     }
 

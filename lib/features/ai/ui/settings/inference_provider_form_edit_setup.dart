@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -217,29 +218,17 @@ class _AiSetupSectionState extends ConsumerState<AiSetupSection> {
                     ),
                   ),
                   SizedBox(height: tokens.spacing.step5),
-                  // Run button
+                  // Run button — branded with a spinner while the setup runs.
                   SizedBox(
                     width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _isRunning ? null : _runFtueSetup,
-                      icon: _isRunning
-                          ? SizedBox(
-                              width: tokens.spacing.step5,
-                              height: tokens.spacing.step5,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: context.colorScheme.onPrimary,
-                              ),
-                            )
-                          : Icon(
-                              Icons.auto_awesome,
-                              size: tokens.spacing.step5,
-                            ),
-                      label: Text(
-                        _isRunning
-                            ? messages.aiSetupWizardRunningButton
-                            : messages.aiSetupWizardRunButton,
-                      ),
+                    child: DesignSystemButton(
+                      fullWidth: true,
+                      isLoading: _isRunning,
+                      leadingIcon: Icons.auto_awesome,
+                      label: _isRunning
+                          ? messages.aiSetupWizardRunningButton
+                          : messages.aiSetupWizardRunButton,
+                      onPressed: _runFtueSetup,
                     ),
                   ),
                 ],
