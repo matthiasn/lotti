@@ -62,7 +62,7 @@ PODS:
     - FlutterMacOS
   - quill_native_bridge_macos (0.0.1):
     - FlutterMacOS
-  - record_macos (1.2.1):
+  - record_macos (2.0.0):
     - FlutterMacOS
   - screen_retriever_macos (0.0.1):
     - FlutterMacOS
@@ -251,7 +251,7 @@ SPEC CHECKSUMS:
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   photo_manager: 25fd77df14f4f0ba5ef99e2c61814dde77e2bceb
   quill_native_bridge_macos: 2b005cb56902bb740e0cd9620aa399dfac6b4882
-  record_macos: 5d55909f9650314be6424ffd6b123ac75a08c3c1
+  record_macos: 2e43c16b84ce188b8137754ee648322a2dcdf7fa
   screen_retriever_macos: c5508cc3c66ff0d4db650480cf0ab691e220d933
   share_plus: 510bf0af1a42cd602274b4629920c9649c52f4cc
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
