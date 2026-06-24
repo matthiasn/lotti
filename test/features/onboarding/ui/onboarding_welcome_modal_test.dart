@@ -14,6 +14,7 @@ import 'package:lotti/features/onboarding/repository/onboarding_metrics_reposito
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -319,7 +320,22 @@ void main() {
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
 
-    // Pick an area and continue.
+    // "Add your own" opens a dialog. Cancelling adds nothing…
+    await tester.tap(find.text('Add your own'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hobbies'), findsNothing);
+
+    // …while a typed name becomes a selected custom area.
+    await tester.tap(find.text('Add your own'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Hobbies');
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hobbies'), findsOneWidget);
+
+    // Pick a preset area too, then continue with both selected.
     await tester.tap(find.text('Work'));
     await tester.pump();
     await tester.tap(find.text('Continue'));
@@ -346,6 +362,11 @@ void main() {
     ).called(1);
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.providerConnected), isTrue);
+
+    // The capture page's close affordance finishes onboarding (pops the page).
+    await tester.tap(find.byIcon(Icons.close_rounded), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.text("What's on your mind?"), findsNothing);
   });
 
   testWidgets('falls back to the getIt-registered metrics repo', (
@@ -374,4 +395,84 @@ void main() {
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.welcomeShown), isTrue);
   });
+
+  testWidgets('renders the desktop (centred) layout on a wide viewport', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(1000, 800)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      makeTestableWidget(
+        host(),
+        mediaQueryData: const MediaQueryData(
+          size: Size(1000, 800),
+          disableAnimations: true,
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // The wide branch of the scaffold renders the centred panel.
+    expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
+
+    // Tapping a non-interactive area of the panel is swallowed (the panel's
+    // opaque no-op tap), so the flow stays open — not dismissed.
+    await tester.tap(find.text('Talk. Lotti turns it into a plan.'));
+    await tester.pumpAndSettle();
+    expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
+  });
+
+  testWidgets(
+    'openOnboardingCreatedTask (desktop) opens the task and pops the capture '
+    'route',
+    (tester) async {
+      final nav = MockNavService();
+      when(() => nav.isDesktopMode).thenReturn(true);
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
+      getIt.registerSingleton<NavService>(nav);
+      addTearDown(() => getIt.unregister<NavService>());
+
+      late BuildContext captureContext;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (rootContext) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(rootContext).push(
+                    MaterialPageRoute<void>(
+                      builder: (capCtx) {
+                        captureContext = capCtx;
+                        return const Scaffold(body: Text('capture'));
+                      },
+                    ),
+                  ),
+                  child: const Text('push'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('push'));
+      await tester.pumpAndSettle();
+      expect(find.text('capture'), findsOneWidget);
+
+      openOnboardingCreatedTask(captureContext, 'task-9');
+      await tester.pumpAndSettle();
+
+      // Desktop: hands the task to the detail stack and pops the capture route
+      // (back to the app), without pushing a TaskDetailsPage route here.
+      verify(() => nav.pushDesktopTaskDetail('task-9')).called(1);
+      expect(find.text('capture'), findsNothing);
+      expect(find.text('push'), findsOneWidget);
+    },
+  );
 }

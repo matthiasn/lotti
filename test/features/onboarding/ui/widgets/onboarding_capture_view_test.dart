@@ -16,8 +16,9 @@ void main() {
   // pumping forever, and a bounded surface for the Column + Spacers.
   Future<void> pumpView(
     WidgetTester tester,
-    OnboardingCapturePhase phase,
-  ) async {
+    OnboardingCapturePhase phase, {
+    bool reduceMotion = true,
+  }) async {
     await tester.pumpWidget(
       makeTestableWidget(
         SizedBox(
@@ -39,9 +40,9 @@ void main() {
             onRatherType: () => ratherTypeTaps++,
           ),
         ),
-        mediaQueryData: const MediaQueryData(
-          size: Size(390, 844),
-          disableAnimations: true,
+        mediaQueryData: MediaQueryData(
+          size: const Size(390, 844),
+          disableAnimations: reduceMotion,
         ),
       ),
     );
@@ -107,5 +108,24 @@ void main() {
     // No escape hatch once we're past listening — the page navigates to the
     // real task from here, there is no in-page reveal.
     expect(find.text('Rather type?'), findsNothing);
+  });
+
+  testWidgets('the thinking pulse loops when motion is enabled', (
+    tester,
+  ) async {
+    // Motion ON → the teal "processing" pulse repeats (the non-reduced-motion
+    // branch). Bounded pumps; never pumpAndSettle a repeating animation.
+    await pumpView(
+      tester,
+      OnboardingCapturePhase.thinking,
+      reduceMotion: false,
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Building your task'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    // Unmount to stop the perpetual pulse so the test tears down cleanly.
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }
