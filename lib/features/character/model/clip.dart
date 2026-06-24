@@ -26,6 +26,10 @@ class SineChannel extends JointChannel {
     this.harmonicPhase = 0,
     this.scaleYAmplitude = 0,
     this.scaleYPhase = 0,
+    this.scaleYHarmonic = 1,
+    this.scaleXAmplitude = 0,
+    this.scaleXPhase = 0,
+    this.scaleXHarmonic = 1,
   });
 
   /// Primary rotation amplitude in radians.
@@ -41,9 +45,18 @@ class SineChannel extends JointChannel {
   final double harmonicAmplitude;
   final double harmonicPhase;
 
-  /// Optional vertical squash/stretch oscillation (multiplier delta).
+  /// Squash/stretch oscillation (multiplier delta around 1). The `*Harmonic`
+  /// fields set the frequency: a walk takes weight **twice** per cycle, so a
+  /// body-squash uses harmonic 2 to compress on each footfall. Pairing a
+  /// negative `scaleYAmplitude` with a positive `scaleXAmplitude` (or vice
+  /// versa) preserves volume — the classic squash that sells weight.
   final double scaleYAmplitude;
   final double scaleYPhase;
+  final double scaleYHarmonic;
+
+  final double scaleXAmplitude;
+  final double scaleXPhase;
+  final double scaleXHarmonic;
 
   @override
   JointPose sample(double p) {
@@ -54,8 +67,15 @@ class SineChannel extends JointChannel {
         harmonicAmplitude * math.sin(2 * twoPi * (p + harmonicPhase));
     final scaleY = scaleYAmplitude == 0
         ? 1.0
-        : 1 + scaleYAmplitude * math.sin(twoPi * (p + scaleYPhase));
-    return JointPose(rotation: rot, scaleY: scaleY);
+        : 1 +
+              scaleYAmplitude *
+                  math.sin(twoPi * scaleYHarmonic * (p + scaleYPhase));
+    final scaleX = scaleXAmplitude == 0
+        ? 1.0
+        : 1 +
+              scaleXAmplitude *
+                  math.sin(twoPi * scaleXHarmonic * (p + scaleXPhase));
+    return JointPose(rotation: rot, scaleX: scaleX, scaleY: scaleY);
   }
 }
 
@@ -81,13 +101,22 @@ class Keyframe {
 
 /// One-shot joint motion as eased keyframes. Keys must be sorted by [Keyframe.p]
 /// and span 0..1.
+///
+/// [phase] shifts the sample point (0..1, wrapping) so a single authored cycle
+/// can drive two limbs half a beat apart — e.g. the left and right legs share
+/// one step cycle, the right at `phase: 0.5`. It is only meaningful for looping
+/// clips whose first and last keys match; one-shots leave it at 0.
 class KeyframeChannel extends JointChannel {
-  const KeyframeChannel(this.keys);
+  const KeyframeChannel(this.keys, {this.phase = 0});
 
   final List<Keyframe> keys;
+  final double phase;
 
   @override
-  JointPose sample(double p) {
+  JointPose sample(double rawP) {
+    final p = phase == 0
+        ? rawP
+        : (rawP + phase) - (rawP + phase).floorToDouble();
     if (keys.isEmpty) return JointPose.identity;
     if (p <= keys.first.p) {
       final k = keys.first;

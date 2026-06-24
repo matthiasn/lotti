@@ -6,15 +6,21 @@ import 'package:lotti/features/character/runtime/character_renderer.dart';
 import 'package:lotti/features/character/runtime/character_scene.dart';
 
 /// Computes a base transform that stands the character on the ground of a
-/// [size] canvas: origin (hips) horizontally centred, feet near the bottom,
-/// uniformly scaled by [scale].
+/// [size] canvas: horizontally centred, the **feet** at [feetFraction] of the
+/// height, uniformly scaled by [scale].
+///
+/// [feetOffset] is the rig's rest distance from origin down to the feet (see
+/// [CharacterScene.restFeetOffset]); the origin is lifted by it so the feet —
+/// not the hips — land on the floor line. Without it the legs run off the
+/// bottom of the canvas.
 Affine2D groundedBase(
   Size size, {
   double scale = 1,
   double feetFraction = 0.92,
+  double feetOffset = 0,
 }) => Affine2D.translation(
   size.width / 2,
-  size.height * feetFraction,
+  size.height * feetFraction - feetOffset * scale,
 ).multiply(Affine2D.scale(scale, scale));
 
 /// A [CustomPainter] that resolves and draws one frame of a [CharacterScene].
@@ -29,6 +35,10 @@ class CharacterPainter extends CustomPainter {
     required this.timeSeconds,
     this.expression = Expression.neutral,
     this.scale = 1,
+    this.eyeOpenScale = 1,
+    this.feetFraction = 0.9,
+    this.groundColor,
+    this.shadowColor = const Color(0x33000000),
     CharacterRenderer? renderer,
   }) : _renderer = renderer ?? CharacterRenderer();
 
@@ -37,17 +47,63 @@ class CharacterPainter extends CustomPainter {
   final double timeSeconds;
   final Expression expression;
   final double scale;
+
+  /// Manual eyelid multiplier (1 = no change) — drives the demo's blink.
+  final double eyeOpenScale;
+
+  /// Fraction of the canvas height at which the floor (and the feet) sit.
+  final double feetFraction;
+
+  /// When set, a floor band is filled from [feetFraction] to the bottom so the
+  /// character has something to stand on instead of floating in the void.
+  final Color? groundColor;
+
+  /// Colour of the soft ground-contact shadow under the feet.
+  final Color shadowColor;
   final CharacterRenderer _renderer;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final base = groundedBase(size, scale: scale);
+    final floorY = size.height * feetFraction;
+    if (groundColor != null) {
+      canvas.drawRect(
+        Rect.fromLTWH(0, floorY, size.width, size.height - floorY),
+        Paint()..color = groundColor!,
+      );
+    }
+
+    final base = groundedBase(
+      size,
+      scale: scale,
+      feetFraction: feetFraction,
+      feetOffset: scene.restFeetOffset,
+    );
     final frame = scene.frameAt(
       clip: clip,
       timeSeconds: timeSeconds,
       expression: expression,
       base: base,
+      eyeOpenScale: eyeOpenScale,
     );
+
+    // Contact shadow: a soft ellipse pinned to the floor under the feet. As the
+    // lowest foot lifts off the floor (passing, a jump) the shadow shrinks and
+    // fades, which is what reads as weight and contact.
+    final footY = scene.lowestDrawnY(frame.world);
+    final lift = ((floorY - footY) / (90 * scale)).clamp(0.0, 1.0);
+    final shadowW = 96 * scale * (1 - 0.5 * lift);
+    final shadowAlpha = ((shadowColor.a * 255.0).round() * (1 - 0.7 * lift))
+        .round()
+        .clamp(0, 255);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width / 2, floorY),
+        width: shadowW,
+        height: shadowW * 0.2,
+      ),
+      Paint()..color = shadowColor.withAlpha(shadowAlpha),
+    );
+
     _renderer.paint(canvas, scene.rig, frame.world, frame.face);
   }
 
@@ -58,5 +114,9 @@ class CharacterPainter extends CustomPainter {
       old.expression != expression ||
       old.scene != scene ||
       old.scale != scale ||
+      old.eyeOpenScale != eyeOpenScale ||
+      old.feetFraction != feetFraction ||
+      old.groundColor != groundColor ||
+      old.shadowColor != shadowColor ||
       old._renderer != _renderer;
 }

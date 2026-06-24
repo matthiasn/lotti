@@ -17,6 +17,8 @@ class CharacterView extends StatefulWidget {
     this.expression = Expression.neutral,
     this.scale = 1,
     this.paused = false,
+    this.eyeOpenScale = 1,
+    this.groundColor,
     super.key,
   });
 
@@ -25,6 +27,14 @@ class CharacterView extends StatefulWidget {
   final Expression expression;
   final double scale;
   final bool paused;
+
+  /// Manual eyelid multiplier (1 = no change). The demo animates this to play a
+  /// blink on demand; it composes with the always-on autonomic blink.
+  final double eyeOpenScale;
+
+  /// When set, the painter fills a floor band and the character stands on it
+  /// (with a contact shadow) instead of floating.
+  final Color? groundColor;
 
   @override
   State<CharacterView> createState() => _CharacterViewState();
@@ -97,6 +107,8 @@ class _CharacterViewState extends State<CharacterView>
         timeSeconds: seconds,
         expression: widget.expression,
         scale: widget.scale,
+        eyeOpenScale: widget.eyeOpenScale,
+        groundColor: widget.groundColor,
         renderer: _renderer,
       ),
       child: const SizedBox.expand(),

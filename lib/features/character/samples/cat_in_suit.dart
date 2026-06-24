@@ -96,7 +96,7 @@ RigSpec buildCatInSuitRig() {
       pivotX: 0,
       pivotY: 36,
       z: 1,
-      restRotation: -0.55,
+      restRotation: -0.82,
       drawable: BoneDrawable(
         kind: BoneShapeKind.capsule,
         width: 12,
@@ -444,31 +444,87 @@ RigSpec buildCatInSuitRig() {
 
 /// The Phase-1 cycle library: walk, run, sit, jump, idle.
 class CatClips {
+  // --- Shared walk step cycle (phase 0 = left-foot contact). ---
+  // The right leg reuses these exact keys at phase 0.5. The point of keyframes
+  // (vs sines) is the two distinct phases a sine can't make: a STANCE leg that
+  // plants, straightens and sweeps back under the body, and a SWING leg whose
+  // knee tucks so the foot lifts clear of the floor, then reaches out to plant.
+  static const _thighKeys = [
+    Keyframe(p: 0, rotation: 0.42), // contact: leg reaches forward
+    Keyframe(p: 0.25, rotation: 0.05), // midstance: under the hips
+    Keyframe(p: 0.5, rotation: -0.42), // toe-off: swept back
+    Keyframe(p: 0.72, rotation: -0.08), // swing: driving through, knee tucked
+    Keyframe(p: 0.88, rotation: 0.5), // reach: stretches out for the next plant
+    Keyframe(p: 1, rotation: 0.42),
+  ];
+  static const _shinKeys = [
+    Keyframe(p: 0, rotation: -0.16), // contact: nearly straight
+    Keyframe(p: 0.12, rotation: -0.46), // weight-accept: bends to absorb
+    Keyframe(p: 0.3, rotation: -0.1), // midstance: straightens, carries weight
+    Keyframe(p: 0.5, rotation: -0.6), // toe-off: starts to fold
+    Keyframe(p: 0.7, rotation: -1.3), // swing: tucked hard so the foot clears
+    Keyframe(p: 0.86, rotation: -0.32), // extends for contact
+    Keyframe(p: 1, rotation: -0.16),
+  ];
+  static const _footKeys = [
+    Keyframe(p: 0, rotation: 0.16), // contact: heel leads
+    Keyframe(p: 0.25), // flat through stance
+    Keyframe(p: 0.5, rotation: 0.5), // toe-off: pushes, points down
+    Keyframe(p: 0.7, rotation: -0.25), // swing: lifts (dorsiflex) to clear
+    Keyframe(p: 0.86), // levels for the plant
+    Keyframe(p: 1, rotation: 0.16),
+  ];
+
   static Clip get walk => const Clip(
     name: 'walk',
     duration: 1,
     locomotionSpeed: 64,
     root: SineRootChannel(
-      bobAmplitude: -5,
-      swayAmplitude: 3,
-      leanAmplitude: 0.03,
+      // Weight drops on each footfall (twice per cycle) and rises at passing.
+      // The bob is the *only* big body motion — sway/lean are kept tiny so the
+      // torso stays contained and the legs carry the walk (a busy torso reads as
+      // a seasick wobble, not weight).
+      bobAmplitude: -6,
+      bobPhase: 0.05,
+      swayAmplitude: 1.5,
+      leanAmplitude: 0.015,
     ),
     channels: {
-      CatBones.legUpperL: SineChannel(amplitude: 0.55),
-      CatBones.legUpperR: SineChannel(amplitude: 0.55, phase: 0.5),
-      CatBones.legLowerL: SineChannel(amplitude: 0.4, phase: 0.12, bias: -0.35),
-      CatBones.legLowerR: SineChannel(amplitude: 0.4, phase: 0.62, bias: -0.35),
-      CatBones.footL: SineChannel(amplitude: 0.3, phase: 0.2),
-      CatBones.footR: SineChannel(amplitude: 0.3, phase: 0.7),
-      CatBones.armUpperL: SineChannel(amplitude: 0.4, phase: 0.5),
+      // --- Spine chain: the single biggest fix for the "cardboard plank". ---
+      // Pelvis lists once per cycle (toward the swing leg); the torso
+      // counter-rotates against it and the neck/head re-counter so the gaze
+      // stays roughly level. The net effect is a body that articulates through
+      // a soft S instead of riding as one rigid block.
+      CatBones.hips: SineChannel(amplitude: 0.06),
+      // Gentle counter-rotation only — no bone-scale squash here, since the
+      // head/arms hang off the torso and any torso scale would distort them.
+      CatBones.torso: SineChannel(amplitude: 0.07, phase: 0.5),
+      // The head stays a near-steady anchor (a walking head barely moves); just
+      // enough counter to keep the gaze level, not a bobble-head.
+      CatBones.neck: SineChannel(amplitude: 0.035),
+      CatBones.head: SineChannel(amplitude: 0.02, phase: 0.5),
+
+      // --- Legs: a real keyframed step, not a pendulum. Left leg drives the
+      // cycle; the right shares the same keys half a beat later (phase 0.5). ---
+      CatBones.legUpperL: KeyframeChannel(_thighKeys),
+      CatBones.legUpperR: KeyframeChannel(_thighKeys, phase: 0.5),
+      CatBones.legLowerL: KeyframeChannel(_shinKeys),
+      CatBones.legLowerR: KeyframeChannel(_shinKeys, phase: 0.5),
+      CatBones.footL: KeyframeChannel(_footKeys),
+      CatBones.footR: KeyframeChannel(_footKeys, phase: 0.5),
+
+      // --- Arms: swing opposite the same-side leg, forearm drags a beat. ---
+      CatBones.armUpperL: SineChannel(amplitude: 0.42, phase: 0.5),
       CatBones.armUpperR: SineChannel(amplitude: 0.4),
-      CatBones.armLowerL: SineChannel(amplitude: 0.18, bias: 0.25),
-      CatBones.armLowerR: SineChannel(amplitude: 0.18, phase: 0.5, bias: 0.25),
-      CatBones.torso: SineChannel(amplitude: 0.04, phase: 0.25),
-      CatBones.tie: SineChannel(amplitude: 0.1, phase: 0.1),
-      CatBones.tail0: SineChannel(amplitude: 0.16, bias: 0.1),
-      CatBones.tail1: SineChannel(amplitude: 0.22, phase: 0.12),
-      CatBones.tail2: SineChannel(amplitude: 0.3, phase: 0.24),
+      CatBones.armLowerL: SineChannel(amplitude: 0.2, phase: 0.12, bias: 0.3),
+      CatBones.armLowerR: SineChannel(amplitude: 0.2, phase: 0.62, bias: 0.3),
+
+      // --- Secondary: tie + tail drag, amplitude grows and phase lags down the
+      // chain (overlapping action) so they whip a beat behind the body. ---
+      CatBones.tie: SineChannel(amplitude: 0.12, phase: 0.15),
+      CatBones.tail0: SineChannel(amplitude: 0.18, bias: 0.1),
+      CatBones.tail1: SineChannel(amplitude: 0.26, phase: 0.14),
+      CatBones.tail2: SineChannel(amplitude: 0.34, phase: 0.28),
     },
   );
 
@@ -477,26 +533,57 @@ class CatClips {
     duration: 0.62,
     locomotionSpeed: 168,
     root: SineRootChannel(
-      bobAmplitude: -9,
+      // A run throws the body higher between strides and lands harder.
+      bobAmplitude: -11,
+      bobPhase: 0.05,
       swayAmplitude: 4,
-      leanAmplitude: 0.04,
+      leanAmplitude: 0.05,
     ),
     channels: {
-      CatBones.legUpperL: SineChannel(amplitude: 0.8, bias: 0.15),
-      CatBones.legUpperR: SineChannel(amplitude: 0.8, phase: 0.5, bias: 0.15),
-      CatBones.legLowerL: SineChannel(amplitude: 0.7, phase: 0.1, bias: -0.6),
-      CatBones.legLowerR: SineChannel(amplitude: 0.7, phase: 0.6, bias: -0.6),
-      CatBones.footL: SineChannel(amplitude: 0.4, phase: 0.2),
-      CatBones.footR: SineChannel(amplitude: 0.4, phase: 0.7),
-      CatBones.armUpperL: SineChannel(amplitude: 0.7, phase: 0.5, bias: 0.2),
-      CatBones.armUpperR: SineChannel(amplitude: 0.7, bias: 0.2),
-      CatBones.armLowerL: SineChannel(amplitude: 0.2, bias: 0.7),
-      CatBones.armLowerR: SineChannel(amplitude: 0.2, phase: 0.5, bias: 0.7),
-      CatBones.torso: SineChannel(amplitude: 0.05, bias: 0.22),
-      CatBones.tie: SineChannel(amplitude: 0.18, phase: 0.1, bias: 0.2),
-      CatBones.tail0: SineChannel(amplitude: 0.2, bias: -0.2),
-      CatBones.tail1: SineChannel(amplitude: 0.28, phase: 0.12),
-      CatBones.tail2: SineChannel(amplitude: 0.36, phase: 0.24),
+      // Spine chain, run-tuned: the pelvis drives harder, the chest pitches
+      // forward into the run (bias) while counter-rotating, and the neck/head
+      // poke up so the gaze leads instead of face-planting into the lean.
+      CatBones.hips: SineChannel(amplitude: 0.1),
+      CatBones.torso: SineChannel(amplitude: 0.13, phase: 0.5, bias: 0.26),
+      CatBones.neck: SineChannel(amplitude: 0.09, bias: -0.18),
+      CatBones.head: SineChannel(amplitude: 0.06, phase: 0.5, bias: -0.12),
+
+      // Legs reach further with a hard knee snap (strong 2nd harmonic) and a
+      // foot that plants then kicks back on toe-off.
+      CatBones.legUpperL: SineChannel(amplitude: 0.82, bias: 0.15),
+      CatBones.legUpperR: SineChannel(amplitude: 0.82, phase: 0.5, bias: 0.15),
+      CatBones.legLowerL: SineChannel(
+        amplitude: 0.68,
+        phase: 0.1,
+        bias: -0.62,
+        harmonicAmplitude: 0.32,
+        harmonicPhase: 0.08,
+      ),
+      CatBones.legLowerR: SineChannel(
+        amplitude: 0.68,
+        phase: 0.6,
+        bias: -0.62,
+        harmonicAmplitude: 0.32,
+        harmonicPhase: 0.58,
+      ),
+      CatBones.footL: SineChannel(amplitude: 0.46, phase: 0.22, bias: 0.18),
+      CatBones.footR: SineChannel(amplitude: 0.46, phase: 0.72, bias: 0.18),
+
+      // Pumping arms, elbows well bent.
+      CatBones.armUpperL: SineChannel(amplitude: 0.72, phase: 0.5, bias: 0.2),
+      CatBones.armUpperR: SineChannel(amplitude: 0.72, bias: 0.2),
+      CatBones.armLowerL: SineChannel(amplitude: 0.22, phase: 0.1, bias: 0.72),
+      CatBones.armLowerR: SineChannel(
+        amplitude: 0.22,
+        phase: 0.6,
+        bias: 0.72,
+      ),
+
+      // Tail streams back and whips with strong overlap.
+      CatBones.tie: SineChannel(amplitude: 0.2, phase: 0.1, bias: 0.2),
+      CatBones.tail0: SineChannel(amplitude: 0.22, bias: -0.22),
+      CatBones.tail1: SineChannel(amplitude: 0.3, phase: 0.14),
+      CatBones.tail2: SineChannel(amplitude: 0.4, phase: 0.28),
     },
   );
 
@@ -616,11 +703,23 @@ class CatClips {
   static Clip get idle => const Clip(
     name: 'idle',
     duration: 3.6,
+    // One slow rise/fall per cycle — the body settling with each breath.
     root: SineRootChannel(bobAmplitude: -2, bobHarmonic: 1),
     channels: {
-      CatBones.tail0: SineChannel(amplitude: 0.12, bias: 0.1),
-      CatBones.tail1: SineChannel(amplitude: 0.16, phase: 0.15),
-      CatBones.tail2: SineChannel(amplitude: 0.22, phase: 0.3),
+      // Breathing: the chest expands (scaleY) and the spine sways a hair, so the
+      // character is never a frozen frame even when standing still. The face's
+      // autonomic blink + eye-darts layer on top for the rest of the "alive".
+      CatBones.torso: SineChannel(amplitude: 0.012, scaleYAmplitude: 0.03),
+      CatBones.hips: SineChannel(amplitude: 0.015, phase: 0.5),
+      // Slow head drift / settle (a calm look-around), offset from the breath.
+      CatBones.neck: SineChannel(amplitude: 0.03, phase: 0.2),
+      CatBones.head: SineChannel(amplitude: 0.025, phase: 0.35),
+      CatBones.armLowerL: SineChannel(amplitude: 0.03, bias: 0.18),
+      CatBones.armLowerR: SineChannel(amplitude: 0.03, phase: 0.5, bias: 0.18),
+      // A relaxed tail sway with gentle overlap down the segments.
+      CatBones.tail0: SineChannel(amplitude: 0.13, bias: 0.1),
+      CatBones.tail1: SineChannel(amplitude: 0.18, phase: 0.16),
+      CatBones.tail2: SineChannel(amplitude: 0.26, phase: 0.32),
     },
   );
 

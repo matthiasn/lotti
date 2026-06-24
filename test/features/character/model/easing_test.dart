@@ -33,8 +33,15 @@ void main() {
       expect(Ease.easeOut.apply(0.5), greaterThan(0.5));
     });
 
-    test('curves are monotonically non-decreasing', () {
-      for (final ease in Ease.values) {
+    test('the plain curves are monotonically non-decreasing', () {
+      // The *Back curves are deliberately excluded — they overshoot.
+      const monotonic = [
+        Ease.linear,
+        Ease.easeIn,
+        Ease.easeOut,
+        Ease.easeInOut,
+      ];
+      for (final ease in monotonic) {
         var prev = ease.apply(0);
         for (var i = 1; i <= 20; i++) {
           final v = ease.apply(i / 20);
@@ -42,6 +49,24 @@ void main() {
           prev = v;
         }
       }
+    });
+
+    test('easeInBack anticipates: it dips below 0 before driving to 1', () {
+      var min = double.infinity;
+      for (var i = 0; i <= 20; i++) {
+        final v = Ease.easeInBack.apply(i / 20);
+        if (v < min) min = v;
+      }
+      expect(min, lessThan(-0.05), reason: 'expected a wind-up below 0');
+    });
+
+    test('easeOutBack overshoots: it exceeds 1 before settling back', () {
+      var max = double.negativeInfinity;
+      for (var i = 0; i <= 20; i++) {
+        final v = Ease.easeOutBack.apply(i / 20);
+        if (v > max) max = v;
+      }
+      expect(max, greaterThan(1.05), reason: 'expected an overshoot past 1');
     });
   });
 }

@@ -43,14 +43,44 @@ class CharacterScene {
   final FaceSolver faceSolver = const FaceSolver();
   final AutonomicLayer autonomic;
 
+  /// Distance (in local units) from the rig origin down to the lowest drawn
+  /// pixel of the **rest** pose — i.e. how far the feet sit below the hips.
+  /// Used to ground the character so the feet land on the floor instead of the
+  /// origin (which would push the legs off the bottom of the canvas).
+  late final double restFeetOffset = lowestDrawnY(
+    solver.solve(const Pose(joints: {})),
+  );
+
+  /// The lowest drawn world-Y across all parts for a solved [world] — a proxy
+  /// for where the feet currently are. Drives both rest grounding and the live
+  /// contact shadow (which shrinks/fades as the feet lift off the floor).
+  double lowestDrawnY(Map<String, Affine2D> world) {
+    var maxY = double.negativeInfinity;
+    for (final bone in rig.bones) {
+      final d = bone.drawable;
+      if (d == null) continue;
+      // Bottom-centre of the drawable, in the bone's local space, mapped to
+      // world. A good proxy for the lowest painted pixel of that part.
+      final p = world[bone.id]!.transformPoint(d.dx, d.dy + d.height / 2);
+      if (p.y > maxY) maxY = p.y;
+    }
+    return maxY;
+  }
+
   /// Resolves the frame for [clip] at [timeSeconds]. [expression] sets the base
   /// emotion (blink/eye-darts are layered on top); [base] places the character
   /// in the target canvas.
+  ///
+  /// [eyeOpenScale] further multiplies eyelid openness (1 = no change, 0 =
+  /// shut). It composes with the autonomic blink and lets a caller drive a
+  /// *manual* blink (the demo's blink button / keyboard) without disturbing the
+  /// deterministic autonomic schedule.
   CharacterFrame frameAt({
     required Clip clip,
     required double timeSeconds,
     Expression expression = Expression.neutral,
     Affine2D base = Affine2D.identity,
+    double eyeOpenScale = 1,
   }) {
     final pose = evaluator.evaluate(clip, timeSeconds);
     final auto = autonomic.sampleAt(timeSeconds);
@@ -64,7 +94,13 @@ class CharacterScene {
     );
 
     final world = solver.solve(posed, base: base);
-    final face = faceSolver.applyAutonomic(expression.state, auto);
+    var face = faceSolver.applyAutonomic(expression.state, auto);
+    if (eyeOpenScale != 1) {
+      face = face.copyWith(
+        eyeOpenLeft: face.eyeOpenLeft * eyeOpenScale,
+        eyeOpenRight: face.eyeOpenRight * eyeOpenScale,
+      );
+    }
     final locomotion = evaluator.locomotionOffset(clip, timeSeconds);
     return CharacterFrame(world: world, face: face, locomotionX: locomotion);
   }

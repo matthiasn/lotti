@@ -291,8 +291,13 @@ class CharacterRenderer {
     final raise = isLeft ? s.browRaiseLeft : s.browRaiseRight;
     final angle = isLeft ? s.browAngleLeft : s.browAngleRight;
     final cy = f.browOffsetY - raise * 6;
-    // Inner-brow tilt: mirror the sign so "inner up" reads as sad on both sides.
-    final rot = (isLeft ? angle : -angle) * 0.5;
+    // Inner-brow tilt. Positive `angle` raises the *inner* end of each brow
+    // (the worried "/\" of a sad face); negative lowers it into the furrowed
+    // "\/" of an angry one. The left/right signs mirror so the tilt stays
+    // symmetric about the face centre. (Canvas rotation is clockwise-positive,
+    // so the inner end — +x on the left brow, -x on the right — needs opposite
+    // signs to move the same way.)
+    final rot = (isLeft ? -angle : angle) * 0.5;
 
     canvas
       ..save()
