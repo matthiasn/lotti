@@ -53,7 +53,12 @@ class CelebrationSettingsBody extends ConsumerWidget {
     final visualsOn = prefs.enabled;
 
     return Padding(
-      padding: EdgeInsets.only(top: tokens.spacing.step4),
+      // Horizontal gutter so the section headings and cards don't sit flush
+      // against the detail-pane edges (this body had only top padding).
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step6,
+        vertical: tokens.spacing.step4,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
