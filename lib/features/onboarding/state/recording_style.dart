@@ -36,11 +36,12 @@ class RecordingStyleController extends AsyncNotifier<RecordingStyle> {
     return _parseRecordingStyle(await prefs.getString(recordingStylePrefsKey));
   }
 
-  /// Persist [style] and update the in-memory state immediately.
+  /// Persist [style], then reflect it in memory — so the in-memory state and
+  /// the stored preference never diverge if the write fails.
   Future<void> setStyle(RecordingStyle style) async {
-    state = AsyncData(style);
     final prefs = ref.read(recordingStyleAppPrefsProvider);
     await prefs.setString(key: recordingStylePrefsKey, value: style.name);
+    state = AsyncData(style);
   }
 }
 

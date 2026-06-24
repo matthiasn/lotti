@@ -254,11 +254,23 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
       provider: widget.providerName,
     );
     final service = ref.read(onboardingCaptureToTaskServiceProvider);
-    final result = await service.createTaskFromTranscript(
-      transcript: transcript,
-      categoryId: _selectedCategoryId,
-      providerName: widget.providerName,
-    );
+    final OnboardingCaptureResult result;
+    try {
+      result = await service.createTaskFromTranscript(
+        transcript: transcript,
+        categoryId: _selectedCategoryId,
+        providerName: widget.providerName,
+      );
+    } catch (_) {
+      // The orchestrator soft-lands its own failures, so a throw here is
+      // unexpected (e.g. persistence). Don't strand the user on the thinking
+      // frame — re-arm the prompt so they can retry.
+      if (!mounted) return;
+      setState(() => _structuring = false);
+      _structuringForTranscript = null;
+      ref.read(captureControllerProvider.notifier).reset();
+      return;
+    }
     if (!mounted) return;
     final task = result.task;
     if (task != null) {
@@ -295,31 +307,68 @@ class _OnboardingCapturePageState extends ConsumerState<OnboardingCapturePage> {
   }
 
   Future<String?> _promptForText() {
-    final controller = TextEditingController();
     final messages = context.messages;
     final material = MaterialLocalizations.of(context);
     return showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(messages.onboardingCaptureTypePrompt),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: null,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (value) => Navigator.of(ctx).pop(value),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(material.cancelButtonLabel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(controller.text),
-            child: Text(material.okButtonLabel),
-          ),
-        ],
+      builder: (_) => _TypeThoughtDialog(
+        title: messages.onboardingCaptureTypePrompt,
+        cancelLabel: material.cancelButtonLabel,
+        okLabel: material.okButtonLabel,
       ),
+    );
+  }
+}
+
+/// The "Rather type?" dialog. A [StatefulWidget] so it owns its
+/// [TextEditingController] and disposes it once the dialog leaves the tree
+/// (after the exit animation) — disposing it synchronously after `showDialog`
+/// returns would tear it down mid-transition while the field still reads it.
+class _TypeThoughtDialog extends StatefulWidget {
+  const _TypeThoughtDialog({
+    required this.title,
+    required this.cancelLabel,
+    required this.okLabel,
+  });
+
+  final String title;
+  final String cancelLabel;
+  final String okLabel;
+
+  @override
+  State<_TypeThoughtDialog> createState() => _TypeThoughtDialogState();
+}
+
+class _TypeThoughtDialogState extends State<_TypeThoughtDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLines: null,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (value) => Navigator.of(context).pop(value),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(widget.cancelLabel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: Text(widget.okLabel),
+        ),
+      ],
     );
   }
 }

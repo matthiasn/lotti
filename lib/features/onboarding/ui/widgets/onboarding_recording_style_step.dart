@@ -104,6 +104,13 @@ class _OnboardingRecordingStyleStepState
       setState(() => _tryingWithVoice = false);
       return;
     }
+    if (!_tryingWithVoice) {
+      // The user toggled back off while the recorder was still starting —
+      // discard immediately so we never leave a recording running.
+      _liveNote = note;
+      unawaited(_stopLive());
+      return;
+    }
     _liveNote = note;
     _ampSub = repo.amplitudeStream.listen((amp) {
       if (!mounted) return;

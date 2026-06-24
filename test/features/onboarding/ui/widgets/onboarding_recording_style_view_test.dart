@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
@@ -90,6 +91,26 @@ void main() {
     await tester.tap(find.text('Analogue'));
     await tester.tap(find.text('Modern'));
     expect(picked, [RecordingStyle.analogue, RecordingStyle.modern]);
+  });
+
+  testWidgets('a style card activates via the keyboard (focus + Enter)', (
+    tester,
+  ) async {
+    final picked = <RecordingStyle>[];
+    await pumpView(tester, onSelect: picked.add);
+
+    // The cards are InkWells (not bare GestureDetectors), so they take focus
+    // and respond to the activate key — operable for keyboard/switch users.
+    // The Analogue label sits under the card's InkWell, so the enclosing focus
+    // node is the card's.
+    final focusNode = Focus.of(tester.element(find.text('Analogue')))
+      ..requestFocus();
+    await tester.pump();
+    expect(focusNode.hasPrimaryFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(picked, [RecordingStyle.analogue]);
   });
 
   testWidgets('the try-with-voice switch reports its change', (tester) async {

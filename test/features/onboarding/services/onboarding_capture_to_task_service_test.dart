@@ -177,6 +177,42 @@ void main() {
       );
     });
 
+    test('keeps the title-only task when the checklist throws', () async {
+      stubStructureSuccess(
+        const OnboardingStructuredTask(
+          title: 'Call the dentist',
+          checklistItems: ['Find number'],
+        ),
+      );
+      stubCreateTask(TestTaskFactory.create(id: 'task-1'));
+      when(
+        () => autoChecklist.autoCreateChecklist(
+          taskId: any(named: 'taskId'),
+          suggestions: any(named: 'suggestions'),
+          title: any(named: 'title'),
+          shouldAutoCreate: any(named: 'shouldAutoCreate'),
+        ),
+      ).thenThrow(Exception('checklist backend down'));
+
+      final result = await service.createTaskFromTranscript(
+        transcript: 'call the dentist and book a slot',
+        categoryId: categoryId,
+        providerName: 'gemini',
+      );
+
+      // The bare-title task was still persisted and the capture still reads as
+      // a real aha — the checklist hiccup is swallowed, not propagated.
+      expect(result.isRealAha, isTrue);
+      expect(result.created, isTrue);
+      expect(result.title, 'Call the dentist');
+      verify(
+        () => metrics.recordEvent(
+          OnboardingEventName.realAha,
+          provider: 'gemini',
+        ),
+      ).called(1);
+    });
+
     test('skips the checklist when there are no items', () async {
       stubStructureSuccess(
         const OnboardingStructuredTask(

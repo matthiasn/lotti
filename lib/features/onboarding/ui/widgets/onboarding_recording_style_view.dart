@@ -212,49 +212,56 @@ class _StyleCard extends StatelessWidget {
       button: true,
       selected: selected,
       label: label,
-      child: GestureDetector(
-        onTap: onTap,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: dsTokensDark.colors.background.level02.withValues(
-              alpha: selected ? 0.55 : 0.32,
+      // InkWell (not a bare GestureDetector) so the card is focusable and
+      // activates on Enter/Space for keyboard and switch-access users; the
+      // splash is clipped to the card radius.
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: dsTokensDark.colors.background.level02.withValues(
+                alpha: selected ? 0.55 : 0.32,
+              ),
+              borderRadius: radius,
+              border: Border.all(
+                color: selected ? accent : textHigh.withValues(alpha: 0.32),
+                width: selected ? 2 : 1,
+              ),
             ),
-            borderRadius: radius,
-            border: Border.all(
-              color: selected ? accent : textHigh.withValues(alpha: 0.32),
-              width: selected ? 2 : 1,
-            ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.step4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      selected
-                          ? Icons.radio_button_checked_rounded
-                          : Icons.radio_button_unchecked_rounded,
-                      size: tokens.spacing.step5,
-                      color: selected
-                          ? accent
-                          : textHigh.withValues(alpha: 0.7),
-                    ),
-                    SizedBox(width: tokens.spacing.step3),
-                    Expanded(
-                      child: Text(
-                        label,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.subtitle.subtitle1
-                            .copyWith(color: textHigh),
+            child: Padding(
+              padding: EdgeInsets.all(tokens.spacing.step4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        selected
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        size: tokens.spacing.step5,
+                        color: selected
+                            ? accent
+                            : textHigh.withValues(alpha: 0.7),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: tokens.spacing.step4),
-                Center(child: preview),
-              ],
+                      SizedBox(width: tokens.spacing.step3),
+                      Expanded(
+                        child: Text(
+                          label,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.subtitle.subtitle1
+                              .copyWith(color: textHigh),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: tokens.spacing.step4),
+                  Center(child: preview),
+                ],
+              ),
             ),
           ),
         ),

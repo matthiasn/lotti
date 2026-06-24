@@ -207,18 +207,24 @@ class OnboardingCaptureToTaskService {
     );
 
     if (task != null && items.isNotEmpty) {
-      await _autoChecklistService.autoCreateChecklist(
-        taskId: task.id,
-        suggestions: [
-          for (final item in items)
-            ChecklistItemData(
-              title: item,
-              isChecked: false,
-              linkedChecklists: const [],
-            ),
-        ],
-        shouldAutoCreate: true,
-      );
+      // Best effort: a checklist hiccup must degrade to the bare-title task
+      // (already persisted above), not fail the whole capture.
+      try {
+        await _autoChecklistService.autoCreateChecklist(
+          taskId: task.id,
+          suggestions: [
+            for (final item in items)
+              ChecklistItemData(
+                title: item,
+                isChecked: false,
+                linkedChecklists: const [],
+              ),
+          ],
+          shouldAutoCreate: true,
+        );
+      } catch (_) {
+        // Keep the title-only task.
+      }
     }
     return task;
   }
@@ -229,9 +235,12 @@ class OnboardingCaptureToTaskService {
     final collapsed = transcript.trim().replaceAll(RegExp(r'\s+'), ' ');
     if (collapsed.isEmpty) return '';
 
-    final sentenceEnd = collapsed.indexOf(RegExp('[.!?]'));
-    final firstSentence = sentenceEnd > 0
-        ? collapsed.substring(0, sentenceEnd)
+    // Split on sentence-ending punctuation only when it's followed by
+    // whitespace or the end of the string, so decimals ("1.5 hours") and
+    // abbreviations aren't truncated mid-token.
+    final sentenceEnd = RegExp(r'[.!?]+(?=\s|$)').firstMatch(collapsed);
+    final firstSentence = (sentenceEnd != null && sentenceEnd.start > 0)
+        ? collapsed.substring(0, sentenceEnd.start)
         : collapsed;
 
     return firstSentence.length <= _maxFloorTitleLength

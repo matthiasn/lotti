@@ -496,38 +496,47 @@ class _OnboardingCategoryStepState
   Future<void> _continue(List<OnboardingCategoryOption> options) async {
     if (_busy) return;
     setState(() => _busy = true);
-    final repository = ref.read(categoryRepositoryProvider);
-    final profileId = onboardingSeededProfileId(widget.type);
-    // Resolved before the await gap so no BuildContext is touched afterwards.
-    final providerName = onboardingProviderName(context.messages, widget.type);
-    final chosen = options.where((o) => _selected.contains(o.label)).toList();
+    try {
+      final repository = ref.read(categoryRepositoryProvider);
+      final profileId = onboardingSeededProfileId(widget.type);
+      // Resolved before the await gap so no BuildContext is touched afterwards.
+      final providerName = onboardingProviderName(
+        context.messages,
+        widget.type,
+      );
+      final chosen = options.where((o) => _selected.contains(o.label)).toList();
 
-    final created = <OnboardingCaptureCategory>[];
-    for (var i = 0; i < chosen.length; i++) {
-      final category = await repository.createCategory(
-        name: chosen[i].label,
-        color: _palette[i % _palette.length],
-        defaultProfileId: profileId,
-      );
-      created.add(
-        OnboardingCaptureCategory(id: category.id, label: category.name),
-      );
-    }
+      final created = <OnboardingCaptureCategory>[];
+      for (var i = 0; i < chosen.length; i++) {
+        final category = await repository.createCategory(
+          name: chosen[i].label,
+          color: _palette[i % _palette.length],
+          defaultProfileId: profileId,
+        );
+        created.add(
+          OnboardingCaptureCategory(id: category.id, label: category.name),
+        );
+      }
 
-    if (created.isNotEmpty) {
-      // Hand every created area to the live first-capture aha; the modal pops
-      // and pushes the capture page in its place. With more than one area the
-      // page lets the user pick which one the task lands in.
-      widget.onStartCapture(
-        OnboardingFirstCapture(
-          categories: created,
-          providerName: providerName,
-        ),
-      );
-    } else {
-      // No area selected — nothing to capture into, so just finish. Defensive:
-      // the Continue button is disabled until at least one area is selected.
-      widget.onDone(); // coverage:ignore-line
+      if (created.isNotEmpty) {
+        // Hand every created area to the live first-capture aha; the modal pops
+        // and pushes the capture page in its place. With more than one area the
+        // page lets the user pick which one the task lands in.
+        widget.onStartCapture(
+          OnboardingFirstCapture(
+            categories: created,
+            providerName: providerName,
+          ),
+        );
+      } else {
+        // No area selected — nothing to capture into, so just finish.
+        // Defensive: Continue is disabled until at least one area is selected.
+        widget.onDone(); // coverage:ignore-line
+      }
+    } finally {
+      // Release the lock if a repository write threw. On success the modal has
+      // already popped (widget unmounted), so guard with mounted.
+      if (mounted) setState(() => _busy = false);
     }
   }
 

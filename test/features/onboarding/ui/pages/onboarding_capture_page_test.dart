@@ -267,6 +267,55 @@ void main() {
     expect(dones, 1);
   });
 
+  testWidgets('a thrown structuring error re-arms the prompt for a retry', (
+    tester,
+  ) async {
+    when(
+      () => service.createTaskFromTranscript(
+        transcript: any(named: 'transcript'),
+        categoryId: any(named: 'categoryId'),
+        providerName: any(named: 'providerName'),
+      ),
+    ).thenThrow(Exception('structuring backend down'));
+    final created = <String>[];
+    var dones = 0;
+    await pumpPage(
+      tester,
+      onTaskCreated: created.add,
+      onDone: () => dones++,
+    );
+
+    controller.emit(
+      const CaptureState(
+        phase: CapturePhase.captured,
+        transcript: transcript,
+        amplitudes: <double>[],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // The throw is swallowed: no task handed up, onboarding not finished, and
+    // the page falls back to the prompt frame so the user can try again.
+    expect(created, isEmpty);
+    expect(dones, 0);
+    expect(find.text("What's on your mind?"), findsOneWidget);
+    expect(find.byType(VoiceOrbZone), findsOneWidget);
+
+    // A fresh capture re-runs structuring (the in-flight guard was cleared).
+    stubStructuring(realAha());
+    controller.emit(
+      const CaptureState(
+        phase: CapturePhase.captured,
+        transcript: transcript,
+        amplitudes: <double>[],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(created, ['task-1']);
+  });
+
   testWidgets('does not re-structure when the captured state re-emits', (
     tester,
   ) async {

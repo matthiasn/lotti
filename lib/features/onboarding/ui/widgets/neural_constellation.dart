@@ -329,7 +329,10 @@ class _ConstellationPainter extends CustomPainter {
       oldDelegate.t01 != t01 ||
       oldDelegate.pulseCycles != pulseCycles ||
       oldDelegate.pulseCount != pulseCount ||
-      oldDelegate.nodes.length != nodes.length ||
+      // Identity, not just length: a seed change regenerates the node list
+      // (often the same count), which must repaint even when t01 is frozen
+      // under reduced motion.
+      !identical(oldDelegate.nodes, nodes) ||
       oldDelegate.nodeColor != nodeColor ||
       oldDelegate.lineColor != lineColor ||
       oldDelegate.pulseColor != pulseColor ||

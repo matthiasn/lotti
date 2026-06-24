@@ -226,6 +226,10 @@ class _ThinkingCluster extends StatelessWidget {
           Text(
             '"$transcript"',
             textAlign: TextAlign.center,
+            // Bounded so a long transcript can't overflow the fixed-height
+            // active band.
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
             style: tokens.typography.styles.body.bodyLarge.copyWith(
               color: tokens.colors.text.highEmphasis,
               fontStyle: FontStyle.italic,
