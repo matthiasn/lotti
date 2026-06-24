@@ -51,10 +51,14 @@ class InferenceProviderModelPickerModal {
 
     // Drop models whose provider is missing or has been deleted: they can't be
     // routed (the runner needs a provider) and would otherwise render as dead
-    // rows whose tap does nothing.
-    final validModels = models
+    // rows whose tap does nothing. But never strand the user: if *every* model's
+    // provider is unresolved (a data inconsistency, or a caller that didn't pass
+    // the provider list), fall back to all of them so the picker still works —
+    // just without per-provider branding — rather than silently returning null.
+    final withProvider = models
         .where((m) => providersById.containsKey(m.inferenceProviderId))
         .toList();
+    final validModels = withProvider.isEmpty ? models : withProvider;
     if (validModels.isEmpty) return null;
     if (validModels.length == 1) return validModels.first.id;
 

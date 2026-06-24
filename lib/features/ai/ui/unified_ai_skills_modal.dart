@@ -368,6 +368,13 @@ class UnifiedAiModal {
     }
 
     if (!context.mounted) return;
+    // Capture the provider container while the widget is still mounted, so the
+    // fire-and-forget trigger below still runs even if the entry card that owns
+    // `context`/`ref` is rebuilt or disposed while the picker is open. The old
+    // single-tap picker rarely outlived its card; the provider→model
+    // drill-down does, which silently stranded the run on a `context.mounted`
+    // check that bailed before firing the trigger.
+    final container = ProviderScope.containerOf(context, listen: false);
     // Cache l10n on the still-mounted context before awaiting the
     // picker — the surrounding widget may be disposed while the
     // picker is open, after which `context.messages` would throw.
@@ -383,11 +390,6 @@ class UnifiedAiModal {
       defaultBadgeLabel: config.defaultBadgeSelector(messages),
     );
     if (picked == null) return;
-    // Second mounted check: the picker `await` can resolve after the
-    // surrounding widget has been deactivated (user navigated away,
-    // entry deleted). Reading `ref` on a deactivated element throws,
-    // so we bail before firing the trigger.
-    if (!context.mounted) return;
 
     final selectedModel = modalityCapable.firstWhereOrNull(
       (model) => model.id == picked,
@@ -396,8 +398,13 @@ class UnifiedAiModal {
         ? providersById[selectedModel.inferenceProviderId]
         : null;
 
+    // Gemini-3 models offer a per-run thinking-mode choice. Only ask when the
+    // context is still mounted (the modal needs it); if the card was disposed
+    // mid-flow, skip the prompt and run with the model's saved mode rather than
+    // dropping the whole inference.
     GeminiThinkingMode? geminiThinkingMode;
-    if (selectedProvider?.inferenceProviderType ==
+    if (context.mounted &&
+        selectedProvider?.inferenceProviderType ==
             InferenceProviderType.gemini &&
         selectedModel != null &&
         GeminiThinkingConfig.isGemini3(selectedModel.providerModelId)) {
@@ -407,15 +414,16 @@ class UnifiedAiModal {
       );
       if (pickedMode == null) return;
       geminiThinkingMode = pickedMode;
-      if (!context.mounted) return;
     }
 
     // Same id as default → no override semantic — the runner reads
     // the profile slot. Different id → forward as override.
     final overrideId = picked == defaultModelId ? null : picked;
 
+    // Fire-and-forget via the captured container (not `ref`/`context`), so a
+    // rebuilt or disposed entry card can't swallow the inference.
     unawaited(
-      ref.read(
+      container.read(
         triggerSkillProvider((
           entityId: journalEntity.id,
           skillId: skill.id,

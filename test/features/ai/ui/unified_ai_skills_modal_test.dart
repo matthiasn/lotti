@@ -1491,6 +1491,163 @@ void main() {
       });
     }
 
+    testWidgets(
+      'multi-provider override: drilling provider -> model fires the trigger '
+      'with that model id (the provider-first two-page flow end to end '
+      'through the popup, not just the picker in isolation)',
+      (tester) async {
+        final t = DateTime(2024, 3, 15, 10);
+        final entity = _audioEntityFactory(
+          id: 'audio-multi',
+          categoryId: 'cat-1',
+        );
+        final skill = _buildSkill(_transcriptionOverrideVariant, t);
+        final providerA = _buildProvider(id: 'p-a', name: 'Provider A', t: t);
+        final providerB = _buildProvider(id: 'p-b', name: 'Provider B', t: t);
+        final modelA = _buildModel(
+          id: 'm-a',
+          name: 'Voxtral Local',
+          providerModelId: 'wire-a',
+          providerId: 'p-a',
+          modality: Modality.audio,
+          t: t,
+        );
+        final modelB = _buildModel(
+          id: 'm-b',
+          name: 'Mistral Cloud',
+          providerModelId: 'wire-b',
+          providerId: 'p-b',
+          modality: Modality.audio,
+          t: t,
+        );
+        TriggerSkillParams? capturedParams;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(journalEntity: entity, linkedFromId: null),
+            overrides: [
+              entryControllerProvider(
+                id: entity.id,
+              ).overrideWith(() => FakeEntryController(entity)),
+              ..._baseOverrides(
+                entity: entity,
+                skill: skill,
+                models: [modelA, modelB],
+                resolver: _NullProfileResolver(),
+                configs: [modelA, modelB, providerA, providerB],
+              ),
+              triggerSkillProvider.overrideWith((ref, params) async {
+                capturedParams = params;
+              }),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text(_transcriptionOverrideVariant.skillName));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Two providers -> the provider page shows two drill-down rows.
+        expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
+
+        // Drill into the first provider, then pick its model.
+        await tester.tap(find.byIcon(Icons.chevron_right_rounded).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Voxtral Local'));
+        await tester.pumpAndSettle();
+
+        expect(capturedParams, isNotNull);
+        expect(capturedParams!.overrideModelId, 'm-a');
+      },
+    );
+
+    testWidgets(
+      'fires the trigger even when the entry card is disposed while the '
+      'picker is open — the run dispatches through a captured container, not '
+      'the (now unmounted) widget context/ref',
+      (tester) async {
+        final t = DateTime(2024, 3, 15, 10);
+        final entity = _audioEntityFactory(
+          id: 'audio-dispose',
+          categoryId: 'cat-1',
+        );
+        final skill = _buildSkill(_transcriptionOverrideVariant, t);
+        final provider = _buildProvider(id: 'p-a', name: 'Provider A', t: t);
+        final modelA = _buildModel(
+          id: 'm-a',
+          name: 'Voxtral Local',
+          providerModelId: 'wire-a',
+          providerId: 'p-a',
+          modality: Modality.audio,
+          t: t,
+        );
+        final modelB = _buildModel(
+          id: 'm-b',
+          name: 'Mistral Cloud',
+          providerModelId: 'wire-b',
+          providerId: 'p-a',
+          modality: Modality.audio,
+          t: t,
+        );
+        final showButton = ValueNotifier(true);
+        addTearDown(showButton.dispose);
+        TriggerSkillParams? capturedParams;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            ValueListenableBuilder<bool>(
+              valueListenable: showButton,
+              builder: (_, show, _) => show
+                  ? UnifiedAiPopUpMenu(journalEntity: entity, linkedFromId: null)
+                  : const SizedBox.shrink(),
+            ),
+            overrides: [
+              entryControllerProvider(
+                id: entity.id,
+              ).overrideWith(() => FakeEntryController(entity)),
+              ..._baseOverrides(
+                entity: entity,
+                skill: skill,
+                models: [modelA, modelB],
+                resolver: _NullProfileResolver(),
+                configs: [modelA, modelB, provider],
+              ),
+              triggerSkillProvider.overrideWith((ref, params) async {
+                capturedParams = params;
+              }),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text(_transcriptionOverrideVariant.skillName));
+        await tester.pumpAndSettle();
+
+        // Single provider -> the model list shows directly.
+        expect(find.text('Voxtral Local'), findsOneWidget);
+
+        // Dispose the entry card (and its ref/context) while the picker is up.
+        showButton.value = false;
+        await tester.pump();
+
+        // Pick a model anyway — the run must still dispatch.
+        await tester.tap(find.text('Voxtral Local'));
+        await tester.pumpAndSettle();
+
+        expect(capturedParams, isNotNull);
+        expect(capturedParams!.overrideModelId, 'm-a');
+      },
+    );
+
     // When the entity itself is a Task, linkedTaskId is non-null
     // (journalEntity.id) so the override handler resolves the profile via
     // resolveForTask rather than resolveForCategory. This drives the
