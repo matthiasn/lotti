@@ -33,6 +33,7 @@ class CatBones {
   static const hips = 'hips';
   static const torso = 'torso';
   static const tie = 'tie';
+  static const tieLower = 'tie_lower';
   static const neck = 'neck';
   static const head = 'head';
   static const earL = 'ear.L';
@@ -348,7 +349,9 @@ RigSpec buildCatInSuitRig() {
       ),
     ),
 
-    // Collar + tie over the jacket.
+    // Tie: a 2-link cloth pendulum over the jacket. The knot is short and nearly
+    // rigid at the collar; the blade hangs off it, lags, and widens toward its
+    // point — so it sways and trails like fabric instead of a rigid stick.
     const Bone(
       id: CatBones.tie,
       parent: CatBones.torso,
@@ -356,10 +359,28 @@ RigSpec buildCatInSuitRig() {
       pivotY: -80,
       z: 14,
       drawable: BoneDrawable(
-        kind: BoneShapeKind.capsule,
-        width: 13,
-        height: 52,
-        dy: 28,
+        kind: BoneShapeKind.taperedCapsule,
+        width: 14,
+        widthTip: 12,
+        height: 24,
+        dy: 11,
+        color: _tie,
+        outlineColor: _outline,
+        outlineWidth: 2,
+      ),
+    ),
+    const Bone(
+      id: CatBones.tieLower,
+      parent: CatBones.tie,
+      pivotX: 0,
+      pivotY: 20,
+      z: 14,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.taperedCapsule,
+        width: 12,
+        widthTip: 17,
+        height: 34,
+        dy: 16,
         color: _tie,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -624,8 +645,9 @@ class CatClips {
       CatBones.earL: SineChannel(amplitude: 0.06, phase: 0.55),
       CatBones.earR: SineChannel(amplitude: 0.06, phase: 0.55),
 
-      // --- Tie sways and lags off the collar. ---
+      // --- Tie: knot barely moves; the blade lags and swings ~2x (cloth). ---
       CatBones.tie: SineChannel(amplitude: 0.07, phase: 0.18),
+      CatBones.tieLower: SineChannel(amplitude: 0.16, phase: 0.3),
 
       // --- Tail: a travelling drag wave. Amplitude grows and phase lags ~0.06
       // per link so the whip visibly travels base->tip; the tip gets a 2nd
@@ -702,6 +724,7 @@ class CatClips {
 
       // Tie + tail stream back and whip (7-link travelling wave, strong tip).
       CatBones.tie: SineChannel(amplitude: 0.12, phase: 0.1, bias: 0.18),
+      CatBones.tieLower: SineChannel(amplitude: 0.24, phase: 0.26, bias: 0.3),
       CatBones.tail0: SineChannel(amplitude: 0.06, bias: -0.18),
       CatBones.tail1: SineChannel(amplitude: 0.1, phase: 0.06, bias: -0.06),
       CatBones.tail2: SineChannel(amplitude: 0.14, phase: 0.12),
@@ -848,6 +871,8 @@ class CatClips {
       CatBones.armLowerR: SineChannel(amplitude: 0.03, phase: 0.5, bias: 0.18),
       // Ears twitch slowly (listening) and the tail does a lazy travelling sway
       // down all 7 links — the "alive at rest" tell.
+      CatBones.tie: SineChannel(amplitude: 0.015, phase: 0.2),
+      CatBones.tieLower: SineChannel(amplitude: 0.035, phase: 0.45, bias: 0.04),
       CatBones.earL: SineChannel(amplitude: 0.03, phase: 0.3),
       CatBones.earR: SineChannel(amplitude: 0.03, phase: 0.8),
       CatBones.tail0: SineChannel(amplitude: 0.04, bias: 0.05),
