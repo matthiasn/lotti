@@ -303,11 +303,14 @@ void main() {
       final t = total * i / frames;
       final travelPx = scene.evaluator.locomotionOffset(clip, t).abs() * sc;
       final cyc = travelPx % (2 * band);
-      final pos = cyc <= band ? cyc : 2 * band - cyc;
+      final movingRight = cyc <= band;
+      final pos = movingRight ? cyc : 2 * band - cyc;
+      // Mirror while moving +x, mirroring the painter's facing so the onion
+      // reflects the real runtime (foot should hold still).
       final base = Affine2D.translation(
         margin + pos,
         floorY - scene.restFeetOffset * sc,
-      ).multiply(Affine2D.scale(cyc > band ? -sc : sc, sc));
+      ).multiply(Affine2D.scale(movingRight ? -sc : sc, sc));
       final frame = scene.frameAt(
         clip: clip,
         timeSeconds: t,

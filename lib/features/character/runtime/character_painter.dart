@@ -91,9 +91,14 @@ class CharacterPainter extends CustomPainter {
           scene.evaluator.locomotionOffset(clip, timeSeconds).abs() * scale;
       final band = (size.width - 2 * _edgeMargin).clamp(1.0, size.width);
       final cyc = travelPx % (2 * band);
-      final pos = cyc <= band ? cyc : 2 * band - cyc; // triangle 0..band..0
+      final movingRight = cyc <= band;
+      final pos = movingRight ? cyc : 2 * band - cyc; // triangle 0..band..0
       centreX = _edgeMargin + pos;
-      flip = cyc > band; // walking back the other way → face left
+      // Face the direction of travel. The authored cycle sweeps the planted
+      // foot forward in body-space, so the character must be MIRRORED while it
+      // walks in the +x direction for the foot to hold still on the floor (the
+      // mirror cancels the foot's body-frame sweep against the body's travel).
+      flip = movingRight;
     }
 
     final base = groundedBase(
