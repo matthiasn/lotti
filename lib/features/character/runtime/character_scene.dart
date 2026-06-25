@@ -207,13 +207,12 @@ class CharacterScene {
     return CharacterFrame(world: world, face: face, locomotionX: locomotion);
   }
 
-  /// In-place one-shots do not locomote, but their support foot still needs to
-  /// feel planted. [Clip.contactSpans] marks that support foot; this pass
-  /// translates the root toward the contact-start anchor. Looping clips keep
-  /// contact spans for shadows only: hard support correction in a loop creates
-  /// visible handoff pops and makes dance cycles look jerky.
+  /// In-place performance clips do not locomote, but their support foot still
+  /// needs to feel planted. [Clip.contactSpans] marks that support foot; this
+  /// pass translates the root toward the contact-start anchor. Loops use a
+  /// weaker correction than one-shots so dance contacts gain weight without
+  /// snapping at support handoffs.
   Pose _contactLockedPose(Clip clip, double timeSeconds, Pose pose) {
-    if (clip.loop) return pose;
     final p = _clipPhase(clip, timeSeconds);
     final span = _activeContactSpanAt(clip, p);
     if (span == null) return pose;
@@ -249,8 +248,9 @@ class CharacterScene {
   }
 
   double _contactLockStrength(Clip clip, GroundSpan span, double p) {
-    const base = 0.94;
-    const fade = 0.08;
+    final base = clip.loop ? 0.64 : 0.94;
+    final spanLength = span.end - span.start;
+    final fade = clip.loop ? (spanLength * 0.32).clamp(0.025, 0.055) : 0.08;
     final fadeIn = _smoothUnit((p - span.start) / fade);
     final fadeOut = _smoothUnit((span.end - p) / fade);
     final edge = fadeIn < fadeOut ? fadeIn : fadeOut;

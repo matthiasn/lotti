@@ -100,6 +100,66 @@ void main() {
       }
     });
 
+    test('looping performance contact spans softly damp foot drift', () {
+      final scene = CharacterScene(buildCatInSuitRig());
+      var lockedDrift = 0.0;
+      var rawDrift = 0.0;
+
+      for (final span in CatClips.dance.contactSpans) {
+        final mid = (span.start + span.end) / 2;
+        final width = (span.end - span.start) / 3;
+        final lockedAnchor = _supportPoint(
+          scene,
+          CatClips.dance,
+          span.bone,
+          mid * CatClips.dance.duration,
+        );
+        final rawAnchor = _rawSupportPoint(
+          scene,
+          CatClips.dance,
+          span.bone,
+          mid * CatClips.dance.duration,
+        );
+
+        for (var i = -3; i <= 3; i++) {
+          final p = mid + width * i / 6;
+          lockedDrift = math.max(
+            lockedDrift,
+            _distance(
+              _supportPoint(
+                scene,
+                CatClips.dance,
+                span.bone,
+                p * CatClips.dance.duration,
+              ),
+              lockedAnchor,
+            ),
+          );
+          rawDrift = math.max(
+            rawDrift,
+            _distance(
+              _rawSupportPoint(
+                scene,
+                CatClips.dance,
+                span.bone,
+                p * CatClips.dance.duration,
+              ),
+              rawAnchor,
+            ),
+          );
+        }
+      }
+
+      expect(rawDrift, greaterThan(6));
+      expect(
+        lockedDrift,
+        lessThan(rawDrift * 0.7),
+        reason:
+            'looped performance contact correction should visibly reduce '
+            'support-foot drift without hard-locking the whole cycle',
+      );
+    });
+
     test('is deterministic: identical scenes resolve identical frames', () {
       final a = CharacterScene(
         buildCatInSuitRig(),

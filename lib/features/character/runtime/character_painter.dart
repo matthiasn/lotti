@@ -135,7 +135,7 @@ class CharacterPainter extends CustomPainter {
   static const double _pairScaleFactor = 0.7;
   static const double _trioScaleFactor = 0.59;
   static const double _pairSpacing = 215;
-  static const double _trioSpacing = 238;
+  static const double _trioSpacing = 205;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -282,10 +282,10 @@ class CharacterPainter extends CustomPainter {
       final p = _cyclePhase(timeSeconds, duration);
       final damping = _transitionDamping(p);
       return switch (index) {
-        0 => 0.075 * damping,
+        0 => 0.125 * damping,
         1 => 0,
-        2 => -0.065 * damping,
-        _ => 0.035 * damping,
+        2 => -0.105 * damping,
+        _ => 0.045 * damping,
       };
     }
     if (index == 0) return 0;
@@ -364,6 +364,19 @@ class CharacterPainter extends CustomPainter {
             Offset(0, deckTop),
             Offset(0, floorY + 18),
             const [Color(0x00FFFFFF), Color(0x143D2B1E)],
+          ),
+      )
+      ..drawOval(
+        Rect.fromCenter(
+          center: Offset(size.width * 0.5, floorY - size.height * 0.07),
+          width: size.width * 0.86,
+          height: size.height * 0.2,
+        ),
+        Paint()
+          ..shader = ui.Gradient.radial(
+            Offset(size.width * 0.5, floorY - size.height * 0.07),
+            size.width * 0.43,
+            const [Color(0x30FFE0A8), Color(0x00FFE0A8)],
           ),
       );
   }
