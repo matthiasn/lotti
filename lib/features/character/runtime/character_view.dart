@@ -17,6 +17,7 @@ class CharacterView extends StatefulWidget {
     this.partnerScene,
     this.ensembleScenes = const [],
     this.ensembleExpressions = const [],
+    this.ensembleClips = const [],
     this.synchronousEnsemble = false,
     this.expression = Expression.neutral,
     this.scale = 1,
@@ -39,6 +40,9 @@ class CharacterView extends StatefulWidget {
 
   /// Optional per-cat expressions for ensemble mode.
   final List<Expression> ensembleExpressions;
+
+  /// Optional per-cat clips for ensemble mode.
+  final List<Clip> ensembleClips;
 
   /// Keeps all ensemble members on the same phase when true.
   final bool synchronousEnsemble;
@@ -155,6 +159,7 @@ class _CharacterViewState extends State<CharacterView>
         partnerScene: widget.partnerScene,
         ensembleScenes: widget.ensembleScenes,
         ensembleExpressions: _ensembleExpressionsAt(seconds),
+        ensembleClips: widget.ensembleClips,
         synchronousEnsemble: widget.synchronousEnsemble,
         clip: widget.clip,
         timeSeconds: seconds,

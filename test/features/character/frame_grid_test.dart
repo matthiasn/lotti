@@ -286,6 +286,13 @@ void main() {
       ensembleScenes: clip.name == CatClips.dance.name
           ? [partnerScene, thirdScene]
           : const [],
+      ensembleClips: clip.name == CatClips.dance.name
+          ? [
+              CatClips.dance,
+              CatClips.danceBackupLeft,
+              CatClips.danceBackupRight,
+            ]
+          : const [],
       ensembleExpressions: clip.name == CatClips.dance.name
           ? _ensembleExpressionsAt(clip.duration * 0.5, expression)
           : const [],
@@ -344,6 +351,13 @@ void main() {
         partnerScene: partnerScene,
         ensembleScenes: clip.name == CatClips.dance.name
             ? [partnerScene, thirdScene]
+            : const [],
+        ensembleClips: clip.name == CatClips.dance.name
+            ? [
+                CatClips.dance,
+                CatClips.danceBackupLeft,
+                CatClips.danceBackupRight,
+              ]
             : const [],
         ensembleExpressions: clip.name == CatClips.dance.name
             ? _ensembleExpressionsAt(t, expression)

@@ -46,6 +46,7 @@ class CharacterPainter extends CustomPainter {
     this.partnerScene,
     this.ensembleScenes = const [],
     this.ensembleExpressions = const [],
+    this.ensembleClips = const [],
     this.synchronousEnsemble = false,
     CharacterRenderer? renderer,
   }) : _renderer = renderer ?? CharacterRenderer();
@@ -64,6 +65,10 @@ class CharacterPainter extends CustomPainter {
   /// entries apply to [ensembleScenes]. Missing entries fall back to
   /// [expression].
   final List<Expression> ensembleExpressions;
+
+  /// Optional per-member clips. Index 0 applies to [scene]; subsequent entries
+  /// apply to [ensembleScenes]. Missing entries fall back to [clip].
+  final List<Clip> ensembleClips;
 
   /// When true, every ensemble member samples the clip at [timeSeconds]. When
   /// false, members get staggered phase offsets for a looser walk-showcase feel.
@@ -102,9 +107,9 @@ class CharacterPainter extends CustomPainter {
   // Keep the cat this far from the stage edges as it walks back and forth.
   static const double _edgeMargin = 44;
   static const double _pairScaleFactor = 0.7;
-  static const double _trioScaleFactor = 0.516;
+  static const double _trioScaleFactor = 0.59;
   static const double _pairSpacing = 215;
-  static const double _trioSpacing = 285;
+  static const double _trioSpacing = 250;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -144,27 +149,56 @@ class CharacterPainter extends CustomPainter {
     }
 
     if (walkingPair) {
-      final members = ensembleScenes.isEmpty
+      final baseMembers = ensembleScenes.isEmpty
           ? [scene, partnerScene ?? scene]
           : [scene, ...ensembleScenes];
+      final baseExpressions = [
+        for (final i in Iterable<int>.generate(baseMembers.length))
+          _expressionAt(i),
+      ];
+      final baseClips = [
+        for (final i in Iterable<int>.generate(baseMembers.length)) _clipAt(i),
+      ];
+      final leadCentreOrder = clip.name == 'dance' && baseMembers.length == 3;
+      final order = leadCentreOrder ? const [1, 0, 2] : null;
+      final members = order == null
+          ? baseMembers
+          : [for (final i in order) baseMembers[i]];
+      final expressions = order == null
+          ? baseExpressions
+          : [for (final i in order) baseExpressions[i]];
+      final clips = order == null
+          ? baseClips
+          : [for (final i in order) baseClips[i]];
       final drawScale = scale * _scaleFactor(members.length);
       final spacing = _spacing(members.length) * drawScale;
       final startX = centreX - spacing * (members.length - 1) / 2;
-      for (final i in Iterable<int>.generate(members.length)) {
+      final paintOrder = members.length >= 3
+          ? const [0, 2, 1]
+          : [for (final i in Iterable<int>.generate(members.length)) i];
+      for (final i in paintOrder) {
         final memberScene = members[i];
+        final memberClip = clips[i];
+        final memberScale = drawScale * _roleScale(i, members.length);
         final phaseOffset = synchronousEnsemble
-            ? _ensembleMicroTimingOffset(i, timeSeconds, clip.duration)
-            : clip.duration * i / members.length;
+            ? _ensembleMicroTimingOffset(
+                i,
+                members.length,
+                timeSeconds,
+                memberClip.duration,
+              )
+            : memberClip.duration * i / members.length;
         _paintCharacterAt(
           memberScene,
           canvas,
           size,
+          clip: memberClip,
           floorY: floorY,
           centreX: startX + spacing * i,
           flip: flip,
           timeSeconds: timeSeconds + phaseOffset,
-          expression: _expressionAt(i),
-          scale: drawScale,
+          expression: expressions[i],
+          scale: memberScale,
           feetFraction: feetFraction,
         );
       }
@@ -175,6 +209,7 @@ class CharacterPainter extends CustomPainter {
       scene,
       canvas,
       size,
+      clip: clip,
       floorY: floorY,
       centreX: centreX,
       flip: flip,
@@ -191,12 +226,32 @@ class CharacterPainter extends CustomPainter {
   static double _spacing(int memberCount) =>
       memberCount >= 3 ? _trioSpacing : _pairSpacing;
 
+  static double _roleScale(int index, int memberCount) {
+    if (memberCount < 3) return 1;
+    return index == 1 ? 1.06 : 0.96;
+  }
+
   static double _ensembleMicroTimingOffset(
     int index,
+    int memberCount,
     double timeSeconds,
     double duration,
   ) {
-    if (index == 0 || duration <= 0) return 0;
+    if (duration <= 0) return 0;
+    if (memberCount >= 3) {
+      // Dance crews should breathe during transitions but land their accents
+      // together. Side cats drift around the centre lead, then collapse back to
+      // exact sync at the main hit phases.
+      final p = _cyclePhase(timeSeconds, duration);
+      final damping = _transitionDamping(p);
+      return switch (index) {
+        0 => 0.075 * damping,
+        1 => 0,
+        2 => -0.065 * damping,
+        _ => 0.035 * damping,
+      };
+    }
+    if (index == 0) return 0;
     final cycle = timeSeconds / duration;
     final p = cycle - cycle.floorToDouble();
     final beatWave = math.sin(p * math.pi * 24);
@@ -208,14 +263,47 @@ class CharacterPainter extends CustomPainter {
     };
   }
 
+  static double _cyclePhase(double timeSeconds, double duration) {
+    final cycle = timeSeconds / duration;
+    final p = cycle - cycle.floorToDouble();
+    return p < 0 ? p + 1 : p;
+  }
+
+  static double _transitionDamping(double p) {
+    const accentPhases = [
+      0.0,
+      1 / 12,
+      3 / 12,
+      5 / 12,
+      7 / 12,
+      9 / 12,
+      11 / 12,
+    ];
+    var nearest = 1.0;
+    for (final accent in accentPhases) {
+      final direct = (p - accent).abs();
+      final wrapped = (1 - direct).abs();
+      nearest = math.min(nearest, math.min(direct, wrapped));
+    }
+    const syncWindow = 1.5 / 72;
+    const looseWindow = 4.0 / 72;
+    if (nearest <= syncWindow) return 0;
+    if (nearest >= looseWindow) return 1;
+    return (nearest - syncWindow) / (looseWindow - syncWindow);
+  }
+
   Expression _expressionAt(int index) => index < ensembleExpressions.length
       ? ensembleExpressions[index]
       : expression;
+
+  Clip _clipAt(int index) =>
+      index < ensembleClips.length ? ensembleClips[index] : clip;
 
   void _paintCharacterAt(
     CharacterScene drawScene,
     Canvas canvas,
     Size size, {
+    required Clip clip,
     required double floorY,
     required double centreX,
     required bool flip,
@@ -248,6 +336,7 @@ class CharacterPainter extends CustomPainter {
       frame,
       timeSeconds,
       drawScene,
+      clip,
     );
 
     _renderer.paint(canvas, drawScene.rig, frame.world, frame.face);
@@ -261,8 +350,9 @@ class CharacterPainter extends CustomPainter {
     CharacterFrame frame,
     double timeSeconds,
     CharacterScene drawScene,
+    Clip clip,
   ) {
-    final contactBone = _activeGroundBone(timeSeconds);
+    final contactBone = _activeGroundBone(clip, timeSeconds);
     if (contactBone == null) {
       _paintBodyShadow(canvas, floorY, centreX, scale, frame, drawScene);
       return;
@@ -292,7 +382,7 @@ class CharacterPainter extends CustomPainter {
     );
   }
 
-  String? _activeGroundBone(double timeSeconds) {
+  String? _activeGroundBone(Clip clip, double timeSeconds) {
     final spans = clip.contactSpans.isNotEmpty
         ? clip.contactSpans
         : clip.groundSpans;
@@ -345,6 +435,7 @@ class CharacterPainter extends CustomPainter {
       old.partnerScene != partnerScene ||
       old.ensembleScenes != ensembleScenes ||
       old.ensembleExpressions != ensembleExpressions ||
+      old.ensembleClips != ensembleClips ||
       old.synchronousEnsemble != synchronousEnsemble ||
       old._renderer != _renderer;
 }

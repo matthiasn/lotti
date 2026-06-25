@@ -64,10 +64,10 @@ void main() {
         rig.bone(CatBones.head)?.drawable?.color,
         CatInSuitPalette.darkBrown.fur,
       );
-      expect(CatInSuitPalette.darkBrown.fur, 0xFF26201B);
-      expect(CatInSuitPalette.darkBrown.furDark, 0xFF0F0C0A);
+      expect(CatInSuitPalette.darkBrown.fur, 0xFF302820);
+      expect(CatInSuitPalette.darkBrown.furDark, 0xFF17110D);
       expect(rig.face?.browColor, CatInSuitPalette.darkBrown.brow);
-      expect(CatInSuitPalette.darkBrown.brow, 0xFFE9D8C2);
+      expect(CatInSuitPalette.darkBrown.brow, 0xFFF1E2C9);
     });
   });
 
@@ -103,6 +103,38 @@ void main() {
       expect(CatClips.dance.channels.containsKey(CatBones.legUpperL), isTrue);
       expect(CatClips.dance.channels.containsKey(CatBones.armLowerR), isTrue);
       expect(CatClips.dance.channels.containsKey(CatBones.tail6), isTrue);
+    });
+
+    test('backup dance clips keep footwork synced and only change arms', () {
+      final lead = CatClips.dance;
+      final left = CatClips.danceBackupLeft;
+      final right = CatClips.danceBackupRight;
+      const p = 7 / 12;
+
+      expect(left.duration, lead.duration);
+      expect(right.duration, lead.duration);
+      expect(left.contactSpans, lead.contactSpans);
+      expect(right.contactSpans, lead.contactSpans);
+      expect(
+        left.channels[CatBones.legUpperL]!.sample(p).rotation,
+        closeTo(lead.channels[CatBones.legUpperL]!.sample(p).rotation, 1e-9),
+      );
+      expect(
+        right.channels[CatBones.legUpperR]!.sample(p).rotation,
+        closeTo(lead.channels[CatBones.legUpperR]!.sample(p).rotation, 1e-9),
+      );
+      expect(
+        left.channels[CatBones.armUpperL]!.sample(p).rotation,
+        isNot(
+          closeTo(lead.channels[CatBones.armUpperL]!.sample(p).rotation, 1e-9),
+        ),
+      );
+      expect(
+        right.channels[CatBones.armUpperR]!.sample(p).rotation,
+        isNot(
+          closeTo(lead.channels[CatBones.armUpperR]!.sample(p).rotation, 1e-9),
+        ),
+      );
     });
 
     test('walk and run carry forward locomotion, stage moves do not', () {

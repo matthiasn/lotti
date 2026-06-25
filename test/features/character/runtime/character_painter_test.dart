@@ -60,6 +60,26 @@ void main() {
       expect(pair.shouldRepaint(painterAt(0.5)), isTrue);
     });
 
+    test('repaints when ensemble clips change', () {
+      final lead = CharacterPainter(
+        scene: scene,
+        clip: CatClips.dance,
+        timeSeconds: 0.5,
+        walkingPair: true,
+        ensembleClips: [CatClips.dance],
+        renderer: renderer,
+      );
+      final backup = CharacterPainter(
+        scene: scene,
+        clip: CatClips.dance,
+        timeSeconds: 0.5,
+        walkingPair: true,
+        ensembleClips: [CatClips.danceBackupLeft],
+        renderer: renderer,
+      );
+      expect(backup.shouldRepaint(lead), isTrue);
+    });
+
     test('does not repaint for identical inputs', () {
       expect(painterAt(0.5).shouldRepaint(painterAt(0.5)), isFalse);
     });
@@ -168,6 +188,97 @@ void main() {
             rightOpaque,
             greaterThan(1500),
             reason: 'right cat should occupy its own lane',
+          );
+        } finally {
+          image.dispose();
+        }
+      } finally {
+        picture.dispose();
+      }
+    });
+  });
+
+  testWidgets('dance trio stages the orange lead in the centre lane', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      CharacterPainter(
+        scene: scene,
+        partnerScene: CharacterScene(
+          buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+        ),
+        ensembleScenes: [
+          CharacterScene(
+            buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+          ),
+          CharacterScene(
+            buildCatInSuitRig(palette: CatInSuitPalette.darkBrown),
+          ),
+        ],
+        ensembleClips: [
+          CatClips.dance,
+          CatClips.danceBackupLeft,
+          CatClips.danceBackupRight,
+        ],
+        ensembleExpressions: const [
+          Expression.neutral,
+          Expression.content,
+          Expression.happy,
+        ],
+        synchronousEnsemble: true,
+        clip: CatClips.dance,
+        timeSeconds: 0.25,
+        walkingPair: true,
+        shadowColor: const Color(0x00000000),
+        renderer: renderer,
+      ).paint(canvas, const Size(760, 420));
+      final picture = recorder.endRecording();
+      try {
+        final image = await picture.toImage(760, 420);
+        try {
+          final data = await image.toByteData();
+          final pixels = data!.buffer.asUint8List();
+          var leftOrange = 0;
+          var centerOrange = 0;
+          var rightOrange = 0;
+          var leftOpaque = 0;
+          var rightOpaque = 0;
+          for (var y = 0; y < 420; y++) {
+            for (var x = 0; x < 760; x++) {
+              final offset = (y * 760 + x) * 4;
+              final red = pixels[offset];
+              final green = pixels[offset + 1];
+              final blue = pixels[offset + 2];
+              final alpha = pixels[offset + 3];
+              if (alpha == 0) continue;
+              if (x < 260) leftOpaque++;
+              if (x > 500) rightOpaque++;
+              final orangeFur =
+                  red > 200 && green > 120 && green < 190 && blue < 120;
+              if (!orangeFur) continue;
+              if (x < 260) {
+                leftOrange++;
+              } else if (x > 500) {
+                rightOrange++;
+              } else {
+                centerOrange++;
+              }
+            }
+          }
+
+          expect(leftOpaque, greaterThan(1000));
+          expect(rightOpaque, greaterThan(1000));
+          expect(
+            centerOrange,
+            greaterThan(leftOrange * 4),
+            reason: 'the orange lead should be staged in the centre lane',
+          );
+          expect(
+            centerOrange,
+            greaterThan(rightOrange * 4),
+            reason: 'the orange lead should be staged in the centre lane',
           );
         } finally {
           image.dispose();

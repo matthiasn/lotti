@@ -42,6 +42,7 @@ const Map<String, String> kExpressionKeys = {
 };
 
 const double kAuthoredDanceBpm = 120;
+const double kDefaultDanceBpm = 124;
 
 AutonomicLayer _danceAutonomic(int seed) => AutonomicLayer(
   seed: seed,
@@ -100,7 +101,7 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
 
   Clip _clip = CatClips.dance;
   Expression _expression = Expression.neutral;
-  double _danceBpm = kAuthoredDanceBpm;
+  double _danceBpm = kDefaultDanceBpm;
   bool _paused = false;
 
   // When true, walk/run travel across the stage and turn at the edges (the cat
@@ -287,6 +288,13 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
                         partnerScene: _partnerScene,
                         ensembleScenes: _clip.name == CatClips.dance.name
                             ? [_partnerScene, _thirdScene]
+                            : const [],
+                        ensembleClips: _clip.name == CatClips.dance.name
+                            ? [
+                                CatClips.dance,
+                                CatClips.danceBackupLeft,
+                                CatClips.danceBackupRight,
+                              ]
                             : const [],
                         ensembleExpressions: _clip.name == CatClips.dance.name
                             ? [
