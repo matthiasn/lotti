@@ -299,8 +299,8 @@ RigSpec buildCatInSuitRig() {
     Bone(
       id: CatBones.armUpperR,
       parent: CatBones.torso,
-      pivotX: 28,
-      pivotY: -70,
+      pivotX: 30,
+      pivotY: -80,
       z: 10,
       restRotation: -0.12,
       drawable: _tapered(25, 18, 60, _suit, dy: 25),
@@ -330,7 +330,9 @@ RigSpec buildCatInSuitRig() {
       ),
     ),
 
-    // Torso (suit jacket).
+    // Torso (suit jacket): a tapered wedge — wide at the shoulders (top),
+    // narrowing to the waist (bottom) — so it reads as a tailored jacket with a
+    // shoulder line, not a barrel/box. The pelvis flares back out below it.
     const Bone(
       id: CatBones.torso,
       parent: CatBones.hips,
@@ -338,11 +340,11 @@ RigSpec buildCatInSuitRig() {
       pivotY: -2,
       z: 13,
       drawable: BoneDrawable(
-        kind: BoneShapeKind.roundedRect,
-        width: 58,
+        kind: BoneShapeKind.taperedCapsule,
+        width: 64, // shoulders (top)
+        widthTip: 50, // waist (bottom)
         height: 86,
         dy: -44,
-        cornerRadius: 16,
         color: _suit,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -391,8 +393,8 @@ RigSpec buildCatInSuitRig() {
     Bone(
       id: CatBones.armUpperL,
       parent: CatBones.torso,
-      pivotX: -28,
-      pivotY: -70,
+      pivotX: -30,
+      pivotY: -80,
       z: 16,
       restRotation: 0.12,
       drawable: _tapered(25, 18, 60, _suit, dy: 25),
