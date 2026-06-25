@@ -732,19 +732,19 @@ class CatClips {
       // Subtle amplitude difference breaks the perfect-mirror "machine" tell,
       // but the resting bias is kept symmetric (0) — a biased rest tilted one
       // arm forward and one back, which read as a postural limp.
-      // Arm swing ~doubled (a pinned upper body read as "hands on hips"); a few
-      // frames of phase lag so the arms trail the legs (follow-through, not a
-      // piston that poses on the same frame as the feet).
-      CatBones.armUpperL: SineChannel(amplitude: 0.52, phase: 0.55),
-      CatBones.armUpperR: SineChannel(amplitude: 0.48, phase: 0.05),
+      // Relaxed swing: in a FRONT view the arm rotates in-plane (sideways), so a
+      // big amplitude reads as a penguin flap — keep it gentle (~20deg) with a few
+      // frames of phase lag so the arms trail the legs (follow-through, not piston).
+      CatBones.armUpperL: SineChannel(amplitude: 0.36, phase: 0.55),
+      CatBones.armUpperR: SineChannel(amplitude: 0.34, phase: 0.05),
       // Forearms push OUTWARD so the hands don't collapse onto the pelvis seam at
       // passing (crotch-hands). armUpperR rests outward, so a positive armLowerR
       // bias would rotate that hand INWARD — hence the negative sign on the right.
-      CatBones.armLowerL: SineChannel(amplitude: 0.22, phase: 0.18, bias: 0.3),
+      CatBones.armLowerL: SineChannel(amplitude: 0.22, phase: 0.18, bias: 0.24),
       CatBones.armLowerR: SineChannel(
         amplitude: 0.22,
         phase: 0.68,
-        bias: -0.26,
+        bias: -0.24,
       ),
 
       // --- Ears flick a beat behind the head bob — the cheapest "alive" tell.
