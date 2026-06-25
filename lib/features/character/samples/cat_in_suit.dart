@@ -648,19 +648,21 @@ class CatClips {
     locomotionSpeed: 168,
     root: SineRootChannel(
       // A run throws the body higher between strides and lands harder.
-      bobAmplitude: -11,
+      bobAmplitude: -8,
       bobPhase: 0.05,
       swayAmplitude: 4,
-      leanAmplitude: 0.05,
+      leanAmplitude: 0.04,
     ),
     channels: {
-      // Spine chain, run-tuned: the pelvis drives harder, the chest pitches
-      // forward into the run (bias) while counter-rotating, and the neck/head
-      // poke up so the gaze leads instead of face-planting into the lean.
-      CatBones.hips: SineChannel(amplitude: 0.1),
-      CatBones.torso: SineChannel(amplitude: 0.13, phase: 0.5, bias: 0.26),
-      CatBones.neck: SineChannel(amplitude: 0.09, bias: -0.18),
-      CatBones.head: SineChannel(amplitude: 0.06, phase: 0.5, bias: -0.12),
+      // Spine chain, run-tuned: the pelvis drives harder and the chest pitches
+      // well forward (bias) so it reads as a run, not an upright skip; the
+      // neck/head poke up so the gaze leads instead of face-planting.
+      CatBones.hips: SineChannel(amplitude: 0.1, bias: 0.08),
+      CatBones.torso: SineChannel(amplitude: 0.13, phase: 0.5, bias: 0.34),
+      CatBones.neck: SineChannel(amplitude: 0.09, bias: -0.26),
+      CatBones.head: SineChannel(amplitude: 0.06, phase: 0.5, bias: -0.16),
+      CatBones.earL: SineChannel(amplitude: 0.1, phase: 0.55),
+      CatBones.earR: SineChannel(amplitude: 0.1, phase: 0.55),
 
       // Legs reach further with a hard knee snap (strong 2nd harmonic) and a
       // foot that plants then kicks back on toe-off.
@@ -693,11 +695,20 @@ class CatClips {
         bias: 0.72,
       ),
 
-      // Tail streams back and whips with strong overlap.
-      CatBones.tie: SineChannel(amplitude: 0.2, phase: 0.1, bias: 0.2),
-      CatBones.tail0: SineChannel(amplitude: 0.22, bias: -0.22),
-      CatBones.tail1: SineChannel(amplitude: 0.3, phase: 0.14),
-      CatBones.tail2: SineChannel(amplitude: 0.4, phase: 0.28),
+      // Tie + tail stream back and whip (7-link travelling wave, strong tip).
+      CatBones.tie: SineChannel(amplitude: 0.12, phase: 0.1, bias: 0.18),
+      CatBones.tail0: SineChannel(amplitude: 0.06, bias: -0.18),
+      CatBones.tail1: SineChannel(amplitude: 0.1, phase: 0.06, bias: -0.06),
+      CatBones.tail2: SineChannel(amplitude: 0.14, phase: 0.12),
+      CatBones.tail3: SineChannel(amplitude: 0.18, phase: 0.18),
+      CatBones.tail4: SineChannel(amplitude: 0.22, phase: 0.24),
+      CatBones.tail5: SineChannel(amplitude: 0.27, phase: 0.3),
+      CatBones.tail6: SineChannel(
+        amplitude: 0.33,
+        phase: 0.36,
+        harmonicAmplitude: 0.16,
+        harmonicPhase: 0.42,
+      ),
     },
   );
 
@@ -830,10 +841,22 @@ class CatClips {
       CatBones.head: SineChannel(amplitude: 0.025, phase: 0.35),
       CatBones.armLowerL: SineChannel(amplitude: 0.03, bias: 0.18),
       CatBones.armLowerR: SineChannel(amplitude: 0.03, phase: 0.5, bias: 0.18),
-      // A relaxed tail sway with gentle overlap down the segments.
-      CatBones.tail0: SineChannel(amplitude: 0.13, bias: 0.1),
-      CatBones.tail1: SineChannel(amplitude: 0.18, phase: 0.16),
-      CatBones.tail2: SineChannel(amplitude: 0.26, phase: 0.32),
+      // Ears twitch slowly (listening) and the tail does a lazy travelling sway
+      // down all 7 links — the "alive at rest" tell.
+      CatBones.earL: SineChannel(amplitude: 0.03, phase: 0.3),
+      CatBones.earR: SineChannel(amplitude: 0.03, phase: 0.8),
+      CatBones.tail0: SineChannel(amplitude: 0.04, bias: 0.05),
+      CatBones.tail1: SineChannel(amplitude: 0.06, phase: 0.08),
+      CatBones.tail2: SineChannel(amplitude: 0.08, phase: 0.16),
+      CatBones.tail3: SineChannel(amplitude: 0.11, phase: 0.24),
+      CatBones.tail4: SineChannel(amplitude: 0.14, phase: 0.32),
+      CatBones.tail5: SineChannel(amplitude: 0.17, phase: 0.4),
+      CatBones.tail6: SineChannel(
+        amplitude: 0.21,
+        phase: 0.48,
+        harmonicAmplitude: 0.07,
+        harmonicPhase: 0.5,
+      ),
     },
   );
 
