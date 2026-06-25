@@ -231,7 +231,9 @@ RigSpec buildCatInSuitRig() {
         kind: BoneShapeKind.roundedRect,
         width: 30,
         height: 16,
-        dx: 5,
+        // Toe points -x (local), which — through the locomotion mirror — makes
+        // the shoe LEAD the direction of travel instead of trailing it.
+        dx: -5,
         dy: 8,
         cornerRadius: 6,
         color: _shoe,
@@ -267,7 +269,8 @@ RigSpec buildCatInSuitRig() {
         kind: BoneShapeKind.roundedRect,
         width: 30,
         height: 16,
-        dx: 5,
+        // Toe points -x (local) so the shoe leads travel — see footR.
+        dx: -5,
         dy: 8,
         cornerRadius: 6,
         color: _shoe,
@@ -590,20 +593,22 @@ class CatClips {
     Keyframe(p: 0.88, rotation: -0.26, ease: Ease.easeOut), // extends to plant
     Keyframe(p: 1, rotation: -0.12),
   ];
+  // Foot tilt signs are negated relative to a naive "toe at +x" foot because the
+  // shoe toe points -x (see footL/R dx) — heel-strike still lifts the toe, etc.
   static const _footKeys = [
-    Keyframe(p: 0, rotation: 0.28), // heel strike: toe up, heel leads
+    Keyframe(p: 0, rotation: -0.28), // heel strike: toe up, heel leads
     Keyframe(p: 0.14, ease: Ease.easeOut), // rolls FLAT — the grounding beat
-    Keyframe(p: 0.42, rotation: 0.05), // stays flat through stance
-    Keyframe(p: 0.52, rotation: 0.5), // toe-off push
+    Keyframe(p: 0.42, rotation: -0.05), // stays flat through stance
+    Keyframe(p: 0.52, rotation: -0.5), // toe-off push
     Keyframe(
       p: 0.66,
-      rotation: -0.25,
+      rotation: 0.25,
       ease: Ease.easeOut,
     ), // swing: dorsiflex to clear
-    Keyframe(p: 0.86, rotation: -0.18), // held lifted through swing
+    Keyframe(p: 0.86, rotation: 0.18), // held lifted through swing
     Keyframe(
       p: 1,
-      rotation: 0.28,
+      rotation: -0.28,
       ease: Ease.easeOut,
     ), // re-cock for heel strike
   ];
@@ -658,13 +663,13 @@ class CatClips {
     Keyframe(p: 1, rotation: -0.22),
   ];
   static const _runFootKeys = [
-    Keyframe(p: 0, rotation: 0.2), // heel contact
-    Keyframe(p: 0.1, rotation: 0.12, ease: Ease.easeOut), // rolls toward flat
-    Keyframe(p: 0.2, rotation: 0.34, ease: Ease.linear), // rolls onto the ball
-    Keyframe(p: 0.32, rotation: 0.7, ease: Ease.easeIn), // hard toe-off
-    Keyframe(p: 0.52, rotation: -0.34, ease: Ease.easeOut), // flight dorsiflex
-    Keyframe(p: 0.85, rotation: -0.12),
-    Keyframe(p: 1, rotation: 0.2),
+    Keyframe(p: 0, rotation: -0.2), // heel contact
+    Keyframe(p: 0.1, rotation: -0.12, ease: Ease.easeOut), // rolls toward flat
+    Keyframe(p: 0.2, rotation: -0.34, ease: Ease.linear), // rolls onto the ball
+    Keyframe(p: 0.32, rotation: -0.7, ease: Ease.easeIn), // hard toe-off
+    Keyframe(p: 0.52, rotation: 0.34, ease: Ease.easeOut), // flight dorsiflex
+    Keyframe(p: 0.85, rotation: 0.12),
+    Keyframe(p: 1, rotation: -0.2),
   ];
 
   static Clip get walk => const Clip(
@@ -681,7 +686,11 @@ class CatClips {
       bobAmplitude: -7,
       bobPhase:
           0.345, // COM trough lands just after contact — sinks onto the plant
-      swayAmplitude: 7,
+      swayAmplitude: 6,
+      // Phase 0.5 puts the COM OVER the planted (stance) foot at midstance. The
+      // previous default (0) lurched the body AWAY from the support foot — an
+      // off-balance rock that read as a limp.
+      swayPhase: 0.5,
       leanAmplitude: 0.025,
     ),
     channels: {
@@ -706,8 +715,11 @@ class CatClips {
 
       // --- Arms: broken L/R symmetry (so the silhouette is never a perfect
       // mirror — the "machine" tell) with a real bent elbow + forearm drag. ---
-      CatBones.armUpperL: SineChannel(amplitude: 0.3, phase: 0.5, bias: -0.03),
-      CatBones.armUpperR: SineChannel(amplitude: 0.27, bias: 0.02),
+      // Subtle amplitude difference breaks the perfect-mirror "machine" tell,
+      // but the resting bias is kept symmetric (0) — a biased rest tilted one
+      // arm forward and one back, which read as a postural limp.
+      CatBones.armUpperL: SineChannel(amplitude: 0.3, phase: 0.5),
+      CatBones.armUpperR: SineChannel(amplitude: 0.28),
       // Forearm bend kept small + outward (bias 0.18) so the hands hang at the
       // outer thighs instead of swinging across into the body's centre.
       CatBones.armLowerL: SineChannel(amplitude: 0.16, phase: 0.18, bias: 0.18),
