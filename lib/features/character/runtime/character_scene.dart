@@ -248,9 +248,9 @@ class CharacterScene {
   }
 
   double _contactLockStrength(Clip clip, GroundSpan span, double p) {
-    final base = clip.loop ? 0.64 : 0.94;
+    final base = clip.loop ? 0.78 : 0.94;
     final spanLength = span.end - span.start;
-    final fade = clip.loop ? (spanLength * 0.32).clamp(0.025, 0.055) : 0.08;
+    final fade = clip.loop ? (spanLength * 0.24).clamp(0.02, 0.04) : 0.08;
     final fadeIn = _smoothUnit((p - span.start) / fade);
     final fadeOut = _smoothUnit((span.end - p) / fade);
     final edge = fadeIn < fadeOut ? fadeIn : fadeOut;

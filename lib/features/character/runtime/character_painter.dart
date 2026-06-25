@@ -135,7 +135,7 @@ class CharacterPainter extends CustomPainter {
   static const double _pairScaleFactor = 0.7;
   static const double _trioScaleFactor = 0.59;
   static const double _pairSpacing = 215;
-  static const double _trioSpacing = 205;
+  static const double _trioSpacing = 220;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -230,7 +230,7 @@ class CharacterPainter extends CustomPainter {
           canvas,
           size,
           clip: memberClip,
-          floorY: floorY,
+          floorY: floorY + _roleFloorOffset(i, members.length) * drawScale,
           centreX: startX + spacing * i,
           flip: flip,
           timeSeconds: timeSeconds + phaseOffset,
@@ -265,7 +265,12 @@ class CharacterPainter extends CustomPainter {
 
   static double _roleScale(int index, int memberCount) {
     if (memberCount < 3) return 1;
-    return index == 1 ? 1.06 : 0.96;
+    return index == 1 ? 1.08 : 0.92;
+  }
+
+  static double _roleFloorOffset(int index, int memberCount) {
+    if (memberCount < 3) return 0;
+    return index == 1 ? 5 : -10;
   }
 
   static double _ensembleMicroTimingOffset(
@@ -277,15 +282,17 @@ class CharacterPainter extends CustomPainter {
     if (duration <= 0) return 0;
     if (memberCount >= 3) {
       // Dance crews should breathe during transitions but land their accents
-      // together. Side cats drift around the centre lead, then collapse back to
-      // exact sync at the main hit phases.
+      // together. Side cats drift around the centre lead, swap tiny lead/trail
+      // moments inside the phrase, then collapse back to sync at the hits.
       final p = _cyclePhase(timeSeconds, duration);
       final damping = _transitionDamping(p);
+      final phraseDrift = math.sin(2 * math.pi * (p * 3 + index * 0.37));
+      final beatDrift = math.sin(2 * math.pi * (p * 12 + index * 0.19));
       return switch (index) {
-        0 => 0.125 * damping,
+        0 => (0.075 + 0.028 * phraseDrift + 0.012 * beatDrift) * damping,
         1 => 0,
-        2 => -0.105 * damping,
-        _ => 0.045 * damping,
+        2 => (-0.066 + 0.024 * phraseDrift - 0.01 * beatDrift) * damping,
+        _ => (0.03 * phraseDrift) * damping,
       };
     }
     if (index == 0) return 0;

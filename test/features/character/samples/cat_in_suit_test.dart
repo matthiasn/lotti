@@ -137,6 +137,31 @@ void main() {
       );
     });
 
+    test('dance keeps body, feet, and hands alive between count hits', () {
+      final channels = CatClips.dance.channels;
+      final torso = channels[CatBones.torso]!;
+      final foot = channels[CatBones.footL]!;
+      final hand = channels[CatBones.armLowerL]!;
+
+      final countStartTorso = torso.sample(0);
+      final offBeatTorso = torso.sample(1 / 24);
+      final countEndTorso = torso.sample(1 / 12);
+      expect(offBeatTorso.scaleY, greaterThan(countStartTorso.scaleY + 0.03));
+      expect(offBeatTorso.scaleY, greaterThan(countEndTorso.scaleY + 0.015));
+
+      final countStartFoot = foot.sample(0).rotation;
+      final offBeatFoot = foot.sample(1 / 24).rotation;
+      final countEndFoot = foot.sample(1 / 12).rotation;
+      expect(offBeatFoot, lessThan(countStartFoot - 0.1));
+      expect(offBeatFoot, lessThan(countEndFoot - 0.1));
+
+      final countStartHand = hand.sample(0).rotation;
+      final offBeatHand = hand.sample(1 / 24).rotation;
+      final countEndHand = hand.sample(1 / 12).rotation;
+      expect(offBeatHand, greaterThan(countStartHand + 0.1));
+      expect(offBeatHand, greaterThan(countEndHand + 0.3));
+    });
+
     test('walk and run carry forward locomotion, stage moves do not', () {
       // The walk uses foot-locked locomotion (ground spans, no speed); the run
       // still uses a constant speed; kick/dance/idle animate in place.
