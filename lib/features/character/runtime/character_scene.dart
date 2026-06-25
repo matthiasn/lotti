@@ -43,6 +43,80 @@ class CharacterScene {
   final FaceSolver faceSolver = const FaceSolver();
   final AutonomicLayer autonomic;
 
+  /// Memoized foot-lock offset tables, keyed by clip name (built once per clip).
+  final Map<String, _LocoTable> _locoTables = {};
+
+  /// The clip's world-space horizontal travel at [timeSeconds]. For clips with
+  /// [Clip.groundSpans] this is **foot-locked**: travel is the negative of the
+  /// planted foot's leg-sweep, so the planted foot holds world position (no
+  /// skate) and the COM sway still reads. Clips without spans fall back to the
+  /// evaluator's constant-speed travel. Deterministic (the table is a pure
+  /// function of the rig + clip), so film-strip renders stay reproducible.
+  double locomotionOffset(Clip clip, double timeSeconds) {
+    if (clip.groundSpans.isEmpty) {
+      return evaluator.locomotionOffset(clip, timeSeconds);
+    }
+    final table = _locoTables.putIfAbsent(
+      clip.name,
+      () => _buildLocoTable(clip),
+    );
+    if (clip.duration <= 0) return 0;
+    final phase = timeSeconds / clip.duration;
+    final cycles = phase.floorToDouble();
+    final frac = phase - cycles; // 0..1, handles negative time too
+    return cycles * table.cycleAdvance + table.sample(frac);
+  }
+
+  /// Samples the planted-foot leg-sweep across the cycle and integrates it into a
+  /// monotonic travel curve that pins each foot during its [GroundSpan]. The
+  /// leg-sweep is `foot.x - root.x` (the root carries the COM sway, so
+  /// subtracting it leaves the pure leg contribution — the body keeps swaying
+  /// while the foot stays put to within that small sway).
+  _LocoTable _buildLocoTable(Clip clip) {
+    const n = 240;
+    final rootId = rig.bones.firstWhere((b) => b.parent == null).id;
+
+    double legSweep(String foot, double p) {
+      final world = solver.solve(evaluator.evaluate(clip, p * clip.duration));
+      return world[foot]!.transformPoint(0, 0).x -
+          world[rootId]!.transformPoint(0, 0).x;
+    }
+
+    String footAt(double p) {
+      for (final s in clip.groundSpans) {
+        if (p >= s.start && p < s.end) return s.bone;
+      }
+      return clip.groundSpans.last.bone;
+    }
+
+    final samples = List<double>.filled(n + 1, 0);
+    var offset = 0.0;
+    var prevFoot = footAt(0);
+    var prevSweep = legSweep(prevFoot, 0);
+    for (var i = 1; i <= n; i++) {
+      final p = i / n;
+      final foot = footAt(p >= 1 ? 0.999999 : p);
+      if (foot == prevFoot) {
+        final sweep = legSweep(foot, p);
+        // The painter MIRRORS the rig while travelling, so the body advances as
+        // the planted foot's body-x increases (it sweeps from front to back of
+        // the body); travel tracks +legSweep so that foot holds screen-x.
+        final next = offset + (sweep - prevSweep);
+        // Clamp monotonic: never travel backward (a brief foot reversal at
+        // heel-strike/toe-off must not moonwalk the whole body).
+        offset = next > offset ? next : offset;
+        prevSweep = sweep;
+      } else {
+        // Handoff: the new foot just planted — continue the offset unchanged and
+        // start tracking the new foot from here.
+        prevFoot = foot;
+        prevSweep = legSweep(foot, p);
+      }
+      samples[i] = offset;
+    }
+    return _LocoTable(samples, offset);
+  }
+
   /// Distance (in local units) from the rig origin down to the lowest drawn
   /// pixel of the **rest** pose — i.e. how far the feet sit below the hips.
   /// Used to ground the character so the feet land on the floor instead of the
@@ -101,7 +175,24 @@ class CharacterScene {
         eyeOpenRight: face.eyeOpenRight * eyeOpenScale,
       );
     }
-    final locomotion = evaluator.locomotionOffset(clip, timeSeconds);
+    final locomotion = locomotionOffset(clip, timeSeconds);
     return CharacterFrame(world: world, face: face, locomotionX: locomotion);
+  }
+}
+
+/// A precomputed foot-lock travel curve: [samples] are the cumulative offset at
+/// evenly spaced phases `i/(len-1)` across one cycle, [cycleAdvance] the total
+/// per-cycle stride. Linear interpolation between samples.
+class _LocoTable {
+  _LocoTable(this.samples, this.cycleAdvance);
+
+  final List<double> samples;
+  final double cycleAdvance;
+
+  double sample(double frac) {
+    final n = samples.length - 1;
+    final x = frac.clamp(0.0, 1.0) * n;
+    final i = x.floor().clamp(0, n - 1);
+    return samples[i] + (samples[i + 1] - samples[i]) * (x - i);
   }
 }

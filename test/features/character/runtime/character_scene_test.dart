@@ -15,13 +15,23 @@ void main() {
       }
     });
 
-    test('locomotionX advances with the clip speed', () {
+    test('locomotionX advances with a constant-speed clip (run)', () {
       final scene = CharacterScene(buildCatInSuitRig());
-      final frame = scene.frameAt(clip: CatClips.walk, timeSeconds: 2);
+      final frame = scene.frameAt(clip: CatClips.run, timeSeconds: 2);
       expect(
         frame.locomotionX,
-        closeTo(CatClips.walk.locomotionSpeed * 2, 1e-9),
+        closeTo(CatClips.run.locomotionSpeed * 2, 1e-9),
       );
+    });
+
+    test('foot-locked walk travel advances one stride per cycle', () {
+      final scene = CharacterScene(buildCatInSuitRig());
+      // duration is 1s, so t=1 is one full cycle and t=2 two cycles; foot-lock
+      // travel is periodic, so two cycles cover exactly twice the stride.
+      final oneCycle = scene.locomotionOffset(CatClips.walk, 1);
+      final twoCycles = scene.locomotionOffset(CatClips.walk, 2);
+      expect(oneCycle, greaterThan(0));
+      expect(twoCycles, closeTo(2 * oneCycle, 1e-6));
     });
 
     test('is deterministic: identical scenes resolve identical frames', () {

@@ -86,9 +86,8 @@ class CharacterPainter extends CustomPainter {
     // the stage when locomotion is on, so the body travels over a planted foot.
     var centreX = size.width / 2;
     var flip = false;
-    if (locomote && clip.locomotionSpeed != 0) {
-      final travelPx =
-          scene.evaluator.locomotionOffset(clip, timeSeconds).abs() * scale;
+    if (locomote && clip.locomotes) {
+      final travelPx = scene.locomotionOffset(clip, timeSeconds).abs() * scale;
       final band = (size.width - 2 * _edgeMargin).clamp(1.0, size.width);
       final cyc = travelPx % (2 * band);
       final movingRight = cyc <= band;

@@ -50,12 +50,13 @@ void main() {
     });
 
     test('walk and run carry forward locomotion, idle does not', () {
-      expect(CatClips.walk.locomotionSpeed, greaterThan(0));
-      expect(
-        CatClips.run.locomotionSpeed,
-        greaterThan(CatClips.walk.locomotionSpeed),
-      );
-      expect(CatClips.idle.locomotionSpeed, 0);
+      // The walk uses foot-locked locomotion (ground spans, no speed); the run
+      // still uses a constant speed; idle animates in place.
+      expect(CatClips.walk.locomotes, isTrue);
+      expect(CatClips.walk.groundSpans, isNotEmpty);
+      expect(CatClips.run.locomotionSpeed, greaterThan(0));
+      expect(CatClips.run.locomotes, isTrue);
+      expect(CatClips.idle.locomotes, isFalse);
     });
   });
 }

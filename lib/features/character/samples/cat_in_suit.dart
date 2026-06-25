@@ -678,12 +678,14 @@ class CatClips {
   static Clip get walk => const Clip(
     name: 'walk',
     duration: 1,
-    // Speed-matched to the stance foot's backward sweep so the planted foot
-    // holds world-x as the body travels over it (no moonwalk / creep). Tuned
-    // against the walk_travel onion until the footprints land as tight stamps.
-    locomotionSpeed:
-        136, // measured: with the articulating stance knee the planted ankle holds
-    // floor height (~5px range) and sweeps ~136 u/s avg — matching it pins the plant.
+    // FOOT-LOCKED locomotion: the body's travel is derived from the planted
+    // foot's real leg-sweep (footL grounded [0,0.5], footR [0.5,1]) so each foot
+    // holds world-x by construction — no constant-speed guess can pin a
+    // non-constant FK foot sweep, which is what skated. (locomotionSpeed unused.)
+    groundSpans: [
+      GroundSpan(CatBones.footL, 0, 0.5),
+      GroundSpan(CatBones.footR, 0.5, 1),
+    ],
     root: SineRootChannel(
       // The COM drops onto each footfall (weight acceptance) and rises at
       // passing — the double-bounce that reads as carrying mass. ~5% of rig

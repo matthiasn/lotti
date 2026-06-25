@@ -300,6 +300,21 @@ class KeyframeRootChannel extends RootChannel {
   }
 }
 
+/// Declares which foot [bone] is planted on the ground over the phase span
+/// `[start, end)` of a cyclic clip. This drives **foot-locked locomotion**: the
+/// body's travel is derived from the planted foot's *actual* body-frame sweep so
+/// the foot holds world position (zero skate by construction), instead of a
+/// guessed constant [Clip.locomotionSpeed] that a non-constant FK foot sweep can
+/// never pin. Spans should tile the cycle `[0,1]` with one grounded foot at a
+/// time; the boundaries are the (brief) double-support handoffs.
+class GroundSpan {
+  const GroundSpan(this.bone, this.start, this.end);
+
+  final String bone;
+  final double start;
+  final double end;
+}
+
 /// A named animation: a bag of per-bone channels plus root motion, evaluated by
 /// the clip evaluator. [loop] distinguishes cyclic clips (walk/run/idle) from
 /// one-shots (sit/jump).
@@ -311,6 +326,7 @@ class Clip {
     this.loop = true,
     this.root = const SineRootChannel(),
     this.locomotionSpeed = 0,
+    this.groundSpans = const [],
   });
 
   /// Display/lookup name.
@@ -330,6 +346,14 @@ class Clip {
 
   /// World-space horizontal speed in local units/sec, speed-matched to the
   /// cycle to avoid foot-skate. Consumed by the caller for locomotion, not
-  /// baked into the pose.
+  /// baked into the pose. Ignored when [groundSpans] is set (foot-lock wins).
   final double locomotionSpeed;
+
+  /// Per-foot ground-contact spans. When non-empty the clip uses **foot-locked**
+  /// locomotion (see [GroundSpan]) instead of [locomotionSpeed]. Empty for
+  /// in-place clips (idle) and one-shots (sit/jump).
+  final List<GroundSpan> groundSpans;
+
+  /// Whether this clip travels across the stage at all (either model).
+  bool get locomotes => locomotionSpeed != 0 || groundSpans.isNotEmpty;
 }

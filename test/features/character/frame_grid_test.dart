@@ -301,7 +301,7 @@ void main() {
     final total = clip.duration * 2.4; // a couple of strides
     for (var i = 0; i < frames; i++) {
       final t = total * i / frames;
-      final travelPx = scene.evaluator.locomotionOffset(clip, t).abs() * sc;
+      final travelPx = scene.locomotionOffset(clip, t).abs() * sc;
       final cyc = travelPx % (2 * band);
       final movingRight = cyc <= band;
       final pos = movingRight ? cyc : 2 * band - cyc;
