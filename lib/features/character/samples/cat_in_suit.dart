@@ -211,8 +211,8 @@ RigSpec buildCatInSuitRig() {
     Bone(
       id: CatBones.legUpperR,
       parent: CatBones.hips,
-      pivotX: 12,
-      pivotY: 11,
+      pivotX: 10,
+      pivotY: 13,
       z: 3,
       drawable: _tapered(28, 22, 68, _trouser, dy: 28),
     ),
@@ -250,8 +250,8 @@ RigSpec buildCatInSuitRig() {
     Bone(
       id: CatBones.legUpperL,
       parent: CatBones.hips,
-      pivotX: -12,
-      pivotY: 11,
+      pivotX: -10,
+      pivotY: 13,
       z: 6,
       drawable: _tapered(28, 22, 68, _trouser, dy: 28),
     ),
@@ -295,12 +295,13 @@ RigSpec buildCatInSuitRig() {
       z: 9,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width:
-            52, // ≈ the jacket waist (50): a slim hip that CONTINUES the body
-        height:
-            32, // line, not a bulky padded-shorts block wider than waist+legs
-        dy: 1,
-        cornerRadius: 15,
+        width: 54,
+        // Sized + lowered to fully COVER the rounded thigh-tops (drawn z-behind):
+        // if it doesn't, the two thigh caps poke out side-by-side and read as butt
+        // CHEEKS. The legs then emerge below as clean tapers — one smooth hip.
+        height: 34,
+        dy: 3,
+        cornerRadius: 17,
         color: _trouser,
         outlineColor: _outline,
         outlineWidth: 2,
