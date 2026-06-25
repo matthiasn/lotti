@@ -54,6 +54,10 @@ class CatBones {
   static const tail0 = 'tail_0';
   static const tail1 = 'tail_1';
   static const tail2 = 'tail_2';
+  static const tail3 = 'tail_3';
+  static const tail4 = 'tail_4';
+  static const tail5 = 'tail_5';
+  static const tail6 = 'tail_6';
 }
 
 /// A tapered limb segment: [w] wide at the joint (pivot) end, [wTip] at the far
@@ -77,65 +81,126 @@ BoneDrawable _tapered(
   outlineWidth: outlineWidth,
 );
 
+/// A tail link — a short tapered segment in the drag chain. Kept as a helper so
+/// the whole tail (length, taper, lift) is trivial to retune.
+Bone _tailSeg(
+  String id,
+  String parent, {
+  required double pivotY,
+  required int z,
+  required double restRotation,
+  required double w,
+  required double wTip,
+  required double h,
+  required double dy,
+  double pivotX = 0,
+  int color = _fur,
+}) => Bone(
+  id: id,
+  parent: parent,
+  pivotX: pivotX,
+  pivotY: pivotY,
+  z: z,
+  restRotation: restRotation,
+  drawable: BoneDrawable(
+    kind: BoneShapeKind.taperedCapsule,
+    width: w,
+    widthTip: wTip,
+    height: h,
+    dy: dy,
+    color: color,
+    outlineColor: _outline,
+    outlineWidth: 2,
+  ),
+);
+
 /// Builds the cat-in-a-suit [RigSpec].
 RigSpec buildCatInSuitRig() {
   final bones = <Bone>[
-    // Tail (behind the body), three segments for drag.
-    // Tail: rises up-and-out from the right hip, then curls back over — three
-    // segments so it reads as a smooth S, not a stick. Drawn behind the body.
-    const Bone(
-      id: CatBones.tail0,
-      parent: CatBones.hips,
-      pivotX: 18,
-      pivotY: 6,
-      z: 0,
-      restRotation: -0.7,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.taperedCapsule,
-        width: 16,
-        widthTip: 12,
-        height: 38,
-        dy: 17,
-        color: _fur,
-        outlineColor: _outline,
-        outlineWidth: 2,
-      ),
+    // Tail: 7 short, thin tapering links that overlap (z-order) into ONE
+    // continuous tail held UP and OUT in a graceful arc — alive and energetic,
+    // not the old scorpion tight-curl and not a limp droop. Base lifts it
+    // out-and-up off the rump; each link adds a small lift so it arcs. Behind
+    // the body (negative z). Channels add a travelling drag wave.
+    _tailSeg(
+      CatBones.tail0,
+      CatBones.hips,
+      pivotX: 14,
+      pivotY: 16,
+      z: -7,
+      restRotation: -1.9,
+      w: 11,
+      wTip: 10,
+      h: 21,
+      dy: 6.5,
     ),
-    const Bone(
-      id: CatBones.tail1,
-      parent: CatBones.tail0,
-      pivotX: 0,
-      pivotY: 36,
-      z: 1,
-      restRotation: -0.3,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.taperedCapsule,
-        width: 12,
-        widthTip: 8,
-        height: 32,
-        dy: 14,
-        color: _fur,
-        outlineColor: _outline,
-        outlineWidth: 2,
-      ),
+    _tailSeg(
+      CatBones.tail1,
+      CatBones.tail0,
+      pivotY: 14,
+      z: -6,
+      restRotation: -0.18,
+      w: 10,
+      wTip: 9,
+      h: 20,
+      dy: 6,
     ),
-    const Bone(
-      id: CatBones.tail2,
-      parent: CatBones.tail1,
-      pivotX: 0,
-      pivotY: 30,
-      z: 2,
-      restRotation: -0.28,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.taperedCapsule,
-        width: 9,
-        widthTip: 3,
-        height: 26,
-        dy: 12,
-        color: _furDark,
-        outlineColor: _outline,
-        outlineWidth: 2,
-      ),
+    _tailSeg(
+      CatBones.tail2,
+      CatBones.tail1,
+      pivotY: 13,
+      z: -5,
+      restRotation: -0.16,
+      w: 9,
+      wTip: 8,
+      h: 19,
+      dy: 5.5,
+    ),
+    _tailSeg(
+      CatBones.tail3,
+      CatBones.tail2,
+      pivotY: 12,
+      z: -4,
+      restRotation: -0.14,
+      w: 8,
+      wTip: 6,
+      h: 18,
+      dy: 5,
+    ),
+    _tailSeg(
+      CatBones.tail4,
+      CatBones.tail3,
+      pivotY: 11,
+      z: -3,
+      restRotation: -0.12,
+      w: 6,
+      wTip: 5,
+      h: 17,
+      dy: 4.5,
+    ),
+    _tailSeg(
+      CatBones.tail5,
+      CatBones.tail4,
+      pivotY: 10,
+      z: -2,
+      restRotation: -0.1,
+      w: 5,
+      wTip: 3,
+      h: 16,
+      dy: 4,
+      color: _furDark,
+    ),
+    _tailSeg(
+      CatBones.tail6,
+      CatBones.tail5,
+      pivotY: 9,
+      z: -1,
+      restRotation: -0.06,
+      w: 4,
+      wTip: 2,
+      h: 14,
+      dy: 3,
+      color: _furDark,
     ),
 
     // Far (right) leg, drawn behind.
@@ -481,27 +546,17 @@ class CatClips {
     ), // reach for the plant
     Keyframe(p: 1, rotation: 0.54),
   ];
+  // Stance is kept tall and the ankle flat (small knee excursion through
+  // p=0..0.5) so the foot doesn't piston up and down on the floor; the knee
+  // still tucks hard in swing (p=0.7) for ground clearance.
   static const _shinKeys = [
-    Keyframe(
-      p: 0,
-      rotation: -0.12,
-    ), // contact: knee near-locked, straight leg lands
-    Keyframe(
-      p: 0.12,
-      rotation: -0.44,
-    ), // weight-accept: bends to absorb (the "down")
-    Keyframe(p: 0.3, rotation: -0.08), // midstance: straightens, leg tall
-    Keyframe(p: 0.52, rotation: -0.55), // toe-off: folds
-    Keyframe(
-      p: 0.7,
-      rotation: -1.25,
-    ), // swing: knee tucks, foot clears
-    Keyframe(
-      p: 0.88,
-      rotation: -0.26,
-      ease: Ease.easeOut,
-    ), // extends toward the plant
-    Keyframe(p: 1, rotation: -0.12),
+    Keyframe(p: 0, rotation: -0.1), // contact: knee near-locked
+    Keyframe(p: 0.12, rotation: -0.3), // weight-accept: gentle absorb
+    Keyframe(p: 0.3, rotation: -0.05), // midstance: tall, ankle flat
+    Keyframe(p: 0.5, rotation: -0.22), // toe-off: begins to fold
+    Keyframe(p: 0.7, rotation: -1.25), // swing: knee tucks, foot clears
+    Keyframe(p: 0.88, rotation: -0.26, ease: Ease.easeOut), // extends to plant
+    Keyframe(p: 1, rotation: -0.1),
   ];
   static const _footKeys = [
     Keyframe(p: 0, rotation: 0.28), // heel strike: toe up, heel leads
@@ -554,18 +609,36 @@ class CatClips {
       CatBones.footL: KeyframeChannel(_footKeys),
       CatBones.footR: KeyframeChannel(_footKeys, phase: 0.5),
 
-      // --- Arms: swing opposite the same-side leg, forearm drags a beat. ---
-      CatBones.armUpperL: SineChannel(amplitude: 0.42, phase: 0.5),
-      CatBones.armUpperR: SineChannel(amplitude: 0.4),
-      CatBones.armLowerL: SineChannel(amplitude: 0.2, phase: 0.12, bias: 0.3),
-      CatBones.armLowerR: SineChannel(amplitude: 0.2, phase: 0.62, bias: 0.3),
+      // --- Arms: broken L/R symmetry (so the silhouette is never a perfect
+      // mirror — the "machine" tell) with a real bent elbow + forearm drag. ---
+      CatBones.armUpperL: SineChannel(amplitude: 0.44, phase: 0.5, bias: -0.03),
+      CatBones.armUpperR: SineChannel(amplitude: 0.38, bias: 0.02),
+      CatBones.armLowerL: SineChannel(amplitude: 0.32, phase: 0.18, bias: 0.45),
+      CatBones.armLowerR: SineChannel(amplitude: 0.32, phase: 0.68, bias: 0.45),
 
-      // --- Secondary: tie + tail drag, amplitude grows and phase lags down the
-      // chain (overlapping action) so they whip a beat behind the body. ---
-      CatBones.tie: SineChannel(amplitude: 0.12, phase: 0.15),
-      CatBones.tail0: SineChannel(amplitude: 0.18, bias: 0.1),
-      CatBones.tail1: SineChannel(amplitude: 0.26, phase: 0.14),
-      CatBones.tail2: SineChannel(amplitude: 0.34, phase: 0.28),
+      // --- Ears flick a beat behind the head bob — the cheapest "alive" tell,
+      // and they were animated in nothing before. ---
+      CatBones.earL: SineChannel(amplitude: 0.06, phase: 0.55),
+      CatBones.earR: SineChannel(amplitude: 0.06, phase: 0.55),
+
+      // --- Tie sways and lags off the collar. ---
+      CatBones.tie: SineChannel(amplitude: 0.07, phase: 0.18),
+
+      // --- Tail: a travelling drag wave. Amplitude grows and phase lags ~0.06
+      // per link so the whip visibly travels base->tip; the tip gets a 2nd
+      // harmonic so it cracks (a fundamental sine can't overshoot). ---
+      CatBones.tail0: SineChannel(amplitude: 0.05, bias: 0.04),
+      CatBones.tail1: SineChannel(amplitude: 0.08, phase: 0.06),
+      CatBones.tail2: SineChannel(amplitude: 0.11, phase: 0.12),
+      CatBones.tail3: SineChannel(amplitude: 0.14, phase: 0.18),
+      CatBones.tail4: SineChannel(amplitude: 0.17, phase: 0.24),
+      CatBones.tail5: SineChannel(amplitude: 0.2, phase: 0.3),
+      CatBones.tail6: SineChannel(
+        amplitude: 0.24,
+        phase: 0.36,
+        harmonicAmplitude: 0.1,
+        harmonicPhase: 0.4,
+      ),
     },
   );
 

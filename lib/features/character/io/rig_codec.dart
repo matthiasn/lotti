@@ -54,6 +54,7 @@ class RigCodec {
   Map<String, dynamic> _drawableToJson(BoneDrawable d) => {
     'kind': d.kind.name,
     'size': [d.width, d.height],
+    if (d.widthTip >= 0) 'widthTip': d.widthTip,
     if (d.dx != 0 || d.dy != 0) 'offset': [d.dx, d.dy],
     if (d.cornerRadius != 0) 'cornerRadius': d.cornerRadius,
     'color': _colorToHex(d.color),
@@ -193,6 +194,7 @@ class RigCodec {
       kind: kind,
       width: size.$1,
       height: size.$2,
+      widthTip: _doubleOr(m, 'widthTip', -1),
       dx: offset?.$1 ?? 0,
       dy: offset?.$2 ?? 0,
       cornerRadius: _doubleOr(m, 'cornerRadius', 0),
