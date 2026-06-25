@@ -80,6 +80,17 @@ void main() {
       expect(backup.shouldRepaint(lead), isTrue);
     });
 
+    test('repaints when the backdrop changes', () {
+      final waterfront = CharacterPainter(
+        scene: scene,
+        clip: CatClips.walk,
+        timeSeconds: 0.5,
+        backdrop: CharacterBackdrop.waterfront,
+        renderer: renderer,
+      );
+      expect(waterfront.shouldRepaint(painterAt(0.5)), isTrue);
+    });
+
     test('does not repaint for identical inputs', () {
       expect(painterAt(0.5).shouldRepaint(painterAt(0.5)), isFalse);
     });
@@ -139,6 +150,54 @@ void main() {
             if (pixels[i] != 0) opaque++;
           }
           expect(opaque, greaterThan(0), reason: 'expected painted pixels');
+        } finally {
+          image.dispose();
+        }
+      } finally {
+        picture.dispose();
+      }
+    });
+  });
+
+  testWidgets('waterfront backdrop paints distinct stage bands', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      const width = 360;
+      const height = 420;
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      CharacterPainter(
+        scene: scene,
+        clip: CatClips.dance,
+        timeSeconds: 0.3,
+        backdrop: CharacterBackdrop.waterfront,
+        shadowColor: const Color(0x00000000),
+        renderer: renderer,
+      ).paint(canvas, Size(width.toDouble(), height.toDouble()));
+      final picture = recorder.endRecording();
+      try {
+        final image = await picture.toImage(width, height);
+        try {
+          final data = await image.toByteData();
+          final pixels = data!.buffer.asUint8List();
+          final sky = _rgbaAt(pixels, width, 10, 10);
+          final water = _rgbaAt(pixels, width, 20, 220);
+          final deck = _rgbaAt(pixels, width, 20, 400);
+
+          expect(sky.a, 255);
+          expect(sky.b, greaterThan(sky.r), reason: 'sky should read blue');
+          expect(
+            water.b,
+            greaterThan(water.r),
+            reason: 'water should read blue',
+          );
+          expect(
+            deck.r,
+            greaterThan(water.r),
+            reason: 'deck should separate from lagoon water',
+          );
+          expect(deck.r, greaterThan(deck.b), reason: 'deck should read warm');
         } finally {
           image.dispose();
         }
@@ -288,4 +347,19 @@ void main() {
       }
     });
   });
+}
+
+({int r, int g, int b, int a}) _rgbaAt(
+  Uint8List pixels,
+  int width,
+  int x,
+  int y,
+) {
+  final offset = (y * width + x) * 4;
+  return (
+    r: pixels[offset],
+    g: pixels[offset + 1],
+    b: pixels[offset + 2],
+    a: pixels[offset + 3],
+  );
 }

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/model/face.dart';
+import 'package:lotti/features/character/runtime/character_painter.dart';
 import 'package:lotti/features/character/runtime/character_scene.dart';
 import 'package:lotti/features/character/runtime/character_view.dart';
 import 'package:lotti/features/character/samples/cat_in_suit.dart';
@@ -311,6 +312,9 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
                         paused: _paused,
                         eyeOpenScale: _blinkScale(_blink.value),
                         groundColor: const Color(0xFF374551),
+                        backdrop: _clip.name == CatClips.dance.name
+                            ? CharacterBackdrop.waterfront
+                            : CharacterBackdrop.none,
                         locomote: _wander,
                         walkingPair: _showPair,
                       ),

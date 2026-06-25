@@ -22,6 +22,7 @@ AI-assisted SVG → rig pipeline and the low-end `drawAtlas` runtime — lives i
 | Tapered tie (`taperedCapsule` shape) | ✅ 2-link draping tie |
 | Locomotion — the cat walks/runs across & turns at edges | ✅ `runtime/character_painter.dart` |
 | Ground floor + per-foot contact shadows | ✅ `runtime/character_painter.dart` |
+| Dance waterfront backdrop — lagoon, Lagos-style skyline/bridge, yacht, banner plane | ✅ `runtime/character_painter.dart` |
 | Film-strip + frame-grid + onion + travel + live harness | ✅ `test/.../{film_strip,frame_grid}_test.dart` |
 | Interactive demo (clip/expression/blink/wander/BPM keys) | ✅ `demo/character_demo.dart` |
 | Offline AI rigging (SVG → rig) | ⛔ not started (Phase 2) |
@@ -48,9 +49,14 @@ stage travel hiding the body mechanics. The dance clip is authored as a
 12-count phrase at 120 BPM: an 8-count groove plus a 4-count Gbese-style
 toe-flick bounce, with a small additive root pulse layered over the keyed body
 motion so slower tempos still have off-beat life. The demo exposes a BPM slider
-for previewing that same authored phrase from 80–240 BPM. The tail is a single
-ribbon driven by a 7-link drag chain; the tie is a keyed 2-link cloth shape;
-ears flick a beat behind the head bob.
+for previewing that same authored phrase from 80–240 BPM. The dance view also
+uses `CharacterBackdrop.waterfront`: a pure-code Lagos-inspired lagoon stage
+with a distant skyline/bridge layer, yacht, animated waves, and a small Lotti
+banner plane. It is painted inside `CharacterPainter` behind the same trio
+rigs, so choreography, timing, contact shadows, and screenshot harnesses keep
+one runtime source of truth. The tail is a single ribbon driven by a 7-link drag
+chain; the tie is a keyed 2-link cloth shape; ears flick a beat behind the head
+bob.
 
 ## Architecture
 
@@ -190,7 +196,7 @@ fvm flutter test test/features/character/frame_grid_test.dart   # grids + onions
 | --- | --- |
 | `<clip>_grid.png` | every sampled frame as a labelled contact sheet |
 | `<clip>_onion.png` | all frames superimposed — reveals arcs (crisp = rigid, blur = moving) |
-| `<clip>_live.png` | one frame through the real `CharacterPainter` (floor + per-foot contact shadows) |
+| `<clip>_live.png` | one frame through the real `CharacterPainter` (dance includes the waterfront backdrop; other clips use floor + per-foot contact shadows) |
 | `<clip>_travel.png` | locomoting clips overlaid while travelling — planted feet should be **crisp footprints**, a smear means foot-skate |
 | `expressions.png`, `blink.png` | the six face presets · an asymmetric blink |
 

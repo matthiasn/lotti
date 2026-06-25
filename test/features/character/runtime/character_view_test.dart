@@ -13,7 +13,11 @@ void main() {
       .whereType<CharacterPainter>()
       .first;
 
-  Widget host({required bool paused, Clip? clip}) => Center(
+  Widget host({
+    required bool paused,
+    Clip? clip,
+    CharacterBackdrop backdrop = CharacterBackdrop.none,
+  }) => Center(
     child: SizedBox(
       width: 200,
       height: 280,
@@ -21,6 +25,7 @@ void main() {
         scene: CharacterScene(buildCatInSuitRig()),
         clip: clip ?? CatClips.walk,
         paused: paused,
+        backdrop: backdrop,
       ),
     ),
   );
@@ -103,5 +108,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(readPainter(tester).timeSeconds, greaterThan(0.35));
+  });
+
+  testWidgets('forwards the selected backdrop to the painter', (tester) async {
+    await tester.pumpWidget(
+      host(paused: true, backdrop: CharacterBackdrop.waterfront),
+    );
+
+    expect(readPainter(tester).backdrop, CharacterBackdrop.waterfront);
   });
 }

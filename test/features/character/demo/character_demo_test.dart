@@ -37,6 +37,7 @@ void main() {
     );
     expect(view(tester).synchronousEnsemble, isTrue);
     expect(view(tester).playbackRate, closeTo(124 / 120, 1e-9));
+    expect(view(tester).backdrop, CharacterBackdrop.waterfront);
     expect(find.text('BPM 124'), findsOneWidget);
   });
 
@@ -45,6 +46,7 @@ void main() {
     await tester.tap(chip('jump'));
     await tester.pump();
     expect(view(tester).clip.name, 'jump');
+    expect(view(tester).backdrop, CharacterBackdrop.none);
   });
 
   testWidgets('selecting an expression chip switches the face', (tester) async {
@@ -68,6 +70,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.digit4);
     await tester.pump();
     expect(view(tester).clip.name, 'dance');
+    expect(view(tester).backdrop, CharacterBackdrop.waterfront);
     expect(view(tester).walkingPair, isTrue);
     expect(view(tester).partnerScene, isNotNull);
     expect(view(tester).ensembleScenes.length, 2);

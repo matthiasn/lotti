@@ -280,6 +280,9 @@ void main() {
       expression: expression,
       scale: h * 0.78 / 300.0,
       groundColor: const Color(0xFF374551),
+      backdrop: clip.name == CatClips.dance.name
+          ? CharacterBackdrop.waterfront
+          : CharacterBackdrop.none,
       walkingPair:
           clip.name == CatClips.walk.name || clip.name == CatClips.dance.name,
       partnerScene: partnerScene,
@@ -347,6 +350,9 @@ void main() {
         expression: expression,
         scale: liveH * 0.78 / 300.0,
         groundColor: const Color(0xFF374551),
+        backdrop: clip.name == CatClips.dance.name
+            ? CharacterBackdrop.waterfront
+            : CharacterBackdrop.none,
         walkingPair: clip.name == CatClips.dance.name,
         partnerScene: partnerScene,
         ensembleScenes: clip.name == CatClips.dance.name
