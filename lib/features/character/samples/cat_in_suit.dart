@@ -129,7 +129,9 @@ RigSpec buildCatInSuitRig() {
       pivotX: 14,
       pivotY: 16,
       z: -7,
-      restRotation: -1.9,
+      restRotation:
+          -2.3, // lifted more vertical so the tail clears the hand line
+
       w: 11,
       wTip: 10,
       h: 21,
@@ -589,15 +591,18 @@ class CatClips {
   // the planted ankle stays at a level height — a deep buckle heaves the body up
   // mid-stance and contributes to the hop. It tucks hard only in swing.
   static const _shinKeys = [
-    Keyframe(p: 0, rotation: -0.05), // contact: nearly straight to plant
-    Keyframe(p: 0.14, rotation: -0.26), // shallow weight-accept (no heave)
-    Keyframe(p: 0.28, rotation: -0.28), // held ~flat — ankle height level
+    Keyframe(p: 0, rotation: -0.16), // contact: slight pre-bend — carries the
+    Keyframe(p: 0.14, rotation: -0.3), // buckle delta down so the ankle doesn't
+    Keyframe(
+      p: 0.28,
+      rotation: -0.28,
+    ), // punch, and the stance sweep linearizes
     Keyframe(p: 0.42, rotation: -0.28), // held ~flat — no creep
     Keyframe(p: 0.5, rotation: -0.26), // still extended on the floor
     Keyframe(p: 0.58, rotation: -0.24), // leaves only as the other foot plants
     Keyframe(p: 0.72, rotation: -1.3), // swing: deep knee-tuck, foot clears
     Keyframe(p: 0.88, rotation: -0.22), // extends to plant
-    Keyframe(p: 1, rotation: -0.05),
+    Keyframe(p: 1, rotation: -0.16),
   ];
   // Foot tilt signs are negated relative to a naive "toe at +x" foot because the
   // shoe toe points -x (see footL/R dx) — heel-strike still lifts the toe, etc.
@@ -679,13 +684,15 @@ class CatClips {
     // holds world-x as the body travels over it (no moonwalk / creep). Tuned
     // against the walk_travel onion until the footprints land as tight stamps.
     locomotionSpeed:
-        195, // measured: planted foot sweeps ~194 u/s in body-frame
+        160, // foot sweep accelerates 114->247 over stance (FK leg); 160 pins the
+    // visually critical early/mid plant where the eye locks (avg sweep is ~181 but
+    // pinning the average smears the initial plant; the late slide is masked by lift-off).
     root: SineRootChannel(
       // The COM drops onto each footfall (weight acceptance) and rises at
       // passing — the double-bounce that reads as carrying mass. ~5% of rig
       // height. bobPhase puts the lowest point on the contacts (p=0, 0.5).
       bobAmplitude:
-          -7, // a deeper bob lifts the planted foot off the floor (hop)
+          -5, // smaller: a deeper bob lifts the planted foot off the floor ~11px
       bobPhase:
           0.345, // COM trough lands just after contact — sinks onto the plant
       swayAmplitude: 6,
@@ -768,7 +775,7 @@ class CatClips {
       CatBones.tail2: SineChannel(amplitude: 0.12, phase: 0.2),
       CatBones.tail3: SineChannel(amplitude: 0.17, phase: 0.3),
       CatBones.tail4: SineChannel(
-        amplitude: 0.18,
+        amplitude: 0.23, // was 0.18 — a dead spot (tail3 0.17) stalled the wave
         phase: 0.4,
         harmonicAmplitude: 0.05,
         harmonicPhase: 0.1,
