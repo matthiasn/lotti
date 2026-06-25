@@ -715,8 +715,8 @@ class CatClips {
 
       // --- Ears flick a beat behind the head bob — the cheapest "alive" tell,
       // and they were animated in nothing before. ---
-      CatBones.earL: SineChannel(amplitude: 0.06, phase: 0.55),
-      CatBones.earR: SineChannel(amplitude: 0.06, phase: 0.55),
+      CatBones.earL: SineChannel(amplitude: 0.06, phase: 0.52),
+      CatBones.earR: SineChannel(amplitude: 0.06, phase: 0.58),
 
       // --- Tie: knot barely moves; the blade lags far behind (0.43) and the
       // tip gets a harmonic so it overshoots — drapes, not hinges. ---
@@ -786,8 +786,8 @@ class CatClips {
       ),
       CatBones.neck: SineChannel(amplitude: 0.09, bias: -0.26),
       CatBones.head: SineChannel(amplitude: 0.06, phase: 0.5, bias: -0.16),
-      CatBones.earL: SineChannel(amplitude: 0.1, phase: 0.55),
-      CatBones.earR: SineChannel(amplitude: 0.1, phase: 0.55),
+      CatBones.earL: SineChannel(amplitude: 0.1, phase: 0.52),
+      CatBones.earR: SineChannel(amplitude: 0.1, phase: 0.58),
 
       // Legs reach further with a hard knee snap (strong 2nd harmonic) and a
       // foot that plants then kicks back on toe-off.
@@ -817,8 +817,8 @@ class CatClips {
       // Tie + tail stream back and whip (7-link travelling wave, strong tip).
       CatBones.tie: SineChannel(amplitude: 0.12, phase: 0.1, bias: 0.18),
       CatBones.tieLower: SineChannel(amplitude: 0.24, phase: 0.26, bias: 0.3),
-      CatBones.tail0: SineChannel(amplitude: 0.06, bias: -0.18),
-      CatBones.tail1: SineChannel(amplitude: 0.1, phase: 0.06, bias: -0.06),
+      CatBones.tail0: SineChannel(amplitude: 0.06, bias: -0.08),
+      CatBones.tail1: SineChannel(amplitude: 0.1, phase: 0.06),
       CatBones.tail2: SineChannel(amplitude: 0.14, phase: 0.12),
       CatBones.tail3: SineChannel(amplitude: 0.18, phase: 0.18),
       CatBones.tail4: SineChannel(amplitude: 0.22, phase: 0.24),
