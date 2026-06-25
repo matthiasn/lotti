@@ -5,23 +5,23 @@ import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/runtime/character_renderer.dart';
 import 'package:lotti/features/character/runtime/character_scene.dart';
 
-/// Computes a base transform that stands the character on the ground of a
-/// [size] canvas: horizontally centred, the **feet** at [feetFraction] of the
-/// height, uniformly scaled by [scale].
-///
-/// [feetOffset] is the rig's rest distance from origin down to the feet (see
+/// Stands the character on the ground of a [size] canvas with its **feet** at
+/// [feetFraction] of the height, horizontally at [centreX], facing right unless
+/// [flip] (then mirrored), uniformly scaled by [scale]. [feetOffset] is the
+/// rig's rest distance from origin to the feet (see
 /// [CharacterScene.restFeetOffset]); the origin is lifted by it so the feet —
-/// not the hips — land on the floor line. Without it the legs run off the
-/// bottom of the canvas.
+/// not the hips — land on the floor line.
 Affine2D groundedBase(
   Size size, {
+  required double centreX,
   double scale = 1,
   double feetFraction = 0.92,
   double feetOffset = 0,
+  bool flip = false,
 }) => Affine2D.translation(
-  size.width / 2,
+  centreX,
   size.height * feetFraction - feetOffset * scale,
-).multiply(Affine2D.scale(scale, scale));
+).multiply(Affine2D.scale(flip ? -scale : scale, scale));
 
 /// A [CustomPainter] that resolves and draws one frame of a [CharacterScene].
 ///
@@ -39,6 +39,7 @@ class CharacterPainter extends CustomPainter {
     this.feetFraction = 0.9,
     this.groundColor,
     this.shadowColor = const Color(0x33000000),
+    this.locomote = false,
     CharacterRenderer? renderer,
   }) : _renderer = renderer ?? CharacterRenderer();
 
@@ -60,7 +61,16 @@ class CharacterPainter extends CustomPainter {
 
   /// Colour of the soft ground-contact shadow under the feet.
   final Color shadowColor;
+
+  /// When true (and the clip carries a [Clip.locomotionSpeed]) the character
+  /// travels: it walks across the stage and ping-pongs at the edges (turning to
+  /// face the direction of travel). Travelling is what makes the planted foot
+  /// hold still in world space instead of skating in place.
+  final bool locomote;
   final CharacterRenderer _renderer;
+
+  // Keep the cat this far from the stage edges as it walks back and forth.
+  static const double _edgeMargin = 64;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -72,11 +82,27 @@ class CharacterPainter extends CustomPainter {
       );
     }
 
+    // Horizontal placement + facing: centred by default; ping-ponging across
+    // the stage when locomotion is on, so the body travels over a planted foot.
+    var centreX = size.width / 2;
+    var flip = false;
+    if (locomote && clip.locomotionSpeed != 0) {
+      final travelPx =
+          scene.evaluator.locomotionOffset(clip, timeSeconds).abs() * scale;
+      final band = (size.width - 2 * _edgeMargin).clamp(1.0, size.width);
+      final cyc = travelPx % (2 * band);
+      final pos = cyc <= band ? cyc : 2 * band - cyc; // triangle 0..band..0
+      centreX = _edgeMargin + pos;
+      flip = cyc > band; // walking back the other way → face left
+    }
+
     final base = groundedBase(
       size,
+      centreX: centreX,
       scale: scale,
       feetFraction: feetFraction,
       feetOffset: scene.restFeetOffset,
+      flip: flip,
     );
     final frame = scene.frameAt(
       clip: clip,
@@ -97,7 +123,7 @@ class CharacterPainter extends CustomPainter {
         .clamp(0, 255);
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(size.width / 2, floorY),
+        center: Offset(centreX, floorY),
         width: shadowW,
         height: shadowW * 0.2,
       ),
@@ -118,5 +144,6 @@ class CharacterPainter extends CustomPainter {
       old.feetFraction != feetFraction ||
       old.groundColor != groundColor ||
       old.shadowColor != shadowColor ||
+      old.locomote != locomote ||
       old._renderer != _renderer;
 }

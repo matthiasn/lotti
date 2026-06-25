@@ -22,7 +22,8 @@ import 'package:lotti/features/character/samples/cat_in_suit.dart';
 /// - `1`–`5` — walk / run / sit / jump / idle  (also `←` / `→` to cycle)
 /// - `N C H S D A` — neutral / content / happy / surprised / sad / angry
 ///   (also `↑` / `↓` to cycle)
-/// - `B` — blink · `X` — auto-cycle faces · `Space` — play/pause · `0` — replay
+/// - `B` — blink · `X` — auto-cycle faces · `M` — wander/in-place
+/// - `Space` — play/pause · `0` — replay
 void main() {
   runApp(const CharacterDemoApp());
 }
@@ -77,6 +78,10 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
   Clip _clip = CatClips.walk;
   Expression _expression = Expression.neutral;
   bool _paused = false;
+
+  // When true, walk/run travel across the stage and turn at the edges (the cat
+  // "moves around"); off shows the cycle in place for pose review.
+  bool _wander = true;
 
   // Bumped when a clip is (re)selected so one-shots (sit/jump) restart their
   // ticker via the keyed CharacterView.
@@ -180,6 +185,8 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
         _triggerBlink();
       case LogicalKeyboardKey.keyX:
         _toggleExpressionCycle();
+      case LogicalKeyboardKey.keyM:
+        setState(() => _wander = !_wander);
       case LogicalKeyboardKey.space:
         setState(() => _paused = !_paused);
       default:
@@ -198,6 +205,13 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
         appBar: AppBar(
           title: const Text('Character demo (cat in a suit)'),
           actions: [
+            IconButton(
+              tooltip: _wander ? 'Walk in place (M)' : 'Wander (M)',
+              icon: Icon(
+                _wander ? Icons.directions_walk : Icons.flip_to_front,
+              ),
+              onPressed: () => setState(() => _wander = !_wander),
+            ),
             IconButton(
               tooltip: 'Blink (B)',
               icon: const Icon(Icons.remove_red_eye_outlined),
@@ -242,6 +256,7 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
                         paused: _paused,
                         eyeOpenScale: _blinkScale(_blink.value),
                         groundColor: const Color(0xFF374551),
+                        locomote: _wander,
                       ),
                     );
                   },

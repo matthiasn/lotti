@@ -19,6 +19,7 @@ class CharacterView extends StatefulWidget {
     this.paused = false,
     this.eyeOpenScale = 1,
     this.groundColor,
+    this.locomote = false,
     super.key,
   });
 
@@ -35,6 +36,10 @@ class CharacterView extends StatefulWidget {
   /// When set, the painter fills a floor band and the character stands on it
   /// (with a contact shadow) instead of floating.
   final Color? groundColor;
+
+  /// When true, locomoting clips (walk/run) travel across the stage and turn at
+  /// the edges instead of cycling in place (which kills the foot-skate).
+  final bool locomote;
 
   @override
   State<CharacterView> createState() => _CharacterViewState();
@@ -109,6 +114,7 @@ class _CharacterViewState extends State<CharacterView>
         scale: widget.scale,
         eyeOpenScale: widget.eyeOpenScale,
         groundColor: widget.groundColor,
+        locomote: widget.locomote,
         renderer: _renderer,
       ),
       child: const SizedBox.expand(),

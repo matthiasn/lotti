@@ -579,7 +579,10 @@ class CatClips {
   static Clip get walk => const Clip(
     name: 'walk',
     duration: 1,
-    locomotionSpeed: 64,
+    // Speed-matched to the stance foot's backward sweep so the planted foot
+    // holds world-x as the body travels over it (no moonwalk). The foot sweeps
+    // ~105 units while planted (half a cycle), so the body covers ~210/cycle.
+    locomotionSpeed: 210,
     root: SineRootChannel(
       // The COM drops onto each footfall (weight acceptance) and rises at
       // passing — the double-bounce that reads as carrying mass. ~5% of rig

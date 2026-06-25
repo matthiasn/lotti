@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
@@ -50,6 +51,40 @@ void main() {
 
     test('does not repaint for identical inputs', () {
       expect(painterAt(0.5).shouldRepaint(painterAt(0.5)), isFalse);
+    });
+  });
+
+  testWidgets('locomotion moves the cat off-centre vs in-place', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      Future<Uint8List> render({required bool locomote}) async {
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(recorder);
+        CharacterPainter(
+          scene: scene,
+          clip: CatClips.walk,
+          // A time where the walk has travelled a good fraction of a stride.
+          timeSeconds: 0.6,
+          locomote: locomote,
+          renderer: renderer,
+        ).paint(canvas, const Size(360, 280));
+        final picture = recorder.endRecording();
+        final image = await picture.toImage(360, 280);
+        final data = await image.toByteData();
+        image.dispose();
+        picture.dispose();
+        return data!.buffer.asUint8List();
+      }
+
+      final travelling = await render(locomote: true);
+      final inPlace = await render(locomote: false);
+      // A clip with no locomotionSpeed (sit) must be unaffected by the flag.
+      expect(
+        travelling,
+        isNot(equals(inPlace)),
+        reason: 'a walk should be placed differently when travelling',
+      );
     });
   });
 

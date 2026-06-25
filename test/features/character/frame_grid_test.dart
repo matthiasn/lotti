@@ -279,6 +279,53 @@ void main() {
     return _pngOf(recorder.endRecording(), w.round(), h.round());
   }
 
+  // Travel onion: overlays the cat at successive times with locomotion ON, so a
+  // PLANTED foot appears as a crisp footprint (it holds world-x through stance)
+  // while the body blurs forward. A smeared foot band = residual foot-skate.
+  Future<Uint8List> renderTravel(CharacterScene scene, Clip clip) async {
+    const w = 360.0;
+    const h = 240.0;
+    const margin = 64.0;
+    const sc = h * 0.62 / 300.0;
+    const floorY = h * 0.9;
+    const band = w - 2 * margin;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder)
+      ..drawRect(const Rect.fromLTWH(0, 0, w, h), Paint()..color = bg)
+      ..drawRect(
+        const Rect.fromLTWH(0, floorY, w, h - floorY),
+        Paint()..color = ground,
+      );
+    final renderer = CharacterRenderer();
+    const frames = 36;
+    final total = clip.duration * 2.4; // a couple of strides
+    for (var i = 0; i < frames; i++) {
+      final t = total * i / frames;
+      final travelPx = scene.evaluator.locomotionOffset(clip, t).abs() * sc;
+      final cyc = travelPx % (2 * band);
+      final pos = cyc <= band ? cyc : 2 * band - cyc;
+      final base = Affine2D.translation(
+        margin + pos,
+        floorY - scene.restFeetOffset * sc,
+      ).multiply(Affine2D.scale(cyc > band ? -sc : sc, sc));
+      final frame = scene.frameAt(
+        clip: clip,
+        timeSeconds: t,
+        expression: expression,
+        base: base,
+      );
+      final alpha = 0.1 + 0.5 * (i / (frames - 1));
+      canvas.saveLayer(
+        const Rect.fromLTWH(0, 0, w, h),
+        Paint()..color = Color.fromRGBO(0, 0, 0, alpha),
+      );
+      renderer.paint(canvas, scene.rig, frame.world, frame.face);
+      canvas.restore();
+    }
+    drawLabel(canvas, 'travel: ${clip.name}', 6, 5);
+    return _pngOf(recorder.endRecording(), w.round(), h.round());
+  }
+
   testWidgets('renders per-frame contact-sheet grids', (tester) async {
     await tester.runAsync(() async {
       for (final name in selected) {
@@ -327,6 +374,15 @@ void main() {
           File('${outputDir.path}/${name}_live.png').writeAsBytesSync(livePng);
           // ignore: avoid_print
           print('wrote ${outputDir.path}/${name}_live.png');
+        }
+
+        if (live && clip.locomotionSpeed != 0) {
+          final travelPng = await renderTravel(scene, clip);
+          File(
+            '${outputDir.path}/${name}_travel.png',
+          ).writeAsBytesSync(travelPng);
+          // ignore: avoid_print
+          print('wrote ${outputDir.path}/${name}_travel.png');
         }
       }
     });
