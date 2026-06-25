@@ -89,7 +89,7 @@ RigSpec buildCatInSuitRig() {
       pivotX: 18,
       pivotY: 6,
       z: 0,
-      restRotation: -2.25,
+      restRotation: -0.7,
       drawable: BoneDrawable(
         kind: BoneShapeKind.taperedCapsule,
         width: 16,
@@ -107,7 +107,7 @@ RigSpec buildCatInSuitRig() {
       pivotX: 0,
       pivotY: 36,
       z: 1,
-      restRotation: -0.82,
+      restRotation: -0.3,
       drawable: BoneDrawable(
         kind: BoneShapeKind.taperedCapsule,
         width: 12,
@@ -125,7 +125,7 @@ RigSpec buildCatInSuitRig() {
       pivotX: 0,
       pivotY: 30,
       z: 2,
-      restRotation: -0.55,
+      restRotation: -0.28,
       drawable: BoneDrawable(
         kind: BoneShapeKind.taperedCapsule,
         width: 9,
@@ -463,30 +463,62 @@ class CatClips {
   // (vs sines) is the two distinct phases a sine can't make: a STANCE leg that
   // plants, straightens and sweeps back under the body, and a SWING leg whose
   // knee tucks so the foot lifts clear of the floor, then reaches out to plant.
+  // Smooth, not snappy: the walk reads as a continuous step, so segments ease
+  // with easeOut/easeInOut. No `*Back` overshoot in a cycle — it reverses a
+  // limb mid-move and reads as a jerk; overshoot/settle is for the one-shots.
   static const _thighKeys = [
-    Keyframe(p: 0, rotation: 0.42), // contact: leg reaches forward
-    Keyframe(p: 0.25, rotation: 0.05), // midstance: under the hips
-    Keyframe(p: 0.5, rotation: -0.42), // toe-off: swept back
-    Keyframe(p: 0.72, rotation: -0.08), // swing: driving through, knee tucked
-    Keyframe(p: 0.88, rotation: 0.5), // reach: stretches out for the next plant
-    Keyframe(p: 1, rotation: 0.42),
+    Keyframe(p: 0, rotation: 0.54), // contact: leg reaches forward
+    Keyframe(
+      p: 0.25,
+      rotation: -0.04,
+    ), // midstance: ankle stacked under the hip
+    Keyframe(p: 0.5, rotation: -0.46), // toe-off: swept back
+    Keyframe(p: 0.72, rotation: -0.08), // swing drive
+    Keyframe(
+      p: 0.88,
+      rotation: 0.56,
+      ease: Ease.easeOut,
+    ), // reach for the plant
+    Keyframe(p: 1, rotation: 0.54),
   ];
   static const _shinKeys = [
-    Keyframe(p: 0, rotation: -0.16), // contact: nearly straight
-    Keyframe(p: 0.12, rotation: -0.46), // weight-accept: bends to absorb
-    Keyframe(p: 0.3, rotation: -0.1), // midstance: straightens, carries weight
-    Keyframe(p: 0.5, rotation: -0.6), // toe-off: starts to fold
-    Keyframe(p: 0.7, rotation: -1.3), // swing: tucked hard so the foot clears
-    Keyframe(p: 0.86, rotation: -0.32), // extends for contact
-    Keyframe(p: 1, rotation: -0.16),
+    Keyframe(
+      p: 0,
+      rotation: -0.12,
+    ), // contact: knee near-locked, straight leg lands
+    Keyframe(
+      p: 0.12,
+      rotation: -0.44,
+    ), // weight-accept: bends to absorb (the "down")
+    Keyframe(p: 0.3, rotation: -0.08), // midstance: straightens, leg tall
+    Keyframe(p: 0.52, rotation: -0.55), // toe-off: folds
+    Keyframe(
+      p: 0.7,
+      rotation: -1.25,
+    ), // swing: knee tucks, foot clears
+    Keyframe(
+      p: 0.88,
+      rotation: -0.26,
+      ease: Ease.easeOut,
+    ), // extends toward the plant
+    Keyframe(p: 1, rotation: -0.12),
   ];
   static const _footKeys = [
-    Keyframe(p: 0, rotation: 0.16), // contact: heel leads
-    Keyframe(p: 0.25), // flat through stance
-    Keyframe(p: 0.5, rotation: 0.5), // toe-off: pushes, points down
-    Keyframe(p: 0.7, rotation: -0.25), // swing: lifts (dorsiflex) to clear
-    Keyframe(p: 0.86), // levels for the plant
-    Keyframe(p: 1, rotation: 0.16),
+    Keyframe(p: 0, rotation: 0.28), // heel strike: toe up, heel leads
+    Keyframe(p: 0.14, ease: Ease.easeOut), // rolls FLAT — the grounding beat
+    Keyframe(p: 0.42, rotation: 0.05), // stays flat through stance
+    Keyframe(p: 0.52, rotation: 0.5), // toe-off push
+    Keyframe(
+      p: 0.66,
+      rotation: -0.25,
+      ease: Ease.easeOut,
+    ), // swing: dorsiflex to clear
+    Keyframe(p: 0.86, rotation: -0.18), // held lifted through swing
+    Keyframe(
+      p: 1,
+      rotation: 0.28,
+      ease: Ease.easeOut,
+    ), // re-cock for heel strike
   ];
 
   static Clip get walk => const Clip(
@@ -494,29 +526,24 @@ class CatClips {
     duration: 1,
     locomotionSpeed: 64,
     root: SineRootChannel(
-      // Weight drops on each footfall (twice per cycle) and rises at passing.
-      // The bob is the *only* big body motion — sway/lean are kept tiny so the
-      // torso stays contained and the legs carry the walk (a busy torso reads as
-      // a seasick wobble, not weight).
-      bobAmplitude: -6,
-      bobPhase: 0.05,
-      swayAmplitude: 1.5,
-      leanAmplitude: 0.015,
+      // The COM drops onto each footfall (weight acceptance) and rises at
+      // passing — the double-bounce that reads as carrying mass. ~5% of rig
+      // height. bobPhase puts the lowest point on the contacts (p=0, 0.5).
+      bobAmplitude: -5,
+      bobPhase: 0.375,
+      swayAmplitude: 2.5,
+      leanAmplitude: 0.025,
     ),
     channels: {
-      // --- Spine chain: the single biggest fix for the "cardboard plank". ---
-      // Pelvis lists once per cycle (toward the swing leg); the torso
-      // counter-rotates against it and the neck/head re-counter so the gaze
-      // stays roughly level. The net effect is a body that articulates through
-      // a soft S instead of riding as one rigid block.
-      CatBones.hips: SineChannel(amplitude: 0.06),
-      // Gentle counter-rotation only — no bone-scale squash here, since the
-      // head/arms hang off the torso and any torso scale would distort them.
-      CatBones.torso: SineChannel(amplitude: 0.07, phase: 0.5),
-      // The head stays a near-steady anchor (a walking head barely moves); just
-      // enough counter to keep the gaze level, not a bobble-head.
-      CatBones.neck: SineChannel(amplitude: 0.035),
-      CatBones.head: SineChannel(amplitude: 0.02, phase: 0.5),
+      // --- Line of action: a real pelvic list that propagates up a soft spine
+      // and is re-leveled at the neck so the gaze holds steady (not a bobble-
+      // head). The pelvis lists ~8°; the chest carries some of it (trunk
+      // articulates instead of staying a plank); the neck/head cancel it back
+      // out so the eyeline barely moves.
+      CatBones.hips: SineChannel(amplitude: 0.13),
+      CatBones.torso: SineChannel(amplitude: 0.07),
+      CatBones.neck: SineChannel(amplitude: 0.11, phase: 0.5),
+      CatBones.head: SineChannel(amplitude: 0.04, phase: 0.5),
 
       // --- Legs: a real keyframed step, not a pendulum. Left leg drives the
       // cycle; the right shares the same keys half a beat later (phase 0.5). ---
