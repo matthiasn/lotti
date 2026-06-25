@@ -107,10 +107,21 @@ class Keyframe {
 /// one step cycle, the right at `phase: 0.5`. It is only meaningful for looping
 /// clips whose first and last keys match; one-shots leave it at 0.
 class KeyframeChannel extends JointChannel {
-  const KeyframeChannel(this.keys, {this.phase = 0});
+  const KeyframeChannel(this.keys, {this.phase = 0, this.smooth = false});
 
   final List<Keyframe> keys;
   final double phase;
+
+  /// When true, interpolate with a **periodic Catmull-Rom spline** (smooth
+  /// tangents through every key) instead of per-segment easing. Per-segment
+  /// `easeInOut` decelerates the joint to a *stop at every keyframe*, which on a
+  /// cyclic clip reads as a frame-to-frame stutter ("it jumps around"). A spline
+  /// flows *through* the keys with continuous velocity — limbs only slow at the
+  /// real turnarounds (where the value reverses), which is what reads as a
+  /// continuous walk. Requires the first and last keys to match (a closed loop);
+  /// use it for cyclic clips, leave it off for one-shots (where the per-key
+  /// ease, incl. `*Back` settles, is intentional).
+  final bool smooth;
 
   @override
   JointPose sample(double rawP) {
@@ -118,28 +129,22 @@ class KeyframeChannel extends JointChannel {
         ? rawP
         : (rawP + phase) - (rawP + phase).floorToDouble();
     if (keys.isEmpty) return JointPose.identity;
-    if (p <= keys.first.p) {
-      final k = keys.first;
-      return JointPose(
-        rotation: k.rotation,
-        scaleX: k.scaleX,
-        scaleY: k.scaleY,
-      );
-    }
-    if (p >= keys.last.p) {
-      final k = keys.last;
-      return JointPose(
-        rotation: k.rotation,
-        scaleX: k.scaleX,
-        scaleY: k.scaleY,
-      );
-    }
+    if (p <= keys.first.p) return _poseOf(keys.first);
+    if (p >= keys.last.p) return _poseOf(keys.last);
+
     for (var i = 0; i < keys.length - 1; i++) {
       final k0 = keys[i];
       final k1 = keys[i + 1];
       if (p >= k0.p && p <= k1.p) {
         final span = k1.p - k0.p;
         final local = span == 0 ? 0.0 : (p - k0.p) / span;
+        if (smooth) {
+          return JointPose(
+            rotation: _spline(i, local, span, (k) => k.rotation),
+            scaleX: _spline(i, local, span, (k) => k.scaleX),
+            scaleY: _spline(i, local, span, (k) => k.scaleY),
+          );
+        }
         final t = k1.ease.apply(local);
         return JointPose(
           rotation: k0.rotation + (k1.rotation - k0.rotation) * t,
@@ -149,6 +154,49 @@ class KeyframeChannel extends JointChannel {
       }
     }
     return JointPose.identity;
+  }
+
+  JointPose _poseOf(Keyframe k) =>
+      JointPose(rotation: k.rotation, scaleX: k.scaleX, scaleY: k.scaleY);
+
+  /// Cubic Hermite for the segment [i,i+1] at [local] (0..1, span [dp]), with
+  /// finite-difference tangents that wrap around the cycle (period = last-first
+  /// key p, assuming the endpoints coincide). This is C1-continuous, so the
+  /// joint never stops at an intermediate key.
+  double _spline(int i, double local, double dp, double Function(Keyframe) f) {
+    final n = keys.length;
+    final period = keys.last.p - keys.first.p;
+    final v1 = f(keys[i]);
+    final v2 = f(keys[i + 1]);
+    // Neighbours, wrapping periodically (keys[0] and keys[n-1] coincide).
+    final double v0;
+    final double p0;
+    final double v3;
+    final double p3;
+    if (i == 0) {
+      v0 = f(keys[n - 2]);
+      p0 = keys[n - 2].p - period;
+    } else {
+      v0 = f(keys[i - 1]);
+      p0 = keys[i - 1].p;
+    }
+    if (i + 1 == n - 1) {
+      v3 = f(keys[1]);
+      p3 = keys[1].p + period;
+    } else {
+      v3 = f(keys[i + 2]);
+      p3 = keys[i + 2].p;
+    }
+    // Per-unit-p tangents (scaled by the segment span for the Hermite basis).
+    final m1 = dp * (v2 - v0) / (keys[i + 1].p - p0);
+    final m2 = dp * (v3 - v1) / (p3 - keys[i].p);
+    final t = local;
+    final t2 = t * t;
+    final t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * v1 +
+        (t3 - 2 * t2 + t) * m1 +
+        (-2 * t3 + 3 * t2) * v2 +
+        (t3 - t2) * m2;
   }
 }
 

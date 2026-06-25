@@ -58,6 +58,39 @@ void main() {
       expect(empty.sample(0.5).rotation, 0);
       expect(empty.sample(0.5).scaleY, 1);
     });
+
+    group('smooth (periodic spline)', () {
+      // A sine-shaped closed loop: peaks at 0.25/0.75, zero-crossings (but
+      // moving) at 0/0.5/1.
+      const keys = [
+        Keyframe(p: 0),
+        Keyframe(p: 0.25, rotation: 1),
+        Keyframe(p: 0.5),
+        Keyframe(p: 0.75, rotation: -1),
+        Keyframe(p: 1),
+      ];
+      const smooth = KeyframeChannel(keys, smooth: true);
+      const eased = KeyframeChannel(keys);
+
+      test('still passes through every key value', () {
+        expect(smooth.sample(0).rotation, closeTo(0, 1e-6));
+        expect(smooth.sample(0.25).rotation, closeTo(1, 1e-6));
+        expect(smooth.sample(0.5).rotation, closeTo(0, 1e-6));
+        expect(smooth.sample(0.75).rotation, closeTo(-1, 1e-6));
+      });
+
+      double speedAt(KeyframeChannel c, double p) =>
+          (c.sample(p + 0.01).rotation - c.sample(p - 0.01).rotation).abs();
+
+      test('flows THROUGH a pass-through key (no stop), unlike eased', () {
+        // At p=0.5 the value is 0 but the motion is sweeping +1 -> -1, so a real
+        // continuous curve is moving fast there. The smooth spline keeps its
+        // speed; the eased channel decelerates to ~0 (stops at the key) — the
+        // stutter this mode exists to remove.
+        expect(speedAt(smooth, 0.5), greaterThan(0.05));
+        expect(speedAt(eased, 0.5), lessThan(0.02));
+      });
+    });
   });
 
   group('SineRootChannel', () {

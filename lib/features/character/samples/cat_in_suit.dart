@@ -302,7 +302,7 @@ RigSpec buildCatInSuitRig() {
       pivotX: 30,
       pivotY: -80,
       z: 10,
-      restRotation: -0.12,
+      restRotation: -0.22, // hangs out from the shoulder, clear of the body
       drawable: _tapered(25, 18, 60, _suit, dy: 25),
     ),
     Bone(
@@ -396,7 +396,7 @@ RigSpec buildCatInSuitRig() {
       pivotX: -30,
       pivotY: -80,
       z: 16,
-      restRotation: 0.12,
+      restRotation: 0.22, // hangs out from the shoulder, clear of the body
       drawable: _tapered(25, 18, 60, _suit, dy: 25),
     ),
     Bone(
@@ -681,19 +681,21 @@ class CatClips {
 
       // --- Legs: a real keyframed step, not a pendulum. Left leg drives the
       // cycle; the right shares the same keys half a beat later (phase 0.5). ---
-      CatBones.legUpperL: KeyframeChannel(_thighKeys),
-      CatBones.legUpperR: KeyframeChannel(_thighKeys, phase: 0.5),
-      CatBones.legLowerL: KeyframeChannel(_shinKeys),
-      CatBones.legLowerR: KeyframeChannel(_shinKeys, phase: 0.5),
-      CatBones.footL: KeyframeChannel(_footKeys),
-      CatBones.footR: KeyframeChannel(_footKeys, phase: 0.5),
+      CatBones.legUpperL: KeyframeChannel(_thighKeys, smooth: true),
+      CatBones.legUpperR: KeyframeChannel(_thighKeys, phase: 0.5, smooth: true),
+      CatBones.legLowerL: KeyframeChannel(_shinKeys, smooth: true),
+      CatBones.legLowerR: KeyframeChannel(_shinKeys, phase: 0.5, smooth: true),
+      CatBones.footL: KeyframeChannel(_footKeys, smooth: true),
+      CatBones.footR: KeyframeChannel(_footKeys, phase: 0.5, smooth: true),
 
       // --- Arms: broken L/R symmetry (so the silhouette is never a perfect
       // mirror — the "machine" tell) with a real bent elbow + forearm drag. ---
-      CatBones.armUpperL: SineChannel(amplitude: 0.44, phase: 0.5, bias: -0.03),
-      CatBones.armUpperR: SineChannel(amplitude: 0.38, bias: 0.02),
-      CatBones.armLowerL: SineChannel(amplitude: 0.32, phase: 0.18, bias: 0.45),
-      CatBones.armLowerR: SineChannel(amplitude: 0.32, phase: 0.68, bias: 0.45),
+      CatBones.armUpperL: SineChannel(amplitude: 0.3, phase: 0.5, bias: -0.03),
+      CatBones.armUpperR: SineChannel(amplitude: 0.27, bias: 0.02),
+      // Forearm bend kept small + outward (bias 0.18) so the hands hang at the
+      // outer thighs instead of swinging across into the body's centre.
+      CatBones.armLowerL: SineChannel(amplitude: 0.16, phase: 0.18, bias: 0.18),
+      CatBones.armLowerR: SineChannel(amplitude: 0.16, phase: 0.68, bias: 0.18),
 
       // --- Ears flick a beat behind the head bob — the cheapest "alive" tell,
       // and they were animated in nothing before. ---
@@ -771,23 +773,28 @@ class CatClips {
 
       // Legs reach further with a hard knee snap (strong 2nd harmonic) and a
       // foot that plants then kicks back on toe-off.
-      CatBones.legUpperL: KeyframeChannel(_runThighKeys),
-      CatBones.legUpperR: KeyframeChannel(_runThighKeys, phase: 0.5),
-      CatBones.legLowerL: KeyframeChannel(_runShinKeys),
-      CatBones.legLowerR: KeyframeChannel(_runShinKeys, phase: 0.5),
-      CatBones.footL: KeyframeChannel(_runFootKeys),
-      CatBones.footR: KeyframeChannel(_runFootKeys, phase: 0.5),
+      CatBones.legUpperL: KeyframeChannel(_runThighKeys, smooth: true),
+      CatBones.legUpperR: KeyframeChannel(
+        _runThighKeys,
+        phase: 0.5,
+        smooth: true,
+      ),
+      CatBones.legLowerL: KeyframeChannel(_runShinKeys, smooth: true),
+      CatBones.legLowerR: KeyframeChannel(
+        _runShinKeys,
+        phase: 0.5,
+        smooth: true,
+      ),
+      CatBones.footL: KeyframeChannel(_runFootKeys, smooth: true),
+      CatBones.footR: KeyframeChannel(_runFootKeys, phase: 0.5, smooth: true),
 
       // Pumping arms, elbows well bent — broken L/R so they aren't matched
       // pistons.
-      CatBones.armUpperL: SineChannel(amplitude: 0.78, phase: 0.5, bias: 0.2),
-      CatBones.armUpperR: SineChannel(amplitude: 0.66, bias: 0.18),
-      CatBones.armLowerL: SineChannel(amplitude: 0.22, phase: 0.1, bias: 0.72),
-      CatBones.armLowerR: SineChannel(
-        amplitude: 0.22,
-        phase: 0.6,
-        bias: 0.72,
-      ),
+      CatBones.armUpperL: SineChannel(amplitude: 0.6, phase: 0.5, bias: 0.18),
+      CatBones.armUpperR: SineChannel(amplitude: 0.54, bias: 0.16),
+      // Elbows bent up to run, but bias kept off the body centreline.
+      CatBones.armLowerL: SineChannel(amplitude: 0.2, phase: 0.1, bias: 0.5),
+      CatBones.armLowerR: SineChannel(amplitude: 0.2, phase: 0.6, bias: 0.5),
 
       // Tie + tail stream back and whip (7-link travelling wave, strong tip).
       CatBones.tie: SineChannel(amplitude: 0.12, phase: 0.1, bias: 0.18),
