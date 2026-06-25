@@ -613,39 +613,59 @@ class CatClips {
   // a deep knee tuck — so the foot plants briefly then flies, instead of pure
   // sines that never hold a contact. ---
   static const _runThighKeys = [
-    Keyframe(p: 0, rotation: 0.62), // contact: moderate reach
-    Keyframe(p: 0.11, rotation: 0.2, ease: Ease.linear), // mid-contact anchor
     Keyframe(
-      p: 0.22,
-      rotation: -0.22,
+      p: 0,
+      rotation: 0.42,
+    ), // contact: land UNDER the hip (not over-reaching)
+    Keyframe(
+      p: 0.13,
+      rotation: 0.05,
       ease: Ease.linear,
-    ), // later, gentler toe-off
-    Keyframe(p: 0.32, rotation: -0.6), // drive back
+    ), // linear pinned stance
+    Keyframe(
+      p: 0.2,
+      rotation: -0.28,
+      ease: Ease.linear,
+    ), // toe-off: end of stance
+    Keyframe(p: 0.32, rotation: -0.7), // drive back HARD — propulsion
     Keyframe(p: 0.62, rotation: 0.1), // flight: knee leads forward
     Keyframe(
       p: 0.85,
-      rotation: 0.7,
+      rotation: 0.5,
       ease: Ease.easeOut,
     ), // reach for next plant
-    Keyframe(p: 1, rotation: 0.62),
+    Keyframe(p: 1, rotation: 0.42),
   ];
   static const _runShinKeys = [
-    Keyframe(p: 0, rotation: -0.18), // contact: near-straight, locked to land
-    Keyframe(p: 0.1, rotation: -0.4), // brief absorb
-    Keyframe(p: 0.18, rotation: -0.22, ease: Ease.linear), // stance, tall
-    Keyframe(p: 0.3, rotation: -0.95), // toe-off folds
-    Keyframe(p: 0.52, rotation: -1.7), // flight: deep tuck (heel to rump)
+    Keyframe(p: 0, rotation: -0.22), // contact: near-straight to land
+    Keyframe(p: 0.07, rotation: -0.55), // sharp absorb — catch the mass
+    Keyframe(
+      p: 0.2,
+      rotation: -0.3,
+      ease: Ease.linear,
+    ), // hold ankle still (no creep)
+    Keyframe(p: 0.32, rotation: -1.05), // fold for flight
+    Keyframe(p: 0.52, rotation: -1.85), // DEEP flight tuck — heel to rump
     Keyframe(
       p: 0.85,
       rotation: -0.32,
       ease: Ease.easeOut,
     ), // whips out to reach
-    Keyframe(p: 1, rotation: -0.18),
+    Keyframe(p: 1, rotation: -0.22),
   ];
   static const _runFootKeys = [
     Keyframe(p: 0, rotation: 0.32), // contact
-    Keyframe(p: 0.1, ease: Ease.easeOut), // flat through the short stance
-    Keyframe(p: 0.3, rotation: 0.62, ease: Ease.easeIn), // hard toe-off push
+    Keyframe(p: 0.1, ease: Ease.easeOut), // rolls flat
+    Keyframe(
+      p: 0.2,
+      rotation: 0.05,
+      ease: Ease.linear,
+    ), // sole held flat to end of stance
+    Keyframe(
+      p: 0.32,
+      rotation: 0.62,
+      ease: Ease.easeIn,
+    ), // hard toe-off AFTER it leaves
     Keyframe(p: 0.52, rotation: -0.34, ease: Ease.easeOut), // flight dorsiflex
     Keyframe(p: 0.85, rotation: -0.12),
     Keyframe(p: 1, rotation: 0.32),
@@ -744,26 +764,28 @@ class CatClips {
   static Clip get run => const Clip(
     name: 'run',
     duration: 0.62,
-    // Speed-matched to the (moderate) run stride so the brief stance foot pins;
-    // tuned against run_travel.png until the footprints don't drift.
-    locomotionSpeed: 360,
+    // Speed-matched to the linear-stance foot sweep (shortened contact) so the
+    // brief sprint contact pins; tuned in the 600-660 window against
+    // run_travel.png until the shoes stamp instead of smear.
+    locomotionSpeed: 640,
     root: SineRootChannel(
-      // A run throws the body higher between strides and lands harder.
-      bobAmplitude: -8,
-      bobPhase: 0.05,
+      // A run is BALLISTIC: throw the COM high into a flight arc (the sine's
+      // zero-velocity apex is the natural hang) so it reads as a run, not a fast
+      // walk. Trough (lowest) lands on each contact (p=0, 0.5).
+      bobAmplitude: -14,
+      bobPhase: 0.375,
       swayAmplitude: 4,
-      leanAmplitude: 0.04,
+      leanAmplitude: 0.06,
     ),
     channels: {
-      // Spine chain, run-tuned: the pelvis drives harder and the chest pitches
-      // well forward (bias) so it reads as a run, not an upright skip; the
-      // neck/head poke up so the gaze leads instead of face-planting.
-      CatBones.hips: SineChannel(amplitude: 0.1, bias: 0.08),
-      // 2nd harmonic gives the chest a float beat at both passings.
+      // Spine = a confident C-curve, pulsed (not a frozen plank): the pelvis
+      // tucks under, the chest carries the forward lean and reaches on the drive
+      // / gathers on recovery; neck/head poke up so the gaze leads.
+      CatBones.hips: SineChannel(amplitude: 0.1, bias: 0.14),
       CatBones.torso: SineChannel(
-        amplitude: 0.13,
+        amplitude: 0.16,
         phase: 0.5,
-        bias: 0.34,
+        bias: 0.3,
         harmonicAmplitude: 0.05,
       ),
       CatBones.neck: SineChannel(amplitude: 0.09, bias: -0.26),
