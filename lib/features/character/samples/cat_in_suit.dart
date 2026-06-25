@@ -553,19 +553,19 @@ class CatClips {
   // with easeOut/easeInOut. No `*Back` overshoot in a cycle — it reverses a
   // limb mid-move and reads as a jerk; overshoot/settle is for the one-shots.
   static const _thighKeys = [
-    Keyframe(p: 0, rotation: 0.54), // contact: leg reaches forward
-    Keyframe(
-      p: 0.25,
-      rotation: -0.04,
-    ), // midstance: ankle stacked under the hip
-    Keyframe(p: 0.5, rotation: -0.46), // toe-off: swept back
-    Keyframe(p: 0.72, rotation: -0.08), // swing drive
+    Keyframe(p: 0, rotation: 0.5), // contact: leg reaches forward
+    // Stance (p 0..0.5) is LINEAR so the foot sweeps back at constant velocity,
+    // matching the constant locomotion travel — that's what stops the planted
+    // foot smearing (skating) under the body.
+    Keyframe(p: 0.25, rotation: 0.02, ease: Ease.linear), // midstance
+    Keyframe(p: 0.5, rotation: -0.46, ease: Ease.linear), // toe-off
+    Keyframe(p: 0.72, rotation: -0.08), // swing drive (eased)
     Keyframe(
       p: 0.88,
-      rotation: 0.56,
+      rotation: 0.52,
       ease: Ease.easeOut,
     ), // reach for the plant
-    Keyframe(p: 1, rotation: 0.54),
+    Keyframe(p: 1, rotation: 0.5),
   ];
   // Stance is kept tall and the ankle flat (small knee excursion through
   // p=0..0.5) so the foot doesn't piston up and down on the floor; the knee
@@ -608,8 +608,8 @@ class CatClips {
       // The COM drops onto each footfall (weight acceptance) and rises at
       // passing — the double-bounce that reads as carrying mass. ~5% of rig
       // height. bobPhase puts the lowest point on the contacts (p=0, 0.5).
-      bobAmplitude: -5,
-      bobPhase: 0.375,
+      bobAmplitude: -7,
+      bobPhase: 0.25,
       swayAmplitude: 2.5,
       leanAmplitude: 0.025,
     ),
