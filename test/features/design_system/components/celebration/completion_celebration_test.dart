@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
@@ -183,6 +185,35 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('adopts a changed duration before the next celebration', (
+    tester,
+  ) async {
+    Widget tree({required bool completed, required Duration duration}) =>
+        makeTestableWidget(
+          CompletionCelebration(
+            completed: completed,
+            duration: duration,
+            child: child(),
+          ),
+        );
+
+    await tester.pumpWidget(
+      tree(completed: false, duration: const Duration(milliseconds: 1400)),
+    );
+    // A duration change while still incomplete retimes the controller
+    // (didUpdateWidget), so the next celebration runs on the new window.
+    await tester.pumpWidget(
+      tree(completed: false, duration: const Duration(milliseconds: 600)),
+    );
+    await tester.pumpWidget(
+      tree(completed: true, duration: const Duration(milliseconds: 600)),
+    );
+
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(find.byType(CompletionGlow), findsOneWidget);
+    await tester.pumpAndSettle();
+  });
+
   group('variant', () {
     // Flips to complete and pumps into the window where both beats are live,
     // returning once the overlay burst exists.
@@ -193,7 +224,7 @@ void main() {
       Widget tree({required bool completed}) => makeTestableWidget(
         CompletionCelebration(
           completed: completed,
-          variant: variant,
+          selection: FixedSelection(variant),
           child: child(),
         ),
       );
@@ -210,7 +241,7 @@ void main() {
       final burst = tester.widget<CompletionBurst>(
         find.byType(CompletionBurst),
       );
-      expect(burst.variant, CelebrationVariant.confetti);
+      expect(burst.params?.variant, CelebrationVariant.confetti);
       await tester.pumpAndSettle();
     });
 
@@ -227,6 +258,33 @@ void main() {
       await celebrate(tester, variant: CelebrationVariant.fireworks);
       final glow = tester.widget<CompletionGlow>(find.byType(CompletionGlow));
       expect(glow.color, isNull);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a combine selection layers a distinct second variant', (
+      tester,
+    ) async {
+      // Deterministic seed so the resolved pair is reproducible.
+      debugResetCelebrationSeed();
+      Widget tree({required bool completed}) => makeTestableWidget(
+        CompletionCelebration(
+          completed: completed,
+          selection: const CombineSelection(),
+          child: child(),
+        ),
+      );
+      await tester.pumpWidget(tree(completed: false));
+      await tester.pumpWidget(tree(completed: true));
+      await tester.pump(const Duration(milliseconds: 200)); // build overlay
+      await tester.pump(const Duration(milliseconds: 300)); // into the window
+
+      final burst = tester.widget<CompletionBurst>(
+        find.byType(CompletionBurst),
+      );
+      expect(burst.params, isNotNull);
+      expect(burst.secondParams, isNotNull);
+      // The two layers speak different particle languages.
+      expect(burst.secondParams!.variant, isNot(burst.params!.variant));
       await tester.pumpAndSettle();
     });
   });
@@ -285,7 +343,9 @@ void main() {
       // Fire from the anchor, then remove it in the same frame.
       spawnCompletionBurst(
         anchorContext,
-        count: 16,
+        params: CelebrationParams.defaultsFor(
+          CelebrationVariant.defaultVariant,
+        ).withValue('count', 16),
         duration: const Duration(milliseconds: 850),
       );
       toggle(show: false);
@@ -310,7 +370,12 @@ void main() {
         disableAnimations: true,
       );
 
-      spawnCompletionBurst(anchorContext);
+      spawnCompletionBurst(
+        anchorContext,
+        params: CelebrationParams.defaultsFor(
+          CelebrationVariant.defaultVariant,
+        ),
+      );
 
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -401,7 +466,9 @@ class _BurstOnMountState extends State<_BurstOnMount> {
       if (mounted) {
         spawnCompletionBurst(
           context,
-          count: 16,
+          params: CelebrationParams.defaultsFor(
+            CelebrationVariant.defaultVariant,
+          ).withValue('count', 16),
           duration: const Duration(milliseconds: 850),
         );
       }

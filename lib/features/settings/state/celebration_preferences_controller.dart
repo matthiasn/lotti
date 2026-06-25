@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/get_it.dart';
 
@@ -12,10 +14,11 @@ const _celebrateHabitsKey = 'CELEBRATE_HABITS';
 const _celebrateChecklistItemsKey = 'CELEBRATE_CHECKLIST_ITEMS';
 const _celebrateTasksKey = 'CELEBRATE_TASKS';
 
-/// Per-content-type [CelebrationVariant] keys; each stores the variant's `name`.
-/// An absent / unrecognised value falls back to the legacy [_celebrateVariantKey]
-/// (so a user who picked one global style before this split keeps it), then to
-/// that event's product default.
+/// Per-content-type [CelebrationSelection] keys; each stores the selection
+/// [CelebrationSelection.token] (a variant `name`, or the random / combine
+/// sentinel). An absent / unrecognised value falls back to the legacy
+/// [_celebrateVariantKey] (so a user who picked one global style before this
+/// split keeps it), then to that event's product default.
 const _celebrateTasksVariantKey = 'CELEBRATE_VARIANT_TASKS';
 const _celebrateHabitsVariantKey = 'CELEBRATE_VARIANT_HABITS';
 const _celebrateChecklistItemsVariantKey = 'CELEBRATE_VARIANT_CHECKLIST_ITEMS';
@@ -23,6 +26,11 @@ const _celebrateChecklistItemsVariantKey = 'CELEBRATE_VARIANT_CHECKLIST_ITEMS';
 /// Legacy single-variant key from before the style became per-content-type. Read
 /// only as a migration fallback for the per-event keys above; never written.
 const _celebrateVariantKey = 'CELEBRATE_VARIANT';
+
+/// The [SettingsDb] key holding the tuned [CelebrationParams] JSON for one
+/// variant. Absent means "untouched" → the variant's defaults.
+String _celebrateParamsKey(CelebrationVariant variant) =>
+    'CELEBRATE_PARAMS_${variant.name}';
 
 /// User preferences for the celebratory completion experience.
 ///
@@ -32,25 +40,16 @@ const _celebrateVariantKey = 'CELEBRATE_VARIANT';
 ///   anchor pop) is gated by the master [enabled] switch *and* the matching
 ///   per-event switch ([habits] / [checklistItems] / [tasks]). Read the
 ///   combined result via [animateHabits] / [animateChecklistItems] /
-///   [animateTasks] at call sites — never the raw per-event field, which the
-///   Settings UI still shows on its own so a user can pre-set categories while
-///   the whole thing is off.
+///   [animateTasks] at call sites.
 /// * The completion **haptic** is gated solely by [haptics], independent of the
-///   visuals: a user can keep the tactile confirmation with the flash off, or
-///   the flash with the buzz off. (On habits the same low-level haptic also
-///   fires for the non-celebratory "missed" swipe; that path is unaffected —
-///   only the *completion* haptic honours this switch.)
+///   visuals.
 ///
-/// [tasksVariant] / [habitsVariant] / [checklistItemsVariant] each select which
-/// particle language that content type's burst speaks — so a user can throw
-/// confetti for habits, bubbles for checklists, and sparks for tasks. A variant
-/// has no effect while the matching visual is gated off.
-///
-/// Everything defaults on, with each content type's product default variant
-/// ([defaultTasksVariant] / [defaultHabitsVariant] /
-/// [defaultChecklistItemsVariant]), so a fresh install celebrates out of the box
-/// and an upgrade preserves a previously chosen global style via the migration in
-/// [CelebrationPreferencesController].
+/// [tasksSelection] / [habitsSelection] / [checklistItemsSelection] each choose
+/// what that content type celebrates with — a fixed variant, a random one, or a
+/// combined pair (see [CelebrationSelection]). [variantParams] holds the user's
+/// tuned look per variant (globally, reused wherever that variant plays); read
+/// the effective params via [paramsFor], which falls back to the untouched
+/// defaults for any variant the user hasn't customized.
 @immutable
 class CelebrationPreferences {
   const CelebrationPreferences({
@@ -59,29 +58,30 @@ class CelebrationPreferences {
     required this.habits,
     required this.checklistItems,
     required this.tasks,
-    required this.tasksVariant,
-    required this.habitsVariant,
-    required this.checklistItemsVariant,
+    required this.tasksSelection,
+    required this.habitsSelection,
+    required this.checklistItemsSelection,
+    required this.variantParams,
   });
 
   /// The default before the user has chosen otherwise: every celebration on,
-  /// haptics on, each content type's product-default variant.
+  /// haptics on, each content type's product-default variant, untouched params.
   const CelebrationPreferences.allEnabled()
     : enabled = true,
       haptics = true,
       habits = true,
       checklistItems = true,
       tasks = true,
-      tasksVariant = defaultTasksVariant,
-      habitsVariant = defaultHabitsVariant,
-      checklistItemsVariant = defaultChecklistItemsVariant;
+      tasksSelection = const FixedSelection(defaultTasksVariant),
+      habitsSelection = const FixedSelection(defaultHabitsVariant),
+      checklistItemsSelection = const FixedSelection(
+        defaultChecklistItemsVariant,
+      ),
+      variantParams = const {};
 
   /// Product-default variant per content type, applied on a fresh install with no
   /// stored choice (and no legacy global value to migrate from). Distinct per
-  /// type so the celebrations feel deliberately different out of the box:
-  /// restrained [CelebrationVariant.sparks] for closing a task, playful
-  /// [CelebrationVariant.confetti] for a habit, and airy
-  /// [CelebrationVariant.bubbles] for ticking off a checklist item.
+  /// type so the celebrations feel deliberately different out of the box.
   static const CelebrationVariant defaultTasksVariant =
       CelebrationVariant.sparks;
   static const CelebrationVariant defaultHabitsVariant =
@@ -105,15 +105,25 @@ class CelebrationPreferences {
   /// Celebrate moving a task into Done.
   final bool tasks;
 
-  /// Which particle language the task-done burst speaks.
-  final CelebrationVariant tasksVariant;
+  /// What the task-done burst celebrates with.
+  final CelebrationSelection tasksSelection;
 
-  /// Which particle language the habit-completion burst speaks.
-  final CelebrationVariant habitsVariant;
+  /// What the habit-completion burst celebrates with.
+  final CelebrationSelection habitsSelection;
 
-  /// Which particle language the checklist-item burst speaks (also the
-  /// whole-checklist 100% bloom, though that is glow-only).
-  final CelebrationVariant checklistItemsVariant;
+  /// What the checklist-item burst celebrates with (also the whole-checklist
+  /// 100% bloom, though that is glow-only).
+  final CelebrationSelection checklistItemsSelection;
+
+  /// The user's tuned parameters per variant. Holds only the variants the user
+  /// has customized; everything else uses [CelebrationParams.defaultsFor] via
+  /// [paramsFor].
+  final Map<CelebrationVariant, CelebrationParams> variantParams;
+
+  /// The effective tunable look for [variant] — the user's tuned params if any,
+  /// otherwise the untouched defaults.
+  CelebrationParams paramsFor(CelebrationVariant variant) =>
+      variantParams[variant] ?? CelebrationParams.defaultsFor(variant);
 
   /// Whether the habit-completion visual should play: master on *and* habits on.
   bool get animateHabits => enabled && habits;
@@ -130,18 +140,21 @@ class CelebrationPreferences {
     bool? habits,
     bool? checklistItems,
     bool? tasks,
-    CelebrationVariant? tasksVariant,
-    CelebrationVariant? habitsVariant,
-    CelebrationVariant? checklistItemsVariant,
+    CelebrationSelection? tasksSelection,
+    CelebrationSelection? habitsSelection,
+    CelebrationSelection? checklistItemsSelection,
+    Map<CelebrationVariant, CelebrationParams>? variantParams,
   }) => CelebrationPreferences(
     enabled: enabled ?? this.enabled,
     haptics: haptics ?? this.haptics,
     habits: habits ?? this.habits,
     checklistItems: checklistItems ?? this.checklistItems,
     tasks: tasks ?? this.tasks,
-    tasksVariant: tasksVariant ?? this.tasksVariant,
-    habitsVariant: habitsVariant ?? this.habitsVariant,
-    checklistItemsVariant: checklistItemsVariant ?? this.checklistItemsVariant,
+    tasksSelection: tasksSelection ?? this.tasksSelection,
+    habitsSelection: habitsSelection ?? this.habitsSelection,
+    checklistItemsSelection:
+        checklistItemsSelection ?? this.checklistItemsSelection,
+    variantParams: variantParams ?? this.variantParams,
   );
 
   @override
@@ -152,9 +165,10 @@ class CelebrationPreferences {
       other.habits == habits &&
       other.checklistItems == checklistItems &&
       other.tasks == tasks &&
-      other.tasksVariant == tasksVariant &&
-      other.habitsVariant == habitsVariant &&
-      other.checklistItemsVariant == checklistItemsVariant;
+      other.tasksSelection == tasksSelection &&
+      other.habitsSelection == habitsSelection &&
+      other.checklistItemsSelection == checklistItemsSelection &&
+      mapEquals(other.variantParams, variantParams);
 
   @override
   int get hashCode => Object.hash(
@@ -163,13 +177,16 @@ class CelebrationPreferences {
     habits,
     checklistItems,
     tasks,
-    tasksVariant,
-    habitsVariant,
-    checklistItemsVariant,
+    tasksSelection,
+    habitsSelection,
+    checklistItemsSelection,
+    Object.hashAllUnordered(
+      variantParams.entries.map((e) => Object.hash(e.key, e.value)),
+    ),
   );
 }
 
-/// Holds the three celebratory-animation switches, persisted across launches in
+/// Holds the celebratory-animation preferences, persisted across launches in
 /// [SettingsDb].
 ///
 /// build returns [CelebrationPreferences.allEnabled] synchronously and then
@@ -207,14 +224,34 @@ class CelebrationPreferencesController
       final habits = await db.itemByKey(_celebrateHabitsKey);
       final checklistItems = await db.itemByKey(_celebrateChecklistItemsKey);
       final tasks = await db.itemByKey(_celebrateTasksKey);
-      final tasksVariant = await db.itemByKey(_celebrateTasksVariantKey);
-      final habitsVariant = await db.itemByKey(_celebrateHabitsVariantKey);
-      final checklistItemsVariant = await db.itemByKey(
+      final tasksSelection = await db.itemByKey(_celebrateTasksVariantKey);
+      final habitsSelection = await db.itemByKey(_celebrateHabitsVariantKey);
+      final checklistItemsSelection = await db.itemByKey(
         _celebrateChecklistItemsVariantKey,
       );
       // The pre-split single key — used only to migrate a previously chosen
       // global style onto whichever per-event keys were never written.
       final legacyVariant = await db.itemByKey(_celebrateVariantKey);
+
+      // Per-variant tuned params. Build the full map honouring any variant the
+      // user already tuned this session (its key in [_adjusted]).
+      final params = <CelebrationVariant, CelebrationParams>{};
+      for (final variant in CelebrationVariant.values) {
+        final key = _celebrateParamsKey(variant);
+        if (_adjusted.contains(key)) {
+          final current = state.variantParams[variant];
+          if (current != null) params[variant] = current;
+          continue;
+        }
+        final decoded = CelebrationParams.tryDecode(await db.itemByKey(key));
+        // Guard against a blob whose payload variant disagrees with its storage
+        // key (a hand-edited / corrupt row): storing it would render this
+        // variant with another variant's knob set, so drop the mismatch.
+        if (decoded != null && decoded.variant == variant) {
+          params[variant] = decoded;
+        }
+      }
+
       // The provider may have been disposed while the reads were in flight.
       if (!ref.mounted) return;
       // `copyWith(field: null)` keeps the current value, so a field the user
@@ -233,36 +270,36 @@ class CelebrationPreferencesController
             ? null
             : checklistItems != 'false',
         tasks: _adjusted.contains(_celebrateTasksKey) ? null : tasks != 'false',
-        tasksVariant: _adjusted.contains(_celebrateTasksVariantKey)
+        tasksSelection: _adjusted.contains(_celebrateTasksVariantKey)
             ? null
-            : _resolveVariant(
-                tasksVariant,
+            : _resolveSelection(
+                tasksSelection,
                 legacyVariant,
                 CelebrationPreferences.defaultTasksVariant,
               ),
-        habitsVariant: _adjusted.contains(_celebrateHabitsVariantKey)
+        habitsSelection: _adjusted.contains(_celebrateHabitsVariantKey)
             ? null
-            : _resolveVariant(
-                habitsVariant,
+            : _resolveSelection(
+                habitsSelection,
                 legacyVariant,
                 CelebrationPreferences.defaultHabitsVariant,
               ),
-        checklistItemsVariant:
+        checklistItemsSelection:
             _adjusted.contains(_celebrateChecklistItemsVariantKey)
             ? null
-            : _resolveVariant(
-                checklistItemsVariant,
+            : _resolveSelection(
+                checklistItemsSelection,
                 legacyVariant,
                 CelebrationPreferences.defaultChecklistItemsVariant,
               ),
+        variantParams: params,
       );
     } catch (_) {
       // A failed read leaves the all-enabled default (set in build) in place.
     }
   }
 
-  /// Enables or disables *all* visual celebrations (the master switch). The
-  /// per-event switches and haptics keep their own state underneath.
+  /// Enables or disables *all* visual celebrations (the master switch).
   Future<void> setEnabled({required bool enabled}) => _updateBool(
     state.copyWith(enabled: enabled),
     _celebrateEnabledKey,
@@ -294,26 +331,50 @@ class CelebrationPreferencesController
   Future<void> setTasks({required bool enabled}) =>
       _updateBool(state.copyWith(tasks: enabled), _celebrateTasksKey, enabled);
 
-  /// Selects the [CelebrationVariant] used by the task-done burst.
-  Future<void> setTasksVariant(CelebrationVariant variant) async {
+  /// Sets what the task-done burst celebrates with.
+  Future<void> setTasksSelection(CelebrationSelection selection) async {
     _adjusted.add(_celebrateTasksVariantKey);
-    state = state.copyWith(tasksVariant: variant);
-    await _persist(_celebrateTasksVariantKey, variant.name);
+    state = state.copyWith(tasksSelection: selection);
+    await _persist(_celebrateTasksVariantKey, selection.token);
   }
 
-  /// Selects the [CelebrationVariant] used by the habit-completion burst.
-  Future<void> setHabitsVariant(CelebrationVariant variant) async {
+  /// Sets what the habit-completion burst celebrates with.
+  Future<void> setHabitsSelection(CelebrationSelection selection) async {
     _adjusted.add(_celebrateHabitsVariantKey);
-    state = state.copyWith(habitsVariant: variant);
-    await _persist(_celebrateHabitsVariantKey, variant.name);
+    state = state.copyWith(habitsSelection: selection);
+    await _persist(_celebrateHabitsVariantKey, selection.token);
   }
 
-  /// Selects the [CelebrationVariant] used by the checklist-item burst.
-  Future<void> setChecklistItemsVariant(CelebrationVariant variant) async {
+  /// Sets what the checklist-item burst celebrates with.
+  Future<void> setChecklistItemsSelection(
+    CelebrationSelection selection,
+  ) async {
     _adjusted.add(_celebrateChecklistItemsVariantKey);
-    state = state.copyWith(checklistItemsVariant: variant);
-    await _persist(_celebrateChecklistItemsVariantKey, variant.name);
+    state = state.copyWith(checklistItemsSelection: selection);
+    await _persist(_celebrateChecklistItemsVariantKey, selection.token);
   }
+
+  /// Stores the user's tuned [params] for `params.variant`, applied globally
+  /// wherever that variant plays. Params equal to the variant's defaults are
+  /// *cleared* rather than stored (empty value → "untouched" on next hydrate),
+  /// so `variantParams` only ever holds genuinely customized variants and a
+  /// reset never freezes today's defaults against future default changes.
+  Future<void> setVariantParams(CelebrationParams params) async {
+    final key = _celebrateParamsKey(params.variant);
+    _adjusted.add(key);
+    final nextParams = {...state.variantParams};
+    if (params.isCustomized) {
+      nextParams[params.variant] = params;
+    } else {
+      nextParams.remove(params.variant);
+    }
+    state = state.copyWith(variantParams: nextParams);
+    await _persist(key, params.isCustomized ? params.encode() : '');
+  }
+
+  /// Restores [variant] to its untouched defaults (clears any stored override).
+  Future<void> resetVariantParams(CelebrationVariant variant) =>
+      setVariantParams(CelebrationParams.defaultsFor(variant));
 
   Future<void> _updateBool(
     CelebrationPreferences next,
@@ -336,19 +397,19 @@ class CelebrationPreferencesController
   }
 }
 
-/// Resolves a per-content-type variant from storage, oldest-wins-last:
-/// the event's own [stored] value if present, else the [legacy] global value
-/// (one-time migration from before the style became per-content-type), else the
-/// product [fallback]. [CelebrationVariant.tryFromStorage] returns `null` for an
-/// absent / unrecognised string so each tier can fall through cleanly.
-CelebrationVariant _resolveVariant(
+/// Resolves a per-content-type selection from storage, oldest-wins-last: the
+/// event's own [stored] token if present, else the [legacy] global variant name
+/// (one-time migration from before surprise modes / per-content-type styles),
+/// else a [FixedSelection] of the product [fallback]. [CelebrationSelection.fromToken]
+/// returns `null` for an absent / unrecognised value so each tier falls through.
+CelebrationSelection _resolveSelection(
   String? stored,
   String? legacy,
   CelebrationVariant fallback,
 ) =>
-    CelebrationVariant.tryFromStorage(stored) ??
-    CelebrationVariant.tryFromStorage(legacy) ??
-    fallback;
+    CelebrationSelection.fromToken(stored) ??
+    CelebrationSelection.fromToken(legacy) ??
+    FixedSelection(fallback);
 
 /// Convenience read of the current [CelebrationPreferences]. Celebration call
 /// sites watch this; tests override it with `overrideWithValue(...)` to assert

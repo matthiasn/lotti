@@ -55,6 +55,7 @@ const DsTokens dsTokensLight = DsTokens(
     decorative: DsColorsDecorative(
       level01: Color(0x1F000000),
       level02: Color(0x3D000000),
+      level03: Color(0x61000000),
     ),
     aiCard: DsColorsAiCard(
       background: Color(0xFFE1EEF7),
@@ -465,6 +466,7 @@ const DsTokens dsTokensDark = DsTokens(
     decorative: DsColorsDecorative(
       level01: Color(0x1FFFFFFF),
       level02: Color(0x3DFFFFFF),
+      level03: Color(0x61FFFFFF),
     ),
     aiCard: DsColorsAiCard(
       background: Color(0xFF0E1A22),
@@ -1326,19 +1328,23 @@ class DsColorsInteractive {
 class DsColorsDecorative {
   final Color level01;
   final Color level02;
+  final Color level03;
 
   const DsColorsDecorative({
     required this.level01,
     required this.level02,
+    required this.level03,
   });
 
   DsColorsDecorative copyWith({
     Color? level01,
     Color? level02,
+    Color? level03,
   }) {
     return DsColorsDecorative(
       level01: level01 ?? this.level01,
       level02: level02 ?? this.level02,
+      level03: level03 ?? this.level03,
     );
   }
 
@@ -1349,6 +1355,7 @@ class DsColorsDecorative {
     return DsColorsDecorative(
       level01: Color.lerp(level01, other.level01, t) ?? level01,
       level02: Color.lerp(level02, other.level02, t) ?? level02,
+      level03: Color.lerp(level03, other.level03, t) ?? level03,
     );
   }
 
@@ -1359,11 +1366,12 @@ class DsColorsDecorative {
     }
     return other is DsColorsDecorative &&
         level01 == other.level01 &&
-        level02 == other.level02;
+        level02 == other.level02 &&
+        level03 == other.level03;
   }
 
   @override
-  int get hashCode => Object.hashAll([level01, level02]);
+  int get hashCode => Object.hashAll([level01, level02, level03]);
 }
 
 @immutable

@@ -145,6 +145,9 @@
   "settingsAdvancedMaintenanceSubtitle": "Perform maintenance tasks to optimise application performance",
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsCategoriesEmptyStateHint": "Create a category to organise your entries",
+  "settingsCelebrationsCustomizeTitle": "Customise",
+  "settingsCelebrationsCustomizeTooltip": "Customise this style",
+  "settingsCelebrationsKnobClearCenter": "Centre gap",
   "settingsLabelsColorHeading": "Colour",
   "settingsLabelsSubtitle": "Organise tasks with coloured labels",
   "settingsSyncConflictsSubtitle": "Resolve synchronisation conflicts to ensure data consistency"

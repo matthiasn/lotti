@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
@@ -405,7 +406,7 @@ void main() {
         extraOverrides: [
           celebrationPreferencesProvider.overrideWithValue(
             const CelebrationPreferences.allEnabled().copyWith(
-              habitsVariant: CelebrationVariant.embers,
+              habitsSelection: const FixedSelection(CelebrationVariant.embers),
             ),
           ),
         ],
@@ -418,10 +419,59 @@ void main() {
       final burst = tester.widget<CompletionBurst>(
         find.byType(CompletionBurst),
       );
-      expect(burst.variant, CelebrationVariant.embers);
+      expect(burst.params?.variant, CelebrationVariant.embers);
       // Embers is a warm variant, so the glow blooms warm (gold), not accent.
       final glow = tester.widget<CompletionGlow>(find.byType(CompletionGlow));
       expect(glow.color, starredGold);
+
+      await tester.pump(const Duration(milliseconds: 1400)); // settle
+    });
+
+    testWidgets('an optimistic tap is consumed, not restarted, when the '
+        'provider catches up', (tester) async {
+      await pumpRow(tester); // not done
+      // Tap complete → the optimistic celebration starts immediately.
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 220));
+      expect(find.byType(CompletionBurst), findsOneWidget);
+
+      // The provider catches up and the row rebuilds as done. The in-flight
+      // timeline continues (the optimistic flag is consumed in didUpdateWidget)
+      // rather than re-firing a second burst.
+      await pumpRow(tester, completedToday: true);
+      await tester.pump(const Duration(milliseconds: 40));
+      expect(find.byType(CompletionBurst), findsOneWidget);
+
+      // It still clears itself once the single timeline completes.
+      await tester.pump(const Duration(milliseconds: 1400));
+      expect(find.byType(CompletionBurst), findsNothing);
+    });
+
+    testWidgets('a combine selection layers a distinct second variant', (
+      tester,
+    ) async {
+      debugResetCelebrationSeed();
+      await pumpRow(
+        tester,
+        extraOverrides: [
+          celebrationPreferencesProvider.overrideWithValue(
+            const CelebrationPreferences.allEnabled().copyWith(
+              habitsSelection: const CombineSelection(),
+            ),
+          ),
+        ],
+      );
+
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 220));
+
+      final burst = tester.widget<CompletionBurst>(
+        find.byType(CompletionBurst),
+      );
+      expect(burst.secondParams, isNotNull);
+      expect(burst.secondParams!.variant, isNot(burst.params!.variant));
 
       await tester.pump(const Duration(milliseconds: 1400)); // settle
     });

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_burst_painters.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
@@ -9,9 +10,10 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// flown out and vanished. Motion is index-seeded (no RNG) so it stays
 /// deterministic for golden capture.
 ///
-/// [variant] picks which particle language the burst speaks (sparks, fireworks,
-/// confetti, embers, bubbles); the staging around it is identical, so switching
-/// variant only swaps the painter (see [buildCelebrationBurstPainter]).
+/// [params] carries the variant *and* its tunable look (count, size, reach,
+/// cleared centre, plus the variant's physics knobs); switching variant only
+/// swaps the painter (see [buildCelebrationBurstPainter]). When omitted it falls
+/// back to the default [CelebrationVariant.defaultVariant] look.
 ///
 /// Render it *over* the card inside an [IgnorePointer], in a non-clipping Stack,
 /// so particles can leave the row's rounded rect. [origin] is the burst centre
@@ -19,46 +21,30 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 class CompletionBurst extends StatelessWidget {
   const CompletionBurst({
     required this.progress,
-    this.variant = CelebrationVariant.defaultVariant,
+    this.params,
+    this.secondParams,
     this.origin = const Alignment(0.82, 0),
-    this.count = 30,
-    this.sizeScale = 1.0,
-    this.clearCenter = 0.0,
-    this.reachFactor = 2.1,
     this.reachOverride,
     super.key,
   });
 
   final double progress;
 
-  /// Which particle language the burst speaks.
-  final CelebrationVariant variant;
+  /// The variant and its tunable look. Defaults to the product-default variant's
+  /// untouched parameters when null.
+  final CelebrationParams? params;
+
+  /// When set, a second particle language is layered over [params] — the
+  /// "combine two" surprise mode (see [CombinedBurstPainter]).
+  final CelebrationParams? secondParams;
 
   final Alignment origin;
 
-  /// Number of particles. Higher reads as a denser, richer burst.
-  final int count;
-
-  /// How far particles fly, as a multiple of the paint area's height. Lower
-  /// keeps the burst a tight ring hugging its anchor; higher gives a wider
-  /// spray for a standalone card.
-  final double reachFactor;
-
-  /// Absolute reach in pixels. When set it overrides [reachFactor] × height —
-  /// used when the burst paints in a roomy overlay box (so it isn't clipped)
-  /// but the spread must stay sized to a small anchor (a checkbox, a pill).
+  /// Absolute reach in pixels. When set it overrides [CelebrationParams.reachFactor]
+  /// × height — used when the burst paints in a roomy overlay box (so it isn't
+  /// clipped) but the spread must stay sized to a small anchor (a checkbox, a
+  /// pill).
   final double? reachOverride;
-
-  /// Multiplier on each particle's head/trail size. Below 1 yields finer
-  /// particles — pair a denser [count] with a sub-1 scale so the burst reads
-  /// rich, not heavy.
-  final double sizeScale;
-
-  /// Fraction of the burst's reach kept clear around [origin] — particles emit
-  /// from a ring at this radius rather than the exact centre, so they radiate
-  /// *around* the celebrated thing instead of obscuring its label. `0` emits
-  /// from the centre.
-  final double clearCenter;
 
   @override
   Widget build(BuildContext context) {
@@ -66,18 +52,31 @@ class CompletionBurst extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final tokens = context.designTokens;
+    final accent = tokens.colors.interactive.enabled;
+    final resolved =
+        params ??
+        CelebrationParams.defaultsFor(CelebrationVariant.defaultVariant);
+    final primary = buildCelebrationBurstPainter(
+      params: resolved,
+      progress: progress,
+      origin: origin,
+      accent: accent,
+      reachOverride: reachOverride,
+    );
+    final second = secondParams;
     return CustomPaint(
-      painter: buildCelebrationBurstPainter(
-        variant: variant,
-        progress: progress,
-        origin: origin,
-        accent: tokens.colors.interactive.enabled,
-        count: count,
-        sizeScale: sizeScale,
-        clearCenter: clearCenter,
-        reachFactor: reachFactor,
-        reachOverride: reachOverride,
-      ),
+      painter: second == null
+          ? primary
+          : CombinedBurstPainter(
+              primary,
+              buildCelebrationBurstPainter(
+                params: second,
+                progress: progress,
+                origin: origin,
+                accent: accent,
+                reachOverride: reachOverride,
+              ),
+            ),
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
@@ -1412,7 +1413,7 @@ void main() {
       final overrides = [
         celebrationPreferencesProvider.overrideWithValue(
           const CelebrationPreferences.allEnabled().copyWith(
-            tasksVariant: CelebrationVariant.fireworks,
+            tasksSelection: const FixedSelection(CelebrationVariant.fireworks),
           ),
         ),
       ];
@@ -1423,7 +1424,7 @@ void main() {
       final burst = tester.widget<CompletionBurst>(
         find.byType(CompletionBurst),
       );
-      expect(burst.variant, CelebrationVariant.fireworks);
+      expect(burst.params?.variant, CelebrationVariant.fireworks);
       await tester.pumpAndSettle();
     });
 

@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1031]
 ### Added
+- **Customizable completion celebrations.** Settings → Advanced → Animations now
+  lets you tune each celebration style — particle count, size, spread, and
+  per-style physics like gravity, twinkle, sway, spin, swell — in a full-screen
+  playground. Controls are grouped into Shape / Motion / Look, each with a
+  plain-language description, and you can drag a slider or tap the value to type
+  an exact number. A live preview plays the effect inside a sample checklist (so
+  you see how it reads in context, not over a lone dot), and Reset-to-default can
+  be undone. Changes persist and apply wherever that style plays. Each content type can also be set to **Random** (a
+  different style on every completion) or **Combine two** (two styles layered,
+  re-rolled each time) for more novelty.
 - A guided **first-time onboarding** (behind the "New onboarding (FTUE)" flag in
   Settings → Advanced → Flags). With the flag on, a fresh install replaces the
   bare provider picker with a short, skippable, cinematic flow: a welcome that

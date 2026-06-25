@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -106,14 +107,27 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
     );
   }
 
-  /// Re-times [_celebrate] to the active habit variant before it plays, so a
-  /// slower-feeling variant (bubbles) gets a longer window everywhere it fires.
-  void _scaleCelebrateDuration() {
-    final scale = ref
+  /// The variant(s) resolved for the in-flight celebration. Re-rolled on every
+  /// fire so Random / Combine vary each completion; drives the burst + glow tint.
+  ResolvedCelebration? _resolved;
+
+  /// Resolves the habit selection for this fire (re-rolling Random / Combine)
+  /// and re-times [_celebrate] to the resolved variant before it plays, so a
+  /// slower-feeling variant (bubbles) gets a longer window. Call right before
+  /// `_celebrate.forward`.
+  void _beginCelebration() {
+    final resolved = ref
         .read(celebrationPreferencesProvider)
-        .habitsVariant
-        .durationScale;
-    _celebrate.duration = _celebrateBaseDuration * scale;
+        .habitsSelection
+        .resolve(seed: nextCelebrationSeed());
+    _resolved = resolved;
+    // For a combined pair, honour the slower of the two so a layered bubbles
+    // half still gets its full window — mirrors spawnCompletionBurst.
+    final primaryScale = resolved.primary.durationScale;
+    final secondScale = resolved.secondary?.durationScale ?? primaryScale;
+    _celebrate.duration =
+        _celebrateBaseDuration *
+        (primaryScale > secondScale ? primaryScale : secondScale);
   }
 
   @override
@@ -129,7 +143,7 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
         // builders decide what it *looks* like — an opacity-only glow under
         // reduced motion, the full staged celebration otherwise. Skipped when
         // the user turned habit celebrations off.
-        _scaleCelebrateDuration();
+        _beginCelebration();
         _celebrate.forward(from: 0);
       }
     }
@@ -197,7 +211,7 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
     final isSuccess = completionType == HabitCompletionType.success;
     if (isSuccess && !widget.completedToday && prefs.animateHabits) {
       _optimisticCelebration = true;
-      _scaleCelebrateDuration();
+      _beginCelebration();
       unawaited(_celebrate.forward(from: 0));
     }
     // A success completion honours the independent haptics switch; the "missed"
@@ -294,8 +308,9 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
                           key: const ValueKey('habit-completion-flash'),
                           value: v,
                           staticGlow: reduceMotion,
-                          // A warm variant blooms warm; the rest keep the accent.
-                          color: prefs.habitsVariant.isWarm
+                          // A warm resolved variant blooms warm; the rest keep
+                          // the accent.
+                          color: (_resolved?.primary.isWarm ?? false)
                               ? starredGold
                               : null,
                         );
@@ -370,11 +385,15 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
                       animation: _celebrate,
                       builder: (context, _) {
                         final p = _stageProgress(_celebrate.value, 0.12, 0.96);
-                        return p == null
+                        final resolved = _resolved;
+                        return p == null || resolved == null
                             ? const SizedBox.shrink()
                             : CompletionBurst(
                                 progress: p,
-                                variant: prefs.habitsVariant,
+                                params: prefs.paramsFor(resolved.primary),
+                                secondParams: resolved.secondary == null
+                                    ? null
+                                    : prefs.paramsFor(resolved.secondary!),
                                 origin: Alignment(originX, 0),
                               );
                       },

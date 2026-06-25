@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_burst_painters.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/themes/colors.dart';
 
@@ -40,20 +41,28 @@ class _CountingCanvas implements Canvas {
 const _accent = Color(0xFF3366FF);
 const _size = Size(200, 200);
 
+/// Params matching the legacy painter test fixture: reach 2.1, cleared centre
+/// 0.2, with [count] / [sizeScale] overridable.
+CelebrationParams _params(
+  CelebrationVariant variant, {
+  double sizeScale = 1.0,
+  int count = 40,
+}) => CelebrationParams.defaultsFor(variant)
+    .withValue('count', count.toDouble())
+    .withValue('size', sizeScale)
+    .withValue('clearCenter', 0.2)
+    .withValue('reach', 2.1);
+
 CelebrationBurstPainter painterFor(
   CelebrationVariant variant, {
   required double progress,
   double sizeScale = 1.0,
   int count = 40,
 }) => buildCelebrationBurstPainter(
-  variant: variant,
+  params: _params(variant, sizeScale: sizeScale, count: count),
   progress: progress,
   origin: Alignment.center,
   accent: _accent,
-  count: count,
-  sizeScale: sizeScale,
-  clearCenter: 0.2,
-  reachFactor: 2.1,
   reachOverride: null,
 );
 
@@ -138,14 +147,10 @@ void main() {
 
     test('reachOf prefers an absolute override', () {
       final overridden = buildCelebrationBurstPainter(
-        variant: CelebrationVariant.sparks,
+        params: _params(CelebrationVariant.sparks, count: 10),
         progress: 0.5,
         origin: Alignment.center,
         accent: _accent,
-        count: 10,
-        sizeScale: 1,
-        clearCenter: 0,
-        reachFactor: 2.1,
         reachOverride: 77,
       );
       expect(overridden.reachOf(_size), 77);
@@ -168,20 +173,14 @@ void main() {
     SparksBurstPainter spark({
       double progress = 0.5,
       Alignment origin = Alignment.center,
-      int count = 40,
-      double sizeScale = 1,
-      double clearCenter = 0.2,
-      double reachFactor = 2.1,
+      CelebrationParams? params,
       double? reachOverride,
       List<Color>? palette,
     }) => SparksBurstPainter(
       progress: progress,
       origin: origin,
       palette: palette ?? const [_accent, starredGold],
-      count: count,
-      sizeScale: sizeScale,
-      clearCenter: clearCenter,
-      reachFactor: reachFactor,
+      params: params ?? _params(CelebrationVariant.sparks),
       reachOverride: reachOverride,
     );
 
@@ -201,10 +200,24 @@ void main() {
         base.shouldRepaint(spark(origin: const Alignment(0.1, 0))),
         isTrue,
       );
-      expect(base.shouldRepaint(spark(count: 41)), isTrue);
-      expect(base.shouldRepaint(spark(sizeScale: 0.9)), isTrue);
-      expect(base.shouldRepaint(spark(clearCenter: 0.3)), isTrue);
-      expect(base.shouldRepaint(spark(reachFactor: 2.2)), isTrue);
+      // A changed shared knob (count) and a changed physics knob (gravity) both
+      // flow through the single `params` comparison.
+      expect(
+        base.shouldRepaint(
+          spark(params: _params(CelebrationVariant.sparks, count: 41)),
+        ),
+        isTrue,
+      );
+      expect(
+        base.shouldRepaint(
+          spark(
+            params: _params(
+              CelebrationVariant.sparks,
+            ).withValue('gravity', 0.31),
+          ),
+        ),
+        isTrue,
+      );
       expect(base.shouldRepaint(spark(reachOverride: 50)), isTrue);
       expect(
         base.shouldRepaint(spark(palette: const [_accent])),
@@ -256,10 +269,7 @@ void main() {
         progress: 0.5,
         origin: Alignment.center,
         palette: const [_accent],
-        count: 20,
-        sizeScale: 1,
-        clearCenter: 0.2,
-        reachFactor: 2.1,
+        params: _params(CelebrationVariant.embers, count: 20),
         reachOverride: null,
       );
       expect(() => paintTo(painter), returnsNormally);
@@ -272,6 +282,53 @@ void main() {
         painterFor(CelebrationVariant.bubbles, progress: 0.66),
       );
       expect(c.circles, greaterThan(0));
+    });
+  });
+
+  group('parameters drive the painted output', () {
+    test('a higher particle count paints more primitives', () {
+      final few = paintTo(
+        painterFor(CelebrationVariant.sparks, progress: 0.3, count: 8),
+      );
+      final many = paintTo(
+        painterFor(CelebrationVariant.sparks, progress: 0.3, count: 48),
+      );
+      expect(many.circles, greaterThan(few.circles));
+    });
+
+    test('confetti count drives the number of ribbons', () {
+      final few = paintTo(
+        painterFor(CelebrationVariant.confetti, progress: 0.3, count: 6),
+      );
+      final many = paintTo(
+        painterFor(CelebrationVariant.confetti, progress: 0.3, count: 36),
+      );
+      expect(many.rects, greaterThan(few.rects));
+    });
+  });
+
+  group('CombinedBurstPainter (combine two)', () {
+    test('paints both children — confetti ribbons and spark heads together', () {
+      final combined = CombinedBurstPainter(
+        painterFor(CelebrationVariant.confetti, progress: 0.3),
+        painterFor(CelebrationVariant.sparks, progress: 0.3),
+      );
+      final canvas = _CountingCanvas();
+      combined.paint(canvas, _size);
+      // Confetti contributes rects, sparks contribute lines + circles — proving
+      // both children rendered, not just one.
+      expect(canvas.rects, greaterThan(0));
+      expect(canvas.lines, greaterThan(0));
+      expect(canvas.circles, greaterThan(0));
+    });
+
+    test('shouldRepaint when either child changes', () {
+      CombinedBurstPainter at(double progress) => CombinedBurstPainter(
+        painterFor(CelebrationVariant.confetti, progress: progress),
+        painterFor(CelebrationVariant.sparks, progress: progress),
+      );
+      expect(at(0.3).shouldRepaint(at(0.3)), isFalse);
+      expect(at(0.4).shouldRepaint(at(0.3)), isTrue);
     });
   });
 

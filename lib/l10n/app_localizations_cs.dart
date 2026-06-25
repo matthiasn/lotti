@@ -7604,11 +7604,26 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCelebrationsChecklistTitle => 'Položky seznamu';
 
   @override
+  String get settingsCelebrationsCustomizeTitle => 'Přizpůsobit';
+
+  @override
+  String get settingsCelebrationsCustomizeTooltip => 'Přizpůsobit tento styl';
+
+  @override
   String get settingsCelebrationsEnabledDescription =>
       'Hlavní vypínač efektů dokončení. Vypnuto skryje všechny animace; haptika má vlastní přepínač.';
 
   @override
   String get settingsCelebrationsEnabledTitle => 'Animace dokončení';
+
+  @override
+  String get settingsCelebrationsGroupLook => 'Vzhled';
+
+  @override
+  String get settingsCelebrationsGroupMotion => 'Pohyb';
+
+  @override
+  String get settingsCelebrationsGroupShape => 'Tvar';
 
   @override
   String get settingsCelebrationsHabitsDescription =>
@@ -7625,6 +7640,147 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCelebrationsHapticsTitle => 'Haptika při dokončení';
 
   @override
+  String get settingsCelebrationsKnobClearCenter => 'Středová mezera';
+
+  @override
+  String get settingsCelebrationsKnobCount => 'Částice';
+
+  @override
+  String get settingsCelebrationsKnobDescClearCenter => 'Volné místo uprostřed';
+
+  @override
+  String get settingsCelebrationsKnobDescCount => 'Kolik částic vylétne';
+
+  @override
+  String get settingsCelebrationsKnobDescFallout => 'Jak daleko jiskry padají';
+
+  @override
+  String get settingsCelebrationsKnobDescFanSpread => 'Šířka vějíře';
+
+  @override
+  String get settingsCelebrationsKnobDescGlow => 'Síla záře';
+
+  @override
+  String get settingsCelebrationsKnobDescGravity => 'Jak rychle padají';
+
+  @override
+  String get settingsCelebrationsKnobDescHalo => 'Síla svatozáře';
+
+  @override
+  String get settingsCelebrationsKnobDescInnerRing =>
+      'Velikost vnitřního prstence';
+
+  @override
+  String get settingsCelebrationsKnobDescLaunch => 'Prodleva před výbuchem';
+
+  @override
+  String get settingsCelebrationsKnobDescPop => 'Kdy prasknou';
+
+  @override
+  String get settingsCelebrationsKnobDescReach => 'Jak daleko doletí';
+
+  @override
+  String get settingsCelebrationsKnobDescRise => 'Jak vysoko stoupají';
+
+  @override
+  String get settingsCelebrationsKnobDescSize => 'Jak velká je každá částice';
+
+  @override
+  String get settingsCelebrationsKnobDescSpeedSpread => 'Rozdíl v rychlosti';
+
+  @override
+  String get settingsCelebrationsKnobDescSpin => 'Jak rychle se točí';
+
+  @override
+  String get settingsCelebrationsKnobDescSpread => 'Šířka rozstřiku';
+
+  @override
+  String get settingsCelebrationsKnobDescSway => 'Jak moc se kývají';
+
+  @override
+  String get settingsCelebrationsKnobDescSwell => 'Jak moc rostou';
+
+  @override
+  String get settingsCelebrationsKnobDescTrail => 'Délka stopy';
+
+  @override
+  String get settingsCelebrationsKnobDescTwinkle => 'Jak moc se třpytí';
+
+  @override
+  String get settingsCelebrationsKnobDescUpward => 'Jak silně stoupají';
+
+  @override
+  String get settingsCelebrationsKnobDescWobble => 'Jak moc se viklají';
+
+  @override
+  String get settingsCelebrationsKnobFallout => 'Dopad';
+
+  @override
+  String get settingsCelebrationsKnobFanSpread => 'Rozevření vějíře';
+
+  @override
+  String get settingsCelebrationsKnobGlow => 'Záře';
+
+  @override
+  String get settingsCelebrationsKnobGravity => 'Gravitace';
+
+  @override
+  String get settingsCelebrationsKnobHalo => 'Halo';
+
+  @override
+  String get settingsCelebrationsKnobInnerRing => 'Vnitřní prstenec';
+
+  @override
+  String get settingsCelebrationsKnobLaunch => 'Čas startu';
+
+  @override
+  String get settingsCelebrationsKnobPop => 'Bod prasknutí';
+
+  @override
+  String get settingsCelebrationsKnobReach => 'Dosah';
+
+  @override
+  String get settingsCelebrationsKnobRise => 'Výška stoupání';
+
+  @override
+  String get settingsCelebrationsKnobSize => 'Velikost';
+
+  @override
+  String get settingsCelebrationsKnobSpeedSpread => 'Proměnlivost rychlosti';
+
+  @override
+  String get settingsCelebrationsKnobSpin => 'Rotace';
+
+  @override
+  String get settingsCelebrationsKnobSpread => 'Úhel rozptylu';
+
+  @override
+  String get settingsCelebrationsKnobSway => 'Houpání';
+
+  @override
+  String get settingsCelebrationsKnobSwell => 'Bobtnání';
+
+  @override
+  String get settingsCelebrationsKnobTrail => 'Délka stopy';
+
+  @override
+  String get settingsCelebrationsKnobTwinkle => 'Třpyt';
+
+  @override
+  String get settingsCelebrationsKnobUpward => 'Stoupání';
+
+  @override
+  String get settingsCelebrationsKnobWobble => 'Chvění';
+
+  @override
+  String get settingsCelebrationsPlaygroundHint =>
+      'Klepni na zvýrazněný řádek pro náhled';
+
+  @override
+  String get settingsCelebrationsPlaygroundLiveNote =>
+      'Změny se okamžitě uloží a použijí všude';
+
+  @override
   String get settingsCelebrationsPreviewChecklistItem => 'Odškrtni mě';
 
   @override
@@ -7638,7 +7794,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCelebrationsPreviewHabit => 'Návyk';
 
   @override
+  String get settingsCelebrationsPreviewSample1 => 'Ranní procházka';
+
+  @override
+  String get settingsCelebrationsPreviewSample2 => 'Dokončit zprávu';
+
+  @override
+  String get settingsCelebrationsPreviewSample3 => 'Zalít rostliny';
+
+  @override
   String get settingsCelebrationsPreviewTitle => 'Vyzkoušet';
+
+  @override
+  String get settingsCelebrationsReplay => 'Přehrát znovu';
+
+  @override
+  String get settingsCelebrationsResetToast => 'Styl obnoven na výchozí';
+
+  @override
+  String get settingsCelebrationsResetToDefault => 'Obnovit výchozí';
+
+  @override
+  String get settingsCelebrationsResetUndo => 'Zpět';
 
   @override
   String get settingsCelebrationsSectionDescription =>
@@ -7671,6 +7848,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCelebrationsVariantBubbles => 'Bubliny';
 
   @override
+  String get settingsCelebrationsVariantCombine => 'Zkombinovat dva';
+
+  @override
+  String get settingsCelebrationsVariantCombineDescription =>
+      'Pokaždé dva náhodné styly přes sebe';
+
+  @override
   String get settingsCelebrationsVariantConfetti => 'Konfety';
 
   @override
@@ -7678,6 +7862,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsCelebrationsVariantFireworks => 'Ohňostroj';
+
+  @override
+  String get settingsCelebrationsVariantRandom => 'Náhodně';
+
+  @override
+  String get settingsCelebrationsVariantRandomDescription =>
+      'Pokaždé jiný styl';
 
   @override
   String get settingsCelebrationsVariantSparks => 'Jiskry';

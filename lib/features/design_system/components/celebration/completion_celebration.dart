@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
@@ -35,11 +37,8 @@ class CompletionCelebration extends StatefulWidget {
     this.anchorScale = false,
     this.animate = true,
     this.duration = const Duration(milliseconds: 1400),
-    this.burstCount = 50,
-    this.burstSizeScale = 0.8,
-    this.burstClearCenter = 0.45,
-    this.burstReach = 2.2,
-    this.variant = CelebrationVariant.defaultVariant,
+    this.selection = const FixedSelection(CelebrationVariant.defaultVariant),
+    this.paramsFor,
     this.onCelebrate,
     super.key,
   });
@@ -68,16 +67,14 @@ class CompletionCelebration extends StatefulWidget {
   /// Length of the celebration timeline. The glow/burst windows scale with it.
   final Duration duration;
 
-  /// Spark count, size multiplier, the cleared centre ring, and how far the
-  /// sparks fly ([burstReach], a multiple of the anchor height). The sparks fly
-  /// out and wither naturally; a higher reach lets them spread freely.
-  final int burstCount;
-  final double burstSizeScale;
-  final double burstClearCenter;
-  final double burstReach;
+  /// What this surface celebrates with — a fixed variant, a random one, or a
+  /// combined pair. Resolved to concrete variant(s) on the completion edge with
+  /// a fresh seed, so Random / Combine re-roll every time.
+  final CelebrationSelection selection;
 
-  /// Which particle language the burst speaks, and whether the glow runs warm.
-  final CelebrationVariant variant;
+  /// Looks up the tunable [CelebrationParams] for a resolved variant (typically
+  /// `CelebrationPreferences.paramsFor`). Defaults to the untouched defaults.
+  final CelebrationParams Function(CelebrationVariant)? paramsFor;
 
   /// When true, the [child] itself pops — a single overshoot scale (1 → 1.12 →
   /// 1) in the first quarter of the timeline, landing with the glow bloom.
@@ -111,6 +108,10 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
   /// the overlay so it outlives this widget if the child collapses.
   late final AnimationController _controller;
 
+  /// The variant(s) resolved on the most recent completion edge. Drives the glow
+  /// tint (a warm primary blooms warm); null until the first celebration fires.
+  ResolvedCelebration? _resolved;
+
   @override
   void initState() {
     super.initState();
@@ -127,18 +128,22 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
       // The haptic fires regardless; only the visual beats honour [animate].
       widget.onCelebrate?.call();
       if (widget.animate) {
+        // Resolve once per fire with a fresh seed so Random / Combine roll a new
+        // look each completion; freeze it for this celebration's lifetime.
+        final resolved = widget.selection.resolve(seed: nextCelebrationSeed());
+        _resolved = resolved;
+        final paramsFor = widget.paramsFor ?? CelebrationParams.defaultsFor;
         _controller.forward(from: 0);
         if (widget.showBurst) {
           // Capture the anchor geometry now, while still mounted, and render
           // the burst in the overlay — see [spawnCompletionBurst].
           spawnCompletionBurst(
             context,
-            variant: widget.variant,
+            params: paramsFor(resolved.primary),
+            secondParams: resolved.secondary == null
+                ? null
+                : paramsFor(resolved.secondary!),
             origin: widget.burstOrigin,
-            count: widget.burstCount,
-            sizeScale: widget.burstSizeScale,
-            clearCenter: widget.burstClearCenter,
-            reachFactor: widget.burstReach,
             duration: widget.duration,
           );
         }
@@ -197,8 +202,11 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
                         value: v,
                         staticGlow: reduceMotion,
                         intensity: widget.glowIntensity,
-                        // A warm variant blooms warm; the rest keep the accent.
-                        color: widget.variant.isWarm ? starredGold : null,
+                        // A warm resolved variant blooms warm; the rest keep the
+                        // accent. Null before the first fire (no glow yet).
+                        color: (_resolved?.primary.isWarm ?? false)
+                            ? starredGold
+                            : null,
                       );
               },
             ),
@@ -224,16 +232,14 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
 /// row / card / scroll viewport.
 ///
 /// No-op under reduced motion, or when there is no overlay / laid-out render
-/// box. [origin] is the burst centre within the anchor; [reachFactor]
-/// multiplies the anchor height to set how far the sparks fly.
+/// box. [origin] is the burst centre within the anchor; the burst's look —
+/// including how far the particles fly ([CelebrationParams.reachFactor] × the
+/// anchor height) — comes from [params].
 void spawnCompletionBurst(
   BuildContext context, {
-  CelebrationVariant variant = CelebrationVariant.defaultVariant,
+  required CelebrationParams params,
+  CelebrationParams? secondParams,
   Alignment origin = Alignment.center,
-  int count = 50,
-  double sizeScale = 0.8,
-  double clearCenter = 0.45,
-  double reachFactor = 2.2,
   Duration duration = const Duration(milliseconds: 1400),
 }) {
   final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
@@ -244,7 +250,12 @@ void spawnCompletionBurst(
   // Stretch the burst window for variants whose motion reads too fast at the
   // base timing (bubbles). Centralised here so every call site — task done,
   // checklist item, the settings preview — picks it up without its own tuning.
-  final scaledDuration = duration * variant.durationScale;
+  // For a combined pair, honour the *slower* of the two so a layered bubbles
+  // half still gets room to swell/rise/pop when the primary runs at base timing.
+  final primaryScale = params.variant.durationScale;
+  final secondScale = secondParams?.variant.durationScale ?? primaryScale;
+  final scaledDuration =
+      duration * (primaryScale > secondScale ? primaryScale : secondScale);
   final size = box.size;
   // Anchor in the overlay's own coordinate space, not the screen's. The
   // nearest Overlay may be a nested one — e.g. the desktop task-detail pane,
@@ -258,7 +269,7 @@ void spawnCompletionBurst(
     origin.alongSize(size),
     ancestor: overlayBox,
   );
-  final reach = size.height * reachFactor;
+  final reach = size.height * params.reachFactor;
   WidgetsBinding.instance.addPostFrameCallback((_) {
     if (!overlay.mounted) return;
     late OverlayEntry entry;
@@ -266,10 +277,8 @@ void spawnCompletionBurst(
       builder: (_) => _OverlayBurst(
         center: center,
         reach: reach,
-        variant: variant,
-        count: count,
-        sizeScale: sizeScale,
-        clearCenter: clearCenter,
+        params: params,
+        secondParams: secondParams,
         duration: scaledDuration,
         // Guard remove(): the entry may already be gone if the overlay was
         // torn down (e.g. the route popped) before the burst finished.
@@ -292,20 +301,16 @@ class _OverlayBurst extends StatefulWidget {
   const _OverlayBurst({
     required this.center,
     required this.reach,
-    required this.variant,
-    required this.count,
-    required this.sizeScale,
-    required this.clearCenter,
+    required this.params,
+    required this.secondParams,
     required this.duration,
     required this.onDone,
   });
 
   final Offset center;
   final double reach;
-  final CelebrationVariant variant;
-  final int count;
-  final double sizeScale;
-  final double clearCenter;
+  final CelebrationParams params;
+  final CelebrationParams? secondParams;
   final Duration duration;
   final VoidCallback onDone;
 
@@ -355,11 +360,9 @@ class _OverlayBurstState extends State<_OverlayBurst>
                 // (the checkbox / pill), not offset to one side.
                 : CompletionBurst(
                     progress: p,
-                    variant: widget.variant,
+                    params: widget.params,
+                    secondParams: widget.secondParams,
                     origin: Alignment.center,
-                    count: widget.count,
-                    sizeScale: widget.sizeScale,
-                    clearCenter: widget.clearCenter,
                     reachOverride: widget.reach,
                   );
           },

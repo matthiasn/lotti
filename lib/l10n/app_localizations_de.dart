@@ -7555,11 +7555,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCelebrationsChecklistTitle => 'Checklisten-Einträge';
 
   @override
+  String get settingsCelebrationsCustomizeTitle => 'Anpassen';
+
+  @override
+  String get settingsCelebrationsCustomizeTooltip => 'Diesen Stil anpassen';
+
+  @override
   String get settingsCelebrationsEnabledDescription =>
       'Hauptschalter für alle Abschluss-Effekte. Aus blendet jede Animation aus; Haptik hat ihren eigenen Schalter.';
 
   @override
   String get settingsCelebrationsEnabledTitle => 'Abschluss-Animationen';
+
+  @override
+  String get settingsCelebrationsGroupLook => 'Aussehen';
+
+  @override
+  String get settingsCelebrationsGroupMotion => 'Bewegung';
+
+  @override
+  String get settingsCelebrationsGroupShape => 'Form';
 
   @override
   String get settingsCelebrationsHabitsDescription =>
@@ -7576,6 +7591,154 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCelebrationsHapticsTitle => 'Abschluss-Haptik';
 
   @override
+  String get settingsCelebrationsKnobClearCenter => 'Mittelabstand';
+
+  @override
+  String get settingsCelebrationsKnobCount => 'Partikel';
+
+  @override
+  String get settingsCelebrationsKnobDescClearCenter =>
+      'Freier Raum in der Mitte';
+
+  @override
+  String get settingsCelebrationsKnobDescCount =>
+      'Wie viele Partikel herausfliegen';
+
+  @override
+  String get settingsCelebrationsKnobDescFallout =>
+      'Wie weit Funken herabrieseln';
+
+  @override
+  String get settingsCelebrationsKnobDescFanSpread => 'Breite des Fächers';
+
+  @override
+  String get settingsCelebrationsKnobDescGlow => 'Stärke des Leuchtens';
+
+  @override
+  String get settingsCelebrationsKnobDescGravity =>
+      'Wie schnell Partikel fallen';
+
+  @override
+  String get settingsCelebrationsKnobDescHalo => 'Stärke des Halos';
+
+  @override
+  String get settingsCelebrationsKnobDescInnerRing => 'Größe des inneren Rings';
+
+  @override
+  String get settingsCelebrationsKnobDescLaunch =>
+      'Verzögerung vor dem Ausbruch';
+
+  @override
+  String get settingsCelebrationsKnobDescPop => 'Wann sie platzen';
+
+  @override
+  String get settingsCelebrationsKnobDescReach => 'Wie weit Partikel fliegen';
+
+  @override
+  String get settingsCelebrationsKnobDescRise => 'Wie hoch Partikel aufsteigen';
+
+  @override
+  String get settingsCelebrationsKnobDescSize => 'Wie groß jedes Partikel ist';
+
+  @override
+  String get settingsCelebrationsKnobDescSpeedSpread =>
+      'Unterschied in der Geschwindigkeit';
+
+  @override
+  String get settingsCelebrationsKnobDescSpin =>
+      'Wie schnell Teile sich drehen';
+
+  @override
+  String get settingsCelebrationsKnobDescSpread => 'Breite des Sprühens';
+
+  @override
+  String get settingsCelebrationsKnobDescSway => 'Wie stark Teile schwanken';
+
+  @override
+  String get settingsCelebrationsKnobDescSwell => 'Wie stark sie wachsen';
+
+  @override
+  String get settingsCelebrationsKnobDescTrail => 'Länge der Spur';
+
+  @override
+  String get settingsCelebrationsKnobDescTwinkle =>
+      'Wie stark Partikel funkeln';
+
+  @override
+  String get settingsCelebrationsKnobDescUpward => 'Wie stark sie aufsteigen';
+
+  @override
+  String get settingsCelebrationsKnobDescWobble => 'Wie stark Teile wackeln';
+
+  @override
+  String get settingsCelebrationsKnobFallout => 'Niederfall';
+
+  @override
+  String get settingsCelebrationsKnobFanSpread => 'Fächerbreite';
+
+  @override
+  String get settingsCelebrationsKnobGlow => 'Leuchten';
+
+  @override
+  String get settingsCelebrationsKnobGravity => 'Schwerkraft';
+
+  @override
+  String get settingsCelebrationsKnobHalo => 'Halo';
+
+  @override
+  String get settingsCelebrationsKnobInnerRing => 'Innerer Ring';
+
+  @override
+  String get settingsCelebrationsKnobLaunch => 'Startzeit';
+
+  @override
+  String get settingsCelebrationsKnobPop => 'Platzpunkt';
+
+  @override
+  String get settingsCelebrationsKnobReach => 'Reichweite';
+
+  @override
+  String get settingsCelebrationsKnobRise => 'Steighöhe';
+
+  @override
+  String get settingsCelebrationsKnobSize => 'Größe';
+
+  @override
+  String get settingsCelebrationsKnobSpeedSpread => 'Geschwindigkeitsvariation';
+
+  @override
+  String get settingsCelebrationsKnobSpin => 'Drehung';
+
+  @override
+  String get settingsCelebrationsKnobSpread => 'Streuwinkel';
+
+  @override
+  String get settingsCelebrationsKnobSway => 'Schwanken';
+
+  @override
+  String get settingsCelebrationsKnobSwell => 'Anschwellen';
+
+  @override
+  String get settingsCelebrationsKnobTrail => 'Schweiflänge';
+
+  @override
+  String get settingsCelebrationsKnobTwinkle => 'Funkeln';
+
+  @override
+  String get settingsCelebrationsKnobUpward => 'Aufstieg';
+
+  @override
+  String get settingsCelebrationsKnobWobble => 'Wackeln';
+
+  @override
+  String get settingsCelebrationsPlaygroundHint =>
+      'Tippe die markierte Zeile an für eine Vorschau';
+
+  @override
+  String get settingsCelebrationsPlaygroundLiveNote =>
+      'Änderungen werden sofort überall gespeichert und angewendet';
+
+  @override
   String get settingsCelebrationsPreviewChecklistItem => 'Hak mich ab';
 
   @override
@@ -7589,7 +7752,29 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCelebrationsPreviewHabit => 'Gewohnheit';
 
   @override
+  String get settingsCelebrationsPreviewSample1 => 'Morgenspaziergang';
+
+  @override
+  String get settingsCelebrationsPreviewSample2 => 'Bericht fertigstellen';
+
+  @override
+  String get settingsCelebrationsPreviewSample3 => 'Pflanzen gießen';
+
+  @override
   String get settingsCelebrationsPreviewTitle => 'Ausprobieren';
+
+  @override
+  String get settingsCelebrationsReplay => 'Erneut abspielen';
+
+  @override
+  String get settingsCelebrationsResetToast =>
+      'Stil auf Standard zurückgesetzt';
+
+  @override
+  String get settingsCelebrationsResetToDefault => 'Auf Standard zurücksetzen';
+
+  @override
+  String get settingsCelebrationsResetUndo => 'Rückgängig';
 
   @override
   String get settingsCelebrationsSectionDescription =>
@@ -7622,6 +7807,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCelebrationsVariantBubbles => 'Blasen';
 
   @override
+  String get settingsCelebrationsVariantCombine => 'Zwei kombinieren';
+
+  @override
+  String get settingsCelebrationsVariantCombineDescription =>
+      'Jedes Mal zwei zufällige Stile, überlagert';
+
+  @override
   String get settingsCelebrationsVariantConfetti => 'Konfetti';
 
   @override
@@ -7629,6 +7821,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsCelebrationsVariantFireworks => 'Feuerwerk';
+
+  @override
+  String get settingsCelebrationsVariantRandom => 'Zufällig';
+
+  @override
+  String get settingsCelebrationsVariantRandomDescription =>
+      'Jedes Mal ein neuer Stil';
 
   @override
   String get settingsCelebrationsVariantSparks => 'Funken';

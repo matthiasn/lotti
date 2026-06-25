@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -22,15 +24,7 @@ class CelebrationPreviewStage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final tasksVariant = ref.watch(
-      celebrationPreferencesProvider.select((p) => p.tasksVariant),
-    );
-    final habitsVariant = ref.watch(
-      celebrationPreferencesProvider.select((p) => p.habitsVariant),
-    );
-    final checklistItemsVariant = ref.watch(
-      celebrationPreferencesProvider.select((p) => p.checklistItemsVariant),
-    );
+    final prefs = ref.watch(celebrationPreferencesProvider);
 
     return Opacity(
       opacity: enabled ? 1 : 0.4,
@@ -41,33 +35,21 @@ class CelebrationPreviewStage extends ConsumerWidget {
           runSpacing: tokens.spacing.step3,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            // Mirrors the task status pill: a centred burst with a roomy reach.
             _PreviewTrigger(
-              variant: tasksVariant,
-              count: 50,
-              sizeScale: 0.8,
-              clearCenter: 0.45,
-              reachFactor: 2.2,
+              selection: prefs.tasksSelection,
+              paramsFor: prefs.paramsFor,
               child: _DonePill(label: messages.settingsCelebrationsPreviewDone),
             ),
-            // Mirrors a checklist item: a finer, tighter burst around the box.
             _PreviewTrigger(
-              variant: checklistItemsVariant,
-              count: 16,
-              sizeScale: 0.7,
-              clearCenter: 0.3,
-              reachFactor: 2,
+              selection: prefs.checklistItemsSelection,
+              paramsFor: prefs.paramsFor,
               child: _ChecklistDummy(
                 label: messages.settingsCelebrationsPreviewChecklistItem,
               ),
             ),
-            // Mirrors the habit complete button.
             _PreviewTrigger(
-              variant: habitsVariant,
-              count: 50,
-              sizeScale: 0.8,
-              clearCenter: 0.4,
-              reachFactor: 2.2,
+              selection: prefs.habitsSelection,
+              paramsFor: prefs.paramsFor,
               child: _HabitDummy(
                 label: messages.settingsCelebrationsPreviewHabit,
               ),
@@ -79,24 +61,19 @@ class CelebrationPreviewStage extends ConsumerWidget {
   }
 }
 
-/// Wraps a dummy control: a tap pops it and fires a real overlay spark burst of
-/// the given [variant], so the preview behaves exactly like the live surfaces.
+/// Wraps a dummy control: a tap pops it and fires a real overlay burst of the
+/// content type's [selection] (resolving Random / Combine fresh each tap), so
+/// the preview behaves exactly like the live surfaces.
 class _PreviewTrigger extends StatefulWidget {
   const _PreviewTrigger({
-    required this.variant,
+    required this.selection,
+    required this.paramsFor,
     required this.child,
-    required this.count,
-    required this.sizeScale,
-    required this.clearCenter,
-    required this.reachFactor,
   });
 
-  final CelebrationVariant variant;
+  final CelebrationSelection selection;
+  final CelebrationParams Function(CelebrationVariant) paramsFor;
   final Widget child;
-  final int count;
-  final double sizeScale;
-  final double clearCenter;
-  final double reachFactor;
 
   @override
   State<_PreviewTrigger> createState() => _PreviewTriggerState();
@@ -127,13 +104,13 @@ class _PreviewTriggerState extends State<_PreviewTrigger>
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     if (!reduceMotion) _pop.forward(from: 0);
+    final resolved = widget.selection.resolve(seed: nextCelebrationSeed());
     spawnCompletionBurst(
       context,
-      variant: widget.variant,
-      count: widget.count,
-      sizeScale: widget.sizeScale,
-      clearCenter: widget.clearCenter,
-      reachFactor: widget.reachFactor,
+      params: widget.paramsFor(resolved.primary),
+      secondParams: resolved.secondary == null
+          ? null
+          : widget.paramsFor(resolved.secondary!),
       duration: const Duration(milliseconds: 1000),
     );
   }

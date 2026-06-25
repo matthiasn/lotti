@@ -210,7 +210,8 @@ class _ChecklistCardState extends ConsumerState<ChecklistCard> {
       completed: total > 0 && widget.completionRate >= 1.0,
       showBurst: false,
       glowIntensity: 0.1,
-      variant: prefs.checklistItemsVariant,
+      selection: prefs.checklistItemsSelection,
+      paramsFor: prefs.paramsFor,
       // The glow honours the master switch + the checklist switch; the medium
       // haptic honours the independent haptics switch.
       animate: prefs.animateChecklistItems,

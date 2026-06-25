@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_burst_painters.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 
@@ -41,7 +42,10 @@ void main() {
     }.entries) {
       await tester.pumpWidget(
         makeTestableWidget(
-          CompletionBurst(progress: 0.5, variant: entry.key),
+          CompletionBurst(
+            progress: 0.5,
+            params: CelebrationParams.defaultsFor(entry.key),
+          ),
         ),
       );
       expect(
@@ -50,6 +54,30 @@ void main() {
         reason: entry.key.name,
       );
     }
+  });
+
+  testWidgets('layers a CombinedBurstPainter when secondParams is set', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidget(
+        CompletionBurst(
+          progress: 0.5,
+          params: CelebrationParams.defaultsFor(CelebrationVariant.sparks),
+          secondParams: CelebrationParams.defaultsFor(
+            CelebrationVariant.bubbles,
+          ),
+        ),
+      ),
+    );
+    final painter = tester.widget<CustomPaint>(burstPaint()).painter;
+    expect(painter, isA<CombinedBurstPainter>());
+    final combined = painter! as CombinedBurstPainter;
+    // Each layer keeps its own variant's painter, so the pair reads as two
+    // effects firing at once.
+    expect(combined.first, isA<SparksBurstPainter>());
+    expect(combined.second, isA<BubblesBurstPainter>());
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('paints nothing at the burst endpoints (rest / spent)', (

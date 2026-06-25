@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_variant_picker.dart';
@@ -25,14 +26,14 @@ void main() {
   /// the picker is presentational, so the selection is the callback, not a write.
   Future<void> pump(
     WidgetTester tester, {
-    required List<CelebrationVariant> selections,
+    required List<CelebrationSelection> selections,
     CelebrationVariant selected = CelebrationVariant.sparks,
     bool enabled = true,
     bool reduceMotion = false,
   }) async {
     final picker = CelebrationVariantPicker(
       enabled: enabled,
-      selected: selected,
+      selected: FixedSelection(selected),
       onSelect: selections.add,
     );
     final child = reduceMotion
@@ -76,13 +77,13 @@ void main() {
   });
 
   testWidgets('tapping a card reports it through onSelect', (tester) async {
-    final selections = <CelebrationVariant>[];
+    final selections = <CelebrationSelection>[];
     await pump(tester, selections: selections);
 
     await tester.tap(find.text('Embers'));
     await tester.pump();
 
-    expect(selections, [CelebrationVariant.embers]);
+    expect(selections, [const FixedSelection(CelebrationVariant.embers)]);
 
     await tester.pumpAndSettle();
   });
@@ -100,7 +101,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     final burst = tester.widget<CompletionBurst>(find.byType(CompletionBurst));
-    expect(burst.variant, CelebrationVariant.confetti);
+    expect(burst.params?.variant, CelebrationVariant.confetti);
 
     await tester.pumpAndSettle();
   });
@@ -108,7 +109,7 @@ void main() {
   testWidgets('under reduce motion, a tap selects but plays no preview burst', (
     tester,
   ) async {
-    final selections = <CelebrationVariant>[];
+    final selections = <CelebrationSelection>[];
     await pump(tester, selections: selections, reduceMotion: true);
 
     await tester.tap(find.text('Bubbles'));
@@ -116,13 +117,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     // Selection still reported …
-    expect(selections, [CelebrationVariant.bubbles]);
+    expect(selections, [const FixedSelection(CelebrationVariant.bubbles)]);
     // … but the preview animation is suppressed, like the live surfaces.
     expect(find.byType(CompletionBurst), findsNothing);
   });
 
   testWidgets('greys out and ignores taps when disabled', (tester) async {
-    final selections = <CelebrationVariant>[];
+    final selections = <CelebrationSelection>[];
     await pump(tester, selections: selections, enabled: false);
 
     // The whole picker is dimmed and non-interactive.
@@ -149,5 +150,90 @@ void main() {
     await tester.tap(find.text('Embers'), warnIfMissed: false);
     await tester.pump();
     expect(selections, isEmpty);
+  });
+
+  group('surprise-mode cards', () {
+    testWidgets('renders a Random and a Combine card alongside the variants', (
+      tester,
+    ) async {
+      await pump(tester, selections: []);
+      expect(find.text('Random'), findsOneWidget);
+      expect(find.text('Combine two'), findsOneWidget);
+    });
+
+    testWidgets('tapping them reports the matching surprise selection', (
+      tester,
+    ) async {
+      final selections = <CelebrationSelection>[];
+      await pump(tester, selections: selections);
+
+      await tester.tap(find.text('Random'));
+      await tester.pump();
+      expect(selections, [const RandomSelection()]);
+
+      await tester.tap(find.text('Combine two'));
+      await tester.pump();
+      expect(selections.last, const CombineSelection());
+    });
+
+    testWidgets('marks the active surprise mode with a filled check', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          CelebrationVariantPicker(
+            selected: const RandomSelection(),
+            onSelect: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // The selected surprise row reads active (filled check); the other is
+      // hollow, and no fixed variant card is selected.
+      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.circle_outlined), findsOneWidget);
+      expect(cardFor(tester, 'Sparks').selected, isFalse);
+    });
+  });
+
+  group('tune affordance', () {
+    testWidgets('each variant card opens the playground for its variant', (
+      tester,
+    ) async {
+      final tuned = <CelebrationVariant>[];
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          CelebrationVariantPicker(
+            selected: const FixedSelection(CelebrationVariant.sparks),
+            onSelect: (_) {},
+            onTune: tuned.add,
+          ),
+        ),
+      );
+
+      // One corner "tune" button per variant card; the surprise rows have none.
+      expect(find.byIcon(Icons.tune_rounded), findsNWidgets(5));
+
+      await tester.tap(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Confetti'),
+            matching: find.byType(CelebrationVariantCard),
+          ),
+          matching: find.byIcon(Icons.tune_rounded),
+        ),
+      );
+      await tester.pump();
+
+      expect(tuned, [CelebrationVariant.confetti]);
+    });
+
+    testWidgets('the tune affordance is hidden when onTune is null', (
+      tester,
+    ) async {
+      await pump(tester, selections: []);
+      expect(find.byIcon(Icons.tune_rounded), findsNothing);
+    });
   });
 }

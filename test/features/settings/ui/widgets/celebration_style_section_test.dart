@@ -1,7 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/celebration_playground_page.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_style_section.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_variant_picker.dart';
 import 'package:lotti/get_it.dart';
@@ -26,9 +29,10 @@ void main() {
     habits: true,
     checklistItems: true,
     tasks: true,
-    tasksVariant: CelebrationVariant.sparks,
-    habitsVariant: CelebrationVariant.confetti,
-    checklistItemsVariant: CelebrationVariant.bubbles,
+    tasksSelection: FixedSelection(CelebrationVariant.sparks),
+    habitsSelection: FixedSelection(CelebrationVariant.confetti),
+    checklistItemsSelection: FixedSelection(CelebrationVariant.bubbles),
+    variantParams: {},
   );
 
   Future<void> pump(WidgetTester tester, {bool enabled = true}) async {
@@ -87,7 +91,10 @@ void main() {
     tester,
   ) async {
     await pump(tester);
-    expect(picker(tester).selected, CelebrationVariant.sparks);
+    expect(
+      picker(tester).selected,
+      const FixedSelection(CelebrationVariant.sparks),
+    );
   });
 
   testWidgets('selecting a surface re-binds the picker to its variant', (
@@ -97,11 +104,17 @@ void main() {
 
     await tester.tap(segment('Habits'));
     await tester.pump();
-    expect(picker(tester).selected, CelebrationVariant.confetti);
+    expect(
+      picker(tester).selected,
+      const FixedSelection(CelebrationVariant.confetti),
+    );
 
     await tester.tap(segment('Checklist items'));
     await tester.pump();
-    expect(picker(tester).selected, CelebrationVariant.bubbles);
+    expect(
+      picker(tester).selected,
+      const FixedSelection(CelebrationVariant.bubbles),
+    );
   });
 
   testWidgets('tapping a style card persists it for the active surface', (
@@ -125,6 +138,27 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('a card tune button opens the playground for that variant', (
+    tester,
+  ) async {
+    await pump(tester);
+
+    // Tasks is the default-active surface → Sparks card. Tap its tune
+    // affordance; it pushes the full-screen editor for that variant.
+    await tester.tap(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('Sparks'),
+          matching: find.byType(CelebrationVariantCard),
+        ),
+        matching: find.byIcon(Icons.tune_rounded),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CelebrationPlaygroundPage), findsOneWidget);
+  });
+
   testWidgets('greys out and ignores taps when disabled', (tester) async {
     await pump(tester, enabled: false);
 
@@ -133,6 +167,9 @@ void main() {
     // bound variant (still the default-active tasks → sparks).
     await tester.tap(segment('Habits'), warnIfMissed: false);
     await tester.pump();
-    expect(picker(tester).selected, CelebrationVariant.sparks);
+    expect(
+      picker(tester).selected,
+      const FixedSelection(CelebrationVariant.sparks),
+    );
   });
 }
