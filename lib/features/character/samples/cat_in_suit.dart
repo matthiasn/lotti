@@ -206,14 +206,15 @@ RigSpec buildCatInSuitRig() {
       color: _furDark,
     ),
 
-    // Far (right) leg, drawn behind. Wide attach (±13) — see legUpperL.
+    // Far (right) leg, drawn behind. Tucked up into the hip (pivotY 11) — see
+    // legUpperL.
     Bone(
       id: CatBones.legUpperR,
       parent: CatBones.hips,
-      pivotX: 13,
-      pivotY: 14,
+      pivotX: 12,
+      pivotY: 11,
       z: 3,
-      drawable: _tapered(31, 22, 68, _trouser, dy: 28),
+      drawable: _tapered(28, 22, 68, _trouser, dy: 28),
     ),
     Bone(
       id: CatBones.legLowerR,
@@ -244,15 +245,15 @@ RigSpec buildCatInSuitRig() {
       ),
     ),
 
-    // Near (left) leg. Attaches wide (±13) so the thighs fill the pelvis width
-    // and read as part of the hips, not narrow sticks hung under the butt.
+    // Near (left) leg. Tucked up into the hip (pivotY 11) and matched to the slim
+    // pelvis width so the thighs flow straight out of the hips — no bulge, no gap.
     Bone(
       id: CatBones.legUpperL,
       parent: CatBones.hips,
-      pivotX: -13,
-      pivotY: 14,
+      pivotX: -12,
+      pivotY: 11,
       z: 6,
-      drawable: _tapered(31, 22, 68, _trouser, dy: 28),
+      drawable: _tapered(28, 22, 68, _trouser, dy: 28),
     ),
     Bone(
       id: CatBones.legLowerL,
@@ -294,10 +295,12 @@ RigSpec buildCatInSuitRig() {
       z: 9,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 54,
-        height: 40,
-        dy: 5,
-        cornerRadius: 18,
+        width:
+            52, // ≈ the jacket waist (50): a slim hip that CONTINUES the body
+        height:
+            32, // line, not a bulky padded-shorts block wider than waist+legs
+        dy: 1,
+        cornerRadius: 15,
         color: _trouser,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -446,9 +449,12 @@ RigSpec buildCatInSuitRig() {
       restRotation: -0.22,
       drawable: BoneDrawable(
         kind: BoneShapeKind.triangle,
-        width: 30,
-        height: 44,
-        dy: -16,
+        width: 32,
+        // Taller + lower base (dy -11) so the ear extends DEEP behind the head
+        // (z18 < head z20): rotation slides the base around behind the crown
+        // instead of swinging it out to expose a background gap.
+        height: 54,
+        dy: -11,
         color: _fur,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -477,9 +483,9 @@ RigSpec buildCatInSuitRig() {
       restRotation: 0.22,
       drawable: BoneDrawable(
         kind: BoneShapeKind.triangle,
-        width: 30,
-        height: 44,
-        dy: -16,
+        width: 32,
+        height: 54, // deep base behind the head — see earL (no rotation gap)
+        dy: -11,
         color: _fur,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -765,8 +771,8 @@ class CatClips {
       // the head crown (a bigger swing swings the base out and opens a gap). The
       // inner ear has NO channel of its own: it inherits the outer ear's rotation
       // rigidly, so the pink inner never splays away from the fur outer.
-      CatBones.earL: SineChannel(amplitude: 0.08, phase: 0.52),
-      CatBones.earR: SineChannel(amplitude: 0.09, phase: 0.58),
+      CatBones.earL: SineChannel(amplitude: 0.045, phase: 0.52),
+      CatBones.earR: SineChannel(amplitude: 0.05, phase: 0.58),
 
       // --- Tie: the blade DRAGS just behind the knot in the SAME direction
       // (phase 0.30 vs knot 0.34) and drapes. It was at 0.66 — nearly ANTI-phase
