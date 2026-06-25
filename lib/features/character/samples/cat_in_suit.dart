@@ -599,6 +599,44 @@ class CatClips {
     ), // re-cock for heel strike
   ];
 
+  // --- Run step cycle (phase 0 = contact). A run has a SHORT stance (the foot
+  // is on the ground only ~p 0..0.18, linear so it pins) and a long flight with
+  // a deep knee tuck — so the foot plants briefly then flies, instead of pure
+  // sines that never hold a contact. ---
+  static const _runThighKeys = [
+    Keyframe(p: 0, rotation: 0.85), // contact: big reach forward
+    Keyframe(p: 0.18, rotation: -0.1, ease: Ease.linear), // short linear stance
+    Keyframe(p: 0.3, rotation: -0.7), // toe-off: driven back
+    Keyframe(p: 0.62, rotation: 0.1), // flight: knee leads forward
+    Keyframe(
+      p: 0.85,
+      rotation: 0.92,
+      ease: Ease.easeOut,
+    ), // reach for next plant
+    Keyframe(p: 1, rotation: 0.85),
+  ];
+  static const _runShinKeys = [
+    Keyframe(p: 0, rotation: -0.18), // contact: near-straight, locked to land
+    Keyframe(p: 0.1, rotation: -0.4), // brief absorb
+    Keyframe(p: 0.18, rotation: -0.22, ease: Ease.linear), // stance, tall
+    Keyframe(p: 0.3, rotation: -0.95), // toe-off folds
+    Keyframe(p: 0.52, rotation: -1.7), // flight: deep tuck (heel to rump)
+    Keyframe(
+      p: 0.85,
+      rotation: -0.32,
+      ease: Ease.easeOut,
+    ), // whips out to reach
+    Keyframe(p: 1, rotation: -0.18),
+  ];
+  static const _runFootKeys = [
+    Keyframe(p: 0, rotation: 0.32), // contact
+    Keyframe(p: 0.1, ease: Ease.easeOut), // flat through the short stance
+    Keyframe(p: 0.3, rotation: 0.62, ease: Ease.easeIn), // hard toe-off push
+    Keyframe(p: 0.52, rotation: -0.34, ease: Ease.easeOut), // flight dorsiflex
+    Keyframe(p: 0.85, rotation: -0.12),
+    Keyframe(p: 1, rotation: 0.32),
+  ];
+
   static Clip get walk => const Clip(
     name: 'walk',
     duration: 1,
@@ -695,24 +733,12 @@ class CatClips {
 
       // Legs reach further with a hard knee snap (strong 2nd harmonic) and a
       // foot that plants then kicks back on toe-off.
-      CatBones.legUpperL: SineChannel(amplitude: 0.82, bias: 0.15),
-      CatBones.legUpperR: SineChannel(amplitude: 0.82, phase: 0.5, bias: 0.15),
-      CatBones.legLowerL: SineChannel(
-        amplitude: 0.68,
-        phase: 0.1,
-        bias: -0.62,
-        harmonicAmplitude: 0.32,
-        harmonicPhase: 0.08,
-      ),
-      CatBones.legLowerR: SineChannel(
-        amplitude: 0.68,
-        phase: 0.6,
-        bias: -0.62,
-        harmonicAmplitude: 0.32,
-        harmonicPhase: 0.58,
-      ),
-      CatBones.footL: SineChannel(amplitude: 0.46, phase: 0.22, bias: 0.18),
-      CatBones.footR: SineChannel(amplitude: 0.46, phase: 0.72, bias: 0.18),
+      CatBones.legUpperL: KeyframeChannel(_runThighKeys),
+      CatBones.legUpperR: KeyframeChannel(_runThighKeys, phase: 0.5),
+      CatBones.legLowerL: KeyframeChannel(_runShinKeys),
+      CatBones.legLowerR: KeyframeChannel(_runShinKeys, phase: 0.5),
+      CatBones.footL: KeyframeChannel(_runFootKeys),
+      CatBones.footR: KeyframeChannel(_runFootKeys, phase: 0.5),
 
       // Pumping arms, elbows well bent.
       CatBones.armUpperL: SineChannel(amplitude: 0.72, phase: 0.5, bias: 0.2),
