@@ -219,9 +219,10 @@ RigSpec buildCatInSuitRig() {
       z: 9,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 52,
-        height: 32,
-        cornerRadius: 12,
+        width: 58,
+        height: 36,
+        dy: 4,
+        cornerRadius: 18,
         color: _trouser,
         outlineColor: _outline,
         outlineWidth: 2,
