@@ -648,7 +648,9 @@ class CatClips {
   static Clip get run => const Clip(
     name: 'run',
     duration: 0.62,
-    locomotionSpeed: 168,
+    // Bigger stride than the walk (longer reach), speed-matched so the run
+    // covers ground without skating.
+    locomotionSpeed: 480,
     root: SineRootChannel(
       // A run throws the body higher between strides and lands harder.
       bobAmplitude: -8,
