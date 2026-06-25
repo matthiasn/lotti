@@ -557,40 +557,36 @@ class CatClips {
   // Smooth, not snappy: the walk reads as a continuous step, so segments ease
   // with easeOut/easeInOut. No `*Back` overshoot in a cycle — it reverses a
   // limb mid-move and reads as a jerk; overshoot/settle is for the one-shots.
+  // NOTE: the leg channels are KeyframeChannel(smooth: true) — the Catmull-Rom
+  // spline ignores `ease` ENTIRELY (it returns before k1.ease is read). So
+  // constant-velocity stance is NOT an Ease.linear; it is encoded as evenly
+  // SPACED keys carrying evenly STEPPED values — a straight line the spline can
+  // only trace. The four 0.125-spaced stance keys below (0.5 -> -0.46, step
+  // -0.24) keep the planted foot's ground sweep linear so it stamps, not skates.
   static const _thighKeys = [
     Keyframe(p: 0, rotation: 0.5), // contact: leg reaches forward
-    // Stance (p 0..0.5) is LINEAR so the foot sweeps back at constant velocity,
-    // matching the constant locomotion travel — that's what stops the planted
-    // foot smearing (skating) under the body.
-    Keyframe(p: 0.25, rotation: 0.02, ease: Ease.linear), // midstance
-    Keyframe(p: 0.5, rotation: -0.46, ease: Ease.linear), // toe-off
-    Keyframe(p: 0.72, rotation: -0.08), // swing drive (eased)
-    Keyframe(
-      p: 0.88,
-      rotation: 0.52,
-      ease: Ease.easeOut,
-    ), // reach for the plant
+    Keyframe(p: 0.125, rotation: 0.26), // linear stance
+    Keyframe(p: 0.25, rotation: 0.02), // midstance
+    Keyframe(p: 0.375, rotation: -0.22), // linear stance
+    Keyframe(p: 0.5, rotation: -0.46), // toe-off
+    Keyframe(p: 0.72, rotation: -0.08), // swing drive
+    Keyframe(p: 0.88, rotation: 0.52), // reach for the plant
     Keyframe(p: 1, rotation: 0.5),
   ];
   // The knee BUCKLES on weight-acceptance (catches the body's mass), then is
   // HELD flat through midstance so the planted ankle doesn't migrate (no foot
   // creep), unfolding only at toe-off; then tucks hard in swing for clearance.
+  // (ease is dead under the smooth spline — see _thighKeys.) The knee BUCKLES
+  // deeper on weight-acceptance (catches the body's mass), is HELD flat through
+  // midstance so the planted ankle doesn't migrate, then tucks hard in swing.
   static const _shinKeys = [
     Keyframe(p: 0, rotation: -0.12), // contact: nearly straight to reach
-    Keyframe(
-      p: 0.14,
-      rotation: -0.5,
-      ease: Ease.easeOut,
-    ), // weight-accept buckle
-    Keyframe(p: 0.28, rotation: -0.45), // held low — the body sinks onto it
-    Keyframe(
-      p: 0.42,
-      rotation: -0.45,
-      ease: Ease.linear,
-    ), // ankle pinned, no creep
-    Keyframe(p: 0.5, rotation: -0.28, ease: Ease.linear), // unfolds at toe-off
+    Keyframe(p: 0.14, rotation: -0.58), // weight-accept buckle (deeper catch)
+    Keyframe(p: 0.28, rotation: -0.54), // held low — the body sinks onto it
+    Keyframe(p: 0.42, rotation: -0.54), // ankle pinned flat, no creep
+    Keyframe(p: 0.5, rotation: -0.28), // unfolds at toe-off
     Keyframe(p: 0.7, rotation: -1.25), // swing: knee tucks, foot clears
-    Keyframe(p: 0.88, rotation: -0.26, ease: Ease.easeOut), // extends to plant
+    Keyframe(p: 0.88, rotation: -0.26), // extends to plant
     Keyframe(p: 1, rotation: -0.12),
   ];
   // Foot tilt signs are negated relative to a naive "toe at +x" foot because the
@@ -683,7 +679,7 @@ class CatClips {
       // The COM drops onto each footfall (weight acceptance) and rises at
       // passing — the double-bounce that reads as carrying mass. ~5% of rig
       // height. bobPhase puts the lowest point on the contacts (p=0, 0.5).
-      bobAmplitude: -7,
+      bobAmplitude: -9, // deeper drop so the mass is CAUGHT on each footfall
       bobPhase:
           0.345, // COM trough lands just after contact — sinks onto the plant
       swayAmplitude: 6,
@@ -718,12 +714,14 @@ class CatClips {
       // Subtle amplitude difference breaks the perfect-mirror "machine" tell,
       // but the resting bias is kept symmetric (0) — a biased rest tilted one
       // arm forward and one back, which read as a postural limp.
-      CatBones.armUpperL: SineChannel(amplitude: 0.3, phase: 0.5),
-      CatBones.armUpperR: SineChannel(amplitude: 0.28),
-      // Forearm bend kept small + outward (bias 0.18) so the hands hang at the
-      // outer thighs instead of swinging across into the body's centre.
-      CatBones.armLowerL: SineChannel(amplitude: 0.16, phase: 0.18, bias: 0.18),
-      CatBones.armLowerR: SineChannel(amplitude: 0.16, phase: 0.68, bias: 0.18),
+      // Arm swing ~doubled: in the front view a pinned upper body read as
+      // "hands on hips / gliding" — a real pendulum is the single biggest lever.
+      CatBones.armUpperL: SineChannel(amplitude: 0.52, phase: 0.5),
+      CatBones.armUpperR: SineChannel(amplitude: 0.48),
+      // Forearm drags a beat behind, kept outward (bias 0.18) so the hands swing
+      // past the outer thighs instead of crossing into the body's centre.
+      CatBones.armLowerL: SineChannel(amplitude: 0.22, phase: 0.18, bias: 0.18),
+      CatBones.armLowerR: SineChannel(amplitude: 0.22, phase: 0.68, bias: 0.18),
 
       // --- Ears flick a beat behind the head bob — the cheapest "alive" tell,
       // and they were animated in nothing before. ---
@@ -734,8 +732,8 @@ class CatClips {
       // tip gets a harmonic so it overshoots — drapes, not hinges. ---
       CatBones.tie: SineChannel(amplitude: 0.07, phase: 0.18),
       CatBones.tieLower: SineChannel(
-        amplitude: 0.2,
-        phase: 0.43,
+        amplitude: 0.4, // ~2x: the blade was so stiff it read as the crispest
+        phase: 0.43, // thing in the onion; the lag (0.25 drag) is preserved
         harmonicAmplitude: 0.05,
         harmonicPhase: 0.5,
       ),
@@ -744,10 +742,10 @@ class CatClips {
       // phase lags ~0.10 per link (total ~0.60 base->tip), so the whip visibly
       // travels down the chain; the last three links carry growing 2nd
       // harmonics so the tip cracks/overshoots instead of swinging as a blade.
-      CatBones.tail0: SineChannel(amplitude: 0.03, bias: 0.05),
-      CatBones.tail1: SineChannel(amplitude: 0.05, phase: 0.1),
-      CatBones.tail2: SineChannel(amplitude: 0.08, phase: 0.2),
-      CatBones.tail3: SineChannel(amplitude: 0.12, phase: 0.3),
+      CatBones.tail0: SineChannel(amplitude: 0.05, bias: 0.05),
+      CatBones.tail1: SineChannel(amplitude: 0.08, phase: 0.1),
+      CatBones.tail2: SineChannel(amplitude: 0.12, phase: 0.2),
+      CatBones.tail3: SineChannel(amplitude: 0.17, phase: 0.3),
       CatBones.tail4: SineChannel(
         amplitude: 0.18,
         phase: 0.4,
