@@ -352,8 +352,8 @@ RigSpec buildCatInSuitRig() {
     ),
 
     // Tie: a 2-link cloth pendulum over the jacket. The knot is short and nearly
-    // rigid at the collar; the blade hangs off it, lags, and widens toward its
-    // point — so it sways and trails like fabric instead of a rigid stick.
+    // rigid at the collar; the blade hangs off it, lags, and tapers to a point
+    // — so it reads as a tie and trails like fabric, not a rigid stick.
     const Bone(
       id: CatBones.tie,
       parent: CatBones.torso,
@@ -362,8 +362,8 @@ RigSpec buildCatInSuitRig() {
       z: 14,
       drawable: BoneDrawable(
         kind: BoneShapeKind.taperedCapsule,
-        width: 14,
-        widthTip: 12,
+        width: 16, // knot
+        widthTip: 14,
         height: 24,
         dy: 11,
         color: _tie,
@@ -379,10 +379,10 @@ RigSpec buildCatInSuitRig() {
       z: 14,
       drawable: BoneDrawable(
         kind: BoneShapeKind.taperedCapsule,
-        width: 12,
-        widthTip: 17,
-        height: 34,
-        dy: 16,
+        width: 16, // blade: widest at the knot, tapering to the point
+        widthTip: 4,
+        height: 38,
+        dy: 18,
         color: _tie,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -569,17 +569,26 @@ class CatClips {
     ), // reach for the plant
     Keyframe(p: 1, rotation: 0.5),
   ];
-  // Stance is kept tall and the ankle flat (small knee excursion through
-  // p=0..0.5) so the foot doesn't piston up and down on the floor; the knee
-  // still tucks hard in swing (p=0.7) for ground clearance.
+  // The knee BUCKLES on weight-acceptance (catches the body's mass), then is
+  // HELD flat through midstance so the planted ankle doesn't migrate (no foot
+  // creep), unfolding only at toe-off; then tucks hard in swing for clearance.
   static const _shinKeys = [
-    Keyframe(p: 0, rotation: -0.1), // contact: knee near-locked
-    Keyframe(p: 0.12, rotation: -0.3), // weight-accept: gentle absorb
-    Keyframe(p: 0.3, rotation: -0.05), // midstance: tall, ankle flat
-    Keyframe(p: 0.5, rotation: -0.22), // toe-off: begins to fold
+    Keyframe(p: 0, rotation: -0.12), // contact: nearly straight to reach
+    Keyframe(
+      p: 0.14,
+      rotation: -0.5,
+      ease: Ease.easeOut,
+    ), // weight-accept buckle
+    Keyframe(p: 0.28, rotation: -0.45), // held low — the body sinks onto it
+    Keyframe(
+      p: 0.42,
+      rotation: -0.45,
+      ease: Ease.linear,
+    ), // ankle pinned, no creep
+    Keyframe(p: 0.5, rotation: -0.28, ease: Ease.linear), // unfolds at toe-off
     Keyframe(p: 0.7, rotation: -1.25), // swing: knee tucks, foot clears
     Keyframe(p: 0.88, rotation: -0.26, ease: Ease.easeOut), // extends to plant
-    Keyframe(p: 1, rotation: -0.1),
+    Keyframe(p: 1, rotation: -0.12),
   ];
   static const _footKeys = [
     Keyframe(p: 0, rotation: 0.28), // heel strike: toe up, heel leads
@@ -604,16 +613,21 @@ class CatClips {
   // a deep knee tuck — so the foot plants briefly then flies, instead of pure
   // sines that never hold a contact. ---
   static const _runThighKeys = [
-    Keyframe(p: 0, rotation: 0.85), // contact: big reach forward
-    Keyframe(p: 0.18, rotation: -0.1, ease: Ease.linear), // short linear stance
-    Keyframe(p: 0.3, rotation: -0.7), // toe-off: driven back
+    Keyframe(p: 0, rotation: 0.62), // contact: moderate reach
+    Keyframe(p: 0.11, rotation: 0.2, ease: Ease.linear), // mid-contact anchor
+    Keyframe(
+      p: 0.22,
+      rotation: -0.22,
+      ease: Ease.linear,
+    ), // later, gentler toe-off
+    Keyframe(p: 0.32, rotation: -0.6), // drive back
     Keyframe(p: 0.62, rotation: 0.1), // flight: knee leads forward
     Keyframe(
       p: 0.85,
-      rotation: 0.92,
+      rotation: 0.7,
       ease: Ease.easeOut,
     ), // reach for next plant
-    Keyframe(p: 1, rotation: 0.85),
+    Keyframe(p: 1, rotation: 0.62),
   ];
   static const _runShinKeys = [
     Keyframe(p: 0, rotation: -0.18), // contact: near-straight, locked to land
@@ -641,15 +655,16 @@ class CatClips {
     name: 'walk',
     duration: 1,
     // Speed-matched to the stance foot's backward sweep so the planted foot
-    // holds world-x as the body travels over it (no moonwalk). The foot sweeps
-    // ~105 units while planted (half a cycle), so the body covers ~210/cycle.
-    locomotionSpeed: 210,
+    // holds world-x as the body travels over it (no moonwalk / creep). Tuned
+    // against the walk_travel onion until the footprints land as tight stamps.
+    locomotionSpeed: 225,
     root: SineRootChannel(
       // The COM drops onto each footfall (weight acceptance) and rises at
       // passing — the double-bounce that reads as carrying mass. ~5% of rig
       // height. bobPhase puts the lowest point on the contacts (p=0, 0.5).
       bobAmplitude: -7,
-      bobPhase: 0.25,
+      bobPhase:
+          0.375, // COM lowest at each footfall (p=0, 0.5), highest at passing
       swayAmplitude: 2.5,
       leanAmplitude: 0.025,
     ),
@@ -685,24 +700,41 @@ class CatClips {
       CatBones.earL: SineChannel(amplitude: 0.06, phase: 0.55),
       CatBones.earR: SineChannel(amplitude: 0.06, phase: 0.55),
 
-      // --- Tie: knot barely moves; the blade lags and swings ~2x (cloth). ---
+      // --- Tie: knot barely moves; the blade lags far behind (0.43) and the
+      // tip gets a harmonic so it overshoots — drapes, not hinges. ---
       CatBones.tie: SineChannel(amplitude: 0.07, phase: 0.18),
-      CatBones.tieLower: SineChannel(amplitude: 0.16, phase: 0.3),
+      CatBones.tieLower: SineChannel(
+        amplitude: 0.2,
+        phase: 0.43,
+        harmonicAmplitude: 0.05,
+        harmonicPhase: 0.5,
+      ),
 
-      // --- Tail: a travelling drag wave. Amplitude grows and phase lags ~0.06
-      // per link so the whip visibly travels base->tip; the tip gets a 2nd
-      // harmonic so it cracks (a fundamental sine can't overshoot). ---
-      CatBones.tail0: SineChannel(amplitude: 0.05, bias: 0.04),
-      CatBones.tail1: SineChannel(amplitude: 0.08, phase: 0.06),
-      CatBones.tail2: SineChannel(amplitude: 0.11, phase: 0.12),
-      CatBones.tail3: SineChannel(amplitude: 0.14, phase: 0.18),
-      CatBones.tail4: SineChannel(amplitude: 0.17, phase: 0.24),
-      CatBones.tail5: SineChannel(amplitude: 0.2, phase: 0.3),
-      CatBones.tail6: SineChannel(
-        amplitude: 0.24,
-        phase: 0.36,
+      // --- Tail: a real travelling wave. The amplitude ramps steeply and the
+      // phase lags ~0.10 per link (total ~0.60 base->tip), so the whip visibly
+      // travels down the chain; the last three links carry growing 2nd
+      // harmonics so the tip cracks/overshoots instead of swinging as a blade.
+      CatBones.tail0: SineChannel(amplitude: 0.03, bias: 0.05),
+      CatBones.tail1: SineChannel(amplitude: 0.05, phase: 0.1),
+      CatBones.tail2: SineChannel(amplitude: 0.08, phase: 0.2),
+      CatBones.tail3: SineChannel(amplitude: 0.12, phase: 0.3),
+      CatBones.tail4: SineChannel(
+        amplitude: 0.18,
+        phase: 0.4,
+        harmonicAmplitude: 0.05,
+        harmonicPhase: 0.1,
+      ),
+      CatBones.tail5: SineChannel(
+        amplitude: 0.26,
+        phase: 0.5,
         harmonicAmplitude: 0.1,
-        harmonicPhase: 0.4,
+        harmonicPhase: 0.2,
+      ),
+      CatBones.tail6: SineChannel(
+        amplitude: 0.34,
+        phase: 0.6,
+        harmonicAmplitude: 0.2,
+        harmonicPhase: 0.3,
       ),
     },
   );
@@ -710,9 +742,9 @@ class CatClips {
   static Clip get run => const Clip(
     name: 'run',
     duration: 0.62,
-    // Bigger stride than the walk (longer reach), speed-matched so the run
-    // covers ground without skating.
-    locomotionSpeed: 480,
+    // Speed-matched to the (moderate) run stride so the brief stance foot pins;
+    // tuned against run_travel.png until the footprints don't drift.
+    locomotionSpeed: 360,
     root: SineRootChannel(
       // A run throws the body higher between strides and lands harder.
       bobAmplitude: -8,
@@ -725,7 +757,13 @@ class CatClips {
       // well forward (bias) so it reads as a run, not an upright skip; the
       // neck/head poke up so the gaze leads instead of face-planting.
       CatBones.hips: SineChannel(amplitude: 0.1, bias: 0.08),
-      CatBones.torso: SineChannel(amplitude: 0.13, phase: 0.5, bias: 0.34),
+      // 2nd harmonic gives the chest a float beat at both passings.
+      CatBones.torso: SineChannel(
+        amplitude: 0.13,
+        phase: 0.5,
+        bias: 0.34,
+        harmonicAmplitude: 0.05,
+      ),
       CatBones.neck: SineChannel(amplitude: 0.09, bias: -0.26),
       CatBones.head: SineChannel(amplitude: 0.06, phase: 0.5, bias: -0.16),
       CatBones.earL: SineChannel(amplitude: 0.1, phase: 0.55),
@@ -740,9 +778,10 @@ class CatClips {
       CatBones.footL: KeyframeChannel(_runFootKeys),
       CatBones.footR: KeyframeChannel(_runFootKeys, phase: 0.5),
 
-      // Pumping arms, elbows well bent.
-      CatBones.armUpperL: SineChannel(amplitude: 0.72, phase: 0.5, bias: 0.2),
-      CatBones.armUpperR: SineChannel(amplitude: 0.72, bias: 0.2),
+      // Pumping arms, elbows well bent — broken L/R so they aren't matched
+      // pistons.
+      CatBones.armUpperL: SineChannel(amplitude: 0.78, phase: 0.5, bias: 0.2),
+      CatBones.armUpperR: SineChannel(amplitude: 0.66, bias: 0.18),
       CatBones.armLowerL: SineChannel(amplitude: 0.22, phase: 0.1, bias: 0.72),
       CatBones.armLowerR: SineChannel(
         amplitude: 0.22,
