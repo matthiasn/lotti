@@ -575,15 +575,19 @@ class CatClips {
   // Stance is HELD on the floor until the swing foot plants (toe-off at p0.58,
   // not p0.5): a walk by definition never leaves the ground, so the stance leg
   // must bridge into the next contact or the whole rig hops (a flight phase).
+  // Mid-stance keys re-spaced so the FOOT's ground sweep (not the thigh angle)
+  // is near-constant — footX = 60·sin(thigh)+50·sin(thigh+shin) is non-linear, so
+  // a linear thigh raced the foot back early then stalled (a lurch-then-stall
+  // travel). Holding the thigh more positive through passing evens the body rate.
   static const _thighKeys = [
     Keyframe(p: 0, rotation: 0.34), // contact: foot lands under the hip
-    Keyframe(p: 0.14, rotation: 0.2), // stance
+    Keyframe(p: 0.14, rotation: 0.27), // stance
     Keyframe(
       p: 0.28,
-      rotation: -0.04,
-    ), // passing (thighs spread so legs separate)
-    Keyframe(p: 0.42, rotation: -0.16), // late stance
-    Keyframe(p: 0.5, rotation: -0.24), // weight rolls forward over the foot
+      rotation: 0.15,
+    ), // passing (held forward — even foot sweep)
+    Keyframe(p: 0.42, rotation: -0.08), // late stance
+    Keyframe(p: 0.5, rotation: -0.22), // weight rolls forward over the foot
     Keyframe(p: 0.58, rotation: -0.34), // toe-off — held until the swing plants
     Keyframe(p: 0.72, rotation: -0.02), // swing drive (knee leads forward)
     Keyframe(p: 0.88, rotation: 0.4), // reach for the plant
@@ -694,7 +698,9 @@ class CatClips {
       // passing — the double-bounce that reads as carrying mass. ~5% of rig
       // height. bobPhase puts the lowest point on the contacts (p=0, 0.5).
       bobAmplitude:
-          -5, // smaller: a deeper bob lifts the planted foot off the floor ~11px
+          -2.5, // the bob lifts the planted foot ~5px; more STACKS with the bent
+      // passing knee's lift into an ~11px vertical hop. -2.5 keeps the foot on the
+      // FK floor while the double-bounce stays legible.
       bobPhase:
           0.345, // COM trough lands just after contact — sinks onto the plant
       swayAmplitude: 6,
@@ -762,27 +768,29 @@ class CatClips {
       CatBones.earL: SineChannel(amplitude: 0.08, phase: 0.52),
       CatBones.earR: SineChannel(amplitude: 0.09, phase: 0.58),
 
-      // --- Tie: knot barely moves; the blade lags far behind (0.43) and the
-      // tip gets a harmonic so it overshoots — drapes, not hinges. ---
-      // Knot is a short fast link (amp 0.10) that feeds the slower, later blade.
-      CatBones.tie: SineChannel(amplitude: 0.12, phase: 0.34),
+      // --- Tie: the blade DRAGS just behind the knot in the SAME direction
+      // (phase 0.30 vs knot 0.34) and drapes. It was at 0.66 — nearly ANTI-phase
+      // to the knot — so the blade wagged opposite the knot like a stiff wiper (an
+      // odd pendulum). Calm amplitude so it hangs, not swings. ---
+      CatBones.tie: SineChannel(amplitude: 0.1, phase: 0.34),
       CatBones.tieLower: SineChannel(
-        // 0.30 splits two panels (0.4 read as a metronome, 0.2 as a painted
-        // stripe); what sells fabric is the LAG + tip overshoot, not raw swing.
-        amplitude: 0.3,
-        phase: 0.66, // trails the body further so it drapes and settles late
-        harmonicAmplitude: 0.07, // stronger tip overshoot = cloth, not a hinge
-        harmonicPhase: 0.72,
+        amplitude: 0.18,
+        phase: 0.3,
+        harmonicAmplitude: 0.05,
+        harmonicPhase: 0.43, // tip overshoot fires on the settle/turnaround
       ),
 
       // --- Tail: a real travelling wave. The amplitude ramps steeply and the
       // phase lags ~0.10 per link (total ~0.60 base->tip), so the whip visibly
       // travels down the chain; the last three links carry growing 2nd
       // harmonics so the tip cracks/overshoots instead of swinging as a blade.
-      CatBones.tail0: SineChannel(amplitude: 0.05, bias: 0.05),
+      // Base bias pulls the whole chain UP/back (-0.12) so the orange tip clears
+      // the right hand's height — same-fur-orange tail tip + hand were fusing into
+      // one smudge. Mid-chain amps eased so the tip stays high behind the rump.
+      CatBones.tail0: SineChannel(amplitude: 0.05, bias: -0.12),
       CatBones.tail1: SineChannel(amplitude: 0.08, phase: 0.1),
-      CatBones.tail2: SineChannel(amplitude: 0.12, phase: 0.2),
-      CatBones.tail3: SineChannel(amplitude: 0.17, phase: 0.3),
+      CatBones.tail2: SineChannel(amplitude: 0.1, phase: 0.2),
+      CatBones.tail3: SineChannel(amplitude: 0.14, phase: 0.3),
       CatBones.tail4: SineChannel(
         amplitude: 0.23, // was 0.18 — a dead spot (tail3 0.17) stalled the wave
         phase: 0.4,

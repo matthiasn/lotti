@@ -67,11 +67,15 @@ class CharacterScene {
     return cycles * table.cycleAdvance + table.sample(frac);
   }
 
-  /// Samples the planted-foot leg-sweep across the cycle and integrates it into a
-  /// monotonic travel curve that pins each foot during its [GroundSpan]. The
-  /// leg-sweep is `foot.x - root.x` (the root carries the COM sway, so
-  /// subtracting it leaves the pure leg contribution — the body keeps swaying
-  /// while the foot stays put to within that small sway).
+  /// Builds the foot-lock travel curve. Per step it advances by the planted
+  /// foot's leg-sweep delta (`foot.x - root.x`; root carries the COM sway, so
+  /// subtracting it keeps the sway while the foot pins). The raw curve tracks the
+  /// foot EXACTLY but its velocity is non-constant (fast at toe-off, slow at each
+  /// contact) — pinning the foot perfectly makes the BODY lurch twice per cycle.
+  /// So the per-step velocity is **low-pass smoothed** (periodically): the body
+  /// travels smoothly while the foot still pins to within the smoothing residual
+  /// (a few px). The total per-cycle advance is preserved (smoothing conserves
+  /// the sum), so the loop stays seamless.
   _LocoTable _buildLocoTable(Clip clip) {
     const n = 240;
     final rootId = rig.bones.firstWhere((b) => b.parent == null).id;
@@ -89,32 +93,55 @@ class CharacterScene {
       return clip.groundSpans.last.bone;
     }
 
-    final samples = List<double>.filled(n + 1, 0);
-    var offset = 0.0;
+    // 1. Raw per-step travel velocity (delta[i] = advance from i/n to (i+1)/n).
+    final delta = List<double>.filled(n, 0);
     var prevFoot = footAt(0);
     var prevSweep = legSweep(prevFoot, 0);
-    for (var i = 1; i <= n; i++) {
-      final p = i / n;
+    for (var i = 0; i < n; i++) {
+      final p = (i + 1) / n;
       final foot = footAt(p >= 1 ? 0.999999 : p);
       if (foot == prevFoot) {
-        final sweep = legSweep(foot, p);
-        // The painter MIRRORS the rig while travelling, so the body advances as
-        // the planted foot's body-x increases (it sweeps from front to back of
-        // the body); travel tracks +legSweep so that foot holds screen-x.
-        final next = offset + (sweep - prevSweep);
-        // Clamp monotonic: never travel backward (a brief foot reversal at
-        // heel-strike/toe-off must not moonwalk the whole body).
-        offset = next > offset ? next : offset;
-        prevSweep = sweep;
+        delta[i] = legSweep(foot, p) - prevSweep;
+        prevSweep += delta[i];
       } else {
-        // Handoff: the new foot just planted — continue the offset unchanged and
-        // start tracking the new foot from here.
+        // Handoff: continue position; start tracking the new (just-planted) foot.
         prevFoot = foot;
         prevSweep = legSweep(foot, p);
       }
-      samples[i] = offset;
     }
-    return _LocoTable(samples, offset);
+    // 2. Periodic low-pass on the velocity — this is what turns the per-contact
+    //    lurch into a smooth travel. The owner prefers smooth over pixel-pinned,
+    //    so the window is generous.
+    final smooth = _smoothPeriodic(delta, window: 46, passes: 3);
+    // 3. Re-integrate into the cumulative offset table.
+    final samples = List<double>.filled(n + 1, 0);
+    for (var i = 0; i < n; i++) {
+      samples[i + 1] = samples[i] + smooth[i];
+    }
+    return _LocoTable(samples, samples[n]);
+  }
+
+  /// Box-filter low-pass over a periodic (wrapping) signal, applied [passes]
+  /// times. Conserves the sum (so the integrated travel keeps its total stride).
+  static List<double> _smoothPeriodic(
+    List<double> v, {
+    required int window,
+    int passes = 1,
+  }) {
+    final n = v.length;
+    var cur = v;
+    for (var pass = 0; pass < passes; pass++) {
+      final next = List<double>.filled(n, 0);
+      for (var i = 0; i < n; i++) {
+        var sum = 0.0;
+        for (var k = -window; k <= window; k++) {
+          sum += cur[((i + k) % n + n) % n];
+        }
+        next[i] = sum / (2 * window + 1);
+      }
+      cur = next;
+    }
+    return cur;
   }
 
   /// Distance (in local units) from the rig origin down to the lowest drawn
