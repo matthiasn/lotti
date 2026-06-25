@@ -208,7 +208,7 @@ RigSpec buildCatInSuitRig() {
     Bone(
       id: CatBones.legUpperR,
       parent: CatBones.hips,
-      pivotX: 13,
+      pivotX: 11,
       pivotY: 16,
       z: 3,
       drawable: _tapered(29, 22, 68, _trouser, dy: 28),
@@ -244,7 +244,7 @@ RigSpec buildCatInSuitRig() {
     Bone(
       id: CatBones.legUpperL,
       parent: CatBones.hips,
-      pivotX: -13,
+      pivotX: -11,
       pivotY: 16,
       z: 6,
       drawable: _tapered(29, 22, 68, _trouser, dy: 28),
@@ -285,10 +285,10 @@ RigSpec buildCatInSuitRig() {
       z: 9,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 58,
-        height: 36,
+        width: 66,
+        height: 38,
         dy: 4,
-        cornerRadius: 18,
+        cornerRadius: 16,
         color: _trouser,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -638,12 +638,16 @@ class CatClips {
   ];
   static const _runShinKeys = [
     Keyframe(p: 0, rotation: -0.22), // contact: near-straight to land
-    Keyframe(p: 0.07, rotation: -0.55), // sharp absorb — catch the mass
+    Keyframe(
+      p: 0.07,
+      rotation: -0.78,
+      ease: Ease.easeOut,
+    ), // hard absorb (down-accent)
     Keyframe(
       p: 0.2,
-      rotation: -0.3,
+      rotation: -0.08,
       ease: Ease.linear,
-    ), // hold ankle still (no creep)
+    ), // extend — propulsive push-off
     Keyframe(p: 0.32, rotation: -1.05), // fold for flight
     Keyframe(p: 0.52, rotation: -1.85), // DEEP flight tuck — heel to rump
     Keyframe(
@@ -654,21 +658,13 @@ class CatClips {
     Keyframe(p: 1, rotation: -0.22),
   ];
   static const _runFootKeys = [
-    Keyframe(p: 0, rotation: 0.32), // contact
-    Keyframe(p: 0.1, ease: Ease.easeOut), // rolls flat
-    Keyframe(
-      p: 0.2,
-      rotation: 0.05,
-      ease: Ease.linear,
-    ), // sole held flat to end of stance
-    Keyframe(
-      p: 0.32,
-      rotation: 0.62,
-      ease: Ease.easeIn,
-    ), // hard toe-off AFTER it leaves
+    Keyframe(p: 0, rotation: 0.2), // heel contact
+    Keyframe(p: 0.1, rotation: 0.12, ease: Ease.easeOut), // rolls toward flat
+    Keyframe(p: 0.2, rotation: 0.34, ease: Ease.linear), // rolls onto the ball
+    Keyframe(p: 0.32, rotation: 0.7, ease: Ease.easeIn), // hard toe-off
     Keyframe(p: 0.52, rotation: -0.34, ease: Ease.easeOut), // flight dorsiflex
     Keyframe(p: 0.85, rotation: -0.12),
-    Keyframe(p: 1, rotation: 0.32),
+    Keyframe(p: 1, rotation: 0.2),
   ];
 
   static Clip get walk => const Clip(
@@ -684,8 +680,8 @@ class CatClips {
       // height. bobPhase puts the lowest point on the contacts (p=0, 0.5).
       bobAmplitude: -7,
       bobPhase:
-          0.375, // COM lowest at each footfall (p=0, 0.5), highest at passing
-      swayAmplitude: 2.5,
+          0.345, // COM trough lands just after contact — sinks onto the plant
+      swayAmplitude: 7,
       leanAmplitude: 0.025,
     ),
     channels: {
@@ -773,7 +769,7 @@ class CatClips {
       // zero-velocity apex is the natural hang) so it reads as a run, not a fast
       // walk. Trough (lowest) lands on each contact (p=0, 0.5).
       bobAmplitude: -14,
-      bobPhase: 0.375,
+      bobPhase: 0.345,
       swayAmplitude: 4,
       leanAmplitude: 0.06,
     ),
@@ -882,6 +878,39 @@ class CatClips {
         Keyframe(p: 0, rotation: -0.12),
         Keyframe(p: 1, rotation: -0.35),
       ]),
+      // Cloth follow-through: as the body sinks and settles, the tail tip, tie
+      // and ears swing past then settle back (easeOutBack) instead of freezing
+      // dead the instant the body stops — the inertial settle.
+      CatBones.tail4: KeyframeChannel([
+        Keyframe(p: 0),
+        Keyframe(p: 0.62, rotation: 0.34, ease: Ease.easeIn),
+        Keyframe(p: 0.82, rotation: -0.1, ease: Ease.easeOut),
+        Keyframe(p: 1, ease: Ease.easeOutBack),
+      ]),
+      CatBones.tail5: KeyframeChannel([
+        Keyframe(p: 0),
+        Keyframe(p: 0.66, rotation: 0.46, ease: Ease.easeIn),
+        Keyframe(p: 0.86, rotation: -0.16, ease: Ease.easeOut),
+        Keyframe(p: 1, ease: Ease.easeOutBack),
+      ]),
+      CatBones.tail6: KeyframeChannel([
+        Keyframe(p: 0),
+        Keyframe(p: 0.7, rotation: 0.6, ease: Ease.easeIn),
+        Keyframe(p: 0.9, rotation: -0.22, ease: Ease.easeOut),
+        Keyframe(p: 1, ease: Ease.easeOutBack),
+      ]),
+      CatBones.tieLower: KeyframeChannel([
+        Keyframe(p: 0),
+        Keyframe(p: 0.62, rotation: 0.22, ease: Ease.easeIn),
+        Keyframe(p: 0.84, rotation: -0.08, ease: Ease.easeOut),
+        Keyframe(p: 1, ease: Ease.easeOutBack),
+      ]),
+      CatBones.earL: KeyframeChannel([
+        Keyframe(p: 0),
+        Keyframe(p: 0.62, rotation: 0.1, ease: Ease.easeIn),
+        Keyframe(p: 0.82, rotation: -0.04, ease: Ease.easeOut),
+        Keyframe(p: 1, ease: Ease.easeOutBack),
+      ]),
     },
   );
 
@@ -948,6 +977,36 @@ class CatClips {
         Keyframe(p: 0.46, rotation: 2.4),
         Keyframe(p: 0.78, rotation: 0.4),
         Keyframe(p: 1, rotation: -0.12),
+      ]),
+      // Cloth follow-through: the tail tip / tie fly up on the launch, whip down
+      // on the landing, then overshoot and settle (easeOutBack) — not frozen.
+      CatBones.tail4: KeyframeChannel([
+        Keyframe(p: 0),
+        Keyframe(p: 0.46, rotation: -0.3, ease: Ease.easeOut),
+        Keyframe(p: 0.78, rotation: 0.42, ease: Ease.easeIn),
+        Keyframe(p: 0.92, rotation: -0.12, ease: Ease.easeOut),
+        Keyframe(p: 1, ease: Ease.easeOutBack),
+      ]),
+      CatBones.tail5: KeyframeChannel([
+        Keyframe(p: 0),
+        Keyframe(p: 0.46, rotation: -0.42, ease: Ease.easeOut),
+        Keyframe(p: 0.78, rotation: 0.54, ease: Ease.easeIn),
+        Keyframe(p: 0.92, rotation: -0.18, ease: Ease.easeOut),
+        Keyframe(p: 1, ease: Ease.easeOutBack),
+      ]),
+      CatBones.tail6: KeyframeChannel([
+        Keyframe(p: 0),
+        Keyframe(p: 0.46, rotation: -0.56, ease: Ease.easeOut),
+        Keyframe(p: 0.78, rotation: 0.68, ease: Ease.easeIn),
+        Keyframe(p: 0.92, rotation: -0.24, ease: Ease.easeOut),
+        Keyframe(p: 1, ease: Ease.easeOutBack),
+      ]),
+      CatBones.tieLower: KeyframeChannel([
+        Keyframe(p: 0),
+        Keyframe(p: 0.46, rotation: -0.26, ease: Ease.easeOut),
+        Keyframe(p: 0.78, rotation: 0.32, ease: Ease.easeIn),
+        Keyframe(p: 0.92, rotation: -0.1, ease: Ease.easeOut),
+        Keyframe(p: 1, ease: Ease.easeOutBack),
       ]),
     },
   );
