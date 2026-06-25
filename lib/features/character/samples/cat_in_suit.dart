@@ -206,14 +206,14 @@ RigSpec buildCatInSuitRig() {
       color: _furDark,
     ),
 
-    // Far (right) leg, drawn behind.
+    // Far (right) leg, drawn behind. Wide attach (±13) — see legUpperL.
     Bone(
       id: CatBones.legUpperR,
       parent: CatBones.hips,
-      pivotX: 11,
-      pivotY: 16,
+      pivotX: 13,
+      pivotY: 14,
       z: 3,
-      drawable: _tapered(29, 22, 68, _trouser, dy: 28),
+      drawable: _tapered(31, 22, 68, _trouser, dy: 28),
     ),
     Bone(
       id: CatBones.legLowerR,
@@ -244,14 +244,15 @@ RigSpec buildCatInSuitRig() {
       ),
     ),
 
-    // Near (left) leg.
+    // Near (left) leg. Attaches wide (±13) so the thighs fill the pelvis width
+    // and read as part of the hips, not narrow sticks hung under the butt.
     Bone(
       id: CatBones.legUpperL,
       parent: CatBones.hips,
-      pivotX: -11,
-      pivotY: 16,
+      pivotX: -13,
+      pivotY: 14,
       z: 6,
-      drawable: _tapered(29, 22, 68, _trouser, dy: 28),
+      drawable: _tapered(31, 22, 68, _trouser, dy: 28),
     ),
     Bone(
       id: CatBones.legLowerL,
@@ -281,8 +282,10 @@ RigSpec buildCatInSuitRig() {
       ),
     ),
 
-    // Pelvis / hips (root). Slim — barely wider than the jacket waist (50) so it
-    // continues the body line instead of flaring into wide saddlebags below it.
+    // Pelvis / hips (root). Slim width (barely wider than the jacket waist 50, no
+    // saddlebags) but with enough HEIGHT + round corners to be a real glute
+    // volume that the thighs (tucked up into it, z-behind) flow out of — not a
+    // small block with legs hung beneath.
     const Bone(
       id: CatBones.hips,
       parent: null,
@@ -292,9 +295,9 @@ RigSpec buildCatInSuitRig() {
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
         width: 54,
-        height: 34,
-        dy: 2,
-        cornerRadius: 14,
+        height: 40,
+        dy: 5,
+        cornerRadius: 18,
         color: _trouser,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -752,12 +755,12 @@ class CatClips {
       ),
 
       // --- Ears flick a beat behind the head bob — the cheapest "alive" tell.
-      // Bigger + asymmetric outer swing, plus an independent lagged inner-ear
-      // jiggle (those bones were rigid) so the big triangles read as listening.
-      CatBones.earL: SineChannel(amplitude: 0.11, phase: 0.52),
-      CatBones.earR: SineChannel(amplitude: 0.13, phase: 0.58),
-      CatBones.earInnerL: SineChannel(amplitude: 0.05, phase: 0.66),
-      CatBones.earInnerR: SineChannel(amplitude: 0.05, phase: 0.74),
+      // Asymmetric outer swing kept modest so the ear BASE stays tucked behind
+      // the head crown (a bigger swing swings the base out and opens a gap). The
+      // inner ear has NO channel of its own: it inherits the outer ear's rotation
+      // rigidly, so the pink inner never splays away from the fur outer.
+      CatBones.earL: SineChannel(amplitude: 0.08, phase: 0.52),
+      CatBones.earR: SineChannel(amplitude: 0.09, phase: 0.58),
 
       // --- Tie: knot barely moves; the blade lags far behind (0.43) and the
       // tip gets a harmonic so it overshoots — drapes, not hinges. ---
