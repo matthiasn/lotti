@@ -78,10 +78,22 @@ void main() {
         bones: const [
           Bone(id: 'a', parent: null, pivotX: 0, pivotY: 0, z: 0),
         ],
+        ribbons: [
+          LimbRibbonSpec(
+            id: 'ribbon',
+            jointBoneIds: const ['a', 'a'],
+            halfWidths: const [4, 3],
+            z: 0,
+            color: 0xFFFFFFFF,
+          ),
+        ],
       );
       expect(rig.bones.clear, throwsUnsupportedError);
       expect(rig.drawOrder.clear, throwsUnsupportedError);
       expect(rig.topoOrder.clear, throwsUnsupportedError);
+      expect(rig.ribbons.clear, throwsUnsupportedError);
+      expect(rig.ribbonDrawOrder.clear, throwsUnsupportedError);
+      expect(rig.ribbonHiddenBoneIds.clear, throwsUnsupportedError);
     });
 
     test('throws on a parent cycle instead of overflowing the stack', () {
@@ -98,6 +110,64 @@ void main() {
             (e) => e.message,
             'message',
             contains('cycle'),
+          ),
+        ),
+      );
+    });
+
+    test('sorts ribbons and exposes hidden bone ids', () {
+      final rig = RigSpec(
+        name: 'r',
+        bones: const [
+          Bone(id: 'upper', parent: null, pivotX: 0, pivotY: 0, z: 0),
+          Bone(id: 'lower', parent: 'upper', pivotX: 0, pivotY: 10, z: 1),
+          Bone(id: 'hand', parent: 'lower', pivotX: 0, pivotY: 10, z: 2),
+        ],
+        ribbons: [
+          LimbRibbonSpec(
+            id: 'front',
+            jointBoneIds: const ['upper', 'lower', 'hand'],
+            hiddenBoneIds: const ['upper', 'lower'],
+            halfWidths: const [8, 6, 4],
+            z: 8,
+            color: 0xFFFFFFFF,
+          ),
+          LimbRibbonSpec(
+            id: 'back',
+            jointBoneIds: const ['upper', 'lower', 'hand'],
+            halfWidths: const [8, 6, 4],
+            z: 4,
+            color: 0xFFFFFFFF,
+          ),
+        ],
+      );
+
+      expect(rig.ribbonDrawOrder.map((r) => r.id), ['back', 'front']);
+      expect(rig.ribbonHiddenBoneIds, {'upper', 'lower'});
+    });
+
+    test('throws when a ribbon references a missing bone', () {
+      expect(
+        () => RigSpec(
+          name: 'r',
+          bones: const [
+            Bone(id: 'a', parent: null, pivotX: 0, pivotY: 0, z: 0),
+          ],
+          ribbons: [
+            LimbRibbonSpec(
+              id: 'bad',
+              jointBoneIds: const ['a', 'missing'],
+              halfWidths: const [5, 4],
+              z: 0,
+              color: 0xFFFFFFFF,
+            ),
+          ],
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('missing bone'),
           ),
         ),
       );

@@ -8,7 +8,7 @@ void main() {
     test('a straight tapered chain fills its centreline and tapers', () {
       // Vertical spine, wide at the top (half-width 12) tapering to 6.
       final path = limbRibbonPath(
-        const [Offset(0, 0), Offset(0, 60), Offset(0, 120)],
+        const [Offset.zero, Offset(0, 60), Offset(0, 120)],
         const [12, 9, 6],
       );
 
@@ -36,7 +36,7 @@ void main() {
     test('a bent chain produces a continuous shape spanning the bend', () {
       // Knee kicks out to +x: hip (0,0) -> knee (30,55) -> ankle (0,110).
       final path = limbRibbonPath(
-        const [Offset(0, 0), Offset(30, 55), Offset(0, 110)],
+        const [Offset.zero, Offset(30, 55), Offset(0, 110)],
         const [12, 10, 7],
       );
       final b = path.getBounds();
@@ -49,8 +49,10 @@ void main() {
     });
 
     test('degenerate input is handled (no crash, empty path)', () {
-      expect(limbRibbonPath(const [Offset(0, 0)], const [10]).getBounds(),
-          Rect.zero);
+      expect(
+        limbRibbonPath(const [Offset.zero], const [10]).getBounds(),
+        Rect.zero,
+      );
     });
   });
 }

@@ -28,6 +28,7 @@ void main() {
     await tester.pumpWidget(const CharacterDemoApp());
     expect(view(tester).clip.name, 'walk');
     expect(view(tester).expression.name, 'neutral');
+    expect(view(tester).walkingPair, isTrue);
   });
 
   testWidgets('selecting a motion chip switches the clip', (tester) async {

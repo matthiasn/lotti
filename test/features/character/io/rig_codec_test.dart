@@ -29,6 +29,7 @@ void main() {
       final text = jsonEncode(codec.toJson(cat));
       final decoded = codec.fromJson(jsonDecode(text) as Map<String, dynamic>);
       expect(decoded.bones.length, cat.bones.length);
+      expect(decoded.ribbons.length, cat.ribbons.length);
       expect(decoded.face, isNotNull);
       expect(decoded.bone(CatBones.head)?.drawable, isNotNull);
     });
@@ -267,6 +268,58 @@ void main() {
           ],
         }),
         throwsA(isA<RigFormatException>()),
+      );
+    });
+
+    test('rejects a ribbon that references a missing bone', () {
+      expect(
+        () => codec.fromJson({
+          'version': 1,
+          'name': 'x',
+          'bones': [validBone()],
+          'ribbons': [
+            {
+              'id': 'bad',
+              'joints': ['a', 'ghost'],
+              'halfWidths': [4, 3],
+              'z': 0,
+              'color': '#FFFFFFFF',
+            },
+          ],
+        }),
+        throwsA(
+          isA<RigFormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('missing bone'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects a ribbon with mismatched joints and widths', () {
+      expect(
+        () => codec.fromJson({
+          'version': 1,
+          'name': 'x',
+          'bones': [validBone()],
+          'ribbons': [
+            {
+              'id': 'bad',
+              'joints': ['a', 'a'],
+              'halfWidths': [4],
+              'z': 0,
+              'color': '#FFFFFFFF',
+            },
+          ],
+        }),
+        throwsA(
+          isA<RigFormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('length mismatch'),
+          ),
+        ),
       );
     });
 

@@ -16,7 +16,9 @@ import 'package:lotti/features/character/model/rig_spec.dart';
 // Palette (ARGB). Kept local to the sample; real characters carry their own
 // colours in the rig art (plan decision D6 — no design-system colour tokens).
 const int _suit = 0xFF2E3A59; // navy jacket
+const int _suitRear = 0xFF26314D; // slightly darker rear arm
 const int _trouser = 0xFF26304A; // darker navy
+const int _trouserRear = 0xFF202941; // slightly darker rear leg
 const int _fur = 0xFFE8A55A; // orange tabby
 const int _furDark = 0xFFD08A3C; // tail tip / shading
 const int _shirt = 0xFFF3EFE6; // collar
@@ -41,16 +43,22 @@ class CatBones {
   static const earInnerL = 'ear_inner.L';
   static const earInnerR = 'ear_inner.R';
   static const armUpperL = 'arm_upper.L';
+  static const armBicepL = 'arm_bicep.L';
   static const armLowerL = 'arm_lower.L';
   static const handL = 'hand.L';
   static const armUpperR = 'arm_upper.R';
+  static const armBicepR = 'arm_bicep.R';
   static const armLowerR = 'arm_lower.R';
   static const handR = 'hand.R';
   static const legUpperL = 'leg_upper.L';
+  static const legQuadL = 'leg_quad.L';
   static const legLowerL = 'leg_lower.L';
+  static const legCalfL = 'leg_calf.L';
   static const footL = 'foot.L';
   static const legUpperR = 'leg_upper.R';
+  static const legQuadR = 'leg_quad.R';
   static const legLowerR = 'leg_lower.R';
+  static const legCalfR = 'leg_calf.R';
   static const footR = 'foot.R';
   static const tail0 = 'tail_0';
   static const tail1 = 'tail_1';
@@ -118,22 +126,19 @@ Bone _tailSeg(
 /// Builds the cat-in-a-suit [RigSpec].
 RigSpec buildCatInSuitRig() {
   final bones = <Bone>[
-    // Tail: 7 short, thin tapering links that overlap (z-order) into ONE
-    // continuous tail held UP and OUT in a graceful arc — alive and energetic,
-    // not the old scorpion tight-curl and not a limp droop. Base lifts it
-    // out-and-up off the rump; each link adds a small lift so it arcs. Behind
-    // the body (negative z). Channels add a travelling drag wave.
+    // Tail controls: the visible tail is drawn as one soft ribbon below. These
+    // short bones only provide the bending spine, so the tail can attach behind
+    // the rump and sweep as one flexible shape instead of a stack of hinges.
     _tailSeg(
       CatBones.tail0,
       CatBones.hips,
-      pivotX: 14,
+      pivotX: 20,
       pivotY: 16,
       z: -7,
-      restRotation:
-          -2.3, // lifted more vertical so the tail clears the hand line
+      restRotation: -1.05, // high rear-rump attachment, not a waist/hand spike
 
-      w: 11,
-      wTip: 10,
+      w: 9,
+      wTip: 8,
       h: 21,
       dy: 6.5,
     ),
@@ -206,87 +211,117 @@ RigSpec buildCatInSuitRig() {
       color: _furDark,
     ),
 
-    // Far (right) leg, drawn behind. Tucked up into the hip (pivotY 11) — see
-    // legUpperL.
+    // Far (right) leg controls, drawn behind. Their rigid drawables are hidden
+    // by the leg ribbon below; keeping the drawables on the bones makes the
+    // fallback path and bbox utilities still work.
     Bone(
       id: CatBones.legUpperR,
       parent: CatBones.hips,
-      pivotX: 10,
-      pivotY: 13,
+      pivotX: 13,
+      pivotY: 10,
       z: 3,
-      drawable: _tapered(28, 22, 68, _trouser, dy: 28),
+      drawable: _tapered(28, 22, 58, _trouserRear, dy: 24),
+    ),
+    const Bone(
+      id: CatBones.legQuadR,
+      parent: CatBones.legUpperR,
+      pivotX: 0,
+      pivotY: 28,
+      z: 3,
     ),
     Bone(
       id: CatBones.legLowerR,
       parent: CatBones.legUpperR,
       pivotX: 0,
-      pivotY: 60,
+      pivotY: 50,
       z: 4,
-      drawable: _tapered(24, 16, 60, _trouser, dy: 24),
+      drawable: _tapered(24, 16, 50, _trouserRear, dy: 20),
+    ),
+    const Bone(
+      id: CatBones.legCalfR,
+      parent: CatBones.legLowerR,
+      pivotX: 0,
+      pivotY: 24,
+      z: 4,
     ),
     const Bone(
       id: CatBones.footR,
       parent: CatBones.legLowerR,
       pivotX: 0,
-      pivotY: 50,
+      pivotY: 42,
       z: 5,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 30,
-        height: 16,
+        width: 28,
+        height: 11,
         // Toe points -x (local), which — through the locomotion mirror — makes
         // the shoe LEAD the direction of travel instead of trailing it.
-        dx: -5,
-        dy: 8,
-        cornerRadius: 6,
+        dx: -7,
+        dy: 6,
+        cornerRadius: 7,
         color: _shoe,
         outlineColor: _outline,
         outlineWidth: 2,
       ),
     ),
 
-    // Near (left) leg. Tucked up into the hip (pivotY 11) and matched to the slim
-    // pelvis width so the thighs flow straight out of the hips — no bulge, no gap.
+    // Near (left) leg controls. The visible leg is a continuous ribbon that
+    // starts inside the hip volume; the hip is drawn over the top so the leg
+    // reads as part of the body, not a capsule bolted underneath.
     Bone(
       id: CatBones.legUpperL,
       parent: CatBones.hips,
-      pivotX: -10,
-      pivotY: 13,
+      pivotX: -13,
+      pivotY: 10,
       z: 6,
-      drawable: _tapered(28, 22, 68, _trouser, dy: 28),
+      drawable: _tapered(28, 22, 58, _trouser, dy: 24),
+    ),
+    const Bone(
+      id: CatBones.legQuadL,
+      parent: CatBones.legUpperL,
+      pivotX: 0,
+      pivotY: 28,
+      z: 6,
     ),
     Bone(
       id: CatBones.legLowerL,
       parent: CatBones.legUpperL,
       pivotX: 0,
-      pivotY: 60,
+      pivotY: 50,
       z: 7,
-      drawable: _tapered(24, 16, 60, _trouser, dy: 24),
+      drawable: _tapered(24, 16, 50, _trouser, dy: 20),
+    ),
+    const Bone(
+      id: CatBones.legCalfL,
+      parent: CatBones.legLowerL,
+      pivotX: 0,
+      pivotY: 24,
+      z: 7,
     ),
     const Bone(
       id: CatBones.footL,
       parent: CatBones.legLowerL,
       pivotX: 0,
-      pivotY: 50,
+      pivotY: 42,
       z: 8,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 30,
-        height: 16,
+        width: 28,
+        height: 11,
         // Toe points -x (local) so the shoe leads travel — see footR.
-        dx: -5,
-        dy: 8,
-        cornerRadius: 6,
+        dx: -7,
+        dy: 6,
+        cornerRadius: 7,
         color: _shoe,
         outlineColor: _outline,
         outlineWidth: 2,
       ),
     ),
 
-    // Pelvis / hips (root). Slim width (barely wider than the jacket waist 50, no
-    // saddlebags) but with enough HEIGHT + round corners to be a real glute
-    // volume that the thighs (tucked up into it, z-behind) flow out of — not a
-    // small block with legs hung beneath.
+    // Pelvis / seat (root). A single low trouser volume sits behind the jacket
+    // and over the thigh roots: enough glute/hip mass that the legs feel
+    // attached to a body, but not the two rounded thigh caps that read as
+    // separate butt cheeks.
     const Bone(
       id: CatBones.hips,
       parent: null,
@@ -294,44 +329,49 @@ RigSpec buildCatInSuitRig() {
       pivotY: 0,
       z: 9,
       drawable: BoneDrawable(
-        kind: BoneShapeKind.roundedRect,
+        kind: BoneShapeKind.ellipse,
         width: 54,
-        // Sized + lowered to fully COVER the rounded thigh-tops (drawn z-behind):
-        // if it doesn't, the two thigh caps poke out side-by-side and read as butt
-        // CHEEKS. The legs then emerge below as clean tapers — one smooth hip.
-        height: 34,
-        dy: 3,
-        cornerRadius: 17,
+        height: 30,
+        dy: 9,
         color: _trouser,
         outlineColor: _outline,
         outlineWidth: 2,
       ),
     ),
 
-    // Far (right) arm.
+    // Far (right) arm controls. The ribbon renderer hides these rigid segments
+    // and draws one bendy arm surface through shoulder→elbow→wrist.
     Bone(
       id: CatBones.armUpperR,
       parent: CatBones.torso,
-      pivotX: 28,
-      pivotY:
-          -74, // just below the shoulder line: high enough to cover the upper
-      z: 10, // jacket sides, low enough not to ride up beside the ears (shrug)
-      restRotation: -0.1, // hangs nearly straight down, only a hair outward
-      drawable: _tapered(25, 18, 60, _suit, dy: 25),
+      pivotX: 29,
+      pivotY: -64,
+      // Starts under the jacket shoulder instead of on top of it; the torso owns
+      // the broad shoulder line, while the arm reads as a sleeve hanging from it.
+      z: 10,
+      restRotation: -0.06,
+      drawable: _tapered(22, 17, 56, _suitRear, dy: 23),
+    ),
+    const Bone(
+      id: CatBones.armBicepR,
+      parent: CatBones.armUpperR,
+      pivotX: 0,
+      pivotY: 22,
+      z: 10,
     ),
     Bone(
       id: CatBones.armLowerR,
       parent: CatBones.armUpperR,
       pivotX: 0,
-      pivotY: 52,
+      pivotY: 48,
       z: 11,
-      drawable: _tapered(20, 13, 54, _suit, dy: 22),
+      drawable: _tapered(18, 13, 50, _suitRear, dy: 20),
     ),
     const Bone(
       id: CatBones.handR,
       parent: CatBones.armLowerR,
       pivotX: 0,
-      pivotY: 44,
+      pivotY: 41,
       z: 12,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
@@ -355,10 +395,10 @@ RigSpec buildCatInSuitRig() {
       z: 13,
       drawable: BoneDrawable(
         kind: BoneShapeKind.taperedCapsule,
-        width: 58, // shoulders (top) — narrowed so the rounded cap isn't a wide
-        widthTip: 50, // dome/shoulder-pad hump above the arms
-        height: 86,
-        dy: -44,
+        width: 66, // broad shoulder line for the suited athletic silhouette
+        widthTip: 54, // jacket hem covers the pelvis and thigh roots
+        height: 98,
+        dy: -38,
         color: _suit,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -407,26 +447,32 @@ RigSpec buildCatInSuitRig() {
     Bone(
       id: CatBones.armUpperL,
       parent: CatBones.torso,
-      pivotX: -28,
-      pivotY:
-          -74, // just below the shoulder line (see armUpperR) — no shrug/hump
+      pivotX: -29,
+      pivotY: -64,
       z: 16,
-      restRotation: 0.1, // hangs nearly straight down, only a hair outward
-      drawable: _tapered(25, 18, 60, _suit, dy: 25),
+      restRotation: 0.06,
+      drawable: _tapered(22, 17, 56, _suit, dy: 23),
+    ),
+    const Bone(
+      id: CatBones.armBicepL,
+      parent: CatBones.armUpperL,
+      pivotX: 0,
+      pivotY: 22,
+      z: 16,
     ),
     Bone(
       id: CatBones.armLowerL,
       parent: CatBones.armUpperL,
       pivotX: 0,
-      pivotY: 52,
+      pivotY: 48,
       z: 17,
-      drawable: _tapered(20, 13, 54, _suit, dy: 22),
+      drawable: _tapered(18, 13, 50, _suit, dy: 20),
     ),
     const Bone(
       id: CatBones.handL,
       parent: CatBones.armLowerL,
       pivotX: 0,
-      pivotY: 44,
+      pivotY: 41,
       z: 18,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
@@ -559,7 +605,110 @@ RigSpec buildCatInSuitRig() {
     whiskerLength: 22,
   );
 
-  return RigSpec(name: 'cat_in_suit', bones: bones, face: face);
+  final ribbons = <LimbRibbonSpec>[
+    LimbRibbonSpec(
+      id: 'tail.ribbon',
+      jointBoneIds: const [
+        CatBones.tail0,
+        CatBones.tail1,
+        CatBones.tail2,
+        CatBones.tail3,
+        CatBones.tail4,
+        CatBones.tail5,
+        CatBones.tail6,
+      ],
+      hiddenBoneIds: const [
+        CatBones.tail0,
+        CatBones.tail1,
+        CatBones.tail2,
+        CatBones.tail3,
+        CatBones.tail4,
+        CatBones.tail5,
+        CatBones.tail6,
+      ],
+      halfWidths: const [4.5, 4.1, 3.7, 3.2, 2.7, 2.1, 1.4],
+      z: -7,
+      color: _fur,
+      outlineColor: _outline,
+      outlineWidth: 2,
+    ),
+    LimbRibbonSpec(
+      id: 'leg.R.ribbon',
+      jointBoneIds: const [
+        CatBones.legUpperR,
+        CatBones.legQuadR,
+        CatBones.legLowerR,
+        CatBones.legCalfR,
+        CatBones.footR,
+      ],
+      hiddenBoneIds: const [CatBones.legUpperR, CatBones.legLowerR],
+      // Athletic leg profile: strong thigh under the hip, a knee pinch, then a
+      // muscular calf bulge tapering to the ankle.
+      halfWidths: const [15, 16.5, 9.5, 13.5, 7],
+      z: 3,
+      color: _trouserRear,
+      outlineColor: _outline,
+      outlineWidth: 2,
+      samplesPerSegment: 12,
+    ),
+    LimbRibbonSpec(
+      id: 'leg.L.ribbon',
+      jointBoneIds: const [
+        CatBones.legUpperL,
+        CatBones.legQuadL,
+        CatBones.legLowerL,
+        CatBones.legCalfL,
+        CatBones.footL,
+      ],
+      hiddenBoneIds: const [CatBones.legUpperL, CatBones.legLowerL],
+      halfWidths: const [15, 16.5, 9.5, 13.5, 7],
+      z: 6,
+      color: _trouser,
+      outlineColor: _outline,
+      outlineWidth: 2,
+      samplesPerSegment: 12,
+    ),
+    LimbRibbonSpec(
+      id: 'arm.R.ribbon',
+      jointBoneIds: const [
+        CatBones.armUpperR,
+        CatBones.armBicepR,
+        CatBones.armLowerR,
+        CatBones.handR,
+      ],
+      hiddenBoneIds: const [CatBones.armUpperR, CatBones.armLowerR],
+      // Broad shoulder into a bicep swell, then a narrower forearm/wrist.
+      halfWidths: const [11.5, 12.5, 8.5, 5.5],
+      z: 10,
+      color: _suitRear,
+      outlineColor: _outline,
+      outlineWidth: 2,
+      samplesPerSegment: 12,
+    ),
+    LimbRibbonSpec(
+      id: 'arm.L.ribbon',
+      jointBoneIds: const [
+        CatBones.armUpperL,
+        CatBones.armBicepL,
+        CatBones.armLowerL,
+        CatBones.handL,
+      ],
+      hiddenBoneIds: const [CatBones.armUpperL, CatBones.armLowerL],
+      halfWidths: const [11.5, 12.5, 8.5, 5.5],
+      z: 16,
+      color: _suit,
+      outlineColor: _outline,
+      outlineWidth: 2,
+      samplesPerSegment: 12,
+    ),
+  ];
+
+  return RigSpec(
+    name: 'cat_in_suit',
+    bones: bones,
+    ribbons: ribbons,
+    face: face,
+  );
 }
 
 /// The Phase-1 cycle library: walk, run, sit, jump, idle.
@@ -745,26 +894,20 @@ class CatClips {
       CatBones.footL: KeyframeChannel(_footKeys, smooth: true),
       CatBones.footR: KeyframeChannel(_footKeys, phase: 0.5, smooth: true),
 
-      // --- Arms: broken L/R symmetry (so the silhouette is never a perfect
-      // mirror — the "machine" tell) with a real bent elbow + forearm drag. ---
-      // Subtle amplitude difference breaks the perfect-mirror "machine" tell,
-      // but the resting bias is kept symmetric (0) — a biased rest tilted one
-      // arm forward and one back, which read as a postural limp.
-      // FRONT view: the arm rotates in-plane (sideways), so any real swing reads
-      // as a penguin flap, and a swing wider than the arm's outward rest (0.16)
-      // crosses the hand past the centerline — the alternating arms then read as an
-      // oscillating X. Keep the swing BELOW the rest so the hands never cross: a
-      // subtle hang-and-sway, with a few frames of phase lag (arms trail the legs).
-      CatBones.armUpperL: SineChannel(amplitude: 0.14, phase: 0.55),
-      CatBones.armUpperR: SineChannel(amplitude: 0.13, phase: 0.05),
-      // Forearms push OUTWARD so the hands don't collapse onto the pelvis seam at
-      // passing (crotch-hands). armUpperR rests outward, so a positive armLowerR
-      // bias would rotate that hand INWARD — hence the negative sign on the right.
-      CatBones.armLowerL: SineChannel(amplitude: 0.12, phase: 0.18, bias: 0.2),
-      CatBones.armLowerR: SineChannel(
-        amplitude: 0.12,
+      // --- Arms: in this front-view rig, side-view arm swing becomes a weird
+      // X/M silhouette. Keep the walk arms as stable sleeve lanes; only a tiny
+      // elbow drag remains so they do not read as frozen.
+      CatBones.armUpperL: SineChannel(amplitude: 0.012, phase: 0.55),
+      CatBones.armUpperR: SineChannel(amplitude: 0.01, phase: 0.05),
+      CatBones.armLowerL: SineChannel(
+        amplitude: 0.015,
         phase: 0.68,
-        bias: -0.2,
+        bias: 0.08,
+      ),
+      CatBones.armLowerR: SineChannel(
+        amplitude: 0.015,
+        phase: 0.18,
+        bias: -0.08,
       ),
 
       // --- Ears flick a beat behind the head bob — the cheapest "alive" tell.

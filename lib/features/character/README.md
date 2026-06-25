@@ -16,8 +16,9 @@ AI-assisted SVG → rig pipeline and the low-end `drawAtlas` runtime — lives i
 | --- | --- |
 | Pure-Dart engine (math, FK, clips, face, autonomic) | ✅ built + unit-tested |
 | Hand-authored "cat in a suit" rig + 5 cycles | ✅ `samples/cat_in_suit.dart` |
-| `CustomPainter` runtime drawing bones as vector shapes | ✅ `runtime/` |
-| Tapered limbs / tie / tail (`taperedCapsule` shape) | ✅ wedged limbs, draping tie |
+| `CustomPainter` runtime drawing bones + soft limb ribbons | ✅ `runtime/` |
+| Bendy ribbons for arms/legs/tail | ✅ shoulder→bicep→wrist, hip→quad→knee→calf→ankle, and 7-control tail surfaces |
+| Tapered tie (`taperedCapsule` shape) | ✅ 2-link draping tie |
 | Locomotion — the cat walks/runs across & turns at edges | ✅ `runtime/character_painter.dart` |
 | Ground floor + foot-tracking contact shadow | ✅ `runtime/character_painter.dart` |
 | Film-strip + frame-grid + onion + travel + live harness | ✅ `test/.../{film_strip,frame_grid}_test.dart` |
@@ -28,17 +29,21 @@ AI-assisted SVG → rig pipeline and the low-end `drawAtlas` runtime — lives i
 | Riverpod mood controller / Tamagotchi product | ⛔ separate consumer feature |
 
 Phase 1 draws bones as **vector shapes** (capsules / ellipses / rounded rects /
-a tapered capsule for limbs) rather than a pre-baked sprite atlas. The skeleton,
-transforms, cycles and face are exactly what the atlas runtime will use; only
-the per-bone paint call changes. This lets us validate motion *before* investing
-in rasterization.
+tapered capsules) plus optional **soft limb ribbons** rather than a pre-baked
+sprite atlas. Ribbons are still cheap `Path` geometry, but they draw a whole limb
+as one continuous tapered surface through solved joint positions, so elbows and
+knees bend through the silhouette instead of exposing rigid-cardboard hinges.
+The skeleton, transforms, cycles and face are exactly what the atlas runtime will
+use; only the per-bone paint call changes. This lets us validate motion *before*
+investing in rasterization.
 
 The walk/run are **keyframed step cycles** (distinct stance/swing, a weight bob,
 a pelvic-list line of action, knee-snap and flat-foot plant). The body
 **travels** at a stride-matched `locomotionSpeed` so the planted foot holds its
 world position instead of skating; the live painter ping-pongs it across the
-stage and flips facing at the edges. The tail is a 7-link tapering drag chain;
-the tie is a 2-link cloth pendulum; ears flick a beat behind the head bob.
+stage and flips facing at the edges. The tail is a single ribbon driven by a
+7-link drag chain; the tie is a 2-link cloth pendulum; ears flick a beat behind
+the head bob.
 
 ## Architecture
 
@@ -93,20 +98,26 @@ sequenceDiagram
   SC->>SS: solve(Pose, base) → world transforms
   SC->>FS: applyAutonomic(expression, sample) → FaceState
   SC-->>RN: CharacterFrame(world, face)
-  RN->>RN: pass 1 — unified dark silhouette (seam-free joints)
-  RN->>RN: pass 2 — bone fills (z-order) + face on the head
+  RN->>RN: pass 1 — ribbon + bone silhouettes (seam-free joints)
+  RN->>RN: pass 2 — ribbon + bone fills (z-order) + face on the head
 ```
 
-Bones are drawn in **two passes**. Pass 1 paints every outlined bone as a
-slightly inflated shape in the *single* outline colour, so overlapping pieces
-union into one continuous dark blob — no outline ever crosses into the body at a
-joint. Pass 2 paints the fills in z-order on top, leaving only the outer rim
-dark. The result is a clean outer outline with seam-free joints, instead of a
-stack of individually-outlined parts (which read as robotic).
+Bones and ribbons are drawn in **two passes**. Pass 1 paints every outlined
+surface as a slightly inflated shape in the *single* outline colour, so
+overlapping pieces union into one continuous dark blob — no outline ever crosses
+into the body at a joint. Pass 2 paints fills in z-order on top, leaving only the
+outer rim dark. Rig-declared `LimbRibbonSpec`s hide the rigid upper/lower segment
+drawables they replace while keeping terminal hands and shoes visible. The cat
+uses this for athletic arms and legs: shoulder → bicep → elbow → wrist, and hip
+→ quad → knee → calf → ankle. The tail also renders as one ribbon through its
+seven control bones instead of exposing each link as a rigid segment. The hip
+itself is a control bone; the suit jacket covers the pelvis and thigh roots so
+the legs read as emerging from the body rather than hanging below a separate
+block.
 
 The hot path is intentionally cheap: evaluate a handful of sinusoids/keyframes,
-walk the bone hierarchy composing `Affine2D`s (~20–25 bones), resolve the face.
-No SVG parsing, no allocation-heavy work.
+walk the bone hierarchy composing `Affine2D`s (~30 bones), resolve the face. No
+SVG parsing, no allocation-heavy work.
 
 ### Runtime ticker lifecycle
 
@@ -135,6 +146,10 @@ stateDiagram-v2
   feeds `Canvas.transform`.
 - **`Bone`** — id, parent, pivot (joint, in the parent's space), rest
   rotation/scale, z-order, and a `BoneDrawable` (shape, size, colour).
+- **`LimbRibbonSpec`** — an optional mesh-style surface over a solved joint
+  chain. The renderer samples the world origins of its joint bones, builds a
+  Catmull-Rom centreline via `limbRibbonPath`, applies the configured width
+  profile, and hides the rigid segment drawables named by `hiddenBoneIds`.
 - **`Clip` + channels** — a clip is a sparse map of per-bone channels plus root
   motion. `SineChannel` builds cyclic motion (`bias + amp·sin(2π(p+phase)) +
   harmonic`); `KeyframeChannel` builds eased one-shots. New cycles are **data,
@@ -195,6 +210,9 @@ fvm flutter test test/features/character/
 - The character is **front-facing**; a true side/¾ profile part-set would lift
   the walk/run further (a sagittal stride foreshortens head-on). Tracked as the
   staging ceiling.
+- Limb ribbons are a deliberately small mesh-deformation step, not full weighted
+  vertex skinning. They remove the worst elbow/knee/tail cardboard hinges, but
+  body squash/stretch is still future work.
 - No 2-part foot (heel/toe roll) yet — the foot plants flat.
 - Runtime is vector-shape paint, not the batched `drawAtlas` low-end path.
 - No quadruped stance / rear-up transition, no offline AI rigging, no feature

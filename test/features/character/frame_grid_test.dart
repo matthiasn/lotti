@@ -275,6 +275,7 @@ void main() {
       expression: expression,
       scale: h * 0.78 / 300.0,
       groundColor: const Color(0xFF374551),
+      walkingPair: clip.name == CatClips.walk.name,
     ).paint(canvas, const Size(w, h));
     return _pngOf(recorder.endRecording(), w.round(), h.round());
   }

@@ -6,6 +6,7 @@ import 'package:lotti/features/character/model/affine2d.dart';
 import 'package:lotti/features/character/model/bone.dart';
 import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/model/rig_spec.dart';
+import 'package:lotti/features/character/runtime/limb_ribbon.dart';
 
 /// Draws a posed [RigSpec] onto a [Canvas]. Stateless and Flutter-only at the
 /// `dart:ui` level — shared by the live [CustomPainter] and the offline
@@ -43,8 +44,21 @@ class CharacterRenderer {
     Map<String, Affine2D> world,
     FaceState face,
   ) {
+    final hiddenBones = rig.ribbonHiddenBoneIds;
+
+    // Ribbons are drawn in the same silhouette/fill two-pass style as bones.
+    // They replace selected rigid upper/lower limb drawables with one continuous
+    // surface, so elbows and knees bend through a curve instead of hinging like
+    // separate cardboard pieces.
+    for (final ribbon in rig.ribbonDrawOrder) {
+      final outline = ribbon.outlineColor;
+      if (outline == null || ribbon.outlineWidth <= 0) continue;
+      _drawRibbonSilhouette(canvas, ribbon, world, outline);
+    }
+
     // Pass 1: the unified dark silhouette (outer outline, no internal seams).
     for (final bone in rig.drawOrder) {
+      if (hiddenBones.contains(bone.id)) continue;
       final drawable = bone.drawable;
       if (drawable == null) continue;
       final outline = drawable.outlineColor;
@@ -58,18 +72,8 @@ class CharacterRenderer {
       canvas.restore();
     }
 
-    // Pass 2: the bone fills, painted back-to-front over the silhouette.
-    for (final bone in rig.drawOrder) {
-      final drawable = bone.drawable;
-      if (drawable == null) continue;
-      final transform = world[bone.id];
-      if (transform == null) continue;
-      canvas
-        ..save()
-        ..transform(transform.toMatrix4Storage(_matrix));
-      _drawFill(canvas, drawable);
-      canvas.restore();
-    }
+    // Pass 2: ribbons + bone fills, painted back-to-front over the silhouette.
+    _drawFills(canvas, rig, world, hiddenBones);
 
     final faceRig = rig.face;
     if (faceRig != null) {
@@ -81,6 +85,36 @@ class CharacterRenderer {
         _drawFace(canvas, faceRig, face);
         canvas.restore();
       }
+    }
+  }
+
+  void _drawFills(
+    Canvas canvas,
+    RigSpec rig,
+    Map<String, Affine2D> world,
+    Set<String> hiddenBones,
+  ) {
+    final ribbons = rig.ribbonDrawOrder;
+    var ribbonIndex = 0;
+    for (final bone in rig.drawOrder) {
+      while (ribbonIndex < ribbons.length && ribbons[ribbonIndex].z <= bone.z) {
+        _drawRibbonFill(canvas, ribbons[ribbonIndex], world);
+        ribbonIndex++;
+      }
+      if (hiddenBones.contains(bone.id)) continue;
+      final drawable = bone.drawable;
+      if (drawable == null) continue;
+      final transform = world[bone.id];
+      if (transform == null) continue;
+      canvas
+        ..save()
+        ..transform(transform.toMatrix4Storage(_matrix));
+      _drawFill(canvas, drawable);
+      canvas.restore();
+    }
+    while (ribbonIndex < ribbons.length) {
+      _drawRibbonFill(canvas, ribbons[ribbonIndex], world);
+      ribbonIndex++;
     }
   }
 
@@ -115,6 +149,62 @@ class CharacterRenderer {
       ..color = Color(outlineColor)
       ..isAntiAlias = antiAlias;
     _drawKind(canvas, d, _paint);
+  }
+
+  void _drawRibbonFill(
+    Canvas canvas,
+    LimbRibbonSpec ribbon,
+    Map<String, Affine2D> world,
+  ) {
+    _paint
+      ..style = PaintingStyle.fill
+      ..strokeWidth = 0
+      ..color = Color(ribbon.color)
+      ..isAntiAlias = antiAlias;
+    _drawRibbon(canvas, ribbon, world, _paint);
+  }
+
+  void _drawRibbonSilhouette(
+    Canvas canvas,
+    LimbRibbonSpec ribbon,
+    Map<String, Affine2D> world,
+    int outlineColor,
+  ) {
+    _paint
+      ..style = PaintingStyle.fill
+      ..strokeWidth = 0
+      ..color = Color(outlineColor)
+      ..isAntiAlias = antiAlias;
+    _drawRibbon(canvas, ribbon, world, _paint);
+
+    _paint
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = ribbon.outlineWidth * 2
+      ..strokeJoin = StrokeJoin.round
+      ..color = Color(outlineColor)
+      ..isAntiAlias = antiAlias;
+    _drawRibbon(canvas, ribbon, world, _paint);
+  }
+
+  void _drawRibbon(
+    Canvas canvas,
+    LimbRibbonSpec ribbon,
+    Map<String, Affine2D> world,
+    Paint paint,
+  ) {
+    final spine = <Offset>[];
+    for (final boneId in ribbon.jointBoneIds) {
+      final transform = world[boneId];
+      if (transform == null) return;
+      final origin = transform.origin;
+      spine.add(Offset(origin.x, origin.y));
+    }
+    final path = limbRibbonPath(
+      spine,
+      ribbon.halfWidths,
+      samplesPerSegment: ribbon.samplesPerSegment,
+    );
+    canvas.drawPath(path, paint);
   }
 
   /// Draws the shape geometry of [d] with [paint] (fill or stroke).

@@ -49,6 +49,17 @@ void main() {
       expect(other.shouldRepaint(painterAt(0.5)), isTrue);
     });
 
+    test('repaints when walking pair mode changes', () {
+      final pair = CharacterPainter(
+        scene: scene,
+        clip: CatClips.walk,
+        timeSeconds: 0.5,
+        walkingPair: true,
+        renderer: renderer,
+      );
+      expect(pair.shouldRepaint(painterAt(0.5)), isTrue);
+    });
+
     test('does not repaint for identical inputs', () {
       expect(painterAt(0.5).shouldRepaint(painterAt(0.5)), isFalse);
     });
@@ -108,6 +119,56 @@ void main() {
             if (pixels[i] != 0) opaque++;
           }
           expect(opaque, greaterThan(0), reason: 'expected painted pixels');
+        } finally {
+          image.dispose();
+        }
+      } finally {
+        picture.dispose();
+      }
+    });
+  });
+
+  testWidgets('walking pair paints two separated characters', (tester) async {
+    await tester.runAsync(() async {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      CharacterPainter(
+        scene: scene,
+        clip: CatClips.walk,
+        timeSeconds: 0.3,
+        walkingPair: true,
+        shadowColor: const Color(0x00000000),
+        renderer: renderer,
+      ).paint(canvas, const Size(520, 320));
+      final picture = recorder.endRecording();
+      try {
+        final image = await picture.toImage(520, 320);
+        try {
+          final data = await image.toByteData();
+          final pixels = data!.buffer.asUint8List();
+          var leftOpaque = 0;
+          var rightOpaque = 0;
+          for (var y = 0; y < 320; y++) {
+            for (var x = 0; x < 520; x++) {
+              final alpha = pixels[(y * 520 + x) * 4 + 3];
+              if (alpha == 0) continue;
+              if (x < 220) {
+                leftOpaque++;
+              } else if (x > 300) {
+                rightOpaque++;
+              }
+            }
+          }
+          expect(
+            leftOpaque,
+            greaterThan(1500),
+            reason: 'left cat should occupy its own lane',
+          );
+          expect(
+            rightOpaque,
+            greaterThan(1500),
+            reason: 'right cat should occupy its own lane',
+          );
         } finally {
           image.dispose();
         }

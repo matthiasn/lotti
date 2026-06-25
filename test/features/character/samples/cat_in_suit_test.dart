@@ -23,6 +23,21 @@ void main() {
       expect(roots.length, 1);
       expect(roots.single.id, CatBones.hips);
     });
+
+    test('uses ribbons for soft limbs and tail', () {
+      expect(
+        rig.ribbons.map((r) => r.id),
+        containsAll([
+          'tail.ribbon',
+          'leg.L.ribbon',
+          'leg.R.ribbon',
+          'arm.L.ribbon',
+          'arm.R.ribbon',
+        ]),
+      );
+      expect(rig.ribbonHiddenBoneIds, contains(CatBones.tail3));
+      expect(rig.ribbonHiddenBoneIds, contains(CatBones.legLowerL));
+    });
   });
 
   group('CatClips', () {

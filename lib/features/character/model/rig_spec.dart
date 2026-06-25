@@ -9,11 +9,20 @@ class RigSpec {
   RigSpec({
     required this.name,
     required List<Bone> bones,
+    List<LimbRibbonSpec> ribbons = const [],
     this.face,
   }) : bones = List<Bone>.unmodifiable(bones),
+       ribbons = List<LimbRibbonSpec>.unmodifiable(ribbons),
        _byId = _buildById(bones),
        _drawOrder = List<Bone>.unmodifiable(_sortedByZ(bones)) {
     _topoOrder = List<Bone>.unmodifiable(_computeTopoOrder(this.bones, _byId));
+    _validateRibbons(this.ribbons, _byId);
+    _ribbonDrawOrder = List<LimbRibbonSpec>.unmodifiable(
+      _sortedRibbons(this.ribbons),
+    );
+    _ribbonHiddenBoneIds = Set<String>.unmodifiable(
+      this.ribbons.expand((r) => r.hiddenBoneIds),
+    );
   }
 
   /// Bones sorted ascending by [Bone.z]. Kept as a typed helper so the sort
@@ -27,11 +36,21 @@ class RigSpec {
   /// The bones of this rig, in author order. Unmodifiable — the cached
   /// [drawOrder]/[topoOrder] and [_byId] lookup assume the set never changes.
   final List<Bone> bones;
+
+  /// Optional soft-deformation ribbons. A ribbon draws one continuous tapered
+  /// path through a chain of solved joint bones, then hides the rigid segment
+  /// drawables it replaces. This is the cheap "mesh-style" path for arms/legs:
+  /// knees and elbows bend through one silhouette instead of folding as separate
+  /// cardboard capsules.
+  final List<LimbRibbonSpec> ribbons;
+
   final FaceRig? face;
 
   final Map<String, Bone> _byId;
   final List<Bone> _drawOrder;
   late final List<Bone> _topoOrder;
+  late final List<LimbRibbonSpec> _ribbonDrawOrder;
+  late final Set<String> _ribbonHiddenBoneIds;
 
   /// Indexes bones by id, rejecting duplicates up front. A map literal would
   /// silently keep the last duplicate while [_computeTopoOrder] still traversed
@@ -52,6 +71,12 @@ class RigSpec {
 
   /// Bones sorted by ascending [Bone.z] — the order to paint them in.
   List<Bone> get drawOrder => _drawOrder;
+
+  /// Ribbons sorted by ascending [LimbRibbonSpec.z] — the fill paint order.
+  List<LimbRibbonSpec> get ribbonDrawOrder => _ribbonDrawOrder;
+
+  /// Bone ids whose rigid drawables are replaced by ribbons.
+  Set<String> get ribbonHiddenBoneIds => _ribbonHiddenBoneIds;
 
   /// Bones ordered so every parent precedes its children — the order forward
   /// kinematics must visit them in.
@@ -91,4 +116,85 @@ class RigSpec {
     bones.forEach(visit);
     return ordered;
   }
+
+  static List<LimbRibbonSpec> _sortedRibbons(List<LimbRibbonSpec> ribbons) =>
+      [...ribbons]..sort((a, b) {
+        final byZ = a.z.compareTo(b.z);
+        return byZ == 0 ? a.id.compareTo(b.id) : byZ;
+      });
+
+  static void _validateRibbons(
+    List<LimbRibbonSpec> ribbons,
+    Map<String, Bone> byId,
+  ) {
+    final ids = <String>{};
+    for (final ribbon in ribbons) {
+      if (!ids.add(ribbon.id)) {
+        throw ArgumentError('Duplicate ribbon id "${ribbon.id}"');
+      }
+      if (ribbon.jointBoneIds.length < 2) {
+        throw ArgumentError('Ribbon "${ribbon.id}" needs at least two joints');
+      }
+      if (ribbon.jointBoneIds.length != ribbon.halfWidths.length) {
+        throw ArgumentError(
+          'Ribbon "${ribbon.id}" has ${ribbon.jointBoneIds.length} joints '
+          'but ${ribbon.halfWidths.length} half-widths',
+        );
+      }
+      if (ribbon.samplesPerSegment <= 0) {
+        throw ArgumentError(
+          'Ribbon "${ribbon.id}" samplesPerSegment must be positive',
+        );
+      }
+      for (final width in ribbon.halfWidths) {
+        if (width <= 0) {
+          throw ArgumentError(
+            'Ribbon "${ribbon.id}" half-widths must be positive',
+          );
+        }
+      }
+      for (final boneId in [
+        ...ribbon.jointBoneIds,
+        ...ribbon.hiddenBoneIds,
+      ]) {
+        if (!byId.containsKey(boneId)) {
+          throw ArgumentError(
+            'Ribbon "${ribbon.id}" references missing bone "$boneId"',
+          );
+        }
+      }
+    }
+  }
+}
+
+/// A continuous tapered limb surface drawn through a solved joint chain.
+///
+/// [jointBoneIds] are sampled at each bone's world origin. For a leg that means
+/// `upperLeg` (hip), `lowerLeg` (knee), `foot` (ankle). [hiddenBoneIds] names
+/// the rigid segment drawables replaced by the ribbon; terminal parts such as
+/// shoes or hands stay visible by leaving them out of [hiddenBoneIds].
+class LimbRibbonSpec {
+  LimbRibbonSpec({
+    required this.id,
+    required List<String> jointBoneIds,
+    required List<double> halfWidths,
+    required this.z,
+    required this.color,
+    List<String> hiddenBoneIds = const [],
+    this.outlineColor,
+    this.outlineWidth = 0,
+    this.samplesPerSegment = 10,
+  }) : jointBoneIds = List<String>.unmodifiable(jointBoneIds),
+       hiddenBoneIds = List<String>.unmodifiable(hiddenBoneIds),
+       halfWidths = List<double>.unmodifiable(halfWidths);
+
+  final String id;
+  final List<String> jointBoneIds;
+  final List<String> hiddenBoneIds;
+  final List<double> halfWidths;
+  final int z;
+  final int color;
+  final int? outlineColor;
+  final double outlineWidth;
+  final int samplesPerSegment;
 }

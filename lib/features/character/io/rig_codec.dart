@@ -37,6 +37,8 @@ class RigCodec {
     'version': kRigFormatVersion,
     'name': rig.name,
     'bones': rig.bones.map(_boneToJson).toList(),
+    if (rig.ribbons.isNotEmpty)
+      'ribbons': rig.ribbons.map(_ribbonToJson).toList(),
     if (rig.face != null) 'face': _faceToJson(rig.face!),
   };
 
@@ -60,6 +62,18 @@ class RigCodec {
     'color': _colorToHex(d.color),
     if (d.outlineColor != null) 'outlineColor': _colorToHex(d.outlineColor!),
     if (d.outlineWidth != 0) 'outlineWidth': d.outlineWidth,
+  };
+
+  Map<String, dynamic> _ribbonToJson(LimbRibbonSpec r) => {
+    'id': r.id,
+    'joints': r.jointBoneIds,
+    if (r.hiddenBoneIds.isNotEmpty) 'hiddenBones': r.hiddenBoneIds,
+    'halfWidths': r.halfWidths,
+    'z': r.z,
+    'color': _colorToHex(r.color),
+    if (r.outlineColor != null) 'outlineColor': _colorToHex(r.outlineColor!),
+    if (r.outlineWidth != 0) 'outlineWidth': r.outlineWidth,
+    if (r.samplesPerSegment != 10) 'samplesPerSegment': r.samplesPerSegment,
   };
 
   Map<String, dynamic> _faceToJson(FaceRig f) => {
@@ -114,6 +128,10 @@ class RigCodec {
     }
     final bones = bonesJson.map(_boneFromJson).toList();
     _validateHierarchy(bones);
+    final ribbonsJson = json['ribbons'];
+    final ribbons = ribbonsJson == null
+        ? <LimbRibbonSpec>[]
+        : _ribbonsFromJson(ribbonsJson, bones);
     final faceJson = json['face'];
     final face = faceJson == null
         ? null
@@ -123,7 +141,7 @@ class RigCodec {
         'face.anchor "${face.anchorBoneId}" references a missing bone',
       );
     }
-    return RigSpec(name: name, bones: bones, face: face);
+    return RigSpec(name: name, bones: bones, ribbons: ribbons, face: face);
   }
 
   /// Rejects duplicate ids, missing parents, and parent cycles with precise
@@ -203,6 +221,74 @@ class RigCodec {
           ? _colorFromHex(_string(m, 'outlineColor'))
           : null,
       outlineWidth: _doubleOr(m, 'outlineWidth', 0),
+    );
+  }
+
+  List<LimbRibbonSpec> _ribbonsFromJson(dynamic raw, List<Bone> bones) {
+    if (raw is! List) {
+      throw RigFormatException('"ribbons" must be a list when present');
+    }
+    final ribbons = raw.map(_ribbonFromJson).toList();
+    final boneIds = {for (final b in bones) b.id};
+    final ribbonIds = <String>{};
+    for (final ribbon in ribbons) {
+      if (!ribbonIds.add(ribbon.id)) {
+        throw RigFormatException('duplicate ribbon id "${ribbon.id}"');
+      }
+      if (ribbon.jointBoneIds.length < 2) {
+        throw RigFormatException(
+          'ribbon "${ribbon.id}" needs at least two joints',
+        );
+      }
+      if (ribbon.jointBoneIds.length != ribbon.halfWidths.length) {
+        throw RigFormatException(
+          'ribbon "${ribbon.id}" joints/halfWidths length mismatch',
+        );
+      }
+      if (ribbon.samplesPerSegment <= 0) {
+        throw RigFormatException(
+          'ribbon "${ribbon.id}" samplesPerSegment must be positive',
+        );
+      }
+      for (final width in ribbon.halfWidths) {
+        if (width <= 0) {
+          throw RigFormatException(
+            'ribbon "${ribbon.id}" halfWidths must be positive',
+          );
+        }
+      }
+      for (final boneId in [
+        ...ribbon.jointBoneIds,
+        ...ribbon.hiddenBoneIds,
+      ]) {
+        if (!boneIds.contains(boneId)) {
+          throw RigFormatException(
+            'ribbon "${ribbon.id}" references missing bone "$boneId"',
+          );
+        }
+      }
+    }
+    return ribbons;
+  }
+
+  LimbRibbonSpec _ribbonFromJson(dynamic raw) {
+    final m = _map(raw, 'ribbon');
+    return LimbRibbonSpec(
+      id: _string(m, 'id'),
+      jointBoneIds: _stringList(m, 'joints'),
+      hiddenBoneIds: m.containsKey('hiddenBones')
+          ? _stringList(m, 'hiddenBones')
+          : const [],
+      halfWidths: _numberList(m, 'halfWidths'),
+      z: _int(m, 'z'),
+      color: _colorFromHex(_string(m, 'color')),
+      outlineColor: m.containsKey('outlineColor')
+          ? _colorFromHex(_string(m, 'outlineColor'))
+          : null,
+      outlineWidth: _doubleOr(m, 'outlineWidth', 0),
+      samplesPerSegment: m.containsKey('samplesPerSegment')
+          ? _int(m, 'samplesPerSegment')
+          : 10,
     );
   }
 
@@ -299,6 +385,26 @@ class RigCodec {
       throw RigFormatException('"$key" must be a [number, number] pair');
     }
     return ((v[0] as num).toDouble(), (v[1] as num).toDouble());
+  }
+
+  List<String> _stringList(Map<String, dynamic> m, String key) {
+    final v = m[key];
+    if (v is! List ||
+        v.isEmpty ||
+        v.any((item) => item is! String || item.isEmpty)) {
+      throw RigFormatException(
+        '"$key" must be a non-empty list of non-empty strings',
+      );
+    }
+    return v.cast<String>();
+  }
+
+  List<double> _numberList(Map<String, dynamic> m, String key) {
+    final v = m[key];
+    if (v is! List || v.isEmpty || v.any((item) => item is! num)) {
+      throw RigFormatException('"$key" must be a non-empty list of numbers');
+    }
+    return [for (final item in v) (item as num).toDouble()];
   }
 
   String _colorToHex(int argb) =>

@@ -61,7 +61,7 @@ Path limbRibbonPath(
   path.arcTo(
     Rect.fromCircle(center: last.centre, radius: last.halfWidth),
     endAngle,
-    math.pi,
+    -math.pi,
     false,
   );
 
@@ -110,7 +110,7 @@ List<_Sample> _sampleCentreline(
       final tan = _catmullRomTangent(p0, p1, p2, p3, t);
       final len = tan.distance;
       final normal = len < 1e-6
-          ? const Offset(0, 0)
+          ? Offset.zero
           : Offset(-tan.dy / len, tan.dx / len);
       out.add(_Sample(pt, normal, w1 + (w2 - w1) * t));
     }
@@ -133,7 +133,13 @@ Offset _catmullRom(Offset p0, Offset p1, Offset p2, Offset p3, double t) {
   );
 }
 
-Offset _catmullRomTangent(Offset p0, Offset p1, Offset p2, Offset p3, double t) {
+Offset _catmullRomTangent(
+  Offset p0,
+  Offset p1,
+  Offset p2,
+  Offset p3,
+  double t,
+) {
   final t2 = t * t;
   double c(double a, double b, double cc, double d) =>
       0.5 *

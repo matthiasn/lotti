@@ -40,6 +40,7 @@ class CharacterPainter extends CustomPainter {
     this.groundColor,
     this.shadowColor = const Color(0x33000000),
     this.locomote = false,
+    this.walkingPair = false,
     CharacterRenderer? renderer,
   }) : _renderer = renderer ?? CharacterRenderer();
 
@@ -67,10 +68,17 @@ class CharacterPainter extends CustomPainter {
   /// face the direction of travel). Travelling is what makes the planted foot
   /// hold still in world space instead of skating in place.
   final bool locomote;
+
+  /// When true, paints two copies of the same rig side-by-side with a phase
+  /// offset. The pair shares one travelling group centre, so they keep their
+  /// lane spacing instead of ping-ponging into each other.
+  final bool walkingPair;
   final CharacterRenderer _renderer;
 
   // Keep the cat this far from the stage edges as it walks back and forth.
   static const double _edgeMargin = 64;
+  static const double _pairScaleFactor = 0.82;
+  static const double _pairSpacing = 155;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -87,12 +95,16 @@ class CharacterPainter extends CustomPainter {
     var centreX = size.width / 2;
     var flip = false;
     if (locomote && clip.locomotes) {
-      final travelPx = scene.locomotionOffset(clip, timeSeconds).abs() * scale;
-      final band = (size.width - 2 * _edgeMargin).clamp(1.0, size.width);
+      final drawScale = walkingPair ? scale * _pairScaleFactor : scale;
+      final travelPx =
+          scene.locomotionOffset(clip, timeSeconds).abs() * drawScale;
+      final groupHalfWidth = walkingPair ? _pairSpacing * drawScale / 2 : 0.0;
+      final margin = _edgeMargin + groupHalfWidth;
+      final band = (size.width - 2 * margin).clamp(1.0, size.width);
       final cyc = travelPx % (2 * band);
       final movingRight = cyc <= band;
       final pos = movingRight ? cyc : 2 * band - cyc; // triangle 0..band..0
-      centreX = _edgeMargin + pos;
+      centreX = margin + pos;
       // Face the direction of travel. The authored cycle sweeps the planted
       // foot forward in body-space, so the character must be MIRRORED while it
       // walks in the +x direction for the foot to hold still on the floor (the
@@ -100,6 +112,50 @@ class CharacterPainter extends CustomPainter {
       flip = movingRight;
     }
 
+    if (walkingPair) {
+      final drawScale = scale * _pairScaleFactor;
+      final spacing = _pairSpacing * drawScale;
+      _paintCharacterAt(
+        canvas,
+        size,
+        floorY: floorY,
+        centreX: centreX - spacing / 2,
+        flip: flip,
+        timeSeconds: timeSeconds,
+        scale: drawScale,
+      );
+      _paintCharacterAt(
+        canvas,
+        size,
+        floorY: floorY,
+        centreX: centreX + spacing / 2,
+        flip: flip,
+        timeSeconds: timeSeconds + clip.duration * 0.5,
+        scale: drawScale,
+      );
+      return;
+    }
+
+    _paintCharacterAt(
+      canvas,
+      size,
+      floorY: floorY,
+      centreX: centreX,
+      flip: flip,
+      timeSeconds: timeSeconds,
+      scale: scale,
+    );
+  }
+
+  void _paintCharacterAt(
+    Canvas canvas,
+    Size size, {
+    required double floorY,
+    required double centreX,
+    required bool flip,
+    required double timeSeconds,
+    required double scale,
+  }) {
     final base = groundedBase(
       size,
       centreX: centreX,
@@ -149,5 +205,6 @@ class CharacterPainter extends CustomPainter {
       old.groundColor != groundColor ||
       old.shadowColor != shadowColor ||
       old.locomote != locomote ||
+      old.walkingPair != walkingPair ||
       old._renderer != _renderer;
 }

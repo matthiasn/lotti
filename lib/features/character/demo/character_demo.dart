@@ -257,6 +257,7 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
                         eyeOpenScale: _blinkScale(_blink.value),
                         groundColor: const Color(0xFF374551),
                         locomote: _wander,
+                        walkingPair: _clip.name == CatClips.walk.name,
                       ),
                     );
                   },
