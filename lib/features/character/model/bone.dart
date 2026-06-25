@@ -19,6 +19,13 @@ enum BoneShapeKind {
   /// An upward-pointing triangle (apex at top-centre) — cat ears, noses.
   /// Corners are softened by the outline's round join.
   triangle,
+
+  /// A capsule whose two ends have different widths — wide at the top (the
+  /// joint near the pivot), narrow at the bottom (`widthTip`). Limbs taper from
+  /// the parent joint toward the child joint instead of reading as a constant-
+  /// width "sausage". Ends are rounded caps, so a tapered shin necks down into a
+  /// real ankle.
+  taperedCapsule,
 }
 
 /// How a single bone is drawn, expressed in the bone's local space (origin at
@@ -32,6 +39,7 @@ class BoneDrawable {
     this.dx = 0,
     this.dy = 0,
     this.cornerRadius = 0,
+    this.widthTip = -1,
     this.outlineColor,
     this.outlineWidth = 0,
   });
@@ -41,6 +49,10 @@ class BoneDrawable {
   /// Shape extents in local units.
   final double width;
   final double height;
+
+  /// For [BoneShapeKind.taperedCapsule]: the width at the far (bottom) end.
+  /// `width` is the near (pivot-side) end. -1 falls back to `width` (no taper).
+  final double widthTip;
 
   /// Centre offset of the shape from the bone pivot, in local units. Limbs
   /// typically offset along +y so the shape hangs from the joint.

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/rendering.dart';
@@ -138,7 +139,37 @@ class CharacterRenderer {
         );
       case BoneShapeKind.triangle:
         canvas.drawPath(_trianglePath(rect), paint);
+      case BoneShapeKind.taperedCapsule:
+        canvas.drawPath(_taperedCapsulePath(d), paint);
     }
+  }
+
+  /// A capsule with different end radii — `width` at the near (top) end,
+  /// `widthTip` at the far (bottom) end — joined by straight sides with rounded
+  /// caps. Drawn along local +y (limbs hang from their pivot). This is the
+  /// shape that turns "sausage" limbs into tapered arms/legs with real joints.
+  Path _taperedCapsulePath(BoneDrawable d) {
+    final r0 = d.width / 2; // near end (joint side, wide)
+    final r1 = (d.widthTip < 0 ? d.width : d.widthTip) / 2; // far end (narrow)
+    final cx = d.dx;
+    final y0 = d.dy - d.height / 2 + r0; // near cap centre
+    final y1 = d.dy + d.height / 2 - r1; // far cap centre
+    return Path()
+      ..moveTo(cx + r0, y0)
+      ..arcTo(
+        Rect.fromCircle(center: Offset(cx, y0), radius: r0),
+        0,
+        -math.pi, // near cap: right → top → left
+        false,
+      )
+      ..lineTo(cx - r1, y1)
+      ..arcTo(
+        Rect.fromCircle(center: Offset(cx, y1), radius: r1),
+        math.pi,
+        -math.pi, // far cap: left → bottom → right
+        false,
+      )
+      ..close();
   }
 
   /// An upward-pointing triangle inscribed in [rect] (apex at top-centre).

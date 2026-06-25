@@ -56,16 +56,26 @@ class CatBones {
   static const tail2 = 'tail_2';
 }
 
-BoneDrawable _capsule(double w, double h, int color, {double dy = 0}) =>
-    BoneDrawable(
-      kind: BoneShapeKind.capsule,
-      width: w,
-      height: h,
-      dy: dy,
-      color: color,
-      outlineColor: _outline,
-      outlineWidth: 2,
-    );
+/// A tapered limb segment: [w] wide at the joint (pivot) end, [wTip] at the far
+/// end, so limbs read as wedged arms/legs with defined wrists/ankles instead of
+/// constant-width sausages.
+BoneDrawable _tapered(
+  double w,
+  double wTip,
+  double h,
+  int color, {
+  double dy = 0,
+  double outlineWidth = 2,
+}) => BoneDrawable(
+  kind: BoneShapeKind.taperedCapsule,
+  width: w,
+  widthTip: wTip,
+  height: h,
+  dy: dy,
+  color: color,
+  outlineColor: _outline,
+  outlineWidth: outlineWidth,
+);
 
 /// Builds the cat-in-a-suit [RigSpec].
 RigSpec buildCatInSuitRig() {
@@ -81,8 +91,9 @@ RigSpec buildCatInSuitRig() {
       z: 0,
       restRotation: -2.25,
       drawable: BoneDrawable(
-        kind: BoneShapeKind.capsule,
-        width: 15,
+        kind: BoneShapeKind.taperedCapsule,
+        width: 16,
+        widthTip: 12,
         height: 38,
         dy: 17,
         color: _fur,
@@ -98,8 +109,9 @@ RigSpec buildCatInSuitRig() {
       z: 1,
       restRotation: -0.82,
       drawable: BoneDrawable(
-        kind: BoneShapeKind.capsule,
+        kind: BoneShapeKind.taperedCapsule,
         width: 12,
+        widthTip: 8,
         height: 32,
         dy: 14,
         color: _fur,
@@ -115,8 +127,9 @@ RigSpec buildCatInSuitRig() {
       z: 2,
       restRotation: -0.55,
       drawable: BoneDrawable(
-        kind: BoneShapeKind.capsule,
+        kind: BoneShapeKind.taperedCapsule,
         width: 9,
+        widthTip: 3,
         height: 26,
         dy: 12,
         color: _furDark,
@@ -132,21 +145,21 @@ RigSpec buildCatInSuitRig() {
       pivotX: 13,
       pivotY: 16,
       z: 3,
-      drawable: _capsule(20, 52, _trouser, dy: 26),
+      drawable: _tapered(29, 22, 68, _trouser, dy: 28),
     ),
     Bone(
       id: CatBones.legLowerR,
       parent: CatBones.legUpperR,
       pivotX: 0,
-      pivotY: 52,
+      pivotY: 60,
       z: 4,
-      drawable: _capsule(17, 46, _trouser, dy: 23),
+      drawable: _tapered(24, 16, 60, _trouser, dy: 24),
     ),
     const Bone(
       id: CatBones.footR,
       parent: CatBones.legLowerR,
       pivotX: 0,
-      pivotY: 44,
+      pivotY: 50,
       z: 5,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
@@ -168,21 +181,21 @@ RigSpec buildCatInSuitRig() {
       pivotX: -13,
       pivotY: 16,
       z: 6,
-      drawable: _capsule(20, 52, _trouser, dy: 26),
+      drawable: _tapered(29, 22, 68, _trouser, dy: 28),
     ),
     Bone(
       id: CatBones.legLowerL,
       parent: CatBones.legUpperL,
       pivotX: 0,
-      pivotY: 52,
+      pivotY: 60,
       z: 7,
-      drawable: _capsule(17, 46, _trouser, dy: 23),
+      drawable: _tapered(24, 16, 60, _trouser, dy: 24),
     ),
     const Bone(
       id: CatBones.footL,
       parent: CatBones.legLowerL,
       pivotX: 0,
-      pivotY: 44,
+      pivotY: 50,
       z: 8,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
@@ -206,9 +219,9 @@ RigSpec buildCatInSuitRig() {
       z: 9,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 46,
-        height: 30,
-        cornerRadius: 10,
+        width: 52,
+        height: 32,
+        cornerRadius: 12,
         color: _trouser,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -223,21 +236,21 @@ RigSpec buildCatInSuitRig() {
       pivotY: -70,
       z: 10,
       restRotation: -0.12,
-      drawable: _capsule(18, 46, _suit, dy: 23),
+      drawable: _tapered(25, 18, 60, _suit, dy: 25),
     ),
     Bone(
       id: CatBones.armLowerR,
       parent: CatBones.armUpperR,
       pivotX: 0,
-      pivotY: 46,
+      pivotY: 52,
       z: 11,
-      drawable: _capsule(15, 40, _suit, dy: 20),
+      drawable: _tapered(20, 13, 54, _suit, dy: 22),
     ),
     const Bone(
       id: CatBones.handR,
       parent: CatBones.armLowerR,
       pivotX: 0,
-      pivotY: 40,
+      pivotY: 44,
       z: 12,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
@@ -295,21 +308,21 @@ RigSpec buildCatInSuitRig() {
       pivotY: -70,
       z: 16,
       restRotation: 0.12,
-      drawable: _capsule(18, 46, _suit, dy: 23),
+      drawable: _tapered(25, 18, 60, _suit, dy: 25),
     ),
     Bone(
       id: CatBones.armLowerL,
       parent: CatBones.armUpperL,
       pivotX: 0,
-      pivotY: 46,
+      pivotY: 52,
       z: 17,
-      drawable: _capsule(15, 40, _suit, dy: 20),
+      drawable: _tapered(20, 13, 54, _suit, dy: 22),
     ),
     const Bone(
       id: CatBones.handL,
       parent: CatBones.armLowerL,
       pivotX: 0,
-      pivotY: 40,
+      pivotY: 44,
       z: 18,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
