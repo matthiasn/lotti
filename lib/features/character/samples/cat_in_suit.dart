@@ -772,10 +772,13 @@ class CatClips {
     name: 'sit',
     duration: 1.4,
     loop: false,
+    // Anticipation (a small lift), then sink past the target and settle back up
+    // (easeOutBack) so the body lands with weight instead of stopping dead.
     root: KeyframeRootChannel([
       RootKeyframe(p: 0),
-      RootKeyframe(p: 0.55, dy: 34),
-      RootKeyframe(p: 1, dy: 38),
+      RootKeyframe(p: 0.12, dy: -4, ease: Ease.easeOut),
+      RootKeyframe(p: 0.62, dy: 41, ease: Ease.easeIn),
+      RootKeyframe(p: 1, dy: 38, ease: Ease.easeOutBack),
     ]),
     channels: {
       CatBones.legUpperL: KeyframeChannel([
@@ -831,28 +834,28 @@ class CatClips {
       CatBones.legUpperL: KeyframeChannel([
         Keyframe(p: 0),
         Keyframe(p: 0.22, rotation: 0.8),
-        Keyframe(p: 0.46, rotation: -0.2),
+        Keyframe(p: 0.46, rotation: 0.45), // apex: knees tuck up
         Keyframe(p: 0.78, rotation: 0.9),
         Keyframe(p: 1),
       ]),
       CatBones.legUpperR: KeyframeChannel([
         Keyframe(p: 0),
         Keyframe(p: 0.22, rotation: 0.8),
-        Keyframe(p: 0.46, rotation: -0.2),
+        Keyframe(p: 0.46, rotation: 0.45), // apex: knees tuck up
         Keyframe(p: 0.78, rotation: 0.9),
         Keyframe(p: 1),
       ]),
       CatBones.legLowerL: KeyframeChannel([
         Keyframe(p: 0),
         Keyframe(p: 0.22, rotation: -1.3),
-        Keyframe(p: 0.46, rotation: -0.1),
+        Keyframe(p: 0.46, rotation: -0.95), // apex: shins folded under
         Keyframe(p: 0.78, rotation: -1.4),
         Keyframe(p: 1),
       ]),
       CatBones.legLowerR: KeyframeChannel([
         Keyframe(p: 0),
         Keyframe(p: 0.22, rotation: -1.3),
-        Keyframe(p: 0.46, rotation: -0.1),
+        Keyframe(p: 0.46, rotation: -0.95), // apex: shins folded under
         Keyframe(p: 0.78, rotation: -1.4),
         Keyframe(p: 1),
       ]),
