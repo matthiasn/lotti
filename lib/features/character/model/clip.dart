@@ -210,6 +210,28 @@ sealed class RootChannel {
   ({double dx, double dy, double rotation}) sample(double p);
 }
 
+/// Adds several root channels together. This keeps large authored beats in a
+/// keyframed channel while layering tiny cyclic pulses on top.
+class LayeredRootChannel extends RootChannel {
+  const LayeredRootChannel(this.channels);
+
+  final List<RootChannel> channels;
+
+  @override
+  ({double dx, double dy, double rotation}) sample(double p) {
+    var dx = 0.0;
+    var dy = 0.0;
+    var rotation = 0.0;
+    for (final channel in channels) {
+      final sample = channel.sample(p);
+      dx += sample.dx;
+      dy += sample.dy;
+      rotation += sample.rotation;
+    }
+    return (dx: dx, dy: dy, rotation: rotation);
+  }
+}
+
 /// Sinusoidal root motion for cyclic clips (walk/run/idle).
 class SineRootChannel extends RootChannel {
   const SineRootChannel({
@@ -218,8 +240,10 @@ class SineRootChannel extends RootChannel {
     this.bobHarmonic = 2,
     this.swayAmplitude = 0,
     this.swayPhase = 0,
+    this.swayHarmonic = 1,
     this.leanAmplitude = 0,
     this.leanPhase = 0,
+    this.leanHarmonic = 1,
   });
 
   /// Vertical bob amplitude in local units.
@@ -232,17 +256,23 @@ class SineRootChannel extends RootChannel {
 
   final double swayAmplitude;
   final double swayPhase;
+  final double swayHarmonic;
 
   final double leanAmplitude;
   final double leanPhase;
+  final double leanHarmonic;
 
   @override
   ({double dx, double dy, double rotation}) sample(double p) {
     const twoPi = 2 * math.pi;
     return (
-      dx: swayAmplitude * math.sin(twoPi * (p + swayPhase)),
+      dx: swayAmplitude * math.sin(swayHarmonic * twoPi * (p + swayPhase)),
       dy: bobAmplitude * math.sin(bobHarmonic * twoPi * (p + bobPhase)),
-      rotation: leanAmplitude * math.sin(twoPi * (p + leanPhase)),
+      rotation:
+          leanAmplitude *
+          math.sin(
+            leanHarmonic * twoPi * (p + leanPhase),
+          ),
     );
   }
 }
@@ -327,6 +357,7 @@ class Clip {
     this.root = const SineRootChannel(),
     this.locomotionSpeed = 0,
     this.groundSpans = const [],
+    this.contactSpans = const [],
   });
 
   /// Display/lookup name.
@@ -353,6 +384,10 @@ class Clip {
   /// locomotion (see [GroundSpan]) instead of [locomotionSpeed]. Empty for
   /// in-place clips (idle) and one-shots (sit/jump).
   final List<GroundSpan> groundSpans;
+
+  /// Per-foot support spans for in-place clips. These drive contact shadows and
+  /// review overlays only; they do not make a clip travel across the stage.
+  final List<GroundSpan> contactSpans;
 
   /// Whether this clip travels across the stage at all (either model).
   bool get locomotes => locomotionSpeed != 0 || groundSpans.isNotEmpty;

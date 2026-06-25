@@ -23,6 +23,24 @@ void main() {
       expect(sameEverywhere, isFalse);
     });
 
+    test('different seeds start their blink schedules independently', () {
+      final a = AutonomicLayer(
+        seed: 11,
+        blinkIntervalBase: 1.7,
+        blinkIntervalJitter: 1.1,
+      );
+      final b = AutonomicLayer(
+        seed: 29,
+        blinkIntervalBase: 1.7,
+        blinkIntervalJitter: 1.1,
+      );
+
+      final divergedEarly = List.generate(40, (i) => i * 0.05).any(
+        (t) => a.sampleAt(t).eyeOpen != b.sampleAt(t).eyeOpen,
+      );
+      expect(divergedEarly, isTrue);
+    });
+
     test('eyeOpen stays within 0..1 and starts open', () {
       final layer = AutonomicLayer();
       expect(layer.sampleAt(0).eyeOpen, 1);

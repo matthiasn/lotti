@@ -1,10 +1,11 @@
 # Character — 2D skeletal ("bones") animation
 
 Programmatic 2D skeletal animation: a rigged character (skeleton + face) driven
-by **procedural, data-driven** motion cycles (walk / run / sit / jump) and an
-expressive face (smile / frown / surprise / blink). The engine is pure Dart and
-deterministic; the same `(clip, time)` always resolves the same frame, so the
-live widget and the offline film-strip renderer produce identical pixels.
+by **procedural, data-driven** motion cycles (walk / run / kick / dance / sit /
+jump) and an expressive face (smile / frown / surprise / blink). The engine is
+pure Dart and deterministic; the same `(clip, time)` always resolves the same
+frame, so the live widget and the offline film-strip renderer produce identical
+pixels.
 
 This is **Phase 1** (proof of concept). The full design — including the offline,
 AI-assisted SVG → rig pipeline and the low-end `drawAtlas` runtime — lives in
@@ -15,14 +16,14 @@ AI-assisted SVG → rig pipeline and the low-end `drawAtlas` runtime — lives i
 | Area | State |
 | --- | --- |
 | Pure-Dart engine (math, FK, clips, face, autonomic) | ✅ built + unit-tested |
-| Hand-authored "cat in a suit" rig + 5 cycles | ✅ `samples/cat_in_suit.dart` |
+| Hand-authored "cat in a suit" rig + 7 clips | ✅ `samples/cat_in_suit.dart` |
 | `CustomPainter` runtime drawing bones + soft limb ribbons | ✅ `runtime/` |
 | Bendy ribbons for arms/legs/tail | ✅ shoulder→bicep→wrist, hip→quad→knee→calf→ankle, and 7-control tail surfaces |
 | Tapered tie (`taperedCapsule` shape) | ✅ 2-link draping tie |
 | Locomotion — the cat walks/runs across & turns at edges | ✅ `runtime/character_painter.dart` |
-| Ground floor + foot-tracking contact shadow | ✅ `runtime/character_painter.dart` |
+| Ground floor + per-foot contact shadows | ✅ `runtime/character_painter.dart` |
 | Film-strip + frame-grid + onion + travel + live harness | ✅ `test/.../{film_strip,frame_grid}_test.dart` |
-| Interactive demo (clip/expression/blink/wander keys) | ✅ `demo/character_demo.dart` |
+| Interactive demo (clip/expression/blink/wander/BPM keys) | ✅ `demo/character_demo.dart` |
 | Offline AI rigging (SVG → rig) | ⛔ not started (Phase 2) |
 | Batched `drawAtlas` runtime + degradation ladder | ⛔ Phase 2 |
 | Quadruped (4-leg) stance + rear-up transition | ⛔ Phase 2 |
@@ -41,9 +42,15 @@ The walk/run are **keyframed step cycles** (distinct stance/swing, a weight bob,
 a pelvic-list line of action, knee-snap and flat-foot plant). The body
 **travels** at a stride-matched `locomotionSpeed` so the planted foot holds its
 world position instead of skating; the live painter ping-pongs it across the
-stage and flips facing at the edges. The tail is a single ribbon driven by a
-7-link drag chain; the tie is a 2-link cloth pendulum; ears flick a beat behind
-the head bob.
+stage and flips facing at the edges. Kick and dance are in-place performance
+clips for judging pose appeal, balance, squash/stretch and arm/tail arcs without
+stage travel hiding the body mechanics. The dance clip is authored as a
+12-count phrase at 120 BPM: an 8-count groove plus a 4-count Gbese-style
+toe-flick bounce, with a small additive root pulse layered over the keyed body
+motion so slower tempos still have off-beat life. The demo exposes a BPM slider
+for previewing that same authored phrase from 80–240 BPM. The tail is a single
+ribbon driven by a 7-link drag chain; the tie is a keyed 2-link cloth shape;
+ears flick a beat behind the head bob.
 
 ## Architecture
 
@@ -152,8 +159,12 @@ stateDiagram-v2
   profile, and hides the rigid segment drawables named by `hiddenBoneIds`.
 - **`Clip` + channels** — a clip is a sparse map of per-bone channels plus root
   motion. `SineChannel` builds cyclic motion (`bias + amp·sin(2π(p+phase)) +
-  harmonic`); `KeyframeChannel` builds eased one-shots. New cycles are **data,
-  not code**.
+  harmonic`); `KeyframeChannel` builds eased/keyed poses. Root motion can be a
+  `SineRootChannel`, `KeyframeRootChannel`, or additive `LayeredRootChannel`
+  when a large authored body path needs small rhythmic pulses on top.
+  `groundSpans` drive foot-locked locomotion; `contactSpans` damp support-foot
+  drift for non-loop stage moves and drive contact shadows for looped in-place
+  moves without making kick/dance travel. New cycles are **data, not code**.
 - **`FaceState` / `Expression`** — ~8 continuous "knobs" (mouth shape + open,
   brow raise/angle, eyelid open, gaze). Six presets (neutral, content, happy,
   surprised, sad, angry). Mouths are **shape-swapped**, not deformed.
@@ -179,7 +190,7 @@ fvm flutter test test/features/character/frame_grid_test.dart   # grids + onions
 | --- | --- |
 | `<clip>_grid.png` | every sampled frame as a labelled contact sheet |
 | `<clip>_onion.png` | all frames superimposed — reveals arcs (crisp = rigid, blur = moving) |
-| `<clip>_live.png` | one frame through the real `CharacterPainter` (floor + contact shadow) |
+| `<clip>_live.png` | one frame through the real `CharacterPainter` (floor + per-foot contact shadows) |
 | `<clip>_travel.png` | locomoting clips overlaid while travelling — planted feet should be **crisp footprints**, a smear means foot-skate |
 | `expressions.png`, `blink.png` | the six face presets · an asymmetric blink |
 

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/rendering.dart';
 import 'package:lotti/features/character/model/affine2d.dart';
 import 'package:lotti/features/character/model/clip.dart';
@@ -41,10 +43,32 @@ class CharacterPainter extends CustomPainter {
     this.shadowColor = const Color(0x33000000),
     this.locomote = false,
     this.walkingPair = false,
+    this.partnerScene,
+    this.ensembleScenes = const [],
+    this.ensembleExpressions = const [],
+    this.synchronousEnsemble = false,
     CharacterRenderer? renderer,
   }) : _renderer = renderer ?? CharacterRenderer();
 
   final CharacterScene scene;
+
+  /// Optional alternate rig/scene for the second cat in pair mode. When null,
+  /// pair mode paints the primary [scene] twice (the historical walk behavior).
+  final CharacterScene? partnerScene;
+
+  /// Additional alternate scenes for ensemble mode. When provided, pair mode
+  /// paints `[scene, ...ensembleScenes]` instead of the legacy two-cat pair.
+  final List<CharacterScene> ensembleScenes;
+
+  /// Optional per-member expressions. Index 0 applies to [scene]; subsequent
+  /// entries apply to [ensembleScenes]. Missing entries fall back to
+  /// [expression].
+  final List<Expression> ensembleExpressions;
+
+  /// When true, every ensemble member samples the clip at [timeSeconds]. When
+  /// false, members get staggered phase offsets for a looser walk-showcase feel.
+  final bool synchronousEnsemble;
+
   final Clip clip;
   final double timeSeconds;
   final Expression expression;
@@ -69,16 +93,18 @@ class CharacterPainter extends CustomPainter {
   /// hold still in world space instead of skating in place.
   final bool locomote;
 
-  /// When true, paints two copies of the same rig side-by-side with a phase
-  /// offset. The pair shares one travelling group centre, so they keep their
-  /// lane spacing instead of ping-ponging into each other.
+  /// When true, paints multiple copies side-by-side. The group shares one
+  /// travelling centre, so they keep their lane spacing instead of ping-ponging
+  /// into each other.
   final bool walkingPair;
   final CharacterRenderer _renderer;
 
   // Keep the cat this far from the stage edges as it walks back and forth.
-  static const double _edgeMargin = 64;
-  static const double _pairScaleFactor = 0.82;
-  static const double _pairSpacing = 155;
+  static const double _edgeMargin = 44;
+  static const double _pairScaleFactor = 0.7;
+  static const double _trioScaleFactor = 0.516;
+  static const double _pairSpacing = 215;
+  static const double _trioSpacing = 285;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -94,11 +120,16 @@ class CharacterPainter extends CustomPainter {
     // the stage when locomotion is on, so the body travels over a planted foot.
     var centreX = size.width / 2;
     var flip = false;
+    final memberCount = walkingPair
+        ? (ensembleScenes.isEmpty ? 2 : ensembleScenes.length + 1)
+        : 1;
     if (locomote && clip.locomotes) {
-      final drawScale = walkingPair ? scale * _pairScaleFactor : scale;
+      final drawScale = walkingPair ? scale * _scaleFactor(memberCount) : scale;
       final travelPx =
           scene.locomotionOffset(clip, timeSeconds).abs() * drawScale;
-      final groupHalfWidth = walkingPair ? _pairSpacing * drawScale / 2 : 0.0;
+      final groupHalfWidth = walkingPair
+          ? _spacing(memberCount) * drawScale * (memberCount - 1) / 2
+          : 0.0;
       final margin = _edgeMargin + groupHalfWidth;
       final band = (size.width - 2 * margin).clamp(1.0, size.width);
       final cyc = travelPx % (2 * band);
@@ -113,58 +144,95 @@ class CharacterPainter extends CustomPainter {
     }
 
     if (walkingPair) {
-      final drawScale = scale * _pairScaleFactor;
-      final spacing = _pairSpacing * drawScale;
-      _paintCharacterAt(
-        canvas,
-        size,
-        floorY: floorY,
-        centreX: centreX - spacing / 2,
-        flip: flip,
-        timeSeconds: timeSeconds,
-        scale: drawScale,
-      );
-      _paintCharacterAt(
-        canvas,
-        size,
-        floorY: floorY,
-        centreX: centreX + spacing / 2,
-        flip: flip,
-        timeSeconds: timeSeconds + clip.duration * 0.5,
-        scale: drawScale,
-      );
+      final members = ensembleScenes.isEmpty
+          ? [scene, partnerScene ?? scene]
+          : [scene, ...ensembleScenes];
+      final drawScale = scale * _scaleFactor(members.length);
+      final spacing = _spacing(members.length) * drawScale;
+      final startX = centreX - spacing * (members.length - 1) / 2;
+      for (final i in Iterable<int>.generate(members.length)) {
+        final memberScene = members[i];
+        final phaseOffset = synchronousEnsemble
+            ? _ensembleMicroTimingOffset(i, timeSeconds, clip.duration)
+            : clip.duration * i / members.length;
+        _paintCharacterAt(
+          memberScene,
+          canvas,
+          size,
+          floorY: floorY,
+          centreX: startX + spacing * i,
+          flip: flip,
+          timeSeconds: timeSeconds + phaseOffset,
+          expression: _expressionAt(i),
+          scale: drawScale,
+          feetFraction: feetFraction,
+        );
+      }
       return;
     }
 
     _paintCharacterAt(
+      scene,
       canvas,
       size,
       floorY: floorY,
       centreX: centreX,
       flip: flip,
       timeSeconds: timeSeconds,
+      expression: expression,
       scale: scale,
+      feetFraction: feetFraction,
     );
   }
 
+  static double _scaleFactor(int memberCount) =>
+      memberCount >= 3 ? _trioScaleFactor : _pairScaleFactor;
+
+  static double _spacing(int memberCount) =>
+      memberCount >= 3 ? _trioSpacing : _pairSpacing;
+
+  static double _ensembleMicroTimingOffset(
+    int index,
+    double timeSeconds,
+    double duration,
+  ) {
+    if (index == 0 || duration <= 0) return 0;
+    final cycle = timeSeconds / duration;
+    final p = cycle - cycle.floorToDouble();
+    final beatWave = math.sin(p * math.pi * 24);
+    final halfBeatWave = math.sin(p * math.pi * 48);
+    return switch (index % 3) {
+      1 => 0.014 * beatWave + 0.006 * halfBeatWave,
+      2 => -0.012 * beatWave + 0.005 * halfBeatWave,
+      _ => 0.006 * beatWave - 0.004 * halfBeatWave,
+    };
+  }
+
+  Expression _expressionAt(int index) => index < ensembleExpressions.length
+      ? ensembleExpressions[index]
+      : expression;
+
   void _paintCharacterAt(
+    CharacterScene drawScene,
     Canvas canvas,
     Size size, {
     required double floorY,
     required double centreX,
     required bool flip,
     required double timeSeconds,
+    required Expression expression,
     required double scale,
+    required double feetFraction,
   }) {
     final base = groundedBase(
       size,
       centreX: centreX,
       scale: scale,
       feetFraction: feetFraction,
-      feetOffset: scene.restFeetOffset,
+      feetOffset: drawScene.restFeetOffset,
       flip: flip,
     );
-    final frame = scene.frameAt(
+    final frame = drawScene.frameAt(
       clip: clip,
       timeSeconds: timeSeconds,
       expression: expression,
@@ -172,12 +240,82 @@ class CharacterPainter extends CustomPainter {
       eyeOpenScale: eyeOpenScale,
     );
 
-    // Contact shadow: a soft ellipse pinned to the floor under the feet. As the
-    // lowest foot lifts off the floor (passing, a jump) the shadow shrinks and
-    // fades, which is what reads as weight and contact.
-    final footY = scene.lowestDrawnY(frame.world);
+    _paintContactShadows(
+      canvas,
+      floorY,
+      centreX,
+      scale,
+      frame,
+      timeSeconds,
+      drawScene,
+    );
+
+    _renderer.paint(canvas, drawScene.rig, frame.world, frame.face);
+  }
+
+  void _paintContactShadows(
+    Canvas canvas,
+    double floorY,
+    double centreX,
+    double scale,
+    CharacterFrame frame,
+    double timeSeconds,
+    CharacterScene drawScene,
+  ) {
+    final contactBone = _activeGroundBone(timeSeconds);
+    if (contactBone == null) {
+      _paintBodyShadow(canvas, floorY, centreX, scale, frame, drawScene);
+      return;
+    }
+
+    final transform = frame.world[contactBone];
+    final drawable = drawScene.rig.bone(contactBone)?.drawable;
+    if (transform == null || drawable == null) return;
+    final bottom = transform.transformPoint(
+      drawable.dx,
+      drawable.dy + drawable.height / 2,
+    );
+    final lift = ((floorY - bottom.y) / (90 * scale)).clamp(0.0, 1.0);
+    final shadowW = 54 * scale * (1 - 0.35 * lift);
+    final baseAlpha = (shadowColor.a * 255.0).round();
+    final shadowAlpha = (baseAlpha * 1.2 * (1 - 0.75 * lift)).round().clamp(
+      0,
+      255,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(bottom.x, floorY + 2),
+        width: shadowW,
+        height: shadowW * 0.16,
+      ),
+      Paint()..color = shadowColor.withAlpha(shadowAlpha),
+    );
+  }
+
+  String? _activeGroundBone(double timeSeconds) {
+    final spans = clip.contactSpans.isNotEmpty
+        ? clip.contactSpans
+        : clip.groundSpans;
+    if (spans.isEmpty || clip.duration <= 0) return null;
+    final raw = timeSeconds / clip.duration;
+    final p = clip.loop ? raw - raw.floorToDouble() : raw.clamp(0.0, 1.0);
+    for (final span in spans) {
+      if (p >= span.start && p < span.end) return span.bone;
+    }
+    return spans.last.bone;
+  }
+
+  void _paintBodyShadow(
+    Canvas canvas,
+    double floorY,
+    double centreX,
+    double scale,
+    CharacterFrame frame,
+    CharacterScene drawScene,
+  ) {
+    final footY = drawScene.lowestDrawnY(frame.world);
     final lift = ((floorY - footY) / (90 * scale)).clamp(0.0, 1.0);
-    final shadowW = 96 * scale * (1 - 0.5 * lift);
+    final shadowW = 78 * scale * (1 - 0.45 * lift);
     final shadowAlpha = ((shadowColor.a * 255.0).round() * (1 - 0.7 * lift))
         .round()
         .clamp(0, 255);
@@ -185,12 +323,10 @@ class CharacterPainter extends CustomPainter {
       Rect.fromCenter(
         center: Offset(centreX, floorY),
         width: shadowW,
-        height: shadowW * 0.2,
+        height: shadowW * 0.16,
       ),
       Paint()..color = shadowColor.withAlpha(shadowAlpha),
     );
-
-    _renderer.paint(canvas, scene.rig, frame.world, frame.face);
   }
 
   @override
@@ -206,5 +342,9 @@ class CharacterPainter extends CustomPainter {
       old.shadowColor != shadowColor ||
       old.locomote != locomote ||
       old.walkingPair != walkingPair ||
+      old.partnerScene != partnerScene ||
+      old.ensembleScenes != ensembleScenes ||
+      old.ensembleExpressions != ensembleExpressions ||
+      old.synchronousEnsemble != synchronousEnsemble ||
       old._renderer != _renderer;
 }

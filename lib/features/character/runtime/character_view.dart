@@ -14,8 +14,13 @@ class CharacterView extends StatefulWidget {
   const CharacterView({
     required this.scene,
     required this.clip,
+    this.partnerScene,
+    this.ensembleScenes = const [],
+    this.ensembleExpressions = const [],
+    this.synchronousEnsemble = false,
     this.expression = Expression.neutral,
     this.scale = 1,
+    this.playbackRate = 1,
     this.paused = false,
     this.eyeOpenScale = 1,
     this.groundColor,
@@ -25,9 +30,23 @@ class CharacterView extends StatefulWidget {
   });
 
   final CharacterScene scene;
+
+  /// Optional alternate scene for the second cat when [walkingPair] is true.
+  final CharacterScene? partnerScene;
+
+  /// Additional scenes for multi-cat ensemble mode.
+  final List<CharacterScene> ensembleScenes;
+
+  /// Optional per-cat expressions for ensemble mode.
+  final List<Expression> ensembleExpressions;
+
+  /// Keeps all ensemble members on the same phase when true.
+  final bool synchronousEnsemble;
+
   final Clip clip;
   final Expression expression;
   final double scale;
+  final double playbackRate;
   final bool paused;
 
   /// Manual eyelid multiplier (1 = no change). The demo animates this to play a
@@ -89,6 +108,24 @@ class _CharacterViewState extends State<CharacterView>
       if (!widget.paused) _ticker.start();
       return;
     }
+    if (oldWidget.playbackRate != widget.playbackRate) {
+      final wasActive = _ticker.isActive;
+      final rawSeconds =
+          (_offset + _elapsed).inMicroseconds / Duration.microsecondsPerSecond;
+      final displaySeconds = rawSeconds * oldWidget.playbackRate;
+      _offset = Duration(
+        microseconds:
+            (displaySeconds /
+                    widget.playbackRate *
+                    Duration.microsecondsPerSecond)
+                .round(),
+      );
+      _elapsed = Duration.zero;
+      if (wasActive) {
+        _ticker.stop();
+        if (!widget.paused) _ticker.start();
+      }
+    }
     if (widget.paused && _ticker.isActive) {
       // Bank the elapsed so the clock holds steady, then resumes from here.
       _offset += _elapsed;
@@ -108,10 +145,17 @@ class _CharacterViewState extends State<CharacterView>
   @override
   Widget build(BuildContext context) {
     final total = _offset + _elapsed;
-    final seconds = total.inMicroseconds / Duration.microsecondsPerSecond;
+    final seconds =
+        total.inMicroseconds /
+        Duration.microsecondsPerSecond *
+        widget.playbackRate;
     return CustomPaint(
       painter: CharacterPainter(
         scene: widget.scene,
+        partnerScene: widget.partnerScene,
+        ensembleScenes: widget.ensembleScenes,
+        ensembleExpressions: _ensembleExpressionsAt(seconds),
+        synchronousEnsemble: widget.synchronousEnsemble,
         clip: widget.clip,
         timeSeconds: seconds,
         expression: widget.expression,
@@ -124,5 +168,35 @@ class _CharacterViewState extends State<CharacterView>
       ),
       child: const SizedBox.expand(),
     );
+  }
+
+  List<Expression> _ensembleExpressionsAt(double seconds) {
+    if (widget.ensembleExpressions.isEmpty) return const [];
+    const offsets = [0.0, 0.65, 1.15, 1.65];
+    const period = 1.45;
+    return [
+      for (final (i, seedExpression) in widget.ensembleExpressions.indexed)
+        _cycledExpression(
+          seedExpression,
+          seconds + offsets[i % offsets.length],
+          period,
+        ),
+    ];
+  }
+
+  Expression _cycledExpression(
+    Expression seedExpression,
+    double seconds,
+    double period,
+  ) {
+    const presets = [
+      Expression.neutral,
+      Expression.content,
+      Expression.happy,
+      Expression.surprised,
+    ];
+    final base = presets.indexWhere((e) => e.name == seedExpression.name);
+    final phase = (seconds / period).floor();
+    return presets[((base < 0 ? 0 : base) + phase) % presets.length];
   }
 }

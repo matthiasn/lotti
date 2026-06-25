@@ -26,7 +26,7 @@ import 'package:lotti/features/character/samples/cat_in_suit.dart';
 /// | Env var              | Meaning                                  | Default |
 /// | -------------------- | ---------------------------------------- | ------- |
 /// | `CHARACTER_STRIP_DIR`| output directory                         | `build/character_film_strips` |
-/// | `GRID_CLIPS`         | comma list: walk,run,sit,jump,idle       | all     |
+/// | `GRID_CLIPS`         | comma list of clips                    | all     |
 /// | `GRID_FRAMES`        | frames per clip (override)               | 24 loop / 32 one-shot |
 /// | `GRID_COLS`          | columns in the contact sheet             | 6       |
 /// | `GRID_SCALE`         | character scale                          | 0.62    |
@@ -259,7 +259,12 @@ void main() {
 
   // Renders one frame through the real CharacterPainter at a demo-like stage
   // size, so the floor + contact shadow + auto-fit framing match the live view.
-  Future<Uint8List> renderLive(CharacterScene scene, Clip clip) async {
+  Future<Uint8List> renderLive(
+    CharacterScene scene,
+    CharacterScene partnerScene,
+    CharacterScene thirdScene,
+    Clip clip,
+  ) async {
     const w = 360.0;
     const h = 520.0;
     final recorder = ui.PictureRecorder();
@@ -275,9 +280,87 @@ void main() {
       expression: expression,
       scale: h * 0.78 / 300.0,
       groundColor: const Color(0xFF374551),
-      walkingPair: clip.name == CatClips.walk.name,
+      walkingPair:
+          clip.name == CatClips.walk.name || clip.name == CatClips.dance.name,
+      partnerScene: partnerScene,
+      ensembleScenes: clip.name == CatClips.dance.name
+          ? [partnerScene, thirdScene]
+          : const [],
+      ensembleExpressions: clip.name == CatClips.dance.name
+          ? _ensembleExpressionsAt(clip.duration * 0.5, expression)
+          : const [],
+      synchronousEnsemble: clip.name == CatClips.dance.name,
     ).paint(canvas, const Size(w, h));
     return _pngOf(recorder.endRecording(), w.round(), h.round());
+  }
+
+  // A contact sheet through the real live painter. Unlike `renderGrid`, this
+  // shows the actual ensemble staging, expressions, blink/look seeds, floor,
+  // contact shadows, and spacing the demo uses.
+  Future<Uint8List> renderLiveGrid(
+    CharacterScene scene,
+    CharacterScene partnerScene,
+    CharacterScene thirdScene,
+    Clip clip,
+    int frames,
+  ) async {
+    const liveW = 520.0;
+    const liveH = 420.0;
+    final rows = (frames / cols).ceil();
+    final width = liveW * cols;
+    final height = liveH * rows;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder)
+      ..drawRect(
+        Rect.fromLTWH(0, 0, width, height),
+        Paint()..color = const Color(0xFF26303A),
+      );
+
+    for (var i = 0; i < frames; i++) {
+      final col = i % cols;
+      final row = i ~/ cols;
+      final dx = col * liveW;
+      final dy = row * liveH;
+      final t = sampleTime(clip, i, frames, clip.duration);
+      final p = clip.duration <= 0 ? 0.0 : t / clip.duration;
+
+      canvas
+        ..save()
+        ..translate(dx, dy)
+        ..clipRect(const Rect.fromLTWH(0, 0, liveW, liveH))
+        ..drawRect(
+          const Rect.fromLTWH(0, 0, liveW, liveH),
+          Paint()..color = const Color(0xFF26303A),
+        );
+
+      CharacterPainter(
+        scene: scene,
+        clip: clip,
+        timeSeconds: t,
+        expression: expression,
+        scale: liveH * 0.78 / 300.0,
+        groundColor: const Color(0xFF374551),
+        walkingPair: clip.name == CatClips.dance.name,
+        partnerScene: partnerScene,
+        ensembleScenes: clip.name == CatClips.dance.name
+            ? [partnerScene, thirdScene]
+            : const [],
+        ensembleExpressions: clip.name == CatClips.dance.name
+            ? _ensembleExpressionsAt(t, expression)
+            : const [],
+        synchronousEnsemble: clip.name == CatClips.dance.name,
+      ).paint(canvas, const Size(liveW, liveH));
+
+      drawLabel(
+        canvas,
+        '#$i  p=${p.toStringAsFixed(2)}',
+        6,
+        5,
+      );
+      canvas.restore();
+    }
+
+    return _pngOf(recorder.endRecording(), width.round(), height.round());
   }
 
   // Travel onion: overlays the cat at successive times with locomotion ON, so a
@@ -336,7 +419,15 @@ void main() {
         final clip = clipsByName[name]!;
         final scene = CharacterScene(
           buildCatInSuitRig(),
-          autonomic: AutonomicLayer(),
+          autonomic: _reviewAutonomic(11),
+        );
+        final partnerScene = CharacterScene(
+          buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+          autonomic: _reviewAutonomic(29),
+        );
+        final thirdScene = CharacterScene(
+          buildCatInSuitRig(palette: CatInSuitPalette.darkBrown),
+          autonomic: _reviewAutonomic(47),
         );
         final frames =
             int.tryParse(env['GRID_FRAMES'] ?? '') ?? (clip.loop ? 24 : 32);
@@ -374,10 +465,30 @@ void main() {
         }
 
         if (live) {
-          final livePng = await renderLive(scene, clip);
+          final livePng = await renderLive(
+            scene,
+            partnerScene,
+            thirdScene,
+            clip,
+          );
           File('${outputDir.path}/${name}_live.png').writeAsBytesSync(livePng);
           // ignore: avoid_print
           print('wrote ${outputDir.path}/${name}_live.png');
+
+          if (name == CatClips.dance.name) {
+            final liveGridPng = await renderLiveGrid(
+              scene,
+              partnerScene,
+              thirdScene,
+              clip,
+              frames,
+            );
+            File(
+              '${outputDir.path}/${name}_ensemble_grid.png',
+            ).writeAsBytesSync(liveGridPng);
+            // ignore: avoid_print
+            print('wrote ${outputDir.path}/${name}_ensemble_grid.png');
+          }
         }
 
         if (live && clip.locomotionSpeed != 0) {
@@ -397,6 +508,41 @@ Expression _expressionByName(String name) => Expression.presets.firstWhere(
   (e) => e.name == name,
   orElse: () => Expression.content,
 );
+
+AutonomicLayer _reviewAutonomic(int seed) => AutonomicLayer(
+  seed: seed,
+  blinkIntervalBase: 1.7,
+  blinkIntervalJitter: 1.1,
+  eyeDartInterval: 1.05,
+  eyeDartAmplitude: 0.75,
+);
+
+List<Expression> _ensembleExpressionsAt(double seconds, Expression lead) {
+  const seeds = [Expression.neutral, Expression.content, Expression.happy];
+  const offsets = [0.0, 0.65, 1.15];
+  const period = 1.45;
+  return [
+    _cycledExpression(lead, seconds + offsets[0], period),
+    for (var i = 1; i < seeds.length; i++)
+      _cycledExpression(seeds[i], seconds + offsets[i], period),
+  ];
+}
+
+Expression _cycledExpression(
+  Expression seedExpression,
+  double seconds,
+  double period,
+) {
+  const presets = [
+    Expression.neutral,
+    Expression.content,
+    Expression.happy,
+    Expression.surprised,
+  ];
+  final base = presets.indexWhere((e) => e.name == seedExpression.name);
+  final phase = (seconds / period).floor();
+  return presets[((base < 0 ? 0 : base) + phase) % presets.length];
+}
 
 Future<Uint8List> _pngOf(ui.Picture picture, int w, int h) async {
   try {

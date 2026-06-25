@@ -92,7 +92,8 @@ class AutonomicLayer {
   int _cursorIndex = 0;
 
   /// Initial gap so the character doesn't blink at t=0.
-  double get _firstBlinkStart => blinkIntervalBase * 0.5;
+  double get _firstBlinkStart =>
+      blinkIntervalBase * (0.35 + _rand(3, 0) * 0.35);
 
   double _eyeOpenAt(double t) {
     if (t < 0) return 1;

@@ -187,12 +187,13 @@ class CharacterScene {
     final auto = autonomic.sampleAt(timeSeconds);
 
     // Breathing nudges the whole body subtly, even mid-walk.
-    final posed = Pose(
+    final breathed = Pose(
       joints: pose.joints,
       rootDx: pose.rootDx,
       rootDy: pose.rootDy + auto.breath * 1.4,
       rootRotation: pose.rootRotation,
     );
+    final posed = _contactLockedPose(clip, timeSeconds, breathed);
 
     final world = solver.solve(posed, base: base);
     var face = faceSolver.applyAutonomic(expression.state, auto);
@@ -204,6 +205,74 @@ class CharacterScene {
     }
     final locomotion = locomotionOffset(clip, timeSeconds);
     return CharacterFrame(world: world, face: face, locomotionX: locomotion);
+  }
+
+  /// In-place one-shots do not locomote, but their support foot still needs to
+  /// feel planted. [Clip.contactSpans] marks that support foot; this pass
+  /// translates the root toward the contact-start anchor. Looping clips keep
+  /// contact spans for shadows only: hard support correction in a loop creates
+  /// visible handoff pops and makes dance cycles look jerky.
+  Pose _contactLockedPose(Clip clip, double timeSeconds, Pose pose) {
+    if (clip.loop) return pose;
+    final p = _clipPhase(clip, timeSeconds);
+    final span = _activeContactSpanAt(clip, p);
+    if (span == null) return pose;
+
+    final anchorPose = evaluator.evaluate(clip, span.start * clip.duration);
+    final currentWorld = solver.solve(pose);
+    final anchorWorld = solver.solve(anchorPose);
+    final current = _contactPoint(currentWorld, span.bone);
+    final anchor = _contactPoint(anchorWorld, span.bone);
+    if (current == null || anchor == null) return pose;
+    final strength = _contactLockStrength(clip, span, p);
+
+    return Pose(
+      joints: pose.joints,
+      rootDx: pose.rootDx + (anchor.x - current.x) * strength,
+      rootDy: pose.rootDy + (anchor.y - current.y) * strength,
+      rootRotation: pose.rootRotation,
+    );
+  }
+
+  double _clipPhase(Clip clip, double timeSeconds) {
+    if (clip.duration <= 0) return 0;
+    final raw = timeSeconds / clip.duration;
+    return clip.loop ? raw - raw.floorToDouble() : raw.clamp(0.0, 1.0);
+  }
+
+  GroundSpan? _activeContactSpanAt(Clip clip, double p) {
+    if (clip.contactSpans.isEmpty) return null;
+    for (final span in clip.contactSpans) {
+      if (p >= span.start && p < span.end) return span;
+    }
+    return clip.contactSpans.last;
+  }
+
+  double _contactLockStrength(Clip clip, GroundSpan span, double p) {
+    const base = 0.94;
+    const fade = 0.08;
+    final fadeIn = _smoothUnit((p - span.start) / fade);
+    final fadeOut = _smoothUnit((span.end - p) / fade);
+    final edge = fadeIn < fadeOut ? fadeIn : fadeOut;
+    return base * edge;
+  }
+
+  double _smoothUnit(double t) {
+    final x = t.clamp(0.0, 1.0);
+    return x * x * (3 - 2 * x);
+  }
+
+  ({double x, double y})? _contactPoint(
+    Map<String, Affine2D> world,
+    String boneId,
+  ) {
+    final transform = world[boneId];
+    final drawable = rig.bone(boneId)?.drawable;
+    if (transform == null || drawable == null) return null;
+    return transform.transformPoint(
+      drawable.dx,
+      drawable.dy + drawable.height / 2,
+    );
   }
 }
 

@@ -106,6 +106,35 @@ void main() {
       expect(s.dx, closeTo(2, 1e-9));
       expect(s.rotation, closeTo(0.5, 1e-9));
     });
+
+    test('sway and lean can use harmonic multipliers', () {
+      const root = SineRootChannel(
+        swayAmplitude: 2,
+        swayHarmonic: 2,
+        leanAmplitude: 0.5,
+        leanHarmonic: 2,
+      );
+      final s = root.sample(0.125);
+      expect(s.dx, closeTo(2, 1e-9));
+      expect(s.rotation, closeTo(0.5, 1e-9));
+    });
+  });
+
+  group('LayeredRootChannel', () {
+    test('adds root samples from all child channels', () {
+      const root = LayeredRootChannel([
+        KeyframeRootChannel([
+          RootKeyframe(p: 0),
+          RootKeyframe(p: 1, dx: 4, dy: 6, rotation: 0.2, ease: Ease.linear),
+        ]),
+        SineRootChannel(bobAmplitude: 2, bobHarmonic: 1),
+      ]);
+
+      final s = root.sample(0.25);
+      expect(s.dx, closeTo(1, 1e-9));
+      expect(s.dy, closeTo(3.5, 1e-9));
+      expect(s.rotation, closeTo(0.05, 1e-9));
+    });
   });
 
   group('KeyframeRootChannel', () {
@@ -132,5 +161,20 @@ void main() {
   test('both channel kinds belong to the sealed JointChannel hierarchy', () {
     expect(const SineChannel(amplitude: 1), isA<JointChannel>());
     expect(const KeyframeChannel(<Keyframe>[]), isA<JointChannel>());
+  });
+
+  group('Clip', () {
+    test('contact spans do not make an in-place clip locomote', () {
+      const clip = Clip(
+        name: 'tap',
+        duration: 1,
+        channels: {},
+        contactSpans: [GroundSpan('foot.L', 0, 1)],
+      );
+
+      expect(clip.contactSpans.single.bone, 'foot.L');
+      expect(clip.groundSpans, isEmpty);
+      expect(clip.locomotes, isFalse);
+    });
   });
 }

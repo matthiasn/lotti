@@ -22,13 +22,18 @@ void main() {
     matching: find.textContaining(name),
   );
 
-  testWidgets('builds with the default walk clip and neutral expression', (
+  testWidgets('builds with the default dance trio and neutral expression', (
     tester,
   ) async {
     await tester.pumpWidget(const CharacterDemoApp());
-    expect(view(tester).clip.name, 'walk');
+    expect(view(tester).clip.name, 'dance');
     expect(view(tester).expression.name, 'neutral');
     expect(view(tester).walkingPair, isTrue);
+    expect(view(tester).ensembleScenes.length, 2);
+    expect(view(tester).ensembleExpressions.length, 3);
+    expect(view(tester).synchronousEnsemble, isTrue);
+    expect(view(tester).playbackRate, 1);
+    expect(find.text('BPM 120'), findsOneWidget);
   });
 
   testWidgets('selecting a motion chip switches the clip', (tester) async {
@@ -51,6 +56,19 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.digit2);
     await tester.pump();
     expect(view(tester).clip.name, 'run');
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+    await tester.pump();
+    expect(view(tester).clip.name, 'kick');
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit4);
+    await tester.pump();
+    expect(view(tester).clip.name, 'dance');
+    expect(view(tester).walkingPair, isTrue);
+    expect(view(tester).partnerScene, isNotNull);
+    expect(view(tester).ensembleScenes.length, 2);
+    expect(view(tester).ensembleExpressions.length, 3);
+    expect(view(tester).synchronousEnsemble, isTrue);
   });
 
   testWidgets('letter keys select the expression', (tester) async {
@@ -70,6 +88,22 @@ void main() {
     await tester.pump(const Duration(milliseconds: 70));
     // Mid-close, the manual blink has driven the eyelids well shut.
     expect(view(tester).eyeOpenScale, lessThan(0.5));
+  });
+
+  testWidgets('the BPM slider controls dance playback up to 240', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const CharacterDemoApp());
+    final slider = tester.widget<Slider>(find.byType(Slider));
+
+    expect(slider.min, 80);
+    expect(slider.max, 240);
+    expect(slider.value, 120);
+
+    await tester.drag(find.byType(Slider), const Offset(500, 0));
+    await tester.pump();
+
+    expect(view(tester).playbackRate, greaterThan(1));
   });
 
   testWidgets('the pause action freezes the painter clock', (tester) async {

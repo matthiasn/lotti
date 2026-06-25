@@ -190,7 +190,9 @@ void main() {
     return count;
   }
 
-  testWidgets('renders cycle film strips (walk/run/sit/jump)', (tester) async {
+  testWidgets('renders cycle film strips (walk/run/kick/dance/sit/jump)', (
+    tester,
+  ) async {
     await tester.runAsync(() async {
       final strips = <String, Uint8List>{
         'walk': await renderCycleStrip(
@@ -204,6 +206,18 @@ void main() {
           clip: CatClips.run,
           frames: 14,
           span: CatClips.run.duration,
+        ),
+        'kick': await renderCycleStrip(
+          scene,
+          clip: CatClips.kick,
+          frames: 16,
+          span: CatClips.kick.duration,
+        ),
+        'dance': await renderCycleStrip(
+          scene,
+          clip: CatClips.dance,
+          frames: 14,
+          span: CatClips.dance.duration,
         ),
         'sit': await renderCycleStrip(
           scene,

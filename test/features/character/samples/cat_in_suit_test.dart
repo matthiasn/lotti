@@ -38,20 +38,53 @@ void main() {
       expect(rig.ribbonHiddenBoneIds, contains(CatBones.tail3));
       expect(rig.ribbonHiddenBoneIds, contains(CatBones.legLowerL));
     });
+
+    test('can build a distinct fur palette for paired cats', () {
+      final rig = buildCatInSuitRig(palette: CatInSuitPalette.silverTabby);
+
+      expect(
+        rig.bone(CatBones.head)?.drawable?.color,
+        CatInSuitPalette.silverTabby.fur,
+      );
+      expect(
+        rig.bone(CatBones.handL)?.drawable?.color,
+        CatInSuitPalette.silverTabby.fur,
+      );
+      expect(
+        rig.ribbons.singleWhere((r) => r.id == 'tail.ribbon').color,
+        CatInSuitPalette.silverTabby.fur,
+      );
+      expect(rig.face?.muzzleColor, CatInSuitPalette.silverTabby.muzzle);
+    });
+
+    test('dark brown palette reads near black', () {
+      final rig = buildCatInSuitRig(palette: CatInSuitPalette.darkBrown);
+
+      expect(
+        rig.bone(CatBones.head)?.drawable?.color,
+        CatInSuitPalette.darkBrown.fur,
+      );
+      expect(CatInSuitPalette.darkBrown.fur, 0xFF26201B);
+      expect(CatInSuitPalette.darkBrown.furDark, 0xFF0F0C0A);
+      expect(rig.face?.browColor, CatInSuitPalette.darkBrown.brow);
+      expect(CatInSuitPalette.darkBrown.brow, 0xFFE9D8C2);
+    });
   });
 
   group('CatClips', () {
-    test('exposes the five Phase-1 cycles', () {
+    test('exposes the Phase-1 motion set', () {
       expect(
         CatClips.all.map((c) => c.name).toSet(),
-        {'walk', 'run', 'sit', 'jump', 'idle'},
+        {'walk', 'run', 'kick', 'dance', 'sit', 'jump', 'idle'},
       );
     });
 
     test('cyclic clips loop and one-shots do not', () {
       expect(CatClips.walk.loop, isTrue);
       expect(CatClips.run.loop, isTrue);
+      expect(CatClips.dance.loop, isTrue);
       expect(CatClips.idle.loop, isTrue);
+      expect(CatClips.kick.loop, isFalse);
       expect(CatClips.sit.loop, isFalse);
       expect(CatClips.jump.loop, isFalse);
     });
@@ -64,13 +97,23 @@ void main() {
       expect(channels.containsKey(CatBones.armUpperR), isTrue);
     });
 
-    test('walk and run carry forward locomotion, idle does not', () {
+    test('kick and dance drive the expected performance bones', () {
+      expect(CatClips.kick.channels.containsKey(CatBones.legUpperR), isTrue);
+      expect(CatClips.kick.channels.containsKey(CatBones.armUpperL), isTrue);
+      expect(CatClips.dance.channels.containsKey(CatBones.legUpperL), isTrue);
+      expect(CatClips.dance.channels.containsKey(CatBones.armLowerR), isTrue);
+      expect(CatClips.dance.channels.containsKey(CatBones.tail6), isTrue);
+    });
+
+    test('walk and run carry forward locomotion, stage moves do not', () {
       // The walk uses foot-locked locomotion (ground spans, no speed); the run
-      // still uses a constant speed; idle animates in place.
+      // still uses a constant speed; kick/dance/idle animate in place.
       expect(CatClips.walk.locomotes, isTrue);
       expect(CatClips.walk.groundSpans, isNotEmpty);
       expect(CatClips.run.locomotionSpeed, greaterThan(0));
       expect(CatClips.run.locomotes, isTrue);
+      expect(CatClips.kick.locomotes, isFalse);
+      expect(CatClips.dance.locomotes, isFalse);
       expect(CatClips.idle.locomotes, isFalse);
     });
   });

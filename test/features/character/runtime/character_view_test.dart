@@ -25,6 +25,18 @@ void main() {
     ),
   );
 
+  Widget hostWithRate({required double playbackRate}) => Center(
+    child: SizedBox(
+      width: 200,
+      height: 280,
+      child: CharacterView(
+        scene: CharacterScene(buildCatInSuitRig()),
+        clip: CatClips.dance,
+        playbackRate: playbackRate,
+      ),
+    ),
+  );
+
   testWidgets('advances the painter clock while ticking', (tester) async {
     await tester.pumpWidget(host(paused: false));
     expect(readPainter(tester).timeSeconds, 0);
@@ -83,5 +95,13 @@ void main() {
     // one-shot doesn't begin partway through.
     await tester.pumpWidget(host(paused: false, clip: CatClips.jump));
     expect(readPainter(tester).timeSeconds, 0);
+  });
+
+  testWidgets('applies playback rate to the painter clock', (tester) async {
+    await tester.pumpWidget(hostWithRate(playbackRate: 2));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(readPainter(tester).timeSeconds, greaterThan(0.35));
   });
 }

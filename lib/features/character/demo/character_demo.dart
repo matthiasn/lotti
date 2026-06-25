@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/runtime/character_scene.dart';
@@ -19,7 +20,8 @@ import 'package:lotti/features/character/samples/cat_in_suit.dart';
 /// is the live counterpart to the offline film strips.
 ///
 /// **Keyboard** (the view is focused on launch):
-/// - `1`–`5` — walk / run / sit / jump / idle  (also `←` / `→` to cycle)
+/// - `1`–`7` — walk / run / kick / dance / sit / jump / idle
+///   (also `←` / `→` to cycle)
 /// - `N C H S D A` — neutral / content / happy / surprised / sad / angry
 ///   (also `↑` / `↓` to cycle)
 /// - `B` — blink · `X` — auto-cycle faces · `M` — wander/in-place
@@ -38,6 +40,16 @@ const Map<String, String> kExpressionKeys = {
   'sad': 'D',
   'angry': 'A',
 };
+
+const double kAuthoredDanceBpm = 120;
+
+AutonomicLayer _danceAutonomic(int seed) => AutonomicLayer(
+  seed: seed,
+  blinkIntervalBase: 1.7,
+  blinkIntervalJitter: 1.1,
+  eyeDartInterval: 1.05,
+  eyeDartAmplitude: 0.75,
+);
 
 class CharacterDemoApp extends StatelessWidget {
   const CharacterDemoApp({super.key});
@@ -62,7 +74,18 @@ class CharacterDemoPage extends StatefulWidget {
 
 class _CharacterDemoPageState extends State<CharacterDemoPage>
     with SingleTickerProviderStateMixin {
-  late final CharacterScene _scene = CharacterScene(buildCatInSuitRig());
+  late final CharacterScene _scene = CharacterScene(
+    buildCatInSuitRig(),
+    autonomic: _danceAutonomic(11),
+  );
+  late final CharacterScene _partnerScene = CharacterScene(
+    buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+    autonomic: _danceAutonomic(29),
+  );
+  late final CharacterScene _thirdScene = CharacterScene(
+    buildCatInSuitRig(palette: CatInSuitPalette.darkBrown),
+    autonomic: _danceAutonomic(47),
+  );
 
   // Manual blink: a short controller whose value (0..1) is mapped to an eyelid
   // multiplier — a fast close then a slower open, the same asymmetry the
@@ -75,8 +98,9 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
 
   final FocusNode _focus = FocusNode();
 
-  Clip _clip = CatClips.walk;
+  Clip _clip = CatClips.dance;
   Expression _expression = Expression.neutral;
+  double _danceBpm = kAuthoredDanceBpm;
   bool _paused = false;
 
   // When true, walk/run travel across the stage and turn at the edges (the cat
@@ -135,6 +159,12 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
 
   void _setExpression(Expression e) => setState(() => _expression = e);
 
+  bool get _showPair =>
+      _clip.name == CatClips.walk.name || _clip.name == CatClips.dance.name;
+
+  double get _playbackRate =>
+      _clip.name == CatClips.dance.name ? _danceBpm / kAuthoredDanceBpm : 1;
+
   // Maps the blink controller value to an eyelid openness multiplier: a fast
   // close (first third) then a slower open, resting at 1 (eyes open).
   double _blinkScale(double v) {
@@ -159,6 +189,10 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
         _selectClip(all[3]);
       case LogicalKeyboardKey.digit5:
         _selectClip(all[4]);
+      case LogicalKeyboardKey.digit6:
+        _selectClip(all[5]);
+      case LogicalKeyboardKey.digit7:
+        _selectClip(all[6]);
       case LogicalKeyboardKey.digit0:
         _replay();
       case LogicalKeyboardKey.arrowRight:
@@ -250,14 +284,27 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
                       builder: (context, _) => CharacterView(
                         key: ValueKey('${_clip.name}-$_restart'),
                         scene: _scene,
+                        partnerScene: _partnerScene,
+                        ensembleScenes: _clip.name == CatClips.dance.name
+                            ? [_partnerScene, _thirdScene]
+                            : const [],
+                        ensembleExpressions: _clip.name == CatClips.dance.name
+                            ? [
+                                _expression,
+                                Expression.content,
+                                Expression.happy,
+                              ]
+                            : const [],
+                        synchronousEnsemble: _clip.name == CatClips.dance.name,
                         clip: _clip,
                         expression: _expression,
                         scale: scale,
+                        playbackRate: _playbackRate,
                         paused: _paused,
                         eyeOpenScale: _blinkScale(_blink.value),
                         groundColor: const Color(0xFF374551),
                         locomote: _wander,
-                        walkingPair: _clip.name == CatClips.walk.name,
+                        walkingPair: _showPair,
                       ),
                     );
                   },
@@ -329,6 +376,26 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
                           onSelected: (_) =>
                               setState(() => _expression = expression),
                         ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 78,
+                        child: Text('BPM ${_danceBpm.round()}'),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          min: 80,
+                          max: 240,
+                          divisions: 160,
+                          value: _danceBpm,
+                          onChanged: _clip.name == CatClips.dance.name
+                              ? (value) => setState(() => _danceBpm = value)
+                              : null,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
