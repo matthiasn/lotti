@@ -17,16 +17,28 @@ AI-assisted SVG → rig pipeline and the low-end `drawAtlas` runtime — lives i
 | Pure-Dart engine (math, FK, clips, face, autonomic) | ✅ built + unit-tested |
 | Hand-authored "cat in a suit" rig + 5 cycles | ✅ `samples/cat_in_suit.dart` |
 | `CustomPainter` runtime drawing bones as vector shapes | ✅ `runtime/` |
-| Film-strip render harness (PNG output) | ✅ `test/.../film_strip_test.dart` |
+| Tapered limbs / tie / tail (`taperedCapsule` shape) | ✅ wedged limbs, draping tie |
+| Locomotion — the cat walks/runs across & turns at edges | ✅ `runtime/character_painter.dart` |
+| Ground floor + foot-tracking contact shadow | ✅ `runtime/character_painter.dart` |
+| Film-strip + frame-grid + onion + travel + live harness | ✅ `test/.../{film_strip,frame_grid}_test.dart` |
+| Interactive demo (clip/expression/blink/wander keys) | ✅ `demo/character_demo.dart` |
 | Offline AI rigging (SVG → rig) | ⛔ not started (Phase 2) |
 | Batched `drawAtlas` runtime + degradation ladder | ⛔ Phase 2 |
+| Quadruped (4-leg) stance + rear-up transition | ⛔ Phase 2 |
 | Riverpod mood controller / Tamagotchi product | ⛔ separate consumer feature |
 
-Phase 1 deliberately draws bones as **vector shapes** (capsules / ellipses /
-rounded rects) rather than a pre-baked sprite atlas. The skeleton, transforms,
-cycles and face are exactly what the atlas runtime will use; only the per-bone
-paint call changes. This lets us validate motion *before* investing in
-rasterization.
+Phase 1 draws bones as **vector shapes** (capsules / ellipses / rounded rects /
+a tapered capsule for limbs) rather than a pre-baked sprite atlas. The skeleton,
+transforms, cycles and face are exactly what the atlas runtime will use; only
+the per-bone paint call changes. This lets us validate motion *before* investing
+in rasterization.
+
+The walk/run are **keyframed step cycles** (distinct stance/swing, a weight bob,
+a pelvic-list line of action, knee-snap and flat-foot plant). The body
+**travels** at a stride-matched `locomotionSpeed` so the planted foot holds its
+world position instead of skating; the live painter ping-pongs it across the
+stage and flips facing at the edges. The tail is a 7-link tapering drag chain;
+the tie is a 2-link cloth pendulum; ears flick a beat behind the head bob.
 
 ## Architecture
 
@@ -134,26 +146,31 @@ stateDiagram-v2
   blink, breathing, micro eye-darts). Deterministic via an internal LCG — never
   `Math.random` / `DateTime.now` — so renders are reproducible.
 
-## Film strips — how to review motion
+## Reviewing motion — film strips, grids, onions, travel
 
-The film-strip harness renders tiled frame sequences to PNGs for visual review.
+Two harnesses render to PNGs under `build/character_film_strips/` (override with
+`CHARACTER_STRIP_DIR`). Both are also regression tests (every output paints the
+character; identical inputs render byte-identical pixels).
 
 ```bash
-fvm flutter test test/features/character/film_strip_test.dart
+fvm flutter test test/features/character/film_strip_test.dart   # strips + faces
+fvm flutter test test/features/character/frame_grid_test.dart   # grids + onions + live + travel
 ```
 
-Outputs land in `build/character_film_strips/` (override with the
-`CHARACTER_STRIP_DIR` env var):
+`frame_grid_test.dart` is the workhorse and is env-controllable
+(`GRID_CLIPS`, `GRID_FRAMES`, `GRID_COLS`, `GRID_SCALE`, `GRID_EXPRESSION`):
 
 | File | Contents |
 | --- | --- |
-| `walk.png`, `run.png` | one full cycle, 14 frames (loop-continuous) |
-| `sit.png`, `jump.png` | one-shot, 16 frames (anticipation → settle) |
-| `expressions.png` | the six face presets |
-| `blink.png` | an asymmetric blink (fast close, slow open) |
+| `<clip>_grid.png` | every sampled frame as a labelled contact sheet |
+| `<clip>_onion.png` | all frames superimposed — reveals arcs (crisp = rigid, blur = moving) |
+| `<clip>_live.png` | one frame through the real `CharacterPainter` (floor + contact shadow) |
+| `<clip>_travel.png` | locomoting clips overlaid while travelling — planted feet should be **crisp footprints**, a smear means foot-skate |
+| `expressions.png`, `blink.png` | the six face presets · an asymmetric blink |
 
-The harness is also a regression test: it asserts every strip actually paints
-the character and that identical inputs render byte-identical pixels.
+The travel-onion is the instrument for tuning `locomotionSpeed`: a planted foot
+that holds its world-x as the body advances reads as discrete footprints; a
+mismatched speed smears them ("moonwalk").
 
 ## Testing
 
@@ -170,13 +187,18 @@ fvm flutter test test/features/character/
 
 ## Known Phase-1 limitations / next steps
 
-- **Tail** reads a little stiff/horizontal — needs rest-rotation + drag tuning.
-- Drag/overlap on secondary bones (tail/tie) is faked with phase-lagged sines;
-  Phase 2 replaces it with real spring integration.
-- No joint-cap quads or 2-part foot yet (planned in `D5`) — watch for elbow/knee
-  seams at extreme bends.
+- Secondary drag (tail/tie/ears) is faked with phase-lagged sines, so it has
+  **no inertial settle** when a motion stops (sit/jump freeze their cloth). A
+  cheap critically-damped spring post-pass is the next step — but the engine's
+  `frameAt(clip, time)` is intentionally pure/stateless (the film strip asserts
+  byte-identical renders), so the spring needs deterministic warm-up.
+- The character is **front-facing**; a true side/¾ profile part-set would lift
+  the walk/run further (a sagittal stride foreshortens head-on). Tracked as the
+  staging ceiling.
+- No 2-part foot (heel/toe roll) yet — the foot plants flat.
 - Runtime is vector-shape paint, not the batched `drawAtlas` low-end path.
-- No offline AI rigging, no feature flag, no product surface yet.
+- No quadruped stance / rear-up transition, no offline AI rigging, no feature
+  flag, no product surface yet.
 
 See the implementation plan for the full Phase-2 scope and the panel's outcome
 rubric.
