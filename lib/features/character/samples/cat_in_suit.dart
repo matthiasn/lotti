@@ -573,36 +573,34 @@ class CatClips {
   // not p0.5): a walk by definition never leaves the ground, so the stance leg
   // must bridge into the next contact or the whole rig hops (a flight phase).
   static const _thighKeys = [
-    Keyframe(p: 0, rotation: 0.42), // contact: foot lands UNDER the hip
-    Keyframe(p: 0.14, rotation: 0.22), // stance (constant ground sweep)
-    Keyframe(p: 0.28, rotation: 0.01), // midstance, leg vertical
-    Keyframe(p: 0.42, rotation: -0.18), // late stance
-    Keyframe(p: 0.5, rotation: -0.3), // weight rolls forward over the foot
-    Keyframe(p: 0.58, rotation: -0.42), // toe-off — held until the swing plants
-    Keyframe(p: 0.72, rotation: -0.1), // swing drive
-    Keyframe(p: 0.88, rotation: 0.46), // reach for the plant
-    Keyframe(p: 1, rotation: 0.42),
-  ];
-  // The knee BUCKLES on weight-acceptance (catches the body's mass), then is
-  // HELD flat through midstance so the planted ankle doesn't migrate (no foot
-  // creep), unfolding only at toe-off; then tucks hard in swing for clearance.
-  // (ease is dead under the smooth spline — see _thighKeys.) The knee takes a
-  // SHALLOW weight-accept flex and then holds ~flat through the whole stance so
-  // the planted ankle stays at a level height — a deep buckle heaves the body up
-  // mid-stance and contributes to the hop. It tucks hard only in swing.
-  static const _shinKeys = [
-    Keyframe(p: 0, rotation: -0.16), // contact: slight pre-bend — carries the
-    Keyframe(p: 0.14, rotation: -0.3), // buckle delta down so the ankle doesn't
+    Keyframe(p: 0, rotation: 0.34), // contact: foot lands under the hip
+    Keyframe(p: 0.14, rotation: 0.2), // stance
     Keyframe(
       p: 0.28,
-      rotation: -0.28,
-    ), // punch, and the stance sweep linearizes
-    Keyframe(p: 0.42, rotation: -0.28), // held ~flat — no creep
-    Keyframe(p: 0.5, rotation: -0.26), // still extended on the floor
-    Keyframe(p: 0.58, rotation: -0.24), // leaves only as the other foot plants
-    Keyframe(p: 0.72, rotation: -1.3), // swing: deep knee-tuck, foot clears
+      rotation: -0.04,
+    ), // passing (thighs spread so legs separate)
+    Keyframe(p: 0.42, rotation: -0.16), // late stance
+    Keyframe(p: 0.5, rotation: -0.24), // weight rolls forward over the foot
+    Keyframe(p: 0.58, rotation: -0.34), // toe-off — held until the swing plants
+    Keyframe(p: 0.72, rotation: -0.02), // swing drive (knee leads forward)
+    Keyframe(p: 0.88, rotation: 0.4), // reach for the plant
+    Keyframe(p: 1, rotation: 0.34),
+  ];
+  // The knee ARTICULATES through stance to cancel the ankle's arc and hold floor
+  // height (a rigid knee + rotating thigh lifts the ankle ~10-25px at midstance —
+  // that arc is the hop). Bent at contact, deepest at weight-accept, then
+  // progressively STRAIGHTENING (-0.12 -> +0.06 -> +0.22) as the thigh sweeps back
+  // so the foot stays planted instead of lifting. Deep tuck only in swing.
+  static const _shinKeys = [
+    Keyframe(p: 0, rotation: -0.2), // contact: knee bent to set the foot down
+    Keyframe(p: 0.14, rotation: -0.3), // weight-accept (deepest flex)
+    Keyframe(p: 0.28, rotation: -0.3), // passing — still flexed under the hip
+    Keyframe(p: 0.42, rotation: -0.12), // straightening to hold the ankle level
+    Keyframe(p: 0.5, rotation: 0.06), // nearly straight — foot still down
+    Keyframe(p: 0.58, rotation: 0.22), // extended push at toe-off
+    Keyframe(p: 0.72, rotation: -1), // swing: knee-tuck clears the (lower) body
     Keyframe(p: 0.88, rotation: -0.22), // extends to plant
-    Keyframe(p: 1, rotation: -0.16),
+    Keyframe(p: 1, rotation: -0.2),
   ];
   // Foot tilt signs are negated relative to a naive "toe at +x" foot because the
   // shoe toe points -x (see footL/R dx) — heel-strike still lifts the toe, etc.
@@ -684,9 +682,8 @@ class CatClips {
     // holds world-x as the body travels over it (no moonwalk / creep). Tuned
     // against the walk_travel onion until the footprints land as tight stamps.
     locomotionSpeed:
-        160, // foot sweep accelerates 114->247 over stance (FK leg); 160 pins the
-    // visually critical early/mid plant where the eye locks (avg sweep is ~181 but
-    // pinning the average smears the initial plant; the late slide is masked by lift-off).
+        136, // measured: with the articulating stance knee the planted ankle holds
+    // floor height (~5px range) and sweeps ~136 u/s avg — matching it pins the plant.
     root: SineRootChannel(
       // The COM drops onto each footfall (weight acceptance) and rises at
       // passing — the double-bounce that reads as carrying mass. ~5% of rig
@@ -712,10 +709,14 @@ class CatClips {
       // reads as a confident stride, not a side-to-side dance. The neck/head
       // counter-sine that re-levels the gaze is rescaled IN LOCKSTEP (0.11->0.085,
       // 0.04->0.03) — sized to the old swing it would over-rotate into a bobble.
+      // Chest counter-phased against the pelvis (torso phase 0.5 vs hips phase 0)
+      // so the spine forms a living S/contrapposto instead of a rigid C-lean. The
+      // pelvis + opposing chest leave only a small net top-of-trunk tilt, so the
+      // neck/head re-level shrinks (0.085->0.03) yet holds the gaze just as steady.
       CatBones.hips: SineChannel(amplitude: 0.09),
-      CatBones.torso: SineChannel(amplitude: 0.05),
-      CatBones.neck: SineChannel(amplitude: 0.085, phase: 0.5),
-      CatBones.head: SineChannel(amplitude: 0.03, phase: 0.5),
+      CatBones.torso: SineChannel(amplitude: 0.07, phase: 0.5),
+      CatBones.neck: SineChannel(amplitude: 0.03, phase: 0.5),
+      CatBones.head: SineChannel(amplitude: 0.025, phase: 0.5),
 
       // --- Legs: a real keyframed step, not a pendulum. Left leg drives the
       // cycle; the right shares the same keys half a beat later (phase 0.5). ---
@@ -757,13 +758,14 @@ class CatClips {
       // --- Tie: knot barely moves; the blade lags far behind (0.43) and the
       // tip gets a harmonic so it overshoots — drapes, not hinges. ---
       // Knot is a short fast link (amp 0.10) that feeds the slower, later blade.
-      CatBones.tie: SineChannel(amplitude: 0.1, phase: 0.3),
+      CatBones.tie: SineChannel(amplitude: 0.12, phase: 0.34),
       CatBones.tieLower: SineChannel(
-        amplitude:
-            0.2, // halved: 0.4 swung wider than the arms = rigid metronome
-        phase: 0.58, // trails the body sway by ~0.15 turn so it drapes and lags
-        harmonicAmplitude: 0.03,
-        harmonicPhase: 0.6,
+        // 0.30 splits two panels (0.4 read as a metronome, 0.2 as a painted
+        // stripe); what sells fabric is the LAG + tip overshoot, not raw swing.
+        amplitude: 0.3,
+        phase: 0.66, // trails the body further so it drapes and settles late
+        harmonicAmplitude: 0.07, // stronger tip overshoot = cloth, not a hinge
+        harmonicPhase: 0.72,
       ),
 
       // --- Tail: a real travelling wave. The amplitude ramps steeply and the
