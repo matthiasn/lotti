@@ -279,7 +279,8 @@ RigSpec buildCatInSuitRig() {
       ),
     ),
 
-    // Pelvis / hips (root).
+    // Pelvis / hips (root). Slim — barely wider than the jacket waist (50) so it
+    // continues the body line instead of flaring into wide saddlebags below it.
     const Bone(
       id: CatBones.hips,
       parent: null,
@@ -288,10 +289,10 @@ RigSpec buildCatInSuitRig() {
       z: 9,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 66,
-        height: 38,
-        dy: 4,
-        cornerRadius: 16,
+        width: 54,
+        height: 34,
+        dy: 2,
+        cornerRadius: 14,
         color: _trouser,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -302,10 +303,11 @@ RigSpec buildCatInSuitRig() {
     Bone(
       id: CatBones.armUpperR,
       parent: CatBones.torso,
-      pivotX: 30,
-      pivotY: -80,
-      z: 10,
-      restRotation: -0.22, // hangs out from the shoulder, clear of the body
+      pivotX: 28,
+      pivotY:
+          -74, // just below the shoulder line: high enough to cover the upper
+      z: 10, // jacket sides, low enough not to ride up beside the ears (shrug)
+      restRotation: -0.1, // hangs nearly straight down, only a hair outward
       drawable: _tapered(25, 18, 60, _suit, dy: 25),
     ),
     Bone(
@@ -344,8 +346,8 @@ RigSpec buildCatInSuitRig() {
       z: 13,
       drawable: BoneDrawable(
         kind: BoneShapeKind.taperedCapsule,
-        width: 64, // shoulders (top)
-        widthTip: 50, // waist (bottom)
+        width: 58, // shoulders (top) — narrowed so the rounded cap isn't a wide
+        widthTip: 50, // dome/shoulder-pad hump above the arms
         height: 86,
         dy: -44,
         color: _suit,
@@ -396,10 +398,11 @@ RigSpec buildCatInSuitRig() {
     Bone(
       id: CatBones.armUpperL,
       parent: CatBones.torso,
-      pivotX: -30,
-      pivotY: -80,
+      pivotX: -28,
+      pivotY:
+          -74, // just below the shoulder line (see armUpperR) — no shrug/hump
       z: 16,
-      restRotation: 0.22, // hangs out from the shoulder, clear of the body
+      restRotation: 0.1, // hangs nearly straight down, only a hair outward
       drawable: _tapered(25, 18, 60, _suit, dy: 25),
     ),
     Bone(
@@ -1042,17 +1045,20 @@ class CatClips {
   static Clip get idle => const Clip(
     name: 'idle',
     duration: 3.6,
-    // One slow rise/fall per cycle — the body settling with each breath.
-    root: SineRootChannel(bobAmplitude: -2, bobHarmonic: 1),
+    // Breathing lives in the CHEST (scaleY), not a whole-body bob — a bob lifts
+    // the planted feet off the floor and reads as floating/helium. A whisper of
+    // bob (-1) is all that's left so the shoulders just barely rise on the breath.
+    root: SineRootChannel(bobAmplitude: -1, bobHarmonic: 1),
     channels: {
       // Breathing: the chest expands (scaleY) and the spine sways a hair, so the
       // character is never a frozen frame even when standing still. The face's
       // autonomic blink + eye-darts layer on top for the rest of the "alive".
-      CatBones.torso: SineChannel(amplitude: 0.012, scaleYAmplitude: 0.03),
-      CatBones.hips: SineChannel(amplitude: 0.015, phase: 0.5),
-      // Slow head drift / settle (a calm look-around), offset from the breath.
-      CatBones.neck: SineChannel(amplitude: 0.03, phase: 0.2),
-      CatBones.head: SineChannel(amplitude: 0.025, phase: 0.35),
+      CatBones.torso: SineChannel(amplitude: 0.01, scaleYAmplitude: 0.045),
+      CatBones.hips: SineChannel(amplitude: 0.012, phase: 0.5),
+      // A small, slow head settle — kept tight so the head sits on the shoulders
+      // instead of drifting/floating around (the gaze should feel anchored).
+      CatBones.neck: SineChannel(amplitude: 0.018, phase: 0.2),
+      CatBones.head: SineChannel(amplitude: 0.014, phase: 0.35),
       CatBones.armLowerL: SineChannel(amplitude: 0.03, bias: 0.18),
       CatBones.armLowerR: SineChannel(amplitude: 0.03, phase: 0.5, bias: 0.18),
       // Ears twitch slowly (listening) and the tail does a lazy travelling sway
