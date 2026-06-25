@@ -22,7 +22,7 @@ AI-assisted SVG → rig pipeline and the low-end `drawAtlas` runtime — lives i
 | Tapered tie (`taperedCapsule` shape) | ✅ 2-link draping tie |
 | Locomotion — the cat walks/runs across & turns at edges | ✅ `runtime/character_painter.dart` |
 | Ground floor + per-foot contact shadows | ✅ `runtime/character_painter.dart` |
-| Dance waterfront backdrop — lagoon, Lagos-style skyline/bridge, yacht, banner plane | ✅ `runtime/character_painter.dart` |
+| Dance waterfront backdrop — Lagos lagoon plate, skyline/bridge, yacht, palms, alpha-mask cloud/wave motion | ✅ `runtime/character_painter.dart` + `assets/images/character/` |
 | Film-strip + frame-grid + onion + travel + live harness | ✅ `test/.../{film_strip,frame_grid}_test.dart` |
 | Interactive demo (clip/expression/blink/wander/BPM keys) | ✅ `demo/character_demo.dart` |
 | Offline AI rigging (SVG → rig) | ⛔ not started (Phase 2) |
@@ -50,13 +50,13 @@ stage travel hiding the body mechanics. The dance clip is authored as a
 toe-flick bounce, with a small additive root pulse layered over the keyed body
 motion so slower tempos still have off-beat life. The demo exposes a BPM slider
 for previewing that same authored phrase from 80–240 BPM. The dance view also
-uses `CharacterBackdrop.waterfront`: a pure-code Lagos-inspired lagoon stage
-with a distant skyline/bridge layer, yacht, animated waves, and a small Lotti
-banner plane. It is painted inside `CharacterPainter` behind the same trio
-rigs, so choreography, timing, contact shadows, and screenshot harnesses keep
-one runtime source of truth. The tail is a single ribbon driven by a 7-link drag
-chain; the tie is a keyed 2-link cloth shape; ears flick a beat behind the head
-bob.
+uses `CharacterBackdrop.waterfront`: an asset-backed Lagos-inspired lagoon plate
+with a distant skyline/bridge, palms, and a luxury yacht. `CharacterPainter`
+adds transparent alpha-mask motion layers for drifting clouds and lagoon glints.
+The demo and screenshot harness decode the same assets, so choreography,
+timing, contact shadows, and rendered review frames keep one runtime source of
+truth. The tail is a single ribbon driven by a 7-link drag chain; the tie is a
+keyed 2-link cloth shape; ears flick a beat behind the head bob.
 
 ## Architecture
 

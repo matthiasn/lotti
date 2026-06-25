@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/model/face.dart';
@@ -84,6 +88,11 @@ class _CharacterViewState extends State<CharacterView>
   // buffers) instead of allocating a fresh one every frame.
   final CharacterRenderer _renderer = CharacterRenderer();
 
+  ui.Image? _backdropImage;
+  ui.Image? _backdropCloudsImage;
+  ui.Image? _backdropWavesImage;
+  bool _loadingBackdropImages = false;
+
   // [Ticker.start] resets its elapsed to zero, so a naive resume would replay
   // the clip from the beginning. We fold each paused run's elapsed into
   // [_offset] and expose [_offset] + the live ticker elapsed, giving
@@ -95,6 +104,7 @@ class _CharacterViewState extends State<CharacterView>
   void initState() {
     super.initState();
     _ticker = createTicker(_onTick);
+    _ensureBackdropImage();
     if (!widget.paused) _ticker.start();
   }
 
@@ -105,6 +115,7 @@ class _CharacterViewState extends State<CharacterView>
   @override
   void didUpdateWidget(CharacterView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _ensureBackdropImage();
     if (oldWidget.clip != widget.clip) {
       // A new clip must play from t=0 — otherwise a one-shot swapped onto the
       // same instance would begin partway through. (The scene/rig carries no
@@ -147,6 +158,9 @@ class _CharacterViewState extends State<CharacterView>
   @override
   void dispose() {
     _ticker.dispose();
+    _backdropImage?.dispose();
+    _backdropCloudsImage?.dispose();
+    _backdropWavesImage?.dispose();
     super.dispose();
   }
 
@@ -172,12 +186,59 @@ class _CharacterViewState extends State<CharacterView>
         eyeOpenScale: widget.eyeOpenScale,
         groundColor: widget.groundColor,
         backdrop: widget.backdrop,
+        backdropImage: widget.backdrop == CharacterBackdrop.waterfront
+            ? _backdropImage
+            : null,
+        backdropCloudsImage: widget.backdrop == CharacterBackdrop.waterfront
+            ? _backdropCloudsImage
+            : null,
+        backdropWavesImage: widget.backdrop == CharacterBackdrop.waterfront
+            ? _backdropWavesImage
+            : null,
         locomote: widget.locomote,
         walkingPair: widget.walkingPair,
         renderer: _renderer,
       ),
       child: const SizedBox.expand(),
     );
+  }
+
+  void _ensureBackdropImage() {
+    if (widget.backdrop != CharacterBackdrop.waterfront ||
+        _backdropImage != null ||
+        _loadingBackdropImages) {
+      return;
+    }
+    _loadingBackdropImages = true;
+    unawaited(_loadBackdropImages());
+  }
+
+  Future<void> _loadBackdropImages() async {
+    final images = await Future.wait([
+      _loadUiImage(kCharacterWaterfrontBackdropAsset),
+      _loadUiImage(kCharacterWaterfrontCloudsAsset),
+      _loadUiImage(kCharacterWaterfrontWavesAsset),
+    ]);
+    if (!mounted) {
+      for (final image in images) {
+        image.dispose();
+      }
+      return;
+    }
+    setState(() {
+      _backdropImage = images[0];
+      _backdropCloudsImage = images[1];
+      _backdropWavesImage = images[2];
+      _loadingBackdropImages = false;
+    });
+  }
+
+  Future<ui.Image> _loadUiImage(String asset) async {
+    final data = await rootBundle.load(asset);
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final frame = await codec.getNextFrame();
+    codec.dispose();
+    return frame.image;
   }
 
   List<Expression> _ensembleExpressionsAt(double seconds) {

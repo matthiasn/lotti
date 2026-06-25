@@ -10,6 +10,13 @@ import 'package:lotti/features/character/runtime/character_scene.dart';
 
 enum CharacterBackdrop { none, waterfront }
 
+const kCharacterWaterfrontBackdropAsset =
+    'assets/images/character/lagos_waterfront.png';
+const kCharacterWaterfrontCloudsAsset =
+    'assets/images/character/lagos_clouds_alpha.png';
+const kCharacterWaterfrontWavesAsset =
+    'assets/images/character/lagos_wave_glints_alpha.png';
+
 /// Stands the character on the ground of a [size] canvas with its **feet** at
 /// [feetFraction] of the height, horizontally at [centreX], facing right unless
 /// [flip] (then mirrored), uniformly scaled by [scale]. [feetOffset] is the
@@ -45,6 +52,9 @@ class CharacterPainter extends CustomPainter {
     this.groundColor,
     this.shadowColor = const Color(0x33000000),
     this.backdrop = CharacterBackdrop.none,
+    this.backdropImage,
+    this.backdropCloudsImage,
+    this.backdropWavesImage,
     this.locomote = false,
     this.walkingPair = false,
     this.partnerScene,
@@ -99,6 +109,15 @@ class CharacterPainter extends CustomPainter {
   /// Optional animated environment painted behind the character.
   final CharacterBackdrop backdrop;
 
+  /// Decoded image plate for [CharacterBackdrop.waterfront].
+  final ui.Image? backdropImage;
+
+  /// Transparent drifting cloud overlay for [CharacterBackdrop.waterfront].
+  final ui.Image? backdropCloudsImage;
+
+  /// Transparent lagoon shimmer overlay for [CharacterBackdrop.waterfront].
+  final ui.Image? backdropWavesImage;
+
   /// When true (and the clip carries a [Clip.locomotionSpeed]) the character
   /// travels: it walks across the stage and ping-pongs at the edges (turning to
   /// face the direction of travel). Travelling is what makes the planted foot
@@ -116,13 +135,22 @@ class CharacterPainter extends CustomPainter {
   static const double _pairScaleFactor = 0.7;
   static const double _trioScaleFactor = 0.59;
   static const double _pairSpacing = 215;
-  static const double _trioSpacing = 250;
+  static const double _trioSpacing = 238;
 
   @override
   void paint(Canvas canvas, Size size) {
     final floorY = size.height * feetFraction;
     if (backdrop == CharacterBackdrop.waterfront) {
-      _paintWaterfrontBackdrop(canvas, size, floorY, timeSeconds);
+      _paintWaterfrontBackdrop(
+        canvas,
+        size,
+        floorY,
+        timeSeconds,
+        backdropImage,
+        backdropCloudsImage,
+        backdropWavesImage,
+      );
+      _paintWaterfrontAtmosphere(canvas, size, floorY);
     } else if (groundColor != null) {
       canvas.drawRect(
         Rect.fromLTWH(0, floorY, size.width, size.height - floorY),
@@ -306,406 +334,156 @@ class CharacterPainter extends CustomPainter {
     Size size,
     double floorY,
     double timeSeconds,
+    ui.Image? backdropImage,
+    ui.Image? backdropCloudsImage,
+    ui.Image? backdropWavesImage,
   ) {
-    final w = size.width;
-    final h = size.height;
-    final horizonY = floorY * 0.48;
-    final waterBottom = floorY + 2;
-
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, w, horizonY),
-      Paint()
-        ..shader = ui.Gradient.linear(
-          Offset.zero,
-          Offset(0, horizonY),
-          const [Color(0xFF95C9F1), Color(0xFFD8F0FF)],
-        ),
-    );
-
-    _paintCloud(canvas, w * 0.14, h * 0.13, w * 0.08);
-    _paintCloud(canvas, w * 0.82, h * 0.11, w * 0.06);
-    _paintDistantSkyline(canvas, w, horizonY);
-
-    canvas
-      ..drawRect(
-        Rect.fromLTWH(0, horizonY - 8, w, 14),
-        Paint()..color = const Color(0x334B8065),
-      )
-      ..drawRect(
-        Rect.fromLTRB(0, horizonY, w, waterBottom),
-        Paint()
-          ..shader = ui.Gradient.linear(
-            Offset(0, horizonY),
-            Offset(0, waterBottom),
-            const [Color(0xFF55A6C9), Color(0xFF256D8E)],
-          ),
-      );
-    _paintWaves(canvas, w, horizonY, waterBottom, timeSeconds);
-    _paintBridge(canvas, w, horizonY, waterBottom);
-    _paintYacht(
-      canvas,
-      w * (0.68 + 0.015 * math.sin(timeSeconds * 0.7)),
-      horizonY + (waterBottom - horizonY) * 0.32,
-      w * 0.12,
-    );
-    _paintPlane(
+    if (backdropImage == null) return;
+    _paintWaterfrontPlate(
       canvas,
       size,
+      floorY,
       timeSeconds,
-      y: h * 0.18 + 7 * math.sin(timeSeconds * 1.1),
-    );
-
-    final deckTop = floorY - 16;
-    canvas.drawRect(
-      Rect.fromLTRB(0, deckTop, w, h),
-      Paint()
-        ..shader = ui.Gradient.linear(
-          Offset(0, deckTop),
-          Offset(0, h),
-          const [Color(0xFFB8A986), Color(0xFF7D715D)],
-        ),
-    );
-    for (var x = -30.0; x < w + 40; x += 72) {
-      canvas.drawRect(
-        Rect.fromLTWH(x, deckTop + 6, 46, 3),
-        Paint()..color = const Color(0x665E5548),
-      );
-    }
-    canvas.drawLine(
-      Offset(0, deckTop),
-      Offset(w, deckTop),
-      Paint()
-        ..color = const Color(0xAAE7D7B1)
-        ..strokeWidth = 2,
+      backdropImage,
+      backdropCloudsImage,
+      backdropWavesImage,
     );
   }
 
-  void _paintDistantSkyline(Canvas canvas, double width, double horizonY) {
-    final paint = Paint()..color = const Color(0x66436772);
-    final highlight = Paint()..color = const Color(0x33E6F4F7);
-    final buildings = [
-      (x: 0.08, width: 0.026, height: 0.16),
-      (x: 0.12, width: 0.018, height: 0.11),
-      (x: 0.17, width: 0.034, height: 0.2),
-      (x: 0.24, width: 0.022, height: 0.14),
-      (x: 0.31, width: 0.04, height: 0.24),
-      (x: 0.38, width: 0.024, height: 0.13),
-      (x: 0.48, width: 0.028, height: 0.19),
-      (x: 0.54, width: 0.02, height: 0.3),
-      (x: 0.61, width: 0.046, height: 0.22),
-      (x: 0.69, width: 0.026, height: 0.15),
-      (x: 0.76, width: 0.038, height: 0.26),
-      (x: 0.84, width: 0.024, height: 0.18),
-    ];
-
-    for (final building in buildings) {
-      final left = width * building.x;
-      final buildingWidth = width * building.width;
-      final buildingHeight = horizonY * building.height;
-      final rect = Rect.fromLTWH(
-        left,
-        horizonY - buildingHeight,
-        buildingWidth,
-        buildingHeight + 5,
-      );
-      canvas
-        ..drawRect(rect, paint)
-        ..drawRect(
-          Rect.fromLTWH(
-            rect.left + buildingWidth * 0.18,
-            rect.top + buildingHeight * 0.16,
-            math.max(1, buildingWidth * 0.12),
-            buildingHeight * 0.62,
-          ),
-          highlight,
-        );
-    }
-
+  void _paintWaterfrontAtmosphere(Canvas canvas, Size size, double floorY) {
+    final deckTop = size.height * 0.63;
     canvas
-      ..drawCircle(
-        Offset(width * 0.43, horizonY - horizonY * 0.1),
-        width * 0.018,
-        paint,
+      ..drawRect(
+        Rect.fromLTRB(0, 0, size.width, deckTop),
+        Paint()..color = const Color(0x20E7F2F2),
       )
       ..drawRect(
-        Rect.fromLTWH(width * 0.405, horizonY - 3, width * 0.05, 7),
-        paint,
-      );
-  }
-
-  void _paintBridge(
-    Canvas canvas,
-    double width,
-    double horizonY,
-    double waterBottom,
-  ) {
-    final bridgeY = horizonY + (waterBottom - horizonY) * 0.18;
-    final deckPaint = Paint()
-      ..color = const Color(0xA04A686D)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = math.max(1.8, width * 0.0045)
-      ..strokeCap = StrokeCap.round;
-    final railPaint = Paint()
-      ..color = const Color(0x88D5ECEE)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = math.max(0.9, width * 0.0016)
-      ..strokeCap = StrokeCap.round;
-    final pierPaint = Paint()
-      ..color = const Color(0x804A686D)
-      ..strokeWidth = math.max(1, width * 0.0018)
-      ..strokeCap = StrokeCap.round;
-
-    final deck = Path()
-      ..moveTo(-width * 0.04, bridgeY + 12)
-      ..cubicTo(
-        width * 0.18,
-        bridgeY + 2,
-        width * 0.44,
-        bridgeY - 7,
-        width * 1.04,
-        bridgeY - 3,
-      );
-    canvas.drawPath(deck, deckPaint);
-
-    final rail = Path()
-      ..moveTo(-width * 0.04, bridgeY + 7)
-      ..cubicTo(
-        width * 0.18,
-        bridgeY - 3,
-        width * 0.44,
-        bridgeY - 12,
-        width * 1.04,
-        bridgeY - 8,
-      );
-    canvas.drawPath(rail, railPaint);
-
-    for (var x = width * 0.04; x < width; x += width * 0.105) {
-      final localCurve = math.sin((x / width) * math.pi);
-      final top = bridgeY + 8 - localCurve * 12;
-      canvas
-        ..drawLine(
-          Offset(x, top),
-          Offset(x - width * 0.012, waterBottom - 12),
-          pierPaint,
-        )
-        ..drawLine(
-          Offset(x + width * 0.018, top + 1),
-          Offset(x + width * 0.008, waterBottom - 10),
-          pierPaint,
-        );
-    }
-  }
-
-  void _paintCloud(Canvas canvas, double x, double y, double r) {
-    final paint = Paint()..color = const Color(0xCFFFFFFF);
-    canvas
-      ..drawCircle(Offset(x, y), r * 0.45, paint)
-      ..drawCircle(Offset(x + r * 0.42, y - r * 0.08), r * 0.55, paint)
-      ..drawCircle(Offset(x + r * 0.92, y + r * 0.06), r * 0.38, paint)
-      ..drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(x - r * 0.4, y, r * 1.65, r * 0.48),
-          Radius.circular(r * 0.24),
-        ),
-        paint,
-      );
-  }
-
-  void _paintWaves(
-    Canvas canvas,
-    double width,
-    double top,
-    double bottom,
-    double timeSeconds,
-  ) {
-    final wavePaint = Paint()
-      ..color = const Color(0x6DD9F7FF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.25
-      ..strokeCap = StrokeCap.round;
-    const rows = 6;
-    for (var row = 0; row < rows; row++) {
-      final y = top + 18 + row * (bottom - top - 24) / rows;
-      final phase = (timeSeconds * (18 + row * 2) + row * 31) % 48;
-      for (var x = -60.0 - phase; x < width + 80; x += 64) {
-        final path = Path()
-          ..moveTo(x, y)
-          ..quadraticBezierTo(x + 14, y - 5, x + 28, y)
-          ..quadraticBezierTo(x + 42, y + 4, x + 56, y);
-        canvas.drawPath(path, wavePaint);
-      }
-    }
-  }
-
-  void _paintYacht(Canvas canvas, double x, double y, double size) {
-    final hull = Path()
-      ..moveTo(x - size * 0.42, y + size * 0.14)
-      ..lineTo(x + size * 0.44, y + size * 0.14)
-      ..lineTo(x + size * 0.24, y + size * 0.32)
-      ..lineTo(x - size * 0.28, y + size * 0.32)
-      ..close();
-    canvas
-      ..drawPath(hull, Paint()..color = const Color(0xFFEFF4F7))
-      ..drawPath(
-        hull,
+        Rect.fromLTRB(0, deckTop, size.width, floorY + 18),
         Paint()
-          ..color = const Color(0x882B4050)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1,
-      );
-
-    final mastPaint = Paint()
-      ..color = const Color(0xFF6C5A48)
-      ..strokeWidth = math.max(1, size * 0.025);
-    canvas.drawLine(
-      Offset(x - size * 0.05, y + size * 0.13),
-      Offset(x - size * 0.05, y - size * 0.52),
-      mastPaint,
-    );
-
-    final sail = Path()
-      ..moveTo(x - size * 0.04, y - size * 0.48)
-      ..lineTo(x - size * 0.04, y + size * 0.1)
-      ..lineTo(x + size * 0.34, y + size * 0.08)
-      ..close();
-    canvas
-      ..drawPath(sail, Paint()..color = const Color(0xFFE9FBFF))
-      ..drawPath(
-        sail,
-        Paint()
-          ..color = const Color(0x66588CA4)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1,
+          ..shader = ui.Gradient.linear(
+            Offset(0, deckTop),
+            Offset(0, floorY + 18),
+            const [Color(0x00FFFFFF), Color(0x143D2B1E)],
+          ),
       );
   }
 
-  void _paintPlane(
+  void _paintWaterfrontPlate(
     Canvas canvas,
     Size size,
-    double timeSeconds, {
-    required double y,
-  }) {
-    final w = size.width;
-    final scale = (w / 760).clamp(0.55, 1.0);
-    final planeX = (timeSeconds * 38 + w * 0.52) % (w + 210) - 155;
-    final planeY = y;
-    final bodyPaint = Paint()..color = const Color(0xFFE9E2CD);
-    final trimPaint = Paint()..color = const Color(0xFFBA6552);
-    final linePaint = Paint()
-      ..color = const Color(0xAA5D5147)
-      ..strokeWidth = 1.1 * scale
-      ..style = PaintingStyle.stroke;
-
-    final sx = 46.0 * scale;
-    final sy = 18.0 * scale;
-    canvas
-      ..save()
-      ..translate(planeX, planeY)
-      ..drawLine(
-        Offset(-sx * 1.55, sy * 0.12),
-        Offset(-sx * 0.55, sy * 0.08),
-        Paint()
-          ..color = const Color(0xAAE7D7C0)
-          ..strokeWidth = 1.2 * scale,
-      );
-    _paintBanner(canvas, Offset(-sx * 2.18, sy * 0.23), scale);
-
-    final fuselage = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset.zero, width: sx, height: sy),
-      Radius.circular(sy * 0.45),
+    double floorY,
+    double timeSeconds,
+    ui.Image image,
+    ui.Image? cloudsImage,
+    ui.Image? wavesImage,
+  ) {
+    paintImage(
+      canvas: canvas,
+      rect: Offset.zero & size,
+      image: image,
+      fit: BoxFit.fill,
+      filterQuality: FilterQuality.high,
     );
-    canvas
-      ..drawRRect(fuselage, bodyPaint)
-      ..drawRRect(fuselage, linePaint)
-      ..drawRect(
-        Rect.fromCenter(
-          center: Offset(sx * 0.04, 0),
-          width: sx * 0.42,
-          height: sy * 0.2,
+
+    if (cloudsImage != null) {
+      _paintScrollingPlateMask(
+        canvas,
+        size,
+        cloudsImage,
+        clip: Rect.fromLTRB(
+          size.width * 0.18,
+          0,
+          size.width * 0.78,
+          size.height * 0.32,
         ),
-        trimPaint,
+        offsetX: timeSeconds * 7,
+        fillPaintFor: (rect) => Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(rect.left, 0),
+            Offset(rect.right, size.height * 0.32),
+            const [Color(0x88FFFFFF), Color(0x44EAF8FF)],
+          ),
       );
+    }
 
-    final wing = Path()
-      ..moveTo(-sx * 0.1, -sy * 0.08)
-      ..lineTo(sx * 0.3, -sy * 1.15)
-      ..lineTo(sx * 0.48, -sy * 1.05)
-      ..lineTo(sx * 0.2, -sy * 0.04)
-      ..close();
-    canvas
-      ..drawPath(wing, Paint()..color = const Color(0xFFEFE8D9))
-      ..drawPath(wing, linePaint);
-
-    final tail = Path()
-      ..moveTo(-sx * 0.42, -sy * 0.08)
-      ..lineTo(-sx * 0.66, -sy * 0.75)
-      ..lineTo(-sx * 0.54, -sy * 0.06)
-      ..close();
-    canvas
-      ..drawPath(tail, Paint()..color = const Color(0xFFDBD4C2))
-      ..drawPath(tail, linePaint);
-
-    final propX = sx * 0.54;
-    canvas.drawCircle(Offset(propX, 0), 2.4 * scale, trimPaint);
-    final propAngle = timeSeconds * math.pi * 10;
-    canvas
-      ..save()
-      ..translate(propX + 4 * scale, 0)
-      ..rotate(propAngle)
-      ..drawOval(
-        Rect.fromCenter(
-          center: Offset.zero,
-          width: 4 * scale,
-          height: 28 * scale,
-        ),
-        Paint()..color = const Color(0x99F7FAFF),
-      )
-      ..rotate(math.pi / 2)
-      ..drawOval(
-        Rect.fromCenter(
-          center: Offset.zero,
-          width: 4 * scale,
-          height: 28 * scale,
-        ),
-        Paint()..color = const Color(0x77F7FAFF),
-      )
-      ..restore()
-      ..restore();
+    if (wavesImage != null) {
+      final waveClip = Rect.fromLTRB(
+        0,
+        size.height * 0.5,
+        size.width * 0.6,
+        size.height * 0.61,
+      );
+      _paintScrollingPlateMask(
+        canvas,
+        size,
+        wavesImage,
+        clip: waveClip,
+        offsetX: timeSeconds * 42,
+        fillPaintFor: (rect) => Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(rect.left, waveClip.top),
+            Offset(rect.right, waveClip.bottom),
+            const [
+              Color(0x00FFFFFF),
+              Color(0x8FFFFFFF),
+              Color(0x4A9EF2FF),
+              Color(0x00FFFFFF),
+            ],
+            const [0, 0.42, 0.68, 1],
+          ),
+      );
+      _paintScrollingPlateMask(
+        canvas,
+        size,
+        wavesImage,
+        clip: waveClip,
+        offsetX: timeSeconds * 27 + size.width * 0.36,
+        offsetY: size.height * 0.012,
+        fillPaintFor: (rect) => Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(rect.left, waveClip.top),
+            Offset(rect.right, waveClip.bottom),
+            const [
+              Color(0x00FFFFFF),
+              Color(0x3DEFFFFF),
+              Color(0x2480E8FF),
+              Color(0x00FFFFFF),
+            ],
+            const [0, 0.48, 0.72, 1],
+          ),
+      );
+    }
   }
 
-  void _paintBanner(Canvas canvas, Offset origin, double scale) {
-    final rect = Rect.fromLTWH(
-      origin.dx,
-      origin.dy - 8 * scale,
-      56 * scale,
-      16 * scale,
-    );
-    final banner = RRect.fromRectAndRadius(rect, Radius.circular(3 * scale));
+  void _paintScrollingPlateMask(
+    Canvas canvas,
+    Size size,
+    ui.Image mask, {
+    required Rect clip,
+    required double offsetX,
+    required Paint Function(Rect rect) fillPaintFor,
+    double offsetY = 0,
+  }) {
+    final phase = offsetX % size.width;
     canvas
-      ..drawRRect(banner, Paint()..color = const Color(0xDFF8F0D7))
-      ..drawRRect(
-        banner,
-        Paint()
-          ..color = const Color(0x885E5548)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.8 * scale,
-      );
-    TextPainter(
-        text: TextSpan(
-          text: 'Lotti',
-          style: TextStyle(
-            color: const Color(0xFF6D4B37),
-            fontSize: 10 * scale,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )
-      ..layout(maxWidth: rect.width)
-      ..paint(
-        canvas,
-        Offset(rect.left + 14 * scale, rect.top + 2 * scale),
-      );
+      ..save()
+      ..clipRect(clip);
+    for (final left in [-phase, size.width - phase]) {
+      final rect = Rect.fromLTWH(left, offsetY, size.width, size.height);
+      canvas
+        ..saveLayer(clip, Paint())
+        ..drawRect(rect, fillPaintFor(rect))
+        ..drawImageRect(
+          mask,
+          Rect.fromLTWH(0, 0, mask.width.toDouble(), mask.height.toDouble()),
+          rect,
+          Paint()
+            ..blendMode = BlendMode.dstIn
+            ..filterQuality = FilterQuality.high,
+        )
+        ..restore();
+    }
+    canvas.restore();
   }
 
   Expression _expressionAt(int index) => index < ensembleExpressions.length
@@ -847,6 +625,9 @@ class CharacterPainter extends CustomPainter {
       old.groundColor != groundColor ||
       old.shadowColor != shadowColor ||
       old.backdrop != backdrop ||
+      old.backdropImage != backdropImage ||
+      old.backdropCloudsImage != backdropCloudsImage ||
+      old.backdropWavesImage != backdropWavesImage ||
       old.locomote != locomote ||
       old.walkingPair != walkingPair ||
       old.partnerScene != partnerScene ||

@@ -79,7 +79,28 @@ void main() {
       .where(clipsByName.containsKey)
       .toList();
 
-  setUpAll(() => outputDir.createSync(recursive: true));
+  ui.Image? waterfrontBackdropImage;
+  ui.Image? waterfrontCloudsImage;
+  ui.Image? waterfrontWavesImage;
+
+  setUpAll(() async {
+    outputDir.createSync(recursive: true);
+    waterfrontBackdropImage = await _imageFromFile(
+      kCharacterWaterfrontBackdropAsset,
+    );
+    waterfrontCloudsImage = await _imageFromFile(
+      kCharacterWaterfrontCloudsAsset,
+    );
+    waterfrontWavesImage = await _imageFromFile(
+      kCharacterWaterfrontWavesAsset,
+    );
+  });
+
+  tearDownAll(() {
+    waterfrontBackdropImage?.dispose();
+    waterfrontCloudsImage?.dispose();
+    waterfrontWavesImage?.dispose();
+  });
 
   // The phase-sample time for frame [i] of [n], matching the film-strip
   // convention: loops sample [0, span) (the wrap frame == frame 0, omitted),
@@ -283,6 +304,15 @@ void main() {
       backdrop: clip.name == CatClips.dance.name
           ? CharacterBackdrop.waterfront
           : CharacterBackdrop.none,
+      backdropImage: clip.name == CatClips.dance.name
+          ? waterfrontBackdropImage
+          : null,
+      backdropCloudsImage: clip.name == CatClips.dance.name
+          ? waterfrontCloudsImage
+          : null,
+      backdropWavesImage: clip.name == CatClips.dance.name
+          ? waterfrontWavesImage
+          : null,
       walkingPair:
           clip.name == CatClips.walk.name || clip.name == CatClips.dance.name,
       partnerScene: partnerScene,
@@ -353,6 +383,15 @@ void main() {
         backdrop: clip.name == CatClips.dance.name
             ? CharacterBackdrop.waterfront
             : CharacterBackdrop.none,
+        backdropImage: clip.name == CatClips.dance.name
+            ? waterfrontBackdropImage
+            : null,
+        backdropCloudsImage: clip.name == CatClips.dance.name
+            ? waterfrontCloudsImage
+            : null,
+        backdropWavesImage: clip.name == CatClips.dance.name
+            ? waterfrontWavesImage
+            : null,
         walkingPair: clip.name == CatClips.dance.name,
         partnerScene: partnerScene,
         ensembleScenes: clip.name == CatClips.dance.name
@@ -573,6 +612,14 @@ Future<Uint8List> _pngOf(ui.Picture picture, int w, int h) async {
   } finally {
     picture.dispose();
   }
+}
+
+Future<ui.Image> _imageFromFile(String path) async {
+  final bytes = await File(path).readAsBytes();
+  final codec = await ui.instantiateImageCodec(bytes);
+  final frame = await codec.getNextFrame();
+  codec.dispose();
+  return frame.image;
 }
 
 // Counts pixels that are neither background nor ground (within tolerance) —

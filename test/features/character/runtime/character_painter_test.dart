@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -12,6 +13,27 @@ import 'package:lotti/features/character/samples/cat_in_suit.dart';
 void main() {
   late CharacterScene scene;
   late CharacterRenderer renderer;
+  late ui.Image waterfrontBackdropImage;
+  late ui.Image waterfrontCloudsImage;
+  late ui.Image waterfrontWavesImage;
+
+  setUpAll(() async {
+    waterfrontBackdropImage = await _imageFromFile(
+      kCharacterWaterfrontBackdropAsset,
+    );
+    waterfrontCloudsImage = await _imageFromFile(
+      kCharacterWaterfrontCloudsAsset,
+    );
+    waterfrontWavesImage = await _imageFromFile(
+      kCharacterWaterfrontWavesAsset,
+    );
+  });
+
+  tearDownAll(() {
+    waterfrontBackdropImage.dispose();
+    waterfrontCloudsImage.dispose();
+    waterfrontWavesImage.dispose();
+  });
 
   setUp(() {
     scene = CharacterScene(buildCatInSuitRig());
@@ -172,6 +194,9 @@ void main() {
         clip: CatClips.dance,
         timeSeconds: 0.3,
         backdrop: CharacterBackdrop.waterfront,
+        backdropImage: waterfrontBackdropImage,
+        backdropCloudsImage: waterfrontCloudsImage,
+        backdropWavesImage: waterfrontWavesImage,
         shadowColor: const Color(0x00000000),
         renderer: renderer,
       ).paint(canvas, Size(width.toDouble(), height.toDouble()));
@@ -181,9 +206,9 @@ void main() {
         try {
           final data = await image.toByteData();
           final pixels = data!.buffer.asUint8List();
-          final sky = _rgbaAt(pixels, width, 10, 10);
-          final water = _rgbaAt(pixels, width, 20, 220);
-          final deck = _rgbaAt(pixels, width, 20, 400);
+          final sky = _rgbaAt(pixels, width, width ~/ 2, 40);
+          final water = _rgbaAt(pixels, width, 60, 230);
+          final deck = _rgbaAt(pixels, width, width ~/ 2, 400);
 
           expect(sky.a, 255);
           expect(sky.b, greaterThan(sky.r), reason: 'sky should read blue');
@@ -362,4 +387,12 @@ void main() {
     b: pixels[offset + 2],
     a: pixels[offset + 3],
   );
+}
+
+Future<ui.Image> _imageFromFile(String path) async {
+  final bytes = await File(path).readAsBytes();
+  final codec = await ui.instantiateImageCodec(bytes);
+  final frame = await codec.getNextFrame();
+  codec.dispose();
+  return frame.image;
 }
