@@ -35,6 +35,22 @@ AiConfigSkill _makeGladosSkill({
   );
 }
 
+bool _hasUnpairedSurrogate(String value) {
+  final codeUnits = value.codeUnits;
+  for (var i = 0; i < codeUnits.length; i++) {
+    final codeUnit = codeUnits[i];
+    if (codeUnit >= 0xD800 && codeUnit <= 0xDBFF) {
+      if (i + 1 == codeUnits.length) return true;
+      final next = codeUnits[i + 1];
+      if (next < 0xDC00 || next > 0xDFFF) return true;
+      i++;
+    } else if (codeUnit >= 0xDC00 && codeUnit <= 0xDFFF) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void main() {
   const builder = SkillPromptBuilder();
 
@@ -334,6 +350,24 @@ Cats in suits in a steampunk laboratory working at a whiteboard with brass machi
         );
         expect(result.userMessage, isNot(contains('a' * 701)));
         expect(result.userMessage, isNot(contains('b' * 501)));
+      });
+
+      test('taskSummary image generation does not split surrogate pairs', () {
+        final skill = makeSkill(
+          skillType: SkillType.imageGeneration,
+          contextPolicy: ContextPolicy.taskSummary,
+        );
+        final result = builder.build(
+          skill: skill,
+          entryContent: '${'a' * 699}😀 after boundary',
+        );
+
+        final sceneLine = result.userMessage
+            .split('\n')
+            .firstWhere((line) => line.startsWith('Scene: '));
+
+        expect(sceneLine, 'Scene: ${'a' * 699}...');
+        expect(_hasUnpairedSurrogate(sceneLine), false);
       });
     });
 

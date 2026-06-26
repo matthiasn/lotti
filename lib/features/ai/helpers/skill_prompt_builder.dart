@@ -223,11 +223,31 @@ class SkillPromptBuilder {
     String? value, {
     int maxLength = _maxCompactSceneChars,
   }) {
-    final normalized = value?.trim().replaceAll(RegExp(r'\s+'), ' ');
-    if (normalized == null || normalized.isEmpty) return null;
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+
+    final bounded = _safeUtf16Prefix(
+      trimmed,
+      maxLength * _compactPromptNormalizationLookaheadFactor,
+    );
+    final normalized = bounded.replaceAll(_compactPromptWhitespacePattern, ' ');
     if (normalized.length <= maxLength) return normalized;
 
-    return '${normalized.substring(0, maxLength).trimRight()}...';
+    return '${_safeUtf16Prefix(normalized, maxLength).trimRight()}...';
+  }
+
+  String _safeUtf16Prefix(String value, int maxLength) {
+    if (value.length <= maxLength) return value;
+
+    var end = maxLength;
+    if (end > 0 && _isUtf16LeadSurrogate(value.codeUnitAt(end - 1))) {
+      end--;
+    }
+    return value.substring(0, end);
+  }
+
+  bool _isUtf16LeadSurrogate(int codeUnit) {
+    return codeUnit >= 0xD800 && codeUnit <= 0xDBFF;
   }
 
   void _appendTaskContext(
@@ -327,3 +347,5 @@ URL FORMATTING RULES:
 
 const _maxCompactSceneChars = 700;
 const _maxCompactSummaryChars = 500;
+const _compactPromptNormalizationLookaheadFactor = 2;
+final _compactPromptWhitespacePattern = RegExp(r'\s+');
