@@ -538,6 +538,48 @@ void main() {
       );
     });
 
+    test('dance crew keeps hand accents continuous through section changes', () {
+      const samples = 128;
+      const watchedHands = [CatBones.handL, CatBones.handR];
+
+      final analyzer = TemporalMotionAnalyzer(
+        CharacterScene(buildCatInSuitRig()),
+      );
+      for (final clip in [
+        CatClips.dance,
+        CatClips.danceBackupLeft,
+        CatClips.danceBackupRight,
+      ]) {
+        final report = analyzer.analyze(
+          clip: clip,
+          samples: samples,
+          boneIds: watchedHands,
+        );
+        final worstDisplacement = report.worstDisplacement;
+        final worstAcceleration = report.worstAcceleration;
+
+        expect(
+          worstDisplacement.distance,
+          lessThan(12.5),
+          reason:
+              '${clip.name} hand accent should travel through section '
+              'transitions, not snap ${worstDisplacement.boneId} from '
+              'frame ${worstDisplacement.fromFrame} to '
+              '${worstDisplacement.toFrame}',
+        );
+        expect(
+          worstAcceleration.magnitude,
+          lessThan(6.5),
+          reason:
+              '${clip.name} hand accent should ease through direction changes, '
+              'not jerk ${worstAcceleration.boneId} across frames '
+              '${worstAcceleration.fromFrame}->'
+              '${worstAcceleration.throughFrame}->'
+              '${worstAcceleration.toFrame}',
+        );
+      }
+    });
+
     test('blink reaches the face via the autonomic layer', () {
       final scene = CharacterScene(buildCatInSuitRig());
       var minOpen = 1.0;
