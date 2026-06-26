@@ -66,6 +66,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   high-efficiency inputs from drag-and-drop, file picker, and clipboard paste.
   Lotti converts those files to JPEG before creating the image entry, so the
   internal attachment format stays unchanged.
+- **The FTUE welcome animation feels more organic.** The neural backdrop now
+  grows as one curved, branching structure with dim tendrils, smaller offshoots
+  and travelling activation tips instead of separate straight-line constellation
+  clusters, while keeping the same calm teal-on-dark mood and reduced-motion
+  fallback.
 - **Choosing a model for a one-off AI run is calmer.** When you run an AI
   action from the sparkle menu (transcribe a voice note, analyze a photo,
   generate a prompt or cover art) and you have more than one capable model, the

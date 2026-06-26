@@ -233,6 +233,34 @@ void main() {
       expect(anyAlive, isTrue);
     });
 
+    test('branch activation progress is stable at the loop seam', () {
+      const pulseCycles = 7;
+      const branchCount = 18;
+
+      for (var branchIndex = 0; branchIndex < branchCount; branchIndex++) {
+        final start = neuralBranchProgressAt(
+          0,
+          pulseCycles,
+          branchIndex,
+          branchCount,
+        );
+        final end = neuralBranchProgressAt(
+          1,
+          pulseCycles,
+          branchIndex,
+          branchCount,
+        );
+
+        expect(end, closeTo(start, 1e-9));
+      }
+
+      final sampledProgress = {
+        for (var branchIndex = 0; branchIndex < branchCount; branchIndex++)
+          neuralBranchProgressAt(0.5, pulseCycles, branchIndex, branchCount),
+      };
+      expect(sampledProgress, hasLength(greaterThan(1)));
+    });
+
     test('pulse cycles per loop is a whole number >= 1', () {
       expect(neuralPulseCyclesForLoop(const Duration(seconds: 24)), 7);
       expect(neuralPulseCyclesForLoop(const Duration(seconds: 14)), 4);

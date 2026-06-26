@@ -237,11 +237,15 @@ feedback** (a volume response is information, not decoration):
 - **`OnboardingRecordingStyleStep`** holds its simulated previews on a static
   frame under reduced motion.
 
-The welcome hero (`NeuralConstellation`) and `CompletionCelebration` already carry
-their own reduced-motion fallbacks.
+The welcome hero (`NeuralConstellation`) and `CompletionCelebration` already
+carry their own reduced-motion fallbacks.
 
-`NeuralConstellation` also loops **seamlessly**: every oscillation (node drift,
-breath, the travelling pulses) runs an integer number of cycles per loop and is
-driven off the controller's normalized value, so the frame at the loop wrap is
-identical to the start — no snap (`neuralPulseCyclesForLoop`, `NeuralNode`,
-`neuralPulseEnvAt`).
+`NeuralConstellation` paints a seeded, deterministic branching organism rather
+than a proximity graph: a main spine grows from a root-like soma, secondary
+branches fork from stable parents, dim hairline offshoots probe outward, and
+travelling activation tips move along the curved tendrils. It loops
+**seamlessly**: every oscillation (node drift, breath, branch activation, and the
+travelling pulses) runs an integer number of cycles per loop and is driven off
+the controller's normalized value, so the frame at the loop wrap is identical to
+the start — no snap (`neuralPulseCyclesForLoop`, `NeuralNode`,
+`neuralPulseEnvAt`, `neuralBranchProgressAt`).

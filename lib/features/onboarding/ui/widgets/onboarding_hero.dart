@@ -73,23 +73,23 @@ class OnboardingBackdrop extends StatelessWidget {
         children: [
           AuroraHero(
             colors: onboardingAuroraColors(accentColor),
-            maxAlpha: 0.10,
+            maxAlpha: 0.06,
           ),
           NeuralConstellation(
-            nodeColor: accentColor.withValues(alpha: 0.62),
-            lineColor: accentColor.withValues(alpha: 0.32),
-            // Brighter, more numerous travelling pulses + a faster loop give
-            // the working-step backdrop perceptible life (the calm base nodes
-            // were near-static over a 24s loop) without the bloom competing
-            // with the form — the node/line alpha + glow stay toned.
+            nodeColor: accentColor.withValues(alpha: 0.42),
+            lineColor: accentColor.withValues(alpha: 0.20),
+            // The working-step backdrop should stay alive but recede behind
+            // provider tiles / key fields, so it is smaller, dimmer and uses
+            // fewer travelling activations than the welcome hero.
             pulseColor: Color.lerp(
               accentColor,
               Colors.white,
               0.45,
-            )!.withValues(alpha: 0.9),
+            )!.withValues(alpha: 0.54),
             nodeCount: nodeCount,
-            pulseCount: 5,
-            glow: 0.8,
+            pulseCount: 2,
+            glow: 0.48,
+            compositionScale: 0.78,
             loop: const Duration(seconds: 14),
           ),
         ],
@@ -108,10 +108,13 @@ Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {
         nodeColor: accent,
         lineColor: accent.withValues(alpha: 0.6),
         pulseColor: Color.lerp(accent, Colors.white, 0.45)!,
-        nodeCount: 30,
-        // Tame the brightest blooms ~20% so the hero supports the promise
-        // headline rather than out-shouting it (design-panel call).
-        glow: 0.8,
+        nodeCount: 38,
+        // The welcome page is the only place where the organism should own the
+        // opening beat. Later FTUE pages use OnboardingBackdrop's smaller,
+        // dimmer values so form controls stay dominant.
+        glow: 1.02,
+        compositionScale: 1.48,
+        compositionOffset: const Offset(0, -0.14),
       );
     case OnboardingHeroStyle.crystallize:
       return CrystallizeHero(
@@ -146,7 +149,7 @@ class OnboardingHeroPanel extends StatelessWidget {
     required this.onConnect,
     required this.onSkip,
     this.heroStyle = OnboardingHeroStyle.constellation,
-    this.heroHeight = 264,
+    this.heroHeight = 292,
     super.key,
   });
 
