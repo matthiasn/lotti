@@ -8,6 +8,34 @@ import 'package:mocktail/mocktail.dart';
 
 import '../test_utils.dart';
 
+List<AiConfig> _meliousDefaultModelRows({bool includeLegacyFlux = false}) {
+  return [
+    AiTestDataFactory.createTestModel(
+      id: 'model-melious-mistral',
+      providerModelId: meliousMistralSmall4119BInstructModelId,
+    ),
+    AiTestDataFactory.createTestModel(
+      id: 'model-melious-deepseek',
+      providerModelId: meliousDeepseekV4ProModelId,
+    ),
+    AiTestDataFactory.createTestModel(
+      id: 'model-melious-whisper-turbo',
+      providerModelId: meliousWhisperLargeV3TurboModelId,
+    ),
+    if (includeLegacyFlux)
+      AiTestDataFactory.createTestModel(
+        id: 'model-melious-flux-dev',
+        providerModelId: 'black-forest-labs/flux-2-dev',
+        outputModalities: const [Modality.image],
+      ),
+    AiTestDataFactory.createTestModel(
+      id: 'model-melious-flux-klein-9b',
+      providerModelId: meliousFlux2Klein9BModelId,
+      outputModalities: const [Modality.image],
+    ),
+  ];
+}
+
 void main() {
   late MockAiConfigRepository mockRepo;
   late ProfileSeedingService service;
@@ -514,27 +542,7 @@ void main() {
       () async {
         when(
           () => mockRepo.getConfigsByType(AiConfigType.model),
-        ).thenAnswer(
-          (_) async => [
-            AiTestDataFactory.createTestModel(
-              id: 'model-melious-mistral',
-              providerModelId: meliousMistralSmall4119BInstructModelId,
-            ),
-            AiTestDataFactory.createTestModel(
-              id: 'model-melious-deepseek',
-              providerModelId: meliousDeepseekV4ProModelId,
-            ),
-            AiTestDataFactory.createTestModel(
-              id: 'model-melious-whisper-turbo',
-              providerModelId: meliousWhisperLargeV3TurboModelId,
-            ),
-            AiTestDataFactory.createTestModel(
-              id: 'model-melious-flux-klein-9b',
-              providerModelId: meliousFlux2Klein9BModelId,
-              outputModalities: const [Modality.image],
-            ),
-          ],
-        );
+        ).thenAnswer((_) async => _meliousDefaultModelRows());
         when(
           () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
         ).thenAnswer(
@@ -556,6 +564,80 @@ void main() {
                   automate: true,
                 ),
               ],
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        final upgraded = captured.single as AiConfigInferenceProfile;
+
+        expect(upgraded.id, profileMeliousId);
+        expect(upgraded.imageGenerationModelId, 'model-melious-flux-klein-9b');
+      },
+    );
+
+    test(
+      'moves untouched Melious profiles from legacy Flux provider ID to Klein',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => _meliousDefaultModelRows());
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileMeliousId,
+              name: 'Melious.ai',
+              thinkingModelId: meliousMistralSmall4119BInstructModelId,
+              thinkingHighEndModelId: meliousDeepseekV4ProModelId,
+              imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
+              transcriptionModelId: meliousWhisperLargeV3TurboModelId,
+              imageGenerationModelId: 'black-forest-labs/flux-2-dev',
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        final upgraded = captured.single as AiConfigInferenceProfile;
+
+        expect(upgraded.id, profileMeliousId);
+        expect(upgraded.imageGenerationModelId, 'model-melious-flux-klein-9b');
+      },
+    );
+
+    test(
+      'moves untouched Melious profiles from legacy Flux model row to Klein',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => _meliousDefaultModelRows(includeLegacyFlux: true),
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileMeliousId,
+              name: 'Melious.ai',
+              thinkingModelId: meliousMistralSmall4119BInstructModelId,
+              thinkingHighEndModelId: meliousDeepseekV4ProModelId,
+              imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
+              transcriptionModelId: meliousWhisperLargeV3TurboModelId,
+              imageGenerationModelId: 'model-melious-flux-dev',
               isDefault: true,
               createdAt: DateTime(2026),
             ),

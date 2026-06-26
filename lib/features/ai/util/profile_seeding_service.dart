@@ -27,6 +27,7 @@ const _localPowerName = 'Local Power (oMLX)';
 const _legacyLocalPowerName = 'Local Power (Ollama)';
 const _legacyLocalPowerThinkingModelId = 'qwen3.6:35b-a3b-coding-nvfp4';
 const _legacyLocalPowerImageModelId = 'qwen3.5:27b';
+const _legacyMeliousFlux2DevModelId = 'black-forest-labs/flux-2-dev';
 
 /// Default skill assignments for profiles with transcription + image
 /// recognition model slots. Uses `skillTranscribeContextId` which has
@@ -187,7 +188,10 @@ class ProfileSeedingService {
     AiConfigInferenceProfile profile,
     List<AiConfigModel> models,
   ) {
-    if (!_isUntouchedMeliousProfileMissingImageGeneration(profile, models)) {
+    if (!_isUntouchedMeliousProfileEligibleForImageGenerationUpgrade(
+      profile,
+      models,
+    )) {
       return profile;
     }
 
@@ -196,7 +200,7 @@ class ProfileSeedingService {
     );
   }
 
-  static bool _isUntouchedMeliousProfileMissingImageGeneration(
+  static bool _isUntouchedMeliousProfileEligibleForImageGenerationUpgrade(
     AiConfigInferenceProfile profile,
     List<AiConfigModel> models,
   ) {
@@ -223,11 +227,26 @@ class ProfileSeedingService {
           meliousWhisperLargeV3TurboModelId,
           models,
         ) &&
-        profile.imageGenerationModelId == null &&
+        _meliousImageGenerationSlotNeedsUpgrade(
+          profile.imageGenerationModelId,
+          models,
+        ) &&
         profile.isDefault &&
         !profile.desktopOnly &&
         profile.pinnedHostId == null &&
         _slotResolvesToModelRow(meliousFlux2Klein9BModelId, models);
+  }
+
+  static bool _meliousImageGenerationSlotNeedsUpgrade(
+    String? slotValue,
+    List<AiConfigModel> models,
+  ) {
+    return slotValue == null ||
+        _slotMatchesProviderModelId(
+          slotValue,
+          _legacyMeliousFlux2DevModelId,
+          models,
+        );
   }
 
   static bool _isUntouchedOmlxProfileMissingTranscription(
