@@ -171,7 +171,9 @@ Future<void> importImageAssets(
           continue;
         }
 
-        final bytes = await file.readAsBytes();
+        final bytes = _requiresConversion(sourceExtension)
+            ? await file.readAsBytes()
+            : null;
         final idNamePart = asset.id.split('/').first;
         final targetFileExtension = _targetImageExtension(
           sourceExtension,
@@ -335,10 +337,14 @@ enum _ImageStorageFormat { original, jpeg, png }
 
 Future<File?> _bestAvailableAssetFile(AssetEntity asset) async {
   try {
-    return await asset.originFile ?? await asset.file;
+    final origin = await asset.originFile;
+    if (origin != null) {
+      return origin;
+    }
   } catch (_) {
-    return asset.file;
+    // Fall back to the platform-provided derivative if original lookup fails.
   }
+  return asset.file;
 }
 
 Future<String> _sourceExtensionForAssetFile(
@@ -504,15 +510,27 @@ bool _containsAsciiString(Uint8List data, String value) {
     return false;
   }
 
-  for (var index = 0; index <= data.length - pattern.length; index++) {
+  final firstByte = pattern.first;
+  final lastPossibleIndex = data.length - pattern.length;
+  var index = 0;
+
+  while (index <= lastPossibleIndex) {
+    index = data.indexOf(firstByte, index);
+    if (index == -1 || index > lastPossibleIndex) {
+      return false;
+    }
+
     var matched = true;
-    for (var patternIndex = 0; patternIndex < pattern.length; patternIndex++) {
+    for (var patternIndex = 1; patternIndex < pattern.length; patternIndex++) {
       if (data[index + patternIndex] != pattern[patternIndex]) {
         matched = false;
         break;
       }
     }
+
     if (matched) return true;
+
+    index++;
   }
 
   return false;
