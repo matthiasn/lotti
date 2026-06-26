@@ -164,12 +164,16 @@ void main() {
     );
 
     test(
-      'dance compresses on downbeats, rebounds, and releases support feet',
+      'dance compresses on downbeats, rebounds, and lifts free feet',
       () {
         final channels = CatClips.dance.channels;
         final torso = channels[CatBones.torso]!;
-        final foot = channels[CatBones.footL]!;
-        final hand = channels[CatBones.armLowerL]!;
+        final footL = channels[CatBones.footL]!;
+        final footR = channels[CatBones.footR]!;
+        final armUpperL = channels[CatBones.armUpperL]!;
+        final armUpperR = channels[CatBones.armUpperR]!;
+        final armLowerL = channels[CatBones.armLowerL]!;
+        final armLowerR = channels[CatBones.armLowerR]!;
 
         final compressionTorso = torso.sample(0);
         final pickupTorso = torso.sample(1 / 16);
@@ -177,34 +181,73 @@ void main() {
         expect(pickupTorso.scaleY, greaterThan(compressionTorso.scaleY + 0.05));
         expect(nextDownbeatTorso.scaleY, lessThan(pickupTorso.scaleY - 0.05));
 
-        final plantedFoot = foot.sample(0).rotation;
-        final midContactFoot = foot.sample(1 / 16).rotation;
-        final releasedFoot = foot.sample(1 / 8).rotation;
-        expect(midContactFoot, lessThan(plantedFoot - 0.03));
-        expect(releasedFoot, greaterThan(plantedFoot + 0.18));
+        final leftSupportFoot = footL.sample(0).rotation;
+        final rightFreeFoot = footR.sample(1 / 8).rotation;
+        final rightSupportFoot = footR.sample(1 / 4).rotation;
+        final leftFreeFoot = footL.sample(3 / 8).rotation;
+        expect(leftSupportFoot, closeTo(-0.08, 0.001));
+        expect(rightSupportFoot, closeTo(-0.08, 0.001));
+        expect(rightFreeFoot, greaterThan(rightSupportFoot + 0.45));
+        expect(leftFreeFoot, greaterThan(leftSupportFoot + 0.55));
 
-        final compactHand = hand.sample(0).rotation;
-        final pickupHand = hand.sample(1 / 16).rotation;
-        final openHand = hand.sample(1 / 8).rotation;
-        expect(pickupHand, lessThan(compactHand - 0.08));
-        expect(openHand, lessThan(pickupHand - 0.14));
+        expect(armUpperL.sample(0).rotation, closeTo(0.28, 0.001));
+        expect(armUpperR.sample(0).rotation, closeTo(-0.28, 0.001));
+        expect(armUpperL.sample(1 / 8).rotation, lessThan(-0.6));
+        expect(armUpperR.sample(1 / 8).rotation, greaterThan(0.8));
+        expect(
+          armUpperL.sample(1 / 4).rotation,
+          greaterThan(1.3),
+          reason:
+              'the count-2 lift should stay high while easing through '
+              'the accent instead of snapping to a vertical punch',
+        );
+        expect(
+          armUpperR.sample(1 / 4).rotation,
+          greaterThan(0.1),
+          reason:
+              'the opposite arm should cross forward without matching the '
+              'lead arm height',
+        );
+        expect(
+          armUpperL.sample(15 / 16).rotation,
+          greaterThan(1.5),
+          reason:
+              'count-8 payoff should keep the left hand high without a snap',
+        );
+        expect(
+          armUpperR.sample(15 / 16).rotation,
+          lessThan(-1.1),
+          reason: 'count-8 payoff should open the opposite arm silhouette',
+        );
+        expect(
+          armLowerL.sample(1 / 4).rotation,
+          greaterThan(0.1),
+          reason: 'the softened count-2 accent still bends the lead elbow',
+        );
+        expect(armLowerR.sample(1 / 4).rotation, greaterThan(0.2));
       },
     );
 
     test('dance pins alternating support feet across the two-bar phrase', () {
+      final spans = CatClips.dance.contactSpans;
+      expect(spans.map((span) => span.bone), [
+        CatBones.footL,
+        CatBones.footR,
+        CatBones.footL,
+        CatBones.footR,
+        CatBones.footL,
+      ]);
+      expect(spans.map((span) => span.start), [
+        0,
+        1 / 4,
+        1 / 2,
+        3 / 4,
+        15 / 16,
+      ]);
+      expect(spans.map((span) => span.end), [1 / 4, 1 / 2, 3 / 4, 15 / 16, 1]);
       expect(
-        CatClips.dance.contactSpans.map((span) => span.bone),
-        [
-          CatBones.footL,
-          CatBones.footR,
-          CatBones.footL,
-          CatBones.footR,
-          CatBones.footL,
-          CatBones.footR,
-          CatBones.footL,
-          CatBones.footR,
-          CatBones.footL,
-        ],
+        spans.take(4).map((span) => span.end - span.start),
+        everyElement(greaterThanOrEqualTo(3 / 16)),
       );
     });
 

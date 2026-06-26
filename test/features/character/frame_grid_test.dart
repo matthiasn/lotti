@@ -287,12 +287,12 @@ void main() {
     CharacterScene thirdScene,
     Clip clip,
   ) async {
-    const w = 360.0;
+    final w = clip.name == CatClips.dance.name ? 760.0 : 360.0;
     const h = 520.0;
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder)
       ..drawRect(
-        const Rect.fromLTWH(0, 0, w, h),
+        Rect.fromLTWH(0, 0, w, h),
         Paint()..color = const Color(0xFF26303A),
       );
     CharacterPainter(
@@ -331,7 +331,7 @@ void main() {
           ? _ensembleExpressionsAt(clip.duration * 0.5, expression)
           : const [],
       synchronousEnsemble: clip.name == CatClips.dance.name,
-    ).paint(canvas, const Size(w, h));
+    ).paint(canvas, Size(w, h));
     return _pngOf(recorder.endRecording(), w.round(), h.round());
   }
 

@@ -135,7 +135,7 @@ class CharacterPainter extends CustomPainter {
   // Keep the cat this far from the stage edges as it walks back and forth.
   static const double _edgeMargin = 44;
   static const double _pairScaleFactor = 0.7;
-  static const double _trioScaleFactor = 0.58;
+  static const double _trioScaleFactor = 0.54;
   static const double _pairSpacing = 215;
   static const double _trioSpacing = 214;
 
@@ -306,12 +306,12 @@ class CharacterPainter extends CustomPainter {
 
   static double _roleScale(int index, int memberCount) {
     if (memberCount < 3) return 1;
-    return index == 1 ? 1.12 : 0.9;
+    return index == 1 ? 1.08 : 0.93;
   }
 
   static double _roleFloorOffset(int index, int memberCount) {
     if (memberCount < 3) return 0;
-    return index == 1 ? -8 : -24;
+    return index == 1 ? 0 : -16;
   }
 
   static ({double zoom, double dx, double dy}) _danceCamera(
@@ -322,30 +322,30 @@ class CharacterPainter extends CustomPainter {
     return (
       zoom: _smoothKeys(p, const [
         (p: 0, v: 1.0),
-        (p: 1 / 8, v: 1.08),
-        (p: 1 / 4, v: 1.13),
-        (p: 1 / 2, v: 1.15),
-        (p: 5 / 8, v: 1.18),
-        (p: 3 / 4, v: 1.13),
-        (p: 29 / 32, v: 1.035),
+        (p: 1 / 8, v: 1.055),
+        (p: 1 / 4, v: 1.105),
+        (p: 1 / 2, v: 1.16),
+        (p: 5 / 8, v: 1.19),
+        (p: 3 / 4, v: 1.16),
+        (p: 29 / 32, v: 1.07),
         (p: 1, v: 1.0),
       ]),
       dx: _smoothKeys(p, const [
         (p: 0, v: 0.0),
-        (p: 1 / 8, v: -8.0),
-        (p: 1 / 4, v: -18.0),
-        (p: 1 / 2, v: 30.0),
-        (p: 5 / 8, v: 24.0),
-        (p: 3 / 4, v: 16.0),
-        (p: 29 / 32, v: 4.0),
+        (p: 1 / 8, v: -12.0),
+        (p: 1 / 4, v: -28.0),
+        (p: 1 / 2, v: 42.0),
+        (p: 5 / 8, v: 48.0),
+        (p: 3 / 4, v: 28.0),
+        (p: 29 / 32, v: 8.0),
         (p: 1, v: 0.0),
       ]),
       dy: _smoothKeys(p, const [
         (p: 0, v: 0.0),
-        (p: 1 / 4, v: -6.0),
-        (p: 1 / 2, v: -10.0),
-        (p: 5 / 8, v: -12.0),
-        (p: 3 / 4, v: -7.0),
+        (p: 1 / 4, v: -7.0),
+        (p: 1 / 2, v: -12.0),
+        (p: 5 / 8, v: -14.0),
+        (p: 3 / 4, v: -9.0),
         (p: 29 / 32, v: 0.0),
         (p: 1, v: 0.0),
       ]),
@@ -451,10 +451,10 @@ class CharacterPainter extends CustomPainter {
       final phraseDrift = math.sin(2 * math.pi * (p * 2 + index * 0.37));
       final beatDrift = math.sin(2 * math.pi * (p * 8 + index * 0.19));
       return switch (index) {
-        0 => (-0.45 * frame + 0.08 * frame * phraseDrift) * damping,
+        0 => (-0.48 * frame + 0.1 * frame * phraseDrift) * damping,
         1 => 0,
-        2 => (0.45 * frame + 0.08 * frame * beatDrift) * damping,
-        _ => (0.12 * frame * phraseDrift) * damping,
+        2 => (0.48 * frame + 0.1 * frame * beatDrift) * damping,
+        _ => (0.08 * frame * phraseDrift) * damping,
       };
     }
     if (index == 0) return 0;
@@ -553,7 +553,7 @@ class CharacterPainter extends CustomPainter {
           ..shader = ui.Gradient.linear(
             Offset(rect.left, 0),
             Offset(rect.right, size.height * 0.32),
-            const [Color(0x6CC8C6B7), Color(0x365F7477)],
+            const [Color(0x34FFFFFF), Color(0x185F7477)],
           ),
       );
     }
@@ -810,9 +810,9 @@ class CharacterPainter extends CustomPainter {
       );
       final lift = ((floorY - bottom.y) / (90 * scale)).clamp(0.0, 1.0);
       final active = boneId == contactBone;
-      final shadowW = (active ? 72 : 48) * scale * (1 - 0.35 * lift);
+      final shadowW = (active ? 84 : 52) * scale * (1 - 0.35 * lift);
       final baseAlpha = (shadowColor.a * 255.0).round();
-      final activeBoost = backdrop == CharacterBackdrop.waterfront ? 3.15 : 2.1;
+      final activeBoost = backdrop == CharacterBackdrop.waterfront ? 4.4 : 2.1;
       final shadowAlpha =
           (baseAlpha * (active ? activeBoost : 0.45) * (1 - 0.82 * lift))
               .round()
@@ -828,7 +828,7 @@ class CharacterPainter extends CustomPainter {
       if (active) {
         final contactAlpha =
             (baseAlpha *
-                    (backdrop == CharacterBackdrop.waterfront ? 4.1 : 2.6) *
+                    (backdrop == CharacterBackdrop.waterfront ? 5.6 : 2.6) *
                     (1 - 0.7 * lift))
                 .round()
                 .clamp(0, 255);
@@ -883,10 +883,10 @@ class CharacterPainter extends CustomPainter {
     final footY = drawScene.lowestDrawnY(frame.world);
     final lift = ((floorY - footY) / (90 * scale)).clamp(0.0, 1.0);
     final shadowW =
-        (backdrop == CharacterBackdrop.waterfront ? 92 : 78) *
+        (backdrop == CharacterBackdrop.waterfront ? 112 : 78) *
         scale *
         (1 - 0.45 * lift);
-    final alphaBoost = backdrop == CharacterBackdrop.waterfront ? 1.75 : 1.0;
+    final alphaBoost = backdrop == CharacterBackdrop.waterfront ? 2.35 : 1.0;
     final shadowAlpha =
         ((shadowColor.a * 255.0).round() * alphaBoost * (1 - 0.7 * lift))
             .round()

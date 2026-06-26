@@ -203,10 +203,11 @@ class CharacterScene {
       timeSeconds,
       rawWorld,
     );
-    final world = _headStabilizedWorld(
+    final world = _rigidHeadWorld(
       clip,
       footStabilizedWorld,
-      rootDy: posed.rootDy,
+      timeSeconds: timeSeconds,
+      baseScale: _uniformScale(base),
     );
     var face = faceSolver.applyAutonomic(expression.state, auto);
     if (eyeOpenScale != 1) {
@@ -219,37 +220,43 @@ class CharacterScene {
     return CharacterFrame(world: world, face: face, locomotionX: locomotion);
   }
 
-  /// The dance phrase deliberately puts micro-motion into the torso/hips, but
-  /// because the Phase-1 rig is a pure parented skeleton, that bounce otherwise
-  /// drags the whole head around like a rubber mask. Counter-translate the head
-  /// subtree a little in screen space so the body can groove underneath a more
-  /// controlled skull/neck.
-  Map<String, Affine2D> _headStabilizedWorld(
+  /// The body can squash, stretch, and groove; the skull should not. Because
+  /// the Phase-1 rig is a parented skeleton, torso scale would otherwise
+  /// propagate into the head/ears and make the face look rubbery. Replace the
+  /// head subtree's linear transform with a rigid, uniform-scale transform while
+  /// preserving the solved neck position. Dance additionally counter-rotates a
+  /// little so the face stays controlled while the chest moves underneath it.
+  Map<String, Affine2D> _rigidHeadWorld(
     Clip clip,
     Map<String, Affine2D> world, {
-    required double rootDy,
+    required double timeSeconds,
+    required double baseScale,
   }) {
     final headId = rig.face?.anchorBoneId;
     if (headId == null) return world;
-    if (clip.name != 'dance' || !world.containsKey(headId)) return world;
+    if (!world.containsKey(headId)) return world;
 
     final headWorld = world[headId]!;
     final headRotation = _worldRotation(headWorld);
-    final rotationCorrection = -headRotation * 0.84;
-    final worldScale = math.sqrt(
-      headWorld.a * headWorld.a + headWorld.b * headWorld.b,
+    final danceAttitude = clip.name == 'dance'
+        ? _danceHeadAttitude(_clipPhase(clip, timeSeconds))
+        : 0.0;
+    final rotationCorrection = clip.name == 'dance'
+        ? -headRotation * 0.92 + danceAttitude
+        : 0.0;
+    final correction = _rigidLinearCorrection(
+      headWorld,
+      targetRotation: headRotation + rotationCorrection,
+      targetScale: baseScale,
     );
-    final verticalCorrection = (-rootDy * worldScale * 0.34).clamp(-2.4, 2.4);
-    if (rotationCorrection.abs() < 0.001 && verticalCorrection.abs() < 0.05) {
+    if (correction == null) {
       return world;
     }
-
     final anchor = headWorld.origin;
-    final stabilizeHead = Affine2D.translation(0, verticalCorrection).multiply(
-      Affine2D.translation(anchor.x, anchor.y)
-          .multiply(Affine2D.rotation(rotationCorrection))
-          .multiply(Affine2D.translation(-anchor.x, -anchor.y)),
-    );
+    final stabilizeHead = Affine2D.translation(
+      anchor.x,
+      anchor.y,
+    ).multiply(correction).multiply(Affine2D.translation(-anchor.x, -anchor.y));
     final shifted = Map<String, Affine2D>.of(world);
     for (final bone in rig.bones) {
       if (bone.id == headId || _hasAncestor(bone.id, headId)) {
@@ -257,6 +264,66 @@ class CharacterScene {
       }
     }
     return shifted;
+  }
+
+  double _danceHeadAttitude(double p) {
+    double pulse(double centre, double width) {
+      final distance = _cyclicDistance(p, centre);
+      if (distance >= width) return 0;
+      final t = 1 - distance / width;
+      return t * t * (3 - 2 * t);
+    }
+
+    // Small, deliberate accents only: enough for the head to answer the body,
+    // not enough to return to the rubber bobble that the rigid pass removed.
+    return -0.018 * pulse(1 / 8, 1 / 18) +
+        0.018 * pulse(3 / 8, 1 / 18) -
+        0.016 * pulse(5 / 8, 1 / 18) +
+        0.022 * pulse(15 / 16, 1 / 16);
+  }
+
+  double _cyclicDistance(double a, double b) {
+    final d = (a - b).abs();
+    return math.min(d, 1 - d);
+  }
+
+  static double _uniformScale(Affine2D transform) =>
+      math.sqrt(transform.a * transform.a + transform.b * transform.b);
+
+  Affine2D? _rigidLinearCorrection(
+    Affine2D current, {
+    required double targetRotation,
+    required double targetScale,
+  }) {
+    final det = current.a * current.d - current.b * current.c;
+    if (det.abs() < 1e-9 || targetScale <= 0) return null;
+    final handedness = det < 0 ? -1.0 : 1.0;
+    final cos = math.cos(targetRotation);
+    final sin = math.sin(targetRotation);
+    final desired = Affine2D(
+      cos * targetScale,
+      sin * targetScale,
+      -sin * targetScale * handedness,
+      cos * targetScale * handedness,
+      0,
+      0,
+    );
+    final inv = Affine2D(
+      current.d / det,
+      -current.b / det,
+      -current.c / det,
+      current.a / det,
+      0,
+      0,
+    );
+    final correction = desired.multiply(inv);
+    if ((correction.a - 1).abs() < 0.001 &&
+        correction.b.abs() < 0.001 &&
+        correction.c.abs() < 0.001 &&
+        (correction.d - 1).abs() < 0.001) {
+      return null;
+    }
+    return correction;
   }
 
   double _worldRotation(Affine2D transform) =>
@@ -395,11 +462,11 @@ class CharacterScene {
     double p,
   ) {
     final dance = clip.name == 'dance';
-    final baseX = dance ? 1.0 : (clip.loop ? 0.8 : 0.94);
-    final baseY = dance ? 1.0 : (clip.loop ? 0.8 : 0.94);
+    final baseX = dance ? 0.94 : (clip.loop ? 0.8 : 0.94);
+    final baseY = dance ? 0.94 : (clip.loop ? 0.8 : 0.94);
     final spanLength = span.end - span.start;
     final fade = dance
-        ? (spanLength * 0.12).clamp(0.018, 0.028)
+        ? (spanLength * 0.24).clamp(0.044, 0.058)
         : (clip.loop ? (spanLength * 0.2).clamp(0.018, 0.035) : 0.08);
     final fadeIn = _smoothUnit((p - span.start) / fade);
     final fadeOut = _smoothUnit((span.end - p) / fade);

@@ -295,6 +295,37 @@ void main() {
       }
     });
 
+    test('dance keeps the pelvis visibly over the active support foot', () {
+      final scene = CharacterScene(buildCatInSuitRig());
+
+      for (var frameIndex = 0; frameIndex < 16; frameIndex++) {
+        final p = frameIndex / 16;
+        final span = CatClips.dance.contactSpans.firstWhere(
+          (span) => p >= span.start && p < span.end,
+          orElse: () => CatClips.dance.contactSpans.last,
+        );
+        final frame = scene.frameAt(
+          clip: CatClips.dance,
+          timeSeconds: p * CatClips.dance.duration,
+        );
+        final hip = frame.world[CatBones.hips]!.origin;
+        final support = _supportPoint(
+          scene,
+          CatClips.dance,
+          span.bone,
+          p * CatClips.dance.duration,
+        );
+
+        expect(
+          (hip.x - support.x).abs(),
+          lessThan(32),
+          reason:
+              'dance frame $frameIndex should visibly load the pelvis over '
+              'the active support foot ${span.bone}',
+        );
+      }
+    });
+
     test('is deterministic: identical scenes resolve identical frames', () {
       final a = CharacterScene(
         buildCatInSuitRig(),
@@ -335,6 +366,55 @@ void main() {
       }
     });
 
+    test('dance keeps the head rigid while the torso squashes', () {
+      final scene = CharacterScene(buildCatInSuitRig());
+      const samples = 48;
+      var minTorsoScaleY = double.infinity;
+      var maxTorsoScaleY = double.negativeInfinity;
+      var minHeadY = double.infinity;
+      var maxHeadY = double.negativeInfinity;
+
+      for (var i = 0; i < samples; i++) {
+        final frame = scene.frameAt(
+          clip: CatClips.dance,
+          timeSeconds: CatClips.dance.duration * i / samples,
+        );
+        final head = frame.world[CatBones.head]!;
+        final torso = frame.world[CatBones.torso]!;
+        final headScaleX = _axisScaleX(head);
+        final headScaleY = _axisScaleY(head);
+        final torsoScaleY = _axisScaleY(torso);
+
+        minTorsoScaleY = math.min(minTorsoScaleY, torsoScaleY);
+        maxTorsoScaleY = math.max(maxTorsoScaleY, torsoScaleY);
+        minHeadY = math.min(minHeadY, head.ty);
+        maxHeadY = math.max(maxHeadY, head.ty);
+        expect(
+          headScaleX,
+          closeTo(1, 1e-6),
+          reason: 'frame $i should not squash/stretch the skull horizontally',
+        );
+        expect(
+          headScaleY,
+          closeTo(1, 1e-6),
+          reason: 'frame $i should not squash/stretch the skull vertically',
+        );
+      }
+
+      expect(
+        maxTorsoScaleY - minTorsoScaleY,
+        greaterThan(0.055),
+        reason: 'the test should cover visible but non-rubbery torso squash',
+      );
+      expect(
+        maxHeadY - minHeadY,
+        lessThan(24),
+        reason:
+            'dance head travel should read like a rigid skull riding the body, '
+            'not a rubber bobble',
+      );
+    });
+
     test('blink reaches the face via the autonomic layer', () {
       final scene = CharacterScene(buildCatInSuitRig());
       var minOpen = 1.0;
@@ -369,6 +449,12 @@ void main() {
 
 double _worldRotation(Affine2D transform) =>
     math.atan2(transform.b, transform.a);
+
+double _axisScaleX(Affine2D transform) =>
+    math.sqrt(transform.a * transform.a + transform.b * transform.b);
+
+double _axisScaleY(Affine2D transform) =>
+    math.sqrt(transform.c * transform.c + transform.d * transform.d);
 
 double _angleDistance(double a, double b) =>
     math.atan2(math.sin(a - b), math.cos(a - b)).abs();
