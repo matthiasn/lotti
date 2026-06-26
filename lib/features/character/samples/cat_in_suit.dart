@@ -1220,6 +1220,12 @@ class CatClips {
     DanceJointKey(31, rotation: -0.08),
     DanceJointKey(32, rotation: -0.08),
   ];
+  static final List<DanceJointKey> _danceFootLAccentKeys = _dancePhrase
+      .jointAccentKeys(
+        const [
+          DanceJointAccent(28, radiusFrames: 2, rotation: 0.055),
+        ],
+      );
   static const _danceFootRKeys = [
     DanceJointKey(0, rotation: 0.34),
     DanceJointKey(2, rotation: 0.52),
@@ -1248,40 +1254,57 @@ class CatClips {
   // the separate foot channels still own shoe roll/toe angle.
   static final KeyframeIkTargetChannel _danceFootLTarget = _dancePhrase
       .ikTargetChannel(
-        const [
-          DanceIkTargetKey(0, x: 9.6, y: 94.4),
-          DanceIkTargetKey(1, x: 10.2, y: 93.9),
-          DanceIkTargetKey(2, x: 11.7, y: 93.1),
-          DanceIkTargetKey(3, x: 14.7, y: 92.2),
-          DanceIkTargetKey(4, x: 17.5, y: 91.4),
-          DanceIkTargetKey(5, x: 20.3, y: 90.4),
-          DanceIkTargetKey(6, x: 19.4, y: 91.1),
-          DanceIkTargetKey(7, x: 8.1, y: 95.2),
-          DanceIkTargetKey(8, x: -4.8, y: 97.9),
-          DanceIkTargetKey(9, x: -8.9, y: 98),
-          DanceIkTargetKey(10, x: -10.4, y: 98),
-          DanceIkTargetKey(11, x: -13.9, y: 98.4),
-          DanceIkTargetKey(12, x: -16.1, y: 98.8),
-          DanceIkTargetKey(13, x: -10.7, y: 98.5),
-          DanceIkTargetKey(14, x: -9.5, y: 99.3),
-          DanceIkTargetKey(15, x: -24, y: 101.5),
-          DanceIkTargetKey(16, x: -38, y: 102.1),
-          DanceIkTargetKey(17, x: -42, y: 102.3),
-          DanceIkTargetKey(18, x: -40.4, y: 102.8),
-          DanceIkTargetKey(19, x: -38.9, y: 103.3),
-          DanceIkTargetKey(20, x: -36.7, y: 103.6),
-          DanceIkTargetKey(21, x: -30.6, y: 103.3),
-          DanceIkTargetKey(22, x: -25.8, y: 102.6),
-          DanceIkTargetKey(23, x: -27.9, y: 102.6),
-          DanceIkTargetKey(24, x: -31.2, y: 102.9),
-          DanceIkTargetKey(25, x: -30.7, y: 103.4),
-          DanceIkTargetKey(26, x: -29.3, y: 104),
-          DanceIkTargetKey(27, x: -30.7, y: 104.7),
-          DanceIkTargetKey(28, x: -27.4, y: 105),
-          DanceIkTargetKey(29, x: -0.5, y: 97.7),
-          DanceIkTargetKey(30, x: 9.8, y: 94.9),
-          DanceIkTargetKey(31, x: 10.8, y: 94),
-          DanceIkTargetKey(32, x: 9.6, y: 94.4),
+        [
+          ...const [
+            DanceIkTargetKey(0, x: 9.6, y: 94.4),
+            DanceIkTargetKey(1, x: 10.2, y: 93.9),
+            DanceIkTargetKey(2, x: 11.7, y: 93.1),
+            DanceIkTargetKey(3, x: 14.7, y: 92.2),
+            DanceIkTargetKey(4, x: 17.5, y: 91.4),
+            DanceIkTargetKey(5, x: 20.3, y: 90.4),
+            DanceIkTargetKey(6, x: 19.4, y: 91.1),
+            DanceIkTargetKey(7, x: 8.1, y: 95.2),
+            DanceIkTargetKey(8, x: -4.8, y: 97.9),
+            DanceIkTargetKey(9, x: -8.9, y: 98),
+            DanceIkTargetKey(10, x: -10.4, y: 98),
+            DanceIkTargetKey(11, x: -13.9, y: 98.4),
+            DanceIkTargetKey(12, x: -16.1, y: 98.8),
+            DanceIkTargetKey(13, x: -10.7, y: 98.5),
+            DanceIkTargetKey(14, x: -9.5, y: 99.3),
+            DanceIkTargetKey(15, x: -24, y: 101.5),
+            DanceIkTargetKey(16, x: -38, y: 102.1),
+            DanceIkTargetKey(17, x: -42, y: 102.3),
+            DanceIkTargetKey(18, x: -40.4, y: 102.8),
+            DanceIkTargetKey(19, x: -38.9, y: 103.3),
+            DanceIkTargetKey(20, x: -36.7, y: 103.6),
+            DanceIkTargetKey(21, x: -30.6, y: 103.3),
+            DanceIkTargetKey(22, x: -25.8, y: 102.6),
+            DanceIkTargetKey(23, x: -27.9, y: 102.6),
+          ],
+          ..._dancePhrase.ikTargetArcKeys(
+            const [
+              DanceIkTargetArc(
+                name: 'left foot toe-flick release',
+                startFrame: 24,
+                peakFrame: 28,
+                endFrame: 32,
+                startX: -31.2,
+                startY: 102.9,
+                peakX: -27.4,
+                peakY: 105,
+                endX: 9.6,
+                endY: 94.4,
+                controlPoints: [
+                  DanceIkTargetArcPoint(25, x: -30.7, y: 103.4),
+                  DanceIkTargetArcPoint(26, x: -29.3, y: 104),
+                  DanceIkTargetArcPoint(27, x: -30.7, y: 104.7),
+                  DanceIkTargetArcPoint(29, x: -0.5, y: 97.7),
+                  DanceIkTargetArcPoint(30, x: 9.8, y: 94.9),
+                  DanceIkTargetArcPoint(31, x: 10.8, y: 94),
+                ],
+              ),
+            ],
+          ),
         ],
         smooth: true,
       );
@@ -2573,7 +2596,10 @@ class CatClips {
         _danceLegLowerRKeys,
         smooth: true,
       ),
-      CatBones.footL: _dancePhrase.jointChannel(_danceFootLKeys, smooth: true),
+      CatBones.footL: LayeredJointChannel([
+        _dancePhrase.jointChannel(_danceFootLKeys, smooth: true),
+        _dancePhrase.jointChannel(_danceFootLAccentKeys, smooth: true),
+      ]),
       CatBones.footR: _dancePhrase.jointChannel(_danceFootRKeys, smooth: true),
 
       // Alternating groove arms for counts 1-8, then compact elbow pops for the

@@ -303,6 +303,7 @@ void main() {
         final rightFreeFoot = footR.sample(1 / 8).rotation;
         final rightSupportFoot = footR.sample(5 / 8).rotation;
         final leftFreeFoot = footL.sample(5 / 8).rotation;
+        final leftReleaseFoot = footL.sample(7 / 8).rotation;
         expect(leftSupportFoot, closeTo(-0.08, 0.001));
         expect(rightSupportFoot, closeTo(-0.08, 0.001));
         expect(rightFreeFoot, greaterThan(rightSupportFoot + 0.45));
@@ -312,6 +313,13 @@ void main() {
           reason:
               'the left toe accent should read as compact Afrobeats texture, '
               'not a large flick that pulls the foot across the body',
+        );
+        expect(
+          leftReleaseFoot,
+          inInclusiveRange(leftSupportFoot + 0.48, leftSupportFoot + 0.64),
+          reason:
+              'the count-8 toe release should be an authored footwork accent, '
+              'not just the raw IK target sliding across the deck',
         );
 
         expect(armUpperL.sample(0).rotation, inInclusiveRange(0.2, 0.25));

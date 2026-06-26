@@ -497,7 +497,15 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(() async {
-      Future<({int width, int height})> orangeBoundsAt(double p) async {
+      Future<
+        ({
+          int orangeWidth,
+          int orangeHeight,
+          double orangeCenterX,
+          int contentMaxY,
+        })
+      >
+      boundsAt(double p) async {
         final recorder = ui.PictureRecorder();
         final canvas = Canvas(recorder);
         CharacterPainter(
@@ -535,9 +543,15 @@ void main() {
             var maxX = -1;
             var minY = 420;
             var maxY = -1;
+            var minOpaqueY = 420;
+            var maxOpaqueY = -1;
             for (var y = 0; y < 420; y++) {
               for (var x = 0; x < 760; x++) {
                 final offset = (y * 760 + x) * 4;
+                if (pixels[offset + 3] != 0) {
+                  minOpaqueY = math.min(minOpaqueY, y);
+                  maxOpaqueY = math.max(maxOpaqueY, y);
+                }
                 final red = pixels[offset];
                 final green = pixels[offset + 1];
                 final blue = pixels[offset + 2];
@@ -551,7 +565,15 @@ void main() {
               }
             }
 
-            return (width: maxX - minX + 1, height: maxY - minY + 1);
+            expect(maxX, greaterThanOrEqualTo(minX));
+            expect(maxY, greaterThanOrEqualTo(minY));
+            expect(maxOpaqueY, greaterThanOrEqualTo(minOpaqueY));
+            return (
+              orangeWidth: maxX - minX + 1,
+              orangeHeight: maxY - minY + 1,
+              orangeCenterX: (minX + maxX) / 2,
+              contentMaxY: maxOpaqueY,
+            );
           } finally {
             image.dispose();
           }
@@ -560,20 +582,35 @@ void main() {
         }
       }
 
-      final wide = await orangeBoundsAt(0);
-      final hook = await orangeBoundsAt(5 / 8);
+      final wide = await boundsAt(0);
+      final closeLeft = await boundsAt(3 / 8);
+      final closeRight = await boundsAt(5 / 8);
 
       expect(
-        hook.height,
-        greaterThan(wide.height * 1.08),
+        closeLeft.orangeHeight,
+        greaterThan(wide.orangeHeight * 1.22),
         reason:
-            'the hook should read as a controlled camera push-in, not another '
-            'locked-off wide stage frame',
+            'the hook camera should commit to an upper-body push-in instead '
+            'of barely enlarging the wide shot and cropping feet by accident',
       );
       expect(
-        hook.width,
-        greaterThan(wide.width * 1.04),
+        closeLeft.orangeWidth,
+        greaterThan(wide.orangeWidth * 1.14),
         reason: 'the orange lead should visibly grow in the closer hook shot',
+      );
+      expect(
+        closeRight.orangeCenterX - closeLeft.orangeCenterX,
+        greaterThan(110),
+        reason:
+            'the close section should read as a deliberate lateral camera move '
+            'across faces and torsos',
+      );
+      expect(
+        closeLeft.contentMaxY,
+        greaterThan(416),
+        reason:
+            'once the camera pushes in, feet should leave frame intentionally; '
+            'otherwise the shot sits in the awkward half-cropped range',
       );
     });
   });
