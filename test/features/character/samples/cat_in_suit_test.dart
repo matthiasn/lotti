@@ -167,6 +167,7 @@ void main() {
       'dance compresses on downbeats, rebounds, and lifts free feet',
       () {
         final channels = CatClips.dance.channels;
+        final hips = channels[CatBones.hips]!;
         final torso = channels[CatBones.torso]!;
         final footL = channels[CatBones.footL]!;
         final footR = channels[CatBones.footR]!;
@@ -180,6 +181,10 @@ void main() {
         final nextDownbeatTorso = torso.sample(1 / 8);
         expect(pickupTorso.scaleY, greaterThan(compressionTorso.scaleY + 0.05));
         expect(nextDownbeatTorso.scaleY, lessThan(pickupTorso.scaleY - 0.05));
+        expect(hips.sample(0).rotation, greaterThan(0.28));
+        expect(hips.sample(1 / 4).rotation, lessThan(-0.27));
+        expect(torso.sample(0).rotation, lessThan(-0.12));
+        expect(torso.sample(1 / 4).rotation, greaterThan(0.13));
 
         final leftSupportFoot = footL.sample(0).rotation;
         final rightFreeFoot = footR.sample(1 / 8).rotation;
@@ -210,14 +215,24 @@ void main() {
         );
         expect(
           armUpperL.sample(15 / 16).rotation,
-          greaterThan(1.5),
+          inInclusiveRange(1.05, 1.3),
           reason:
-              'count-8 payoff should keep the left hand high without a snap',
+              'count-8 hook should bend the left arm instead of reaching high',
         );
         expect(
           armUpperR.sample(15 / 16).rotation,
-          lessThan(-1.1),
-          reason: 'count-8 payoff should open the opposite arm silhouette',
+          lessThan(-0.9),
+          reason: 'count-8 hook should keep the opposite arm open',
+        );
+        expect(
+          armLowerL.sample(15 / 16).rotation,
+          greaterThan(0.6),
+          reason: 'count-8 hook should visibly bend the lead elbow',
+        );
+        expect(
+          armLowerR.sample(15 / 16).rotation,
+          greaterThan(0.7),
+          reason: 'count-8 hook should visibly bend the opposite elbow',
         );
         expect(
           armLowerL.sample(1 / 4).rotation,

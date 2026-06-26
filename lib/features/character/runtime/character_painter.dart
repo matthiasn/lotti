@@ -306,12 +306,12 @@ class CharacterPainter extends CustomPainter {
 
   static double _roleScale(int index, int memberCount) {
     if (memberCount < 3) return 1;
-    return index == 1 ? 1.08 : 0.93;
+    return index == 1 ? 1.11 : 0.91;
   }
 
   static double _roleFloorOffset(int index, int memberCount) {
     if (memberCount < 3) return 0;
-    return index == 1 ? 0 : -16;
+    return index == 1 ? 6 : -18;
   }
 
   static ({double zoom, double dx, double dy}) _danceCamera(
@@ -371,9 +371,11 @@ class CharacterPainter extends CustomPainter {
     final returnLock = _smoothUnit((p - 25 / 32) / (4 / 32));
     return switch (index) {
       0 => (
-        dx: (-14 - 5 * breathe - 8 * sideAnswer - 7 * wideV) * (1 - returnLock),
+        dx:
+            (-22 - 6 * breathe - 10 * sideAnswer - 8 * wideV) *
+            (1 - returnLock),
         dy:
-            -5 +
+            -8 +
             1.5 * callResponse -
             4 * leadCall -
             5 * sideAnswer -
@@ -383,19 +385,19 @@ class CharacterPainter extends CustomPainter {
       1 => (
         dx: 2 * leadCall - 2 * ensembleHit,
         dy:
-            5 -
+            9 -
             5 * leadCall -
             2 * blackSolo +
-            3 * wideV +
-            5 * centreFeature -
+            4 * wideV +
+            7 * centreFeature -
             3 * ensembleHit,
       ),
       2 => (
         dx:
-            (14 + 5 * breathe + 7 * sideAnswer + 9 * blackSolo + 7 * wideV) *
+            (22 + 6 * breathe + 9 * sideAnswer + 11 * blackSolo + 8 * wideV) *
             (1 - returnLock),
         dy:
-            -5 -
+            -8 -
             1.5 * callResponse -
             2 * leadCall -
             4 * sideAnswer +
