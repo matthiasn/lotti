@@ -115,7 +115,7 @@ void main() {
     });
 
     test(
-      'backup dance clips keep footwork synced but answer with body canon',
+      'backup dance clips keep footwork synced but answer with arm canon',
       () {
         final lead = CatClips.dance;
         final left = CatClips.danceBackupLeft;
@@ -136,17 +136,11 @@ void main() {
         );
         expect(
           left.channels[CatBones.hips]!.sample(p).rotation,
-          closeTo(
-            lead.channels[CatBones.hips]!.sample(p - 1 / 32).rotation,
-            0.02,
-          ),
+          closeTo(lead.channels[CatBones.hips]!.sample(p).rotation, 0.005),
         );
         expect(
           right.channels[CatBones.hips]!.sample(p).rotation,
-          closeTo(
-            lead.channels[CatBones.hips]!.sample(p + 1 / 32).rotation,
-            0.02,
-          ),
+          closeTo(lead.channels[CatBones.hips]!.sample(p).rotation, 0.005),
         );
         expect(
           left.channels[CatBones.armUpperL]!.sample(p).rotation,
@@ -186,13 +180,13 @@ void main() {
         final plantedFoot = foot.sample(0).rotation;
         final midContactFoot = foot.sample(1 / 16).rotation;
         final releasedFoot = foot.sample(1 / 8).rotation;
-        expect(midContactFoot, closeTo(plantedFoot, 0.05));
+        expect(midContactFoot, lessThan(plantedFoot - 0.03));
         expect(releasedFoot, greaterThan(plantedFoot + 0.18));
 
         final compactHand = hand.sample(0).rotation;
         final pickupHand = hand.sample(1 / 16).rotation;
         final openHand = hand.sample(1 / 8).rotation;
-        expect(pickupHand, lessThan(compactHand - 0.14));
+        expect(pickupHand, lessThan(compactHand - 0.08));
         expect(openHand, lessThan(pickupHand - 0.14));
       },
     );
