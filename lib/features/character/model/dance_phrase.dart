@@ -206,6 +206,19 @@ class DancePhrase {
     smooth: smooth,
   );
 
+  List<DanceIkTargetKey> ikTargetArcKeys(List<DanceIkTargetArc> arcs) {
+    final keys = <DanceIkTargetKey>[];
+    for (final arc in arcs) {
+      final arcKeys = arc.keys;
+      for (final key in arcKeys) {
+        _checkFrame(key.frame);
+      }
+      keys.addAll(arcKeys);
+    }
+    keys.sort((a, b) => a.frame.compareTo(b.frame));
+    return List<DanceIkTargetKey>.unmodifiable(keys);
+  }
+
   List<DanceIkTargetKey> ikTargetAccentKeys(
     List<DanceIkTargetAccent> accents,
   ) {
@@ -529,6 +542,87 @@ class DanceIkTargetKey {
     weight: weight,
     ease: ease,
   );
+}
+
+class DanceIkTargetArc {
+  const DanceIkTargetArc({
+    required this.name,
+    required this.startFrame,
+    required this.peakFrame,
+    required this.endFrame,
+    required this.startX,
+    required this.startY,
+    required this.peakX,
+    required this.peakY,
+    required this.endX,
+    required this.endY,
+    this.controlPoints = const <DanceIkTargetArcPoint>[],
+    this.weight = 1,
+    this.ease = Ease.easeInOut,
+  }) : assert(startFrame < peakFrame, 'arc peak must follow start'),
+       assert(peakFrame < endFrame, 'arc end must follow peak');
+
+  /// Choreography-facing label for review notes and future editor handles.
+  final String name;
+  final int startFrame;
+  final int peakFrame;
+  final int endFrame;
+  final double startX;
+  final double startY;
+  final double peakX;
+  final double peakY;
+  final double endX;
+  final double endY;
+  final List<DanceIkTargetArcPoint> controlPoints;
+  final double weight;
+  final Ease ease;
+
+  List<DanceIkTargetKey> get keys {
+    final keys = [
+      DanceIkTargetKey(
+        startFrame,
+        x: startX,
+        y: startY,
+        weight: weight,
+        ease: ease,
+      ),
+      for (final point in controlPoints) point.toKey(weight, ease),
+      DanceIkTargetKey(
+        peakFrame,
+        x: peakX,
+        y: peakY,
+        weight: weight,
+        ease: ease,
+      ),
+      DanceIkTargetKey(endFrame, x: endX, y: endY, weight: weight, ease: ease),
+    ]..sort((a, b) => a.frame.compareTo(b.frame));
+    return keys;
+  }
+}
+
+class DanceIkTargetArcPoint {
+  const DanceIkTargetArcPoint(
+    this.frame, {
+    required this.x,
+    required this.y,
+    this.weight,
+    this.ease,
+  });
+
+  final int frame;
+  final double x;
+  final double y;
+  final double? weight;
+  final Ease? ease;
+
+  DanceIkTargetKey toKey(double defaultWeight, Ease defaultEase) =>
+      DanceIkTargetKey(
+        frame,
+        x: x,
+        y: y,
+        weight: weight ?? defaultWeight,
+        ease: ease ?? defaultEase,
+      );
 }
 
 class DanceIkTargetAccent {

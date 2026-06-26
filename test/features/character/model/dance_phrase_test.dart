@@ -245,6 +245,45 @@ void main() {
       expect(channel.sample(1).x, closeTo(-12, 1e-9));
     });
 
+    test('builds named IK target arcs from start peak and settle points', () {
+      final keys = phrase.ikTargetArcKeys(
+        const [
+          DanceIkTargetArc(
+            name: 'right hand lift',
+            startFrame: 12,
+            peakFrame: 16,
+            endFrame: 20,
+            startX: 32,
+            startY: 24,
+            peakX: 80,
+            peakY: 8,
+            endX: 52,
+            endY: 28,
+            weight: 0.8,
+            controlPoints: [
+              DanceIkTargetArcPoint(14, x: 58, y: 16),
+              DanceIkTargetArcPoint(18, x: 68, y: 14, weight: 0.6),
+            ],
+          ),
+        ],
+      );
+
+      expect(keys.map((key) => key.frame), [12, 14, 16, 18, 20]);
+      expect(keys[0].x, 32);
+      expect(keys[0].y, 24);
+      expect(keys[0].weight, 0.8);
+      expect(keys[1].x, 58);
+      expect(keys[1].y, 16);
+      expect(keys[1].weight, 0.8);
+      expect(keys[2].x, 80);
+      expect(keys[2].y, 8);
+      expect(keys[3].x, 68);
+      expect(keys[3].y, 14);
+      expect(keys[3].weight, 0.6);
+      expect(keys[4].x, 52);
+      expect(keys[4].y, 28);
+    });
+
     test('builds neutralized IK target accent pulses', () {
       final keys = phrase.ikTargetAccentKeys(
         const [
@@ -329,6 +368,25 @@ void main() {
       expect(
         () => phrase.ikTargetAccentKeys(
           const [DanceIkTargetAccent(31, radiusFrames: 2, x: 1, y: 1)],
+        ),
+        throwsRangeError,
+      );
+      expect(
+        () => phrase.ikTargetArcKeys(
+          const [
+            DanceIkTargetArc(
+              name: 'bad',
+              startFrame: 28,
+              peakFrame: 31,
+              endFrame: 34,
+              startX: 0,
+              startY: 0,
+              peakX: 1,
+              peakY: 1,
+              endX: 2,
+              endY: 2,
+            ),
+          ],
         ),
         throwsRangeError,
       );
