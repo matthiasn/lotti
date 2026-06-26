@@ -19,8 +19,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import '../helpers/fake_image_compress_platform.dart';
 import '../helpers/fallbacks.dart';
 import '../helpers/path_provider.dart';
+import '../helpers/target_platform.dart';
 import '../mocks/mocks.dart';
 
 // ---------------------------------------------------------------------------
@@ -443,10 +445,35 @@ void main() {
     group('ImageImportConstants', () {
       test('defines supported extensions', () {
         expect(
-          ImageImportConstants.supportedExtensions,
+          ImageImportConstants.supportedExtensionsForPlatform(
+            TargetPlatform.macOS,
+          ),
+          containsAll(['jpg', 'jpeg', 'png', 'heic', 'heif']),
+        );
+        expect(
+          ImageImportConstants.supportedExtensionsForPlatform(
+            TargetPlatform.macOS,
+          ),
+          hasLength(5),
+        );
+        expect(
+          ImageImportConstants.supportedExtensionsForPlatform(
+            TargetPlatform.linux,
+          ),
           containsAll(['jpg', 'jpeg', 'png']),
         );
-        expect(ImageImportConstants.supportedExtensions, hasLength(3));
+        expect(
+          ImageImportConstants.supportedExtensionsForPlatform(
+            TargetPlatform.linux,
+          ),
+          isNot(contains('heic')),
+        );
+        expect(
+          ImageImportConstants.supportedExtensionsForPlatform(
+            TargetPlatform.linux,
+          ),
+          isNot(contains('heif')),
+        );
       });
 
       test('defines reasonable file size limit', () {
@@ -547,6 +574,64 @@ void main() {
           ),
         ).called(1);
       });
+
+      test('normalizes pasted image extension before storage', () async {
+        final validData = Uint8List.fromList(List<int>.filled(200, 0xBB));
+
+        await importPastedImages(
+          data: validData,
+          fileExtension: 'PNG',
+        );
+
+        final capturedImage =
+            verify(
+                  () => mockPersistenceLogic.createDbEntity(
+                    captureAny(that: isA<JournalImage>()),
+                    linkedId: any(named: 'linkedId'),
+                    shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                    enqueueSync: any(named: 'enqueueSync'),
+                  ),
+                ).captured.single
+                as JournalImage;
+
+        expect(capturedImage.data.imageFile, endsWith('.png'));
+        expect(capturedImage.data.imageFile, isNot(endsWith('.PNG')));
+      });
+
+      test('converts pasted HEIC data to stored JPEG', () async {
+        final heicData = Uint8List.fromList(List<int>.filled(200, 0xCC));
+
+        await withTargetPlatform(
+          TargetPlatform.macOS,
+          () => withFakeImageCompressPlatform(
+            () => importPastedImages(
+              data: heicData,
+              fileExtension: 'heic',
+            ),
+          ),
+        );
+
+        final capturedImage =
+            verify(
+                  () => mockPersistenceLogic.createDbEntity(
+                    captureAny(that: isA<JournalImage>()),
+                    linkedId: any(named: 'linkedId'),
+                    shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                    enqueueSync: any(named: 'enqueueSync'),
+                  ),
+                ).captured.single
+                as JournalImage;
+
+        expect(capturedImage.data.imageFile, endsWith('.jpg'));
+        expect(
+          File(
+            '${tempDir.path}'
+            '${capturedImage.data.imageDirectory}'
+            '${capturedImage.data.imageFile}',
+          ).existsSync(),
+          isTrue,
+        );
+      });
     });
 
     group('importDroppedImages', () {
@@ -580,6 +665,51 @@ void main() {
             enqueueSync: any(named: 'enqueueSync'),
           ),
         ).called(1);
+      });
+
+      test('converts dropped HEIC file to stored JPEG', () async {
+        final testFile = await createTestImageFile('screenshot.HEIC', 1024);
+
+        await withTargetPlatform(
+          TargetPlatform.macOS,
+          () => withFakeImageCompressPlatform(
+            () => importImageXFiles([XFile(testFile.path)]),
+          ),
+        );
+
+        final capturedImage =
+            verify(
+                  () => mockPersistenceLogic.createDbEntity(
+                    captureAny(that: isA<JournalImage>()),
+                    linkedId: any(named: 'linkedId'),
+                    shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                    enqueueSync: any(named: 'enqueueSync'),
+                  ),
+                ).captured.single
+                as JournalImage;
+
+        expect(capturedImage.data.imageFile, endsWith('.jpg'));
+        expect(capturedImage.data.imageFile, isNot(endsWith('.HEIC')));
+      });
+
+      test('skips HEIC files on Linux before conversion', () async {
+        final testFile = await createTestImageFile('screenshot.heic', 1024);
+
+        await withTargetPlatform(
+          TargetPlatform.linux,
+          () => withFakeImageCompressPlatform(
+            () => importImageXFiles([XFile(testFile.path)]),
+          ),
+        );
+
+        verifyNever(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        );
       });
 
       test('skips non-image file silently', () async {
@@ -786,6 +916,48 @@ void main() {
             shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
             enqueueSync: any(named: 'enqueueSync'),
           ),
+        );
+      });
+
+      test('includes HEIC and HEIF in the picker on macOS', () async {
+        final original = FileSelectorPlatform.instance;
+        final fakeSelector = FakeFileSelectorPlatform();
+        FileSelectorPlatform.instance = fakeSelector;
+        addTearDown(() => FileSelectorPlatform.instance = original);
+
+        await withTargetPlatform(
+          TargetPlatform.macOS,
+          importImagePickerFiles,
+        );
+
+        expect(
+          fakeSelector.lastAcceptedTypeGroups?.single.extensions,
+          containsAll(['jpg', 'jpeg', 'png', 'heic', 'heif']),
+        );
+      });
+
+      test('omits HEIC and HEIF from the picker on Linux', () async {
+        final original = FileSelectorPlatform.instance;
+        final fakeSelector = FakeFileSelectorPlatform();
+        FileSelectorPlatform.instance = fakeSelector;
+        addTearDown(() => FileSelectorPlatform.instance = original);
+
+        await withTargetPlatform(
+          TargetPlatform.linux,
+          importImagePickerFiles,
+        );
+
+        expect(
+          fakeSelector.lastAcceptedTypeGroups?.single.extensions,
+          containsAll(['jpg', 'jpeg', 'png']),
+        );
+        expect(
+          fakeSelector.lastAcceptedTypeGroups?.single.extensions,
+          isNot(contains('heic')),
+        );
+        expect(
+          fakeSelector.lastAcceptedTypeGroups?.single.extensions,
+          isNot(contains('heif')),
         );
       });
     });

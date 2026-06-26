@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
@@ -15,12 +16,16 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
+import '../helpers/fake_image_compress_platform.dart';
+import '../helpers/target_platform.dart';
 import '../mocks/mocks.dart';
 
 enum _GeneratedMediaKind {
   jpg,
   jpeg,
   png,
+  heic,
+  heif,
   m4a,
   txt,
   markdown,
@@ -41,7 +46,9 @@ class _GeneratedMediaFile {
   bool get isImage => switch (kind) {
     _GeneratedMediaKind.jpg ||
     _GeneratedMediaKind.jpeg ||
-    _GeneratedMediaKind.png => true,
+    _GeneratedMediaKind.png ||
+    _GeneratedMediaKind.heic ||
+    _GeneratedMediaKind.heif => true,
     _ => false,
   };
 
@@ -60,6 +67,8 @@ class _GeneratedMediaFile {
     _GeneratedMediaKind.jpg => 'jpg',
     _GeneratedMediaKind.jpeg => 'jpeg',
     _GeneratedMediaKind.png => 'png',
+    _GeneratedMediaKind.heic => 'heic',
+    _GeneratedMediaKind.heif => 'heif',
     _GeneratedMediaKind.m4a => 'm4a',
     _GeneratedMediaKind.txt => 'txt',
     _GeneratedMediaKind.markdown => 'md',
@@ -259,6 +268,58 @@ void main() {
       ).called(1);
     });
 
+    test('dispatches HEIF files to the image importer', () async {
+      final imageFile = await createTestFile('screenshot.HEIF', 1024);
+      final dropDetails = createDropDetails([XFile(imageFile.path)]);
+
+      await withTargetPlatform(
+        TargetPlatform.macOS,
+        () => withFakeImageCompressPlatform(
+          () => handleDroppedMediaFiles(
+            dropDetails,
+            linkedId: 'linked-123',
+          ),
+        ),
+      );
+
+      final capturedImage =
+          verify(
+                () => mockPersistenceLogic.createDbEntity(
+                  captureAny(that: isA<JournalImage>()),
+                  linkedId: any(named: 'linkedId'),
+                  shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                  enqueueSync: any(named: 'enqueueSync'),
+                ),
+              ).captured.single
+              as JournalImage;
+
+      expect(capturedImage.data.imageFile, endsWith('.jpg'));
+    });
+
+    test('does not route HEIF files as images on Linux', () async {
+      final imageFile = await createTestFile('screenshot.HEIF', 1024);
+      final dropDetails = createDropDetails([XFile(imageFile.path)]);
+
+      await withTargetPlatform(
+        TargetPlatform.linux,
+        () => withFakeImageCompressPlatform(
+          () => handleDroppedMediaFiles(
+            dropDetails,
+            linkedId: 'linked-123',
+          ),
+        ),
+      );
+
+      verifyNever(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalImage>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      );
+    });
+
     test('dispatches audio files to importDroppedAudio', () async {
       final audioFile = await createTestFile('test.m4a', 1024);
       final dropDetails = createDropDetails([XFile(audioFile.path)]);
@@ -362,8 +423,28 @@ void main() {
 
     test('recognizes all supported image extensions', () {
       expect(
-        ImageImportConstants.supportedExtensions,
+        ImageImportConstants.supportedExtensionsForPlatform(
+          TargetPlatform.macOS,
+        ),
+        containsAll(['jpg', 'jpeg', 'png', 'heic', 'heif']),
+      );
+      expect(
+        ImageImportConstants.supportedExtensionsForPlatform(
+          TargetPlatform.linux,
+        ),
         containsAll(['jpg', 'jpeg', 'png']),
+      );
+      expect(
+        ImageImportConstants.supportedExtensionsForPlatform(
+          TargetPlatform.linux,
+        ),
+        isNot(contains('heic')),
+      );
+      expect(
+        ImageImportConstants.supportedExtensionsForPlatform(
+          TargetPlatform.linux,
+        ),
+        isNot(contains('heif')),
       );
     });
 
@@ -391,10 +472,15 @@ void main() {
         xFiles.add(XFile(file.path));
       }
 
-      await handleDroppedMediaFiles(
-        createDropDetails(xFiles),
-        linkedId: 'linked-generated',
-        categoryId: 'category-generated',
+      await withTargetPlatform(
+        TargetPlatform.macOS,
+        () => withFakeImageCompressPlatform(
+          () => handleDroppedMediaFiles(
+            createDropDetails(xFiles),
+            linkedId: 'linked-generated',
+            categoryId: 'category-generated',
+          ),
+        ),
       );
 
       if (scenario.expectedImageCount == 0) {

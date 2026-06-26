@@ -1235,13 +1235,17 @@ class FakeFileSelectorPlatform extends Fake
     with MockPlatformInterfaceMixin
     implements FileSelectorPlatform {
   List<XFile> filesToReturn = const [];
+  List<XTypeGroup>? lastAcceptedTypeGroups;
 
   @override
   Future<List<XFile>> openFiles({
     List<XTypeGroup>? acceptedTypeGroups,
     String? initialDirectory,
     String? confirmButtonText,
-  }) async => filesToReturn;
+  }) async {
+    lastAcceptedTypeGroups = acceptedTypeGroups;
+    return filesToReturn;
+  }
 }
 
 /// Mocks for the Supertonic TTS engine's native boundary

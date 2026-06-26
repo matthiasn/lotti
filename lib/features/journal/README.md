@@ -395,6 +395,7 @@ Supported entry points include:
 Two integration details are worth documenting because they are easy to miss:
 
 - image import and paste flows can trigger automatic image-analysis callbacks supplied by the AI feature
+- drag-and-drop and clipboard image imports accept JPEG and PNG everywhere; on platforms with HEIC/HEIF conversion support, high-efficiency inputs are converted to JPEG before the `JournalImage` entry is persisted so stored image paths stay in Lotti's existing image formats
 - creating a timer from a linked context polls for the new linked entry and then publishes a focus intent so the page scrolls to the freshly created timer entry
 - image and audio entries add a desktop-only file-manager reveal action to the
   existing entry Actions sheet without changing the underlying entity model
