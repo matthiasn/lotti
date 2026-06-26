@@ -164,10 +164,11 @@ Future<void> importImageAssets(
       final file = await _bestAvailableAssetFile(asset);
 
       if (file != null) {
-        final sourceExtension = await _sourceExtensionForAssetFile(asset, file);
-        if (!ImageImportConstants.supportedExtensions.contains(
-          sourceExtension,
-        )) {
+        final sourceExtension = await sourceExtensionForAssetFile(asset, file);
+        if (sourceExtension == null ||
+            !ImageImportConstants.supportedExtensions.contains(
+              sourceExtension,
+            )) {
           continue;
         }
 
@@ -347,14 +348,19 @@ Future<File?> _bestAvailableAssetFile(AssetEntity asset) async {
   return asset.file;
 }
 
-Future<String> _sourceExtensionForAssetFile(
+/// Resolves an imported asset's source image extension.
+///
+/// Returns `null` when the asset MIME type, title, and file path do not expose
+/// a known extension, so callers can reject the asset instead of storing
+/// unknown bytes under a misleading image extension.
+@visibleForTesting
+Future<String?> sourceExtensionForAssetFile(
   AssetEntity asset,
   File file,
 ) async {
   return _extensionFromMimeType(asset.mimeType) ??
       await _extensionFromAssetTitle(asset) ??
-      _extensionFromPath(file.path) ??
-      ImageImportConstants.convertedImageExtension;
+      _extensionFromPath(file.path);
 }
 
 Future<String?> _extensionFromAssetTitle(AssetEntity asset) async {

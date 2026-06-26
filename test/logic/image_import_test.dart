@@ -503,6 +503,23 @@ void main() {
       });
     });
 
+    group('sourceExtensionForAssetFile', () {
+      test(
+        'returns null for assets without identifiable image extension',
+        () async {
+          final asset = MockAssetEntity();
+          final file = File(path.join(tempDir.path, 'opaque_asset'));
+
+          when(() => asset.mimeType).thenReturn(null);
+          when(() => asset.titleAsync).thenAnswer((_) async => 'opaque_asset');
+
+          final extension = await sourceExtensionForAssetFile(asset, file);
+
+          expect(extension, isNull);
+        },
+      );
+    });
+
     group('importPastedImages', () {
       test('detects HEIF alpha auxiliary image metadata', () {
         expect(
