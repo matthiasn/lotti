@@ -135,7 +135,7 @@ class CharacterPainter extends CustomPainter {
   static const double _pairScaleFactor = 0.7;
   static const double _trioScaleFactor = 0.59;
   static const double _pairSpacing = 215;
-  static const double _trioSpacing = 220;
+  static const double _trioSpacing = 236;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -384,6 +384,62 @@ class CharacterPainter extends CustomPainter {
             Offset(size.width * 0.5, floorY - size.height * 0.07),
             size.width * 0.43,
             const [Color(0x30FFE0A8), Color(0x00FFE0A8)],
+          ),
+      );
+    _paintDistanceHaze(canvas, size, deckTop);
+  }
+
+  void _paintDistanceHaze(Canvas canvas, Size size, double deckTop) {
+    final horizonY = size.height * 0.43;
+    final skylineTop = size.height * 0.24;
+    final waterFarY = size.height * 0.52;
+    final farSceneClip = Rect.fromLTRB(
+      0,
+      skylineTop,
+      size.width * 0.74,
+      deckTop,
+    );
+
+    canvas
+      // Atmospheric perspective: far forms lose contrast/saturation and shift
+      // toward cool sky colour, while humid city haze adds a warm gray smog band
+      // near the horizon.
+      ..drawRect(
+        farSceneClip,
+        Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(0, skylineTop),
+            Offset(0, deckTop),
+            const [
+              Color(0x00DDEFF5),
+              Color(0x38DDEFF5),
+              Color(0x54E8E0CF),
+              Color(0x18DDEFF5),
+              Color(0x00FFFFFF),
+            ],
+            const [0, 0.3, 0.5, 0.74, 1],
+          ),
+      )
+      ..drawOval(
+        Rect.fromCenter(
+          center: Offset(size.width * 0.36, horizonY),
+          width: size.width * 0.92,
+          height: size.height * 0.24,
+        ),
+        Paint()
+          ..shader = ui.Gradient.radial(
+            Offset(size.width * 0.36, horizonY),
+            size.width * 0.46,
+            const [Color(0x56E9E2D3), Color(0x00E9E2D3)],
+          ),
+      )
+      ..drawRect(
+        Rect.fromLTRB(0, waterFarY, size.width * 0.7, deckTop),
+        Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(0, waterFarY),
+            Offset(0, deckTop),
+            const [Color(0x28D9F2F6), Color(0x00D9F2F6)],
           ),
       );
   }

@@ -1044,8 +1044,10 @@ class CatClips {
     Keyframe(p: 1, rotation: 0.26),
   ];
 
-  // Backup-dancer arm roles. Legs/root stay shared with the lead dance so the
-  // trio lands together; only the arms change to frame the orange centre cat.
+  // Backup-dancer roles. Legs/root stay on the shared support scaffold so the
+  // trio lands together, but side cats answer the lead through phased
+  // hips/chest/arms. That makes the group read as call-and-response instead of
+  // three cloned cycles.
   static const _danceBackupLeftArmUpperLKeys = [
     Keyframe(p: 0, rotation: 2.48),
     Keyframe(p: 1 / 12, rotation: 2.05),
@@ -1861,26 +1863,26 @@ class CatClips {
       // A compact two-step groove: hips lead, chest counters, head stays
       // mostly locked to the viewer so the dance reads as body rhythm instead
       // of a wobbling face.
-      CatBones.hips: KeyframeChannel(_danceHipKeys),
-      CatBones.torso: KeyframeChannel(_danceTorsoKeys),
-      CatBones.neck: KeyframeChannel(_danceNeckKeys),
-      CatBones.head: KeyframeChannel(_danceHeadKeys),
+      CatBones.hips: KeyframeChannel(_danceHipKeys, smooth: true),
+      CatBones.torso: KeyframeChannel(_danceTorsoKeys, smooth: true),
+      CatBones.neck: KeyframeChannel(_danceNeckKeys, smooth: true),
+      CatBones.head: KeyframeChannel(_danceHeadKeys, smooth: true),
 
       // Step-touch legs plus a 4-beat Gbese toe-flick bounce: right flick,
       // rebound, left flick, reset. The support foot stays opposite the flick.
-      CatBones.legUpperL: KeyframeChannel(_danceLegUpperLKeys),
-      CatBones.legUpperR: KeyframeChannel(_danceLegUpperRKeys),
-      CatBones.legLowerL: KeyframeChannel(_danceLegLowerLKeys),
-      CatBones.legLowerR: KeyframeChannel(_danceLegLowerRKeys),
-      CatBones.footL: KeyframeChannel(_danceFootLKeys),
-      CatBones.footR: KeyframeChannel(_danceFootRKeys),
+      CatBones.legUpperL: KeyframeChannel(_danceLegUpperLKeys, smooth: true),
+      CatBones.legUpperR: KeyframeChannel(_danceLegUpperRKeys, smooth: true),
+      CatBones.legLowerL: KeyframeChannel(_danceLegLowerLKeys, smooth: true),
+      CatBones.legLowerR: KeyframeChannel(_danceLegLowerRKeys, smooth: true),
+      CatBones.footL: KeyframeChannel(_danceFootLKeys, smooth: true),
+      CatBones.footR: KeyframeChannel(_danceFootRKeys, smooth: true),
 
       // Alternating groove arms for counts 1-8, then compact elbow pops for the
       // Gbese phrase so hands stay visible outside the belly silhouette.
-      CatBones.armUpperL: KeyframeChannel(_danceArmUpperLKeys),
-      CatBones.armUpperR: KeyframeChannel(_danceArmUpperRKeys),
-      CatBones.armLowerL: KeyframeChannel(_danceArmLowerLKeys),
-      CatBones.armLowerR: KeyframeChannel(_danceArmLowerRKeys),
+      CatBones.armUpperL: KeyframeChannel(_danceArmUpperLKeys, smooth: true),
+      CatBones.armUpperR: KeyframeChannel(_danceArmUpperRKeys, smooth: true),
+      CatBones.armLowerL: KeyframeChannel(_danceArmLowerLKeys, smooth: true),
+      CatBones.armLowerR: KeyframeChannel(_danceArmLowerRKeys, smooth: true),
 
       CatBones.tie: KeyframeChannel(_danceTieKeys, smooth: true),
       CatBones.tieLower: KeyframeChannel(_danceTieLowerKeys, smooth: true),
@@ -1907,6 +1909,8 @@ class CatClips {
     armLowerL: _danceBackupLeftArmLowerLKeys,
     armUpperR: _danceBackupLeftArmUpperRKeys,
     armLowerR: _danceBackupLeftArmLowerRKeys,
+    bodyPhase: 1 / 36,
+    armPhase: 0,
   );
 
   static Clip get danceBackupRight => _danceArmRole(
@@ -1915,6 +1919,8 @@ class CatClips {
     armLowerL: _danceBackupRightArmLowerLKeys,
     armUpperR: _danceBackupRightArmUpperRKeys,
     armLowerR: _danceBackupRightArmLowerRKeys,
+    bodyPhase: 1 / 36,
+    armPhase: 0,
   );
 
   static Clip _danceArmRole({
@@ -1923,6 +1929,8 @@ class CatClips {
     required List<Keyframe> armLowerL,
     required List<Keyframe> armUpperR,
     required List<Keyframe> armLowerR,
+    required double bodyPhase,
+    required double armPhase,
   }) {
     final base = dance;
     return Clip(
@@ -1932,10 +1940,46 @@ class CatClips {
       root: base.root,
       channels: {
         ...base.channels,
-        CatBones.armUpperL: KeyframeChannel(armUpperL),
-        CatBones.armUpperR: KeyframeChannel(armUpperR),
-        CatBones.armLowerL: KeyframeChannel(armLowerL),
-        CatBones.armLowerR: KeyframeChannel(armLowerR),
+        CatBones.hips: KeyframeChannel(
+          _danceHipKeys,
+          phase: bodyPhase,
+          smooth: true,
+        ),
+        CatBones.torso: KeyframeChannel(
+          _danceTorsoKeys,
+          phase: bodyPhase,
+          smooth: true,
+        ),
+        CatBones.neck: KeyframeChannel(
+          _danceNeckKeys,
+          phase: bodyPhase,
+          smooth: true,
+        ),
+        CatBones.head: KeyframeChannel(
+          _danceHeadKeys,
+          phase: bodyPhase,
+          smooth: true,
+        ),
+        CatBones.armUpperL: KeyframeChannel(
+          armUpperL,
+          phase: armPhase,
+          smooth: true,
+        ),
+        CatBones.armUpperR: KeyframeChannel(
+          armUpperR,
+          phase: armPhase,
+          smooth: true,
+        ),
+        CatBones.armLowerL: KeyframeChannel(
+          armLowerL,
+          phase: armPhase,
+          smooth: true,
+        ),
+        CatBones.armLowerR: KeyframeChannel(
+          armLowerR,
+          phase: armPhase,
+          smooth: true,
+        ),
       },
     );
   }

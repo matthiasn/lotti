@@ -105,37 +105,60 @@ void main() {
       expect(CatClips.dance.channels.containsKey(CatBones.tail6), isTrue);
     });
 
-    test('backup dance clips keep footwork synced and only change arms', () {
-      final lead = CatClips.dance;
-      final left = CatClips.danceBackupLeft;
-      final right = CatClips.danceBackupRight;
-      const p = 7 / 12;
+    test(
+      'backup dance clips keep footwork synced but answer with body canon',
+      () {
+        final lead = CatClips.dance;
+        final left = CatClips.danceBackupLeft;
+        final right = CatClips.danceBackupRight;
+        const p = 7 / 12;
 
-      expect(left.duration, lead.duration);
-      expect(right.duration, lead.duration);
-      expect(left.contactSpans, lead.contactSpans);
-      expect(right.contactSpans, lead.contactSpans);
-      expect(
-        left.channels[CatBones.legUpperL]!.sample(p).rotation,
-        closeTo(lead.channels[CatBones.legUpperL]!.sample(p).rotation, 1e-9),
-      );
-      expect(
-        right.channels[CatBones.legUpperR]!.sample(p).rotation,
-        closeTo(lead.channels[CatBones.legUpperR]!.sample(p).rotation, 1e-9),
-      );
-      expect(
-        left.channels[CatBones.armUpperL]!.sample(p).rotation,
-        isNot(
-          closeTo(lead.channels[CatBones.armUpperL]!.sample(p).rotation, 1e-9),
-        ),
-      );
-      expect(
-        right.channels[CatBones.armUpperR]!.sample(p).rotation,
-        isNot(
-          closeTo(lead.channels[CatBones.armUpperR]!.sample(p).rotation, 1e-9),
-        ),
-      );
-    });
+        expect(left.duration, lead.duration);
+        expect(right.duration, lead.duration);
+        expect(left.contactSpans, lead.contactSpans);
+        expect(right.contactSpans, lead.contactSpans);
+        expect(
+          left.channels[CatBones.legUpperL]!.sample(p).rotation,
+          closeTo(lead.channels[CatBones.legUpperL]!.sample(p).rotation, 1e-9),
+        );
+        expect(
+          right.channels[CatBones.legUpperR]!.sample(p).rotation,
+          closeTo(lead.channels[CatBones.legUpperR]!.sample(p).rotation, 1e-9),
+        );
+        expect(
+          left.channels[CatBones.hips]!.sample(p).rotation,
+          closeTo(
+            lead.channels[CatBones.hips]!.sample(p + 1 / 36).rotation,
+            1e-9,
+          ),
+        );
+        expect(
+          right.channels[CatBones.hips]!.sample(p).rotation,
+          closeTo(
+            lead.channels[CatBones.hips]!.sample(p + 1 / 36).rotation,
+            1e-9,
+          ),
+        );
+        expect(
+          left.channels[CatBones.armUpperL]!.sample(p).rotation,
+          isNot(
+            closeTo(
+              lead.channels[CatBones.armUpperL]!.sample(p).rotation,
+              1e-9,
+            ),
+          ),
+        );
+        expect(
+          right.channels[CatBones.armUpperR]!.sample(p).rotation,
+          isNot(
+            closeTo(
+              lead.channels[CatBones.armUpperR]!.sample(p).rotation,
+              1e-9,
+            ),
+          ),
+        );
+      },
+    );
 
     test('dance keeps body, feet, and hands alive between count hits', () {
       final channels = CatClips.dance.channels;
