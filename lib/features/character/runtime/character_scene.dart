@@ -203,9 +203,14 @@ class CharacterScene {
       timeSeconds,
       rawWorld,
     );
+    final footStabilizedWorld = _danceSupportFootStabilizedWorld(
+      clip,
+      timeSeconds,
+      massShiftedWorld,
+    );
     final world = _headStabilizedWorld(
       clip,
-      massShiftedWorld,
+      footStabilizedWorld,
       rootDy: posed.rootDy,
     );
     var face = faceSolver.applyAutonomic(expression.state, auto);
@@ -261,6 +266,59 @@ class CharacterScene {
 
   double _worldRotation(Affine2D transform) =>
       math.atan2(transform.b, transform.a);
+
+  /// The contact-lock pins the support point, but the shoe can still rotate
+  /// through the planted frames as the leg keys keep moving. That reads as
+  /// sliding on a deck. During the stable middle of a dance contact, keep the
+  /// support foot's world orientation close to its contact-frame orientation,
+  /// rotating only the foot subtree around the already-planted contact point.
+  Map<String, Affine2D> _danceSupportFootStabilizedWorld(
+    Clip clip,
+    double timeSeconds,
+    Map<String, Affine2D> world,
+  ) {
+    if (clip.name != 'dance') return world;
+    final contact = _activeContactAt(clip, _clipPhase(clip, timeSeconds));
+    if (contact == null) return world;
+    final boneId = contact.span.bone;
+    final current = world[boneId];
+    final contactPoint = _contactPoint(world, boneId);
+    if (current == null || contactPoint == null) return world;
+
+    final anchorPose = evaluator.evaluate(
+      clip,
+      contact.anchorPhase * clip.duration,
+    );
+    final anchorWorld = solver.solve(anchorPose);
+    final anchor = anchorWorld[boneId];
+    if (anchor == null) return world;
+
+    final strength = _contactLockStrength(
+      clip,
+      contact.span,
+      contact.strengthPhase,
+    ).x;
+    if (strength < 0.05) return world;
+
+    final delta = _shortestAngle(
+      _worldRotation(anchor) - _worldRotation(current),
+    );
+    if (delta.abs() < 0.01) return world;
+
+    final correction = Affine2D.translation(contactPoint.x, contactPoint.y)
+        .multiply(Affine2D.rotation(delta * strength))
+        .multiply(Affine2D.translation(-contactPoint.x, -contactPoint.y));
+    final shifted = Map<String, Affine2D>.of(world);
+    for (final bone in rig.bones) {
+      if (bone.id == boneId || _hasAncestor(bone.id, boneId)) {
+        shifted[bone.id] = correction.multiply(world[bone.id]!);
+      }
+    }
+    return shifted;
+  }
+
+  double _shortestAngle(double radians) =>
+      math.atan2(math.sin(radians), math.cos(radians));
 
   /// The dance contacts lock the feet, but the Phase-1 skeleton can still read
   /// floaty when the torso mass stays centered between both feet during a side

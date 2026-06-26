@@ -272,6 +272,35 @@ void main() {
       }
     });
 
+    test('dance keeps planted shoe orientation stable through support', () {
+      final scene = CharacterScene(buildCatInSuitRig());
+
+      for (final span in CatClips.dance.contactSpans) {
+        final spanLength = span.end - span.start;
+        final anchorFrame = scene.frameAt(
+          clip: CatClips.dance,
+          timeSeconds: span.start * CatClips.dance.duration,
+        );
+        final anchorRotation = _worldRotation(anchorFrame.world[span.bone]!);
+
+        for (final localP in [0.35, 0.5, 0.65]) {
+          final frame = scene.frameAt(
+            clip: CatClips.dance,
+            timeSeconds:
+                (span.start + spanLength * localP) * CatClips.dance.duration,
+          );
+          final rotation = _worldRotation(frame.world[span.bone]!);
+
+          expect(
+            _angleDistance(rotation, anchorRotation),
+            lessThan(0.08),
+            reason:
+                '${span.bone} should not visibly roll while it bears weight',
+          );
+        }
+      }
+    });
+
     test('is deterministic: identical scenes resolve identical frames', () {
       final a = CharacterScene(
         buildCatInSuitRig(),
@@ -353,6 +382,9 @@ GroundSpan _spanAt(Clip clip, double p) {
 
 double _worldRotation(Affine2D transform) =>
     math.atan2(transform.b, transform.a);
+
+double _angleDistance(double a, double b) =>
+    math.atan2(math.sin(a - b), math.cos(a - b)).abs();
 
 ({double x, double y}) _supportPoint(
   CharacterScene scene,
