@@ -120,6 +120,50 @@ void main() {
       expect(channel.sample(1).dx, closeTo(-8, 1e-9));
     });
 
+    test('builds synchronized body groove channels from mixed keys', () {
+      const keys = [
+        DanceBodyKey(
+          0,
+          rootDx: -8,
+          rootDy: 18,
+          pelvisRotation: -0.2,
+          chestRotation: 0.12,
+          chestScaleX: 1.02,
+          chestScaleY: 0.94,
+        ),
+        DanceBodyKey(
+          8,
+          pelvisRotation: 0.4,
+          chestRotation: -0.18,
+          chestScaleX: 1.06,
+          chestScaleY: 0.91,
+        ),
+        DanceBodyKey(16, rootDx: 8, rootDy: 12, rootRotation: 0.02),
+        DanceBodyKey(
+          32,
+          rootDx: -8,
+          rootDy: 18,
+          pelvisRotation: -0.2,
+          chestRotation: 0.12,
+          chestScaleX: 1.02,
+          chestScaleY: 0.94,
+        ),
+      ];
+
+      final root = phrase.bodyRootChannel(keys);
+      final pelvis = phrase.bodyPelvisChannel(keys);
+      final chest = phrase.bodyChestChannel(keys);
+
+      expect(root.sample(0).dx, closeTo(-8, 1e-9));
+      expect(root.sample(0.5).dx, closeTo(8, 1e-9));
+      expect(root.sample(0.5).dy, closeTo(12, 1e-9));
+      expect(root.sample(0.5).rotation, closeTo(0.02, 1e-9));
+      expect(pelvis.sample(0.25).rotation, closeTo(0.4, 1e-9));
+      expect(chest.sample(0.25).rotation, closeTo(-0.18, 1e-9));
+      expect(chest.sample(0.25).scaleX, closeTo(1.06, 1e-9));
+      expect(chest.sample(0.25).scaleY, closeTo(0.91, 1e-9));
+    });
+
     test('builds IK target channels from frame-addressed keys', () {
       final channel = phrase.ikTargetChannel(
         const [
@@ -141,6 +185,12 @@ void main() {
     test('rejects keys outside the authored phrase', () {
       expect(() => phrase.phaseOf(-1), throwsRangeError);
       expect(() => phrase.jointKey(33), throwsRangeError);
+      expect(
+        () => phrase.bodyRootChannel(
+          const [DanceBodyKey(33, rootDx: 0)],
+        ),
+        throwsRangeError,
+      );
       expect(
         () => phrase.ikTargetKey(33, x: 0, y: 0),
         throwsRangeError,

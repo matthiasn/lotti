@@ -193,11 +193,12 @@ stateDiagram-v2
 - **`DancePhrase`** — choreography-facing authoring for dance clips. It stores
   a phrase length in frames, labelled support-foot windows, load/release frames,
   free-foot identity, pelvis-distance guardrails, pocket compression targets,
-  named movement sections, and frame-addressed joint/root keys. It compiles
-  those into the same `GroundSpan`, `KeyframeChannel`, and `KeyframeRootChannel`
-  primitives the engine already samples. This is the handoff point for
-  beat-synced choreography, support/weight checks, panel-addressable move
-  windows, and future per-character dance styles.
+  named movement sections, frame-addressed joint/root keys, and synchronized
+  body-groove keys for COM, pelvis, and chest. It compiles those into the same
+  `GroundSpan`, `KeyframeChannel`, and `KeyframeRootChannel` primitives the
+  engine already samples. This is the handoff point for beat-synced
+  choreography, support/weight checks, panel-addressable move windows, and
+  future per-character dance styles.
 - **`TemporalMotionAnalyzer`** — a resolved-frame diagnostic over
   `CharacterScene`. It records per-bone frame-to-frame displacement and
   acceleration after clip evaluation, contact pinning, head stabilization, and

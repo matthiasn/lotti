@@ -8,8 +8,8 @@ import 'package:lotti/features/character/model/easing.dart';
 /// review, however, happens on counts and frames: "frame 16 is the right-foot
 /// plant" is much easier to reason about than `p: 0.5`. This layer keeps the
 /// authored intent in those terms, then converts it to [GroundSpan],
-/// [KeyframeChannel], [KeyframeRootChannel], and [KeyframeIkTargetChannel] so
-/// the runtime stays unchanged.
+/// [KeyframeChannel], [KeyframeRootChannel], [KeyframeIkTargetChannel], and
+/// synchronized body-groove channels so the runtime stays unchanged.
 class DancePhrase {
   const DancePhrase({
     required this.frameCount,
@@ -114,6 +114,39 @@ class DancePhrase {
     bool smooth = false,
   }) => KeyframeRootChannel(
     [for (final key in keys) key.toRootKeyframe(this)],
+    smooth: smooth,
+  );
+
+  KeyframeRootChannel bodyRootChannel(
+    List<DanceBodyKey> keys, {
+    bool smooth = false,
+  }) => KeyframeRootChannel(
+    [
+      for (final key in keys)
+        if (key.hasRoot) key.toRootKeyframe(this),
+    ],
+    smooth: smooth,
+  );
+
+  KeyframeChannel bodyPelvisChannel(
+    List<DanceBodyKey> keys, {
+    bool smooth = false,
+  }) => KeyframeChannel(
+    [
+      for (final key in keys)
+        if (key.hasPelvis) key.toPelvisKeyframe(this),
+    ],
+    smooth: smooth,
+  );
+
+  KeyframeChannel bodyChestChannel(
+    List<DanceBodyKey> keys, {
+    bool smooth = false,
+  }) => KeyframeChannel(
+    [
+      for (final key in keys)
+        if (key.hasChest) key.toChestKeyframe(this),
+    ],
     smooth: smooth,
   );
 
@@ -276,6 +309,59 @@ class DanceRootKey {
     dx: dx,
     dy: dy,
     rotation: rotation,
+    ease: ease,
+  );
+}
+
+class DanceBodyKey {
+  const DanceBodyKey(
+    this.frame, {
+    this.rootDx,
+    this.rootDy,
+    this.rootRotation,
+    this.pelvisRotation,
+    this.chestRotation,
+    this.chestScaleX,
+    this.chestScaleY,
+    this.ease = Ease.easeInOut,
+  });
+
+  final int frame;
+  final double? rootDx;
+  final double? rootDy;
+  final double? rootRotation;
+  final double? pelvisRotation;
+  final double? chestRotation;
+  final double? chestScaleX;
+  final double? chestScaleY;
+  final Ease ease;
+
+  bool get hasRoot => rootDx != null || rootDy != null || rootRotation != null;
+
+  bool get hasPelvis => pelvisRotation != null;
+
+  bool get hasChest =>
+      chestRotation != null || chestScaleX != null || chestScaleY != null;
+
+  RootKeyframe toRootKeyframe(DancePhrase phrase) => phrase.rootKey(
+    frame,
+    dx: rootDx ?? 0,
+    dy: rootDy ?? 0,
+    rotation: rootRotation ?? 0,
+    ease: ease,
+  );
+
+  Keyframe toPelvisKeyframe(DancePhrase phrase) => phrase.jointKey(
+    frame,
+    rotation: pelvisRotation ?? 0,
+    ease: ease,
+  );
+
+  Keyframe toChestKeyframe(DancePhrase phrase) => phrase.jointKey(
+    frame,
+    rotation: chestRotation ?? 0,
+    scaleX: chestScaleX ?? 1,
+    scaleY: chestScaleY ?? 1,
     ease: ease,
   );
 }
