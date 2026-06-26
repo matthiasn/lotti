@@ -269,6 +269,13 @@ void main() {
               'the visible torso mass should move toward ${span.bone} on '
               'dance support beat $p',
         );
+        expect(
+          (torso.x - hip.x).abs(),
+          lessThan(5.5),
+          reason:
+              'the torso should stay visibly attached to the hips while '
+              'leaning into the support beat $p',
+        );
       }
     });
 

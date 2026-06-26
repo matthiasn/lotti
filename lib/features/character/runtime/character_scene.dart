@@ -341,8 +341,11 @@ class CharacterScene {
     if (hips == null || support == null) return world;
 
     final supportDelta = support.x - hips.origin.x;
-    final pelvisDx = (supportDelta * 0.14).clamp(-9.0, 9.0);
-    final torsoDx = (supportDelta * 0.28).clamp(-18.0, 18.0);
+    // Keep the upper mass biased toward the support foot, but do not let the
+    // torso outrun the pelvis. A large torso/hip differential reads as the
+    // upper body sliding off the hips on the lead dancer.
+    final pelvisDx = (supportDelta * 0.18).clamp(-10.0, 10.0);
+    final torsoDx = (supportDelta * 0.22).clamp(-14.0, 14.0);
     if (pelvisDx.abs() < 0.35 && torsoDx.abs() < 0.5) return world;
 
     final shifted = Map<String, Affine2D>.of(world);
