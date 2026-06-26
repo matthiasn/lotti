@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/samples/cat_in_suit.dart';
@@ -144,9 +146,74 @@ void main() {
       expect(CatClips.dance.channels.containsKey(CatBones.legUpperL), isTrue);
       expect(CatClips.dance.channels.containsKey(CatBones.armLowerR), isTrue);
       expect(CatClips.dance.channels.containsKey(CatBones.tail6), isTrue);
+      expect(CatClips.dance.channels.containsKey(CatBones.earL), isTrue);
+      expect(CatClips.dance.channels.containsKey(CatBones.earR), isTrue);
       expect(
         CatClips.dance.limbTargets.map((target) => target.endBoneId),
         [CatBones.handL, CatBones.handR, CatBones.footL, CatBones.footR],
+      );
+    });
+
+    test('dance ears flick independently while staying bounded', () {
+      final earL = CatClips.dance.channels[CatBones.earL]!;
+      final earR = CatClips.dance.channels[CatBones.earR]!;
+      var minL = double.infinity;
+      var maxL = double.negativeInfinity;
+      var minR = double.infinity;
+      var maxR = double.negativeInfinity;
+      var maxPairDifference = 0.0;
+      var minScaleY = double.infinity;
+      var maxScaleY = double.negativeInfinity;
+
+      for (var i = 0; i <= 32; i++) {
+        final p = i / 32;
+        final leftPose = earL.sample(p);
+        final rightPose = earR.sample(p);
+        final l = leftPose.rotation;
+        final r = rightPose.rotation;
+        minL = math.min(minL, l);
+        maxL = math.max(maxL, l);
+        minR = math.min(minR, r);
+        maxR = math.max(maxR, r);
+        maxPairDifference = math.max(maxPairDifference, (l - r).abs());
+        minScaleY = math.min(
+          minScaleY,
+          math.min(leftPose.scaleY, rightPose.scaleY),
+        );
+        maxScaleY = math.max(
+          maxScaleY,
+          math.max(leftPose.scaleY, rightPose.scaleY),
+        );
+      }
+
+      expect(
+        maxL - minL,
+        greaterThan(0.22),
+        reason: 'left ear should visibly flick instead of reading static',
+      );
+      expect(
+        maxR - minR,
+        greaterThan(0.22),
+        reason: 'right ear should visibly flick instead of reading static',
+      );
+      expect(
+        maxPairDifference,
+        greaterThan(0.2),
+        reason: 'ears should not move as a mirrored rigid head ornament',
+      );
+      expect(
+        [minL.abs(), maxL.abs(), minR.abs(), maxR.abs()],
+        everyElement(lessThan(0.16)),
+        reason:
+            'ear flicks must stay subtle enough that the deep bases remain '
+            'hidden behind the crown',
+      );
+      expect(
+        maxScaleY - minScaleY,
+        greaterThan(0.08),
+        reason:
+            'ear motion should include a little squash/stretch so the ears do '
+            'not read as rigid triangles',
       );
     });
 
@@ -156,7 +223,9 @@ void main() {
         final lead = CatClips.dance;
         final left = CatClips.danceBackupLeft;
         final right = CatClips.danceBackupRight;
-        const p = 7 / 12;
+        const supportCheckP = 7 / 12;
+        const rightFeatureP = 3 / 8;
+        const leftFeatureP = 3 / 4;
 
         expect(left.duration, lead.duration);
         expect(right.duration, lead.duration);
@@ -172,15 +241,18 @@ void main() {
           right.limbTargets.map((target) => target.endBoneId),
           lead.limbTargets.map((target) => target.endBoneId),
         );
-        final leadHandR = _targetFor(lead, CatBones.handR).channel.sample(
-          3 / 4,
-        );
-        final leftHandR = _targetFor(left, CatBones.handR).channel.sample(
-          3 / 4,
-        );
-        final leadHandL = _targetFor(lead, CatBones.handL).channel.sample(
-          3 / 4,
-        );
+        final leadHandR = _targetFor(
+          lead,
+          CatBones.handR,
+        ).channel.sample(3 / 4);
+        final leftHandR = _targetFor(
+          left,
+          CatBones.handR,
+        ).channel.sample(3 / 4);
+        final leadHandL = _targetFor(
+          lead,
+          CatBones.handL,
+        ).channel.sample(3 / 4);
         final rightHandL = _targetFor(right, CatBones.handL).channel.sample(
           3 / 4,
         );
@@ -200,69 +272,86 @@ void main() {
           right,
           CatBones.handL,
         ).channel.sample(3 / 8);
-        expect(leftHandR.x, closeTo(leadHandR.x - 9, 0.001));
-        expect(leftHandR.y, closeTo(leadHandR.y - 5, 0.001));
-        expect(rightHandL.x, closeTo(leadHandL.x + 9, 0.001));
-        expect(rightHandL.y, closeTo(leadHandL.y - 5, 0.001));
+        expect(leftHandR.x, closeTo(leadHandR.x - 12, 0.001));
+        expect(leftHandR.y, closeTo(leadHandR.y - 7, 0.001));
+        expect(rightHandL.x, closeTo(leadHandL.x + 1.35, 0.001));
+        expect(rightHandL.y, closeTo(leadHandL.y - 0.81, 0.001));
         expect(
           leftHandRFirstAnswer.x,
-          closeTo(leadHandRFirstAnswer.x - 2.1, 0.001),
+          closeTo(leadHandRFirstAnswer.x - 0.48, 0.001),
         );
         expect(
           leftHandRFirstAnswer.y,
-          closeTo(leadHandRFirstAnswer.y - 1.4, 0.001),
+          closeTo(leadHandRFirstAnswer.y - 0.36, 0.001),
         );
         expect(
           rightHandLFirstAnswer.x,
-          closeTo(leadHandLFirstAnswer.x + 2.1, 0.001),
+          closeTo(leadHandLFirstAnswer.x + 9, 0.001),
         );
         expect(
           rightHandLFirstAnswer.y,
-          closeTo(leadHandLFirstAnswer.y - 1.4, 0.001),
+          closeTo(leadHandLFirstAnswer.y - 6, 0.001),
         );
         expect(
-          left.channels[CatBones.legUpperL]!.sample(p).rotation,
-          closeTo(lead.channels[CatBones.legUpperL]!.sample(p).rotation, 1e-9),
+          left.channels[CatBones.legUpperL]!.sample(supportCheckP).rotation,
+          closeTo(
+            lead.channels[CatBones.legUpperL]!.sample(supportCheckP).rotation,
+            1e-9,
+          ),
         );
         expect(
-          right.channels[CatBones.legUpperR]!.sample(p).rotation,
-          closeTo(lead.channels[CatBones.legUpperR]!.sample(p).rotation, 1e-9),
+          right.channels[CatBones.legUpperR]!.sample(supportCheckP).rotation,
+          closeTo(
+            lead.channels[CatBones.legUpperR]!.sample(supportCheckP).rotation,
+            1e-9,
+          ),
         );
         final leftHipDelta =
-            left.channels[CatBones.hips]!.sample(p).rotation -
-            lead.channels[CatBones.hips]!.sample(p).rotation;
+            left.channels[CatBones.hips]!.sample(leftFeatureP).rotation -
+            lead.channels[CatBones.hips]!.sample(leftFeatureP).rotation;
         final rightTorsoDelta =
-            right.channels[CatBones.torso]!.sample(p).rotation -
-            lead.channels[CatBones.torso]!.sample(p).rotation;
+            right.channels[CatBones.torso]!.sample(rightFeatureP).rotation -
+            lead.channels[CatBones.torso]!.sample(rightFeatureP).rotation;
         final leftArmDelta =
-            left.channels[CatBones.armUpperR]!.sample(p).rotation -
-            lead.channels[CatBones.armUpperR]!.sample(p).rotation;
+            left.channels[CatBones.armUpperR]!.sample(leftFeatureP).rotation -
+            lead.channels[CatBones.armUpperR]!.sample(leftFeatureP).rotation;
         final rightArmDelta =
-            right.channels[CatBones.armUpperL]!.sample(p).rotation -
-            lead.channels[CatBones.armUpperL]!.sample(p).rotation;
+            right.channels[CatBones.armUpperL]!.sample(rightFeatureP).rotation -
+            lead.channels[CatBones.armUpperL]!.sample(rightFeatureP).rotation;
         expect(
           leftHipDelta.abs(),
-          inInclusiveRange(0.005, 0.09),
+          inInclusiveRange(0.04, 0.12),
           reason:
-              'left backup should answer with a small hip variation while '
-              'sharing the lead support timing',
+              'left backup should answer with a visible hip variation when '
+              'the camera pans left',
         );
         expect(
           rightTorsoDelta.abs(),
-          inInclusiveRange(0.005, 0.12),
+          inInclusiveRange(0.03, 0.12),
           reason:
-              'right backup should answer with a small chest variation while '
-              'sharing the lead support timing',
+              'right backup should answer with a visible chest variation when '
+              'the camera pans right',
         );
         expect(
           leftArmDelta.abs(),
-          inInclusiveRange(0.005, 0.2),
-          reason: 'left backup should answer with its inside arm',
+          inInclusiveRange(0.08, 0.32),
+          reason: 'left backup should feature its inside arm on the left pass',
         );
         expect(
           rightArmDelta.abs(),
-          inInclusiveRange(0.005, 0.2),
-          reason: 'right backup should answer with its inside arm',
+          inInclusiveRange(0.08, 0.28),
+          reason:
+              'right backup should feature its inside arm on the right pass',
+        );
+        final rightOffCameraArmDelta =
+            right.channels[CatBones.armUpperL]!.sample(leftFeatureP).rotation -
+            lead.channels[CatBones.armUpperL]!.sample(leftFeatureP).rotation;
+        expect(
+          rightOffCameraArmDelta.abs(),
+          lessThan(leftArmDelta.abs() * 0.45),
+          reason:
+              'right backup should not compete with the left-side camera '
+              'feature later in the phrase',
         );
       },
     );

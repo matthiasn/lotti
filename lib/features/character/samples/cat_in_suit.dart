@@ -1629,6 +1629,40 @@ class CatClips {
     Keyframe(p: 7 / 8, rotation: -0.0015),
     Keyframe(p: 1),
   ];
+  static const _danceEarLKeys = [
+    Keyframe(p: 0, rotation: 0.02, scaleX: 1.01, scaleY: 0.99),
+    Keyframe(p: 1 / 16, rotation: -0.08, scaleX: 1.05, scaleY: 0.96),
+    Keyframe(p: 1 / 8, rotation: -0.12, scaleX: 1.08, scaleY: 0.94),
+    Keyframe(p: 3 / 16, rotation: 0.04, scaleX: 0.98, scaleY: 1.03),
+    Keyframe(p: 1 / 4, rotation: 0.11, scaleX: 0.96, scaleY: 1.05),
+    Keyframe(p: 3 / 8, rotation: 0.03, scaleX: 1.02, scaleY: 0.98),
+    Keyframe(p: 7 / 16, rotation: -0.07, scaleX: 1.05, scaleY: 0.96),
+    Keyframe(p: 1 / 2, rotation: -0.1, scaleX: 1.07, scaleY: 0.95),
+    Keyframe(p: 5 / 8, rotation: -0.13, scaleX: 1.08, scaleY: 0.94),
+    Keyframe(p: 11 / 16, rotation: 0.02),
+    Keyframe(p: 3 / 4, rotation: 0.08, scaleX: 0.97, scaleY: 1.04),
+    Keyframe(p: 13 / 16, rotation: 0.12, scaleX: 0.96, scaleY: 1.05),
+    Keyframe(p: 7 / 8, rotation: 0.1, scaleX: 0.97, scaleY: 1.04),
+    Keyframe(p: 15 / 16, rotation: 0.04, scaleX: 1.01, scaleY: 0.99),
+    Keyframe(p: 1, rotation: 0.02, scaleX: 1.01, scaleY: 0.99),
+  ];
+  static const _danceEarRKeys = [
+    Keyframe(p: 0, rotation: -0.018, scaleX: 0.99, scaleY: 1.01),
+    Keyframe(p: 1 / 16, rotation: 0.05, scaleX: 0.97, scaleY: 1.04),
+    Keyframe(p: 1 / 8, rotation: 0.115, scaleX: 0.95, scaleY: 1.06),
+    Keyframe(p: 3 / 16, rotation: -0.03, scaleX: 1.02, scaleY: 0.98),
+    Keyframe(p: 1 / 4, rotation: -0.13, scaleX: 1.08, scaleY: 0.94),
+    Keyframe(p: 5 / 16, rotation: -0.06, scaleX: 1.04, scaleY: 0.97),
+    Keyframe(p: 3 / 8, rotation: -0.03, scaleX: 1.01, scaleY: 0.99),
+    Keyframe(p: 1 / 2, rotation: 0.08, scaleX: 0.97, scaleY: 1.04),
+    Keyframe(p: 5 / 8, rotation: 0.12, scaleX: 0.95, scaleY: 1.06),
+    Keyframe(p: 11 / 16, rotation: -0.02),
+    Keyframe(p: 3 / 4, rotation: -0.075, scaleX: 1.04, scaleY: 0.97),
+    Keyframe(p: 13 / 16, rotation: -0.11, scaleX: 1.07, scaleY: 0.95),
+    Keyframe(p: 7 / 8, rotation: -0.09, scaleX: 1.04, scaleY: 0.97),
+    Keyframe(p: 15 / 16, rotation: -0.035),
+    Keyframe(p: 1, rotation: -0.018, scaleX: 0.99, scaleY: 1.01),
+  ];
   static const _danceArmUpperLKeys = [
     DanceJointKey(0, rotation: 0.22),
     DanceJointKey(2, rotation: -0.12),
@@ -1924,34 +1958,37 @@ class CatClips {
       DanceBodyAccent(
         12,
         radiusFrames: 3,
-        pelvisRotation: -0.025,
-        chestRotation: 0.03,
-        chestScaleY: 0.988,
-        chestScaleX: 1.008,
+        // Camera is on the right-side dancer here; keep the left-side answer
+        // alive but secondary.
+        pelvisRotation: -0.012,
+        chestRotation: 0.014,
+        chestScaleY: 0.994,
+        chestScaleX: 1.004,
       ),
       DanceBodyAccent(
         24,
-        radiusFrames: 8,
-        pelvisRotation: -0.07,
-        chestRotation: 0.08,
-        chestScaleY: 0.974,
-        chestScaleX: 1.02,
+        // Left-side feature when the camera pans back across the crew.
+        radiusFrames: 7,
+        pelvisRotation: -0.09,
+        chestRotation: 0.105,
+        chestScaleY: 0.966,
+        chestScaleX: 1.026,
       ),
     ],
     ikTargetAccents: {
       CatBones.handR: [
-        DanceIkTargetAccent(12, radiusFrames: 3, x: -3, y: -2, weight: 0.7),
-        DanceIkTargetAccent(24, radiusFrames: 8, x: -9, y: -5),
+        DanceIkTargetAccent(12, radiusFrames: 3, x: -1.2, y: -0.9, weight: 0.4),
+        DanceIkTargetAccent(24, radiusFrames: 7, x: -12, y: -7),
       ],
     },
     jointAccents: {
       CatBones.armUpperR: [
-        DanceJointAccent(12, radiusFrames: 3, rotation: -0.08),
-        DanceJointAccent(24, radiusFrames: 8, rotation: -0.2),
+        DanceJointAccent(12, radiusFrames: 3, rotation: -0.035),
+        DanceJointAccent(24, radiusFrames: 7, rotation: -0.26),
       ],
       CatBones.armLowerR: [
-        DanceJointAccent(12, radiusFrames: 3, rotation: 0.08),
-        DanceJointAccent(24, radiusFrames: 8, rotation: 0.22),
+        DanceJointAccent(12, radiusFrames: 3, rotation: 0.035),
+        DanceJointAccent(24, radiusFrames: 7, rotation: 0.3),
       ],
     },
   );
@@ -1960,35 +1997,38 @@ class CatClips {
     bodyAccents: [
       DanceBodyAccent(
         12,
-        radiusFrames: 3,
-        pelvisRotation: 0.025,
-        chestRotation: -0.03,
-        chestScaleY: 0.988,
-        chestScaleX: 1.008,
+        // Right-side feature: this lands under the camera's first lateral pan.
+        radiusFrames: 4,
+        pelvisRotation: 0.07,
+        chestRotation: -0.08,
+        chestScaleY: 0.974,
+        chestScaleX: 1.022,
       ),
       DanceBodyAccent(
         24,
-        radiusFrames: 8,
-        pelvisRotation: 0.074,
-        chestRotation: -0.08,
-        chestScaleY: 0.974,
-        chestScaleX: 1.02,
+        // Camera has moved left by this point; keep the right-side dancer from
+        // competing with the featured left-side answer.
+        radiusFrames: 6,
+        pelvisRotation: 0.025,
+        chestRotation: -0.03,
+        chestScaleY: 0.99,
+        chestScaleX: 1.008,
       ),
     ],
     ikTargetAccents: {
       CatBones.handL: [
-        DanceIkTargetAccent(12, radiusFrames: 3, x: 3, y: -2, weight: 0.7),
-        DanceIkTargetAccent(24, radiusFrames: 8, x: 9, y: -5),
+        DanceIkTargetAccent(12, radiusFrames: 4, x: 9, y: -6),
+        DanceIkTargetAccent(24, radiusFrames: 6, x: 3, y: -1.8, weight: 0.45),
       ],
     },
     jointAccents: {
       CatBones.armUpperL: [
-        DanceJointAccent(12, radiusFrames: 3, rotation: 0.08),
-        DanceJointAccent(24, radiusFrames: 8, rotation: 0.2),
+        DanceJointAccent(12, radiusFrames: 4, rotation: 0.2),
+        DanceJointAccent(24, radiusFrames: 6, rotation: 0.07),
       ],
       CatBones.armLowerL: [
-        DanceJointAccent(12, radiusFrames: 3, rotation: 0.08),
-        DanceJointAccent(24, radiusFrames: 8, rotation: 0.22),
+        DanceJointAccent(12, radiusFrames: 4, rotation: 0.24),
+        DanceJointAccent(24, radiusFrames: 6, rotation: 0.08),
       ],
     },
   );
@@ -2642,8 +2682,8 @@ class CatClips {
         _danceTieLowerKeys,
         smooth: true,
       ),
-      CatBones.earL: const SineChannel(amplitude: 0.04, phase: 0.35),
-      CatBones.earR: const SineChannel(amplitude: 0.045, phase: 0.8),
+      CatBones.earL: const KeyframeChannel(_danceEarLKeys, smooth: true),
+      CatBones.earR: const KeyframeChannel(_danceEarRKeys, smooth: true),
       CatBones.tail0: const SineChannel(amplitude: 0.055, bias: -0.34),
       CatBones.tail1: const SineChannel(
         amplitude: 0.09,
