@@ -321,32 +321,42 @@ class CharacterScene {
       math.atan2(math.sin(radians), math.cos(radians));
 
   /// The dance contacts lock the feet, but the Phase-1 skeleton can still read
-  /// floaty when the torso mass stays centered between both feet during a side
-  /// transfer. Shift only the upper-body subtree a small, clamped amount toward
-  /// the active support foot: legs/feet remain planted, while the visible COM
-  /// agrees more clearly with the support.
+  /// floaty when the visible mass stays centered between both feet during a
+  /// side transfer. Shift the drawn pelvis mesh a little and the upper-body
+  /// subtree more toward the active support foot: legs/feet remain planted,
+  /// while the visible COM agrees more clearly with the support.
   Map<String, Affine2D> _danceSupportMassShiftedWorld(
     Clip clip,
     double timeSeconds,
     Map<String, Affine2D> world,
   ) {
     if (clip.name != 'dance') return world;
+    const hipsId = 'hips';
     const torsoId = 'torso';
     if (!world.containsKey(torsoId)) return world;
     final contact = _activeContactAt(clip, _clipPhase(clip, timeSeconds));
     if (contact == null) return world;
-    final hips = world[rig.bones.firstWhere((b) => b.parent == null).id];
+    final hips = world[hipsId];
     final support = _contactPoint(world, contact.span.bone);
     if (hips == null || support == null) return world;
 
-    final dx = ((support.x - hips.origin.x) * 0.26).clamp(-18.0, 18.0);
-    if (dx.abs() < 0.5) return world;
+    final supportDelta = support.x - hips.origin.x;
+    final pelvisDx = (supportDelta * 0.14).clamp(-9.0, 9.0);
+    final torsoDx = (supportDelta * 0.28).clamp(-18.0, 18.0);
+    if (pelvisDx.abs() < 0.35 && torsoDx.abs() < 0.5) return world;
 
-    final shift = Affine2D.translation(dx, 0);
     final shifted = Map<String, Affine2D>.of(world);
+    // The hips bone itself is hidden by a skinned pelvis mesh. Shift only this
+    // transform in the resolved world map; its already-solved leg descendants
+    // stay put, so contact-locked shoes do not skate.
+    shifted[hipsId] = Affine2D.translation(
+      pelvisDx,
+      0,
+    ).multiply(world[hipsId]!);
+    final torsoShift = Affine2D.translation(torsoDx, 0);
     for (final bone in rig.bones) {
       if (bone.id == torsoId || _hasAncestor(bone.id, torsoId)) {
-        shifted[bone.id] = shift.multiply(world[bone.id]!);
+        shifted[bone.id] = torsoShift.multiply(world[bone.id]!);
       }
     }
     return shifted;
