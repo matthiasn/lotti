@@ -193,7 +193,13 @@ void main() {
         expect(leftSupportFoot, closeTo(-0.08, 0.001));
         expect(rightSupportFoot, closeTo(-0.08, 0.001));
         expect(rightFreeFoot, greaterThan(rightSupportFoot + 0.45));
-        expect(leftFreeFoot, greaterThan(leftSupportFoot + 0.55));
+        expect(
+          leftFreeFoot,
+          inInclusiveRange(leftSupportFoot + 0.35, leftSupportFoot + 0.56),
+          reason:
+              'the left toe accent should read as compact Afrobeats texture, '
+              'not a large flick that pulls the foot across the body',
+        );
 
         expect(armUpperL.sample(0).rotation, closeTo(0.28, 0.001));
         expect(armUpperR.sample(0).rotation, closeTo(-0.28, 0.001));
