@@ -373,7 +373,7 @@ AiProviderSetupPreviewPreset? mistralPreset() {
 }
 
 /// FTUE preset for Melious: the default Melious profile plus thinking,
-/// high-end thinking, and Whisper transcription models.
+/// high-end thinking, image-generation, and Whisper transcription models.
 AiProviderSetupPreviewPreset? meliousPreset() {
   final known = getMeliousFtueKnownModels();
   assert(known != null, 'Melious FTUE known-model lookup returned null');
@@ -385,8 +385,9 @@ AiProviderSetupPreviewPreset? meliousPreset() {
     models: <KnownModel>[
       known.thinking,
       known.advancedThinking,
-      known.whisperTurbo,
+      known.imageGeneration,
       known.whisper,
+      known.whisperTurbo,
     ],
   );
 }

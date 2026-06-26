@@ -24,6 +24,7 @@ import 'package:lotti/services/nav_service.dart';
 /// The seeded inference profile attached to categories created for a freshly
 /// connected provider — so each chosen category resolves to a real model.
 String? onboardingSeededProfileId(InferenceProviderType type) => switch (type) {
+  InferenceProviderType.melious => profileMeliousId,
   InferenceProviderType.gemini => profileGeminiFlashId,
   InferenceProviderType.mistral => profileMistralEuId,
   InferenceProviderType.alibaba => profileAlibabaId,

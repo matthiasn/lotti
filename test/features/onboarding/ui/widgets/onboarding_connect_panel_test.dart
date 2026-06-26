@@ -16,6 +16,8 @@ void main() {
     void Function(InferenceProviderType)? onSelect,
     VoidCallback? onBack,
   }) async {
+    await tester.binding.setSurfaceSize(const Size(480, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
       makeTestableWidget(
         ConstrainedBox(
@@ -57,12 +59,14 @@ void main() {
           reason: 'expected primary tile for $type',
         );
       }
-      // Concretely: Gemini, Mistral and Qwen.
+      // Concretely: Melious.ai, Mistral, Gemini, and Qwen.
+      expect(find.text('Melious.ai'), findsOneWidget);
       expect(find.text('Gemini'), findsOneWidget);
       expect(find.text('Mistral'), findsOneWidget);
       expect(find.text('Qwen'), findsOneWidget);
 
       // Primary taglines render under the names.
+      expect(find.text(m.aiProviderTaglineMelious), findsOneWidget);
       expect(find.text(m.onboardingConnectGeminiTagline), findsOneWidget);
       expect(find.text(m.onboardingConnectMistralTagline), findsOneWidget);
       expect(find.text(m.onboardingConnectQwenTagline), findsOneWidget);
@@ -184,6 +188,10 @@ void main() {
 
       // Spot-check the explicit brand hues for the listed arms.
       expect(
+        onboardingProviderBrandColor(InferenceProviderType.melious),
+        const Color(0xFF14B8A6),
+      );
+      expect(
         onboardingProviderBrandColor(InferenceProviderType.gemini),
         const Color(0xFF4285F4),
       );
@@ -222,6 +230,7 @@ void main() {
   group('onboardingProviderName / onboardingProviderTagline', () {
     test('curated names map to the welcome-specific copy', () {
       final cases = <InferenceProviderType, String>{
+        InferenceProviderType.melious: m.aiProviderMeliousName,
         InferenceProviderType.gemini: m.onboardingConnectGeminiName,
         InferenceProviderType.mistral: m.onboardingConnectMistralName,
         InferenceProviderType.alibaba: m.onboardingConnectQwenName,
@@ -248,6 +257,7 @@ void main() {
 
     test('primary providers expose a non-empty tagline', () {
       final cases = <InferenceProviderType, String>{
+        InferenceProviderType.melious: m.aiProviderTaglineMelious,
         InferenceProviderType.gemini: m.onboardingConnectGeminiTagline,
         InferenceProviderType.mistral: m.onboardingConnectMistralTagline,
         InferenceProviderType.alibaba: m.onboardingConnectQwenTagline,

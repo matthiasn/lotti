@@ -242,12 +242,13 @@ setup before a user installs additional live-catalog rows: `deepseek-v4-pro`,
 `whisper-large-v3`, and `whisper-large-v3-turbo`.
 The default Melious profile uses `mistral-small-4-119b-instruct` for thinking
 and image recognition, `deepseek-v4-pro` for the high-end thinking slot, and
-`flux-2-klein-9b` for image generation, and
-`whisper-large-v3-turbo` for transcription. FTUE setup creates both Whisper
+`flux-2-klein-9b` for image generation, and `whisper-large-v3` for
+transcription. FTUE setup creates both Whisper
 rows so users can switch between the regular and Turbo variants. Existing
-untouched default Melious profiles that predate the image-generation slot gain
-Flux 2 Klein 9B during `upgradeExisting()` after the model backfill has
-created the row.
+untouched default Melious profiles that predate the image-generation slot, or
+still point at the legacy Flux 2 Dev default or the previous Whisper Turbo
+transcription default, move to Flux 2 Klein 9B and Whisper Large v3 during
+`upgradeExisting()` after the model backfill has created the rows.
 
 Melious and oMLX provider settings also use live catalogs. The provider detail
 page and edit form render the same `AvailableModelsSection`, so endpoint-backed
@@ -737,12 +738,12 @@ Operational details from the seeded definitions:
 - `Local (Ollama)` and `Local Gemma 4 (Ollama)` ship with image-analysis automation but no transcription slot
 - `Local Power (oMLX)` uses `Qwen3.6-35B-A3B-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
 - `Local Gemma 4 (oMLX)` uses `gemma-4-26B-A4B-it-QAT-MLX-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
-- `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, DeepSeek V4 Pro for high-end thinking, Flux 2 Klein 9B for image generation, and Whisper Large v3 Turbo for transcription
+- `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, DeepSeek V4 Pro for high-end thinking, Flux 2 Klein 9B for image generation, and Whisper Large v3 for transcription
 - `Local Gemma 4 Power (Ollama)` currently ships with no default skill assignments
 
 `seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 
-`upgradeExisting()` backfills migration-safe pieces after model rows exist: legacy profile slots that still contain provider-native model IDs are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, untouched Melious profiles gain the Flux 2 Klein 9B image-generation slot, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, model slots, optional slots, and non-empty assignment lists are preserved.
+`upgradeExisting()` backfills migration-safe pieces after model rows exist: legacy profile slots that still contain provider-native model IDs are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, untouched Melious profiles move to the Flux 2 Klein 9B image-generation slot and Whisper Large v3 transcription slot, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, model slots, optional slots, and non-empty assignment lists are preserved.
 
 `ModelPrepopulationService.backfillNewModels()` seeds known model rows for
 configured providers at startup. Known model identity is the

@@ -70,8 +70,8 @@ const List<KnownModel> meliousModels = [
     outputModalities: [Modality.image],
     isReasoningModel: false,
     description:
-        'Melious-hosted Black Forest Labs Flux 2 Klein 9B image-generation model '
-        'for higher-quality task cover art.',
+        'Melious-hosted Black Forest Labs Flux 2 Klein 9B image-generation '
+        'model for fast, high-quality task cover art.',
   ),
   KnownModel(
     providerModelId: meliousWhisperLargeV3ModelId,
@@ -80,8 +80,8 @@ const List<KnownModel> meliousModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description:
-        'Melious-hosted Whisper Large v3 transcription through the '
-        'OpenAI-compatible audio transcriptions endpoint.',
+        'Default Melious transcription model. Whisper Large v3 '
+        'speech-to-text through the OpenAI-compatible endpoint.',
   ),
   KnownModel(
     providerModelId: meliousWhisperLargeV3TurboModelId,
@@ -90,8 +90,8 @@ const List<KnownModel> meliousModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description:
-        'Default Melious transcription model. Turbo Whisper Large v3 variant '
-        'for faster speech-to-text through the OpenAI-compatible endpoint.',
+        'Faster Melious Whisper Large v3 Turbo speech-to-text through the '
+        'OpenAI-compatible endpoint.',
   ),
 ];
 

@@ -264,6 +264,7 @@ void main() {
         'Whisper': whisperModels,
         'Voxtral': voxtralModels,
         'Alibaba': alibabaModels,
+        'Melious': meliousModels,
       };
 
       for (final entry in providersWithoutMaxTokens.entries) {

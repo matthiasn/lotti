@@ -6452,7 +6452,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingConnectMoreOptions => 'More options';
 
   @override
-  String get onboardingConnectNotSure => 'Gemini is the quickest way to start.';
+  String get onboardingConnectNotSure =>
+      'Melious.ai is the recommended default.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

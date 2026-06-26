@@ -11,16 +11,17 @@ void main() {
   group('AiPickProviderModal.defaultTiles — static spec', () {
     test(
       'lineup matches the design: '
-      'Gemini → OpenAI → Anthropic → Alibaba → Melious → MLX Audio → oMLX → Ollama → Voxtral',
+      'Melious → Mistral → Gemini → Alibaba → OpenAI → Anthropic → MLX Audio → oMLX → Ollama → Voxtral',
       () {
         expect(
           AiPickProviderModal.defaultTiles.map((t) => t.providerType).toList(),
           [
+            InferenceProviderType.melious,
+            InferenceProviderType.mistral,
             InferenceProviderType.gemini,
+            InferenceProviderType.alibaba,
             InferenceProviderType.openAi,
             InferenceProviderType.anthropic,
-            InferenceProviderType.alibaba,
-            InferenceProviderType.melious,
             InferenceProviderType.mlxAudio,
             InferenceProviderType.omlx,
             InferenceProviderType.ollama,
@@ -30,9 +31,9 @@ void main() {
       },
     );
 
-    test('Gemini carries the RECOMMENDED badge (per the design)', () {
+    test('Melious carries the RECOMMENDED badge (per the design)', () {
       final spec = AiPickProviderModal.defaultTiles.firstWhere(
-        (t) => t.providerType == InferenceProviderType.gemini,
+        (t) => t.providerType == InferenceProviderType.melious,
       );
       expect(spec.badge, AiPickProviderBadge.recommended);
     });
@@ -51,11 +52,18 @@ void main() {
       expect(spec.badge, AiPickProviderBadge.newcomer);
     });
 
-    test('Melious carries the NEW badge', () {
+    test('Mistral has no badge', () {
       final spec = AiPickProviderModal.defaultTiles.firstWhere(
-        (t) => t.providerType == InferenceProviderType.melious,
+        (t) => t.providerType == InferenceProviderType.mistral,
       );
-      expect(spec.badge, AiPickProviderBadge.newcomer);
+      expect(spec.badge, isNull);
+    });
+
+    test('Gemini has no badge', () {
+      final spec = AiPickProviderModal.defaultTiles.firstWhere(
+        (t) => t.providerType == InferenceProviderType.gemini,
+      );
+      expect(spec.badge, isNull);
     });
 
     test('MLX Audio carries the NEW badge', () {
@@ -86,7 +94,7 @@ void main() {
       expect(spec.badge, AiPickProviderBadge.desktopOnly);
     });
 
-    test('OpenAI has no badge (the only un-badged tile)', () {
+    test('OpenAI has no badge', () {
       final spec = AiPickProviderModal.defaultTiles.firstWhere(
         (t) => t.providerType == InferenceProviderType.openAi,
       );
@@ -158,13 +166,13 @@ void main() {
 
     testWidgets(
       'renders one DesignSystemBadge per badged tile '
-      '(Gemini RECOMMENDED, Anthropic NEW, Alibaba NEW, '
-      'Melious NEW, MLX Audio NEW, oMLX DESKTOP ONLY, '
-      'Ollama DESKTOP ONLY, Voxtral DESKTOP ONLY) — eight badges total '
-      'because OpenAI is intentionally un-badged',
+      '(Melious RECOMMENDED, Alibaba NEW, Anthropic NEW, '
+      'MLX Audio NEW, oMLX DESKTOP ONLY, Ollama DESKTOP ONLY, '
+      'Voxtral DESKTOP ONLY) — seven badges total because Mistral, '
+      'Gemini, and OpenAI are intentionally un-badged',
       (tester) async {
         await pumpModal(tester);
-        expect(find.byType(DesignSystemBadge), findsNWidgets(8));
+        expect(find.byType(DesignSystemBadge), findsNWidgets(7));
       },
     );
 
@@ -193,10 +201,10 @@ void main() {
       'Continue pops the modal with confirmed(<initialSelection>) '
       'when the user has not changed the radio',
       (tester) async {
-        // Six tiles + footer + action row exceed the default 800x600 test
+        // Ten tiles + footer + action row exceed the default 800x600 test
         // viewport — bump it so the Continue button is hit-testable.
         // Production renders inside WoltModalSheet which scrolls.
-        await tester.binding.setSurfaceSize(const Size(800, 900));
+        await tester.binding.setSurfaceSize(const Size(800, 1100));
         addTearDown(() => tester.binding.setSurfaceSize(null));
         AiPickProviderResult? captured;
         await tester.pumpWidget(
@@ -239,7 +247,7 @@ void main() {
       'Continue carries the LATEST radio selection — proves the modal '
       'forwards the picked tile, not the seeded one',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 900));
+        await tester.binding.setSurfaceSize(const Size(800, 1100));
         addTearDown(() => tester.binding.setSurfaceSize(null));
         AiPickProviderResult? captured;
         await tester.pumpWidget(
@@ -284,7 +292,7 @@ void main() {
       'providerType is forwarded because the user is opting out, not '
       'picking',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 900));
+        await tester.binding.setSurfaceSize(const Size(800, 1100));
         addTearDown(() => tester.binding.setSurfaceSize(null));
         AiPickProviderResult? captured;
         await tester.pumpWidget(

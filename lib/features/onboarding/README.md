@@ -133,9 +133,10 @@ stateDiagram-v2
   (the always-dark cinematic welcome and its animated hero), `OnboardingConnectPanel`
   (provider tiles), `OnboardingApiKeyPanel` (key paste + verify), `OnboardingSuccessView`
   (connect beat), `OnboardingCategoryView` (the category step's presentational view).
-- **Providers** — Gemini / Mistral / Qwen as co-equals (no default) + OpenAI /
-  Ollama behind "More options". MLX is excluded from the FTUE (multi-GB download);
-  it stays available in Settings. Visuals reuse `ai_provider_visual.dart`.
+- **Providers** — Melious.ai first, then Mistral, Gemini, and Qwen, with
+  OpenAI / Ollama behind "More options". MLX is excluded from the FTUE
+  (multi-GB download); it stays available in Settings. Visuals reuse
+  `ai_provider_visual.dart`.
 - **Funnel events** — `welcomeShown`, `providerModalShown`, `providerConnected`,
   `welcomeSkipped`.
 

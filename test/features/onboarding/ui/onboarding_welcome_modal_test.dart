@@ -85,6 +85,26 @@ void main() {
     );
   }
 
+  test('onboardingSeededProfileId maps surfaced providers to profiles', () {
+    expect(
+      onboardingSeededProfileId(InferenceProviderType.melious),
+      profileMeliousId,
+    );
+    expect(
+      onboardingSeededProfileId(InferenceProviderType.mistral),
+      profileMistralEuId,
+    );
+    expect(
+      onboardingSeededProfileId(InferenceProviderType.gemini),
+      profileGeminiFlashId,
+    );
+    expect(
+      onboardingSeededProfileId(InferenceProviderType.alibaba),
+      profileAlibabaId,
+    );
+    expect(onboardingSeededProfileId(InferenceProviderType.whisper), isNull);
+  });
+
   Future<void> openWelcome(WidgetTester tester, {Widget? child}) async {
     // The fixed-height modal panel (~680) is taller than the default 800x600
     // render surface; size the surface to the 844-tall MediaQuery so the lower
@@ -113,12 +133,13 @@ void main() {
     expect(state.reached(OnboardingEventName.welcomeShown), isTrue);
   });
 
-  testWidgets('advancing to connect reveals the three providers and records '
+  testWidgets('advancing to connect reveals the primary providers and records '
       'providerModalShown', (tester) async {
     await openWelcome(tester);
     await tester.tap(find.text('Choose your AI brain'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Melious.ai'), findsOneWidget);
     expect(find.text('Gemini'), findsOneWidget);
     expect(find.text('Mistral'), findsOneWidget);
     expect(find.text('Qwen'), findsOneWidget);

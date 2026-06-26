@@ -6612,7 +6612,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingConnectNotSure =>
-      'Gemini este cea mai rapidă cale de a începe.';
+      'Melious.ai este opțiunea implicită recomandată.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

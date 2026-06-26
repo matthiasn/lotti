@@ -76,6 +76,7 @@ void main() {
         containsAll([
           meliousMistralSmall4119BInstructModelId,
           meliousDeepseekV4ProModelId,
+          meliousFlux2Klein9BModelId,
           meliousWhisperLargeV3TurboModelId,
           meliousWhisperLargeV3ModelId,
         ]),

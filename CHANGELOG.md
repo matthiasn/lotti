@@ -9,14 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A guided **first-time onboarding** (behind the "New onboarding (FTUE)" flag in
   Settings → Advanced → Flags). With the flag on, a fresh install replaces the
   bare provider picker with a short, skippable, cinematic flow: a welcome that
-  frames AI setup as "connect your brain"; a provider step (Gemini, Mistral and
-  Qwen as equals, with OpenAI and Ollama behind "More options") that pastes a key
-  and creates the provider, its known models and a ready-to-use inference profile
-  in place; a quiet "connected" beat; a step to pick the life areas (Work,
-  Fitness, Family, Friends, or your own) the AI should power — teaching that the
-  provider is chosen per category; and a playful step to pick how recording looks
-  (a modern energy orb or an analogue VU meter, previewed live — try it with your
-  voice). It ends in the real payoff: you speak a thought, watch it become a
+  frames AI setup as "connect your brain"; a provider step (Melious.ai first,
+  then Mistral, Gemini and Qwen, with OpenAI and Ollama behind "More options")
+  that pastes a key and creates the provider, its known models and a
+  ready-to-use inference profile in place; a quiet "connected" beat; a step to
+  pick the life areas (Work, Fitness, Family, Friends, or your own) the AI should
+  power — teaching that the provider is chosen per category; and a playful step
+  to pick how recording looks (a modern energy orb or an analogue VU meter,
+  previewed live — try it with your voice). It ends in the real payoff: you
+  speak a thought, watch it become a
   structured task with a checklist, and land straight on that task — already in
   progress, in the area you pick — instead of a dead end. A "Rather type?" path, a
   one-tap retry, and a soft-landing title-only task when structuring fails keep it
@@ -50,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   section instead of expanding into one long page. New Melious setups also seed a
   ready-to-use default profile with Mistral Small 4 119B Instruct for thinking
   and image recognition, DeepSeek V4 Pro for advanced thinking, Flux 2 Klein 9B
-  for image generation, and Whisper Large v3 Turbo for transcription.
+  for image generation, and Whisper Large v3 for transcription.
 - oMLX can now be used for local Whisper Large v3 transcription on Apple
   Silicon. The oMLX model catalog includes Whisper Large v3, Whisper Large v3
   MLX, and Whisper Large v3 Turbo as audio-to-text models, and selecting one

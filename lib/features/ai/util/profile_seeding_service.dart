@@ -86,7 +86,9 @@ class ProfileSeedingService {
   ///
   /// This migrates legacy provider-native profile slot values to
   /// `AiConfigModel.id` when the match is unambiguous, migrates the untouched
-  /// old Local Power seed from Ollama to oMLX, then backfills default skill
+  /// old Local Power seed from Ollama to oMLX, migrates untouched Melious image
+  /// generation and transcription to the Flux 2 Klein 9B and Whisper Large v3
+  /// defaults, then backfills default skill
   /// assignments only for default profiles whose assignments are empty.
   Future<void> upgradeExisting() async {
     var upgradedCount = 0;
@@ -99,6 +101,7 @@ class ProfileSeedingService {
     for (final config in configs.whereType<AiConfigInferenceProfile>()) {
       var upgraded = _withMigratedLegacyLocalPowerSeed(config, models);
       upgraded = _withUpgradedOmlxWhisperTranscription(upgraded, models);
+      upgraded = _withUpgradedMeliousWhisperTranscription(upgraded, models);
       upgraded = _withUpgradedMeliousFluxImageGeneration(upgraded, models);
       upgraded = _withResolvedModelConfigIds(upgraded, models);
       final template = templatesById[config.id];
@@ -200,6 +203,58 @@ class ProfileSeedingService {
     );
   }
 
+  static AiConfigInferenceProfile _withUpgradedMeliousWhisperTranscription(
+    AiConfigInferenceProfile profile,
+    List<AiConfigModel> models,
+  ) {
+    if (!_isUntouchedMeliousProfileEligibleForWhisperDefaultUpgrade(
+      profile,
+      models,
+    )) {
+      return profile;
+    }
+
+    return profile.copyWith(
+      transcriptionModelId: meliousWhisperLargeV3ModelId,
+    );
+  }
+
+  static bool _isUntouchedMeliousProfileEligibleForWhisperDefaultUpgrade(
+    AiConfigInferenceProfile profile,
+    List<AiConfigModel> models,
+  ) {
+    return profile.id == profileMeliousId &&
+        profile.name == 'Melious.ai' &&
+        profile.description == null &&
+        _slotMatchesProviderModelId(
+          profile.thinkingModelId,
+          meliousMistralSmall4119BInstructModelId,
+          models,
+        ) &&
+        _slotMatchesProviderModelId(
+          profile.thinkingHighEndModelId,
+          meliousDeepseekV4ProModelId,
+          models,
+        ) &&
+        _slotMatchesProviderModelId(
+          profile.imageRecognitionModelId,
+          meliousMistralSmall4119BInstructModelId,
+          models,
+        ) &&
+        _meliousTranscriptionSlotNeedsUpgrade(
+          profile.transcriptionModelId,
+          models,
+        ) &&
+        _meliousImageGenerationSlotMatchesDefaultOrLegacy(
+          profile.imageGenerationModelId,
+          models,
+        ) &&
+        profile.isDefault &&
+        !profile.desktopOnly &&
+        profile.pinnedHostId == null &&
+        _slotResolvesToModelRow(meliousWhisperLargeV3ModelId, models);
+  }
+
   static bool _isUntouchedMeliousProfileEligibleForImageGenerationUpgrade(
     AiConfigInferenceProfile profile,
     List<AiConfigModel> models,
@@ -222,9 +277,8 @@ class ProfileSeedingService {
           meliousMistralSmall4119BInstructModelId,
           models,
         ) &&
-        _slotMatchesProviderModelId(
+        _meliousTranscriptionSlotMatchesDefaultOrLegacy(
           profile.transcriptionModelId,
-          meliousWhisperLargeV3TurboModelId,
           models,
         ) &&
         _meliousImageGenerationSlotNeedsUpgrade(
@@ -235,6 +289,46 @@ class ProfileSeedingService {
         !profile.desktopOnly &&
         profile.pinnedHostId == null &&
         _slotResolvesToModelRow(meliousFlux2Klein9BModelId, models);
+  }
+
+  static bool _meliousTranscriptionSlotNeedsUpgrade(
+    String? slotValue,
+    List<AiConfigModel> models,
+  ) {
+    return slotValue == null ||
+        _slotMatchesProviderModelId(
+          slotValue,
+          meliousWhisperLargeV3TurboModelId,
+          models,
+        );
+  }
+
+  static bool _meliousTranscriptionSlotMatchesDefaultOrLegacy(
+    String? slotValue,
+    List<AiConfigModel> models,
+  ) {
+    return _slotMatchesProviderModelId(
+          slotValue,
+          meliousWhisperLargeV3ModelId,
+          models,
+        ) ||
+        _slotMatchesProviderModelId(
+          slotValue,
+          meliousWhisperLargeV3TurboModelId,
+          models,
+        );
+  }
+
+  static bool _meliousImageGenerationSlotMatchesDefaultOrLegacy(
+    String? slotValue,
+    List<AiConfigModel> models,
+  ) {
+    return _meliousImageGenerationSlotNeedsUpgrade(slotValue, models) ||
+        _slotMatchesProviderModelId(
+          slotValue,
+          meliousFlux2Klein9BModelId,
+          models,
+        );
   }
 
   static bool _meliousImageGenerationSlotNeedsUpgrade(
@@ -472,7 +566,7 @@ class ProfileSeedingService {
       thinkingModelId: meliousMistralSmall4119BInstructModelId,
       thinkingHighEndModelId: meliousDeepseekV4ProModelId,
       imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
-      transcriptionModelId: meliousWhisperLargeV3TurboModelId,
+      transcriptionModelId: meliousWhisperLargeV3ModelId,
       imageGenerationModelId: meliousFlux2Klein9BModelId,
       skillAssignments: _defaultSkillAssignments,
       isDefault: true,

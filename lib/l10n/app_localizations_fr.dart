@@ -6614,7 +6614,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboardingConnectNotSure =>
-      'Gemini est le moyen le plus rapide de commencer.';
+      'Melious.ai est le choix par défaut recommandé.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

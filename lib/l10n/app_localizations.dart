@@ -11293,7 +11293,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingConnectNotSure.
   ///
   /// In en, this message translates to:
-  /// **'Gemini is the quickest way to start.'**
+  /// **'Melious.ai is the recommended default.'**
   String get onboardingConnectNotSure;
 
   /// No description provided for @onboardingConnectOllamaName.
