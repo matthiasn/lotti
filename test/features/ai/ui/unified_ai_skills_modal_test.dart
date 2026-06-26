@@ -1603,7 +1603,10 @@ void main() {
             ValueListenableBuilder<bool>(
               valueListenable: showButton,
               builder: (_, show, _) => show
-                  ? UnifiedAiPopUpMenu(journalEntity: entity, linkedFromId: null)
+                  ? UnifiedAiPopUpMenu(
+                      journalEntity: entity,
+                      linkedFromId: null,
+                    )
                   : const SizedBox.shrink(),
             ),
             overrides: [

@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:exif/exif.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -46,7 +48,51 @@ class ImageImportConstants {
   const ImageImportConstants._();
 
   /// Supported image file extensions for import.
-  static const Set<String> supportedExtensions = {'jpg', 'jpeg', 'png'};
+  static Set<String> get supportedExtensions =>
+      supportedExtensionsForPlatform();
+
+  /// Image file extensions that can be imported without conversion.
+  static const Set<String> standardExtensions = {
+    'jpg',
+    'jpeg',
+    'png',
+  };
+
+  /// HEIC/HEIF extensions accepted only where conversion support is available.
+  static const Set<String> highEfficiencyExtensions = {
+    'heic',
+    'heif',
+  };
+
+  /// Source image extensions that are converted before storage.
+  static const Set<String> sourceExtensionsConvertedToJpeg = {'heic', 'heif'};
+
+  /// Extension used for converted images in Lotti's storage.
+  static const String convertedImageExtension = 'jpg';
+
+  /// Returns image extensions supported on [targetPlatform].
+  static Set<String> supportedExtensionsForPlatform([
+    TargetPlatform? targetPlatform,
+  ]) {
+    if (supportsHighEfficiencyImageConversion(targetPlatform)) {
+      return {...standardExtensions, ...highEfficiencyExtensions};
+    }
+    return standardExtensions;
+  }
+
+  /// Whether HEIC/HEIF inputs can be converted before storage.
+  static bool supportsHighEfficiencyImageConversion([
+    TargetPlatform? targetPlatform,
+  ]) {
+    return switch (targetPlatform ?? defaultTargetPlatform) {
+      TargetPlatform.android ||
+      TargetPlatform.iOS ||
+      TargetPlatform.macOS => true,
+      TargetPlatform.fuchsia ||
+      TargetPlatform.linux ||
+      TargetPlatform.windows => false,
+    };
+  }
 
   /// Directory prefix for storing imported images.
   static const String directoryPrefix = '/images/';
@@ -162,10 +208,12 @@ Future<void> importImagePickerFiles({
   String? categoryId,
   AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
-  const group = XTypeGroup(
-    extensions: ['jpg', 'jpeg', 'png'],
+  final group = XTypeGroup(
+    extensions: ImageImportConstants.supportedExtensions.toList(
+      growable: false,
+    ),
   );
-  final files = await openFiles(acceptedTypeGroups: const [group]);
+  final files = await openFiles(acceptedTypeGroups: [group]);
   if (files.isEmpty) return;
   await importImageXFiles(
     files,
@@ -226,10 +274,15 @@ Future<void> importImageXFiles(
       ).format(capturedAt);
       final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
       final directory = await createAssetDirectory(relativePath);
-      final targetFileName = '$id.$fileExtension';
+      final targetFileExtension = _targetImageExtension(fileExtension);
+      final targetFileName = '$id.$targetFileExtension';
       final targetFilePath = p.join(directory, targetFileName);
 
-      await File(srcPath).copy(targetFilePath);
+      await _copyOrConvertImageFile(
+        sourceFile: File(srcPath),
+        sourceExtension: fileExtension,
+        targetFilePath: targetFilePath,
+      );
 
       final imageData = ImageData(
         imageId: id,
@@ -256,6 +309,68 @@ Future<void> importImageXFiles(
         subDomain: 'importDroppedImages',
       );
       // Continue processing other files even if one fails
+    }
+  }
+}
+
+String _targetImageExtension(String sourceExtension) {
+  final normalizedExtension = sourceExtension.toLowerCase();
+  if (_shouldConvertToJpeg(normalizedExtension)) {
+    return ImageImportConstants.convertedImageExtension;
+  }
+  return normalizedExtension;
+}
+
+bool _shouldConvertToJpeg(String sourceExtension) =>
+    ImageImportConstants.sourceExtensionsConvertedToJpeg.contains(
+      sourceExtension.toLowerCase(),
+    );
+
+Future<void> _copyOrConvertImageFile({
+  required File sourceFile,
+  required String sourceExtension,
+  required String targetFilePath,
+}) async {
+  if (!_shouldConvertToJpeg(sourceExtension)) {
+    await sourceFile.copy(targetFilePath);
+    return;
+  }
+
+  final convertedFile = await compressAndSave(sourceFile, targetFilePath);
+  if (convertedFile == null) {
+    throw StateError('Failed to convert $sourceExtension image to JPEG');
+  }
+}
+
+Future<void> _writeOrConvertPastedImageBytes({
+  required Uint8List data,
+  required String sourceExtension,
+  required String targetFilePath,
+}) async {
+  if (!_shouldConvertToJpeg(sourceExtension)) {
+    final file = await File(targetFilePath).create(recursive: true);
+    await file.writeAsBytes(data);
+    return;
+  }
+
+  final tempDirectory = await Directory.systemTemp.createTemp(
+    'lotti_pasted_image_',
+  );
+  try {
+    final sourceFile = File(
+      p.join(tempDirectory.path, 'pasted.$sourceExtension'),
+    );
+    await sourceFile.writeAsBytes(data);
+    await _copyOrConvertImageFile(
+      sourceFile: sourceFile,
+      sourceExtension: sourceExtension,
+      targetFilePath: targetFilePath,
+    );
+  } finally {
+    try {
+      await tempDirectory.delete(recursive: true);
+    } catch (_) {
+      // Best-effort cleanup for a temp file that no longer affects import.
     }
   }
 }
@@ -370,11 +485,16 @@ Future<void> importPastedImages({
   ).format(capturedAt);
   final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
   final directory = await createAssetDirectory(relativePath);
-  final targetFileName = '$id.$fileExtension';
+  final sourceExtension = fileExtension.toLowerCase();
+  final targetFileExtension = _targetImageExtension(fileExtension);
+  final targetFileName = '$id.$targetFileExtension';
   final targetFilePath = p.join(directory, targetFileName);
 
-  final file = await File(targetFilePath).create(recursive: true);
-  await file.writeAsBytes(data);
+  await _writeOrConvertPastedImageBytes(
+    data: data,
+    sourceExtension: sourceExtension,
+    targetFilePath: targetFilePath,
+  );
 
   final imageData = ImageData(
     imageId: id,

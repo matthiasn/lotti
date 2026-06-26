@@ -62,6 +62,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   be installed directly from the provider edit page.
 
 ### Changed
+- On platforms with HEIC/HEIF conversion support, image import now accepts
+  high-efficiency inputs from drag-and-drop, file picker, and clipboard paste.
+  Lotti converts those files to JPEG before creating the image entry, so the
+  internal attachment format stays unchanged.
 - **Choosing a model for a one-off AI run is calmer.** When you run an AI
   action from the sparkle menu (transcribe a voice note, analyze a photo,
   generate a prompt or cover art) and you have more than one capable model, the

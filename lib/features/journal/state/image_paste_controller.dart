@@ -20,9 +20,7 @@ class ImagePasteController extends _$ImagePasteController {
       return false;
     }
     final reader = await clipboard.read();
-    return reader.items.any(
-      (item) => item.canProvide(Formats.png) || item.canProvide(Formats.jpeg),
-    );
+    return reader.items.any(_canProvideSupportedImage);
   }
 
   Future<void> paste() async {
@@ -34,15 +32,29 @@ class ImagePasteController extends _$ImagePasteController {
 
     // Process all clipboard items (supports multiple photos)
     final futures = <Future<void>>[];
+    final supportsHighEfficiencyImages =
+        ImageImportConstants.supportsHighEfficiencyImageConversion();
     for (final item in reader.items) {
       if (item.canProvide(Formats.jpeg)) {
         futures.add(_processPastedItem(item, Formats.jpeg, 'jpg'));
       } else if (item.canProvide(Formats.png)) {
         futures.add(_processPastedItem(item, Formats.png, 'png'));
+      } else if (supportsHighEfficiencyImages &&
+          item.canProvide(Formats.heic)) {
+        futures.add(_processPastedItem(item, Formats.heic, 'heic'));
+      } else if (supportsHighEfficiencyImages &&
+          item.canProvide(Formats.heif)) {
+        futures.add(_processPastedItem(item, Formats.heif, 'heif'));
       }
     }
     await Future.wait(futures);
   }
+
+  bool _canProvideSupportedImage(ClipboardDataReader item) =>
+      item.canProvide(Formats.jpeg) ||
+      item.canProvide(Formats.png) ||
+      (ImageImportConstants.supportsHighEfficiencyImageConversion() &&
+          (item.canProvide(Formats.heic) || item.canProvide(Formats.heif)));
 
   Future<void> _processPastedItem(
     ClipboardDataReader item,

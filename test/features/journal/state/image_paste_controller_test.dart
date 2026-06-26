@@ -1,8 +1,8 @@
 // ignore_for_file: unnecessary_lambdas
 
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -23,7 +23,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
+import '../../../helpers/fake_image_compress_platform.dart';
 import '../../../helpers/path_provider.dart';
+import '../../../helpers/target_platform.dart';
 import '../../../mocks/mocks.dart';
 
 class MockSystemClipboard extends Mock implements SystemClipboard {}
@@ -257,6 +259,57 @@ void main() {
       expect(result, true);
     });
 
+    for (final scenario in [
+      (format: Formats.heic, name: 'HEIC'),
+      (format: Formats.heif, name: 'HEIF'),
+    ]) {
+      test('build returns true when ${scenario.name} is available', () async {
+        await withTargetPlatform(
+          TargetPlatform.macOS,
+          () async {
+            when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(false);
+            when(() => mockItem.canProvide(Formats.png)).thenReturn(false);
+            when(
+              () => mockItem.canProvide(Formats.heic),
+            ).thenReturn(scenario.format == Formats.heic);
+            when(
+              () => mockItem.canProvide(Formats.heif),
+            ).thenReturn(scenario.format == Formats.heif);
+
+            final result = await container.read(
+              imagePasteControllerProvider(
+                linkedFromId: null,
+                categoryId: null,
+              ).future,
+            );
+
+            expect(result, true);
+          },
+        );
+      });
+    }
+
+    test('build ignores HEIC-only clipboard data on Linux', () async {
+      await withTargetPlatform(
+        TargetPlatform.linux,
+        () async {
+          when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(false);
+          when(() => mockItem.canProvide(Formats.png)).thenReturn(false);
+
+          final result = await container.read(
+            imagePasteControllerProvider(
+              linkedFromId: null,
+              categoryId: null,
+            ).future,
+          );
+
+          expect(result, false);
+          verifyNever(() => mockItem.canProvide(Formats.heic));
+          verifyNever(() => mockItem.canProvide(Formats.heif));
+        },
+      );
+    });
+
     test('paste handles PNG data correctly', () async {
       when(() => mockItem.canProvide(Formats.png)).thenReturn(true);
       when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(false);
@@ -320,6 +373,120 @@ void main() {
 
       verify(() => mockItem.getFile(Formats.jpeg, any())).called(1);
       verify(() => mockFile.readAll()).called(1);
+    });
+
+    for (final scenario in [
+      (format: Formats.heic, name: 'HEIC'),
+      (format: Formats.heif, name: 'HEIF'),
+    ]) {
+      test('paste handles ${scenario.name} data as stored JPEG', () async {
+        await withTargetPlatform(
+          TargetPlatform.macOS,
+          () async {
+            clearInteractions(mockPersistenceLogic);
+            when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(false);
+            when(() => mockItem.canProvide(Formats.png)).thenReturn(false);
+            when(
+              () => mockItem.canProvide(Formats.heic),
+            ).thenReturn(scenario.format == Formats.heic);
+            when(
+              () => mockItem.canProvide(Formats.heif),
+            ).thenReturn(scenario.format == Formats.heif);
+
+            when(
+              () => mockItem.getFile(scenario.format, any()),
+            ).thenAnswer((invocation) {
+              final callback =
+                  invocation.positionalArguments[1]
+                      as void Function(DataReaderFile);
+              callback(mockFile);
+              return null;
+            });
+
+            when(
+              () => mockFile.readAll(),
+            ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
+
+            final controller = container.read(
+              imagePasteControllerProvider(
+                linkedFromId: 'testLink',
+                categoryId: 'testCategory',
+              ).notifier,
+            );
+
+            await withFakeImageCompressPlatform(controller.paste);
+            await pumpEventQueue();
+
+            final capturedImage =
+                verify(
+                      () => mockPersistenceLogic.createDbEntity(
+                        captureAny(that: isA<JournalImage>()),
+                        linkedId: 'testLink',
+                        shouldAddGeolocation: any(
+                          named: 'shouldAddGeolocation',
+                        ),
+                        enqueueSync: any(named: 'enqueueSync'),
+                      ),
+                    ).captured.single
+                    as JournalImage;
+
+            expect(capturedImage.data.imageFile, endsWith('.jpg'));
+            verify(() => mockItem.getFile(scenario.format, any())).called(1);
+            verify(() => mockFile.readAll()).called(1);
+          },
+        );
+      });
+    }
+
+    test('paste skips HEIC-only clipboard data on Linux', () async {
+      await withTargetPlatform(
+        TargetPlatform.linux,
+        () async {
+          when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(false);
+          when(() => mockItem.canProvide(Formats.png)).thenReturn(false);
+
+          final controller = container.read(
+            imagePasteControllerProvider(
+              linkedFromId: 'testLink',
+              categoryId: 'testCategory',
+            ).notifier,
+          );
+
+          await controller.paste();
+          await pumpEventQueue();
+
+          verifyNever(() => mockItem.canProvide(Formats.heic));
+          verifyNever(() => mockItem.canProvide(Formats.heif));
+          verifyNever(() => mockItem.getFile(any(), any()));
+        },
+      );
+    });
+
+    test('paste surfaces errors from clipboard file reads', () async {
+      when(() => mockItem.canProvide(Formats.png)).thenReturn(false);
+      when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(true);
+
+      when(() => mockItem.getFile(Formats.jpeg, any())).thenAnswer((
+        invocation,
+      ) {
+        final callback =
+            invocation.positionalArguments[1] as void Function(DataReaderFile);
+        callback(mockFile);
+        return null;
+      });
+
+      when(
+        () => mockFile.readAll(),
+      ).thenThrow(StateError('clipboard read failed'));
+
+      final controller = container.read(
+        imagePasteControllerProvider(
+          linkedFromId: 'testLink',
+          categoryId: 'testCategory',
+        ).notifier,
+      );
+
+      await expectLater(controller.paste(), throwsA(isA<StateError>()));
     });
 
     test(
@@ -495,8 +662,12 @@ void main() {
       // Both items have no supported formats
       when(() => mockItem1.canProvide(Formats.png)).thenReturn(false);
       when(() => mockItem1.canProvide(Formats.jpeg)).thenReturn(false);
+      when(() => mockItem1.canProvide(Formats.heic)).thenReturn(false);
+      when(() => mockItem1.canProvide(Formats.heif)).thenReturn(false);
       when(() => mockItem2.canProvide(Formats.png)).thenReturn(false);
       when(() => mockItem2.canProvide(Formats.jpeg)).thenReturn(false);
+      when(() => mockItem2.canProvide(Formats.heic)).thenReturn(false);
+      when(() => mockItem2.canProvide(Formats.heif)).thenReturn(false);
 
       final controller = container.read(
         imagePasteControllerProvider(
