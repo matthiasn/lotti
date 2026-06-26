@@ -1853,6 +1853,14 @@ class CatClips {
   static const _danceBackupLeftStyle = DanceRoleStyle(
     bodyAccents: [
       DanceBodyAccent(
+        12,
+        radiusFrames: 3,
+        pelvisRotation: -0.025,
+        chestRotation: 0.03,
+        chestScaleY: 0.988,
+        chestScaleX: 1.008,
+      ),
+      DanceBodyAccent(
         24,
         radiusFrames: 8,
         pelvisRotation: -0.07,
@@ -1863,14 +1871,17 @@ class CatClips {
     ],
     ikTargetAccents: {
       CatBones.handR: [
+        DanceIkTargetAccent(12, radiusFrames: 3, x: -3, y: -2, weight: 0.7),
         DanceIkTargetAccent(24, radiusFrames: 8, x: -9, y: -5),
       ],
     },
     jointAccents: {
       CatBones.armUpperR: [
+        DanceJointAccent(12, radiusFrames: 3, rotation: -0.08),
         DanceJointAccent(24, radiusFrames: 8, rotation: -0.2),
       ],
       CatBones.armLowerR: [
+        DanceJointAccent(12, radiusFrames: 3, rotation: 0.08),
         DanceJointAccent(24, radiusFrames: 8, rotation: 0.22),
       ],
     },
@@ -1878,6 +1889,14 @@ class CatClips {
 
   static const _danceBackupRightStyle = DanceRoleStyle(
     bodyAccents: [
+      DanceBodyAccent(
+        12,
+        radiusFrames: 3,
+        pelvisRotation: 0.025,
+        chestRotation: -0.03,
+        chestScaleY: 0.988,
+        chestScaleX: 1.008,
+      ),
       DanceBodyAccent(
         24,
         radiusFrames: 8,
@@ -1889,14 +1908,17 @@ class CatClips {
     ],
     ikTargetAccents: {
       CatBones.handL: [
+        DanceIkTargetAccent(12, radiusFrames: 3, x: 3, y: -2, weight: 0.7),
         DanceIkTargetAccent(24, radiusFrames: 8, x: 9, y: -5),
       ],
     },
     jointAccents: {
       CatBones.armUpperL: [
+        DanceJointAccent(12, radiusFrames: 3, rotation: 0.08),
         DanceJointAccent(24, radiusFrames: 8, rotation: 0.2),
       ],
       CatBones.armLowerL: [
+        DanceJointAccent(12, radiusFrames: 3, rotation: 0.08),
         DanceJointAccent(24, radiusFrames: 8, rotation: 0.22),
       ],
     },

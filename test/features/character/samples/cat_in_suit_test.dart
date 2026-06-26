@@ -184,10 +184,42 @@ void main() {
         final rightHandL = _targetFor(right, CatBones.handL).channel.sample(
           3 / 4,
         );
+        final leadHandRFirstAnswer = _targetFor(
+          lead,
+          CatBones.handR,
+        ).channel.sample(3 / 8);
+        final leftHandRFirstAnswer = _targetFor(
+          left,
+          CatBones.handR,
+        ).channel.sample(3 / 8);
+        final leadHandLFirstAnswer = _targetFor(
+          lead,
+          CatBones.handL,
+        ).channel.sample(3 / 8);
+        final rightHandLFirstAnswer = _targetFor(
+          right,
+          CatBones.handL,
+        ).channel.sample(3 / 8);
         expect(leftHandR.x, closeTo(leadHandR.x - 9, 0.001));
         expect(leftHandR.y, closeTo(leadHandR.y - 5, 0.001));
         expect(rightHandL.x, closeTo(leadHandL.x + 9, 0.001));
         expect(rightHandL.y, closeTo(leadHandL.y - 5, 0.001));
+        expect(
+          leftHandRFirstAnswer.x,
+          closeTo(leadHandRFirstAnswer.x - 2.1, 0.001),
+        );
+        expect(
+          leftHandRFirstAnswer.y,
+          closeTo(leadHandRFirstAnswer.y - 1.4, 0.001),
+        );
+        expect(
+          rightHandLFirstAnswer.x,
+          closeTo(leadHandLFirstAnswer.x + 2.1, 0.001),
+        );
+        expect(
+          rightHandLFirstAnswer.y,
+          closeTo(leadHandLFirstAnswer.y - 1.4, 0.001),
+        );
         expect(
           left.channels[CatBones.legUpperL]!.sample(p).rotation,
           closeTo(lead.channels[CatBones.legUpperL]!.sample(p).rotation, 1e-9),
