@@ -4,6 +4,9 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/character/model/affine2d.dart';
+import 'package:lotti/features/character/model/bone.dart';
+import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/runtime/character_painter.dart';
 import 'package:lotti/features/character/runtime/character_renderer.dart';
@@ -177,6 +180,73 @@ void main() {
         }
       } finally {
         picture.dispose();
+      }
+    });
+  });
+
+  testWidgets('dance contact foot is visually pinned to the floor', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      const width = 320;
+      const height = 360;
+      const canvasSize = Size(320, 360);
+      const feetFraction = 0.78;
+      const expectedFloorY = height * feetFraction;
+
+      for (final t in const [0.0, 0.75, 1.5, 2.25, 3.0, 3.75, 4.5]) {
+        final base = groundedBase(
+          canvasSize,
+          centreX: canvasSize.width / 2,
+          feetFraction: feetFraction,
+          floorY: expectedFloorY,
+          feetOffset: scene.restFeetOffset,
+        );
+        final frame = scene.frameAt(
+          clip: CatClips.dance,
+          timeSeconds: t,
+          base: base,
+        );
+        final contactBone = _activeContactBone(CatClips.dance, t)!;
+        final transform = frame.world[contactBone]!;
+        final drawable = scene.rig.bone(contactBone)!.drawable!;
+        final footBounds = _drawableBounds(transform, drawable);
+
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(recorder);
+        CharacterPainter(
+          scene: scene,
+          clip: CatClips.dance,
+          timeSeconds: t,
+          feetFraction: feetFraction,
+          shadowColor: const Color(0x00000000),
+          renderer: renderer,
+        ).paint(canvas, canvasSize);
+        final picture = recorder.endRecording();
+        try {
+          final image = await picture.toImage(width, height);
+          try {
+            final data = await image.toByteData();
+            final pixels = data!.buffer.asUint8List();
+            final floorPixels = _opaquePixelsInBox(
+              pixels,
+              width,
+              (footBounds.minX - 4).floor(),
+              (footBounds.maxX + 4).ceil(),
+              (expectedFloorY - 4).floor(),
+              (expectedFloorY + 5).ceil(),
+            );
+            expect(
+              floorPixels,
+              greaterThan(0),
+              reason: 'dance contact foot should reach the floor at t=$t',
+            );
+          } finally {
+            image.dispose();
+          }
+        } finally {
+          picture.dispose();
+        }
       }
     });
   });
@@ -372,6 +442,61 @@ void main() {
       }
     });
   });
+}
+
+String? _activeContactBone(Clip clip, double timeSeconds) {
+  final spans = clip.contactSpans.isNotEmpty
+      ? clip.contactSpans
+      : clip.groundSpans;
+  if (spans.isEmpty || clip.duration <= 0) return null;
+  final raw = timeSeconds / clip.duration;
+  final p = clip.loop ? raw - raw.floorToDouble() : raw.clamp(0.0, 1.0);
+  for (final span in spans) {
+    if (p >= span.start && p < span.end) return span.bone;
+  }
+  return spans.last.bone;
+}
+
+({double minX, double maxX}) _drawableBounds(
+  Affine2D transform,
+  BoneDrawable drawable,
+) {
+  final left = drawable.dx - drawable.width / 2;
+  final right = drawable.dx + drawable.width / 2;
+  final top = drawable.dy - drawable.height / 2;
+  final bottom = drawable.dy + drawable.height / 2;
+  final points = [
+    transform.transformPoint(left, top),
+    transform.transformPoint(right, top),
+    transform.transformPoint(left, bottom),
+    transform.transformPoint(right, bottom),
+  ];
+  var minX = points.first.x;
+  var maxX = points.first.x;
+  for (final point in points.skip(1)) {
+    if (point.x < minX) minX = point.x;
+    if (point.x > maxX) maxX = point.x;
+  }
+  return (minX: minX, maxX: maxX);
+}
+
+int _opaquePixelsInBox(
+  Uint8List pixels,
+  int width,
+  int minX,
+  int maxX,
+  int minY,
+  int maxY,
+) {
+  final left = minX.clamp(0, width - 1);
+  final right = maxX.clamp(0, width - 1);
+  var opaque = 0;
+  for (var y = minY; y <= maxY; y++) {
+    for (var x = left; x <= right; x++) {
+      if (pixels[(y * width + x) * 4 + 3] != 0) opaque++;
+    }
+  }
+  return opaque;
 }
 
 ({int r, int g, int b, int a}) _rgbaAt(

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 import 'package:lotti/features/character/model/affine2d.dart';
+import 'package:lotti/features/character/model/bone.dart';
 import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/runtime/character_renderer.dart';
@@ -263,6 +264,8 @@ class CharacterPainter extends CustomPainter {
       }
       canvas.restore();
       if (backdrop == CharacterBackdrop.waterfront) {
+        _paintWaterfrontDirtyGrade(canvas, size, floorY);
+        _paintWaterfrontForegroundGrime(canvas, size, floorY, timeSeconds);
         _paintTopSafeSky(canvas, size);
       }
       return;
@@ -283,8 +286,177 @@ class CharacterPainter extends CustomPainter {
     );
     canvas.restore();
     if (backdrop == CharacterBackdrop.waterfront) {
+      _paintWaterfrontDirtyGrade(canvas, size, floorY);
+      _paintWaterfrontForegroundGrime(canvas, size, floorY, timeSeconds);
       _paintTopSafeSky(canvas, size);
     }
+  }
+
+  void _paintWaterfrontDirtyGrade(Canvas canvas, Size size, double floorY) {
+    _paintDeckGrime(canvas, size, floorY);
+    canvas
+      ..drawRect(
+        Offset.zero & size,
+        Paint()
+          ..blendMode = BlendMode.multiply
+          ..color = const Color(0x6B263D3F),
+      )
+      ..drawRect(
+        Offset.zero & size,
+        Paint()
+          ..blendMode = BlendMode.overlay
+          ..color = const Color(0x2A1B1A16),
+      )
+      ..drawRect(
+        Offset.zero & size,
+        Paint()
+          ..blendMode = BlendMode.color
+          ..color = const Color(0x2420312F),
+      )
+      ..drawRect(
+        Rect.fromLTRB(0, size.height * 0.52, size.width, size.height),
+        Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(0, size.height * 0.52),
+            Offset(0, size.height),
+            const [Color(0x00211D18), Color(0x7A201B16)],
+          ),
+      )
+      ..drawOval(
+        Rect.fromCenter(
+          center: Offset(size.width * 0.5, floorY - size.height * 0.12),
+          width: size.width * 1.18,
+          height: size.height * 0.46,
+        ),
+        Paint()
+          ..blendMode = BlendMode.multiply
+          ..shader = ui.Gradient.radial(
+            Offset(size.width * 0.5, floorY - size.height * 0.12),
+            size.width * 0.58,
+            const [Color(0x00191E20), Color(0x68131617)],
+          ),
+      );
+  }
+
+  void _paintWaterfrontForegroundGrime(
+    Canvas canvas,
+    Size size,
+    double floorY,
+    double timeSeconds,
+  ) {
+    final cablePaint = Paint()
+      ..blendMode = BlendMode.multiply
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = math.max(2, size.width * 0.003)
+      ..color = const Color(0x8A171512);
+    final sway = math.sin(timeSeconds * 0.7) * size.height * 0.004;
+    for (var i = 0; i < 3; i++) {
+      final y = size.height * (0.12 + i * 0.045) + sway * (i + 1);
+      final path = Path()
+        ..moveTo(-size.width * 0.05, y)
+        ..quadraticBezierTo(
+          size.width * (0.34 + i * 0.08),
+          y + size.height * (0.026 + i * 0.008),
+          size.width * 1.05,
+          y - size.height * (0.018 - i * 0.004),
+        );
+      canvas.drawPath(path, cablePaint);
+    }
+
+    final postPaint = Paint()
+      ..blendMode = BlendMode.multiply
+      ..shader = ui.Gradient.linear(
+        Offset(0, floorY - size.height * 0.28),
+        Offset(0, size.height),
+        const [Color(0xBE1B1711), Color(0xF0181511)],
+      );
+    for (final x in [
+      -size.width * 0.025,
+      size.width * 0.965,
+    ]) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            x,
+            floorY - size.height * 0.24,
+            size.width * 0.035,
+            size.height * 0.38,
+          ),
+          Radius.circular(size.width * 0.008),
+        ),
+        postPaint,
+      );
+    }
+
+    final puddlePaint = Paint()
+      ..blendMode = BlendMode.screen
+      ..shader = ui.Gradient.radial(
+        Offset(size.width * 0.5, floorY + size.height * 0.07),
+        size.width * 0.48,
+        const [Color(0x2D546461), Color(0x00303A38)],
+      );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.5, floorY + size.height * 0.07),
+        width: size.width * 0.74,
+        height: size.height * 0.12,
+      ),
+      puddlePaint,
+    );
+
+    final grainPaint = Paint()
+      ..blendMode = BlendMode.multiply
+      ..strokeWidth = 1
+      ..color = const Color(0x1C15120F);
+    for (var i = 0; i < 72; i++) {
+      final x = size.width * ((i * 0.619 + 0.13) % 1);
+      final y = size.height * ((i * 0.347 + 0.08) % 1);
+      final len = size.width * (0.004 + 0.008 * ((i * 11) % 7) / 6);
+      canvas.drawLine(
+        Offset(x, y),
+        Offset(x + len, y + len * 0.28),
+        grainPaint,
+      );
+    }
+  }
+
+  void _paintDeckGrime(Canvas canvas, Size size, double floorY) {
+    final deckTop = size.height * 0.63;
+    canvas
+      ..save()
+      ..clipRect(Rect.fromLTRB(0, deckTop, size.width, size.height));
+    final stainPaint = Paint()
+      ..blendMode = BlendMode.multiply
+      ..color = const Color(0x24201713);
+    for (var i = 0; i < 18; i++) {
+      final x = size.width * ((i * 0.137 + 0.09) % 1);
+      final y = deckTop + (floorY - deckTop) * ((i * 0.173 + 0.21) % 1);
+      final w = size.width * (0.018 + 0.018 * ((i * 7) % 5) / 4);
+      final h = size.height * (0.006 + 0.008 * ((i * 5 + 2) % 6) / 5);
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(x, y), width: w, height: h),
+        stainPaint,
+      );
+    }
+
+    final scratchPaint = Paint()
+      ..blendMode = BlendMode.multiply
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = math.max(0.7, size.width * 0.001)
+      ..color = const Color(0x34251B12);
+    for (var i = 0; i < 26; i++) {
+      final startX = size.width * ((i * 0.071 + 0.04) % 1);
+      final y = deckTop + (size.height - deckTop) * ((i * 0.113 + 0.17) % 1);
+      final length = size.width * (0.035 + 0.05 * ((i * 3) % 7) / 6);
+      final drift = size.height * (0.003 + 0.009 * ((i * 11) % 5) / 4);
+      canvas.drawLine(
+        Offset(startX, y),
+        Offset(startX + length, y + drift),
+        scratchPaint,
+      );
+    }
+    canvas.restore();
   }
 
   void _paintTopSafeSky(Canvas canvas, Size size) {
@@ -296,9 +468,9 @@ class CharacterPainter extends CustomPainter {
           Offset.zero,
           Offset(0, height),
           const [
-            Color(0xFF3DB9E9),
-            Color(0xCC47BFEA),
-            Color(0x003DB9E9),
+            Color(0xFF566A6F),
+            Color(0xCC61757A),
+            Color(0x00566A6F),
           ],
           const [0, 0.46, 1],
         ),
@@ -330,12 +502,12 @@ class CharacterPainter extends CustomPainter {
 
   static double _roleScale(int index, int memberCount) {
     if (memberCount < 3) return 1;
-    return index == 1 ? 1.06 : 0.94;
+    return index == 1 ? 1.12 : 0.9;
   }
 
   static double _roleFloorOffset(int index, int memberCount) {
     if (memberCount < 3) return 0;
-    return index == 1 ? -28 : -40;
+    return index == 1 ? -16 : -48;
   }
 
   static ({double zoom, double dx, double dy}) _danceCamera(
@@ -386,22 +558,52 @@ class CharacterPainter extends CustomPainter {
     final p = _cyclePhase(timeSeconds, duration);
     final breathe = math.sin(2 * math.pi * (p * 3 + 0.15));
     final callResponse = math.sin(2 * math.pi * (p * 2 - 0.08));
+    final leadCall = _pulse(p, 1 / 16, 1 / 4);
+    final sideAnswer = _pulse(p, 5 / 16, 1 / 2);
     final blackSolo = _pulse(p, 3 / 8, 1 / 2);
     final wideV = _pulse(p, 1 / 2, 3 / 4);
     final centreFeature = _pulse(p, 17 / 32, 23 / 32);
+    final ensembleHit = _pulse(p, 23 / 32, 27 / 32);
     final returnLock = _smoothUnit((p - 25 / 32) / (4 / 32));
     return switch (index) {
       0 => (
-        dx: (-12 - 8 * breathe - 12 * wideV) * (1 - returnLock),
-        dy: -6 + 3 * callResponse - 5 * blackSolo - 7 * wideV,
+        dx:
+            (-22 - 10 * breathe - 18 * sideAnswer - 16 * wideV) *
+            (1 - returnLock),
+        dy:
+            -10 +
+            3 * callResponse -
+            8 * leadCall -
+            12 * sideAnswer -
+            9 * wideV +
+            7 * ensembleHit,
       ),
       1 => (
-        dx: 0,
-        dy: 8 - 4 * blackSolo + 5 * wideV + 8 * centreFeature,
+        dx: 4 * leadCall - 4 * ensembleHit,
+        dy:
+            12 -
+            12 * leadCall -
+            5 * blackSolo +
+            7 * wideV +
+            12 * centreFeature -
+            8 * ensembleHit,
       ),
       2 => (
-        dx: (12 + 8 * breathe + 14 * blackSolo + 12 * wideV) * (1 - returnLock),
-        dy: -6 - 3 * callResponse + 11 * blackSolo - 7 * wideV,
+        dx:
+            (22 +
+                10 * breathe +
+                16 * sideAnswer +
+                22 * blackSolo +
+                16 * wideV) *
+            (1 - returnLock),
+        dy:
+            -10 -
+            3 * callResponse -
+            5 * leadCall -
+            10 * sideAnswer +
+            18 * blackSolo -
+            9 * wideV +
+            7 * ensembleHit,
       ),
       _ => (dx: 0, dy: 0),
     };
@@ -525,7 +727,7 @@ class CharacterPainter extends CustomPainter {
     canvas
       ..drawRect(
         Rect.fromLTRB(0, 0, size.width, deckTop),
-        Paint()..color = const Color(0x20E7F2F2),
+        Paint()..color = const Color(0x4F203639),
       )
       ..drawRect(
         Rect.fromLTRB(0, deckTop, size.width, floorY + 18),
@@ -533,7 +735,7 @@ class CharacterPainter extends CustomPainter {
           ..shader = ui.Gradient.linear(
             Offset(0, deckTop),
             Offset(0, floorY + 18),
-            const [Color(0x00FFFFFF), Color(0x143D2B1E)],
+            const [Color(0x001B1713), Color(0x7A1A1612)],
           ),
       )
       ..drawOval(
@@ -546,7 +748,7 @@ class CharacterPainter extends CustomPainter {
           ..shader = ui.Gradient.radial(
             Offset(size.width * 0.5, floorY - size.height * 0.07),
             size.width * 0.43,
-            const [Color(0x30FFE0A8), Color(0x00FFE0A8)],
+            const [Color(0x30332621), Color(0x00312621)],
           ),
       );
     _paintDistanceHaze(canvas, size, deckTop);
@@ -574,11 +776,11 @@ class CharacterPainter extends CustomPainter {
             Offset(0, skylineTop),
             Offset(0, deckTop),
             const [
-              Color(0x00DDEFF5),
-              Color(0x38DDEFF5),
-              Color(0x54E8E0CF),
-              Color(0x18DDEFF5),
-              Color(0x00FFFFFF),
+              Color(0x00304042),
+              Color(0x78647776),
+              Color(0xA8645E55),
+              Color(0x60475B5D),
+              Color(0x001B2426),
             ],
             const [0, 0.3, 0.5, 0.74, 1],
           ),
@@ -593,7 +795,7 @@ class CharacterPainter extends CustomPainter {
           ..shader = ui.Gradient.radial(
             Offset(size.width * 0.36, horizonY),
             size.width * 0.46,
-            const [Color(0x56E9E2D3), Color(0x00E9E2D3)],
+            const [Color(0xA4645C52), Color(0x00645C52)],
           ),
       )
       ..drawRect(
@@ -602,7 +804,7 @@ class CharacterPainter extends CustomPainter {
           ..shader = ui.Gradient.linear(
             Offset(0, waterFarY),
             Offset(0, deckTop),
-            const [Color(0x28D9F2F6), Color(0x00D9F2F6)],
+            const [Color(0x56506263), Color(0x00506263)],
           ),
       );
   }
@@ -640,7 +842,7 @@ class CharacterPainter extends CustomPainter {
           ..shader = ui.Gradient.linear(
             Offset(rect.left, 0),
             Offset(rect.right, size.height * 0.32),
-            const [Color(0x88FFFFFF), Color(0x44EAF8FF)],
+            const [Color(0x6CC8C6B7), Color(0x365F7477)],
           ),
       );
     }
@@ -664,8 +866,8 @@ class CharacterPainter extends CustomPainter {
             Offset(rect.right, waveClip.bottom),
             const [
               Color(0x00FFFFFF),
-              Color(0x8FFFFFFF),
-              Color(0x4A9EF2FF),
+              Color(0x62D8D1BC),
+              Color(0x385F9DA3),
               Color(0x00FFFFFF),
             ],
             const [0, 0.42, 0.68, 1],
@@ -684,8 +886,8 @@ class CharacterPainter extends CustomPainter {
             Offset(rect.right, waveClip.bottom),
             const [
               Color(0x00FFFFFF),
-              Color(0x3DEFFFFF),
-              Color(0x2480E8FF),
+              Color(0x2ED8D0BE),
+              Color(0x225C8589),
               Color(0x00FFFFFF),
             ],
             const [0, 0.48, 0.72, 1],
@@ -761,19 +963,112 @@ class CharacterPainter extends CustomPainter {
       base: base,
       eyeOpenScale: eyeOpenScale,
     );
+    final groundedFrame = _floorPinnedPerformanceFrame(
+      frame,
+      drawScene,
+      clip,
+      timeSeconds,
+      expression,
+      base,
+      floorY,
+    );
 
     _paintContactShadows(
       canvas,
       floorY,
       centreX,
       scale,
-      frame,
+      groundedFrame,
       timeSeconds,
       drawScene,
       clip,
     );
 
-    _renderer.paint(canvas, drawScene.rig, frame.world, frame.face);
+    _renderer.paint(
+      canvas,
+      drawScene.rig,
+      groundedFrame.world,
+      groundedFrame.face,
+    );
+  }
+
+  CharacterFrame _floorPinnedPerformanceFrame(
+    CharacterFrame frame,
+    CharacterScene drawScene,
+    Clip clip,
+    double timeSeconds,
+    Expression expression,
+    Affine2D base,
+    double floorY,
+  ) {
+    if (clip.locomotes) return frame;
+    final contactSpan = _activeGroundSpan(clip, timeSeconds);
+    if (contactSpan == null) return frame;
+    final transform = frame.world[contactSpan.bone];
+    final drawable = drawScene.rig.bone(contactSpan.bone)?.drawable;
+    if (transform == null || drawable == null) return frame;
+
+    final targetFrame = drawScene.frameAt(
+      clip: clip,
+      timeSeconds: _spanStartTime(clip, timeSeconds, contactSpan.start),
+      expression: expression,
+      base: base,
+      eyeOpenScale: eyeOpenScale,
+    );
+    final targetTransform = targetFrame.world[contactSpan.bone];
+    final targetDrawable = drawScene.rig.bone(contactSpan.bone)?.drawable;
+    final visualBottom = _drawableVisualBottom(transform, drawable);
+    final currentContact = _drawableFootContact(transform, drawable);
+    final targetContact = targetTransform == null || targetDrawable == null
+        ? currentContact
+        : _drawableFootContact(targetTransform, targetDrawable);
+    final dx = targetContact.x - currentContact.x;
+    final dy = floorY - visualBottom;
+    if (dx.abs() < 0.2 && dy.abs() < 0.2) return frame;
+    final correction = Affine2D.translation(dx, dy);
+    return CharacterFrame(
+      world: {
+        for (final entry in frame.world.entries)
+          entry.key: correction.multiply(entry.value),
+      },
+      face: frame.face,
+      locomotionX: frame.locomotionX,
+    );
+  }
+
+  static double _spanStartTime(Clip clip, double timeSeconds, double start) {
+    if (clip.duration <= 0) return timeSeconds;
+    if (!clip.loop) return start * clip.duration;
+    final raw = timeSeconds / clip.duration;
+    return (raw.floorToDouble() + start) * clip.duration;
+  }
+
+  static ({double x, double y}) _drawableFootContact(
+    Affine2D transform,
+    BoneDrawable drawable,
+  ) => transform.transformPoint(
+    drawable.dx,
+    drawable.dy + drawable.height / 2,
+  );
+
+  static double _drawableVisualBottom(
+    Affine2D transform,
+    BoneDrawable drawable,
+  ) {
+    final left = drawable.dx - drawable.width / 2;
+    final right = drawable.dx + drawable.width / 2;
+    final top = drawable.dy - drawable.height / 2;
+    final bottom = drawable.dy + drawable.height / 2;
+    return math.max(
+      math.max(
+        transform.transformPoint(left, top).y,
+        transform.transformPoint(right, top).y,
+      ),
+      math.max(
+        transform.transformPoint(left, bottom).y,
+        transform.transformPoint(right, bottom).y,
+      ),
+    );
   }
 
   void _paintContactShadows(
@@ -804,10 +1099,11 @@ class CharacterPainter extends CustomPainter {
       );
       final lift = ((floorY - bottom.y) / (90 * scale)).clamp(0.0, 1.0);
       final active = boneId == contactBone;
-      final shadowW = (active ? 62 : 46) * scale * (1 - 0.35 * lift);
+      final shadowW = (active ? 72 : 48) * scale * (1 - 0.35 * lift);
       final baseAlpha = (shadowColor.a * 255.0).round();
+      final activeBoost = backdrop == CharacterBackdrop.waterfront ? 2.45 : 1.9;
       final shadowAlpha =
-          (baseAlpha * (active ? 1.75 : 0.72) * (1 - 0.82 * lift))
+          (baseAlpha * (active ? activeBoost : 0.8) * (1 - 0.82 * lift))
               .round()
               .clamp(0, 255);
       canvas.drawOval(
@@ -818,6 +1114,22 @@ class CharacterPainter extends CustomPainter {
         ),
         Paint()..color = shadowColor.withAlpha(shadowAlpha),
       );
+      if (active) {
+        final contactAlpha =
+            (baseAlpha *
+                    (backdrop == CharacterBackdrop.waterfront ? 3.2 : 2.4) *
+                    (1 - 0.7 * lift))
+                .round()
+                .clamp(0, 255);
+        canvas.drawOval(
+          Rect.fromCenter(
+            center: Offset(bottom.x, floorY + 0.5),
+            width: shadowW * 0.62,
+            height: shadowW * 0.065,
+          ),
+          Paint()..color = shadowColor.withAlpha(contactAlpha),
+        );
+      }
     }
   }
 
@@ -833,6 +1145,10 @@ class CharacterPainter extends CustomPainter {
   }
 
   String? _activeGroundBone(Clip clip, double timeSeconds) {
+    return _activeGroundSpan(clip, timeSeconds)?.bone;
+  }
+
+  GroundSpan? _activeGroundSpan(Clip clip, double timeSeconds) {
     final spans = clip.contactSpans.isNotEmpty
         ? clip.contactSpans
         : clip.groundSpans;
@@ -840,9 +1156,9 @@ class CharacterPainter extends CustomPainter {
     final raw = timeSeconds / clip.duration;
     final p = clip.loop ? raw - raw.floorToDouble() : raw.clamp(0.0, 1.0);
     for (final span in spans) {
-      if (p >= span.start && p < span.end) return span.bone;
+      if (p >= span.start && p < span.end) return span;
     }
-    return spans.last.bone;
+    return spans.last;
   }
 
   void _paintBodyShadow(
@@ -855,10 +1171,15 @@ class CharacterPainter extends CustomPainter {
   ) {
     final footY = drawScene.lowestDrawnY(frame.world);
     final lift = ((floorY - footY) / (90 * scale)).clamp(0.0, 1.0);
-    final shadowW = 78 * scale * (1 - 0.45 * lift);
-    final shadowAlpha = ((shadowColor.a * 255.0).round() * (1 - 0.7 * lift))
-        .round()
-        .clamp(0, 255);
+    final shadowW =
+        (backdrop == CharacterBackdrop.waterfront ? 92 : 78) *
+        scale *
+        (1 - 0.45 * lift);
+    final alphaBoost = backdrop == CharacterBackdrop.waterfront ? 1.75 : 1.0;
+    final shadowAlpha =
+        ((shadowColor.a * 255.0).round() * alphaBoost * (1 - 0.7 * lift))
+            .round()
+            .clamp(0, 255);
     canvas.drawOval(
       Rect.fromCenter(
         center: Offset(centreX, floorY),
