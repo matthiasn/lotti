@@ -135,9 +135,9 @@ class CharacterPainter extends CustomPainter {
   // Keep the cat this far from the stage edges as it walks back and forth.
   static const double _edgeMargin = 44;
   static const double _pairScaleFactor = 0.7;
-  static const double _trioScaleFactor = 0.49;
+  static const double _trioScaleFactor = 0.58;
   static const double _pairSpacing = 215;
-  static const double _trioSpacing = 236;
+  static const double _trioSpacing = 214;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -164,7 +164,6 @@ class CharacterPainter extends CustomPainter {
         backdropCloudsImage,
         backdropWavesImage,
       );
-      _paintWaterfrontAtmosphere(canvas, size, floorY);
     } else if (groundColor != null) {
       canvas.drawRect(
         Rect.fromLTWH(0, floorY, size.width, size.height - floorY),
@@ -263,9 +262,6 @@ class CharacterPainter extends CustomPainter {
         );
       }
       canvas.restore();
-      if (backdrop == CharacterBackdrop.waterfront) {
-        _paintTopSafeSky(canvas, size);
-      }
       return;
     }
 
@@ -283,27 +279,6 @@ class CharacterPainter extends CustomPainter {
       feetFraction: feetFraction,
     );
     canvas.restore();
-    if (backdrop == CharacterBackdrop.waterfront) {
-      _paintTopSafeSky(canvas, size);
-    }
-  }
-
-  void _paintTopSafeSky(Canvas canvas, Size size) {
-    final height = size.height * 0.085;
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, height),
-      Paint()
-        ..shader = ui.Gradient.linear(
-          Offset.zero,
-          Offset(0, height),
-          const [
-            Color(0xFF566A6F),
-            Color(0xCC61757A),
-            Color(0x00566A6F),
-          ],
-          const [0, 0.46, 1],
-        ),
-    );
   }
 
   static void _applySceneCamera(
@@ -336,7 +311,7 @@ class CharacterPainter extends CustomPainter {
 
   static double _roleFloorOffset(int index, int memberCount) {
     if (memberCount < 3) return 0;
-    return index == 1 ? -16 : -48;
+    return index == 1 ? -8 : -24;
   }
 
   static ({double zoom, double dx, double dy}) _danceCamera(
@@ -396,43 +371,37 @@ class CharacterPainter extends CustomPainter {
     final returnLock = _smoothUnit((p - 25 / 32) / (4 / 32));
     return switch (index) {
       0 => (
-        dx:
-            (-22 - 10 * breathe - 18 * sideAnswer - 16 * wideV) *
-            (1 - returnLock),
+        dx: (-14 - 5 * breathe - 8 * sideAnswer - 7 * wideV) * (1 - returnLock),
         dy:
-            -10 +
-            3 * callResponse -
-            8 * leadCall -
-            12 * sideAnswer -
-            9 * wideV +
-            7 * ensembleHit,
+            -5 +
+            1.5 * callResponse -
+            4 * leadCall -
+            5 * sideAnswer -
+            4 * wideV +
+            3 * ensembleHit,
       ),
       1 => (
-        dx: 4 * leadCall - 4 * ensembleHit,
+        dx: 2 * leadCall - 2 * ensembleHit,
         dy:
-            12 -
-            12 * leadCall -
-            5 * blackSolo +
-            7 * wideV +
-            12 * centreFeature -
-            8 * ensembleHit,
+            5 -
+            5 * leadCall -
+            2 * blackSolo +
+            3 * wideV +
+            5 * centreFeature -
+            3 * ensembleHit,
       ),
       2 => (
         dx:
-            (22 +
-                10 * breathe +
-                16 * sideAnswer +
-                22 * blackSolo +
-                16 * wideV) *
+            (14 + 5 * breathe + 7 * sideAnswer + 9 * blackSolo + 7 * wideV) *
             (1 - returnLock),
         dy:
-            -10 -
-            3 * callResponse -
-            5 * leadCall -
-            10 * sideAnswer +
-            18 * blackSolo -
-            9 * wideV +
-            7 * ensembleHit,
+            -5 -
+            1.5 * callResponse -
+            2 * leadCall -
+            4 * sideAnswer +
+            7 * blackSolo -
+            4 * wideV +
+            3 * ensembleHit,
       ),
       _ => (dx: 0, dy: 0),
     };
@@ -549,37 +518,6 @@ class CharacterPainter extends CustomPainter {
       backdropCloudsImage,
       backdropWavesImage,
     );
-  }
-
-  void _paintWaterfrontAtmosphere(Canvas canvas, Size size, double floorY) {
-    final deckTop = size.height * 0.63;
-    canvas
-      ..drawRect(
-        Rect.fromLTRB(0, 0, size.width, deckTop),
-        Paint()..color = const Color(0x14203639),
-      )
-      ..drawRect(
-        Rect.fromLTRB(0, deckTop, size.width, floorY + 18),
-        Paint()
-          ..shader = ui.Gradient.linear(
-            Offset(0, deckTop),
-            Offset(0, floorY + 18),
-            const [Color(0x001B1713), Color(0x241A1612)],
-          ),
-      )
-      ..drawOval(
-        Rect.fromCenter(
-          center: Offset(size.width * 0.5, floorY - size.height * 0.07),
-          width: size.width * 0.86,
-          height: size.height * 0.2,
-        ),
-        Paint()
-          ..shader = ui.Gradient.radial(
-            Offset(size.width * 0.5, floorY - size.height * 0.07),
-            size.width * 0.43,
-            const [Color(0x14332621), Color(0x00312621)],
-          ),
-      );
   }
 
   void _paintWaterfrontPlate(
@@ -874,9 +812,9 @@ class CharacterPainter extends CustomPainter {
       final active = boneId == contactBone;
       final shadowW = (active ? 72 : 48) * scale * (1 - 0.35 * lift);
       final baseAlpha = (shadowColor.a * 255.0).round();
-      final activeBoost = backdrop == CharacterBackdrop.waterfront ? 2.45 : 1.9;
+      final activeBoost = backdrop == CharacterBackdrop.waterfront ? 3.15 : 2.1;
       final shadowAlpha =
-          (baseAlpha * (active ? activeBoost : 0.8) * (1 - 0.82 * lift))
+          (baseAlpha * (active ? activeBoost : 0.45) * (1 - 0.82 * lift))
               .round()
               .clamp(0, 255);
       canvas.drawOval(
@@ -890,7 +828,7 @@ class CharacterPainter extends CustomPainter {
       if (active) {
         final contactAlpha =
             (baseAlpha *
-                    (backdrop == CharacterBackdrop.waterfront ? 3.2 : 2.4) *
+                    (backdrop == CharacterBackdrop.waterfront ? 4.1 : 2.6) *
                     (1 - 0.7 * lift))
                 .round()
                 .clamp(0, 255);
