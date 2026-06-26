@@ -91,7 +91,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
 
   @override
   void initState() {
-    final provider = taskAppBarControllerProvider(id: widget.taskId);
+    final provider = taskAppBarControllerProvider(widget.taskId);
     _updateOffsetListener = () => ref
         .read(provider.notifier)
         .updateOffset(
@@ -219,7 +219,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
 
   @override
   Widget build(BuildContext context) {
-    final focusProvider = taskFocusControllerProvider(id: widget.taskId);
+    final focusProvider = taskFocusControllerProvider(widget.taskId);
 
     void handleFocus(TaskFocusIntent? intent, {bool isInitialLoad = false}) {
       if (intent == null) return;
@@ -258,7 +258,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
         _onSuggestionsChanged,
       );
 
-    final provider = entryControllerProvider(id: widget.taskId);
+    final provider = entryControllerProvider(widget.taskId);
     final asyncTask = ref.watch(provider);
     final task = asyncTask.value?.entry;
 

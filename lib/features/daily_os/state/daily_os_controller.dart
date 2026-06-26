@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
@@ -9,9 +10,6 @@ import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.d
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'daily_os_controller.g.dart';
 
 /// The three stacked sections that make up the Daily OS scroll view, in
 /// render order. Used by [DailyOsController.toggleSection] to drive the
@@ -115,8 +113,14 @@ class DailyOsState {
 /// midnight. This is the keep-it-simple selection that every section watches;
 /// changing it re-keys [unifiedDailyOsDataControllerProvider] and reloads the
 /// whole view for the new day.
-@riverpod
-class DailyOsSelectedDate extends _$DailyOsSelectedDate {
+final NotifierProvider<DailyOsSelectedDate, DateTime>
+dailyOsSelectedDateProvider =
+    NotifierProvider.autoDispose<DailyOsSelectedDate, DateTime>(
+      DailyOsSelectedDate.new,
+      name: 'dailyOsSelectedDateProvider',
+    );
+
+class DailyOsSelectedDate extends Notifier<DateTime> {
   @override
   DateTime build() {
     return DateTime.now().dayAtMidnight;
@@ -149,8 +153,14 @@ class DailyOsSelectedDate extends _$DailyOsSelectedDate {
 /// Combines day plan, budget progress, and timeline data into a unified state.
 /// Uses the UnifiedDailyOsDataController for data that auto-updates when
 /// entries are created or synced.
-@riverpod
-class DailyOsController extends _$DailyOsController {
+final AsyncNotifierProvider<DailyOsController, DailyOsState>
+dailyOsControllerProvider =
+    AsyncNotifierProvider.autoDispose<DailyOsController, DailyOsState>(
+      DailyOsController.new,
+      name: 'dailyOsControllerProvider',
+    );
+
+class DailyOsController extends AsyncNotifier<DailyOsState> {
   @override
   Future<DailyOsState> build() async {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
@@ -158,7 +168,7 @@ class DailyOsController extends _$DailyOsController {
     // Watch the unified controller which handles all data fetching
     // and auto-updates via stream subscription
     final unifiedData = await ref.watch(
-      unifiedDailyOsDataControllerProvider(date: selectedDate).future,
+      unifiedDailyOsDataControllerProvider(selectedDate).future,
     );
 
     return DailyOsState(
@@ -241,14 +251,22 @@ class DailyOsController extends _$DailyOsController {
 }
 
 /// Provides just the highlighted category ID for efficient rebuilds.
-@riverpod
+final Provider<String?> highlightedCategoryIdProvider =
+    Provider.autoDispose<String?>(
+      highlightedCategoryId,
+      name: 'highlightedCategoryIdProvider',
+    );
 String? highlightedCategoryId(Ref ref) {
   final controllerAsync = ref.watch(dailyOsControllerProvider);
   return controllerAsync.value?.highlightedCategoryId;
 }
 
 /// Provides just the expanded fold regions for efficient rebuilds.
-@riverpod
+final Provider<Set<int>> expandedFoldRegionsProvider =
+    Provider.autoDispose<Set<int>>(
+      expandedFoldRegions,
+      name: 'expandedFoldRegionsProvider',
+    );
 Set<int> expandedFoldRegions(Ref ref) {
   final controllerAsync = ref.watch(dailyOsControllerProvider);
   return controllerAsync.value?.expandedFoldRegions ?? {};
@@ -267,13 +285,17 @@ Set<int> expandedFoldRegions(Ref ref) {
 /// Re-evaluates every 15 seconds to keep the focus state reasonably current
 /// without excessive resource usage. Handles midnight crossings by
 /// recalculating "today" on each iteration.
-@riverpod
+final StreamProvider<String?> activeFocusCategoryIdProvider =
+    StreamProvider.autoDispose<String?>(
+      activeFocusCategoryId,
+      name: 'activeFocusCategoryIdProvider',
+    );
 Stream<String?> activeFocusCategoryId(Ref ref) async* {
   // Track the current date to detect midnight crossings
   final currentDate = clock.now().dayAtMidnight;
 
   // Establish initial dependency on today's unified data
-  ref.watch(unifiedDailyOsDataControllerProvider(date: currentDate));
+  ref.watch(unifiedDailyOsDataControllerProvider(currentDate));
 
   // Use a Completer to break out of the loop when the provider is disposed,
   // preventing ref.read() calls on an already-disposed Ref.
@@ -293,7 +315,7 @@ Stream<String?> activeFocusCategoryId(Ref ref) async* {
 
     // Use ref.read inside the loop for fresh data reads
     final todayData = ref.read(
-      unifiedDailyOsDataControllerProvider(date: today),
+      unifiedDailyOsDataControllerProvider(today),
     );
 
     final result = todayData.whenOrNull(
@@ -326,8 +348,14 @@ Stream<String?> activeFocusCategoryId(Ref ref) async* {
 /// Returns the category ID (from linkedFrom or the entry itself) when a timer
 /// is actively running, or null when no timer is running.
 /// Used for visual indicators in the UI (e.g., showing a timer icon).
-@riverpod
-class RunningTimerCategoryId extends _$RunningTimerCategoryId {
+final NotifierProvider<RunningTimerCategoryId, String?>
+runningTimerCategoryIdProvider =
+    NotifierProvider.autoDispose<RunningTimerCategoryId, String?>(
+      RunningTimerCategoryId.new,
+      name: 'runningTimerCategoryIdProvider',
+    );
+
+class RunningTimerCategoryId extends Notifier<String?> {
   late TimeService _timeService;
   StreamSubscription<JournalEntity?>? _subscription;
 

@@ -22,7 +22,7 @@ import '../../../../../widget_test_utils.dart';
 
 class _TestEntryController extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     controller = QuillController.basic();
     return EntryState.saved(
       entryId: id,
@@ -53,7 +53,7 @@ class _UnsavedSaveButtonController extends SaveButtonController {
   bool saveCalled = false;
 
   @override
-  Future<bool?> build({required String id}) async => true;
+  Future<bool?> build() async => true;
 
   @override
   Future<void> save({Duration? estimate}) async {
@@ -97,7 +97,7 @@ void main() {
   }) {
     final container = ProviderContainer(
       overrides: [
-        entryControllerProvider(id: entryId).overrideWith(
+        entryControllerProvider(entryId).overrideWith(
           controllerFactory ?? _TestEntryController.new,
         ),
         ...extraOverrides,
@@ -105,7 +105,7 @@ void main() {
     );
     addTearDown(container.dispose);
     final sub = container.listen(
-      entryControllerProvider(id: entryId),
+      entryControllerProvider(entryId),
       (_, _) {},
     );
     addTearDown(sub.close);
@@ -147,7 +147,7 @@ void main() {
       (tester) async {
         final container = makeKeptAliveContainer();
         final notifier = container.read(
-          entryControllerProvider(id: entryId).notifier,
+          entryControllerProvider(entryId).notifier,
         );
 
         await tester.pumpWidget(buildSubject(container));
@@ -194,7 +194,7 @@ void main() {
         // Render the static (post-animation) branch so the toolbar is at full
         // height and the buttons are hittable.
         container
-                .read(entryControllerProvider(id: entryId).notifier)
+                .read(entryControllerProvider(entryId).notifier)
                 .animationCompleted =
             true;
         await tester.pumpWidget(buildSubject(container));
@@ -225,7 +225,7 @@ void main() {
       (tester) async {
         final container = makeKeptAliveContainer();
         container
-                .read(entryControllerProvider(id: entryId).notifier)
+                .read(entryControllerProvider(entryId).notifier)
                 .animationCompleted =
             true;
         await tester.pumpWidget(buildSubject(container));
@@ -256,7 +256,7 @@ void main() {
 
         final container = makeKeptAliveContainer();
         container
-                .read(entryControllerProvider(id: entryId).notifier)
+                .read(entryControllerProvider(entryId).notifier)
                 .animationCompleted =
             true;
         await tester.pumpWidget(buildSubject(container));
@@ -283,13 +283,13 @@ void main() {
         final saveSpy = _UnsavedSaveButtonController();
         final container = makeKeptAliveContainer(
           extraOverrides: [
-            saveButtonControllerProvider(id: entryId).overrideWith(
+            saveButtonControllerProvider(entryId).overrideWith(
               () => saveSpy,
             ),
           ],
         );
         container
-                .read(entryControllerProvider(id: entryId).notifier)
+                .read(entryControllerProvider(entryId).notifier)
                 .animationCompleted =
             true;
         await tester.pumpWidget(buildSubject(container));
@@ -316,13 +316,13 @@ void main() {
         final container = makeKeptAliveContainer(
           controllerFactory: () => spy,
           extraOverrides: [
-            saveButtonControllerProvider(id: entryId).overrideWith(
+            saveButtonControllerProvider(entryId).overrideWith(
               _UnsavedSaveButtonController.new,
             ),
           ],
         );
         container
-                .read(entryControllerProvider(id: entryId).notifier)
+                .read(entryControllerProvider(entryId).notifier)
                 .animationCompleted =
             true;
         await tester.pumpWidget(buildSubject(container));

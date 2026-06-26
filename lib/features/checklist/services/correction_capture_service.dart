@@ -2,19 +2,21 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/utils/string_utils.dart' as string_utils;
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'correction_capture_service.g.dart';
 
 /// Duration before a pending correction is automatically saved.
 const kCorrectionSaveDelay = Duration(seconds: 5);
 
 /// Provider for the correction capture service.
-@riverpod
+final Provider<CorrectionCaptureService> correctionCaptureServiceProvider =
+    Provider.autoDispose<CorrectionCaptureService>(
+      correctionCaptureService,
+      name: 'correctionCaptureServiceProvider',
+    );
 CorrectionCaptureService correctionCaptureService(Ref ref) {
   return CorrectionCaptureService(
     categoryRepository: ref.watch(categoryRepositoryProvider),
@@ -24,8 +26,14 @@ CorrectionCaptureService correctionCaptureService(Ref ref) {
 
 /// Notifier for pending correction with countdown.
 /// UI watches this to show the snackbar with undo functionality.
-@riverpod
-class CorrectionCaptureNotifier extends _$CorrectionCaptureNotifier {
+final NotifierProvider<CorrectionCaptureNotifier, PendingCorrection?>
+correctionCaptureProvider =
+    NotifierProvider.autoDispose<CorrectionCaptureNotifier, PendingCorrection?>(
+      CorrectionCaptureNotifier.new,
+      name: 'correctionCaptureProvider',
+    );
+
+class CorrectionCaptureNotifier extends Notifier<PendingCorrection?> {
   Timer? _saveTimer;
 
   @override

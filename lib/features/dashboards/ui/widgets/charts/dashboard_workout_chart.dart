@@ -74,11 +74,11 @@ class DashboardWorkoutChart extends ConsumerWidget {
 
     return StaleAsyncValue<List<Observation>>(
       async: ref.watch(
-        workoutObservationsControllerProvider(
+        workoutObservationsControllerProvider((
           chartConfig: chartConfig,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ),
+        )),
       ),
       builder: (context, value, isInitialLoading) {
         final observations = value ?? const <Observation>[];

@@ -126,16 +126,16 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
-            healthObservationsControllerProvider(
+            )).overrideWithBuild((ref, notifier) => <Observation>[]),
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            )).overrideWithBuild((ref, notifier) => <Observation>[]),
           ],
         ),
       );
@@ -173,11 +173,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.WEIGHT',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            )).overrideWithBuild((ref, notifier) => <Observation>[]),
           ],
           mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
         ),
@@ -216,11 +216,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.RESTING_HEART_RATE',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => observations),
+            )).overrideWithBuild((ref, notifier) => observations),
           ],
         ),
       );
@@ -251,11 +251,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.RESTING_HEART_RATE',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            )).overrideWithBuild((ref, notifier) => <Observation>[]),
           ],
         ),
       );
@@ -276,11 +276,11 @@ void main() {
               rangeEnd: rangeEnd,
             ),
             overrides: [
-              healthObservationsControllerProvider(
+              healthObservationsControllerProvider((
                 healthDataType: 'HealthDataType.RESTING_HEART_RATE',
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ).overrideWithBuild((ref, notifier) => <Observation>[]),
+              )).overrideWithBuild((ref, notifier) => <Observation>[]),
             ],
           ),
         );
@@ -309,11 +309,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.RESTING_HEART_RATE',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild(
+            )).overrideWithBuild(
               (ref, notifier) => makeObservations([60, 62, 58]),
             ),
           ],
@@ -346,11 +346,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.RESTING_HEART_RATE',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => observations),
+            )).overrideWithBuild((ref, notifier) => observations),
           ],
         ),
       );
@@ -395,11 +395,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'cumulative_step_count',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => observations),
+            )).overrideWithBuild((ref, notifier) => observations),
           ],
         ),
       );
@@ -428,11 +428,11 @@ void main() {
               rangeEnd: rangeEnd,
             ),
             overrides: [
-              healthObservationsControllerProvider(
+              healthObservationsControllerProvider((
                 healthDataType: 'cumulative_step_count',
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ).overrideWithBuild(
+              )).overrideWithBuild(
                 (ref, notifier) => makeObservations([12000, 7000, 3000]),
               ),
             ],
@@ -478,11 +478,11 @@ void main() {
               rangeEnd: rangeEnd,
             ),
             overrides: [
-              healthObservationsControllerProvider(
+              healthObservationsControllerProvider((
                 healthDataType: 'cumulative_distance',
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ).overrideWithBuild((ref, notifier) => makeObservations([1500])),
+              )).overrideWithBuild((ref, notifier) => makeObservations([1500])),
             ],
           ),
         );
@@ -513,11 +513,11 @@ void main() {
               rangeEnd: rangeEnd,
             ),
             overrides: [
-              healthObservationsControllerProvider(
+              healthObservationsControllerProvider((
                 healthDataType: 'cumulative_step_count',
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ).overrideWithBuild((ref, notifier) => <Observation>[]),
+              )).overrideWithBuild((ref, notifier) => <Observation>[]),
             ],
           ),
         );
@@ -541,11 +541,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'cumulative_step_count',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild(
+            )).overrideWithBuild(
               (ref, notifier) => makeObservations([8000, 12000, 6500]),
             ),
           ],
@@ -573,11 +573,11 @@ void main() {
               rangeEnd: rangeEnd,
             ),
             overrides: [
-              healthObservationsControllerProvider(
+              healthObservationsControllerProvider((
                 healthDataType: 'cumulative_step_count',
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ).overrideWithBuild((ref, notifier) => <Observation>[]),
+              )).overrideWithBuild((ref, notifier) => <Observation>[]),
             ],
           ),
         );
@@ -615,11 +615,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.SLEEP_ASLEEP',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => observations),
+            )).overrideWithBuild((ref, notifier) => observations),
           ],
         ),
       );
@@ -647,11 +647,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.SLEEP_ASLEEP',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            )).overrideWithBuild((ref, notifier) => <Observation>[]),
           ],
         ),
       );

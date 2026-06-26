@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -9,9 +11,6 @@ import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'linked_entries_controller.g.dart';
 
 /// Loads and live-updates the outgoing [EntryLink]s from entry `id` (the links
 /// to the entries shown in its linked-entries list).
@@ -21,9 +20,23 @@ part 'linked_entries_controller.g.dart';
 /// stays current as links are added/removed and target entries are edited.
 /// Visibility of hidden links is driven by [IncludeHiddenController] for the
 /// same id. Result is cached for `entryCacheDuration`. Also exposes
-/// [removeLink]/[updateLink] write helpers that delegate to the repository.
-@riverpod
-class LinkedEntriesController extends _$LinkedEntriesController {
+/// removeLink/updateLink write helpers that delegate to the repository.
+final AsyncNotifierProviderFamily<
+  LinkedEntriesController,
+  List<EntryLink>,
+  String
+>
+linkedEntriesControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<LinkedEntriesController, List<EntryLink>, String>(
+      LinkedEntriesController.new,
+      name: 'linkedEntriesControllerProvider',
+    );
+
+class LinkedEntriesController extends AsyncNotifier<List<EntryLink>> {
+  LinkedEntriesController([this.id = '']);
+
+  final String id;
+
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
   final watchedIds = <String>{};
@@ -33,7 +46,7 @@ class LinkedEntriesController extends _$LinkedEntriesController {
       affectedIds,
     ) {
       if (affectedIds.intersection(watchedIds).isNotEmpty) {
-        final includeHidden = ref.read(includeHiddenControllerProvider(id: id));
+        final includeHidden = ref.read(includeHiddenControllerProvider(id));
 
         _fetch(includeHidden: includeHidden).then((latest) {
           if (latest != state.value) {
@@ -45,14 +58,12 @@ class LinkedEntriesController extends _$LinkedEntriesController {
   }
 
   @override
-  Future<List<EntryLink>> build({
-    required String id,
-  }) async {
+  Future<List<EntryLink>> build() async {
     ref
       ..onDispose(() => _updateSubscription?.cancel())
       ..cacheFor(entryCacheDuration);
 
-    final includeHidden = ref.watch(includeHiddenControllerProvider(id: id));
+    final includeHidden = ref.watch(includeHiddenControllerProvider(id));
     final res = await _fetch(
       includeHidden: includeHidden,
     );
@@ -90,10 +101,20 @@ class LinkedEntriesController extends _$LinkedEntriesController {
 
 /// Per-entry toggle controlling whether hidden links are included when
 /// [LinkedEntriesController] fetches the linked-entries list. Defaults to off.
-@riverpod
-class IncludeHiddenController extends _$IncludeHiddenController {
+final NotifierProviderFamily<IncludeHiddenController, bool, String>
+includeHiddenControllerProvider = NotifierProvider.autoDispose
+    .family<IncludeHiddenController, bool, String>(
+      IncludeHiddenController.new,
+      name: 'includeHiddenControllerProvider',
+    );
+
+class IncludeHiddenController extends Notifier<bool> {
+  IncludeHiddenController([this.id = '']);
+
+  final String id;
+
   @override
-  bool build({required String id}) {
+  bool build() {
     return false;
   }
 
@@ -108,10 +129,20 @@ class IncludeHiddenController extends _$IncludeHiddenController {
 /// the linked-entries list (passed through to the entry detail widget as
 /// `showAiEntry`). Defaults to off so AI responses stay collapsed under their
 /// source entry unless the user opts in.
-@riverpod
-class IncludeAiEntriesController extends _$IncludeAiEntriesController {
+final NotifierProviderFamily<IncludeAiEntriesController, bool, String>
+includeAiEntriesControllerProvider = NotifierProvider.autoDispose
+    .family<IncludeAiEntriesController, bool, String>(
+      IncludeAiEntriesController.new,
+      name: 'includeAiEntriesControllerProvider',
+    );
+
+class IncludeAiEntriesController extends Notifier<bool> {
+  IncludeAiEntriesController([this.id = '']);
+
+  final String id;
+
   @override
-  bool build({required String id}) {
+  bool build() {
     return false;
   }
 
@@ -126,10 +157,20 @@ class IncludeAiEntriesController extends _$IncludeAiEntriesController {
 /// entries only (`meta.flag == EntryFlag.import`, the flag toggled via
 /// the entry header's flag icon). Defaults to off so all linked entries
 /// stay visible until the user opts in.
-@riverpod
-class ShowFlaggedOnlyController extends _$ShowFlaggedOnlyController {
+final NotifierProviderFamily<ShowFlaggedOnlyController, bool, String>
+showFlaggedOnlyControllerProvider = NotifierProvider.autoDispose
+    .family<ShowFlaggedOnlyController, bool, String>(
+      ShowFlaggedOnlyController.new,
+      name: 'showFlaggedOnlyControllerProvider',
+    );
+
+class ShowFlaggedOnlyController extends Notifier<bool> {
+  ShowFlaggedOnlyController([this.id = '']);
+
+  final String id;
+
   @override
-  bool build({required String id}) {
+  bool build() {
     return false;
   }
 
@@ -143,11 +184,29 @@ class ShowFlaggedOnlyController extends _$ShowFlaggedOnlyController {
 /// Per-entry toggle state for the activity filter pills shown above the
 /// linked entries list (Timer / Audio / Images / Code). Defaults to all
 /// kinds active so existing behavior is preserved when the bar mounts.
-@riverpod
+final NotifierProviderFamily<
+  LinkedEntriesActivityFilterController,
+  Set<LinkedEntryActivityFilter>,
+  String
+>
+linkedEntriesActivityFilterControllerProvider = NotifierProvider.autoDispose
+    .family<
+      LinkedEntriesActivityFilterController,
+      Set<LinkedEntryActivityFilter>,
+      String
+    >(
+      LinkedEntriesActivityFilterController.new,
+      name: 'linkedEntriesActivityFilterControllerProvider',
+    );
+
 class LinkedEntriesActivityFilterController
-    extends _$LinkedEntriesActivityFilterController {
+    extends Notifier<Set<LinkedEntryActivityFilter>> {
+  LinkedEntriesActivityFilterController([this.id = '']);
+
+  final String id;
+
   @override
-  Set<LinkedEntryActivityFilter> build({required String id}) {
+  Set<LinkedEntryActivityFilter> build() {
     return LinkedEntryActivityFilter.values.toSet();
   }
 
@@ -163,10 +222,24 @@ enum LinkedEntriesSortOrder { newestFirst, oldestFirst }
 
 /// Per-entry sort order for the linked entries list. Defaults to newest
 /// first, matching pre-filter-bar behavior.
-@riverpod
-class LinkedEntriesSortController extends _$LinkedEntriesSortController {
+final NotifierProviderFamily<
+  LinkedEntriesSortController,
+  LinkedEntriesSortOrder,
+  String
+>
+linkedEntriesSortControllerProvider = NotifierProvider.autoDispose
+    .family<LinkedEntriesSortController, LinkedEntriesSortOrder, String>(
+      LinkedEntriesSortController.new,
+      name: 'linkedEntriesSortControllerProvider',
+    );
+
+class LinkedEntriesSortController extends Notifier<LinkedEntriesSortOrder> {
+  LinkedEntriesSortController([this.id = '']);
+
+  final String id;
+
   @override
-  LinkedEntriesSortOrder build({required String id}) {
+  LinkedEntriesSortOrder build() {
     return LinkedEntriesSortOrder.newestFirst;
   }
 
@@ -174,7 +247,7 @@ class LinkedEntriesSortController extends _$LinkedEntriesSortController {
   set order(LinkedEntriesSortOrder value) => state = value;
 }
 
-/// Returns the linked entries for [id] sorted by the linked entity's
+/// Returns the linked entries for id sorted by the linked entity's
 /// `meta.dateFrom`, applying the user's selected [LinkedEntriesSortOrder].
 ///
 /// Sorting by `dateFrom` matches the timestamp shown for each linked
@@ -182,15 +255,19 @@ class LinkedEntriesSortController extends _$LinkedEntriesSortController {
 /// `dateFrom` at the top — independent of when the link was created.
 /// Links whose target entity has not yet resolved fall back to
 /// `link.createdAt` so the order remains stable while data loads.
-@riverpod
+final ProviderFamily<List<EntryLink>, String> sortedLinkedEntriesProvider =
+    Provider.autoDispose.family<List<EntryLink>, String>(
+      sortedLinkedEntries,
+      name: 'sortedLinkedEntriesProvider',
+    );
 List<EntryLink> sortedLinkedEntries(Ref ref, String id) {
   final links =
-      ref.watch(linkedEntriesControllerProvider(id: id)).value ?? const [];
+      ref.watch(linkedEntriesControllerProvider(id)).value ?? const [];
   if (links.isEmpty) {
     return const [];
   }
 
-  final sortOrder = ref.watch(linkedEntriesSortControllerProvider(id: id));
+  final sortOrder = ref.watch(linkedEntriesSortControllerProvider(id));
 
   // Pre-resolve sort keys in a single pass. Watching inside the sort
   // comparator would (a) re-watch O(N log N) times and (b) miss
@@ -200,7 +277,7 @@ List<EntryLink> sortedLinkedEntries(Ref ref, String id) {
     for (final link in links)
       link.id:
           ref
-              .watch(entryControllerProvider(id: link.toId))
+              .watch(entryControllerProvider(link.toId))
               .value
               ?.entry
               ?.meta
@@ -227,15 +304,26 @@ List<EntryLink> sortedLinkedEntries(Ref ref, String id) {
 /// entry `id` (by `EntryLink.createdAt`), or null when `id` is null or has no
 /// links. Used by the duration widget to decide which linked timer entry shows
 /// the record button.
-@riverpod
-class NewestLinkedIdController extends _$NewestLinkedIdController {
+final AsyncNotifierProviderFamily<NewestLinkedIdController, String?, String?>
+newestLinkedIdControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<NewestLinkedIdController, String?, String?>(
+      NewestLinkedIdController.new,
+      name: 'newestLinkedIdControllerProvider',
+    );
+
+class NewestLinkedIdController extends AsyncNotifier<String?> {
+  NewestLinkedIdController([this.id]);
+
+  final String? id;
+
   @override
-  Future<String?> build({required String? id}) async {
+  Future<String?> build() async {
+    final id = this.id;
     if (id == null) {
       return null;
     }
 
-    final provider = linkedEntriesControllerProvider(id: id);
+    final provider = linkedEntriesControllerProvider(id);
     final entryLinks = ref.watch(provider).value;
 
     final newestLinkedId = entryLinks
@@ -253,17 +341,22 @@ class NewestLinkedIdController extends _$NewestLinkedIdController {
 /// This centralizes the resolution logic so that downstream providers can
 /// filter/process the resolved entities without needing to watch individual
 /// entryControllerProviders in loops.
-@riverpod
+final ProviderFamily<List<JournalEntity>, String>
+resolvedOutgoingLinkedEntriesProvider = Provider.autoDispose
+    .family<List<JournalEntity>, String>(
+      resolvedOutgoingLinkedEntries,
+      name: 'resolvedOutgoingLinkedEntriesProvider',
+    );
 List<JournalEntity> resolvedOutgoingLinkedEntries(
   Ref ref,
   String id,
 ) {
-  final linksAsync = ref.watch(linkedEntriesControllerProvider(id: id));
+  final linksAsync = ref.watch(linkedEntriesControllerProvider(id));
   final links = linksAsync.value ?? [];
 
   final entities = <JournalEntity>[];
   for (final link in links) {
-    final entryAsync = ref.watch(entryControllerProvider(id: link.toId));
+    final entryAsync = ref.watch(entryControllerProvider(link.toId));
     final entry = entryAsync.value?.entry;
     if (entry != null) {
       entities.add(entry);
@@ -277,7 +370,12 @@ List<JournalEntity> resolvedOutgoingLinkedEntries(
 ///
 /// Used by LinkedEntriesWidget to determine whether to show the "Linked Entries"
 /// section when hideTaskEntries is true.
-@riverpod
+final ProviderFamily<bool, String> hasNonTaskLinkedEntriesProvider = Provider
+    .autoDispose
+    .family<bool, String>(
+      hasNonTaskLinkedEntries,
+      name: 'hasNonTaskLinkedEntriesProvider',
+    );
 bool hasNonTaskLinkedEntries(
   Ref ref,
   String id,

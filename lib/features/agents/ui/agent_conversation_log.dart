@@ -139,7 +139,7 @@ class _ThreadTile extends ConsumerWidget {
 
     // Resolve the model that was used for this specific conversation,
     // from the template version recorded at wake time.
-    final modelAsync = ref.watch(modelIdForThreadProvider(agentId, threadId));
+    final modelAsync = ref.watch(modelIdForThreadProvider((agentId, threadId)));
     final model = modelAsync.whenData((modelId) {
       if (modelId == null) return null;
       // Strip prefix like 'models/' for display.
@@ -151,7 +151,7 @@ class _ThreadTile extends ConsumerWidget {
     final locale = Localizations.localeOf(context).toString();
     final tokenNumberFormat = NumberFormat.decimalPattern(locale);
     final tokenUsageAsync = ref.watch(
-      tokenUsageForThreadProvider(agentId, threadId),
+      tokenUsageForThreadProvider((agentId, threadId)),
     );
     final tokenUsage = tokenUsageAsync.value;
 

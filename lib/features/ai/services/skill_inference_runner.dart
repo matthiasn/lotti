@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -35,11 +36,8 @@ import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'skill_inference_runner_internals.dart';
-
-part 'skill_inference_runner.g.dart';
 
 const _logTag = 'SkillInferenceRunner';
 
@@ -769,7 +767,10 @@ enum _OverrideSlotKind {
   final String label;
 }
 
-@Riverpod(keepAlive: true)
+final skillInferenceRunnerProvider = Provider<SkillInferenceRunner>(
+  skillInferenceRunner,
+  name: 'skillInferenceRunnerProvider',
+);
 SkillInferenceRunner skillInferenceRunner(Ref ref) {
   final taskSummaryResolver = TaskSummaryResolver(
     getIt.isRegistered<AgentDatabase>()

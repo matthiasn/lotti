@@ -46,7 +46,7 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
     .family<List<AiConfigSkill>, SkillsAvailabilityParams>(
       (ref, params) async {
         final entryState = ref
-            .watch(entryControllerProvider(id: params.entityId))
+            .watch(entryControllerProvider(params.entityId))
             .value;
         final entity = entryState?.entry;
         if (entity == null) return [];

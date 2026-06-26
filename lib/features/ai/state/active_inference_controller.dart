@@ -1,10 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/utils/cache_extension.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'active_inference_controller.g.dart';
 
 /// Live state for one in-flight inference run.
 ///
@@ -61,16 +60,33 @@ class ActiveInferenceData {
 /// flight. The provider is kept alive briefly after disposal
 /// ([inferenceStateCacheDuration]) and disposes the current data's progress
 /// stream on teardown.
-@riverpod
-class ActiveInferenceController extends _$ActiveInferenceController {
+final NotifierProviderFamily<
+  ActiveInferenceController,
+  ActiveInferenceData?,
+  ({AiResponseType aiResponseType, String entityId})
+>
+activeInferenceControllerProvider = NotifierProvider.autoDispose
+    .family<
+      ActiveInferenceController,
+      ActiveInferenceData?,
+      ({String entityId, AiResponseType aiResponseType})
+    >(
+      ActiveInferenceController.new,
+      name: 'activeInferenceControllerProvider',
+    );
+
+class ActiveInferenceController extends Notifier<ActiveInferenceData?> {
+  ActiveInferenceController(this._providerArgs);
+
+  final ({String entityId, AiResponseType aiResponseType}) _providerArgs;
+  String get entityId => _providerArgs.entityId;
+  AiResponseType get aiResponseType => _providerArgs.aiResponseType;
+
   // Track current data to dispose in onDispose without accessing state
   ActiveInferenceData? _currentData;
 
   @override
-  ActiveInferenceData? build({
-    required String entityId,
-    required AiResponseType aiResponseType,
-  }) {
+  ActiveInferenceData? build() {
     ref
       ..cacheFor(inferenceStateCacheDuration)
       // Clean up when provider is disposed
@@ -123,19 +139,33 @@ class ActiveInferenceController extends _$ActiveInferenceController {
 /// first in-flight run, or null if the entity is idle. Because the unified
 /// controller registers active inference for BOTH the primary and linked
 /// entity, this also reports runs that were started against a linked entity.
-@riverpod
-class ActiveInferenceByEntity extends _$ActiveInferenceByEntity {
+final NotifierProviderFamily<
+  ActiveInferenceByEntity,
+  ActiveInferenceData?,
+  String
+>
+activeInferenceByEntityProvider = NotifierProvider.autoDispose
+    .family<ActiveInferenceByEntity, ActiveInferenceData?, String>(
+      ActiveInferenceByEntity.new,
+      name: 'activeInferenceByEntityProvider',
+    );
+
+class ActiveInferenceByEntity extends Notifier<ActiveInferenceData?> {
+  ActiveInferenceByEntity(this.entityId);
+
+  final String entityId;
+
   @override
-  ActiveInferenceData? build(String entityId) {
+  ActiveInferenceData? build() {
     ref.cacheFor(inferenceStateCacheDuration);
 
     // Watch all response types to find any active inference for this entity
     for (final responseType in AiResponseType.values) {
       final activeInference = ref.watch(
-        activeInferenceControllerProvider(
+        activeInferenceControllerProvider((
           entityId: entityId,
           aiResponseType: responseType,
-        ),
+        )),
       );
       if (activeInference != null) {
         return activeInference;

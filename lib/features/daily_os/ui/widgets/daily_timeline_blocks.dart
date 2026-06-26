@@ -367,7 +367,7 @@ class _ActualBlockContent extends ConsumerWidget {
         if (linkedFrom is Task) {
           ref
               .read(
-                taskFocusControllerProvider(id: linkedFrom.meta.id).notifier,
+                taskFocusControllerProvider(linkedFrom.meta.id).notifier,
               )
               .publishTaskFocus(
                 entryId: entryId,

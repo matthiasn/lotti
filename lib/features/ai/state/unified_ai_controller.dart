@@ -76,20 +76,20 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
   }) {
     ref
         .read(
-          inferenceStatusControllerProvider(
+          inferenceStatusControllerProvider((
             id: entityId,
             aiResponseType: responseType,
-          ).notifier,
+          )).notifier,
         )
         .setStatus(status);
 
     if (linkedEntityId != null) {
       ref
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: linkedEntityId,
               aiResponseType: responseType,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(status);
     }
@@ -103,10 +103,10 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
   }) {
     ref
         .read(
-          activeInferenceControllerProvider(
+          activeInferenceControllerProvider((
             entityId: entityId,
             aiResponseType: responseType,
-          ).notifier,
+          )).notifier,
         )
         .startInference(
           promptId: promptId,
@@ -116,10 +116,10 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
     if (linkedEntityId != null) {
       ref
           .read(
-            activeInferenceControllerProvider(
+            activeInferenceControllerProvider((
               entityId: linkedEntityId,
               aiResponseType: responseType,
-            ).notifier,
+            )).notifier,
           )
           .startInference(
             promptId: promptId,
@@ -136,20 +136,20 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
   }) {
     ref
         .read(
-          activeInferenceControllerProvider(
+          activeInferenceControllerProvider((
             entityId: entityId,
             aiResponseType: responseType,
-          ).notifier,
+          )).notifier,
         )
         .updateProgress(progress);
 
     if (linkedEntityId != null) {
       ref
           .read(
-            activeInferenceControllerProvider(
+            activeInferenceControllerProvider((
               entityId: linkedEntityId,
               aiResponseType: responseType,
-            ).notifier,
+            )).notifier,
           )
           .updateProgress(progress);
     }
@@ -162,20 +162,20 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
   }) {
     ref
         .read(
-          activeInferenceControllerProvider(
+          activeInferenceControllerProvider((
             entityId: entityId,
             aiResponseType: responseType,
-          ).notifier,
+          )).notifier,
         )
         .clearInference();
 
     if (linkedEntityId != null) {
       ref
           .read(
-            activeInferenceControllerProvider(
+            activeInferenceControllerProvider((
               entityId: linkedEntityId,
               aiResponseType: responseType,
-            ).notifier,
+            )).notifier,
           )
           .clearInference();
     }

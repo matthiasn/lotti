@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
@@ -39,7 +41,7 @@ import '../../../widget_test_utils.dart';
 /// Entry controller that returns null (entity not found).
 class FakeEntryControllerNull extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) async => null;
+  Future<EntryState?> build() async => null;
 }
 
 /// File-level factory for the boilerplate [AiConfigPrompt] blocks; only the
@@ -213,7 +215,7 @@ void main() {
       containersToDispose.add(testContainer);
 
       await testContainer.read(
-        entryControllerProvider(id: audioEntity.id).future,
+        entryControllerProvider(audioEntity.id).future,
       );
 
       final hasSkills = await testContainer.read(
@@ -246,7 +248,7 @@ void main() {
       containersToDispose.add(testContainer);
 
       await testContainer.read(
-        entryControllerProvider(id: journalEntry.id).future,
+        entryControllerProvider(journalEntry.id).future,
       );
 
       final hasSkills = await testContainer.read(
@@ -263,7 +265,6 @@ void main() {
   group('triggerNewInference provider', () {
     test('triggers inference when called', () async {
       final promptConfig = _makePromptConfig(
-        // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
 
@@ -340,10 +341,10 @@ void main() {
         // Listen to inference status for main entity
         container
           ..listen(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: 'audio-entry-id',
               aiResponseType: AiResponseType.audioTranscription,
-            ),
+            )),
             (previous, next) {
               mainEntityStatuses.add(next);
             },
@@ -351,10 +352,10 @@ void main() {
           )
           // Listen to inference status for linked entity
           ..listen(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: 'linked-task-id',
               aiResponseType: AiResponseType.audioTranscription,
-            ),
+            )),
             (previous, next) {
               linkedEntityStatuses.add(next);
             },
@@ -425,10 +426,10 @@ void main() {
         // Listen to inference status for main entity
         container
           ..listen(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: 'audio-entry-id',
               aiResponseType: AiResponseType.audioTranscription,
-            ),
+            )),
             (previous, next) {
               mainEntityStatuses.add(next);
             },
@@ -436,10 +437,10 @@ void main() {
           )
           // Listen to inference status for linked entity
           ..listen(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: 'linked-task-id',
               aiResponseType: AiResponseType.audioTranscription,
-            ),
+            )),
             (previous, next) {
               linkedEntityStatuses.add(next);
             },
@@ -554,7 +555,7 @@ void main() {
         containersToDispose.add(testContainer);
 
         await testContainer.read(
-          entryControllerProvider(id: audioEntity.id).future,
+          entryControllerProvider(audioEntity.id).future,
         );
 
         final skills = await testContainer.read(
@@ -613,7 +614,7 @@ void main() {
         containersToDispose.add(testContainer);
 
         await testContainer.read(
-          entryControllerProvider(id: imageEntity.id).future,
+          entryControllerProvider(imageEntity.id).future,
         );
 
         final skills = await testContainer.read(
@@ -677,7 +678,7 @@ void main() {
       containersToDispose.add(testContainer);
 
       await testContainer.read(
-        entryControllerProvider(id: taskEntity.id).future,
+        entryControllerProvider(taskEntity.id).future,
       );
 
       final skills = await testContainer.read(
@@ -730,7 +731,7 @@ void main() {
       containersToDispose.add(testContainer);
 
       await testContainer.read(
-        entryControllerProvider(id: taskEntity.id).future,
+        entryControllerProvider(taskEntity.id).future,
       );
 
       final skills = await testContainer.read(
@@ -774,7 +775,7 @@ void main() {
       containersToDispose.add(testContainer);
 
       await testContainer.read(
-        entryControllerProvider(id: taskEntity.id).future,
+        entryControllerProvider(taskEntity.id).future,
       );
 
       final skills = await testContainer.read(
@@ -825,7 +826,7 @@ void main() {
         containersToDispose.add(testContainer);
 
         await testContainer.read(
-          entryControllerProvider(id: measurementEntity.id).future,
+          entryControllerProvider(measurementEntity.id).future,
         );
 
         final skills = await testContainer.read(
@@ -858,7 +859,7 @@ void main() {
             ],
           );
           containersToDispose.add(c);
-          await c.read(entryControllerProvider(id: entity.id).future);
+          await c.read(entryControllerProvider(entity.id).future);
           return c.read(
             availableSkillsForEntityProvider((
               entityId: entity.id,
@@ -999,7 +1000,7 @@ void main() {
       containersToDispose.add(testContainer);
 
       await testContainer.read(
-        entryControllerProvider(id: audioEntity.id).future,
+        entryControllerProvider(audioEntity.id).future,
       );
 
       final standaloneSkills = await testContainer.read(
@@ -1030,7 +1031,7 @@ void main() {
         overrides: [
           skillRegistryProvider.overrideWithValue(const []),
           // No entry controller override — entity will not be found
-          entryControllerProvider(id: 'nonexistent').overrideWith(
+          entryControllerProvider('nonexistent').overrideWith(
             FakeEntryControllerNull.new,
           ),
         ],
@@ -1086,7 +1087,7 @@ void main() {
         );
         try {
           await testContainer.read(
-            entryControllerProvider(id: entity.meta.id).future,
+            entryControllerProvider(entity.meta.id).future,
           );
           final skills = await testContainer.read(
             availableSkillsForEntityProvider((
@@ -2320,7 +2321,6 @@ void main() {
                 createdAt: now,
                 useReasoning: false,
                 requiredInputData: [InputDataType.task],
-                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
                 description: 'Generates task summaries',
               )
@@ -2379,10 +2379,10 @@ void main() {
 
           // Track status updates for linked entity
           container.listen(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: linkedTaskId,
               aiResponseType: AiResponseType.audioTranscription,
-            ),
+            )),
             (previous, next) {
               inferenceStatusUpdates++;
             },
@@ -2455,20 +2455,20 @@ void main() {
           // Track status changes
           container
             ..listen(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: audioEntryId,
                 aiResponseType: AiResponseType.audioTranscription,
-              ),
+              )),
               (previous, next) {
                 mainEntityStatuses.add(next);
               },
               fireImmediately: true,
             )
             ..listen(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: linkedTaskId,
                 aiResponseType: AiResponseType.audioTranscription,
-              ),
+              )),
               (previous, next) {
                 linkedEntityStatuses.add(next);
               },
@@ -2550,10 +2550,10 @@ void main() {
           // Track error status
           container
             ..listen(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: audioEntryId,
                 aiResponseType: AiResponseType.audioTranscription,
-              ),
+              )),
               (previous, next) {
                 if (next == InferenceStatus.error) {
                   mainEntityErrorStatus = true;
@@ -2561,10 +2561,10 @@ void main() {
               },
             )
             ..listen(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: linkedTaskId,
                 aiResponseType: AiResponseType.audioTranscription,
-              ),
+              )),
               (previous, next) {
                 if (next == InferenceStatus.error) {
                   linkedEntityErrorStatus = true;
@@ -2653,7 +2653,6 @@ void main() {
               onStatusChange(InferenceStatus.idle);
               executionOrder.add('ASR_COMPLETE');
             } else if (promptConfig.aiResponseType ==
-                // ignore: deprecated_member_use_from_same_package
                 AiResponseType.taskSummary) {
               executionOrder.add('TASK_SUMMARY_START');
               onStatusChange(InferenceStatus.running);
@@ -2755,7 +2754,6 @@ void main() {
               onStatusChange(InferenceStatus.idle);
               executionOrder.add('ASR_END');
             } else if (promptConfig.aiResponseType ==
-                // ignore: deprecated_member_use_from_same_package
                 AiResponseType.taskSummary) {
               executionOrder.add('TASK_SUMMARY_START');
               onStatusChange(InferenceStatus.running);
@@ -2845,10 +2843,10 @@ void main() {
           // Track status changes for the task entity for both response types
           container
             ..listen(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: taskId,
                 aiResponseType: AiResponseType.audioTranscription,
-              ),
+              )),
               (previous, next) {
                 taskEntityStatuses.add({
                   'type': 'ASR',
@@ -2857,11 +2855,10 @@ void main() {
               },
             )
             ..listen(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: taskId,
-                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
-              ),
+              )),
               (previous, next) {
                 taskEntityStatuses.add({
                   'type': 'TaskSummary',
@@ -2890,7 +2887,6 @@ void main() {
               onStatusChange(InferenceStatus.running);
               onStatusChange(InferenceStatus.idle);
             } else if (promptConfig.aiResponseType ==
-                // ignore: deprecated_member_use_from_same_package
                 AiResponseType.taskSummary) {
               onStatusChange(InferenceStatus.running);
               onStatusChange(InferenceStatus.idle);

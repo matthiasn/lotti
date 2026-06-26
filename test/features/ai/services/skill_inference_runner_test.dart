@@ -253,10 +253,10 @@ class _GeneratedSkillRunnerBench {
 
   InferenceStatus promptStatus(String id) {
     return container.read(
-      inferenceStatusControllerProvider(
+      inferenceStatusControllerProvider((
         id: id,
         aiResponseType: AiResponseType.promptGeneration,
-      ),
+      )),
     );
   }
 
@@ -2875,10 +2875,10 @@ void main() {
             );
 
             final status = localContainer.read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: 'generated-prompt-entry',
                 aiResponseType: AiResponseType.promptGeneration,
-              ),
+              )),
             );
             expect(
               status,
@@ -2890,10 +2890,10 @@ void main() {
             if (linkedTaskId != null) {
               expect(
                 localContainer.read(
-                  inferenceStatusControllerProvider(
+                  inferenceStatusControllerProvider((
                     id: linkedTaskId,
                     aiResponseType: AiResponseType.promptGeneration,
-                  ),
+                  )),
                 ),
                 status,
                 reason: '$scenario',
@@ -3698,7 +3698,7 @@ void main() {
       );
 
       String? imageGenError(String id) =>
-          container.read(imageGenerationErrorControllerProvider(id: id));
+          container.read(imageGenerationErrorControllerProvider(id));
 
       void stubImageGenPipeline(String entryId, String taskId) {
         when(

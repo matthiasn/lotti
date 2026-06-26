@@ -52,7 +52,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     // Rebuild when label definitions change (names, colours, visibility).
     ref.watch(labelsStreamProvider);
 
-    final entryState = ref.watch(entryControllerProvider(id: taskId)).value;
+    final entryState = ref.watch(entryControllerProvider(taskId)).value;
     final task = entryState?.entry;
     if (task is! Task) {
       return const SizedBox.shrink();
@@ -62,7 +62,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     final project = projectAsync.asData?.value;
 
     final data = _buildData(context, task, project);
-    final controller = ref.read(entryControllerProvider(id: taskId).notifier);
+    final controller = ref.read(entryControllerProvider(taskId).notifier);
 
     return DesktopTaskHeader(
       data: data,
@@ -174,7 +174,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     WidgetRef ref,
     Task task,
   ) async {
-    final controller = ref.read(entryControllerProvider(id: taskId).notifier);
+    final controller = ref.read(entryControllerProvider(taskId).notifier);
     final selected = await ModalUtils.showSinglePageModal<String>(
       context: context,
       // Strip the trailing colon so the picker title matches the other
@@ -192,7 +192,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     WidgetRef ref,
     Task task,
   ) async {
-    final controller = ref.read(entryControllerProvider(id: taskId).notifier);
+    final controller = ref.read(entryControllerProvider(taskId).notifier);
     final current = task.data.priority;
     final selected = await ModalUtils.showSinglePageModal<String>(
       context: context,
@@ -266,7 +266,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     WidgetRef ref,
     Task task,
   ) async {
-    final controller = ref.read(entryControllerProvider(id: taskId).notifier);
+    final controller = ref.read(entryControllerProvider(taskId).notifier);
     final result = await showCategoryPicker(
       context: context,
       title: context.messages.habitCategoryLabel,
@@ -311,7 +311,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     WidgetRef ref,
     Task task,
   ) async {
-    final controller = ref.read(entryControllerProvider(id: taskId).notifier);
+    final controller = ref.read(entryControllerProvider(taskId).notifier);
     await showDueDatePicker(
       context: context,
       initialDate: task.data.due,
@@ -362,7 +362,7 @@ class _TaskEstimateChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: taskId);
+    final provider = entryControllerProvider(taskId);
     final entryState = ref.watch(provider).value;
     final task = entryState?.entry;
     if (task is! Task) {
@@ -396,7 +396,7 @@ class _TaskEstimateChip extends ConsumerWidget {
     }
 
     final progressState = ref
-        .watch(taskProgressControllerProvider(id: taskId))
+        .watch(taskProgressControllerProvider(taskId))
         .value;
     final isOvertime =
         progressState != null &&

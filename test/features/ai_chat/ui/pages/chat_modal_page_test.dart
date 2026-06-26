@@ -374,7 +374,7 @@ final Finder _activeGlowContainerFinder = find.byWidgetPredicate((w) {
 
 class _StreamingChatController extends ChatSessionController {
   @override
-  ChatSessionUiModel build(String categoryId) {
+  ChatSessionUiModel build() {
     return const ChatSessionUiModel(
       id: 's',
       title: 't',
@@ -394,7 +394,7 @@ class _StreamingChatController extends ChatSessionController {
 /// `_AmbientPulseBorder.didUpdateWidget`.
 class _TogglableChatController extends ChatSessionController {
   @override
-  ChatSessionUiModel build(String categoryId) {
+  ChatSessionUiModel build() {
     return const ChatSessionUiModel(
       id: 's',
       title: 't',

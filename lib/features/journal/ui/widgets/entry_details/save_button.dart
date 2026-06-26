@@ -19,7 +19,7 @@ class SaveButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = saveButtonControllerProvider(id: entryId);
+    final provider = saveButtonControllerProvider(entryId);
     final unsaved = ref.watch(provider).value ?? false;
 
     // No unsaved changes → render nothing and reserve NO space. (Keeping the

@@ -298,18 +298,18 @@ void main() {
       const responseType = AiResponseType.taskSummary;
 
       final controller = container.read(
-        activeInferenceControllerProvider(
+        activeInferenceControllerProvider((
           entityId: entityId,
           aiResponseType: responseType,
-        ).notifier,
+        )).notifier,
       );
 
       // Initially should be null
       var state = container.read(
-        activeInferenceControllerProvider(
+        activeInferenceControllerProvider((
           entityId: entityId,
           aiResponseType: responseType,
-        ),
+        )),
       );
       expect(state, isNull);
 
@@ -321,10 +321,10 @@ void main() {
 
       // Should now have active inference data
       state = container.read(
-        activeInferenceControllerProvider(
+        activeInferenceControllerProvider((
           entityId: entityId,
           aiResponseType: responseType,
-        ),
+        )),
       );
       expect(state, isNotNull);
       expect(state!.entityId, equals(entityId));
@@ -341,17 +341,17 @@ void main() {
 
       fakeAsync((async) {
         final controller = container.read(
-          activeInferenceControllerProvider(
+          activeInferenceControllerProvider((
             entityId: entityId,
             aiResponseType: responseType,
-          ).notifier,
+          )).notifier,
         )..startInference(promptId: promptId);
 
         final state = container.read(
-          activeInferenceControllerProvider(
+          activeInferenceControllerProvider((
             entityId: entityId,
             aiResponseType: responseType,
-          ),
+          )),
         );
 
         // Set up stream listener
@@ -370,10 +370,10 @@ void main() {
 
         // Check state was updated
         final updatedState = container.read(
-          activeInferenceControllerProvider(
+          activeInferenceControllerProvider((
             entityId: entityId,
             aiResponseType: responseType,
-          ),
+          )),
         );
         expect(updatedState!.progressText, equals('Second update'));
 
@@ -389,20 +389,20 @@ void main() {
 
       final controller =
           container.read(
-              activeInferenceControllerProvider(
+              activeInferenceControllerProvider((
                 entityId: entityId,
                 aiResponseType: responseType,
-              ).notifier,
+              )).notifier,
             )
             // Start inference
             ..startInference(promptId: promptId);
 
       // Verify it exists
       var state = container.read(
-        activeInferenceControllerProvider(
+        activeInferenceControllerProvider((
           entityId: entityId,
           aiResponseType: responseType,
-        ),
+        )),
       );
       expect(state, isNotNull);
 
@@ -411,10 +411,10 @@ void main() {
 
       // Should be null again
       state = container.read(
-        activeInferenceControllerProvider(
+        activeInferenceControllerProvider((
           entityId: entityId,
           aiResponseType: responseType,
-        ),
+        )),
       );
       expect(state, isNull);
     });
@@ -434,10 +434,10 @@ void main() {
       // Start an inference
       container
           .read(
-            activeInferenceControllerProvider(
+            activeInferenceControllerProvider((
               entityId: entityId,
               aiResponseType: responseType,
-            ).notifier,
+            )).notifier,
           )
           .startInference(promptId: promptId);
 
@@ -472,10 +472,10 @@ void main() {
       // 1. Start for primary entity (audio)
       container
           .read(
-            activeInferenceControllerProvider(
+            activeInferenceControllerProvider((
               entityId: audioEntityId,
               aiResponseType: responseType,
-            ).notifier,
+            )).notifier,
           )
           .startInference(
             promptId: promptId,
@@ -485,10 +485,10 @@ void main() {
       // 2. Also start for linked entity (task) - this is what makes it work!
       container
           .read(
-            activeInferenceControllerProvider(
+            activeInferenceControllerProvider((
               entityId: taskEntityId,
               aiResponseType: responseType,
-            ).notifier,
+            )).notifier,
           )
           .startInference(
             promptId: promptId,
@@ -526,10 +526,10 @@ void main() {
         try {
           for (final operation in scenario.operations) {
             final controller = generatedContainer.read(
-              activeInferenceControllerProvider(
+              activeInferenceControllerProvider((
                 entityId: operation.entityId,
                 aiResponseType: operation.responseType,
-              ).notifier,
+              )).notifier,
             );
 
             switch (operation.kind) {
@@ -552,10 +552,10 @@ void main() {
             expect(
               _activeInferenceSnapshot(
                 generatedContainer.read(
-                  activeInferenceControllerProvider(
+                  activeInferenceControllerProvider((
                     entityId: operation.entityId,
                     aiResponseType: operation.responseType,
-                  ),
+                  )),
                 ),
               ),
               equals(

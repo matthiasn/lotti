@@ -1,14 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'day_plan_repository.g.dart';
 
 /// Repository for day plan data operations.
 ///
@@ -138,7 +136,10 @@ class DayPlanRepositoryImpl implements DayPlanRepository {
 }
 
 /// Provides the [DayPlanRepository] instance.
-@Riverpod(keepAlive: true)
+final dayPlanRepositoryProvider = Provider<DayPlanRepository>(
+  dayPlanRepository,
+  name: 'dayPlanRepositoryProvider',
+);
 DayPlanRepository dayPlanRepository(Ref ref) {
   return DayPlanRepositoryImpl(
     journalDb: getIt<JournalDb>(),

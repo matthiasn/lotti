@@ -57,13 +57,13 @@ class _InferenceModelEditPageState
   /// silently disagree on the (`configId`, `preselectedProviderId`)
   /// tuple — keeping the same tuple end-to-end keeps Riverpod from
   /// spawning a second controller family instance.
-  InferenceModelFormControllerProvider get _formProvider =>
-      inferenceModelFormControllerProvider(
-        configId: widget.configId,
-        preselectedProviderId: widget.configId == null
-            ? widget.preselectedProviderId
-            : null,
-      );
+  AsyncNotifierProvider<InferenceModelFormController, InferenceModelFormState?>
+  get _formProvider => inferenceModelFormControllerProvider(
+    configId: widget.configId,
+    preselectedProviderId: widget.configId == null
+        ? widget.preselectedProviderId
+        : null,
+  );
 
   @override
   Widget build(BuildContext context) {

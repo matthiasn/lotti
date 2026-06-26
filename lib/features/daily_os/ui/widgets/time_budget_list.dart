@@ -20,7 +20,7 @@ class TimeBudgetList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
     final unifiedDataAsync = ref.watch(
-      unifiedDailyOsDataControllerProvider(date: selectedDate),
+      unifiedDailyOsDataControllerProvider(selectedDate),
     );
 
     // Watch the active focus category for auto-expand/collapse behavior.

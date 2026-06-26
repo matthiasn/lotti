@@ -475,12 +475,10 @@ void main() {
           daily_os.createTestHistoryData(),
         ),
       ),
-      unifiedDailyOsDataControllerProvider(
-        date: daily_os.testDate,
-      ).overrideWith(
+      unifiedDailyOsDataControllerProvider(daily_os.testDate).overrideWith(
         () => daily_os.TestUnifiedController(daily_os.createUnifiedData()),
       ),
-      dayBudgetStatsProvider(date: daily_os.testDate).overrideWith(
+      dayBudgetStatsProvider(daily_os.testDate).overrideWith(
         (ref) async => const DayBudgetStats(
           totalPlanned: Duration.zero,
           totalRecorded: Duration.zero,
@@ -489,7 +487,7 @@ void main() {
         ),
       ),
       activeFocusCategoryIdProvider.overrideWith((ref) => Stream.value(null)),
-      runningTimerCategoryIdProvider.overrideWithValue(null),
+      runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
     ];
 
     Future<void> pumpCalendarRoot(

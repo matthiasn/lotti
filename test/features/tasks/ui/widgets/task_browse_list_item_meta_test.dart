@@ -205,7 +205,7 @@ void main() {
         makeTestableWidget(
           widget,
           overrides: [
-            taskProgressControllerProvider(id: taskId).overrideWith(
+            taskProgressControllerProvider(taskId).overrideWith(
               () => FakeTaskProgressController(testProgress),
             ),
           ],
@@ -249,7 +249,7 @@ void main() {
         makeTestableWidget(
           widget,
           overrides: [
-            taskProgressControllerProvider(id: taskId).overrideWith(
+            taskProgressControllerProvider(taskId).overrideWith(
               () => FakeTaskProgressController(null),
             ),
           ],

@@ -29,7 +29,7 @@ class LinkedFromEntriesWidget extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final provider = linkedFromEntriesControllerProvider(id: item.id);
+    final provider = linkedFromEntriesControllerProvider(item.id);
     var items = ref.watch(provider).value ?? [];
 
     // Projects link many tasks but are never useful surfacing as

@@ -31,7 +31,7 @@ class DailyTimeline extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
     final unifiedDataAsync = ref.watch(
-      unifiedDailyOsDataControllerProvider(date: selectedDate),
+      unifiedDailyOsDataControllerProvider(selectedDate),
     );
 
     return unifiedDataAsync.when(

@@ -61,10 +61,10 @@ void main() {
       addTearDown(container.dispose);
 
       final result = await container.read(
-        workoutChartDataControllerProvider(
+        workoutChartDataControllerProvider((
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ).future,
+        )).future,
       );
 
       expect(result, hasLength(1));
@@ -92,10 +92,10 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final provider = workoutChartDataControllerProvider(
+      final provider = workoutChartDataControllerProvider((
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
-      );
+      ));
 
       // Initial load
       await container.read(provider.future);
@@ -160,18 +160,18 @@ void main() {
 
       // First ensure the data controller has loaded
       await container.read(
-        workoutChartDataControllerProvider(
+        workoutChartDataControllerProvider((
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ).future,
+        )).future,
       );
 
       final result = await container.read(
-        workoutObservationsControllerProvider(
+        workoutObservationsControllerProvider((
           chartConfig: runningEnergyConfig,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ).future,
+        )).future,
       );
 
       // 5 days in range, each with aggregated value
@@ -199,11 +199,11 @@ void main() {
         final container = ProviderContainer();
         addTearDown(container.dispose);
 
-        final provider = workoutObservationsControllerProvider(
+        final provider = workoutObservationsControllerProvider((
           chartConfig: runningEnergyConfig,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        );
+        ));
 
         final future = container.read(provider.future);
         await pumpEventQueue();
@@ -250,11 +250,11 @@ void main() {
         addTearDown(container.dispose);
 
         final result = await container.read(
-          workoutObservationsControllerProvider(
+          workoutObservationsControllerProvider((
             chartConfig: runningEnergyConfig,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
-          ).future,
+          )).future,
         );
 
         // No running workout -> empty (so the chart shows "No data"), rather

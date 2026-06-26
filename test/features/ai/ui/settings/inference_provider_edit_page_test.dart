@@ -54,7 +54,7 @@ AppLocalizations l10n(WidgetTester tester) => AppLocalizations.of(
 
 class _ErrorAiConfigByTypeController extends AiConfigByTypeController {
   @override
-  Stream<List<AiConfig>> build({required AiConfigType configType}) {
+  Stream<List<AiConfig>> build() {
     return Stream.error(Exception('model stream failed'));
   }
 }
@@ -1983,7 +1983,7 @@ void main() {
             overrides: [
               aiConfigRepositoryProvider.overrideWithValue(mockRepository),
               aiConfigByTypeControllerProvider(
-                configType: AiConfigType.model,
+                AiConfigType.model,
               ).overrideWith(_ErrorAiConfigByTypeController.new),
               meliousInferenceRepositoryProvider.overrideWithValue(
                 fakeMeliousRepository,

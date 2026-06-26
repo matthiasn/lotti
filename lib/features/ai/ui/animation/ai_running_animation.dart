@@ -76,10 +76,10 @@ class AiRunningAnimationWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = inferenceRunningControllerProvider(
+    final provider = inferenceRunningControllerProvider((
       id: entryId,
       responseTypes: responseTypes,
-    );
+    ));
     final isRunning = ref.watch(provider);
 
     if (!isRunning) {
@@ -147,10 +147,10 @@ class AiRunningDecoderBars extends ConsumerWidget {
     // inference-running signal and, when interactive, the tap-to-progress
     // affordance.
     final isRunning = ref.watch(
-      inferenceRunningControllerProvider(
+      inferenceRunningControllerProvider((
         id: entryId,
         responseTypes: responseTypes,
-      ),
+      )),
     );
 
     final bars = AiThinkingShaderPresence(
@@ -365,10 +365,10 @@ Future<void> _handleAiActivityTap({
 
   for (final responseType in responseTypes) {
     final inference = ref.read(
-      activeInferenceControllerProvider(
+      activeInferenceControllerProvider((
         entityId: entryId,
         aiResponseType: responseType,
-      ),
+      )),
     );
     if (inference != null) {
       activeInference = inference;
@@ -420,10 +420,10 @@ class AiRunningAnimationWrapperCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = inferenceRunningControllerProvider(
+    final provider = inferenceRunningControllerProvider((
       id: entryId,
       responseTypes: responseTypes,
-    );
+    ));
     final isRunning = ref.watch(provider);
 
     if (!isRunning) {

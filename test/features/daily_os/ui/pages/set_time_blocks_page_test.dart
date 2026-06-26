@@ -101,7 +101,7 @@ class _TestUnifiedController extends UnifiedDailyOsDataController {
   List<PlannedBlock>? savedBlocks;
 
   @override
-  Future<DailyOsData> build({required DateTime date}) async => _data;
+  Future<DailyOsData> build() async => _data;
 
   @override
   Future<void> setPlannedBlocks(List<PlannedBlock> blocks) async {
@@ -157,8 +157,8 @@ void main() {
         const SetTimeBlocksPage(),
         theme: DesignSystemTheme.light(),
         overrides: [
-          dailyOsSelectedDateProvider.overrideWithValue(_testDate),
-          unifiedDailyOsDataControllerProvider(date: _testDate).overrideWith(
+          dailyOsSelectedDateProvider.overrideWithBuild((_, _) => _testDate),
+          unifiedDailyOsDataControllerProvider(_testDate).overrideWith(
             () => testController = _TestUnifiedController(effectiveData),
           ),
         ],
@@ -207,8 +207,8 @@ void main() {
         ),
         theme: DesignSystemTheme.light(),
         overrides: [
-          dailyOsSelectedDateProvider.overrideWithValue(_testDate),
-          unifiedDailyOsDataControllerProvider(date: _testDate).overrideWith(
+          dailyOsSelectedDateProvider.overrideWithBuild((_, _) => _testDate),
+          unifiedDailyOsDataControllerProvider(_testDate).overrideWith(
             createController,
           ),
         ],

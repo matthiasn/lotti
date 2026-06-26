@@ -1,12 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'audio_waveform_provider.g.dart';
 
 /// Identity key for a waveform computation: which [audio] and how many
 /// amplitude buckets to render.
@@ -59,7 +58,12 @@ class AudioWaveformRequest {
 /// repeatedly scrolled in/out of view, then auto-releases so long sessions
 /// don't accumulate amplitude lists for every clip ever shown. The keep-alive
 /// link is closed early on dispose by cancelling the timer.
-@riverpod
+final FutureProviderFamily<AudioWaveformData?, AudioWaveformRequest>
+audioWaveformProvider = FutureProvider.autoDispose
+    .family<AudioWaveformData?, AudioWaveformRequest>(
+      audioWaveform,
+      name: 'audioWaveformProvider',
+    );
 Future<AudioWaveformData?> audioWaveform(
   Ref ref,
   AudioWaveformRequest request,

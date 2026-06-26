@@ -68,7 +68,7 @@ class TaskListContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final viewModeAsync = ref.watch(
-      taskViewPreferenceProvider(categoryId: categoryId),
+      taskViewPreferenceProvider(categoryId),
     );
     final viewMode = viewModeAsync.value ?? TaskViewMode.list;
 
@@ -105,9 +105,7 @@ class TaskListContent extends ConsumerWidget {
                 behavior: HitTestBehavior.opaque,
                 onTap: () => ref
                     .read(
-                      taskViewPreferenceProvider(
-                        categoryId: categoryId,
-                      ).notifier,
+                      taskViewPreferenceProvider(categoryId).notifier,
                     )
                     .toggle(),
                 child: Padding(

@@ -1,14 +1,12 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'dashscope_inference_repository.g.dart';
 
 /// DashScope image generation endpoint path (native API, not OpenAI-compatible).
 const _imageGenerationPath =
@@ -261,7 +259,12 @@ class DashScopeInferenceRepository {
   void close() => _httpClient.close();
 }
 
-@riverpod
+final Provider<DashScopeInferenceRepository>
+dashScopeInferenceRepositoryProvider =
+    Provider.autoDispose<DashScopeInferenceRepository>(
+      dashScopeInferenceRepository,
+      name: 'dashScopeInferenceRepositoryProvider',
+    );
 DashScopeInferenceRepository dashScopeInferenceRepository(Ref ref) {
   final repo = DashScopeInferenceRepository();
   ref.onDispose(repo.close);

@@ -42,14 +42,14 @@ void main() {
 
   group('TaskFocusController', () {
     test('initial state is null', () {
-      final provider = taskFocusControllerProvider(id: testTaskId);
+      final provider = taskFocusControllerProvider(testTaskId);
       final state = container.read(provider);
 
       expect(state, isNull);
     });
 
     test('publishTaskFocus sets intent', () {
-      final provider = taskFocusControllerProvider(id: testTaskId);
+      final provider = taskFocusControllerProvider(testTaskId);
 
       container
           .read(provider.notifier)
@@ -66,7 +66,7 @@ void main() {
     });
 
     test('publishSuggestionFocus sets suggestions intent', () {
-      final provider = taskFocusControllerProvider(id: testTaskId);
+      final provider = taskFocusControllerProvider(testTaskId);
 
       container.read(provider.notifier).publishSuggestionFocus();
 
@@ -79,7 +79,7 @@ void main() {
     });
 
     test('publishTaskFocus with custom alignment', () {
-      final provider = taskFocusControllerProvider(id: testTaskId);
+      final provider = taskFocusControllerProvider(testTaskId);
 
       container
           .read(provider.notifier)
@@ -93,7 +93,7 @@ void main() {
     });
 
     test('clearIntent resets state to null', () {
-      final provider = taskFocusControllerProvider(id: testTaskId);
+      final provider = taskFocusControllerProvider(testTaskId);
       final notifier = container.read(provider.notifier)
         ..publishTaskFocus(
           entryId: testEntryId,
@@ -111,7 +111,7 @@ void main() {
     });
 
     test('multiple publish calls update the intent', () {
-      final provider = taskFocusControllerProvider(id: testTaskId);
+      final provider = taskFocusControllerProvider(testTaskId);
       final notifier = container.read(provider.notifier)
         ..publishTaskFocus(
           entryId: 'entry1',
@@ -128,7 +128,7 @@ void main() {
     });
 
     test('re-trigger after clearIntent works', () {
-      final provider = taskFocusControllerProvider(id: testTaskId);
+      final provider = taskFocusControllerProvider(testTaskId);
       final notifier = container.read(provider.notifier)
         ..publishTaskFocus(
           entryId: testEntryId,
@@ -154,8 +154,8 @@ void main() {
       const taskId1 = 'task-1';
       const taskId2 = 'task-2';
 
-      final provider1 = taskFocusControllerProvider(id: taskId1);
-      final provider2 = taskFocusControllerProvider(id: taskId2);
+      final provider1 = taskFocusControllerProvider(taskId1);
+      final provider2 = taskFocusControllerProvider(taskId2);
 
       container
           .read(provider1.notifier)
@@ -203,7 +203,7 @@ void main() {
         alignment: 0.3,
       );
 
-      final provider = taskFocusControllerProvider(id: testTaskId);
+      final provider = taskFocusControllerProvider(testTaskId);
       final widgetContainer = ProviderScope.containerOf(
         tester.element(find.byType(SizedBox)),
       );

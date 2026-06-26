@@ -23,8 +23,7 @@ import '../../test_utils.dart';
 /// [CircularProgressIndicator] instead of crashing on its real dependencies.
 class _LoadingChatState extends SoulEvolutionChatState {
   @override
-  Future<EvolutionChatData> build(String soulId) =>
-      Completer<EvolutionChatData>().future;
+  Future<EvolutionChatData> build() => Completer<EvolutionChatData>().future;
 }
 
 void main() {

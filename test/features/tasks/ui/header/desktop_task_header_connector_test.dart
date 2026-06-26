@@ -43,7 +43,7 @@ class _FakeTaskProgressController extends TaskProgressController {
   final TaskProgressState? _state;
 
   @override
-  Future<TaskProgressState?> build({required String id}) async => _state;
+  Future<TaskProgressState?> build() async => _state;
 }
 
 void main() {
@@ -214,7 +214,7 @@ void main() {
         projectForTaskProvider(task.id).overrideWith(
           (ref) async => project,
         ),
-        taskProgressControllerProvider(id: task.id).overrideWith(
+        taskProgressControllerProvider(task.id).overrideWith(
           () => _FakeTaskProgressController(progress),
         ),
       ],
@@ -691,14 +691,14 @@ void main() {
       required Task task,
       required ToggleCallTracker tracker,
     }) => [
-      entryControllerProvider(id: task.id).overrideWith(
+      entryControllerProvider(task.id).overrideWith(
         () => FakeEntryController(task, tracker: tracker),
       ),
       labelsStreamProvider.overrideWith(
         (ref) => Stream<List<LabelDefinition>>.value(const []),
       ),
       projectForTaskProvider(task.id).overrideWith((ref) async => null),
-      taskProgressControllerProvider(id: task.id).overrideWith(
+      taskProgressControllerProvider(task.id).overrideWith(
         () => _FakeTaskProgressController(null),
       ),
     ];
@@ -1041,14 +1041,14 @@ void main() {
       List<ProjectEntry> projects = const [],
     }) {
       return [
-        entryControllerProvider(id: task.id).overrideWith(
+        entryControllerProvider(task.id).overrideWith(
           () => FakeEntryController(task, tracker: tracker),
         ),
         labelsStreamProvider.overrideWith(
           (ref) => Stream<List<LabelDefinition>>.value(const []),
         ),
         projectForTaskProvider(task.id).overrideWith((ref) async => null),
-        taskProgressControllerProvider(id: task.id).overrideWith(
+        taskProgressControllerProvider(task.id).overrideWith(
           () => _FakeTaskProgressController(null),
         ),
         projectRepositoryProvider.overrideWithValue(projectRepo),
@@ -1240,7 +1240,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              entryControllerProvider(id: task.id).overrideWith(
+              entryControllerProvider(task.id).overrideWith(
                 () => FakeEntryController(task, tracker: tracker),
               ),
               labelsStreamProvider.overrideWith(
@@ -1249,7 +1249,7 @@ void main() {
               projectForTaskProvider(task.id).overrideWith(
                 (ref) async => null,
               ),
-              taskProgressControllerProvider(id: task.id).overrideWith(
+              taskProgressControllerProvider(task.id).overrideWith(
                 () => _FakeTaskProgressController(null),
               ),
             ],
@@ -1302,7 +1302,7 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
-                entryControllerProvider(id: task.id).overrideWith(
+                entryControllerProvider(task.id).overrideWith(
                   () => FakeEntryController(task, tracker: tracker),
                 ),
                 labelsStreamProvider.overrideWith(
@@ -1311,7 +1311,7 @@ void main() {
                 projectForTaskProvider(task.id).overrideWith(
                   (ref) async => null,
                 ),
-                taskProgressControllerProvider(id: task.id).overrideWith(
+                taskProgressControllerProvider(task.id).overrideWith(
                   () => _FakeTaskProgressController(null),
                 ),
               ],

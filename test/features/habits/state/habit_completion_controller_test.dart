@@ -104,11 +104,11 @@ void main() {
 
   Future<List<HabitResult>> readResults() {
     return container.read(
-      habitCompletionControllerProvider(
+      habitCompletionControllerProvider((
         habitId: habitId,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
-      ).future,
+      )).future,
     );
   }
 
@@ -179,11 +179,11 @@ void main() {
 
         final updated = container
             .read(
-              habitCompletionControllerProvider(
+              habitCompletionControllerProvider((
                 habitId: habitId,
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ),
+              )),
             )
             .value!;
         final updatedByDay = {
@@ -240,11 +240,11 @@ void main() {
         var emissions = 0;
         List<HabitResult>? lastEmitted;
         container.listen(
-          habitCompletionControllerProvider(
+          habitCompletionControllerProvider((
             habitId: habitId,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
-          ),
+          )),
           (_, next) {
             emissions++;
             lastEmitted = next.value;

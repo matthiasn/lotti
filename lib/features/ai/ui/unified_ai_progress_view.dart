@@ -102,10 +102,10 @@ class _UnifiedAiProgressContentState
 
     if (config != null && config is AiConfigPrompt) {
       final activeInference = ref.read(
-        activeInferenceControllerProvider(
+        activeInferenceControllerProvider((
           entityId: widget.entityId,
           aiResponseType: config.aiResponseType,
-        ),
+        )),
       );
 
       if (activeInference != null) {
@@ -217,10 +217,10 @@ class _UnifiedAiProgressContentState
             : controllerState?.message ?? '';
 
         final inferenceStatus = ref.watch(
-          inferenceStatusControllerProvider(
+          inferenceStatusControllerProvider((
             id: widget.entityId,
             aiResponseType: promptConfig.aiResponseType,
-          ),
+          )),
         );
 
         final isError = inferenceStatus == InferenceStatus.error;

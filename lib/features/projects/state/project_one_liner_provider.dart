@@ -1,9 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'project_one_liner_provider.g.dart';
 
 /// Fetches the AI-generated one-liner subtitle for a project from its agent
 /// report.
@@ -11,7 +10,11 @@ part 'project_one_liner_provider.g.dart';
 /// Chains `projectAgentProvider` to resolve the project's agent, then watches
 /// `agentReportProvider` for the latest report and extracts the `oneLiner`
 /// field. Auto-disposes when the project card scrolls off-screen.
-@riverpod
+final FutureProviderFamily<String?, String> projectOneLinerProvider =
+    FutureProvider.autoDispose.family<String?, String>(
+      projectOneLiner,
+      name: 'projectOneLinerProvider',
+    );
 Future<String?> projectOneLiner(Ref ref, String projectId) async {
   final agentEntity = await ref.watch(
     projectAgentProvider(projectId).future,

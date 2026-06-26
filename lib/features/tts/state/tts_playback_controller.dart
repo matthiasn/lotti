@@ -1,13 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'tts_playback_controller.g.dart';
 
 /// Language-agnostic synthesis mode; Supertonic infers from the text.
 const String kDefaultTtsLanguage = 'na';
@@ -19,8 +17,13 @@ const String kDefaultTtsLanguage = 'na';
 /// App-wide (keepAlive) so playback survives header rebuilds and only one
 /// utterance plays at a time. [TtsPlaybackState.sourceId] tracks which content
 /// is active so each header reflects only its own play/stop state.
-@Riverpod(keepAlive: true)
-class TtsPlaybackController extends _$TtsPlaybackController {
+final ttsPlaybackControllerProvider =
+    NotifierProvider<TtsPlaybackController, TtsPlaybackState>(
+      TtsPlaybackController.new,
+      name: 'ttsPlaybackControllerProvider',
+    );
+
+class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   StreamSubscription<void>? _completedSub;
   StreamSubscription<Duration>? _positionSub;
   StreamSubscription<Duration>? _durationSub;

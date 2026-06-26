@@ -50,7 +50,7 @@ class AudioRecordingIndicator extends ConsumerWidget {
       final linkedId = state.linkedId;
 
       final linkedEntry = linkedId != null
-          ? ref.watch(entryControllerProvider(id: linkedId)).value?.entry
+          ? ref.watch(entryControllerProvider(linkedId)).value?.entry
           : null;
 
       void onTap() {

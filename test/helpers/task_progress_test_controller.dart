@@ -11,7 +11,7 @@ class TestTaskProgressController extends TaskProgressController {
   final Duration estimate;
 
   @override
-  Future<TaskProgressState?> build({required String id}) async {
+  Future<TaskProgressState?> build() async {
     return TaskProgressState(
       progress: progress,
       estimate: estimate,

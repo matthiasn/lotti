@@ -27,7 +27,7 @@ import '../../../widget_test_utils.dart';
 /// building the heavy real detail page.
 class _NullEntryController extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) async => null;
+  Future<EntryState?> build() async => null;
 }
 
 class _BoolNotifier extends Notifier<bool> {
@@ -1097,7 +1097,7 @@ void main() {
           // null entry so the overlay shows the cheap "Entry not found" shell
           // instead of building the real detail page + full provider graph.
           entryControllerProvider(
-            id: taskId,
+            taskId,
           ).overrideWith(_NullEntryController.new),
         ],
       );

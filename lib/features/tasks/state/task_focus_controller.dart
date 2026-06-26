@@ -1,7 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'task_focus_controller.g.dart';
+import 'package:flutter_riverpod/misc.dart';
 
 enum TaskFocusTarget {
   entry,
@@ -45,12 +43,20 @@ class TaskFocusIntent {
   }
 }
 
-@riverpod
-class TaskFocusController extends _$TaskFocusController {
-  TaskFocusController();
+final NotifierProviderFamily<TaskFocusController, TaskFocusIntent?, String>
+taskFocusControllerProvider = NotifierProvider.autoDispose
+    .family<TaskFocusController, TaskFocusIntent?, String>(
+      TaskFocusController.new,
+      name: 'taskFocusControllerProvider',
+    );
+
+class TaskFocusController extends Notifier<TaskFocusIntent?> {
+  TaskFocusController(this.id);
+
+  final String id;
 
   @override
-  TaskFocusIntent? build({required String id}) {
+  TaskFocusIntent? build() {
     ref.keepAlive();
     return null;
   }
@@ -89,7 +95,7 @@ void publishTaskFocus({
   double alignment = 0.0,
 }) {
   ref
-      .read(taskFocusControllerProvider(id: taskId).notifier)
+      .read(taskFocusControllerProvider(taskId).notifier)
       .publishTaskFocus(
         entryId: entryId,
         alignment: alignment,
@@ -103,6 +109,6 @@ void publishTaskSuggestionFocus({
   double alignment = 0.1,
 }) {
   ref
-      .read(taskFocusControllerProvider(id: taskId).notifier)
+      .read(taskFocusControllerProvider(taskId).notifier)
       .publishSuggestionFocus(alignment: alignment);
 }

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:developer' as developer;
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
@@ -19,7 +21,6 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:openai_dart/openai_dart.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 /// Dispatches streamed assistant tool calls for the unified AI inference path:
 /// checklist completion suggestions, checklist add/update, task language

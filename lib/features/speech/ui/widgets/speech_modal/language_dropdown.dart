@@ -21,7 +21,7 @@ class LanguageDropdown extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
+    final provider = entryControllerProvider(entryId);
     final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).value;
     final item = entryState?.entry;

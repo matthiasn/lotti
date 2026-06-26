@@ -294,7 +294,7 @@ Future<void> _settlePreview(WidgetTester tester) async {
   // the currently selected date so results cannot depend on pump ordering.
   final selectedDate = container.read(dailyOsSelectedDateProvider);
   await container.read(
-    unifiedDailyOsDataControllerProvider(date: selectedDate).future,
+    unifiedDailyOsDataControllerProvider(selectedDate).future,
   );
 
   await tester.pump();

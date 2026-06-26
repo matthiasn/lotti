@@ -28,7 +28,7 @@ import '../../../../../widget_test_utils.dart';
 /// to exercise the footer's empty-state (`SizedBox.shrink`) branch.
 class _NullEntryController extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     final value = EntryState.saved(
       entryId: id,
       entry: null,
@@ -265,9 +265,7 @@ void main() {
             linkedFrom: null,
           ),
           overrides: [
-            entryControllerProvider(
-              id: testTextEntryNoGeo.meta.id,
-            ).overrideWith(
+            entryControllerProvider(testTextEntryNoGeo.meta.id).overrideWith(
               () => FakeEntryController(testTextEntryNoGeo),
             ),
           ],
@@ -294,9 +292,7 @@ void main() {
             linkedFrom: null,
           ),
           overrides: [
-            entryControllerProvider(
-              id: testTextEntryNoGeo.meta.id,
-            ).overrideWith(
+            entryControllerProvider(testTextEntryNoGeo.meta.id).overrideWith(
               () => FakeEntryController(testTextEntryNoGeo, showMap: true),
             ),
           ],
@@ -321,9 +317,7 @@ void main() {
             linkedFrom: null,
           ),
           overrides: [
-            entryControllerProvider(
-              id: testTextEntryNoGeo.meta.id,
-            ).overrideWith(
+            entryControllerProvider(testTextEntryNoGeo.meta.id).overrideWith(
               _NullEntryController.new,
             ),
           ],

@@ -27,7 +27,7 @@ class CategorySelectionIconButton extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final provider = entryControllerProvider(id: entry.id);
+    final provider = entryControllerProvider(entry.id);
     final notifier = ref.read(provider.notifier);
 
     return IconButton(

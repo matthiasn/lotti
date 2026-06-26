@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -15,9 +16,6 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'journal_repository.g.dart';
 
 /// App-facing facade for journal entity reads, writes, links, and deletes.
 ///
@@ -451,5 +449,9 @@ class JournalRepository {
   }
 }
 
-@riverpod
+final Provider<JournalRepository> journalRepositoryProvider =
+    Provider.autoDispose<JournalRepository>(
+      journalRepository,
+      name: 'journalRepositoryProvider',
+    );
 JournalRepository journalRepository(Ref ref) => JournalRepository();

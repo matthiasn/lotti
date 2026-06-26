@@ -43,8 +43,7 @@ class TaskCompactAppBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final offset =
-        ref.watch(taskAppBarControllerProvider(id: task.id)).value ?? 0;
+    final offset = ref.watch(taskAppBarControllerProvider(task.id)).value ?? 0;
     final showTitle = offset >= _persistentTitleScrollThreshold;
     final showGraph =
         ref.watch(configFlagProvider(enableKnowledgeGraphFlag)).value ?? false;

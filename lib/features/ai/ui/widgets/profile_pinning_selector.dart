@@ -67,12 +67,10 @@ class ProfilePinningSelector extends ConsumerWidget {
     final directoryAsync = ref.watch(knownSyncNodesProvider);
     final localHostAsync = ref.watch(localVectorClockHostIdProvider);
     final modelsAsync = ref.watch(
-      aiConfigByTypeControllerProvider(configType: AiConfigType.model),
+      aiConfigByTypeControllerProvider(AiConfigType.model),
     );
     final providersAsync = ref.watch(
-      aiConfigByTypeControllerProvider(
-        configType: AiConfigType.inferenceProvider,
-      ),
+      aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider),
     );
 
     final nodes = directoryAsync.maybeWhen<List<SyncNodeProfile>>(

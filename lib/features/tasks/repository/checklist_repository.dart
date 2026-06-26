@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -10,12 +11,13 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'checklist_repository.g.dart';
 
 /// Keep-alive provider exposing the singleton [ChecklistRepository].
-@Riverpod(keepAlive: true)
+final checklistRepositoryProvider = Provider<ChecklistRepository>(
+  checklistRepository,
+  name: 'checklistRepositoryProvider',
+);
+
 ChecklistRepository checklistRepository(Ref _) {
   return ChecklistRepository();
 }

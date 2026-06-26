@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -64,7 +66,6 @@ void main() {
 
   group('AiRunningAnimationWrapper', () {
     const testId = 'test-id';
-    // ignore: deprecated_member_use_from_same_package
     const testType = AiResponseType.taskSummary;
     final testSet = {testType};
 
@@ -98,10 +99,10 @@ void main() {
       // Set the inference status to running
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: testType,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.running);
 
@@ -136,10 +137,10 @@ void main() {
       // Set the inference status to running
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: testType,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.running);
 
@@ -176,10 +177,10 @@ void main() {
         // Set the inference status to running
         container
             .read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: testId,
                 aiResponseType: testType,
-              ).notifier,
+              )).notifier,
             )
             .setStatus(InferenceStatus.running);
 
@@ -219,10 +220,10 @@ void main() {
       // Set the inference status to running
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: testType,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.running);
 
@@ -264,7 +265,6 @@ void main() {
     testWidgets('should handle multiple response types', (tester) async {
       // Test with multiple response types in the set
       final multipleTypes = {
-        // ignore: deprecated_member_use_from_same_package
         AiResponseType.taskSummary,
         AiResponseType.audioTranscription,
         AiResponseType.imageAnalysis,
@@ -276,10 +276,10 @@ void main() {
       // Set one of the inference statuses to running
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: AiResponseType.audioTranscription,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.running);
 
@@ -308,7 +308,6 @@ void main() {
 
   group('AiRunningAnimationWrapperCard', () {
     const testId = 'test-id';
-    // ignore: deprecated_member_use_from_same_package
     const testType = AiResponseType.taskSummary;
     final testSet = {testType};
 
@@ -342,10 +341,10 @@ void main() {
         // Set the inference status to running
         container
             .read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: testId,
                 aiResponseType: testType,
-              ).notifier,
+              )).notifier,
             )
             .setStatus(InferenceStatus.running);
 
@@ -381,10 +380,10 @@ void main() {
       // Set the inference status to running
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: testType,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.running);
 
@@ -435,10 +434,10 @@ void main() {
         // Set the inference status to running
         container
             .read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: testId,
                 aiResponseType: testType,
-              ).notifier,
+              )).notifier,
             )
             .setStatus(InferenceStatus.running);
 
@@ -474,7 +473,6 @@ void main() {
     ) async {
       // Test with multiple response types
       final multipleTypes = {
-        // ignore: deprecated_member_use_from_same_package
         AiResponseType.taskSummary,
         AiResponseType.audioTranscription,
       };
@@ -485,11 +483,10 @@ void main() {
       // Set the inference status to running for one type
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
-              // ignore: deprecated_member_use_from_same_package
               aiResponseType: AiResponseType.taskSummary,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.running);
 
@@ -526,10 +523,10 @@ void main() {
       // Set the inference status to running
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: testType,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.running);
 
@@ -562,7 +559,6 @@ void main() {
   group('AiRunningDecoderBars', () {
     const testId = 'test-id';
     const testPromptId = 'test-prompt-id';
-    // ignore: deprecated_member_use_from_same_package
     const testType = AiResponseType.taskSummary;
     final testSet = {testType};
 
@@ -572,10 +568,10 @@ void main() {
     ) {
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: testType,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(status);
     }
@@ -800,10 +796,10 @@ void main() {
       try {
         container
             .read(
-              activeInferenceControllerProvider(
+              activeInferenceControllerProvider((
                 entityId: testId,
                 aiResponseType: testType,
-              ).notifier,
+              )).notifier,
             )
             .startInference(promptId: testPromptId);
         setInferenceStatus(container, InferenceStatus.running);
@@ -902,7 +898,6 @@ void main() {
     group('AI Animation Modal Interaction Tests', () {
       const testId = 'test-entity-id';
       const testPromptId = 'test-prompt-id';
-      // ignore: deprecated_member_use_from_same_package
       const testType = AiResponseType.taskSummary;
       final testTypes = {testType};
 
@@ -920,7 +915,6 @@ void main() {
           createdAt: DateTime(2024, 3, 15, 10, 30),
           useReasoning: false,
           requiredInputData: const [],
-          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
       });
@@ -940,10 +934,10 @@ void main() {
           // Set up active inference
           container
               .read(
-                activeInferenceControllerProvider(
+                activeInferenceControllerProvider((
                   entityId: testId,
                   aiResponseType: testType,
-                ).notifier,
+                )).notifier,
               )
               .startInference(
                 promptId: testPromptId,
@@ -952,10 +946,10 @@ void main() {
           // Set status to running
           container
               .read(
-                inferenceStatusControllerProvider(
+                inferenceStatusControllerProvider((
                   id: testId,
                   aiResponseType: testType,
-                ).notifier,
+                )).notifier,
               )
               .setStatus(InferenceStatus.running);
 
@@ -1000,10 +994,10 @@ void main() {
         // Set status to running
         container
             .read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: testId,
                 aiResponseType: testType,
-              ).notifier,
+              )).notifier,
             )
             .setStatus(InferenceStatus.running);
 
@@ -1037,10 +1031,10 @@ void main() {
         // Set status to running but no active inference
         container
             .read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: testId,
                 aiResponseType: testType,
-              ).notifier,
+              )).notifier,
             )
             .setStatus(InferenceStatus.running);
 
@@ -1084,10 +1078,10 @@ void main() {
         // Set up active inference
         container
             .read(
-              activeInferenceControllerProvider(
+              activeInferenceControllerProvider((
                 entityId: testId,
                 aiResponseType: testType,
-              ).notifier,
+              )).notifier,
             )
             .startInference(
               promptId: testPromptId,
@@ -1096,10 +1090,10 @@ void main() {
         // Set status to running
         container
             .read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: testId,
                 aiResponseType: testType,
-              ).notifier,
+              )).notifier,
             )
             .setStatus(InferenceStatus.running);
 
@@ -1128,7 +1122,6 @@ void main() {
 
       testWidgets('handles multiple response types correctly', (tester) async {
         final multipleTypes = {
-          // ignore: deprecated_member_use_from_same_package
           AiResponseType.taskSummary,
           AiResponseType.audioTranscription,
           AiResponseType.imageAnalysis,
@@ -1145,10 +1138,10 @@ void main() {
         // Set up active inference for audioTranscription
         container
             .read(
-              activeInferenceControllerProvider(
+              activeInferenceControllerProvider((
                 entityId: testId,
                 aiResponseType: AiResponseType.audioTranscription,
-              ).notifier,
+              )).notifier,
             )
             .startInference(
               promptId: testPromptId,
@@ -1157,10 +1150,10 @@ void main() {
         // Set status to running for audioTranscription
         container
             .read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: testId,
                 aiResponseType: AiResponseType.audioTranscription,
-              ).notifier,
+              )).notifier,
             )
             .setStatus(InferenceStatus.running);
 
@@ -1201,10 +1194,10 @@ void main() {
           // Set up active inference
           container
               .read(
-                activeInferenceControllerProvider(
+                activeInferenceControllerProvider((
                   entityId: testId,
                   aiResponseType: testType,
-                ).notifier,
+                )).notifier,
               )
               .startInference(
                 promptId: testPromptId,
@@ -1213,10 +1206,10 @@ void main() {
           // Set status to running
           container
               .read(
-                inferenceStatusControllerProvider(
+                inferenceStatusControllerProvider((
                   id: testId,
                   aiResponseType: testType,
-                ).notifier,
+                )).notifier,
               )
               .setStatus(InferenceStatus.running);
 

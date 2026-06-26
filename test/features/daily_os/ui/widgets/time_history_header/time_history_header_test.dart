@@ -128,10 +128,10 @@ void main() {
             timeHistoryHeaderControllerProvider.overrideWith(
               LoadingTimeHistoryController.new,
             ),
-            unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+            unifiedDailyOsDataControllerProvider(testDate).overrideWith(
               () => TestUnifiedController(createUnifiedData()),
             ),
-            dayBudgetStatsProvider(date: testDate).overrideWith(
+            dayBudgetStatsProvider(testDate).overrideWith(
               (ref) async => const DayBudgetStats(
                 totalPlanned: Duration.zero,
                 totalRecorded: Duration.zero,
@@ -231,10 +231,10 @@ void main() {
             timeHistoryHeaderControllerProvider.overrideWith(
               () => trackingController,
             ),
-            unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+            unifiedDailyOsDataControllerProvider(testDate).overrideWith(
               () => TestUnifiedController(createUnifiedData()),
             ),
-            dayBudgetStatsProvider(date: testDate).overrideWith(
+            dayBudgetStatsProvider(testDate).overrideWith(
               (ref) async => const DayBudgetStats(
                 totalPlanned: Duration.zero,
                 totalRecorded: Duration.zero,
@@ -397,19 +397,15 @@ void main() {
               timeHistoryHeaderControllerProvider.overrideWith(
                 () => TestTimeHistoryController(historyData),
               ),
-              unifiedDailyOsDataControllerProvider(
-                date: yesterday,
-              ).overrideWith(
+              unifiedDailyOsDataControllerProvider(yesterday).overrideWith(
                 () => TestUnifiedController(createUnifiedData(date: yesterday)),
               ),
-              unifiedDailyOsDataControllerProvider(
-                date: todayMidnight,
-              ).overrideWith(
+              unifiedDailyOsDataControllerProvider(todayMidnight).overrideWith(
                 () => TestUnifiedController(
                   createUnifiedData(date: todayMidnight),
                 ),
               ),
-              dayBudgetStatsProvider(date: yesterday).overrideWith(
+              dayBudgetStatsProvider(yesterday).overrideWith(
                 (ref) async => const DayBudgetStats(
                   totalPlanned: Duration.zero,
                   totalRecorded: Duration.zero,
@@ -417,7 +413,7 @@ void main() {
                   overBudgetCount: 0,
                 ),
               ),
-              dayBudgetStatsProvider(date: todayMidnight).overrideWith(
+              dayBudgetStatsProvider(todayMidnight).overrideWith(
                 (ref) async => const DayBudgetStats(
                   totalPlanned: Duration.zero,
                   totalRecorded: Duration.zero,

@@ -701,7 +701,7 @@ class _FakeJournalPageController extends JournalPageController {
   final JournalPageState _testState;
 
   @override
-  JournalPageState build(bool showTasks) => _testState;
+  JournalPageState build() => _testState;
 
   @override
   JournalPageState get state => _testState;

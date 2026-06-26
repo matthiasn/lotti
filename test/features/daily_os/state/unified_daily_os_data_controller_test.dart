@@ -228,7 +228,7 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       expect(result.budgetProgress, isEmpty);
@@ -248,7 +248,7 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress;
@@ -290,7 +290,7 @@ void main() {
       ).thenAnswer((_) async => [entry]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress;
@@ -335,7 +335,7 @@ void main() {
       ).thenAnswer((_) async => [entry]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       expect(
@@ -375,7 +375,7 @@ void main() {
       ).thenAnswer((_) async => [entry]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       expect(
@@ -415,7 +415,7 @@ void main() {
       ).thenAnswer((_) async => [entry]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress.first;
@@ -461,7 +461,7 @@ void main() {
       ).thenAnswer((_) async => entries);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress.first;
@@ -519,7 +519,7 @@ void main() {
         ).thenAnswer((_) async => entries);
 
         final result = await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         final progress = result.budgetProgress.first;
@@ -558,7 +558,7 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress;
@@ -612,7 +612,7 @@ void main() {
       ).thenAnswer((_) async => entries);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress;
@@ -688,7 +688,7 @@ void main() {
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress;
@@ -759,7 +759,7 @@ void main() {
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress;
@@ -807,7 +807,7 @@ void main() {
       ).thenAnswer((_) async => [zeroDurationEntry]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress.first;
@@ -838,7 +838,7 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final timeline = result.timelineData;
@@ -886,7 +886,7 @@ void main() {
       ).thenAnswer((_) async => entries);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final timeline = result.timelineData;
@@ -941,7 +941,7 @@ void main() {
       ).thenAnswer((_) async => entries);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final timeline = result.timelineData;
@@ -998,7 +998,7 @@ void main() {
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final timeline = result.timelineData;
@@ -1081,7 +1081,7 @@ void main() {
         ).thenAnswer((_) async => [ratingEntry, parentTask]);
 
         final result = await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         final slot = result.timelineData.actualSlots.single;
@@ -1143,7 +1143,7 @@ void main() {
       ).thenAnswer((_) async => [ratingEntry]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final slot = result.timelineData.actualSlots.single;
@@ -1195,7 +1195,7 @@ void main() {
       ).thenAnswer((_) async => entries);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final timeline = result.timelineData;
@@ -1216,7 +1216,7 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       expect(result.timelineData.dayStartHour, equals(8));
@@ -1237,7 +1237,7 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       // 6 - 1 (buffer) = 5
@@ -1265,7 +1265,7 @@ void main() {
       ).thenAnswer((_) async => [entry]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       // 5 - 1 (buffer) = 4
@@ -1286,7 +1286,7 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       expect(result.timelineData.dayStartHour, equals(0));
@@ -1306,7 +1306,7 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       // 22 + 1 (next hour) + 1 (buffer) = 24
@@ -1334,7 +1334,7 @@ void main() {
       ).thenAnswer((_) async => [entry]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       // 20 + 1 (next hour) + 1 (buffer) = 22
@@ -1355,7 +1355,7 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       expect(result.timelineData.dayEndHour, equals(24));
@@ -1383,7 +1383,7 @@ void main() {
       ).thenAnswer((_) async => [entry]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       // Should treat as hour 24 since it ends on next day
@@ -1404,7 +1404,7 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       // Should treat as hour 24 since it ends on next day
@@ -1442,7 +1442,7 @@ void main() {
       ).thenAnswer((_) async => [entry]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       // Should use 7 (from actual) not 10 (from planned)
@@ -1481,7 +1481,7 @@ void main() {
       ).thenAnswer((_) async => [entry]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       // Should use 20 (from actual) not 17 (from planned)
@@ -1535,7 +1535,7 @@ void main() {
       ).thenAnswer((_) async => entries);
 
       final result = await container.read(
-        dayBudgetStatsProvider(date: testDate).future,
+        dayBudgetStatsProvider(testDate).future,
       );
 
       expect(result.totalPlanned, equals(const Duration(hours: 3)));
@@ -1606,7 +1606,7 @@ void main() {
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress.first;
@@ -1693,7 +1693,7 @@ void main() {
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress.first;
@@ -1765,7 +1765,7 @@ void main() {
       ).thenAnswer((_) async => [doneTask]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final taskProgress = result.budgetProgress.first.taskProgressItems.first;
@@ -1837,7 +1837,7 @@ void main() {
         ).thenAnswer((_) async => [doneTask]);
 
         final result = await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         final taskProgress =
@@ -1925,7 +1925,7 @@ void main() {
       ).thenAnswer((_) async => [task1, task2]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final items = result.budgetProgress.first.taskProgressItems;
@@ -1973,7 +1973,7 @@ void main() {
       ).thenAnswer((_) async => []);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress.first;
@@ -2010,7 +2010,7 @@ void main() {
       ).thenAnswer((_) async => [dueTask as Task]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress.first;
@@ -2086,7 +2086,7 @@ void main() {
       ).thenAnswer((_) async => [taskWithDue as Task]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final progress = result.budgetProgress.first;
@@ -2130,7 +2130,7 @@ void main() {
         ).thenAnswer((_) async => [dueTask as Task]);
 
         final result = await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         // Should have 2 budgets: the planned one and a synthetic one
@@ -2183,7 +2183,7 @@ void main() {
       ).thenAnswer((_) async => [dueTodayTask as Task, overdueTask as Task]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final items = result.budgetProgress.first.taskProgressItems;
@@ -2210,7 +2210,7 @@ void main() {
       ).thenAnswer((_) async => [dueTask as Task]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       // No budgets should be created for tasks without category
@@ -2319,7 +2319,7 @@ void main() {
         ).thenAnswer((_) async => [futureDueTask as Task, overdueTask as Task]);
 
         final result = await container.read(
-          unifiedDailyOsDataControllerProvider(date: futureDateStart).future,
+          unifiedDailyOsDataControllerProvider(futureDateStart).future,
         );
 
         final items = result.budgetProgress.first.taskProgressItems;
@@ -2391,7 +2391,7 @@ void main() {
         );
 
         final result = await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         final items = result.budgetProgress.first.taskProgressItems;
@@ -2447,7 +2447,7 @@ void main() {
       ).thenAnswer((_) async => [p0DueToday as Task, p3Overdue as Task]);
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final items = result.budgetProgress.first.taskProgressItems;
@@ -2479,7 +2479,7 @@ void main() {
 
         // Initial fetch
         container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
         async.flushMicrotasks();
 
@@ -2493,7 +2493,7 @@ void main() {
 
         // Baseline: nothing recorded against the work budget yet.
         final before = container
-            .read(unifiedDailyOsDataControllerProvider(date: testDate))
+            .read(unifiedDailyOsDataControllerProvider(testDate))
             .value!
             .budgetProgress
             .firstWhere((p) => p.categoryId == 'cat-work');
@@ -2507,7 +2507,7 @@ void main() {
 
         // The live timer entry's elapsed time lands in the budget.
         final after = container
-            .read(unifiedDailyOsDataControllerProvider(date: testDate))
+            .read(unifiedDailyOsDataControllerProvider(testDate))
             .value!
             .budgetProgress
             .firstWhere((p) => p.categoryId == 'cat-work');
@@ -2537,7 +2537,7 @@ void main() {
 
         // Initial fetch
         container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
         async.flushMicrotasks();
 
@@ -2578,7 +2578,7 @@ void main() {
 
         // Initial fetch
         container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
         async.flushMicrotasks();
 
@@ -2627,7 +2627,7 @@ void main() {
 
         // Initial fetch
         container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
         async.flushMicrotasks();
 
@@ -2676,7 +2676,7 @@ void main() {
         late DailyOsData initialResult;
         container
             .read(
-              unifiedDailyOsDataControllerProvider(date: testDate).future,
+              unifiedDailyOsDataControllerProvider(testDate).future,
             )
             .then((value) => initialResult = value);
         async.flushMicrotasks();
@@ -2696,7 +2696,7 @@ void main() {
 
         // The budget should not have changed
         final result = container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate),
+          unifiedDailyOsDataControllerProvider(testDate),
         );
         expect(
           result.value?.budgetProgress.firstOrNull?.recordedDuration,
@@ -2723,7 +2723,7 @@ void main() {
 
         // Initial fetch
         container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
         async.flushMicrotasks();
 
@@ -2739,7 +2739,7 @@ void main() {
 
         // The budget should not have changed for any category
         final result = container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate),
+          unifiedDailyOsDataControllerProvider(testDate),
         );
         expect(
           result.value?.budgetProgress.first.recordedDuration,
@@ -2773,7 +2773,7 @@ void main() {
 
         // Initial fetch
         container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
         async.flushMicrotasks();
 
@@ -2827,7 +2827,7 @@ void main() {
         late DailyOsData initialResult;
         container
             .read(
-              unifiedDailyOsDataControllerProvider(date: testDate).future,
+              unifiedDailyOsDataControllerProvider(testDate).future,
             )
             .then((value) => initialResult = value);
         async.flushMicrotasks();
@@ -2850,7 +2850,7 @@ void main() {
         // The new entry should be added to contributing entries
         // Total should now be 1.5 hours
         final result = container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate),
+          unifiedDailyOsDataControllerProvider(testDate),
         );
 
         // Verify the state was updated
@@ -2891,7 +2891,7 @@ void main() {
 
         // Initial fetch
         container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
         async.flushMicrotasks();
 
@@ -2907,7 +2907,7 @@ void main() {
 
         // The entry should be updated (replaced) in contributing entries
         final result = container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate),
+          unifiedDailyOsDataControllerProvider(testDate),
         );
         expect(result.hasValue, isTrue);
       });
@@ -2959,11 +2959,11 @@ void main() {
       setupBasicMocks(plan);
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .agreeToPlan();
 
       final captured = verify(
@@ -2981,11 +2981,11 @@ void main() {
       setupBasicMocks(plan);
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .markComplete();
 
       final captured = verify(
@@ -3000,7 +3000,7 @@ void main() {
       setupBasicMocks(plan);
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final newBlock = PlannedBlock(
@@ -3011,7 +3011,7 @@ void main() {
       );
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .addPlannedBlock(newBlock);
 
       final captured = verify(
@@ -3033,7 +3033,7 @@ void main() {
       setupBasicMocks(plan);
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final updatedBlock = PlannedBlock(
@@ -3044,7 +3044,7 @@ void main() {
       );
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .updatePlannedBlock(updatedBlock);
 
       final captured = verify(
@@ -3078,11 +3078,11 @@ void main() {
       setupBasicMocks(plan);
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .removePlannedBlock('block-1');
 
       final captured = verify(
@@ -3107,7 +3107,7 @@ void main() {
       setupBasicMocks(plan);
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       final newBlocks = [
@@ -3126,7 +3126,7 @@ void main() {
       ];
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .setPlannedBlocks(newBlocks);
 
       final captured = verify(
@@ -3152,11 +3152,11 @@ void main() {
       setupBasicMocks(plan);
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .setPlannedBlocks([]);
 
       final captured = verify(
@@ -3171,7 +3171,7 @@ void main() {
       setupBasicMocks(plan);
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       const taskRef = PinnedTaskRef(
@@ -3181,7 +3181,7 @@ void main() {
       );
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .pinTask(taskRef);
 
       final captured = verify(
@@ -3202,11 +3202,11 @@ void main() {
       setupBasicMocks(plan);
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .unpinTask('task-1');
 
       final captured = verify(
@@ -3222,11 +3222,11 @@ void main() {
       setupBasicMocks(plan);
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .setDayLabel('Deep Work Day');
 
       final captured = verify(
@@ -3244,7 +3244,7 @@ void main() {
         setupBasicMocks(agreedPlan);
 
         await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         final newBlock = PlannedBlock(
@@ -3255,7 +3255,7 @@ void main() {
         );
 
         await container
-            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
             .addPlannedBlock(newBlock);
 
         final captured = verify(
@@ -3285,7 +3285,7 @@ void main() {
           setupBasicMocks(agreedPlan);
 
           await container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate).future,
+            unifiedDailyOsDataControllerProvider(testDate).future,
           );
 
           final updatedBlock = PlannedBlock(
@@ -3297,7 +3297,7 @@ void main() {
 
           await container
               .read(
-                unifiedDailyOsDataControllerProvider(date: testDate).notifier,
+                unifiedDailyOsDataControllerProvider(testDate).notifier,
               )
               .updatePlannedBlock(updatedBlock);
 
@@ -3325,12 +3325,12 @@ void main() {
           setupBasicMocks(agreedPlan);
 
           await container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate).future,
+            unifiedDailyOsDataControllerProvider(testDate).future,
           );
 
           await container
               .read(
-                unifiedDailyOsDataControllerProvider(date: testDate).notifier,
+                unifiedDailyOsDataControllerProvider(testDate).notifier,
               )
               .removePlannedBlock('block-1');
 
@@ -3359,12 +3359,12 @@ void main() {
           setupBasicMocks(agreedPlan);
 
           await container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate).future,
+            unifiedDailyOsDataControllerProvider(testDate).future,
           );
 
           await container
               .read(
-                unifiedDailyOsDataControllerProvider(date: testDate).notifier,
+                unifiedDailyOsDataControllerProvider(testDate).notifier,
               )
               .setPlannedBlocks([
                 PlannedBlock(
@@ -3394,12 +3394,12 @@ void main() {
           setupBasicMocks(draftPlan);
 
           await container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate).future,
+            unifiedDailyOsDataControllerProvider(testDate).future,
           );
 
           await container
               .read(
-                unifiedDailyOsDataControllerProvider(date: testDate).notifier,
+                unifiedDailyOsDataControllerProvider(testDate).notifier,
               )
               .setPlannedBlocks([
                 PlannedBlock(
@@ -3425,7 +3425,7 @@ void main() {
         setupBasicMocks(agreedPlan);
 
         await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         const taskRef = PinnedTaskRef(
@@ -3434,7 +3434,7 @@ void main() {
         );
 
         await container
-            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
             .pinTask(taskRef);
 
         final captured = verify(
@@ -3458,11 +3458,11 @@ void main() {
         setupBasicMocks(agreedPlan);
 
         await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         await container
-            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
             .unpinTask('task-1');
 
         final captured = verify(
@@ -3477,7 +3477,7 @@ void main() {
         setupBasicMocks(draftPlan);
 
         await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         final newBlock = PlannedBlock(
@@ -3488,7 +3488,7 @@ void main() {
         );
 
         await container
-            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
             .addPlannedBlock(newBlock);
 
         final captured = verify(
@@ -3506,7 +3506,7 @@ void main() {
         setupBasicMocks(agreedPlan);
 
         await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         final newBlock = PlannedBlock(
@@ -3517,7 +3517,7 @@ void main() {
         );
 
         await container
-            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
             .addPlannedBlock(newBlock);
 
         final captured = verify(
@@ -3553,7 +3553,7 @@ void main() {
       setupMocksForNoPlan();
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       // UI receives a transient plan with correct ID
@@ -3569,7 +3569,7 @@ void main() {
       setupMocksForNoPlan();
 
       final result = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       expect(result.dayPlan.meta.id, equals(dayPlanId(testDate)));
@@ -3603,7 +3603,7 @@ void main() {
         });
 
         await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         // Verify no save before interaction
@@ -3617,7 +3617,7 @@ void main() {
         );
 
         await container
-            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
             .addPlannedBlock(newBlock);
 
         // Now the plan should have been saved
@@ -3647,13 +3647,13 @@ void main() {
       });
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       verifyNever(() => mockDayPlanRepository.save(any()));
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .agreeToPlan();
 
       final captured = verify(
@@ -3680,7 +3680,7 @@ void main() {
       });
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       verifyNever(() => mockDayPlanRepository.save(any()));
@@ -3691,7 +3691,7 @@ void main() {
       );
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .pinTask(taskRef);
 
       final captured = verify(
@@ -3719,13 +3719,13 @@ void main() {
       });
 
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
+        unifiedDailyOsDataControllerProvider(testDate).future,
       );
 
       verifyNever(() => mockDayPlanRepository.save(any()));
 
       await container
-          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .read(unifiedDailyOsDataControllerProvider(testDate).notifier)
           .setDayLabel('Focus Day');
 
       final captured = verify(
@@ -3765,7 +3765,7 @@ void main() {
         stubPlanAndEmptyEntries(existingPlan);
 
         final result = await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         // Should use the existing plan from DB, not create a new one
@@ -3802,11 +3802,11 @@ void main() {
 
       // Navigate to date1
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: date1).future,
+        unifiedDailyOsDataControllerProvider(date1).future,
       );
       // Navigate to date2
       await container.read(
-        unifiedDailyOsDataControllerProvider(date: date2).future,
+        unifiedDailyOsDataControllerProvider(date2).future,
       );
 
       // No plan should have been persisted for either date
@@ -3827,7 +3827,7 @@ void main() {
         ).thenAnswer((_) async => []);
 
         container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
         async.flushMicrotasks();
 
@@ -3873,7 +3873,7 @@ void main() {
         ).thenAnswer((_) async => []);
 
         container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
         async.flushMicrotasks();
 
@@ -3881,7 +3881,7 @@ void main() {
         async.flushMicrotasks();
 
         final state = container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate),
+          unifiedDailyOsDataControllerProvider(testDate),
         );
         expect(state.value?.dayPlan.data.plannedBlocks, hasLength(1));
         verify(() => mockDayPlanRepository.getDayPlan(testDate)).called(2);
@@ -3915,7 +3915,7 @@ void main() {
           ).thenAnswer((_) async => []);
 
           container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate).future,
+            unifiedDailyOsDataControllerProvider(testDate).future,
           );
           async.flushMicrotasks();
           expect(planCalls, 1);
@@ -3954,7 +3954,7 @@ void main() {
           expect(planCalls, 3);
 
           final state = container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate),
+            unifiedDailyOsDataControllerProvider(testDate),
           );
           expect(state.value?.dayPlan.data.plannedBlocks, hasLength(1));
         });
@@ -3997,7 +3997,7 @@ void main() {
         });
 
         container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
         async.flushMicrotasks();
 
@@ -4005,7 +4005,7 @@ void main() {
         async.flushMicrotasks();
 
         final state = container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate),
+          unifiedDailyOsDataControllerProvider(testDate),
         );
         expect(state.value?.budgetProgress, hasLength(1));
         expect(
@@ -4059,7 +4059,7 @@ void main() {
           ).thenAnswer((_) async => []);
 
           container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate).future,
+            unifiedDailyOsDataControllerProvider(testDate).future,
           );
           async.flushMicrotasks();
 
@@ -4070,7 +4070,7 @@ void main() {
           async.flushMicrotasks();
 
           final state = container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate),
+            unifiedDailyOsDataControllerProvider(testDate),
           );
           expect(state.value?.dayPlan.data.plannedBlocks, hasLength(1));
           verify(() => mockDayPlanRepository.getDayPlan(testDate)).called(2);
@@ -4128,7 +4128,7 @@ void main() {
 
         // Initial load fully completes (_hasLoadedInitialData = true).
         container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
         async.flushMicrotasks();
 
@@ -4158,7 +4158,7 @@ void main() {
         // The queued refresh's data (block from call 3) is the final state,
         // proving the line-174 re-run actually applied fresh data.
         final state = container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate),
+          unifiedDailyOsDataControllerProvider(testDate),
         );
         expect(state.value?.dayPlan.data.plannedBlocks, hasLength(1));
         expect(
@@ -4203,7 +4203,7 @@ void main() {
 
             // Initial load (succeeds)
             container.read(
-              unifiedDailyOsDataControllerProvider(date: testDate).future,
+              unifiedDailyOsDataControllerProvider(testDate).future,
             );
             async.flushMicrotasks();
 
@@ -4223,7 +4223,7 @@ void main() {
 
             // Controller must still be usable (no unhandled error)
             final stateAfterError = container.read(
-              unifiedDailyOsDataControllerProvider(date: testDate),
+              unifiedDailyOsDataControllerProvider(testDate),
             );
             expect(stateAfterError.hasValue, isTrue);
           });
@@ -4268,7 +4268,7 @@ void main() {
 
           // Initial load
           container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate).future,
+            unifiedDailyOsDataControllerProvider(testDate).future,
           );
           async.flushMicrotasks();
 
@@ -4343,7 +4343,7 @@ void main() {
 
             // Start the build; the initial _fetchAllData blocks on the completer.
             container.read(
-              unifiedDailyOsDataControllerProvider(date: testDate).future,
+              unifiedDailyOsDataControllerProvider(testDate).future,
             );
             async.flushMicrotasks();
 
@@ -4469,7 +4469,7 @@ void main() {
           ).thenAnswer((_) async => [trackedTask as Task]);
 
           final result = await container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate).future,
+            unifiedDailyOsDataControllerProvider(testDate).future,
           );
 
           // There should be exactly one synthetic budget for cat-unplanned
@@ -4611,7 +4611,7 @@ void main() {
           ).thenAnswer((_) async => [taskA, taskB]);
 
           final result = await container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate).future,
+            unifiedDailyOsDataControllerProvider(testDate).future,
           );
 
           final items = result.budgetProgress.first.taskProgressItems;
@@ -4717,7 +4717,7 @@ void main() {
         ).thenAnswer((_) async => [taskZebra, taskApple]);
 
         final result = await container.read(
-          unifiedDailyOsDataControllerProvider(date: testDate).future,
+          unifiedDailyOsDataControllerProvider(testDate).future,
         );
 
         final items = result.budgetProgress.first.taskProgressItems;
@@ -4747,7 +4747,7 @@ void main() {
           ).thenAnswer((_) async => []);
 
           container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate).future,
+            unifiedDailyOsDataControllerProvider(testDate).future,
           );
           async.flushMicrotasks();
 
@@ -4794,7 +4794,7 @@ void main() {
             ).thenAnswer((_) async => []);
 
             container.read(
-              unifiedDailyOsDataControllerProvider(date: testDate).future,
+              unifiedDailyOsDataControllerProvider(testDate).future,
             );
             async.flushMicrotasks();
 
@@ -4850,7 +4850,7 @@ void main() {
             when(() => mockTimeService.linkedFrom).thenReturn(null);
 
             container.read(
-              unifiedDailyOsDataControllerProvider(date: testDate).future,
+              unifiedDailyOsDataControllerProvider(testDate).future,
             );
             async.flushMicrotasks();
 

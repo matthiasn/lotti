@@ -2,11 +2,11 @@ part of 'journal_page_controller.dart';
 
 /// Filter-state mutation methods for [JournalPageController].
 ///
-/// A `mixin on _$JournalPageController` (not a helper class) because these
+/// A `mixin on Notifier<JournalPageState>` (not a helper class) because these
 /// methods mutate the Notifier's filter state and drive its refresh/persist/
 /// emit lifecycle. Filter fields stay on the concrete class (satisfying the
 /// abstract accessors below); the lifecycle hooks are likewise concrete.
-mixin _JournalPageFilters on _$JournalPageController {
+mixin _JournalPageFilters on Notifier<JournalPageState> {
   // Filter state owned by the concrete JournalPageController.
   set _filters(Set<DisplayFilter> value);
   Set<String> get _selectedEntryTypes;

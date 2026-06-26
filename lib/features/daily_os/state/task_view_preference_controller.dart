@@ -1,8 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'task_view_preference_controller.g.dart';
 
 /// View modes for task display in time budget cards.
 enum TaskViewMode { list, grid }
@@ -11,13 +10,23 @@ enum TaskViewMode { list, grid }
 String _settingsKey(String categoryId) => 'time_budget_view_$categoryId';
 
 /// Controller for persisting task view mode preferences per category.
-@riverpod
-class TaskViewPreference extends _$TaskViewPreference {
+final AsyncNotifierProviderFamily<TaskViewPreference, TaskViewMode, String>
+taskViewPreferenceProvider = AsyncNotifierProvider.autoDispose
+    .family<TaskViewPreference, TaskViewMode, String>(
+      TaskViewPreference.new,
+      name: 'taskViewPreferenceProvider',
+    );
+
+class TaskViewPreference extends AsyncNotifier<TaskViewMode> {
+  TaskViewPreference([this.categoryId = '']);
+
+  final String categoryId;
+
   late SettingsDb _settingsDb;
   late String _categoryId;
 
   @override
-  Future<TaskViewMode> build({required String categoryId}) async {
+  Future<TaskViewMode> build() async {
     _settingsDb = getIt<SettingsDb>();
     _categoryId = categoryId;
     final stored = await _settingsDb.itemByKey(_settingsKey(categoryId));

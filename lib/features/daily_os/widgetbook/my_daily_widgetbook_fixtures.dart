@@ -30,7 +30,7 @@ List<Override> _buildMyDailyPreviewOverrides(_MyDailyPreviewFixture fixture) {
       () => _PreviewTimeHistoryHeaderController(fixture.historyData),
     ),
     for (final entry in fixture.dailyDataByDate.entries)
-      unifiedDailyOsDataControllerProvider(date: entry.key).overrideWith(
+      unifiedDailyOsDataControllerProvider(entry.key).overrideWith(
         () => _PreviewUnifiedDailyOsDataController(entry.value),
       ),
   ];
@@ -219,12 +219,12 @@ class _PreviewDailyOsController extends DailyOsController {
 
 class _PreviewUnifiedDailyOsDataController
     extends UnifiedDailyOsDataController {
-  _PreviewUnifiedDailyOsDataController(this._data);
+  _PreviewUnifiedDailyOsDataController(this._data) : super(_data.date);
 
   final DailyOsData _data;
 
   @override
-  Future<DailyOsData> build({required DateTime date}) async => _data;
+  Future<DailyOsData> build() async => _data;
 }
 
 class _PreviewTimeHistoryHeaderController extends TimeHistoryHeaderController {

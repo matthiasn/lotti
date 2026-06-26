@@ -1188,22 +1188,25 @@ class MockLinkedFromEntriesController extends LinkedFromEntriesController {
   final List<JournalEntity> _entities;
 
   @override
-  Future<List<JournalEntity>> build({required String id}) async => _entities;
+  Future<List<JournalEntity>> build() async => _entities;
 }
 
 class MockLinkedTasksControllerManageMode extends LinkedTasksController {
+  MockLinkedTasksControllerManageMode([super.taskId]);
+
   @override
-  LinkedTasksState build({required String taskId}) {
+  LinkedTasksState build() {
     return const LinkedTasksState(manageMode: true);
   }
 }
 
 class MockLinkedEntriesController extends LinkedEntriesController {
-  MockLinkedEntriesController([this._links = const []]);
+  MockLinkedEntriesController([this._links = const [], super.id]);
+
   final List<EntryLink> _links;
 
   @override
-  Future<List<EntryLink>> build({required String id}) async => _links;
+  Future<List<EntryLink>> build() async => _links;
 }
 
 class MockEntryCreationService extends Mock implements EntryCreationService {}

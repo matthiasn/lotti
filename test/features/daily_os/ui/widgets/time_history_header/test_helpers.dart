@@ -113,7 +113,7 @@ class TestUnifiedController extends UnifiedDailyOsDataController {
   final DailyOsData _data;
 
   @override
-  Future<DailyOsData> build({required DateTime date}) async {
+  Future<DailyOsData> build() async {
     return _data;
   }
 }
@@ -295,10 +295,10 @@ Widget createTestWidget({
       timeHistoryHeaderControllerProvider.overrideWith(
         () => TestTimeHistoryController(effectiveHistoryData),
       ),
-      unifiedDailyOsDataControllerProvider(date: date).overrideWith(
+      unifiedDailyOsDataControllerProvider(date).overrideWith(
         () => TestUnifiedController(unifiedData),
       ),
-      dayBudgetStatsProvider(date: date).overrideWith(
+      dayBudgetStatsProvider(date).overrideWith(
         (ref) async => effectiveStats,
       ),
       ...additionalOverrides,

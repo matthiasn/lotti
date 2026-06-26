@@ -96,11 +96,11 @@ class DashboardHealthChart extends ConsumerWidget {
 
     return StaleAsyncValue<List<Observation>>(
       async: ref.watch(
-        healthObservationsControllerProvider(
+        healthObservationsControllerProvider((
           healthDataType: chartConfig.healthType,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ),
+        )),
       ),
       builder: (context, value, isInitialLoading) {
         final data = value ?? const <Observation>[];

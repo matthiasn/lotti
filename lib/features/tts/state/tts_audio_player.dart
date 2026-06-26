@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'tts_audio_player.g.dart';
 
 /// Plays a synthesized WAV file and exposes position / duration / completion
 /// so the playback controller can drive progress and transition to stopped.
@@ -71,7 +69,10 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
 // coverage:ignore-start
 
 /// App-wide [TtsAudioPlayer]. Overridden with a fake in tests.
-@Riverpod(keepAlive: true)
+final ttsAudioPlayerProvider = Provider<TtsAudioPlayer>(
+  ttsAudioPlayer,
+  name: 'ttsAudioPlayerProvider',
+);
 TtsAudioPlayer ttsAudioPlayer(Ref ref) {
   final player = MediaKitTtsAudioPlayer();
   ref.onDispose(() => unawaited(player.dispose()));

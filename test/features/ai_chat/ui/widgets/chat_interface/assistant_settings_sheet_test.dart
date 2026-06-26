@@ -14,7 +14,7 @@ import '../../../../../widget_test_utils.dart';
 
 class _StaticChatController extends ChatSessionController {
   @override
-  ChatSessionUiModel build(String categoryId) {
+  ChatSessionUiModel build() {
     return const ChatSessionUiModel(
       id: 's',
       title: 't',
@@ -31,7 +31,7 @@ class _StaticChatController extends ChatSessionController {
 
 class _StreamingChatController extends ChatSessionController {
   @override
-  ChatSessionUiModel build(String categoryId) {
+  ChatSessionUiModel build() {
     return const ChatSessionUiModel(
       id: 's',
       title: 't',

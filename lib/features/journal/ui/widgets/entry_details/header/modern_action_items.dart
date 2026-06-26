@@ -52,7 +52,7 @@ class ModernUnlinkItem extends ConsumerWidget {
 
         if (result == unlinkKey) {
           final notifier = ref.read(
-            linkedEntriesControllerProvider(id: linkedFromId).notifier,
+            linkedEntriesControllerProvider(linkedFromId).notifier,
           );
           await notifier.removeLink(toId: entryId);
         }
@@ -76,7 +76,7 @@ class ModernToggleHiddenItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hidden = link.hidden ?? false;
-    final provider = linkedEntriesControllerProvider(id: link.fromId);
+    final provider = linkedEntriesControllerProvider(link.fromId);
     final notifier = ref.read(provider.notifier);
 
     return ActionMenuListItem(
@@ -104,7 +104,7 @@ class ModernCopyImageItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
+    final provider = entryControllerProvider(entryId);
     final entryState = ref.watch(provider).value;
     final notifier = ref.read(provider.notifier);
 
@@ -139,7 +139,7 @@ class ModernCopyEntryTextItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
+    final provider = entryControllerProvider(entryId);
     final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).value;
 
@@ -186,7 +186,7 @@ class ModernLabelsItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
+    final provider = entryControllerProvider(entryId);
     final entryState = ref.watch(provider).value;
     final entry = entryState?.entry;
 
@@ -238,7 +238,7 @@ class ModernSetTaskLanguageItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
+    final provider = entryControllerProvider(entryId);
     final entry = ref.watch(provider).value?.entry;
 
     if (entry is! Task) {
@@ -271,7 +271,7 @@ class ModernSetTaskLanguageItem extends ConsumerWidget {
     // Bind the update callback to the notifier while `ref` is still valid —
     // the Actions modal will be popped (unmounting this item) before the
     // language modal callback fires.
-    final notifier = ref.read(entryControllerProvider(id: entryId).notifier);
+    final notifier = ref.read(entryControllerProvider(entryId).notifier);
 
     return ActionMenuListItem(
       leading: leading,

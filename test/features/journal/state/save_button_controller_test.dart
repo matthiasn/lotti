@@ -31,7 +31,7 @@ final _testEntry = JournalEntry(
 /// Fake EntryController that returns a saved state.
 class _SavedEntryController extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     final value = EntryState.saved(
       entryId: id,
       entry: _testEntry,
@@ -61,7 +61,7 @@ class _SavedEntryController extends EntryController {
 /// Fake EntryController that returns a dirty state.
 class _DirtyEntryController extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     final value = EntryState.dirty(
       entryId: id,
       entry: _testEntry,
@@ -78,7 +78,7 @@ class _DirtyEntryController extends EntryController {
 /// Fake EntryController that returns null (entity not yet loaded).
 class _NullEntryController extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     state = const AsyncData(null);
     return SynchronousFuture(null);
   }
@@ -91,7 +91,7 @@ class _EstimateTrackingEntryController extends EntryController {
   final void Function(Duration?) onSave;
 
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     final value = EntryState.saved(
       entryId: id,
       entry: _testEntry,
@@ -133,7 +133,7 @@ void main() {
     test('returns true when entry state is dirty', () async {
       final container = ProviderContainer(
         overrides: [
-          entryControllerProvider(id: _testId).overrideWith(
+          entryControllerProvider(_testId).overrideWith(
             _DirtyEntryController.new,
           ),
         ],
@@ -141,7 +141,7 @@ void main() {
       addTearDown(container.dispose);
 
       final result = await container.read(
-        saveButtonControllerProvider(id: _testId).future,
+        saveButtonControllerProvider(_testId).future,
       );
 
       expect(result, isTrue);
@@ -150,7 +150,7 @@ void main() {
     test('returns false when entry state is saved', () async {
       final container = ProviderContainer(
         overrides: [
-          entryControllerProvider(id: _testId).overrideWith(
+          entryControllerProvider(_testId).overrideWith(
             _SavedEntryController.new,
           ),
         ],
@@ -158,7 +158,7 @@ void main() {
       addTearDown(container.dispose);
 
       final result = await container.read(
-        saveButtonControllerProvider(id: _testId).future,
+        saveButtonControllerProvider(_testId).future,
       );
 
       expect(result, isFalse);
@@ -167,7 +167,7 @@ void main() {
     test('returns null when entry state is not yet loaded', () async {
       final container = ProviderContainer(
         overrides: [
-          entryControllerProvider(id: _testId).overrideWith(
+          entryControllerProvider(_testId).overrideWith(
             _NullEntryController.new,
           ),
         ],
@@ -175,7 +175,7 @@ void main() {
       addTearDown(container.dispose);
 
       final result = await container.read(
-        saveButtonControllerProvider(id: _testId).future,
+        saveButtonControllerProvider(_testId).future,
       );
 
       expect(result, isNull);
@@ -185,7 +185,7 @@ void main() {
       late _SavedEntryController entryController;
       final container = ProviderContainer(
         overrides: [
-          entryControllerProvider(id: _testId).overrideWith(
+          entryControllerProvider(_testId).overrideWith(
             () => entryController = _SavedEntryController(),
           ),
         ],
@@ -194,11 +194,11 @@ void main() {
 
       // Wait for initial build to complete
       await container.read(
-        saveButtonControllerProvider(id: _testId).future,
+        saveButtonControllerProvider(_testId).future,
       );
 
       final saveButtonNotifier = container.read(
-        saveButtonControllerProvider(id: _testId).notifier,
+        saveButtonControllerProvider(_testId).notifier,
       );
 
       await saveButtonNotifier.save();
@@ -210,7 +210,7 @@ void main() {
       Duration? receivedEstimate;
       final container = ProviderContainer(
         overrides: [
-          entryControllerProvider(id: _testId).overrideWith(() {
+          entryControllerProvider(_testId).overrideWith(() {
             return _EstimateTrackingEntryController(
               onSave: (estimate) => receivedEstimate = estimate,
             );
@@ -220,11 +220,11 @@ void main() {
       addTearDown(container.dispose);
 
       await container.read(
-        saveButtonControllerProvider(id: _testId).future,
+        saveButtonControllerProvider(_testId).future,
       );
 
       final saveButtonNotifier = container.read(
-        saveButtonControllerProvider(id: _testId).notifier,
+        saveButtonControllerProvider(_testId).notifier,
       );
 
       const testEstimate = Duration(hours: 2);

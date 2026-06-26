@@ -363,7 +363,7 @@ class _SaveActionBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entry.meta.id);
+    final provider = entryControllerProvider(entry.meta.id);
 
     return ValueListenableBuilder<EntryDateTimeRange>(
       valueListenable: stateNotifier,

@@ -497,7 +497,7 @@ class _DraggablePlannedBlockState extends ConsumerState<DraggablePlannedBlock> {
 
     await ref
         .read(
-          unifiedDailyOsDataControllerProvider(date: widget.date).notifier,
+          unifiedDailyOsDataControllerProvider(widget.date).notifier,
         )
         .updatePlannedBlock(updatedBlock);
 

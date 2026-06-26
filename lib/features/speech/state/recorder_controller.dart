@@ -21,9 +21,6 @@ import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart' as rec;
 import 'package:record/record.dart' show Amplitude;
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'recorder_controller.g.dart';
 
 /// Interval in milliseconds for amplitude updates from the recorder.
 const intervalMs = 20;
@@ -37,8 +34,13 @@ const intervalMs = 20;
 /// - UI state management (modal visibility, indicator visibility)
 ///
 /// The controller is kept alive to maintain recording state across navigation.
-@Riverpod(keepAlive: true)
-class AudioRecorderController extends _$AudioRecorderController {
+final audioRecorderControllerProvider =
+    NotifierProvider<AudioRecorderController, AudioRecorderState>(
+      AudioRecorderController.new,
+      name: 'audioRecorderControllerProvider',
+    );
+
+class AudioRecorderController extends Notifier<AudioRecorderState> {
   late final AudioRecorderRepository _recorderRepository;
   StreamSubscription<Amplitude>? _amplitudeSub;
   late final DomainLogger _loggingService;

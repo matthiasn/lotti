@@ -11,7 +11,6 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
 part 'alibaba_ftue_setup.dart';
@@ -22,10 +21,13 @@ part 'melious_ftue_setup.dart';
 part 'mistral_ftue_setup.dart';
 part 'ollama_ftue_setup.dart';
 part 'openai_ftue_setup.dart';
-part 'provider_prompt_setup_service.g.dart';
 
 /// Provider for [ProviderPromptSetupService].
-@riverpod
+final Provider<ProviderPromptSetupService> providerPromptSetupServiceProvider =
+    Provider.autoDispose<ProviderPromptSetupService>(
+      providerPromptSetupService,
+      name: 'providerPromptSetupServiceProvider',
+    );
 ProviderPromptSetupService providerPromptSetupService(Ref ref) {
   return const ProviderPromptSetupService();
 }

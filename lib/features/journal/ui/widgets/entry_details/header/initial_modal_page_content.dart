@@ -30,7 +30,7 @@ class InitialModalPageContent extends ConsumerWidget {
     final link = this.link;
 
     // Watch entry state to conditionally include items
-    final entryState = ref.watch(entryControllerProvider(id: entryId)).value;
+    final entryState = ref.watch(entryControllerProvider(entryId)).value;
     final entry = entryState?.entry;
 
     // Determine entry type for conditional rendering
@@ -42,7 +42,7 @@ class InitialModalPageContent extends ConsumerWidget {
     final hasText =
         entryState != null &&
         ref
-            .read(entryControllerProvider(id: entryId).notifier)
+            .read(entryControllerProvider(entryId).notifier)
             .controller
             .document
             .toPlainText()
@@ -51,7 +51,7 @@ class InitialModalPageContent extends ConsumerWidget {
 
     // Check if linked entry is a task (for cover art generation)
     final linkedEntryState = linkedFromId != null
-        ? ref.watch(entryControllerProvider(id: linkedFromId)).value
+        ? ref.watch(entryControllerProvider(linkedFromId)).value
         : null;
     final linkedIsTask = linkedEntryState?.entry is Task;
 

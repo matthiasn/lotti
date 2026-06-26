@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
@@ -9,18 +11,25 @@ import 'package:lotti/features/ai_chat/ui/controllers/chat_stream_utils.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
-
-part 'chat_session_controller.g.dart';
 
 /// Riverpod controller for a single AI chat session.
 ///
 /// Owns UI-facing state (messages, streaming flags, errors) and delegates
 /// sending to `ChatRepository`. Enforces explicit model selection and manages
 /// streaming placeholders for assistant messages.
-@riverpod
-class ChatSessionController extends _$ChatSessionController {
+final NotifierProviderFamily<ChatSessionController, ChatSessionUiModel, String>
+chatSessionControllerProvider = NotifierProvider.autoDispose
+    .family<ChatSessionController, ChatSessionUiModel, String>(
+      ChatSessionController.new,
+      name: 'chatSessionControllerProvider',
+    );
+
+class ChatSessionController extends Notifier<ChatSessionUiModel> {
+  ChatSessionController([this.categoryId = '']);
+
+  final String categoryId;
+
   final DomainLogger _loggingService = getIt<DomainLogger>();
   // Cap moved to ChatStreamUtils.maxStreamingContentSize
   String? _currentStreamingMessageId;
@@ -31,7 +40,7 @@ class ChatSessionController extends _$ChatSessionController {
   // Streaming parse state moved into ChatStreamParser.
 
   @override
-  ChatSessionUiModel build(String categoryId) {
+  ChatSessionUiModel build() {
     return ChatSessionUiModel.empty();
   }
 

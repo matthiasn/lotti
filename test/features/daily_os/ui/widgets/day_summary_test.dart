@@ -28,8 +28,8 @@ void main() {
 
     return RiverpodWidgetTestBench(
       overrides: [
-        dailyOsSelectedDateProvider.overrideWithValue(testDate),
-        dayBudgetStatsProvider(date: testDate).overrideWith(
+        dailyOsSelectedDateProvider.overrideWithBuild((_, _) => testDate),
+        dayBudgetStatsProvider(testDate).overrideWith(
           (ref) async => effectiveStats,
         ),
         ...additionalOverrides,

@@ -244,7 +244,7 @@ void main() {
       ).thenAnswer((_) async => []);
 
       final state = container.read(
-        referenceImageSelectionControllerProvider(taskId: taskId),
+        referenceImageSelectionControllerProvider(taskId),
       );
 
       expect(state.isLoading, isTrue);
@@ -387,12 +387,12 @@ void main() {
       // Toggle selection to add the image
       container
           .read(
-            referenceImageSelectionControllerProvider(taskId: taskId).notifier,
+            referenceImageSelectionControllerProvider(taskId).notifier,
           )
           .toggleImageSelection('img-1');
 
       final state = container.read(
-        referenceImageSelectionControllerProvider(taskId: taskId),
+        referenceImageSelectionControllerProvider(taskId),
       );
 
       expect(state.selectedImageIds.contains('img-1'), isTrue);
@@ -410,7 +410,7 @@ void main() {
       await waitForLoaded(taskId);
 
       container.read(
-          referenceImageSelectionControllerProvider(taskId: taskId).notifier,
+          referenceImageSelectionControllerProvider(taskId).notifier,
         )
         // Add the image first
         ..toggleImageSelection('img-1')
@@ -418,7 +418,7 @@ void main() {
         ..toggleImageSelection('img-1');
 
       final state = container.read(
-        referenceImageSelectionControllerProvider(taskId: taskId),
+        referenceImageSelectionControllerProvider(taskId),
       );
 
       expect(state.selectedImageIds.contains('img-1'), isFalse);
@@ -444,7 +444,7 @@ void main() {
 
       // Try to select all 6 images (should only allow 5)
       container.read(
-          referenceImageSelectionControllerProvider(taskId: taskId).notifier,
+          referenceImageSelectionControllerProvider(taskId).notifier,
         )
         ..toggleImageSelection('img-1')
         ..toggleImageSelection('img-2')
@@ -454,7 +454,7 @@ void main() {
         ..toggleImageSelection('img-6'); // Should be ignored
 
       final state = container.read(
-        referenceImageSelectionControllerProvider(taskId: taskId),
+        referenceImageSelectionControllerProvider(taskId),
       );
 
       expect(state.selectedImageIds.length, kMaxReferenceImages);
@@ -474,14 +474,14 @@ void main() {
 
       // Add some selections first, then clear them
       container.read(
-          referenceImageSelectionControllerProvider(taskId: taskId).notifier,
+          referenceImageSelectionControllerProvider(taskId).notifier,
         )
         ..toggleImageSelection('img-1')
         ..toggleImageSelection('img-2')
         ..clearSelection();
 
       final state = container.read(
-        referenceImageSelectionControllerProvider(taskId: taskId),
+        referenceImageSelectionControllerProvider(taskId),
       );
 
       expect(state.selectedImageIds, isEmpty);
@@ -520,7 +520,7 @@ void main() {
       try {
         await _waitForLoaded(generatedContainer, taskId);
         final controller = generatedContainer.read(
-          referenceImageSelectionControllerProvider(taskId: taskId).notifier,
+          referenceImageSelectionControllerProvider(taskId).notifier,
         );
 
         for (final operation in scenario.operations) {
@@ -539,7 +539,7 @@ void main() {
           }
 
           final state = generatedContainer.read(
-            referenceImageSelectionControllerProvider(taskId: taskId),
+            referenceImageSelectionControllerProvider(taskId),
           );
           expect(
             state.selectedImageIds,
@@ -599,7 +599,7 @@ void main() {
 
         // Don't select any images - just call processSelectedImages
         final controller = container.read(
-          referenceImageSelectionControllerProvider(taskId: taskId).notifier,
+          referenceImageSelectionControllerProvider(taskId).notifier,
         );
         final results = await controller.processSelectedImages();
 
@@ -619,9 +619,7 @@ void main() {
 
         final controller =
             container.read(
-                referenceImageSelectionControllerProvider(
-                  taskId: taskId,
-                ).notifier,
+                referenceImageSelectionControllerProvider(taskId).notifier,
               )
               // Select an image
               ..toggleImageSelection('img-1');
@@ -631,7 +629,7 @@ void main() {
 
         // Check processing state before completion
         final stateDuringProcessing = container.read(
-          referenceImageSelectionControllerProvider(taskId: taskId),
+          referenceImageSelectionControllerProvider(taskId),
         );
         expect(stateDuringProcessing.isProcessing, isTrue);
 
@@ -652,9 +650,7 @@ void main() {
 
         final controller =
             container.read(
-                referenceImageSelectionControllerProvider(
-                  taskId: taskId,
-                ).notifier,
+                referenceImageSelectionControllerProvider(taskId).notifier,
               )
               // Select an image
               ..toggleImageSelection('img-1');
@@ -664,7 +660,7 @@ void main() {
 
         // Check state after completion
         final stateAfterProcessing = container.read(
-          referenceImageSelectionControllerProvider(taskId: taskId),
+          referenceImageSelectionControllerProvider(taskId),
         );
         expect(stateAfterProcessing.isProcessing, isFalse);
       });
@@ -682,9 +678,7 @@ void main() {
 
         final controller =
             container.read(
-                referenceImageSelectionControllerProvider(
-                  taskId: taskId,
-                ).notifier,
+                referenceImageSelectionControllerProvider(taskId).notifier,
               )
               // Select an image that exists
               ..toggleImageSelection('img-1');
@@ -719,9 +713,7 @@ void main() {
 
         final controller =
             container.read(
-                referenceImageSelectionControllerProvider(
-                  taskId: taskId,
-                ).notifier,
+                referenceImageSelectionControllerProvider(taskId).notifier,
               )
               // Select max images
               ..toggleImageSelection('img-1')
@@ -745,7 +737,7 @@ Future<ReferenceImageSelectionState> _waitForLoaded(
 ) async {
   final completer = Completer<ReferenceImageSelectionState>();
   final sub = container.listen(
-    referenceImageSelectionControllerProvider(taskId: taskId),
+    referenceImageSelectionControllerProvider(taskId),
     (_, state) {
       if (!state.isLoading && !completer.isCompleted) {
         completer.complete(state);
@@ -759,7 +751,7 @@ Future<ReferenceImageSelectionState> _waitForLoaded(
     onTimeout: () {
       sub.close();
       return container.read(
-        referenceImageSelectionControllerProvider(taskId: taskId),
+        referenceImageSelectionControllerProvider(taskId),
       );
     },
   );

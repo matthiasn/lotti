@@ -77,11 +77,11 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
     }
 
     final resultsAsync = ref.watch(
-      habitCompletionControllerProvider(
+      habitCompletionControllerProvider((
         habitId: habitDefinition.id,
         rangeStart: widget.rangeStart,
         rangeEnd: widget.rangeEnd,
-      ),
+      )),
     );
     if (resultsAsync.hasValue) {
       _lastResults = resultsAsync.value;

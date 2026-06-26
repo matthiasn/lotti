@@ -17,7 +17,7 @@ class MockLinkedFromEntriesController extends LinkedFromEntriesController {
   final List<JournalEntity> _entities;
 
   @override
-  Future<List<JournalEntity>> build({required String id}) async {
+  Future<List<JournalEntity>> build() async {
     return _entities;
   }
 }
@@ -86,10 +86,10 @@ void main() {
 
       // Get the controller and wait for it to load
       final controller = container.read(
-        linkedFromEntriesControllerProvider(id: testId).notifier,
+        linkedFromEntriesControllerProvider(testId).notifier,
       );
       final result = await container.read(
-        linkedFromEntriesControllerProvider(id: testId).future,
+        linkedFromEntriesControllerProvider(testId).future,
       );
 
       // Assert
@@ -149,10 +149,10 @@ void main() {
 
       // Get the controller and wait for it to load
       final controller = container.read(
-        linkedFromEntriesControllerProvider(id: testId).notifier,
+        linkedFromEntriesControllerProvider(testId).notifier,
       );
       await container.read(
-        linkedFromEntriesControllerProvider(id: testId).future,
+        linkedFromEntriesControllerProvider(testId).future,
       );
 
       // Simulate an update notification for one of the watched IDs
@@ -163,7 +163,7 @@ void main() {
 
       // Get the updated state
       final updatedState = container.read(
-        linkedFromEntriesControllerProvider(id: testId),
+        linkedFromEntriesControllerProvider(testId),
       );
 
       // Assert
@@ -194,10 +194,10 @@ void main() {
 
       // Get the controller and wait for it to load
       final controller = container.read(
-        linkedFromEntriesControllerProvider(id: testId).notifier,
+        linkedFromEntriesControllerProvider(testId).notifier,
       );
       await container.read(
-        linkedFromEntriesControllerProvider(id: testId).future,
+        linkedFromEntriesControllerProvider(testId).future,
       );
 
       // We can't directly access the private _updateSubscription field
@@ -226,7 +226,7 @@ void main() {
 
       // Get the controller and wait for it to load
       final result = await container.read(
-        linkedFromEntriesControllerProvider(id: testId).future,
+        linkedFromEntriesControllerProvider(testId).future,
       );
 
       // Assert
@@ -260,7 +260,7 @@ void main() {
       // Act
       final container = ProviderContainer(
         overrides: [
-          linkedFromEntriesControllerProvider(id: testId).overrideWith(
+          linkedFromEntriesControllerProvider(testId).overrideWith(
             () => MockLinkedFromEntriesController(mockEntities),
           ),
         ],
@@ -268,7 +268,7 @@ void main() {
 
       // Get the result from the controller
       final result = await container.read(
-        linkedFromEntriesControllerProvider(id: testId).future,
+        linkedFromEntriesControllerProvider(testId).future,
       );
 
       // Assert

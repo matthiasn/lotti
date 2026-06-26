@@ -81,7 +81,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
         ],
@@ -89,10 +89,10 @@ void main() {
 
       // Get the controller and wait for it to load
       final controller = container.read(
-        linkedEntriesControllerProvider(id: testId).notifier,
+        linkedEntriesControllerProvider(testId).notifier,
       );
       final result = await container.read(
-        linkedEntriesControllerProvider(id: testId).future,
+        linkedEntriesControllerProvider(testId).future,
       );
 
       // Assert
@@ -144,7 +144,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
         ],
@@ -152,9 +152,9 @@ void main() {
 
       // Get the controller and wait for it to load
       final controller = container.read(
-        linkedEntriesControllerProvider(id: testId).notifier,
+        linkedEntriesControllerProvider(testId).notifier,
       );
-      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await container.read(linkedEntriesControllerProvider(testId).future);
 
       // Simulate an update notification for one of the watched IDs
       updateStreamController.add({'linked-id-1'});
@@ -164,7 +164,7 @@ void main() {
 
       // Get the updated state
       final updatedState = container.read(
-        linkedEntriesControllerProvider(id: testId),
+        linkedEntriesControllerProvider(testId),
       );
 
       // Assert
@@ -195,7 +195,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
         ],
@@ -203,9 +203,9 @@ void main() {
 
       // Get the controller and wait for it to load
       final controller = container.read(
-        linkedEntriesControllerProvider(id: testId).notifier,
+        linkedEntriesControllerProvider(testId).notifier,
       );
-      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await container.read(linkedEntriesControllerProvider(testId).future);
 
       // Call removeLink
       await controller.removeLink(toId: 'linked-id-1');
@@ -243,7 +243,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
         ],
@@ -251,9 +251,9 @@ void main() {
 
       // Get the controller and wait for it to load
       final controller = container.read(
-        linkedEntriesControllerProvider(id: testId).notifier,
+        linkedEntriesControllerProvider(testId).notifier,
       );
-      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await container.read(linkedEntriesControllerProvider(testId).future);
 
       // Call updateLink
       await controller.updateLink(linkToUpdate);
@@ -272,7 +272,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () =>
                 FakeIncludeHiddenController(true), // Set includeHidden to true
           ),
@@ -280,7 +280,7 @@ void main() {
       );
 
       // Get the controller and wait for it to load
-      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await container.read(linkedEntriesControllerProvider(testId).future);
 
       // Assert
       verify(
@@ -298,7 +298,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
         ],
@@ -306,9 +306,9 @@ void main() {
 
       // Get the controller and wait for it to load
       final controller = container.read(
-        linkedEntriesControllerProvider(id: testId).notifier,
+        linkedEntriesControllerProvider(testId).notifier,
       );
-      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await container.read(linkedEntriesControllerProvider(testId).future);
 
       // We can't directly access the private _updateSubscription field
       // but we can verify the controller was created successfully
@@ -329,7 +329,7 @@ void main() {
       // Act
       final container = ProviderContainer();
       final result = container.read(
-        includeHiddenControllerProvider(id: testId),
+        includeHiddenControllerProvider(testId),
       );
 
       // Assert
@@ -340,7 +340,7 @@ void main() {
       // Act
       final container = ProviderContainer();
       final controller = container.read(
-        includeHiddenControllerProvider(id: testId).notifier,
+        includeHiddenControllerProvider(testId).notifier,
       );
 
       // Initial state should be false
@@ -352,7 +352,7 @@ void main() {
       // Assert
       expect(controller.includeHidden, isTrue);
       expect(
-        container.read(includeHiddenControllerProvider(id: testId)),
+        container.read(includeHiddenControllerProvider(testId)),
         isTrue,
       );
     });
@@ -365,7 +365,7 @@ void main() {
       // Act
       final container = ProviderContainer();
       final result = container.read(
-        includeAiEntriesControllerProvider(id: testId),
+        includeAiEntriesControllerProvider(testId),
       );
 
       // Assert
@@ -376,7 +376,7 @@ void main() {
       // Act
       final container = ProviderContainer();
       final controller = container.read(
-        includeAiEntriesControllerProvider(id: testId).notifier,
+        includeAiEntriesControllerProvider(testId).notifier,
       );
 
       // Initial state should be false
@@ -388,7 +388,7 @@ void main() {
       // Assert
       expect(controller.includeAiEntries, isTrue);
       expect(
-        container.read(includeAiEntriesControllerProvider(id: testId)),
+        container.read(includeAiEntriesControllerProvider(testId)),
         isTrue,
       );
     });
@@ -402,7 +402,7 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final result = container.read(
-        showFlaggedOnlyControllerProvider(id: testId),
+        showFlaggedOnlyControllerProvider(testId),
       );
 
       // Assert
@@ -414,7 +414,7 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final controller = container.read(
-        showFlaggedOnlyControllerProvider(id: testId).notifier,
+        showFlaggedOnlyControllerProvider(testId).notifier,
       );
 
       // Initial state should be false
@@ -426,7 +426,7 @@ void main() {
       // Assert
       expect(controller.showFlaggedOnly, isTrue);
       expect(
-        container.read(showFlaggedOnlyControllerProvider(id: testId)),
+        container.read(showFlaggedOnlyControllerProvider(testId)),
         isTrue,
       );
     });
@@ -436,17 +436,17 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       container
-              .read(showFlaggedOnlyControllerProvider(id: testId).notifier)
+              .read(showFlaggedOnlyControllerProvider(testId).notifier)
               .showFlaggedOnly =
           true;
 
       // Assert: another entry id keeps its own independent default
       expect(
-        container.read(showFlaggedOnlyControllerProvider(id: testId)),
+        container.read(showFlaggedOnlyControllerProvider(testId)),
         isTrue,
       );
       expect(
-        container.read(showFlaggedOnlyControllerProvider(id: 'other-id')),
+        container.read(showFlaggedOnlyControllerProvider('other-id')),
         isFalse,
       );
     });
@@ -489,7 +489,7 @@ void main() {
       // Act
       final container = ProviderContainer();
       final result = await container.read(
-        newestLinkedIdControllerProvider(id: null).future,
+        newestLinkedIdControllerProvider(null).future,
       );
 
       // Assert
@@ -506,18 +506,18 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
         ],
       );
 
       // Wait for the linked entries to load
-      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await container.read(linkedEntriesControllerProvider(testId).future);
 
       // Get the newest linked ID
       final newestId = await container.read(
-        newestLinkedIdControllerProvider(id: testId).future,
+        newestLinkedIdControllerProvider(testId).future,
       );
 
       // Assert
@@ -534,18 +534,18 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
         ],
       );
 
       // Wait for the linked entries to load
-      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await container.read(linkedEntriesControllerProvider(testId).future);
 
       // Get the newest linked ID
       final newestId = await container.read(
-        newestLinkedIdControllerProvider(id: testId).future,
+        newestLinkedIdControllerProvider(testId).future,
       );
 
       // Assert

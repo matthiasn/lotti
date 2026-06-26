@@ -1955,7 +1955,7 @@ class CategoryDefinition implements EntityDefinition {
  final  String? defaultTemplateId;
 /// Default event-agent template ID for new events in this category.
 /// An event agent is auto-created from this template when an event is
-/// created. Independent of [defaultTemplateId] so enabling task agents
+/// created. Independent of `defaultTemplateId` so enabling task agents
 /// does not implicitly spawn event agents. Nullable for JSON backward
 /// compatibility (absent key ⇒ `null` ⇒ no event agent).
  final  String? defaultEventTemplateId;

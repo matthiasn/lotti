@@ -167,10 +167,10 @@ class _CoverArtProgressViewState extends ConsumerState<_CoverArtProgressView> {
   @override
   Widget build(BuildContext context) {
     final status = ref.watch(
-      inferenceStatusControllerProvider(
+      inferenceStatusControllerProvider((
         id: widget.linkedTaskId,
         aiResponseType: AiResponseType.imageGeneration,
-      ),
+      )),
     );
 
     // Track whether we've observed the running state at least once.
@@ -189,7 +189,7 @@ class _CoverArtProgressViewState extends ConsumerState<_CoverArtProgressView> {
     // reason, e.g. a network error) falls back to a generic message.
     final errorReason = isError
         ? ref.watch(
-            imageGenerationErrorControllerProvider(id: widget.linkedTaskId),
+            imageGenerationErrorControllerProvider(widget.linkedTaskId),
           )
         : null;
 

@@ -32,7 +32,7 @@ class _TestEntryController extends EntryController {
   final Task _task;
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     return EntryState.saved(
       entryId: id,
       entry: _task,
@@ -45,7 +45,7 @@ class _TestEntryController extends EntryController {
 
 class _NullEntryController extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) async => null;
+  Future<EntryState?> build() async => null;
 }
 
 void main() {
@@ -93,7 +93,7 @@ void main() {
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
-        entryControllerProvider(id: task.meta.id).overrideWith(
+        entryControllerProvider(task.meta.id).overrideWith(
           () => _TestEntryController(task),
         ),
         taskAgentProvider.overrideWith(
@@ -123,7 +123,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            entryControllerProvider(id: 'no-entry').overrideWith(
+            entryControllerProvider('no-entry').overrideWith(
               _NullEntryController.new,
             ),
           ],

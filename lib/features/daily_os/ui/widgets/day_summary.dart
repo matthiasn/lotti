@@ -15,7 +15,7 @@ class DaySummary extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
     final budgetStatsAsync = ref.watch(
-      dayBudgetStatsProvider(date: selectedDate),
+      dayBudgetStatsProvider(selectedDate),
     );
 
     return budgetStatsAsync.when(

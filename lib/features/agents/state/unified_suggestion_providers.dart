@@ -1,3 +1,5 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -6,9 +8,6 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'unified_suggestion_providers.g.dart';
 
 /// One pending proposal in the unified suggestion list.
 ///
@@ -68,7 +67,12 @@ class UnifiedSuggestionList {
 /// dispatch confirm/reject through the existing
 /// `ChangeSetConfirmationService` contract) and the proposal ledger (so
 /// the activity strip can show recently-resolved / retracted items).
-@riverpod
+final FutureProviderFamily<UnifiedSuggestionList, String>
+unifiedSuggestionListProvider = FutureProvider.autoDispose
+    .family<UnifiedSuggestionList, String>(
+      unifiedSuggestionList,
+      name: 'unifiedSuggestionListProvider',
+    );
 Future<UnifiedSuggestionList> unifiedSuggestionList(
   Ref ref,
   String taskId,

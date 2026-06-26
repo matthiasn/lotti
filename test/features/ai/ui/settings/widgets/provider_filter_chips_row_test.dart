@@ -17,7 +17,7 @@ class TestAiConfigByTypeController extends AiConfigByTypeController {
   final List<AiConfig> providers;
 
   @override
-  Stream<List<AiConfig>> build({required AiConfigType configType}) {
+  Stream<List<AiConfig>> build() {
     return Stream.value(providers);
   }
 }
@@ -25,7 +25,7 @@ class TestAiConfigByTypeController extends AiConfigByTypeController {
 // Test controller that returns an error
 class ErrorTestAiConfigByTypeController extends AiConfigByTypeController {
   @override
-  Stream<List<AiConfig>> build({required AiConfigType configType}) {
+  Stream<List<AiConfig>> build() {
     return Stream.error(Exception('Test error'));
   }
 }
@@ -33,7 +33,7 @@ class ErrorTestAiConfigByTypeController extends AiConfigByTypeController {
 // Test controller that returns empty stream for loading state
 class LoadingTestAiConfigByTypeController extends AiConfigByTypeController {
   @override
-  Stream<List<AiConfig>> build({required AiConfigType configType}) {
+  Stream<List<AiConfig>> build() {
     return const Stream.empty();
   }
 }
@@ -83,7 +83,7 @@ void main() {
       return ProviderScope(
         overrides: [
           aiConfigByTypeControllerProvider(
-            configType: AiConfigType.inferenceProvider,
+            AiConfigType.inferenceProvider,
           ).overrideWith(() => TestAiConfigByTypeController(mockProviders)),
         ],
         child: MaterialApp(
@@ -117,7 +117,7 @@ void main() {
       return ProviderScope(
         overrides: [
           aiConfigByTypeControllerProvider(
-            configType: AiConfigType.inferenceProvider,
+            AiConfigType.inferenceProvider,
           ).overrideWith(() => TestAiConfigByTypeController(mockProviders)),
           for (final provider in mockProviders)
             aiConfigByIdProvider(
@@ -441,7 +441,7 @@ void main() {
           ProviderScope(
             overrides: [
               aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
+                AiConfigType.inferenceProvider,
               ).overrideWith(() => TestAiConfigByTypeController(mockProviders)),
               aiConfigByIdProvider(
                 'provider1',
@@ -679,7 +679,7 @@ void main() {
           ProviderScope(
             overrides: [
               aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
+                AiConfigType.inferenceProvider,
               ).overrideWith(LoadingTestAiConfigByTypeController.new),
             ],
             child: MaterialApp(
@@ -709,7 +709,7 @@ void main() {
           ProviderScope(
             overrides: [
               aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
+                AiConfigType.inferenceProvider,
               ).overrideWith(ErrorTestAiConfigByTypeController.new),
             ],
             child: MaterialApp(

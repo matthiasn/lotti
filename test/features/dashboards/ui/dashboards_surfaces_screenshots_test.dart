@@ -98,11 +98,11 @@ Future<void> _pump(
         key: _boundaryKey,
         child: ProviderScope(
           overrides: [
-            habitCompletionControllerProvider(
+            habitCompletionControllerProvider((
               habitId: habitFlossing.id,
               rangeStart: _rangeStart,
               rangeEnd: _rangeEnd,
-            ).overrideWithBuild((ref, notifier) => _results()),
+            )).overrideWithBuild((ref, notifier) => _results()),
           ],
           child: MaterialApp(
             debugShowCheckedModeBanner: false,

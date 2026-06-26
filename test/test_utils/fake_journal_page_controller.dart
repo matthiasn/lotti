@@ -46,7 +46,7 @@ class FakeJournalPageController extends JournalPageController {
   int refreshQueryCalled = 0;
 
   @override
-  JournalPageState build(bool showTasks) => _initialState;
+  JournalPageState build() => _initialState;
 
   @override
   JournalPageState get state => _initialState;

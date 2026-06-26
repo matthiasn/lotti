@@ -59,11 +59,11 @@ class DashboardSurveyChart extends ConsumerWidget {
 
     return StaleAsyncValue<List<JournalEntity>>(
       async: ref.watch(
-        surveyChartDataControllerProvider(
+        surveyChartDataControllerProvider((
           surveyType: chartConfig.surveyType,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ),
+        )),
       ),
       builder: (context, value, isInitialLoading) {
         final items = value ?? const <JournalEntity>[];

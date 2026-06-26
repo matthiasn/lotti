@@ -26,8 +26,7 @@ class _ImmediateAiConfigByTypeController extends AiConfigByTypeController {
   final List<AiConfig> _configs;
 
   @override
-  Stream<List<AiConfig>> build({required AiConfigType configType}) =>
-      Stream.value(_configs);
+  Stream<List<AiConfig>> build() => Stream.value(_configs);
 }
 
 void main() {
@@ -78,7 +77,7 @@ void main() {
         const OllamaModelInstallDialog(modelName: testModelName),
         overrides: [
           aiConfigByTypeControllerProvider(
-            configType: AiConfigType.inferenceProvider,
+            AiConfigType.inferenceProvider,
           ).overrideWith(
             () => MockAiConfigByTypeController([testOllamaProvider]),
           ),
@@ -105,7 +104,7 @@ void main() {
             mockCloudRepository,
           ),
           aiConfigByTypeControllerProvider(
-            configType: AiConfigType.inferenceProvider,
+            AiConfigType.inferenceProvider,
           ).overrideWith(() => _ImmediateAiConfigByTypeController(providers)),
         ],
         child: MaterialApp(
@@ -125,7 +124,7 @@ void main() {
               // provider-lookup result.
               ref.watch(
                 aiConfigByTypeControllerProvider(
-                  configType: AiConfigType.inferenceProvider,
+                  AiConfigType.inferenceProvider,
                 ),
               );
               return child!;
@@ -267,7 +266,7 @@ void main() {
             const OllamaModelInstallDialog(modelName: 'phi3'),
             overrides: [
               aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
+                AiConfigType.inferenceProvider,
               ).overrideWith(
                 () => _ImmediateAiConfigByTypeController([ollamaProvider]),
               ),
@@ -318,7 +317,7 @@ void main() {
             const OllamaModelInstallDialog(modelName: 'gemma'),
             overrides: [
               aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
+                AiConfigType.inferenceProvider,
               ).overrideWith(
                 () => _ImmediateAiConfigByTypeController([ollamaProvider]),
               ),

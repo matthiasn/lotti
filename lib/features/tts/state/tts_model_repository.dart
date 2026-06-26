@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'tts_model_repository.g.dart';
 
 /// Files that make up a Supertonic model, fetched from the repo's `onnx/`
 /// directory. The two JSON configs live alongside the ONNX graphs upstream.
@@ -131,5 +129,8 @@ class SupertonicModelRepository implements TtsModelRepository {
 
 /// Provides the model repository — the Hugging Face downloader in production;
 /// tests override it with a fake.
-@Riverpod(keepAlive: true)
+final ttsModelRepositoryProvider = Provider<TtsModelRepository>(
+  ttsModelRepository,
+  name: 'ttsModelRepositoryProvider',
+);
 TtsModelRepository ttsModelRepository(Ref ref) => SupertonicModelRepository();

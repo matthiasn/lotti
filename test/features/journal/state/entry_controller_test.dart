@@ -397,7 +397,7 @@ void main() {
         ],
       );
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await expectLater(
@@ -418,7 +418,7 @@ void main() {
     test('toggle map visibility', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await expectLater(
@@ -471,7 +471,7 @@ void main() {
     test('toggle map does nothing for entry without geolocation', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntryNoGeo.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await expectLater(
@@ -508,7 +508,7 @@ void main() {
     test('set dirty', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await expectLater(
@@ -564,7 +564,7 @@ void main() {
           ),
         ],
       );
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       when(
@@ -610,7 +610,7 @@ void main() {
           ),
         ],
       );
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await expectLater(
@@ -653,7 +653,7 @@ void main() {
       reset(mockPersistenceLogic);
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       Future<bool> testFn() => mockPersistenceLogic.updateJournalEntity(
@@ -669,7 +669,7 @@ void main() {
       reset(mockPersistenceLogic);
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       Future<bool> testFn() => mockPersistenceLogic.updateJournalEntity(
@@ -685,7 +685,7 @@ void main() {
       reset(mockPersistenceLogic);
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       Future<bool> testFn() => mockPersistenceLogic.updateJournalEntity(
@@ -700,7 +700,7 @@ void main() {
     test('set dirty & save text', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await expectLater(
@@ -751,7 +751,7 @@ void main() {
       () async {
         final container = makeProviderContainer();
         final entryId = testTextEntry.meta.id;
-        final testEntryProvider = entryControllerProvider(id: entryId);
+        final testEntryProvider = entryControllerProvider(entryId);
         final notifier = container.read(testEntryProvider.notifier);
         await expectLater(
           container.read(testEntryProvider.future),
@@ -810,7 +810,7 @@ void main() {
     test('discard reverts unsaved edits and drops the draft', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await expectLater(
@@ -869,7 +869,7 @@ void main() {
     test('focusNodeListener maintains editor toolbar visibility', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
 
       // Initial state - not focused, toolbar not visible
       final initialState = await container.read(testEntryProvider.future);
@@ -887,7 +887,7 @@ void main() {
       () async {
         final container = makeProviderContainer();
         final entryId = testTextEntry.meta.id;
-        final testEntryProvider = entryControllerProvider(id: entryId);
+        final testEntryProvider = entryControllerProvider(entryId);
         final notifier = container.read(testEntryProvider.notifier);
 
         await container.read(testEntryProvider.future);
@@ -912,7 +912,7 @@ void main() {
     test('focus node listener updates isFocused state', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -967,10 +967,10 @@ void main() {
           ],
         );
         final notifier = container.read(
-          entryControllerProvider(id: entryId).notifier,
+          entryControllerProvider(entryId).notifier,
         );
         // Ensure the initial state is loaded AFTER container is created and notifier is obtained
-        await container.read(entryControllerProvider(id: entryId).future);
+        await container.read(entryControllerProvider(entryId).future);
 
         final result = await notifier.updateCategoryId(testCategoryId);
 
@@ -1027,9 +1027,9 @@ void main() {
           ],
         );
         final notifier = container.read(
-          entryControllerProvider(id: entryId).notifier,
+          entryControllerProvider(entryId).notifier,
         );
-        await container.read(entryControllerProvider(id: entryId).future);
+        await container.read(entryControllerProvider(entryId).future);
 
         final result = await notifier.updateCategoryId(testCategoryId);
 
@@ -1103,9 +1103,9 @@ void main() {
           ],
         );
         final notifier = container.read(
-          entryControllerProvider(id: entryId).notifier,
+          entryControllerProvider(entryId).notifier,
         );
-        await container.read(entryControllerProvider(id: entryId).future);
+        await container.read(entryControllerProvider(entryId).future);
 
         final result = await notifier.updateCategoryId(null);
 
@@ -1190,10 +1190,10 @@ void main() {
             ],
           );
           final notifier = container.read(
-            entryControllerProvider(id: mainTask.meta.id).notifier,
+            entryControllerProvider(mainTask.meta.id).notifier,
           );
           await container.read(
-            entryControllerProvider(id: mainTask.meta.id).future,
+            entryControllerProvider(mainTask.meta.id).future,
           );
 
           final result = await notifier.updateCategoryId(newCategoryId);
@@ -1243,9 +1243,9 @@ void main() {
           ],
         );
         final notifier = container.read(
-          entryControllerProvider(id: entryId).notifier,
+          entryControllerProvider(entryId).notifier,
         );
-        await container.read(entryControllerProvider(id: entryId).future);
+        await container.read(entryControllerProvider(entryId).future);
 
         final result = await notifier.updateCategoryId(testCategoryId);
 
@@ -1293,10 +1293,10 @@ void main() {
           ],
         );
         final notifier = container.read(
-          entryControllerProvider(id: entryId).notifier,
+          entryControllerProvider(entryId).notifier,
         );
         await container.read(
-          entryControllerProvider(id: entryId).future,
+          entryControllerProvider(entryId).future,
         ); // Ensure loaded
 
         final result = await notifier.updateFromTo(
@@ -1334,10 +1334,10 @@ void main() {
           ],
         );
         final notifier = container.read(
-          entryControllerProvider(id: entryId).notifier,
+          entryControllerProvider(entryId).notifier,
         );
         await container.read(
-          entryControllerProvider(id: entryId).future,
+          entryControllerProvider(entryId).future,
         ); // Ensure loaded
 
         final result = await notifier.updateFromTo(
@@ -1378,7 +1378,7 @@ void main() {
 
           final listener = Listener<AsyncValue<EntryState?>>();
           container.listen<AsyncValue<EntryState?>>(
-            entryControllerProvider(id: entryId),
+            entryControllerProvider(entryId),
             listener.call,
             fireImmediately: true,
           );
@@ -1419,7 +1419,7 @@ void main() {
           );
 
           final initialState = await container.read(
-            entryControllerProvider(id: entryId).future,
+            entryControllerProvider(entryId).future,
           );
 
           expect(initialState, isNotNull);
@@ -1443,14 +1443,14 @@ void main() {
           ],
         );
         final notifier = container.read(
-          entryControllerProvider(id: entryId).notifier,
+          entryControllerProvider(entryId).notifier,
         );
-        await container.read(entryControllerProvider(id: entryId).future);
+        await container.read(entryControllerProvider(entryId).future);
 
         notifier.controller.document.insert(0, 'New text');
         notifier.setDirty(value: true);
         final dirtyState = await container.read(
-          entryControllerProvider(id: entryId).future,
+          entryControllerProvider(entryId).future,
         );
         expect(dirtyState, isA<EntryStateDirty>());
 
@@ -1490,7 +1490,7 @@ void main() {
         ).called(1);
 
         final savedState = await container.read(
-          entryControllerProvider(id: entryId).future,
+          entryControllerProvider(entryId).future,
         );
         expect(savedState, isNot(isA<EntryStateDirty>()));
         expect(savedState?.shouldShowEditorToolBar, isFalse);
@@ -1506,9 +1506,9 @@ void main() {
           ],
         );
         final notifier = container.read(
-          entryControllerProvider(id: entryId).notifier,
+          entryControllerProvider(entryId).notifier,
         );
-        await container.read(entryControllerProvider(id: entryId).future);
+        await container.read(entryControllerProvider(entryId).future);
         notifier.setDirty(value: true);
 
         when(
@@ -1535,7 +1535,7 @@ void main() {
         // The full post-save transition: dirty cleared and the editor
         // toolbar hidden — not just the timer side effect.
         final savedState = await container.read(
-          entryControllerProvider(id: entryId).future,
+          entryControllerProvider(entryId).future,
         );
         expect(savedState, isNot(isA<EntryStateDirty>()));
         expect(savedState?.shouldShowEditorToolBar, isFalse);
@@ -1552,9 +1552,9 @@ void main() {
           ],
         );
         final notifier = container.read(
-          entryControllerProvider(id: entryId).notifier,
+          entryControllerProvider(entryId).notifier,
         );
-        await container.read(entryControllerProvider(id: entryId).future);
+        await container.read(entryControllerProvider(entryId).future);
         notifier.setDirty(value: true);
 
         when(
@@ -1577,9 +1577,9 @@ void main() {
         () async {
           final container = makeProviderContainer();
           final notifier = container.read(
-            entryControllerProvider(id: entryId).notifier,
+            entryControllerProvider(entryId).notifier,
           );
-          await container.read(entryControllerProvider(id: entryId).future);
+          await container.read(entryControllerProvider(entryId).future);
 
           notifier.setDirty(value: true);
 
@@ -1624,7 +1624,7 @@ void main() {
           );
 
           final savedState = await container.read(
-            entryControllerProvider(id: entryId).future,
+            entryControllerProvider(entryId).future,
           );
           expect(savedState, isNot(isA<EntryStateDirty>()));
         },
@@ -1665,9 +1665,9 @@ void main() {
 
       final container = makeProviderContainer();
       final notifier = container.read(
-        entryControllerProvider(id: nonTaskEntryId).notifier,
+        entryControllerProvider(nonTaskEntryId).notifier,
       );
-      await container.read(entryControllerProvider(id: nonTaskEntryId).future);
+      await container.read(entryControllerProvider(nonTaskEntryId).future);
 
       await notifier.updateChecklistOrder(['any_id']);
 
@@ -1686,9 +1686,9 @@ void main() {
       () async {
         final container = makeProviderContainer();
         final notifier = container.read(
-          entryControllerProvider(id: entryId).notifier,
+          entryControllerProvider(entryId).notifier,
         );
-        await container.read(entryControllerProvider(id: entryId).future);
+        await container.read(entryControllerProvider(entryId).future);
 
         notifier.controller.document.insert(
           0,
@@ -1722,9 +1722,9 @@ void main() {
     test('updates with a new order of existing checklistIds', () async {
       final container = makeProviderContainer();
       final notifier = container.read(
-        entryControllerProvider(id: entryId).notifier,
+        entryControllerProvider(entryId).notifier,
       );
-      await container.read(entryControllerProvider(id: entryId).future);
+      await container.read(entryControllerProvider(entryId).future);
       notifier.controller.document.insert(0, 'Reordering checklist');
       final expectedEntryText = entryTextFromController(notifier.controller);
 
@@ -1755,9 +1755,9 @@ void main() {
     test('filters out non-existent or deleted checklistIds', () async {
       final container = makeProviderContainer();
       final notifier = container.read(
-        entryControllerProvider(id: entryId).notifier,
+        entryControllerProvider(entryId).notifier,
       );
-      await container.read(entryControllerProvider(id: entryId).future);
+      await container.read(entryControllerProvider(entryId).future);
       notifier.controller.document.insert(0, 'Filtering checklist');
       final expectedEntryText = entryTextFromController(notifier.controller);
 
@@ -1820,7 +1820,7 @@ void main() {
     test('updates task status when status changes', () async {
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -1845,7 +1845,7 @@ void main() {
     test('does nothing when task status is unchanged', () async {
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -1863,7 +1863,7 @@ void main() {
     test('does nothing when entry is not a task', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -1881,7 +1881,7 @@ void main() {
     test('does nothing when status is null', () async {
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -1911,7 +1911,7 @@ void main() {
     test('persists a new language code with ChangeSource.user', () async {
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
-      final provider = entryControllerProvider(id: entryId);
+      final provider = entryControllerProvider(entryId);
       final notifier = container.read(provider.notifier);
 
       await container.read(provider.future);
@@ -1953,7 +1953,7 @@ void main() {
         ).thenAnswer((_) async => seeded);
 
         final container = makeProviderContainer();
-        final provider = entryControllerProvider(id: seeded.meta.id);
+        final provider = entryControllerProvider(seeded.meta.id);
         final notifier = container.read(provider.notifier);
         await container.read(provider.future);
 
@@ -1993,7 +1993,7 @@ void main() {
         ).thenAnswer((_) async => seeded);
 
         final container = makeProviderContainer();
-        final provider = entryControllerProvider(id: seeded.meta.id);
+        final provider = entryControllerProvider(seeded.meta.id);
         final notifier = container.read(provider.notifier);
         await container.read(provider.future);
 
@@ -2020,7 +2020,7 @@ void main() {
       ).thenAnswer((_) async => seeded);
 
       final container = makeProviderContainer();
-      final provider = entryControllerProvider(id: seeded.meta.id);
+      final provider = entryControllerProvider(seeded.meta.id);
       final notifier = container.read(provider.notifier);
       await container.read(provider.future);
 
@@ -2048,7 +2048,7 @@ void main() {
     test('does nothing when entry is not a task', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final provider = entryControllerProvider(id: entryId);
+      final provider = entryControllerProvider(entryId);
       final notifier = container.read(provider.notifier);
       await container.read(provider.future);
 
@@ -2078,7 +2078,7 @@ void main() {
     test('updates rating for JournalEvent', () async {
       final container = makeProviderContainer();
       final entryId = testEventEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -2114,7 +2114,7 @@ void main() {
     test('does nothing when entry is not a JournalEvent', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -2145,7 +2145,7 @@ void main() {
     test('persists a trimmed rename, preserving status', () async {
       final container = makeProviderContainer();
       final entryId = testEventEntry.meta.id;
-      final provider = entryControllerProvider(id: entryId);
+      final provider = entryControllerProvider(entryId);
       final notifier = container.read(provider.notifier);
       await container.read(provider.future);
 
@@ -2173,7 +2173,7 @@ void main() {
 
     test('does nothing when the title is unchanged', () async {
       final container = makeProviderContainer();
-      final provider = entryControllerProvider(id: testEventEntry.meta.id);
+      final provider = entryControllerProvider(testEventEntry.meta.id);
       final notifier = container.read(provider.notifier);
       await container.read(provider.future);
 
@@ -2190,7 +2190,7 @@ void main() {
 
     test('does nothing when entry is not a JournalEvent', () async {
       final container = makeProviderContainer();
-      final provider = entryControllerProvider(id: testTextEntry.meta.id);
+      final provider = entryControllerProvider(testTextEntry.meta.id);
       final notifier = container.read(provider.notifier);
       await container.read(provider.future);
 
@@ -2220,7 +2220,7 @@ void main() {
     test('persists a new status, preserving title', () async {
       final container = makeProviderContainer();
       final entryId = testEventEntry.meta.id;
-      final provider = entryControllerProvider(id: entryId);
+      final provider = entryControllerProvider(entryId);
       final notifier = container.read(provider.notifier);
       await container.read(provider.future);
 
@@ -2248,7 +2248,7 @@ void main() {
 
     test('does nothing when the status is unchanged', () async {
       final container = makeProviderContainer();
-      final provider = entryControllerProvider(id: testEventEntry.meta.id);
+      final provider = entryControllerProvider(testEventEntry.meta.id);
       final notifier = container.read(provider.notifier);
       await container.read(provider.future);
 
@@ -2265,7 +2265,7 @@ void main() {
 
     test('does nothing when entry is not a JournalEvent', () async {
       final container = makeProviderContainer();
-      final provider = entryControllerProvider(id: testTextEntry.meta.id);
+      final provider = entryControllerProvider(testTextEntry.meta.id);
       final notifier = container.read(provider.notifier);
       await container.read(provider.future);
 
@@ -2295,7 +2295,7 @@ void main() {
     test('persists the chosen cover image id, preserving title', () async {
       final container = makeProviderContainer();
       final entryId = testEventEntry.meta.id;
-      final provider = entryControllerProvider(id: entryId);
+      final provider = entryControllerProvider(entryId);
       final notifier = container.read(provider.notifier);
       await container.read(provider.future);
 
@@ -2324,7 +2324,7 @@ void main() {
     test('clamps an out-of-range cropX before persisting', () async {
       final container = makeProviderContainer();
       final entryId = testEventEntry.meta.id;
-      final provider = entryControllerProvider(id: entryId);
+      final provider = entryControllerProvider(entryId);
       final notifier = container.read(provider.notifier);
       await container.read(provider.future);
 
@@ -2350,7 +2350,7 @@ void main() {
 
     test('does nothing when entry is not a JournalEvent', () async {
       final container = makeProviderContainer();
-      final provider = entryControllerProvider(id: testTextEntry.meta.id);
+      final provider = entryControllerProvider(testTextEntry.meta.id);
       final notifier = container.read(provider.notifier);
       await container.read(provider.future);
 
@@ -2377,7 +2377,7 @@ void main() {
     test('taskTitleFocusNodeListener executes without errors', () async {
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       final stateBefore = await container.read(testEntryProvider.future);
@@ -2414,7 +2414,7 @@ void main() {
     test('saves event', () async {
       final container = makeProviderContainer();
       final entryId = testEventEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -2459,7 +2459,7 @@ void main() {
     test('saves task with title and estimate', () async {
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -2512,7 +2512,7 @@ void main() {
     test('saves task with dueDate', () async {
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -2568,7 +2568,7 @@ void main() {
 
       final container = makeProviderContainer();
       final entryId = taskWithDueDate.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -2625,7 +2625,7 @@ void main() {
 
         final container = makeProviderContainer();
         final entryId = taskWithDueDate.meta.id;
-        final testEntryProvider = entryControllerProvider(id: entryId);
+        final testEntryProvider = entryControllerProvider(entryId);
         final notifier = container.read(testEntryProvider.notifier);
 
         await container.read(testEntryProvider.future);
@@ -2685,7 +2685,7 @@ void main() {
     test('sets cover art on a task', () async {
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -2722,7 +2722,7 @@ void main() {
 
       final container = makeProviderContainer();
       final entryId = taskWithCover.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -2751,7 +2751,7 @@ void main() {
     test('does nothing when entry is not a task', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -2769,7 +2769,7 @@ void main() {
     test('updates local state optimistically', () async {
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
+      final testEntryProvider = entryControllerProvider(entryId);
       final notifier = container.read(testEntryProvider.notifier);
 
       await container.read(testEntryProvider.future);
@@ -2805,7 +2805,7 @@ void main() {
     test('does nothing when entry is not a task', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final provider = entryControllerProvider(id: entryId);
+      final provider = entryControllerProvider(entryId);
       final notifier = container.read(provider.notifier);
 
       await container.read(provider.future);
@@ -2824,7 +2824,7 @@ void main() {
       // testTask has default priority p2Medium; 'P2' resolves to that.
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
-      final provider = entryControllerProvider(id: entryId);
+      final provider = entryControllerProvider(entryId);
       final notifier = container.read(provider.notifier);
 
       await container.read(provider.future);
@@ -2842,7 +2842,7 @@ void main() {
     test('persists new priority and optimistically updates state', () async {
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
-      final provider = entryControllerProvider(id: entryId);
+      final provider = entryControllerProvider(entryId);
       final notifier = container.read(provider.notifier);
 
       await container.read(provider.future);
@@ -2876,7 +2876,7 @@ void main() {
     test('persists P1 (high) priority correctly', () async {
       final container = makeProviderContainer();
       final entryId = testTask.meta.id;
-      final provider = entryControllerProvider(id: entryId);
+      final provider = entryControllerProvider(entryId);
       final notifier = container.read(provider.notifier);
 
       await container.read(provider.future);
@@ -2932,7 +2932,7 @@ void main() {
 
         final container = makeProviderContainer();
         final entryId = testTextEntry.meta.id;
-        final provider = entryControllerProvider(id: entryId);
+        final provider = entryControllerProvider(entryId);
         container.read(provider.notifier);
 
         await container.read(provider.future);
@@ -2966,7 +2966,7 @@ void main() {
 
         final container = makeProviderContainer();
         final entryId = testTextEntry.meta.id;
-        final provider = entryControllerProvider(id: entryId);
+        final provider = entryControllerProvider(entryId);
         container.read(provider.notifier);
 
         await container.read(provider.future);
@@ -3010,7 +3010,7 @@ void main() {
 
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final provider = entryControllerProvider(id: entryId);
+      final provider = entryControllerProvider(entryId);
       final notifier = container.read(provider.notifier);
 
       await container.read(provider.future);
@@ -3034,7 +3034,7 @@ void main() {
     test('does nothing when entry is not a JournalImage', () async {
       final container = makeProviderContainer();
       final entryId = testTextEntry.meta.id;
-      final provider = entryControllerProvider(id: entryId);
+      final provider = entryControllerProvider(entryId);
       final notifier = container.read(provider.notifier);
 
       await container.read(provider.future);
@@ -3077,7 +3077,7 @@ void main() {
             ),
           ],
         );
-        final provider = entryControllerProvider(id: testTextEntry.meta.id);
+        final provider = entryControllerProvider(testTextEntry.meta.id);
         final notifier = container.read(provider.notifier);
         await container.read(provider.future);
 
@@ -3103,7 +3103,7 @@ void main() {
             ),
           ],
         );
-        final provider = entryControllerProvider(id: testTextEntry.meta.id);
+        final provider = entryControllerProvider(testTextEntry.meta.id);
         final notifier = container.read(provider.notifier);
         await container.read(provider.future);
 
@@ -3127,7 +3127,7 @@ void main() {
             ),
           ],
         );
-        final provider = entryControllerProvider(id: emptyTextEntry.meta.id);
+        final provider = entryControllerProvider(emptyTextEntry.meta.id);
         final notifier = container.read(provider.notifier);
         await container.read(provider.future);
 
@@ -3150,7 +3150,7 @@ void main() {
             ),
           ],
         );
-        final provider = entryControllerProvider(id: emptyTextEntry.meta.id);
+        final provider = entryControllerProvider(emptyTextEntry.meta.id);
         final notifier = container.read(provider.notifier);
         await container.read(provider.future);
 
@@ -3180,7 +3180,7 @@ void main() {
         // construct a fresh AsyncData — and that the toolbar flag stays false.
         final container = makeProviderContainer();
         final entryId = testTextEntry.meta.id;
-        final provider = entryControllerProvider(id: entryId);
+        final provider = entryControllerProvider(entryId);
         final notifier = container.read(provider.notifier);
 
         await container.read(provider.future);
@@ -3222,7 +3222,7 @@ void main() {
           overrides: [agentInitializationProvider.overrideWith((ref) async {})],
         );
         final entryId = testTextEntry.meta.id;
-        final provider = entryControllerProvider(id: entryId);
+        final provider = entryControllerProvider(entryId);
         final notifier = container.read(provider.notifier);
 
         await container.read(provider.future);
@@ -3277,7 +3277,7 @@ void main() {
           overrides: [agentInitializationProvider.overrideWith((ref) async {})],
         );
         final entryId = testTextEntry.meta.id;
-        final provider = entryControllerProvider(id: entryId);
+        final provider = entryControllerProvider(entryId);
         final notifier = container.read(provider.notifier);
 
         await container.read(provider.future);
@@ -3335,7 +3335,7 @@ void main() {
           overrides: [agentInitializationProvider.overrideWith((ref) async {})],
         );
         final entryId = testTask.meta.id;
-        final provider = entryControllerProvider(id: entryId);
+        final provider = entryControllerProvider(entryId);
         final notifier = container.read(provider.notifier);
 
         await container.read(provider.future);
@@ -3456,7 +3456,7 @@ void main() {
         // super_clipboard platform channel is not set up in tests.
         // We handle both outcomes so the test is environment-agnostic.
         final container = makeProviderContainer();
-        final provider = entryControllerProvider(id: testImageForCopy.meta.id);
+        final provider = entryControllerProvider(testImageForCopy.meta.id);
         final notifier = container.read(provider.notifier);
 
         await container.read(provider.future);

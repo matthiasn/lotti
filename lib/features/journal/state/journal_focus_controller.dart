@@ -1,6 +1,5 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'journal_focus_controller.g.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 
 /// Intent to focus on a specific entry within a journal entry
 class JournalFocusIntent {
@@ -24,12 +23,24 @@ class JournalFocusIntent {
       'JournalFocusIntent(journalId: $journalId, entryId: $entryId, alignment: $alignment)';
 }
 
-@riverpod
-class JournalFocusController extends _$JournalFocusController {
-  JournalFocusController();
+final NotifierProviderFamily<
+  JournalFocusController,
+  JournalFocusIntent?,
+  String
+>
+journalFocusControllerProvider = NotifierProvider.autoDispose
+    .family<JournalFocusController, JournalFocusIntent?, String>(
+      JournalFocusController.new,
+      name: 'journalFocusControllerProvider',
+    );
+
+class JournalFocusController extends Notifier<JournalFocusIntent?> {
+  JournalFocusController(this.id);
+
+  final String id;
 
   @override
-  JournalFocusIntent? build({required String id}) {
+  JournalFocusIntent? build() {
     ref.keepAlive();
     return null;
   }

@@ -207,9 +207,7 @@ void main() {
       // Act & Assert
       subscription = container
           .listen(
-            aiConfigByTypeControllerProvider(
-              configType: AiConfigType.inferenceProvider,
-            ),
+            aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider),
             (_, _) {},
             fireImmediately: true,
           )
@@ -217,9 +215,7 @@ void main() {
 
       expect(
         container.read(
-          aiConfigByTypeControllerProvider(
-            configType: AiConfigType.inferenceProvider,
-          ),
+          aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider),
         ),
         const AsyncValue<List<AiConfig>>.loading(),
       );
@@ -228,9 +224,7 @@ void main() {
 
       // Verify data state with the correct data
       final state = container.read(
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.inferenceProvider,
-        ),
+        aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider),
       );
       expect(state.hasValue, isTrue);
       expect(state.value, [testApiConfig]);
@@ -261,9 +255,7 @@ void main() {
         () => generatedRepository.watchConfigsByType(scenario.configType),
       ).thenAnswer((_) => streamController.stream);
 
-      final provider = aiConfigByTypeControllerProvider(
-        configType: scenario.configType,
-      );
+      final provider = aiConfigByTypeControllerProvider(scenario.configType);
       final generatedSubscription = generatedContainer.listen(
         provider,
         (_, _) {},

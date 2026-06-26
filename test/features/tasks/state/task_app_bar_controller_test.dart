@@ -14,7 +14,7 @@ void main() {
     /// Keeps the autoDispose family instance alive and resolves its initial
     /// build before the test interacts with the notifier.
     Future<TaskAppBarController> bootstrap(String id) async {
-      final provider = taskAppBarControllerProvider(id: id);
+      final provider = taskAppBarControllerProvider(id);
       final subscription = container.listen(provider, (_, _) {});
       addTearDown(subscription.close);
       await container.read(provider.future);
@@ -25,7 +25,7 @@ void main() {
       await bootstrap('task-1');
 
       expect(
-        container.read(taskAppBarControllerProvider(id: 'task-1')).value,
+        container.read(taskAppBarControllerProvider('task-1')).value,
         0.0,
       );
     });
@@ -36,14 +36,14 @@ void main() {
       notifier.updateOffset(142.5);
 
       expect(
-        container.read(taskAppBarControllerProvider(id: 'task-1')).value,
+        container.read(taskAppBarControllerProvider('task-1')).value,
         142.5,
       );
 
       // Subsequent updates overwrite, they do not accumulate.
       notifier.updateOffset(7);
       expect(
-        container.read(taskAppBarControllerProvider(id: 'task-1')).value,
+        container.read(taskAppBarControllerProvider('task-1')).value,
         7.0,
       );
     });
@@ -55,11 +55,11 @@ void main() {
       notifierA.updateOffset(33);
 
       expect(
-        container.read(taskAppBarControllerProvider(id: 'task-a')).value,
+        container.read(taskAppBarControllerProvider('task-a')).value,
         33.0,
       );
       expect(
-        container.read(taskAppBarControllerProvider(id: 'task-b')).value,
+        container.read(taskAppBarControllerProvider('task-b')).value,
         0.0,
       );
     });

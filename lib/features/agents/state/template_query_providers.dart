@@ -1,14 +1,17 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'template_query_providers.g.dart';
 
 /// List all non-deleted agent templates.
-@riverpod
+final FutureProvider<List<AgentDomainEntity>> agentTemplatesProvider =
+    FutureProvider.autoDispose<List<AgentDomainEntity>>(
+      agentTemplates,
+      name: 'agentTemplatesProvider',
+    );
 Future<List<AgentDomainEntity>> agentTemplates(Ref ref) async {
   final service = ref.watch(agentTemplateServiceProvider);
   return service.listTemplates();
@@ -18,7 +21,11 @@ Future<List<AgentDomainEntity>> agentTemplates(Ref ref) async {
 ///
 /// Uses a single DB query instead of N per-template lookups.
 /// Reactively rebuilds when any agent data changes.
-@riverpod
+final FutureProvider<List<AgentDomainEntity>> allEvolutionSessionsProvider =
+    FutureProvider.autoDispose<List<AgentDomainEntity>>(
+      allEvolutionSessions,
+      name: 'allEvolutionSessionsProvider',
+    );
 Future<List<AgentDomainEntity>> allEvolutionSessions(Ref ref) async {
   ref.watch(agentUpdateStreamProvider(agentNotification));
   final repository = ref.watch(agentRepositoryProvider);
@@ -26,10 +33,14 @@ Future<List<AgentDomainEntity>> allEvolutionSessions(Ref ref) async {
   return sessions.cast<AgentDomainEntity>();
 }
 
-/// Fetch a single agent template by [templateId].
+/// Fetch a single agent template by templateId.
 ///
 /// The returned entity is an [AgentTemplateEntity] (or `null`).
-@riverpod
+final FutureProviderFamily<AgentDomainEntity?, String> agentTemplateProvider =
+    FutureProvider.autoDispose.family<AgentDomainEntity?, String>(
+      agentTemplate,
+      name: 'agentTemplateProvider',
+    );
 Future<AgentDomainEntity?> agentTemplate(
   Ref ref,
   String templateId,
@@ -38,10 +49,15 @@ Future<AgentDomainEntity?> agentTemplate(
   return service.getTemplate(templateId);
 }
 
-/// Fetch the active version for a template by [templateId].
+/// Fetch the active version for a template by templateId.
 ///
 /// The returned entity is an [AgentTemplateVersionEntity] (or `null`).
-@riverpod
+final FutureProviderFamily<AgentDomainEntity?, String>
+activeTemplateVersionProvider = FutureProvider.autoDispose
+    .family<AgentDomainEntity?, String>(
+      activeTemplateVersion,
+      name: 'activeTemplateVersionProvider',
+    );
 Future<AgentDomainEntity?> activeTemplateVersion(
   Ref ref,
   String templateId,
@@ -50,10 +66,15 @@ Future<AgentDomainEntity?> activeTemplateVersion(
   return service.getActiveVersion(templateId);
 }
 
-/// Fetch the version history for a template by [templateId].
+/// Fetch the version history for a template by templateId.
 ///
 /// Each element is an [AgentTemplateVersionEntity].
-@riverpod
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+templateVersionHistoryProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>(
+      templateVersionHistory,
+      name: 'templateVersionHistoryProvider',
+    );
 Future<List<AgentDomainEntity>> templateVersionHistory(
   Ref ref,
   String templateId,
@@ -62,10 +83,15 @@ Future<List<AgentDomainEntity>> templateVersionHistory(
   return service.getVersionHistory(templateId);
 }
 
-/// Resolve the template assigned to an agent by [agentId].
+/// Resolve the template assigned to an agent by agentId.
 ///
 /// The returned entity is an [AgentTemplateEntity] (or `null`).
-@riverpod
+final FutureProviderFamily<AgentDomainEntity?, String>
+templateForAgentProvider = FutureProvider.autoDispose
+    .family<AgentDomainEntity?, String>(
+      templateForAgent,
+      name: 'templateForAgentProvider',
+    );
 Future<AgentDomainEntity?> templateForAgent(
   Ref ref,
   String agentId,
@@ -81,7 +107,12 @@ Future<AgentDomainEntity?> templateForAgent(
 ///
 /// Uses a SQL JOIN via `template_assignment` links to fetch all
 /// [WakeTokenUsageEntity] records across every instance in a single query.
-@riverpod
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+templateTokenUsageRecordsProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>(
+      templateTokenUsageRecords,
+      name: 'templateTokenUsageRecordsProvider',
+    );
 Future<List<AgentDomainEntity>> templateTokenUsageRecords(
   Ref ref,
   String templateId,
@@ -98,7 +129,12 @@ Future<List<AgentDomainEntity>> templateTokenUsageRecords(
 ///
 /// Derives from [templateTokenUsageRecordsProvider] and aggregates into
 /// per-model summaries sorted by total tokens descending.
-@riverpod
+final FutureProviderFamily<List<AgentTokenUsageSummary>, String>
+templateTokenUsageSummariesProvider = FutureProvider.autoDispose
+    .family<List<AgentTokenUsageSummary>, String>(
+      templateTokenUsageSummaries,
+      name: 'templateTokenUsageSummariesProvider',
+    );
 Future<List<AgentTokenUsageSummary>> templateTokenUsageSummaries(
   Ref ref,
   String templateId,
@@ -115,7 +151,12 @@ Future<List<AgentTokenUsageSummary>> templateTokenUsageSummaries(
 /// Groups token records by instance, then by model within each instance.
 /// Returns full per-model summaries so each instance can render a
 /// `TokenUsageTable` identical in structure to the aggregate view.
-@riverpod
+final FutureProviderFamily<List<InstanceTokenBreakdown>, String>
+templateInstanceTokenBreakdownProvider = FutureProvider.autoDispose
+    .family<List<InstanceTokenBreakdown>, String>(
+      templateInstanceTokenBreakdown,
+      name: 'templateInstanceTokenBreakdownProvider',
+    );
 Future<List<InstanceTokenBreakdown>> templateInstanceTokenBreakdown(
   Ref ref,
   String templateId,
@@ -148,7 +189,12 @@ Future<List<InstanceTokenBreakdown>> templateInstanceTokenBreakdown(
 }
 
 /// Recent reports from all instances of a template, newest-first.
-@riverpod
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+templateRecentReportsProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>(
+      templateRecentReports,
+      name: 'templateRecentReportsProvider',
+    );
 Future<List<AgentDomainEntity>> templateRecentReports(
   Ref ref,
   String templateId,
@@ -162,8 +208,13 @@ Future<List<AgentDomainEntity>> templateRecentReports(
   return reports.cast<AgentDomainEntity>();
 }
 
-/// Computed performance metrics for a template by [templateId].
-@riverpod
+/// Computed performance metrics for a template by templateId.
+final FutureProviderFamily<TemplatePerformanceMetrics, String>
+templatePerformanceMetricsProvider = FutureProvider.autoDispose
+    .family<TemplatePerformanceMetrics, String>(
+      templatePerformanceMetrics,
+      name: 'templatePerformanceMetricsProvider',
+    );
 Future<TemplatePerformanceMetrics> templatePerformanceMetrics(
   Ref ref,
   String templateId,
@@ -175,7 +226,12 @@ Future<TemplatePerformanceMetrics> templatePerformanceMetrics(
 /// Fetch evolution sessions for a template, newest-first.
 ///
 /// Each element is an [EvolutionSessionEntity].
-@riverpod
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+evolutionSessionsProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>(
+      evolutionSessions,
+      name: 'evolutionSessionsProvider',
+    );
 Future<List<AgentDomainEntity>> evolutionSessions(
   Ref ref,
   String templateId,
@@ -189,7 +245,12 @@ Future<List<AgentDomainEntity>> evolutionSessions(
 /// Fetch evolution notes for a template, newest-first.
 ///
 /// Each element is an [EvolutionNoteEntity].
-@riverpod
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+evolutionNotesProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>(
+      evolutionNotes,
+      name: 'evolutionNotesProvider',
+    );
 Future<List<AgentDomainEntity>> evolutionNotes(
   Ref ref,
   String templateId,

@@ -20,7 +20,7 @@ void main() {
 
     test('initial state has manageMode as false', () {
       final state = container.read(
-        linkedTasksControllerProvider(taskId: 'task-1'),
+        linkedTasksControllerProvider('task-1'),
       );
 
       expect(state.manageMode, isFalse);
@@ -28,42 +28,36 @@ void main() {
 
     test('toggleManageMode toggles manageMode state', () {
       final notifier = container.read(
-        linkedTasksControllerProvider(taskId: 'task-1').notifier,
+        linkedTasksControllerProvider('task-1').notifier,
       );
 
       // Initially false
       expect(
-        container
-            .read(linkedTasksControllerProvider(taskId: 'task-1'))
-            .manageMode,
+        container.read(linkedTasksControllerProvider('task-1')).manageMode,
         isFalse,
       );
 
       // Toggle to true
       notifier.toggleManageMode();
       expect(
-        container
-            .read(linkedTasksControllerProvider(taskId: 'task-1'))
-            .manageMode,
+        container.read(linkedTasksControllerProvider('task-1')).manageMode,
         isTrue,
       );
 
       // Toggle back to false
       notifier.toggleManageMode();
       expect(
-        container
-            .read(linkedTasksControllerProvider(taskId: 'task-1'))
-            .manageMode,
+        container.read(linkedTasksControllerProvider('task-1')).manageMode,
         isFalse,
       );
     });
 
     test('different taskIds have independent state', () {
       final notifier1 = container.read(
-        linkedTasksControllerProvider(taskId: 'task-1').notifier,
+        linkedTasksControllerProvider('task-1').notifier,
       );
       final notifier2 = container.read(
-        linkedTasksControllerProvider(taskId: 'task-2').notifier,
+        linkedTasksControllerProvider('task-2').notifier,
       );
 
       // Toggle manageMode on task-1
@@ -71,10 +65,10 @@ void main() {
 
       // task-2 should remain unaffected
       final state1 = container.read(
-        linkedTasksControllerProvider(taskId: 'task-1'),
+        linkedTasksControllerProvider('task-1'),
       );
       final state2 = container.read(
-        linkedTasksControllerProvider(taskId: 'task-2'),
+        linkedTasksControllerProvider('task-2'),
       );
 
       expect(state1.manageMode, isTrue);
@@ -84,10 +78,10 @@ void main() {
       notifier2.toggleManageMode();
 
       final state1After = container.read(
-        linkedTasksControllerProvider(taskId: 'task-1'),
+        linkedTasksControllerProvider('task-1'),
       );
       final state2After = container.read(
-        linkedTasksControllerProvider(taskId: 'task-2'),
+        linkedTasksControllerProvider('task-2'),
       );
 
       expect(state1After.manageMode, isTrue);

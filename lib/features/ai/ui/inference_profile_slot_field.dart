@@ -35,12 +35,10 @@ class ModelSlotField extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final modelsAsync = ref.watch(
-      aiConfigByTypeControllerProvider(configType: AiConfigType.model),
+      aiConfigByTypeControllerProvider(AiConfigType.model),
     );
     final providersAsync = ref.watch(
-      aiConfigByTypeControllerProvider(
-        configType: AiConfigType.inferenceProvider,
-      ),
+      aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider),
     );
 
     final allModels = switch (modelsAsync) {

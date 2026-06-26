@@ -412,9 +412,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
 
   List<Widget> _buildBodySlivers() {
     final providersAsync = ref.watch(
-      aiConfigByTypeControllerProvider(
-        configType: AiConfigType.inferenceProvider,
-      ),
+      aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider),
     );
 
     final providers = providersAsync.value
@@ -431,9 +429,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           child: ConfigErrorState(
             error: providersAsync.error!,
             onRetry: () => ref.invalidate(
-              aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
-              ),
+              aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider),
             ),
           ),
         ),
@@ -441,7 +437,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     }
 
     final modelsAsync = ref.watch(
-      aiConfigByTypeControllerProvider(configType: AiConfigType.model),
+      aiConfigByTypeControllerProvider(AiConfigType.model),
     );
     final profilesAsync = ref.watch(inferenceProfileControllerProvider);
     final models =

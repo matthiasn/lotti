@@ -37,7 +37,7 @@ class CompactTaskProgress extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(taskProgressControllerProvider(id: taskId)).value;
+    final state = ref.watch(taskProgressControllerProvider(taskId)).value;
 
     if (state == null || state.estimate == Duration.zero) {
       return const SizedBox.shrink();

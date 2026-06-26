@@ -43,7 +43,7 @@ class _StubNewestLinkedIdController extends NewestLinkedIdController {
   final String? _id;
 
   @override
-  Future<String?> build({required String? id}) async => _id;
+  Future<String?> build() async => _id;
 }
 
 /// A test subclass that pre-populates session-ended state.
@@ -102,7 +102,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         createEntryControllerOverride(entry),
-        newestLinkedIdControllerProvider(id: linkedFrom?.id).overrideWith(
+        newestLinkedIdControllerProvider(linkedFrom?.id).overrideWith(
           () => _StubNewestLinkedIdController(entry.meta.id),
         ),
         ...extraOverrides,
@@ -285,7 +285,7 @@ void main() {
             ),
             overrides: [
               createEntryControllerOverride(recentEntry),
-              newestLinkedIdControllerProvider(id: null).overrideWith(
+              newestLinkedIdControllerProvider(null).overrideWith(
                 () => _StubNewestLinkedIdController(recentEntry.meta.id),
               ),
               sessionEndedControllerProvider.overrideWith(
@@ -337,7 +337,7 @@ void main() {
             overrides: [
               createEntryControllerOverride(testEntry),
               createEntryControllerOverride(newEntry),
-              newestLinkedIdControllerProvider(id: null).overrideWith(
+              newestLinkedIdControllerProvider(null).overrideWith(
                 () => _StubNewestLinkedIdController(entryId),
               ),
             ],

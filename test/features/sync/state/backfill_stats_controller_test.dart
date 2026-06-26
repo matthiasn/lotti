@@ -771,7 +771,7 @@ void main() {
     group('auto-refresh timer dispose', () {
       test(
         'provider dispose cancels the timer so no ticks fire after the '
-        'Backfill Settings page is closed — the @riverpod auto-dispose '
+        'Backfill Settings page is closed; the auto-dispose provider '
         'is the backstop for "zero cost when page is closed"',
         () {
           fakeAsync((async) {

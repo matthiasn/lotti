@@ -1,10 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'linked_tasks_controller.freezed.dart';
-part 'linked_tasks_controller.g.dart';
 
 /// UI state for the LinkedTasks section in task detail view.
 @freezed
@@ -16,10 +16,20 @@ abstract class LinkedTasksState with _$LinkedTasksState {
 }
 
 /// Controller for managing the LinkedTasks section UI state.
-@riverpod
-class LinkedTasksController extends _$LinkedTasksController {
+final NotifierProviderFamily<LinkedTasksController, LinkedTasksState, String>
+linkedTasksControllerProvider = NotifierProvider.autoDispose
+    .family<LinkedTasksController, LinkedTasksState, String>(
+      LinkedTasksController.new,
+      name: 'linkedTasksControllerProvider',
+    );
+
+class LinkedTasksController extends Notifier<LinkedTasksState> {
+  LinkedTasksController([this.taskId = '']);
+
+  final String taskId;
+
   @override
-  LinkedTasksState build({required String taskId}) {
+  LinkedTasksState build() {
     return const LinkedTasksState();
   }
 
@@ -36,7 +46,11 @@ class LinkedTasksController extends _$LinkedTasksController {
 /// entryControllerProviders in the widget tree.
 ///
 /// Returns `List<JournalEntity>` (all Tasks) - caller should cast with `whereType<Task>()`.
-@riverpod
+final ProviderFamily<List<JournalEntity>, String> outgoingLinkedTasksProvider =
+    Provider.autoDispose.family<List<JournalEntity>, String>(
+      outgoingLinkedTasks,
+      name: 'outgoingLinkedTasksProvider',
+    );
 List<JournalEntity> outgoingLinkedTasks(
   Ref ref,
   String taskId,

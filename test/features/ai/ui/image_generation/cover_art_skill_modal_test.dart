@@ -49,13 +49,16 @@ void main() {
       tester,
     ) async {
       const refImageState = ReferenceImageSelectionState(isLoading: true);
-      final controller = FakeReferenceImageSelectionController(refImageState);
+      final controller = FakeReferenceImageSelectionController(
+        refImageState,
+        taskId: testLinkedTaskId,
+      );
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
             referenceImageSelectionControllerProvider(
-              taskId: testLinkedTaskId,
+              testLinkedTaskId,
             ).overrideWith(
               () => controller,
             ),
@@ -88,7 +91,7 @@ void main() {
           RiverpodWidgetTestBench(
             overrides: [
               referenceImageSelectionControllerProvider(
-                taskId: testLinkedTaskId,
+                testLinkedTaskId,
               ).overrideWith(
                 () => FakeReferenceImageSelectionController(
                   const ReferenceImageSelectionState(),
@@ -100,10 +103,10 @@ void main() {
                   // Simulate running status
                   ref
                       .read(
-                        inferenceStatusControllerProvider(
+                        inferenceStatusControllerProvider((
                           id: testLinkedTaskId,
                           aiResponseType: AiResponseType.imageGeneration,
-                        ).notifier,
+                        )).notifier,
                       )
                       .setStatus(InferenceStatus.running);
                   return Future<void>.value();
@@ -144,7 +147,7 @@ void main() {
           RiverpodWidgetTestBench(
             overrides: [
               referenceImageSelectionControllerProvider(
-                taskId: testLinkedTaskId,
+                testLinkedTaskId,
               ).overrideWith(
                 () => FakeReferenceImageSelectionController(
                   const ReferenceImageSelectionState(),
@@ -213,7 +216,7 @@ void main() {
           RiverpodWidgetTestBench(
             overrides: [
               referenceImageSelectionControllerProvider(
-                taskId: testLinkedTaskId,
+                testLinkedTaskId,
               ).overrideWith(
                 () => FakeReferenceImageSelectionController(
                   stateWithImages,
@@ -225,10 +228,10 @@ void main() {
                   capturedParams = params;
                   ref
                       .read(
-                        inferenceStatusControllerProvider(
+                        inferenceStatusControllerProvider((
                           id: testLinkedTaskId,
                           aiResponseType: AiResponseType.imageGeneration,
-                        ).notifier,
+                        )).notifier,
                       )
                       .setStatus(InferenceStatus.running);
                   return Future<void>.value();
@@ -272,7 +275,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             referenceImageSelectionControllerProvider(
-              taskId: testLinkedTaskId,
+              testLinkedTaskId,
             ).overrideWith(
               () => FakeReferenceImageSelectionController(errorState),
             ),
@@ -304,7 +307,7 @@ void main() {
           RiverpodWidgetTestBench(
             overrides: [
               referenceImageSelectionControllerProvider(
-                taskId: testLinkedTaskId,
+                testLinkedTaskId,
               ).overrideWith(
                 () => FakeReferenceImageSelectionController(errorState),
               ),
@@ -313,10 +316,10 @@ void main() {
                   capturedParams = params;
                   ref
                       .read(
-                        inferenceStatusControllerProvider(
+                        inferenceStatusControllerProvider((
                           id: testLinkedTaskId,
                           aiResponseType: AiResponseType.imageGeneration,
-                        ).notifier,
+                        )).notifier,
                       )
                       .setStatus(InferenceStatus.running);
                   return Future<void>.value();
@@ -356,7 +359,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             referenceImageSelectionControllerProvider(
-              taskId: testLinkedTaskId,
+              testLinkedTaskId,
             ).overrideWith(
               () => FakeReferenceImageSelectionController(
                 const ReferenceImageSelectionState(),
@@ -368,10 +371,10 @@ void main() {
                 // then idle to simulate completion.
                 ref
                     .read(
-                      inferenceStatusControllerProvider(
+                      inferenceStatusControllerProvider((
                         id: testLinkedTaskId,
                         aiResponseType: AiResponseType.imageGeneration,
-                      ).notifier,
+                      )).notifier,
                     )
                     .setStatus(InferenceStatus.running);
                 return Future<void>.value();
@@ -397,10 +400,10 @@ void main() {
       );
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testLinkedTaskId,
               aiResponseType: AiResponseType.imageGeneration,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.idle);
       await tester.pump();
@@ -419,7 +422,7 @@ void main() {
           RiverpodWidgetTestBench(
             overrides: [
               referenceImageSelectionControllerProvider(
-                taskId: testLinkedTaskId,
+                testLinkedTaskId,
               ).overrideWith(
                 () => FakeReferenceImageSelectionController(
                   const ReferenceImageSelectionState(),
@@ -430,10 +433,10 @@ void main() {
                   // Generation runs under linkedTaskId.
                   ref
                       .read(
-                        inferenceStatusControllerProvider(
+                        inferenceStatusControllerProvider((
                           id: testLinkedTaskId,
                           aiResponseType: AiResponseType.imageGeneration,
-                        ).notifier,
+                        )).notifier,
                       )
                       .setStatus(InferenceStatus.running);
                   return Future<void>.value();
@@ -464,10 +467,10 @@ void main() {
         // generation it tracks runs under linkedTaskId.
         container
             .read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: testEntityId,
                 aiResponseType: AiResponseType.imageGeneration,
-              ).notifier,
+              )).notifier,
             )
             .setStatus(InferenceStatus.idle);
         await tester.pump();
@@ -478,10 +481,10 @@ void main() {
         // Driving the linkedTaskId status to idle DOES surface completion.
         container
             .read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: testLinkedTaskId,
                 aiResponseType: AiResponseType.imageGeneration,
-              ).notifier,
+              )).notifier,
             )
             .setStatus(InferenceStatus.idle);
         await tester.pump();
@@ -497,7 +500,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             referenceImageSelectionControllerProvider(
-              taskId: testLinkedTaskId,
+              testLinkedTaskId,
             ).overrideWith(
               () => FakeReferenceImageSelectionController(
                 const ReferenceImageSelectionState(),
@@ -508,10 +511,10 @@ void main() {
                 // Set running first so _hasObservedRunning becomes true.
                 ref
                     .read(
-                      inferenceStatusControllerProvider(
+                      inferenceStatusControllerProvider((
                         id: testLinkedTaskId,
                         aiResponseType: AiResponseType.imageGeneration,
-                      ).notifier,
+                      )).notifier,
                     )
                     .setStatus(InferenceStatus.running);
                 return Future<void>.value();
@@ -536,10 +539,10 @@ void main() {
       );
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testLinkedTaskId,
               aiResponseType: AiResponseType.imageGeneration,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.error);
       await tester.pump();
@@ -556,7 +559,7 @@ void main() {
           RiverpodWidgetTestBench(
             overrides: [
               referenceImageSelectionControllerProvider(
-                taskId: testLinkedTaskId,
+                testLinkedTaskId,
               ).overrideWith(
                 () => FakeReferenceImageSelectionController(
                   const ReferenceImageSelectionState(),
@@ -565,10 +568,10 @@ void main() {
               triggerSkillProvider.overrideWith((ref, params) {
                 ref
                     .read(
-                      inferenceStatusControllerProvider(
+                      inferenceStatusControllerProvider((
                         id: testLinkedTaskId,
                         aiResponseType: AiResponseType.imageGeneration,
-                      ).notifier,
+                      )).notifier,
                     )
                     .setStatus(InferenceStatus.running);
                 return Future<void>.value();
@@ -592,17 +595,15 @@ void main() {
         // Provider rejection: error status + a verbatim provider reason.
         container
             .read(
-              imageGenerationErrorControllerProvider(
-                id: testLinkedTaskId,
-              ).notifier,
+              imageGenerationErrorControllerProvider(testLinkedTaskId).notifier,
             )
             .setError('PROHIBITED_CONTENT');
         container
             .read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: testLinkedTaskId,
                 aiResponseType: AiResponseType.imageGeneration,
-              ).notifier,
+              )).notifier,
             )
             .setStatus(InferenceStatus.error);
         await tester.pump();

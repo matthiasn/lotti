@@ -53,7 +53,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = entryControllerProvider(id: widget.entryId);
+    final provider = entryControllerProvider(widget.entryId);
     final item = ref.watch(provider).value?.entry;
     final notifier = ref.read(provider.notifier);
 

@@ -1,11 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/get_it.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'tts_settings_controller.g.dart';
 
 /// Holds the user's TTS preferences — selected voice, model, and playback
 /// speed — persisted locally via [SettingsDb].
@@ -13,8 +11,13 @@ part 'tts_settings_controller.g.dart';
 /// These are device-local preferences (which voice sounds best on this
 /// device, how fast to read), so unlike theming they are intentionally not
 /// enqueued for cross-device sync.
-@Riverpod(keepAlive: true)
-class TtsSettingsController extends _$TtsSettingsController {
+final ttsSettingsControllerProvider =
+    NotifierProvider<TtsSettingsController, TtsSettings>(
+      TtsSettingsController.new,
+      name: 'ttsSettingsControllerProvider',
+    );
+
+class TtsSettingsController extends Notifier<TtsSettings> {
   /// Set once the user changes any setting, so a late-resolving [_load] never
   /// clobbers an interaction made before storage finished loading.
   bool _userChanged = false;

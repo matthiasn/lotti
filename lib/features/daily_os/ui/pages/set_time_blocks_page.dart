@@ -40,7 +40,7 @@ class _SetTimeBlocksPageState extends ConsumerState<SetTimeBlocksPage> {
     final date = _date;
     if (_initializedDate == date) return;
 
-    ref.watch(unifiedDailyOsDataControllerProvider(date: date)).whenData((d) {
+    ref.watch(unifiedDailyOsDataControllerProvider(date)).whenData((d) {
       if (_initializedDate == date) return;
       _initializedDate = date;
       _pendingBlocks.clear();
@@ -63,7 +63,7 @@ class _SetTimeBlocksPageState extends ConsumerState<SetTimeBlocksPage> {
       final allBlocks = _pendingBlocks.values.expand((b) => b).toList();
 
       await ref
-          .read(unifiedDailyOsDataControllerProvider(date: _date).notifier)
+          .read(unifiedDailyOsDataControllerProvider(_date).notifier)
           .setPlannedBlocks(allBlocks);
 
       if (mounted) {

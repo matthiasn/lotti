@@ -93,19 +93,19 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
+          linkedTasksControllerProvider('task-main').overrideWith(
             manageMode
-                ? MockLinkedTasksControllerManageMode.new
+                ? () => MockLinkedTasksControllerManageMode('task-main')
                 : LinkedTasksController.new,
           ),
           outgoingLinkedTasksProvider('task-main').overrideWith(
             (ref) => outgoing,
           ),
-          linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
+          linkedFromEntriesControllerProvider('task-main').overrideWith(
             () => MockLinkedFromEntriesController(incoming),
           ),
-          linkedEntriesControllerProvider(id: 'task-main').overrideWith(
-            () => MockLinkedEntriesController(outgoingLinks),
+          linkedEntriesControllerProvider('task-main').overrideWith(
+            () => MockLinkedEntriesController(outgoingLinks, 'task-main'),
           ),
           journalRepositoryProvider.overrideWithValue(journalRepo),
           ...extraOverrides,

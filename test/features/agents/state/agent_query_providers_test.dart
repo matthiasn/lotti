@@ -1456,7 +1456,7 @@ void main() {
 
         final container = createContainer();
         final result = await container.read(
-          modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+          modelIdForThreadProvider((kTestAgentId, 'thread-abc')).future,
         );
 
         expect(result, 'qwen3:8b');
@@ -1484,7 +1484,7 @@ void main() {
 
         final container = createContainer();
         final result = await container.read(
-          modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+          modelIdForThreadProvider((kTestAgentId, 'thread-abc')).future,
         );
 
         expect(result, 'qwen3.5:9b');
@@ -1521,7 +1521,7 @@ void main() {
 
         final container = createContainer();
         final result = await container.read(
-          modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+          modelIdForThreadProvider((kTestAgentId, 'thread-abc')).future,
         );
 
         expect(result, 'qwen3.5:9b');
@@ -1548,7 +1548,7 @@ void main() {
 
         final container = createContainer();
         final result = await container.read(
-          modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+          modelIdForThreadProvider((kTestAgentId, 'thread-abc')).future,
         );
 
         expect(result, 'models/gemini-3-pro');
@@ -1602,7 +1602,7 @@ void main() {
 
             final container = createContainer();
             final result = await container.read(
-              modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+              modelIdForThreadProvider((kTestAgentId, 'thread-abc')).future,
             );
 
             // Profile resolution failed → legacy version.modelId wins.
@@ -1636,7 +1636,7 @@ void main() {
 
         final container = createContainer();
         final result = await container.read(
-          modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+          modelIdForThreadProvider((kTestAgentId, 'thread-abc')).future,
         );
 
         expect(result, 'qwen3.5:9b');
@@ -1654,7 +1654,7 @@ void main() {
 
         final container = createContainer();
         final result = await container.read(
-          modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+          modelIdForThreadProvider((kTestAgentId, 'thread-abc')).future,
         );
 
         expect(result, 'models/gemini-3-pro');
@@ -1665,7 +1665,7 @@ void main() {
 
         final container = createContainer();
         final result = await container.read(
-          modelIdForThreadProvider(kTestAgentId, 'missing').future,
+          modelIdForThreadProvider((kTestAgentId, 'missing')).future,
         );
 
         expect(result, isNull);
@@ -1804,7 +1804,7 @@ void main() {
           ],
         );
         final result = await container.read(
-          tokenUsageForThreadProvider(agentId, 'my-thread').future,
+          tokenUsageForThreadProvider((agentId, 'my-thread')).future,
         );
         expect(result, isNull);
       });
@@ -1815,7 +1815,7 @@ void main() {
           records: [],
         );
         final result = await container.read(
-          tokenUsageForThreadProvider(agentId, 'my-thread').future,
+          tokenUsageForThreadProvider((agentId, 'my-thread')).future,
         );
         expect(result, isNull);
       });
@@ -1867,7 +1867,7 @@ void main() {
         );
 
         final result = await container.read(
-          tokenUsageForThreadProvider(agentId, 'target-thread').future,
+          tokenUsageForThreadProvider((agentId, 'target-thread')).future,
         );
 
         expect(result, isNotNull);
@@ -1899,7 +1899,7 @@ void main() {
         );
 
         final result = await container.read(
-          tokenUsageForThreadProvider(agentId, 'null-thread').future,
+          tokenUsageForThreadProvider((agentId, 'null-thread')).future,
         );
 
         expect(result, isNotNull);

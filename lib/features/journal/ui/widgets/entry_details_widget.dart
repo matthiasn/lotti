@@ -78,7 +78,7 @@ class EntryDetailsWidget extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final provider = entryControllerProvider(id: itemId);
+    final provider = entryControllerProvider(itemId);
     final entryState = ref.watch(provider).value;
 
     final item = entryState?.entry;
@@ -274,7 +274,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
     final linkedFrom = widget.linkedFrom;
     final link = widget.link;
 
-    final provider = entryControllerProvider(id: itemId);
+    final provider = entryControllerProvider(itemId);
     final entryState = ref.watch(provider).value;
 
     final item = entryState?.entry;

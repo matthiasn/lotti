@@ -1,10 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'saved_task_filter_activator.g.dart';
 
 /// Applies a [SavedTaskFilter] to the live tasks page state.
 ///
@@ -94,7 +92,11 @@ bool _hasActiveClauses(TasksFilter live) {
 
 /// id of the saved filter whose persisted shape matches the live tasks-page
 /// filter, or null when no saved filter matches.
-@riverpod
+final Provider<String?> currentSavedTaskFilterIdProvider =
+    Provider.autoDispose<String?>(
+      currentSavedTaskFilterId,
+      name: 'currentSavedTaskFilterIdProvider',
+    );
 String? currentSavedTaskFilterId(Ref ref) {
   final pageState = ref.watch(journalPageControllerProvider(true));
   final saved =
@@ -111,7 +113,11 @@ String? currentSavedTaskFilterId(Ref ref) {
 /// True when the live filter has clauses that don't match any saved filter
 /// — the sidebar `+` and the modal Save button use this to decide whether
 /// they're enabled.
-@riverpod
+final Provider<bool> tasksFilterHasUnsavedClausesProvider =
+    Provider.autoDispose<bool>(
+      tasksFilterHasUnsavedClauses,
+      name: 'tasksFilterHasUnsavedClausesProvider',
+    );
 bool tasksFilterHasUnsavedClauses(Ref ref) {
   final pageState = ref.watch(journalPageControllerProvider(true));
   final live = _liveFilterFor(pageState);

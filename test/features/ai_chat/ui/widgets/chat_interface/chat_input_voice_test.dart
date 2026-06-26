@@ -245,7 +245,7 @@ class _FakeChatSessionController extends ChatSessionController {
 
   final ValueNotifier<String?> sink;
   @override
-  ChatSessionUiModel build(String categoryId) {
+  ChatSessionUiModel build() {
     // Selected model set so sending is allowed
     return const ChatSessionUiModel(
       id: 's',
@@ -268,7 +268,7 @@ class _FakeChatSessionController extends ChatSessionController {
 
 class _NonSendableChatSessionController extends ChatSessionController {
   @override
-  ChatSessionUiModel build(String categoryId) {
+  ChatSessionUiModel build() {
     // No selected model -> cannot send
     return const ChatSessionUiModel(
       id: 's',

@@ -56,14 +56,14 @@ void main() {
 
   group('JournalFocusController', () {
     test('initial state is null', () {
-      final provider = journalFocusControllerProvider(id: testJournalId);
+      final provider = journalFocusControllerProvider(testJournalId);
       final state = container.read(provider);
 
       expect(state, isNull);
     });
 
     test('publishJournalFocus sets intent', () {
-      final provider = journalFocusControllerProvider(id: testJournalId);
+      final provider = journalFocusControllerProvider(testJournalId);
 
       container
           .read(provider.notifier)
@@ -79,7 +79,7 @@ void main() {
     });
 
     test('publishJournalFocus with custom alignment', () {
-      final provider = journalFocusControllerProvider(id: testJournalId);
+      final provider = journalFocusControllerProvider(testJournalId);
 
       container
           .read(provider.notifier)
@@ -93,7 +93,7 @@ void main() {
     });
 
     test('clearIntent resets state to null', () {
-      final provider = journalFocusControllerProvider(id: testJournalId);
+      final provider = journalFocusControllerProvider(testJournalId);
       final notifier = container.read(provider.notifier)
         ..publishJournalFocus(
           entryId: testEntryId,
@@ -111,7 +111,7 @@ void main() {
     });
 
     test('multiple publish calls update the intent', () {
-      final provider = journalFocusControllerProvider(id: testJournalId);
+      final provider = journalFocusControllerProvider(testJournalId);
       final notifier = container.read(provider.notifier)
         ..publishJournalFocus(
           entryId: 'entry1',
@@ -128,7 +128,7 @@ void main() {
     });
 
     test('re-trigger after clearIntent works', () {
-      final provider = journalFocusControllerProvider(id: testJournalId);
+      final provider = journalFocusControllerProvider(testJournalId);
       final notifier = container.read(provider.notifier)
         ..publishJournalFocus(
           entryId: testEntryId,
@@ -154,8 +154,8 @@ void main() {
       const journalId1 = 'journal-1';
       const journalId2 = 'journal-2';
 
-      final provider1 = journalFocusControllerProvider(id: journalId1);
-      final provider2 = journalFocusControllerProvider(id: journalId2);
+      final provider1 = journalFocusControllerProvider(journalId1);
+      final provider2 = journalFocusControllerProvider(journalId2);
 
       container
           .read(provider1.notifier)
@@ -190,7 +190,7 @@ void main() {
 
       // Direct test without the helper function since it requires WidgetRef
       // We'll test the functionality directly through the controller
-      final provider = journalFocusControllerProvider(id: journalId);
+      final provider = journalFocusControllerProvider(journalId);
       container
           .read(provider.notifier)
           .publishJournalFocus(
@@ -212,7 +212,7 @@ void main() {
       const entryId = 'test-entry-2';
 
       // Direct test without the helper function since it requires WidgetRef
-      final provider = journalFocusControllerProvider(id: journalId);
+      final provider = journalFocusControllerProvider(journalId);
       container
           .read(provider.notifier)
           .publishJournalFocus(
@@ -233,7 +233,7 @@ void main() {
       const entryId = 'test-entry-3';
       const alignment = 0.5;
 
-      final provider = journalFocusControllerProvider(id: journalId);
+      final provider = journalFocusControllerProvider(journalId);
 
       // This simulates what the helper function does internally
       container

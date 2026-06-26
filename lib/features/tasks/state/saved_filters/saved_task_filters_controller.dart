@@ -1,20 +1,23 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
 import 'package:lotti/get_it.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
-
-part 'saved_task_filters_controller.g.dart';
 
 /// Riverpod controller backing the user's pinned task-filter list.
 ///
 /// State is the ordered list of [SavedTaskFilter]s. Position in the list is
 /// the sort order. Mutations write through to [SavedTaskFiltersPersistence]
 /// after each operation.
-@Riverpod(keepAlive: true)
-class SavedTaskFiltersController extends _$SavedTaskFiltersController {
+final savedTaskFiltersControllerProvider =
+    AsyncNotifierProvider<SavedTaskFiltersController, List<SavedTaskFilter>>(
+      SavedTaskFiltersController.new,
+      name: 'savedTaskFiltersControllerProvider',
+    );
+
+class SavedTaskFiltersController extends AsyncNotifier<List<SavedTaskFilter>> {
   late final SavedTaskFiltersPersistence _persistence;
   final Uuid _uuid = const Uuid();
 

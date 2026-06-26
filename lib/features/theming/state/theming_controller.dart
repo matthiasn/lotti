@@ -5,6 +5,7 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
@@ -16,9 +17,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'theming_controller.g.dart';
 
 /// Platform-aware emoji font fallback chain for the global ThemeData.
 ///
@@ -90,7 +88,11 @@ class ThemingState {
 }
 
 /// Stream provider watching the tooltip enable flag from config.
-@riverpod
+final StreamProvider<bool> enableTooltipsProvider =
+    StreamProvider.autoDispose<bool>(
+      enableTooltips,
+      name: 'enableTooltipsProvider',
+    );
 Stream<bool> enableTooltips(Ref ref) {
   final db = getIt<JournalDb>();
   return db.watchConfigFlag(enableTooltipFlag);
@@ -98,8 +100,13 @@ Stream<bool> enableTooltips(Ref ref) {
 
 /// Notifier managing the complete theming state.
 /// Marked as keepAlive since theme state should persist for the entire app lifecycle.
-@Riverpod(keepAlive: true)
-class ThemingController extends _$ThemingController {
+final themingControllerProvider =
+    NotifierProvider<ThemingController, ThemingState>(
+      ThemingController.new,
+      name: 'themingControllerProvider',
+    );
+
+class ThemingController extends Notifier<ThemingState> {
   StreamSubscription<Set<String>>? _settingsNotificationSub;
   bool _isApplyingSyncedChanges = false;
   final _debounceKey = 'theming.sync.${identityHashCode(Object())}';

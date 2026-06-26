@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
@@ -8,9 +10,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'task_progress_controller.g.dart';
 
 /// Live time-spent / estimate state for a single task, keyed by task `id`.
 ///
@@ -22,11 +21,25 @@ part 'task_progress_controller.g.dart';
 ///   updates the live entity's range in-memory so the displayed total grows
 ///   smoothly without a DB round-trip.
 ///
-/// [_fetch] deliberately preserves that live range across re-fetches because
+/// _fetch deliberately preserves that live range across re-fetches because
 /// the persisted `dateTo` of a running timer is stale; see the inline comment
 /// there for why clobbering it caused the recorded time to blip back to zero.
-@riverpod
-class TaskProgressController extends _$TaskProgressController {
+final AsyncNotifierProviderFamily<
+  TaskProgressController,
+  TaskProgressState?,
+  String
+>
+taskProgressControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<TaskProgressController, TaskProgressState?, String>(
+      TaskProgressController.new,
+      name: 'taskProgressControllerProvider',
+    );
+
+class TaskProgressController extends AsyncNotifier<TaskProgressState?> {
+  TaskProgressController([this.id = '']);
+
+  final String id;
+
   final _timeRanges = <String, TimeRange>{};
   final _subscribedIds = <String>{};
   Duration? _estimate;
@@ -65,7 +78,7 @@ class TaskProgressController extends _$TaskProgressController {
   }
 
   @override
-  Future<TaskProgressState?> build({required String id}) async {
+  Future<TaskProgressState?> build() async {
     _subscribedIds.add(id);
     ref
       ..onDispose(() => _updateSubscription?.cancel())

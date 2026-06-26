@@ -63,7 +63,7 @@ void main() {
   ProviderScope buildWrapper(JournalEntity? entry) {
     return ProviderScope(
       overrides: [
-        entryControllerProvider(id: entry?.id ?? 'entry-123').overrideWith(
+        entryControllerProvider(entry?.id ?? 'entry-123').overrideWith(
           () => TestEntryController(entry),
         ),
         labelsStreamProvider.overrideWith(
@@ -173,7 +173,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              entryControllerProvider(id: entry.id).overrideWith(
+              entryControllerProvider(entry.id).overrideWith(
                 () => TestEntryController(entry),
               ),
               labelsStreamProvider.overrideWith(
@@ -236,7 +236,7 @@ void main() {
     ProviderScope buildAudioWrapper(JournalAudio entry) {
       return ProviderScope(
         overrides: [
-          entryControllerProvider(id: entry.id).overrideWith(
+          entryControllerProvider(entry.id).overrideWith(
             () => TestEntryController(entry),
           ),
           labelsStreamProvider.overrideWith(
@@ -292,7 +292,7 @@ void main() {
     ProviderScope buildImageWrapper(JournalImage entry) {
       return ProviderScope(
         overrides: [
-          entryControllerProvider(id: entry.id).overrideWith(
+          entryControllerProvider(entry.id).overrideWith(
             () => TestEntryController(entry),
           ),
           labelsStreamProvider.overrideWith(

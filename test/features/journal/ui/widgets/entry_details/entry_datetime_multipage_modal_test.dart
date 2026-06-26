@@ -76,7 +76,7 @@ class _ThrowingEntryController extends EntryController {
   final JournalEntity _entity;
 
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     final value = EntryState.saved(
       entryId: id,
       entry: _entity,
@@ -264,7 +264,7 @@ void main() {
         tester,
         _sameDay,
         overrideController: entryControllerProvider(
-          id: _sameDay.meta.id,
+          _sameDay.meta.id,
         ).overrideWith(() => _ThrowingEntryController(_sameDay)),
       );
 

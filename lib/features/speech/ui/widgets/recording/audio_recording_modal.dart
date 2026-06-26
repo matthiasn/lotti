@@ -443,10 +443,10 @@ class _AudioRecordingModalContentState
     // Use the extracted provider to compute visibility
     // This makes the logic testable independently from the widget
     final visibility = ref.watch(
-      checkboxVisibilityProvider(
+      checkboxVisibilityProvider((
         categoryId: widget.categoryId,
         linkedId: widget.linkedId,
-      ),
+      )),
     );
 
     if (visibility.none) {

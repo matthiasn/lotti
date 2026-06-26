@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -11,11 +12,9 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'time_history_header_controller.freezed.dart';
-part 'time_history_header_controller.g.dart';
 
 /// Summary of time spent per category for a single day.
 /// Uses noon representation to avoid DST artifacts.
@@ -72,8 +71,17 @@ abstract class TimeHistoryData with _$TimeHistoryData {
 ///
 /// Fetches and aggregates time-by-category data for multiple days,
 /// supporting incremental loading for infinite scroll.
-@riverpod
-class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
+final AsyncNotifierProvider<TimeHistoryHeaderController, TimeHistoryData>
+timeHistoryHeaderControllerProvider =
+    AsyncNotifierProvider.autoDispose<
+      TimeHistoryHeaderController,
+      TimeHistoryData
+    >(
+      TimeHistoryHeaderController.new,
+      name: 'timeHistoryHeaderControllerProvider',
+    );
+
+class TimeHistoryHeaderController extends AsyncNotifier<TimeHistoryData> {
   static const int _initialPastDays = 30;
   static const int _initialFutureDays = 30;
   static const int _loadMoreDays = 14;

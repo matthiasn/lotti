@@ -84,7 +84,7 @@ void main() {
       navigateToTimerTarget(current: entry, linkedFrom: task, ref: ref);
 
       verify(() => mockNavService.beamToNamed('/tasks/task-1')).called(1);
-      final intent = container.read(taskFocusControllerProvider(id: 'task-1'));
+      final intent = container.read(taskFocusControllerProvider('task-1'));
       expect(intent?.entryId, 'entry-1');
     },
   );
@@ -100,7 +100,7 @@ void main() {
 
       verify(() => mockNavService.beamToNamed('/journal/parent-1')).called(1);
       expect(
-        container.read(taskFocusControllerProvider(id: 'parent-1')),
+        container.read(taskFocusControllerProvider('parent-1')),
         isNull,
       );
     },

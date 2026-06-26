@@ -21,7 +21,7 @@ class _FixedProgressController extends TaskProgressController {
   final Duration estimate;
 
   @override
-  Future<TaskProgressState?> build({required String id}) async {
+  Future<TaskProgressState?> build() async {
     return TaskProgressState(progress: progress, estimate: estimate);
   }
 }
@@ -67,7 +67,7 @@ void main() {
   }) async {
     return ProviderScope(
       overrides: [
-        taskProgressControllerProvider(id: taskId).overrideWith(
+        taskProgressControllerProvider(taskId).overrideWith(
           () => _FixedProgressController(
             progress: progress,
             estimate: estimate,
@@ -157,7 +157,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            taskProgressControllerProvider(id: taskId).overrideWith(
+            taskProgressControllerProvider(taskId).overrideWith(
               () => _FixedProgressController(
                 progress: const Duration(minutes: 45),
                 estimate: const Duration(hours: 1),
@@ -339,7 +339,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            taskProgressControllerProvider(id: taskId).overrideWith(
+            taskProgressControllerProvider(taskId).overrideWith(
               () => makeController(progress, estimate),
             ),
           ],
@@ -384,7 +384,7 @@ class _FixedTimerTextProgressController extends TaskProgressController {
   final Duration estimate;
 
   @override
-  Future<TaskProgressState?> build({required String id}) async {
+  Future<TaskProgressState?> build() async {
     return TaskProgressState(progress: progress, estimate: estimate);
   }
 }

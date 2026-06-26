@@ -21,7 +21,7 @@ class _FakeAiConfigByTypeController extends AiConfigByTypeController {
   final List<AiConfig> _data;
 
   @override
-  Stream<List<AiConfig>> build({required AiConfigType configType}) {
+  Stream<List<AiConfig>> build() {
     return Stream.value(_data);
   }
 }
@@ -41,10 +41,10 @@ void main() {
           // The form (mounted on the data branch) reads the model and
           // provider lists too; supply empty fakes so it can render.
           aiConfigByTypeControllerProvider(
-            configType: AiConfigType.model,
+            AiConfigType.model,
           ).overrideWith(() => _FakeAiConfigByTypeController(const [])),
           aiConfigByTypeControllerProvider(
-            configType: AiConfigType.inferenceProvider,
+            AiConfigType.inferenceProvider,
           ).overrideWith(() => _FakeAiConfigByTypeController(const [])),
           inferenceProfileControllerProvider.overrideWith(
             _FakeInferenceProfileController.new,

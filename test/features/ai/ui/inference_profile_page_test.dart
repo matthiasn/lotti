@@ -38,10 +38,10 @@ void main() {
         }),
         // Needed for InferenceProfileForm when navigated to.
         aiConfigByTypeControllerProvider(
-          configType: AiConfigType.model,
+          AiConfigType.model,
         ).overrideWith(_FakeConfigController.new),
         aiConfigByTypeControllerProvider(
-          configType: AiConfigType.inferenceProvider,
+          AiConfigType.inferenceProvider,
         ).overrideWith(_FakeConfigController.new),
       ],
     );
@@ -233,7 +233,7 @@ class _FakeInferenceProfileController extends InferenceProfileController {
 
 class _FakeConfigController extends AiConfigByTypeController {
   @override
-  Stream<List<AiConfig>> build({required AiConfigType configType}) {
+  Stream<List<AiConfig>> build() {
     return Stream.value([]);
   }
 }

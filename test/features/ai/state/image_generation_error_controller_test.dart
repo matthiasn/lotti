@@ -13,7 +13,7 @@ void main() {
   });
 
   String? read(String id) =>
-      container.read(imageGenerationErrorControllerProvider(id: id));
+      container.read(imageGenerationErrorControllerProvider(id));
 
   group('ImageGenerationErrorController', () {
     test('initial reason is null', () {
@@ -22,14 +22,14 @@ void main() {
 
     test('setError stores the provider reason verbatim', () {
       container
-          .read(imageGenerationErrorControllerProvider(id: 'task-1').notifier)
+          .read(imageGenerationErrorControllerProvider('task-1').notifier)
           .setError('PROHIBITED_CONTENT');
 
       expect(read('task-1'), 'PROHIBITED_CONTENT');
     });
 
     test('setError(null) clears a previously set reason', () {
-      final provider = imageGenerationErrorControllerProvider(id: 'task-1');
+      final provider = imageGenerationErrorControllerProvider('task-1');
       container.read(provider.notifier).setError('IMAGE_SAFETY');
       expect(read('task-1'), 'IMAGE_SAFETY');
 
@@ -39,7 +39,7 @@ void main() {
 
     test('reasons are isolated per id', () {
       container
-          .read(imageGenerationErrorControllerProvider(id: 'task-1').notifier)
+          .read(imageGenerationErrorControllerProvider('task-1').notifier)
           .setError('PROHIBITED_CONTENT');
 
       expect(read('task-1'), 'PROHIBITED_CONTENT');

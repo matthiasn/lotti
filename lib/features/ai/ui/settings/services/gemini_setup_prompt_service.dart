@@ -1,11 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'gemini_setup_prompt_service.g.dart';
 
 /// Key for storing whether the Gemini setup prompt was permanently dismissed
 const _dismissedKey = 'gemini_setup_prompt_dismissed';
@@ -17,8 +15,14 @@ const _dismissedKey = 'gemini_setup_prompt_dismissed';
 /// 2. Tracks whether the user has dismissed the prompt permanently
 /// 3. Waits for What's New modal to be dismissed first
 /// 4. Determines whether to show the setup prompt
-@riverpod
-class GeminiSetupPromptService extends _$GeminiSetupPromptService {
+final AsyncNotifierProvider<GeminiSetupPromptService, bool>
+geminiSetupPromptServiceProvider =
+    AsyncNotifierProvider.autoDispose<GeminiSetupPromptService, bool>(
+      GeminiSetupPromptService.new,
+      name: 'geminiSetupPromptServiceProvider',
+    );
+
+class GeminiSetupPromptService extends AsyncNotifier<bool> {
   @override
   Future<bool> build() async {
     return _shouldShowPrompt();

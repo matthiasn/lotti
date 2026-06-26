@@ -50,11 +50,11 @@ void main() {
       addTearDown(container.dispose);
 
       final result = await container.read(
-        surveyChartDataControllerProvider(
+        surveyChartDataControllerProvider((
           surveyType: surveyType,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ).future,
+        )).future,
       );
 
       expect(result, hasLength(1));
@@ -102,11 +102,11 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final provider = surveyChartDataControllerProvider(
+      final provider = surveyChartDataControllerProvider((
         surveyType: surveyType,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
-      );
+      ));
 
       // Initial load
       await container.read(provider.future);
@@ -157,11 +157,11 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final provider = surveyChartDataControllerProvider(
+      final provider = surveyChartDataControllerProvider((
         surveyType: surveyType,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
-      );
+      ));
 
       await container.read(provider.future);
 

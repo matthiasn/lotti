@@ -49,7 +49,7 @@ class MockAiConfigByTypeController extends AiConfigByTypeController {
   final List<AiConfig> _configs;
 
   @override
-  Stream<List<AiConfig>> build({required AiConfigType configType}) {
+  Stream<List<AiConfig>> build() {
     // Use a StreamController that emits the value and stays open.
     // This mimics the real implementation which watches for changes.
     final controller = StreamController<List<AiConfig>>()..add(_configs);
@@ -278,7 +278,7 @@ class AiTestSetup {
     if (providers != null) {
       overrides.add(
         aiConfigByTypeControllerProvider(
-          configType: AiConfigType.inferenceProvider,
+          AiConfigType.inferenceProvider,
         ).overrideWith(() => MockAiConfigByTypeController(providers)),
       );
     }
@@ -286,7 +286,7 @@ class AiTestSetup {
     if (models != null) {
       overrides.add(
         aiConfigByTypeControllerProvider(
-          configType: AiConfigType.model,
+          AiConfigType.model,
         ).overrideWith(() => MockAiConfigByTypeController(models)),
       );
     }
@@ -294,7 +294,7 @@ class AiTestSetup {
     if (prompts != null) {
       overrides.add(
         aiConfigByTypeControllerProvider(
-          configType: AiConfigType.prompt,
+          AiConfigType.prompt,
         ).overrideWith(() => MockAiConfigByTypeController(prompts)),
       );
     }

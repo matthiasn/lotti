@@ -52,7 +52,7 @@ Future<void> _createTaskAgent(
   String taskId,
 ) async {
   final entryStateResult = await ref.read(
-    entryControllerProvider(id: taskId).future,
+    entryControllerProvider(taskId).future,
   );
   final entryState = entryStateResult?.entry;
   if (entryState == null || entryState is! Task) return;

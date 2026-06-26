@@ -10,7 +10,7 @@ import '../../../../widget_test_utils.dart';
 /// Pins the unsaved flag without booting the full entry-controller graph.
 class _FakeSaveButtonController extends SaveButtonController {
   @override
-  Future<bool?> build({required String id}) async => false;
+  Future<bool?> build() async => false;
 }
 
 void main() {
@@ -24,7 +24,7 @@ void main() {
         ),
         overrides: [
           saveButtonControllerProvider(
-            id: entryId,
+            entryId,
           ).overrideWith(_FakeSaveButtonController.new),
         ],
       ),

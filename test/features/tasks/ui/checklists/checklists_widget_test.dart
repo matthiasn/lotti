@@ -41,7 +41,7 @@ class MockEntryController extends EntryController {
   final List<List<String>> updateChecklistOrderCalls = [];
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     if (mockEntry == null) {
       return null;
     }
@@ -245,7 +245,7 @@ void main() {
 
       return ProviderScope(
         overrides: [
-          entryControllerProvider(id: testTask.id).overrideWith(
+          entryControllerProvider(testTask.id).overrideWith(
             () => MockEntryController(mockEntry: taskWithIds),
           ),
           checklistRepositoryProvider.overrideWithValue(
@@ -308,7 +308,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              entryControllerProvider(id: 'task1').overrideWith(
+              entryControllerProvider('task1').overrideWith(
                 () => MockEntryController(mockEntry: mockTask),
               ),
               checklistRepositoryProvider.overrideWithValue(
@@ -364,7 +364,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entryControllerProvider(id: 'task1').overrideWith(
+            entryControllerProvider('task1').overrideWith(
               () => MockEntryController(mockEntry: null),
             ),
           ],
@@ -402,7 +402,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entryControllerProvider(id: 'task1').overrideWith(
+            entryControllerProvider('task1').overrideWith(
               () => MockEntryController(mockEntry: journalEntry),
             ),
           ],
@@ -467,7 +467,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entryControllerProvider(id: 'task1').overrideWith(
+            entryControllerProvider('task1').overrideWith(
               () => controller,
             ),
             checklistRepositoryProvider.overrideWithValue(
@@ -590,7 +590,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              entryControllerProvider(id: 'task1').overrideWith(
+              entryControllerProvider('task1').overrideWith(
                 () => controller,
               ),
               checklistRepositoryProvider.overrideWithValue(
@@ -660,7 +660,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              entryControllerProvider(id: 'task1').overrideWith(
+              entryControllerProvider('task1').overrideWith(
                 () => controller,
               ),
               checklistRepositoryProvider.overrideWithValue(

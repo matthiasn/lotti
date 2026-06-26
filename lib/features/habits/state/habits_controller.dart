@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:easy_debounce/easy_debounce.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
@@ -11,9 +12,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'habits_controller.g.dart';
 
 /// Owns the whole [HabitsState] for the habits tab.
 ///
@@ -21,15 +19,20 @@ part 'habits_controller.g.dart';
 /// fires: the repository's habit-definition stream, the update stream filtered
 /// for `habitCompletionNotification`, and the nav-index stream (to refresh the
 /// time-sensitive due/later split when the tab is re-entered). The heavy lift
-/// is [_determineHabitSuccessByDays], which buckets completions into the
+/// is _determineHabitSuccessByDays, which buckets completions into the
 /// per-day maps, splits open habits into due-now vs. pending-later via
 /// `showHabit`, applies the category filter, counts streaks and recomputes the
 /// chart's [HabitsState.minY].
 ///
 /// Marked `keepAlive` so the (relatively expensive) state survives navigating
 /// away from and back to the tab.
-@Riverpod(keepAlive: true)
-class HabitsController extends _$HabitsController {
+final habitsControllerProvider =
+    NotifierProvider<HabitsController, HabitsState>(
+      HabitsController.new,
+      name: 'habitsControllerProvider',
+    );
+
+class HabitsController extends Notifier<HabitsState> {
   StreamSubscription<List<HabitDefinition>>? _definitionsSubscription;
   StreamSubscription<Set<String>>? _updateSubscription;
   StreamSubscription<int>? _navIndexSubscription;

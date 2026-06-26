@@ -1,12 +1,24 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'checklist_completion_service.g.dart';
+final AsyncNotifierProvider<
+  ChecklistCompletionService,
+  List<ChecklistCompletionSuggestion>
+>
+checklistCompletionServiceProvider =
+    AsyncNotifierProvider.autoDispose<
+      ChecklistCompletionService,
+      List<ChecklistCompletionSuggestion>
+    >(
+      ChecklistCompletionService.new,
+      name: 'checklistCompletionServiceProvider',
+    );
 
-@riverpod
-class ChecklistCompletionService extends _$ChecklistCompletionService {
+class ChecklistCompletionService
+    extends AsyncNotifier<List<ChecklistCompletionSuggestion>> {
   @override
   FutureOr<List<ChecklistCompletionSuggestion>> build() async {
     return [];

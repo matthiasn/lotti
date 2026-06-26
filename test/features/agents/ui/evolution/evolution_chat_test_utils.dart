@@ -16,7 +16,7 @@ class FakeEvolutionChatState extends EvolutionChatState {
   final Future<EvolutionChatData> Function(String) _buildFn;
 
   @override
-  Future<EvolutionChatData> build(String templateId) => _buildFn(templateId);
+  Future<EvolutionChatData> build() => _buildFn(templateId);
 }
 
 /// Fake [EvolutionChatState] that captures [sendMessage] calls without
@@ -28,7 +28,7 @@ class CapturingSendEvolutionChatState extends EvolutionChatState {
   final List<String> sentMessages = [];
 
   @override
-  Future<EvolutionChatData> build(String templateId) async => _initialData;
+  Future<EvolutionChatData> build() async => _initialData;
 
   @override
   Future<void> sendMessage(
@@ -47,7 +47,7 @@ class MutableEvolutionChatState extends EvolutionChatState {
   final EvolutionChatData _initialData;
 
   @override
-  Future<EvolutionChatData> build(String templateId) async => _initialData;
+  Future<EvolutionChatData> build() async => _initialData;
 
   void pushData(EvolutionChatData data) {
     state = AsyncData(data);
@@ -61,7 +61,7 @@ class FakeSoulEvolutionChatState extends SoulEvolutionChatState {
   final Future<EvolutionChatData> Function(String) _buildFn;
 
   @override
-  Future<EvolutionChatData> build(String soulId) => _buildFn(soulId);
+  Future<EvolutionChatData> build() => _buildFn(soulId);
 }
 
 /// Fake that records the last [sendMessage] call without calling the real
@@ -73,7 +73,7 @@ class TrackingSoulEvolutionChatState extends SoulEvolutionChatState {
   String? lastSentMessage;
 
   @override
-  Future<EvolutionChatData> build(String soulId) => _buildFn(soulId);
+  Future<EvolutionChatData> build() => _buildFn(soulId);
 
   @override
   Future<void> sendMessage(
@@ -92,7 +92,7 @@ class ControllableSoulEvolutionChatState extends SoulEvolutionChatState {
   final Future<EvolutionChatData> Function(String) _buildFn;
 
   @override
-  Future<EvolutionChatData> build(String soulId) => _buildFn(soulId);
+  Future<EvolutionChatData> build() => _buildFn(soulId);
 
   void pushUpdate(EvolutionChatData data) {
     state = AsyncData(data);

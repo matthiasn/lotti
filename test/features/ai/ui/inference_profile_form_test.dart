@@ -60,13 +60,11 @@ void main() {
         inferenceProfileControllerProvider.overrideWith(() {
           return fakeProfileController;
         }),
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.model,
-        ).overrideWith(() {
+        aiConfigByTypeControllerProvider(AiConfigType.model).overrideWith(() {
           return _FakeAiConfigByTypeController(models);
         }),
         aiConfigByTypeControllerProvider(
-          configType: AiConfigType.inferenceProvider,
+          AiConfigType.inferenceProvider,
         ).overrideWith(() {
           return _FakeAiConfigByTypeController(providers);
         }),
@@ -184,10 +182,10 @@ void main() {
                 () => fakeProfileController,
               ),
               aiConfigByTypeControllerProvider(
-                configType: AiConfigType.model,
+                AiConfigType.model,
               ).overrideWith(() => _FakeAiConfigByTypeController(const [])),
               aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
+                AiConfigType.inferenceProvider,
               ).overrideWith(() => _FakeAiConfigByTypeController(const [])),
             ],
           ),
@@ -2387,7 +2385,7 @@ class _FakeAiConfigByTypeController extends AiConfigByTypeController {
   final List<AiConfig> _data;
 
   @override
-  Stream<List<AiConfig>> build({required AiConfigType configType}) {
+  Stream<List<AiConfig>> build() {
     return Stream.value(_data);
   }
 }

@@ -47,7 +47,7 @@ void main() {
       ProviderScope(
         overrides: [
           entryControllerProvider(
-            id: entity.meta.id,
+            entity.meta.id,
           ).overrideWith(() => controller),
         ],
         child: makeTestableWidgetWithScaffold(

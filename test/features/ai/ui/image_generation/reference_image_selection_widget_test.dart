@@ -54,9 +54,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(loadingState),
             ),
           ],
@@ -78,9 +76,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(emptyState),
             ),
           ],
@@ -109,9 +105,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(stateWithImages),
             ),
           ],
@@ -145,9 +139,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(stateWithSelection),
             ),
           ],
@@ -171,9 +163,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(stateWithImages),
             ),
           ],
@@ -203,9 +193,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(stateWithSelection),
             ),
           ],
@@ -230,9 +218,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(processingState),
             ),
           ],
@@ -264,9 +250,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(stateWithImages),
             ),
           ],
@@ -295,9 +279,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(stateWithSelection),
             ),
           ],
@@ -321,9 +303,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(stateWithImages),
             ),
           ],
@@ -353,9 +333,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(stateAtMax),
             ),
           ],
@@ -378,9 +356,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(emptyState),
             ),
           ],
@@ -415,9 +391,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(stateWithImages),
             ),
           ],
@@ -443,9 +417,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(stateWithImages),
             ),
           ],
@@ -475,7 +447,7 @@ void main() {
           RiverpodWidgetTestBench(
             overrides: [
               referenceImageSelectionControllerProvider(
-                taskId: testTaskId,
+                testTaskId,
               ).overrideWith(
                 () => FakeReferenceImageSelectionController(stateWithImages),
               ),
@@ -524,9 +496,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(errorState),
             ),
           ],
@@ -568,9 +538,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => trackingController,
             ),
           ],
@@ -627,9 +595,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => trackingController,
             ),
           ],
@@ -680,9 +646,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => trackingController,
             ),
           ],
@@ -721,7 +685,7 @@ void main() {
           RiverpodWidgetTestBench(
             overrides: [
               referenceImageSelectionControllerProvider(
-                taskId: testTaskId,
+                testTaskId,
               ).overrideWith(
                 () => FakeReferenceImageSelectionController(stateWithImages),
               ),
@@ -753,9 +717,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(errorState),
             ),
           ],
@@ -788,9 +750,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(
                 stateWithLinkedImage,
               ),
@@ -821,9 +781,7 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testTaskId,
-            ).overrideWith(
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
               () => FakeReferenceImageSelectionController(stateWithDirectOnly),
             ),
           ],
@@ -866,7 +824,7 @@ void main() {
               RiverpodWidgetTestBench(
                 overrides: [
                   referenceImageSelectionControllerProvider(
-                    taskId: testTaskId,
+                    testTaskId,
                   ).overrideWith(
                     () => FakeReferenceImageSelectionController(state),
                   ),

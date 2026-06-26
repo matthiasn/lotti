@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -23,15 +24,15 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'agent_workflow_providers.g.dart';
 
 /// The template evolution workflow with all dependencies resolved.
 ///
 /// Includes the multi-turn session dependencies (AgentTemplateService,
 /// AgentSyncService) alongside the legacy single-turn dependencies.
-@Riverpod(keepAlive: true)
+final templateEvolutionWorkflowProvider = Provider<TemplateEvolutionWorkflow>(
+  templateEvolutionWorkflow,
+  name: 'templateEvolutionWorkflowProvider',
+);
 TemplateEvolutionWorkflow templateEvolutionWorkflow(Ref ref) {
   final improverService = ref.watch(improverAgentServiceProvider);
   return TemplateEvolutionWorkflow(
@@ -56,7 +57,10 @@ TemplateEvolutionWorkflow templateEvolutionWorkflow(Ref ref) {
 }
 
 /// The improver agent workflow with all dependencies resolved.
-@Riverpod(keepAlive: true)
+final improverAgentWorkflowProvider = Provider<ImproverAgentWorkflow>(
+  improverAgentWorkflow,
+  name: 'improverAgentWorkflowProvider',
+);
 ImproverAgentWorkflow improverAgentWorkflow(Ref ref) {
   return ImproverAgentWorkflow(
     feedbackService: ref.watch(feedbackExtractionServiceProvider),
@@ -69,7 +73,10 @@ ImproverAgentWorkflow improverAgentWorkflow(Ref ref) {
 }
 
 /// The task agent workflow with all dependencies resolved.
-@Riverpod(keepAlive: true)
+final taskAgentWorkflowProvider = Provider<TaskAgentWorkflow>(
+  taskAgentWorkflow,
+  name: 'taskAgentWorkflowProvider',
+);
 TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
   // Embedding dependencies are optional — the pipeline may not be available
   // (e.g. ObjectBox initialization failure).
@@ -115,7 +122,10 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
 }
 
 /// The project agent workflow with all dependencies resolved.
-@Riverpod(keepAlive: true)
+final projectAgentWorkflowProvider = Provider<ProjectAgentWorkflow>(
+  projectAgentWorkflow,
+  name: 'projectAgentWorkflowProvider',
+);
 ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return ProjectAgentWorkflow(
@@ -142,7 +152,10 @@ ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
 ///
 /// Leaner than the project workflow: v1 events are narrate-only recaps, so
 /// there is no input-capture log or compaction summarizer to wire in.
-@Riverpod(keepAlive: true)
+final eventAgentWorkflowProvider = Provider<EventAgentWorkflow>(
+  eventAgentWorkflow,
+  name: 'eventAgentWorkflowProvider',
+);
 EventAgentWorkflow eventAgentWorkflow(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return EventAgentWorkflow(
@@ -160,7 +173,10 @@ EventAgentWorkflow eventAgentWorkflow(Ref ref) {
 }
 
 /// The Daily OS day-agent workflow with all dependencies resolved.
-@Riverpod(keepAlive: true)
+final dayAgentWorkflowProvider = Provider<DayAgentWorkflow>(
+  dayAgentWorkflow,
+  name: 'dayAgentWorkflowProvider',
+);
 DayAgentWorkflow dayAgentWorkflow(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return DayAgentWorkflow(

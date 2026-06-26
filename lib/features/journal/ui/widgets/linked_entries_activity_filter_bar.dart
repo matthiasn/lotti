@@ -26,14 +26,14 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final activeKinds = ref.watch(
-      linkedEntriesActivityFilterControllerProvider(id: entryId),
+      linkedEntriesActivityFilterControllerProvider(entryId),
     );
     final notifier = ref.read(
-      linkedEntriesActivityFilterControllerProvider(id: entryId).notifier,
+      linkedEntriesActivityFilterControllerProvider(entryId).notifier,
     );
 
     final sortOrder = ref.watch(
-      linkedEntriesSortControllerProvider(id: entryId),
+      linkedEntriesSortControllerProvider(entryId),
     );
 
     return Padding(

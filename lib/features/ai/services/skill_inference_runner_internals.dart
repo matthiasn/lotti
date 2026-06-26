@@ -17,20 +17,20 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
   }) {
     _ref
         .read(
-          inferenceStatusControllerProvider(
+          inferenceStatusControllerProvider((
             id: entityId,
             aiResponseType: responseType,
-          ).notifier,
+          )).notifier,
         )
         .setStatus(status);
 
     if (linkedTaskId != null) {
       _ref
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: linkedTaskId,
               aiResponseType: responseType,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(status);
     }
@@ -46,13 +46,13 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
     String? linkedTaskId,
   }) {
     _ref
-        .read(imageGenerationErrorControllerProvider(id: entityId).notifier)
+        .read(imageGenerationErrorControllerProvider(entityId).notifier)
         .setError(providerReason);
 
     if (linkedTaskId != null) {
       _ref
           .read(
-            imageGenerationErrorControllerProvider(id: linkedTaskId).notifier,
+            imageGenerationErrorControllerProvider(linkedTaskId).notifier,
           )
           .setError(providerReason);
     }

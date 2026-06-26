@@ -64,7 +64,7 @@ class _FakeEntryController extends EntryController {
   final JournalEntity _entry;
 
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     final value = EntryState.saved(
       entryId: id,
       entry: _entry,
@@ -81,7 +81,7 @@ class _FakeEntryController extends EntryController {
 /// Returns a null entry (entity not yet loaded / missing).
 class _NullEntryController extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     state = const AsyncData(null);
     return SynchronousFuture(null);
   }
@@ -651,7 +651,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             ProviderScope(
               overrides: [
-                entryControllerProvider(id: testTask.meta.id).overrideWith(
+                entryControllerProvider(testTask.meta.id).overrideWith(
                   () => _FakeEntryController(testTask),
                 ),
               ],
@@ -680,7 +680,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             ProviderScope(
               overrides: [
-                entryControllerProvider(id: testTask.meta.id).overrideWith(
+                entryControllerProvider(testTask.meta.id).overrideWith(
                   () => _FakeEntryController(testTask),
                 ),
               ],
@@ -731,7 +731,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             ProviderScope(
               overrides: [
-                entryControllerProvider(id: 'ai-entry-id').overrideWith(
+                entryControllerProvider('ai-entry-id').overrideWith(
                   () => _FakeEntryController(aiEntry),
                 ),
               ],
@@ -776,7 +776,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             ProviderScope(
               overrides: [
-                entryControllerProvider(id: 'event-id').overrideWith(
+                entryControllerProvider('event-id').overrideWith(
                   () => _FakeEntryController(buildEvent()),
                 ),
                 resolvedOutgoingLinkedEntriesProvider(
@@ -807,7 +807,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             ProviderScope(
               overrides: [
-                entryControllerProvider(id: 'event-id').overrideWith(
+                entryControllerProvider('event-id').overrideWith(
                   () => _FakeEntryController(buildEvent()),
                 ),
                 configFlagProvider(
@@ -837,7 +837,7 @@ void main() {
           ProviderScope(
             overrides: [
               entryControllerProvider(
-                id: 'missing-id',
+                'missing-id',
               ).overrideWith(_NullEntryController.new),
             ],
             child: const EntryDetailsWidget(
@@ -866,7 +866,7 @@ void main() {
           ProviderScope(
             overrides: [
               entryControllerProvider(
-                id: deletedEntry.meta.id,
+                deletedEntry.meta.id,
               ).overrideWith(() => _FakeEntryController(deletedEntry)),
             ],
             child: EntryDetailsWidget(
@@ -909,7 +909,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testTextEntry.meta.id,
+                  testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
               ],
               child: EntryDetailsWidget(
@@ -942,7 +942,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testTextEntry.meta.id,
+                  testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
               ],
               child: EntryDetailsWidget(
@@ -977,7 +977,7 @@ void main() {
               ProviderScope(
                 overrides: [
                   entryControllerProvider(
-                    id: testTextEntry.meta.id,
+                    testTextEntry.meta.id,
                   ).overrideWith(() => _FakeEntryController(testTextEntry)),
                 ],
                 child: EntryDetailsWidget(
@@ -1056,7 +1056,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             ProviderScope(
               overrides: [
-                entryControllerProvider(id: 'ai-detail-id').overrideWith(
+                entryControllerProvider('ai-detail-id').overrideWith(
                   () => _FakeEntryController(aiEntry),
                 ),
               ],
@@ -1099,7 +1099,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             ProviderScope(
               overrides: [
-                entryControllerProvider(id: 'checklist-id').overrideWith(
+                entryControllerProvider('checklist-id').overrideWith(
                   () => _FakeEntryController(checklist),
                 ),
               ],
@@ -1143,7 +1143,7 @@ void main() {
           makeTestableWidget(
             ProviderScope(
               overrides: [
-                entryControllerProvider(id: 'checklist-item-id').overrideWith(
+                entryControllerProvider('checklist-item-id').overrideWith(
                   () => _FakeEntryController(checklistItem),
                 ),
               ],
@@ -1178,7 +1178,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testAudioEntry.meta.id,
+                  testAudioEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testAudioEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
@@ -1223,7 +1223,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testAudioEntry.meta.id,
+                  testAudioEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testAudioEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
@@ -1270,7 +1270,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testAudioEntry.meta.id,
+                  testAudioEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testAudioEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
@@ -1327,7 +1327,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: labelled.meta.id,
+                  labelled.meta.id,
                 ).overrideWith(() => _FakeEntryController(labelled)),
                 labelsStreamProvider.overrideWith(
                   (ref) => Stream.value(const <LabelDefinition>[]),
@@ -1368,7 +1368,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: labelled.meta.id,
+                  labelled.meta.id,
                 ).overrideWith(() => _FakeEntryController(labelled)),
                 labelsStreamProvider.overrideWith(
                   (ref) => Stream.value(const <LabelDefinition>[]),
@@ -1397,7 +1397,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testMeasurementChocolateEntry.meta.id,
+                  testMeasurementChocolateEntry.meta.id,
                 ).overrideWith(
                   () => _FakeEntryController(testMeasurementChocolateEntry),
                 ),
@@ -1429,7 +1429,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testHabitCompletionEntry.meta.id,
+                  testHabitCompletionEntry.meta.id,
                 ).overrideWith(
                   () => _FakeEntryController(testHabitCompletionEntry),
                 ),
@@ -1463,7 +1463,7 @@ void main() {
                 // Use the SAME itemId so both EntryDetailsWidget and
                 // EntryDetailsContent watch the same provider.
                 entryControllerProvider(
-                  id: deletedEntry.meta.id,
+                  deletedEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(deletedEntry)),
               ],
               child: EntryDetailsWidget(
@@ -1511,7 +1511,7 @@ void main() {
                 return ProviderScope(
                   overrides: [
                     entryControllerProvider(
-                      id: testTextEntry.meta.id,
+                      testTextEntry.meta.id,
                     ).overrideWith(() => _FakeEntryController(testTextEntry)),
                   ],
                   child: Column(
@@ -1572,7 +1572,7 @@ void main() {
                 return ProviderScope(
                   overrides: [
                     entryControllerProvider(
-                      id: testTextEntry.meta.id,
+                      testTextEntry.meta.id,
                     ).overrideWith(() => _FakeEntryController(testTextEntry)),
                   ],
                   child: Column(
@@ -1647,7 +1647,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testTextEntry.meta.id,
+                  testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
               ],
               child: EntryDetailsWidget(
@@ -1702,7 +1702,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testTextEntry.meta.id,
+                  testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
               ],
               child: EntryDetailsWidget(
@@ -1799,7 +1799,7 @@ void main() {
                 return ProviderScope(
                   overrides: [
                     entryControllerProvider(
-                      id: testTextEntry.meta.id,
+                      testTextEntry.meta.id,
                     ).overrideWith(() => _FakeEntryController(testTextEntry)),
                   ],
                   child: Column(
@@ -1902,7 +1902,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testTextEntry.meta.id,
+                  testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
@@ -2015,7 +2015,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testTextEntry.meta.id,
+                  testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
@@ -2124,7 +2124,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testTextEntry.meta.id,
+                  testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
@@ -2183,7 +2183,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testTextEntry.meta.id,
+                  testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
@@ -2246,7 +2246,7 @@ void main() {
             ProviderScope(
               overrides: [
                 entryControllerProvider(
-                  id: testTextEntry.meta.id,
+                  testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,

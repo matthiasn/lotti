@@ -53,7 +53,7 @@ class FakeEntryController extends EntryController {
   final bool isLoading;
 
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     // Return synchronously using SynchronousFuture for immediate resolution in tests
     if (shouldError) {
       // Return a Future.error for error propagation
@@ -299,7 +299,7 @@ void main() {
     // Override the entryControllerProvider if linkedTaskId is provided
     if (linkedTaskId != null && mockTask != null) {
       overrides.add(
-        entryControllerProvider(id: linkedTaskId).overrideWith(
+        entryControllerProvider(linkedTaskId).overrideWith(
           () => FakeEntryController(mockEntry: mockTask),
         ),
       );
@@ -308,10 +308,10 @@ void main() {
     // Override checkbox visibility when speech checkbox should be shown
     if (showSpeechCheckbox) {
       overrides.add(
-        checkboxVisibilityProvider(
+        checkboxVisibilityProvider((
           categoryId: provideCategory ? 'test-category' : null,
           linkedId: linkedTaskId,
-        ).overrideWithValue(
+        )).overrideWithValue(
           const AutomaticPromptVisibility(speech: true),
         ),
       );
@@ -750,10 +750,10 @@ void main() {
             tester,
             linkedId: 'task-1',
             extraOverrides: [
-              checkboxVisibilityProvider(
+              checkboxVisibilityProvider((
                 categoryId: 'test-category',
                 linkedId: 'task-1',
-              ).overrideWithValue(
+              )).overrideWithValue(
                 const AutomaticPromptVisibility(speech: true),
               ),
             ],
@@ -1128,17 +1128,17 @@ void main() {
           ),
           categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
           playerFactoryProvider.overrideWithValue(() => mockPlayer),
-          entryControllerProvider(id: linkedId).overrideWith(
+          entryControllerProvider(linkedId).overrideWith(
             () => FakeEntryController(
               mockEntry: linkedEntry,
               shouldError: shouldError,
             ),
           ),
           if (showSpeechCheckbox)
-            checkboxVisibilityProvider(
+            checkboxVisibilityProvider((
               categoryId: 'test-category',
               linkedId: linkedId,
-            ).overrideWithValue(
+            )).overrideWithValue(
               const AutomaticPromptVisibility(speech: true),
             ),
         ],
@@ -1239,13 +1239,13 @@ void main() {
             ),
             playerFactoryProvider.overrideWithValue(() => mockPlayer),
             // Override entryControllerProvider to return an Event
-            entryControllerProvider(id: 'event-123').overrideWith(
+            entryControllerProvider('event-123').overrideWith(
               () => FakeEntryController(mockEntry: mockEvent),
             ),
-            checkboxVisibilityProvider(
+            checkboxVisibilityProvider((
               categoryId: 'test-category',
               linkedId: 'event-123',
-            ).overrideWithValue(
+            )).overrideWithValue(
               const AutomaticPromptVisibility(speech: true),
             ),
           ],
@@ -1318,13 +1318,13 @@ void main() {
               mockCategoryRepository,
             ),
             playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            entryControllerProvider(id: 'journal-123').overrideWith(
+            entryControllerProvider('journal-123').overrideWith(
               () => FakeEntryController(mockEntry: mockJournalEntry),
             ),
-            checkboxVisibilityProvider(
+            checkboxVisibilityProvider((
               categoryId: 'test-category',
               linkedId: 'journal-123',
-            ).overrideWithValue(
+            )).overrideWithValue(
               const AutomaticPromptVisibility(speech: true),
             ),
           ],
@@ -1392,13 +1392,13 @@ void main() {
             ),
             playerFactoryProvider.overrideWithValue(() => mockPlayer),
             // Return null entry
-            entryControllerProvider(id: 'nonexistent-123').overrideWith(
+            entryControllerProvider('nonexistent-123').overrideWith(
               () => FakeEntryController(mockEntry: null),
             ),
-            checkboxVisibilityProvider(
+            checkboxVisibilityProvider((
               categoryId: 'test-category',
               linkedId: 'nonexistent-123',
-            ).overrideWithValue(
+            )).overrideWithValue(
               const AutomaticPromptVisibility(speech: true),
             ),
           ],
@@ -1468,13 +1468,13 @@ void main() {
               ),
               playerFactoryProvider.overrideWithValue(() => mockPlayer),
               // Return AsyncValue with null value
-              entryControllerProvider(id: 'null-value-123').overrideWith(
+              entryControllerProvider('null-value-123').overrideWith(
                 () => FakeEntryController(mockEntry: null),
               ),
-              checkboxVisibilityProvider(
+              checkboxVisibilityProvider((
                 categoryId: 'test-category',
                 linkedId: 'null-value-123',
-              ).overrideWithValue(
+              )).overrideWithValue(
                 const AutomaticPromptVisibility(speech: true),
               ),
             ],
@@ -1545,13 +1545,13 @@ void main() {
             ),
             playerFactoryProvider.overrideWithValue(() => mockPlayer),
             // Return loading state
-            entryControllerProvider(id: 'loading-123').overrideWith(
+            entryControllerProvider('loading-123').overrideWith(
               () => FakeEntryController(isLoading: true),
             ),
-            checkboxVisibilityProvider(
+            checkboxVisibilityProvider((
               categoryId: 'test-category',
               linkedId: 'loading-123',
-            ).overrideWithValue(
+            )).overrideWithValue(
               const AutomaticPromptVisibility(speech: true),
             ),
           ],
@@ -1621,10 +1621,10 @@ void main() {
             // Override checkboxVisibilityProvider to simulate error state behavior
             // When entryController is in error state, isLinkedToTask should be false,
             // so only speech checkbox is visible
-            checkboxVisibilityProvider(
+            checkboxVisibilityProvider((
               categoryId: 'test-category',
               linkedId: 'error-123',
-            ).overrideWithValue(
+            )).overrideWithValue(
               const AutomaticPromptVisibility(
                 speech: true,
               ),
@@ -1717,13 +1717,13 @@ void main() {
                 mockCategoryRepository,
               ),
               playerFactoryProvider.overrideWithValue(() => mockPlayer),
-              entryControllerProvider(id: 'task-123').overrideWith(
+              entryControllerProvider('task-123').overrideWith(
                 () => FakeEntryController(mockEntry: mockTask),
               ),
-              checkboxVisibilityProvider(
+              checkboxVisibilityProvider((
                 categoryId: 'test-category',
                 linkedId: 'task-123',
-              ).overrideWithValue(
+              )).overrideWithValue(
                 const AutomaticPromptVisibility(speech: true),
               ),
             ],

@@ -1134,7 +1134,7 @@ void main() {
 
   group('full-details overlay (desktop)', () {
     // The overlay's [EntryDetailSidebar] is a ConsumerWidget that watches
-    // `entryControllerProvider(id: focusId)`. Building it for real would pull in
+    // `entryControllerProvider(focusId)`. Building it for real would pull in
     // the app's full provider/getIt graph and the heavy TaskForm/details
     // widgets. Instead, the focus entry's controller is overridden with one
     // whose `build` resolves to `null` (no entry) — so the sidebar renders its
@@ -1162,7 +1162,7 @@ void main() {
           scenario: scenario,
           extraOverrides: [
             // The focus at open time is the scenario seed (`t0`).
-            entryControllerProvider(id: scenario.seedId).overrideWith(
+            entryControllerProvider(scenario.seedId).overrideWith(
               _NullEntryController.new,
             ),
           ],
@@ -1203,5 +1203,5 @@ void main() {
 /// heavy real detail widgets — and without the app's provider/getIt graph.
 class _NullEntryController extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) async => null;
+  Future<EntryState?> build() async => null;
 }

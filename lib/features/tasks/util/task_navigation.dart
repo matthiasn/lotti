@@ -30,7 +30,7 @@ void openLinkedTaskDetail({
           context,
           listen: false,
         )
-        .read(taskFocusControllerProvider(id: taskId).notifier)
+        .read(taskFocusControllerProvider(taskId).notifier)
         .publishSuggestionFocus();
   }
 

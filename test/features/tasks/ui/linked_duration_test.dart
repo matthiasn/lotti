@@ -17,7 +17,7 @@ class _FixedProgressController extends TaskProgressController {
   final TaskProgressState? fixedState;
 
   @override
-  Future<TaskProgressState?> build({required String id}) async => fixedState;
+  Future<TaskProgressState?> build() async => fixedState;
 }
 
 void main() {
@@ -40,7 +40,7 @@ void main() {
       makeTestableWidgetNoScroll(
         const Scaffold(body: LinkedDuration(taskId: taskId)),
         overrides: [
-          taskProgressControllerProvider(id: taskId).overrideWith(
+          taskProgressControllerProvider(taskId).overrideWith(
             () => _FixedProgressController(fixedState: state),
           ),
         ],
@@ -133,7 +133,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            taskProgressControllerProvider(id: taskId).overrideWith(
+            taskProgressControllerProvider(taskId).overrideWith(
               () => makeController(progress, estimate),
             ),
           ],
@@ -181,7 +181,7 @@ class _FixedTimerTextProgressController extends TaskProgressController {
   final Duration estimate;
 
   @override
-  Future<TaskProgressState?> build({required String id}) async {
+  Future<TaskProgressState?> build() async {
     return TaskProgressState(progress: progress, estimate: estimate);
   }
 }

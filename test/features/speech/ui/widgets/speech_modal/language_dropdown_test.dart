@@ -65,7 +65,7 @@ Future<FakeEntryController> _pump(
     makeTestableWidgetWithScaffold(
       LanguageDropdown(entryId: entryId),
       overrides: [
-        entryControllerProvider(id: entryId).overrideWith(() => ctrl),
+        entryControllerProvider(entryId).overrideWith(() => ctrl),
       ],
     ),
   );

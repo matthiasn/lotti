@@ -40,7 +40,7 @@ class EntryLabelsDisplay extends ConsumerWidget {
     // Watch label stream to rebuild when labels change globally
     ref.watch(labelsStreamProvider);
 
-    final entryState = ref.watch(entryControllerProvider(id: entryId)).value;
+    final entryState = ref.watch(entryControllerProvider(entryId)).value;
     final entry = entryState?.entry;
 
     if (entry == null) {

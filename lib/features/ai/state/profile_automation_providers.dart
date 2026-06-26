@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -6,18 +7,21 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'profile_automation_providers.g.dart';
-
-@Riverpod(keepAlive: true)
+final profileResolverProvider = Provider<ProfileResolver>(
+  profileResolver,
+  name: 'profileResolverProvider',
+);
 ProfileResolver profileResolver(Ref ref) {
   return ProfileResolver(
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
   );
 }
 
-@Riverpod(keepAlive: true)
+final profileAutomationResolverProvider = Provider<ProfileAutomationResolver>(
+  profileAutomationResolver,
+  name: 'profileAutomationResolverProvider',
+);
 ProfileAutomationResolver profileAutomationResolver(Ref ref) {
   return ProfileAutomationResolver(
     taskAgentService: ref.watch(taskAgentServiceProvider),
@@ -39,7 +43,10 @@ ProfileAutomationResolver profileAutomationResolver(Ref ref) {
   );
 }
 
-@Riverpod(keepAlive: true)
+final profileAutomationServiceProvider = Provider<ProfileAutomationService>(
+  profileAutomationService,
+  name: 'profileAutomationServiceProvider',
+);
 ProfileAutomationService profileAutomationService(Ref ref) {
   return ProfileAutomationService(
     resolver: ref.watch(profileAutomationResolverProvider),

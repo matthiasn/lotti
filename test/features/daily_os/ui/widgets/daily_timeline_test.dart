@@ -35,7 +35,7 @@ class _TestUnifiedController extends UnifiedDailyOsDataController {
   final DailyOsData _data;
 
   @override
-  Future<DailyOsData> build({required DateTime date}) async {
+  Future<DailyOsData> build() async {
     return _data;
   }
 }
@@ -43,7 +43,7 @@ class _TestUnifiedController extends UnifiedDailyOsDataController {
 /// Mock controller that throws an error.
 class _TestErrorUnifiedController extends UnifiedDailyOsDataController {
   @override
-  Future<DailyOsData> build({required DateTime date}) async {
+  Future<DailyOsData> build() async {
     throw Exception('timeline load failed');
   }
 }
@@ -53,7 +53,7 @@ class _TestLoadingUnifiedController extends UnifiedDailyOsDataController {
   static final Completer<DailyOsData> _completer = Completer();
 
   @override
-  Future<DailyOsData> build({required DateTime date}) => _completer.future;
+  Future<DailyOsData> build() => _completer.future;
 }
 
 void main() {
@@ -125,15 +125,15 @@ void main() {
 
     return RiverpodWidgetTestBench(
       overrides: [
-        dailyOsSelectedDateProvider.overrideWithValue(testDate),
-        unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+        dailyOsSelectedDateProvider.overrideWithBuild((_, _) => testDate),
+        unifiedDailyOsDataControllerProvider(testDate).overrideWith(
           () => _TestUnifiedController(unifiedData),
         ),
         highlightedCategoryIdProvider.overrideWith(
           (ref) => highlightedCategoryId,
         ),
         // Override to avoid TimeService dependency in tests
-        runningTimerCategoryIdProvider.overrideWithValue(null),
+        runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
         ...additionalOverrides,
       ],
       child: const SingleChildScrollView(
@@ -922,7 +922,7 @@ void main() {
           tester.element(find.byType(DailyTimeline)),
         );
         final focusState = container.read(
-          taskFocusControllerProvider(id: 'task-1'),
+          taskFocusControllerProvider('task-1'),
         );
         expect(focusState?.entryId, equals('time-entry-1'));
       },
@@ -2458,11 +2458,13 @@ void main() {
       final selectedDate = date ?? testDate;
       return RiverpodWidgetTestBench(
         overrides: [
-          dailyOsSelectedDateProvider.overrideWithValue(selectedDate),
-          unifiedDailyOsDataControllerProvider(date: selectedDate).overrideWith(
+          dailyOsSelectedDateProvider.overrideWithBuild(
+            (_, _) => selectedDate,
+          ),
+          unifiedDailyOsDataControllerProvider(selectedDate).overrideWith(
             controllerFactory,
           ),
-          runningTimerCategoryIdProvider.overrideWithValue(null),
+          runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
         ],
         child: const SingleChildScrollView(
           child: DailyTimeline(),
@@ -2559,12 +2561,14 @@ void main() {
         await tester.pumpWidget(
           RiverpodWidgetTestBench(
             overrides: [
-              dailyOsSelectedDateProvider.overrideWithValue(samemonthDate),
+              dailyOsSelectedDateProvider.overrideWithBuild(
+                (_, _) => samemonthDate,
+              ),
               unifiedDailyOsDataControllerProvider(
-                date: samemonthDate,
+                samemonthDate,
               ).overrideWith(() => _TestUnifiedController(unifiedData)),
               highlightedCategoryIdProvider.overrideWith((ref) => null),
-              runningTimerCategoryIdProvider.overrideWithValue(null),
+              runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
             ],
             child: const SingleChildScrollView(child: DailyTimeline()),
           ),
@@ -2648,12 +2652,12 @@ void main() {
         await tester.pumpWidget(
           RiverpodWidgetTestBench(
             overrides: [
-              dailyOsSelectedDateProvider.overrideWithValue(today),
-              unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+              dailyOsSelectedDateProvider.overrideWithBuild((_, _) => today),
+              unifiedDailyOsDataControllerProvider(today).overrideWith(
                 () => _TestUnifiedController(unifiedData),
               ),
               highlightedCategoryIdProvider.overrideWith((ref) => null),
-              runningTimerCategoryIdProvider.overrideWithValue(null),
+              runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
             ],
             child: const SingleChildScrollView(child: DailyTimeline()),
           ),
@@ -2732,12 +2736,12 @@ void main() {
         await tester.pumpWidget(
           RiverpodWidgetTestBench(
             overrides: [
-              dailyOsSelectedDateProvider.overrideWithValue(today),
-              unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+              dailyOsSelectedDateProvider.overrideWithBuild((_, _) => today),
+              unifiedDailyOsDataControllerProvider(today).overrideWith(
                 () => _TestUnifiedController(unifiedData),
               ),
               highlightedCategoryIdProvider.overrideWith((ref) => null),
-              runningTimerCategoryIdProvider.overrideWithValue(null),
+              runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
             ],
             child: const SingleChildScrollView(child: DailyTimeline()),
           ),

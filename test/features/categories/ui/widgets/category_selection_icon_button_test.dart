@@ -66,7 +66,7 @@ void main() {
   Widget pumpInNestedNavigator({required ToggleCallTracker tracker}) {
     return ProviderScope(
       overrides: [
-        entryControllerProvider(id: testTextEntry.id).overrideWith(
+        entryControllerProvider(testTextEntry.id).overrideWith(
           () => FakeEntryController(testTextEntry, tracker: tracker),
         ),
       ],

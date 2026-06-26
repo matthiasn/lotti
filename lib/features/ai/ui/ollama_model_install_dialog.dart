@@ -41,9 +41,7 @@ class OllamaModelInstallDialogState
     try {
       // Get the provider configuration to find the Ollama base URL
       final providers = await ref.read(
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.inferenceProvider,
-        ).future,
+        aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider).future,
       );
       final ollamaProvider = providers
           .whereType<AiConfigInferenceProvider>()

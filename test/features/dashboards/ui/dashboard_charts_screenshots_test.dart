@@ -172,44 +172,44 @@ List<Override> _overrides() {
     )).overrideWithBuild((ref, notifier) => _series(6, 2)),
 
     // Workout.
-    workoutObservationsControllerProvider(
+    workoutObservationsControllerProvider((
       chartConfig: _workoutConfig,
       rangeStart: _rangeStart,
       rangeEnd: _rangeEnd,
-    ).overrideWithBuild((ref, notifier) => _series(350, 150)),
+    )).overrideWithBuild((ref, notifier) => _series(350, 150)),
 
     // Health line (resting heart rate).
-    healthObservationsControllerProvider(
+    healthObservationsControllerProvider((
       healthDataType: 'HealthDataType.RESTING_HEART_RATE',
       rangeStart: _rangeStart,
       rangeEnd: _rangeEnd,
-    ).overrideWithBuild((ref, notifier) => _series(58, 6)),
+    )).overrideWithBuild((ref, notifier) => _series(58, 6)),
 
     // Health bar (steps).
-    healthObservationsControllerProvider(
+    healthObservationsControllerProvider((
       healthDataType: 'cumulative_step_count',
       rangeStart: _rangeStart,
       rangeEnd: _rangeEnd,
-    ).overrideWithBuild((ref, notifier) => _series(9000, 3500)),
+    )).overrideWithBuild((ref, notifier) => _series(9000, 3500)),
 
     // Blood pressure (systolic + diastolic).
-    healthObservationsControllerProvider(
+    healthObservationsControllerProvider((
       healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
       rangeStart: _rangeStart,
       rangeEnd: _rangeEnd,
-    ).overrideWithBuild((ref, notifier) => _series(120, 8, everyNthDay: 3)),
-    healthObservationsControllerProvider(
+    )).overrideWithBuild((ref, notifier) => _series(120, 8, everyNthDay: 3)),
+    healthObservationsControllerProvider((
       healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
       rangeStart: _rangeStart,
       rangeEnd: _rangeEnd,
-    ).overrideWithBuild((ref, notifier) => _series(78, 6, everyNthDay: 3)),
+    )).overrideWithBuild((ref, notifier) => _series(78, 6, everyNthDay: 3)),
 
     // BMI / weight.
-    healthObservationsControllerProvider(
+    healthObservationsControllerProvider((
       healthDataType: 'HealthDataType.WEIGHT',
       rangeStart: _rangeStart,
       rangeEnd: _rangeEnd,
-    ).overrideWithBuild((ref, notifier) => _series(74, 2)),
+    )).overrideWithBuild((ref, notifier) => _series(74, 2)),
   ];
 }
 

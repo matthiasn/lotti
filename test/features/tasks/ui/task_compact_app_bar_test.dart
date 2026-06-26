@@ -27,7 +27,7 @@ class _FixedOffsetController extends TaskAppBarController {
   final double _offset;
 
   @override
-  Future<double> build({required String id}) async => _offset;
+  Future<double> build() async => _offset;
 }
 
 void main() {
@@ -230,7 +230,7 @@ void main() {
         buildTestWidget(
           task,
           overrides: [
-            taskAppBarControllerProvider(id: task.id).overrideWith(
+            taskAppBarControllerProvider(task.id).overrideWith(
               () => _FixedOffsetController(0),
             ),
           ],
@@ -249,7 +249,7 @@ void main() {
           buildTestWidget(
             task,
             overrides: [
-              taskAppBarControllerProvider(id: task.id).overrideWith(
+              taskAppBarControllerProvider(task.id).overrideWith(
                 () => _FixedOffsetController(200),
               ),
             ],
