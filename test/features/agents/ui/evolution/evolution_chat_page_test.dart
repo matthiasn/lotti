@@ -56,8 +56,8 @@ void main() {
         templatePerformanceMetricsProvider.overrideWith(
           (ref, id) async => makeTestMetrics(templateId: templateId),
         ),
-        evolutionChatStateProvider.overrideWith(
-          () => FakeEvolutionChatState(
+        evolutionChatStateProvider.overrideWith2(
+          (_) => FakeEvolutionChatState(
             chatStateBuilder ?? (_) async => defaultChatData,
           ),
         ),
@@ -131,7 +131,7 @@ void main() {
             templatePerformanceMetricsProvider.overrideWith(
               (ref, id) async => makeTestMetrics(),
             ),
-            evolutionChatStateProvider.overrideWith(() => chatState),
+            evolutionChatStateProvider.overrideWith2((_) => chatState),
           ],
         ),
       );

@@ -161,9 +161,20 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
   }
 
+  Future<void> pumpUntilFound(WidgetTester tester, Finder finder) async {
+    for (var i = 0; i < 20; i++) {
+      if (finder.evaluate().isNotEmpty) return;
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
+
   group('OllamaModelInstallDialog - initial state', () {
     testWidgets('displays correct initial state', (tester) async {
-      await pumpDialog(tester);
+      await pumpInstallDialog(
+        tester,
+        modelName: testModelName,
+        providers: [testOllamaProvider],
+      );
 
       expect(find.text('Model Not Installed'), findsOneWidget);
       expect(
@@ -226,33 +237,45 @@ void main() {
     testWidgets('shows installation UI when install button is pressed', (
       tester,
     ) async {
-      final progressStream = Stream<OllamaPullProgress>.fromIterable([
-        const OllamaPullProgress(status: 'pulling manifest', progress: 0),
-      ]);
+      final progressController = StreamController<OllamaPullProgress>();
 
       when(
-        () => mockCloudRepository.installModel(testModelName, any()),
-      ).thenAnswer((_) => progressStream);
+        () => mockCloudRepository.installModel(any(), any()),
+      ).thenAnswer((_) => progressController.stream);
 
-      await pumpDialog(tester);
+      final ollamaProvider = AiTestDataFactory.createTestProvider(
+        id: 'ollama-installing',
+        name: 'Ollama',
+        type: InferenceProviderType.ollama,
+        baseUrl: 'http://localhost:11434/',
+      );
+
+      await pumpInstallDialog(
+        tester,
+        modelName: testModelName,
+        providers: [ollamaProvider],
+      );
 
       // Act - Press install button
       await tester.tap(find.text('Install'));
-      await tester.pump();
+      await pumpUntilFound(tester, find.text('Installing model...'));
 
       // Assert - Should show installation UI
       expect(find.text('Installing model...'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+      progressController.addError(Exception('stop install'));
+      await progressController.close();
+      await tester.pump();
     });
 
     testWidgets(
       'resets to install state when install fails',
       (tester) async {
-        // thenThrow drives the catch block synchronously so bounded pumps
-        // complete the full async chain.
+        final progressController = StreamController<OllamaPullProgress>();
         when(
           () => mockCloudRepository.installModel(any(), any()),
-        ).thenThrow(Exception('Installation failed'));
+        ).thenAnswer((_) => progressController.stream);
 
         final ollamaProvider = AiTestDataFactory.createTestProvider(
           id: 'ollama-test',
@@ -261,32 +284,23 @@ void main() {
           baseUrl: 'http://localhost:11434/',
         );
 
-        await tester.pumpWidget(
-          buildTestWidget(
-            const OllamaModelInstallDialog(modelName: 'phi3'),
-            overrides: [
-              aiConfigByTypeControllerProvider(
-                AiConfigType.inferenceProvider,
-              ).overrideWith(
-                () => _ImmediateAiConfigByTypeController([ollamaProvider]),
-              ),
-            ],
-          ),
+        await pumpInstallDialog(
+          tester,
+          modelName: 'phi3',
+          providers: [ollamaProvider],
         );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap install – the "Installing model..." state is set first.
         await tester.tap(find.text('Install'));
-        await tester.pump();
+        await pumpUntilFound(tester, find.text('Installing model...'));
         // _isInstalling = true: the installing state is active.
         expect(find.text('Installing model...'), findsOneWidget);
 
-        // Drive the async chain: provider.future → installModel throws
+        // Drive the async chain: provider.future → installModel emits error
         // → catch strips 'Exception: ', sets _error, _isInstalling=false.
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        progressController.addError(Exception('Installation failed'));
+        await progressController.close();
+        await pumpUntilFound(tester, find.text('Install'));
 
         // After error: _isInstalling=false so Install button is back.
         expect(find.text('Install'), findsOneWidget);
@@ -308,43 +322,44 @@ void main() {
           baseUrl: 'http://localhost:11434/',
         );
 
+        final progressControllers = <StreamController<OllamaPullProgress>>[];
         when(
           () => mockCloudRepository.installModel(any(), any()),
-        ).thenThrow(Exception('fail'));
+        ).thenAnswer((_) {
+          final controller = StreamController<OllamaPullProgress>();
+          progressControllers.add(controller);
+          return controller.stream;
+        });
 
-        await tester.pumpWidget(
-          buildTestWidget(
-            const OllamaModelInstallDialog(modelName: 'gemma'),
-            overrides: [
-              aiConfigByTypeControllerProvider(
-                AiConfigType.inferenceProvider,
-              ).overrideWith(
-                () => _ImmediateAiConfigByTypeController([ollamaProvider]),
-              ),
-            ],
-          ),
+        await pumpInstallDialog(
+          tester,
+          modelName: 'gemma',
+          providers: [ollamaProvider],
         );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         // First install attempt
         await tester.tap(find.text('Install'));
-        await tester.pump();
+        await pumpUntilFound(tester, find.text('Installing model...'));
         // _isInstalling=true: Install button is hidden, "Installing model..." shows
         expect(find.text('Install'), findsNothing);
         expect(find.text('Installing model...'), findsOneWidget);
 
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        progressControllers.single.addError(Exception('fail'));
+        await progressControllers.single.close();
+        await pumpUntilFound(tester, find.text('Install'));
         // After error: _isInstalling=false, Install button re-appears
         expect(find.text('Install'), findsOneWidget);
 
         // Second tap re-invokes _installModel (install button enables retry)
         await tester.tap(find.text('Install'));
-        await tester.pump();
+        await pumpUntilFound(tester, find.text('Installing model...'));
         // _isInstalling=true again: showing "Installing model..."
         expect(find.text('Installing model...'), findsOneWidget);
+        expect(progressControllers, hasLength(2));
+
+        progressControllers.last.addError(Exception('fail again'));
+        await progressControllers.last.close();
+        await tester.pump();
       },
     );
   });

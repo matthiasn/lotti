@@ -81,8 +81,8 @@ void main() {
   List<Override> overrides({bool recordController = false}) => [
     labelsRepositoryProvider.overrideWithValue(repository),
     if (recordController)
-      labelEditorControllerProvider.overrideWith(
-        _RecordingLabelEditorController.new,
+      labelEditorControllerProvider.overrideWith2(
+        (_) => _RecordingLabelEditorController(),
       ),
   ];
 

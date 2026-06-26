@@ -1036,8 +1036,8 @@ void main() {
               ),
               // Keep the pushed ReconcilePage on its loading shell so it
               // does not reach into GetIt-backed services.
-              reconcileControllerProvider.overrideWith(
-                _PendingReconcileController.new,
+              reconcileControllerProvider.overrideWith2(
+                (_) => _PendingReconcileController(),
               ),
             ],
           ),

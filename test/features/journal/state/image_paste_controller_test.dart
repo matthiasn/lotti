@@ -277,10 +277,10 @@ void main() {
             ).thenReturn(scenario.format == Formats.heif);
 
             final result = await container.read(
-              imagePasteControllerProvider(
+              imagePasteControllerProvider((
                 linkedFromId: null,
                 categoryId: null,
-              ).future,
+              )).future,
             );
 
             expect(result, true);
@@ -297,10 +297,10 @@ void main() {
           when(() => mockItem.canProvide(Formats.png)).thenReturn(false);
 
           final result = await container.read(
-            imagePasteControllerProvider(
+            imagePasteControllerProvider((
               linkedFromId: null,
               categoryId: null,
-            ).future,
+            )).future,
           );
 
           expect(result, false);
@@ -408,10 +408,10 @@ void main() {
             ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
 
             final controller = container.read(
-              imagePasteControllerProvider(
+              imagePasteControllerProvider((
                 linkedFromId: 'testLink',
                 categoryId: 'testCategory',
-              ).notifier,
+              )).notifier,
             );
 
             await withFakeImageCompressPlatform(controller.paste);
@@ -446,10 +446,10 @@ void main() {
           when(() => mockItem.canProvide(Formats.png)).thenReturn(false);
 
           final controller = container.read(
-            imagePasteControllerProvider(
+            imagePasteControllerProvider((
               linkedFromId: 'testLink',
               categoryId: 'testCategory',
-            ).notifier,
+            )).notifier,
           );
 
           await controller.paste();
@@ -480,10 +480,10 @@ void main() {
       ).thenThrow(StateError('clipboard read failed'));
 
       final controller = container.read(
-        imagePasteControllerProvider(
+        imagePasteControllerProvider((
           linkedFromId: 'testLink',
           categoryId: 'testCategory',
-        ).notifier,
+        )).notifier,
       );
 
       await expectLater(controller.paste(), throwsA(isA<StateError>()));

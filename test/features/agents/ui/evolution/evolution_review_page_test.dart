@@ -482,7 +482,9 @@ void main() {
             ),
             // pendingOverride returns null → _StartCard shown (line 54).
             extraOverrides: [
-              evolutionChatStateProvider.overrideWith(_LoadingChatState.new),
+              evolutionChatStateProvider.overrideWith2(
+                (_) => _LoadingChatState(),
+              ),
             ],
           ),
         );
@@ -519,7 +521,9 @@ void main() {
             ),
             pendingOverride: () async => session,
             extraOverrides: [
-              evolutionChatStateProvider.overrideWith(_LoadingChatState.new),
+              evolutionChatStateProvider.overrideWith2(
+                (_) => _LoadingChatState(),
+              ),
             ],
           ),
         );

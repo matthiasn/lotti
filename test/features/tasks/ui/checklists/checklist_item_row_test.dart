@@ -251,8 +251,8 @@ _pumpWithControllers(
           id: 'item-1',
           taskId: 'task-1',
         )).overrideWith(() => itemCtrl),
-        checklistControllerProvider.overrideWith(
-          () => FakeChecklistController(tracker),
+        checklistControllerProvider.overrideWith2(
+          (_) => FakeChecklistController(tracker),
         ),
         checklistCompletionServiceProvider.overrideWith(
           () => completionSvc,
@@ -656,8 +656,8 @@ void main() {
                 id: 'item-1',
                 taskId: 'task-1',
               )).overrideWith(() => itemCtrl),
-              checklistControllerProvider.overrideWith(
-                () => FakeChecklistController(tracker),
+              checklistControllerProvider.overrideWith2(
+                (_) => FakeChecklistController(tracker),
               ),
               checklistCompletionServiceProvider.overrideWith(
                 () => completionSvc,
@@ -950,8 +950,8 @@ void main() {
                   id: 'item-1',
                   taskId: 'task-1',
                 )).overrideWith(() => itemCtrl),
-                checklistControllerProvider.overrideWith(
-                  () => FakeChecklistController(tracker),
+                checklistControllerProvider.overrideWith2(
+                  (_) => FakeChecklistController(tracker),
                 ),
                 checklistCompletionServiceProvider.overrideWith(
                   () => completionSvc,
@@ -1049,8 +1049,8 @@ void main() {
                 id: 'item-1',
                 taskId: 'task-1',
               )).overrideWith(() => itemCtrl),
-              checklistControllerProvider.overrideWith(
-                FakeChecklistController.new,
+              checklistControllerProvider.overrideWith2(
+                (_) => FakeChecklistController(),
               ),
               checklistCompletionServiceProvider.overrideWith(
                 FakeChecklistCompletionService.new,
@@ -1478,8 +1478,8 @@ void main() {
                 id: 'item-1',
                 taskId: 'task-1',
               )).overrideWith(() => FakeChecklistItemController(_makeItem())),
-              checklistControllerProvider.overrideWith(
-                FakeChecklistController.new,
+              checklistControllerProvider.overrideWith2(
+                (_) => FakeChecklistController(),
               ),
               checklistCompletionServiceProvider.overrideWith(
                 () => completionSvc,
@@ -1535,8 +1535,8 @@ void main() {
               id: 'item-1',
               taskId: 'task-1',
             )).overrideWith(() => itemCtrl),
-            checklistControllerProvider.overrideWith(
-              FakeChecklistController.new,
+            checklistControllerProvider.overrideWith2(
+              (_) => FakeChecklistController(),
             ),
             checklistCompletionServiceProvider.overrideWith(
               FakeChecklistCompletionService.new,

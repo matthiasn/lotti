@@ -59,8 +59,8 @@ void main() {
         soulDocumentProvider.overrideWith(
           soulOverride ?? (ref, id) async => defaultSoul,
         ),
-        soulEvolutionChatStateProvider.overrideWith(
-          () => FakeSoulEvolutionChatState(
+        soulEvolutionChatStateProvider.overrideWith2(
+          (_) => FakeSoulEvolutionChatState(
             chatStateBuilder ?? (_) async => defaultChatData,
           ),
         ),
@@ -347,8 +347,8 @@ void main() {
             ),
             overrides: [
               soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
-              soulEvolutionChatStateProvider.overrideWith(
-                () => FakeSoulEvolutionChatState((_) async => defaultChatData),
+              soulEvolutionChatStateProvider.overrideWith2(
+                (_) => FakeSoulEvolutionChatState((_) async => defaultChatData),
               ),
             ],
           ),
@@ -391,7 +391,7 @@ void main() {
           const SoulEvolutionChatPage(soulId: kTestSoulId),
           overrides: [
             soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
-            soulEvolutionChatStateProvider.overrideWith(() {
+            soulEvolutionChatStateProvider.overrideWith2((_) {
               final n = TrackingSoulEvolutionChatState(
                 (_) async => initialData,
               );
@@ -435,8 +435,8 @@ void main() {
             const SoulEvolutionChatPage(soulId: kTestSoulId),
             overrides: [
               soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
-              soulEvolutionChatStateProvider.overrideWith(
-                () => ControllableSoulEvolutionChatState(
+              soulEvolutionChatStateProvider.overrideWith2(
+                (_) => ControllableSoulEvolutionChatState(
                   (_) async => initialData,
                 ),
               ),
@@ -495,8 +495,8 @@ void main() {
             const SoulEvolutionChatPage(soulId: kTestSoulId),
             overrides: [
               soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
-              soulEvolutionChatStateProvider.overrideWith(
-                () => ControllableSoulEvolutionChatState(
+              soulEvolutionChatStateProvider.overrideWith2(
+                (_) => ControllableSoulEvolutionChatState(
                   (_) async => initialData,
                 ),
               ),
@@ -554,8 +554,8 @@ void main() {
           const SoulEvolutionChatPage(soulId: kTestSoulId),
           overrides: [
             soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
-            soulEvolutionChatStateProvider.overrideWith(
-              () => FakeSoulEvolutionChatState(
+            soulEvolutionChatStateProvider.overrideWith2(
+              (_) => FakeSoulEvolutionChatState(
                 (_) async => EvolutionChatData(
                   sessionId: 'session-1',
                   messages: [
