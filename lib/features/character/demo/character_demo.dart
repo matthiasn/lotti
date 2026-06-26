@@ -43,7 +43,7 @@ const Map<String, String> kExpressionKeys = {
 };
 
 const double kAuthoredDanceBpm = 120;
-const double kDefaultDanceBpm = 124;
+const double kDefaultDanceBpm = 105;
 
 AutonomicLayer _danceAutonomic(int seed) => AutonomicLayer(
   seed: seed,

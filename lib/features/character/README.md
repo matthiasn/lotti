@@ -46,17 +46,19 @@ world position instead of skating; the live painter ping-pongs it across the
 stage and flips facing at the edges. Kick and dance are in-place performance
 clips for judging pose appeal, balance, squash/stretch and arm/tail arcs without
 stage travel hiding the body mechanics. The dance clip is authored as a
-12-count phrase at 120 BPM: an 8-count groove plus a 4-count Gbese-style
-toe-flick bounce, with a small additive root pulse layered over the keyed body
-motion so slower tempos still have off-beat life. The demo exposes a BPM slider
-for previewing that same authored phrase from 80–240 BPM. The dance view also
-uses `CharacterBackdrop.waterfront`: an asset-backed Lagos-inspired lagoon plate
-with a distant skyline/bridge, palms, and a luxury yacht. `CharacterPainter`
-adds transparent alpha-mask motion layers for drifting clouds and lagoon glints.
-The demo and screenshot harness decode the same assets, so choreography,
-timing, contact shadows, and rendered review frames keep one runtime source of
-truth. The tail is a single ribbon driven by a 7-link drag chain; the tie is a
-keyed 2-link cloth shape; ears flick a beat behind the head bob.
+12-count phrase at 120 BPM: an 8-count groove plus a 4-count toe-flick bounce,
+with a small additive root pulse layered over the keyed body motion so slower
+tempos still have off-beat life. The demo previews that same authored phrase at
+105 BPM by default, using Omah Lay's "soso" as the current movement reference:
+warm, compact, waist-led pocket before bigger stage hits. The BPM slider still
+spans 80–240 BPM for review. The dance view also uses
+`CharacterBackdrop.waterfront`: an asset-backed Lagos-inspired lagoon plate with
+a distant skyline/bridge, palms, and a luxury yacht. `CharacterPainter` adds
+transparent alpha-mask motion layers for drifting clouds and lagoon glints. The
+demo and screenshot harness decode the same assets, so choreography, timing,
+contact shadows, and rendered review frames keep one runtime source of truth.
+The tail is a single ribbon driven by a 7-link drag chain; the tie is a keyed
+2-link cloth shape; ears flick a beat behind the head bob.
 
 ## Architecture
 
