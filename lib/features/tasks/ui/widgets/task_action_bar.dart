@@ -185,7 +185,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
       return;
     }
     await ref
-        .read(entryControllerProvider(id: running.meta.id).notifier)
+        .read(entryControllerProvider(running.meta.id).notifier)
         .save(stopRecording: true);
   }
 

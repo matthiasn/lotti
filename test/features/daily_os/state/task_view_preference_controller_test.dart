@@ -31,7 +31,7 @@ void main() {
       ).thenAnswer((_) async => null);
 
       final result = await container.read(
-        taskViewPreferenceProvider(categoryId: 'cat-1').future,
+        taskViewPreferenceProvider('cat-1').future,
       );
 
       expect(result, equals(TaskViewMode.list));
@@ -43,7 +43,7 @@ void main() {
       ).thenAnswer((_) async => 'list');
 
       final result = await container.read(
-        taskViewPreferenceProvider(categoryId: 'cat-1').future,
+        taskViewPreferenceProvider('cat-1').future,
       );
 
       expect(result, equals(TaskViewMode.list));
@@ -55,7 +55,7 @@ void main() {
       ).thenAnswer((_) async => 'grid');
 
       final result = await container.read(
-        taskViewPreferenceProvider(categoryId: 'cat-1').future,
+        taskViewPreferenceProvider('cat-1').future,
       );
 
       expect(result, equals(TaskViewMode.grid));
@@ -74,16 +74,16 @@ void main() {
 
       // Get initial state
       await container.read(
-        taskViewPreferenceProvider(categoryId: 'cat-1').future,
+        taskViewPreferenceProvider('cat-1').future,
       );
 
       // Toggle
       await container
-          .read(taskViewPreferenceProvider(categoryId: 'cat-1').notifier)
+          .read(taskViewPreferenceProvider('cat-1').notifier)
           .toggle();
 
       final state = container.read(
-        taskViewPreferenceProvider(categoryId: 'cat-1'),
+        taskViewPreferenceProvider('cat-1'),
       );
 
       expect(state.value, equals(TaskViewMode.grid));
@@ -108,16 +108,16 @@ void main() {
 
       // Get initial state
       await container.read(
-        taskViewPreferenceProvider(categoryId: 'cat-1').future,
+        taskViewPreferenceProvider('cat-1').future,
       );
 
       // Toggle
       await container
-          .read(taskViewPreferenceProvider(categoryId: 'cat-1').notifier)
+          .read(taskViewPreferenceProvider('cat-1').notifier)
           .toggle();
 
       final state = container.read(
-        taskViewPreferenceProvider(categoryId: 'cat-1'),
+        taskViewPreferenceProvider('cat-1'),
       );
 
       expect(state.value, equals(TaskViewMode.list));
@@ -138,10 +138,10 @@ void main() {
       ).thenAnswer((_) async => 'list');
 
       final result1 = await container.read(
-        taskViewPreferenceProvider(categoryId: 'cat-1').future,
+        taskViewPreferenceProvider('cat-1').future,
       );
       final result2 = await container.read(
-        taskViewPreferenceProvider(categoryId: 'cat-2').future,
+        taskViewPreferenceProvider('cat-2').future,
       );
 
       expect(result1, equals(TaskViewMode.grid));

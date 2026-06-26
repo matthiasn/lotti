@@ -1,12 +1,19 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'inference_profile_controller.g.dart';
 
 /// Streams all inference profiles for the profile management UI.
-@riverpod
-class InferenceProfileController extends _$InferenceProfileController {
+final StreamNotifierProvider<InferenceProfileController, List<AiConfig>>
+inferenceProfileControllerProvider =
+    StreamNotifierProvider.autoDispose<
+      InferenceProfileController,
+      List<AiConfig>
+    >(
+      InferenceProfileController.new,
+      name: 'inferenceProfileControllerProvider',
+    );
+
+class InferenceProfileController extends StreamNotifier<List<AiConfig>> {
   @override
   Stream<List<AiConfig>> build() {
     final repository = ref.watch(aiConfigRepositoryProvider);

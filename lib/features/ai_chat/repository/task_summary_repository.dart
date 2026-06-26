@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -8,14 +9,15 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/get_it.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'task_summary_repository.g.dart';
 
 /// Provides the [TaskSummaryRepository], wiring in the journal DB and a
 /// [TaskSummaryResolver] backed by the agent database when one is registered
 /// (the resolver prefers agent reports, falling back to legacy summaries).
-@riverpod
+final Provider<TaskSummaryRepository> taskSummaryRepositoryProvider =
+    Provider.autoDispose<TaskSummaryRepository>(
+      taskSummaryRepository,
+      name: 'taskSummaryRepositoryProvider',
+    );
 TaskSummaryRepository taskSummaryRepository(Ref ref) {
   return TaskSummaryRepository(
     journalDb: getIt<JournalDb>(),

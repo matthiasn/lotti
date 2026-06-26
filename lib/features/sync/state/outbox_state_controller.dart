@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/outbox/outbox_daily_volume.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
@@ -8,9 +9,6 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'outbox_state_controller.g.dart';
 
 /// Status of individual outbox items in the sync queue.
 /// Used by SyncDatabase and outbox-related components.
@@ -41,7 +39,11 @@ enum OutboxConnectionState {
 
 /// Stream provider watching the Matrix sync enable flag.
 /// Replaces OutboxCubit's config flag watching.
-@riverpod
+final StreamProvider<OutboxConnectionState> outboxConnectionStateProvider =
+    StreamProvider.autoDispose<OutboxConnectionState>(
+      outboxConnectionState,
+      name: 'outboxConnectionStateProvider',
+    );
 Stream<OutboxConnectionState> outboxConnectionState(Ref ref) {
   final db = ref.watch(journalDbProvider);
   return db
@@ -54,7 +56,11 @@ Stream<OutboxConnectionState> outboxConnectionState(Ref ref) {
 }
 
 /// Stream provider for outbox pending count (for badge display).
-@riverpod
+final StreamProvider<int> outboxPendingCountProvider =
+    StreamProvider.autoDispose<int>(
+      outboxPendingCount,
+      name: 'outboxPendingCountProvider',
+    );
 Stream<int> outboxPendingCount(Ref ref) {
   final syncDb = ref.watch(syncDatabaseProvider);
   return syncDb.watchOutboxCount();
@@ -65,7 +71,11 @@ const kOutboxVolumeDays = 30;
 
 /// Future provider for daily outbox volume over the last [kOutboxVolumeDays].
 /// Maps [OutboxDailyVolume] entries to [Observation]s with KB values.
-@riverpod
+final FutureProvider<List<Observation>> outboxDailyVolumeProvider =
+    FutureProvider.autoDispose<List<Observation>>(
+      outboxDailyVolume,
+      name: 'outboxDailyVolumeProvider',
+    );
 Future<List<Observation>> outboxDailyVolume(Ref ref) async {
   final syncDb = ref.watch(syncDatabaseProvider);
   final volumes = await syncDb.getDailyOutboxVolume(days: kOutboxVolumeDays);
@@ -75,19 +85,31 @@ Future<List<Observation>> outboxDailyVolume(Ref ref) async {
 /// Looks up the global [SyncActivitySignaler]. Resolved through `getIt`
 /// so tests that swap in a custom signaler do not need a parallel
 /// override in every consumer.
-@riverpod
+final Provider<SyncActivitySignaler> syncActivitySignalerProvider =
+    Provider.autoDispose<SyncActivitySignaler>(
+      syncActivitySignaler,
+      name: 'syncActivitySignalerProvider',
+    );
 SyncActivitySignaler syncActivitySignaler(Ref ref) =>
     getIt<SyncActivitySignaler>();
 
 /// Per-packet TX pulses for the sidebar sync activity indicator. Emits
 /// once per outbound event committed to the homeserver.
-@riverpod
+final StreamProvider<DateTime> syncActivityTxPulsesProvider =
+    StreamProvider.autoDispose<DateTime>(
+      syncActivityTxPulses,
+      name: 'syncActivityTxPulsesProvider',
+    );
 Stream<DateTime> syncActivityTxPulses(Ref ref) =>
     ref.watch(syncActivitySignalerProvider).txPulses;
 
 /// Per-packet RX pulses for the sidebar sync activity indicator. Emits
 /// once per inbound event applied locally.
-@riverpod
+final StreamProvider<DateTime> syncActivityRxPulsesProvider =
+    StreamProvider.autoDispose<DateTime>(
+      syncActivityRxPulses,
+      name: 'syncActivityRxPulsesProvider',
+    );
 Stream<DateTime> syncActivityRxPulses(Ref ref) =>
     ref.watch(syncActivitySignalerProvider).rxPulses;
 
@@ -96,7 +118,11 @@ Stream<DateTime> syncActivityRxPulses(Ref ref) =>
 /// queue lazily via `MatrixService.queueCoordinator` because the
 /// coordinator is created during app boot, not during provider
 /// construction.
-@riverpod
+final StreamProvider<int> inboundQueueDepthProvider =
+    StreamProvider.autoDispose<int>(
+      inboundQueueDepth,
+      name: 'inboundQueueDepthProvider',
+    );
 Stream<int> inboundQueueDepth(Ref ref) {
   final matrixService = ref.watch(matrixServiceProvider);
   return inboundQueueDepthStream(matrixService.queueCoordinator.queue);

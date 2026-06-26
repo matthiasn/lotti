@@ -300,7 +300,7 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
     );
 
     await ref
-        .read(unifiedDailyOsDataControllerProvider(date: widget.date).notifier)
+        .read(unifiedDailyOsDataControllerProvider(widget.date).notifier)
         .updatePlannedBlock(updatedBlock);
 
     if (mounted) {
@@ -333,7 +333,7 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
     if ((confirmed ?? false) && mounted) {
       await ref
           .read(
-            unifiedDailyOsDataControllerProvider(date: widget.date).notifier,
+            unifiedDailyOsDataControllerProvider(widget.date).notifier,
           )
           .removePlannedBlock(widget.block.id);
       if (mounted) {

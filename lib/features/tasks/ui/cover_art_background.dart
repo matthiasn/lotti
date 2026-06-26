@@ -38,7 +38,7 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
 
   @override
   Widget build(BuildContext context) {
-    final provider = entryControllerProvider(id: widget.imageId);
+    final provider = entryControllerProvider(widget.imageId);
     final entry = ref.watch(provider).value?.entry;
 
     if (entry is! JournalImage) {

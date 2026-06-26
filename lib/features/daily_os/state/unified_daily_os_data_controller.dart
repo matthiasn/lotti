@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -19,9 +21,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'unified_daily_os_data_controller.g.dart';
 part 'unified_daily_os_data_aggregation.dart';
 
 /// Combined data for Daily OS view - single source of truth.
@@ -54,8 +54,23 @@ class DailyOsData {
 ///
 /// This ensures that when a time entry is created or synced, all UI components
 /// (timeline, budget progress bars, summary) update together.
-@riverpod
-class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
+final AsyncNotifierProviderFamily<
+  UnifiedDailyOsDataController,
+  DailyOsData,
+  DateTime
+>
+unifiedDailyOsDataControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<UnifiedDailyOsDataController, DailyOsData, DateTime>(
+      UnifiedDailyOsDataController.new,
+      name: 'unifiedDailyOsDataControllerProvider',
+    );
+
+class UnifiedDailyOsDataController extends AsyncNotifier<DailyOsData> {
+  UnifiedDailyOsDataController([DateTime? date])
+    : date = date ?? DateTime.fromMillisecondsSinceEpoch(0);
+
+  final DateTime date;
+
   static const Set<String> _broadRefreshKeys = {
     dayPlanNotification,
     textEntryNotification,
@@ -86,7 +101,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
   bool _pendingRefresh = false;
 
   @override
-  Future<DailyOsData> build({required DateTime date}) async {
+  Future<DailyOsData> build() async {
     _date = date;
     _isDisposed = false;
     _dayPlanRepository = ref.read(dayPlanRepositoryProvider);

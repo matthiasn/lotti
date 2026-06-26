@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
@@ -8,9 +9,6 @@ import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_data.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'habit_heatmap_controller.g.dart';
 
 /// Owns the deep-history series for the habits consistency heatmap.
 ///
@@ -24,8 +22,13 @@ part 'habit_heatmap_controller.g.dart';
 /// State is a plain [HabitHeatmapData] (not an `AsyncValue`) seeded with
 /// [HabitHeatmapData.empty]; after the first recompute it never republishes a
 /// loading state, so a background refresh never blanks the grid.
-@Riverpod(keepAlive: true)
-class HabitHeatmapController extends _$HabitHeatmapController {
+final habitHeatmapControllerProvider =
+    NotifierProvider<HabitHeatmapController, HabitHeatmapData>(
+      HabitHeatmapController.new,
+      name: 'habitHeatmapControllerProvider',
+    );
+
+class HabitHeatmapController extends Notifier<HabitHeatmapData> {
   StreamSubscription<List<HabitDefinition>>? _definitionsSubscription;
   StreamSubscription<Set<String>>? _updateSubscription;
 

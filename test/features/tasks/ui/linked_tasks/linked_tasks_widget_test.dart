@@ -90,19 +90,19 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
+          linkedTasksControllerProvider('task-main').overrideWith(
             manageMode
-                ? MockLinkedTasksControllerManageMode.new
+                ? () => MockLinkedTasksControllerManageMode('task-main')
                 : LinkedTasksController.new,
           ),
           outgoingLinkedTasksProvider('task-main').overrideWith(
             (ref) => outgoing,
           ),
-          linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
+          linkedFromEntriesControllerProvider('task-main').overrideWith(
             () => MockLinkedFromEntriesController(incoming),
           ),
-          linkedEntriesControllerProvider(id: 'task-main').overrideWith(
-            () => MockLinkedEntriesController(outgoingLinks),
+          linkedEntriesControllerProvider('task-main').overrideWith(
+            () => MockLinkedEntriesController(outgoingLinks, 'task-main'),
           ),
           journalRepositoryProvider.overrideWithValue(journalRepo),
           ...extraOverrides,
@@ -379,10 +379,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            linkedTasksControllerProvider(taskId: 'task-a').overrideWith(
+            linkedTasksControllerProvider('task-a').overrideWith(
               LinkedTasksController.new,
             ),
-            linkedTasksControllerProvider(taskId: 'task-b').overrideWith(
+            linkedTasksControllerProvider('task-b').overrideWith(
               LinkedTasksController.new,
             ),
             outgoingLinkedTasksProvider(
@@ -391,16 +391,16 @@ void main() {
             outgoingLinkedTasksProvider(
               'task-b',
             ).overrideWith((ref) => [taskB]),
-            linkedFromEntriesControllerProvider(id: 'task-a').overrideWith(
+            linkedFromEntriesControllerProvider('task-a').overrideWith(
               () => MockLinkedFromEntriesController([]),
             ),
-            linkedFromEntriesControllerProvider(id: 'task-b').overrideWith(
+            linkedFromEntriesControllerProvider('task-b').overrideWith(
               () => MockLinkedFromEntriesController([]),
             ),
-            linkedEntriesControllerProvider(id: 'task-a').overrideWith(
+            linkedEntriesControllerProvider('task-a').overrideWith(
               MockLinkedEntriesController.new,
             ),
-            linkedEntriesControllerProvider(id: 'task-b').overrideWith(
+            linkedEntriesControllerProvider('task-b').overrideWith(
               MockLinkedEntriesController.new,
             ),
           ],
@@ -423,10 +423,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            linkedTasksControllerProvider(taskId: 'task-a').overrideWith(
+            linkedTasksControllerProvider('task-a').overrideWith(
               LinkedTasksController.new,
             ),
-            linkedTasksControllerProvider(taskId: 'task-b').overrideWith(
+            linkedTasksControllerProvider('task-b').overrideWith(
               LinkedTasksController.new,
             ),
             outgoingLinkedTasksProvider(
@@ -435,16 +435,16 @@ void main() {
             outgoingLinkedTasksProvider(
               'task-b',
             ).overrideWith((ref) => [taskB]),
-            linkedFromEntriesControllerProvider(id: 'task-a').overrideWith(
+            linkedFromEntriesControllerProvider('task-a').overrideWith(
               () => MockLinkedFromEntriesController([]),
             ),
-            linkedFromEntriesControllerProvider(id: 'task-b').overrideWith(
+            linkedFromEntriesControllerProvider('task-b').overrideWith(
               () => MockLinkedFromEntriesController([]),
             ),
-            linkedEntriesControllerProvider(id: 'task-a').overrideWith(
+            linkedEntriesControllerProvider('task-a').overrideWith(
               MockLinkedEntriesController.new,
             ),
-            linkedEntriesControllerProvider(id: 'task-b').overrideWith(
+            linkedEntriesControllerProvider('task-b').overrideWith(
               MockLinkedEntriesController.new,
             ),
           ],

@@ -26,7 +26,7 @@ class _TestEntryController extends EntryController {
   final JournalEntity? _entry;
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     final entry = _entry;
     if (entry == null) return null;
     return EntryState.saved(
@@ -115,7 +115,7 @@ void main() {
   }) {
     return ProviderScope(
       overrides: [
-        entryControllerProvider(id: 'entry-123').overrideWith(
+        entryControllerProvider('entry-123').overrideWith(
           () => _TestEntryController(entry),
         ),
         labelsStreamProvider.overrideWith(

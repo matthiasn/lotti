@@ -105,7 +105,7 @@ void main() {
         // it).
         taskGraphProvider(task.id).overrideWith((ref) async => null),
         if (initialOffset != null)
-          taskAppBarControllerProvider(id: task.id).overrideWith(
+          taskAppBarControllerProvider(task.id).overrideWith(
             () => _FixedOffsetTaskAppBarController(initialOffset),
           ),
       ],
@@ -461,5 +461,5 @@ class _FixedOffsetTaskAppBarController extends TaskAppBarController {
   final double _offset;
 
   @override
-  Future<double> build({required String id}) async => _offset;
+  Future<double> build() async => _offset;
 }

@@ -1,15 +1,48 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_model_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'inference_model_form_controller.g.dart';
+final AsyncNotifierProviderFamily<
+  InferenceModelFormController,
+  InferenceModelFormState?,
+  ({String? configId, String? preselectedProviderId})
+>
+_inferenceModelFormControllerFamily = AsyncNotifierProvider.autoDispose
+    .family<
+      InferenceModelFormController,
+      InferenceModelFormState?,
+      ({String? configId, String? preselectedProviderId})
+    >(
+      InferenceModelFormController.new,
+      name: 'inferenceModelFormControllerProvider',
+    );
 
-@riverpod
-class InferenceModelFormController extends _$InferenceModelFormController {
+AsyncNotifierProvider<InferenceModelFormController, InferenceModelFormState?>
+inferenceModelFormControllerProvider({
+  required String? configId,
+  String? preselectedProviderId,
+}) {
+  return _inferenceModelFormControllerFamily(
+    (
+      configId: configId,
+      preselectedProviderId: preselectedProviderId,
+    ),
+  );
+}
+
+class InferenceModelFormController
+    extends AsyncNotifier<InferenceModelFormState?> {
+  InferenceModelFormController(this._providerArgs);
+
+  final ({String? configId, String? preselectedProviderId}) _providerArgs;
+  String? get configId => _providerArgs.configId;
+  String? get preselectedProviderId => _providerArgs.preselectedProviderId;
+
   final nameController = TextEditingController();
   final providerModelIdController = TextEditingController();
   final descriptionController = TextEditingController();
@@ -18,10 +51,8 @@ class InferenceModelFormController extends _$InferenceModelFormController {
   AiConfigModel? _config;
 
   @override
-  Future<InferenceModelFormState?> build({
-    required String? configId,
-    String? preselectedProviderId,
-  }) async {
+  Future<InferenceModelFormState?> build() async {
+    final configId = this.configId;
     _config = configId != null
         ? (await ref.read(aiConfigRepositoryProvider).getConfigById(configId)
               as AiConfigModel?)

@@ -676,7 +676,9 @@ void main() {
     setUp(() {
       container = ProviderContainer(
         overrides: [
-          dailyOsSelectedDateProvider.overrideWithValue(testDateToday),
+          dailyOsSelectedDateProvider.overrideWithBuild(
+            (_, _) => testDateToday,
+          ),
         ],
       );
     });
@@ -692,10 +694,10 @@ void main() {
         withClock(async.getClock(DateTime(2024, 3, 15, 12)), () {
           final testContainer = ProviderContainer(
             overrides: [
-              dailyOsSelectedDateProvider.overrideWithValue(yesterday),
-              unifiedDailyOsDataControllerProvider(
-                date: yesterday,
-              ).overrideWith(
+              dailyOsSelectedDateProvider.overrideWithBuild(
+                (_, _) => yesterday,
+              ),
+              unifiedDailyOsDataControllerProvider(yesterday).overrideWith(
                 () => _TestUnifiedController(
                   DailyOsData(
                     date: yesterday,
@@ -782,8 +784,8 @@ void main() {
 
             final testContainer = ProviderContainer(
               overrides: [
-                dailyOsSelectedDateProvider.overrideWithValue(today),
-                unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+                dailyOsSelectedDateProvider.overrideWithBuild((_, _) => today),
+                unifiedDailyOsDataControllerProvider(today).overrideWith(
                   () => _TestUnifiedController(testData),
                 ),
               ],
@@ -888,8 +890,8 @@ void main() {
 
           final testContainer = ProviderContainer(
             overrides: [
-              dailyOsSelectedDateProvider.overrideWithValue(today),
-              unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+              dailyOsSelectedDateProvider.overrideWithBuild((_, _) => today),
+              unifiedDailyOsDataControllerProvider(today).overrideWith(
                 () => _TestUnifiedController(testData),
               ),
             ],
@@ -938,8 +940,8 @@ void main() {
 
           final testContainer = ProviderContainer(
             overrides: [
-              dailyOsSelectedDateProvider.overrideWithValue(today),
-              unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+              dailyOsSelectedDateProvider.overrideWithBuild((_, _) => today),
+              unifiedDailyOsDataControllerProvider(today).overrideWith(
                 () => _TestUnifiedController(testData),
               ),
             ],
@@ -987,8 +989,8 @@ void main() {
 
           final testContainer = ProviderContainer(
             overrides: [
-              dailyOsSelectedDateProvider.overrideWithValue(today),
-              unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+              dailyOsSelectedDateProvider.overrideWithBuild((_, _) => today),
+              unifiedDailyOsDataControllerProvider(today).overrideWith(
                 () => _TestUnifiedController(testData),
               ),
             ],
@@ -1097,8 +1099,8 @@ void main() {
         withClock(async.getClock(justBeforeMidnight), () {
           final testContainer = ProviderContainer(
             overrides: [
-              dailyOsSelectedDateProvider.overrideWithValue(dayA),
-              unifiedDailyOsDataControllerProvider(date: dayA).overrideWith(
+              dailyOsSelectedDateProvider.overrideWithBuild((_, _) => dayA),
+              unifiedDailyOsDataControllerProvider(dayA).overrideWith(
                 () => _TestUnifiedController(
                   DailyOsData(
                     date: dayA,
@@ -1108,7 +1110,7 @@ void main() {
                   ),
                 ),
               ),
-              unifiedDailyOsDataControllerProvider(date: dayB).overrideWith(
+              unifiedDailyOsDataControllerProvider(dayB).overrideWith(
                 () => _TestUnifiedController(
                   DailyOsData(
                     date: dayB,
@@ -1127,12 +1129,12 @@ void main() {
           // window that would otherwise yield null before midnight).
           unawaited(
             testContainer.read(
-              unifiedDailyOsDataControllerProvider(date: dayA).future,
+              unifiedDailyOsDataControllerProvider(dayA).future,
             ),
           );
           unawaited(
             testContainer.read(
-              unifiedDailyOsDataControllerProvider(date: dayB).future,
+              unifiedDailyOsDataControllerProvider(dayB).future,
             ),
           );
           async.flushMicrotasks();
@@ -1275,8 +1277,8 @@ void main() {
       );
       return ProviderContainer(
         overrides: [
-          dailyOsSelectedDateProvider.overrideWithValue(d),
-          unifiedDailyOsDataControllerProvider(date: d).overrideWith(
+          dailyOsSelectedDateProvider.overrideWithBuild((_, _) => d),
+          unifiedDailyOsDataControllerProvider(d).overrideWith(
             () => _TestUnifiedController(data),
           ),
         ],
@@ -1506,8 +1508,8 @@ void main() {
     test('returns null when no category is highlighted', () async {
       final container = ProviderContainer(
         overrides: [
-          dailyOsSelectedDateProvider.overrideWithValue(testDate),
-          unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+          dailyOsSelectedDateProvider.overrideWithBuild((_, _) => testDate),
+          unifiedDailyOsDataControllerProvider(testDate).overrideWith(
             () => _TestUnifiedController(
               DailyOsData(
                 date: testDate,
@@ -1531,8 +1533,8 @@ void main() {
       () async {
         final container = ProviderContainer(
           overrides: [
-            dailyOsSelectedDateProvider.overrideWithValue(testDate),
-            unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+            dailyOsSelectedDateProvider.overrideWithBuild((_, _) => testDate),
+            unifiedDailyOsDataControllerProvider(testDate).overrideWith(
               () => _TestUnifiedController(
                 DailyOsData(
                   date: testDate,
@@ -1569,7 +1571,7 @@ class _TestUnifiedController extends UnifiedDailyOsDataController {
   final DailyOsData _data;
 
   @override
-  Future<DailyOsData> build({required DateTime date}) async {
+  Future<DailyOsData> build() async {
     return _data;
   }
 }

@@ -1,10 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/get_it.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'celebration_preferences_controller.g.dart';
 
 /// [SettingsDb] keys backing each celebratory-animation switch. The bool keys
 /// store the strings `'true'` / `'false'`; an absent key means "never set" → on.
@@ -174,15 +172,20 @@ class CelebrationPreferences {
 /// Holds the three celebratory-animation switches, persisted across launches in
 /// [SettingsDb].
 ///
-/// [build] returns [CelebrationPreferences.allEnabled] synchronously and then
+/// build returns [CelebrationPreferences.allEnabled] synchronously and then
 /// hydrates the persisted values, mirroring `ZoomController`. Returning a value
 /// synchronously (rather than an `AsyncValue`) lets a celebration call site read
 /// the flag on the very frame it would fire — no loading state to thread through
 /// a `didUpdateWidget`. Reads from / writes to [SettingsDb] are skipped when it
 /// is not registered (some widget tests), so the default simply stays on.
-@Riverpod(keepAlive: true)
+final celebrationPreferencesControllerProvider =
+    NotifierProvider<CelebrationPreferencesController, CelebrationPreferences>(
+      CelebrationPreferencesController.new,
+      name: 'celebrationPreferencesControllerProvider',
+    );
+
 class CelebrationPreferencesController
-    extends _$CelebrationPreferencesController {
+    extends Notifier<CelebrationPreferences> {
   /// Keys the user has toggled this session. A late-arriving hydration skips
   /// only these fields, so toggling one switch before hydration completes
   /// doesn't clobber that choice — *and* doesn't block the other (untouched)
@@ -350,6 +353,10 @@ CelebrationVariant _resolveVariant(
 /// Convenience read of the current [CelebrationPreferences]. Celebration call
 /// sites watch this; tests override it with `overrideWithValue(...)` to assert
 /// gating without touching persistence.
-@riverpod
+final Provider<CelebrationPreferences> celebrationPreferencesProvider =
+    Provider.autoDispose<CelebrationPreferences>(
+      celebrationPreferences,
+      name: 'celebrationPreferencesProvider',
+    );
 CelebrationPreferences celebrationPreferences(Ref ref) =>
     ref.watch(celebrationPreferencesControllerProvider);

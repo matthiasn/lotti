@@ -1,13 +1,16 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'gemini_thinking_providers.g.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Controls whether Gemini reasoning/thinking content is surfaced inline.
 ///
 /// UI can toggle this; CloudInferenceRepository reads it to override the
 /// `includeThoughts` flag in the final thinking config.
-@Riverpod(keepAlive: true)
-class GeminiIncludeThoughts extends _$GeminiIncludeThoughts {
+final geminiIncludeThoughtsProvider =
+    NotifierProvider<GeminiIncludeThoughts, bool>(
+      GeminiIncludeThoughts.new,
+      name: 'geminiIncludeThoughtsProvider',
+    );
+
+class GeminiIncludeThoughts extends Notifier<bool> {
   @override
   bool build() => false;
 

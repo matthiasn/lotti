@@ -1,12 +1,14 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'task_agent_providers.g.dart';
 
 /// The task-agent-specific service.
-@Riverpod(keepAlive: true)
+final taskAgentServiceProvider = Provider<TaskAgentService>(
+  taskAgentService,
+  name: 'taskAgentServiceProvider',
+);
 TaskAgentService taskAgentService(Ref ref) {
   return TaskAgentService(
     agentService: ref.watch(agentServiceProvider),
@@ -17,12 +19,16 @@ TaskAgentService taskAgentService(Ref ref) {
   );
 }
 
-/// Fetch the Task Agent for a given journal-domain [taskId].
+/// Fetch the Task Agent for a given journal-domain taskId.
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentIdentityEntity]) or `null`.
 /// Watches the update stream so the UI rebuilds when an agent-task link
 /// arrives via sync (the notification includes the taskId).
-@riverpod
+final FutureProviderFamily<AgentDomainEntity?, String> taskAgentProvider =
+    FutureProvider.autoDispose.family<AgentDomainEntity?, String>(
+      taskAgent,
+      name: 'taskAgentProvider',
+    );
 Future<AgentDomainEntity?> taskAgent(
   Ref ref,
   String taskId,

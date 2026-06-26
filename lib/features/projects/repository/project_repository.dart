@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -15,9 +16,6 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'project_repository.g.dart';
 
 /// Repository for project CRUD and task-project linking.
 ///
@@ -615,7 +613,10 @@ const Set<String> _overviewNotificationTokens = {
 /// Kept-alive provider for the singleton [ProjectRepository], wired to the
 /// app's database, caches, persistence, and update-notification services from
 /// `getIt`. Every project provider in this feature reads through here.
-@Riverpod(keepAlive: true)
+final projectRepositoryProvider = Provider<ProjectRepository>(
+  projectRepository,
+  name: 'projectRepositoryProvider',
+);
 ProjectRepository projectRepository(Ref ref) {
   return ProjectRepository(
     journalDb: getIt<JournalDb>(),

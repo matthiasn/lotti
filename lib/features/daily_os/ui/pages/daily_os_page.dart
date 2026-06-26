@@ -46,7 +46,7 @@ class _DailyOsPageState extends ConsumerState<DailyOsPage> {
   Widget build(BuildContext context) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
     final unifiedDataAsync = ref.watch(
-      unifiedDailyOsDataControllerProvider(date: selectedDate),
+      unifiedDailyOsDataControllerProvider(selectedDate),
     );
 
     return Scaffold(
@@ -62,12 +62,10 @@ class _DailyOsPageState extends ConsumerState<DailyOsPage> {
                 onRefresh: () async {
                   // Invalidate the unified controller to trigger a full refresh
                   ref.invalidate(
-                    unifiedDailyOsDataControllerProvider(date: selectedDate),
+                    unifiedDailyOsDataControllerProvider(selectedDate),
                   );
                   await ref.read(
-                    unifiedDailyOsDataControllerProvider(
-                      date: selectedDate,
-                    ).future,
+                    unifiedDailyOsDataControllerProvider(selectedDate).future,
                   );
                 },
                 child: SingleChildScrollView(
@@ -91,7 +89,7 @@ class _DailyOsPageState extends ConsumerState<DailyOsPage> {
                                 ref
                                     .read(
                                       unifiedDailyOsDataControllerProvider(
-                                        date: selectedDate,
+                                        selectedDate,
                                       ).notifier,
                                     )
                                     .agreeToPlan();
@@ -106,7 +104,7 @@ class _DailyOsPageState extends ConsumerState<DailyOsPage> {
                                 ref
                                     .read(
                                       unifiedDailyOsDataControllerProvider(
-                                        date: selectedDate,
+                                        selectedDate,
                                       ).notifier,
                                     )
                                     .agreeToPlan();

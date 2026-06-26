@@ -17,7 +17,7 @@ class FakeEntryController extends EntryController {
   final List<String> setLanguageCalls = [];
 
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     final value = _entry == null
         ? null
         : EntryState.saved(

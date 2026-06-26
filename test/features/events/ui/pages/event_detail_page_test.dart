@@ -39,7 +39,7 @@ const _eventId = 'event-1';
 /// `event_view_mapping_test`; here we cover the page glue that wires it.
 class _NullEntryController extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     state = const AsyncData(null);
     return SynchronousFuture(null);
   }
@@ -48,7 +48,7 @@ class _NullEntryController extends EntryController {
 /// Fails to load the entry, to exercise the page's terminal-error branch.
 class _ErrorEntryController extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     state = AsyncError(Exception('load failed'), StackTrace.current);
     return Future<EntryState?>.error(Exception('load failed'));
   }
@@ -180,7 +180,7 @@ void main() {
         ProviderScope(
           overrides: [
             entryControllerProvider(
-              id: _eventId,
+              _eventId,
             ).overrideWith(_NullEntryController.new),
           ],
           child: const EventDetailPage(eventId: _eventId),
@@ -200,7 +200,7 @@ void main() {
         ProviderScope(
           overrides: [
             entryControllerProvider(
-              id: _eventId,
+              _eventId,
             ).overrideWith(_ErrorEntryController.new),
           ],
           child: const EventDetailPage(eventId: _eventId),
@@ -232,7 +232,7 @@ void main() {
         makeTestableWidget2(
           ProviderScope(
             overrides: [
-              entryControllerProvider(id: _eventId).overrideWith(
+              entryControllerProvider(_eventId).overrideWith(
                 controllerBuilder ?? () => FakeEntryController(_event()),
               ),
               resolvedOutgoingLinkedEntriesProvider(

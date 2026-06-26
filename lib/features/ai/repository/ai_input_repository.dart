@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -23,9 +24,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'ai_input_repository.g.dart';
 
 /// Repository for preparing AI input data from journal entities.
 ///
@@ -537,7 +535,10 @@ class AiInputRepository {
   }
 }
 
-@Riverpod(keepAlive: true)
+final aiInputRepositoryProvider = Provider<AiInputRepository>(
+  aiInputRepository,
+  name: 'aiInputRepositoryProvider',
+);
 AiInputRepository aiInputRepository(Ref ref) {
   final agentRepository = getIt.isRegistered<AgentDatabase>()
       ? AgentRepository(getIt<AgentDatabase>())

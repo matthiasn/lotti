@@ -56,7 +56,7 @@ class _FakeLinkedEntriesController extends LinkedEntriesController {
   final List<EntryLink> _links;
 
   @override
-  Future<List<EntryLink>> build({required String id}) async => _links;
+  Future<List<EntryLink>> build() async => _links;
 }
 
 class _TestEntryController extends EntryController {
@@ -64,7 +64,7 @@ class _TestEntryController extends EntryController {
   final JournalEntity _entry;
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     return EntryState.saved(
       entryId: id,
       entry: _entry,
@@ -82,10 +82,7 @@ class _TrackingCanPasteController extends ImagePasteController {
   final void Function() onPaste;
 
   @override
-  Future<bool> build({
-    required String? linkedFromId,
-    required String? categoryId,
-  }) async => true;
+  Future<bool> build() async => true;
 
   @override
   Future<void> paste() async => onPaste();
@@ -221,7 +218,7 @@ void main() {
             makeTestableWidgetWithScaffold(
               const CreateChecklistItem(parentId),
               overrides: [
-                entryControllerProvider(id: parentId).overrideWith(
+                entryControllerProvider(parentId).overrideWith(
                   () => _TestEntryController(journalEntry),
                 ),
               ],
@@ -256,7 +253,7 @@ void main() {
             makeTestableWidgetWithScaffold(
               const CreateChecklistItem(parentId),
               overrides: [
-                entryControllerProvider(id: parentId).overrideWith(
+                entryControllerProvider(parentId).overrideWith(
                   () => _TestEntryController(task),
                 ),
                 checklistRepositoryProvider.overrideWithValue(
@@ -302,7 +299,7 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
-                entryControllerProvider(id: parentId).overrideWith(
+                entryControllerProvider(parentId).overrideWith(
                   () => _TestEntryController(task),
                 ),
                 checklistRepositoryProvider.overrideWithValue(
@@ -362,10 +359,10 @@ void main() {
           makeTestableWidgetWithScaffold(
             const PasteImageItem(linkedId, categoryId: categoryId),
             overrides: [
-              imagePasteControllerProvider(
+              imagePasteControllerProvider((
                 linkedFromId: linkedId,
                 categoryId: categoryId,
-              ).overrideWithBuild(
+              )).overrideWithBuild(
                 (ref, notifier) async => true,
               ),
             ],
@@ -395,10 +392,10 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              imagePasteControllerProvider(
+              imagePasteControllerProvider((
                 linkedFromId: linkedId,
                 categoryId: categoryId,
-              ).overrideWith(
+              )).overrideWith(
                 () => _TrackingCanPasteController(
                   onPaste: () => pasteCalled = true,
                 ),
@@ -566,21 +563,21 @@ void main() {
 
         // Verify no focus intent initially.
         final initialState = container.read(
-          taskFocusControllerProvider(id: parentId),
+          taskFocusControllerProvider(parentId),
         );
         expect(initialState, isNull);
 
         // Simulate the task focus publishing that _waitForTimerAndScroll
         // performs once the timer entry is found in linked entries.
         container
-            .read(taskFocusControllerProvider(id: parentId).notifier)
+            .read(taskFocusControllerProvider(parentId).notifier)
             .publishTaskFocus(
               entryId: timerEntryId,
               alignment: kDefaultScrollAlignment,
             );
 
         final focusState = container.read(
-          taskFocusControllerProvider(id: parentId),
+          taskFocusControllerProvider(parentId),
         );
         expect(focusState, isNotNull);
         expect(focusState!.taskId, parentId);
@@ -601,21 +598,21 @@ void main() {
         const timerId2 = 'timer-two';
 
         container
-            .read(taskFocusControllerProvider(id: taskId1).notifier)
+            .read(taskFocusControllerProvider(taskId1).notifier)
             .publishTaskFocus(
               entryId: timerId1,
               alignment: kDefaultScrollAlignment,
             );
 
         container
-            .read(taskFocusControllerProvider(id: taskId2).notifier)
+            .read(taskFocusControllerProvider(taskId2).notifier)
             .publishTaskFocus(
               entryId: timerId2,
               alignment: kDefaultScrollAlignment,
             );
 
-        final focus1 = container.read(taskFocusControllerProvider(id: taskId1));
-        final focus2 = container.read(taskFocusControllerProvider(id: taskId2));
+        final focus1 = container.read(taskFocusControllerProvider(taskId1));
+        final focus2 = container.read(taskFocusControllerProvider(taskId2));
 
         expect(focus1!.taskId, taskId1);
         expect(focus1.entryId, timerId1);
@@ -638,14 +635,14 @@ void main() {
         // and isTask is true: it reads taskFocusControllerProvider and calls
         // publishTaskFocus.
         container
-            .read(taskFocusControllerProvider(id: parentId).notifier)
+            .read(taskFocusControllerProvider(parentId).notifier)
             .publishTaskFocus(
               entryId: timerEntryId,
               alignment: kDefaultScrollAlignment,
             );
 
         final state = container.read(
-          taskFocusControllerProvider(id: parentId),
+          taskFocusControllerProvider(parentId),
         );
         expect(state, isNotNull);
         expect(state!.target, TaskFocusTarget.entry);
@@ -677,7 +674,7 @@ void main() {
             const CreateTimerItem(parentId),
             overrides: [
               entryCreationServiceProvider.overrideWithValue(mockService),
-              entryControllerProvider(id: parentId).overrideWith(
+              entryControllerProvider(parentId).overrideWith(
                 () => _TestEntryController(entry),
               ),
             ],
@@ -708,7 +705,7 @@ void main() {
 
         // No call to publishTaskFocus is made — entries list is empty.
         final state = container.read(
-          taskFocusControllerProvider(id: parentId),
+          taskFocusControllerProvider(parentId),
         );
         expect(state, isNull);
 
@@ -977,10 +974,10 @@ void main() {
           ProviderScope(
             overrides: [
               entryCreationServiceProvider.overrideWithValue(mockService),
-              entryControllerProvider(id: parentId).overrideWith(
+              entryControllerProvider(parentId).overrideWith(
                 () => _TestEntryController(parentEntry),
               ),
-              linkedEntriesControllerProvider(id: parentId).overrideWith(
+              linkedEntriesControllerProvider(parentId).overrideWith(
                 () => _FakeLinkedEntriesController([timerLink]),
               ),
             ],
@@ -1010,7 +1007,7 @@ void main() {
         // polling inside _waitForTimerAndScroll uses container.read() which
         // doesn't prevent disposal between calls).
         final linkedEntriesSub = capturedContainer!.listen(
-          linkedEntriesControllerProvider(id: parentId),
+          linkedEntriesControllerProvider(parentId),
           (_, _) {},
         );
         addTearDown(linkedEntriesSub.close);
@@ -1039,7 +1036,7 @@ void main() {
 
         // publishJournalFocus should have been called.
         final focusState = capturedContainer!.read(
-          journalFocusControllerProvider(id: parentId),
+          journalFocusControllerProvider(parentId),
         );
         expect(focusState, isNotNull);
         expect(focusState!.journalId, parentId);
@@ -1106,10 +1103,10 @@ void main() {
           ProviderScope(
             overrides: [
               entryCreationServiceProvider.overrideWithValue(mockService),
-              entryControllerProvider(id: parentId).overrideWith(
+              entryControllerProvider(parentId).overrideWith(
                 () => _TestEntryController(parentTask),
               ),
-              linkedEntriesControllerProvider(id: parentId).overrideWith(
+              linkedEntriesControllerProvider(parentId).overrideWith(
                 () => _FakeLinkedEntriesController([timerLink]),
               ),
             ],
@@ -1139,7 +1136,7 @@ void main() {
         // polling inside _waitForTimerAndScroll uses container.read() which
         // doesn't prevent disposal between calls).
         final linkedEntriesSub = capturedContainer!.listen(
-          linkedEntriesControllerProvider(id: parentId),
+          linkedEntriesControllerProvider(parentId),
           (_, _) {},
         );
         addTearDown(linkedEntriesSub.close);
@@ -1161,7 +1158,7 @@ void main() {
 
         // publishTaskFocus should have been called.
         final focusState = capturedContainer!.read(
-          taskFocusControllerProvider(id: parentId),
+          taskFocusControllerProvider(parentId),
         );
         expect(focusState, isNotNull);
         expect(focusState!.taskId, parentId);
@@ -1765,7 +1762,7 @@ void main() {
 
           // Initially no focus intent
           final initialState = container.read(
-            journalFocusControllerProvider(id: linkedId),
+            journalFocusControllerProvider(linkedId),
           );
           expect(initialState, isNull);
 
@@ -1773,9 +1770,7 @@ void main() {
           // This is what happens after createTimerEntry succeeds
           container
               .read(
-                journalFocusControllerProvider(
-                  id: linkedEntry.meta.id,
-                ).notifier,
+                journalFocusControllerProvider(linkedEntry.meta.id).notifier,
               )
               .publishJournalFocus(
                 entryId: timerEntry.meta.id,
@@ -1784,7 +1779,7 @@ void main() {
 
           // Verify focus was published with correct parameters
           final focusState = container.read(
-            journalFocusControllerProvider(id: linkedId),
+            journalFocusControllerProvider(linkedId),
           );
           expect(focusState, isNotNull);
           expect(focusState!.journalId, linkedId);
@@ -1815,9 +1810,7 @@ void main() {
         if (timerEntry != null) {
           container
               .read(
-                journalFocusControllerProvider(
-                  id: linkedEntry.meta.id,
-                ).notifier,
+                journalFocusControllerProvider(linkedEntry.meta.id).notifier,
               )
               .publishJournalFocus(
                 entryId: timerEntry.meta.id,
@@ -1827,7 +1820,7 @@ void main() {
 
         // Verify focus was NOT published
         final focusState = container.read(
-          journalFocusControllerProvider(id: linkedId),
+          journalFocusControllerProvider(linkedId),
         );
         expect(focusState, isNull);
 
@@ -1841,7 +1834,7 @@ void main() {
 
         // Simulate publishing focus
         container
-            .read(journalFocusControllerProvider(id: linkedId).notifier)
+            .read(journalFocusControllerProvider(linkedId).notifier)
             .publishJournalFocus(
               entryId: timerEntryId,
               alignment: kDefaultScrollAlignment,
@@ -1849,7 +1842,7 @@ void main() {
 
         // Verify alignment uses kDefaultScrollAlignment constant
         final focusState = container.read(
-          journalFocusControllerProvider(id: linkedId),
+          journalFocusControllerProvider(linkedId),
         );
         expect(focusState!.alignment, kDefaultScrollAlignment);
 
@@ -1864,27 +1857,27 @@ void main() {
 
         // First timer creation
         container
-            .read(journalFocusControllerProvider(id: linkedId).notifier)
+            .read(journalFocusControllerProvider(linkedId).notifier)
             .publishJournalFocus(
               entryId: timer1Id,
               alignment: kDefaultScrollAlignment,
             );
 
         final focusState = container.read(
-          journalFocusControllerProvider(id: linkedId),
+          journalFocusControllerProvider(linkedId),
         );
         expect(focusState!.entryId, timer1Id);
 
         // Second timer creation (should update the focus)
         container
-            .read(journalFocusControllerProvider(id: linkedId).notifier)
+            .read(journalFocusControllerProvider(linkedId).notifier)
             .publishJournalFocus(
               entryId: timer2Id,
               alignment: kDefaultScrollAlignment,
             );
 
         final updatedFocusState = container.read(
-          journalFocusControllerProvider(id: linkedId),
+          journalFocusControllerProvider(linkedId),
         );
         expect(updatedFocusState!.entryId, timer2Id);
 
@@ -2525,7 +2518,7 @@ void main() {
               entryCreationServiceProvider.overrideWithValue(
                 mockEntryCreationService,
               ),
-              entryControllerProvider(id: parentId).overrideWith(
+              entryControllerProvider(parentId).overrideWith(
                 () => _TestEntryController(parentEntry),
               ),
             ],
@@ -2594,7 +2587,7 @@ void main() {
               entryCreationServiceProvider.overrideWithValue(
                 mockEntryCreationService,
               ),
-              entryControllerProvider(id: parentId).overrideWith(
+              entryControllerProvider(parentId).overrideWith(
                 () => _TestEntryController(parentEntry),
               ),
             ],

@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'project_agent_providers.g.dart';
 
 /// The project-agent-specific service.
-@Riverpod(keepAlive: true)
+final projectAgentServiceProvider = Provider<ProjectAgentService>(
+  projectAgentService,
+  name: 'projectAgentServiceProvider',
+);
 ProjectAgentService projectAgentService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return ProjectAgentService(
@@ -21,12 +21,16 @@ ProjectAgentService projectAgentService(Ref ref) {
   );
 }
 
-/// Fetch the Project Agent for a given journal-domain [projectId].
+/// Fetch the Project Agent for a given journal-domain projectId.
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentIdentityEntity]) or `null`.
 /// Watches the update stream so the UI rebuilds when an agent-project link
 /// arrives via sync.
-@riverpod
+final FutureProviderFamily<AgentDomainEntity?, String> projectAgentProvider =
+    FutureProvider.autoDispose.family<AgentDomainEntity?, String>(
+      projectAgent,
+      name: 'projectAgentProvider',
+    );
 Future<AgentDomainEntity?> projectAgent(
   Ref ref,
   String projectId,

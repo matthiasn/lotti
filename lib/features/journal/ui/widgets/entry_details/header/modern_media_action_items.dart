@@ -26,7 +26,7 @@ class ModernSpeechItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
+    final provider = entryControllerProvider(entryId);
     final entryState = ref.watch(provider).value;
 
     final item = entryState?.entry;
@@ -59,7 +59,7 @@ class ModernShowInFileManagerItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
+    final provider = entryControllerProvider(entryId);
     final entryState = ref.watch(provider).value;
     final entry = entryState?.entry;
     final resolvedPlatform = platform ?? MediaFileActions.currentPlatform();
@@ -137,7 +137,7 @@ class ModernShareItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
+    final provider = entryControllerProvider(entryId);
     final entryState = ref.watch(provider).value;
     final entry = entryState?.entry;
 

@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide ChangeSource;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -29,10 +31,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:super_clipboard/super_clipboard.dart';
-
-part 'entry_controller.g.dart';
 
 /// Delay before stopping the time service after save.
 /// Overridable in tests to avoid real delays.
@@ -47,8 +46,18 @@ Duration stopRecordingDelay = const Duration(milliseconds: 100);
 /// follow the dual-write path (persist the entity, then propagate metadata such
 /// as category to linked entries). See the feature README for the full
 /// save/refresh flow.
-@riverpod
-class EntryController extends _$EntryController {
+final AsyncNotifierProviderFamily<EntryController, EntryState?, String>
+entryControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<EntryController, EntryState?, String>(
+      EntryController.new,
+      name: 'entryControllerProvider',
+    );
+
+class EntryController extends AsyncNotifier<EntryState?> {
+  EntryController([this.id = '']);
+
+  final String id;
+
   void focusNodeListener() {
     if (focusNode.hasFocus == _isFocused) {
       return;
@@ -133,7 +142,7 @@ class EntryController extends _$EntryController {
   }
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     // Eagerly initialize the agent infrastructure when any entry is viewed.
     // The provider itself checks the config flag and is a no-op when disabled.
     // Use listen (not watch) to avoid rebuilding this controller when the

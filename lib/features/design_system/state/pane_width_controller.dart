@@ -1,11 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'pane_width_controller.g.dart';
 
 /// Settings keys for persisted pane widths.
 const sidebarWidthKey = 'PANE_WIDTH_SIDEBAR';
@@ -80,8 +78,13 @@ class PaneWidths {
 /// deltas, and debounces writes back to disk. Once the user adjusts a width,
 /// a late-arriving persisted load is ignored so it cannot clobber the live
 /// value.
-@Riverpod(keepAlive: true)
-class PaneWidthController extends _$PaneWidthController {
+final paneWidthControllerProvider =
+    NotifierProvider<PaneWidthController, PaneWidths>(
+      PaneWidthController.new,
+      name: 'paneWidthControllerProvider',
+    );
+
+class PaneWidthController extends Notifier<PaneWidths> {
   bool _userAdjusted = false;
   Timer? _sidebarDebounce;
   Timer? _listPaneDebounce;

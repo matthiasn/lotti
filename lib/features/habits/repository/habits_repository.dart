@@ -1,12 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'habits_repository.g.dart';
 
 /// Repository interface for habit-related data operations.
 ///
@@ -131,7 +129,10 @@ class HabitsRepositoryImpl implements HabitsRepository {
 ///
 /// This provider bridges the gap between getIt service locator and Riverpod,
 /// allowing the repository to be easily overridden in tests.
-@Riverpod(keepAlive: true)
+final habitsRepositoryProvider = Provider<HabitsRepository>(
+  habitsRepository,
+  name: 'habitsRepositoryProvider',
+);
 HabitsRepository habitsRepository(Ref ref) {
   return HabitsRepositoryImpl(
     journalDb: getIt<JournalDb>(),

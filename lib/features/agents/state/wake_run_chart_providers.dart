@@ -1,3 +1,5 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_database.dart'
@@ -11,15 +13,17 @@ import 'package:lotti/features/agents/model/wake_run_time_series.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series_utils.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'wake_run_chart_providers.g.dart';
 
 /// Computes time-series chart data for a template's wake runs.
 ///
 /// Fetches raw [WakeRunLogData] via the [AgentRepository] and transforms
 /// them into daily and per-version buckets suitable for mini chart rendering.
-@riverpod
+final FutureProviderFamily<WakeRunTimeSeries, String>
+templateWakeRunTimeSeriesProvider = FutureProvider.autoDispose
+    .family<WakeRunTimeSeries, String>(
+      templateWakeRunTimeSeries,
+      name: 'templateWakeRunTimeSeriesProvider',
+    );
 Future<WakeRunTimeSeries> templateWakeRunTimeSeries(
   Ref ref,
   String templateId,
@@ -37,7 +41,12 @@ Future<WakeRunTimeSeries> templateWakeRunTimeSeries(
 /// 3. For each linked task, looks up the [JournalEntity] in the journal DB.
 /// 4. Extracts the first DONE/REJECTED status from the task's status history.
 /// 5. Computes MTTR as `status.createdAt - agent.createdAt`.
-@riverpod
+final FutureProviderFamily<TaskResolutionTimeSeries, String>
+templateTaskResolutionTimeSeriesProvider = FutureProvider.autoDispose
+    .family<TaskResolutionTimeSeries, String>(
+      templateTaskResolutionTimeSeries,
+      name: 'templateTaskResolutionTimeSeriesProvider',
+    );
 Future<TaskResolutionTimeSeries> templateTaskResolutionTimeSeries(
   Ref ref,
   String templateId,

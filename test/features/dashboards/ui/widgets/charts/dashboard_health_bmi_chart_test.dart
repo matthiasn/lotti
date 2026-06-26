@@ -172,11 +172,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.WEIGHT',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => observations),
+            )).overrideWithBuild((ref, notifier) => observations),
           ],
         ),
       );
@@ -199,11 +199,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.WEIGHT',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => observations),
+            )).overrideWithBuild((ref, notifier) => observations),
           ],
         ),
       );
@@ -227,11 +227,11 @@ void main() {
               rangeEnd: rangeEnd,
             ),
             overrides: [
-              healthObservationsControllerProvider(
+              healthObservationsControllerProvider((
                 healthDataType: 'HealthDataType.WEIGHT',
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ).overrideWithBuild((ref, notifier) => observations),
+              )).overrideWithBuild((ref, notifier) => observations),
             ],
           ),
         );
@@ -254,11 +254,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.WEIGHT',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            )).overrideWithBuild((ref, notifier) => <Observation>[]),
           ],
         ),
       );
@@ -280,11 +280,11 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.WEIGHT',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild(
+            )).overrideWithBuild(
               (ref, notifier) => makeObservations([72, 73.5, 74]),
             ),
           ],

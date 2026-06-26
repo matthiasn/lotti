@@ -1,13 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/features/notifications/model/notification_inbox_projection.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'notification_inbox_controller.g.dart';
 
 /// Reactive count of unseen notifications that should pulse the bell badge.
 ///
@@ -24,8 +22,13 @@ part 'notification_inbox_controller.g.dart';
 ///    multiple `_refresh()` calls. An epoch counter discards results from any
 ///    refresh that finishes after a newer one started, so the latest fetch
 ///    always wins regardless of database latency.
-@Riverpod(keepAlive: true)
-class UnseenNotificationCount extends _$UnseenNotificationCount {
+final unseenNotificationCountProvider =
+    AsyncNotifierProvider<UnseenNotificationCount, int>(
+      UnseenNotificationCount.new,
+      name: 'unseenNotificationCountProvider',
+    );
+
+class UnseenNotificationCount extends AsyncNotifier<int> {
   StreamSubscription<Set<String>>? _sub;
   int _refreshEpoch = 0;
 
@@ -69,8 +72,13 @@ class UnseenNotificationCount extends _$UnseenNotificationCount {
 ///
 /// `_refresh` uses the same epoch + try/catch guard as
 /// [UnseenNotificationCount] — see that class's doc comment for the reasoning.
-@Riverpod(keepAlive: true)
-class InboxNotifications extends _$InboxNotifications {
+final inboxNotificationsProvider =
+    AsyncNotifierProvider<InboxNotifications, List<NotificationEntity>>(
+      InboxNotifications.new,
+      name: 'inboxNotificationsProvider',
+    );
+
+class InboxNotifications extends AsyncNotifier<List<NotificationEntity>> {
   StreamSubscription<Set<String>>? _sub;
   int _refreshEpoch = 0;
 

@@ -29,10 +29,10 @@ void main() {
 
     test('initial state is idle', () {
       final state = container.read(
-        inferenceStatusControllerProvider(
+        inferenceStatusControllerProvider((
           id: testId,
           aiResponseType: testAiResponseType,
-        ),
+        )),
       );
       expect(state, equals(InferenceStatus.idle));
     });
@@ -40,19 +40,19 @@ void main() {
     test('setStatus updates the state correctly', () {
       final controller =
           container.read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: testId,
                 aiResponseType: testAiResponseType,
-              ).notifier,
+              )).notifier,
             )
             // Test setting to running
             ..setStatus(InferenceStatus.running);
       expect(
         container.read(
-          inferenceStatusControllerProvider(
+          inferenceStatusControllerProvider((
             id: testId,
             aiResponseType: testAiResponseType,
-          ),
+          )),
         ),
         equals(InferenceStatus.running),
       );
@@ -61,10 +61,10 @@ void main() {
       controller.setStatus(InferenceStatus.error);
       expect(
         container.read(
-          inferenceStatusControllerProvider(
+          inferenceStatusControllerProvider((
             id: testId,
             aiResponseType: testAiResponseType,
-          ),
+          )),
         ),
         equals(InferenceStatus.error),
       );
@@ -73,10 +73,10 @@ void main() {
       controller.setStatus(InferenceStatus.idle);
       expect(
         container.read(
-          inferenceStatusControllerProvider(
+          inferenceStatusControllerProvider((
             id: testId,
             aiResponseType: testAiResponseType,
-          ),
+          )),
         ),
         equals(InferenceStatus.idle),
       );
@@ -88,17 +88,17 @@ void main() {
       const testAiResponseType2 = AiResponseType.taskSummary;
 
       final controller1 = container.read(
-        inferenceStatusControllerProvider(
+        inferenceStatusControllerProvider((
           id: testId,
           aiResponseType: testAiResponseType,
-        ).notifier,
+        )).notifier,
       );
 
       final controller2 = container.read(
-        inferenceStatusControllerProvider(
+        inferenceStatusControllerProvider((
           id: testId2,
           aiResponseType: testAiResponseType2,
-        ).notifier,
+        )).notifier,
       );
 
       // Set different states for each controller
@@ -108,20 +108,20 @@ void main() {
       // Verify states are independent
       expect(
         container.read(
-          inferenceStatusControllerProvider(
+          inferenceStatusControllerProvider((
             id: testId,
             aiResponseType: testAiResponseType,
-          ),
+          )),
         ),
         equals(InferenceStatus.running),
       );
 
       expect(
         container.read(
-          inferenceStatusControllerProvider(
+          inferenceStatusControllerProvider((
             id: testId2,
             aiResponseType: testAiResponseType2,
-          ),
+          )),
         ),
         equals(InferenceStatus.error),
       );
@@ -131,20 +131,20 @@ void main() {
       final states = <InferenceStatus>[];
 
       final unsubscribe = container.listen(
-        inferenceStatusControllerProvider(
+        inferenceStatusControllerProvider((
           id: testId,
           aiResponseType: testAiResponseType,
-        ),
+        )),
         (previous, next) => states.add(next),
         fireImmediately: true,
       );
       subscriptions.add(unsubscribe.close);
 
       container.read(
-          inferenceStatusControllerProvider(
+          inferenceStatusControllerProvider((
             id: testId,
             aiResponseType: testAiResponseType,
-          ).notifier,
+          )).notifier,
         )
         ..setStatus(InferenceStatus.running)
         ..setStatus(InferenceStatus.error)
@@ -172,10 +172,10 @@ void main() {
 
     test('initial state is false when no inference is running', () {
       final state = container.read(
-        inferenceRunningControllerProvider(
+        inferenceRunningControllerProvider((
           id: testId,
           responseTypes: responseTypes,
-        ),
+        )),
       );
       expect(state, equals(false));
     });
@@ -184,20 +184,20 @@ void main() {
       // Set the first inference type to running
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: responseType1,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.running);
 
       // Check that the running controller returns true
       expect(
         container.read(
-          inferenceRunningControllerProvider(
+          inferenceRunningControllerProvider((
             id: testId,
             responseTypes: responseTypes,
-          ),
+          )),
         ),
         equals(true),
       );
@@ -205,29 +205,29 @@ void main() {
       // Set both to idle
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: responseType1,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.idle);
 
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: responseType2,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.idle);
 
       // Check that the running controller returns false
       expect(
         container.read(
-          inferenceRunningControllerProvider(
+          inferenceRunningControllerProvider((
             id: testId,
             responseTypes: responseTypes,
-          ),
+          )),
         ),
         equals(false),
       );
@@ -235,20 +235,20 @@ void main() {
       // Set the second inference type to running
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: responseType2,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.running);
 
       // Check that the running controller returns true
       expect(
         container.read(
-          inferenceRunningControllerProvider(
+          inferenceRunningControllerProvider((
             id: testId,
             responseTypes: responseTypes,
-          ),
+          )),
         ),
         equals(true),
       );
@@ -258,10 +258,10 @@ void main() {
       final states = <bool>[];
 
       final unsubscribe = container.listen(
-        inferenceRunningControllerProvider(
+        inferenceRunningControllerProvider((
           id: testId,
           responseTypes: responseTypes,
-        ),
+        )),
         (previous, next) => states.add(next),
         fireImmediately: true,
       );
@@ -273,20 +273,20 @@ void main() {
       // Set first inference to running
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: responseType1,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.running);
 
       // Allow the provider to update
       // Need to explicitly read the value to trigger the update
       container.read(
-        inferenceRunningControllerProvider(
+        inferenceRunningControllerProvider((
           id: testId,
           responseTypes: responseTypes,
-        ),
+        )),
       );
 
       expect(states, equals([false, true]));
@@ -294,19 +294,19 @@ void main() {
       // Set second inference to running as well
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: responseType2,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.running);
 
       // Need to explicitly read the value to trigger the update
       container.read(
-        inferenceRunningControllerProvider(
+        inferenceRunningControllerProvider((
           id: testId,
           responseTypes: responseTypes,
-        ),
+        )),
       );
 
       // Should still be true, but no new notification since the value didn't change
@@ -315,19 +315,19 @@ void main() {
       // Set first inference back to idle
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: responseType1,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.idle);
 
       // Need to explicitly read the value to trigger the update
       container.read(
-        inferenceRunningControllerProvider(
+        inferenceRunningControllerProvider((
           id: testId,
           responseTypes: responseTypes,
-        ),
+        )),
       );
 
       // Should still be true because the second inference is still running
@@ -336,19 +336,19 @@ void main() {
       // Set second inference back to idle
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: testId,
               aiResponseType: responseType2,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.idle);
 
       // Need to explicitly read the value to trigger the update
       container.read(
-        inferenceRunningControllerProvider(
+        inferenceRunningControllerProvider((
           id: testId,
           responseTypes: responseTypes,
-        ),
+        )),
       );
 
       // Now should be false
@@ -359,10 +359,10 @@ void main() {
       final emptyResponseTypes = <AiResponseType>{};
 
       final state = container.read(
-        inferenceRunningControllerProvider(
+        inferenceRunningControllerProvider((
           id: testId,
           responseTypes: emptyResponseTypes,
-        ),
+        )),
       );
 
       expect(state, equals(false));
@@ -383,10 +383,10 @@ void main() {
         for (final operation in scenario.operations) {
           generatedContainer
               .read(
-                inferenceStatusControllerProvider(
+                inferenceStatusControllerProvider((
                   id: operation.id,
                   aiResponseType: operation.responseType,
-                ).notifier,
+                )).notifier,
               )
               .setStatus(operation.status);
 
@@ -403,20 +403,20 @@ void main() {
 
           expect(
             generatedContainer.read(
-              inferenceRunningControllerProvider(
+              inferenceRunningControllerProvider((
                 id: watchedId,
                 responseTypes: watchedResponseTypes,
-              ),
+              )),
             ),
             expectedRunning,
             reason: '$scenario after $operation',
           );
           expect(
             generatedContainer.read(
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: operation.id,
                 aiResponseType: operation.responseType,
-              ),
+              )),
             ),
             operation.status,
             reason: '$scenario after $operation',
@@ -426,10 +426,10 @@ void main() {
         if (scenario.operations.isEmpty) {
           expect(
             generatedContainer.read(
-              inferenceRunningControllerProvider(
+              inferenceRunningControllerProvider((
                 id: watchedId,
                 responseTypes: watchedResponseTypes,
-              ),
+              )),
             ),
             isFalse,
             reason: '$scenario has no status updates',

@@ -5,21 +5,28 @@ import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'matrix_stats_provider.g.dart';
 
 /// Streams live message-count [MatrixStats] from the Matrix service for the
 /// stats UI.
-@riverpod
+final StreamProvider<MatrixStats> matrixStatsStreamProvider =
+    StreamProvider.autoDispose<MatrixStats>(
+      matrixStatsStream,
+      name: 'matrixStatsStreamProvider',
+    );
 Stream<MatrixStats> matrixStatsStream(Ref ref) {
   return ref.watch(matrixServiceProvider).messageCountsController.stream;
 }
 
 /// Exposes the latest [MatrixStats], seeded from the service's current counts
 /// and then kept live by [matrixStatsStream].
-@riverpod
-class MatrixStatsController extends _$MatrixStatsController {
+final AsyncNotifierProvider<MatrixStatsController, MatrixStats>
+matrixStatsControllerProvider =
+    AsyncNotifierProvider.autoDispose<MatrixStatsController, MatrixStats>(
+      MatrixStatsController.new,
+      name: 'matrixStatsControllerProvider',
+    );
+
+class MatrixStatsController extends AsyncNotifier<MatrixStats> {
   MatrixService get _matrixService => ref.read(matrixServiceProvider);
 
   @override
@@ -51,8 +58,13 @@ final matrixDiagnosticsTextProvider = FutureProvider<String>((ref) async {
 
 /// Rolling in-memory history for a few KPI metrics to power sparklines.
 /// Kept UI-side to avoid coupling to the pipeline internals.
-@Riverpod(keepAlive: true)
-class SyncMetricsHistory extends _$SyncMetricsHistory {
+final syncMetricsHistoryProvider =
+    NotifierProvider<SyncMetricsHistory, Map<String, List<int>>>(
+      SyncMetricsHistory.new,
+      name: 'syncMetricsHistoryProvider',
+    );
+
+class SyncMetricsHistory extends Notifier<Map<String, List<int>>> {
   @override
   Map<String, List<int>> build() {
     // Listen for typed metrics updates and append KPI values.

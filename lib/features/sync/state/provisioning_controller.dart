@@ -2,16 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'provisioning_controller.freezed.dart';
-part 'provisioning_controller.g.dart';
 
 /// State machine for consuming a sync provisioning/handover bundle on a new
 /// device: from [ProvisioningState.initial] through decode, login, room-join,
@@ -36,8 +35,14 @@ sealed class ProvisioningState with _$ProvisioningState {
 /// discriminator became required.
 const int kSyncBundleVersion = 2;
 
-@riverpod
-class ProvisioningController extends _$ProvisioningController {
+final NotifierProvider<ProvisioningController, ProvisioningState>
+provisioningControllerProvider =
+    NotifierProvider.autoDispose<ProvisioningController, ProvisioningState>(
+      ProvisioningController.new,
+      name: 'provisioningControllerProvider',
+    );
+
+class ProvisioningController extends Notifier<ProvisioningState> {
   SyncProvisioningBundle? _lastBundle;
 
   @override

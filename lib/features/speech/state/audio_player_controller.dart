@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/get_it.dart';
@@ -10,9 +11,6 @@ import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'audio_player_controller.g.dart';
 
 /// Tunable timings for [AudioPlayerController] playback handling.
 class AudioPlayerConstants {
@@ -27,7 +25,10 @@ class AudioPlayerConstants {
 typedef PlayerFactory = Player Function();
 
 /// Provider for the player factory, can be overridden in tests.
-@Riverpod(keepAlive: true)
+final playerFactoryProvider = Provider<PlayerFactory>(
+  playerFactory,
+  name: 'playerFactoryProvider',
+);
 PlayerFactory playerFactory(Ref ref) {
   return Player.new;
 }
@@ -44,8 +45,13 @@ PlayerFactory playerFactory(Ref ref) {
 /// VM is torn down by hot restart while the thread is alive, the trampolines
 /// it calls into are gone and the process aborts with
 /// "Callback invoked after it has been deleted".)
-@Riverpod(keepAlive: true)
-class AudioPlayerController extends _$AudioPlayerController {
+final audioPlayerControllerProvider =
+    NotifierProvider<AudioPlayerController, AudioPlayerState>(
+      AudioPlayerController.new,
+      name: 'audioPlayerControllerProvider',
+    );
+
+class AudioPlayerController extends Notifier<AudioPlayerState> {
   /// Tracks the active Player instance so the shutdown path can dispose it
   /// without going through Riverpod (which doesn't run disposal on
   /// `exit()`/`_exit()`).

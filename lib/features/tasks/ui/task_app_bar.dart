@@ -21,7 +21,7 @@ class TaskSliverAppBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: taskId);
+    final provider = entryControllerProvider(taskId);
     final item = ref.watch(provider).value?.entry;
 
     if (item == null || item is! Task) {

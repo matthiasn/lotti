@@ -1,15 +1,22 @@
 import 'dart:async';
 
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 
-part 'task_app_bar_controller.g.dart';
+final AsyncNotifierProviderFamily<TaskAppBarController, double, String>
+taskAppBarControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<TaskAppBarController, double, String>(
+      TaskAppBarController.new,
+      name: 'taskAppBarControllerProvider',
+    );
 
-@riverpod
-class TaskAppBarController extends _$TaskAppBarController {
-  TaskAppBarController();
+class TaskAppBarController extends AsyncNotifier<double> {
+  TaskAppBarController([this.id = '']);
+
+  final String id;
 
   @override
-  Future<double> build({required String id}) async {
+  Future<double> build() async {
     return 0.0;
   }
 

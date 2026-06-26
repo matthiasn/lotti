@@ -1,10 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'automatic_image_analysis_trigger.g.dart';
 
 /// Helper class to handle automatic image analysis after image import.
 ///
@@ -84,7 +82,11 @@ class AutomaticImageAnalysisTrigger {
 /// Uses keepAlive to prevent disposal during async operations.
 /// The trigger stores a Ref and uses it in async operations, so it must
 /// remain valid throughout the inference lifecycle.
-@Riverpod(keepAlive: true)
+final automaticImageAnalysisTriggerProvider =
+    Provider<AutomaticImageAnalysisTrigger>(
+      automaticImageAnalysisTrigger,
+      name: 'automaticImageAnalysisTriggerProvider',
+    );
 AutomaticImageAnalysisTrigger automaticImageAnalysisTrigger(Ref ref) {
   return AutomaticImageAnalysisTrigger(
     ref: ref,

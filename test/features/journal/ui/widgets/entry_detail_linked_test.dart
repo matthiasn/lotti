@@ -534,9 +534,7 @@ void main() {
       );
       container
               .read(
-                showFlaggedOnlyControllerProvider(
-                  id: testTask.meta.id,
-                ).notifier,
+                showFlaggedOnlyControllerProvider(testTask.meta.id).notifier,
               )
               .showFlaggedOnly =
           true;
@@ -548,9 +546,7 @@ void main() {
       // Toggling it back off restores the non-flagged entry.
       container
               .read(
-                showFlaggedOnlyControllerProvider(
-                  id: testTask.meta.id,
-                ).notifier,
+                showFlaggedOnlyControllerProvider(testTask.meta.id).notifier,
               )
               .showFlaggedOnly =
           false;

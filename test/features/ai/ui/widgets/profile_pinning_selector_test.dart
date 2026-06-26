@@ -82,10 +82,10 @@ Widget _harness({
       knownSyncNodesProvider.overrideWith((_) => Stream.value(knownNodes)),
       localVectorClockHostIdProvider.overrideWith((_) async => localHostId),
       aiConfigByTypeControllerProvider(
-        configType: AiConfigType.model,
+        AiConfigType.model,
       ).overrideWith(() => MockAiConfigByTypeController(models)),
       aiConfigByTypeControllerProvider(
-        configType: AiConfigType.inferenceProvider,
+        AiConfigType.inferenceProvider,
       ).overrideWith(() => MockAiConfigByTypeController(providers)),
     ],
   );

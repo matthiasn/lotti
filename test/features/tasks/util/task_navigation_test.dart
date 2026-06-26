@@ -107,7 +107,7 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final sub = container.listen(
-        taskFocusControllerProvider(id: 'task-9'),
+        taskFocusControllerProvider('task-9'),
         (_, _) {},
       );
       addTearDown(sub.close);
@@ -121,7 +121,7 @@ void main() {
 
       await tester.tap(find.text('open'));
 
-      final intent = container.read(taskFocusControllerProvider(id: 'task-9'));
+      final intent = container.read(taskFocusControllerProvider('task-9'));
       expect(intent, isNotNull);
       expect(intent!.taskId, 'task-9');
       verify(() => mockNavService.pushDesktopTaskDetail('task-9')).called(1);

@@ -1,11 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'time_budget_progress_controller.g.dart';
 
 /// Progress data for a single task on a specific day.
 class TaskDayProgress {
@@ -91,10 +90,14 @@ class TimeBudgetProgress {
 /// Provides total stats for a day's budgets.
 ///
 /// Uses the unified controller to ensure consistent updates when entries change.
-@riverpod
+final FutureProviderFamily<DayBudgetStats, DateTime> dayBudgetStatsProvider =
+    FutureProvider.autoDispose.family<DayBudgetStats, DateTime>(
+      (ref, arg) => dayBudgetStats(ref, date: arg),
+      name: 'dayBudgetStatsProvider',
+    );
 Future<DayBudgetStats> dayBudgetStats(Ref ref, {required DateTime date}) async {
   final unifiedData = await ref.watch(
-    unifiedDailyOsDataControllerProvider(date: date).future,
+    unifiedDailyOsDataControllerProvider(date).future,
   );
   final progress = unifiedData.budgetProgress;
 

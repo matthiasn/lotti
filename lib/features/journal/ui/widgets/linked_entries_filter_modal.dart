@@ -36,24 +36,24 @@ class _LinkedEntriesFilterModalBody extends ConsumerWidget {
     final spacing = tokens.spacing;
 
     final sortOrder = ref.watch(
-      linkedEntriesSortControllerProvider(id: entryId),
+      linkedEntriesSortControllerProvider(entryId),
     );
     final sortNotifier = ref.read(
-      linkedEntriesSortControllerProvider(id: entryId).notifier,
+      linkedEntriesSortControllerProvider(entryId).notifier,
     );
 
     final includeHidden = ref.watch(
-      includeHiddenControllerProvider(id: entryId),
+      includeHiddenControllerProvider(entryId),
     );
     final includeHiddenNotifier = ref.read(
-      includeHiddenControllerProvider(id: entryId).notifier,
+      includeHiddenControllerProvider(entryId).notifier,
     );
 
     final showFlaggedOnly = ref.watch(
-      showFlaggedOnlyControllerProvider(id: entryId),
+      showFlaggedOnlyControllerProvider(entryId),
     );
     final showFlaggedOnlyNotifier = ref.read(
-      showFlaggedOnlyControllerProvider(id: entryId).notifier,
+      showFlaggedOnlyControllerProvider(entryId).notifier,
     );
 
     String sortLabel(LinkedEntriesSortOrder option) => switch (option) {

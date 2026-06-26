@@ -602,7 +602,7 @@ void main() {
       // Create a container with pre-existing focus intent
       final container = ProviderContainer();
       final focusProvider = journalFocusControllerProvider(
-        id: testTextEntry.meta.id,
+        testTextEntry.meta.id,
       );
 
       // Set focus intent before building widget
@@ -717,7 +717,7 @@ void main() {
 
       final container = ProviderContainer();
       final focusProvider = journalFocusControllerProvider(
-        id: testTextEntry.meta.id,
+        testTextEntry.meta.id,
       );
 
       // Set focus intent that would trigger scroll

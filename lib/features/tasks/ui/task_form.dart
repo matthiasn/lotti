@@ -30,7 +30,7 @@ class TaskForm extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: taskId);
+    final provider = entryControllerProvider(taskId);
     final entryState = ref.watch(provider).value;
     final task = entryState?.entry;
 

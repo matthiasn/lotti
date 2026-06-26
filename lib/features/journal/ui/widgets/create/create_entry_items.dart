@@ -125,7 +125,7 @@ class CreateChecklistItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final id = linkedFromId;
     if (id == null) return const SizedBox.shrink();
-    final entry = ref.watch(entryControllerProvider(id: id)).value?.entry;
+    final entry = ref.watch(entryControllerProvider(id)).value?.entry;
     if (entry is! Task) return const SizedBox.shrink();
 
     return CreateMenuListItem(
@@ -187,7 +187,7 @@ class CreateTimerItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final linked = ref
-        .watch(entryControllerProvider(id: linkedFromId))
+        .watch(entryControllerProvider(linkedFromId))
         .value
         ?.entry;
     final entryCreationService = ref.read(entryCreationServiceProvider);
@@ -348,10 +348,10 @@ class PasteImageItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = imagePasteControllerProvider(
+    final provider = imagePasteControllerProvider((
       linkedFromId: linkedFromId,
       categoryId: categoryId,
-    );
+    ));
     final canPasteImage = ref.watch(provider).value ?? false;
 
     if (!canPasteImage) {
@@ -393,7 +393,7 @@ void _waitForTimerAndScroll({
 
     // Check if the timer entry is in the linked entries
     final linkedEntries = container
-        .read(linkedEntriesControllerProvider(id: parentId))
+        .read(linkedEntriesControllerProvider(parentId))
         .value;
 
     if (linkedEntries != null &&
@@ -401,14 +401,14 @@ void _waitForTimerAndScroll({
       // Timer entry found! Publish focus intent
       if (isTask) {
         container
-            .read(taskFocusControllerProvider(id: parentId).notifier)
+            .read(taskFocusControllerProvider(parentId).notifier)
             .publishTaskFocus(
               entryId: timerEntryId,
               alignment: kDefaultScrollAlignment,
             );
       } else {
         container
-            .read(journalFocusControllerProvider(id: parentId).notifier)
+            .read(journalFocusControllerProvider(parentId).notifier)
             .publishJournalFocus(
               entryId: timerEntryId,
               alignment: kDefaultScrollAlignment,

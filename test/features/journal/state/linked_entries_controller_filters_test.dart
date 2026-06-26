@@ -171,7 +171,7 @@ void main() {
     test('defaults to all activity kinds active', () {
       final container = ProviderContainer();
       final state = container.read(
-        linkedEntriesActivityFilterControllerProvider(id: testId),
+        linkedEntriesActivityFilterControllerProvider(testId),
       );
       expect(state, LinkedEntryActivityFilter.values.toSet());
     });
@@ -180,12 +180,12 @@ void main() {
       final container = ProviderContainer();
       container
           .read(
-            linkedEntriesActivityFilterControllerProvider(id: testId).notifier,
+            linkedEntriesActivityFilterControllerProvider(testId).notifier,
           )
           .toggle(LinkedEntryActivityFilter.audio);
 
       final state = container.read(
-        linkedEntriesActivityFilterControllerProvider(id: testId),
+        linkedEntriesActivityFilterControllerProvider(testId),
       );
       expect(state, isNot(contains(LinkedEntryActivityFilter.audio)));
       expect(state, contains(LinkedEntryActivityFilter.timer));
@@ -195,15 +195,13 @@ void main() {
     test('toggle restores an inactive kind', () {
       final container = ProviderContainer();
       container.read(
-          linkedEntriesActivityFilterControllerProvider(
-            id: testId,
-          ).notifier,
+          linkedEntriesActivityFilterControllerProvider(testId).notifier,
         )
         ..toggle(LinkedEntryActivityFilter.timer)
         ..toggle(LinkedEntryActivityFilter.timer);
 
       final state = container.read(
-        linkedEntriesActivityFilterControllerProvider(id: testId),
+        linkedEntriesActivityFilterControllerProvider(testId),
       );
       expect(state, contains(LinkedEntryActivityFilter.timer));
     });
@@ -212,15 +210,15 @@ void main() {
       final container = ProviderContainer();
       container
           .read(
-            linkedEntriesActivityFilterControllerProvider(id: 'a').notifier,
+            linkedEntriesActivityFilterControllerProvider('a').notifier,
           )
           .toggle(LinkedEntryActivityFilter.images);
 
       final stateA = container.read(
-        linkedEntriesActivityFilterControllerProvider(id: 'a'),
+        linkedEntriesActivityFilterControllerProvider('a'),
       );
       final stateB = container.read(
-        linkedEntriesActivityFilterControllerProvider(id: 'b'),
+        linkedEntriesActivityFilterControllerProvider('b'),
       );
       expect(stateA, isNot(contains(LinkedEntryActivityFilter.images)));
       expect(stateB, contains(LinkedEntryActivityFilter.images));
@@ -267,7 +265,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
           createEntryControllerOverride(earliest),
@@ -276,10 +274,10 @@ void main() {
         ],
       );
 
-      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await container.read(linkedEntriesControllerProvider(testId).future);
       await Future.wait([
         for (final entry in [earliest, latest, middle])
-          container.read(entryControllerProvider(id: entry.meta.id).future),
+          container.read(entryControllerProvider(entry.meta.id).future),
       ]);
 
       final sorted = container.read(sortedLinkedEntriesProvider(testId));
@@ -303,7 +301,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
           createEntryControllerOverride(earliest),
@@ -312,13 +310,13 @@ void main() {
         ],
       );
 
-      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await container.read(linkedEntriesControllerProvider(testId).future);
       await Future.wait([
         for (final entry in [earliest, latest, middle])
-          container.read(entryControllerProvider(id: entry.meta.id).future),
+          container.read(entryControllerProvider(entry.meta.id).future),
       ]);
       container
-              .read(linkedEntriesSortControllerProvider(id: testId).notifier)
+              .read(linkedEntriesSortControllerProvider(testId).notifier)
               .order =
           LinkedEntriesSortOrder.oldestFirst;
 
@@ -363,7 +361,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
           createEntryControllerOverride(earliest),
@@ -371,10 +369,10 @@ void main() {
         ],
       );
 
-      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await container.read(linkedEntriesControllerProvider(testId).future);
       await Future.wait([
         for (final entry in [earliest, latest])
-          container.read(entryControllerProvider(id: entry.meta.id).future),
+          container.read(entryControllerProvider(entry.meta.id).future),
       ]);
 
       final sorted = container.read(sortedLinkedEntriesProvider(testId));
@@ -409,10 +407,10 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
-          linkedEntriesControllerProvider(id: testId).overrideWith(
+          linkedEntriesControllerProvider(testId).overrideWith(
             () => StaticLinksController([unresolvedLink, newerLink]),
           ),
         ],
@@ -498,7 +496,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
           createEntryControllerOverride(entryA),
@@ -507,10 +505,10 @@ void main() {
         ],
       );
 
-      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await container.read(linkedEntriesControllerProvider(testId).future);
       await Future.wait([
         for (final entry in [entryA, entryB, entryC])
-          container.read(entryControllerProvider(id: entry.meta.id).future),
+          container.read(entryControllerProvider(entry.meta.id).future),
       ]);
 
       // Newest first: tie on dateFrom → newest createdAt wins, so link-c
@@ -526,7 +524,7 @@ void main() {
       );
 
       container
-              .read(linkedEntriesSortControllerProvider(id: testId).notifier)
+              .read(linkedEntriesSortControllerProvider(testId).notifier)
               .order =
           LinkedEntriesSortOrder.oldestFirst;
 
@@ -549,13 +547,13 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          includeHiddenControllerProvider(id: testId).overrideWith(
+          includeHiddenControllerProvider(testId).overrideWith(
             () => FakeIncludeHiddenController(false),
           ),
         ],
       );
 
-      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await container.read(linkedEntriesControllerProvider(testId).future);
 
       expect(container.read(sortedLinkedEntriesProvider(testId)), isEmpty);
     });
@@ -567,7 +565,7 @@ void main() {
     test('defaults to newest first', () {
       final container = ProviderContainer();
       expect(
-        container.read(linkedEntriesSortControllerProvider(id: testId)),
+        container.read(linkedEntriesSortControllerProvider(testId)),
         LinkedEntriesSortOrder.newestFirst,
       );
     });
@@ -575,29 +573,27 @@ void main() {
     test('order setter updates state', () {
       final container = ProviderContainer();
       container
-              .read(linkedEntriesSortControllerProvider(id: testId).notifier)
+              .read(linkedEntriesSortControllerProvider(testId).notifier)
               .order =
           LinkedEntriesSortOrder.oldestFirst;
 
       expect(
-        container.read(linkedEntriesSortControllerProvider(id: testId)),
+        container.read(linkedEntriesSortControllerProvider(testId)),
         LinkedEntriesSortOrder.oldestFirst,
       );
     });
 
     test('state is independent per entry id', () {
       final container = ProviderContainer();
-      container
-              .read(linkedEntriesSortControllerProvider(id: 'a').notifier)
-              .order =
+      container.read(linkedEntriesSortControllerProvider('a').notifier).order =
           LinkedEntriesSortOrder.oldestFirst;
 
       expect(
-        container.read(linkedEntriesSortControllerProvider(id: 'a')),
+        container.read(linkedEntriesSortControllerProvider('a')),
         LinkedEntriesSortOrder.oldestFirst,
       );
       expect(
-        container.read(linkedEntriesSortControllerProvider(id: 'b')),
+        container.read(linkedEntriesSortControllerProvider('b')),
         LinkedEntriesSortOrder.newestFirst,
       );
     });

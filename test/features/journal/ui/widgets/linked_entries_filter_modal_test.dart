@@ -69,7 +69,7 @@ void main() {
     final (_, container, messages) = await pumpAndOpenModal(tester);
 
     expect(
-      container.read(linkedEntriesSortControllerProvider(id: entryId)),
+      container.read(linkedEntriesSortControllerProvider(entryId)),
       LinkedEntriesSortOrder.newestFirst,
     );
 
@@ -79,7 +79,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      container.read(linkedEntriesSortControllerProvider(id: entryId)),
+      container.read(linkedEntriesSortControllerProvider(entryId)),
       LinkedEntriesSortOrder.oldestFirst,
     );
   });
@@ -90,7 +90,7 @@ void main() {
     final (_, container, messages) = await pumpAndOpenModal(tester);
 
     expect(
-      container.read(includeHiddenControllerProvider(id: entryId)),
+      container.read(includeHiddenControllerProvider(entryId)),
       isFalse,
     );
 
@@ -98,7 +98,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      container.read(includeHiddenControllerProvider(id: entryId)),
+      container.read(includeHiddenControllerProvider(entryId)),
       isTrue,
     );
   });
@@ -109,7 +109,7 @@ void main() {
       final (_, container, messages) = await pumpAndOpenModal(tester);
 
       expect(
-        container.read(showFlaggedOnlyControllerProvider(id: entryId)),
+        container.read(showFlaggedOnlyControllerProvider(entryId)),
         isFalse,
       );
 
@@ -119,7 +119,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        container.read(showFlaggedOnlyControllerProvider(id: entryId)),
+        container.read(showFlaggedOnlyControllerProvider(entryId)),
         isTrue,
       );
 
@@ -130,7 +130,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        container.read(showFlaggedOnlyControllerProvider(id: entryId)),
+        container.read(showFlaggedOnlyControllerProvider(entryId)),
         isFalse,
       );
     },

@@ -135,7 +135,7 @@ void main() {
       final container = makeContainer();
 
       final visibility = container.read(
-        checkboxVisibilityProvider(categoryId: 'cat-1'),
+        checkboxVisibilityProvider((categoryId: 'cat-1', linkedId: null)),
       );
 
       expect(visibility.speech, isFalse);
@@ -159,7 +159,7 @@ void main() {
       final container = makeContainer();
 
       final visibility = container.read(
-        checkboxVisibilityProvider(categoryId: 'cat-1', linkedId: 'task-1'),
+        checkboxVisibilityProvider((categoryId: 'cat-1', linkedId: 'task-1')),
       );
 
       expect(visibility.speech, isFalse);
@@ -182,7 +182,7 @@ void main() {
       );
       addTearDown(transcriptionSub.close);
       final visibilitySub = container.listen(
-        checkboxVisibilityProvider(categoryId: 'cat-1', linkedId: 'task-1'),
+        checkboxVisibilityProvider((categoryId: 'cat-1', linkedId: 'task-1')),
         (_, _) {},
       );
       addTearDown(visibilitySub.close);
@@ -203,7 +203,7 @@ void main() {
 
         await container.read(hasProfileTranscriptionProvider('task-1').future);
         final visibility = container.read(
-          checkboxVisibilityProvider(categoryId: 'cat-1', linkedId: 'task-1'),
+          checkboxVisibilityProvider((categoryId: 'cat-1', linkedId: 'task-1')),
         );
 
         expect(visibility.speech, isTrue);
@@ -219,7 +219,7 @@ void main() {
 
         await container.read(hasProfileTranscriptionProvider('task-1').future);
         final visibility = container.read(
-          checkboxVisibilityProvider(categoryId: 'cat-1', linkedId: 'task-1'),
+          checkboxVisibilityProvider((categoryId: 'cat-1', linkedId: 'task-1')),
         );
 
         expect(visibility.speech, isFalse);

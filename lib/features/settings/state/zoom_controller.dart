@@ -1,8 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'zoom_controller.g.dart';
 
 const _zoomScaleKey = 'ZOOM_SCALE';
 
@@ -20,14 +18,18 @@ const zoomStep = 0.1;
 
 /// App-wide UI zoom factor, persisted across launches.
 ///
-/// `keepAlive` so the scale survives navigation. [build] returns
+/// `keepAlive` so the scale survives navigation. build returns
 /// [defaultZoomScale] synchronously, then asynchronously hydrates the last
 /// persisted value from [SettingsDb] under `ZOOM_SCALE`; hydration is
 /// skipped if the user already adjusted zoom before it completed (so a
 /// race can't clobber a fresh interaction). Every adjustment clamps to
 /// [[minZoomScale], [maxZoomScale]], rounds to two decimals, and persists.
-@Riverpod(keepAlive: true)
-class ZoomController extends _$ZoomController {
+final zoomControllerProvider = NotifierProvider<ZoomController, double>(
+  ZoomController.new,
+  name: 'zoomControllerProvider',
+);
+
+class ZoomController extends Notifier<double> {
   bool _userAdjusted = false;
 
   @override

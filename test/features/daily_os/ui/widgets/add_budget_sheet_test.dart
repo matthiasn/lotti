@@ -28,7 +28,7 @@ class _TestUnifiedController extends UnifiedDailyOsDataController {
   final DailyOsData _data;
 
   @override
-  Future<DailyOsData> build({required DateTime date}) async {
+  Future<DailyOsData> build() async {
     return _data;
   }
 }
@@ -41,7 +41,7 @@ class _TrackingUnifiedController extends UnifiedDailyOsDataController {
   final List<PlannedBlock> addedBlocks = [];
 
   @override
-  Future<DailyOsData> build({required DateTime date}) async {
+  Future<DailyOsData> build() async {
     return _data;
   }
 
@@ -131,7 +131,7 @@ void main() {
     return RiverpodWidgetTestBench(
       mediaQueryData: mediaQueryData,
       overrides: [
-        unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+        unifiedDailyOsDataControllerProvider(testDate).overrideWith(
           () => _TestUnifiedController(unifiedData),
         ),
         ...additionalOverrides,
@@ -354,7 +354,7 @@ void main() {
           ProviderScope(
             overrides: [
               unifiedDailyOsDataControllerProvider(
-                date: testDate,
+                testDate,
               ).overrideWith(() => _TestUnifiedController(unifiedData)),
             ],
             child: MaterialApp(
@@ -648,7 +648,7 @@ void main() {
           ProviderScope(
             overrides: [
               unifiedDailyOsDataControllerProvider(
-                date: testDate,
+                testDate,
               ).overrideWith(() => _TestUnifiedController(unifiedData)),
             ],
             child: MaterialApp(
@@ -748,7 +748,7 @@ void main() {
           ProviderScope(
             overrides: [
               unifiedDailyOsDataControllerProvider(
-                date: testDate,
+                testDate,
               ).overrideWith(() => tracker),
             ],
             child: MaterialApp(
@@ -818,7 +818,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+            unifiedDailyOsDataControllerProvider(testDate).overrideWith(
               () => _TestUnifiedController(
                 DailyOsData(
                   date: testDate,

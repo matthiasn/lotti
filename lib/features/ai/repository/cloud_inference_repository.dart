@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
@@ -20,9 +21,6 @@ import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'cloud_inference_repository.g.dart';
 
 /// Facade over the cloud-inference generate collaborators.
 ///
@@ -227,7 +225,11 @@ class CloudInferenceRepository {
   void close() => _generateMore.close();
 }
 
-@riverpod
+final Provider<CloudInferenceRepository> cloudInferenceRepositoryProvider =
+    Provider.autoDispose<CloudInferenceRepository>(
+      cloudInferenceRepository,
+      name: 'cloudInferenceRepositoryProvider',
+    );
 CloudInferenceRepository cloudInferenceRepository(Ref ref) {
   final repo = CloudInferenceRepository(ref);
   ref.onDispose(repo.close);

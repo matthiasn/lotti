@@ -126,7 +126,7 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
     );
 
     await ref
-        .read(unifiedDailyOsDataControllerProvider(date: widget.date).notifier)
+        .read(unifiedDailyOsDataControllerProvider(widget.date).notifier)
         .addPlannedBlock(block);
 
     if (mounted) {

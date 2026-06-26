@@ -1,5 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/database/agent_database.dart'
     show WakeRunLogData;
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -10,9 +12,6 @@ import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'ritual_review_providers.g.dart';
 
 /// Returns the most recent active [EvolutionSessionEntity] for a template,
 /// or `null` if there is no active session pending review.
@@ -23,7 +22,12 @@ part 'ritual_review_providers.g.dart';
 /// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
 ///
 /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
-@riverpod
+final FutureProviderFamily<AgentDomainEntity?, String>
+pendingRitualReviewProvider = FutureProvider.autoDispose
+    .family<AgentDomainEntity?, String>(
+      pendingRitualReview,
+      name: 'pendingRitualReviewProvider',
+    );
 Future<AgentDomainEntity?> pendingRitualReview(
   Ref ref,
   String templateId,
@@ -45,7 +49,11 @@ Future<AgentDomainEntity?> pendingRitualReview(
 /// Extracts classified feedback for a template's review window.
 ///
 /// Uses the feedback extraction service to scan the default 7-day window.
-@riverpod
+final FutureProviderFamily<ClassifiedFeedback?, String> ritualFeedbackProvider =
+    FutureProvider.autoDispose.family<ClassifiedFeedback?, String>(
+      ritualFeedback,
+      name: 'ritualFeedbackProvider',
+    );
 Future<ClassifiedFeedback?> ritualFeedback(
   Ref ref,
   String templateId,
@@ -58,7 +66,11 @@ Future<ClassifiedFeedback?> ritualFeedback(
 }
 
 /// Set of template IDs with pending rituals.
-@riverpod
+final FutureProvider<Set<String>> templatesPendingReviewProvider =
+    FutureProvider.autoDispose<Set<String>>(
+      templatesPendingReview,
+      name: 'templatesPendingReviewProvider',
+    );
 Future<Set<String>> templatesPendingReview(Ref ref) async {
   ref.watch(agentUpdateStreamProvider(agentNotification));
   final sessions = await ref.watch(allEvolutionSessionsProvider.future);
@@ -73,7 +85,12 @@ Future<Set<String>> templatesPendingReview(Ref ref) async {
 }
 
 /// Aggregate stats for evolution sessions of a template.
-@riverpod
+final FutureProviderFamily<EvolutionSessionStats, String>
+evolutionSessionStatsProvider = FutureProvider.autoDispose
+    .family<EvolutionSessionStats, String>(
+      evolutionSessionStats,
+      name: 'evolutionSessionStatsProvider',
+    );
 Future<EvolutionSessionStats> evolutionSessionStats(
   Ref ref,
   String templateId,
@@ -109,7 +126,12 @@ class EvolutionSessionStats {
 
 /// Returns the completion timestamp of the newest completed ritual session
 /// for a template, if any.
-@riverpod
+final FutureProviderFamily<DateTime?, String>
+latestCompletedRitualTimestampProvider = FutureProvider.autoDispose
+    .family<DateTime?, String>(
+      latestCompletedRitualTimestamp,
+      name: 'latestCompletedRitualTimestampProvider',
+    );
 Future<DateTime?> latestCompletedRitualTimestamp(
   Ref ref,
   String templateId,
@@ -126,7 +148,12 @@ Future<DateTime?> latestCompletedRitualTimestamp(
 }
 
 /// History entries for past ritual sessions, backed by persisted recap data.
-@riverpod
+final FutureProviderFamily<List<RitualSessionHistoryEntry>, String>
+ritualSessionHistoryProvider = FutureProvider.autoDispose
+    .family<List<RitualSessionHistoryEntry>, String>(
+      ritualSessionHistory,
+      name: 'ritualSessionHistoryProvider',
+    );
 Future<List<RitualSessionHistoryEntry>> ritualSessionHistory(
   Ref ref,
   String templateId,
@@ -155,7 +182,12 @@ Future<List<RitualSessionHistoryEntry>> ritualSessionHistory(
 }
 
 /// Compact summary metrics for ritual home and chat header surfaces.
-@riverpod
+final FutureProviderFamily<RitualSummaryMetrics, String>
+ritualSummaryMetricsProvider = FutureProvider.autoDispose
+    .family<RitualSummaryMetrics, String>(
+      ritualSummaryMetrics,
+      name: 'ritualSummaryMetricsProvider',
+    );
 Future<RitualSummaryMetrics> ritualSummaryMetrics(
   Ref ref,
   String templateId,

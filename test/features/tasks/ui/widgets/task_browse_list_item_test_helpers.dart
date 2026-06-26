@@ -21,7 +21,7 @@ class FakeTaskProgressController extends TaskProgressController {
   final TaskProgressState? _fakeState;
 
   @override
-  Future<TaskProgressState?> build({required String id}) async {
+  Future<TaskProgressState?> build() async {
     return _fakeState;
   }
 }

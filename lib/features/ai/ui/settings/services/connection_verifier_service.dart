@@ -2,12 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'connection_verifier_service.g.dart';
 
 /// Sealed result of a single connection probe. The connect form's
 /// status strip dispatches on this to render the loading / verified /
@@ -135,7 +134,12 @@ const Map<InferenceProviderType, ConnectionProbe> _defaultConnectionProbes =
 /// Probe-per-provider lookup table. Override in tests to substitute
 /// fake probes (returns canned states) without monkeypatching network
 /// IO. Production callers leave this alone.
-@riverpod
+final Provider<Map<InferenceProviderType, ConnectionProbe>>
+connectionProbeRegistryProvider =
+    Provider.autoDispose<Map<InferenceProviderType, ConnectionProbe>>(
+      connectionProbeRegistry,
+      name: 'connectionProbeRegistryProvider',
+    );
 Map<InferenceProviderType, ConnectionProbe> connectionProbeRegistry(Ref ref) {
   return _defaultConnectionProbes;
 }
@@ -145,14 +149,22 @@ Map<InferenceProviderType, ConnectionProbe> connectionProbeRegistry(Ref ref) {
 /// can be `.close()`d in a `finally` without leaking connections to
 /// concurrent probes. Tests override this with a `MockClient`-backed
 /// factory to assert calls without touching the network.
-@riverpod
+final Provider<http.Client Function()> connectionVerifierClientProvider =
+    Provider.autoDispose<http.Client Function()>(
+      connectionVerifierClient,
+      name: 'connectionVerifierClientProvider',
+    );
 http.Client Function() connectionVerifierClient(Ref ref) {
   return http.Client.new;
 }
 
 /// Per-probe timeout. Surfaced as a separate provider so retry-style
 /// tests can shorten it without instantiating the controller directly.
-@riverpod
+final Provider<Duration> connectionVerifierTimeoutProvider =
+    Provider.autoDispose<Duration>(
+      connectionVerifierTimeout,
+      name: 'connectionVerifierTimeoutProvider',
+    );
 Duration connectionVerifierTimeout(Ref ref) {
   return const Duration(seconds: 8);
 }
@@ -160,15 +172,33 @@ Duration connectionVerifierTimeout(Ref ref) {
 /// Family-keyed Riverpod notifier driving the connection-check strip.
 /// One controller instance per `InferenceProviderType` so tab swaps
 /// don't carry stale verification state between provider types.
-@riverpod
-class ConnectionVerifierController extends _$ConnectionVerifierController {
+final NotifierProviderFamily<
+  ConnectionVerifierController,
+  ConnectionCheckState,
+  InferenceProviderType
+>
+connectionVerifierControllerProvider = NotifierProvider.autoDispose
+    .family<
+      ConnectionVerifierController,
+      ConnectionCheckState,
+      InferenceProviderType
+    >(
+      ConnectionVerifierController.new,
+      name: 'connectionVerifierControllerProvider',
+    );
+
+class ConnectionVerifierController extends Notifier<ConnectionCheckState> {
+  ConnectionVerifierController(this.providerType);
+
+  final InferenceProviderType providerType;
+
   /// In-flight probe identifier — guards against a fast Re-test tap
   /// race where an older probe's response would otherwise overwrite a
   /// newer probe's verified state.
   int _generation = 0;
 
   @override
-  ConnectionCheckState build(InferenceProviderType providerType) {
+  ConnectionCheckState build() {
     return const ConnectionCheckIdle();
   }
 

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -9,9 +11,6 @@ import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'workout_chart_controller.g.dart';
 
 /// Loads *all* workout entities in a date range (not filtered by type) and
 /// keeps them live; one instance backs every workout chart sharing the same
@@ -22,11 +21,29 @@ part 'workout_chart_controller.g.dart';
 /// `dashboardCacheDuration` and re-fetches on workout [UpdateNotifications]
 /// events. Per-type filtering and aggregation happen downstream in
 /// [WorkoutObservationsController].
-@riverpod
-class WorkoutChartDataController extends _$WorkoutChartDataController {
-  WorkoutChartDataController() {
+final AsyncNotifierProviderFamily<
+  WorkoutChartDataController,
+  List<JournalEntity>,
+  ({DateTime rangeEnd, DateTime rangeStart})
+>
+workoutChartDataControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<
+      WorkoutChartDataController,
+      List<JournalEntity>,
+      ({DateTime rangeStart, DateTime rangeEnd})
+    >(
+      WorkoutChartDataController.new,
+      name: 'workoutChartDataControllerProvider',
+    );
+
+class WorkoutChartDataController extends AsyncNotifier<List<JournalEntity>> {
+  WorkoutChartDataController(this._providerArgs) {
     getIt<HealthImport>().getWorkoutsHealthDataDelta();
   }
+
+  final ({DateTime rangeStart, DateTime rangeEnd}) _providerArgs;
+  DateTime get rangeStart => _providerArgs.rangeStart;
+  DateTime get rangeEnd => _providerArgs.rangeEnd;
 
   final JournalDb _journalDb = getIt<JournalDb>();
 
@@ -49,10 +66,7 @@ class WorkoutChartDataController extends _$WorkoutChartDataController {
   }
 
   @override
-  Future<List<JournalEntity>> build({
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-  }) async {
+  Future<List<JournalEntity>> build() async {
     ref
       ..onDispose(() {
         _updateSubscription?.cancel();
@@ -81,14 +95,32 @@ class WorkoutChartDataController extends _$WorkoutChartDataController {
 /// Riverpod codegen limitation. Returns an empty list when no workout of this
 /// type exists in range so the chart shows "No data" rather than a flat row of
 /// the prefilled zero buckets the aggregator produces.
-@riverpod
-class WorkoutObservationsController extends _$WorkoutObservationsController {
+final AsyncNotifierProviderFamily<
+  WorkoutObservationsController,
+  List<Observation>,
+  ({DashboardItem chartConfig, DateTime rangeEnd, DateTime rangeStart})
+>
+workoutObservationsControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<
+      WorkoutObservationsController,
+      List<Observation>,
+      ({DashboardItem chartConfig, DateTime rangeStart, DateTime rangeEnd})
+    >(
+      WorkoutObservationsController.new,
+      name: 'workoutObservationsControllerProvider',
+    );
+
+class WorkoutObservationsController extends AsyncNotifier<List<Observation>> {
+  WorkoutObservationsController(this._providerArgs);
+
+  final ({DashboardItem chartConfig, DateTime rangeStart, DateTime rangeEnd})
+  _providerArgs;
+  DashboardItem get chartConfig => _providerArgs.chartConfig;
+  DateTime get rangeStart => _providerArgs.rangeStart;
+  DateTime get rangeEnd => _providerArgs.rangeEnd;
+
   @override
-  Future<List<Observation>> build({
-    required DashboardItem chartConfig,
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-  }) async {
+  Future<List<Observation>> build() async {
     ref.cacheFor(dashboardCacheDuration);
 
     // Await the upstream future (don't read `.value ?? []`) so this provider
@@ -96,10 +128,10 @@ class WorkoutObservationsController extends _$WorkoutObservationsController {
     // an empty upstream would make the chart flash a run of prefilled zero bars
     // (aggregateWorkoutDailySum fills every day) before the data arrives.
     final items = await ref.watch(
-      workoutChartDataControllerProvider(
+      workoutChartDataControllerProvider((
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
-      ).future,
+      )).future,
     );
 
     // type casting is necessary because an issue in riverpod otherwise

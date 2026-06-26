@@ -14,7 +14,7 @@ class TestEntryController extends EntryController {
   final JournalEntity? _entry;
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     final entry = _entry;
     if (entry == null) return null;
     return EntryState.saved(

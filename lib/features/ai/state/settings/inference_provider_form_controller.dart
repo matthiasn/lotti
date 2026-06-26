@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
@@ -6,13 +8,47 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/services/dev_logger.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'inference_provider_form_controller.g.dart';
+final AsyncNotifierProviderFamily<
+  InferenceProviderFormController,
+  InferenceProviderFormState?,
+  ({String? configId, InferenceProviderType? preselectedType})
+>
+_inferenceProviderFormControllerFamily = AsyncNotifierProvider.autoDispose
+    .family<
+      InferenceProviderFormController,
+      InferenceProviderFormState?,
+      ({String? configId, InferenceProviderType? preselectedType})
+    >(
+      InferenceProviderFormController.new,
+      name: 'inferenceProviderFormControllerProvider',
+    );
 
-@riverpod
+AsyncNotifierProvider<
+  InferenceProviderFormController,
+  InferenceProviderFormState?
+>
+inferenceProviderFormControllerProvider({
+  required String? configId,
+  InferenceProviderType? preselectedType,
+}) {
+  return _inferenceProviderFormControllerFamily(
+    (
+      configId: configId,
+      preselectedType: preselectedType,
+    ),
+  );
+}
+
 class InferenceProviderFormController
-    extends _$InferenceProviderFormController {
+    extends AsyncNotifier<InferenceProviderFormState?> {
+  InferenceProviderFormController(this._providerArgs);
+
+  final ({String? configId, InferenceProviderType? preselectedType})
+  _providerArgs;
+  String? get configId => _providerArgs.configId;
+  InferenceProviderType? get preselectedType => _providerArgs.preselectedType;
+
   final nameController = TextEditingController();
   final apiKeyController = TextEditingController();
   final baseUrlController = TextEditingController();
@@ -21,10 +57,8 @@ class InferenceProviderFormController
   AiConfigInferenceProvider? _config;
 
   @override
-  Future<InferenceProviderFormState?> build({
-    required String? configId,
-    InferenceProviderType? preselectedType,
-  }) async {
+  Future<InferenceProviderFormState?> build() async {
+    final configId = this.configId;
     _config = configId != null
         ? (await ref.read(aiConfigRepositoryProvider).getConfigById(configId)
               as AiConfigInferenceProvider?)

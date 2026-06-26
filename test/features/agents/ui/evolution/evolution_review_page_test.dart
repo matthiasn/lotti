@@ -23,8 +23,7 @@ import '../../test_utils.dart';
 /// without triggering the real workflow.
 class _LoadingChatState extends EvolutionChatState {
   @override
-  Future<EvolutionChatData> build(String templateId) =>
-      Completer<EvolutionChatData>().future;
+  Future<EvolutionChatData> build() => Completer<EvolutionChatData>().future;
 }
 
 void main() {

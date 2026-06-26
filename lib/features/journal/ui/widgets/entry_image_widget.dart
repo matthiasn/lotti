@@ -22,7 +22,7 @@ class EntryImageWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: journalImage.meta.id);
+    final provider = entryControllerProvider(journalImage.meta.id);
     final notifier = ref.read(provider.notifier);
     final file = File(getFullImagePath(journalImage));
     final focusNode = notifier.focusNode;

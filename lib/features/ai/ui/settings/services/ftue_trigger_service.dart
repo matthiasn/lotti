@@ -1,9 +1,9 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'ftue_trigger_service.g.dart';
 
 /// Result of the FTUE trigger check.
 enum FtueTriggerResult {
@@ -45,8 +45,14 @@ extension FtueProviderTypeExtension on InferenceProviderType {
 ///
 /// This service encapsulates the logic for deciding when to show the FTUE setup
 /// dialog, making it independently testable from the UI layer.
-@riverpod
-class FtueTriggerService extends _$FtueTriggerService {
+final AsyncNotifierProvider<FtueTriggerService, void>
+ftueTriggerServiceProvider =
+    AsyncNotifierProvider.autoDispose<FtueTriggerService, void>(
+      FtueTriggerService.new,
+      name: 'ftueTriggerServiceProvider',
+    );
+
+class FtueTriggerService extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 

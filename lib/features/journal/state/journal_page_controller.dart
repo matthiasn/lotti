@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -20,18 +22,25 @@ import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'journal_page_controller.g.dart';
 part 'journal_page_controller_filters.dart';
 
 /// Controller for managing journal/tasks page state.
 ///
 /// Uses a family provider pattern with showTasks as the family key.
 /// keepAlive: true to preserve state when switching tabs.
-@Riverpod(keepAlive: true)
-class JournalPageController extends _$JournalPageController
+final NotifierProviderFamily<JournalPageController, JournalPageState, bool>
+journalPageControllerProvider =
+    NotifierProvider.family<JournalPageController, JournalPageState, bool>(
+      JournalPageController.new,
+      name: 'journalPageControllerProvider',
+    );
+
+class JournalPageController extends Notifier<JournalPageState>
     with _JournalPageFilters {
+  // ignore: avoid_positional_boolean_parameters
+  JournalPageController([this._showTasks = false]);
+
   // Storage keys
   static const tasksCategoryFiltersKey = 'TASKS_CATEGORY_FILTERS';
   static const journalCategoryFiltersKey = 'JOURNAL_CATEGORY_FILTERS';
@@ -78,7 +87,7 @@ class JournalPageController extends _$JournalPageController
   bool _hasExplicitSearchModeSelection = false;
   String _query = '';
   bool _showPrivateEntries = false;
-  late bool _showTasks;
+  final bool _showTasks;
   @override
   Set<String> _selectedCategoryIds = {};
   @override
@@ -104,9 +113,7 @@ class JournalPageController extends _$JournalPageController
   Set<String> _selectedTaskStatuses = {'OPEN', 'GROOMED', 'IN PROGRESS'};
 
   @override
-  JournalPageState build(bool showTasks) {
-    _showTasks = showTasks;
-
+  JournalPageState build() {
     // Initialize services
     final db = getIt<JournalDb>();
     final settingsDb = getIt<SettingsDb>();
@@ -137,7 +144,7 @@ class JournalPageController extends _$JournalPageController
     );
 
     // Initialize category selection for tasks tab
-    if (showTasks) {
+    if (_showTasks) {
       final allCategoryIds = entitiesCacheService.sortedCategories
           .map((e) => e.id)
           .toSet();
@@ -151,14 +158,14 @@ class JournalPageController extends _$JournalPageController
 
     // Set up subscriptions
     _subscriptions.setup(
-      showTasks: showTasks,
+      showTasks: _showTasks,
       onPrivateFlagChanged: (showPrivate) {
         _showPrivateEntries = showPrivate;
         _emitState();
       },
       onJournalConfigFlagsChanged: _onJournalConfigFlagsChanged,
       onUpdateNotification: (affectedIds) =>
-          _onUpdateNotification(affectedIds, showTasks: showTasks),
+          _onUpdateNotification(affectedIds, showTasks: _showTasks),
     );
 
     // Load persisted filters
@@ -176,7 +183,7 @@ class JournalPageController extends _$JournalPageController
     });
 
     return JournalPageState(
-      showTasks: showTasks,
+      showTasks: _showTasks,
       pagingController: controller,
       selectedEntryTypes: _selectedEntryTypes.toList(),
       selectedCategoryIds: _selectedCategoryIds,

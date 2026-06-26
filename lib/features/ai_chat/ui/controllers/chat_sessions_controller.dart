@@ -1,13 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai_chat/models/chat_exceptions.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'chat_sessions_controller.g.dart';
 
 /// Manages the list of chat sessions for one category: the recent-sessions
 /// list, the current session, search, and deletion. Keyed by `categoryId`.
@@ -16,12 +15,22 @@ part 'chat_sessions_controller.g.dart';
 /// a single open session; this controller is the session browser/manager. All
 /// repository errors are logged and surfaced via `ChatStateUiModel.error`
 /// (except recent-session loads, which fail silently).
-@riverpod
-class ChatSessionsController extends _$ChatSessionsController {
+final NotifierProviderFamily<ChatSessionsController, ChatStateUiModel, String>
+chatSessionsControllerProvider = NotifierProvider.autoDispose
+    .family<ChatSessionsController, ChatStateUiModel, String>(
+      ChatSessionsController.new,
+      name: 'chatSessionsControllerProvider',
+    );
+
+class ChatSessionsController extends Notifier<ChatStateUiModel> {
+  ChatSessionsController(this.categoryId);
+
+  final String categoryId;
+
   final DomainLogger _loggingService = getIt<DomainLogger>();
 
   @override
-  ChatStateUiModel build(String categoryId) {
+  ChatStateUiModel build() {
     // Initialize and load recent sessions
     _loadRecentSessions();
     return ChatStateUiModel.initial();

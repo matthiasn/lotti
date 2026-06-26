@@ -72,18 +72,18 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild(
+            )).overrideWithBuild(
               (ref, notifier) => sysObs([120.0, 118.0, 122.0]),
             ),
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild(
+            )).overrideWithBuild(
               (ref, notifier) => diaObs([80.0, 78.0, 82.0]),
             ),
           ],
@@ -106,16 +106,16 @@ void main() {
               rangeEnd: rangeEnd,
             ),
             overrides: [
-              healthObservationsControllerProvider(
+              healthObservationsControllerProvider((
                 healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ).overrideWithBuild((ref, notifier) => sysObs([120.0])),
-              healthObservationsControllerProvider(
+              )).overrideWithBuild((ref, notifier) => sysObs([120.0])),
+              healthObservationsControllerProvider((
                 healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ).overrideWithBuild((ref, notifier) => diaObs([80.0])),
+              )).overrideWithBuild((ref, notifier) => diaObs([80.0])),
             ],
           ),
         );
@@ -145,16 +145,16 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => sysObs([120.0])),
-            healthObservationsControllerProvider(
+            )).overrideWithBuild((ref, notifier) => sysObs([120.0])),
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => diaObs([80.0])),
+            )).overrideWithBuild((ref, notifier) => diaObs([80.0])),
           ],
         ),
       );
@@ -187,16 +187,16 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => systolicObservations),
-            healthObservationsControllerProvider(
+            )).overrideWithBuild((ref, notifier) => systolicObservations),
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            )).overrideWithBuild((ref, notifier) => <Observation>[]),
           ],
         ),
       );
@@ -230,16 +230,16 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
-            healthObservationsControllerProvider(
+            )).overrideWithBuild((ref, notifier) => <Observation>[]),
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => diastolicObservations),
+            )).overrideWithBuild((ref, notifier) => diastolicObservations),
           ],
         ),
       );
@@ -262,16 +262,16 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
-            healthObservationsControllerProvider(
+            )).overrideWithBuild((ref, notifier) => <Observation>[]),
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            )).overrideWithBuild((ref, notifier) => <Observation>[]),
           ],
         ),
       );
@@ -291,16 +291,16 @@ void main() {
               rangeEnd: rangeEnd,
             ),
             overrides: [
-              healthObservationsControllerProvider(
+              healthObservationsControllerProvider((
                 healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ).overrideWithBuild((ref, notifier) => <Observation>[]),
-              healthObservationsControllerProvider(
+              )).overrideWithBuild((ref, notifier) => <Observation>[]),
+              healthObservationsControllerProvider((
                 healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ).overrideWithBuild((ref, notifier) => <Observation>[]),
+              )).overrideWithBuild((ref, notifier) => <Observation>[]),
             ],
           ),
         );
@@ -322,16 +322,16 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => sysObs([120.0])),
-            healthObservationsControllerProvider(
+            )).overrideWithBuild((ref, notifier) => sysObs([120.0])),
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            )).overrideWithBuild((ref, notifier) => <Observation>[]),
           ],
         ),
       );
@@ -359,16 +359,16 @@ void main() {
               rangeEnd: rangeEnd,
             ),
             overrides: [
-              healthObservationsControllerProvider(
+              healthObservationsControllerProvider((
                 healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ).overrideWithBuild((ref, notifier) => sysObs([120.0])),
-              healthObservationsControllerProvider(
+              )).overrideWithBuild((ref, notifier) => sysObs([120.0])),
+              healthObservationsControllerProvider((
                 healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ).overrideWithBuild((ref, notifier) => diaObs([80.0])),
+              )).overrideWithBuild((ref, notifier) => diaObs([80.0])),
             ],
           ),
         );
@@ -406,16 +406,16 @@ void main() {
             rangeEnd: rangeEnd,
           ),
           overrides: [
-            healthObservationsControllerProvider(
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => sysObs([125, 130])),
-            healthObservationsControllerProvider(
+            )).overrideWithBuild((ref, notifier) => sysObs([125, 130])),
+            healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => diaObs([78, 82])),
+            )).overrideWithBuild((ref, notifier) => diaObs([78, 82])),
           ],
         ),
       );

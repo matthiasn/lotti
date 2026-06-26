@@ -1,14 +1,14 @@
 import 'dart:developer' as developer;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'reference_image_selection_controller.freezed.dart';
-part 'reference_image_selection_controller.g.dart';
 
 /// Error codes for reference image selection operations.
 /// These codes should be mapped to localized strings in the widget layer.
@@ -40,11 +40,29 @@ extension ReferenceImageSelectionStateX on ReferenceImageSelectionState {
   int get selectionCount => selectedImageIds.length;
 }
 
-@riverpod
+final NotifierProviderFamily<
+  ReferenceImageSelectionController,
+  ReferenceImageSelectionState,
+  String
+>
+referenceImageSelectionControllerProvider = NotifierProvider.autoDispose
+    .family<
+      ReferenceImageSelectionController,
+      ReferenceImageSelectionState,
+      String
+    >(
+      ReferenceImageSelectionController.new,
+      name: 'referenceImageSelectionControllerProvider',
+    );
+
 class ReferenceImageSelectionController
-    extends _$ReferenceImageSelectionController {
+    extends Notifier<ReferenceImageSelectionState> {
+  ReferenceImageSelectionController([this.taskId = '']);
+
+  final String taskId;
+
   @override
-  ReferenceImageSelectionState build({required String taskId}) {
+  ReferenceImageSelectionState build() {
     _loadAvailableImages();
     return const ReferenceImageSelectionState(isLoading: true);
   }

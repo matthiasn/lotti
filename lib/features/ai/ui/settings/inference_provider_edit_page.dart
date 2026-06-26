@@ -289,13 +289,14 @@ class _InferenceProviderEditPageState
   }
 
   /// Helper to get the form controller provider with correct parameters
-  InferenceProviderFormControllerProvider get _formProvider =>
-      inferenceProviderFormControllerProvider(
-        configId: widget.configId,
-        preselectedType: widget.configId == null
-            ? widget.preselectedType
-            : null,
-      );
+  AsyncNotifierProvider<
+    InferenceProviderFormController,
+    InferenceProviderFormState?
+  >
+  get _formProvider => inferenceProviderFormControllerProvider(
+    configId: widget.configId,
+    preselectedType: widget.configId == null ? widget.preselectedType : null,
+  );
 
   @override
   Widget build(BuildContext context) {

@@ -29,7 +29,7 @@ class _TrackingUnifiedController extends UnifiedDailyOsDataController {
   int agreeToPlanCallCount = 0;
 
   @override
-  Future<DailyOsData> build({required DateTime date}) async {
+  Future<DailyOsData> build() async {
     return _data;
   }
 
@@ -42,7 +42,7 @@ class _TrackingUnifiedController extends UnifiedDailyOsDataController {
 /// Mock controller that always fails with an error.
 class _ErrorUnifiedController extends UnifiedDailyOsDataController {
   @override
-  Future<DailyOsData> build({required DateTime date}) async {
+  Future<DailyOsData> build() async {
     throw Exception('test error');
   }
 }
@@ -132,10 +132,10 @@ void main() {
         timeHistoryHeaderControllerProvider.overrideWith(
           () => TestTimeHistoryController(historyData),
         ),
-        unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+        unifiedDailyOsDataControllerProvider(testDate).overrideWith(
           unifiedControllerFactory ?? () => TestUnifiedController(unifiedData),
         ),
-        dayBudgetStatsProvider(date: testDate).overrideWith(
+        dayBudgetStatsProvider(testDate).overrideWith(
           (ref) async => effectiveStats,
         ),
         // Override stream provider to avoid timer issues in tests
@@ -143,7 +143,7 @@ void main() {
           (ref) => Stream.value(null),
         ),
         // Override to avoid TimeService dependency in tests
-        runningTimerCategoryIdProvider.overrideWithValue(null),
+        runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
         ...additionalOverrides,
       ],
       child: const DailyOsPage(),

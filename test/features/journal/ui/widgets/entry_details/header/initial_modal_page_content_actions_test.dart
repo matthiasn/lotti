@@ -86,10 +86,10 @@ void main() {
     }) {
       return ProviderScope(
         overrides: [
-          entryControllerProvider(id: image.id).overrideWith(
+          entryControllerProvider(image.id).overrideWith(
             () => TestEntryController(image),
           ),
-          entryControllerProvider(id: linkedParent.id).overrideWith(
+          entryControllerProvider(linkedParent.id).overrideWith(
             () => TestEntryController(linkedParent),
           ),
           labelsStreamProvider.overrideWith(
@@ -144,7 +144,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entryControllerProvider(id: image.id).overrideWith(
+            entryControllerProvider(image.id).overrideWith(
               () => TestEntryController(image),
             ),
             labelsStreamProvider.overrideWith(
@@ -191,7 +191,7 @@ void main() {
     ProviderScope buildGeoWrapper(JournalEntry entry) {
       return ProviderScope(
         overrides: [
-          entryControllerProvider(id: entry.id).overrideWith(
+          entryControllerProvider(entry.id).overrideWith(
             () => TestEntryController(entry),
           ),
           labelsStreamProvider.overrideWith(
@@ -229,7 +229,7 @@ void main() {
       EntryLink? link,
     }) {
       final baseOverrides = [
-        entryControllerProvider(id: entry.id).overrideWith(
+        entryControllerProvider(entry.id).overrideWith(
           () => TestEntryController(entry),
         ),
         labelsStreamProvider.overrideWith(
@@ -240,10 +240,10 @@ void main() {
       final allOverrides = [
         ...baseOverrides,
         if (linkedFromId != null) ...[
-          entryControllerProvider(id: linkedFromId).overrideWith(
+          entryControllerProvider(linkedFromId).overrideWith(
             () => TestEntryController(textEntry()),
           ),
-          linkedEntriesControllerProvider(id: linkedFromId).overrideWith(
+          linkedEntriesControllerProvider(linkedFromId).overrideWith(
             FakeLinkedEntriesController.new,
           ),
         ],

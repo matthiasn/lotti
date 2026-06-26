@@ -52,7 +52,7 @@ class EntryDetailHeader extends ConsumerStatefulWidget {
 class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
   @override
   Widget build(BuildContext context) {
-    final provider = entryControllerProvider(id: widget.entryId);
+    final provider = entryControllerProvider(widget.entryId);
     final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).value;
     if (entryState == null) {

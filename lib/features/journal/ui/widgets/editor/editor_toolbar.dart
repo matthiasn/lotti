@@ -39,7 +39,7 @@ class ToolbarWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(entryControllerProvider(id: entryId).notifier);
+    final notifier = ref.read(entryControllerProvider(entryId).notifier);
     const duration = Duration(milliseconds: 400);
     const curve = Curves.easeInOutQuint;
     final tokens = context.designTokens;
@@ -339,7 +339,7 @@ class _ToolbarActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unsaved =
-        ref.watch(saveButtonControllerProvider(id: entryId)).value ?? false;
+        ref.watch(saveButtonControllerProvider(entryId)).value ?? false;
     final tokens = context.designTokens;
 
     return Row(
@@ -365,7 +365,7 @@ class _ToolbarActions extends ConsumerWidget {
                     height: _trailingControlSize,
                   ),
                   onPressed: () => ref
-                      .read(entryControllerProvider(id: entryId).notifier)
+                      .read(entryControllerProvider(entryId).notifier)
                       .discard(),
                 )
               : null,
@@ -417,9 +417,7 @@ class _ToolbarSaveButton extends ConsumerWidget {
         // null onPressed → the button renders its disabled (quiet) state.
         onPressed: unsaved
             ? () {
-                ref
-                    .read(saveButtonControllerProvider(id: entryId).notifier)
-                    .save();
+                ref.read(saveButtonControllerProvider(entryId).notifier).save();
                 FocusManager.instance.primaryFocus?.unfocus();
               }
             : null,

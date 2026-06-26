@@ -82,11 +82,11 @@ class DashboardHealthBmiChart extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return StaleAsyncValue<List<Observation>>(
       async: ref.watch(
-        healthObservationsControllerProvider(
+        healthObservationsControllerProvider((
           healthDataType: 'HealthDataType.WEIGHT',
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ),
+        )),
       ),
       builder: (context, value, isInitialLoading) {
         final weightData = value ?? const <Observation>[];

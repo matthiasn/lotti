@@ -39,7 +39,7 @@ class MockEntryController extends EntryController {
   final JournalEntity mockEntry;
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     // Return the mock entry state
     return EntryState.saved(
       entryId: id,
@@ -105,7 +105,7 @@ void main() {
           return TestAudioRecorderController(state);
         }),
         if (state.linkedId != null && linkedEntry != null)
-          entryControllerProvider(id: state.linkedId!).overrideWith(() {
+          entryControllerProvider(state.linkedId!).overrideWith(() {
             return MockEntryController(mockEntry: linkedEntry);
           }),
       ],

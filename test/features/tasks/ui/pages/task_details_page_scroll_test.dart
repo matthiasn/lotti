@@ -230,7 +230,7 @@ void main() {
         // is that the listener executes without error and the provider
         // state is accessible.
         final updatedState = container.read(
-          taskAppBarControllerProvider(id: testTask.id),
+          taskAppBarControllerProvider(testTask.id),
         );
         expect(
           updatedState.hasValue,
@@ -421,7 +421,7 @@ void main() {
 
         // Publish the suggestions focus intent.
         container
-            .read(taskFocusControllerProvider(id: testTask.id).notifier)
+            .read(taskFocusControllerProvider(testTask.id).notifier)
             .publishSuggestionFocus(alignment: 0);
 
         // Pump enough frames for the scroll + finally block to complete.
@@ -432,7 +432,7 @@ void main() {
         // The finally block calls onScrolled() → clearIntent(), so the
         // intent must be null now.
         expect(
-          container.read(taskFocusControllerProvider(id: testTask.id)),
+          container.read(taskFocusControllerProvider(testTask.id)),
           isNull,
           reason: 'Intent must be cleared in finally block after ensureVisible',
         );

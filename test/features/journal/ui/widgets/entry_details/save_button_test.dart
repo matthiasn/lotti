@@ -14,7 +14,7 @@ class _FakeSaveButtonController extends SaveButtonController {
   int saveCount = 0;
 
   @override
-  Future<bool?> build({required String id}) async => unsaved;
+  Future<bool?> build() async => unsaved;
 
   @override
   Future<void> save({Duration? estimate}) async {
@@ -34,9 +34,7 @@ void main() {
       makeTestableWidgetWithScaffold(
         const SaveButton(entryId: entryId),
         overrides: [
-          saveButtonControllerProvider(
-            id: entryId,
-          ).overrideWith(() => controller),
+          saveButtonControllerProvider(entryId).overrideWith(() => controller),
         ],
       ),
     );

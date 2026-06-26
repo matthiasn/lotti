@@ -5,7 +5,8 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 /// `build()` and records every mutation so tests can assert on the calls
 /// without a repository.
 class FakeLinkedEntriesController extends LinkedEntriesController {
-  FakeLinkedEntriesController({this.links = const []});
+  FakeLinkedEntriesController({this.links = const [], String id = ''})
+    : super(id);
 
   final List<EntryLink> links;
 
@@ -16,7 +17,7 @@ class FakeLinkedEntriesController extends LinkedEntriesController {
   final List<String> removeLinkCalls = [];
 
   @override
-  Future<List<EntryLink>> build({required String id}) async => links;
+  Future<List<EntryLink>> build() async => links;
 
   @override
   Future<void> updateLink(EntryLink link) async {

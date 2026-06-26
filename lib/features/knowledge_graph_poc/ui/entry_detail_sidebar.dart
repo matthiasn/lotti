@@ -32,7 +32,7 @@ class EntryDetailSidebar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(entryControllerProvider(id: entryId));
+    final state = ref.watch(entryControllerProvider(entryId));
     // Round only the top — the panel reaches the window bottom so the embedded
     // page's bottom action bar sits flush instead of being clipped by a curve.
     final radius = BorderRadius.vertical(top: Radius.circular(tokens.radii.l));

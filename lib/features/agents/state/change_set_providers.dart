@@ -27,9 +27,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'change_set_providers.g.dart';
 
 /// Deduplicates change sets that have identical pending-item fingerprints.
 ///
@@ -189,7 +186,12 @@ projectRecommendationsProvider = FutureProvider.autoDispose
     });
 
 /// Provides a [ChangeSetConfirmationService] with all dependencies resolved.
-@riverpod
+final Provider<ChangeSetConfirmationService>
+changeSetConfirmationServiceProvider =
+    Provider.autoDispose<ChangeSetConfirmationService>(
+      changeSetConfirmationService,
+      name: 'changeSetConfirmationServiceProvider',
+    );
 ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
   final labelsRepository = ref.watch(labelsRepositoryProvider);
   final logger = ref.watch(domainLoggerProvider);

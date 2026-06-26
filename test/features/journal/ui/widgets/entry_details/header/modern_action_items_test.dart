@@ -832,7 +832,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             linkedEntriesControllerProvider(
-              id: 'parent-1',
+              'parent-1',
             ).overrideWith(FakeLinkedEntriesController.new),
           ],
           child: ModernToggleHiddenItem(link: link),
@@ -861,7 +861,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             linkedEntriesControllerProvider(
-              id: 'parent-1',
+              'parent-1',
             ).overrideWith(FakeLinkedEntriesController.new),
           ],
           child: ModernToggleHiddenItem(link: link),
@@ -891,7 +891,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             linkedEntriesControllerProvider(
-              id: 'parent-1',
+              'parent-1',
             ).overrideWith(() => controller),
           ],
           child: ModernToggleHiddenItem(link: link),
@@ -1264,9 +1264,7 @@ void main() {
         await tester.pumpWidget(
           _buildWithRoute(
             overrides: [
-              entryControllerProvider(
-                id: 'entry-1',
-              ).overrideWith(() => controller),
+              entryControllerProvider('entry-1').overrideWith(() => controller),
             ],
             child: const ModernDeleteItem(entryId: 'entry-1', beamBack: false),
           ),
@@ -1300,9 +1298,7 @@ void main() {
         await tester.pumpWidget(
           _buildWithRoute(
             overrides: [
-              entryControllerProvider(
-                id: 'entry-1',
-              ).overrideWith(() => controller),
+              entryControllerProvider('entry-1').overrideWith(() => controller),
             ],
             child: const ModernDeleteItem(entryId: 'entry-1', beamBack: false),
           ),
@@ -1336,7 +1332,7 @@ void main() {
           _buildWithRoute(
             overrides: [
               linkedEntriesControllerProvider(
-                id: 'parent-1',
+                'parent-1',
               ).overrideWith(() => controller),
             ],
             child: const ModernUnlinkItem(
@@ -1374,7 +1370,7 @@ void main() {
           _buildWithRoute(
             overrides: [
               linkedEntriesControllerProvider(
-                id: 'parent-1',
+                'parent-1',
               ).overrideWith(() => controller),
             ],
             child: const ModernUnlinkItem(
@@ -1412,9 +1408,7 @@ void main() {
         await tester.pumpWidget(
           _buildWithRoute(
             overrides: [
-              entryControllerProvider(
-                id: 'image-1',
-              ).overrideWith(() => controller),
+              entryControllerProvider('image-1').overrideWith(() => controller),
             ],
             child: const ModernCopyImageItem(entryId: 'image-1'),
           ),
@@ -2010,7 +2004,7 @@ void main() {
     ProviderScope buildWrapper(JournalEntity entry) {
       return ProviderScope(
         overrides: [
-          entryControllerProvider(id: entry.id).overrideWith(
+          entryControllerProvider(entry.id).overrideWith(
             () => _TestEntryController(entry),
           ),
           labelsStreamProvider.overrideWith(
@@ -2058,7 +2052,7 @@ void main() {
     ProviderScope buildSimpleWrapper(JournalEntity entry) {
       return ProviderScope(
         overrides: [
-          entryControllerProvider(id: entry.id).overrideWith(
+          entryControllerProvider(entry.id).overrideWith(
             () => _TestEntryController(entry),
           ),
           labelsStreamProvider.overrideWith(
@@ -2599,7 +2593,7 @@ void main() {
             ],
           ),
           overrides: [
-            entryControllerProvider(id: 'e1').overrideWith(() => controller),
+            entryControllerProvider('e1').overrideWith(() => controller),
             appClipboardProvider.overrideWithValue(fakeClipboard),
           ],
         ),
@@ -2633,7 +2627,7 @@ void main() {
             ],
           ),
           overrides: [
-            entryControllerProvider(id: 'e1').overrideWith(() => controller),
+            entryControllerProvider('e1').overrideWith(() => controller),
             appClipboardProvider.overrideWithValue(fakeClipboard),
           ],
         ),
@@ -2662,7 +2656,7 @@ void main() {
             ],
           ),
           overrides: [
-            entryControllerProvider(id: 'e2').overrideWith(() => controller),
+            entryControllerProvider('e2').overrideWith(() => controller),
           ],
         ),
       );
@@ -2685,7 +2679,7 @@ void main() {
             ],
           ),
           overrides: [
-            entryControllerProvider(id: 'e2b').overrideWith(() => controller),
+            entryControllerProvider('e2b').overrideWith(() => controller),
           ],
         ),
       );
@@ -2707,7 +2701,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entryControllerProvider(id: 'e3').overrideWith(() => controller),
+            entryControllerProvider('e3').overrideWith(() => controller),
           ],
           child: MaterialApp(
             theme: resolveTestTheme(),
@@ -2744,7 +2738,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entryControllerProvider(id: 'e4').overrideWith(() => controller),
+            entryControllerProvider('e4').overrideWith(() => controller),
           ],
           child: MaterialApp(
             theme: resolveTestTheme(),
@@ -2822,7 +2816,7 @@ class _RemoveLinkTrackingController extends LinkedEntriesController {
   final List<String> removeLinkCalls = [];
 
   @override
-  Future<List<EntryLink>> build({required String id}) async => [];
+  Future<List<EntryLink>> build() async => [];
 
   @override
   Future<void> updateLink(EntryLink link) async {}
@@ -2836,10 +2830,7 @@ class _RemoveLinkTrackingController extends LinkedEntriesController {
 /// Fake RatingController that returns null (no existing rating).
 class _FakeNoRatingController extends RatingController {
   @override
-  Future<JournalEntity?> build({
-    required String targetId,
-    String catalogId = 'session',
-  }) async {
+  Future<JournalEntity?> build() async {
     state = const AsyncData(null);
     return null;
   }
@@ -2848,10 +2839,7 @@ class _FakeNoRatingController extends RatingController {
 /// Fake RatingController that returns an existing rating.
 class _FakeHasRatingController extends RatingController {
   @override
-  Future<JournalEntity?> build({
-    required String targetId,
-    String catalogId = 'session',
-  }) async {
+  Future<JournalEntity?> build() async {
     final testDate = DateTime(2025, 12, 31, 12);
     final entity = RatingEntry(
       meta: Metadata(
@@ -2929,7 +2917,7 @@ class _TestEntryController extends EntryController {
   final JournalEntity entry;
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     return EntryState.saved(
       entryId: id,
       entry: entry,
@@ -2953,7 +2941,7 @@ class _CopyTextEntryController extends EntryController {
   bool markdownCalled = false;
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     // Initialize controller with initial text
     controller = QuillController.basic();
     if (initialText.isNotEmpty) {

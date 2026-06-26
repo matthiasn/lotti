@@ -435,7 +435,7 @@ void main() {
       tester,
       ModernTaskCard(task: task),
       overrides: [
-        taskProgressControllerProvider(id: task.meta.id).overrideWith(
+        taskProgressControllerProvider(task.meta.id).overrideWith(
           () => TestTaskProgressController(
             progress: const Duration(minutes: 30),
             estimate: const Duration(hours: 1),
@@ -834,7 +834,7 @@ void main() {
           tester,
           ModernTaskCard(task: task),
           overrides: [
-            entryControllerProvider(id: 'image-123').overrideWith(
+            entryControllerProvider('image-123').overrideWith(
               () => _FakeImageController(image),
             ),
           ],
@@ -871,7 +871,7 @@ void main() {
         tester,
         ModernTaskCard(task: task),
         overrides: [
-          entryControllerProvider(id: 'image-123').overrideWith(
+          entryControllerProvider('image-123').overrideWith(
             () => _FakeImageController(image),
           ),
         ],
@@ -915,10 +915,10 @@ void main() {
         tester,
         ModernTaskCard(task: task),
         overrides: [
-          entryControllerProvider(id: 'image-123').overrideWith(
+          entryControllerProvider('image-123').overrideWith(
             () => _FakeImageController(image),
           ),
-          taskProgressControllerProvider(id: task.meta.id).overrideWith(
+          taskProgressControllerProvider(task.meta.id).overrideWith(
             () => TestTaskProgressController(
               progress: const Duration(minutes: 30),
               estimate: const Duration(hours: 1),
@@ -977,7 +977,7 @@ void main() {
         tester,
         ModernTaskCard(task: task),
         overrides: [
-          entryControllerProvider(id: 'image-123').overrideWith(
+          entryControllerProvider('image-123').overrideWith(
             () => _FakeImageController(image),
           ),
         ],
@@ -1018,7 +1018,7 @@ void main() {
           tester,
           ModernTaskCard(task: task),
           overrides: [
-            entryControllerProvider(id: 'image-123').overrideWith(
+            entryControllerProvider('image-123').overrideWith(
               () => _FakeImageController(image),
             ),
           ],
@@ -1059,7 +1059,7 @@ void main() {
         tester,
         ModernTaskCard(task: task),
         overrides: [
-          entryControllerProvider(id: 'image-123').overrideWith(
+          entryControllerProvider('image-123').overrideWith(
             () => _FakeImageController(image),
           ),
         ],
@@ -1082,7 +1082,7 @@ class _FakeImageController extends EntryController {
   final JournalImage _image;
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     final value = EntryState.saved(
       entryId: id,
       entry: _image,

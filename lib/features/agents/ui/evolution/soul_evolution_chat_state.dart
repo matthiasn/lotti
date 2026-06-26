@@ -2,26 +2,39 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/state/agent_workflow_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'soul_evolution_chat_state.g.dart';
 
 /// Manages the lifecycle of a standalone soul evolution chat session.
 ///
-/// Parameterized by [soulId]. On [build], starts a new multi-turn session
+/// Parameterized by soulId. On build, starts a new multi-turn session
 /// via [TemplateEvolutionWorkflow.startSoulSession]. The user can then send
 /// messages, approve/reject soul proposals, and end the session.
-@riverpod
-class SoulEvolutionChatState extends _$SoulEvolutionChatState {
+final AsyncNotifierProviderFamily<
+  SoulEvolutionChatState,
+  EvolutionChatData,
+  String
+>
+soulEvolutionChatStateProvider = AsyncNotifierProvider.autoDispose
+    .family<SoulEvolutionChatState, EvolutionChatData, String>(
+      SoulEvolutionChatState.new,
+      name: 'soulEvolutionChatStateProvider',
+    );
+
+class SoulEvolutionChatState extends AsyncNotifier<EvolutionChatData> {
+  SoulEvolutionChatState([this.soulId = '']);
+
+  final String soulId;
+
   static const _logTag = 'SoulEvolutionChatState';
 
   @override
-  Future<EvolutionChatData> build(String soulId) async {
+  Future<EvolutionChatData> build() async {
     final workflow = ref.read(templateEvolutionWorkflowProvider);
 
     final messages = <EvolutionChatMessage>[

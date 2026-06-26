@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
@@ -10,9 +12,6 @@ import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'health_chart_controller.g.dart';
 
 /// Loads the raw quantitative health entities of one `healthDataType` within a
 /// date range and keeps them fresh.
@@ -22,8 +21,30 @@ part 'health_chart_controller.g.dart';
 /// change to this exact health type re-fetches and pushes new data (skipping
 /// the rebuild when the rows are unchanged). The returned entities are
 /// unaggregated; [HealthObservationsController] turns them into chart points.
-@riverpod
-class HealthChartDataController extends _$HealthChartDataController {
+final AsyncNotifierProviderFamily<
+  HealthChartDataController,
+  List<JournalEntity>,
+  ({String healthDataType, DateTime rangeEnd, DateTime rangeStart})
+>
+healthChartDataControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<
+      HealthChartDataController,
+      List<JournalEntity>,
+      ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
+    >(
+      HealthChartDataController.new,
+      name: 'healthChartDataControllerProvider',
+    );
+
+class HealthChartDataController extends AsyncNotifier<List<JournalEntity>> {
+  HealthChartDataController(this._providerArgs);
+
+  final ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
+  _providerArgs;
+  String get healthDataType => _providerArgs.healthDataType;
+  DateTime get rangeStart => _providerArgs.rangeStart;
+  DateTime get rangeEnd => _providerArgs.rangeEnd;
+
   final JournalDb _journalDb = getIt<JournalDb>();
 
   StreamSubscription<Set<String>>? _updateSubscription;
@@ -46,11 +67,7 @@ class HealthChartDataController extends _$HealthChartDataController {
   }
 
   @override
-  Future<List<JournalEntity>> build({
-    required String healthDataType,
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-  }) async {
+  Future<List<JournalEntity>> build() async {
     ref
       ..onDispose(() {
         _updateSubscription?.cancel();
@@ -81,9 +98,23 @@ class HealthChartDataController extends _$HealthChartDataController {
 /// upstream future (rather than reading a possibly-empty cached value) so the
 /// provider stays in `AsyncLoading` until the DB read completes — otherwise the
 /// chart's stale-while-revalidate wrapper would flash an empty "No data" state.
-@riverpod
-class HealthObservationsController extends _$HealthObservationsController {
-  HealthObservationsController() {
+final AsyncNotifierProviderFamily<
+  HealthObservationsController,
+  List<Observation>,
+  ({String healthDataType, DateTime rangeEnd, DateTime rangeStart})
+>
+healthObservationsControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<
+      HealthObservationsController,
+      List<Observation>,
+      ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
+    >(
+      HealthObservationsController.new,
+      name: 'healthObservationsControllerProvider',
+    );
+
+class HealthObservationsController extends AsyncNotifier<List<Observation>> {
+  HealthObservationsController(this._providerArgs) {
     if (!Platform.environment.containsKey('FLUTTER_TEST')) {
       Future.delayed(Duration(milliseconds: 500 + Random().nextInt(500)), () {
         getIt<HealthImport>().fetchHealthDataDelta(healthDataType);
@@ -91,12 +122,14 @@ class HealthObservationsController extends _$HealthObservationsController {
     }
   }
 
+  final ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
+  _providerArgs;
+  String get healthDataType => _providerArgs.healthDataType;
+  DateTime get rangeStart => _providerArgs.rangeStart;
+  DateTime get rangeEnd => _providerArgs.rangeEnd;
+
   @override
-  Future<List<Observation>> build({
-    required String healthDataType,
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-  }) async {
+  Future<List<Observation>> build() async {
     ref.cacheFor(dashboardCacheDuration);
 
     // Await the upstream future (don't read `.value ?? []`) so this provider
@@ -104,11 +137,11 @@ class HealthObservationsController extends _$HealthObservationsController {
     // an empty upstream would make the chart's stale-while-revalidate wrapper
     // see a value and flash an empty "No data" state on first load.
     final items = await ref.watch(
-      healthChartDataControllerProvider(
+      healthChartDataControllerProvider((
         healthDataType: healthDataType,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
-      ).future,
+      )).future,
     );
 
     return aggregateByType(items, healthDataType);

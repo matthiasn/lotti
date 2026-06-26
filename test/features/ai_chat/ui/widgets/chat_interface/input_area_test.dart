@@ -1095,7 +1095,7 @@ class _IdleControllerWithRealtimeMode extends ChatRecorderController {
 /// Minimal fake [ChatSessionController] that returns a non-streaming state.
 class _StaticChatController extends ChatSessionController {
   @override
-  ChatSessionUiModel build(String categoryId) {
+  ChatSessionUiModel build() {
     return const ChatSessionUiModel(
       id: 's',
       title: 't',

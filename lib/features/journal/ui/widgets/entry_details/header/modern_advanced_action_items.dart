@@ -29,7 +29,7 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
+    final provider = entryControllerProvider(entryId);
     final entryState = ref.watch(provider).value;
     final entry = entryState?.entry;
 
@@ -45,7 +45,7 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
     }
 
     // Check if the linked entity is actually a task
-    final linkedProvider = entryControllerProvider(id: linkedTaskId);
+    final linkedProvider = entryControllerProvider(linkedTaskId);
     final linkedState = ref.watch(linkedProvider).value;
     final linkedEntry = linkedState?.entry;
 
@@ -101,7 +101,7 @@ class ModernSetCoverArtItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final parentProvider = entryControllerProvider(id: linkedFromId);
+    final parentProvider = entryControllerProvider(linkedFromId);
     final parentEntry = ref.watch(parentProvider).value?.entry;
 
     if (parentEntry is! Task) return const SizedBox.shrink();

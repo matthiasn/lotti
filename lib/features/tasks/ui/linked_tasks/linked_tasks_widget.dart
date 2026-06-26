@@ -57,7 +57,7 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
   @override
   Widget build(BuildContext context) {
     final taskId = widget.taskId;
-    final uiState = ref.watch(linkedTasksControllerProvider(taskId: taskId));
+    final uiState = ref.watch(linkedTasksControllerProvider(taskId));
 
     final outgoingTasks = ref
         .watch(outgoingLinkedTasksProvider(taskId))
@@ -65,7 +65,7 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
         .toList();
 
     final incomingEntities =
-        ref.watch(linkedFromEntriesControllerProvider(id: taskId)).value ?? [];
+        ref.watch(linkedFromEntriesControllerProvider(taskId)).value ?? [];
     final incomingTasks = incomingEntities.whereType<Task>().toList();
 
     if (incomingTasks.isEmpty && outgoingTasks.isEmpty) {
@@ -146,7 +146,7 @@ class _LinkedTasksHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final notifier = ref.read(
-      linkedTasksControllerProvider(taskId: taskId).notifier,
+      linkedTasksControllerProvider(taskId).notifier,
     );
 
     return InkWell(
@@ -268,9 +268,9 @@ class _LinkedTasksHeader extends ConsumerWidget {
 
   Future<void> _showLinkTaskModal(BuildContext context, WidgetRef ref) async {
     final outgoingLinks =
-        ref.read(linkedEntriesControllerProvider(id: taskId)).value ?? [];
+        ref.read(linkedEntriesControllerProvider(taskId)).value ?? [];
     final incomingEntities =
-        ref.read(linkedFromEntriesControllerProvider(id: taskId)).value ?? [];
+        ref.read(linkedFromEntriesControllerProvider(taskId)).value ?? [];
 
     final existingLinkedIds = <String>{
       ...outgoingLinks.map((link) => link.toId),
@@ -285,7 +285,7 @@ class _LinkedTasksHeader extends ConsumerWidget {
   }
 
   Future<void> _createNewLinkedTask(BuildContext context, WidgetRef ref) async {
-    final entryState = ref.read(entryControllerProvider(id: taskId)).value;
+    final entryState = ref.read(entryControllerProvider(taskId)).value;
     final categoryId = entryState?.entry?.meta.categoryId;
 
     final newTask = await createTask(
@@ -443,7 +443,7 @@ class _LinkedTaskRow extends ConsumerWidget {
 
     if (data.direction == _LinkDirection.to) {
       await ref
-          .read(linkedEntriesControllerProvider(id: taskId).notifier)
+          .read(linkedEntriesControllerProvider(taskId).notifier)
           .removeLink(toId: data.task.id);
     } else {
       await ref

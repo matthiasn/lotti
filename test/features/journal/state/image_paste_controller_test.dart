@@ -220,10 +220,10 @@ void main() {
       );
 
       final result = await container.read(
-        imagePasteControllerProvider(
+        imagePasteControllerProvider((
           linkedFromId: null,
           categoryId: null,
-        ).future,
+        )).future,
       );
 
       expect(result, false);
@@ -234,10 +234,10 @@ void main() {
       when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(false);
 
       final result = await container.read(
-        imagePasteControllerProvider(
+        imagePasteControllerProvider((
           linkedFromId: null,
           categoryId: null,
-        ).future,
+        )).future,
       );
 
       expect(result, true);
@@ -248,10 +248,10 @@ void main() {
       when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(true);
 
       final result = await container.read(
-        imagePasteControllerProvider(
+        imagePasteControllerProvider((
           linkedFromId: null,
           categoryId: null,
-        ).future,
+        )).future,
       );
 
       expect(result, true);
@@ -273,10 +273,10 @@ void main() {
       ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
 
       final controller = container.read(
-        imagePasteControllerProvider(
+        imagePasteControllerProvider((
           linkedFromId: 'testLink',
           categoryId: 'testCategory',
-        ).notifier,
+        )).notifier,
       );
 
       await controller.paste();
@@ -307,10 +307,10 @@ void main() {
       ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
 
       final controller = container.read(
-        imagePasteControllerProvider(
+        imagePasteControllerProvider((
           linkedFromId: 'testLink',
           categoryId: 'testCategory',
-        ).notifier,
+        )).notifier,
       );
 
       await controller.paste();
@@ -343,10 +343,10 @@ void main() {
         ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
 
         final controller = container.read(
-          imagePasteControllerProvider(
+          imagePasteControllerProvider((
             linkedFromId: 'testLink',
             categoryId: 'testCategory',
-          ).notifier,
+          )).notifier,
         );
 
         await controller.paste();
@@ -393,10 +393,10 @@ void main() {
       }
 
       final controller = container.read(
-        imagePasteControllerProvider(
+        imagePasteControllerProvider((
           linkedFromId: 'testLink',
           categoryId: 'testCategory',
-        ).notifier,
+        )).notifier,
       );
 
       await controller.paste();
@@ -453,10 +453,10 @@ void main() {
       ).thenAnswer((_) async => Uint8List.fromList([4, 5, 6]));
 
       final controller = container.read(
-        imagePasteControllerProvider(
+        imagePasteControllerProvider((
           linkedFromId: 'testLink',
           categoryId: 'testCategory',
-        ).notifier,
+        )).notifier,
       );
 
       await controller.paste();
@@ -472,10 +472,10 @@ void main() {
       when(() => mockReader.items).thenReturn([]);
 
       final controller = container.read(
-        imagePasteControllerProvider(
+        imagePasteControllerProvider((
           linkedFromId: 'testLink',
           categoryId: 'testCategory',
-        ).notifier,
+        )).notifier,
       );
 
       // Should complete without errors
@@ -499,10 +499,10 @@ void main() {
       when(() => mockItem2.canProvide(Formats.jpeg)).thenReturn(false);
 
       final controller = container.read(
-        imagePasteControllerProvider(
+        imagePasteControllerProvider((
           linkedFromId: 'testLink',
           categoryId: 'testCategory',
-        ).notifier,
+        )).notifier,
       );
 
       await controller.paste();

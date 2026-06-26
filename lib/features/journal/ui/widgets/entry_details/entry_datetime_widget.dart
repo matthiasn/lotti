@@ -21,7 +21,7 @@ class EntryDatetimeWidget extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final provider = entryControllerProvider(id: entryId);
+    final provider = entryControllerProvider(entryId);
     final entryState = ref.watch(provider).value;
     final entry = entryState?.entry;
 

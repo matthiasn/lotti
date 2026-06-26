@@ -20,7 +20,7 @@ class TestEntryController extends EntryController {
   final bool showToolbar;
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     controller = QuillController.basic();
     return EntryState.saved(
       entryId: id,
@@ -41,7 +41,7 @@ Widget buildEditorTestWidget({
 }) {
   return ProviderScope(
     overrides: [
-      entryControllerProvider(id: entryId).overrideWith(
+      entryControllerProvider(entryId).overrideWith(
         () => TestEntryController(showToolbar: showToolbar),
       ),
       if (speechDictionaryServiceOverride != null)

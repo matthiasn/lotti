@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
@@ -8,10 +10,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
-
-part 'conversation_repository.g.dart';
 
 /// Matches `<think>...</think>` and `<thinking>...</thinking>` blocks
 /// (case-insensitive, possibly spanning newlines). Used to remove
@@ -45,8 +44,14 @@ String? stripThinkBlocks(String? content) {
 ///   invoking the provided `ConversationStrategy` with predefined
 ///   `ChatCompletionMessageToolCall` objects. This preserves the strategy/handler execution path
 ///   while avoiding brittle mock setups.
-@riverpod
-class ConversationRepository extends _$ConversationRepository {
+final NotifierProvider<ConversationRepository, void>
+conversationRepositoryProvider =
+    NotifierProvider.autoDispose<ConversationRepository, void>(
+      ConversationRepository.new,
+      name: 'conversationRepositoryProvider',
+    );
+
+class ConversationRepository extends Notifier<void> {
   final _conversations = <String, ConversationManager>{};
   final _uuid = const Uuid();
 
@@ -420,7 +425,12 @@ class ConversationRepository extends _$ConversationRepository {
 }
 
 /// Provider for accessing conversation events
-@riverpod
+final StreamProviderFamily<ConversationEvent, String>
+conversationEventsProvider = StreamProvider.autoDispose
+    .family<ConversationEvent, String>(
+      conversationEvents,
+      name: 'conversationEventsProvider',
+    );
 Stream<ConversationEvent> conversationEvents(
   Ref ref,
   String conversationId,
@@ -436,7 +446,12 @@ Stream<ConversationEvent> conversationEvents(
 }
 
 /// Provider for conversation messages
-@riverpod
+final ProviderFamily<List<ChatCompletionMessage>, String>
+conversationMessagesProvider = Provider.autoDispose
+    .family<List<ChatCompletionMessage>, String>(
+      conversationMessages,
+      name: 'conversationMessagesProvider',
+    );
 List<ChatCompletionMessage> conversationMessages(
   Ref ref,
   String conversationId,

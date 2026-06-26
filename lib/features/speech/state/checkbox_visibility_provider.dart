@@ -1,10 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'checkbox_visibility_provider.g.dart';
 
 /// Checks whether a task has profile-driven transcription available.
 ///
@@ -12,7 +11,11 @@ part 'checkbox_visibility_provider.g.dart';
 /// so that edits to automation toggles are immediately reflected in the UI.
 /// Uses the pure capability check rather than the execution path to avoid
 /// side effects during render-time reads.
-@riverpod
+final FutureProviderFamily<bool, String> hasProfileTranscriptionProvider =
+    FutureProvider.autoDispose.family<bool, String>(
+      hasProfileTranscription,
+      name: 'hasProfileTranscriptionProvider',
+    );
 Future<bool> hasProfileTranscription(Ref ref, String taskId) async {
   // Watch the profiles stream so this provider invalidates when any
   // profile is edited. Without this, the result would be stale after
@@ -32,7 +35,22 @@ Future<bool> hasProfileTranscription(Ref ref, String taskId) async {
 ///
 /// This extracts the business logic from the widget, making it testable
 /// independently without widget build cycles or timing issues.
-@riverpod
+final ProviderFamily<
+  AutomaticPromptVisibility,
+  ({String? categoryId, String? linkedId})
+>
+checkboxVisibilityProvider = Provider.autoDispose
+    .family<
+      AutomaticPromptVisibility,
+      ({String? categoryId, String? linkedId})
+    >(
+      (ref, arg) => checkboxVisibility(
+        ref,
+        categoryId: arg.categoryId,
+        linkedId: arg.linkedId,
+      ),
+      name: 'checkboxVisibilityProvider',
+    );
 AutomaticPromptVisibility checkboxVisibility(
   Ref ref, {
   required String? categoryId,

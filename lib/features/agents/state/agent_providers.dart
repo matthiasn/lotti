@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -35,13 +36,10 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 export 'package:lotti/features/agents/state/agent_query_providers.dart';
 export 'package:lotti/features/agents/state/agent_workflow_providers.dart';
 export 'package:lotti/features/agents/state/template_query_providers.dart';
-
-part 'agent_providers.g.dart';
 
 /// Builds the `onPersistedStateChanged` callback shared by the agent services
 /// and managers.
@@ -60,7 +58,10 @@ void Function(String) persistedStateChangedNotifier(
 }
 
 /// Optional UpdateNotifications service from GetIt.
-@Riverpod(keepAlive: true)
+final maybeUpdateNotificationsProvider = Provider<UpdateNotifications?>(
+  maybeUpdateNotifications,
+  name: 'maybeUpdateNotificationsProvider',
+);
 UpdateNotifications? maybeUpdateNotifications(Ref ref) {
   if (!getIt.isRegistered<UpdateNotifications>()) {
     return null;
@@ -69,7 +70,10 @@ UpdateNotifications? maybeUpdateNotifications(Ref ref) {
 }
 
 /// Required UpdateNotifications service for agent runtime wiring.
-@Riverpod(keepAlive: true)
+final updateNotificationsProvider = Provider<UpdateNotifications>(
+  updateNotifications,
+  name: 'updateNotificationsProvider',
+);
 UpdateNotifications updateNotifications(Ref ref) {
   final notifications = ref.watch(maybeUpdateNotificationsProvider);
   if (notifications == null) {
@@ -79,7 +83,10 @@ UpdateNotifications updateNotifications(Ref ref) {
 }
 
 /// Optional sync processor dependency for cross-device agent wiring.
-@Riverpod(keepAlive: true)
+final maybeSyncEventProcessorProvider = Provider<SyncEventProcessor?>(
+  maybeSyncEventProcessor,
+  name: 'maybeSyncEventProcessorProvider',
+);
 SyncEventProcessor? maybeSyncEventProcessor(Ref ref) {
   if (!getIt.isRegistered<SyncEventProcessor>()) {
     return null;
@@ -94,7 +101,10 @@ SyncEventProcessor? maybeSyncEventProcessor(Ref ref) {
 /// without rebuilding the provider. This prevents a flag toggle from
 /// cascading into orchestrator/workflow/service rebuilds and unintentionally
 /// restarting the agent runtime.
-@Riverpod(keepAlive: true)
+final domainLoggerProvider = Provider<DomainLogger>(
+  domainLogger,
+  name: 'domainLoggerProvider',
+);
 DomainLogger domainLogger(Ref ref) {
   // Use the GetIt-registered instance so sync components (also GetIt-managed)
   // share the same DomainLogger and benefit from config flag toggles.
@@ -125,13 +135,19 @@ DomainLogger domainLogger(Ref ref) {
 }
 
 /// The agent database instance (singleton via GetIt).
-@Riverpod(keepAlive: true)
+final agentDatabaseProvider = Provider<AgentDatabase>(
+  agentDatabase,
+  name: 'agentDatabaseProvider',
+);
 AgentDatabase agentDatabase(Ref ref) {
   return getIt<AgentDatabase>();
 }
 
 /// The agent repository wrapping the database.
-@Riverpod(keepAlive: true)
+final agentRepositoryProvider = Provider<AgentRepository>(
+  agentRepository,
+  name: 'agentRepositoryProvider',
+);
 AgentRepository agentRepository(Ref ref) {
   return AgentRepository(
     ref.watch(agentDatabaseProvider),
@@ -140,7 +156,10 @@ AgentRepository agentRepository(Ref ref) {
 }
 
 /// Sync-aware write wrapper for agent entities and links.
-@Riverpod(keepAlive: true)
+final agentSyncServiceProvider = Provider<AgentSyncService>(
+  agentSyncService,
+  name: 'agentSyncServiceProvider',
+);
 AgentSyncService agentSyncService(Ref ref) {
   return AgentSyncService(
     repository: ref.watch(agentRepositoryProvider),
@@ -150,13 +169,19 @@ AgentSyncService agentSyncService(Ref ref) {
 }
 
 /// The in-memory wake queue.
-@Riverpod(keepAlive: true)
+final wakeQueueProvider = Provider<WakeQueue>(
+  wakeQueue,
+  name: 'wakeQueueProvider',
+);
 WakeQueue wakeQueue(Ref ref) {
   return WakeQueue();
 }
 
 /// The single-flight wake runner.
-@Riverpod(keepAlive: true)
+final wakeRunnerProvider = Provider<WakeRunner>(
+  wakeRunner,
+  name: 'wakeRunnerProvider',
+);
 WakeRunner wakeRunner(Ref ref) {
   final runner = WakeRunner();
   ref.onDispose(runner.dispose);
@@ -193,7 +218,10 @@ WakeStartHook forkHealingHook(
 }
 
 /// The wake orchestrator (notification listener + subscription matching).
-@Riverpod(keepAlive: true)
+final wakeOrchestratorProvider = Provider<WakeOrchestrator>(
+  wakeOrchestrator,
+  name: 'wakeOrchestratorProvider',
+);
 WakeOrchestrator wakeOrchestrator(Ref ref) {
   final notifications = ref.watch(maybeUpdateNotificationsProvider);
   void Function(String agentId)? onPersistedStateChanged;
@@ -256,7 +284,10 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
 }
 
 /// The scheduled wake manager for time-based agent wakes.
-@Riverpod(keepAlive: true)
+final scheduledWakeManagerProvider = Provider<ScheduledWakeManager>(
+  scheduledWakeManager,
+  name: 'scheduledWakeManagerProvider',
+);
 ScheduledWakeManager scheduledWakeManager(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   final manager = ScheduledWakeManager(
@@ -272,7 +303,10 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
 
 /// Tracks local project/task changes and marks project reports stale without
 /// waking the project agent immediately.
-@Riverpod(keepAlive: true)
+final projectActivityMonitorProvider = Provider<ProjectActivityMonitor>(
+  projectActivityMonitor,
+  name: 'projectActivityMonitorProvider',
+);
 ProjectActivityMonitor projectActivityMonitor(Ref ref) {
   final monitor = ProjectActivityMonitor(
     notifications: ref.watch(updateNotificationsProvider),
@@ -288,7 +322,10 @@ ProjectActivityMonitor projectActivityMonitor(Ref ref) {
 }
 
 /// The high-level agent service.
-@Riverpod(keepAlive: true)
+final agentServiceProvider = Provider<AgentService>(
+  agentService,
+  name: 'agentServiceProvider',
+);
 AgentService agentService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return AgentService(
@@ -300,7 +337,10 @@ AgentService agentService(Ref ref) {
 }
 
 /// The agent template service.
-@Riverpod(keepAlive: true)
+final agentTemplateServiceProvider = Provider<AgentTemplateService>(
+  agentTemplateService,
+  name: 'agentTemplateServiceProvider',
+);
 AgentTemplateService agentTemplateService(Ref ref) {
   return AgentTemplateService(
     repository: ref.watch(agentRepositoryProvider),
@@ -309,7 +349,10 @@ AgentTemplateService agentTemplateService(Ref ref) {
 }
 
 /// The standing agreement authoring service.
-@Riverpod(keepAlive: true)
+final standingAgreementServiceProvider = Provider<StandingAgreementService>(
+  standingAgreementService,
+  name: 'standingAgreementServiceProvider',
+);
 StandingAgreementService standingAgreementService(Ref ref) {
   return StandingAgreementService(
     repository: ref.watch(agentRepositoryProvider),
@@ -318,7 +361,10 @@ StandingAgreementService standingAgreementService(Ref ref) {
 }
 
 /// The soul document service.
-@Riverpod(keepAlive: true)
+final soulDocumentServiceProvider = Provider<SoulDocumentService>(
+  soulDocumentService,
+  name: 'soulDocumentServiceProvider',
+);
 SoulDocumentService soulDocumentService(Ref ref) {
   return SoulDocumentService(
     repository: ref.watch(agentRepositoryProvider),
@@ -327,7 +373,10 @@ SoulDocumentService soulDocumentService(Ref ref) {
 }
 
 /// The feedback extraction service.
-@Riverpod(keepAlive: true)
+final feedbackExtractionServiceProvider = Provider<FeedbackExtractionService>(
+  feedbackExtractionService,
+  name: 'feedbackExtractionServiceProvider',
+);
 FeedbackExtractionService feedbackExtractionService(Ref ref) {
   return FeedbackExtractionService(
     agentRepository: ref.watch(agentRepositoryProvider),
@@ -337,7 +386,10 @@ FeedbackExtractionService feedbackExtractionService(Ref ref) {
 }
 
 /// The improver agent service.
-@Riverpod(keepAlive: true)
+final improverAgentServiceProvider = Provider<ImproverAgentService>(
+  improverAgentService,
+  name: 'improverAgentServiceProvider',
+);
 ImproverAgentService improverAgentService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return ImproverAgentService(
@@ -361,7 +413,10 @@ ImproverAgentService improverAgentService(Ref ref) {
 ///
 /// Must be watched (e.g. from a top-level widget or app initialization) to
 /// take effect.
-@Riverpod(keepAlive: true)
+final agentInitializationProvider = FutureProvider<void>(
+  agentInitialization,
+  name: 'agentInitializationProvider',
+);
 Future<void> agentInitialization(Ref ref) async {
   developer.log(
     'Agents enabled, starting wake orchestrator',

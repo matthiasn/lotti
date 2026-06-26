@@ -107,7 +107,7 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
     final item = widget.item;
     final entryId = item.meta.id;
     final linkedFrom = widget.linkedFrom;
-    final provider = entryControllerProvider(id: entryId);
+    final provider = entryControllerProvider(entryId);
     final entry = ref.watch(provider).value?.entry;
 
     final sessionJustEnded = ref.watch(
@@ -121,7 +121,7 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
     final recording = _currentRecording;
 
     final latestLinkedId = ref
-        .watch(newestLinkedIdControllerProvider(id: linkedFrom?.id))
+        .watch(newestLinkedIdControllerProvider(linkedFrom?.id))
         .value;
 
     final showRecordIcon =

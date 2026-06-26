@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -51,8 +53,7 @@ class _ImmediateAiConfigByTypeController extends AiConfigByTypeController {
   final List<AiConfig> _configs;
 
   @override
-  Stream<List<AiConfig>> build({required AiConfigType configType}) =>
-      Stream.value(_configs);
+  Stream<List<AiConfig>> build() => Stream.value(_configs);
 }
 
 class _TestInferenceStatusController extends InferenceStatusController {
@@ -61,10 +62,7 @@ class _TestInferenceStatusController extends InferenceStatusController {
   final InferenceStatus initialStatus;
 
   @override
-  InferenceStatus build({
-    required String id,
-    required AiResponseType aiResponseType,
-  }) {
+  InferenceStatus build() {
     return initialStatus;
   }
 }
@@ -95,7 +93,6 @@ void main() {
               createdAt: testDate,
               useReasoning: false,
               requiredInputData: [InputDataType.task],
-              // ignore: deprecated_member_use_from_same_package
               aiResponseType: AiResponseType.taskSummary,
               description: 'A test prompt for testing purposes',
             )
@@ -329,11 +326,10 @@ void main() {
         // Start an active inference so _subscribeToExistingInference finds
         // a progress stream to attach to.
         final activeNotifier = container.read(
-          activeInferenceControllerProvider(
+          activeInferenceControllerProvider((
             entityId: testEntityId,
-            // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
-          ).notifier,
+          )).notifier,
         )..startInference(promptId: testPromptId);
 
         await tester.pumpWidget(
@@ -366,11 +362,10 @@ void main() {
         // The else branch subscribed to the active inference's broadcast
         // progress stream.
         final activeData = container.read(
-          activeInferenceControllerProvider(
+          activeInferenceControllerProvider((
             entityId: testEntityId,
-            // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
-          ),
+          )),
         );
         expect(activeData!.progressStreamController.hasListener, isTrue);
 
@@ -468,11 +463,10 @@ void main() {
               unifiedAiControllerOverride(
                 const UnifiedAiState(message: 'Upstream server exploded'),
               ),
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: 'test-entity',
-                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
-              ).overrideWith(
+              )).overrideWith(
                 () => _TestInferenceStatusController(InferenceStatus.error),
               ),
               triggerNewInferenceProvider.overrideWith((ref, arg) async {
@@ -548,11 +542,10 @@ void main() {
       // Set error state with model not installed message
       container
           .read(
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: 'test-entity',
-              // ignore: deprecated_member_use_from_same_package
               aiResponseType: AiResponseType.taskSummary,
-            ).notifier,
+            )).notifier,
           )
           .setStatus(InferenceStatus.error);
 
@@ -674,7 +667,7 @@ void main() {
               (ref) async => testPromptConfig,
             ),
             aiConfigByTypeControllerProvider(
-              configType: AiConfigType.inferenceProvider,
+              AiConfigType.inferenceProvider,
             ).overrideWith(
               () => MockAiConfigByTypeController([ollamaProvider]),
             ),
@@ -684,10 +677,10 @@ void main() {
                 error: ModelNotInstalledException('llama3'),
               ),
             ),
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: entityId,
               aiResponseType: testPromptConfig.aiResponseType,
-            ).overrideWith(
+            )).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.error),
             ),
             triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
@@ -716,7 +709,7 @@ void main() {
               (ref) async => testPromptConfig,
             ),
             aiConfigByTypeControllerProvider(
-              configType: AiConfigType.inferenceProvider,
+              AiConfigType.inferenceProvider,
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
@@ -726,10 +719,10 @@ void main() {
                     'Model "llama3" is not installed. Please install it first.',
               ),
             ),
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: entityId,
               aiResponseType: testPromptConfig.aiResponseType,
-            ).overrideWith(
+            )).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.error),
             ),
             triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
@@ -758,17 +751,17 @@ void main() {
               (ref) async => testPromptConfig,
             ),
             aiConfigByTypeControllerProvider(
-              configType: AiConfigType.inferenceProvider,
+              AiConfigType.inferenceProvider,
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
             unifiedAiControllerOverride(
               const UnifiedAiState(message: ''),
             ),
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: entityId,
               aiResponseType: testPromptConfig.aiResponseType,
-            ).overrideWith(
+            )).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.running),
             ),
             triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
@@ -795,7 +788,6 @@ void main() {
                 createdAt: DateTime(2024, 3, 15, 10, 30),
                 useReasoning: false,
                 requiredInputData: [InputDataType.task],
-                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
                 description: 'Test description',
               )
@@ -823,7 +815,6 @@ void main() {
               expect(animation.entryId, 'test-entity');
               expect(
                 animation.responseTypes,
-                // ignore: deprecated_member_use_from_same_package
                 {AiResponseType.taskSummary},
               );
 
@@ -882,7 +873,7 @@ void main() {
               (ref) async => imagePromptConfig,
             ),
             aiConfigByTypeControllerProvider(
-              configType: AiConfigType.inferenceProvider,
+              AiConfigType.inferenceProvider,
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
@@ -896,10 +887,10 @@ A beautiful sunset over mountains.
 Digital painting of a vibrant sunset over misty mountains, warm orange and purple tones, atmospheric, cinematic lighting, 4K --ar 16:9''',
               ),
             ),
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: entityId,
               aiResponseType: AiResponseType.imagePromptGeneration,
-            ).overrideWith(
+            )).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.idle),
             ),
             triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
@@ -945,7 +936,7 @@ Digital painting of a vibrant sunset over misty mountains, warm orange and purpl
               (ref) async => promptGenConfig,
             ),
             aiConfigByTypeControllerProvider(
-              configType: AiConfigType.inferenceProvider,
+              AiConfigType.inferenceProvider,
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
@@ -959,10 +950,10 @@ Help implement OAuth.
 Implement OAuth 2.0 authentication flow in Flutter using the oauth2 package.''',
               ),
             ),
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: entityId,
               aiResponseType: AiResponseType.promptGeneration,
-            ).overrideWith(
+            )).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.idle),
             ),
             triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
@@ -1029,7 +1020,7 @@ Implement OAuth 2.0 authentication flow in Flutter using the oauth2 package.''',
                 (ref) async => promptGenConfig,
               ),
               aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
+                AiConfigType.inferenceProvider,
               ).overrideWith(
                 () => MockAiConfigByTypeController(const <AiConfig>[]),
               ),
@@ -1040,10 +1031,10 @@ Implement OAuth 2.0 authentication flow in Flutter using the oauth2 package.''',
 Generate a widget that renders a login form.''',
                 ),
               ),
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: entityId,
                 aiResponseType: AiResponseType.promptGeneration,
-              ).overrideWith(
+              )).overrideWith(
                 () => _TestInferenceStatusController(InferenceStatus.idle),
               ),
               triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
@@ -1096,17 +1087,17 @@ Generate a widget that renders a login form.''',
                 (ref) async => testPromptConfig,
               ),
               aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
+                AiConfigType.inferenceProvider,
               ).overrideWith(
                 () => MockAiConfigByTypeController(const <AiConfig>[]),
               ),
               unifiedAiControllerOverride(
                 const UnifiedAiState(message: 'some generic error occurred'),
               ),
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: entityId,
                 aiResponseType: testPromptConfig.aiResponseType,
-              ).overrideWith(
+              )).overrideWith(
                 () => _TestInferenceStatusController(InferenceStatus.error),
               ),
               triggerNewInferenceProvider.overrideWith((ref, arg) async {
@@ -1166,22 +1157,20 @@ Generate a widget that renders a login form.''',
         // Start an active inference so _subscribeToExistingInference finds it
         container
             .read(
-              activeInferenceControllerProvider(
+              activeInferenceControllerProvider((
                 entityId: entityId,
-                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
-              ).notifier,
+              )).notifier,
             )
             .startInference(promptId: promptId);
 
         // Push initial progress text
         container
             .read(
-              activeInferenceControllerProvider(
+              activeInferenceControllerProvider((
                 entityId: entityId,
-                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
-              ).notifier,
+              )).notifier,
             )
             .updateProgress('Partial result…');
 
@@ -1243,11 +1232,10 @@ Generate a widget that renders a login form.''',
         // Start an active inference
         container
             .read(
-              activeInferenceControllerProvider(
+              activeInferenceControllerProvider((
                 entityId: entityId,
-                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
-              ).notifier,
+              )).notifier,
             )
             .startInference(promptId: promptId);
 
@@ -1278,11 +1266,10 @@ Generate a widget that renders a login form.''',
         // Push a stream update
         container
             .read(
-              activeInferenceControllerProvider(
+              activeInferenceControllerProvider((
                 entityId: entityId,
-                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
-              ).notifier,
+              )).notifier,
             )
             .updateProgress('Stream update text');
 
@@ -1318,7 +1305,7 @@ Generate a widget that renders a login form.''',
                 (ref) async => testPromptConfig,
               ),
               aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
+                AiConfigType.inferenceProvider,
               ).overrideWith(
                 () => MockAiConfigByTypeController(const <AiConfig>[]),
               ),
@@ -1329,10 +1316,10 @@ Generate a widget that renders a login form.''',
                   error: ModelNotInstalledException('phi3'),
                 ),
               ),
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: entityId,
                 aiResponseType: testPromptConfig.aiResponseType,
-              ).overrideWith(
+              )).overrideWith(
                 () => _TestInferenceStatusController(InferenceStatus.error),
               ),
               triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
@@ -1393,7 +1380,7 @@ Generate a widget that renders a login form.''',
               (ref) async => testPromptConfig,
             ),
             aiConfigByTypeControllerProvider(
-              configType: AiConfigType.inferenceProvider,
+              AiConfigType.inferenceProvider,
             ).overrideWith(
               () => MockAiConfigByTypeController([ollamaProvider]),
             ),
@@ -1404,10 +1391,10 @@ Generate a widget that renders a login form.''',
                     'Model "llama3" is not installed. Please install it first.',
               ),
             ),
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: entityId,
               aiResponseType: testPromptConfig.aiResponseType,
-            ).overrideWith(
+            )).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.error),
             ),
             triggerNewInferenceProvider.overrideWith((ref, arg) async {
@@ -1469,7 +1456,7 @@ Generate a widget that renders a login form.''',
               (ref) async => testPromptConfig,
             ),
             aiConfigByTypeControllerProvider(
-              configType: AiConfigType.inferenceProvider,
+              AiConfigType.inferenceProvider,
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
@@ -1477,10 +1464,10 @@ Generate a widget that renders a login form.''',
             unifiedAiControllerOverride(
               const UnifiedAiState(message: 'some generic network error'),
             ),
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: entityId,
               aiResponseType: testPromptConfig.aiResponseType,
-            ).overrideWith(
+            )).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.error),
             ),
             triggerNewInferenceProvider.overrideWith((ref, arg) async {
@@ -1551,7 +1538,7 @@ Generate a widget that renders a login form.''',
               ),
               // Use _ImmediateAiConfigByTypeController so provider.future resolves
               aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
+                AiConfigType.inferenceProvider,
               ).overrideWith(
                 () => _ImmediateAiConfigByTypeController([ollamaProvider]),
               ),
@@ -1562,10 +1549,10 @@ Generate a widget that renders a login form.''',
                   error: ModelNotInstalledException('llama3'),
                 ),
               ),
-              inferenceStatusControllerProvider(
+              inferenceStatusControllerProvider((
                 id: entityId,
                 aiResponseType: testPromptConfig.aiResponseType,
-              ).overrideWith(
+              )).overrideWith(
                 () => _TestInferenceStatusController(InferenceStatus.error),
               ),
               triggerNewInferenceProvider.overrideWith((ref, arg) async {
@@ -1657,15 +1644,15 @@ Generate a widget that renders a login form.''',
               (ref) async => testPromptConfig,
             ),
             aiConfigByTypeControllerProvider(
-              configType: AiConfigType.inferenceProvider,
+              AiConfigType.inferenceProvider,
             ).overrideWith(
               () => MockAiConfigByTypeController([makeOllama()]),
             ),
             unifiedAiControllerOverride(controllerState),
-            inferenceStatusControllerProvider(
+            inferenceStatusControllerProvider((
               id: entityId,
               aiResponseType: testPromptConfig.aiResponseType,
-            ).overrideWith(
+            )).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.error),
             ),
             triggerNewInferenceProvider.overrideWith((ref, arg) async {
@@ -1684,7 +1671,7 @@ Generate a widget that renders a login form.''',
                 builder: (context, ref, child) {
                   ref.watch(
                     aiConfigByTypeControllerProvider(
-                      configType: AiConfigType.inferenceProvider,
+                      AiConfigType.inferenceProvider,
                     ),
                   );
                   return child!;

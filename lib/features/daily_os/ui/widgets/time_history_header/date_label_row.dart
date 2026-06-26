@@ -27,10 +27,10 @@ class DateLabelRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unifiedDataAsync = ref.watch(
-      unifiedDailyOsDataControllerProvider(date: selectedDate),
+      unifiedDailyOsDataControllerProvider(selectedDate),
     );
     final budgetStatsAsync = ref.watch(
-      dayBudgetStatsProvider(date: selectedDate),
+      dayBudgetStatsProvider(selectedDate),
     );
 
     return Padding(

@@ -1,3 +1,5 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -7,15 +9,17 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'agent_query_providers.g.dart';
 
 /// Whether a specific agent is currently running.
 ///
 /// Yields the initial synchronous value, then updates reactively whenever the
 /// agent starts or stops running.
-@riverpod
+final StreamProviderFamily<bool, String> agentIsRunningProvider = StreamProvider
+    .autoDispose
+    .family<bool, String>(
+      agentIsRunning,
+      name: 'agentIsRunningProvider',
+    );
 Stream<bool> agentIsRunning(Ref ref, String agentId) async* {
   final runner = ref.watch(wakeRunnerProvider);
   yield runner.isRunning(agentId);
@@ -30,16 +34,24 @@ Stream<bool> agentIsRunning(Ref ref, String agentId) async* {
 /// `null == null`, a `Stream<void>` would only notify watchers on the first
 /// emission. Each `Set` instance is identity-distinct, ensuring every
 /// notification triggers a provider rebuild.
-@riverpod
+final StreamProviderFamily<Set<String>, String> agentUpdateStreamProvider =
+    StreamProvider.autoDispose.family<Set<String>, String>(
+      agentUpdateStream,
+      name: 'agentUpdateStreamProvider',
+    );
 Stream<Set<String>> agentUpdateStream(Ref ref, String agentId) {
   final notifications = ref.watch(updateNotificationsProvider);
   return notifications.updateStream.where((ids) => ids.contains(agentId));
 }
 
-/// Fetch the latest report for an agent by [agentId].
+/// Fetch the latest report for an agent by agentId.
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentReportEntity]) or `null`.
-@riverpod
+final FutureProviderFamily<AgentDomainEntity?, String> agentReportProvider =
+    FutureProvider.autoDispose.family<AgentDomainEntity?, String>(
+      agentReport,
+      name: 'agentReportProvider',
+    );
 Future<AgentDomainEntity?> agentReport(
   Ref ref,
   String agentId,
@@ -49,10 +61,14 @@ Future<AgentDomainEntity?> agentReport(
   return service.getAgentReport(agentId);
 }
 
-/// Fetch agent state for an agent by [agentId].
+/// Fetch agent state for an agent by agentId.
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentStateEntity]) or `null`.
-@riverpod
+final FutureProviderFamily<AgentDomainEntity?, String> agentStateProvider =
+    FutureProvider.autoDispose.family<AgentDomainEntity?, String>(
+      agentState,
+      name: 'agentStateProvider',
+    );
 Future<AgentDomainEntity?> agentState(
   Ref ref,
   String agentId,
@@ -62,10 +78,14 @@ Future<AgentDomainEntity?> agentState(
   return repository.getAgentState(agentId);
 }
 
-/// Fetch agent identity by [agentId].
+/// Fetch agent identity by agentId.
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentIdentityEntity]) or `null`.
-@riverpod
+final FutureProviderFamily<AgentDomainEntity?, String> agentIdentityProvider =
+    FutureProvider.autoDispose.family<AgentDomainEntity?, String>(
+      agentIdentity,
+      name: 'agentIdentityProvider',
+    );
 Future<AgentDomainEntity?> agentIdentity(
   Ref ref,
   String agentId,
@@ -75,12 +95,17 @@ Future<AgentDomainEntity?> agentIdentity(
   return service.getAgent(agentId);
 }
 
-/// Fetch recent messages for an agent by [agentId].
+/// Fetch recent messages for an agent by agentId.
 ///
 /// Returns up to 50 of the most recent message entities (all kinds),
 /// ordered most-recent first. Each element is an [AgentDomainEntity] of
 /// variant [AgentMessageEntity].
-@riverpod
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+agentRecentMessagesProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>(
+      agentRecentMessages,
+      name: 'agentRecentMessagesProvider',
+    );
 Future<List<AgentDomainEntity>> agentRecentMessages(
   Ref ref,
   String agentId,
@@ -119,7 +144,12 @@ int _displayRank(AgentMessageEntity message) => switch (message.kind) {
 /// chronologically within each thread (conversation-order tiebreak for rows
 /// sharing the wake timestamp). Threads are sorted most-recent-first
 /// (by the latest message in each thread).
-@riverpod
+final FutureProviderFamily<Map<String, List<AgentDomainEntity>>, String>
+agentMessagesByThreadProvider = FutureProvider.autoDispose
+    .family<Map<String, List<AgentDomainEntity>>, String>(
+      agentMessagesByThread,
+      name: 'agentMessagesByThreadProvider',
+    );
 Future<Map<String, List<AgentDomainEntity>>> agentMessagesByThread(
   Ref ref,
   String agentId,
@@ -164,11 +194,16 @@ Future<Map<String, List<AgentDomainEntity>>> agentMessagesByThread(
   return Map.fromEntries(sortedEntries);
 }
 
-/// Fetch recent observation messages for an agent by [agentId].
+/// Fetch recent observation messages for an agent by agentId.
 ///
 /// Returns only messages with kind [AgentMessageKind.observation], ordered
 /// most-recent first.
-@riverpod
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+agentObservationMessagesProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>(
+      agentObservationMessages,
+      name: 'agentObservationMessagesProvider',
+    );
 Future<List<AgentDomainEntity>> agentObservationMessages(
   Ref ref,
   String agentId,
@@ -186,11 +221,16 @@ Future<List<AgentDomainEntity>> agentObservationMessages(
       .toList();
 }
 
-/// Fetch all report snapshots for an agent by [agentId], most-recent first.
+/// Fetch all report snapshots for an agent by agentId, most-recent first.
 ///
 /// Each wake overwrites the report, so older snapshots let the user trace
 /// how the report evolved over time.
-@riverpod
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+agentReportHistoryProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>(
+      agentReportHistory,
+      name: 'agentReportHistoryProvider',
+    );
 Future<List<AgentDomainEntity>> agentReportHistory(
   Ref ref,
   String agentId,
@@ -212,7 +252,11 @@ Future<List<AgentDomainEntity>> agentReportHistory(
 /// is reconstructed on demand from the synced event log via
 /// [WakePromptReconstructor]. Returns `null` if the payload doesn't exist
 /// or has no renderable text.
-@riverpod
+final FutureProviderFamily<String?, String> agentMessagePayloadTextProvider =
+    FutureProvider.autoDispose.family<String?, String>(
+      agentMessagePayloadText,
+      name: 'agentMessagePayloadTextProvider',
+    );
 Future<String?> agentMessagePayloadText(
   Ref ref,
   String payloadId,
@@ -241,7 +285,11 @@ Future<String?> agentMessagePayloadText(
 }
 
 /// List all agent identity instances.
-@riverpod
+final FutureProvider<List<AgentDomainEntity>> allAgentInstancesProvider =
+    FutureProvider.autoDispose<List<AgentDomainEntity>>(
+      allAgentInstances,
+      name: 'allAgentInstancesProvider',
+    );
 Future<List<AgentDomainEntity>> allAgentInstances(Ref ref) async {
   final service = ref.watch(agentServiceProvider);
   final agents = await service.listAgents();
@@ -255,7 +303,12 @@ Future<List<AgentDomainEntity>> allAgentInstances(Ref ref) async {
 /// Shared base provider that fetches `WakeTokenUsageEntity` records once;
 /// both [agentTokenUsageSummariesProvider] and [tokenUsageForThreadProvider]
 /// derive their state from this to avoid redundant database queries.
-@riverpod
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+agentTokenUsageRecordsProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>(
+      agentTokenUsageRecords,
+      name: 'agentTokenUsageRecordsProvider',
+    );
 Future<List<AgentDomainEntity>> agentTokenUsageRecords(
   Ref ref,
   String agentId,
@@ -270,7 +323,12 @@ Future<List<AgentDomainEntity>> agentTokenUsageRecords(
 ///
 /// Derives from [agentTokenUsageRecordsProvider] and aggregates into
 /// per-model summaries sorted by total tokens descending.
-@riverpod
+final FutureProviderFamily<List<AgentTokenUsageSummary>, String>
+agentTokenUsageSummariesProvider = FutureProvider.autoDispose
+    .family<List<AgentTokenUsageSummary>, String>(
+      agentTokenUsageSummaries,
+      name: 'agentTokenUsageSummariesProvider',
+    );
 Future<List<AgentTokenUsageSummary>> agentTokenUsageSummaries(
   Ref ref,
   String agentId,
@@ -284,10 +342,15 @@ Future<List<AgentTokenUsageSummary>> agentTokenUsageSummaries(
 
 /// Aggregated token usage summary for a specific thread.
 ///
-/// Derives from [agentTokenUsageRecordsProvider], filters by [threadId],
+/// Derives from [agentTokenUsageRecordsProvider], filters by threadId,
 /// and folds into a single [AgentTokenUsageSummary].
 /// Returns `null` if no records match.
-@riverpod
+final FutureProviderFamily<AgentTokenUsageSummary?, (String, String)>
+tokenUsageForThreadProvider = FutureProvider.autoDispose
+    .family<AgentTokenUsageSummary?, (String, String)>(
+      (ref, arg) => tokenUsageForThread(ref, arg.$1, arg.$2),
+      name: 'tokenUsageForThreadProvider',
+    );
 Future<AgentTokenUsageSummary?> tokenUsageForThread(
   Ref ref,
   String agentId,
@@ -329,7 +392,11 @@ Future<AgentTokenUsageSummary?> tokenUsageForThread(
 /// 4. Live agent config — `profile.thinkingModelId` or `config.modelId` from
 ///    the agent instance's current config. Only used for in-flight
 ///    threads where the wake run hasn't been created yet.
-@riverpod
+final FutureProviderFamily<String?, (String, String)> modelIdForThreadProvider =
+    FutureProvider.autoDispose.family<String?, (String, String)>(
+      (ref, arg) => modelIdForThread(ref, arg.$1, arg.$2),
+      name: 'modelIdForThreadProvider',
+    );
 Future<String?> modelIdForThread(
   Ref ref,
   String agentId,

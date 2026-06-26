@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -9,13 +10,13 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'audio_recorder_repository.g.dart';
 
 /// Provider for the audio recorder repository.
 /// Kept alive to maintain recording state across navigation.
-@Riverpod(keepAlive: true)
+final audioRecorderRepositoryProvider = Provider<AudioRecorderRepository>(
+  audioRecorderRepository,
+  name: 'audioRecorderRepositoryProvider',
+);
 AudioRecorderRepository audioRecorderRepository(Ref ref) {
   final repository = AudioRecorderRepository();
   ref.onDispose(() async {

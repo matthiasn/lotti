@@ -41,7 +41,7 @@ class EventDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncEntry = ref.watch(entryControllerProvider(id: eventId));
+    final asyncEntry = ref.watch(entryControllerProvider(eventId));
 
     // A terminal load error shows an error glyph rather than an indefinite
     // spinner; a still-resolving (or genuinely non-event) entry stays on the
@@ -71,7 +71,7 @@ class EventDetailPage extends ConsumerWidget {
       entry.meta.categoryId,
     );
     final documentsDirectory = getIt<Directory>().path;
-    final controller = ref.read(entryControllerProvider(id: eventId).notifier);
+    final controller = ref.read(entryControllerProvider(eventId).notifier);
 
     final data = eventDetailDataFromEntities(
       event: entry,

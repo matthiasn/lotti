@@ -1,7 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/utils/cache_extension.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'image_generation_error_controller.g.dart';
 
 /// Holds the provider's *verbatim* failure reason for an entity/task id (e.g. a
 /// Gemini `finishReason` like `PROHIBITED_CONTENT`) so the cover-art UI can show
@@ -13,10 +12,20 @@ part 'image_generation_error_controller.g.dart';
 /// starts and populated when a run fails with a provider reason. `null` means
 /// "no provider reason" (e.g. a network error), so the UI falls back to a
 /// generic failure message.
-@riverpod
-class ImageGenerationErrorController extends _$ImageGenerationErrorController {
+final NotifierProviderFamily<ImageGenerationErrorController, String?, String>
+imageGenerationErrorControllerProvider = NotifierProvider.autoDispose
+    .family<ImageGenerationErrorController, String?, String>(
+      ImageGenerationErrorController.new,
+      name: 'imageGenerationErrorControllerProvider',
+    );
+
+class ImageGenerationErrorController extends Notifier<String?> {
+  ImageGenerationErrorController(this.id);
+
+  final String id;
+
   @override
-  String? build({required String id}) {
+  String? build() {
     ref.cacheFor(inferenceStateCacheDuration);
     return null;
   }

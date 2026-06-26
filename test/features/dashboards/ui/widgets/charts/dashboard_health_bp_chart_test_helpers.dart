@@ -41,16 +41,16 @@ Future<LineChart> hPumpBpChart(
         rangeEnd: rangeEnd,
       ),
       overrides: [
-        healthObservationsControllerProvider(
+        healthObservationsControllerProvider((
           healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ).overrideWithBuild((ref, notifier) => effectiveSystolic),
-        healthObservationsControllerProvider(
+        )).overrideWithBuild((ref, notifier) => effectiveSystolic),
+        healthObservationsControllerProvider((
           healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ).overrideWithBuild((ref, notifier) => diastolicObservations),
+        )).overrideWithBuild((ref, notifier) => diastolicObservations),
       ],
     ),
   );

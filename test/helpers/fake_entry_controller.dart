@@ -47,7 +47,7 @@ class FakeEntryController extends EntryController {
   final bool _showMap;
 
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     // Create the state value
     final value = EntryState.saved(
       entryId: id,
@@ -134,7 +134,7 @@ class FakeEntryController extends EntryController {
 
 /// Helper to create entry controller override that returns a fixed entity.
 Override createEntryControllerOverride(JournalEntity entity) {
-  return entryControllerProvider(id: entity.id).overrideWith(
+  return entryControllerProvider(entity.id).overrideWith(
     () => FakeEntryController(entity),
   );
 }
@@ -146,7 +146,7 @@ Override createEntryControllerOverride(JournalEntity entity) {
   bool showMap = false,
 }) {
   final tracker = ToggleCallTracker();
-  final override = entryControllerProvider(id: entity.id).overrideWith(
+  final override = entryControllerProvider(entity.id).overrideWith(
     () => FakeEntryController(entity, tracker: tracker, showMap: showMap),
   );
   return (override, tracker);
@@ -168,9 +168,9 @@ class TrackingFakeEntryController extends FakeEntryController {
   JournalEntity? _currentEntity;
 
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     _currentEntity = super._entity;
-    return super.build(id: id);
+    return super.build();
   }
 
   @override
@@ -197,7 +197,7 @@ class TrackingFakeEntryController extends FakeEntryController {
   JournalEntity entity,
 ) {
   final tracker = CoverArtCallTracker();
-  final override = entryControllerProvider(id: entity.id).overrideWith(
+  final override = entryControllerProvider(entity.id).overrideWith(
     () => TrackingFakeEntryController(entity, tracker),
   );
   return (override, tracker);

@@ -1,13 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'linked_from_entries_controller.g.dart';
 
 /// Loads and live-updates the entries that link *to* entry `id` (incoming
 /// links, the "linked from" set), resolved to full [JournalEntity]s.
@@ -15,8 +14,22 @@ part 'linked_from_entries_controller.g.dart';
 /// Mirrors `LinkedEntriesController` but for the reverse direction: subscribes
 /// to [UpdateNotifications] and re-fetches when the source or any linking
 /// entity changes, caching for `entryCacheDuration`.
-@riverpod
-class LinkedFromEntriesController extends _$LinkedFromEntriesController {
+final AsyncNotifierProviderFamily<
+  LinkedFromEntriesController,
+  List<JournalEntity>,
+  String
+>
+linkedFromEntriesControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<LinkedFromEntriesController, List<JournalEntity>, String>(
+      LinkedFromEntriesController.new,
+      name: 'linkedFromEntriesControllerProvider',
+    );
+
+class LinkedFromEntriesController extends AsyncNotifier<List<JournalEntity>> {
+  LinkedFromEntriesController([this.id = '']);
+
+  final String id;
+
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
   final watchedIds = <String>{};
@@ -36,9 +49,7 @@ class LinkedFromEntriesController extends _$LinkedFromEntriesController {
   }
 
   @override
-  Future<List<JournalEntity>> build({
-    required String id,
-  }) async {
+  Future<List<JournalEntity>> build() async {
     ref
       ..onDispose(() => _updateSubscription?.cancel())
       ..cacheFor(entryCacheDuration);

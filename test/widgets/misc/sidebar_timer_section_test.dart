@@ -259,7 +259,7 @@ void main() {
     await tester.pump();
 
     expect(lastBeamedPath(), equals('/tasks/task-3'));
-    final intent = container.read(taskFocusControllerProvider(id: 'task-3'));
+    final intent = container.read(taskFocusControllerProvider('task-3'));
     expect(intent, isNotNull);
     expect(intent!.taskId, equals('task-3'));
     expect(intent.entryId, equals('timer-3'));

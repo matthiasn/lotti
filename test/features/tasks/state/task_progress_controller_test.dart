@@ -127,20 +127,20 @@ void main() {
   test('initial state loads task progress data', () async {
     // Add a listener to track state changes
     container.listen(
-      taskProgressControllerProvider(id: testTaskId),
+      taskProgressControllerProvider(testTaskId),
       (_, _) {},
       fireImmediately: true,
     );
 
     // Wait for the future to complete
-    await container.read(taskProgressControllerProvider(id: testTaskId).future);
+    await container.read(taskProgressControllerProvider(testTaskId).future);
 
     // Verify the data was fetched from the repository
     verify(() => mockRepository.getTaskProgressData(id: testTaskId)).called(1);
 
     // Verify the state contains the expected data
     final state = container.read(
-      taskProgressControllerProvider(id: testTaskId),
+      taskProgressControllerProvider(testTaskId),
     );
     expect(state.value, equals(testProgress));
   });
@@ -150,7 +150,7 @@ void main() {
     () async {
       // Set up initial state
       await container.read(
-        taskProgressControllerProvider(id: testTaskId).future,
+        taskProgressControllerProvider(testTaskId).future,
       );
 
       // Clear previous invocations
@@ -186,7 +186,7 @@ void main() {
       // Listen for the updated state
       final updated = Completer<void>();
       final sub = container.listen(
-        taskProgressControllerProvider(id: testTaskId),
+        taskProgressControllerProvider(testTaskId),
         (_, next) {
           if (!updated.isCompleted && next.value == updatedProgress) {
             updated.complete();
@@ -209,7 +209,7 @@ void main() {
 
       // Ensure the final state contains the updated data
       final state = container.read(
-        taskProgressControllerProvider(id: testTaskId),
+        taskProgressControllerProvider(testTaskId),
       );
       expect(state.value, equals(updatedProgress));
     },
@@ -217,7 +217,7 @@ void main() {
 
   test('updates state when time service emits a linked journal entity', () async {
     // Set up initial state
-    await container.read(taskProgressControllerProvider(id: testTaskId).future);
+    await container.read(taskProgressControllerProvider(testTaskId).future);
 
     // Mock the linkedFrom property
     final mockTask = MockTask(date: DateTime(2022, 7, 7));
@@ -262,7 +262,7 @@ void main() {
 
       // Ensure the state was updated
       final state = container.read(
-        taskProgressControllerProvider(id: testTaskId),
+        taskProgressControllerProvider(testTaskId),
       );
       expect(state.value?.estimate, equals(testEstimate));
     });
@@ -270,7 +270,7 @@ void main() {
 
   test('ignores time service events for unrelated tasks', () async {
     // Set up initial state
-    await container.read(taskProgressControllerProvider(id: testTaskId).future);
+    await container.read(taskProgressControllerProvider(testTaskId).future);
 
     // Mock the linkedFrom property with a different task ID
     final mockTask = MockTask(
@@ -315,7 +315,7 @@ void main() {
     () async {
       // Arrange: bootstrap the controller with the initial DB ranges.
       await container.read(
-        taskProgressControllerProvider(id: testTaskId).future,
+        taskProgressControllerProvider(testTaskId).future,
       );
 
       // The timer is running, linked to this task. Its DB row reflects the
@@ -395,7 +395,7 @@ void main() {
       // to the (dateFrom, dateFrom + 60s) window.
       final tickerSeen = Completer<void>();
       final tickerSub = container.listen(
-        taskProgressControllerProvider(id: testTaskId),
+        taskProgressControllerProvider(testTaskId),
         (_, next) {
           if (!tickerSeen.isCompleted && next.value == preservedProgress) {
             tickerSeen.complete();
@@ -445,7 +445,7 @@ void main() {
 
       // And the published state still reads the cumulative-with-live value.
       final state = container.read(
-        taskProgressControllerProvider(id: testTaskId),
+        taskProgressControllerProvider(testTaskId),
       );
       expect(state.value, equals(preservedProgress));
     },
@@ -475,7 +475,7 @@ void main() {
 
     // Initialize the controller
     await localContainer.read(
-      taskProgressControllerProvider(id: testTaskId).future,
+      taskProgressControllerProvider(testTaskId).future,
     );
 
     // Clear interactions to start fresh

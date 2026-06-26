@@ -51,18 +51,18 @@ class _DashboardHealthBpChartState
     final diastolicColor = tokens.colors.alert.info.defaultColor;
 
     final systolicAsync = ref.watch(
-      healthObservationsControllerProvider(
+      healthObservationsControllerProvider((
         healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
         rangeStart: widget.rangeStart,
         rangeEnd: widget.rangeEnd,
-      ),
+      )),
     );
     final diastolicAsync = ref.watch(
-      healthObservationsControllerProvider(
+      healthObservationsControllerProvider((
         healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
         rangeStart: widget.rangeStart,
         rangeEnd: widget.rangeEnd,
-      ),
+      )),
     );
     final systolicData =
         _systolic.resolve(systolicAsync) ?? const <Observation>[];

@@ -285,7 +285,7 @@ void main() {
       );
 
       container
-          .read(taskFocusControllerProvider(id: testTask.id).notifier)
+          .read(taskFocusControllerProvider(testTask.id).notifier)
           .publishTaskFocus(
             entryId: testTextEntry.meta.id,
           );
@@ -296,8 +296,7 @@ void main() {
       for (
         var i = 0;
         i < 20 &&
-            container.read(taskFocusControllerProvider(id: testTask.id)) !=
-                null;
+            container.read(taskFocusControllerProvider(testTask.id)) != null;
         i++
       ) {
         await tester.pump(const Duration(milliseconds: 100));
@@ -305,7 +304,7 @@ void main() {
 
       // Verify intent was cleared after consumption
       final intent = container.read(
-        taskFocusControllerProvider(id: testTask.id),
+        taskFocusControllerProvider(testTask.id),
       );
       expect(intent, isNull);
     });
@@ -317,14 +316,14 @@ void main() {
       );
 
       container
-          .read(taskFocusControllerProvider(id: testTask.id).notifier)
+          .read(taskFocusControllerProvider(testTask.id).notifier)
           .publishTaskFocus(
             entryId: testTextEntry.meta.id,
           );
 
       // Verify intent exists
       final intentBefore = container.read(
-        taskFocusControllerProvider(id: testTask.id),
+        taskFocusControllerProvider(testTask.id),
       );
       expect(intentBefore, isNotNull);
       expect(intentBefore!.entryId, equals(testTextEntry.meta.id));
@@ -344,8 +343,7 @@ void main() {
       for (
         var i = 0;
         i < 20 &&
-            container.read(taskFocusControllerProvider(id: testTask.id)) !=
-                null;
+            container.read(taskFocusControllerProvider(testTask.id)) != null;
         i++
       ) {
         await tester.pump(const Duration(milliseconds: 100));
@@ -353,7 +351,7 @@ void main() {
 
       // Verify intent was cleared after handling
       final intentAfter = container.read(
-        taskFocusControllerProvider(id: testTask.id),
+        taskFocusControllerProvider(testTask.id),
       );
       expect(intentAfter, isNull);
 
@@ -382,21 +380,20 @@ void main() {
         tester.element(find.byType(TaskDetailsPage)),
       );
       container
-          .read(taskFocusControllerProvider(id: testTask.id).notifier)
+          .read(taskFocusControllerProvider(testTask.id).notifier)
           .publishSuggestionFocus(alignment: 0.2);
 
       for (
         var i = 0;
         i < 10 &&
-            container.read(taskFocusControllerProvider(id: testTask.id)) !=
-                null;
+            container.read(taskFocusControllerProvider(testTask.id)) != null;
         i++
       ) {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
       expect(
-        container.read(taskFocusControllerProvider(id: testTask.id)),
+        container.read(taskFocusControllerProvider(testTask.id)),
         isNull,
       );
     });
@@ -412,7 +409,7 @@ void main() {
         );
 
         container
-            .read(taskFocusControllerProvider(id: testTask.id).notifier)
+            .read(taskFocusControllerProvider(testTask.id).notifier)
             .publishSuggestionFocus();
 
         await tester.pumpWidget(
@@ -427,15 +424,14 @@ void main() {
         for (
           var i = 0;
           i < 10 &&
-              container.read(taskFocusControllerProvider(id: testTask.id)) !=
-                  null;
+              container.read(taskFocusControllerProvider(testTask.id)) != null;
           i++
         ) {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
         expect(
-          container.read(taskFocusControllerProvider(id: testTask.id)),
+          container.read(taskFocusControllerProvider(testTask.id)),
           isNull,
         );
 

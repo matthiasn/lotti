@@ -42,13 +42,13 @@ class LinkedEntriesWidget extends ConsumerWidget {
     final orderedLinks = ref.watch(sortedLinkedEntriesProvider(item.id));
 
     final includeAiEntries = ref.watch(
-      includeAiEntriesControllerProvider(id: item.id),
+      includeAiEntriesControllerProvider(item.id),
     );
     final activeKinds = ref.watch(
-      linkedEntriesActivityFilterControllerProvider(id: item.id),
+      linkedEntriesActivityFilterControllerProvider(item.id),
     );
     final showFlaggedOnly = ref.watch(
-      showFlaggedOnlyControllerProvider(id: item.id),
+      showFlaggedOnlyControllerProvider(item.id),
     );
 
     if (orderedLinks.isEmpty) {
@@ -126,7 +126,7 @@ class _FilteredEntryDetails extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final entry = ref.watch(entryControllerProvider(id: itemId)).value?.entry;
+    final entry = ref.watch(entryControllerProvider(itemId)).value?.entry;
     if (entry != null) {
       final kind = LinkedEntryActivityFilter.fromEntity(entry);
       if (kind != null && !activeKinds.contains(kind)) {

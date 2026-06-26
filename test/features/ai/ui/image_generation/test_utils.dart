@@ -9,8 +9,9 @@ class FakeReferenceImageSelectionController
     extends ReferenceImageSelectionController {
   FakeReferenceImageSelectionController(
     this._fixedState, {
+    String taskId = '',
     this.processedImages = const [],
-  });
+  }) : super(taskId);
 
   final ReferenceImageSelectionState _fixedState;
   final List<ProcessedReferenceImage> processedImages;
@@ -26,7 +27,7 @@ class FakeReferenceImageSelectionController
   String? builtWithTaskId;
 
   @override
-  ReferenceImageSelectionState build({required String taskId}) {
+  ReferenceImageSelectionState build() {
     builtWithTaskId = taskId;
     return _fixedState;
   }

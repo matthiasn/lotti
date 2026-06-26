@@ -53,7 +53,7 @@ class _CreateEntryMenuList extends ConsumerWidget {
     final id = linkedFromId;
     final showChecklist =
         id != null &&
-        ref.watch(entryControllerProvider(id: id)).value?.entry is Task;
+        ref.watch(entryControllerProvider(id)).value?.entry is Task;
 
     final items = <Widget>[
       // Renders only when `linkedFromId` resolves to a Task — i.e. when the

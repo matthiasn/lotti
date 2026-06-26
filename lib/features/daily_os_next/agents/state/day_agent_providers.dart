@@ -1,3 +1,5 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -11,12 +13,12 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_conte
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'day_agent_providers.g.dart';
 
 /// The Daily OS day-agent service.
-@Riverpod(keepAlive: true)
+final dayAgentServiceProvider = Provider<DayAgentService>(
+  dayAgentService,
+  name: 'dayAgentServiceProvider',
+);
 DayAgentService dayAgentService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return DayAgentService(
@@ -31,7 +33,10 @@ DayAgentService dayAgentService(Ref ref) {
 }
 
 /// The Daily OS day-agent capture/reconcile service.
-@Riverpod(keepAlive: true)
+final dayAgentCaptureServiceProvider = Provider<DayAgentCaptureService>(
+  dayAgentCaptureService,
+  name: 'dayAgentCaptureServiceProvider',
+);
 DayAgentCaptureService dayAgentCaptureService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return DayAgentCaptureService(
@@ -47,7 +52,10 @@ DayAgentCaptureService dayAgentCaptureService(Ref ref) {
 }
 
 /// The Daily OS durable-knowledge service (ADR 0022).
-@Riverpod(keepAlive: true)
+final dayAgentKnowledgeServiceProvider = Provider<DayAgentKnowledgeService>(
+  dayAgentKnowledgeService,
+  name: 'dayAgentKnowledgeServiceProvider',
+);
 DayAgentKnowledgeService dayAgentKnowledgeService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return DayAgentKnowledgeService(
@@ -60,7 +68,10 @@ DayAgentKnowledgeService dayAgentKnowledgeService(Ref ref) {
 
 /// The Daily OS week-context service: lookback/lookahead prompt sections and
 /// the `write_day_summary` tool backend.
-@Riverpod(keepAlive: true)
+final dayAgentWeekContextServiceProvider = Provider<DayAgentWeekContextService>(
+  dayAgentWeekContextService,
+  name: 'dayAgentWeekContextServiceProvider',
+);
 DayAgentWeekContextService dayAgentWeekContextService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return DayAgentWeekContextService(
@@ -73,7 +84,10 @@ DayAgentWeekContextService dayAgentWeekContextService(Ref ref) {
 }
 
 /// The Daily OS day-agent drafting service.
-@Riverpod(keepAlive: true)
+final dayAgentPlanServiceProvider = Provider<DayAgentPlanService>(
+  dayAgentPlanService,
+  name: 'dayAgentPlanServiceProvider',
+);
 DayAgentPlanService dayAgentPlanService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return DayAgentPlanService(
@@ -85,8 +99,12 @@ DayAgentPlanService dayAgentPlanService(Ref ref) {
   );
 }
 
-/// Fetch the active Daily OS day agent for [date], if one exists.
-@riverpod
+/// Fetch the active Daily OS day agent for date, if one exists.
+final FutureProviderFamily<AgentDomainEntity?, DateTime> dayAgentProvider =
+    FutureProvider.autoDispose.family<AgentDomainEntity?, DateTime>(
+      dayAgent,
+      name: 'dayAgentProvider',
+    );
 Future<AgentDomainEntity?> dayAgent(
   Ref ref,
   DateTime date,
@@ -98,7 +116,12 @@ Future<AgentDomainEntity?> dayAgent(
 }
 
 /// Stream-refreshed parsed items for one capture.
-@riverpod
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+parsedItemsForCaptureProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>(
+      parsedItemsForCapture,
+      name: 'parsedItemsForCaptureProvider',
+    );
 Future<List<AgentDomainEntity>> parsedItemsForCapture(
   Ref ref,
   String captureId,
@@ -111,8 +134,13 @@ Future<List<AgentDomainEntity>> parsedItemsForCapture(
   return service.parsedItemsForCapture(captureId);
 }
 
-/// Pending reconcile decisions for [date].
-@riverpod
+/// Pending reconcile decisions for date.
+final FutureProviderFamily<List<DayAgentPendingItem>, DateTime>
+pendingDecisionsForDateProvider = FutureProvider.autoDispose
+    .family<List<DayAgentPendingItem>, DateTime>(
+      pendingDecisionsForDate,
+      name: 'pendingDecisionsForDateProvider',
+    );
 Future<List<DayAgentPendingItem>> pendingDecisionsForDate(
   Ref ref,
   DateTime date,
@@ -130,13 +158,17 @@ Future<List<DayAgentPendingItem>> pendingDecisionsForDate(
   );
 }
 
-/// Currently drafted day plan for [date], if any.
+/// Currently drafted day plan for date, if any.
 ///
-/// Returns the base [AgentDomainEntity] for codegen compatibility — the
-/// riverpod_generator in this codebase rejects freezed subtypes as return
-/// types. Consumers should unwrap via `mapOrNull(dayPlan: (e) => e)` to
-/// get the typed [DayPlanEntity] view.
-@riverpod
+/// Returns the base [AgentDomainEntity] to match the repository surface.
+/// Consumers should unwrap via `mapOrNull(dayPlan: (e) => e)` to get the typed
+/// [DayPlanEntity] view.
+final FutureProviderFamily<AgentDomainEntity?, DateTime>
+draftedPlanForDateProvider = FutureProvider.autoDispose
+    .family<AgentDomainEntity?, DateTime>(
+      draftedPlanForDate,
+      name: 'draftedPlanForDateProvider',
+    );
 Future<AgentDomainEntity?> draftedPlanForDate(
   Ref ref,
   DateTime date,

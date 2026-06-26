@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
@@ -9,13 +10,14 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/version_utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-part 'whats_new_controller.g.dart';
-
 /// Provider for the [WhatsNewService].
-@riverpod
+final Provider<WhatsNewService> whatsNewServiceProvider =
+    Provider.autoDispose<WhatsNewService>(
+      whatsNewService,
+      name: 'whatsNewServiceProvider',
+    );
 WhatsNewService whatsNewService(Ref ref) {
   final service = WhatsNewService();
   ref.onDispose(service.close);
@@ -31,7 +33,11 @@ WhatsNewService whatsNewService(Ref ref) {
 ///
 /// Once read, this provider marks the current version as "launched"
 /// so subsequent checks return false until the next version change.
-@riverpod
+final FutureProvider<bool> shouldAutoShowWhatsNewProvider =
+    FutureProvider.autoDispose<bool>(
+      shouldAutoShowWhatsNew,
+      name: 'shouldAutoShowWhatsNewProvider',
+    );
 Future<bool> shouldAutoShowWhatsNew(Ref ref) async {
   // Check if the What's New feature is enabled via the DB config flag.
   final db = ref.watch(journalDbProvider);
@@ -64,8 +70,14 @@ Future<bool> shouldAutoShowWhatsNew(Ref ref) async {
 ///
 /// Manages fetching release content and tracking which releases
 /// the user has seen using SharedPreferences.
-@riverpod
-class WhatsNewController extends _$WhatsNewController {
+final AsyncNotifierProvider<WhatsNewController, WhatsNewState>
+whatsNewControllerProvider =
+    AsyncNotifierProvider.autoDispose<WhatsNewController, WhatsNewState>(
+      WhatsNewController.new,
+      name: 'whatsNewControllerProvider',
+    );
+
+class WhatsNewController extends AsyncNotifier<WhatsNewState> {
   /// Prefix for SharedPreferences keys tracking seen releases.
   static const String _seenKeyPrefix = 'whats_new_seen_';
 

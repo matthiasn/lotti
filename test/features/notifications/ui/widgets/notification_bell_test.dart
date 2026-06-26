@@ -367,7 +367,7 @@ void main() {
         () => navService.pushDesktopTaskDetail('task-act-on-me'),
       ).called(1);
       final intent = container.read(
-        taskFocusControllerProvider(id: 'task-act-on-me'),
+        taskFocusControllerProvider('task-act-on-me'),
       );
       expect(intent, isNotNull);
       expect(intent!.target, TaskFocusTarget.suggestions);
@@ -415,7 +415,7 @@ void main() {
       ).called(1);
       expect(
         container.read(
-          taskFocusControllerProvider(id: 'task-overdue-act-on-me'),
+          taskFocusControllerProvider('task-overdue-act-on-me'),
         ),
         isNull,
       );

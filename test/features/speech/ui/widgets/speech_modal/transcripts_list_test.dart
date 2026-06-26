@@ -76,7 +76,7 @@ Future<void> _pump(
     makeTestableWidgetWithScaffold(
       TranscriptsList(entryId: entryId),
       overrides: [
-        entryControllerProvider(id: entryId).overrideWith(() => ctrl),
+        entryControllerProvider(entryId).overrideWith(() => ctrl),
       ],
     ),
   );

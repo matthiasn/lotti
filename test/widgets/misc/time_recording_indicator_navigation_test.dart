@@ -123,7 +123,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify focus intent was published
-      final intent = container.read(taskFocusControllerProvider(id: taskId));
+      final intent = container.read(taskFocusControllerProvider(taskId));
       expect(intent, isNotNull);
       expect(intent!.taskId, equals(taskId));
       expect(intent.entryId, equals(entryId));
@@ -281,7 +281,7 @@ void main() {
       await tester.tap(find.byType(TimeRecordingIndicator));
       await tester.pumpAndSettle();
 
-      final intent = container.read(taskFocusControllerProvider(id: taskId));
+      final intent = container.read(taskFocusControllerProvider(taskId));
       expect(intent!.alignment, equals(0.0));
 
       container.dispose();

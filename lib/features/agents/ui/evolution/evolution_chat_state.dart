@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_data.dart';
@@ -9,23 +11,30 @@ import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 export 'package:lotti/features/agents/ui/evolution/evolution_chat_data.dart';
 
-part 'evolution_chat_state.g.dart';
-
 /// Manages the lifecycle of an evolution chat session for a specific template.
 ///
-/// On [build], starts a new multi-turn session via
+/// On build, starts a new multi-turn session via
 /// `TemplateEvolutionWorkflow.startSession`. The user can then send messages,
 /// approve/reject proposals, and end the session.
-@riverpod
-class EvolutionChatState extends _$EvolutionChatState {
+final AsyncNotifierProviderFamily<EvolutionChatState, EvolutionChatData, String>
+evolutionChatStateProvider = AsyncNotifierProvider.autoDispose
+    .family<EvolutionChatState, EvolutionChatData, String>(
+      EvolutionChatState.new,
+      name: 'evolutionChatStateProvider',
+    );
+
+class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
+  EvolutionChatState([this.templateId = '']);
+
+  final String templateId;
+
   static const _logTag = 'EvolutionChatState';
 
   @override
-  Future<EvolutionChatData> build(String templateId) async {
+  Future<EvolutionChatData> build() async {
     final workflow = ref.read(templateEvolutionWorkflowProvider);
 
     final now = clock.now();

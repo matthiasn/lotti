@@ -145,7 +145,7 @@ void main() {
       overrides: [
         highlightedCategoryIdProvider.overrideWith((ref) => null),
         // Override to avoid TimeService dependency in tests
-        runningTimerCategoryIdProvider.overrideWithValue(null),
+        runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
         ...overrides,
       ],
       child: TimeBudgetCard(
@@ -374,7 +374,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => 'cat-1'),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
@@ -417,7 +417,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
@@ -1084,7 +1084,9 @@ void main() {
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
             // Timer is running for this category
-            runningTimerCategoryIdProvider.overrideWithValue('cat-1'),
+            runningTimerCategoryIdProvider.overrideWithBuild(
+              (_, _) => 'cat-1',
+            ),
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
@@ -1118,8 +1120,8 @@ void main() {
             overrides: [
               highlightedCategoryIdProvider.overrideWith((ref) => null),
               // Timer is running for a different category
-              runningTimerCategoryIdProvider.overrideWithValue(
-                'other-category',
+              runningTimerCategoryIdProvider.overrideWithBuild(
+                (_, _) => 'other-category',
               ),
             ],
             child: TimeBudgetCard(
@@ -1160,7 +1162,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
             activeFocusCategoryIdProvider.overrideWith(
               (ref) => focusController.stream,
             ),
@@ -1182,7 +1184,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
             activeFocusCategoryIdProvider.overrideWith(
               (ref) => focusController.stream,
             ),
@@ -1207,7 +1209,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
@@ -1235,7 +1237,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
@@ -1251,7 +1253,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
@@ -1345,10 +1347,10 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
             // Override view preference to grid mode
             taskViewPreferenceProvider(
-              categoryId: testCategory.id,
+              testCategory.id,
             ).overrideWith(_TestTaskViewPreferenceController.new),
           ],
           child: TimeBudgetCard(
@@ -1372,9 +1374,9 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
             taskViewPreferenceProvider(
-              categoryId: testCategory.id,
+              testCategory.id,
             ).overrideWith(_TestTaskViewPreferenceController.new),
           ],
           child: TimeBudgetCard(
@@ -1395,7 +1397,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
             // Start with list view
           ],
           child: TimeBudgetCard(
@@ -1738,9 +1740,9 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
             taskViewPreferenceProvider(
-              categoryId: testCategory.id,
+              testCategory.id,
             ).overrideWith(_TestTaskViewPreferenceController.new),
           ],
           child: TimeBudgetCard(
@@ -1767,9 +1769,9 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
             taskViewPreferenceProvider(
-              categoryId: testCategory.id,
+              testCategory.id,
             ).overrideWith(_TestTaskViewPreferenceController.new),
           ],
           child: TimeBudgetCard(
@@ -1796,9 +1798,9 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
             taskViewPreferenceProvider(
-              categoryId: testCategory.id,
+              testCategory.id,
             ).overrideWith(_TestTaskViewPreferenceController.new),
           ],
           child: TimeBudgetCard(
@@ -1827,9 +1829,9 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
+            runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
             taskViewPreferenceProvider(
-              categoryId: testCategory.id,
+              testCategory.id,
             ).overrideWith(_TestTaskViewPreferenceController.new),
           ],
           child: TimeBudgetCard(
@@ -2226,9 +2228,9 @@ void main() {
           RiverpodWidgetTestBench(
             overrides: [
               highlightedCategoryIdProvider.overrideWith((ref) => null),
-              runningTimerCategoryIdProvider.overrideWithValue(null),
+              runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
               taskViewPreferenceProvider(
-                categoryId: testCategory.id,
+                testCategory.id,
               ).overrideWith(_TogglableTaskViewPreferenceController.new),
             ],
             child: TimeBudgetCard(
@@ -2263,9 +2265,9 @@ void main() {
           RiverpodWidgetTestBench(
             overrides: [
               highlightedCategoryIdProvider.overrideWith((ref) => null),
-              runningTimerCategoryIdProvider.overrideWithValue(null),
+              runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
               taskViewPreferenceProvider(
-                categoryId: testCategory.id,
+                testCategory.id,
               ).overrideWith(_TestTaskViewPreferenceController.new),
             ],
             child: TimeBudgetCard(
@@ -2401,7 +2403,7 @@ void main() {
             isFocusActive: true,
             overrides: [
               taskViewPreferenceProvider(
-                categoryId: testCategory.id,
+                testCategory.id,
               ).overrideWith(_TestTaskViewPreferenceController.new),
             ],
           ),
@@ -2483,12 +2485,12 @@ void main() {
           RiverpodWidgetTestBench(
             overrides: [
               highlightedCategoryIdProvider.overrideWith((ref) => null),
-              runningTimerCategoryIdProvider.overrideWithValue(null),
+              runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
               taskViewPreferenceProvider(
-                categoryId: testCategory.id,
+                testCategory.id,
               ).overrideWith(_TestTaskViewPreferenceController.new),
               // Provide a stub so CoverArtThumbnail does not call real DB.
-              entryControllerProvider(id: coverArtImageId).overrideWith(
+              entryControllerProvider(coverArtImageId).overrideWith(
                 () => FakeEntryController(
                   JournalEntity.journalEntry(
                     meta: Metadata(
@@ -2565,7 +2567,7 @@ extension _AnyCompactDuration on glados.Any {
 /// Test controller that returns grid mode.
 class _TestTaskViewPreferenceController extends TaskViewPreference {
   @override
-  Future<TaskViewMode> build({required String categoryId}) async {
+  Future<TaskViewMode> build() async {
     return TaskViewMode.grid;
   }
 }
@@ -2573,7 +2575,7 @@ class _TestTaskViewPreferenceController extends TaskViewPreference {
 /// Test controller that starts in list mode and can toggle to grid.
 class _TogglableTaskViewPreferenceController extends TaskViewPreference {
   @override
-  Future<TaskViewMode> build({required String categoryId}) async {
+  Future<TaskViewMode> build() async {
     return TaskViewMode.list;
   }
 

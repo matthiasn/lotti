@@ -38,10 +38,10 @@ void main() {
         dailyOsSelectedDateProvider.overrideWith(
           () => TestDailyOsSelectedDate(date),
         ),
-        unifiedDailyOsDataControllerProvider(date: date).overrideWith(
+        unifiedDailyOsDataControllerProvider(date).overrideWith(
           () => TestUnifiedController(unifiedData),
         ),
-        dayBudgetStatsProvider(date: date).overrideWith(
+        dayBudgetStatsProvider(date).overrideWith(
           (ref) async => effectiveStats,
         ),
         firstDayOfWeekIndexProvider.overrideWith((ref) async => 1),

@@ -26,7 +26,7 @@ class _TestUnifiedController extends UnifiedDailyOsDataController {
   final DailyOsData _data;
 
   @override
-  Future<DailyOsData> build({required DateTime date}) async {
+  Future<DailyOsData> build() async {
     return _data;
   }
 }
@@ -171,14 +171,14 @@ void main() {
 
     return RiverpodWidgetTestBench(
       overrides: [
-        dailyOsSelectedDateProvider.overrideWithValue(testDate),
-        unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+        dailyOsSelectedDateProvider.overrideWithBuild((_, _) => testDate),
+        unifiedDailyOsDataControllerProvider(testDate).overrideWith(
           () => _TestUnifiedController(unifiedData),
         ),
         highlightedCategoryIdProvider.overrideWith(
           (ref) => highlightedCategoryId,
         ),
-        runningTimerCategoryIdProvider.overrideWithValue(null),
+        runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
         ...additionalOverrides,
       ],
       child: SizedBox(

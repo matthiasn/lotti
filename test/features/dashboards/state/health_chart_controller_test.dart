@@ -47,11 +47,11 @@ void main() {
       addTearDown(container.dispose);
 
       final future = container.read(
-        healthChartDataControllerProvider(
+        healthChartDataControllerProvider((
           healthDataType: dataType,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ).future,
+        )).future,
       );
 
       final result = await future;
@@ -105,11 +105,11 @@ void main() {
         final container = ProviderContainer();
         addTearDown(container.dispose);
 
-        final provider = healthChartDataControllerProvider(
+        final provider = healthChartDataControllerProvider((
           healthDataType: dataType,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        );
+        ));
 
         // Initial load
         await container.read(provider.future);
@@ -177,19 +177,19 @@ void main() {
 
       // Ensure the data controller has loaded first
       await container.read(
-        healthChartDataControllerProvider(
+        healthChartDataControllerProvider((
           healthDataType: dataType,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ).future,
+        )).future,
       );
 
       final result = await container.read(
-        healthObservationsControllerProvider(
+        healthObservationsControllerProvider((
           healthDataType: dataType,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ).future,
+        )).future,
       );
 
       // WEIGHT uses 'none' aggregation, so one observation per entry
@@ -215,11 +215,11 @@ void main() {
         final container = ProviderContainer();
         addTearDown(container.dispose);
 
-        final provider = healthObservationsControllerProvider(
+        final provider = healthObservationsControllerProvider((
           healthDataType: dataType,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        );
+        ));
 
         final future = container.read(provider.future);
         await pumpEventQueue();

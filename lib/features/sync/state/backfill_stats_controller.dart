@@ -1,13 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart' show AppLifecycleListener;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/get_it.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'backfill_stats_controller.g.dart';
 
 /// State for backfill stats and manual operations.
 class BackfillStatsState {
@@ -101,8 +99,8 @@ class BackfillStatsState {
 /// timer entirely when the app is backgrounded (no user there to
 /// watch the numbers move anyway).
 ///
-/// Zero cost when the page is closed: the provider is `@riverpod`
-/// without `keepAlive`, so Riverpod tears it down on last unwatch,
+/// Zero cost when the page is closed: the provider is auto-disposed,
+/// so Riverpod tears it down on last unwatch,
 /// firing the `ref.onDispose` that cancels this timer. Zero cost
 /// when the app is backgrounded: the `AppLifecycleListener` stops
 /// the timer on `onHide` and re-arms it on `onShow`.
@@ -113,8 +111,14 @@ const Duration _autoRefreshInterval = Duration(seconds: 30);
 /// manual operations (full backfill, re-request, reset/retire of stuck and
 /// unresolvable entries), reflecting each as in-progress/last-count flags on
 /// [BackfillStatsState].
-@riverpod
-class BackfillStatsController extends _$BackfillStatsController {
+final NotifierProvider<BackfillStatsController, BackfillStatsState>
+backfillStatsControllerProvider =
+    NotifierProvider.autoDispose<BackfillStatsController, BackfillStatsState>(
+      BackfillStatsController.new,
+      name: 'backfillStatsControllerProvider',
+    );
+
+class BackfillStatsController extends Notifier<BackfillStatsState> {
   Timer? _autoRefreshTimer;
   AppLifecycleListener? _lifecycleListener;
   bool _appVisible = true;

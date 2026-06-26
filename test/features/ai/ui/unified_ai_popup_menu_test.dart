@@ -154,16 +154,16 @@ void main() {
 
     defaultOverrides = [
       // Override entry controllers for all test entities
-      entryControllerProvider(id: 'task-1').overrideWith(
+      entryControllerProvider('task-1').overrideWith(
         () => FakeEntryController(testTaskEntity),
       ),
-      entryControllerProvider(id: 'entry-1').overrideWith(
+      entryControllerProvider('entry-1').overrideWith(
         () => FakeEntryController(testJournalEntry),
       ),
-      entryControllerProvider(id: 'image-1').overrideWith(
+      entryControllerProvider('image-1').overrideWith(
         () => FakeEntryController(testImageEntity),
       ),
-      entryControllerProvider(id: 'audio-1').overrideWith(
+      entryControllerProvider('audio-1').overrideWith(
         () => FakeEntryController(testAudioEntity),
       ),
     ];

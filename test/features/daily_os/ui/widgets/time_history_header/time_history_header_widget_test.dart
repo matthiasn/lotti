@@ -86,10 +86,10 @@ void main() {
               timeHistoryHeaderControllerProvider.overrideWith(
                 ErrorTimeHistoryController.new,
               ),
-              unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+              unifiedDailyOsDataControllerProvider(testDate).overrideWith(
                 () => TestUnifiedController(createUnifiedData()),
               ),
-              dayBudgetStatsProvider(date: testDate).overrideWith(
+              dayBudgetStatsProvider(testDate).overrideWith(
                 (ref) async => const DayBudgetStats(
                   totalPlanned: Duration.zero,
                   totalRecorded: Duration.zero,
@@ -141,10 +141,10 @@ void main() {
               timeHistoryHeaderControllerProvider.overrideWith(
                 () => controller,
               ),
-              unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+              unifiedDailyOsDataControllerProvider(testDate).overrideWith(
                 () => TestUnifiedController(createUnifiedData()),
               ),
-              dayBudgetStatsProvider(date: testDate).overrideWith(
+              dayBudgetStatsProvider(testDate).overrideWith(
                 (ref) async => const DayBudgetStats(
                   totalPlanned: Duration.zero,
                   totalRecorded: Duration.zero,
@@ -229,20 +229,18 @@ void main() {
                 timeHistoryHeaderControllerProvider.overrideWith(
                   () => trackingController,
                 ),
-                unifiedDailyOsDataControllerProvider(
-                  date: pastDate,
-                ).overrideWith(
+                unifiedDailyOsDataControllerProvider(pastDate).overrideWith(
                   () =>
                       TestUnifiedController(createUnifiedData(date: pastDate)),
                 ),
                 unifiedDailyOsDataControllerProvider(
-                  date: todayMidnight,
+                  todayMidnight,
                 ).overrideWith(
                   () => TestUnifiedController(
                     createUnifiedData(date: todayMidnight),
                   ),
                 ),
-                dayBudgetStatsProvider(date: pastDate).overrideWith(
+                dayBudgetStatsProvider(pastDate).overrideWith(
                   (ref) async => const DayBudgetStats(
                     totalPlanned: Duration.zero,
                     totalRecorded: Duration.zero,
@@ -250,7 +248,7 @@ void main() {
                     overBudgetCount: 0,
                   ),
                 ),
-                dayBudgetStatsProvider(date: todayMidnight).overrideWith(
+                dayBudgetStatsProvider(todayMidnight).overrideWith(
                   (ref) async => const DayBudgetStats(
                     totalPlanned: Duration.zero,
                     totalRecorded: Duration.zero,
@@ -348,13 +346,13 @@ void main() {
                   () => TestTimeHistoryController(historyData),
                 ),
                 unifiedDailyOsDataControllerProvider(
-                  date: todayMidnight,
+                  todayMidnight,
                 ).overrideWith(
                   () => TestUnifiedController(
                     createUnifiedData(date: todayMidnight),
                   ),
                 ),
-                dayBudgetStatsProvider(date: todayMidnight).overrideWith(
+                dayBudgetStatsProvider(todayMidnight).overrideWith(
                   (ref) async => const DayBudgetStats(
                     totalPlanned: Duration.zero,
                     totalRecorded: Duration.zero,
@@ -435,13 +433,13 @@ void main() {
                   () => TestTimeHistoryController(historyData),
                 ),
                 unifiedDailyOsDataControllerProvider(
-                  date: todayMidnight,
+                  todayMidnight,
                 ).overrideWith(
                   () => TestUnifiedController(
                     createUnifiedData(date: todayMidnight),
                   ),
                 ),
-                dayBudgetStatsProvider(date: todayMidnight).overrideWith(
+                dayBudgetStatsProvider(todayMidnight).overrideWith(
                   (ref) async => const DayBudgetStats(
                     totalPlanned: Duration.zero,
                     totalRecorded: Duration.zero,
@@ -493,10 +491,10 @@ void main() {
               timeHistoryHeaderControllerProvider.overrideWith(
                 () => TestTimeHistoryController(historyData),
               ),
-              unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+              unifiedDailyOsDataControllerProvider(testDate).overrideWith(
                 () => TestUnifiedController(createUnifiedData()),
               ),
-              dayBudgetStatsProvider(date: testDate).overrideWith(
+              dayBudgetStatsProvider(testDate).overrideWith(
                 (ref) async => const DayBudgetStats(
                   totalPlanned: Duration.zero,
                   totalRecorded: Duration.zero,

@@ -1883,7 +1883,7 @@ void main() {
       bench = _TestBench(
         extraOverrides: [
           // Mock the thoughts toggle provider - default to true for testing
-          geminiIncludeThoughtsProvider.overrideWithValue(true),
+          geminiIncludeThoughtsProvider.overrideWithBuild((_, _) => true),
         ],
       );
       mockGeminiRepo = bench.geminiRepo;
@@ -2900,7 +2900,7 @@ void main() {
         bench = _TestBench(
           withHttpClient: false,
           extraOverrides: [
-            geminiIncludeThoughtsProvider.overrideWithValue(true),
+            geminiIncludeThoughtsProvider.overrideWithBuild((_, _) => true),
           ],
         );
         mockOllamaRepo = bench.ollamaRepo;

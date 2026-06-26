@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
@@ -13,13 +14,14 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
-part 'rating_repository.g.dart';
-
 /// Provides the singleton [RatingRepository] used by controllers and UI.
-@riverpod
+final Provider<RatingRepository> ratingRepositoryProvider =
+    Provider.autoDispose<RatingRepository>(
+      ratingRepository,
+      name: 'ratingRepositoryProvider',
+    );
 RatingRepository ratingRepository(Ref ref) {
   return RatingRepository();
 }

@@ -42,7 +42,7 @@ class _FakeEntryController extends EntryController {
   final JournalEntity? _entry;
 
   @override
-  Future<EntryState?> build({required String id}) {
+  Future<EntryState?> build() {
     final value = _entry == null
         ? null
         : EntryState.saved(
@@ -70,7 +70,7 @@ Future<void> _pump(
 }) async {
   final overrides = <Override>[
     for (final entry in entryMap.entries)
-      entryControllerProvider(id: entry.key).overrideWith(
+      entryControllerProvider(entry.key).overrideWith(
         () => _FakeEntryController(entry.value),
       ),
   ];

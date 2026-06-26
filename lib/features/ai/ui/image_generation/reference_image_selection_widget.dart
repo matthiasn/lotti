@@ -38,10 +38,10 @@ class _ReferenceImageSelectionWidgetState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(
-      referenceImageSelectionControllerProvider(taskId: widget.taskId),
+      referenceImageSelectionControllerProvider(widget.taskId),
     );
     final controller = ref.read(
-      referenceImageSelectionControllerProvider(taskId: widget.taskId).notifier,
+      referenceImageSelectionControllerProvider(widget.taskId).notifier,
     );
 
     if (state.isLoading) {

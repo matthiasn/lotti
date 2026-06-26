@@ -107,7 +107,7 @@ void main() {
     // Audio starts active, both in the controller and in the rendered pill.
     expect(
       container.read(
-        linkedEntriesActivityFilterControllerProvider(id: entryId),
+        linkedEntriesActivityFilterControllerProvider(entryId),
       ),
       contains(LinkedEntryActivityFilter.audio),
     );
@@ -121,7 +121,7 @@ void main() {
     // After the tap the controller drops audio and the pill re-renders as off.
     expect(
       container.read(
-        linkedEntriesActivityFilterControllerProvider(id: entryId),
+        linkedEntriesActivityFilterControllerProvider(entryId),
       ),
       isNot(contains(LinkedEntryActivityFilter.audio)),
     );

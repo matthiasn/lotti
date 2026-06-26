@@ -165,16 +165,16 @@ void main() {
 
     defaultOverrides = [
       // Override entry controllers for all test entities
-      entryControllerProvider(id: 'task-1').overrideWith(
+      entryControllerProvider('task-1').overrideWith(
         () => FakeEntryController(testTaskEntity),
       ),
-      entryControllerProvider(id: 'entry-1').overrideWith(
+      entryControllerProvider('entry-1').overrideWith(
         () => FakeEntryController(testJournalEntry),
       ),
-      entryControllerProvider(id: 'image-1').overrideWith(
+      entryControllerProvider('image-1').overrideWith(
         () => FakeEntryController(testImageEntity),
       ),
-      entryControllerProvider(id: 'audio-1').overrideWith(
+      entryControllerProvider('audio-1').overrideWith(
         () => FakeEntryController(testAudioEntity),
       ),
     ];
@@ -1399,7 +1399,7 @@ void main() {
                   linkedFromId: null,
                 ),
                 overrides: [
-                  entryControllerProvider(id: fx.entity.id).overrideWith(
+                  entryControllerProvider(fx.entity.id).overrideWith(
                     () => FakeEntryController(fx.entity),
                   ),
                   ..._baseOverrides(
@@ -1455,7 +1455,7 @@ void main() {
                   linkedFromId: null,
                 ),
                 overrides: [
-                  entryControllerProvider(id: fx.entity.id).overrideWith(
+                  entryControllerProvider(fx.entity.id).overrideWith(
                     () => FakeEntryController(fx.entity),
                   ),
                   ..._baseOverrides(
@@ -1527,7 +1527,7 @@ void main() {
             UnifiedAiPopUpMenu(journalEntity: entity, linkedFromId: null),
             overrides: [
               entryControllerProvider(
-                id: entity.id,
+                entity.id,
               ).overrideWith(() => FakeEntryController(entity)),
               ..._baseOverrides(
                 entity: entity,
@@ -1603,12 +1603,15 @@ void main() {
             ValueListenableBuilder<bool>(
               valueListenable: showButton,
               builder: (_, show, _) => show
-                  ? UnifiedAiPopUpMenu(journalEntity: entity, linkedFromId: null)
+                  ? UnifiedAiPopUpMenu(
+                      journalEntity: entity,
+                      linkedFromId: null,
+                    )
                   : const SizedBox.shrink(),
             ),
             overrides: [
               entryControllerProvider(
-                id: entity.id,
+                entity.id,
               ).overrideWith(() => FakeEntryController(entity)),
               ..._baseOverrides(
                 entity: entity,
@@ -1710,7 +1713,7 @@ void main() {
               linkedFromId: null,
             ),
             overrides: [
-              entryControllerProvider(id: taskEntity.id).overrideWith(
+              entryControllerProvider(taskEntity.id).overrideWith(
                 () => FakeEntryController(taskEntity),
               ),
               ..._baseOverrides(
@@ -2349,7 +2352,7 @@ List<Override> _baseOverrides({
     )).overrideWith((ref) => Future.value([skill])),
     profileAutomationResolverProvider.overrideWithValue(resolver),
     aiConfigByTypeControllerProvider(
-      configType: AiConfigType.model,
+      AiConfigType.model,
     ).overrideWith(() => MockAiConfigByTypeController(models)),
     aiConfigRepositoryProvider.overrideWithValue(
       _StubAiConfigRepository(configs),

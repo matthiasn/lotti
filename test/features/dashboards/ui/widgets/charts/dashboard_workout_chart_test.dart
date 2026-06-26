@@ -41,11 +41,11 @@ void main() {
           rangeEnd: rangeEnd,
         ),
         overrides: [
-          workoutObservationsControllerProvider(
+          workoutObservationsControllerProvider((
             chartConfig: chartConfig,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
-          ).overrideWithBuild((ref, notifier) => observations),
+          )).overrideWithBuild((ref, notifier) => observations),
         ],
       ),
     );

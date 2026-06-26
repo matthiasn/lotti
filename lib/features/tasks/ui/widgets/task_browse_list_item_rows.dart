@@ -374,7 +374,7 @@ class _TrackedDurationMeta extends ConsumerWidget {
       return _TrackedDurationMetaContent(label: label);
     }
 
-    final progressState = ref.watch(taskProgressControllerProvider(id: taskId));
+    final progressState = ref.watch(taskProgressControllerProvider(taskId));
     final progress = switch (progressState) {
       AsyncData(:final value) => value?.progress ?? Duration.zero,
       _ => Duration.zero,

@@ -1,14 +1,18 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-part 'backfill_config_controller.g.dart';
 
 const _backfillEnabledKey = 'backfill_enabled';
 
 /// Controller for backfill configuration settings.
 /// Allows enabling/disabling automatic backfill sync (useful on metered/slow networks).
-@riverpod
-class BackfillConfigController extends _$BackfillConfigController {
+final AsyncNotifierProvider<BackfillConfigController, bool>
+backfillConfigControllerProvider =
+    AsyncNotifierProvider.autoDispose<BackfillConfigController, bool>(
+      BackfillConfigController.new,
+      name: 'backfillConfigControllerProvider',
+    );
+
+class BackfillConfigController extends AsyncNotifier<bool> {
   @override
   Future<bool> build() async {
     final prefs = await SharedPreferences.getInstance();

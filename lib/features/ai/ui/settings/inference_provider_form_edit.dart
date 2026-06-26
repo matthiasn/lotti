@@ -235,7 +235,7 @@ class AvailableModelsSection extends ConsumerWidget {
 
     // Watch all configured models to check which are already added
     final allModelsAsync = ref.watch(
-      aiConfigByTypeControllerProvider(configType: AiConfigType.model),
+      aiConfigByTypeControllerProvider(AiConfigType.model),
     );
 
     return allModelsAsync.when(
@@ -319,7 +319,7 @@ class _DynamicAvailableModelsSectionState
       _dynamicKnownModelsProvider(widget.providerId),
     );
     final allModelsAsync = ref.watch(
-      aiConfigByTypeControllerProvider(configType: AiConfigType.model),
+      aiConfigByTypeControllerProvider(AiConfigType.model),
     );
 
     return Column(

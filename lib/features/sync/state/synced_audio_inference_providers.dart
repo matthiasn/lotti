@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart'
     show wakeOrchestratorProvider;
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -13,9 +14,6 @@ import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'synced_audio_inference_providers.g.dart';
 
 /// Live, sorted list of known peer node profiles plus the local node's own
 /// snapshot.
@@ -24,7 +22,10 @@ part 'synced_audio_inference_providers.g.dart';
 /// change from `SyncNodeProfileRepository.watchKnownNodes()`. Consumers
 /// (the pinning selector, the sync-node settings page) listen here to see
 /// remote-published profiles arrive without manual refresh.
-@Riverpod(keepAlive: true)
+final knownSyncNodesProvider = StreamProvider<List<SyncNodeProfile>>(
+  knownSyncNodes,
+  name: 'knownSyncNodesProvider',
+);
 Stream<List<SyncNodeProfile>> knownSyncNodes(Ref ref) async* {
   final repo = ref.watch(syncNodeProfileRepositoryProvider);
   yield await repo.listKnownNodes();
@@ -33,7 +34,10 @@ Stream<List<SyncNodeProfile>> knownSyncNodes(Ref ref) async* {
 
 /// The local node's currently-persisted self profile, refreshed on every
 /// directory change (covers display-name edits + capability re-probes).
-@Riverpod(keepAlive: true)
+final localSyncNodeSelfProvider = StreamProvider<SyncNodeProfile?>(
+  localSyncNodeSelf,
+  name: 'localSyncNodeSelfProvider',
+);
 Stream<SyncNodeProfile?> localSyncNodeSelf(Ref ref) async* {
   final repo = ref.watch(syncNodeProfileRepositoryProvider);
   yield await repo.getSelf();
@@ -46,7 +50,11 @@ Stream<SyncNodeProfile?> localSyncNodeSelf(Ref ref) async* {
 /// should run AI inference on audio that arrived via sync. `keepAlive` so it
 /// shares the listener's lifetime; wires it to the journal DB, vector-clock
 /// service, profile resolvers, and the inference/wake machinery.
-@Riverpod(keepAlive: true)
+final syncedAudioInferenceDispatcherProvider =
+    Provider<SyncedAudioInferenceDispatcher>(
+      syncedAudioInferenceDispatcher,
+      name: 'syncedAudioInferenceDispatcherProvider',
+    );
 SyncedAudioInferenceDispatcher syncedAudioInferenceDispatcher(Ref ref) {
   return SyncedAudioInferenceDispatcher(
     journalDb: ref.watch(journalDbProvider),
@@ -69,7 +77,11 @@ SyncedAudioInferenceDispatcher syncedAudioInferenceDispatcher(Ref ref) {
 /// dispatcher fires on every `fromSync: true` batch from
 /// `UpdateNotifications.syncUpdateStream`. The provider is `keepAlive` —
 /// the subscription must survive the entire app lifetime.
-@Riverpod(keepAlive: true)
+final syncedAudioInferenceListenerProvider =
+    Provider<SyncedAudioInferenceListener>(
+      syncedAudioInferenceListener,
+      name: 'syncedAudioInferenceListenerProvider',
+    );
 SyncedAudioInferenceListener syncedAudioInferenceListener(Ref ref) {
   final listener = SyncedAudioInferenceListener(
     updateNotifications: getIt<UpdateNotifications>(),

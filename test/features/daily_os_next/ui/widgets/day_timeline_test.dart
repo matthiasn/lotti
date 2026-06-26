@@ -310,7 +310,7 @@ void main() {
         // ...and first publishes the intent that makes the task page scroll
         // to (and highlight) the tapped recording, using the decoded entry id.
         final intent = container.read(
-          taskFocusControllerProvider(id: 'task-9'),
+          taskFocusControllerProvider('task-9'),
         );
         expect(intent, isNotNull);
         expect(intent!.target, TaskFocusTarget.entry);
@@ -354,7 +354,7 @@ void main() {
 
         // No backing recording → no scroll target published.
         expect(
-          container.read(taskFocusControllerProvider(id: 'task-1')),
+          container.read(taskFocusControllerProvider('task-1')),
           isNull,
         );
       },

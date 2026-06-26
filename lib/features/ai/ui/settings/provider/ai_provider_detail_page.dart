@@ -93,7 +93,7 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
     // re-subscribed every time the AsyncValue changes state.
     final configAsync = ref.watch(aiConfigByIdProvider(widget.providerId));
     final modelsAsync = ref.watch(
-      aiConfigByTypeControllerProvider(configType: AiConfigType.model),
+      aiConfigByTypeControllerProvider(AiConfigType.model),
     );
     final profilesAsync = ref.watch(inferenceProfileControllerProvider);
 

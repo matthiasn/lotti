@@ -36,7 +36,7 @@ import '../../test_data/template_factories.dart';
 ///   with the task's category in `allowedCategoryIds`
 class _NullEntryController extends EntryController {
   @override
-  Future<EntryState?> build({required String id}) async => null;
+  Future<EntryState?> build() async => null;
 }
 
 /// Emits a fixed list of inference profiles so the creation modal's
@@ -56,7 +56,7 @@ class _TaskEntryController extends EntryController {
   final Task _task;
 
   @override
-  Future<EntryState?> build({required String id}) async {
+  Future<EntryState?> build() async {
     return EntryState.saved(
       entryId: id,
       entry: _task,
@@ -104,7 +104,7 @@ void main() {
               ),
               taskAgentProvider.overrideWith((ref, id) async => null),
               entryControllerProvider(
-                id: 'task-001',
+                'task-001',
               ).overrideWith(_NullEntryController.new),
               agentTemplateServiceProvider.overrideWith(
                 (ref) => templateService,
@@ -160,7 +160,7 @@ void main() {
               ),
               taskAgentProvider.overrideWith((ref, id) async => null),
               entryControllerProvider(
-                id: testTask.meta.id,
+                testTask.meta.id,
               ).overrideWith(() => _TaskEntryController(testTask)),
               agentTemplateServiceProvider.overrideWith(
                 (ref) => templateService,
@@ -216,7 +216,7 @@ void main() {
               ),
               taskAgentProvider.overrideWith((ref, id) async => null),
               entryControllerProvider(
-                id: testTask.meta.id,
+                testTask.meta.id,
               ).overrideWith(() => _TaskEntryController(testTask)),
               agentTemplateServiceProvider.overrideWith(
                 (ref) => templateService,
@@ -375,7 +375,7 @@ class _SuccessPathHarness {
           (ref, id) async => _agentAttached ? makeTestIdentity() : null,
         ),
         entryControllerProvider(
-          id: task.meta.id,
+          task.meta.id,
         ).overrideWith(() => _TaskEntryController(task)),
         agentTemplateServiceProvider.overrideWith((ref) => templateService),
         taskAgentServiceProvider.overrideWith((ref) => taskAgentService),

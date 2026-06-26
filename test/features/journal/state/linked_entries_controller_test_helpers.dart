@@ -15,7 +15,7 @@ class FakeIncludeHiddenController extends IncludeHiddenController {
   final bool _value;
 
   @override
-  bool build({required String id}) => _value;
+  bool build() => _value;
 }
 
 /// Synchronous links override for the unresolved-fallback test, so the
@@ -26,7 +26,7 @@ class StaticLinksController extends LinkedEntriesController {
   final List<EntryLink> _links;
 
   @override
-  Future<List<EntryLink>> build({required String id}) {
+  Future<List<EntryLink>> build() {
     state = AsyncData(_links);
     return SynchronousFuture(_links);
   }

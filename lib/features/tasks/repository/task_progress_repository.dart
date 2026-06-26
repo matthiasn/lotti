@@ -1,21 +1,22 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:meta/meta.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'task_progress_repository.g.dart';
 
 /// Keep-alive provider exposing the singleton [TaskProgressRepository].
 ///
 /// Kept alive so the per-microtask batching state (pending ids, in-flight
 /// futures) is shared across every `TaskProgressController` instance instead
 /// of being rebuilt per task.
-@Riverpod(keepAlive: true)
+final taskProgressRepositoryProvider = Provider<TaskProgressRepository>(
+  taskProgressRepository,
+  name: 'taskProgressRepositoryProvider',
+);
 TaskProgressRepository taskProgressRepository(Ref ref) {
   return TaskProgressRepository();
 }

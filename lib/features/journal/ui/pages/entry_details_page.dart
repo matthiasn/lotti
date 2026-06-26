@@ -55,7 +55,7 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
   @override
   void initState() {
     final listener = getIt<UserActivityService>().updateActivity;
-    final provider = taskAppBarControllerProvider(id: widget.itemId);
+    final provider = taskAppBarControllerProvider(widget.itemId);
 
     _scrollController
       ..addListener(listener)
@@ -86,7 +86,7 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
 
   @override
   Widget build(BuildContext context) {
-    final focusProvider = journalFocusControllerProvider(id: widget.itemId);
+    final focusProvider = journalFocusControllerProvider(widget.itemId);
 
     void handleFocus(JournalFocusIntent? intent, {bool isInitialLoad = false}) {
       if (intent == null) return;
@@ -104,7 +104,7 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
       (_, next) => handleFocus(next),
     );
 
-    final provider = entryControllerProvider(id: widget.itemId);
+    final provider = entryControllerProvider(widget.itemId);
     final asyncItem = ref.watch(provider);
     final item = asyncItem.value?.entry;
 

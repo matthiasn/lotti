@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -31,12 +32,9 @@ import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 export 'package:lotti/features/ai/repository/ai_tool_call_processor.dart'
     show extractJsonObjects;
-
-part 'unified_ai_inference_repository.g.dart';
 
 /// Result of audio preparation containing base64 data and format
 class PreparedAudio {
@@ -801,7 +799,12 @@ class UnifiedAiInferenceRepository {
   }
 }
 
-@riverpod
+final Provider<UnifiedAiInferenceRepository>
+unifiedAiInferenceRepositoryProvider =
+    Provider.autoDispose<UnifiedAiInferenceRepository>(
+      unifiedAiInferenceRepository,
+      name: 'unifiedAiInferenceRepositoryProvider',
+    );
 UnifiedAiInferenceRepository unifiedAiInferenceRepository(Ref ref) {
   return UnifiedAiInferenceRepository(ref);
 }

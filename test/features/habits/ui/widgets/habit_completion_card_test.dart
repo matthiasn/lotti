@@ -25,11 +25,7 @@ final _rangeEnd = DateTime(2024, 3, 15);
 /// strip and the `completedToday` flag are fully controlled by the test.
 class _FakeController extends HabitCompletionController {
   @override
-  Future<List<HabitResult>> build({
-    required String habitId,
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-  }) async => _results;
+  Future<List<HabitResult>> build() async => _results;
 }
 
 // The list the active [_FakeController] returns. Set per-test before pumping

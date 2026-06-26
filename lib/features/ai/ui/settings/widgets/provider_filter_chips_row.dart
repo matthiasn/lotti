@@ -77,9 +77,7 @@ class ProviderFilterChipsRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final providersAsync = ref.watch(
-      aiConfigByTypeControllerProvider(
-        configType: AiConfigType.inferenceProvider,
-      ),
+      aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider),
     );
 
     return providersAsync.when(
