@@ -145,7 +145,7 @@ void main() {
       expect(CatClips.dance.channels.containsKey(CatBones.tail6), isTrue);
       expect(
         CatClips.dance.limbTargets.map((target) => target.endBoneId),
-        [CatBones.handL, CatBones.handR],
+        [CatBones.handL, CatBones.handR, CatBones.footL, CatBones.footR],
       );
     });
 

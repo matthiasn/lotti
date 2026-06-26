@@ -580,6 +580,48 @@ void main() {
       }
     });
 
+    test('dance crew keeps foot-target handoffs continuous', () {
+      const samples = 128;
+      const watchedFeet = [CatBones.footL, CatBones.footR];
+
+      final analyzer = TemporalMotionAnalyzer(
+        CharacterScene(buildCatInSuitRig()),
+      );
+      for (final clip in [
+        CatClips.dance,
+        CatClips.danceBackupLeft,
+        CatClips.danceBackupRight,
+      ]) {
+        final report = analyzer.analyze(
+          clip: clip,
+          samples: samples,
+          boneIds: watchedFeet,
+        );
+        final worstDisplacement = report.worstDisplacement;
+        final worstAcceleration = report.worstAcceleration;
+
+        expect(
+          worstDisplacement.distance,
+          lessThan(8.2),
+          reason:
+              '${clip.name} support handoffs should move through foot targets, '
+              'not snap ${worstDisplacement.boneId} from frame '
+              '${worstDisplacement.fromFrame} to '
+              '${worstDisplacement.toFrame}',
+        );
+        expect(
+          worstAcceleration.magnitude,
+          lessThan(3.8),
+          reason:
+              '${clip.name} foot targets should ease into support changes, '
+              'not jerk ${worstAcceleration.boneId} across frames '
+              '${worstAcceleration.fromFrame}->'
+              '${worstAcceleration.throughFrame}->'
+              '${worstAcceleration.toFrame}',
+        );
+      }
+    });
+
     test('limb targets solve hand goals in anchor-bone space', () {
       final scene = CharacterScene(buildCatInSuitRig());
       const targetX = -88.0;

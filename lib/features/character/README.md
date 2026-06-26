@@ -185,7 +185,8 @@ stateDiagram-v2
   moves without making kick/dance travel. `LimbIkTarget` adds an optional
   target-based layer for two-bone limbs, so choreography can place a hand or
   foot relative to an anchor bone before the existing contact/head stabilization
-  passes run. New cycles are **data, not code**.
+  passes run. The dance sample uses this for torso-relative hand paths and
+  pelvis-relative foot handoffs. New cycles are **data, not code**.
 - **`DancePhrase`** — choreography-facing authoring for dance clips. It stores
   a phrase length in frames, labelled support-foot windows, load/release frames,
   free-foot identity, pelvis-distance guardrails, pocket compression targets,
