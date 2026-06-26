@@ -198,9 +198,14 @@ class CharacterScene {
     final posed = _contactLockedPose(clip, timeSeconds, breathed);
 
     final rawWorld = solver.solve(posed, base: base);
+    final massShiftedWorld = _danceSupportMassShiftedWorld(
+      clip,
+      timeSeconds,
+      rawWorld,
+    );
     final world = _headStabilizedWorld(
       clip,
-      rawWorld,
+      massShiftedWorld,
       rootDy: posed.rootDy,
     );
     var face = faceSolver.applyAutonomic(expression.state, auto);
@@ -256,6 +261,38 @@ class CharacterScene {
 
   double _worldRotation(Affine2D transform) =>
       math.atan2(transform.b, transform.a);
+
+  /// The dance contacts lock the feet, but the Phase-1 skeleton can still read
+  /// floaty when the torso mass stays centered between both feet during a side
+  /// transfer. Shift only the upper-body subtree a small, clamped amount toward
+  /// the active support foot: legs/feet remain planted, while the visible COM
+  /// agrees more clearly with the support.
+  Map<String, Affine2D> _danceSupportMassShiftedWorld(
+    Clip clip,
+    double timeSeconds,
+    Map<String, Affine2D> world,
+  ) {
+    if (clip.name != 'dance') return world;
+    const torsoId = 'torso';
+    if (!world.containsKey(torsoId)) return world;
+    final contact = _activeContactAt(clip, _clipPhase(clip, timeSeconds));
+    if (contact == null) return world;
+    final hips = world[rig.bones.firstWhere((b) => b.parent == null).id];
+    final support = _contactPoint(world, contact.span.bone);
+    if (hips == null || support == null) return world;
+
+    final dx = ((support.x - hips.origin.x) * 0.26).clamp(-18.0, 18.0);
+    if (dx.abs() < 0.5) return world;
+
+    final shift = Affine2D.translation(dx, 0);
+    final shifted = Map<String, Affine2D>.of(world);
+    for (final bone in rig.bones) {
+      if (bone.id == torsoId || _hasAncestor(bone.id, torsoId)) {
+        shifted[bone.id] = shift.multiply(world[bone.id]!);
+      }
+    }
+    return shifted;
+  }
 
   bool _hasAncestor(String boneId, String ancestorId) {
     var parent = rig.bone(boneId)?.parent;

@@ -244,6 +244,34 @@ void main() {
       },
     );
 
+    test('dance shifts visible torso mass toward the active support foot', () {
+      final scene = CharacterScene(buildCatInSuitRig());
+
+      for (final p in [1 / 8, 3 / 8, 5 / 8, 7 / 8]) {
+        final span = _spanAt(CatClips.dance, p);
+        final frame = scene.frameAt(
+          clip: CatClips.dance,
+          timeSeconds: p * CatClips.dance.duration,
+        );
+        final support = _supportPoint(
+          scene,
+          CatClips.dance,
+          span.bone,
+          p * CatClips.dance.duration,
+        );
+        final hip = frame.world[CatBones.hips]!.origin;
+        final torso = frame.world[CatBones.torso]!.origin;
+
+        expect(
+          (torso.x - support.x).abs(),
+          lessThan((hip.x - support.x).abs()),
+          reason:
+              'the visible torso mass should move toward ${span.bone} on '
+              'dance support beat $p',
+        );
+      }
+    });
+
     test('is deterministic: identical scenes resolve identical frames', () {
       final a = CharacterScene(
         buildCatInSuitRig(),
@@ -294,6 +322,13 @@ void main() {
       expect(minOpen, lessThan(0.1));
     });
   });
+}
+
+GroundSpan _spanAt(Clip clip, double p) {
+  for (final span in clip.contactSpans) {
+    if (p >= span.start && p < span.end) return span;
+  }
+  return clip.contactSpans.last;
 }
 
 ({double min, double max}) _rotationStats(
