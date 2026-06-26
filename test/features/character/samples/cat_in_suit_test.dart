@@ -170,7 +170,7 @@ void main() {
     );
 
     test(
-      'dance compresses, rebounds, and moves through foot and hand arcs',
+      'dance compresses on downbeats, rebounds, and releases support feet',
       () {
         final channels = CatClips.dance.channels;
         final torso = channels[CatBones.torso]!;
@@ -179,15 +179,15 @@ void main() {
 
         final compressionTorso = torso.sample(0);
         final pickupTorso = torso.sample(1 / 16);
-        final reboundTorso = torso.sample(1 / 8);
-        expect(pickupTorso.scaleY, greaterThan(compressionTorso.scaleY + 0.01));
-        expect(reboundTorso.scaleY, greaterThan(pickupTorso.scaleY + 0.02));
+        final nextDownbeatTorso = torso.sample(1 / 8);
+        expect(pickupTorso.scaleY, greaterThan(compressionTorso.scaleY + 0.05));
+        expect(nextDownbeatTorso.scaleY, lessThan(pickupTorso.scaleY - 0.05));
 
         final plantedFoot = foot.sample(0).rotation;
-        final toeRollFoot = foot.sample(1 / 16).rotation;
-        final reboundFoot = foot.sample(1 / 8).rotation;
-        expect(toeRollFoot, lessThan(plantedFoot - 0.04));
-        expect(reboundFoot, greaterThan(toeRollFoot + 0.08));
+        final midContactFoot = foot.sample(1 / 16).rotation;
+        final releasedFoot = foot.sample(1 / 8).rotation;
+        expect(midContactFoot, closeTo(plantedFoot, 0.05));
+        expect(releasedFoot, greaterThan(plantedFoot + 0.18));
 
         final compactHand = hand.sample(0).rotation;
         final pickupHand = hand.sample(1 / 16).rotation;

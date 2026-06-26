@@ -343,14 +343,31 @@ class CharacterPainter extends CustomPainter {
     double duration,
   ) {
     final p = _cyclePhase(timeSeconds, duration);
-    final loopGate = math.sin(math.pi * p);
-    final push = loopGate * loopGate;
-    final track = math.sin(2 * math.pi * p) * loopGate;
-    final accent = math.sin(2 * math.pi * p);
     return (
-      zoom: 1.0 + 0.13 * push + 0.025 * accent * accent,
-      dx: 118 * track + 10 * push,
-      dy: -7 * push,
+      zoom: _smoothKeys(p, const [
+        (p: 0, v: 1.0),
+        (p: 1 / 4, v: 1.06),
+        (p: 1 / 2, v: 1.105),
+        (p: 3 / 4, v: 1.03),
+        (p: 29 / 32, v: 1.005),
+        (p: 1, v: 1.0),
+      ]),
+      dx: _smoothKeys(p, const [
+        (p: 0, v: 0.0),
+        (p: 1 / 4, v: 8.0),
+        (p: 1 / 2, v: 74.0),
+        (p: 3 / 4, v: 18.0),
+        (p: 29 / 32, v: 2.0),
+        (p: 1, v: 0.0),
+      ]),
+      dy: _smoothKeys(p, const [
+        (p: 0, v: 0.0),
+        (p: 1 / 4, v: -3.0),
+        (p: 1 / 2, v: -8.0),
+        (p: 3 / 4, v: -2.0),
+        (p: 29 / 32, v: 0.0),
+        (p: 1, v: 0.0),
+      ]),
     );
   }
 
@@ -364,13 +381,51 @@ class CharacterPainter extends CustomPainter {
     final p = _cyclePhase(timeSeconds, duration);
     final breathe = math.sin(2 * math.pi * (p * 3 + 0.15));
     final callResponse = math.sin(2 * math.pi * (p * 2 - 0.08));
-    final heroPulse = math.pow(math.sin(math.pi * p), 2).toDouble();
+    final blackSolo = _pulse(p, 3 / 8, 1 / 2);
+    final wideV = _pulse(p, 1 / 2, 3 / 4);
+    final returnLock = _smoothUnit((p - 25 / 32) / (4 / 32));
     return switch (index) {
-      0 => (dx: -10 - 8 * breathe, dy: -6 + 3 * callResponse),
-      1 => (dx: 0, dy: 8 + 6 * heroPulse),
-      2 => (dx: 10 + 8 * breathe, dy: -6 - 3 * callResponse),
+      0 => (
+        dx: (-10 - 8 * breathe - 10 * wideV) * (1 - returnLock),
+        dy: -6 + 3 * callResponse - 5 * blackSolo - 5 * wideV,
+      ),
+      1 => (
+        dx: 0,
+        dy: 8 - 4 * blackSolo + 5 * wideV,
+      ),
+      2 => (
+        dx: (10 + 8 * breathe + 14 * blackSolo + 10 * wideV) * (1 - returnLock),
+        dy: -6 - 3 * callResponse + 11 * blackSolo - 5 * wideV,
+      ),
       _ => (dx: 0, dy: 0),
     };
+  }
+
+  static double _smoothKeys(
+    double p,
+    List<({double p, double v})> keys,
+  ) {
+    for (var i = 0; i < keys.length - 1; i++) {
+      final a = keys[i];
+      final b = keys[i + 1];
+      if (p >= a.p && p <= b.p) {
+        final t = _smoothUnit((p - a.p) / (b.p - a.p));
+        return a.v + (b.v - a.v) * t;
+      }
+    }
+    return keys.last.v;
+  }
+
+  static double _pulse(double p, double start, double end) {
+    final mid = (start + end) / 2;
+    if (p < start || p > end) return 0;
+    if (p <= mid) return _smoothUnit((p - start) / (mid - start));
+    return 1 - _smoothUnit((p - mid) / (end - mid));
+  }
+
+  static double _smoothUnit(double t) {
+    final x = t.clamp(0.0, 1.0);
+    return x * x * (3 - 2 * x);
   }
 
   static double _ensembleMicroTimingOffset(
@@ -386,13 +441,14 @@ class CharacterPainter extends CustomPainter {
       // moments inside the phrase, then collapse back to sync at the hits.
       final p = _cyclePhase(timeSeconds, duration);
       final damping = _transitionDamping(p);
-      final phraseDrift = math.sin(2 * math.pi * (p * 3 + index * 0.37));
-      final beatDrift = math.sin(2 * math.pi * (p * 12 + index * 0.19));
+      final frame = duration / 32;
+      final phraseDrift = math.sin(2 * math.pi * (p * 2 + index * 0.37));
+      final beatDrift = math.sin(2 * math.pi * (p * 8 + index * 0.19));
       return switch (index) {
-        0 => (-0.052 + 0.018 * phraseDrift + 0.008 * beatDrift) * damping,
+        0 => (-0.45 * frame + 0.08 * frame * phraseDrift) * damping,
         1 => 0,
-        2 => (0.04 + 0.016 * phraseDrift - 0.008 * beatDrift) * damping,
-        _ => (0.03 * phraseDrift) * damping,
+        2 => (0.45 * frame + 0.08 * frame * beatDrift) * damping,
+        _ => (0.12 * frame * phraseDrift) * damping,
       };
     }
     if (index == 0) return 0;
@@ -416,12 +472,13 @@ class CharacterPainter extends CustomPainter {
   static double _transitionDamping(double p) {
     const accentPhases = [
       0.0,
-      1 / 12,
-      3 / 12,
-      5 / 12,
-      7 / 12,
-      9 / 12,
-      11 / 12,
+      1 / 8,
+      1 / 4,
+      3 / 8,
+      1 / 2,
+      5 / 8,
+      3 / 4,
+      7 / 8,
     ];
     var nearest = 1.0;
     for (final accent in accentPhases) {
