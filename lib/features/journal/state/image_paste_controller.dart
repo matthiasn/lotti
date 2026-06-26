@@ -53,10 +53,10 @@ class ImagePasteController extends AsyncNotifier<bool> {
     final supportsHighEfficiencyImages =
         ImageImportConstants.supportsHighEfficiencyImageConversion();
     for (final item in reader.items) {
-      if (item.canProvide(Formats.jpeg)) {
-        futures.add(_processPastedItem(item, Formats.jpeg, 'jpg'));
-      } else if (item.canProvide(Formats.png)) {
+      if (item.canProvide(Formats.png)) {
         futures.add(_processPastedItem(item, Formats.png, 'png'));
+      } else if (item.canProvide(Formats.jpeg)) {
+        futures.add(_processPastedItem(item, Formats.jpeg, 'jpg'));
       } else if (supportsHighEfficiencyImages &&
           item.canProvide(Formats.heic)) {
         futures.add(_processPastedItem(item, Formats.heic, 'heic'));

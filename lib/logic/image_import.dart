@@ -7,6 +7,8 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart'
+    show CompressFormat;
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -65,7 +67,10 @@ class ImageImportConstants {
   };
 
   /// Source image extensions that are converted before storage.
-  static const Set<String> sourceExtensionsConvertedToJpeg = {'heic', 'heif'};
+  static const Set<String> sourceExtensionsRequiringConversion = {
+    'heic',
+    'heif',
+  };
 
   /// Extension used for converted images in Lotti's storage.
   static const String convertedImageExtension = 'jpg';
@@ -156,27 +161,38 @@ Future<void> importImageAssets(
       }
 
       final createdAt = asset.createDateTime;
-      final file = await asset.file;
+      final file = await _bestAvailableAssetFile(asset);
 
       if (file != null) {
+        final sourceExtension = await sourceExtensionForAssetFile(asset, file);
+        if (sourceExtension == null ||
+            !ImageImportConstants.supportedExtensions.contains(
+              sourceExtension,
+            )) {
+          continue;
+        }
+
+        final bytes = _requiresConversion(sourceExtension)
+            ? await file.readAsBytes()
+            : null;
         final idNamePart = asset.id.split('/').first;
-        final originalName = file.path.split('/').last;
-        final imageFileName = '$idNamePart.$originalName'
-            .replaceAll(
-              'HEIC',
-              'JPG',
-            )
-            .replaceAll(
-              'PNG',
-              'JPG',
-            );
+        final targetFileExtension = _targetImageExtension(
+          sourceExtension,
+          sourceBytes: bytes,
+        );
+        final imageFileName = '$idNamePart.$targetFileExtension';
         final day = DateFormat(
           AudioRecorderConstants.directoryDateFormat,
         ).format(createdAt);
         final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
         final directory = await createAssetDirectory(relativePath);
         final targetFilePath = p.join(directory, imageFileName);
-        await compressAndSave(file, targetFilePath);
+        await _copyOrConvertImageFile(
+          sourceFile: file,
+          sourceExtension: sourceExtension,
+          sourceBytes: bytes,
+          targetFilePath: targetFilePath,
+        );
         final created = asset.createDateTime;
 
         final imageData = ImageData(
@@ -237,7 +253,8 @@ Future<void> importImageXFiles(
     try {
       final id = uuid.v1();
       final srcPath = file.path;
-      final fileExtension = file.name.split('.').last.toLowerCase();
+      final fileExtension =
+          _extensionFromPath(file.name) ?? _extensionFromPath(srcPath) ?? '';
 
       // Skip non-image files
       if (!ImageImportConstants.supportedExtensions.contains(fileExtension)) {
@@ -274,13 +291,17 @@ Future<void> importImageXFiles(
       ).format(capturedAt);
       final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
       final directory = await createAssetDirectory(relativePath);
-      final targetFileExtension = _targetImageExtension(fileExtension);
+      final targetFileExtension = _targetImageExtension(
+        fileExtension,
+        sourceBytes: bytes,
+      );
       final targetFileName = '$id.$targetFileExtension';
       final targetFilePath = p.join(directory, targetFileName);
 
       await _copyOrConvertImageFile(
         sourceFile: File(srcPath),
         sourceExtension: fileExtension,
+        sourceBytes: bytes,
         targetFilePath: targetFilePath,
       );
 
@@ -313,16 +334,89 @@ Future<void> importImageXFiles(
   }
 }
 
-String _targetImageExtension(String sourceExtension) {
-  final normalizedExtension = sourceExtension.toLowerCase();
-  if (_shouldConvertToJpeg(normalizedExtension)) {
-    return ImageImportConstants.convertedImageExtension;
+enum _ImageStorageFormat { original, jpeg, png }
+
+Future<File?> _bestAvailableAssetFile(AssetEntity asset) async {
+  try {
+    final origin = await asset.originFile;
+    if (origin != null) {
+      return origin;
+    }
+  } catch (_) {
+    // Fall back to the platform-provided derivative if original lookup fails.
   }
-  return normalizedExtension;
+  return asset.file;
 }
 
-bool _shouldConvertToJpeg(String sourceExtension) =>
-    ImageImportConstants.sourceExtensionsConvertedToJpeg.contains(
+/// Resolves an imported asset's source image extension.
+///
+/// Returns `null` when the asset MIME type, title, and file path do not expose
+/// a known extension, so callers can reject the asset instead of storing
+/// unknown bytes under a misleading image extension.
+@visibleForTesting
+Future<String?> sourceExtensionForAssetFile(
+  AssetEntity asset,
+  File file,
+) async {
+  return _extensionFromMimeType(asset.mimeType) ??
+      await _extensionFromAssetTitle(asset) ??
+      _extensionFromPath(file.path);
+}
+
+Future<String?> _extensionFromAssetTitle(AssetEntity asset) async {
+  try {
+    return _extensionFromPath(await asset.titleAsync);
+  } catch (_) {
+    return null;
+  }
+}
+
+String? _extensionFromPath(String path) {
+  final extension = p.extension(path).replaceFirst('.', '').toLowerCase();
+  return extension.isEmpty ? null : extension;
+}
+
+String? _extensionFromMimeType(String? mimeType) {
+  return switch (mimeType?.toLowerCase()) {
+    'image/jpeg' || 'image/jpg' => 'jpg',
+    'image/png' => 'png',
+    'image/heic' => 'heic',
+    'image/heif' => 'heif',
+    _ => null,
+  };
+}
+
+String _targetImageExtension(
+  String sourceExtension, {
+  Uint8List? sourceBytes,
+}) {
+  final normalizedExtension = sourceExtension.toLowerCase();
+  return switch (_storageFormatForSource(
+    normalizedExtension,
+    sourceBytes: sourceBytes,
+  )) {
+    _ImageStorageFormat.original => normalizedExtension,
+    _ImageStorageFormat.jpeg => ImageImportConstants.convertedImageExtension,
+    _ImageStorageFormat.png => 'png',
+  };
+}
+
+_ImageStorageFormat _storageFormatForSource(
+  String sourceExtension, {
+  Uint8List? sourceBytes,
+}) {
+  final normalizedExtension = sourceExtension.toLowerCase();
+  if (!_requiresConversion(normalizedExtension)) {
+    return _ImageStorageFormat.original;
+  }
+  if (sourceBytes != null && heifContainsAlphaAuxiliaryImage(sourceBytes)) {
+    return _ImageStorageFormat.png;
+  }
+  return _ImageStorageFormat.jpeg;
+}
+
+bool _requiresConversion(String sourceExtension) =>
+    ImageImportConstants.sourceExtensionsRequiringConversion.contains(
       sourceExtension.toLowerCase(),
     );
 
@@ -330,15 +424,33 @@ Future<void> _copyOrConvertImageFile({
   required File sourceFile,
   required String sourceExtension,
   required String targetFilePath,
+  Uint8List? sourceBytes,
 }) async {
-  if (!_shouldConvertToJpeg(sourceExtension)) {
+  final storageFormat = _storageFormatForSource(
+    sourceExtension,
+    sourceBytes: sourceBytes,
+  );
+  if (storageFormat == _ImageStorageFormat.original) {
     await sourceFile.copy(targetFilePath);
     return;
   }
 
-  final convertedFile = await compressAndSave(sourceFile, targetFilePath);
+  final convertedFile = await compressAndSave(
+    sourceFile,
+    targetFilePath,
+    format: switch (storageFormat) {
+      _ImageStorageFormat.jpeg => CompressFormat.jpeg,
+      _ImageStorageFormat.png => CompressFormat.png,
+      _ImageStorageFormat.original => throw StateError(
+        'Original image storage does not require conversion',
+      ),
+    },
+  );
   if (convertedFile == null) {
-    throw StateError('Failed to convert $sourceExtension image to JPEG');
+    throw StateError(
+      'Failed to convert $sourceExtension image to '
+      '${storageFormat.name.toUpperCase()}',
+    );
   }
 }
 
@@ -347,7 +459,7 @@ Future<void> _writeOrConvertPastedImageBytes({
   required String sourceExtension,
   required String targetFilePath,
 }) async {
-  if (!_shouldConvertToJpeg(sourceExtension)) {
+  if (!_requiresConversion(sourceExtension)) {
     final file = await File(targetFilePath).create(recursive: true);
     await file.writeAsBytes(data);
     return;
@@ -364,6 +476,7 @@ Future<void> _writeOrConvertPastedImageBytes({
     await _copyOrConvertImageFile(
       sourceFile: sourceFile,
       sourceExtension: sourceExtension,
+      sourceBytes: data,
       targetFilePath: targetFilePath,
     );
   } finally {
@@ -373,6 +486,60 @@ Future<void> _writeOrConvertPastedImageBytes({
       // Best-effort cleanup for a temp file that no longer affects import.
     }
   }
+}
+
+/// Returns true when HEIF/HEIC metadata declares an auxiliary alpha image.
+///
+/// HEIF stores this as an `auxC` box whose auxiliary type is a
+/// null-terminated URN. A byte-level check is enough here because this only
+/// chooses a lossless output format; the native image codec still performs the
+/// actual decode/encode work.
+@visibleForTesting
+bool heifContainsAlphaAuxiliaryImage(Uint8List data) {
+  if (!_containsAsciiString(data, 'auxC')) {
+    return false;
+  }
+
+  return _heifAlphaAuxiliaryTypes.any(
+    (auxiliaryType) => _containsAsciiString(data, auxiliaryType),
+  );
+}
+
+const _heifAlphaAuxiliaryTypes = [
+  'urn:mpeg:hevc:2015:auxid:1',
+  'urn:mpeg:mpegB:cicp:systems:auxiliary:alpha',
+];
+
+bool _containsAsciiString(Uint8List data, String value) {
+  final pattern = value.codeUnits;
+  if (pattern.isEmpty || data.length < pattern.length) {
+    return false;
+  }
+
+  final firstByte = pattern.first;
+  final lastPossibleIndex = data.length - pattern.length;
+  var index = 0;
+
+  while (index <= lastPossibleIndex) {
+    index = data.indexOf(firstByte, index);
+    if (index == -1 || index > lastPossibleIndex) {
+      return false;
+    }
+
+    var matched = true;
+    for (var patternIndex = 1; patternIndex < pattern.length; patternIndex++) {
+      if (data[index + patternIndex] != pattern[patternIndex]) {
+        matched = false;
+        break;
+      }
+    }
+
+    if (matched) return true;
+
+    index++;
+  }
+
+  return false;
 }
 
 /// Extracts original timestamp from image EXIF data
@@ -486,7 +653,10 @@ Future<void> importPastedImages({
   final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
   final directory = await createAssetDirectory(relativePath);
   final sourceExtension = fileExtension.toLowerCase();
-  final targetFileExtension = _targetImageExtension(fileExtension);
+  final targetFileExtension = _targetImageExtension(
+    fileExtension,
+    sourceBytes: data,
+  );
   final targetFileName = '$id.$targetFileExtension';
   final targetFilePath = p.join(directory, targetFileName);
 

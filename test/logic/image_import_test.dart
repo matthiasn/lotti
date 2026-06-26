@@ -331,6 +331,17 @@ Uint8List buildExifJpegWithDateTime(String dateTime) {
   ]);
 }
 
+Uint8List _createHeifBytes({required bool hasAlpha}) {
+  return Uint8List.fromList([
+    ...'\u0000\u0000\u0000\u0018ftypheic\u0000\u0000\u0000\u0000'.codeUnits,
+    ...'\u0000\u0000\u0000\u0008meta'.codeUnits,
+    if (hasAlpha)
+      ...'\u0000\u0000\u0000\u0028auxC'
+              'urn:mpeg:hevc:2015:auxid:1\u0000'
+          .codeUnits,
+  ]);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -492,7 +503,39 @@ void main() {
       });
     });
 
+    group('sourceExtensionForAssetFile', () {
+      test(
+        'returns null for assets without identifiable image extension',
+        () async {
+          final asset = MockAssetEntity();
+          final file = File(path.join(tempDir.path, 'opaque_asset'));
+
+          when(() => asset.mimeType).thenReturn(null);
+          when(() => asset.titleAsync).thenAnswer((_) async => 'opaque_asset');
+
+          final extension = await sourceExtensionForAssetFile(asset, file);
+
+          expect(extension, isNull);
+        },
+      );
+    });
+
     group('importPastedImages', () {
+      test('detects HEIF alpha auxiliary image metadata', () {
+        expect(
+          heifContainsAlphaAuxiliaryImage(
+            _createHeifBytes(hasAlpha: true),
+          ),
+          isTrue,
+        );
+        expect(
+          heifContainsAlphaAuxiliaryImage(
+            _createHeifBytes(hasAlpha: false),
+          ),
+          isFalse,
+        );
+      });
+
       test('rejects images exceeding size limit', () async {
         final oversizedData = Uint8List(
           ImageImportConstants.maxFileSizeBytes + 1,
@@ -598,6 +641,47 @@ void main() {
         expect(capturedImage.data.imageFile, isNot(endsWith('.PNG')));
       });
 
+      test('stores pasted PNG bytes without converting them', () async {
+        final pngData = Uint8List.fromList([
+          0x89,
+          0x50,
+          0x4E,
+          0x47,
+          0x0D,
+          0x0A,
+          0x1A,
+          0x0A,
+          0x10,
+          0x20,
+          0x30,
+          0x40,
+        ]);
+
+        await importPastedImages(
+          data: pngData,
+          fileExtension: 'png',
+        );
+
+        final capturedImage =
+            verify(
+                  () => mockPersistenceLogic.createDbEntity(
+                    captureAny(that: isA<JournalImage>()),
+                    linkedId: any(named: 'linkedId'),
+                    shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                    enqueueSync: any(named: 'enqueueSync'),
+                  ),
+                ).captured.single
+                as JournalImage;
+        final storedFile = File(
+          '${tempDir.path}'
+          '${capturedImage.data.imageDirectory}'
+          '${capturedImage.data.imageFile}',
+        );
+
+        expect(capturedImage.data.imageFile, endsWith('.png'));
+        expect(storedFile.readAsBytesSync(), equals(pngData));
+      });
+
       test('converts pasted HEIC data to stored JPEG', () async {
         final heicData = Uint8List.fromList(List<int>.filled(200, 0xCC));
 
@@ -630,6 +714,42 @@ void main() {
             '${capturedImage.data.imageFile}',
           ).existsSync(),
           isTrue,
+        );
+      });
+
+      test('converts pasted HEIC data with alpha to stored PNG', () async {
+        final heicData = _createHeifBytes(hasAlpha: true);
+
+        await withTargetPlatform(
+          TargetPlatform.macOS,
+          () => withFakeImageCompressPlatform(
+            () => importPastedImages(
+              data: heicData,
+              fileExtension: 'heic',
+            ),
+          ),
+        );
+
+        final capturedImage =
+            verify(
+                  () => mockPersistenceLogic.createDbEntity(
+                    captureAny(that: isA<JournalImage>()),
+                    linkedId: any(named: 'linkedId'),
+                    shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                    enqueueSync: any(named: 'enqueueSync'),
+                  ),
+                ).captured.single
+                as JournalImage;
+        final storedBytes = File(
+          '${tempDir.path}'
+          '${capturedImage.data.imageDirectory}'
+          '${capturedImage.data.imageFile}',
+        ).readAsBytesSync();
+
+        expect(capturedImage.data.imageFile, endsWith('.png'));
+        expect(
+          storedBytes.take(8),
+          equals([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
         );
       });
     });
@@ -667,6 +787,46 @@ void main() {
         ).called(1);
       });
 
+      test('copies dropped PNG bytes without converting them', () async {
+        final pngData = Uint8List.fromList([
+          0x89,
+          0x50,
+          0x4E,
+          0x47,
+          0x0D,
+          0x0A,
+          0x1A,
+          0x0A,
+          0xAA,
+          0xBB,
+          0xCC,
+        ]);
+        final testFile = File(path.join(tempDir.path, 'transparent.png'));
+        await testFile.create(recursive: true);
+        await testFile.writeAsBytes(pngData);
+
+        await importImageXFiles([XFile(testFile.path)]);
+
+        final capturedImage =
+            verify(
+                  () => mockPersistenceLogic.createDbEntity(
+                    captureAny(that: isA<JournalImage>()),
+                    linkedId: any(named: 'linkedId'),
+                    shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                    enqueueSync: any(named: 'enqueueSync'),
+                  ),
+                ).captured.single
+                as JournalImage;
+        final storedFile = File(
+          '${tempDir.path}'
+          '${capturedImage.data.imageDirectory}'
+          '${capturedImage.data.imageFile}',
+        );
+
+        expect(capturedImage.data.imageFile, endsWith('.png'));
+        expect(storedFile.readAsBytesSync(), equals(pngData));
+      });
+
       test('converts dropped HEIC file to stored JPEG', () async {
         final testFile = await createTestImageFile('screenshot.HEIC', 1024);
 
@@ -690,6 +850,33 @@ void main() {
 
         expect(capturedImage.data.imageFile, endsWith('.jpg'));
         expect(capturedImage.data.imageFile, isNot(endsWith('.HEIC')));
+      });
+
+      test('converts dropped HEIC file with alpha to stored PNG', () async {
+        final testFile = File(path.join(tempDir.path, 'screenshot.heic'));
+        await testFile.create(recursive: true);
+        await testFile.writeAsBytes(_createHeifBytes(hasAlpha: true));
+
+        await withTargetPlatform(
+          TargetPlatform.macOS,
+          () => withFakeImageCompressPlatform(
+            () => importImageXFiles([XFile(testFile.path)]),
+          ),
+        );
+
+        final capturedImage =
+            verify(
+                  () => mockPersistenceLogic.createDbEntity(
+                    captureAny(that: isA<JournalImage>()),
+                    linkedId: any(named: 'linkedId'),
+                    shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                    enqueueSync: any(named: 'enqueueSync'),
+                  ),
+                ).captured.single
+                as JournalImage;
+
+        expect(capturedImage.data.imageFile, endsWith('.png'));
+        expect(capturedImage.data.imageFile, isNot(endsWith('.heic')));
       });
 
       test('skips HEIC files on Linux before conversion', () async {

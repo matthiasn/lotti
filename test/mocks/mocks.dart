@@ -180,6 +180,7 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:record/record.dart' as record;
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 /// Generic mock for drift Selectable queries used in widget tests.
 class MockSelectable<T> extends Mock implements drift.Selectable<T> {
@@ -821,6 +822,8 @@ class MockHealthService extends Mock implements HealthService {}
 class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
 
 class MockBuildContext extends Mock implements BuildContext {}
+
+class MockAssetEntity extends Mock implements AssetEntity {}
 
 class FakeQuantitativeData extends Fake implements CumulativeQuantityData {}
 

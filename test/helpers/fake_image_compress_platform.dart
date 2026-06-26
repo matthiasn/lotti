@@ -32,6 +32,61 @@ final _fakeJpegBytes = Uint8List.fromList([
   0xD9,
 ]);
 
+final _fakePngBytes = Uint8List.fromList([
+  0x89,
+  0x50,
+  0x4E,
+  0x47,
+  0x0D,
+  0x0A,
+  0x1A,
+  0x0A,
+  0x00,
+  0x00,
+  0x00,
+  0x0D,
+  0x49,
+  0x48,
+  0x44,
+  0x52,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x08,
+  0x06,
+  0x00,
+  0x00,
+  0x00,
+  0x1F,
+  0x15,
+  0xC4,
+  0x89,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+  0x49,
+  0x45,
+  0x4E,
+  0x44,
+  0xAE,
+  0x42,
+  0x60,
+  0x82,
+]);
+
+Uint8List _fakeBytesForFormat(image_compress.CompressFormat format) {
+  return switch (format) {
+    image_compress.CompressFormat.png => Uint8List.fromList(_fakePngBytes),
+    _ => Uint8List.fromList(_fakeJpegBytes),
+  };
+}
+
 class FakeImageCompressPlatform extends Fake
     with MockPlatformInterfaceMixin
     implements image_compress.FlutterImageCompressPlatform {
@@ -47,7 +102,7 @@ class FakeImageCompressPlatform extends Fake
     image_compress.CompressFormat format = image_compress.CompressFormat.jpeg,
     bool keepExif = false,
   }) async {
-    return Uint8List.fromList(_fakeJpegBytes);
+    return _fakeBytesForFormat(format);
   }
 
   @override
@@ -64,7 +119,7 @@ class FakeImageCompressPlatform extends Fake
     int numberOfRetries = 5,
   }) async {
     await _validateSourcePath(path);
-    return Uint8List.fromList(_fakeJpegBytes);
+    return _fakeBytesForFormat(format);
   }
 
   @override
@@ -84,7 +139,7 @@ class FakeImageCompressPlatform extends Fake
     await _validateSourcePath(path);
     final targetFile = File(targetPath);
     await targetFile.create(recursive: true);
-    await targetFile.writeAsBytes(_fakeJpegBytes);
+    await targetFile.writeAsBytes(_fakeBytesForFormat(format));
     return image_compress.XFile(targetFile.path);
   }
 
@@ -98,7 +153,7 @@ class FakeImageCompressPlatform extends Fake
     bool autoCorrectionAngle = true,
     image_compress.CompressFormat format = image_compress.CompressFormat.jpeg,
     bool keepExif = false,
-  }) async => _fakeJpegBytes;
+  }) async => _fakeBytesForFormat(format);
 
   @override
   image_compress.FlutterImageCompressValidator get validator =>

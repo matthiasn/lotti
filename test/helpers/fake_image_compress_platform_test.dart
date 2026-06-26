@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter_image_compress/flutter_image_compress.dart'
+    show CompressFormat;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 
@@ -56,6 +58,22 @@ void main() {
       expect(result!.path, targetPath);
       expect(File(targetPath).existsSync(), isTrue);
       expect(await File(targetPath).readAsBytes(), isNotEmpty);
+    });
+
+    test('compressAndGetFile writes PNG bytes when PNG is requested', () async {
+      final sourceFile = File(path.join(tempDir.path, 'source.heic'));
+      final targetPath = path.join(tempDir.path, 'target.png');
+      await sourceFile.writeAsBytes([1, 2, 3]);
+
+      final result = await platform.compressAndGetFile(
+        sourceFile.path,
+        targetPath,
+        format: CompressFormat.png,
+      );
+
+      expect(result, isNotNull);
+      final bytes = await File(targetPath).readAsBytes();
+      expect(bytes.take(4), equals([0x89, 0x50, 0x4E, 0x47]));
     });
   });
 }
