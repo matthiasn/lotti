@@ -134,13 +134,22 @@ void main() {
           right.channels[CatBones.legUpperR]!.sample(p).rotation,
           closeTo(lead.channels[CatBones.legUpperR]!.sample(p).rotation, 1e-9),
         );
+        final leadHip = lead.channels[CatBones.hips]!.sample(p).rotation;
+        final leftHip = left.channels[CatBones.hips]!.sample(p).rotation;
+        final rightHip = right.channels[CatBones.hips]!.sample(p).rotation;
         expect(
-          left.channels[CatBones.hips]!.sample(p).rotation,
-          closeTo(lead.channels[CatBones.hips]!.sample(p).rotation, 0.005),
+          (leftHip - leadHip).abs(),
+          inInclusiveRange(0.005, 0.08),
+          reason:
+              'the left backup should echo the lead with a small body delay, '
+              'not clone the exact upper-body groove',
         );
         expect(
-          right.channels[CatBones.hips]!.sample(p).rotation,
-          closeTo(lead.channels[CatBones.hips]!.sample(p).rotation, 0.005),
+          (rightHip - leadHip).abs(),
+          inInclusiveRange(0.005, 0.08),
+          reason:
+              'the right backup should answer with a small body lead, while '
+              'keeping the shared footwork readable',
         );
         expect(
           left.channels[CatBones.armUpperL]!.sample(p).rotation,
@@ -197,14 +206,26 @@ void main() {
 
         expect(armUpperL.sample(0).rotation, closeTo(0.28, 0.001));
         expect(armUpperR.sample(0).rotation, closeTo(-0.28, 0.001));
-        expect(armUpperL.sample(1 / 8).rotation, lessThan(-0.6));
-        expect(armUpperR.sample(1 / 8).rotation, greaterThan(0.8));
+        expect(
+          armUpperL.sample(1 / 8).rotation,
+          lessThan(-0.45),
+          reason:
+              'the lead arm should cross into the groove without a huge '
+              'stage-sweep',
+        );
+        expect(
+          armUpperR.sample(1 / 8).rotation,
+          inInclusiveRange(0.32, 0.55),
+          reason:
+              'the opposite arm should mark the chest-level groove without '
+              'whipping through a boy-band sweep',
+        );
         expect(
           armUpperL.sample(1 / 4).rotation,
-          greaterThan(1.3),
+          inInclusiveRange(0.6, 0.85),
           reason:
-              'the count-2 lift should stay high while easing through '
-              'the accent instead of snapping to a vertical punch',
+              'the count-2 accent should stay compact at chest level instead '
+              'of snapping to a vertical boy-band punch',
         );
         expect(
           armUpperR.sample(1 / 4).rotation,
@@ -215,19 +236,20 @@ void main() {
         );
         expect(
           armUpperL.sample(15 / 16).rotation,
-          inInclusiveRange(1.05, 1.3),
-          reason:
-              'count-8 hook should bend the left arm instead of reaching high',
+          inInclusiveRange(0.55, 0.8),
+          reason: 'count-8 hook should bend the left arm in a compact groove',
         );
         expect(
           armUpperR.sample(15 / 16).rotation,
-          lessThan(-0.9),
-          reason: 'count-8 hook should keep the opposite arm open',
+          lessThan(-0.6),
+          reason: 'count-8 hook should keep the opposite arm open but compact',
         );
         expect(
           armLowerL.sample(15 / 16).rotation,
-          greaterThan(0.6),
-          reason: 'count-8 hook should visibly bend the lead elbow',
+          greaterThan(0.4),
+          reason:
+              'count-8 hook should visibly bend the lead elbow without '
+              'snapping out at the loop seam',
         );
         expect(
           armLowerR.sample(15 / 16).rotation,

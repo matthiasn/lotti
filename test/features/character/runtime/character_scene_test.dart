@@ -415,6 +415,57 @@ void main() {
       );
     });
 
+    test('dance has no discontinuous frame-to-frame jumps', () {
+      final scene = CharacterScene(buildCatInSuitRig());
+      const samples = 96;
+      const watchedBones = [
+        CatBones.hips,
+        CatBones.torso,
+        CatBones.head,
+        CatBones.handL,
+        CatBones.handR,
+        CatBones.footL,
+        CatBones.footR,
+        CatBones.tail6,
+      ];
+      var worstDistance = 0.0;
+      var worstBone = '';
+      var worstFrame = 0;
+
+      var previous = scene.frameAt(
+        clip: CatClips.dance,
+        timeSeconds: 0,
+      );
+      for (var frameIndex = 1; frameIndex <= samples; frameIndex++) {
+        final frame = scene.frameAt(
+          clip: CatClips.dance,
+          timeSeconds: CatClips.dance.duration * frameIndex / samples,
+        );
+        for (final boneId in watchedBones) {
+          final prev = previous.world[boneId]!.origin;
+          final next = frame.world[boneId]!.origin;
+          final distance = _distance(
+            (x: prev.x, y: prev.y),
+            (x: next.x, y: next.y),
+          );
+          if (distance > worstDistance) {
+            worstDistance = distance;
+            worstBone = boneId;
+            worstFrame = frameIndex;
+          }
+        }
+        previous = frame;
+      }
+
+      expect(
+        worstDistance,
+        lessThan(18),
+        reason:
+            'worst jump was ${worstDistance.toStringAsFixed(2)}px on '
+            '$worstBone from frame ${worstFrame - 1} to $worstFrame',
+      );
+    });
+
     test('blink reaches the face via the autonomic layer', () {
       final scene = CharacterScene(buildCatInSuitRig());
       var minOpen = 1.0;

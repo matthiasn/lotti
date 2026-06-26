@@ -819,13 +819,13 @@ class CharacterPainter extends CustomPainter {
           (baseAlpha * (active ? activeBoost : 0.45) * (1 - 0.82 * lift))
               .round()
               .clamp(0, 255);
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(bottom.x, floorY + (active ? 1.5 : 2.5)),
-          width: shadowW,
-          height: shadowW * (active ? 0.15 : 0.12),
-        ),
-        Paint()..color = shadowColor.withAlpha(shadowAlpha),
+      _drawDeckShadowOval(
+        canvas,
+        center: Offset(bottom.x + _shadowSlantX(scale), floorY + 2),
+        width: shadowW,
+        height: shadowW * (active ? 0.15 : 0.12),
+        color: _deckShadowColor(shadowAlpha),
+        angle: _deckShadowAngle,
       );
       if (active) {
         final contactAlpha =
@@ -834,13 +834,13 @@ class CharacterPainter extends CustomPainter {
                     (1 - 0.7 * lift))
                 .round()
                 .clamp(0, 255);
-        canvas.drawOval(
-          Rect.fromCenter(
-            center: Offset(bottom.x, floorY + 0.5),
-            width: shadowW * 0.62,
-            height: shadowW * 0.065,
-          ),
-          Paint()..color = shadowColor.withAlpha(contactAlpha),
+        _drawDeckShadowOval(
+          canvas,
+          center: Offset(bottom.x + _shadowSlantX(scale) * 0.45, floorY + 0.5),
+          width: shadowW * 0.62,
+          height: shadowW * 0.065,
+          color: _deckShadowColor(contactAlpha),
+          angle: _deckShadowAngle,
         );
       }
     }
@@ -893,14 +893,51 @@ class CharacterPainter extends CustomPainter {
         ((shadowColor.a * 255.0).round() * alphaBoost * (1 - 0.7 * lift))
             .round()
             .clamp(0, 255);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(centreX, floorY),
-        width: shadowW,
-        height: shadowW * 0.16,
+    _drawDeckShadowOval(
+      canvas,
+      center: Offset(
+        centreX + (backdrop == CharacterBackdrop.waterfront ? 10 * scale : 0),
+        floorY + (backdrop == CharacterBackdrop.waterfront ? 4 * scale : 0),
       ),
-      Paint()..color = shadowColor.withAlpha(shadowAlpha),
+      width: shadowW * (backdrop == CharacterBackdrop.waterfront ? 1.14 : 1),
+      height: shadowW * (backdrop == CharacterBackdrop.waterfront ? 0.2 : 0.16),
+      color: _deckShadowColor(shadowAlpha),
+      angle: _deckShadowAngle,
     );
+  }
+
+  static const double _deckShadowAngle = -0.08;
+
+  double _shadowSlantX(double scale) =>
+      backdrop == CharacterBackdrop.waterfront ? 5.5 * scale : 0;
+
+  Color _deckShadowColor(int alpha) => backdrop == CharacterBackdrop.waterfront
+      ? const Color(0xFF3A2518).withAlpha(alpha)
+      : shadowColor.withAlpha(alpha);
+
+  static void _drawDeckShadowOval(
+    Canvas canvas, {
+    required Offset center,
+    required double width,
+    required double height,
+    required Color color,
+    required double angle,
+  }) {
+    canvas
+      ..save()
+      ..translate(center.dx, center.dy)
+      ..rotate(angle)
+      ..drawOval(
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: width,
+          height: height,
+        ),
+        Paint()
+          ..color = color
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.6),
+      )
+      ..restore();
   }
 
   @override
