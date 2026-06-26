@@ -436,6 +436,8 @@ Two built-in image-generation skills share that same runtime path:
   composition guidance, with no full task JSON, related-task JSON, or
   `**Entry Notes:**` wrapper. This is intended for Flux-style image models that
   perform better with a direct visual story than with application context.
+  Melious image generation also requests the documented wide `1792x1024`
+  output size so the transport-level request matches the cover-art prompt.
 
 Image-generation skills are still hidden for standalone entries and task-only
 surfaces in `availableSkillsForEntityProvider`; cover art needs a linked text

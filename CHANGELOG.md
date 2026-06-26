@@ -89,9 +89,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   notes. It sends Flux models a short visual scene and mood brief instead of the
   full task JSON and related-task context, while keeping the same 16:9,
   center-safe thumbnail composition guidance as the regular cover-art prompt.
-  Melious-hosted Flux 2 Klein 9B gets a clean image prompt for task covers, and
-  new and untouched Melious profiles use it as their default image-generation
-  model.
+  Melious-hosted Flux 2 Klein 9B gets a clean image prompt for task covers,
+  requests Melious' documented wide `1792x1024` output size, and new and
+  untouched Melious profiles use it as their default image-generation model.
 - **AI settings search now matches the rest of the app.** The search field in
   Settings → AI uses the same design-system search component as the journal,
   habits, task-linking and language pickers — one consistent look instead of a
