@@ -146,19 +146,27 @@ class DancePhrase {
   );
 
   List<DanceBodyKey> bodyAccentKeys(List<DanceBodyAccent> accents) {
-    final keys = <DanceBodyKey>[];
+    final keysByFrame = <int, DanceBodyKey>{};
+    void addKey(DanceBodyKey key) {
+      keysByFrame.update(
+        key.frame,
+        (existing) => existing.mergeWith(key),
+        ifAbsent: () => key,
+      );
+    }
+
     for (final accent in accents) {
       final startFrame = accent.frame - accent.radiusFrames;
       final endFrame = accent.frame + accent.radiusFrames;
       _checkFrame(startFrame);
       _checkFrame(accent.frame);
       _checkFrame(endFrame);
-      keys
-        ..add(accent.neutralKey(startFrame))
-        ..add(accent.peakKey())
-        ..add(accent.neutralKey(endFrame));
+      addKey(accent.neutralKey(startFrame));
+      addKey(accent.peakKey());
+      addKey(accent.neutralKey(endFrame));
     }
-    keys.sort((a, b) => a.frame.compareTo(b.frame));
+    final keys = keysByFrame.values.toList()
+      ..sort((a, b) => a.frame.compareTo(b.frame));
     return List<DanceBodyKey>.unmodifiable(keys);
   }
 
@@ -461,6 +469,26 @@ class DanceBodyKey {
     scaleY: chestScaleY ?? 1,
     ease: ease,
   );
+
+  DanceBodyKey mergeWith(DanceBodyKey other) {
+    assert(frame == other.frame, 'can only merge body keys on the same frame');
+    double? sum(double? a, double? b) =>
+        a == null && b == null ? null : (a ?? 0) + (b ?? 0);
+    double? multiply(double? a, double? b) =>
+        a == null && b == null ? null : (a ?? 1) * (b ?? 1);
+
+    return DanceBodyKey(
+      frame,
+      rootDx: sum(rootDx, other.rootDx),
+      rootDy: sum(rootDy, other.rootDy),
+      rootRotation: sum(rootRotation, other.rootRotation),
+      pelvisRotation: sum(pelvisRotation, other.pelvisRotation),
+      chestRotation: sum(chestRotation, other.chestRotation),
+      chestScaleX: multiply(chestScaleX, other.chestScaleX),
+      chestScaleY: multiply(chestScaleY, other.chestScaleY),
+      ease: ease,
+    );
+  }
 }
 
 class DanceBodyAccent {

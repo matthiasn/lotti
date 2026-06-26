@@ -196,7 +196,9 @@ stateDiagram-v2
   named movement sections, frame-addressed joint/root keys, and synchronized
   body-groove keys for COM, pelvis, and chest. `DanceBodyAccent` adds
   neutralized pulse keys around named hits, so a pocket or rebound can deepen
-  root, pelvis, and chest together without hand-editing three separate tracks.
+  root, pelvis, and chest together without hand-editing three separate tracks;
+  overlapping body accents merge on the same frame so move blocks can compose
+  without duplicate spline keys.
   `DanceIkTargetAccent` does the same for local hand/foot target pulses, so a
   lead-hand hit can be layered over the shared semantic hand path without
   duplicating the whole coordinate track. `DanceIkTargetArc` groups named

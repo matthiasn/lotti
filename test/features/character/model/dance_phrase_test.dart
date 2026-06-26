@@ -227,6 +227,38 @@ void main() {
       expect(keys[4].chestScaleY, 1.02);
     });
 
+    test('combines overlapping body accent keys on the same frame', () {
+      final keys = phrase.bodyAccentKeys(
+        const [
+          DanceBodyAccent(
+            8,
+            radiusFrames: 2,
+            rootDy: 2,
+            pelvisRotation: 0.04,
+            chestScaleX: 1.02,
+            chestScaleY: 0.98,
+          ),
+          DanceBodyAccent(
+            8,
+            radiusFrames: 2,
+            rootDy: -1,
+            pelvisRotation: 0.03,
+            chestRotation: -0.02,
+            chestScaleX: 1.01,
+            chestScaleY: 0.99,
+          ),
+        ],
+      );
+
+      expect(keys.map((key) => key.frame), [6, 8, 10]);
+      final sharedFrame = keys.singleWhere((key) => key.frame == 8);
+      expect(sharedFrame.rootDy, 1);
+      expect(sharedFrame.pelvisRotation, closeTo(0.07, 1e-9));
+      expect(sharedFrame.chestRotation, -0.02);
+      expect(sharedFrame.chestScaleX, closeTo(1.0302, 1e-9));
+      expect(sharedFrame.chestScaleY, closeTo(0.9702, 1e-9));
+    });
+
     test('builds IK target channels from frame-addressed keys', () {
       final channel = phrase.ikTargetChannel(
         const [

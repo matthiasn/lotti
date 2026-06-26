@@ -367,6 +367,23 @@ void main() {
           reason: 'count-8 hook should visibly bend the opposite elbow',
         );
         expect(
+          hips.sample(15 / 16).rotation,
+          greaterThan(0.21),
+          reason: 'count-8 hook should keep a small hip pickup under the arms',
+        );
+        expect(
+          torso.sample(15 / 16).rotation,
+          lessThan(-0.09),
+          reason:
+              'count-8 hook should carry a counter-shoulder pickup, not only '
+              'arm motion',
+        );
+        expect(
+          torso.sample(15 / 16).scaleY,
+          lessThan(0.96),
+          reason: 'count-8 hook should stay in the groove pocket',
+        );
+        expect(
           armLowerL.sample(1 / 4).rotation,
           greaterThan(0.1),
           reason: 'the softened count-2 accent still bends the lead elbow',

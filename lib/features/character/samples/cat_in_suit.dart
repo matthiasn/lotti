@@ -1559,13 +1559,23 @@ class CatClips {
       chestScaleY: 1.008,
       chestScaleX: 0.996,
     ),
+    DanceBodyAccent(
+      30,
+      radiusFrames: 2,
+      rootDy: 0.9,
+      rootRotation: -0.001,
+      pelvisRotation: 0.03,
+      chestRotation: -0.025,
+      chestScaleY: 0.992,
+      chestScaleX: 1.006,
+    ),
   ];
 
   static final List<DanceBodyKey> _danceBodyAccentKeys = _dancePhrase
       .bodyAccentKeys(_danceBodyAccents);
 
   // Backup-dancer roles are configured as small additive style overlays below.
-  // below. The shared base clip owns support timing and body mechanics.
+  // The shared base clip owns support timing and body mechanics.
   static const _danceNeckKeys = [
     Keyframe(p: 0, rotation: 0.004),
     Keyframe(p: 1 / 16, rotation: 0.003),
@@ -1708,40 +1718,57 @@ class CatClips {
   // arm channels remain as elbow shape and fallback motion.
   static final KeyframeIkTargetChannel _danceHandLTarget = _dancePhrase
       .ikTargetChannel(
-        const [
-          DanceIkTargetKey(0, x: -56.1, y: 30.3),
-          DanceIkTargetKey(1, x: -41.1, y: 32.7),
-          DanceIkTargetKey(2, x: -29.5, y: 32.8),
-          DanceIkTargetKey(3, x: -22.8, y: 31.4),
-          DanceIkTargetKey(4, x: -14.2, y: 28.8),
-          DanceIkTargetKey(5, x: -12.8, y: 30.2),
-          DanceIkTargetKey(6, x: -19.7, y: 30.4),
-          DanceIkTargetKey(7, x: -57.2, y: 30.2),
-          DanceIkTargetKey(8, x: -92.3, y: 11.3),
-          DanceIkTargetKey(9, x: -93.1, y: 10.5),
-          DanceIkTargetKey(10, x: -82.5, y: 19.1),
-          DanceIkTargetKey(11, x: -70.8, y: 24.6),
-          DanceIkTargetKey(12, x: -55.7, y: 28.9),
-          DanceIkTargetKey(13, x: -75.2, y: 22.2),
-          DanceIkTargetKey(14, x: -80.7, y: 19.7),
-          DanceIkTargetKey(15, x: -66, y: 25.8),
-          DanceIkTargetKey(16, x: -47, y: 31.5),
-          DanceIkTargetKey(17, x: -29.7, y: 32.8),
-          DanceIkTargetKey(18, x: -25, y: 32.4),
-          DanceIkTargetKey(19, x: -40.7, y: 32.8),
-          DanceIkTargetKey(20, x: -49.4, y: 31.3),
-          DanceIkTargetKey(21, x: -48.5, y: 30.5),
-          DanceIkTargetKey(22, x: -45.3, y: 30.3),
-          DanceIkTargetKey(23, x: -53.9, y: 27.8),
-          DanceIkTargetKey(24, x: -72.2, y: 22.2),
-          DanceIkTargetKey(25, x: -63.6, y: 25.4),
-          DanceIkTargetKey(26, x: -43.7, y: 28.6),
-          DanceIkTargetKey(27, x: -67.1, y: 26.9),
-          DanceIkTargetKey(28, x: -88.2, y: 12.9),
-          DanceIkTargetKey(29, x: -98, y: -3),
-          DanceIkTargetKey(30, x: -94, y: 4),
-          DanceIkTargetKey(31, x: -75, y: 22),
-          DanceIkTargetKey(32, x: -56.1, y: 30.3),
+        [
+          ...const [
+            DanceIkTargetKey(0, x: -56.1, y: 30.3),
+            DanceIkTargetKey(1, x: -41.1, y: 32.7),
+            DanceIkTargetKey(2, x: -29.5, y: 32.8),
+            DanceIkTargetKey(3, x: -22.8, y: 31.4),
+            DanceIkTargetKey(4, x: -14.2, y: 28.8),
+            DanceIkTargetKey(5, x: -12.8, y: 30.2),
+            DanceIkTargetKey(6, x: -19.7, y: 30.4),
+            DanceIkTargetKey(7, x: -57.2, y: 30.2),
+            DanceIkTargetKey(8, x: -92.3, y: 11.3),
+            DanceIkTargetKey(9, x: -93.1, y: 10.5),
+            DanceIkTargetKey(10, x: -82.5, y: 19.1),
+            DanceIkTargetKey(11, x: -70.8, y: 24.6),
+            DanceIkTargetKey(12, x: -55.7, y: 28.9),
+            DanceIkTargetKey(13, x: -75.2, y: 22.2),
+            DanceIkTargetKey(14, x: -80.7, y: 19.7),
+            DanceIkTargetKey(15, x: -66, y: 25.8),
+            DanceIkTargetKey(16, x: -47, y: 31.5),
+            DanceIkTargetKey(17, x: -29.7, y: 32.8),
+            DanceIkTargetKey(18, x: -25, y: 32.4),
+            DanceIkTargetKey(19, x: -40.7, y: 32.8),
+            DanceIkTargetKey(20, x: -49.4, y: 31.3),
+            DanceIkTargetKey(21, x: -48.5, y: 30.5),
+            DanceIkTargetKey(22, x: -45.3, y: 30.3),
+            DanceIkTargetKey(23, x: -53.9, y: 27.8),
+          ],
+          ..._dancePhrase.ikTargetArcKeys(
+            const [
+              DanceIkTargetArc(
+                name: 'left hand count-8 hook',
+                startFrame: 24,
+                peakFrame: 29,
+                endFrame: 32,
+                startX: -72.2,
+                startY: 22.2,
+                peakX: -98,
+                peakY: -3,
+                endX: -56.1,
+                endY: 30.3,
+                controlPoints: [
+                  DanceIkTargetArcPoint(25, x: -63.6, y: 25.4),
+                  DanceIkTargetArcPoint(26, x: -43.7, y: 28.6),
+                  DanceIkTargetArcPoint(27, x: -67.1, y: 26.9),
+                  DanceIkTargetArcPoint(28, x: -88.2, y: 12.9),
+                  DanceIkTargetArcPoint(30, x: -94, y: 4),
+                  DanceIkTargetArcPoint(31, x: -75, y: 22),
+                ],
+              ),
+            ],
+          ),
         ],
         smooth: true,
       );
