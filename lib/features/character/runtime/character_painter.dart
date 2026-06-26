@@ -299,19 +299,34 @@ class CharacterPainter extends CustomPainter {
         Offset.zero & size,
         Paint()
           ..blendMode = BlendMode.multiply
-          ..color = const Color(0x6B263D3F),
+          ..color = const Color(0x84213638),
       )
       ..drawRect(
         Offset.zero & size,
         Paint()
           ..blendMode = BlendMode.overlay
-          ..color = const Color(0x2A1B1A16),
+          ..color = const Color(0x34171410),
       )
       ..drawRect(
         Offset.zero & size,
         Paint()
           ..blendMode = BlendMode.color
-          ..color = const Color(0x2420312F),
+          ..color = const Color(0x3024312D),
+      )
+      ..drawRect(
+        Offset.zero & size,
+        Paint()
+          ..blendMode = BlendMode.softLight
+          ..shader = ui.Gradient.linear(
+            Offset.zero,
+            Offset(0, size.height),
+            const [
+              Color(0x5D18363A),
+              Color(0x2E6A5434),
+              Color(0x6C171411),
+            ],
+            const [0, 0.48, 1],
+          ),
       )
       ..drawRect(
         Rect.fromLTRB(0, size.height * 0.52, size.width, size.height),
@@ -319,21 +334,21 @@ class CharacterPainter extends CustomPainter {
           ..shader = ui.Gradient.linear(
             Offset(0, size.height * 0.52),
             Offset(0, size.height),
-            const [Color(0x00211D18), Color(0x7A201B16)],
+            const [Color(0x00211D18), Color(0x98201813)],
           ),
       )
       ..drawOval(
         Rect.fromCenter(
           center: Offset(size.width * 0.5, floorY - size.height * 0.12),
-          width: size.width * 1.18,
-          height: size.height * 0.46,
+          width: size.width * 1.3,
+          height: size.height * 0.54,
         ),
         Paint()
           ..blendMode = BlendMode.multiply
           ..shader = ui.Gradient.radial(
             Offset(size.width * 0.5, floorY - size.height * 0.12),
-            size.width * 0.58,
-            const [Color(0x00191E20), Color(0x68131617)],
+            size.width * 0.62,
+            const [Color(0x00191E20), Color(0x7C111314)],
           ),
       );
   }
@@ -408,8 +423,8 @@ class CharacterPainter extends CustomPainter {
     final grainPaint = Paint()
       ..blendMode = BlendMode.multiply
       ..strokeWidth = 1
-      ..color = const Color(0x1C15120F);
-    for (var i = 0; i < 72; i++) {
+      ..color = const Color(0x2815120F);
+    for (var i = 0; i < 112; i++) {
       final x = size.width * ((i * 0.619 + 0.13) % 1);
       final y = size.height * ((i * 0.347 + 0.08) % 1);
       final len = size.width * (0.004 + 0.008 * ((i * 11) % 7) / 6);
@@ -418,6 +433,16 @@ class CharacterPainter extends CustomPainter {
         Offset(x + len, y + len * 0.28),
         grainPaint,
       );
+    }
+
+    final sootPaint = Paint()
+      ..blendMode = BlendMode.multiply
+      ..color = const Color(0x2A17130F);
+    for (var i = 0; i < 34; i++) {
+      final x = size.width * ((i * 0.283 + 0.07) % 1);
+      final y = size.height * ((i * 0.431 + 0.19) % 1);
+      final radius = size.width * (0.002 + 0.004 * ((i * 13) % 5) / 4);
+      canvas.drawCircle(Offset(x, y), radius, sootPaint);
     }
   }
 
@@ -428,8 +453,8 @@ class CharacterPainter extends CustomPainter {
       ..clipRect(Rect.fromLTRB(0, deckTop, size.width, size.height));
     final stainPaint = Paint()
       ..blendMode = BlendMode.multiply
-      ..color = const Color(0x24201713);
-    for (var i = 0; i < 18; i++) {
+      ..color = const Color(0x36201713);
+    for (var i = 0; i < 30; i++) {
       final x = size.width * ((i * 0.137 + 0.09) % 1);
       final y = deckTop + (floorY - deckTop) * ((i * 0.173 + 0.21) % 1);
       final w = size.width * (0.018 + 0.018 * ((i * 7) % 5) / 4);
@@ -444,8 +469,8 @@ class CharacterPainter extends CustomPainter {
       ..blendMode = BlendMode.multiply
       ..strokeCap = StrokeCap.round
       ..strokeWidth = math.max(0.7, size.width * 0.001)
-      ..color = const Color(0x34251B12);
-    for (var i = 0; i < 26; i++) {
+      ..color = const Color(0x46251B12);
+    for (var i = 0; i < 42; i++) {
       final startX = size.width * ((i * 0.071 + 0.04) % 1);
       final y = deckTop + (size.height - deckTop) * ((i * 0.113 + 0.17) % 1);
       final length = size.width * (0.035 + 0.05 * ((i * 3) % 7) / 6);
