@@ -986,6 +986,18 @@ void main() {
                 userInstructions: 'User',
               )
               as AiConfigSkill;
+      final compactCoverArt =
+          AiConfig.skill(
+                id: 'skill-cover-art-compact',
+                name: 'Cover Art Compact',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.imageGeneration,
+                requiredInputModalities: [Modality.text],
+                contextPolicy: ContextPolicy.taskSummary,
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
 
       final testContainer = ProviderContainer(
         overrides: [
@@ -993,6 +1005,7 @@ void main() {
             plainTranscribe,
             taskContextTranscribe,
             coverArt,
+            compactCoverArt,
           ]),
           createEntryControllerOverride(audioEntity),
         ],
@@ -1022,9 +1035,74 @@ void main() {
       );
       expect(
         linkedSkills.map((s) => s.id),
-        containsAll(['skill-transcribe-plain', 'skill-transcribe-task']),
+        containsAll([
+          'skill-transcribe-plain',
+          'skill-transcribe-task',
+          'skill-cover-art',
+          'skill-cover-art-compact',
+        ]),
       );
     });
+
+    test(
+      'hides imageGeneration skills for a Task entity because the runner '
+      'requires a note or audio source entry',
+      () async {
+        final taskEntity = Task(
+          meta: Metadata(
+            id: 'task-cover-filter',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 0,
+            ),
+            title: 'Task-only cover source',
+            statusHistory: const [],
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+        );
+        final coverArtSkill =
+            AiConfig.skill(
+                  id: 'skill-cover-task-filter',
+                  name: 'Generate Cover Art',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.imageGeneration,
+                  requiredInputModalities: [Modality.text],
+                  contextPolicy: ContextPolicy.taskSummary,
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([coverArtSkill]),
+            createEntryControllerOverride(taskEntity),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          entryControllerProvider(taskEntity.id).future,
+        );
+
+        final skills = await testContainer.read(
+          availableSkillsForEntityProvider((
+            entityId: taskEntity.id,
+            linkedFromId: null,
+          )).future,
+        );
+
+        expect(skills, isEmpty);
+      },
+    );
 
     test('returns empty list when entity not found', () async {
       final testContainer = ProviderContainer(
@@ -3009,6 +3087,10 @@ class _SkillFilterScenario {
   bool get expectIncluded {
     final isTask = entityKind == 2;
     final hasTaskContext = isTask || hasLinkedFrom;
+    if (skillType == SkillType.imageGeneration &&
+        (!hasTaskContext || (entityKind != 0 && entityKind != 1))) {
+      return false;
+    }
     if (!hasTaskContext && contextPolicy == ContextPolicy.fullTask) {
       return false;
     }

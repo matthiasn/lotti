@@ -105,6 +105,7 @@ const String meliousMistralSmall4119BInstructModelId =
 const String meliousDeepseekV4FlashModelId = 'deepseek-v4-flash';
 const String meliousWhisperLargeV3ModelId = 'whisper-large-v3';
 const String meliousWhisperLargeV3TurboModelId = 'whisper-large-v3-turbo';
+const String meliousFlux2DevModelId = 'black-forest-labs/flux-2-dev';
 
 /// Canonical oMLX model identifiers used by the local OpenAI-compatible
 /// server profile.

@@ -35,6 +35,22 @@ AiConfigSkill _makeGladosSkill({
   );
 }
 
+bool _hasUnpairedSurrogate(String value) {
+  final codeUnits = value.codeUnits;
+  for (var i = 0; i < codeUnits.length; i++) {
+    final codeUnit = codeUnits[i];
+    if (codeUnit >= 0xD800 && codeUnit <= 0xDBFF) {
+      if (i + 1 == codeUnits.length) return true;
+      final next = codeUnits[i + 1];
+      if (next < 0xDC00 || next > 0xDFFF) return true;
+      i++;
+    } else if (codeUnit >= 0xDC00 && codeUnit <= 0xDFFF) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void main() {
   const builder = SkillPromptBuilder();
 
@@ -284,6 +300,74 @@ void main() {
           result.userMessage,
           contains('Make it blue and modern'),
         );
+      });
+
+      test('taskSummary image generation builds compact scene prompt', () {
+        final skill = makeSkill(
+          skillType: SkillType.imageGeneration,
+          contextPolicy: ContextPolicy.taskSummary,
+          userInstructions: 'Compact Flux cover art.',
+        );
+        final result = builder.build(
+          skill: skill,
+          entryContent: '''
+Cats in suits in a steampunk laboratory working at a whiteboard with brass machinery and warm workshop lighting.
+''',
+          taskContext: '{"id": "task-1", "title": "Should not leak"}',
+          linkedTasks: '{"linked_from": ["task-2"]}',
+          currentTaskSummary: 'Creative planning task with a playful mood.',
+        );
+
+        expect(result.userMessage, contains('Compact Flux cover art.'));
+        expect(result.userMessage, contains('Scene: Cats in suits'));
+        expect(
+          result.userMessage,
+          contains('Mood and task clues: Creative planning task'),
+        );
+        expect(result.userMessage, contains('Render this as an image story'));
+        expect(result.userMessage, isNot(contains('**Task Context:**')));
+        expect(result.userMessage, isNot(contains('**Task Summary:**')));
+        expect(result.userMessage, isNot(contains('**Entry Notes:**')));
+        expect(result.userMessage, isNot(contains('Should not leak')));
+        expect(result.userMessage, isNot(contains('linked_from')));
+      });
+
+      test('taskSummary image generation truncates long inputs', () {
+        final skill = makeSkill(
+          skillType: SkillType.imageGeneration,
+          contextPolicy: ContextPolicy.taskSummary,
+        );
+        final result = builder.build(
+          skill: skill,
+          entryContent: 'a' * 900,
+          currentTaskSummary: 'b' * 650,
+        );
+
+        expect(result.userMessage, contains('Scene: ${'a' * 700}...'));
+        expect(
+          result.userMessage,
+          contains('Mood and task clues: ${'b' * 500}...'),
+        );
+        expect(result.userMessage, isNot(contains('a' * 701)));
+        expect(result.userMessage, isNot(contains('b' * 501)));
+      });
+
+      test('taskSummary image generation does not split surrogate pairs', () {
+        final skill = makeSkill(
+          skillType: SkillType.imageGeneration,
+          contextPolicy: ContextPolicy.taskSummary,
+        );
+        final result = builder.build(
+          skill: skill,
+          entryContent: '${'a' * 699}😀 after boundary',
+        );
+
+        final sceneLine = result.userMessage
+            .split('\n')
+            .firstWhere((line) => line.startsWith('Scene: '));
+
+        expect(sceneLine, 'Scene: ${'a' * 699}...');
+        expect(_hasUnpairedSurrogate(sceneLine), false);
       });
     });
 

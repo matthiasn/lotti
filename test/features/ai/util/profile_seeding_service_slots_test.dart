@@ -510,6 +510,108 @@ void main() {
     );
 
     test(
+      'adds Flux 2 Dev image generation to untouched Melious profiles',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestModel(
+              id: 'model-melious-mistral',
+              providerModelId: meliousMistralSmall4119BInstructModelId,
+            ),
+            AiTestDataFactory.createTestModel(
+              id: 'model-melious-deepseek',
+              providerModelId: meliousDeepseekV4ProModelId,
+            ),
+            AiTestDataFactory.createTestModel(
+              id: 'model-melious-whisper-turbo',
+              providerModelId: meliousWhisperLargeV3TurboModelId,
+            ),
+            AiTestDataFactory.createTestModel(
+              id: 'model-melious-flux-dev',
+              providerModelId: meliousFlux2DevModelId,
+              outputModalities: const [Modality.image],
+            ),
+          ],
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileMeliousId,
+              name: 'Melious.ai',
+              thinkingModelId: meliousMistralSmall4119BInstructModelId,
+              thinkingHighEndModelId: meliousDeepseekV4ProModelId,
+              imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
+              transcriptionModelId: meliousWhisperLargeV3TurboModelId,
+              skillAssignments: const [
+                SkillAssignment(
+                  skillId: skillTranscribeContextId,
+                  automate: true,
+                ),
+                SkillAssignment(
+                  skillId: skillImageAnalysisContextId,
+                  automate: true,
+                ),
+              ],
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        final upgraded = captured.single as AiConfigInferenceProfile;
+
+        expect(upgraded.id, profileMeliousId);
+        expect(upgraded.imageGenerationModelId, 'model-melious-flux-dev');
+      },
+    );
+
+    test(
+      'preserves user-edited Melious profiles during Flux image upgrade',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestModel(
+              id: 'model-melious-flux-dev',
+              providerModelId: meliousFlux2DevModelId,
+              outputModalities: const [Modality.image],
+            ),
+          ],
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileMeliousId,
+              name: 'My Melious Profile',
+              thinkingModelId: meliousMistralSmall4119BInstructModelId,
+              thinkingHighEndModelId: meliousDeepseekV4ProModelId,
+              imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
+              transcriptionModelId: meliousWhisperLargeV3TurboModelId,
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        verifyNever(() => mockRepo.saveConfig(any()));
+      },
+    );
+
+    test(
       'preserves user-edited Local Power profiles during oMLX migration',
       () async {
         when(

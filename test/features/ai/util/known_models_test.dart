@@ -498,10 +498,21 @@ void main() {
             meliousMinimaxM27ModelId,
             meliousMistralSmall4119BInstructModelId,
             meliousDeepseekV4FlashModelId,
+            meliousFlux2DevModelId,
             meliousWhisperLargeV3ModelId,
             meliousWhisperLargeV3TurboModelId,
           }),
         );
+      });
+
+      test('Flux default is a text-to-image model', () {
+        final flux = findMeliousKnownModel(meliousFlux2DevModelId);
+
+        expect(flux, isNotNull);
+        expect(flux!.inputModalities, contains(Modality.text));
+        expect(flux.outputModalities, contains(Modality.image));
+        expect(flux.isReasoningModel, isFalse);
+        expect(flux.name, contains('Flux 2 Dev'));
       });
 
       test('Whisper defaults are audio-to-text transcription models', () {
@@ -529,6 +540,10 @@ void main() {
         expect(
           models.advancedThinking.providerModelId,
           meliousDeepseekV4ProModelId,
+        );
+        expect(
+          models.imageGeneration.providerModelId,
+          meliousFlux2DevModelId,
         );
         expect(
           models.whisper.providerModelId,

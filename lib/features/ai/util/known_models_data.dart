@@ -6,7 +6,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 /// Melious exposes a larger live model catalog through `/models`, but these
 /// rows are seeded immediately when the provider is added. The set mirrors the
 /// default Melious profile: fast general thinking, high-end thinking, image
-/// recognition, and Whisper transcription.
+/// recognition, Flux cover art, and Whisper transcription.
 const List<KnownModel> meliousModels = [
   KnownModel(
     providerModelId: meliousDeepseekV4ProModelId,
@@ -62,6 +62,16 @@ const List<KnownModel> meliousModels = [
     description:
         'Fast Melious-hosted DeepSeek reasoning model for lower-latency '
         'thinking tasks.',
+  ),
+  KnownModel(
+    providerModelId: meliousFlux2DevModelId,
+    name: 'Flux 2 Dev',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.image],
+    isReasoningModel: false,
+    description:
+        'Melious-hosted Black Forest Labs Flux 2 Dev image-generation model '
+        'for higher-quality task cover art.',
   ),
   KnownModel(
     providerModelId: meliousWhisperLargeV3ModelId,

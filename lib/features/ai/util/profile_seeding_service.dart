@@ -98,6 +98,7 @@ class ProfileSeedingService {
     for (final config in configs.whereType<AiConfigInferenceProfile>()) {
       var upgraded = _withMigratedLegacyLocalPowerSeed(config, models);
       upgraded = _withUpgradedOmlxWhisperTranscription(upgraded, models);
+      upgraded = _withUpgradedMeliousFluxImageGeneration(upgraded, models);
       upgraded = _withResolvedModelConfigIds(upgraded, models);
       final template = templatesById[config.id];
 
@@ -180,6 +181,53 @@ class ProfileSeedingService {
         .toList(growable: false);
 
     return upgraded.copyWith(skillAssignments: sanitizedAssignments);
+  }
+
+  static AiConfigInferenceProfile _withUpgradedMeliousFluxImageGeneration(
+    AiConfigInferenceProfile profile,
+    List<AiConfigModel> models,
+  ) {
+    if (!_isUntouchedMeliousProfileMissingImageGeneration(profile, models)) {
+      return profile;
+    }
+
+    return profile.copyWith(
+      imageGenerationModelId: meliousFlux2DevModelId,
+    );
+  }
+
+  static bool _isUntouchedMeliousProfileMissingImageGeneration(
+    AiConfigInferenceProfile profile,
+    List<AiConfigModel> models,
+  ) {
+    return profile.id == profileMeliousId &&
+        profile.name == 'Melious.ai' &&
+        profile.description == null &&
+        _slotMatchesProviderModelId(
+          profile.thinkingModelId,
+          meliousMistralSmall4119BInstructModelId,
+          models,
+        ) &&
+        _slotMatchesProviderModelId(
+          profile.thinkingHighEndModelId,
+          meliousDeepseekV4ProModelId,
+          models,
+        ) &&
+        _slotMatchesProviderModelId(
+          profile.imageRecognitionModelId,
+          meliousMistralSmall4119BInstructModelId,
+          models,
+        ) &&
+        _slotMatchesProviderModelId(
+          profile.transcriptionModelId,
+          meliousWhisperLargeV3TurboModelId,
+          models,
+        ) &&
+        profile.imageGenerationModelId == null &&
+        profile.isDefault &&
+        !profile.desktopOnly &&
+        profile.pinnedHostId == null &&
+        _slotResolvesToModelRow(meliousFlux2DevModelId, models);
   }
 
   static bool _isUntouchedOmlxProfileMissingTranscription(
@@ -406,6 +454,7 @@ class ProfileSeedingService {
       thinkingHighEndModelId: meliousDeepseekV4ProModelId,
       imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
       transcriptionModelId: meliousWhisperLargeV3TurboModelId,
+      imageGenerationModelId: meliousFlux2DevModelId,
       skillAssignments: _defaultSkillAssignments,
       isDefault: true,
       createdAt: DateTime(2026),

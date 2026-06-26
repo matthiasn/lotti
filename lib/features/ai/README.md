@@ -237,11 +237,16 @@ flowchart TD
 Melious also has a small curated static catalog used for immediate provider
 setup before a user installs additional live-catalog rows: `deepseek-v4-pro`,
 `gemma-4-26b-a4b`, `minimax-m2.7`, `mistral-small-4-119b-instruct`,
-`deepseek-v4-flash`, `whisper-large-v3`, and `whisper-large-v3-turbo`.
+`deepseek-v4-flash`, `black-forest-labs/flux-2-dev`,
+`whisper-large-v3`, and `whisper-large-v3-turbo`.
 The default Melious profile uses `mistral-small-4-119b-instruct` for thinking
 and image recognition, `deepseek-v4-pro` for the high-end thinking slot, and
+`black-forest-labs/flux-2-dev` for image generation, and
 `whisper-large-v3-turbo` for transcription. FTUE setup creates both Whisper
-rows so users can switch between the regular and Turbo variants.
+rows so users can switch between the regular and Turbo variants. Existing
+untouched default Melious profiles that predate the image-generation slot gain
+Flux 2 Dev during `upgradeExisting()` after the model backfill has created the
+row.
 
 Melious and oMLX provider settings also use live catalogs. The provider detail
 page and edit form render the same `AvailableModelsSection`, so endpoint-backed
@@ -367,6 +372,11 @@ flowchart TD
 
 - Modality filter — `Modality.audio` only matches `JournalAudio`, `Modality.image` only matches `JournalImage`, `Modality.text` matches any entity with text content (`JournalAudio` qualifies via its transcript).
 - Task-context filter — a skill is considered to "need a task" iff `contextPolicy == ContextPolicy.fullTask`. When the entity is not a `Task` and `linkedFromId` is null (a standalone entry), these skills are hidden. Same skill on a task or on an entry linked from a task remains visible.
+- Cover-art source filter — `SkillType.imageGeneration` is narrower than the
+  general text-modality rule: it is shown only for `JournalEntry` or
+  `JournalAudio` sources that also have a task context. The runner imports the
+  generated image back onto the linked task, so a task-only popup would have no
+  source note and standalone notes would have nowhere to save the cover art.
 
 The seeded task-context skills (`Transcribe (Task Context)`, `Analyze Image (Task Context)`, `Generate Cover Art`, the coding/design/research prompt generators) are therefore hidden for standalone entries; only their plain counterparts (`Transcribe Audio`, `Analyze Image`) show up. `triggerSkillProvider` also has a defensive guard: a `fullTask` skill triggered without a `linkedTaskId` is captured as an event and aborted — the popup should never offer one in that state, so reaching it is a caller bug.
 
@@ -413,6 +423,22 @@ stateDiagram-v2
 ### Cover-Art Model Selection
 
 Cover-art image generation is a separate path (`_handleImageGenerationSkill` → `CoverArtSkillModal`) but now offers the same provider→model choice. Before the reference-image step, the handler loads every model that *outputs* images and opens the same `InferenceProviderModelPickerModal`; the chosen `AiConfigModel.id` threads through `CoverArtSkillModal` → `triggerSkillProvider` → `runImageGeneration` as `overrideModelId`, which `_resolveImageGenerationTarget` resolves against the override (falling back to the profile's `imageGeneration` slot, with a warning log keyed by `_OverrideSlotKind.imageGeneration`) exactly like the other slots. The same short-circuits apply: with fewer than two image-output models the picker is skipped and generation runs on the profile slot as before.
+
+Two built-in image-generation skills share that same runtime path:
+
+- `Generate Cover Art` keeps `ContextPolicy.fullTask` and builds the original
+  rich prompt with task JSON, related tasks, task summary, and entry notes.
+- `Generate Cover Art (Flux)` uses `ContextPolicy.taskSummary` as a compact
+  cover-art mode. `SkillPromptBuilder` recognizes
+  `SkillType.imageGeneration + ContextPolicy.taskSummary` and sends only a
+  short scene plus mood/task clues, with no full task JSON, related-task JSON,
+  or `**Entry Notes:**` wrapper. This is intended for Flux-style image models
+  that perform better with a direct visual story than with application context.
+
+Image-generation skills are still hidden for standalone entries and task-only
+surfaces in `availableSkillsForEntityProvider`; cover art needs a linked text
+or audio note as its source and a task so the imported generated image can be
+saved back as `TaskData.coverArtId`.
 
 ## Conversation and Tool Calling
 
@@ -707,12 +733,12 @@ Operational details from the seeded definitions:
 - `Local (Ollama)` and `Local Gemma 4 (Ollama)` ship with image-analysis automation but no transcription slot
 - `Local Power (oMLX)` uses `Qwen3.6-35B-A3B-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
 - `Local Gemma 4 (oMLX)` uses `gemma-4-26B-A4B-it-QAT-MLX-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
-- `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, DeepSeek V4 Pro for high-end thinking, and Whisper Large v3 Turbo for transcription
+- `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, DeepSeek V4 Pro for high-end thinking, Flux 2 Dev for image generation, and Whisper Large v3 Turbo for transcription
 - `Local Gemma 4 Power (Ollama)` currently ships with no default skill assignments
 
 `seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 
-`upgradeExisting()` backfills migration-safe pieces after model rows exist: legacy profile slots that still contain provider-native model IDs are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, model slots, optional slots, and non-empty assignment lists are preserved.
+`upgradeExisting()` backfills migration-safe pieces after model rows exist: legacy profile slots that still contain provider-native model IDs are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, untouched Melious profiles gain the Flux 2 Dev image-generation slot, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, model slots, optional slots, and non-empty assignment lists are preserved.
 
 `ModelPrepopulationService.backfillNewModels()` seeds known model rows for
 configured providers at startup. Known model identity is the

@@ -128,7 +128,7 @@ void main() {
       await tester.pump();
 
       expect(result, isNotNull);
-      expect(result!.modelsCreated, 4);
+      expect(result!.modelsCreated, 5);
       expect(result!.modelsVerified, 0);
       expect(result!.categoryCreated, isTrue);
       expect(
@@ -136,6 +136,7 @@ void main() {
         containsAll([
           meliousMistralSmall4119BInstructModelId,
           meliousDeepseekV4ProModelId,
+          meliousFlux2DevModelId,
           meliousWhisperLargeV3ModelId,
           meliousWhisperLargeV3TurboModelId,
         ]),
@@ -163,6 +164,12 @@ void main() {
           id: 'advanced',
           name: 'DeepSeek V4 Pro',
           providerModelId: meliousDeepseekV4ProModelId,
+          inferenceProviderId: meliousProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'flux-dev',
+          name: 'Flux 2 Dev',
+          providerModelId: meliousFlux2DevModelId,
           inferenceProviderId: meliousProvider.id,
         ),
         AiTestDataFactory.createTestModel(
@@ -219,7 +226,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.modelsCreated, 0);
-      expect(result!.modelsVerified, 4);
+      expect(result!.modelsVerified, 5);
       expect(result!.categoryCreated, isFalse);
       expect(result!.categoryReused, isTrue);
       verifyNever(() => mockRepository.saveConfig(any()));
