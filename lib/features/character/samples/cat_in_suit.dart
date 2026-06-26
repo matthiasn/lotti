@@ -1516,6 +1516,54 @@ class CatClips {
     ),
   ];
 
+  static const _danceBodyAccents = [
+    DanceBodyAccent(
+      4,
+      radiusFrames: 2,
+      rootDy: 1.4,
+      rootRotation: -0.0015,
+      pelvisRotation: 0.035,
+      chestRotation: -0.02,
+      chestScaleY: 0.988,
+      chestScaleX: 1.01,
+    ),
+    DanceBodyAccent(
+      12,
+      radiusFrames: 2,
+      rootDx: 1.2,
+      rootDy: -0.8,
+      rootRotation: 0.001,
+      pelvisRotation: -0.025,
+      chestRotation: 0.02,
+      chestScaleY: 1.008,
+      chestScaleX: 0.996,
+    ),
+    DanceBodyAccent(
+      20,
+      radiusFrames: 2,
+      rootDy: 1.4,
+      rootRotation: 0.0015,
+      pelvisRotation: -0.035,
+      chestRotation: 0.02,
+      chestScaleY: 0.988,
+      chestScaleX: 1.01,
+    ),
+    DanceBodyAccent(
+      28,
+      radiusFrames: 2,
+      rootDx: -1.2,
+      rootDy: -0.8,
+      rootRotation: -0.001,
+      pelvisRotation: 0.025,
+      chestRotation: -0.02,
+      chestScaleY: 1.008,
+      chestScaleX: 0.996,
+    ),
+  ];
+
+  static final List<DanceBodyKey> _danceBodyAccentKeys = _dancePhrase
+      .bodyAccentKeys(_danceBodyAccents);
+
   // Backup-dancer roles are configured as small additive overlays in _danceBodyRole
   // below. The shared base clip owns support timing and body mechanics.
   static const _danceNeckKeys = [
@@ -2320,6 +2368,7 @@ class CatClips {
     limbTargets: _danceLimbTargets,
     root: LayeredRootChannel([
       _dancePhrase.bodyRootChannel(_danceBodyGrooveKeys, smooth: true),
+      _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
       const SineRootChannel(
         bobAmplitude: -0.055,
         bobPhase: 0.125,
@@ -2344,6 +2393,7 @@ class CatClips {
       // of a wobbling face.
       CatBones.hips: LayeredJointChannel([
         _dancePhrase.bodyPelvisChannel(_danceBodyGrooveKeys),
+        _dancePhrase.bodyPelvisChannel(_danceBodyAccentKeys, smooth: true),
         const SineChannel(
           harmonicAmplitude: 0.004,
           harmonicPhase: 0.015,
@@ -2358,6 +2408,7 @@ class CatClips {
       ]),
       CatBones.torso: LayeredJointChannel([
         _dancePhrase.bodyChestChannel(_danceBodyGrooveKeys),
+        _dancePhrase.bodyChestChannel(_danceBodyAccentKeys, smooth: true),
         const SineChannel(
           harmonicAmplitude: 0.003,
           harmonicPhase: 0.04,

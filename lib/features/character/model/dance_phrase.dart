@@ -128,6 +128,23 @@ class DancePhrase {
     smooth: smooth,
   );
 
+  List<DanceBodyKey> bodyAccentKeys(List<DanceBodyAccent> accents) {
+    final keys = <DanceBodyKey>[];
+    for (final accent in accents) {
+      final startFrame = accent.frame - accent.radiusFrames;
+      final endFrame = accent.frame + accent.radiusFrames;
+      _checkFrame(startFrame);
+      _checkFrame(accent.frame);
+      _checkFrame(endFrame);
+      keys
+        ..add(accent.neutralKey(startFrame))
+        ..add(accent.peakKey())
+        ..add(accent.neutralKey(endFrame));
+    }
+    keys.sort((a, b) => a.frame.compareTo(b.frame));
+    return List<DanceBodyKey>.unmodifiable(keys);
+  }
+
   KeyframeChannel bodyPelvisChannel(
     List<DanceBodyKey> keys, {
     bool smooth = false,
@@ -362,6 +379,63 @@ class DanceBodyKey {
     rotation: chestRotation ?? 0,
     scaleX: chestScaleX ?? 1,
     scaleY: chestScaleY ?? 1,
+    ease: ease,
+  );
+}
+
+class DanceBodyAccent {
+  const DanceBodyAccent(
+    this.frame, {
+    required this.radiusFrames,
+    this.rootDx,
+    this.rootDy,
+    this.rootRotation,
+    this.pelvisRotation,
+    this.chestRotation,
+    this.chestScaleX,
+    this.chestScaleY,
+    this.ease = Ease.easeInOut,
+  }) : assert(radiusFrames > 0, 'radiusFrames must be positive');
+
+  final int frame;
+  final int radiusFrames;
+  final double? rootDx;
+  final double? rootDy;
+  final double? rootRotation;
+  final double? pelvisRotation;
+  final double? chestRotation;
+  final double? chestScaleX;
+  final double? chestScaleY;
+  final Ease ease;
+
+  bool get _hasRoot => rootDx != null || rootDy != null || rootRotation != null;
+
+  bool get _hasPelvis => pelvisRotation != null;
+
+  bool get _hasChest =>
+      chestRotation != null || chestScaleX != null || chestScaleY != null;
+
+  DanceBodyKey neutralKey(int frame) => DanceBodyKey(
+    frame,
+    rootDx: _hasRoot ? 0 : null,
+    rootDy: _hasRoot ? 0 : null,
+    rootRotation: _hasRoot ? 0 : null,
+    pelvisRotation: _hasPelvis ? 0 : null,
+    chestRotation: _hasChest ? 0 : null,
+    chestScaleX: _hasChest ? 1 : null,
+    chestScaleY: _hasChest ? 1 : null,
+    ease: ease,
+  );
+
+  DanceBodyKey peakKey() => DanceBodyKey(
+    frame,
+    rootDx: _hasRoot ? rootDx ?? 0 : null,
+    rootDy: _hasRoot ? rootDy ?? 0 : null,
+    rootRotation: _hasRoot ? rootRotation ?? 0 : null,
+    pelvisRotation: pelvisRotation,
+    chestRotation: _hasChest ? chestRotation ?? 0 : null,
+    chestScaleX: _hasChest ? chestScaleX ?? 1 : null,
+    chestScaleY: _hasChest ? chestScaleY ?? 1 : null,
     ease: ease,
   );
 }

@@ -164,6 +164,43 @@ void main() {
       expect(chest.sample(0.25).scaleY, closeTo(0.91, 1e-9));
     });
 
+    test('builds neutralized body accent pulses', () {
+      final keys = phrase.bodyAccentKeys(
+        const [
+          DanceBodyAccent(
+            8,
+            radiusFrames: 2,
+            rootDy: 3,
+            pelvisRotation: 0.08,
+            chestRotation: -0.04,
+            chestScaleX: 1.02,
+            chestScaleY: 0.96,
+          ),
+          DanceBodyAccent(
+            20,
+            radiusFrames: 4,
+            rootDx: -2,
+            chestScaleY: 1.02,
+          ),
+        ],
+      );
+
+      expect(keys.map((key) => key.frame), [6, 8, 10, 16, 20, 24]);
+      expect(keys[0].rootDy, 0);
+      expect(keys[0].pelvisRotation, 0);
+      expect(keys[0].chestScaleY, 1);
+      expect(keys[1].rootDy, 3);
+      expect(keys[1].pelvisRotation, 0.08);
+      expect(keys[1].chestRotation, -0.04);
+      expect(keys[1].chestScaleX, 1.02);
+      expect(keys[1].chestScaleY, 0.96);
+      expect(keys[4].rootDx, -2);
+      expect(keys[4].rootDy, 0);
+      expect(keys[4].chestRotation, 0);
+      expect(keys[4].chestScaleX, 1);
+      expect(keys[4].chestScaleY, 1.02);
+    });
+
     test('builds IK target channels from frame-addressed keys', () {
       final channel = phrase.ikTargetChannel(
         const [
@@ -188,6 +225,12 @@ void main() {
       expect(
         () => phrase.bodyRootChannel(
           const [DanceBodyKey(33, rootDx: 0)],
+        ),
+        throwsRangeError,
+      );
+      expect(
+        () => phrase.bodyAccentKeys(
+          const [DanceBodyAccent(1, radiusFrames: 2, rootDy: 1)],
         ),
         throwsRangeError,
       );
