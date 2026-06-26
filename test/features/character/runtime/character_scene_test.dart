@@ -244,37 +244,24 @@ void main() {
       },
     );
 
-    test('dance shifts visible torso mass toward the active support foot', () {
+    test('dance keeps torso attached to hips across the full phrase', () {
       final scene = CharacterScene(buildCatInSuitRig());
 
-      for (final p in [1 / 8, 3 / 8, 5 / 8, 7 / 8]) {
-        final span = _spanAt(CatClips.dance, p);
+      for (var frameIndex = 0; frameIndex < 32; frameIndex += 1) {
+        final p = frameIndex / 32;
         final frame = scene.frameAt(
           clip: CatClips.dance,
           timeSeconds: p * CatClips.dance.duration,
-        );
-        final support = _supportPoint(
-          scene,
-          CatClips.dance,
-          span.bone,
-          p * CatClips.dance.duration,
         );
         final hip = frame.world[CatBones.hips]!.origin;
         final torso = frame.world[CatBones.torso]!.origin;
 
         expect(
-          (torso.x - support.x).abs(),
-          lessThan((hip.x - support.x).abs()),
-          reason:
-              'the visible torso mass should move toward ${span.bone} on '
-              'dance support beat $p',
-        );
-        expect(
           (torso.x - hip.x).abs(),
-          lessThan(5.5),
+          lessThan(1.5),
           reason:
-              'the torso should stay visibly attached to the hips while '
-              'leaning into the support beat $p',
+              'the torso and hips should stay visibly attached at dance '
+              'frame $frameIndex',
         );
       }
     });
@@ -358,13 +345,6 @@ void main() {
       expect(minOpen, lessThan(0.1));
     });
   });
-}
-
-GroundSpan _spanAt(Clip clip, double p) {
-  for (final span in clip.contactSpans) {
-    if (p >= span.start && p < span.end) return span;
-  }
-  return clip.contactSpans.last;
 }
 
 ({double min, double max}) _rotationStats(

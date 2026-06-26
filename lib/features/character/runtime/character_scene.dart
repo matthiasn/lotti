@@ -198,15 +198,10 @@ class CharacterScene {
     final posed = _contactLockedPose(clip, timeSeconds, breathed);
 
     final rawWorld = solver.solve(posed, base: base);
-    final massShiftedWorld = _danceSupportMassShiftedWorld(
-      clip,
-      timeSeconds,
-      rawWorld,
-    );
     final footStabilizedWorld = _danceSupportFootStabilizedWorld(
       clip,
       timeSeconds,
-      massShiftedWorld,
+      rawWorld,
     );
     final world = _headStabilizedWorld(
       clip,
@@ -319,51 +314,6 @@ class CharacterScene {
 
   double _shortestAngle(double radians) =>
       math.atan2(math.sin(radians), math.cos(radians));
-
-  /// The dance contacts lock the feet, but the Phase-1 skeleton can still read
-  /// floaty when the visible mass stays centered between both feet during a
-  /// side transfer. Shift the drawn pelvis mesh a little and the upper-body
-  /// subtree more toward the active support foot: legs/feet remain planted,
-  /// while the visible COM agrees more clearly with the support.
-  Map<String, Affine2D> _danceSupportMassShiftedWorld(
-    Clip clip,
-    double timeSeconds,
-    Map<String, Affine2D> world,
-  ) {
-    if (clip.name != 'dance') return world;
-    const hipsId = 'hips';
-    const torsoId = 'torso';
-    if (!world.containsKey(torsoId)) return world;
-    final contact = _activeContactAt(clip, _clipPhase(clip, timeSeconds));
-    if (contact == null) return world;
-    final hips = world[hipsId];
-    final support = _contactPoint(world, contact.span.bone);
-    if (hips == null || support == null) return world;
-
-    final supportDelta = support.x - hips.origin.x;
-    // Keep the upper mass biased toward the support foot, but do not let the
-    // torso outrun the pelvis. A large torso/hip differential reads as the
-    // upper body sliding off the hips on the lead dancer.
-    final pelvisDx = (supportDelta * 0.18).clamp(-10.0, 10.0);
-    final torsoDx = (supportDelta * 0.22).clamp(-14.0, 14.0);
-    if (pelvisDx.abs() < 0.35 && torsoDx.abs() < 0.5) return world;
-
-    final shifted = Map<String, Affine2D>.of(world);
-    // The hips bone itself is hidden by a skinned pelvis mesh. Shift only this
-    // transform in the resolved world map; its already-solved leg descendants
-    // stay put, so contact-locked shoes do not skate.
-    shifted[hipsId] = Affine2D.translation(
-      pelvisDx,
-      0,
-    ).multiply(world[hipsId]!);
-    final torsoShift = Affine2D.translation(torsoDx, 0);
-    for (final bone in rig.bones) {
-      if (bone.id == torsoId || _hasAncestor(bone.id, torsoId)) {
-        shifted[bone.id] = torsoShift.multiply(world[bone.id]!);
-      }
-    }
-    return shifted;
-  }
 
   bool _hasAncestor(String boneId, String ancestorId) {
     var parent = rig.bone(boneId)?.parent;
