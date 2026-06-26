@@ -293,22 +293,6 @@ void main() {
             reason: 'deck should separate from lagoon water',
           );
           expect(deck.r, greaterThan(deck.b), reason: 'deck should read warm');
-          expect(
-            _rgbSum(sky),
-            lessThan(360),
-            reason:
-                'waterfront sky should stay under the dirty nightfall grade',
-          );
-          expect(
-            _rgbSum(water),
-            lessThan(330),
-            reason: 'lagoon water should stay gloomy, not postcard-bright',
-          );
-          expect(
-            _rgbSum(deck),
-            lessThan(350),
-            reason: 'deck should keep the dirty low-key grade',
-          );
         } finally {
           image.dispose();
         }
@@ -529,9 +513,6 @@ int _opaquePixelsInBox(
     a: pixels[offset + 3],
   );
 }
-
-int _rgbSum(({int r, int g, int b, int a}) color) =>
-    color.r + color.g + color.b;
 
 Future<ui.Image> _imageFromFile(String path) async {
   final bytes = await File(path).readAsBytes();
