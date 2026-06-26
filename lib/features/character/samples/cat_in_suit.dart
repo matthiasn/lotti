@@ -29,6 +29,9 @@ const int _muzzle = 0xFFF3DCB8; // lighter snout patch
 const int _nose = 0xFFC8696B; // pink nose
 const int _whisker = 0xFF8A765C; // muted whisker
 
+const double kDanceLeadLegWidthScale = 1.48;
+const double kDanceLeadArmWidthScale = 1.18;
+
 /// Fur/face colours for a cat-in-suit rig variant.
 ///
 /// The suit stays fixed so paired cats still read as the same act; the palette
@@ -179,6 +182,8 @@ Bone _tailSeg(
 /// Builds the cat-in-a-suit [RigSpec].
 RigSpec buildCatInSuitRig({
   CatInSuitPalette palette = CatInSuitPalette.orangeTabby,
+  double legWidthScale = 1,
+  double armWidthScale = 1,
 }) {
   final bones = <Bone>[
     // Tail controls: the visible tail is drawn as one soft ribbon below. These
@@ -677,6 +682,13 @@ RigSpec buildCatInSuitRig({
     whiskerLength: 22,
   );
 
+  List<double> scaledLegWidths(List<double> widths) => [
+    for (final width in widths) width * legWidthScale,
+  ];
+  List<double> scaledArmWidths(List<double> widths) => [
+    for (final width in widths) width * armWidthScale,
+  ];
+
   final ribbons = <LimbRibbonSpec>[
     LimbRibbonSpec(
       id: 'tail.ribbon',
@@ -716,7 +728,7 @@ RigSpec buildCatInSuitRig({
       hiddenBoneIds: const [CatBones.legUpperR, CatBones.legLowerR],
       // Athletic leg profile: strong thigh under the hip, a knee pinch, then a
       // muscular calf bulge tapering to the ankle.
-      halfWidths: const [13, 12.4, 7.8, 9.6, 5.4],
+      halfWidths: scaledLegWidths(const [13, 12.4, 7.8, 9.6, 5.4]),
       z: 3,
       color: _trouserRear,
       outlineColor: _outline,
@@ -733,7 +745,7 @@ RigSpec buildCatInSuitRig({
         CatBones.footL,
       ],
       hiddenBoneIds: const [CatBones.legUpperL, CatBones.legLowerL],
-      halfWidths: const [13, 12.4, 7.8, 9.6, 5.4],
+      halfWidths: scaledLegWidths(const [13, 12.4, 7.8, 9.6, 5.4]),
       z: 6,
       color: _trouser,
       outlineColor: _outline,
@@ -750,7 +762,7 @@ RigSpec buildCatInSuitRig({
       ],
       hiddenBoneIds: const [CatBones.armUpperR, CatBones.armLowerR],
       // Broad shoulder into a bicep swell, then a narrower forearm/wrist.
-      halfWidths: const [11.6, 12.2, 8.6, 5.5],
+      halfWidths: scaledArmWidths(const [11.6, 12.2, 8.6, 5.5]),
       z: 15,
       color: _suit,
       outlineColor: _outline,
@@ -766,7 +778,7 @@ RigSpec buildCatInSuitRig({
         CatBones.handL,
       ],
       hiddenBoneIds: const [CatBones.armUpperL, CatBones.armLowerL],
-      halfWidths: const [11.6, 12.2, 8.6, 5.5],
+      halfWidths: scaledArmWidths(const [11.6, 12.2, 8.6, 5.5]),
       z: 16,
       color: _suit,
       outlineColor: _outline,
@@ -1238,9 +1250,9 @@ class CatClips {
     Keyframe(p: 1 / 8, rotation: -0.46),
     Keyframe(p: 3 / 16, rotation: -0.08),
     Keyframe(p: 7 / 32, rotation: 0.3),
-    Keyframe(p: 1 / 4, rotation: 0.58),
-    Keyframe(p: 9 / 32, rotation: 0.52),
-    Keyframe(p: 5 / 16, rotation: 0.34),
+    Keyframe(p: 1 / 4, rotation: 0.66),
+    Keyframe(p: 9 / 32, rotation: 0.62),
+    Keyframe(p: 5 / 16, rotation: 0.46),
     Keyframe(p: 11 / 32, rotation: 0.22),
     Keyframe(p: 3 / 8, rotation: 0.02),
     Keyframe(p: 13 / 32, rotation: 0.26),
@@ -1251,11 +1263,11 @@ class CatClips {
     Keyframe(p: 5 / 8, rotation: 0.26),
     Keyframe(p: 11 / 16, rotation: 0.26),
     Keyframe(p: 23 / 32, rotation: 0.34),
-    Keyframe(p: 3 / 4, rotation: 0.62),
+    Keyframe(p: 3 / 4, rotation: 0.72),
     Keyframe(p: 13 / 16, rotation: 0.26),
-    Keyframe(p: 7 / 8, rotation: 0.34),
-    Keyframe(p: 29 / 32, rotation: 0.62),
-    Keyframe(p: 15 / 16, rotation: 0.56),
+    Keyframe(p: 7 / 8, rotation: 0.42),
+    Keyframe(p: 29 / 32, rotation: 0.64),
+    Keyframe(p: 15 / 16, rotation: 0.58),
     Keyframe(p: 31 / 32, rotation: 0.32),
     Keyframe(p: 1, rotation: 0.22),
   ];
@@ -1265,7 +1277,7 @@ class CatClips {
     Keyframe(p: 1 / 8, rotation: 0.38),
     Keyframe(p: 3 / 16, rotation: -0.36),
     Keyframe(p: 7 / 32, rotation: -0.08),
-    Keyframe(p: 1 / 4, rotation: 0.32),
+    Keyframe(p: 1 / 4, rotation: 0.38),
     Keyframe(p: 9 / 32, rotation: 0.22),
     Keyframe(p: 5 / 16, rotation: 0.06),
     Keyframe(p: 3 / 8, rotation: 0.38),
@@ -1278,41 +1290,41 @@ class CatClips {
     Keyframe(p: 23 / 32, rotation: -0.62),
     Keyframe(p: 3 / 4, rotation: -0.32),
     Keyframe(p: 13 / 16, rotation: -0.58),
-    Keyframe(p: 7 / 8, rotation: 0.34),
-    Keyframe(p: 29 / 32, rotation: 0.52),
-    Keyframe(p: 15 / 16, rotation: 0.48),
+    Keyframe(p: 7 / 8, rotation: 0.42),
+    Keyframe(p: 29 / 32, rotation: 0.56),
+    Keyframe(p: 15 / 16, rotation: 0.54),
     Keyframe(p: 31 / 32, rotation: 0.18),
     Keyframe(p: 1, rotation: -0.12),
   ];
   static const _danceArmUpperRKeys = [
     Keyframe(p: 0, rotation: -0.24),
     Keyframe(p: 1 / 16, rotation: 0.05),
-    Keyframe(p: 1 / 8, rotation: 0.38),
+    Keyframe(p: 1 / 8, rotation: 0.44),
     Keyframe(p: 3 / 16, rotation: -0.02),
     Keyframe(p: 7 / 32, rotation: 0.08),
-    Keyframe(p: 1 / 4, rotation: -0.04),
+    Keyframe(p: 1 / 4, rotation: -0.08),
     Keyframe(p: 5 / 16, rotation: -0.02),
     Keyframe(p: 3 / 8, rotation: -0.24),
     Keyframe(p: 7 / 16, rotation: -0.34),
     Keyframe(p: 15 / 32, rotation: -0.46),
-    Keyframe(p: 1 / 2, rotation: -0.62),
+    Keyframe(p: 1 / 2, rotation: -0.68),
     Keyframe(p: 9 / 16, rotation: -0.54),
     Keyframe(p: 5 / 8, rotation: -0.38),
     Keyframe(p: 11 / 16, rotation: -0.5),
     Keyframe(p: 23 / 32, rotation: -0.62),
-    Keyframe(p: 3 / 4, rotation: -0.48),
+    Keyframe(p: 3 / 4, rotation: -0.56),
     Keyframe(p: 25 / 32, rotation: -0.54),
     Keyframe(p: 13 / 16, rotation: -0.58),
     Keyframe(p: 7 / 8, rotation: -0.48),
-    Keyframe(p: 29 / 32, rotation: -0.6),
-    Keyframe(p: 15 / 16, rotation: -0.56),
+    Keyframe(p: 29 / 32, rotation: -0.68),
+    Keyframe(p: 15 / 16, rotation: -0.62),
     Keyframe(p: 31 / 32, rotation: -0.48),
     Keyframe(p: 1, rotation: -0.24),
   ];
   static const _danceArmLowerRKeys = [
     Keyframe(p: 0, rotation: 0.14),
     Keyframe(p: 1 / 16, rotation: 0.36),
-    Keyframe(p: 1 / 8, rotation: -0.22),
+    Keyframe(p: 1 / 8, rotation: -0.26),
     Keyframe(p: 3 / 16, rotation: 0.26),
     Keyframe(p: 7 / 32, rotation: 0.32),
     Keyframe(p: 1 / 4, rotation: 0.46),
@@ -1327,9 +1339,9 @@ class CatClips {
     Keyframe(p: 23 / 32, rotation: 0.1),
     Keyframe(p: 3 / 4, rotation: 0.34),
     Keyframe(p: 13 / 16, rotation: 0.3),
-    Keyframe(p: 7 / 8, rotation: 0.72),
-    Keyframe(p: 29 / 32, rotation: 0.78),
-    Keyframe(p: 15 / 16, rotation: 0.68),
+    Keyframe(p: 7 / 8, rotation: 0.78),
+    Keyframe(p: 29 / 32, rotation: 0.84),
+    Keyframe(p: 15 / 16, rotation: 0.72),
     Keyframe(p: 31 / 32, rotation: 0.22),
     Keyframe(p: 1, rotation: 0.14),
   ];
@@ -1882,7 +1894,7 @@ class CatClips {
       // mostly locked to the viewer so the dance reads as body rhythm instead
       // of a wobbling face.
       CatBones.hips: LayeredJointChannel([
-        KeyframeChannel(_danceHipKeys, smooth: true),
+        KeyframeChannel(_danceHipKeys),
         SineChannel(
           harmonicAmplitude: 0.002,
           harmonicPhase: 0.015,
@@ -1896,7 +1908,7 @@ class CatClips {
         ),
       ]),
       CatBones.torso: LayeredJointChannel([
-        KeyframeChannel(_danceTorsoKeys, smooth: true),
+        KeyframeChannel(_danceTorsoKeys),
         SineChannel(
           harmonicAmplitude: 0.002,
           harmonicPhase: 0.04,
@@ -1923,10 +1935,10 @@ class CatClips {
 
       // Alternating groove arms for counts 1-8, then compact elbow pops for the
       // Gbese phrase so hands stay visible outside the belly silhouette.
-      CatBones.armUpperL: KeyframeChannel(_danceArmUpperLKeys, smooth: true),
-      CatBones.armUpperR: KeyframeChannel(_danceArmUpperRKeys, smooth: true),
-      CatBones.armLowerL: KeyframeChannel(_danceArmLowerLKeys, smooth: true),
-      CatBones.armLowerR: KeyframeChannel(_danceArmLowerRKeys, smooth: true),
+      CatBones.armUpperL: KeyframeChannel(_danceArmUpperLKeys),
+      CatBones.armUpperR: KeyframeChannel(_danceArmUpperRKeys),
+      CatBones.armLowerL: KeyframeChannel(_danceArmLowerLKeys),
+      CatBones.armLowerR: KeyframeChannel(_danceArmLowerRKeys),
 
       CatBones.tie: KeyframeChannel(_danceTieKeys, smooth: true),
       CatBones.tieLower: KeyframeChannel(_danceTieLowerKeys, smooth: true),
@@ -1947,24 +1959,30 @@ class CatClips {
     },
   );
 
-  static Clip get danceBackupLeft => _danceArmRole(
+  static Clip get danceBackupLeft => _danceBodyRole(
     name: 'danceBackupLeft',
+    hips: const SineChannel(amplitude: 0.018, phase: 0.08),
+    torso: const SineChannel(amplitude: 0.026, phase: 0.62, bias: -0.006),
     armUpperL: const SineChannel(),
     armLowerL: const SineChannel(),
     armUpperR: const SineChannel(amplitude: 0.055, phase: 0.54, bias: -0.015),
     armLowerR: const SineChannel(amplitude: 0.06, phase: 0.68, bias: 0.015),
   );
 
-  static Clip get danceBackupRight => _danceArmRole(
+  static Clip get danceBackupRight => _danceBodyRole(
     name: 'danceBackupRight',
+    hips: const SineChannel(amplitude: 0.02, phase: 0.58),
+    torso: const SineChannel(amplitude: 0.034, phase: 0.12, bias: 0.01),
     armUpperL: const SineChannel(amplitude: 0.055, phase: 0.58, bias: -0.015),
     armLowerL: const SineChannel(amplitude: 0.06, phase: 0.7, bias: 0.015),
     armUpperR: const SineChannel(),
     armLowerR: const SineChannel(),
   );
 
-  static Clip _danceArmRole({
+  static Clip _danceBodyRole({
     required String name,
+    required JointChannel hips,
+    required JointChannel torso,
     required JointChannel armUpperL,
     required JointChannel armLowerL,
     required JointChannel armUpperR,
@@ -1979,6 +1997,14 @@ class CatClips {
       root: base.root,
       channels: {
         ...base.channels,
+        CatBones.hips: LayeredJointChannel([
+          base.channels[CatBones.hips]!,
+          hips,
+        ]),
+        CatBones.torso: LayeredJointChannel([
+          base.channels[CatBones.torso]!,
+          torso,
+        ]),
         CatBones.armUpperL: LayeredJointChannel([
           base.channels[CatBones.armUpperL]!,
           armUpperL,

@@ -77,7 +77,10 @@ class CharacterDemoPage extends StatefulWidget {
 class _CharacterDemoPageState extends State<CharacterDemoPage>
     with SingleTickerProviderStateMixin {
   late final CharacterScene _scene = CharacterScene(
-    buildCatInSuitRig(),
+    buildCatInSuitRig(
+      legWidthScale: kDanceLeadLegWidthScale,
+      armWidthScale: kDanceLeadArmWidthScale,
+    ),
     autonomic: _danceAutonomic(11),
   );
   late final CharacterScene _partnerScene = CharacterScene(

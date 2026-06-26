@@ -229,6 +229,7 @@ class CharacterPainter extends CustomPainter {
         final memberScene = members[i];
         final memberClip = clips[i];
         final memberScale = drawScale * _roleScale(i, members.length);
+        final memberHorizontalScale = _roleHorizontalScale(i, members.length);
         final phaseOffset = synchronousEnsemble
             ? _ensembleMicroTimingOffset(
                 i,
@@ -259,6 +260,7 @@ class CharacterPainter extends CustomPainter {
           expression: expressions[i],
           scale: memberScale,
           feetFraction: feetFraction,
+          horizontalScale: memberHorizontalScale,
         );
       }
       canvas.restore();
@@ -306,12 +308,17 @@ class CharacterPainter extends CustomPainter {
 
   static double _roleScale(int index, int memberCount) {
     if (memberCount < 3) return 1;
-    return index == 1 ? 1.28 : 0.82;
+    return index == 1 ? 1.32 : 0.79;
+  }
+
+  static double _roleHorizontalScale(int index, int memberCount) {
+    if (memberCount < 3) return 1;
+    return index == 1 ? 1.08 : 1;
   }
 
   static double _roleFloorOffset(int index, int memberCount) {
     if (memberCount < 3) return 0;
-    return index == 1 ? 22 : -36;
+    return index == 1 ? 28 : -44;
   }
 
   static ({double zoom, double dx, double dy}) _danceCamera(
@@ -323,29 +330,29 @@ class CharacterPainter extends CustomPainter {
       zoom: _smoothKeys(p, const [
         (p: 0, v: 1.0),
         (p: 1 / 8, v: 1.05),
-        (p: 1 / 4, v: 1.13),
-        (p: 1 / 2, v: 1.21),
-        (p: 5 / 8, v: 1.26),
-        (p: 3 / 4, v: 1.18),
-        (p: 29 / 32, v: 1.07),
+        (p: 1 / 4, v: 1.15),
+        (p: 1 / 2, v: 1.24),
+        (p: 5 / 8, v: 1.3),
+        (p: 3 / 4, v: 1.2),
+        (p: 29 / 32, v: 1.08),
         (p: 1, v: 1.0),
       ]),
       dx: _smoothKeys(p, const [
         (p: 0, v: 0.0),
-        (p: 1 / 8, v: -10.0),
-        (p: 1 / 4, v: -24.0),
-        (p: 1 / 2, v: 22.0),
-        (p: 5 / 8, v: 30.0),
-        (p: 3 / 4, v: 18.0),
-        (p: 29 / 32, v: 8.0),
+        (p: 1 / 8, v: -12.0),
+        (p: 1 / 4, v: -28.0),
+        (p: 1 / 2, v: 26.0),
+        (p: 5 / 8, v: 34.0),
+        (p: 3 / 4, v: 22.0),
+        (p: 29 / 32, v: 10.0),
         (p: 1, v: 0.0),
       ]),
       dy: _smoothKeys(p, const [
         (p: 0, v: 0.0),
-        (p: 1 / 4, v: -8.0),
-        (p: 1 / 2, v: -22.0),
-        (p: 5 / 8, v: -28.0),
-        (p: 3 / 4, v: -16.0),
+        (p: 1 / 4, v: -10.0),
+        (p: 1 / 2, v: -26.0),
+        (p: 5 / 8, v: -32.0),
+        (p: 3 / 4, v: -18.0),
         (p: 29 / 32, v: 0.0),
         (p: 1, v: 0.0),
       ]),
@@ -627,6 +634,7 @@ class CharacterPainter extends CustomPainter {
     required Expression expression,
     required double scale,
     required double feetFraction,
+    double horizontalScale = 1,
   }) {
     final base = groundedBase(
       size,
@@ -636,7 +644,7 @@ class CharacterPainter extends CustomPainter {
       floorY: floorY,
       feetOffset: drawScene.restFeetOffset,
       flip: flip,
-    );
+    ).multiply(Affine2D.scale(horizontalScale, 1));
     final frame = drawScene.frameAt(
       clip: clip,
       timeSeconds: timeSeconds,

@@ -78,6 +78,37 @@ void main() {
       expect(rig.face?.browColor, CatInSuitPalette.darkBrown.brow);
       expect(CatInSuitPalette.darkBrown.brow, 0xFFF1E2C9);
     });
+
+    test('can build a lead variant with stronger limbs', () {
+      final base = buildCatInSuitRig();
+      final lead = buildCatInSuitRig(
+        legWidthScale: kDanceLeadLegWidthScale,
+        armWidthScale: kDanceLeadArmWidthScale,
+      );
+
+      final baseLeg = base.ribbons.singleWhere((r) => r.id == 'leg.L.ribbon');
+      final leadLeg = lead.ribbons.singleWhere((r) => r.id == 'leg.L.ribbon');
+      final baseArm = base.ribbons.singleWhere((r) => r.id == 'arm.L.ribbon');
+      final leadArm = lead.ribbons.singleWhere((r) => r.id == 'arm.L.ribbon');
+      final baseTail = base.ribbons.singleWhere((r) => r.id == 'tail.ribbon');
+      final leadTail = lead.ribbons.singleWhere((r) => r.id == 'tail.ribbon');
+
+      expect(baseLeg.halfWidths, const [13, 12.4, 7.8, 9.6, 5.4]);
+      expect(
+        leadLeg.halfWidths.first,
+        closeTo(13 * kDanceLeadLegWidthScale, 0.001),
+      );
+      expect(
+        leadLeg.halfWidths[3],
+        closeTo(9.6 * kDanceLeadLegWidthScale, 0.001),
+      );
+      expect(baseArm.halfWidths, const [11.6, 12.2, 8.6, 5.5]);
+      expect(
+        leadArm.halfWidths[1],
+        closeTo(12.2 * kDanceLeadArmWidthScale, 0.001),
+      );
+      expect(leadTail.halfWidths, baseTail.halfWidths);
+    });
   });
 
   group('CatClips', () {
@@ -115,7 +146,7 @@ void main() {
     });
 
     test(
-      'backup dance clips share support timing and add bounded arm style',
+      'backup dance clips share support timing and add bounded body style',
       () {
         final lead = CatClips.dance;
         final left = CatClips.danceBackupLeft;
@@ -136,20 +167,32 @@ void main() {
           right.channels[CatBones.legUpperR]!.sample(p).rotation,
           closeTo(lead.channels[CatBones.legUpperR]!.sample(p).rotation, 1e-9),
         );
-        expect(
-          left.channels[CatBones.hips]!.sample(p).rotation,
-          closeTo(lead.channels[CatBones.hips]!.sample(p).rotation, 1e-9),
-        );
-        expect(
-          right.channels[CatBones.torso]!.sample(p).rotation,
-          closeTo(lead.channels[CatBones.torso]!.sample(p).rotation, 1e-9),
-        );
+        final leftHipDelta =
+            left.channels[CatBones.hips]!.sample(p).rotation -
+            lead.channels[CatBones.hips]!.sample(p).rotation;
+        final rightTorsoDelta =
+            right.channels[CatBones.torso]!.sample(p).rotation -
+            lead.channels[CatBones.torso]!.sample(p).rotation;
         final leftArmDelta =
             left.channels[CatBones.armUpperR]!.sample(p).rotation -
             lead.channels[CatBones.armUpperR]!.sample(p).rotation;
         final rightArmDelta =
             right.channels[CatBones.armUpperL]!.sample(p).rotation -
             lead.channels[CatBones.armUpperL]!.sample(p).rotation;
+        expect(
+          leftHipDelta.abs(),
+          inInclusiveRange(0.005, 0.04),
+          reason:
+              'left backup should answer with a small hip variation while '
+              'sharing the lead support timing',
+        );
+        expect(
+          rightTorsoDelta.abs(),
+          inInclusiveRange(0.005, 0.05),
+          reason:
+              'right backup should answer with a small chest variation while '
+              'sharing the lead support timing',
+        );
         expect(
           leftArmDelta.abs(),
           inInclusiveRange(0.005, 0.08),
@@ -222,14 +265,14 @@ void main() {
         );
         expect(
           armUpperL.sample(1 / 4).rotation,
-          inInclusiveRange(0.38, 0.6),
+          inInclusiveRange(0.5, 0.75),
           reason:
               'the count-2 accent should stay compact at chest level instead '
               'of snapping to a vertical boy-band punch',
         );
         expect(
           armUpperR.sample(1 / 4).rotation,
-          inInclusiveRange(-0.1, 0.08),
+          inInclusiveRange(-0.12, 0.02),
           reason:
               'the opposite arm should counter the lead scoop instead of '
               'matching its height',

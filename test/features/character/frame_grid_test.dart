@@ -480,7 +480,14 @@ void main() {
       for (final name in selected) {
         final clip = clipsByName[name]!;
         final scene = CharacterScene(
-          buildCatInSuitRig(),
+          buildCatInSuitRig(
+            legWidthScale: clip.name == CatClips.dance.name
+                ? kDanceLeadLegWidthScale
+                : 1,
+            armWidthScale: clip.name == CatClips.dance.name
+                ? kDanceLeadArmWidthScale
+                : 1,
+          ),
           autonomic: _reviewAutonomic(11),
         );
         final partnerScene = CharacterScene(
