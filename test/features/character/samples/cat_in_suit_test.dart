@@ -562,6 +562,37 @@ void main() {
         reason: 'lead Shaku cue should read as crossed-arm groove',
       );
 
+      final reboundP = phrase.moveAtFrame(10).accentFrame / phrase.frameCount;
+      expect(phrase.moveAtFrame(10).name, 'lead rebound shoulder scoop');
+      expect(
+        leadChannels[CatBones.torso]!.sample(reboundP).scaleY,
+        lessThan(0.96),
+        reason: 'rebound scoop should stay in the pocket, not stand tall',
+      );
+      final reboundLeftHand = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(reboundP);
+      final reboundRightHand = _targetFor(
+        lead,
+        CatBones.handR,
+      ).channel.sample(reboundP);
+      expect(
+        reboundLeftHand.y,
+        lessThan(-8),
+        reason: 'left hand should lift to shoulder/chest level for the scoop',
+      );
+      expect(
+        reboundRightHand.y,
+        lessThan(-5),
+        reason: 'right hand should answer high enough to define the scoop',
+      );
+      expect(
+        reboundRightHand.x - reboundLeftHand.x,
+        greaterThan(135),
+        reason: 'scoop should read as a broad shoulder-level shape',
+      );
+
       final rightCueP = phrase.moveAtFrame(12).accentFrame / phrase.frameCount;
       final rightArmDelta =
           right.channels[CatBones.armUpperL]!.sample(rightCueP).rotation -
@@ -580,9 +611,27 @@ void main() {
       final rightFootCueP =
           phrase.moveAtFrame(20).accentFrame / phrase.frameCount;
       expect(
+        phrase.moveAtFrame(20).signature,
+        contains('lifted free-left toe'),
+      );
+      expect(
         leadChannels[CatBones.hips]!.sample(rightFootCueP).rotation,
         lessThan(-0.35),
         reason: 'right-foot groove cue should visibly load the opposite hip',
+      );
+      final freeLeftFoot = _targetFor(
+        lead,
+        CatBones.footL,
+      ).channel.sample(rightFootCueP);
+      expect(
+        freeLeftFoot.x,
+        lessThan(-45),
+        reason: 'free-left foot should flick outward in the right-foot groove',
+      );
+      expect(
+        freeLeftFoot.y,
+        lessThan(100.5),
+        reason: 'free-left foot should lift instead of dragging at frame 20',
       );
 
       final leftCueP = phrase.moveAtFrame(24).accentFrame / phrase.frameCount;
