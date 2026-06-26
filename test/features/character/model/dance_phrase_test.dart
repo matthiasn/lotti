@@ -115,6 +115,61 @@ void main() {
       expect(phrase.moveAtPhase(0.64).signature, contains('inside-arm lift'));
     });
 
+    test('compiles named move signatures over base choreography keys', () {
+      const signatures = [
+        DanceMoveSignature(
+          moveName: 'left pocket hit',
+          bodyAccents: [
+            DanceBodyAccent(
+              4,
+              radiusFrames: 2,
+              rootDy: 1.5,
+              chestRotation: -0.04,
+            ),
+          ],
+          jointKeys: {
+            'foot.R': [
+              DanceJointKey(4, rotation: 0.32),
+            ],
+          },
+          ikTargetKeys: {
+            'hand.L': [
+              DanceIkTargetKey(4, x: -42, y: 6),
+            ],
+          },
+        ),
+      ];
+
+      final bodyAccents = phrase.moveBodyAccents(signatures);
+      final footKeys = phrase.mergeJointKeys(
+        baseKeys: const [
+          DanceJointKey(0, rotation: -0.1),
+          DanceJointKey(4),
+          DanceJointKey(32, rotation: -0.1),
+        ],
+        signatures: signatures,
+        boneId: 'foot.R',
+      );
+      final handKeys = phrase.mergeIkTargetKeys(
+        baseKeys: const [
+          DanceIkTargetKey(0, x: -12, y: 24),
+          DanceIkTargetKey(4, x: -18, y: 30),
+          DanceIkTargetKey(32, x: -12, y: 24),
+        ],
+        signatures: signatures,
+        targetBoneId: 'hand.L',
+      );
+
+      expect(bodyAccents.single.frame, 4);
+      expect(bodyAccents.single.rootDy, 1.5);
+      expect(bodyAccents.single.chestRotation, -0.04);
+      expect(footKeys.map((key) => key.frame), [0, 4, 32]);
+      expect(footKeys[1].rotation, 0.32);
+      expect(handKeys.map((key) => key.frame), [0, 4, 32]);
+      expect(handKeys[1].x, -42);
+      expect(handKeys[1].y, 6);
+    });
+
     test('builds joint channels from frame-addressed keys', () {
       final channel = phrase.jointChannel(
         const [
@@ -450,6 +505,40 @@ void main() {
       );
       expect(
         () => phrase.ikTargetKey(33, x: 0, y: 0),
+        throwsRangeError,
+      );
+      expect(
+        () => phrase.mergeIkTargetKeys(
+          baseKeys: const [],
+          signatures: const [
+            DanceMoveSignature(
+              moveName: 'missing cue',
+              ikTargetKeys: {
+                'hand.L': [
+                  DanceIkTargetKey(4, x: 1, y: 1),
+                ],
+              },
+            ),
+          ],
+          targetBoneId: 'hand.L',
+        ),
+        throwsStateError,
+      );
+      expect(
+        () => phrase.mergeJointKeys(
+          baseKeys: const [],
+          signatures: const [
+            DanceMoveSignature(
+              moveName: 'left pocket hit',
+              jointKeys: {
+                'foot.R': [
+                  DanceJointKey(33, rotation: 0.1),
+                ],
+              },
+            ),
+          ],
+          boneId: 'foot.R',
+        ),
         throwsRangeError,
       );
       expect(

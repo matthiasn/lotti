@@ -190,6 +190,39 @@ class DancePhrase {
     return List<DanceBodyKey>.unmodifiable(keys);
   }
 
+  List<DanceBodyAccent> moveBodyAccents(
+    List<DanceMoveSignature> signatures,
+  ) {
+    final accents = <DanceBodyAccent>[];
+    for (final signature in signatures) {
+      _checkSignatureMove(signature);
+      accents.addAll(signature.bodyAccents);
+    }
+    return List<DanceBodyAccent>.unmodifiable(accents);
+  }
+
+  List<DanceJointKey> mergeJointKeys({
+    required List<DanceJointKey> baseKeys,
+    required List<DanceMoveSignature> signatures,
+    required String boneId,
+  }) {
+    final keysByFrame = <int, DanceJointKey>{};
+
+    void addKey(DanceJointKey key) {
+      _checkFrame(key.frame);
+      keysByFrame[key.frame] = key;
+    }
+
+    baseKeys.forEach(addKey);
+    for (final signature in signatures) {
+      _checkSignatureMove(signature);
+      (signature.jointKeys[boneId] ?? const <DanceJointKey>[]).forEach(addKey);
+    }
+    final keys = keysByFrame.values.toList()
+      ..sort((a, b) => a.frame.compareTo(b.frame));
+    return List<DanceJointKey>.unmodifiable(keys);
+  }
+
   KeyframeChannel bodyPelvisChannel(
     List<DanceBodyKey> keys, {
     bool smooth = false,
@@ -247,6 +280,29 @@ class DancePhrase {
     return List<DanceIkTargetKey>.unmodifiable(keys);
   }
 
+  List<DanceIkTargetKey> mergeIkTargetKeys({
+    required List<DanceIkTargetKey> baseKeys,
+    required List<DanceMoveSignature> signatures,
+    required String targetBoneId,
+  }) {
+    final keysByFrame = <int, DanceIkTargetKey>{};
+
+    void addKey(DanceIkTargetKey key) {
+      _checkFrame(key.frame);
+      keysByFrame[key.frame] = key;
+    }
+
+    baseKeys.forEach(addKey);
+    for (final signature in signatures) {
+      _checkSignatureMove(signature);
+      (signature.ikTargetKeys[targetBoneId] ?? const <DanceIkTargetKey>[])
+          .forEach(addKey);
+    }
+    final keys = keysByFrame.values.toList()
+      ..sort((a, b) => a.frame.compareTo(b.frame));
+    return List<DanceIkTargetKey>.unmodifiable(keys);
+  }
+
   List<DanceIkTargetKey> ikTargetAccentKeys(
     List<DanceIkTargetAccent> accents,
   ) {
@@ -268,6 +324,14 @@ class DancePhrase {
 
   void _checkFrame(int frame) {
     RangeError.checkValueInInterval(frame, 0, frameCount, 'frame');
+  }
+
+  void _checkSignatureMove(DanceMoveSignature signature) {
+    if (!moves.any((move) => move.name == signature.moveName)) {
+      throw StateError(
+        'Move signature "${signature.moveName}" has no matching cue.',
+      );
+    }
   }
 
   int _wrappedFrame(int frame) {
@@ -389,6 +453,30 @@ class DanceMoveCue {
   final String signature;
 
   bool containsFrame(int frame) => frame >= startFrame && frame < endFrame;
+}
+
+class DanceMoveSignature {
+  const DanceMoveSignature({
+    required this.moveName,
+    this.bodyAccents = const <DanceBodyAccent>[],
+    this.ikTargetKeys = const <String, List<DanceIkTargetKey>>{},
+    this.jointKeys = const <String, List<DanceJointKey>>{},
+  });
+
+  /// Must match [DanceMoveCue.name]. This keeps authored pose data tied to a
+  /// choreographic idea instead of anonymous frame ranges.
+  final String moveName;
+
+  /// Additive body pulses that define the move's weight or shoulder action.
+  final List<DanceBodyAccent> bodyAccents;
+
+  /// Absolute IK target keys for this move, keyed by end-bone id. These replace
+  /// base keys on matching frames when compiled by [DancePhrase.mergeIkTargetKeys].
+  final Map<String, List<DanceIkTargetKey>> ikTargetKeys;
+
+  /// Absolute FK joint keys for this move, keyed by bone id. These replace base
+  /// keys on matching frames when compiled by [DancePhrase.mergeJointKeys].
+  final Map<String, List<DanceJointKey>> jointKeys;
 }
 
 class DanceJointKey {
