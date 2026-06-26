@@ -295,12 +295,11 @@ class DanceIkTargetKey {
   final double weight;
   final Ease ease;
 
-  IkTargetKeyframe toIkTargetKeyframe(DancePhrase phrase) =>
-      phrase.ikTargetKey(
-        frame,
-        x: x,
-        y: y,
-        weight: weight,
-        ease: ease,
-      );
+  IkTargetKeyframe toIkTargetKeyframe(DancePhrase phrase) => phrase.ikTargetKey(
+    frame,
+    x: x,
+    y: y,
+    weight: weight,
+    ease: ease,
+  );
 }

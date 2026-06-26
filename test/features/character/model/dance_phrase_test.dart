@@ -124,7 +124,7 @@ void main() {
       final channel = phrase.ikTargetChannel(
         const [
           DanceIkTargetKey(0, x: -12, y: 24, weight: 0.4),
-          DanceIkTargetKey(8, x: 18, y: 12, weight: 1),
+          DanceIkTargetKey(8, x: 18, y: 12),
           DanceIkTargetKey(32, x: -12, y: 24, weight: 0.4),
         ],
       );
