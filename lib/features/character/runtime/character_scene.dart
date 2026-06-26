@@ -442,7 +442,7 @@ class CharacterScene {
     double p,
   ) {
     final dance = clip.name == 'dance';
-    final baseX = dance ? 0.985 : (clip.loop ? 0.8 : 0.94);
+    final baseX = dance ? 1.0 : (clip.loop ? 0.8 : 0.94);
     final baseY = dance ? 1.0 : (clip.loop ? 0.8 : 0.94);
     final spanLength = span.end - span.start;
     final fade = dance

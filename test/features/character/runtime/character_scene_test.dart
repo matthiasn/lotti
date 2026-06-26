@@ -160,7 +160,7 @@ void main() {
       );
       expect(
         lockedDrift,
-        lessThan(3.2),
+        lessThan(2.4),
         reason:
             'dance support feet should stay close enough to read planted '
             'during the groove holds',
@@ -201,7 +201,7 @@ void main() {
 
           expect(
             drift,
-            lessThan(4.2),
+            lessThan(3.0),
             reason:
                 '${span.bone} should hold a stable contact through most of '
                 'the dance beat before the next pickup',
@@ -223,7 +223,7 @@ void main() {
         );
         expect(
           _distance(seamBefore, seamAfter),
-          lessThan(4.2),
+          lessThan(3.0),
           reason:
               'the loop-pickup support foot should roll into frame 1 instead of '
               'visibly popping to a new floor point',
@@ -236,7 +236,7 @@ void main() {
         );
         expect(
           _distance(seamBefore, seamCarry),
-          lessThan(4.2),
+          lessThan(3.0),
           reason:
               'matching first/last loop contacts should behave as one '
               'continuous support hold across the wrap',
