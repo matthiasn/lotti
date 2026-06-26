@@ -8,7 +8,8 @@ import 'package:lotti/features/character/model/easing.dart';
 /// review, however, happens on counts and frames: "frame 16 is the right-foot
 /// plant" is much easier to reason about than `p: 0.5`. This layer keeps the
 /// authored intent in those terms, then converts it to [GroundSpan],
-/// [KeyframeChannel], and [KeyframeRootChannel] so the runtime stays unchanged.
+/// [KeyframeChannel], [KeyframeRootChannel], and [KeyframeIkTargetChannel] so
+/// the runtime stays unchanged.
 class DancePhrase {
   const DancePhrase({
     required this.frameCount,
@@ -113,6 +114,28 @@ class DancePhrase {
     bool smooth = false,
   }) => KeyframeRootChannel(
     [for (final key in keys) key.toRootKeyframe(this)],
+    smooth: smooth,
+  );
+
+  IkTargetKeyframe ikTargetKey(
+    int frame, {
+    required double x,
+    required double y,
+    double weight = 1,
+    Ease ease = Ease.easeInOut,
+  }) => IkTargetKeyframe(
+    p: phaseOf(frame),
+    x: x,
+    y: y,
+    weight: weight,
+    ease: ease,
+  );
+
+  KeyframeIkTargetChannel ikTargetChannel(
+    List<DanceIkTargetKey> keys, {
+    bool smooth = false,
+  }) => KeyframeIkTargetChannel(
+    [for (final key in keys) key.toIkTargetKeyframe(this)],
     smooth: smooth,
   );
 
@@ -255,4 +278,29 @@ class DanceRootKey {
     rotation: rotation,
     ease: ease,
   );
+}
+
+class DanceIkTargetKey {
+  const DanceIkTargetKey(
+    this.frame, {
+    required this.x,
+    required this.y,
+    this.weight = 1,
+    this.ease = Ease.easeInOut,
+  });
+
+  final int frame;
+  final double x;
+  final double y;
+  final double weight;
+  final Ease ease;
+
+  IkTargetKeyframe toIkTargetKeyframe(DancePhrase phrase) =>
+      phrase.ikTargetKey(
+        frame,
+        x: x,
+        y: y,
+        weight: weight,
+        ease: ease,
+      );
 }

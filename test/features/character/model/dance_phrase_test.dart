@@ -120,9 +120,31 @@ void main() {
       expect(channel.sample(1).dx, closeTo(-8, 1e-9));
     });
 
+    test('builds IK target channels from frame-addressed keys', () {
+      final channel = phrase.ikTargetChannel(
+        const [
+          DanceIkTargetKey(0, x: -12, y: 24, weight: 0.4),
+          DanceIkTargetKey(8, x: 18, y: 12, weight: 1),
+          DanceIkTargetKey(32, x: -12, y: 24, weight: 0.4),
+        ],
+      );
+
+      expect(channel.sample(0).x, closeTo(-12, 1e-9));
+      expect(channel.sample(0).y, closeTo(24, 1e-9));
+      expect(channel.sample(0).weight, closeTo(0.4, 1e-9));
+      expect(channel.sample(0.25).x, closeTo(18, 1e-9));
+      expect(channel.sample(0.25).y, closeTo(12, 1e-9));
+      expect(channel.sample(0.25).weight, closeTo(1, 1e-9));
+      expect(channel.sample(1).x, closeTo(-12, 1e-9));
+    });
+
     test('rejects keys outside the authored phrase', () {
       expect(() => phrase.phaseOf(-1), throwsRangeError);
       expect(() => phrase.jointKey(33), throwsRangeError);
+      expect(
+        () => phrase.ikTargetKey(33, x: 0, y: 0),
+        throwsRangeError,
+      );
       expect(
         () => const DanceSupportSpan(
           footBoneId: 'foot.L',
