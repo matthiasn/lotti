@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../test_helper.dart';
 
@@ -127,6 +128,54 @@ void main() {
 
       expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
       expect(find.byIcon(MdiIcons.microphone), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'listening inverts the stop mark: teal glyph, no filled disc',
+    (tester) async {
+      await pumpVoiceButton(tester, phase: CapturePhase.listening);
+
+      final tokens = tester.element(find.byType(VoiceButton)).designTokens;
+      final teal = tokens.colors.interactive.enabled;
+
+      // The stop square is drawn in the orb's own teal (inverted), not the
+      // light on-interactive color it used to punch out of the disc, and
+      // larger than the mic glyph since there is no disc to sit inside.
+      final stopIcon = tester.widget<Icon>(find.byIcon(Icons.stop_rounded));
+      expect(stopIcon.color, teal);
+      expect(stopIcon.color, isNot(tokens.colors.text.onInteractiveAlert));
+      expect(stopIcon.size, 132 * 0.57);
+
+      // The filled disc is gone: the core decoration has no fill and no
+      // shadow while listening — just the teal square sits in the field.
+      final decoration =
+          tester
+                  .widget<Ink>(
+                    find.ancestor(
+                      of: find.byKey(VoiceButton.coreButtonKey),
+                      matching: find.byType(Ink),
+                    ),
+                  )
+                  .decoration!
+              as BoxDecoration;
+      expect(decoration.color, isNull);
+      expect(decoration.boxShadow, isNull);
+
+      // Idle keeps the solid teal disc, so the inversion is scoped to
+      // listening rather than flattening the orb everywhere.
+      await pumpVoiceButton(tester);
+      final idleDecoration =
+          tester
+                  .widget<Ink>(
+                    find.ancestor(
+                      of: find.byKey(VoiceButton.coreButtonKey),
+                      matching: find.byType(Ink),
+                    ),
+                  )
+                  .decoration!
+              as BoxDecoration;
+      expect(idleDecoration.color, teal);
     },
   );
 

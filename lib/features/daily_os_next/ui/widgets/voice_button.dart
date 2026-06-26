@@ -11,19 +11,21 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// Visual states, driven by [CapturePhase]:
 /// - **idle / error** — solid teal disc + mic glyph, resting
 ///   concentric frames.
-/// - **listening** — the disc wrapped by the dBFS-driven tension-loop
-///   shader; glyph becomes a stop square (tap = stop recording).
+/// - **listening** — the filled disc drops away and the stop square is
+///   drawn in the orb's own teal (an inverted stop mark), wrapped by the
+///   dBFS-driven tension-loop shader (tap = stop recording).
 /// - **transcribing** — dimmed button while the recording is converted to
 ///   text; tapping is a no-op at the controller level.
 /// - **captured** — mic glyph again (tap = discard and re-record).
 ///
 /// The button is deliberately "alive": presses scale the core down and
 /// release it with a slight overshoot, the ink ripple is painted *above*
-/// the fill so it is actually visible, glyph changes cross-fade, and —
-/// while listening — the core itself breathes with the live voice level
-/// (it rests smaller inside the shader field and swells with the same
-/// dBFS signal the shader renders, so the inside and the outside of the
-/// orb move as one organism instead of a live ring around a dead disc).
+/// the fill so it is actually visible, and glyph changes cross-fade. While
+/// listening the disc fill is removed entirely, so the orb reads as the
+/// tension-loop shader field wrapped around an inverted teal stop mark; the
+/// live voice level drives the surrounding shader, and the underlying core
+/// box still tracks it (rests smaller, swells with dBFS) to scope the press
+/// ripple, even though that box is no longer painted.
 ///
 /// Pure presentation. The parent calls [onTap] which delegates to
 /// `CaptureController.toggle()`.
@@ -236,13 +238,24 @@ class _VoiceButtonState extends State<VoiceButton>
     // the primary action (the advance CTA is), so the full teal fill would
     // shout over it.
     final outlined = widget.phase == CapturePhase.captured;
-    final glyphColor = outlined ? teal : onTeal;
+    // While listening the filled disc drops away and the stop glyph carries
+    // the orb's own teal — an inverted stop mark sitting in the shader field,
+    // rather than a light glyph punched out of a teal disc.
+    final listening = widget.phase == CapturePhase.listening;
+    final glyphColor = outlined || listening ? teal : onTeal;
+    // Without the disc behind it the inverted stop mark reads small, so it is
+    // drawn larger than the mic glyph (about halfway to filling the orb); the
+    // core's circular clip is dropped while listening so the larger square's
+    // corners are not shaved.
+    final glyphSize = size * (listening ? 0.57 : 0.38);
     final coreDecoration = outlined
         ? BoxDecoration(
             shape: BoxShape.circle,
             color: teal.withValues(alpha: 0.08),
             border: Border.all(color: teal.withValues(alpha: 0.55), width: 1.5),
           )
+        : listening
+        ? const BoxDecoration(shape: BoxShape.circle)
         : BoxDecoration(
             shape: BoxShape.circle,
             // Flat brand disc — the one gradient in the system read as a
@@ -356,7 +369,7 @@ class _VoiceButtonState extends State<VoiceButton>
                 child: Material(
                   color: Colors.transparent,
                   shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
+                  clipBehavior: listening ? Clip.none : Clip.antiAlias,
                   child: Ink(
                     decoration: coreDecoration,
                     child: InkWell(
@@ -366,12 +379,10 @@ class _VoiceButtonState extends State<VoiceButton>
                       onTapCancel: () => _setPressed(false),
                       onTapUp: (_) => _setPressed(false),
                       customBorder: const CircleBorder(),
-                      splashColor: (outlined ? teal : onTeal).withValues(
-                        alpha: 0.22,
-                      ),
-                      highlightColor: (outlined ? teal : onTeal).withValues(
-                        alpha: 0.08,
-                      ),
+                      splashColor: (outlined || listening ? teal : onTeal)
+                          .withValues(alpha: 0.22),
+                      highlightColor: (outlined || listening ? teal : onTeal)
+                          .withValues(alpha: 0.08),
                       child: Center(
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 180),
@@ -391,7 +402,7 @@ class _VoiceButtonState extends State<VoiceButton>
                           child: Icon(
                             _glyph,
                             key: ValueKey<IconData>(_glyph),
-                            size: size * 0.38,
+                            size: glyphSize,
                             color: glyphColor,
                           ),
                         ),

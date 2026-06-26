@@ -183,6 +183,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   after they appear — their progress chip and bar hold their space from the
   first frame, so the list doesn't shuffle under you as you scroll.
 ### Fixed
+- Coding prompts generated from a task-linked audio note now attach to the
+  parent task even when the note's task relationship has to be resolved from
+  the link graph, so follow-up prompts can see the earlier generated prompt as
+  task context.
 - Photos dragged into Lotti now keep the moment they were taken. They were being
   dated to the time of the drop; the importer now reads the original capture time
   from the image's EXIF metadata (and its GPS location, when present), falling

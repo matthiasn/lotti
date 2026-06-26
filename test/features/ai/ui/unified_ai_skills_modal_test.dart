@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart' show toDbEntity;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -956,6 +957,98 @@ void main() {
         expect(capturedParams, isNotNull);
         expect(capturedParams!.overrideModelId, isNull);
         expect(capturedParams!.geminiThinkingMode, isNull);
+      },
+    );
+
+    testWidgets(
+      'prompt generation resolves a graph-linked task before dispatching',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 10);
+        final entity = _audioEntityFactory(
+          id: 'audio-coding-popup',
+          categoryId: 'cat-audio',
+        );
+        final linkedTask = Task(
+          meta: Metadata(
+            id: 'task-coding-popup',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now.add(const Duration(hours: 1)),
+            categoryId: 'cat-task',
+          ),
+          data: TaskData(
+            title: 'Coding task',
+            status: TaskStatus.open(
+              id: 'status-coding-popup',
+              createdAt: now,
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: now,
+            dateTo: now.add(const Duration(hours: 1)),
+          ),
+        );
+        final provider = _buildProvider(id: 'p-text', name: 'Text AI', t: now);
+        final model = _buildModel(
+          id: 'm-text',
+          name: 'Prompt Model',
+          providerModelId: 'wire-text',
+          providerId: provider.id,
+          modality: Modality.text,
+          t: now,
+        );
+        final profile = ResolvedProfile(
+          thinkingModelId: model.providerModelId,
+          thinkingProvider: provider,
+          thinkingModel: model,
+        );
+        final resolver = _RecordingProfileResolver(profile);
+        TriggerSkillParams? capturedParams;
+
+        when(
+          () => mockJournalDb.getLinkedToEntities(entity.id),
+        ).thenAnswer((_) async => [toDbEntity(linkedTask)]);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: entity,
+              linkedFromId: null,
+            ),
+            overrides: [
+              entryControllerProvider(entity.id).overrideWith(
+                () => FakeEntryController(entity),
+              ),
+              ..._baseOverrides(
+                entity: entity,
+                skill: testSkills.last,
+                models: [model],
+                resolver: resolver,
+                configs: [model, provider],
+              ),
+              triggerSkillProvider.overrideWith((ref, params) async {
+                capturedParams = params;
+              }),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Prompt Generation Skill'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(resolver.resolveForTaskCalls, [linkedTask.id]);
+        expect(resolver.resolveForCategoryCalls, isEmpty);
+        expect(capturedParams, isNotNull);
+        expect(capturedParams!.entityId, entity.id);
+        expect(capturedParams!.linkedTaskId, linkedTask.id);
+        expect(capturedParams!.overrideModelId, isNull);
       },
     );
   });

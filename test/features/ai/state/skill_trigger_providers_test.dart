@@ -9,6 +9,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart' show toDbEntity;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -137,6 +138,15 @@ void main() {
     when(
       () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
     ).thenAnswer((_) => Stream.value([]));
+    when(
+      () => mockJournalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockJournalDb.getLinkedEntities(any()),
+    ).thenAnswer((_) async => <JournalEntity>[]);
+    when(
+      () => mockJournalDb.getLinkedToEntities(any()),
+    ).thenAnswer((_) async => <JournalDbEntity>[]);
 
     container = ProviderContainer(
       overrides: [
@@ -495,6 +505,7 @@ void main() {
       required String name,
       required SkillType skillType,
       required List<Modality> modalities,
+      ContextPolicy contextPolicy = ContextPolicy.none,
       String? description,
     }) {
       return AiConfig.skill(
@@ -503,6 +514,7 @@ void main() {
             createdAt: DateTime(2024, 3, 15),
             skillType: skillType,
             requiredInputModalities: modalities,
+            contextPolicy: contextPolicy,
             systemInstructions: 'System instructions for $name',
             userInstructions: 'User instructions for $name',
             description: description,
@@ -1043,6 +1055,93 @@ void main() {
         ]),
       );
     });
+
+    test(
+      'shows fullTask prompt skills for audio entries linked from a task',
+      () async {
+        final now = DateTime(2024, 3, 15);
+        final audioEntity = JournalAudio(
+          meta: Metadata(
+            id: 'audio-task-linked',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: AudioData(
+            dateFrom: now,
+            dateTo: now,
+            audioFile: 'task-note.mp3',
+            audioDirectory: '/x',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+        final linkedTask = Task(
+          meta: Metadata(
+            id: 'task-parent',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: TaskData(
+            title: 'Parent task',
+            status: TaskStatus.open(
+              id: 'status-task',
+              createdAt: now,
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: now,
+            dateTo: now,
+          ),
+        );
+        final plainTranscribe = createSkill(
+          id: 'skill-transcribe-plain',
+          name: 'Transcribe',
+          skillType: SkillType.transcription,
+          modalities: [Modality.audio],
+        );
+        final codingPrompt = createSkill(
+          id: 'skill-coding-prompt',
+          name: 'Generate Coding Prompt',
+          skillType: SkillType.promptGeneration,
+          modalities: [Modality.text],
+          contextPolicy: ContextPolicy.fullTask,
+        );
+
+        when(
+          () => mockJournalDb.getLinkedToEntities(audioEntity.id),
+        ).thenAnswer((_) async => [toDbEntity(linkedTask)]);
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([
+              plainTranscribe,
+              codingPrompt,
+            ]),
+            createEntryControllerOverride(audioEntity),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          entryControllerProvider(audioEntity.id).future,
+        );
+
+        final skills = await testContainer.read(
+          availableSkillsForEntityProvider((
+            entityId: audioEntity.id,
+            linkedFromId: null,
+          )).future,
+        );
+
+        expect(skills.map((s) => s.id), [
+          'skill-transcribe-plain',
+          'skill-coding-prompt',
+        ]);
+      },
+    );
 
     test(
       'hides imageGeneration skills for a Task entity because the runner '
@@ -1899,6 +1998,126 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'resolves a graph-linked task before routing prompt generation',
+      () async {
+        final now = DateTime(2024, 3, 15);
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-prompt',
+                  name: 'Generate Coding Prompt',
+                  createdAt: now,
+                  skillType: SkillType.promptGeneration,
+                  requiredInputModalities: [Modality.text],
+                  contextPolicy: ContextPolicy.fullTask,
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+        final audioEntity = JournalAudio(
+          meta: Metadata(
+            id: 'audio-entry-graph',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: AudioData(
+            dateFrom: now,
+            dateTo: now,
+            audioFile: 'prompt-note.mp3',
+            audioDirectory: '/x',
+            duration: const Duration(minutes: 1),
+          ),
+        );
+        final linkedTask = Task(
+          meta: Metadata(
+            id: 'task-graph-parent',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: TaskData(
+            title: 'Graph parent',
+            status: TaskStatus.open(
+              id: 'status-graph',
+              createdAt: now,
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: now,
+            dateTo: now,
+          ),
+        );
+        final thinkingProvider =
+            AiConfig.inferenceProvider(
+                  id: 'gemini-prov',
+                  name: 'Gemini',
+                  inferenceProviderType: InferenceProviderType.gemini,
+                  apiKey: 'key',
+                  baseUrl: 'https://generativelanguage.googleapis.com',
+                  createdAt: now,
+                )
+                as AiConfigInferenceProvider;
+        final resolvedProfile = ResolvedProfile(
+          thinkingModelId: 'flash',
+          thinkingProvider: thinkingProvider,
+        );
+
+        when(
+          () => mockJournalDb.journalEntityById(audioEntity.id),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockJournalDb.getLinkedToEntities(audioEntity.id),
+        ).thenAnswer((_) async => [toDbEntity(linkedTask)]);
+        when(
+          () => mockResolver.resolveForTask(linkedTask.id),
+        ).thenAnswer((_) async => resolvedProfile);
+        when(
+          () => mockRunner.runPromptGeneration(
+            entryId: any(named: 'entryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: audioEntity.id,
+            skillId: skill.id,
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        verify(() => mockResolver.resolveForTask(linkedTask.id)).called(1);
+        verifyNever(() => mockResolver.resolveForCategory(any()));
+        verify(
+          () => mockRunner.runPromptGeneration(
+            entryId: audioEntity.id,
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: linkedTask.id,
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          ),
+        ).called(1);
+      },
+    );
 
     test('successfully routes image generation skill to runner', () async {
       final skill =

@@ -4,6 +4,8 @@ import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/conversions.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
@@ -62,7 +64,21 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
           SkillType.imageGeneration,
         };
 
-        final hasTaskContext = entity is Task || params.linkedFromId != null;
+        final hasKnownTaskContext =
+            entity is Task || params.linkedFromId != null;
+        final needsResolvedTaskContext =
+            !hasKnownTaskContext &&
+            registry.any(
+              (skill) =>
+                  supportedTypes.contains(skill.skillType) &&
+                  (skill.contextPolicy == ContextPolicy.fullTask ||
+                      skill.skillType == SkillType.imageGeneration),
+            );
+        final hasTaskContext =
+            hasKnownTaskContext ||
+            (needsResolvedTaskContext &&
+                await _findLinkedTaskId(entityId: entity.id) != null);
+
         final hasText =
             entity is JournalEntry ||
             entity is JournalAudio ||
@@ -159,11 +175,16 @@ final triggerSkillProvider = FutureProvider.autoDispose
             return;
           }
 
+          final linkedTaskId = await _resolveLinkedTaskId(
+            entityId: params.entityId,
+            linkedTaskId: params.linkedTaskId,
+          );
+
           // Defensive guard: a skill that needs full task context cannot run
           // without a linked task. The popup filter hides these skills for
-          // standalone entries, so reaching this branch indicates a caller
-          // bug — fail loudly rather than silently no-op.
-          if (params.linkedTaskId == null &&
+          // standalone entries, and the graph lookup above covers task-linked
+          // entries whose caller did not pass `linkedTaskId`.
+          if (linkedTaskId == null &&
               skill.contextPolicy == ContextPolicy.fullTask) {
             loggingService.log(
               LogDomain.ai,
@@ -179,10 +200,8 @@ final triggerSkillProvider = FutureProvider.autoDispose
           // back to the entry category's `defaultProfileId`.
           final resolver = ref.read(profileAutomationResolverProvider);
           ResolvedProfile? resolvedProfile;
-          if (params.linkedTaskId != null) {
-            resolvedProfile = await resolver.resolveForTask(
-              params.linkedTaskId!,
-            );
+          if (linkedTaskId != null) {
+            resolvedProfile = await resolver.resolveForTask(linkedTaskId);
           } else {
             final entity = await ref
                 .read(journalDbProvider)
@@ -204,7 +223,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
             loggingService.log(
               LogDomain.ai,
               'Skipping ${params.skillId} for ${params.entityId} '
-              '(linkedTaskId=${params.linkedTaskId}): no profile configured',
+              '(linkedTaskId=$linkedTaskId): no profile configured',
               subDomain: 'triggerSkillProvider',
             );
             return;
@@ -212,7 +231,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
 
           developer.log(
             'triggerSkill: resolved profile for ${params.entityId} '
-            '(linkedTaskId=${params.linkedTaskId}), '
+            '(linkedTaskId=$linkedTaskId), '
             'running ${skill.skillType}',
             name: 'UnifiedAiController',
           );
@@ -230,7 +249,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
               await runner.runTranscription(
                 audioEntryId: params.entityId,
                 automationResult: automationResult,
-                linkedTaskId: params.linkedTaskId,
+                linkedTaskId: linkedTaskId,
                 overrideModelId: params.overrideModelId,
                 geminiThinkingMode: params.geminiThinkingMode,
               );
@@ -238,7 +257,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
               await runner.runImageAnalysis(
                 imageEntryId: params.entityId,
                 automationResult: automationResult,
-                linkedTaskId: params.linkedTaskId,
+                linkedTaskId: linkedTaskId,
                 overrideModelId: params.overrideModelId,
                 geminiThinkingMode: params.geminiThinkingMode,
               );
@@ -247,12 +266,11 @@ final triggerSkillProvider = FutureProvider.autoDispose
               await runner.runPromptGeneration(
                 entryId: params.entityId,
                 automationResult: automationResult,
-                linkedTaskId: params.linkedTaskId,
+                linkedTaskId: linkedTaskId,
                 overrideModelId: params.overrideModelId,
                 geminiThinkingMode: params.geminiThinkingMode,
               );
             case SkillType.imageGeneration:
-              final linkedTaskId = params.linkedTaskId;
               if (linkedTaskId == null) {
                 throw StateError(
                   'Image generation requires a linkedTaskId, '
@@ -284,6 +302,45 @@ final triggerSkillProvider = FutureProvider.autoDispose
         }
       },
     );
+
+Future<String?> _resolveLinkedTaskId({
+  required String entityId,
+  required String? linkedTaskId,
+}) async {
+  if (linkedTaskId != null) return linkedTaskId;
+
+  final db = getIt<JournalDb>();
+  final entity = await db.journalEntityById(entityId);
+  if (entity == null) return null;
+  if (entity is Task) return entity.id;
+  return _findLinkedTaskId(entityId: entityId);
+}
+
+Future<String?> _findLinkedTaskId({
+  required String entityId,
+}) async {
+  final db = getIt<JournalDb>();
+
+  final outgoingEntitiesFuture = db.getLinkedEntities(entityId);
+  final incomingEntitiesFuture = db.getLinkedToEntities(entityId);
+
+  final (outgoingEntities, incomingDbEntities) = await (
+    outgoingEntitiesFuture,
+    incomingEntitiesFuture,
+  ).wait;
+
+  // Preferred direction: the source entry explicitly links to a task.
+  final outgoingTask = outgoingEntities.whereType<Task>().firstOrNull;
+  if (outgoingTask != null) return outgoingTask.id;
+
+  // Fallback direction: a task links to the source entry as one of its
+  // children. This is the common task timeline direction.
+  final incomingTask = incomingDbEntities
+      .map(fromDbEntity)
+      .whereType<Task>()
+      .firstOrNull;
+  return incomingTask?.id;
+}
 
 /// Record type for trigger new inference parameters.
 typedef TriggerNewInferenceParams = ({
