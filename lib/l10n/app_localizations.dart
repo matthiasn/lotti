@@ -11293,7 +11293,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingConnectNotSure.
   ///
   /// In en, this message translates to:
-  /// **'Not sure? Gemini is the easiest to start with.'**
+  /// **'Gemini is the quickest way to start.'**
   String get onboardingConnectNotSure;
 
   /// No description provided for @onboardingConnectOllamaName.
@@ -11323,7 +11323,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingConnectTitle.
   ///
   /// In en, this message translates to:
-  /// **'Pick the brain that turns your words into tasks'**
+  /// **'Choose the AI brain for your tasks'**
   String get onboardingConnectTitle;
 
   /// No description provided for @onboardingRecordingStyleAnalogue.
@@ -11383,7 +11383,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingWelcomeConnectButton.
   ///
   /// In en, this message translates to:
-  /// **'Connect your brain'**
+  /// **'Choose your AI brain'**
   String get onboardingWelcomeConnectButton;
 
   /// No description provided for @onboardingWelcomeMessage.

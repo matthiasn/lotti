@@ -6452,8 +6452,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingConnectMoreOptions => 'More options';
 
   @override
-  String get onboardingConnectNotSure =>
-      'Not sure? Gemini is the easiest to start with.';
+  String get onboardingConnectNotSure => 'Gemini is the quickest way to start.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';
@@ -6468,8 +6467,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingConnectQwenTagline => 'China';
 
   @override
-  String get onboardingConnectTitle =>
-      'Pick the brain that turns your words into tasks';
+  String get onboardingConnectTitle => 'Choose the AI brain for your tasks';
 
   @override
   String get onboardingRecordingStyleAnalogue => 'Analogue — VU meter';
@@ -6501,7 +6499,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingSuccessTitle => 'You\'re all set';
 
   @override
-  String get onboardingWelcomeConnectButton => 'Connect your brain';
+  String get onboardingWelcomeConnectButton => 'Choose your AI brain';
 
   @override
   String get onboardingWelcomeMessage =>

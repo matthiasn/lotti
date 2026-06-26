@@ -6563,8 +6563,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingConnectMoreOptions => 'Další možnosti';
 
   @override
-  String get onboardingConnectNotSure =>
-      'Nevíš? Gemini je pro začátek nejjednodušší.';
+  String get onboardingConnectNotSure => 'S Gemini začneš nejrychleji.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';
@@ -6579,8 +6578,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingConnectQwenTagline => 'Čína';
 
   @override
-  String get onboardingConnectTitle =>
-      'Vyber mozek, který promění tvá slova v úkoly';
+  String get onboardingConnectTitle => 'Vyber AI mozek pro své úkoly';
 
   @override
   String get onboardingRecordingStyleAnalogue => 'Analogový — VU metr';
@@ -6612,7 +6610,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingSuccessTitle => 'Vše připraveno';
 
   @override
-  String get onboardingWelcomeConnectButton => 'Připojit mozek';
+  String get onboardingWelcomeConnectButton => 'Vybrat AI mozek';
 
   @override
   String get onboardingWelcomeMessage =>

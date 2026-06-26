@@ -245,10 +245,10 @@ class _NeuralConstellationState extends State<NeuralConstellation>
     final rng = math.Random(seed);
     final nodes = <NeuralNode>[];
     const roots = [
-      Offset(0.15, 0.70),
-      Offset(0.22, 0.46),
-      Offset(0.36, 0.64),
-      Offset(0.12, 0.38),
+      Offset(0.18, 0.66),
+      Offset(0.23, 0.46),
+      Offset(0.36, 0.62),
+      Offset(0.16, 0.40),
     ];
     const canopies = [
       Offset(0.66, 0.34),
@@ -257,9 +257,10 @@ class _NeuralConstellationState extends State<NeuralConstellation>
       Offset(0.64, 0.62),
     ];
     const convergence = [
-      Offset(0.34, 0.50),
-      Offset(0.46, 0.42),
-      Offset(0.52, 0.56),
+      Offset(0.33, 0.46),
+      Offset(0.44, 0.38),
+      Offset(0.54, 0.52),
+      Offset(0.40, 0.58),
     ];
 
     for (var vine = 0; vine < vineCount; vine++) {
@@ -339,15 +340,15 @@ class _NeuralConstellationState extends State<NeuralConstellation>
             growthAngle = _angleBetween(parent.base, base);
           }
 
-          if (rng.nextDouble() < 0.48) {
+          if (rng.nextDouble() < 0.40) {
             final cluster =
                 convergence[(vine + localIndex + parent.generation) %
                     convergence.length];
             base =
-                Offset.lerp(base, cluster, 0.34)! +
+                Offset.lerp(base, cluster, 0.28)! +
                 Offset(
-                  (rng.nextDouble() - 0.5) * 0.035,
-                  (rng.nextDouble() - 0.5) * 0.035,
+                  (rng.nextDouble() - 0.5) * 0.045,
+                  (rng.nextDouble() - 0.5) * 0.045,
                 );
             growthAngle = _angleBetween(parent.base, base);
           }
@@ -363,8 +364,8 @@ class _NeuralConstellationState extends State<NeuralConstellation>
             generation: parentIndex == null
                 ? 0
                 : nodes[parentIndex].generation + 1,
-            driftX: 0.008 + rng.nextDouble() * 0.023,
-            driftY: 0.008 + rng.nextDouble() * 0.023,
+            driftX: 0.004 + rng.nextDouble() * 0.012,
+            driftY: 0.004 + rng.nextDouble() * 0.012,
             phase: rng.nextDouble() * math.pi * 2,
             driftCycles: 1 + rng.nextInt(3),
             breathCycles: 1 + rng.nextInt(2),
@@ -507,18 +508,20 @@ class NeuralNode {
       0.5 + 0.5 * math.sin(2 * math.pi * breathCycles * t01 + phase);
 }
 
-/// The travelling-pulse envelope (0 → 1 → 0) for pulse [index] at loop phase
-/// [t01], given [pulseCycles] base travels per loop. Public for seam tests.
+/// The travelling-pulse envelope for pulse [index] at loop phase [t01], given
+/// [pulseCycles] base travels per loop. Public for seam tests.
 ///
 /// Each pulse runs an *integer* number of travels per loop (`pulseCycles +
-/// index`), so its progress is exactly 0 at both `t01 == 0` and `t01 == 1` —
-/// the envelope is 0 there, meaning every pulse has fully faded out at the seam
-/// and the loop wrap shows no pulse jump.
+/// index`), so its progress is identical at `t01 == 0` and `t01 == 1`. The
+/// envelope keeps a low floor rather than fading to black, which makes the
+/// activation feel like a continuous relay instead of a one-shot reveal that
+/// finishes between nodes.
 @visibleForTesting
 double neuralPulseEnvAt(double t01, int pulseCycles, int index) {
   final phase = t01 * (pulseCycles + index);
   final progress = phase - phase.floorToDouble();
-  return math.sin(progress * math.pi);
+  final wave = 0.5 - 0.5 * math.cos(progress * math.pi * 2);
+  return 0.18 + 0.82 * Curves.easeInOut.transform(wave);
 }
 
 /// Branch activation progress for a stable branch index. Branches are offset
@@ -578,10 +581,13 @@ class _ConstellationPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final positions = [
       for (final n in nodes)
-        _offsetPoint(
-          _scaleAroundCenter(n.positionAt(t01, size), size, compositionScale),
+        _breathePoint(
+          _offsetPoint(
+            _scaleAroundCenter(n.positionAt(t01, size), size, compositionScale),
+            size,
+            compositionOffset,
+          ),
           size,
-          compositionOffset,
         ),
     ];
     final branches = <_NeuralBranch>[];
@@ -610,6 +616,10 @@ class _ConstellationPainter extends CustomPainter {
       final breath = nodes[branch.to].breathAt(t01);
       final generation = nodes[branch.to].generation;
       final branchWeight = math.max(0.36, 1 - generation * 0.13);
+      final compositionWeight = _compositionWeight(
+        _quadraticPoint(from, control, to, 0.58),
+        size,
+      );
       final entangledBranch = entanglement > 0;
       final trunkBoost = entangledBranch && generation <= 3 ? 1.34 : 1.0;
       final layerAlpha = entangledBranch
@@ -622,7 +632,11 @@ class _ConstellationPainter extends CustomPainter {
         to: to,
         color: lineColor.withValues(
           alpha:
-              lineColor.a * branchWeight * layerAlpha * (0.12 + 0.06 * breath),
+              lineColor.a *
+              branchWeight *
+              layerAlpha *
+              (0.12 + 0.06 * breath) *
+              compositionWeight,
         ),
         width:
             (5.8 + nodes[branch.from].radius * 0.52 * branchWeight) *
@@ -635,7 +649,12 @@ class _ConstellationPainter extends CustomPainter {
           control: control,
           to: to,
           color: lineColor.withValues(
-            alpha: lineColor.a * branchWeight * layerAlpha * 0.22,
+            alpha:
+                lineColor.a *
+                branchWeight *
+                layerAlpha *
+                0.22 *
+                compositionWeight,
           ),
           width: (0.58 + branchWeight * 0.34) * trunkBoost,
           size: size,
@@ -643,7 +662,12 @@ class _ConstellationPainter extends CustomPainter {
         );
       }
       final branchColor = lineColor.withValues(
-        alpha: lineColor.a * branchWeight * layerAlpha * (0.42 + 0.22 * breath),
+        alpha:
+            lineColor.a *
+            branchWeight *
+            layerAlpha *
+            (0.42 + 0.22 * breath) *
+            compositionWeight,
       );
       final branchWidth =
           (1.12 + nodes[branch.from].radius * 0.25 * branchWeight) * trunkBoost;
@@ -676,14 +700,17 @@ class _ConstellationPainter extends CustomPainter {
               (branch.to.isEven ? math.pi / 2.8 : -math.pi / 2.8),
           phase: nodes[branch.to].phase,
           size: size,
-          color: lineColor.withValues(alpha: lineColor.a * 0.18 * branchWeight),
+          color: lineColor.withValues(
+            alpha: lineColor.a * 0.18 * branchWeight * compositionWeight,
+          ),
         );
       }
     }
 
     for (var k = 0; k < pulseCount; k++) {
       for (var i = 0; i < branches.length; i++) {
-        if ((i + k * 3) % 4 != 0) continue;
+        final entangledPulse = entanglement > 0;
+        if ((i + k * 3) % (entangledPulse ? 3 : 4) != 0) continue;
 
         final progress = neuralBranchProgressAt(
           t01 + k / pulseCount,
@@ -692,7 +719,6 @@ class _ConstellationPainter extends CustomPainter {
           branches.length,
         );
         final env = neuralPulseEnvAt(progress, 1, 0);
-        if (env <= 0.30) continue;
 
         final branch = branches[i];
         final from = positions[branch.from];
@@ -705,9 +731,22 @@ class _ConstellationPainter extends CustomPainter {
         );
         final eased = Curves.easeInOut.transform(progress);
         final head = _quadraticPoint(from, control, to, eased);
-        final entangledPulse = entanglement > 0;
+        final headWeight = _compositionWeight(head, size);
+        final rightRelay =
+            entangledPulse &&
+            head.dx > size.width * 0.52 &&
+            head.dx < size.width * 0.86 &&
+            headWeight > 0.54 &&
+            (branch.to + k).isEven;
+        final mainRelay =
+            entangledPulse &&
+            nodes[branch.to].generation <= 6 &&
+            headWeight > 0.58 &&
+            (nodes[branch.to].generation <= 4 ||
+                (branch.to + nodes[branch.to].vineId).isEven ||
+                rightRelay);
         final tailLength = entangledPulse ? 0.28 : 0.20;
-        final pulseBoost = entangledPulse ? 1.24 : 1.0;
+        final pulseBoost = entangledPulse ? (mainRelay ? 1.42 : 1.08) : 1.0;
         final tail = eased <= tailLength ? 0.0 : eased - tailLength;
         final tailFrom = _quadraticPoint(from, control, to, tail);
         final tailControl = _quadraticPoint(
@@ -717,9 +756,10 @@ class _ConstellationPainter extends CustomPainter {
           (tail + eased) / 2,
         );
         final pulseTailColor = pulseColor.withValues(
-          alpha: 0.20 * env * pulseBoost,
+          alpha: (mainRelay ? 0.23 : 0.14) * env * pulseBoost * headWeight,
         );
-        final pulseTailWidth = (1.8 + env * 0.8) * pulseBoost;
+        final pulseTailWidth =
+            ((mainRelay ? 1.82 : 1.45) + env * 0.58) * pulseBoost;
         if (entangledPulse) {
           _drawTendrilPath(
             canvas,
@@ -743,16 +783,22 @@ class _ConstellationPainter extends CustomPainter {
         canvas
           ..drawCircle(
             head,
-            5.8 * env * pulseBoost,
+            (mainRelay ? 6.4 : 4.8) * env * pulseBoost,
             Paint()
-              ..color = pulseColor.withValues(alpha: 0.18 * env * pulseBoost)
+              ..color = pulseColor.withValues(
+                alpha:
+                    (mainRelay ? 0.18 : 0.12) * env * pulseBoost * headWeight,
+              )
               ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
           )
           ..drawCircle(
             head,
-            1.4 + env * 0.58,
+            (mainRelay ? 1.65 : 1.18) + env * 0.58,
             Paint()
-              ..color = pulseColor.withValues(alpha: 0.62 * env * pulseBoost),
+              ..color = pulseColor.withValues(
+                alpha:
+                    (mainRelay ? 0.68 : 0.42) * env * pulseBoost * headWeight,
+              ),
           );
       }
     }
@@ -765,8 +811,10 @@ class _ConstellationPainter extends CustomPainter {
       final generation = nodes[i].generation;
       final hierarchy = math.max(0.36, 1 - generation * 0.12);
       final entangledNode = entanglement > 0;
+      final compositionWeight = _compositionWeight(positions[i], size);
       final coreAlpha = (isRoot ? 0.9 : 0.74) * hierarchy;
       final nodeRadius = nodes[i].radius;
+      final activeCore = entangledNode && (isRoot || generation <= 1);
       final drawCore = entangledNode
           ? isRoot ||
                 generation <= 1 ||
@@ -779,7 +827,8 @@ class _ConstellationPainter extends CustomPainter {
           nodeRadius * (entangledNode ? 0.32 : 0.56),
           Paint()
             ..color = nodeColor.withValues(
-              alpha: (entangledNode ? 0.10 : 0.24) * hierarchy,
+              alpha:
+                  (entangledNode ? 0.10 : 0.24) * hierarchy * compositionWeight,
             ),
         );
         continue;
@@ -787,22 +836,36 @@ class _ConstellationPainter extends CustomPainter {
       canvas
         ..drawCircle(
           positions[i],
-          nodeRadius * (entangledNode ? 4.35 : 3.9 + 0.8 * tw) * glow,
+          nodeRadius *
+              (entangledNode ? (activeCore ? 4.72 : 4.05) : 3.9 + 0.8 * tw) *
+              glow,
           Paint()
             ..color = nodeColor.withValues(
               alpha:
-                  (entangledNode ? 0.12 + 0.05 * tw : 0.13 + 0.07 * tw) *
+                  (entangledNode
+                      ? (activeCore ? 0.145 : 0.10) + 0.05 * tw
+                      : 0.13 + 0.07 * tw) *
                   hierarchy *
-                  glow,
+                  glow *
+                  compositionWeight,
             )
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
         )
         ..drawCircle(
           positions[i],
-          nodeRadius * (isRoot ? 1.16 : 1),
+          nodeRadius *
+              (activeCore
+                  ? 1.22
+                  : isRoot
+                  ? 1.16
+                  : 1),
           Paint()
             ..color = nodeColor.withValues(
-              alpha: entangledNode ? coreAlpha * 0.9 : coreAlpha,
+              alpha:
+                  (entangledNode
+                      ? coreAlpha * (activeCore ? 0.96 : 0.82)
+                      : coreAlpha) *
+                  compositionWeight,
             ),
         );
     }
@@ -984,7 +1047,15 @@ class _ConstellationPainter extends CustomPainter {
           control: control,
           to: positions[j],
           color: lineColor.withValues(
-            alpha: lineColor.a * entanglement * 0.16 * proximity,
+            alpha:
+                lineColor.a *
+                entanglement *
+                0.16 *
+                proximity *
+                _compositionWeight(
+                  Offset.lerp(positions[i], positions[j], 0.5)!,
+                  size,
+                ),
           ),
           width: 0.62 + proximity * 0.38,
         );
@@ -1066,5 +1137,23 @@ class _ConstellationPainter extends CustomPainter {
   Offset _offsetPoint(Offset point, Size size, Offset offset) {
     if (offset == Offset.zero) return point;
     return point + Offset(size.width * offset.dx, size.height * offset.dy);
+  }
+
+  Offset _breathePoint(Offset point, Size size) {
+    if (entanglement <= 0) return point;
+    final phase = math.sin(2 * math.pi * t01);
+    final center = Offset(size.width * 0.48, size.height * 0.48);
+    final scale = 1 + phase * 0.018;
+    return center + (point - center) * scale;
+  }
+
+  double _compositionWeight(Offset point, Size size) {
+    if (entanglement <= 0) return 1;
+    final nx = point.dx / size.width;
+    final ny = point.dy / size.height;
+    final lowerFade = 1 - ((ny - 0.68) / 0.24).clamp(0.0, 1.0) * 0.42;
+    final rightFade = 1 - ((nx - 0.76) / 0.18).clamp(0.0, 1.0) * 0.34;
+    final topEdgeFade = 1 - ((0.08 - ny) / 0.08).clamp(0.0, 1.0) * 0.32;
+    return lowerFade * rightFade * topEdgeFade;
   }
 }

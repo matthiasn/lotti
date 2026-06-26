@@ -328,7 +328,7 @@ void main() {
       );
       expect(constellation.vineCount, 1);
       expect(constellation.entanglement, 0);
-      expect(constellation.glow, 0.24);
+      expect(constellation.glow, 0.28);
       expect(constellation.compositionOffset.dy, lessThan(0));
       expect(tester.takeException(), isNull);
     });

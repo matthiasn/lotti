@@ -249,8 +249,8 @@ spines cross through shared convergence clusters, faint cross-links connect only
 nearby separate vines, and the foreground branches draw as bundled strands so the
 hero reads as neural tissue instead of a flat dot mesh. Later steps keep the
 single-vine topology, lower alpha, fewer pulses, a smaller upward-shifted
-composition, and a panel-coloured content scrim so provider cards and forms stay
-dominant. The painter loops **seamlessly**:
+composition, a panel-coloured content scrim, and connect-step title-safe veil so
+provider cards and forms stay dominant. The painter loops **seamlessly**:
 every oscillation (node drift, breath, branch activation, and travelling pulses)
 runs an integer number of cycles per loop and is driven off the controller's
 normalized value, so the frame at the loop wrap is identical to the start — no

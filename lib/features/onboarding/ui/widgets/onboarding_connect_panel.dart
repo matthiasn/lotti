@@ -115,6 +115,29 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
               ),
             ),
           ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: tokens.spacing.step6 * 7,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      panelBg.withValues(alpha: 0.18),
+                      panelBg.withValues(alpha: 0.76),
+                      panelBg.withValues(alpha: 0.52),
+                      panelBg.withValues(alpha: 0),
+                    ],
+                    stops: const [0, 0.45, 0.72, 1],
+                  ),
+                ),
+              ),
+            ),
+          ),
           Padding(
             padding: EdgeInsets.fromLTRB(
               tokens.spacing.step5,
@@ -272,6 +295,7 @@ class _ProviderTile extends StatelessWidget {
     final accent = onboardingProviderBrandColor(type);
     final textHigh = dsTokensDark.colors.text.highEmphasis;
     final textMed = dsTokensDark.colors.text.mediumEmphasis;
+    final tileBase = dsTokensDark.colors.background.level02;
     final tagline = onboardingProviderTagline(messages, type);
 
     return AnimatedModalItem(
@@ -283,21 +307,34 @@ class _ProviderTile extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              accent.withValues(alpha: 0.3),
-              accent.withValues(alpha: 0.14),
+              Color.lerp(tileBase, accent, 0.18)!,
+              Color.lerp(tileBase, accent, 0.07)!,
             ],
           ),
           borderRadius: BorderRadius.circular(tokens.radii.l),
+          border: Border.all(color: accent.withValues(alpha: 0.1)),
         ),
         child: Row(
           children: [
             Container(
+              width: tokens.spacing.step1,
+              height: tokens.spacing.step6 * 2,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.62),
+                borderRadius: BorderRadius.circular(tokens.radii.s),
+              ),
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            Container(
               padding: EdgeInsets.all(tokens.spacing.step3),
               decoration: BoxDecoration(
-                color: textHigh.withValues(alpha: 0.14),
+                color: accent.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(tokens.radii.m),
               ),
-              child: Icon(aiProviderIcon(type), color: accent),
+              child: Icon(
+                aiProviderIcon(type),
+                color: Color.lerp(accent, textHigh, 0.18),
+              ),
             ),
             SizedBox(width: tokens.spacing.step4),
             Expanded(

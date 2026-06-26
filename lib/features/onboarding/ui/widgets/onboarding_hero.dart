@@ -73,11 +73,11 @@ class OnboardingBackdrop extends StatelessWidget {
         children: [
           AuroraHero(
             colors: onboardingAuroraColors(accentColor),
-            maxAlpha: 0.06,
+            maxAlpha: 0.09,
           ),
           NeuralConstellation(
-            nodeColor: accentColor.withValues(alpha: 0.26),
-            lineColor: accentColor.withValues(alpha: 0.09),
+            nodeColor: accentColor.withValues(alpha: 0.30),
+            lineColor: accentColor.withValues(alpha: 0.10),
             // The working-step backdrop should stay alive but recede behind
             // provider tiles / key fields, so it is smaller, dimmer and uses
             // fewer travelling activations than the welcome hero.
@@ -85,12 +85,12 @@ class OnboardingBackdrop extends StatelessWidget {
               accentColor,
               Colors.white,
               0.42,
-            )!.withValues(alpha: 0.3),
+            )!.withValues(alpha: 0.36),
             nodeCount: nodeCount,
             pulseCount: 2,
-            glow: 0.24,
-            compositionScale: 0.72,
-            compositionOffset: const Offset(0, -0.2),
+            glow: 0.28,
+            compositionScale: 0.78,
+            compositionOffset: const Offset(0, -0.18),
             loop: const Duration(seconds: 14),
           ),
           const _BackdropContentScrim(),
@@ -115,11 +115,11 @@ class _BackdropContentScrim extends StatelessWidget {
             end: Alignment.bottomCenter,
             colors: [
               Colors.transparent,
-              dsTokensDark.colors.background.level01.withValues(alpha: 0.48),
-              dsTokensDark.colors.background.level01.withValues(alpha: 0.84),
-              dsTokensDark.colors.background.level01.withValues(alpha: 0.9),
+              dsTokensDark.colors.background.level01.withValues(alpha: 0.42),
+              dsTokensDark.colors.background.level01.withValues(alpha: 0.86),
+              dsTokensDark.colors.background.level01.withValues(alpha: 0.92),
             ],
-            stops: const [0, 0.18, 0.42, 1],
+            stops: const [0, 0.14, 0.34, 1],
           ),
         ),
       ),
@@ -186,6 +186,7 @@ class _HeroArtworkFrame extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
+        _HeroCloudWash(backgroundColor: backgroundColor),
         child,
         IgnorePointer(
           child: DecoratedBox(
@@ -211,15 +212,52 @@ class _HeroArtworkFrame extends StatelessWidget {
                 colors: [
                   Colors.transparent,
                   Colors.transparent,
-                  backgroundColor.withValues(alpha: 0.48),
+                  backgroundColor.withValues(alpha: 0.58),
                   backgroundColor,
                 ],
-                stops: const [0, 0.58, 0.82, 1],
+                stops: const [0, 0.58, 0.78, 1],
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _HeroCloudWash extends StatelessWidget {
+  const _HeroCloudWash({required this.backgroundColor});
+
+  final Color backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final lifted = Color.lerp(
+      backgroundColor,
+      dsTokensDark.colors.background.level02,
+      0.78,
+    )!;
+    final softLifted = Color.lerp(
+      backgroundColor,
+      dsTokensDark.colors.background.level02,
+      0.38,
+    )!;
+
+    return IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: const Alignment(-0.24, -0.18),
+            radius: 0.92,
+            colors: [
+              lifted.withValues(alpha: 0.74),
+              softLifted.withValues(alpha: 0.34),
+              backgroundColor.withValues(alpha: 0),
+            ],
+            stops: const [0, 0.48, 1],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -233,7 +271,7 @@ class OnboardingHeroPanel extends StatelessWidget {
     required this.onConnect,
     required this.onSkip,
     this.heroStyle = OnboardingHeroStyle.constellation,
-    this.heroHeight = 292,
+    this.heroHeight = 276,
     super.key,
   });
 
@@ -259,9 +297,17 @@ class OnboardingHeroPanel extends StatelessWidget {
             SizedBox(
               height: heroHeight,
               width: double.infinity,
-              child: _HeroArtworkFrame(
-                backgroundColor: panelBg,
-                child: buildOnboardingHeroVisual(heroStyle),
+              child: OverflowBox(
+                alignment: Alignment.topCenter,
+                maxHeight: heroHeight + tokens.spacing.step5,
+                child: SizedBox(
+                  height: heroHeight + tokens.spacing.step5,
+                  width: double.infinity,
+                  child: _HeroArtworkFrame(
+                    backgroundColor: panelBg,
+                    child: buildOnboardingHeroVisual(heroStyle),
+                  ),
+                ),
               ),
             ),
             Padding(
@@ -275,6 +321,10 @@ class OnboardingHeroPanel extends StatelessWidget {
               ),
               child: StaggeredEntrance(
                 crossAxisAlignment: CrossAxisAlignment.center,
+                duration: MotionDurations.short4,
+                initialOpacity: 1,
+                interval: const Duration(milliseconds: 34),
+                rise: tokens.spacing.step2,
                 children: [
                   Text(
                     context.messages.onboardingWelcomeTitle,
