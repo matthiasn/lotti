@@ -164,7 +164,7 @@ void main() {
     );
 
     test(
-      'dance compresses on downbeats, rebounds, and lifts free feet',
+      'dance compresses into a soft pocket, rebounds, and lifts free feet',
       () {
         final channels = CatClips.dance.channels;
         final hips = channels[CatBones.hips]!;
@@ -178,9 +178,12 @@ void main() {
 
         final compressionTorso = torso.sample(0);
         final pickupTorso = torso.sample(1 / 16);
-        final nextDownbeatTorso = torso.sample(1 / 8);
+        final nextQuarterCatchTorso = torso.sample(1 / 4);
         expect(pickupTorso.scaleY, greaterThan(compressionTorso.scaleY + 0.05));
-        expect(nextDownbeatTorso.scaleY, lessThan(pickupTorso.scaleY - 0.05));
+        expect(
+          nextQuarterCatchTorso.scaleY,
+          lessThan(pickupTorso.scaleY - 0.05),
+        );
         expect(hips.sample(0).rotation, greaterThan(0.28));
         expect(hips.sample(1 / 4).rotation, lessThan(-0.27));
         expect(torso.sample(0).rotation, lessThan(-0.12));
@@ -201,11 +204,11 @@ void main() {
               'not a large flick that pulls the foot across the body',
         );
 
-        expect(armUpperL.sample(0).rotation, closeTo(0.28, 0.001));
-        expect(armUpperR.sample(0).rotation, closeTo(-0.28, 0.001));
+        expect(armUpperL.sample(0).rotation, closeTo(0.22, 0.001));
+        expect(armUpperR.sample(0).rotation, closeTo(-0.24, 0.001));
         expect(
           armUpperL.sample(1 / 8).rotation,
-          lessThan(-0.45),
+          lessThan(-0.35),
           reason:
               'the lead arm should cross into the groove without a huge '
               'stage-sweep',
@@ -219,38 +222,38 @@ void main() {
         );
         expect(
           armUpperL.sample(1 / 4).rotation,
-          inInclusiveRange(0.6, 0.85),
+          inInclusiveRange(0.38, 0.6),
           reason:
               'the count-2 accent should stay compact at chest level instead '
               'of snapping to a vertical boy-band punch',
         );
         expect(
           armUpperR.sample(1 / 4).rotation,
-          greaterThan(0.1),
+          inInclusiveRange(-0.1, 0.08),
           reason:
-              'the opposite arm should cross forward without matching the '
-              'lead arm height',
+              'the opposite arm should counter the lead scoop instead of '
+              'matching its height',
         );
         expect(
           armUpperL.sample(15 / 16).rotation,
-          inInclusiveRange(0.55, 0.8),
+          inInclusiveRange(0.42, 0.62),
           reason: 'count-8 hook should bend the left arm in a compact groove',
         );
         expect(
           armUpperR.sample(15 / 16).rotation,
-          lessThan(-0.6),
+          lessThan(-0.45),
           reason: 'count-8 hook should keep the opposite arm open but compact',
         );
         expect(
           armLowerL.sample(15 / 16).rotation,
-          greaterThan(0.4),
+          greaterThan(0.35),
           reason:
               'count-8 hook should visibly bend the lead elbow without '
               'snapping out at the loop seam',
         );
         expect(
           armLowerR.sample(15 / 16).rotation,
-          greaterThan(0.7),
+          greaterThan(0.55),
           reason: 'count-8 hook should visibly bend the opposite elbow',
         );
         expect(

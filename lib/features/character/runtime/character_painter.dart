@@ -306,12 +306,12 @@ class CharacterPainter extends CustomPainter {
 
   static double _roleScale(int index, int memberCount) {
     if (memberCount < 3) return 1;
-    return index == 1 ? 1.2 : 0.86;
+    return index == 1 ? 1.28 : 0.82;
   }
 
   static double _roleFloorOffset(int index, int memberCount) {
     if (memberCount < 3) return 0;
-    return index == 1 ? 14 : -28;
+    return index == 1 ? 22 : -36;
   }
 
   static ({double zoom, double dx, double dy}) _danceCamera(
@@ -322,30 +322,30 @@ class CharacterPainter extends CustomPainter {
     return (
       zoom: _smoothKeys(p, const [
         (p: 0, v: 1.0),
-        (p: 1 / 8, v: 1.06),
-        (p: 1 / 4, v: 1.16),
-        (p: 1 / 2, v: 1.24),
-        (p: 5 / 8, v: 1.32),
-        (p: 3 / 4, v: 1.22),
-        (p: 29 / 32, v: 1.1),
+        (p: 1 / 8, v: 1.05),
+        (p: 1 / 4, v: 1.13),
+        (p: 1 / 2, v: 1.21),
+        (p: 5 / 8, v: 1.26),
+        (p: 3 / 4, v: 1.18),
+        (p: 29 / 32, v: 1.07),
         (p: 1, v: 1.0),
       ]),
       dx: _smoothKeys(p, const [
         (p: 0, v: 0.0),
-        (p: 1 / 8, v: -14.0),
-        (p: 1 / 4, v: -30.0),
-        (p: 1 / 2, v: 30.0),
-        (p: 5 / 8, v: 38.0),
-        (p: 3 / 4, v: 26.0),
-        (p: 29 / 32, v: 12.0),
+        (p: 1 / 8, v: -10.0),
+        (p: 1 / 4, v: -24.0),
+        (p: 1 / 2, v: 22.0),
+        (p: 5 / 8, v: 30.0),
+        (p: 3 / 4, v: 18.0),
+        (p: 29 / 32, v: 8.0),
         (p: 1, v: 0.0),
       ]),
       dy: _smoothKeys(p, const [
         (p: 0, v: 0.0),
-        (p: 1 / 4, v: -11.0),
-        (p: 1 / 2, v: -30.0),
-        (p: 5 / 8, v: -36.0),
-        (p: 3 / 4, v: -24.0),
+        (p: 1 / 4, v: -8.0),
+        (p: 1 / 2, v: -22.0),
+        (p: 5 / 8, v: -28.0),
+        (p: 3 / 4, v: -16.0),
         (p: 29 / 32, v: 0.0),
         (p: 1, v: 0.0),
       ]),
@@ -370,9 +370,9 @@ class CharacterPainter extends CustomPainter {
     final ensembleHit = _pulse(p, 23 / 32, 27 / 32);
     return switch (index) {
       0 => (
-        dx: -27 - 8 * breathe - 12 * sideAnswer - 10 * wideV,
+        dx: -34 - 7 * breathe - 10 * sideAnswer - 9 * wideV,
         dy:
-            -10 +
+            -17 +
             1.5 * callResponse -
             4 * leadCall -
             5 * sideAnswer -
@@ -382,7 +382,7 @@ class CharacterPainter extends CustomPainter {
       1 => (
         dx: 3 * leadCall - 3 * ensembleHit,
         dy:
-            12 -
+            20 -
             5 * leadCall -
             2 * blackSolo +
             4 * wideV +
@@ -390,9 +390,9 @@ class CharacterPainter extends CustomPainter {
             3 * ensembleHit,
       ),
       2 => (
-        dx: 27 + 8 * breathe + 11 * sideAnswer + 13 * blackSolo + 10 * wideV,
+        dx: 34 + 7 * breathe + 10 * sideAnswer + 11 * blackSolo + 9 * wideV,
         dy:
-            -10 -
+            -17 -
             1.5 * callResponse -
             2 * leadCall -
             4 * sideAnswer +

@@ -493,7 +493,7 @@ void main() {
     });
   });
 
-  testWidgets('dance trio camera pushes from wide into a hook medium shot', (
+  testWidgets('dance trio camera drifts from wide into a closer hook shot', (
     tester,
   ) async {
     await tester.runAsync(() async {
@@ -565,15 +565,15 @@ void main() {
 
       expect(
         hook.height,
-        greaterThan(wide.height * 1.18),
+        greaterThan(wide.height * 1.08),
         reason:
-            'the hook should read as a camera push-in, not another locked-off '
-            'wide stage frame',
+            'the hook should read as a controlled camera push-in, not another '
+            'locked-off wide stage frame',
       );
       expect(
         hook.width,
-        greaterThan(wide.width * 1.15),
-        reason: 'the orange lead should visibly grow in the medium hook shot',
+        greaterThan(wide.width * 1.04),
+        reason: 'the orange lead should visibly grow in the closer hook shot',
       );
     });
   });
