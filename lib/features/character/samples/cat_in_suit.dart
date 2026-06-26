@@ -982,6 +982,56 @@ class CatClips {
         intent: 'compact pickup that lands back into the first pocket',
       ),
     ],
+    moves: [
+      DanceMoveCue(
+        name: 'lead Shaku pocket hit',
+        startFrame: 0,
+        endFrame: 8,
+        accentFrame: 4,
+        featuredDancer: 'lead',
+        signature: 'low left support, crossed hands, right toe flick',
+      ),
+      DanceMoveCue(
+        name: 'lead rebound shoulder scoop',
+        startFrame: 8,
+        endFrame: 12,
+        accentFrame: 10,
+        featuredDancer: 'lead',
+        signature: 'compact chest-level scoop without standing tall',
+      ),
+      DanceMoveCue(
+        name: 'right-side camera answer',
+        startFrame: 12,
+        endFrame: 16,
+        accentFrame: 12,
+        featuredDancer: 'right',
+        signature: 'right dancer inside-arm lift during the camera pass',
+      ),
+      DanceMoveCue(
+        name: 'right-foot groove pocket',
+        startFrame: 16,
+        endFrame: 24,
+        accentFrame: 20,
+        featuredDancer: 'lead',
+        signature: 'lead settles over right support with free-left texture',
+      ),
+      DanceMoveCue(
+        name: 'left-side camera answer',
+        startFrame: 24,
+        endFrame: 28,
+        accentFrame: 24,
+        featuredDancer: 'left',
+        signature: 'left dancer inside-arm answer during the camera pass',
+      ),
+      DanceMoveCue(
+        name: 'toe-flick hook reset',
+        startFrame: 28,
+        endFrame: 32,
+        accentFrame: 28,
+        featuredDancer: 'lead',
+        signature: 'free-left toe flick into compact hook reset',
+      ),
+    ],
   );
   static DancePhrase get dancePhrase => _dancePhrase;
   static final List<GroundSpan> _danceContactSpans = _dancePhrase

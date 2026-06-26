@@ -15,6 +15,7 @@ class DancePhrase {
     required this.frameCount,
     required this.supports,
     this.sections = const [],
+    this.moves = const [],
   }) : assert(frameCount > 0, 'frameCount must be positive');
 
   /// Number of authored frames in the looping phrase.
@@ -33,6 +34,11 @@ class DancePhrase {
   /// handles, e.g. "Shaku pocket" or "Gbese toe-flick answer"; lower-level
   /// channels still carry the exact bone values.
   final List<DancePhraseSection> sections;
+
+  /// Shorter choreographic cues inside [sections]. Unlike a broad section,
+  /// a move cue names what should be legible at a specific beat: who is
+  /// featured and what body/hand/foot signature the frame should show.
+  final List<DanceMoveCue> moves;
 
   double phaseOf(int frame) {
     _checkFrame(frame);
@@ -69,6 +75,20 @@ class DancePhrase {
     final normalized = phase - phase.floorToDouble();
     final frame = (normalized * frameCount).floor();
     return sectionAtFrame(frame);
+  }
+
+  DanceMoveCue moveAtFrame(int frame) {
+    final wrappedFrame = _wrappedFrame(frame);
+    for (final move in moves) {
+      if (move.containsFrame(wrappedFrame)) return move;
+    }
+    throw StateError('No dance move covers frame $wrappedFrame.');
+  }
+
+  DanceMoveCue moveAtPhase(double phase) {
+    final normalized = phase - phase.floorToDouble();
+    final frame = (normalized * frameCount).floor();
+    return moveAtFrame(frame);
   }
 
   Keyframe jointKey(
@@ -335,6 +355,38 @@ class DancePhraseSection {
   /// Short choreographic purpose of the section. Kept data-side so panel
   /// feedback can target a movement idea, not just a numeric frame range.
   final String intent;
+
+  bool containsFrame(int frame) => frame >= startFrame && frame < endFrame;
+}
+
+class DanceMoveCue {
+  const DanceMoveCue({
+    required this.name,
+    required this.startFrame,
+    required this.endFrame,
+    required this.accentFrame,
+    required this.featuredDancer,
+    required this.signature,
+  }) : assert(startFrame < endFrame, 'move cue must move forward'),
+       assert(
+         startFrame <= accentFrame && accentFrame < endFrame,
+         'accent frame must be inside the move cue',
+       );
+
+  /// Choreography-facing name, e.g. "right-side Gbese answer".
+  final String name;
+  final int startFrame;
+  final int endFrame;
+
+  /// Beat/frame where the move should read most clearly.
+  final int accentFrame;
+
+  /// Which performer the camera/choreo should privilege: `lead`, `left`, or
+  /// `right` for the current trio.
+  final String featuredDancer;
+
+  /// Concrete visible signature expected at [accentFrame].
+  final String signature;
 
   bool containsFrame(int frame) => frame >= startFrame && frame < endFrame;
 }

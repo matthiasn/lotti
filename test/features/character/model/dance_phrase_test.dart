@@ -43,6 +43,24 @@ void main() {
           intent: 'answer on the right support',
         ),
       ],
+      moves: [
+        DanceMoveCue(
+          name: 'left pocket hit',
+          startFrame: 0,
+          endFrame: 8,
+          accentFrame: 4,
+          featuredDancer: 'lead',
+          signature: 'low shoulder pocket over left support',
+        ),
+        DanceMoveCue(
+          name: 'right answer hit',
+          startFrame: 16,
+          endFrame: 32,
+          accentFrame: 20,
+          featuredDancer: 'right',
+          signature: 'right dancer answers with inside-arm lift',
+        ),
+      ],
     );
 
     test('maps authored frames to normalized clip phase', () {
@@ -87,6 +105,14 @@ void main() {
       expect(phrase.sectionAtFrame(16).name, 'answer');
       expect(phrase.sectionAtFrame(32).name, 'pocket');
       expect(phrase.sectionAtPhase(0.75).intent, 'answer on the right support');
+    });
+
+    test('looks up concrete move cues by frame and phase', () {
+      expect(phrase.moveAtFrame(0).name, 'left pocket hit');
+      expect(phrase.moveAtFrame(7).accentFrame, 4);
+      expect(phrase.moveAtFrame(16).name, 'right answer hit');
+      expect(phrase.moveAtFrame(32).featuredDancer, 'lead');
+      expect(phrase.moveAtPhase(0.64).signature, contains('inside-arm lift'));
     });
 
     test('builds joint channels from frame-addressed keys', () {

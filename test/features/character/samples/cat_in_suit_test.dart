@@ -525,9 +525,93 @@ void main() {
         'toe-flick release',
         'loop pickup',
       ]);
+      expect(phrase.moves.map((move) => move.name), [
+        'lead Shaku pocket hit',
+        'lead rebound shoulder scoop',
+        'right-side camera answer',
+        'right-foot groove pocket',
+        'left-side camera answer',
+        'toe-flick hook reset',
+      ]);
       expect(phrase.sectionAtFrame(4).name, 'Shaku pocket');
       expect(phrase.sectionAtFrame(20).name, 'answer pocket');
       expect(phrase.sectionAtFrame(31).name, 'loop pickup');
+      expect(phrase.moveAtFrame(4).featuredDancer, 'lead');
+      expect(phrase.moveAtFrame(12).name, 'right-side camera answer');
+      expect(phrase.moveAtFrame(20).name, 'right-foot groove pocket');
+      expect(phrase.moveAtFrame(24).featuredDancer, 'left');
+      expect(phrase.moveAtFrame(31).name, 'toe-flick hook reset');
+    });
+
+    test('dance move cues map to visible body, arm, and foot signatures', () {
+      final phrase = CatClips.dancePhrase;
+      final lead = CatClips.dance;
+      final left = CatClips.danceBackupLeft;
+      final right = CatClips.danceBackupRight;
+      final leadChannels = lead.channels;
+
+      final shakuP = phrase.moveAtFrame(4).accentFrame / phrase.frameCount;
+      expect(
+        leadChannels[CatBones.torso]!.sample(shakuP).scaleY,
+        lessThan(0.94),
+        reason: 'lead Shaku cue should visibly drop into the pocket',
+      );
+      expect(
+        leadChannels[CatBones.armUpperL]!.sample(shakuP).rotation,
+        lessThan(-0.35),
+        reason: 'lead Shaku cue should read as crossed-arm groove',
+      );
+
+      final rightCueP = phrase.moveAtFrame(12).accentFrame / phrase.frameCount;
+      final rightArmDelta =
+          right.channels[CatBones.armUpperL]!.sample(rightCueP).rotation -
+          leadChannels[CatBones.armUpperL]!.sample(rightCueP).rotation;
+      final rightHandDelta =
+          _targetFor(right, CatBones.handL).channel.sample(rightCueP).x -
+          _targetFor(lead, CatBones.handL).channel.sample(rightCueP).x;
+      expect(
+        rightArmDelta,
+        greaterThan(0.15),
+        reason:
+            'right-side camera cue should feature the right dancer inside arm',
+      );
+      expect(rightHandDelta, greaterThan(8));
+
+      final rightFootCueP =
+          phrase.moveAtFrame(20).accentFrame / phrase.frameCount;
+      expect(
+        leadChannels[CatBones.hips]!.sample(rightFootCueP).rotation,
+        lessThan(-0.35),
+        reason: 'right-foot groove cue should visibly load the opposite hip',
+      );
+
+      final leftCueP = phrase.moveAtFrame(24).accentFrame / phrase.frameCount;
+      final leftArmDelta =
+          left.channels[CatBones.armUpperR]!.sample(leftCueP).rotation -
+          leadChannels[CatBones.armUpperR]!.sample(leftCueP).rotation;
+      final leftHandDelta =
+          _targetFor(left, CatBones.handR).channel.sample(leftCueP).x -
+          _targetFor(lead, CatBones.handR).channel.sample(leftCueP).x;
+      expect(
+        leftArmDelta,
+        lessThan(-0.2),
+        reason:
+            'left-side camera cue should feature the left dancer inside arm',
+      );
+      expect(leftHandDelta, lessThan(-10));
+
+      final hookP = phrase.moveAtFrame(31).accentFrame / phrase.frameCount;
+      final leftSupportFoot = leadChannels[CatBones.footL]!.sample(0).rotation;
+      expect(
+        leadChannels[CatBones.footL]!.sample(hookP).rotation,
+        greaterThan(leftSupportFoot + 0.28),
+        reason: 'hook reset should retain a visible free-left toe flick',
+      );
+      expect(
+        leadChannels[CatBones.armUpperL]!.sample(hookP).rotation,
+        greaterThan(0.25),
+        reason: 'hook reset should close back into a compact arm shape',
+      );
     });
 
     test('walk and run carry forward locomotion, stage moves do not', () {
