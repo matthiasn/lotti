@@ -1945,7 +1945,8 @@ class CatClips {
       GroundSpan(CatBones.footL, 1 / 2, 5 / 8),
       GroundSpan(CatBones.footR, 5 / 8, 3 / 4),
       GroundSpan(CatBones.footL, 3 / 4, 7 / 8),
-      GroundSpan(CatBones.footR, 7 / 8, 1),
+      GroundSpan(CatBones.footR, 7 / 8, 31 / 32),
+      GroundSpan(CatBones.footL, 31 / 32, 1),
     ],
     root: LayeredRootChannel([
       KeyframeRootChannel([

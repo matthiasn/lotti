@@ -167,6 +167,70 @@ void main() {
       );
     });
 
+    test(
+      'dance keeps broad contact holds and loop seam physically continuous',
+      () {
+        final scene = CharacterScene(buildCatInSuitRig());
+
+        for (final span in CatClips.dance.contactSpans) {
+          final spanLength = span.end - span.start;
+          final anchorP = span.start + spanLength * 0.18;
+          final anchor = _supportPoint(
+            scene,
+            CatClips.dance,
+            span.bone,
+            anchorP * CatClips.dance.duration,
+          );
+
+          var drift = 0.0;
+          for (var i = 2; i <= 6; i++) {
+            final p = span.start + spanLength * i / 8;
+            drift = math.max(
+              drift,
+              _distance(
+                _supportPoint(
+                  scene,
+                  CatClips.dance,
+                  span.bone,
+                  p * CatClips.dance.duration,
+                ),
+                anchor,
+              ),
+            );
+          }
+
+          expect(
+            drift,
+            lessThan(4.2),
+            reason:
+                '${span.bone} should hold a stable contact through most of '
+                'the dance beat before the next pickup',
+          );
+        }
+
+        final lastSpan = CatClips.dance.contactSpans.last;
+        final seamBefore = _supportPoint(
+          scene,
+          CatClips.dance,
+          lastSpan.bone,
+          CatClips.dance.duration * 31 / 32,
+        );
+        final seamAfter = _supportPoint(
+          scene,
+          CatClips.dance,
+          lastSpan.bone,
+          CatClips.dance.duration,
+        );
+        expect(
+          _distance(seamBefore, seamAfter),
+          lessThan(7),
+          reason:
+              'the loop-pickup support foot should roll into frame 1 instead of '
+              'visibly popping to a new floor point',
+        );
+      },
+    );
+
     test('is deterministic: identical scenes resolve identical frames', () {
       final a = CharacterScene(
         buildCatInSuitRig(),

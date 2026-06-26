@@ -209,6 +209,7 @@ void main() {
           CatBones.footR,
           CatBones.footL,
           CatBones.footR,
+          CatBones.footL,
         ],
       );
     });
