@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -440,6 +441,91 @@ void main() {
       } finally {
         picture.dispose();
       }
+    });
+  });
+
+  testWidgets('dance trio camera pushes from wide into a hook medium shot', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      Future<({int width, int height})> orangeBoundsAt(double p) async {
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(recorder);
+        CharacterPainter(
+          scene: scene,
+          partnerScene: CharacterScene(
+            buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+          ),
+          ensembleScenes: [
+            CharacterScene(
+              buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+            ),
+            CharacterScene(
+              buildCatInSuitRig(palette: CatInSuitPalette.darkBrown),
+            ),
+          ],
+          ensembleClips: [
+            CatClips.dance,
+            CatClips.danceBackupLeft,
+            CatClips.danceBackupRight,
+          ],
+          synchronousEnsemble: true,
+          clip: CatClips.dance,
+          timeSeconds: CatClips.dance.duration * p,
+          walkingPair: true,
+          shadowColor: const Color(0x00000000),
+          renderer: renderer,
+        ).paint(canvas, const Size(760, 420));
+        final picture = recorder.endRecording();
+        try {
+          final image = await picture.toImage(760, 420);
+          try {
+            final data = await image.toByteData();
+            final pixels = data!.buffer.asUint8List();
+            var minX = 760;
+            var maxX = -1;
+            var minY = 420;
+            var maxY = -1;
+            for (var y = 0; y < 420; y++) {
+              for (var x = 0; x < 760; x++) {
+                final offset = (y * 760 + x) * 4;
+                final red = pixels[offset];
+                final green = pixels[offset + 1];
+                final blue = pixels[offset + 2];
+                final orangeFur =
+                    red > 200 && green > 120 && green < 190 && blue < 120;
+                if (!orangeFur) continue;
+                minX = math.min(minX, x);
+                maxX = math.max(maxX, x);
+                minY = math.min(minY, y);
+                maxY = math.max(maxY, y);
+              }
+            }
+
+            return (width: maxX - minX + 1, height: maxY - minY + 1);
+          } finally {
+            image.dispose();
+          }
+        } finally {
+          picture.dispose();
+        }
+      }
+
+      final wide = await orangeBoundsAt(0);
+      final hook = await orangeBoundsAt(5 / 8);
+
+      expect(
+        hook.height,
+        greaterThan(wide.height * 1.18),
+        reason:
+            'the hook should read as a camera push-in, not another locked-off '
+            'wide stage frame',
+      );
+      expect(
+        hook.width,
+        greaterThan(wide.width * 1.15),
+        reason: 'the orange lead should visibly grow in the medium hook shot',
+      );
     });
   });
 }
