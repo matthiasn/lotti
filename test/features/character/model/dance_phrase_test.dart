@@ -104,6 +104,32 @@ void main() {
       expect(channel.sample(1).rotation, closeTo(-0.2, 1e-9));
     });
 
+    test('builds neutralized joint accent pulses', () {
+      final keys = phrase.jointAccentKeys(
+        const [
+          DanceJointAccent(8, radiusFrames: 2, rotation: 0.12),
+          DanceJointAccent(
+            20,
+            radiusFrames: 4,
+            rotation: -0.08,
+            scaleX: 1.03,
+            scaleY: 0.97,
+          ),
+        ],
+      );
+
+      expect(keys.map((key) => key.frame), [6, 8, 10, 16, 20, 24]);
+      expect(keys[0].rotation, 0);
+      expect(keys[0].scaleX, 1);
+      expect(keys[0].scaleY, 1);
+      expect(keys[1].rotation, 0.12);
+      expect(keys[1].scaleX, 1);
+      expect(keys[1].scaleY, 1);
+      expect(keys[4].rotation, -0.08);
+      expect(keys[4].scaleX, 1.03);
+      expect(keys[4].scaleY, 0.97);
+    });
+
     test('builds root channels from frame-addressed keys', () {
       final channel = phrase.rootChannel(
         const [
@@ -245,9 +271,49 @@ void main() {
       expect(keys[4].weight, 0.7);
     });
 
+    test('collects role style overlays by body, target, and joint', () {
+      const style = DanceRoleStyle(
+        bodyAccents: [
+          DanceBodyAccent(8, radiusFrames: 2, rootDy: 2),
+        ],
+        ikTargetAccents: {
+          'hand.L': [
+            DanceIkTargetAccent(12, radiusFrames: 2, x: -4, y: -3),
+          ],
+        },
+        jointAccents: {
+          'torso': [
+            DanceJointAccent(20, radiusFrames: 4, rotation: 0.05),
+          ],
+        },
+      );
+
+      final bodyKeys = style.bodyKeys(phrase);
+      final handKeys = style.ikTargetKeys(phrase, 'hand.L');
+      final missingHandKeys = style.ikTargetKeys(phrase, 'hand.R');
+      final torsoKeys = style.jointKeys(phrase, 'torso');
+      final missingJointKeys = style.jointKeys(phrase, 'head');
+
+      expect(bodyKeys.map((key) => key.frame), [6, 8, 10]);
+      expect(bodyKeys[1].rootDy, 2);
+      expect(handKeys.map((key) => key.frame), [10, 12, 14]);
+      expect(handKeys[1].x, -4);
+      expect(handKeys[1].y, -3);
+      expect(missingHandKeys, isEmpty);
+      expect(torsoKeys.map((key) => key.frame), [16, 20, 24]);
+      expect(torsoKeys[1].rotation, 0.05);
+      expect(missingJointKeys, isEmpty);
+    });
+
     test('rejects keys outside the authored phrase', () {
       expect(() => phrase.phaseOf(-1), throwsRangeError);
       expect(() => phrase.jointKey(33), throwsRangeError);
+      expect(
+        () => phrase.jointAccentKeys(
+          const [DanceJointAccent(1, radiusFrames: 2, rotation: 0.1)],
+        ),
+        throwsRangeError,
+      );
       expect(
         () => phrase.bodyRootChannel(
           const [DanceBodyKey(33, rootDx: 0)],

@@ -1564,7 +1564,7 @@ class CatClips {
   static final List<DanceBodyKey> _danceBodyAccentKeys = _dancePhrase
       .bodyAccentKeys(_danceBodyAccents);
 
-  // Backup-dancer roles are configured as small additive overlays in _danceBodyRole
+  // Backup-dancer roles are configured as small additive style overlays below.
   // below. The shared base clip owns support timing and body mechanics.
   static const _danceNeckKeys = [
     Keyframe(p: 0, rotation: 0.004),
@@ -1850,51 +1850,83 @@ class CatClips {
         ),
       ]);
 
-  static final KeyframeIkTargetChannel _danceBackupLeftHandROffset =
-      _dancePhrase.ikTargetChannel(
-        const [
-          DanceIkTargetKey(0, x: 0, y: 0, weight: 0),
-          DanceIkTargetKey(16, x: 0, y: 0, weight: 0),
-          DanceIkTargetKey(20, x: -4, y: -3, weight: 0.7),
-          DanceIkTargetKey(24, x: -9, y: -5),
-          DanceIkTargetKey(28, x: -5, y: -3, weight: 0.7),
-          DanceIkTargetKey(32, x: 0, y: 0, weight: 0),
-        ],
-        smooth: true,
-      );
+  static const _danceBackupLeftStyle = DanceRoleStyle(
+    bodyAccents: [
+      DanceBodyAccent(
+        24,
+        radiusFrames: 8,
+        pelvisRotation: -0.07,
+        chestRotation: 0.08,
+        chestScaleY: 0.974,
+        chestScaleX: 1.02,
+      ),
+    ],
+    ikTargetAccents: {
+      CatBones.handR: [
+        DanceIkTargetAccent(24, radiusFrames: 8, x: -9, y: -5),
+      ],
+    },
+    jointAccents: {
+      CatBones.armUpperR: [
+        DanceJointAccent(24, radiusFrames: 8, rotation: -0.2),
+      ],
+      CatBones.armLowerR: [
+        DanceJointAccent(24, radiusFrames: 8, rotation: 0.22),
+      ],
+    },
+  );
 
-  static final KeyframeIkTargetChannel _danceBackupRightHandLOffset =
-      _dancePhrase.ikTargetChannel(
-        const [
-          DanceIkTargetKey(0, x: 0, y: 0, weight: 0),
-          DanceIkTargetKey(16, x: 0, y: 0, weight: 0),
-          DanceIkTargetKey(20, x: 4, y: -3, weight: 0.7),
-          DanceIkTargetKey(24, x: 9, y: -5),
-          DanceIkTargetKey(28, x: 5, y: -3, weight: 0.7),
-          DanceIkTargetKey(32, x: 0, y: 0, weight: 0),
-        ],
-        smooth: true,
-      );
+  static const _danceBackupRightStyle = DanceRoleStyle(
+    bodyAccents: [
+      DanceBodyAccent(
+        24,
+        radiusFrames: 8,
+        pelvisRotation: 0.074,
+        chestRotation: -0.08,
+        chestScaleY: 0.974,
+        chestScaleX: 1.02,
+      ),
+    ],
+    ikTargetAccents: {
+      CatBones.handL: [
+        DanceIkTargetAccent(24, radiusFrames: 8, x: 9, y: -5),
+      ],
+    },
+    jointAccents: {
+      CatBones.armUpperL: [
+        DanceJointAccent(24, radiusFrames: 8, rotation: 0.2),
+      ],
+      CatBones.armLowerL: [
+        DanceJointAccent(24, radiusFrames: 8, rotation: 0.22),
+      ],
+    },
+  );
 
-  static final List<LimbIkTarget> _danceBackupLeftLimbTargets =
-      _danceRoleLimbTargets(handROffset: _danceBackupLeftHandROffset);
+  static List<LimbIkTarget> _danceRoleLimbTargets(DanceRoleStyle style) =>
+      List<LimbIkTarget>.unmodifiable([
+        _danceLimbTargets[0].withChannel(
+          _layerDanceTarget(
+            _danceLeadHandLTarget,
+            _danceRoleTargetOffset(style, CatBones.handL),
+          ),
+        ),
+        _danceLimbTargets[1].withChannel(
+          _layerDanceTarget(
+            _danceLeadHandRTarget,
+            _danceRoleTargetOffset(style, CatBones.handR),
+          ),
+        ),
+        _danceLimbTargets[2],
+        _danceLimbTargets[3],
+      ]);
 
-  static final List<LimbIkTarget> _danceBackupRightLimbTargets =
-      _danceRoleLimbTargets(handLOffset: _danceBackupRightHandLOffset);
-
-  static List<LimbIkTarget> _danceRoleLimbTargets({
-    IkTargetChannel? handLOffset,
-    IkTargetChannel? handROffset,
-  }) => List<LimbIkTarget>.unmodifiable([
-    _danceLimbTargets[0].withChannel(
-      _layerDanceTarget(_danceLeadHandLTarget, handLOffset),
-    ),
-    _danceLimbTargets[1].withChannel(
-      _layerDanceTarget(_danceLeadHandRTarget, handROffset),
-    ),
-    _danceLimbTargets[2],
-    _danceLimbTargets[3],
-  ]);
+  static KeyframeIkTargetChannel _danceRoleTargetOffset(
+    DanceRoleStyle style,
+    String targetBoneId,
+  ) => _dancePhrase.ikTargetChannel(
+    style.ikTargetKeys(_dancePhrase, targetBoneId),
+    smooth: true,
+  );
 
   static IkTargetChannel _layerDanceTarget(
     IkTargetChannel base,
@@ -2541,179 +2573,71 @@ class CatClips {
     },
   );
 
-  static Clip get danceBackupLeft => _danceBodyRole(
+  static Clip get danceBackupLeft => _danceStyledRole(
     name: 'danceBackupLeft',
-    limbTargets: _danceBackupLeftLimbTargets,
-    hips: const LayeredJointChannel([
-      SineChannel(amplitude: 0.018, phase: 0.08),
-      KeyframeChannel(
-        [
-          Keyframe(p: 0),
-          Keyframe(p: 1 / 2),
-          Keyframe(p: 19 / 32, rotation: -0.04),
-          Keyframe(p: 3 / 4, rotation: -0.07),
-          Keyframe(p: 7 / 8, rotation: -0.036),
-          Keyframe(p: 1),
-        ],
-        smooth: true,
-      ),
-    ]),
-    torso: const LayeredJointChannel([
-      SineChannel(amplitude: 0.026, phase: 0.62, bias: -0.006),
-      KeyframeChannel(
-        [
-          Keyframe(p: 0),
-          Keyframe(p: 1 / 2),
-          Keyframe(p: 5 / 8, rotation: 0.06, scaleY: 0.982, scaleX: 1.014),
-          Keyframe(p: 3 / 4, rotation: 0.08, scaleY: 0.974, scaleX: 1.02),
-          Keyframe(p: 7 / 8, rotation: 0.035, scaleY: 0.99, scaleX: 1.008),
-          Keyframe(p: 1),
-        ],
-        smooth: true,
-      ),
-    ]),
-    armUpperL: const SineChannel(),
-    armLowerL: const SineChannel(),
-    armUpperR: const LayeredJointChannel([
-      SineChannel(amplitude: 0.055, phase: 0.54, bias: -0.015),
-      KeyframeChannel(
-        [
-          Keyframe(p: 0),
-          Keyframe(p: 1 / 2),
-          Keyframe(p: 5 / 8, rotation: -0.13),
-          Keyframe(p: 3 / 4, rotation: -0.2),
-          Keyframe(p: 7 / 8, rotation: -0.1),
-          Keyframe(p: 1),
-        ],
-        smooth: true,
-      ),
-    ]),
-    armLowerR: const LayeredJointChannel([
-      SineChannel(amplitude: 0.06, phase: 0.68, bias: 0.015),
-      KeyframeChannel(
-        [
-          Keyframe(p: 0),
-          Keyframe(p: 1 / 2),
-          Keyframe(p: 5 / 8, rotation: 0.14),
-          Keyframe(p: 3 / 4, rotation: 0.22),
-          Keyframe(p: 7 / 8, rotation: 0.1),
-          Keyframe(p: 1),
-        ],
-        smooth: true,
-      ),
-    ]),
+    style: _danceBackupLeftStyle,
   );
 
-  static Clip get danceBackupRight => _danceBodyRole(
+  static Clip get danceBackupRight => _danceStyledRole(
     name: 'danceBackupRight',
-    limbTargets: _danceBackupRightLimbTargets,
-    hips: const LayeredJointChannel([
-      SineChannel(amplitude: 0.02, phase: 0.58),
-      KeyframeChannel(
-        [
-          Keyframe(p: 0),
-          Keyframe(p: 1 / 2),
-          Keyframe(p: 19 / 32, rotation: 0.042),
-          Keyframe(p: 3 / 4, rotation: 0.074),
-          Keyframe(p: 7 / 8, rotation: 0.038),
-          Keyframe(p: 1),
-        ],
-        smooth: true,
-      ),
-    ]),
-    torso: const LayeredJointChannel([
-      SineChannel(amplitude: 0.034, phase: 0.12, bias: 0.01),
-      KeyframeChannel(
-        [
-          Keyframe(p: 0),
-          Keyframe(p: 1 / 2),
-          Keyframe(p: 5 / 8, rotation: -0.06, scaleY: 0.982, scaleX: 1.014),
-          Keyframe(p: 3 / 4, rotation: -0.08, scaleY: 0.974, scaleX: 1.02),
-          Keyframe(p: 7 / 8, rotation: -0.035, scaleY: 0.99, scaleX: 1.008),
-          Keyframe(p: 1),
-        ],
-        smooth: true,
-      ),
-    ]),
-    armUpperL: const LayeredJointChannel([
-      SineChannel(amplitude: 0.055, phase: 0.58, bias: -0.015),
-      KeyframeChannel(
-        [
-          Keyframe(p: 0),
-          Keyframe(p: 1 / 2),
-          Keyframe(p: 5 / 8, rotation: 0.13),
-          Keyframe(p: 3 / 4, rotation: 0.2),
-          Keyframe(p: 7 / 8, rotation: 0.1),
-          Keyframe(p: 1),
-        ],
-        smooth: true,
-      ),
-    ]),
-    armLowerL: const LayeredJointChannel([
-      SineChannel(amplitude: 0.06, phase: 0.7, bias: 0.015),
-      KeyframeChannel(
-        [
-          Keyframe(p: 0),
-          Keyframe(p: 1 / 2),
-          Keyframe(p: 5 / 8, rotation: 0.14),
-          Keyframe(p: 3 / 4, rotation: 0.22),
-          Keyframe(p: 7 / 8, rotation: 0.1),
-          Keyframe(p: 1),
-        ],
-        smooth: true,
-      ),
-    ]),
-    armUpperR: const SineChannel(),
-    armLowerR: const SineChannel(),
+    style: _danceBackupRightStyle,
   );
 
-  static Clip _danceBodyRole({
+  static Clip _danceStyledRole({
     required String name,
-    required List<LimbIkTarget> limbTargets,
-    required JointChannel hips,
-    required JointChannel torso,
-    required JointChannel armUpperL,
-    required JointChannel armLowerL,
-    required JointChannel armUpperR,
-    required JointChannel armLowerR,
+    required DanceRoleStyle style,
   }) {
     final base = dance;
+    final bodyKeys = style.bodyKeys(_dancePhrase);
     return Clip(
       name: name,
       duration: base.duration,
       contactSpans: base.contactSpans,
       contactPinning: base.contactPinning,
-      limbTargets: limbTargets,
-      root: base.root,
+      limbTargets: _danceRoleLimbTargets(style),
+      root: LayeredRootChannel([
+        base.root,
+        _dancePhrase.bodyRootChannel(bodyKeys, smooth: true),
+      ]),
       channels: {
         ...base.channels,
         CatBones.hips: LayeredJointChannel([
           base.channels[CatBones.hips]!,
-          hips,
+          _dancePhrase.bodyPelvisChannel(bodyKeys, smooth: true),
+          _danceRoleJointChannel(style, CatBones.hips),
         ]),
         CatBones.torso: LayeredJointChannel([
           base.channels[CatBones.torso]!,
-          torso,
+          _dancePhrase.bodyChestChannel(bodyKeys, smooth: true),
+          _danceRoleJointChannel(style, CatBones.torso),
         ]),
         CatBones.armUpperL: LayeredJointChannel([
           base.channels[CatBones.armUpperL]!,
-          armUpperL,
+          _danceRoleJointChannel(style, CatBones.armUpperL),
         ]),
         CatBones.armUpperR: LayeredJointChannel([
           base.channels[CatBones.armUpperR]!,
-          armUpperR,
+          _danceRoleJointChannel(style, CatBones.armUpperR),
         ]),
         CatBones.armLowerL: LayeredJointChannel([
           base.channels[CatBones.armLowerL]!,
-          armLowerL,
+          _danceRoleJointChannel(style, CatBones.armLowerL),
         ]),
         CatBones.armLowerR: LayeredJointChannel([
           base.channels[CatBones.armLowerR]!,
-          armLowerR,
+          _danceRoleJointChannel(style, CatBones.armLowerR),
         ]),
       },
     );
   }
+
+  static JointChannel _danceRoleJointChannel(
+    DanceRoleStyle style,
+    String boneId,
+  ) => _dancePhrase.jointChannel(
+    style.jointKeys(_dancePhrase, boneId),
+    smooth: true,
+  );
 
   static Clip get sit => const Clip(
     name: 'sit',

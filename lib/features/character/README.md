@@ -199,7 +199,9 @@ stateDiagram-v2
   root, pelvis, and chest together without hand-editing three separate tracks.
   `DanceIkTargetAccent` does the same for local hand/foot target pulses, so a
   lead-hand hit can be layered over the shared semantic hand path without
-  duplicating the whole coordinate track.
+  duplicating the whole coordinate track. `DanceRoleStyle` groups those body,
+  IK-target, and joint accents by dancer role, which keeps backup/alternate
+  styles as data overlays instead of separate hand-authored clip forks.
   It compiles those into the same `GroundSpan`, `KeyframeChannel`, and
   `KeyframeRootChannel` primitives the engine already samples. This is the
   handoff point for beat-synced
