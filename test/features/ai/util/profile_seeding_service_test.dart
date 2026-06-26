@@ -255,7 +255,7 @@ void main() {
     });
 
     test(
-      'Melious profile wires thinking, high-end, vision, and Whisper',
+      'Melious profile wires thinking, high-end, vision, Flux, and Whisper',
       () async {
         final capturedConfigs = <AiConfig>[];
         when(
@@ -289,6 +289,10 @@ void main() {
         expect(
           meliousProfile.transcriptionModelId,
           meliousWhisperLargeV3TurboModelId,
+        );
+        expect(
+          meliousProfile.imageGenerationModelId,
+          meliousFlux2DevModelId,
         );
         expect(meliousProfile.isDefault, isTrue);
       },

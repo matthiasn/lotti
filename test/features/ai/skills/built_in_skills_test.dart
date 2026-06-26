@@ -62,6 +62,7 @@ void main() {
           [Modality.image],
         ),
         skillImageGenId: (SkillType.imageGeneration, [Modality.text]),
+        skillImageGenFluxId: (SkillType.imageGeneration, [Modality.text]),
         skillPromptGenId: (SkillType.promptGeneration, [Modality.text]),
         skillImagePromptGenId: (
           SkillType.imagePromptGeneration,
@@ -133,6 +134,39 @@ void main() {
           skill.systemInstructions.toLowerCase(),
           contains('design system'),
         );
+      });
+    });
+
+    group('Flux cover art skill', () {
+      late AiConfigSkill skill;
+
+      setUp(() {
+        final found = findBuiltInSkill(skillImageGenFluxId);
+        expect(found, isNotNull, reason: 'Flux cover art skill missing');
+        skill = found!;
+      });
+
+      test('is an imageGeneration skill on text modality', () {
+        expect(skill.skillType, SkillType.imageGeneration);
+        expect(skill.requiredInputModalities, [Modality.text]);
+      });
+
+      test('uses compact taskSummary context instead of fullTask JSON', () {
+        expect(skill.contextPolicy, ContextPolicy.taskSummary);
+        expect(
+          skill.description,
+          contains('short visual scene prompt'),
+        );
+      });
+
+      test('instructions forbid text and UI artifacts', () {
+        final instructions =
+            '${skill.systemInstructions}\n${skill.userInstructions}'
+                .toLowerCase();
+
+        expect(instructions, contains('no readable text'));
+        expect(instructions, contains('ui'));
+        expect(instructions, contains('watermark'));
       });
     });
 

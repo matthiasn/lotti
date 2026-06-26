@@ -94,6 +94,7 @@ class SkillPromptBuilder {
     String? correctionExamples,
   }) {
     final buffer = StringBuffer();
+    final compactCoverArtPrompt = _usesCompactCoverArtPrompt(skill);
 
     // Add language code for image analysis (no task context) variant.
     if (skill.skillType == SkillType.imageAnalysis &&
@@ -127,9 +128,18 @@ class SkillPromptBuilder {
       }
     }
 
+    if (compactCoverArtPrompt) {
+      _appendCompactCoverArtPrompt(
+        buffer,
+        entryContent: entryContent,
+        currentTaskSummary: currentTaskSummary,
+      );
+    }
+
     // Inject task context for fullTask and taskSummary policies.
-    if (skill.contextPolicy == ContextPolicy.fullTask ||
-        skill.contextPolicy == ContextPolicy.taskSummary) {
+    if (!compactCoverArtPrompt &&
+        (skill.contextPolicy == ContextPolicy.fullTask ||
+            skill.contextPolicy == ContextPolicy.taskSummary)) {
       _appendTaskContext(
         buffer,
         skill: skill,
@@ -141,9 +151,10 @@ class SkillPromptBuilder {
 
     // Inject the user's entry content (audio transcript or text note) for
     // skills that consume the entry as their main input.
-    if (skill.skillType == SkillType.promptGeneration ||
-        skill.skillType == SkillType.imagePromptGeneration ||
-        skill.skillType == SkillType.imageGeneration) {
+    if (!compactCoverArtPrompt &&
+        (skill.skillType == SkillType.promptGeneration ||
+            skill.skillType == SkillType.imagePromptGeneration ||
+            skill.skillType == SkillType.imageGeneration)) {
       if (entryContent != null && entryContent.isNotEmpty) {
         buffer
           ..writeln()
@@ -172,6 +183,51 @@ class SkillPromptBuilder {
     }
 
     return buffer.toString();
+  }
+
+  bool _usesCompactCoverArtPrompt(AiConfigSkill skill) {
+    return skill.skillType == SkillType.imageGeneration &&
+        skill.contextPolicy == ContextPolicy.taskSummary;
+  }
+
+  void _appendCompactCoverArtPrompt(
+    StringBuffer buffer, {
+    String? entryContent,
+    String? currentTaskSummary,
+  }) {
+    final scene = _compactPromptText(entryContent);
+    final mood = _compactPromptText(
+      currentTaskSummary,
+      maxLength: _maxCompactSummaryChars,
+    );
+
+    if (scene == null && mood == null) return;
+
+    buffer
+      ..writeln()
+      ..writeln();
+
+    if (scene != null) {
+      buffer.writeln('Scene: $scene');
+    }
+    if (mood != null) {
+      buffer.writeln('Mood and task clues: $mood');
+    }
+    buffer.writeln(
+      'Render this as an image story only: no readable text, captions, UI, '
+      'diagrams, logos, or watermark.',
+    );
+  }
+
+  String? _compactPromptText(
+    String? value, {
+    int maxLength = _maxCompactSceneChars,
+  }) {
+    final normalized = value?.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (normalized == null || normalized.isEmpty) return null;
+    if (normalized.length <= maxLength) return normalized;
+
+    return '${normalized.substring(0, maxLength).trimRight()}...';
   }
 
   void _appendTaskContext(
@@ -268,3 +324,6 @@ const _urlFormattingRules = '''
 URL FORMATTING RULES:
 - Any URL found in the image (e.g., in a browser address bar) MUST be formatted as a Markdown link: [Link Title](URL)
 - If the visible URL lacks a protocol (e.g., "github.com/pulls"), prepend https:// — always assume HTTPS unless http:// is explicitly visible.''';
+
+const _maxCompactSceneChars = 700;
+const _maxCompactSummaryChars = 500;

@@ -71,6 +71,11 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
 
         return registry.where((skill) {
           if (!supportedTypes.contains(skill.skillType)) return false;
+          if (skill.skillType == SkillType.imageGeneration &&
+              (!hasTaskContext ||
+                  (entity is! JournalAudio && entity is! JournalEntry))) {
+            return false;
+          }
           if (!hasTaskContext &&
               skill.contextPolicy == ContextPolicy.fullTask) {
             return false;

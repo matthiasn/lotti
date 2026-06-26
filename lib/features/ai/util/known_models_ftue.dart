@@ -219,6 +219,7 @@ getMistralFtueKnownModels() {
 const String ftueMeliousThinkingModelId =
     meliousMistralSmall4119BInstructModelId;
 const String ftueMeliousAdvancedThinkingModelId = meliousDeepseekV4ProModelId;
+const String ftueMeliousImageGenerationModelId = meliousFlux2DevModelId;
 const String ftueMeliousWhisperModelId = meliousWhisperLargeV3ModelId;
 const String ftueMeliousWhisperTurboModelId = meliousWhisperLargeV3TurboModelId;
 
@@ -233,10 +234,12 @@ KnownModel? findMeliousKnownModel(String providerModelId) {
 /// Returns the KnownModel configurations needed for Melious FTUE.
 /// - Thinking/vision model for the default Melious profile
 /// - Advanced thinking model for the high-end slot
+/// - Flux image generation model for cover art
 /// - Whisper Large v3 and Turbo for speech-to-text testing
 ({
   KnownModel thinking,
   KnownModel advancedThinking,
+  KnownModel imageGeneration,
   KnownModel whisper,
   KnownModel whisperTurbo,
 })?
@@ -245,11 +248,15 @@ getMeliousFtueKnownModels() {
   final advancedThinking = findMeliousKnownModel(
     ftueMeliousAdvancedThinkingModelId,
   );
+  final imageGeneration = findMeliousKnownModel(
+    ftueMeliousImageGenerationModelId,
+  );
   final whisper = findMeliousKnownModel(ftueMeliousWhisperModelId);
   final whisperTurbo = findMeliousKnownModel(ftueMeliousWhisperTurboModelId);
 
   if (thinking == null ||
       advancedThinking == null ||
+      imageGeneration == null ||
       whisper == null ||
       whisperTurbo == null) {
     return null;
@@ -258,6 +265,7 @@ getMeliousFtueKnownModels() {
   return (
     thinking: thinking,
     advancedThinking: advancedThinking,
+    imageGeneration: imageGeneration,
     whisper: whisper,
     whisperTurbo: whisperTurbo,
   );
