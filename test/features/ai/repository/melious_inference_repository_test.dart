@@ -1002,6 +1002,7 @@ void main() {
           final body = jsonDecode(request.body) as Map<String, dynamic>;
           expect(body['model'], equals('flux-2-klein'));
           expect(body['prompt'], equals('a quiet lake'));
+          expect(body['size'], equals('1792x1024'));
           expect(body['response_format'], equals('b64_json'));
 
           return http.Response(
