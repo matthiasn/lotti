@@ -4,7 +4,11 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/file_utils.dart';
 
-Future<XFile?> compressAndSave(File file, String targetPath) async {
+Future<XFile?> compressAndSave(
+  File file,
+  String targetPath, {
+  CompressFormat format = CompressFormat.jpeg,
+}) async {
   final sourcePath = file.absolute.path;
   final result = await FlutterImageCompress.compressAndGetFile(
     sourcePath,
@@ -12,7 +16,8 @@ Future<XFile?> compressAndSave(File file, String targetPath) async {
     minHeight: 10000,
     minWidth: 10000,
     quality: 90,
-    keepExif: true,
+    format: format,
+    keepExif: format == CompressFormat.jpeg,
   );
   return result;
 }

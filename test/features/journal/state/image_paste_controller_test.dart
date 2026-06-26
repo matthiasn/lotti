@@ -490,12 +490,12 @@ void main() {
     });
 
     test(
-      'paste handles only JPEG when both PNG and JPEG are available',
+      'paste handles only PNG when both PNG and JPEG are available',
       () async {
         when(() => mockItem.canProvide(Formats.png)).thenReturn(true);
         when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(true);
 
-        when(() => mockItem.getFile(Formats.jpeg, any())).thenAnswer((
+        when(() => mockItem.getFile(Formats.png, any())).thenAnswer((
           invocation,
         ) {
           final callback =
@@ -521,9 +521,21 @@ void main() {
         // Ensure any pending async completes before expectations/teardown
         await pumpEventQueue();
 
-        verify(() => mockItem.getFile(Formats.jpeg, any())).called(1);
+        final capturedImage =
+            verify(
+                  () => mockPersistenceLogic.createDbEntity(
+                    captureAny(that: isA<JournalImage>()),
+                    linkedId: 'testLink',
+                    shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                    enqueueSync: any(named: 'enqueueSync'),
+                  ),
+                ).captured.single
+                as JournalImage;
+
+        expect(capturedImage.data.imageFile, endsWith('.png'));
+        verify(() => mockItem.getFile(Formats.png, any())).called(1);
         verify(() => mockFile.readAll()).called(1);
-        verifyNever(() => mockItem.getFile(Formats.png, any()));
+        verifyNever(() => mockItem.getFile(Formats.jpeg, any()));
       },
     );
 

@@ -64,8 +64,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - On platforms with HEIC/HEIF conversion support, image import now accepts
   high-efficiency inputs from drag-and-drop, file picker, and clipboard paste.
-  Lotti converts those files to JPEG before creating the image entry, so the
-  internal attachment format stays unchanged.
+  Lotti preserves existing JPEG and PNG inputs as-is, converts ordinary
+  HEIC/HEIF files to JPEG, and converts HEIC/HEIF files with alpha to PNG so
+  transparent screenshots stay transparent.
 - **The FTUE setup animation feels more organic.** The welcome screen now grows
   an entangled, looping neural organism with dim tendrils, smaller offshoots and
   travelling activation tips instead of separate straight-line constellation
