@@ -58,7 +58,9 @@ void main() {
         ),
         // Keep the destination chat page in a loading state so navigation
         // assertions don't depend on the chat page's real dependencies.
-        soulEvolutionChatStateProvider.overrideWith(_LoadingChatState.new),
+        soulEvolutionChatStateProvider.overrideWith2(
+          (_) => _LoadingChatState(),
+        ),
         ...extraOverrides,
       ],
     );

@@ -221,7 +221,7 @@ void main() {
       await pumpPage(
         tester,
         overrides: [
-          labelEditorControllerProvider.overrideWith(() => fakeController),
+          labelEditorControllerProvider.overrideWith2((_) => fakeController),
         ],
       );
 
@@ -347,7 +347,9 @@ void main() {
       await pumpPage(
         tester,
         overrides: [
-          labelEditorControllerProvider.overrideWith(() => colorSpyController),
+          labelEditorControllerProvider.overrideWith2(
+            (_) => colorSpyController,
+          ),
         ],
       );
 
@@ -438,7 +440,7 @@ void main() {
       await pumpPage(
         tester,
         overrides: [
-          labelEditorControllerProvider.overrideWith(() => fakeController),
+          labelEditorControllerProvider.overrideWith2((_) => fakeController),
         ],
       );
 
@@ -471,7 +473,7 @@ void main() {
       await pumpPage(
         tester,
         overrides: [
-          labelEditorControllerProvider.overrideWith(() => fakeController),
+          labelEditorControllerProvider.overrideWith2((_) => fakeController),
         ],
       );
 
@@ -538,7 +540,7 @@ void main() {
         await pumpPage(
           tester,
           overrides: [
-            labelEditorControllerProvider.overrideWith(() => fakeController),
+            labelEditorControllerProvider.overrideWith2((_) => fakeController),
           ],
         );
 
@@ -887,7 +889,7 @@ void main() {
         await pumpPage(
           tester,
           overrides: [
-            labelEditorControllerProvider.overrideWith(() => controller),
+            labelEditorControllerProvider.overrideWith2((_) => controller),
           ],
         );
 

@@ -55,8 +55,8 @@ void main() {
         templatePerformanceMetricsProvider.overrideWith(
           (ref, id) async => makeTestMetrics(templateId: templateId),
         ),
-        evolutionChatStateProvider.overrideWith(
-          () => FakeEvolutionChatState(
+        evolutionChatStateProvider.overrideWith2(
+          (_) => FakeEvolutionChatState(
             chatStateBuilder ?? (_) async => defaultChatData,
           ),
         ),
@@ -104,7 +104,7 @@ void main() {
           templatePerformanceMetricsProvider.overrideWith(
             (ref, id) async => makeTestMetrics(),
           ),
-          evolutionChatStateProvider.overrideWith(() {
+          evolutionChatStateProvider.overrideWith2((_) {
             capturedNotifier = CapturingSendEvolutionChatState(
               EvolutionChatData(
                 sessionId: 'session-1',
@@ -147,7 +147,7 @@ void main() {
             templatePerformanceMetricsProvider.overrideWith(
               (ref, id) async => makeTestMetrics(),
             ),
-            evolutionChatStateProvider.overrideWith(() {
+            evolutionChatStateProvider.overrideWith2((_) {
               capturedNotifier = CapturingSendEvolutionChatState(
                 EvolutionChatData(
                   sessionId: 'session-1',
@@ -190,8 +190,8 @@ void main() {
             templatePerformanceMetricsProvider.overrideWith(
               (ref, id) async => makeTestMetrics(),
             ),
-            evolutionChatStateProvider.overrideWith(
-              () => FakeEvolutionChatState(
+            evolutionChatStateProvider.overrideWith2(
+              (_) => FakeEvolutionChatState(
                 (_) async => EvolutionChatData(
                   sessionId: 'session-1',
                   messages: [
@@ -254,7 +254,7 @@ void main() {
             templatePerformanceMetricsProvider.overrideWith(
               (ref, id) async => makeTestMetrics(),
             ),
-            evolutionChatStateProvider.overrideWith(() {
+            evolutionChatStateProvider.overrideWith2((_) {
               capturedNotifier = MutableEvolutionChatState(initialData);
               return capturedNotifier!;
             }),
@@ -314,7 +314,7 @@ void main() {
             templatePerformanceMetricsProvider.overrideWith(
               (ref, id) async => makeTestMetrics(),
             ),
-            evolutionChatStateProvider.overrideWith(() {
+            evolutionChatStateProvider.overrideWith2((_) {
               capturedNotifier = MutableEvolutionChatState(initialData);
               return capturedNotifier!;
             }),

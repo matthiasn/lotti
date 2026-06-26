@@ -93,7 +93,9 @@ void main() {
           showLinkedDashboard: showLinkedDashboard,
         ),
         overrides: [
-          habitCompletionControllerProvider.overrideWith(_FakeController.new),
+          habitCompletionControllerProvider.overrideWith2(
+            (_) => _FakeController(),
+          ),
         ],
       ),
     );
@@ -205,7 +207,9 @@ void main() {
             rangeEnd: _rangeEnd,
           ),
           overrides: [
-            habitCompletionControllerProvider.overrideWith(_FakeController.new),
+            habitCompletionControllerProvider.overrideWith2(
+              (_) => _FakeController(),
+            ),
           ],
         ),
       );
@@ -222,7 +226,9 @@ void main() {
             rangeEnd: _rangeEnd,
           ),
           overrides: [
-            habitCompletionControllerProvider.overrideWith(_FakeController.new),
+            habitCompletionControllerProvider.overrideWith2(
+              (_) => _FakeController(),
+            ),
           ],
         ),
       );
