@@ -182,7 +182,10 @@ stateDiagram-v2
   when a large authored body path needs small rhythmic pulses on top.
   `groundSpans` drive foot-locked locomotion; `contactSpans` damp support-foot
   drift for non-loop stage moves and drive contact shadows for looped in-place
-  moves without making kick/dance travel. New cycles are **data, not code**.
+  moves without making kick/dance travel. `LimbIkTarget` adds an optional
+  target-based layer for two-bone limbs, so choreography can place a hand or
+  foot relative to an anchor bone before the existing contact/head stabilization
+  passes run. New cycles are **data, not code**.
 - **`DancePhrase`** — choreography-facing authoring for dance clips. It stores
   a phrase length in frames, labelled support-foot windows, load/release frames,
   free-foot identity, pelvis-distance guardrails, pocket compression targets,

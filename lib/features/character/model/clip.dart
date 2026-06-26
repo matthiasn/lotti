@@ -228,6 +228,115 @@ class KeyframeChannel extends JointChannel {
   }
 }
 
+/// A sampled inverse-kinematics target for a two-bone limb chain.
+///
+/// Coordinates are expressed in the local space of [LimbIkTarget.anchorBoneId],
+/// so choreography can say "put this hand near the chest" instead of solving
+/// shoulder and elbow angles by eye.
+class IkTargetPose {
+  const IkTargetPose({required this.x, required this.y, this.weight = 1});
+
+  final double x;
+  final double y;
+
+  /// Blend amount for the IK solve. `0` leaves authored FK unchanged, `1`
+  /// fully hits the target when it is reachable.
+  final double weight;
+}
+
+sealed class IkTargetChannel {
+  const IkTargetChannel();
+
+  IkTargetPose sample(double p);
+}
+
+class FixedIkTargetChannel extends IkTargetChannel {
+  const FixedIkTargetChannel({
+    required this.x,
+    required this.y,
+    this.weight = 1,
+  });
+
+  final double x;
+  final double y;
+  final double weight;
+
+  @override
+  IkTargetPose sample(double p) => IkTargetPose(x: x, y: y, weight: weight);
+}
+
+class IkTargetKeyframe {
+  const IkTargetKeyframe({
+    required this.p,
+    required this.x,
+    required this.y,
+    this.weight = 1,
+    this.ease = Ease.easeInOut,
+  });
+
+  final double p;
+  final double x;
+  final double y;
+  final double weight;
+  final Ease ease;
+}
+
+class KeyframeIkTargetChannel extends IkTargetChannel {
+  const KeyframeIkTargetChannel(this.keys);
+
+  final List<IkTargetKeyframe> keys;
+
+  @override
+  IkTargetPose sample(double p) {
+    if (keys.isEmpty) return const IkTargetPose(x: 0, y: 0, weight: 0);
+    if (p <= keys.first.p) return _poseOf(keys.first);
+    if (p >= keys.last.p) return _poseOf(keys.last);
+
+    for (var i = 0; i < keys.length - 1; i++) {
+      final k0 = keys[i];
+      final k1 = keys[i + 1];
+      if (p >= k0.p && p <= k1.p) {
+        final span = k1.p - k0.p;
+        final local = span == 0 ? 0.0 : (p - k0.p) / span;
+        final t = k1.ease.apply(local);
+        return IkTargetPose(
+          x: k0.x + (k1.x - k0.x) * t,
+          y: k0.y + (k1.y - k0.y) * t,
+          weight: k0.weight + (k1.weight - k0.weight) * t,
+        );
+      }
+    }
+    return const IkTargetPose(x: 0, y: 0, weight: 0);
+  }
+
+  IkTargetPose _poseOf(IkTargetKeyframe key) =>
+      IkTargetPose(x: key.x, y: key.y, weight: key.weight);
+}
+
+class LimbIkTarget {
+  const LimbIkTarget({
+    required this.upperBoneId,
+    required this.lowerBoneId,
+    required this.endBoneId,
+    required this.anchorBoneId,
+    required this.channel,
+    this.bendDirection = 1,
+  }) : assert(
+         bendDirection == -1 || bendDirection == 1,
+         'bendDirection must be -1 or 1',
+       );
+
+  final String upperBoneId;
+  final String lowerBoneId;
+  final String endBoneId;
+  final String anchorBoneId;
+  final IkTargetChannel channel;
+
+  /// Selects which side of the shoulder->target line the elbow/knee bends
+  /// toward. The rig owns the bone ids; the clip owns the choreographic choice.
+  final int bendDirection;
+}
+
 /// Root-level body motion layered under forward kinematics: the vertical bob,
 /// horizontal sway and torso lean that give a cycle its weight. Sealed so cyclic
 /// ([SineRootChannel]) and one-shot ([KeyframeRootChannel]) root motion share a
@@ -453,6 +562,7 @@ class Clip {
     this.groundSpans = const [],
     this.contactSpans = const [],
     this.contactPinning = ContactPinning.activeSpan,
+    this.limbTargets = const [],
   });
 
   /// Display/lookup name.
@@ -486,6 +596,11 @@ class Clip {
 
   /// Floor-pinning policy for in-place clips with [contactSpans].
   final ContactPinning contactPinning;
+
+  /// Optional two-bone IK targets applied after authored FK channels. This is
+  /// the choreographic path for hands/feet that must hit semantic positions
+  /// without reverse-engineering shoulder/elbow or hip/knee rotations.
+  final List<LimbIkTarget> limbTargets;
 
   /// Whether this clip travels across the stage at all (either model).
   bool get locomotes => locomotionSpeed != 0 || groundSpans.isNotEmpty;

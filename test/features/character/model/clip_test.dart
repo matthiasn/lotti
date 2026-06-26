@@ -206,6 +206,29 @@ void main() {
     });
   });
 
+  group('IkTargetChannel', () {
+    test('fixed targets hold their semantic point and weight', () {
+      const channel = FixedIkTargetChannel(x: 12, y: -8, weight: 0.4);
+      final sample = channel.sample(0.72);
+
+      expect(sample.x, 12);
+      expect(sample.y, -8);
+      expect(sample.weight, 0.4);
+    });
+
+    test('keyframed targets interpolate position and blend weight', () {
+      const channel = KeyframeIkTargetChannel([
+        IkTargetKeyframe(p: 0, x: 0, y: 10, weight: 0),
+        IkTargetKeyframe(p: 1, x: 20, y: -10, ease: Ease.linear),
+      ]);
+      final sample = channel.sample(0.25);
+
+      expect(sample.x, closeTo(5, 1e-9));
+      expect(sample.y, closeTo(5, 1e-9));
+      expect(sample.weight, closeTo(0.25, 1e-9));
+    });
+  });
+
   test('both channel kinds belong to the sealed JointChannel hierarchy', () {
     expect(const SineChannel(amplitude: 1), isA<JointChannel>());
     expect(const KeyframeChannel(<Keyframe>[]), isA<JointChannel>());

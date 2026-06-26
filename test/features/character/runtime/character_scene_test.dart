@@ -580,6 +580,42 @@ void main() {
       }
     });
 
+    test('limb targets solve hand goals in anchor-bone space', () {
+      final scene = CharacterScene(buildCatInSuitRig());
+      const targetX = -88.0;
+      const targetY = -12.0;
+      const clip = Clip(
+        name: 'left-hand-target',
+        duration: 1,
+        channels: {},
+        limbTargets: [
+          LimbIkTarget(
+            upperBoneId: CatBones.armUpperL,
+            lowerBoneId: CatBones.armLowerL,
+            endBoneId: CatBones.handL,
+            anchorBoneId: CatBones.torso,
+            bendDirection: -1,
+            channel: FixedIkTargetChannel(x: targetX, y: targetY),
+          ),
+        ],
+      );
+
+      final frame = scene.frameAt(clip: clip, timeSeconds: 0);
+      final expected = frame.world[CatBones.torso]!.transformPoint(
+        targetX,
+        targetY,
+      );
+      final actual = frame.world[CatBones.handL]!.origin;
+
+      expect(
+        _distance(actual, expected),
+        lessThan(1.5),
+        reason:
+            'IK should let choreography place a hand in torso space without '
+            'manually solving shoulder and elbow rotations',
+      );
+    });
+
     test('blink reaches the face via the autonomic layer', () {
       final scene = CharacterScene(buildCatInSuitRig());
       var minOpen = 1.0;

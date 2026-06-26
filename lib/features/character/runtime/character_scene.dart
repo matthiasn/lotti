@@ -5,6 +5,7 @@ import 'package:lotti/features/character/engine/clip_evaluator.dart';
 import 'package:lotti/features/character/engine/face_solver.dart';
 import 'package:lotti/features/character/engine/skeleton_solver.dart';
 import 'package:lotti/features/character/model/affine2d.dart';
+import 'package:lotti/features/character/model/bone.dart';
 import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/model/pose.dart';
@@ -195,7 +196,8 @@ class CharacterScene {
       rootDy: pose.rootDy + auto.breath * 1.4,
       rootRotation: pose.rootRotation,
     );
-    final posed = _contactLockedPose(clip, timeSeconds, breathed);
+    final targeted = _limbTargetedPose(clip, timeSeconds, breathed);
+    final posed = _contactLockedPose(clip, timeSeconds, targeted);
 
     final rawWorld = solver.solve(posed, base: base);
     final footStabilizedWorld = _danceSupportFootStabilizedWorld(
@@ -219,6 +221,164 @@ class CharacterScene {
     final locomotion = locomotionOffset(clip, timeSeconds);
     return CharacterFrame(world: world, face: face, locomotionX: locomotion);
   }
+
+  Pose _limbTargetedPose(Clip clip, double timeSeconds, Pose pose) {
+    if (clip.limbTargets.isEmpty) return pose;
+
+    final phase = evaluator.phaseAt(clip, timeSeconds);
+    final joints = Map<String, JointPose>.of(pose.joints);
+    var currentPose = pose;
+
+    for (final target in clip.limbTargets) {
+      final sample = target.channel.sample(phase);
+      final weight = sample.weight.clamp(0.0, 1.0);
+      if (weight <= 0) continue;
+
+      final solved = _solveLimbTarget(
+        target,
+        sample,
+        currentPose,
+        weight,
+      );
+      if (solved == null) continue;
+
+      joints[target.upperBoneId] = solved.upper;
+      joints[target.lowerBoneId] = solved.lower;
+      currentPose = Pose(
+        joints: joints,
+        rootDx: pose.rootDx,
+        rootDy: pose.rootDy,
+        rootRotation: pose.rootRotation,
+      );
+    }
+
+    return currentPose;
+  }
+
+  ({JointPose upper, JointPose lower})? _solveLimbTarget(
+    LimbIkTarget target,
+    IkTargetPose sample,
+    Pose pose,
+    double weight,
+  ) {
+    final upper = rig.bone(target.upperBoneId);
+    final lower = rig.bone(target.lowerBoneId);
+    final end = rig.bone(target.endBoneId);
+    final anchor = rig.bone(target.anchorBoneId);
+    if (upper == null || lower == null || end == null || anchor == null) {
+      return null;
+    }
+    if (lower.parent != upper.id || end.parent != lower.id) return null;
+
+    final world = solver.solve(pose);
+    final upperWorld = world[upper.id];
+    final lowerWorld = world[lower.id];
+    final endWorld = world[end.id];
+    final anchorWorld = world[anchor.id];
+    if (upperWorld == null ||
+        lowerWorld == null ||
+        endWorld == null ||
+        anchorWorld == null) {
+      return null;
+    }
+
+    final shoulder = upperWorld.origin;
+    final elbow = lowerWorld.origin;
+    final wrist = endWorld.origin;
+    final targetPoint = anchorWorld.transformPoint(sample.x, sample.y);
+    final upperLength = _pointDistance(shoulder, elbow);
+    final lowerLength = _pointDistance(elbow, wrist);
+    if (upperLength <= 0 || lowerLength <= 0) return null;
+
+    final toTargetX = targetPoint.x - shoulder.x;
+    final toTargetY = targetPoint.y - shoulder.y;
+    final targetDistance = math.sqrt(
+      toTargetX * toTargetX + toTargetY * toTargetY,
+    );
+    if (targetDistance <= 1e-6) return null;
+
+    final minReach = (upperLength - lowerLength).abs() + 1e-6;
+    final maxReach = upperLength + lowerLength - 1e-6;
+    final solvedDistance = targetDistance.clamp(minReach, maxReach);
+    final targetAngle = math.atan2(toTargetY, toTargetX);
+    final shoulderCos =
+        (upperLength * upperLength +
+            solvedDistance * solvedDistance -
+            lowerLength * lowerLength) /
+        (2 * upperLength * solvedDistance);
+    final shoulderOffset = math.acos(shoulderCos.clamp(-1.0, 1.0));
+    final upperSegmentAngle =
+        targetAngle + target.bendDirection * shoulderOffset;
+    final solvedElbow = (
+      x: shoulder.x + math.cos(upperSegmentAngle) * upperLength,
+      y: shoulder.y + math.sin(upperSegmentAngle) * upperLength,
+    );
+    final lowerSegmentAngle = math.atan2(
+      targetPoint.y - solvedElbow.y,
+      targetPoint.x - solvedElbow.x,
+    );
+
+    final parentRotation = _parentWorldRotation(world, upper, pose);
+    final upperTargetRotation =
+        upperSegmentAngle -
+        parentRotation -
+        upper.restRotation -
+        _localPivotAngle(lower);
+    final upperTransformRotation =
+        parentRotation + upper.restRotation + upperTargetRotation;
+    final lowerTargetRotation =
+        lowerSegmentAngle -
+        upperTransformRotation -
+        lower.restRotation -
+        _localPivotAngle(end);
+    final currentUpper = pose.jointOf(upper.id);
+    final currentLower = pose.jointOf(lower.id);
+
+    return (
+      upper: JointPose(
+        rotation: _lerpAngle(
+          currentUpper.rotation,
+          upperTargetRotation,
+          weight,
+        ),
+        scaleX: currentUpper.scaleX,
+        scaleY: currentUpper.scaleY,
+      ),
+      lower: JointPose(
+        rotation: _lerpAngle(
+          currentLower.rotation,
+          lowerTargetRotation,
+          weight,
+        ),
+        scaleX: currentLower.scaleX,
+        scaleY: currentLower.scaleY,
+      ),
+    );
+  }
+
+  double _parentWorldRotation(
+    Map<String, Affine2D> world,
+    Bone bone,
+    Pose pose,
+  ) {
+    final parentId = bone.parent;
+    if (parentId == null) return pose.rootRotation;
+    final parentWorld = world[parentId];
+    return parentWorld == null
+        ? pose.rootRotation
+        : _worldRotation(parentWorld);
+  }
+
+  double _localPivotAngle(Bone child) => math.atan2(child.pivotY, child.pivotX);
+
+  double _pointDistance(({double x, double y}) a, ({double x, double y}) b) {
+    final dx = a.x - b.x;
+    final dy = a.y - b.y;
+    return math.sqrt(dx * dx + dy * dy);
+  }
+
+  double _lerpAngle(double from, double to, double weight) =>
+      from + _shortestAngle(to - from) * weight;
 
   /// The body can squash, stretch, and groove; the skull should not. Because
   /// the Phase-1 rig is a parented skeleton, torso scale would otherwise
