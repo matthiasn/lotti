@@ -189,6 +189,25 @@ class DancePhrase {
     smooth: smooth,
   );
 
+  List<DanceIkTargetKey> ikTargetAccentKeys(
+    List<DanceIkTargetAccent> accents,
+  ) {
+    final keys = <DanceIkTargetKey>[];
+    for (final accent in accents) {
+      final startFrame = accent.frame - accent.radiusFrames;
+      final endFrame = accent.frame + accent.radiusFrames;
+      _checkFrame(startFrame);
+      _checkFrame(accent.frame);
+      _checkFrame(endFrame);
+      keys
+        ..add(accent.neutralKey(startFrame))
+        ..add(accent.peakKey())
+        ..add(accent.neutralKey(endFrame));
+    }
+    keys.sort((a, b) => a.frame.compareTo(b.frame));
+    return List<DanceIkTargetKey>.unmodifiable(keys);
+  }
+
   void _checkFrame(int frame) {
     RangeError.checkValueInInterval(frame, 0, frameCount, 'frame');
   }
@@ -456,6 +475,40 @@ class DanceIkTargetKey {
   final Ease ease;
 
   IkTargetKeyframe toIkTargetKeyframe(DancePhrase phrase) => phrase.ikTargetKey(
+    frame,
+    x: x,
+    y: y,
+    weight: weight,
+    ease: ease,
+  );
+}
+
+class DanceIkTargetAccent {
+  const DanceIkTargetAccent(
+    this.frame, {
+    required this.radiusFrames,
+    required this.x,
+    required this.y,
+    this.weight = 1,
+    this.ease = Ease.easeInOut,
+  }) : assert(radiusFrames > 0, 'radiusFrames must be positive');
+
+  final int frame;
+  final int radiusFrames;
+  final double x;
+  final double y;
+  final double weight;
+  final Ease ease;
+
+  DanceIkTargetKey neutralKey(int frame) => DanceIkTargetKey(
+    frame,
+    x: 0,
+    y: 0,
+    weight: 0,
+    ease: ease,
+  );
+
+  DanceIkTargetKey peakKey() => DanceIkTargetKey(
     frame,
     x: x,
     y: y,

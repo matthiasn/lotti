@@ -197,6 +197,9 @@ stateDiagram-v2
   body-groove keys for COM, pelvis, and chest. `DanceBodyAccent` adds
   neutralized pulse keys around named hits, so a pocket or rebound can deepen
   root, pelvis, and chest together without hand-editing three separate tracks.
+  `DanceIkTargetAccent` does the same for local hand/foot target pulses, so a
+  lead-hand hit can be layered over the shared semantic hand path without
+  duplicating the whole coordinate track.
   It compiles those into the same `GroundSpan`, `KeyframeChannel`, and
   `KeyframeRootChannel` primitives the engine already samples. This is the
   handoff point for beat-synced

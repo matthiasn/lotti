@@ -219,6 +219,32 @@ void main() {
       expect(channel.sample(1).x, closeTo(-12, 1e-9));
     });
 
+    test('builds neutralized IK target accent pulses', () {
+      final keys = phrase.ikTargetAccentKeys(
+        const [
+          DanceIkTargetAccent(8, radiusFrames: 2, x: -6, y: -4),
+          DanceIkTargetAccent(
+            20,
+            radiusFrames: 4,
+            x: 5,
+            y: -3,
+            weight: 0.7,
+          ),
+        ],
+      );
+
+      expect(keys.map((key) => key.frame), [6, 8, 10, 16, 20, 24]);
+      expect(keys[0].x, 0);
+      expect(keys[0].y, 0);
+      expect(keys[0].weight, 0);
+      expect(keys[1].x, -6);
+      expect(keys[1].y, -4);
+      expect(keys[1].weight, 1);
+      expect(keys[4].x, 5);
+      expect(keys[4].y, -3);
+      expect(keys[4].weight, 0.7);
+    });
+
     test('rejects keys outside the authored phrase', () {
       expect(() => phrase.phaseOf(-1), throwsRangeError);
       expect(() => phrase.jointKey(33), throwsRangeError);
@@ -231,6 +257,12 @@ void main() {
       expect(
         () => phrase.bodyAccentKeys(
           const [DanceBodyAccent(1, radiusFrames: 2, rootDy: 1)],
+        ),
+        throwsRangeError,
+      );
+      expect(
+        () => phrase.ikTargetAccentKeys(
+          const [DanceIkTargetAccent(31, radiusFrames: 2, x: 1, y: 1)],
         ),
         throwsRangeError,
       );

@@ -1786,6 +1786,37 @@ class CatClips {
         smooth: true,
       );
 
+  static final KeyframeIkTargetChannel _danceHandLAccentOffset = _dancePhrase
+      .ikTargetChannel(
+        _dancePhrase.ikTargetAccentKeys(
+          const [
+            DanceIkTargetAccent(8, radiusFrames: 3, x: -2.5, y: -1.5),
+          ],
+        ),
+        smooth: true,
+      );
+
+  static final KeyframeIkTargetChannel _danceHandRAccentOffset = _dancePhrase
+      .ikTargetChannel(
+        _dancePhrase.ikTargetAccentKeys(
+          const [
+            DanceIkTargetAccent(16, radiusFrames: 2, x: 5, y: -3),
+            DanceIkTargetAccent(24, radiusFrames: 2, x: 4, y: -2.5),
+          ],
+        ),
+        smooth: true,
+      );
+
+  static final IkTargetChannel _danceLeadHandLTarget = _layerDanceTarget(
+    _danceHandLTarget,
+    _danceHandLAccentOffset,
+  );
+
+  static final IkTargetChannel _danceLeadHandRTarget = _layerDanceTarget(
+    _danceHandRTarget,
+    _danceHandRAccentOffset,
+  );
+
   static final List<LimbIkTarget> _danceLimbTargets =
       List<LimbIkTarget>.unmodifiable([
         LimbIkTarget(
@@ -1793,7 +1824,7 @@ class CatClips {
           lowerBoneId: CatBones.armLowerL,
           endBoneId: CatBones.handL,
           anchorBoneId: CatBones.torso,
-          channel: _danceHandLTarget,
+          channel: _danceLeadHandLTarget,
           bendDirection: -1,
         ),
         LimbIkTarget(
@@ -1801,7 +1832,7 @@ class CatClips {
           lowerBoneId: CatBones.armLowerR,
           endBoneId: CatBones.handR,
           anchorBoneId: CatBones.torso,
-          channel: _danceHandRTarget,
+          channel: _danceLeadHandRTarget,
         ),
         LimbIkTarget(
           upperBoneId: CatBones.legUpperL,
@@ -1856,10 +1887,10 @@ class CatClips {
     IkTargetChannel? handROffset,
   }) => List<LimbIkTarget>.unmodifiable([
     _danceLimbTargets[0].withChannel(
-      _layerDanceTarget(_danceHandLTarget, handLOffset),
+      _layerDanceTarget(_danceLeadHandLTarget, handLOffset),
     ),
     _danceLimbTargets[1].withChannel(
-      _layerDanceTarget(_danceHandRTarget, handROffset),
+      _layerDanceTarget(_danceLeadHandRTarget, handROffset),
     ),
     _danceLimbTargets[2],
     _danceLimbTargets[3],
