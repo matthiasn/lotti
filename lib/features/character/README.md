@@ -17,6 +17,7 @@ AI-assisted SVG → rig pipeline and the low-end `drawAtlas` runtime — lives i
 | --- | --- |
 | Pure-Dart engine (math, FK, clips, face, autonomic) | ✅ built + unit-tested |
 | Hand-authored "cat in a suit" rig + 7 clips | ✅ `samples/cat_in_suit.dart` |
+| Frame-addressed dance phrase authoring | ✅ `model/dance_phrase.dart` |
 | `CustomPainter` runtime drawing bones + soft limb ribbons | ✅ `runtime/` |
 | Bendy ribbons for arms/legs/tail | ✅ shoulder→bicep→wrist, hip→quad→knee→calf→ankle, and 7-control tail surfaces |
 | Tapered tie (`taperedCapsule` shape) | ✅ 2-link draping tie |
@@ -45,13 +46,18 @@ a pelvic-list line of action, knee-snap and flat-foot plant). The body
 world position instead of skating; the live painter ping-pongs it across the
 stage and flips facing at the edges. Kick and dance are in-place performance
 clips for judging pose appeal, balance, squash/stretch and arm/tail arcs without
-stage travel hiding the body mechanics. The dance clip is authored as a
-12-count phrase at 120 BPM: an 8-count groove plus a 4-count toe-flick bounce,
-with a small additive root pulse layered over the keyed body motion so slower
-tempos still have off-beat life. The demo previews that same authored phrase at
-105 BPM by default, using Omah Lay's "soso" as the current movement reference:
-warm, compact, waist-led pocket before bigger stage hits. The BPM slider still
-spans 80–240 BPM for review. The dance view also uses
+stage travel hiding the body mechanics. The dance clip is authored through a
+32-frame `DancePhrase`: support spans and body/limb keys are addressed by
+choreography frame (`0..32`) and then compiled into the regular `Clip`
+channels. That keeps the movement review language ("frame 16 right-foot plant",
+"count-8 loop pickup") aligned with the runtime data instead of scattering raw
+normalized phases through the sample. The current phrase is a compact 12-count
+Afrobeats groove: an 8-count pocket plus a 4-count toe-flick bounce, with a
+small additive root pulse layered over the keyed body motion so slower tempos
+still have off-beat life. The demo previews that same authored phrase at 105 BPM
+by default, using Omah Lay's "soso" as the current movement reference: warm,
+compact, waist-led pocket before bigger stage hits. The BPM slider still spans
+80–240 BPM for review. The dance view also uses
 `CharacterBackdrop.waterfront`: an asset-backed Lagos-inspired lagoon plate with
 a distant skyline/bridge, palms, and a luxury yacht. `CharacterPainter` adds
 transparent alpha-mask motion layers for drifting clouds and lagoon glints. The
@@ -71,6 +77,7 @@ flowchart TD
     A[Affine2D]
     B[Bone / RigSpec / BoneDrawable]
     C[Clip + JointChannel\nSine / Keyframe]
+    DP[DancePhrase\nframes/supports → clip keys]
     D[Pose / JointPose]
     F[FaceRig / FaceState / Expression]
   end
@@ -82,15 +89,18 @@ flowchart TD
   end
   subgraph runtime["runtime/ (Flutter / dart:ui)"]
     SC[CharacterScene — composes a frame]
+    TM[TemporalMotionAnalyzer\nresolved continuity report]
     RN[CharacterRenderer — draws to a Canvas]
     PA[CharacterPainter — CustomPainter]
     VW[CharacterView — ticking widget]
   end
-  samples[samples/cat_in_suit.dart] --> B & C & F
+  samples[samples/cat_in_suit.dart] --> B & DP & F
+  DP --> C
   C --> CE --> D --> SS --> SC
   F --> FS --> SC
   AU --> SC
   SS -. uses .-> A
+  SC --> TM
   SC --> RN
   PA --> SC & RN
   VW --> PA
@@ -173,6 +183,17 @@ stateDiagram-v2
   `groundSpans` drive foot-locked locomotion; `contactSpans` damp support-foot
   drift for non-loop stage moves and drive contact shadows for looped in-place
   moves without making kick/dance travel. New cycles are **data, not code**.
+- **`DancePhrase`** — choreography-facing authoring for dance clips. It stores
+  a phrase length in frames, labelled support-foot windows, and frame-addressed
+  joint/root keys, then compiles them into the same `GroundSpan`,
+  `KeyframeChannel`, and `KeyframeRootChannel` primitives the engine already
+  samples. This is the handoff point for beat-synced choreography and future
+  per-character dance styles.
+- **`TemporalMotionAnalyzer`** — a resolved-frame diagnostic over
+  `CharacterScene`. It records per-bone frame-to-frame displacement and
+  acceleration after clip evaluation, contact pinning, head stabilization, and
+  base transforms, so jumpy dance failures report exact bones, frame pairs and
+  phases before panel review.
 - **`FaceState` / `Expression`** — ~8 continuous "knobs" (mouth shape + open,
   brow raise/angle, eyelid open, gaze). Six presets (neutral, content, happy,
   surprised, sad, angry). Mouths are **shape-swapped**, not deformed.
@@ -211,9 +232,11 @@ mismatched speed smears them ("moonwalk").
 Pure-Dart math carries the value and is exhaustively unit-tested (one test file
 per source file): `Affine2D` algebra, FK against hand-computed joint positions,
 clip phase wrap/clamp + channel sampling, autonomic determinism + bounds, face
-blending. Runtime is covered by `CharacterScene`/`CharacterPainter` tests and the
-`CharacterView` ticker test (`fakeAsync`-free, `tester.pump(duration)`), plus the
-film-strip harness. No `Future.delayed`, no `pumpAndSettle`, no `Math.random`.
+blending, frame-addressed dance phrase compilation, and temporal motion
+diagnostics. Runtime is covered by `CharacterScene`/`CharacterPainter` tests and
+the `CharacterView` ticker test (`fakeAsync`-free, `tester.pump(duration)`), plus
+the film-strip harness. No `Future.delayed`, no `pumpAndSettle`, no
+`Math.random`.
 
 ```bash
 fvm flutter test test/features/character/

@@ -5,6 +5,7 @@ import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/affine2d.dart';
 import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/runtime/character_scene.dart';
+import 'package:lotti/features/character/runtime/temporal_motion_analyzer.dart';
 import 'package:lotti/features/character/samples/cat_in_suit.dart';
 
 void main() {
@@ -453,7 +454,6 @@ void main() {
     });
 
     test('dance has no discontinuous frame-to-frame jumps', () {
-      final scene = CharacterScene(buildCatInSuitRig());
       const samples = 96;
       const watchedBones = [
         CatBones.hips,
@@ -465,41 +465,26 @@ void main() {
         CatBones.footR,
         CatBones.tail6,
       ];
-      var worstDistance = 0.0;
-      var worstBone = '';
-      var worstFrame = 0;
 
-      var previous = scene.frameAt(
-        clip: CatClips.dance,
-        timeSeconds: 0,
-      );
-      for (var frameIndex = 1; frameIndex <= samples; frameIndex++) {
-        final frame = scene.frameAt(
-          clip: CatClips.dance,
-          timeSeconds: CatClips.dance.duration * frameIndex / samples,
-        );
-        for (final boneId in watchedBones) {
-          final prev = previous.world[boneId]!.origin;
-          final next = frame.world[boneId]!.origin;
-          final distance = _distance(
-            (x: prev.x, y: prev.y),
-            (x: next.x, y: next.y),
+      final report =
+          TemporalMotionAnalyzer(
+            CharacterScene(buildCatInSuitRig()),
+          ).analyze(
+            clip: CatClips.dance,
+            samples: samples,
+            boneIds: watchedBones,
           );
-          if (distance > worstDistance) {
-            worstDistance = distance;
-            worstBone = boneId;
-            worstFrame = frameIndex;
-          }
-        }
-        previous = frame;
-      }
+      final worst = report.worstDisplacement;
 
       expect(
-        worstDistance,
+        worst.distance,
         lessThan(22),
         reason:
-            'worst jump was ${worstDistance.toStringAsFixed(2)}px on '
-            '$worstBone from frame ${worstFrame - 1} to $worstFrame',
+            'worst jump was ${worst.distance.toStringAsFixed(2)}px on '
+            '${worst.boneId} from frame ${worst.fromFrame} to '
+            '${worst.toFrame} '
+            '(p ${worst.fromPhase.toStringAsFixed(3)} -> '
+            '${worst.toPhase.toStringAsFixed(3)})',
       );
     });
 
