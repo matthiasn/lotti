@@ -238,10 +238,10 @@ class CharacterScene {
 
     final headWorld = world[headId]!;
     final headRotation = _worldRotation(headWorld);
-    final danceAttitude = clip.name == 'dance'
+    final danceAttitude = _isDanceFamily(clip)
         ? _danceHeadAttitude(_clipPhase(clip, timeSeconds))
         : 0.0;
-    final rotationCorrection = clip.name == 'dance'
+    final rotationCorrection = _isDanceFamily(clip)
         ? -headRotation * 0.92 + danceAttitude
         : 0.0;
     final correction = _rigidLinearCorrection(
@@ -339,7 +339,7 @@ class CharacterScene {
     double timeSeconds,
     Map<String, Affine2D> world,
   ) {
-    if (clip.name != 'dance') return world;
+    if (!_isDanceFamily(clip)) return world;
     final contact = _activeContactAt(clip, _clipPhase(clip, timeSeconds));
     if (contact == null) return world;
     final boneId = contact.span.bone;
@@ -355,11 +355,14 @@ class CharacterScene {
     final anchor = anchorWorld[boneId];
     if (anchor == null) return world;
 
-    final strength = _contactLockStrength(
+    final contactStrength = _contactLockStrength(
       clip,
       contact.span,
       contact.strengthPhase,
     ).x;
+    final strength = _isDanceFamily(clip)
+        ? math.min(1, contactStrength * 1.35)
+        : contactStrength;
     if (strength < 0.05) return world;
 
     final delta = _shortestAngle(
@@ -461,8 +464,8 @@ class CharacterScene {
     GroundSpan span,
     double p,
   ) {
-    final dance = clip.name == 'dance';
-    final baseX = dance ? 0.22 : (clip.loop ? 0.8 : 0.94);
+    final dance = _isDanceFamily(clip);
+    final baseX = dance ? 0.55 : (clip.loop ? 0.8 : 0.94);
     final baseY = dance ? 0.94 : (clip.loop ? 0.8 : 0.94);
     final spanLength = span.end - span.start;
     final fade = dance
@@ -478,6 +481,9 @@ class CharacterScene {
     final x = t.clamp(0.0, 1.0);
     return x * x * (3 - 2 * x);
   }
+
+  bool _isDanceFamily(Clip clip) =>
+      clip.name == 'dance' || clip.name.startsWith('danceBackup');
 
   ({double x, double y})? _contactPoint(
     Map<String, Affine2D> world,

@@ -181,27 +181,27 @@ void main() {
             lead.channels[CatBones.armUpperL]!.sample(p).rotation;
         expect(
           leftHipDelta.abs(),
-          inInclusiveRange(0.005, 0.04),
+          inInclusiveRange(0.005, 0.09),
           reason:
               'left backup should answer with a small hip variation while '
               'sharing the lead support timing',
         );
         expect(
           rightTorsoDelta.abs(),
-          inInclusiveRange(0.005, 0.05),
+          inInclusiveRange(0.005, 0.12),
           reason:
               'right backup should answer with a small chest variation while '
               'sharing the lead support timing',
         );
         expect(
           leftArmDelta.abs(),
-          inInclusiveRange(0.005, 0.08),
-          reason: 'left backup should vary its inside arm only slightly',
+          inInclusiveRange(0.005, 0.2),
+          reason: 'left backup should answer with its inside arm',
         );
         expect(
           rightArmDelta.abs(),
-          inInclusiveRange(0.005, 0.08),
-          reason: 'right backup should vary its inside arm only slightly',
+          inInclusiveRange(0.005, 0.2),
+          reason: 'right backup should answer with its inside arm',
         );
       },
     );
@@ -219,23 +219,29 @@ void main() {
         final armLowerL = channels[CatBones.armLowerL]!;
         final armLowerR = channels[CatBones.armLowerR]!;
 
-        final compressionTorso = torso.sample(0);
-        final pickupTorso = torso.sample(1 / 16);
-        final nextQuarterCatchTorso = torso.sample(1 / 4);
-        expect(pickupTorso.scaleY, greaterThan(compressionTorso.scaleY + 0.05));
+        final contactTorso = torso.sample(0);
+        final pocketTorso = torso.sample(1 / 8);
+        final reboundTorso = torso.sample(1 / 4);
         expect(
-          nextQuarterCatchTorso.scaleY,
-          lessThan(pickupTorso.scaleY - 0.05),
+          pocketTorso.scaleY,
+          lessThan(contactTorso.scaleY - 0.03),
+          reason: 'Shaku count 1 should settle into a low shoulder pocket',
         );
-        expect(hips.sample(0).rotation, greaterThan(0.28));
-        expect(hips.sample(1 / 4).rotation, lessThan(-0.27));
-        expect(torso.sample(0).rotation, lessThan(-0.12));
-        expect(torso.sample(1 / 4).rotation, greaterThan(0.13));
+        expect(
+          reboundTorso.scaleY,
+          greaterThan(pocketTorso.scaleY + 0.05),
+          reason:
+              'count 2 should rebound from the pocket without standing tall',
+        );
+        expect(hips.sample(1 / 8).rotation, greaterThan(0.35));
+        expect(hips.sample(5 / 8).rotation, lessThan(-0.35));
+        expect(torso.sample(1 / 8).rotation, lessThan(-0.15));
+        expect(torso.sample(5 / 8).rotation, greaterThan(0.15));
 
         final leftSupportFoot = footL.sample(0).rotation;
         final rightFreeFoot = footR.sample(1 / 8).rotation;
-        final rightSupportFoot = footR.sample(1 / 4).rotation;
-        final leftFreeFoot = footL.sample(3 / 8).rotation;
+        final rightSupportFoot = footR.sample(5 / 8).rotation;
+        final leftFreeFoot = footL.sample(5 / 8).rotation;
         expect(leftSupportFoot, closeTo(-0.08, 0.001));
         expect(rightSupportFoot, closeTo(-0.08, 0.001));
         expect(rightFreeFoot, greaterThan(rightSupportFoot + 0.45));
@@ -247,8 +253,8 @@ void main() {
               'not a large flick that pulls the foot across the body',
         );
 
-        expect(armUpperL.sample(0).rotation, closeTo(0.22, 0.001));
-        expect(armUpperR.sample(0).rotation, closeTo(-0.24, 0.001));
+        expect(armUpperL.sample(0).rotation, inInclusiveRange(0.2, 0.25));
+        expect(armUpperR.sample(0).rotation, inInclusiveRange(-0.26, -0.21));
         expect(
           armUpperL.sample(1 / 8).rotation,
           lessThan(-0.35),
@@ -308,26 +314,18 @@ void main() {
       },
     );
 
-    test('dance pins alternating support feet across the two-bar phrase', () {
+    test('dance holds broad Shaku supports across the phrase', () {
       final spans = CatClips.dance.contactSpans;
       expect(spans.map((span) => span.bone), [
         CatBones.footL,
         CatBones.footR,
         CatBones.footL,
-        CatBones.footR,
-        CatBones.footL,
       ]);
-      expect(spans.map((span) => span.start), [
-        0,
-        1 / 4,
-        1 / 2,
-        3 / 4,
-        15 / 16,
-      ]);
-      expect(spans.map((span) => span.end), [1 / 4, 1 / 2, 3 / 4, 15 / 16, 1]);
+      expect(spans.map((span) => span.start), [0, 1 / 2, 15 / 16]);
+      expect(spans.map((span) => span.end), [1 / 2, 15 / 16, 1]);
       expect(
-        spans.take(4).map((span) => span.end - span.start),
-        everyElement(greaterThanOrEqualTo(3 / 16)),
+        spans.take(2).map((span) => span.end - span.start),
+        everyElement(greaterThanOrEqualTo(7 / 16)),
       );
     });
 

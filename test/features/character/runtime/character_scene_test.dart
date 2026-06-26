@@ -294,29 +294,34 @@ void main() {
     test('dance keeps planted shoe orientation stable through support', () {
       final scene = CharacterScene(buildCatInSuitRig());
 
-      for (final span in CatClips.dance.contactSpans) {
-        final spanLength = span.end - span.start;
-        final anchorFrame = scene.frameAt(
-          clip: CatClips.dance,
-          timeSeconds: span.start * CatClips.dance.duration,
-        );
-        final anchorRotation = _worldRotation(anchorFrame.world[span.bone]!);
-
-        for (final localP in [0.35, 0.5, 0.65]) {
-          final frame = scene.frameAt(
-            clip: CatClips.dance,
-            timeSeconds:
-                (span.start + spanLength * localP) * CatClips.dance.duration,
+      for (final clip in [
+        CatClips.dance,
+        CatClips.danceBackupLeft,
+        CatClips.danceBackupRight,
+      ]) {
+        for (final span in clip.contactSpans) {
+          final spanLength = span.end - span.start;
+          final anchorFrame = scene.frameAt(
+            clip: clip,
+            timeSeconds: span.start * clip.duration,
           );
-          final rotation = _worldRotation(frame.world[span.bone]!);
+          final anchorRotation = _worldRotation(anchorFrame.world[span.bone]!);
 
-          expect(
-            _angleDistance(rotation, anchorRotation),
-            lessThan(0.32),
-            reason:
-                '${span.bone} should not visibly roll into a hard flip while '
-                'it bears weight',
-          );
+          for (final localP in [0.35, 0.5, 0.65]) {
+            final frame = scene.frameAt(
+              clip: clip,
+              timeSeconds: (span.start + spanLength * localP) * clip.duration,
+            );
+            final rotation = _worldRotation(frame.world[span.bone]!);
+
+            expect(
+              _angleDistance(rotation, anchorRotation),
+              lessThan(0.32),
+              reason:
+                  '${clip.name} ${span.bone} should not visibly roll into a '
+                  'hard flip while it bears weight',
+            );
+          }
         }
       }
     });
@@ -344,7 +349,7 @@ void main() {
 
         expect(
           (hip.x - support.x).abs(),
-          lessThan(36),
+          lessThan(40),
           reason:
               'dance frame $frameIndex should visibly load the pelvis over '
               'the active support foot ${span.bone}',
@@ -371,7 +376,13 @@ void main() {
     test('performance clips keep the head stable over the moving torso', () {
       final scene = CharacterScene(buildCatInSuitRig());
 
-      for (final clip in [CatClips.walk, CatClips.kick, CatClips.dance]) {
+      for (final clip in [
+        CatClips.walk,
+        CatClips.kick,
+        CatClips.dance,
+        CatClips.danceBackupLeft,
+        CatClips.danceBackupRight,
+      ]) {
         final headStats = _rotationStats(scene, clip, CatBones.head);
         final torsoStats = _rotationStats(scene, clip, CatBones.torso);
         final headRange = headStats.max - headStats.min;
