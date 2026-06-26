@@ -18,15 +18,14 @@ void main() {
             .map((t) => t.providerType)
             .toList();
 
-        // First nine tiles match the FTUE lineup verbatim.
+        // The first tiles match the FTUE lineup verbatim.
         expect(
-          types.take(9),
+          types.take(AiPickProviderModal.defaultTiles.length),
           AiPickProviderModal.defaultTiles.map((t) => t.providerType),
         );
-        // Remaining five are the advanced types appended alphabetically.
-        expect(types.skip(9).toList(), [
+        // Remaining four are the advanced types appended alphabetically.
+        expect(types.skip(AiPickProviderModal.defaultTiles.length).toList(), [
           InferenceProviderType.genericOpenAi,
-          InferenceProviderType.mistral,
           InferenceProviderType.nebiusAiStudio,
           InferenceProviderType.openRouter,
           InferenceProviderType.whisper,
@@ -44,7 +43,6 @@ void main() {
       () {
         final advancedTypes = <InferenceProviderType>{
           InferenceProviderType.genericOpenAi,
-          InferenceProviderType.mistral,
           InferenceProviderType.nebiusAiStudio,
           InferenceProviderType.openRouter,
           InferenceProviderType.whisper,
@@ -100,7 +98,7 @@ void main() {
       'showFtueChrome:false renders every InferenceProviderType tile when '
       'fed allTypesTiles — guards the dismissed-FTUE add flow and the '
       'in-form type switcher, both of which must surface genericOpenAi, '
-      'OpenRouter, Nebius, Mistral, and Whisper alongside the FTUE seven',
+      'OpenRouter, Nebius, and Whisper alongside the FTUE lineup',
       (tester) async {
         // Tall surface so all fourteen tiles + actions fit without
         // off-stage hit-testing complications.

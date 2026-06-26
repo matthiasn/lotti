@@ -7,12 +7,13 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/animated_modal_item.dart';
 
-/// The three providers surfaced as co-equals. MLX is deliberately excluded from
-/// the FTUE (a multi-GB download has no place in a first session); it stays
-/// available later in Settings.
+/// The primary providers surfaced in the first onboarding row. MLX is
+/// deliberately excluded from the FTUE (a multi-GB download has no place in a
+/// first session); it stays available later in Settings.
 const onboardingPrimaryProviders = <InferenceProviderType>[
-  InferenceProviderType.gemini,
+  InferenceProviderType.melious,
   InferenceProviderType.mistral,
+  InferenceProviderType.gemini,
   InferenceProviderType.alibaba,
 ];
 
@@ -26,6 +27,7 @@ const onboardingMoreProviders = <InferenceProviderType>[
 /// generic AI-settings label — e.g. "Qwen" rather than "Alibaba").
 String onboardingProviderName(AppLocalizations m, InferenceProviderType type) {
   return switch (type) {
+    InferenceProviderType.melious => m.aiProviderMeliousName,
     InferenceProviderType.gemini => m.onboardingConnectGeminiName,
     InferenceProviderType.mistral => m.onboardingConnectMistralName,
     InferenceProviderType.alibaba => m.onboardingConnectQwenName,
@@ -41,6 +43,7 @@ String onboardingProviderTagline(
   InferenceProviderType type,
 ) {
   return switch (type) {
+    InferenceProviderType.melious => m.aiProviderTaglineMelious,
     InferenceProviderType.gemini => m.onboardingConnectGeminiTagline,
     InferenceProviderType.mistral => m.onboardingConnectMistralTagline,
     InferenceProviderType.alibaba => m.onboardingConnectQwenTagline,
@@ -56,6 +59,7 @@ String onboardingProviderTagline(
 /// rest of AI Settings are unaffected.
 Color onboardingProviderBrandColor(InferenceProviderType type) {
   return switch (type) {
+    InferenceProviderType.melious => const Color(0xFF14B8A6), // Melious teal
     InferenceProviderType.gemini => const Color(0xFF4285F4), // Google blue
     InferenceProviderType.mistral => const Color(0xFFFF7000), // Mistral orange
     InferenceProviderType.alibaba => const Color(0xFF615CED), // Qwen violet

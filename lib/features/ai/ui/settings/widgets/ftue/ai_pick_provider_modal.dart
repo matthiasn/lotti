@@ -101,30 +101,28 @@ class AiPickProviderModal extends StatefulWidget {
     super.key,
   });
 
-  /// Default tile lineup matching the design: Gemini (RECOMMENDED) →
-  /// OpenAI → Anthropic (NEW) → Alibaba (NEW) → Melious.ai (NEW) →
-  /// MLX Audio (NEW) → oMLX (DESKTOP ONLY) → Ollama (DESKTOP ONLY) →
-  /// Voxtral (DESKTOP ONLY). Hosted providers land before the local options
-  /// so the embedded/desktop providers stay last in the list. Exposed as a
-  /// static so tests can re-use the same spec the modal ships with without
-  /// instantiating the widget.
+  /// Default tile lineup matching the design: Melious.ai (RECOMMENDED) →
+  /// Mistral → Gemini → Alibaba (NEW) → OpenAI → Anthropic (NEW) → MLX Audio
+  /// (NEW) → oMLX (DESKTOP ONLY) → Ollama (DESKTOP ONLY) → Voxtral
+  /// (DESKTOP ONLY). Hosted providers land before the local options so the
+  /// embedded/desktop providers stay last in the list. Exposed as a static so
+  /// tests can re-use the same spec the modal ships with without instantiating
+  /// the widget.
   static const List<AiPickProviderTileSpec> defaultTiles =
       <AiPickProviderTileSpec>[
         AiPickProviderTileSpec(
-          providerType: InferenceProviderType.gemini,
+          providerType: InferenceProviderType.melious,
           badge: AiPickProviderBadge.recommended,
         ),
-        AiPickProviderTileSpec(providerType: InferenceProviderType.openAi),
-        AiPickProviderTileSpec(
-          providerType: InferenceProviderType.anthropic,
-          badge: AiPickProviderBadge.newcomer,
-        ),
+        AiPickProviderTileSpec(providerType: InferenceProviderType.mistral),
+        AiPickProviderTileSpec(providerType: InferenceProviderType.gemini),
         AiPickProviderTileSpec(
           providerType: InferenceProviderType.alibaba,
           badge: AiPickProviderBadge.newcomer,
         ),
+        AiPickProviderTileSpec(providerType: InferenceProviderType.openAi),
         AiPickProviderTileSpec(
-          providerType: InferenceProviderType.melious,
+          providerType: InferenceProviderType.anthropic,
           badge: AiPickProviderBadge.newcomer,
         ),
         AiPickProviderTileSpec(
@@ -159,7 +157,6 @@ class AiPickProviderModal extends StatefulWidget {
         AiPickProviderTileSpec(
           providerType: InferenceProviderType.genericOpenAi,
         ),
-        AiPickProviderTileSpec(providerType: InferenceProviderType.mistral),
         AiPickProviderTileSpec(
           providerType: InferenceProviderType.nebiusAiStudio,
         ),

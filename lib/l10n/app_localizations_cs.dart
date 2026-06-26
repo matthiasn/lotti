@@ -6563,7 +6563,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingConnectMoreOptions => 'Další možnosti';
 
   @override
-  String get onboardingConnectNotSure => 'S Gemini začneš nejrychleji.';
+  String get onboardingConnectNotSure =>
+      'Melious.ai je doporučená výchozí volba.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

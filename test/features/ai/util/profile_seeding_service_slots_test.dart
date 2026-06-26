@@ -19,6 +19,10 @@ List<AiConfig> _meliousDefaultModelRows({bool includeLegacyFlux = false}) {
       providerModelId: meliousDeepseekV4ProModelId,
     ),
     AiTestDataFactory.createTestModel(
+      id: 'model-melious-whisper',
+      providerModelId: meliousWhisperLargeV3ModelId,
+    ),
+    AiTestDataFactory.createTestModel(
       id: 'model-melious-whisper-turbo',
       providerModelId: meliousWhisperLargeV3TurboModelId,
     ),
@@ -578,6 +582,44 @@ void main() {
         final upgraded = captured.single as AiConfigInferenceProfile;
 
         expect(upgraded.id, profileMeliousId);
+        expect(upgraded.transcriptionModelId, 'model-melious-whisper');
+        expect(upgraded.imageGenerationModelId, 'model-melious-flux-klein-9b');
+      },
+    );
+
+    test(
+      'moves untouched Melious profiles from Whisper Turbo to Whisper v3',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => _meliousDefaultModelRows());
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileMeliousId,
+              name: 'Melious.ai',
+              thinkingModelId: meliousMistralSmall4119BInstructModelId,
+              thinkingHighEndModelId: meliousDeepseekV4ProModelId,
+              imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
+              transcriptionModelId: meliousWhisperLargeV3TurboModelId,
+              imageGenerationModelId: meliousFlux2Klein9BModelId,
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        final upgraded = captured.single as AiConfigInferenceProfile;
+
+        expect(upgraded.id, profileMeliousId);
+        expect(upgraded.transcriptionModelId, 'model-melious-whisper');
         expect(upgraded.imageGenerationModelId, 'model-melious-flux-klein-9b');
       },
     );
@@ -614,6 +656,7 @@ void main() {
         final upgraded = captured.single as AiConfigInferenceProfile;
 
         expect(upgraded.id, profileMeliousId);
+        expect(upgraded.transcriptionModelId, 'model-melious-whisper');
         expect(upgraded.imageGenerationModelId, 'model-melious-flux-klein-9b');
       },
     );
@@ -652,6 +695,7 @@ void main() {
         final upgraded = captured.single as AiConfigInferenceProfile;
 
         expect(upgraded.id, profileMeliousId);
+        expect(upgraded.transcriptionModelId, 'model-melious-whisper');
         expect(upgraded.imageGenerationModelId, 'model-melious-flux-klein-9b');
       },
     );
