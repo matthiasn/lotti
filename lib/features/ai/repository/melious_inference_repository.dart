@@ -38,6 +38,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   static const _providerName = 'MeliousInferenceRepository';
   static const _modelListTimeout = Duration(seconds: 15);
   static const _imageGenerationTimeout = Duration(seconds: 180);
+  static const _imageGenerationWidth = 1792;
+  static const _imageGenerationHeight = 1008;
 
   final CloudInferenceRequestHelpers _helpers;
   final MeliousChatCompletionStreamFactory _chatCompletionStreamFactory;
@@ -417,7 +419,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       'model': model,
       'prompt': prompt,
       'n': 1,
-      'size': '1024x1024',
+      'width': _imageGenerationWidth,
+      'height': _imageGenerationHeight,
       'response_format': 'b64_json',
     };
 

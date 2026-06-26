@@ -49,8 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   static list. Large live catalogs are searchable in the Available Models
   section instead of expanding into one long page. New Melious setups also seed a
   ready-to-use default profile with Mistral Small 4 119B Instruct for thinking
-  and image recognition, DeepSeek V4 Pro for advanced thinking, Flux 2 Dev for
-  image generation, and Whisper Large v3 Turbo for transcription.
+  and image recognition, DeepSeek V4 Pro for advanced thinking, Flux 2 Klein 9B
+  for image generation, and Whisper Large v3 Turbo for transcription.
 - oMLX can now be used for local Whisper Large v3 transcription on Apple
   Silicon. The oMLX model catalog includes Whisper Large v3, Whisper Large v3
   MLX, and Whisper Large v3 Turbo as audio-to-text models, and selecting one
@@ -87,9 +87,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Flux cover art gets its own prompt path.** The AI popup now includes a
   separate *Generate Cover Art (Flux)* action for task-linked notes and voice
   notes. It sends Flux models a short visual scene and mood brief instead of the
-  full task JSON and related-task context, so Melious-hosted Flux 2 Dev gets a
-  clean image prompt for task covers. New and untouched Melious profiles use
-  Flux 2 Dev as their default image-generation model.
+  full task JSON and related-task context, while keeping the same 16:9,
+  center-safe thumbnail composition guidance as the regular cover-art prompt.
+  Melious-hosted Flux 2 Klein 9B gets a clean image prompt for task covers,
+  requests an explicit 16:9 `1792` x `1008` canvas through Melious' FLUX
+  dimensions, and new and untouched Melious profiles use it as their default
+  image-generation model.
 - **AI settings search now matches the rest of the app.** The search field in
   Settings → AI uses the same design-system search component as the journal,
   habits, task-linking and language pickers — one consistent look instead of a

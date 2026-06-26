@@ -238,16 +238,16 @@ flowchart TD
 Melious also has a small curated static catalog used for immediate provider
 setup before a user installs additional live-catalog rows: `deepseek-v4-pro`,
 `gemma-4-26b-a4b`, `minimax-m2.7`, `mistral-small-4-119b-instruct`,
-`deepseek-v4-flash`, `black-forest-labs/flux-2-dev`,
+`deepseek-v4-flash`, `flux-2-klein-9b`,
 `whisper-large-v3`, and `whisper-large-v3-turbo`.
 The default Melious profile uses `mistral-small-4-119b-instruct` for thinking
 and image recognition, `deepseek-v4-pro` for the high-end thinking slot, and
-`black-forest-labs/flux-2-dev` for image generation, and
+`flux-2-klein-9b` for image generation, and
 `whisper-large-v3-turbo` for transcription. FTUE setup creates both Whisper
 rows so users can switch between the regular and Turbo variants. Existing
 untouched default Melious profiles that predate the image-generation slot gain
-Flux 2 Dev during `upgradeExisting()` after the model backfill has created the
-row.
+Flux 2 Klein 9B during `upgradeExisting()` after the model backfill has
+created the row.
 
 Melious and oMLX provider settings also use live catalogs. The provider detail
 page and edit form render the same `AvailableModelsSection`, so endpoint-backed
@@ -432,9 +432,12 @@ Two built-in image-generation skills share that same runtime path:
 - `Generate Cover Art (Flux)` uses `ContextPolicy.taskSummary` as a compact
   cover-art mode. `SkillPromptBuilder` recognizes
   `SkillType.imageGeneration + ContextPolicy.taskSummary` and sends only a
-  short scene plus mood/task clues, with no full task JSON, related-task JSON,
-  or `**Entry Notes:**` wrapper. This is intended for Flux-style image models
-  that perform better with a direct visual story than with application context.
+  short scene plus mood/task clues and explicit 16:9 / central square-safe
+  composition guidance, with no full task JSON, related-task JSON, or
+  `**Entry Notes:**` wrapper. This is intended for Flux-style image models that
+  perform better with a direct visual story than with application context.
+  Melious image generation also passes explicit FLUX dimensions (`1792` x
+  `1008`) so the transport-level request matches the 16:9 cover-art prompt.
 
 Image-generation skills are still hidden for standalone entries and task-only
 surfaces in `availableSkillsForEntityProvider`; cover art needs a linked text
@@ -734,12 +737,12 @@ Operational details from the seeded definitions:
 - `Local (Ollama)` and `Local Gemma 4 (Ollama)` ship with image-analysis automation but no transcription slot
 - `Local Power (oMLX)` uses `Qwen3.6-35B-A3B-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
 - `Local Gemma 4 (oMLX)` uses `gemma-4-26B-A4B-it-QAT-MLX-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
-- `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, DeepSeek V4 Pro for high-end thinking, Flux 2 Dev for image generation, and Whisper Large v3 Turbo for transcription
+- `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, DeepSeek V4 Pro for high-end thinking, Flux 2 Klein 9B for image generation, and Whisper Large v3 Turbo for transcription
 - `Local Gemma 4 Power (Ollama)` currently ships with no default skill assignments
 
 `seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 
-`upgradeExisting()` backfills migration-safe pieces after model rows exist: legacy profile slots that still contain provider-native model IDs are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, untouched Melious profiles gain the Flux 2 Dev image-generation slot, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, model slots, optional slots, and non-empty assignment lists are preserved.
+`upgradeExisting()` backfills migration-safe pieces after model rows exist: legacy profile slots that still contain provider-native model IDs are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, untouched Melious profiles gain the Flux 2 Klein 9B image-generation slot, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, model slots, optional slots, and non-empty assignment lists are preserved.
 
 `ModelPrepopulationService.backfillNewModels()` seeds known model rows for
 configured providers at startup. Known model identity is the

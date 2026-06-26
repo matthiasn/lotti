@@ -292,7 +292,7 @@ void main() {
         );
         expect(
           meliousProfile.imageGenerationModelId,
-          meliousFlux2DevModelId,
+          meliousFlux2Klein9BModelId,
         );
         expect(meliousProfile.isDefault, isTrue);
       },

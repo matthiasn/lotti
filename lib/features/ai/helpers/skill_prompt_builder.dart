@@ -213,10 +213,16 @@ class SkillPromptBuilder {
     if (mood != null) {
       buffer.writeln('Mood and task clues: $mood');
     }
-    buffer.writeln(
-      'Render this as an image story only: no readable text, captions, UI, '
-      'diagrams, logos, or watermark.',
-    );
+    buffer
+      ..writeln(
+        'Format: 16:9 wide cover art. Keep the primary subject and main action '
+        'inside the central square-safe area, away from the top edge, so the '
+        'image still reads after a 1:1 thumbnail crop.',
+      )
+      ..writeln(
+        'Render this as an image story only: no readable text, captions, UI, '
+        'diagrams, logos, or watermark.',
+      );
   }
 
   String? _compactPromptText(

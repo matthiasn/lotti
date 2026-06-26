@@ -259,7 +259,7 @@ void main() {
                     },
                   },
                   {
-                    'id': 'flux-2-dev',
+                    'id': 'flux-2-klein-9b',
                     'object': 'model',
                     'owned_by': 'melious',
                     '_meta': {
@@ -341,7 +341,7 @@ void main() {
         expect(deepseek.description, contains('Context: 1000000 tokens'));
 
         final image = models.singleWhere(
-          (model) => model.providerModelId == 'flux-2-dev',
+          (model) => model.providerModelId == 'flux-2-klein-9b',
         );
         expect(
           image.inputModalities,
@@ -1002,6 +1002,9 @@ void main() {
           final body = jsonDecode(request.body) as Map<String, dynamic>;
           expect(body['model'], equals('flux-2-klein'));
           expect(body['prompt'], equals('a quiet lake'));
+          expect(body.containsKey('size'), isFalse);
+          expect(body['width'], equals(1792));
+          expect(body['height'], equals(1008));
           expect(body['response_format'], equals('b64_json'));
 
           return http.Response(

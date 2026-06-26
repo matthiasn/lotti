@@ -219,7 +219,7 @@ getMistralFtueKnownModels() {
 const String ftueMeliousThinkingModelId =
     meliousMistralSmall4119BInstructModelId;
 const String ftueMeliousAdvancedThinkingModelId = meliousDeepseekV4ProModelId;
-const String ftueMeliousImageGenerationModelId = meliousFlux2DevModelId;
+const String ftueMeliousImageGenerationModelId = meliousFlux2Klein9BModelId;
 const String ftueMeliousWhisperModelId = meliousWhisperLargeV3ModelId;
 const String ftueMeliousWhisperTurboModelId = meliousWhisperLargeV3TurboModelId;
 

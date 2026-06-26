@@ -203,11 +203,13 @@ Create a visually memorable image that:
       systemInstructions: '''
 Create a single coherent cover-art image from a compact visual scene prompt.
 
-Prioritize what should be visible in the picture. Avoid literal text, UI, diagrams, captions, logos, watermarks, and dense symbolic layouts.''',
+Prioritize what should be visible in the picture. Use a 16:9 wide frame whose primary subject and main action stay inside the central square-safe area for thumbnail crops.
+Avoid literal text, UI, diagrams, captions, logos, watermarks, and dense symbolic layouts.''',
       userInstructions: '''
 16:9 cinematic task cover art. Depict one clear visual story based on the details below.
 
-Use a strong centered composition with recognizable subjects and setting. Keep it visually simple enough to work as a small task thumbnail. No readable text, captions, UI, diagrams, logos, or watermark.''',
+Use a strong centered composition with recognizable subjects and setting. Keep the main action in the middle square-safe area, away from the top edge, so it remains legible as a 1:1 thumbnail crop.
+No readable text, captions, UI, diagrams, logos, or watermark.''',
     ),
 
     // -- Prompt generation skills --
