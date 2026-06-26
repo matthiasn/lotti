@@ -150,10 +150,20 @@ class UnifiedAiModal {
             name: 'UnifiedAiPopUpMenu',
           );
 
-          // Determine the linked task ID for profile resolution
-          final linkedTaskId = journalEntity is Task
-              ? journalEntity.id
-              : linkedFromId;
+          // Determine the linked task ID for profile resolution and
+          // persistence. Some task timeline entries arrive without a
+          // `linkedFromId`, so fall back to the link graph in the same way as
+          // cover-art generation.
+          final journalRepo = ref.read(journalRepositoryProvider);
+          final linkedTask = await _resolveLinkedTask(
+            journalEntity: journalEntity,
+            preferredTaskId: journalEntity is Task
+                ? journalEntity.id
+                : linkedFromId,
+            journalRepo: journalRepo,
+          );
+          final linkedTaskId = linkedTask?.id;
+          if (!context.mounted) return;
 
           // Image generation skills need reference image selection first
           if (skill.skillType == SkillType.imageGeneration) {
