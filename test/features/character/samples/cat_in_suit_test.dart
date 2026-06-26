@@ -143,6 +143,10 @@ void main() {
       expect(CatClips.dance.channels.containsKey(CatBones.legUpperL), isTrue);
       expect(CatClips.dance.channels.containsKey(CatBones.armLowerR), isTrue);
       expect(CatClips.dance.channels.containsKey(CatBones.tail6), isTrue);
+      expect(
+        CatClips.dance.limbTargets.map((target) => target.endBoneId),
+        [CatBones.handL, CatBones.handR],
+      );
     });
 
     test(
@@ -159,6 +163,8 @@ void main() {
         expect(right.contactSpans, lead.contactSpans);
         expect(left.contactPinning, lead.contactPinning);
         expect(right.contactPinning, lead.contactPinning);
+        expect(left.limbTargets, lead.limbTargets);
+        expect(right.limbTargets, lead.limbTargets);
         expect(
           left.channels[CatBones.legUpperL]!.sample(p).rotation,
           closeTo(lead.channels[CatBones.legUpperL]!.sample(p).rotation, 1e-9),

@@ -560,7 +560,7 @@ void main() {
 
         expect(
           worstDisplacement.distance,
-          lessThan(12.5),
+          lessThan(10.5),
           reason:
               '${clip.name} hand accent should travel through section '
               'transitions, not snap ${worstDisplacement.boneId} from '
@@ -569,7 +569,7 @@ void main() {
         );
         expect(
           worstAcceleration.magnitude,
-          lessThan(6.5),
+          lessThan(6),
           reason:
               '${clip.name} hand accent should ease through direction changes, '
               'not jerk ${worstAcceleration.boneId} across frames '

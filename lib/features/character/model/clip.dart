@@ -282,9 +282,14 @@ class IkTargetKeyframe {
 }
 
 class KeyframeIkTargetChannel extends IkTargetChannel {
-  const KeyframeIkTargetChannel(this.keys);
+  const KeyframeIkTargetChannel(this.keys, {this.smooth = false});
 
   final List<IkTargetKeyframe> keys;
+
+  /// Periodic Catmull-Rom interpolation for looping target paths. This matches
+  /// [KeyframeChannel.smooth]: the hand/foot travels through authored targets
+  /// with continuous velocity instead of stopping on every beat key.
+  final bool smooth;
 
   @override
   IkTargetPose sample(double p) {
@@ -298,6 +303,13 @@ class KeyframeIkTargetChannel extends IkTargetChannel {
       if (p >= k0.p && p <= k1.p) {
         final span = k1.p - k0.p;
         final local = span == 0 ? 0.0 : (p - k0.p) / span;
+        if (smooth) {
+          return IkTargetPose(
+            x: _spline(i, local, span, (k) => k.x),
+            y: _spline(i, local, span, (k) => k.y),
+            weight: _spline(i, local, span, (k) => k.weight).clamp(0.0, 1.0),
+          );
+        }
         final t = k1.ease.apply(local);
         return IkTargetPose(
           x: k0.x + (k1.x - k0.x) * t,
@@ -311,6 +323,45 @@ class KeyframeIkTargetChannel extends IkTargetChannel {
 
   IkTargetPose _poseOf(IkTargetKeyframe key) =>
       IkTargetPose(x: key.x, y: key.y, weight: key.weight);
+
+  double _spline(
+    int i,
+    double local,
+    double dp,
+    double Function(IkTargetKeyframe) f,
+  ) {
+    final n = keys.length;
+    final period = keys.last.p - keys.first.p;
+    final v1 = f(keys[i]);
+    final v2 = f(keys[i + 1]);
+    final double v0;
+    final double p0;
+    final double v3;
+    final double p3;
+    if (i == 0) {
+      v0 = f(keys[n - 2]);
+      p0 = keys[n - 2].p - period;
+    } else {
+      v0 = f(keys[i - 1]);
+      p0 = keys[i - 1].p;
+    }
+    if (i + 1 == n - 1) {
+      v3 = f(keys[1]);
+      p3 = keys[1].p + period;
+    } else {
+      v3 = f(keys[i + 2]);
+      p3 = keys[i + 2].p;
+    }
+    final m1 = dp * (v2 - v0) / (keys[i + 1].p - p0);
+    final m2 = dp * (v3 - v1) / (p3 - keys[i].p);
+    final t = local;
+    final t2 = t * t;
+    final t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * v1 +
+        (t3 - 2 * t2 + t) * m1 +
+        (-2 * t3 + 3 * t2) * v2 +
+        (t3 - t2) * m2;
+  }
 }
 
 class LimbIkTarget {

@@ -227,6 +227,34 @@ void main() {
       expect(sample.y, closeTo(5, 1e-9));
       expect(sample.weight, closeTo(0.25, 1e-9));
     });
+
+    test('smooth target paths keep moving through pass-through targets', () {
+      const smooth = KeyframeIkTargetChannel([
+        IkTargetKeyframe(p: 0, x: 0, y: 0),
+        IkTargetKeyframe(p: 0.25, x: 12, y: -6),
+        IkTargetKeyframe(p: 0.5, x: 0, y: 0),
+        IkTargetKeyframe(p: 0.75, x: -12, y: 6),
+        IkTargetKeyframe(p: 1, x: 0, y: 0),
+      ], smooth: true);
+      const eased = KeyframeIkTargetChannel([
+        IkTargetKeyframe(p: 0, x: 0, y: 0),
+        IkTargetKeyframe(p: 0.25, x: 12, y: -6),
+        IkTargetKeyframe(p: 0.5, x: 0, y: 0),
+        IkTargetKeyframe(p: 0.75, x: -12, y: 6),
+        IkTargetKeyframe(p: 1, x: 0, y: 0),
+      ]);
+
+      double speedAt(IkTargetChannel channel, double p) {
+        final before = channel.sample(p - 0.01);
+        final after = channel.sample(p + 0.01);
+        final dx = after.x - before.x;
+        final dy = after.y - before.y;
+        return dx * dx + dy * dy;
+      }
+
+      expect(speedAt(smooth, 0.5), greaterThan(1));
+      expect(speedAt(eased, 0.5), lessThan(0.2));
+    });
   });
 
   test('both channel kinds belong to the sealed JointChannel hierarchy', () {
