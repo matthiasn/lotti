@@ -358,6 +358,36 @@ void main() {
       }
     });
 
+    test('dance keeps feet separated through second-half phrase accents', () {
+      final scene = CharacterScene(buildCatInSuitRig());
+
+      for (final frameIndex in [12, 15, 18]) {
+        final timeSeconds = CatClips.dance.duration * frameIndex / 24;
+        final left = _supportPoint(
+          scene,
+          CatClips.dance,
+          CatBones.footL,
+          timeSeconds,
+        );
+        final right = _supportPoint(
+          scene,
+          CatClips.dance,
+          CatBones.footR,
+          timeSeconds,
+        );
+        final separation = (left.x - right.x).abs();
+
+        expect(
+          separation,
+          greaterThan(30),
+          reason:
+              '24-frame dance sample $frameIndex should keep the feet '
+              'separated enough that the leg ribbons do not merge into one '
+              'dark shape',
+        );
+      }
+    });
+
     test('is deterministic: identical scenes resolve identical frames', () {
       final a = CharacterScene(
         buildCatInSuitRig(),
