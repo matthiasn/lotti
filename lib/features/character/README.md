@@ -184,11 +184,12 @@ stateDiagram-v2
   drift for non-loop stage moves and drive contact shadows for looped in-place
   moves without making kick/dance travel. New cycles are **data, not code**.
 - **`DancePhrase`** — choreography-facing authoring for dance clips. It stores
-  a phrase length in frames, labelled support-foot windows, and frame-addressed
-  joint/root keys, then compiles them into the same `GroundSpan`,
-  `KeyframeChannel`, and `KeyframeRootChannel` primitives the engine already
-  samples. This is the handoff point for beat-synced choreography and future
-  per-character dance styles.
+  a phrase length in frames, labelled support-foot windows, load/release frames,
+  free-foot identity, pelvis-distance guardrails, pocket compression targets,
+  and frame-addressed joint/root keys. It compiles those into the same
+  `GroundSpan`, `KeyframeChannel`, and `KeyframeRootChannel` primitives the
+  engine already samples. This is the handoff point for beat-synced
+  choreography, support/weight checks, and future per-character dance styles.
 - **`TemporalMotionAnalyzer`** — a resolved-frame diagnostic over
   `CharacterScene`. It records per-bone frame-to-frame displacement and
   acceleration after clip evaluation, contact pinning, head stabilization, and

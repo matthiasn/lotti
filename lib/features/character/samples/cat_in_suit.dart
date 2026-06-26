@@ -918,24 +918,40 @@ class CatClips {
     supports: [
       DanceSupportSpan(
         footBoneId: CatBones.footL,
+        freeFootBoneId: CatBones.footR,
         startFrame: 0,
         endFrame: 16,
+        loadFrame: 4,
+        releaseFrame: 8,
+        maxPelvisDistance: 40,
+        pocketScaleY: 0.918,
         label: 'left-foot Shaku low pocket',
       ),
       DanceSupportSpan(
         footBoneId: CatBones.footR,
+        freeFootBoneId: CatBones.footL,
         startFrame: 16,
         endFrame: 30,
+        loadFrame: 20,
+        releaseFrame: 24,
+        maxPelvisDistance: 40,
+        pocketScaleY: 0.918,
         label: 'right-foot answer pocket',
       ),
       DanceSupportSpan(
         footBoneId: CatBones.footL,
+        freeFootBoneId: CatBones.footR,
         startFrame: 30,
         endFrame: 32,
+        loadFrame: 31,
+        releaseFrame: 32,
+        maxPelvisDistance: 32,
+        pocketScaleY: 0.956,
         label: 'left-foot loop pickup',
       ),
     ],
   );
+  static DancePhrase get dancePhrase => _dancePhrase;
   static final List<GroundSpan> _danceContactSpans = _dancePhrase
       .contactSpans();
 

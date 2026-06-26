@@ -315,7 +315,9 @@ void main() {
     );
 
     test('dance holds broad Shaku supports across the phrase', () {
+      final phrase = CatClips.dancePhrase;
       final spans = CatClips.dance.contactSpans;
+      expect(phrase.frameCount, 32);
       expect(spans.map((span) => span.bone), [
         CatBones.footL,
         CatBones.footR,
@@ -327,6 +329,20 @@ void main() {
         spans.take(2).map((span) => span.end - span.start),
         everyElement(greaterThanOrEqualTo(7 / 16)),
       );
+      expect(phrase.supports.map((support) => support.label), [
+        'left-foot Shaku low pocket',
+        'right-foot answer pocket',
+        'left-foot loop pickup',
+      ]);
+      expect(phrase.supportAtFrame(4).freeFootBoneId, CatBones.footR);
+      expect(phrase.supportAtFrame(20).freeFootBoneId, CatBones.footL);
+      expect(phrase.supportAtFrame(32).footBoneId, CatBones.footL);
+      expect(phrase.supports.map((support) => support.loadFrame), [4, 20, 31]);
+      expect(phrase.supports.map((support) => support.releaseFrame), [
+        8,
+        24,
+        32,
+      ]);
     });
 
     test('walk and run carry forward locomotion, stage moves do not', () {

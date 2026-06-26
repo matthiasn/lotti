@@ -329,31 +329,51 @@ void main() {
 
     test('dance keeps the pelvis visibly over the active support foot', () {
       final scene = CharacterScene(buildCatInSuitRig());
+      final phrase = CatClips.dancePhrase;
 
       for (var frameIndex = 0; frameIndex < 16; frameIndex++) {
         final p = frameIndex / 16;
-        final span = CatClips.dance.contactSpans.firstWhere(
-          (span) => p >= span.start && p < span.end,
-          orElse: () => CatClips.dance.contactSpans.last,
-        );
+        final support = phrase.supportAtPhase(p);
         final frame = scene.frameAt(
           clip: CatClips.dance,
           timeSeconds: p * CatClips.dance.duration,
         );
         final hip = frame.world[CatBones.hips]!.origin;
-        final support = _supportPoint(
+        final supportPoint = _supportPoint(
           scene,
           CatClips.dance,
-          span.bone,
+          support.footBoneId,
           p * CatClips.dance.duration,
         );
 
         expect(
-          (hip.x - support.x).abs(),
-          lessThan(40),
+          (hip.x - supportPoint.x).abs(),
+          lessThan(support.maxPelvisDistance),
           reason:
               'dance frame $frameIndex should visibly load the pelvis over '
-              'the active support foot ${span.bone}',
+              'the active support foot ${support.footBoneId}',
+        );
+      }
+    });
+
+    test('dance loads declared torso pockets over support frames', () {
+      final scene = CharacterScene(buildCatInSuitRig());
+      final phrase = CatClips.dancePhrase;
+
+      for (final support in phrase.supports) {
+        final p = support.loadFrame / phrase.frameCount;
+        final frame = scene.frameAt(
+          clip: CatClips.dance,
+          timeSeconds: p * CatClips.dance.duration,
+        );
+        final torsoScaleY = _axisScaleY(frame.world[CatBones.torso]!);
+
+        expect(
+          torsoScaleY,
+          lessThanOrEqualTo(support.pocketScaleY + 0.025),
+          reason:
+              '${support.label} should visibly compress the torso at its '
+              'declared load frame',
         );
       }
     });

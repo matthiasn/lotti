@@ -36,6 +36,20 @@ class DancePhrase {
     for (final support in supports) support.toGroundSpan(this),
   ];
 
+  DanceSupportSpan supportAtFrame(int frame) {
+    final wrappedFrame = _wrappedFrame(frame);
+    for (final support in supports) {
+      if (support.containsFrame(wrappedFrame)) return support;
+    }
+    throw StateError('No dance support covers frame $wrappedFrame.');
+  }
+
+  DanceSupportSpan supportAtPhase(double phase) {
+    final normalized = phase - phase.floorToDouble();
+    final frame = (normalized * frameCount).floor();
+    return supportAtFrame(frame);
+  }
+
   Keyframe jointKey(
     int frame, {
     double rotation = 0,
@@ -85,25 +99,69 @@ class DancePhrase {
   void _checkFrame(int frame) {
     RangeError.checkValueInInterval(frame, 0, frameCount, 'frame');
   }
+
+  int _wrappedFrame(int frame) {
+    _checkFrame(frame);
+    return frame == frameCount ? 0 : frame;
+  }
 }
 
 class DanceSupportSpan {
   const DanceSupportSpan({
     required this.footBoneId,
+    required this.freeFootBoneId,
     required this.startFrame,
     required this.endFrame,
+    required this.loadFrame,
+    required this.releaseFrame,
+    required this.maxPelvisDistance,
+    required this.pocketScaleY,
     required this.label,
-  }) : assert(startFrame < endFrame, 'support span must move forward');
+  }) : assert(startFrame < endFrame, 'support span must move forward'),
+       assert(
+         startFrame <= loadFrame && loadFrame < endFrame,
+         'load frame must be inside the support span',
+       ),
+       assert(
+         startFrame < releaseFrame && releaseFrame <= endFrame,
+         'release frame must finish inside the support span',
+       ),
+       assert(maxPelvisDistance > 0, 'max pelvis distance must be positive'),
+       assert(
+         pocketScaleY > 0 && pocketScaleY <= 1,
+         'pocket scale must be a positive compression multiplier',
+       );
 
   final String footBoneId;
+  final String freeFootBoneId;
   final int startFrame;
   final int endFrame;
+
+  /// Strongest body-load frame inside the support. This is where the hips should
+  /// visibly settle over the planted foot and the torso can compress into the
+  /// pocket.
+  final int loadFrame;
+
+  /// Last frame of the support's release. It must stay inside the span so a
+  /// handoff has time to prepare before the next foot takes weight.
+  final int releaseFrame;
+
+  /// Maximum intended world-space horizontal distance from pelvis origin to the
+  /// support-foot contact point during this support. Tests use this to keep the
+  /// pose readable as loaded over one leg instead of drifting away from it.
+  final double maxPelvisDistance;
+
+  /// Intended torso `scaleY` at the load frame. Lower values mean a deeper
+  /// pocket/squash over the support foot.
+  final double pocketScaleY;
 
   /// Human-readable choreographic intent, e.g. "left low pocket".
   ///
   /// The runtime does not use this, but tests and reviewers can point to the
   /// support move by name instead of only by a number.
   final String label;
+
+  bool containsFrame(int frame) => frame >= startFrame && frame < endFrame;
 
   GroundSpan toGroundSpan(DancePhrase phrase) => GroundSpan(
     footBoneId,

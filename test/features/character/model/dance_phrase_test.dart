@@ -8,14 +8,24 @@ void main() {
       supports: [
         DanceSupportSpan(
           footBoneId: 'foot.L',
+          freeFootBoneId: 'foot.R',
           startFrame: 0,
           endFrame: 16,
+          loadFrame: 4,
+          releaseFrame: 8,
+          maxPelvisDistance: 36,
+          pocketScaleY: 0.92,
           label: 'left pocket',
         ),
         DanceSupportSpan(
           footBoneId: 'foot.R',
+          freeFootBoneId: 'foot.L',
           startFrame: 16,
           endFrame: 32,
+          loadFrame: 20,
+          releaseFrame: 24,
+          maxPelvisDistance: 36,
+          pocketScaleY: 0.92,
           label: 'right pocket',
         ),
       ],
@@ -38,6 +48,23 @@ void main() {
         'left pocket',
         'right pocket',
       ]);
+    });
+
+    test('looks up support and weight intent by frame and phase', () {
+      expect(phrase.supportAtFrame(0).footBoneId, 'foot.L');
+      expect(phrase.supportAtFrame(15).footBoneId, 'foot.L');
+      expect(phrase.supportAtFrame(16).footBoneId, 'foot.R');
+      expect(phrase.supportAtFrame(32).footBoneId, 'foot.L');
+      expect(phrase.supportAtPhase(0.62).footBoneId, 'foot.R');
+
+      final rightPocket = phrase.supportAtFrame(20);
+      expect(rightPocket.freeFootBoneId, 'foot.L');
+      expect(rightPocket.loadFrame, 20);
+      expect(rightPocket.releaseFrame, 24);
+      expect(rightPocket.maxPelvisDistance, 36);
+      expect(rightPocket.pocketScaleY, 0.92);
+      expect(rightPocket.containsFrame(31), isTrue);
+      expect(rightPocket.containsFrame(32), isFalse);
     });
 
     test('builds joint channels from frame-addressed keys', () {
@@ -77,8 +104,13 @@ void main() {
       expect(
         () => const DanceSupportSpan(
           footBoneId: 'foot.L',
+          freeFootBoneId: 'foot.R',
           startFrame: 20,
           endFrame: 40,
+          loadFrame: 24,
+          releaseFrame: 32,
+          maxPelvisDistance: 36,
+          pocketScaleY: 0.92,
           label: 'bad',
         ).toGroundSpan(phrase),
         throwsRangeError,
