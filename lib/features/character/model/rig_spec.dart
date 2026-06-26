@@ -10,19 +10,29 @@ class RigSpec {
     required this.name,
     required List<Bone> bones,
     List<LimbRibbonSpec> ribbons = const [],
+    List<SkinnedMeshSpec> meshes = const [],
     this.face,
   }) : bones = List<Bone>.unmodifiable(bones),
        ribbons = List<LimbRibbonSpec>.unmodifiable(ribbons),
+       meshes = List<SkinnedMeshSpec>.unmodifiable(meshes),
        _byId = _buildById(bones),
        _drawOrder = List<Bone>.unmodifiable(_sortedByZ(bones)) {
     _topoOrder = List<Bone>.unmodifiable(_computeTopoOrder(this.bones, _byId));
     _validateRibbons(this.ribbons, _byId);
+    _validateMeshes(this.meshes, _byId);
     _ribbonDrawOrder = List<LimbRibbonSpec>.unmodifiable(
       _sortedRibbons(this.ribbons),
+    );
+    _meshDrawOrder = List<SkinnedMeshSpec>.unmodifiable(
+      _sortedMeshes(this.meshes),
     );
     _ribbonHiddenBoneIds = Set<String>.unmodifiable(
       this.ribbons.expand((r) => r.hiddenBoneIds),
     );
+    _hiddenDrawableBoneIds = Set<String>.unmodifiable({
+      ..._ribbonHiddenBoneIds,
+      ...this.meshes.expand((m) => m.hiddenBoneIds),
+    });
   }
 
   /// Bones sorted ascending by [Bone.z]. Kept as a typed helper so the sort
@@ -44,13 +54,21 @@ class RigSpec {
   /// cardboard capsules.
   final List<LimbRibbonSpec> ribbons;
 
+  /// Optional weighted polygon meshes. Unlike a ribbon, a skinned mesh is not
+  /// restricted to one limb centreline: every vertex can blend between one or
+  /// more bones, so broad surfaces such as a jacket, pelvis, or shoulder mass
+  /// can squash, lean and bend without splitting into rigid cardboard pieces.
+  final List<SkinnedMeshSpec> meshes;
+
   final FaceRig? face;
 
   final Map<String, Bone> _byId;
   final List<Bone> _drawOrder;
   late final List<Bone> _topoOrder;
   late final List<LimbRibbonSpec> _ribbonDrawOrder;
+  late final List<SkinnedMeshSpec> _meshDrawOrder;
   late final Set<String> _ribbonHiddenBoneIds;
+  late final Set<String> _hiddenDrawableBoneIds;
 
   /// Indexes bones by id, rejecting duplicates up front. A map literal would
   /// silently keep the last duplicate while [_computeTopoOrder] still traversed
@@ -75,8 +93,14 @@ class RigSpec {
   /// Ribbons sorted by ascending [LimbRibbonSpec.z] — the fill paint order.
   List<LimbRibbonSpec> get ribbonDrawOrder => _ribbonDrawOrder;
 
+  /// Meshes sorted by ascending [SkinnedMeshSpec.z] — the fill paint order.
+  List<SkinnedMeshSpec> get meshDrawOrder => _meshDrawOrder;
+
   /// Bone ids whose rigid drawables are replaced by ribbons.
   Set<String> get ribbonHiddenBoneIds => _ribbonHiddenBoneIds;
+
+  /// Bone ids whose rigid drawables are replaced by any soft surface.
+  Set<String> get hiddenDrawableBoneIds => _hiddenDrawableBoneIds;
 
   /// Bones ordered so every parent precedes its children — the order forward
   /// kinematics must visit them in.
@@ -123,6 +147,12 @@ class RigSpec {
         return byZ == 0 ? a.id.compareTo(b.id) : byZ;
       });
 
+  static List<SkinnedMeshSpec> _sortedMeshes(List<SkinnedMeshSpec> meshes) =>
+      [...meshes]..sort((a, b) {
+        final byZ = a.z.compareTo(b.z);
+        return byZ == 0 ? a.id.compareTo(b.id) : byZ;
+      });
+
   static void _validateRibbons(
     List<LimbRibbonSpec> ribbons,
     Map<String, Bone> byId,
@@ -165,6 +195,61 @@ class RigSpec {
       }
     }
   }
+
+  static void _validateMeshes(
+    List<SkinnedMeshSpec> meshes,
+    Map<String, Bone> byId,
+  ) {
+    final ids = <String>{};
+    for (final mesh in meshes) {
+      if (!ids.add(mesh.id)) {
+        throw ArgumentError('Duplicate mesh id "${mesh.id}"');
+      }
+      if (mesh.vertices.length < 3) {
+        throw ArgumentError('Mesh "${mesh.id}" needs at least three vertices');
+      }
+      if (mesh.boundary.length < 3) {
+        throw ArgumentError('Mesh "${mesh.id}" needs a boundary loop');
+      }
+      for (final index in mesh.boundary) {
+        if (index < 0 || index >= mesh.vertices.length) {
+          throw ArgumentError(
+            'Mesh "${mesh.id}" boundary index $index is out of range',
+          );
+        }
+      }
+      for (final vertex in mesh.vertices) {
+        if (vertex.influences.isEmpty) {
+          throw ArgumentError('Mesh "${mesh.id}" has an unweighted vertex');
+        }
+        var weight = 0.0;
+        for (final influence in vertex.influences) {
+          if (!byId.containsKey(influence.boneId)) {
+            throw ArgumentError(
+              'Mesh "${mesh.id}" references missing bone "${influence.boneId}"',
+            );
+          }
+          if (influence.weight <= 0) {
+            throw ArgumentError('Mesh "${mesh.id}" weights must be positive');
+          }
+          weight += influence.weight;
+        }
+        if ((weight - 1).abs() > 0.001) {
+          throw ArgumentError(
+            'Mesh "${mesh.id}" vertex weights must sum to 1 '
+            '(got $weight)',
+          );
+        }
+      }
+      for (final boneId in mesh.hiddenBoneIds) {
+        if (!byId.containsKey(boneId)) {
+          throw ArgumentError(
+            'Mesh "${mesh.id}" references missing bone "$boneId"',
+          );
+        }
+      }
+    }
+  }
 }
 
 /// A continuous tapered limb surface drawn through a solved joint chain.
@@ -197,4 +282,54 @@ class LimbRibbonSpec {
   final int? outlineColor;
   final double outlineWidth;
   final int samplesPerSegment;
+}
+
+/// A broad skinned surface made from weighted vertices.
+///
+/// Each vertex stores one or more [MeshInfluence]s. At render time every
+/// influence transforms its local `(x,y)` by that bone's solved world transform;
+/// the weighted sum becomes the final deformed vertex. This is linear blend
+/// skinning, but kept deliberately small for 2D vector surfaces.
+class SkinnedMeshSpec {
+  SkinnedMeshSpec({
+    required this.id,
+    required List<SkinnedMeshVertex> vertices,
+    required List<int> boundary,
+    required this.z,
+    required this.color,
+    List<String> hiddenBoneIds = const [],
+    this.outlineColor,
+    this.outlineWidth = 0,
+  }) : vertices = List<SkinnedMeshVertex>.unmodifiable(vertices),
+       boundary = List<int>.unmodifiable(boundary),
+       hiddenBoneIds = List<String>.unmodifiable(hiddenBoneIds);
+
+  final String id;
+  final List<SkinnedMeshVertex> vertices;
+  final List<int> boundary;
+  final List<String> hiddenBoneIds;
+  final int z;
+  final int color;
+  final int? outlineColor;
+  final double outlineWidth;
+}
+
+class SkinnedMeshVertex {
+  const SkinnedMeshVertex(this.influences);
+
+  final List<MeshInfluence> influences;
+}
+
+class MeshInfluence {
+  const MeshInfluence({
+    required this.boneId,
+    required this.x,
+    required this.y,
+    required this.weight,
+  });
+
+  final String boneId;
+  final double x;
+  final double y;
+  final double weight;
 }

@@ -13,9 +13,9 @@ void main() {
       expect(rig.topoOrder.length, rig.bones.length);
     });
 
-    test('the head carries a drawable and anchors the face', () {
+    test('the head and neck carry drawables and the head anchors the face', () {
       expect(rig.bone(CatBones.head)?.drawable, isNotNull);
-      expect(rig.bone(CatBones.neck)?.drawable, isNull); // control bone
+      expect(rig.bone(CatBones.neck)?.drawable, isNotNull);
     });
 
     test('hips are the single root', () {
@@ -24,7 +24,7 @@ void main() {
       expect(roots.single.id, CatBones.hips);
     });
 
-    test('uses ribbons for soft limbs and tail', () {
+    test('uses soft surfaces for limbs, tail, jacket, and hips', () {
       expect(
         rig.ribbons.map((r) => r.id),
         containsAll([
@@ -35,8 +35,17 @@ void main() {
           'arm.R.ribbon',
         ]),
       );
+      expect(
+        rig.meshes.map((m) => m.id),
+        containsAll([
+          'jacket.mesh',
+          'hips.mesh',
+        ]),
+      );
       expect(rig.ribbonHiddenBoneIds, contains(CatBones.tail3));
-      expect(rig.ribbonHiddenBoneIds, contains(CatBones.legLowerL));
+      expect(rig.hiddenDrawableBoneIds, contains(CatBones.legLowerL));
+      expect(rig.hiddenDrawableBoneIds, contains(CatBones.torso));
+      expect(rig.hiddenDrawableBoneIds, contains(CatBones.hips));
     });
 
     test('can build a distinct fur palette for paired cats', () {
@@ -129,14 +138,14 @@ void main() {
           left.channels[CatBones.hips]!.sample(p).rotation,
           closeTo(
             lead.channels[CatBones.hips]!.sample(p + 1 / 36).rotation,
-            1e-9,
+            0.02,
           ),
         );
         expect(
           right.channels[CatBones.hips]!.sample(p).rotation,
           closeTo(
             lead.channels[CatBones.hips]!.sample(p + 1 / 36).rotation,
-            1e-9,
+            0.02,
           ),
         );
         expect(

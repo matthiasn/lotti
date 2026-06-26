@@ -87,13 +87,35 @@ void main() {
             color: 0xFFFFFFFF,
           ),
         ],
+        meshes: [
+          SkinnedMeshSpec(
+            id: 'mesh',
+            vertices: const [
+              SkinnedMeshVertex([
+                MeshInfluence(boneId: 'a', x: 0, y: 0, weight: 1),
+              ]),
+              SkinnedMeshVertex([
+                MeshInfluence(boneId: 'a', x: 1, y: 0, weight: 1),
+              ]),
+              SkinnedMeshVertex([
+                MeshInfluence(boneId: 'a', x: 0, y: 1, weight: 1),
+              ]),
+            ],
+            boundary: const [0, 1, 2],
+            z: 0,
+            color: 0xFFFFFFFF,
+          ),
+        ],
       );
       expect(rig.bones.clear, throwsUnsupportedError);
       expect(rig.drawOrder.clear, throwsUnsupportedError);
       expect(rig.topoOrder.clear, throwsUnsupportedError);
       expect(rig.ribbons.clear, throwsUnsupportedError);
       expect(rig.ribbonDrawOrder.clear, throwsUnsupportedError);
+      expect(rig.meshes.clear, throwsUnsupportedError);
+      expect(rig.meshDrawOrder.clear, throwsUnsupportedError);
       expect(rig.ribbonHiddenBoneIds.clear, throwsUnsupportedError);
+      expect(rig.hiddenDrawableBoneIds.clear, throwsUnsupportedError);
     });
 
     test('throws on a parent cycle instead of overflowing the stack', () {
@@ -146,6 +168,56 @@ void main() {
       expect(rig.ribbonHiddenBoneIds, {'upper', 'lower'});
     });
 
+    test('sorts skinned meshes and exposes hidden drawable ids', () {
+      final rig = RigSpec(
+        name: 'r',
+        bones: const [
+          Bone(id: 'root', parent: null, pivotX: 0, pivotY: 0, z: 0),
+          Bone(id: 'child', parent: 'root', pivotX: 0, pivotY: 10, z: 1),
+        ],
+        meshes: [
+          SkinnedMeshSpec(
+            id: 'front',
+            vertices: const [
+              SkinnedMeshVertex([
+                MeshInfluence(boneId: 'root', x: 0, y: 0, weight: 1),
+              ]),
+              SkinnedMeshVertex([
+                MeshInfluence(boneId: 'child', x: 1, y: 0, weight: 1),
+              ]),
+              SkinnedMeshVertex([
+                MeshInfluence(boneId: 'root', x: 0, y: 1, weight: 1),
+              ]),
+            ],
+            boundary: const [0, 1, 2],
+            hiddenBoneIds: const ['child'],
+            z: 8,
+            color: 0xFFFFFFFF,
+          ),
+          SkinnedMeshSpec(
+            id: 'back',
+            vertices: const [
+              SkinnedMeshVertex([
+                MeshInfluence(boneId: 'root', x: 0, y: 0, weight: 1),
+              ]),
+              SkinnedMeshVertex([
+                MeshInfluence(boneId: 'child', x: 1, y: 0, weight: 1),
+              ]),
+              SkinnedMeshVertex([
+                MeshInfluence(boneId: 'root', x: 0, y: 1, weight: 1),
+              ]),
+            ],
+            boundary: const [0, 1, 2],
+            z: 4,
+            color: 0xFFFFFFFF,
+          ),
+        ],
+      );
+
+      expect(rig.meshDrawOrder.map((m) => m.id), ['back', 'front']);
+      expect(rig.hiddenDrawableBoneIds, {'child'});
+    });
+
     test('throws when a ribbon references a missing bone', () {
       expect(
         () => RigSpec(
@@ -168,6 +240,80 @@ void main() {
             (e) => e.message,
             'message',
             contains('missing bone'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when a skinned mesh references a missing bone', () {
+      expect(
+        () => RigSpec(
+          name: 'r',
+          bones: const [
+            Bone(id: 'a', parent: null, pivotX: 0, pivotY: 0, z: 0),
+          ],
+          meshes: [
+            SkinnedMeshSpec(
+              id: 'bad',
+              vertices: const [
+                SkinnedMeshVertex([
+                  MeshInfluence(boneId: 'a', x: 0, y: 0, weight: 1),
+                ]),
+                SkinnedMeshVertex([
+                  MeshInfluence(boneId: 'missing', x: 1, y: 0, weight: 1),
+                ]),
+                SkinnedMeshVertex([
+                  MeshInfluence(boneId: 'a', x: 0, y: 1, weight: 1),
+                ]),
+              ],
+              boundary: const [0, 1, 2],
+              z: 0,
+              color: 0xFFFFFFFF,
+            ),
+          ],
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('missing bone'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when skinned mesh vertex weights do not sum to one', () {
+      expect(
+        () => RigSpec(
+          name: 'r',
+          bones: const [
+            Bone(id: 'a', parent: null, pivotX: 0, pivotY: 0, z: 0),
+          ],
+          meshes: [
+            SkinnedMeshSpec(
+              id: 'bad',
+              vertices: const [
+                SkinnedMeshVertex([
+                  MeshInfluence(boneId: 'a', x: 0, y: 0, weight: 0.5),
+                ]),
+                SkinnedMeshVertex([
+                  MeshInfluence(boneId: 'a', x: 1, y: 0, weight: 1),
+                ]),
+                SkinnedMeshVertex([
+                  MeshInfluence(boneId: 'a', x: 0, y: 1, weight: 1),
+                ]),
+              ],
+              boundary: const [0, 1, 2],
+              z: 0,
+              color: 0xFFFFFFFF,
+            ),
+          ],
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('sum to 1'),
           ),
         ),
       );

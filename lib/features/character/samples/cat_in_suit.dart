@@ -16,7 +16,6 @@ import 'package:lotti/features/character/model/rig_spec.dart';
 // Palette (ARGB). Kept local to the sample; real characters carry their own
 // colours in the rig art (plan decision D6 — no design-system colour tokens).
 const int _suit = 0xFF2E3A59; // navy jacket
-const int _suitRear = 0xFF26314D; // slightly darker rear arm
 const int _trouser = 0xFF26304A; // darker navy
 const int _trouserRear = 0xFF202941; // slightly darker rear leg
 const int _fur = 0xFFE8A55A; // orange tabby
@@ -287,29 +286,29 @@ RigSpec buildCatInSuitRig({
       id: CatBones.legQuadR,
       parent: CatBones.legUpperR,
       pivotX: 2,
-      pivotY: 28,
+      pivotY: 31,
       z: 3,
     ),
     Bone(
       id: CatBones.legLowerR,
       parent: CatBones.legUpperR,
       pivotX: 0,
-      pivotY: 50,
+      pivotY: 55,
       z: 4,
-      drawable: _tapered(24, 16, 50, _trouserRear, dy: 20),
+      drawable: _tapered(24, 16, 56, _trouserRear, dy: 23),
     ),
     const Bone(
       id: CatBones.legCalfR,
       parent: CatBones.legLowerR,
       pivotX: 1.5,
-      pivotY: 24,
+      pivotY: 27,
       z: 4,
     ),
     const Bone(
       id: CatBones.footR,
       parent: CatBones.legLowerR,
       pivotX: 0,
-      pivotY: 42,
+      pivotY: 48,
       z: 5,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
@@ -341,29 +340,29 @@ RigSpec buildCatInSuitRig({
       id: CatBones.legQuadL,
       parent: CatBones.legUpperL,
       pivotX: -2,
-      pivotY: 28,
+      pivotY: 31,
       z: 6,
     ),
     Bone(
       id: CatBones.legLowerL,
       parent: CatBones.legUpperL,
       pivotX: 0,
-      pivotY: 50,
+      pivotY: 55,
       z: 7,
-      drawable: _tapered(24, 16, 50, _trouser, dy: 20),
+      drawable: _tapered(24, 16, 56, _trouser, dy: 23),
     ),
     const Bone(
       id: CatBones.legCalfL,
       parent: CatBones.legLowerL,
       pivotX: -1.5,
-      pivotY: 24,
+      pivotY: 27,
       z: 7,
     ),
     const Bone(
       id: CatBones.footL,
       parent: CatBones.legLowerL,
       pivotX: 0,
-      pivotY: 42,
+      pivotY: 48,
       z: 8,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
@@ -405,13 +404,13 @@ RigSpec buildCatInSuitRig({
     Bone(
       id: CatBones.armUpperR,
       parent: CatBones.torso,
-      pivotX: 29,
-      pivotY: -64,
+      pivotX: 35,
+      pivotY: -56,
       // Starts under the jacket shoulder instead of on top of it; the torso owns
       // the broad shoulder line, while the arm reads as a sleeve hanging from it.
       z: 15,
       restRotation: -0.06,
-      drawable: _tapered(22, 17, 56, _suitRear, dy: 23),
+      drawable: _tapered(22, 17, 56, _suit, dy: 23),
     ),
     const Bone(
       id: CatBones.armBicepR,
@@ -426,7 +425,7 @@ RigSpec buildCatInSuitRig({
       pivotX: 0,
       pivotY: 48,
       z: 16,
-      drawable: _tapered(18, 13, 50, _suitRear, dy: 20),
+      drawable: _tapered(18, 13, 50, _suit, dy: 20),
     ),
     Bone(
       id: CatBones.handR,
@@ -508,8 +507,8 @@ RigSpec buildCatInSuitRig({
     Bone(
       id: CatBones.armUpperL,
       parent: CatBones.torso,
-      pivotX: -29,
-      pivotY: -64,
+      pivotX: -35,
+      pivotY: -56,
       z: 16,
       restRotation: 0.06,
       drawable: _tapered(22, 17, 56, _suit, dy: 23),
@@ -614,13 +613,25 @@ RigSpec buildCatInSuitRig({
       ),
     ),
 
-    // Neck (control) + head.
-    const Bone(
+    // Neck: visible bridge tucked behind the head and collar. Without this the
+    // head reads pasted directly onto the jacket, especially when the torso
+    // mesh jiggles under it.
+    Bone(
       id: CatBones.neck,
       parent: CatBones.torso,
       pivotX: 0,
       pivotY: -84,
       z: 19,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 24,
+        height: 24,
+        dy: -4,
+        cornerRadius: 10,
+        color: palette.furDark,
+        outlineColor: _outline,
+        outlineWidth: 2,
+      ),
     ),
     Bone(
       id: CatBones.head,
@@ -630,9 +641,9 @@ RigSpec buildCatInSuitRig({
       z: 20,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
-        width: 78,
-        height: 72,
-        dy: -30,
+        width: 72,
+        height: 66,
+        dy: -28,
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -705,7 +716,7 @@ RigSpec buildCatInSuitRig({
       hiddenBoneIds: const [CatBones.legUpperR, CatBones.legLowerR],
       // Athletic leg profile: strong thigh under the hip, a knee pinch, then a
       // muscular calf bulge tapering to the ankle.
-      halfWidths: const [14, 13.2, 8.2, 10, 5.7],
+      halfWidths: const [13, 12.4, 7.8, 9.6, 5.4],
       z: 3,
       color: _trouserRear,
       outlineColor: _outline,
@@ -722,7 +733,7 @@ RigSpec buildCatInSuitRig({
         CatBones.footL,
       ],
       hiddenBoneIds: const [CatBones.legUpperL, CatBones.legLowerL],
-      halfWidths: const [14, 13.2, 8.2, 10, 5.7],
+      halfWidths: const [13, 12.4, 7.8, 9.6, 5.4],
       z: 6,
       color: _trouser,
       outlineColor: _outline,
@@ -741,7 +752,7 @@ RigSpec buildCatInSuitRig({
       // Broad shoulder into a bicep swell, then a narrower forearm/wrist.
       halfWidths: const [11.6, 12.2, 8.6, 5.5],
       z: 15,
-      color: _suitRear,
+      color: _suit,
       outlineColor: _outline,
       outlineWidth: 2,
       samplesPerSegment: 12,
@@ -764,10 +775,125 @@ RigSpec buildCatInSuitRig({
     ),
   ];
 
+  final meshes = <SkinnedMeshSpec>[
+    SkinnedMeshSpec(
+      id: 'hips.mesh',
+      vertices: const [
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: -22, y: 7, weight: 0.3),
+          MeshInfluence(boneId: CatBones.hips, x: -22, y: 2, weight: 0.7),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: -8, y: 11, weight: 0.24),
+          MeshInfluence(boneId: CatBones.hips, x: -10, y: 6, weight: 0.76),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: 8, y: 11, weight: 0.24),
+          MeshInfluence(boneId: CatBones.hips, x: 10, y: 6, weight: 0.76),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: 22, y: 7, weight: 0.3),
+          MeshInfluence(boneId: CatBones.hips, x: 22, y: 2, weight: 0.7),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.hips, x: 25, y: 10, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.hips, x: 20, y: 21, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.hips, x: 10, y: 29, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.hips, x: 0, y: 31, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.hips, x: -10, y: 29, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.hips, x: -20, y: 21, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.hips, x: -25, y: 10, weight: 1),
+        ]),
+      ],
+      boundary: const [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      hiddenBoneIds: const [CatBones.hips],
+      z: 9,
+      color: _trouser,
+      outlineColor: _outline,
+      outlineWidth: 2,
+    ),
+    SkinnedMeshSpec(
+      id: 'jacket.mesh',
+      vertices: const [
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: -28, y: -82, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: -10, y: -88, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: 10, y: -88, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: 28, y: -82, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: 47, y: -62, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: 42, y: -38, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: 28, y: -14, weight: 0.9),
+          MeshInfluence(boneId: CatBones.hips, x: 28, y: -2, weight: 0.1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: 20, y: 10, weight: 0.72),
+          MeshInfluence(boneId: CatBones.hips, x: 22, y: 8, weight: 0.28),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: 8, y: 18, weight: 0.62),
+          MeshInfluence(boneId: CatBones.hips, x: 10, y: 20, weight: 0.38),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: 0, y: 20, weight: 0.58),
+          MeshInfluence(boneId: CatBones.hips, x: 0, y: 21, weight: 0.42),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: -8, y: 18, weight: 0.62),
+          MeshInfluence(boneId: CatBones.hips, x: -10, y: 20, weight: 0.38),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: -20, y: 10, weight: 0.72),
+          MeshInfluence(boneId: CatBones.hips, x: -22, y: 8, weight: 0.28),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: -28, y: -14, weight: 0.9),
+          MeshInfluence(boneId: CatBones.hips, x: -28, y: -2, weight: 0.1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: -42, y: -38, weight: 1),
+        ]),
+        SkinnedMeshVertex([
+          MeshInfluence(boneId: CatBones.torso, x: -47, y: -62, weight: 1),
+        ]),
+      ],
+      boundary: const [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+      hiddenBoneIds: const [CatBones.torso],
+      z: 13,
+      color: _suit,
+      outlineColor: _outline,
+      outlineWidth: 2,
+    ),
+  ];
+
   return RigSpec(
     name: 'cat_in_suit',
     bones: bones,
     ribbons: ribbons,
+    meshes: meshes,
     face: face,
   );
 }
@@ -1196,34 +1322,46 @@ class CatClips {
     Keyframe(p: 1, rotation: -0.025, scaleY: 0.93, scaleX: 1.036),
   ];
   static const _danceNeckKeys = [
-    Keyframe(p: 0, rotation: -0.176),
-    Keyframe(p: 1 / 12, rotation: -0.244),
-    Keyframe(p: 2 / 12, rotation: 0.176),
-    Keyframe(p: 3 / 12, rotation: 0.244),
-    Keyframe(p: 4 / 12, rotation: -0.176),
-    Keyframe(p: 5 / 12, rotation: -0.244),
-    Keyframe(p: 6 / 12, rotation: 0.176),
-    Keyframe(p: 7 / 12, rotation: 0.244),
-    Keyframe(p: 8 / 12, rotation: -0.189),
-    Keyframe(p: 9 / 12, rotation: -0.252),
-    Keyframe(p: 10 / 12, rotation: 0.189),
-    Keyframe(p: 11 / 12, rotation: 0.252),
-    Keyframe(p: 1, rotation: -0.176),
+    Keyframe(p: 0, rotation: -0.205, scaleY: 1.075, scaleX: 0.965),
+    Keyframe(p: 1 / 24, rotation: -0.04, scaleY: 1.029, scaleX: 0.986),
+    Keyframe(p: 1 / 12, rotation: -0.29, scaleY: 1.05, scaleX: 0.977),
+    Keyframe(p: 1 / 8, rotation: -0.025, scaleY: 1.064, scaleX: 0.97),
+    Keyframe(p: 2 / 12, rotation: 0.205, scaleY: 1.075, scaleX: 0.965),
+    Keyframe(p: 5 / 24, rotation: 0.04, scaleY: 1.029, scaleX: 0.986),
+    Keyframe(p: 3 / 12, rotation: 0.29, scaleY: 1.05, scaleX: 0.977),
+    Keyframe(p: 7 / 24, rotation: 0.025, scaleY: 1.064, scaleX: 0.97),
+    Keyframe(p: 4 / 12, rotation: -0.205, scaleY: 1.075, scaleX: 0.965),
+    Keyframe(p: 3 / 8, rotation: -0.04, scaleY: 1.029, scaleX: 0.986),
+    Keyframe(p: 5 / 12, rotation: -0.29, scaleY: 1.05, scaleX: 0.977),
+    Keyframe(p: 11 / 24, rotation: -0.025, scaleY: 1.064, scaleX: 0.97),
+    Keyframe(p: 6 / 12, rotation: 0.205, scaleY: 1.075, scaleX: 0.965),
+    Keyframe(p: 13 / 24, rotation: 0.04, scaleY: 1.029, scaleX: 0.986),
+    Keyframe(p: 7 / 12, rotation: 0.29, scaleY: 1.05, scaleX: 0.977),
+    Keyframe(p: 5 / 8, rotation: 0.025, scaleY: 1.064, scaleX: 0.97),
+    Keyframe(p: 8 / 12, rotation: -0.22, scaleY: 1.081, scaleX: 0.962),
+    Keyframe(p: 17 / 24, rotation: -0.045, scaleY: 1.031, scaleX: 0.984),
+    Keyframe(p: 9 / 12, rotation: -0.305, scaleY: 1.053, scaleX: 0.975),
+    Keyframe(p: 19 / 24, rotation: -0.03, scaleY: 1.066, scaleX: 0.969),
+    Keyframe(p: 10 / 12, rotation: 0.22, scaleY: 1.081, scaleX: 0.962),
+    Keyframe(p: 7 / 8, rotation: 0.045, scaleY: 1.031, scaleX: 0.984),
+    Keyframe(p: 11 / 12, rotation: 0.305, scaleY: 1.053, scaleX: 0.975),
+    Keyframe(p: 23 / 24, rotation: 0.03, scaleY: 1.066, scaleX: 0.969),
+    Keyframe(p: 1, rotation: -0.205, scaleY: 1.075, scaleX: 0.965),
   ];
   static const _danceHeadKeys = [
-    Keyframe(p: 0, rotation: -0.053),
-    Keyframe(p: 1 / 12, rotation: -0.073),
-    Keyframe(p: 2 / 12, rotation: 0.053),
-    Keyframe(p: 3 / 12, rotation: 0.073),
-    Keyframe(p: 4 / 12, rotation: -0.053),
-    Keyframe(p: 5 / 12, rotation: -0.073),
-    Keyframe(p: 6 / 12, rotation: 0.053),
-    Keyframe(p: 7 / 12, rotation: 0.073),
-    Keyframe(p: 8 / 12, rotation: -0.057),
-    Keyframe(p: 9 / 12, rotation: -0.076),
-    Keyframe(p: 10 / 12, rotation: 0.057),
-    Keyframe(p: 11 / 12, rotation: 0.076),
-    Keyframe(p: 1, rotation: -0.053),
+    Keyframe(p: 0, rotation: -0.004),
+    Keyframe(p: 1 / 12, rotation: -0.006),
+    Keyframe(p: 2 / 12, rotation: 0.004),
+    Keyframe(p: 3 / 12, rotation: 0.006),
+    Keyframe(p: 4 / 12, rotation: -0.004),
+    Keyframe(p: 5 / 12, rotation: -0.006),
+    Keyframe(p: 6 / 12, rotation: 0.004),
+    Keyframe(p: 7 / 12, rotation: 0.006),
+    Keyframe(p: 8 / 12, rotation: -0.005),
+    Keyframe(p: 9 / 12, rotation: -0.007),
+    Keyframe(p: 10 / 12, rotation: 0.005),
+    Keyframe(p: 11 / 12, rotation: 0.007),
+    Keyframe(p: 1, rotation: -0.004),
   ];
   static const _danceArmUpperLKeys = [
     Keyframe(p: 0, rotation: 1.5),
@@ -1814,36 +1952,36 @@ class CatClips {
     ],
     root: LayeredRootChannel([
       KeyframeRootChannel([
-        RootKeyframe(p: 0, dx: -5.4, dy: 10, rotation: -0.006),
-        RootKeyframe(p: 1 / 24, dx: -6.2, dy: 4, rotation: -0.008),
-        RootKeyframe(p: 1 / 12, dx: -5.8, dy: 7, rotation: -0.009),
-        RootKeyframe(p: 1 / 8, dx: -2.2, dy: 5, rotation: -0.003),
-        RootKeyframe(p: 2 / 12, dx: 5.4, dy: 10, rotation: 0.006),
-        RootKeyframe(p: 5 / 24, dx: 6.2, dy: 4, rotation: 0.008),
-        RootKeyframe(p: 3 / 12, dx: 5.8, dy: 7, rotation: 0.009),
-        RootKeyframe(p: 7 / 24, dx: 2.2, dy: 5, rotation: 0.003),
-        RootKeyframe(p: 4 / 12, dx: -5.4, dy: 10, rotation: -0.006),
-        RootKeyframe(p: 3 / 8, dx: -6.2, dy: 4, rotation: -0.008),
-        RootKeyframe(p: 5 / 12, dx: -5.8, dy: 7, rotation: -0.009),
-        RootKeyframe(p: 11 / 24, dx: -2.2, dy: 5, rotation: -0.003),
-        RootKeyframe(p: 6 / 12, dx: 5.4, dy: 10, rotation: 0.006),
-        RootKeyframe(p: 13 / 24, dx: 6.2, dy: 4, rotation: 0.008),
-        RootKeyframe(p: 7 / 12, dx: 5.8, dy: 7, rotation: 0.009),
-        RootKeyframe(p: 5 / 8, dx: 2.2, dy: 5, rotation: 0.003),
-        RootKeyframe(p: 8 / 12, dx: -5.6, dy: 10, rotation: -0.007),
-        RootKeyframe(p: 17 / 24, dx: -6.4, dy: 4, rotation: -0.009),
-        RootKeyframe(p: 53 / 72, dx: -6.6, dy: 5, rotation: -0.01),
-        RootKeyframe(p: 9 / 12, dx: -6, dy: 7, rotation: -0.011),
-        RootKeyframe(p: 7 / 9, dx: -3.4, dy: 5, rotation: -0.006),
-        RootKeyframe(p: 10 / 12, dx: 5.6, dy: 10, rotation: 0.007),
-        RootKeyframe(p: 7 / 8, dx: 6.4, dy: 4, rotation: 0.009),
-        RootKeyframe(p: 65 / 72, dx: 6.6, dy: 5, rotation: 0.01),
-        RootKeyframe(p: 11 / 12, dx: 6, dy: 7, rotation: 0.011),
-        RootKeyframe(p: 17 / 18, dx: 3.4, dy: 5, rotation: 0.006),
-        RootKeyframe(p: 1, dx: -5.4, dy: 10, rotation: -0.006),
+        RootKeyframe(p: 0, dx: -5.4, dy: 6, rotation: -0.006),
+        RootKeyframe(p: 1 / 24, dx: -6.2, dy: 2.5, rotation: -0.008),
+        RootKeyframe(p: 1 / 12, dx: -5.8, dy: 4.2, rotation: -0.009),
+        RootKeyframe(p: 1 / 8, dx: -2.2, dy: 3.2, rotation: -0.003),
+        RootKeyframe(p: 2 / 12, dx: 5.4, dy: 6, rotation: 0.006),
+        RootKeyframe(p: 5 / 24, dx: 6.2, dy: 2.5, rotation: 0.008),
+        RootKeyframe(p: 3 / 12, dx: 5.8, dy: 4.2, rotation: 0.009),
+        RootKeyframe(p: 7 / 24, dx: 2.2, dy: 3.2, rotation: 0.003),
+        RootKeyframe(p: 4 / 12, dx: -5.4, dy: 6, rotation: -0.006),
+        RootKeyframe(p: 3 / 8, dx: -6.2, dy: 2.5, rotation: -0.008),
+        RootKeyframe(p: 5 / 12, dx: -5.8, dy: 4.2, rotation: -0.009),
+        RootKeyframe(p: 11 / 24, dx: -2.2, dy: 3.2, rotation: -0.003),
+        RootKeyframe(p: 6 / 12, dx: 5.4, dy: 6, rotation: 0.006),
+        RootKeyframe(p: 13 / 24, dx: 6.2, dy: 2.5, rotation: 0.008),
+        RootKeyframe(p: 7 / 12, dx: 5.8, dy: 4.2, rotation: 0.009),
+        RootKeyframe(p: 5 / 8, dx: 2.2, dy: 3.2, rotation: 0.003),
+        RootKeyframe(p: 8 / 12, dx: -5.6, dy: 6.2, rotation: -0.007),
+        RootKeyframe(p: 17 / 24, dx: -6.4, dy: 2.5, rotation: -0.009),
+        RootKeyframe(p: 53 / 72, dx: -6.6, dy: 3.2, rotation: -0.01),
+        RootKeyframe(p: 9 / 12, dx: -6, dy: 4.3, rotation: -0.011),
+        RootKeyframe(p: 7 / 9, dx: -3.4, dy: 3.2, rotation: -0.006),
+        RootKeyframe(p: 10 / 12, dx: 5.6, dy: 6.2, rotation: 0.007),
+        RootKeyframe(p: 7 / 8, dx: 6.4, dy: 2.5, rotation: 0.009),
+        RootKeyframe(p: 65 / 72, dx: 6.6, dy: 3.2, rotation: 0.01),
+        RootKeyframe(p: 11 / 12, dx: 6, dy: 4.3, rotation: 0.011),
+        RootKeyframe(p: 17 / 18, dx: 3.4, dy: 3.2, rotation: 0.006),
+        RootKeyframe(p: 1, dx: -5.4, dy: 6, rotation: -0.006),
       ]),
       SineRootChannel(
-        bobAmplitude: -2.2,
+        bobAmplitude: -1.05,
         bobPhase: 0.0625,
         bobHarmonic: 12,
         leanAmplitude: 0.002,
@@ -1851,7 +1989,7 @@ class CatClips {
       ),
       SineRootChannel(
         // Tiny double-time pulse keeps the torso alive between count hits.
-        bobAmplitude: -0.32,
+        bobAmplitude: -0.16,
         bobPhase: 0.02,
         bobHarmonic: 24,
         leanAmplitude: 0.0008,
@@ -1863,8 +2001,34 @@ class CatClips {
       // A compact two-step groove: hips lead, chest counters, head stays
       // mostly locked to the viewer so the dance reads as body rhythm instead
       // of a wobbling face.
-      CatBones.hips: KeyframeChannel(_danceHipKeys, smooth: true),
-      CatBones.torso: KeyframeChannel(_danceTorsoKeys, smooth: true),
+      CatBones.hips: LayeredJointChannel([
+        KeyframeChannel(_danceHipKeys, smooth: true),
+        SineChannel(
+          harmonicAmplitude: 0.014,
+          harmonicPhase: 0.015,
+          harmonicMultiplier: 24,
+          scaleXAmplitude: 0.006,
+          scaleXPhase: 0.015,
+          scaleXHarmonic: 24,
+          scaleYAmplitude: -0.005,
+          scaleYPhase: 0.015,
+          scaleYHarmonic: 24,
+        ),
+      ]),
+      CatBones.torso: LayeredJointChannel([
+        KeyframeChannel(_danceTorsoKeys, smooth: true),
+        SineChannel(
+          harmonicAmplitude: 0.012,
+          harmonicPhase: 0.04,
+          harmonicMultiplier: 24,
+          scaleXAmplitude: -0.012,
+          scaleXPhase: 0.04,
+          scaleXHarmonic: 24,
+          scaleYAmplitude: 0.014,
+          scaleYPhase: 0.04,
+          scaleYHarmonic: 24,
+        ),
+      ]),
       CatBones.neck: KeyframeChannel(_danceNeckKeys, smooth: true),
       CatBones.head: KeyframeChannel(_danceHeadKeys, smooth: true),
 
@@ -1940,16 +2104,42 @@ class CatClips {
       root: base.root,
       channels: {
         ...base.channels,
-        CatBones.hips: KeyframeChannel(
-          _danceHipKeys,
-          phase: bodyPhase,
-          smooth: true,
-        ),
-        CatBones.torso: KeyframeChannel(
-          _danceTorsoKeys,
-          phase: bodyPhase,
-          smooth: true,
-        ),
+        CatBones.hips: LayeredJointChannel([
+          KeyframeChannel(
+            _danceHipKeys,
+            phase: bodyPhase,
+            smooth: true,
+          ),
+          SineChannel(
+            harmonicAmplitude: 0.012,
+            harmonicPhase: bodyPhase + 0.015,
+            harmonicMultiplier: 24,
+            scaleXAmplitude: 0.005,
+            scaleXPhase: bodyPhase + 0.015,
+            scaleXHarmonic: 24,
+            scaleYAmplitude: -0.004,
+            scaleYPhase: bodyPhase + 0.015,
+            scaleYHarmonic: 24,
+          ),
+        ]),
+        CatBones.torso: LayeredJointChannel([
+          KeyframeChannel(
+            _danceTorsoKeys,
+            phase: bodyPhase,
+            smooth: true,
+          ),
+          SineChannel(
+            harmonicAmplitude: 0.01,
+            harmonicPhase: bodyPhase + 0.04,
+            harmonicMultiplier: 24,
+            scaleXAmplitude: -0.01,
+            scaleXPhase: bodyPhase + 0.04,
+            scaleXHarmonic: 24,
+            scaleYAmplitude: 0.012,
+            scaleYPhase: bodyPhase + 0.04,
+            scaleYHarmonic: 24,
+          ),
+        ]),
         CatBones.neck: KeyframeChannel(
           _danceNeckKeys,
           phase: bodyPhase,

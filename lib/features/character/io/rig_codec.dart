@@ -39,6 +39,7 @@ class RigCodec {
     'bones': rig.bones.map(_boneToJson).toList(),
     if (rig.ribbons.isNotEmpty)
       'ribbons': rig.ribbons.map(_ribbonToJson).toList(),
+    if (rig.meshes.isNotEmpty) 'meshes': rig.meshes.map(_meshToJson).toList(),
     if (rig.face != null) 'face': _faceToJson(rig.face!),
   };
 
@@ -74,6 +75,27 @@ class RigCodec {
     if (r.outlineColor != null) 'outlineColor': _colorToHex(r.outlineColor!),
     if (r.outlineWidth != 0) 'outlineWidth': r.outlineWidth,
     if (r.samplesPerSegment != 10) 'samplesPerSegment': r.samplesPerSegment,
+  };
+
+  Map<String, dynamic> _meshToJson(SkinnedMeshSpec m) => {
+    'id': m.id,
+    'vertices': [
+      for (final vertex in m.vertices)
+        [
+          for (final influence in vertex.influences)
+            {
+              'bone': influence.boneId,
+              'point': [influence.x, influence.y],
+              'weight': influence.weight,
+            },
+        ],
+    ],
+    'boundary': m.boundary,
+    if (m.hiddenBoneIds.isNotEmpty) 'hiddenBones': m.hiddenBoneIds,
+    'z': m.z,
+    'color': _colorToHex(m.color),
+    if (m.outlineColor != null) 'outlineColor': _colorToHex(m.outlineColor!),
+    if (m.outlineWidth != 0) 'outlineWidth': m.outlineWidth,
   };
 
   Map<String, dynamic> _faceToJson(FaceRig f) => {
@@ -132,6 +154,10 @@ class RigCodec {
     final ribbons = ribbonsJson == null
         ? <LimbRibbonSpec>[]
         : _ribbonsFromJson(ribbonsJson, bones);
+    final meshesJson = json['meshes'];
+    final meshes = meshesJson == null
+        ? <SkinnedMeshSpec>[]
+        : _meshesFromJson(meshesJson, bones);
     final faceJson = json['face'];
     final face = faceJson == null
         ? null
@@ -141,7 +167,13 @@ class RigCodec {
         'face.anchor "${face.anchorBoneId}" references a missing bone',
       );
     }
-    return RigSpec(name: name, bones: bones, ribbons: ribbons, face: face);
+    return RigSpec(
+      name: name,
+      bones: bones,
+      ribbons: ribbons,
+      meshes: meshes,
+      face: face,
+    );
   }
 
   /// Rejects duplicate ids, missing parents, and parent cycles with precise
@@ -292,6 +324,121 @@ class RigCodec {
     );
   }
 
+  List<SkinnedMeshSpec> _meshesFromJson(dynamic raw, List<Bone> bones) {
+    if (raw is! List) {
+      throw RigFormatException('"meshes" must be a list when present');
+    }
+    final meshes = raw.map(_meshFromJson).toList();
+    final boneIds = {for (final b in bones) b.id};
+    final meshIds = <String>{};
+    for (final mesh in meshes) {
+      if (!meshIds.add(mesh.id)) {
+        throw RigFormatException('duplicate mesh id "${mesh.id}"');
+      }
+      if (mesh.vertices.length < 3) {
+        throw RigFormatException(
+          'mesh "${mesh.id}" needs at least three vertices',
+        );
+      }
+      if (mesh.boundary.length < 3) {
+        throw RigFormatException('mesh "${mesh.id}" needs a boundary loop');
+      }
+      for (final index in mesh.boundary) {
+        if (index < 0 || index >= mesh.vertices.length) {
+          throw RigFormatException(
+            'mesh "${mesh.id}" boundary index $index is out of range',
+          );
+        }
+      }
+      for (final vertex in mesh.vertices) {
+        if (vertex.influences.isEmpty) {
+          throw RigFormatException(
+            'mesh "${mesh.id}" has an unweighted vertex',
+          );
+        }
+        var weight = 0.0;
+        for (final influence in vertex.influences) {
+          if (!boneIds.contains(influence.boneId)) {
+            throw RigFormatException(
+              'mesh "${mesh.id}" references missing bone '
+              '"${influence.boneId}"',
+            );
+          }
+          if (influence.weight <= 0) {
+            throw RigFormatException(
+              'mesh "${mesh.id}" weights must be positive',
+            );
+          }
+          weight += influence.weight;
+        }
+        if ((weight - 1).abs() > 0.001) {
+          throw RigFormatException(
+            'mesh "${mesh.id}" vertex weights must sum to 1 (got $weight)',
+          );
+        }
+      }
+      for (final boneId in mesh.hiddenBoneIds) {
+        if (!boneIds.contains(boneId)) {
+          throw RigFormatException(
+            'mesh "${mesh.id}" references missing bone "$boneId"',
+          );
+        }
+      }
+    }
+    return meshes;
+  }
+
+  SkinnedMeshSpec _meshFromJson(dynamic raw) {
+    final m = _map(raw, 'mesh');
+    return SkinnedMeshSpec(
+      id: _string(m, 'id'),
+      vertices: _meshVerticesFromJson(m, 'vertices'),
+      boundary: _intList(m, 'boundary'),
+      hiddenBoneIds: m.containsKey('hiddenBones')
+          ? _stringList(m, 'hiddenBones')
+          : const [],
+      z: _int(m, 'z'),
+      color: _colorFromHex(_string(m, 'color')),
+      outlineColor: m.containsKey('outlineColor')
+          ? _colorFromHex(_string(m, 'outlineColor'))
+          : null,
+      outlineWidth: _doubleOr(m, 'outlineWidth', 0),
+    );
+  }
+
+  List<SkinnedMeshVertex> _meshVerticesFromJson(
+    Map<String, dynamic> m,
+    String key,
+  ) {
+    final raw = m[key];
+    if (raw is! List || raw.isEmpty) {
+      throw RigFormatException('"$key" must be a non-empty list');
+    }
+    return [for (final vertex in raw) _meshVertexFromJson(vertex)];
+  }
+
+  SkinnedMeshVertex _meshVertexFromJson(dynamic raw) {
+    if (raw is! List || raw.isEmpty) {
+      throw RigFormatException(
+        'mesh vertex must be a non-empty list of influences',
+      );
+    }
+    return SkinnedMeshVertex([
+      for (final influence in raw) _meshInfluenceFromJson(influence),
+    ]);
+  }
+
+  MeshInfluence _meshInfluenceFromJson(dynamic raw) {
+    final m = _map(raw, 'mesh influence');
+    final point = _pair(m, 'point');
+    return MeshInfluence(
+      boneId: _string(m, 'bone'),
+      x: point.$1,
+      y: point.$2,
+      weight: _double(m, 'weight'),
+    );
+  }
+
   FaceRig _faceFromJson(Map<String, dynamic> m) {
     final eye = _map(m['eye'], 'face.eye');
     final brow = _map(m['brow'], 'face.brow');
@@ -405,6 +552,14 @@ class RigCodec {
       throw RigFormatException('"$key" must be a non-empty list of numbers');
     }
     return [for (final item in v) (item as num).toDouble()];
+  }
+
+  List<int> _intList(Map<String, dynamic> m, String key) {
+    final v = m[key];
+    if (v is! List || v.isEmpty || v.any((item) => item is! int)) {
+      throw RigFormatException('"$key" must be a non-empty list of integers');
+    }
+    return v.cast<int>();
   }
 
   String _colorToHex(int argb) =>

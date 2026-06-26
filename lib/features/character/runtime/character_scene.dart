@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/engine/clip_evaluator.dart';
 import 'package:lotti/features/character/engine/face_solver.dart';
@@ -195,7 +197,8 @@ class CharacterScene {
     );
     final posed = _contactLockedPose(clip, timeSeconds, breathed);
 
-    final world = solver.solve(posed, base: base);
+    final rawWorld = solver.solve(posed, base: base);
+    final world = _headStabilizedWorld(clip, rawWorld);
     var face = faceSolver.applyAutonomic(expression.state, auto);
     if (eyeOpenScale != 1) {
       face = face.copyWith(
@@ -205,6 +208,49 @@ class CharacterScene {
     }
     final locomotion = locomotionOffset(clip, timeSeconds);
     return CharacterFrame(world: world, face: face, locomotionX: locomotion);
+  }
+
+  /// The dance phrase deliberately puts micro-motion into the torso/hips, but
+  /// because the Phase-1 rig is a pure parented skeleton, that bounce otherwise
+  /// drags the whole head around like a rubber mask. Counter-translate the head
+  /// subtree a little in screen space so the body can groove underneath a more
+  /// controlled skull/neck.
+  Map<String, Affine2D> _headStabilizedWorld(
+    Clip clip,
+    Map<String, Affine2D> world,
+  ) {
+    final headId = rig.face?.anchorBoneId;
+    if (headId == null) return world;
+    if (clip.name != 'dance' || !world.containsKey(headId)) return world;
+
+    final headWorld = world[headId]!;
+    final headRotation = _worldRotation(headWorld);
+    final rotationCorrection = -headRotation * 0.84;
+    if (rotationCorrection.abs() < 0.001) return world;
+
+    final anchor = headWorld.origin;
+    final rotateAroundHead = Affine2D.translation(anchor.x, anchor.y)
+        .multiply(Affine2D.rotation(rotationCorrection))
+        .multiply(Affine2D.translation(-anchor.x, -anchor.y));
+    final shifted = Map<String, Affine2D>.of(world);
+    for (final bone in rig.bones) {
+      if (bone.id == headId || _hasAncestor(bone.id, headId)) {
+        shifted[bone.id] = rotateAroundHead.multiply(world[bone.id]!);
+      }
+    }
+    return shifted;
+  }
+
+  double _worldRotation(Affine2D transform) =>
+      math.atan2(transform.b, transform.a);
+
+  bool _hasAncestor(String boneId, String ancestorId) {
+    var parent = rig.bone(boneId)?.parent;
+    while (parent != null) {
+      if (parent == ancestorId) return true;
+      parent = rig.bone(parent)?.parent;
+    }
+    return false;
   }
 
   /// In-place performance clips do not locomote, but their support foot still
@@ -248,9 +294,12 @@ class CharacterScene {
   }
 
   double _contactLockStrength(Clip clip, GroundSpan span, double p) {
-    final base = clip.loop ? 0.8 : 0.94;
+    final dance = clip.name == 'dance';
+    final base = dance ? 0.94 : (clip.loop ? 0.8 : 0.94);
     final spanLength = span.end - span.start;
-    final fade = clip.loop ? (spanLength * 0.2).clamp(0.018, 0.035) : 0.08;
+    final fade = dance
+        ? (spanLength * 0.16).clamp(0.018, 0.03)
+        : (clip.loop ? (spanLength * 0.2).clamp(0.018, 0.035) : 0.08);
     final fadeIn = _smoothUnit((p - span.start) / fade);
     final fadeOut = _smoothUnit((span.end - p) / fade);
     final edge = fadeIn < fadeOut ? fadeIn : fadeOut;

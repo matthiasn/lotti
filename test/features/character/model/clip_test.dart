@@ -24,9 +24,42 @@ void main() {
       expect(ch.sample(0.125).rotation, closeTo(1, 1e-9));
     });
 
+    test('harmonic multiplier controls the secondary pulse frequency', () {
+      const ch = SineChannel(harmonicAmplitude: 1, harmonicMultiplier: 4);
+      // sin(2π·4·0.0625) = sin(π/2) = 1.
+      expect(ch.sample(0.0625).rotation, closeTo(1, 1e-9));
+    });
+
     test('scaleY oscillation defaults to a flat 1', () {
       const ch = SineChannel(amplitude: 1);
       expect(ch.sample(0.3).scaleY, 1);
+    });
+  });
+
+  group('LayeredJointChannel', () {
+    test('adds rotations and multiplies scale pulses', () {
+      const ch = LayeredJointChannel([
+        KeyframeChannel([
+          Keyframe(p: 0, rotation: 0.1, scaleX: 1.1, scaleY: 0.9),
+          Keyframe(
+            p: 1,
+            rotation: 0.1,
+            scaleX: 1.1,
+            scaleY: 0.9,
+            ease: Ease.linear,
+          ),
+        ]),
+        SineChannel(
+          bias: 0.2,
+          scaleXAmplitude: 0.1,
+          scaleYAmplitude: -0.1,
+        ),
+      ]);
+
+      final pose = ch.sample(0.25);
+      expect(pose.rotation, closeTo(0.3, 1e-9));
+      expect(pose.scaleX, closeTo(1.21, 1e-9));
+      expect(pose.scaleY, closeTo(0.81, 1e-9));
     });
   });
 
@@ -161,6 +194,7 @@ void main() {
   test('both channel kinds belong to the sealed JointChannel hierarchy', () {
     expect(const SineChannel(amplitude: 1), isA<JointChannel>());
     expect(const KeyframeChannel(<Keyframe>[]), isA<JointChannel>());
+    expect(const LayeredJointChannel([]), isA<JointChannel>());
   });
 
   group('Clip', () {

@@ -30,6 +30,7 @@ void main() {
       final decoded = codec.fromJson(jsonDecode(text) as Map<String, dynamic>);
       expect(decoded.bones.length, cat.bones.length);
       expect(decoded.ribbons.length, cat.ribbons.length);
+      expect(decoded.meshes.length, cat.meshes.length);
       expect(decoded.face, isNotNull);
       expect(decoded.bone(CatBones.head)?.drawable, isNotNull);
     });
@@ -318,6 +319,102 @@ void main() {
             (e) => e.message,
             'message',
             contains('length mismatch'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects a mesh that references a missing bone', () {
+      expect(
+        () => codec.fromJson({
+          'version': 1,
+          'name': 'x',
+          'bones': [validBone()],
+          'meshes': [
+            {
+              'id': 'bad',
+              'vertices': [
+                [
+                  {
+                    'bone': 'a',
+                    'point': [0, 0],
+                    'weight': 1,
+                  },
+                ],
+                [
+                  {
+                    'bone': 'ghost',
+                    'point': [1, 0],
+                    'weight': 1,
+                  },
+                ],
+                [
+                  {
+                    'bone': 'a',
+                    'point': [0, 1],
+                    'weight': 1,
+                  },
+                ],
+              ],
+              'boundary': [0, 1, 2],
+              'z': 0,
+              'color': '#FFFFFFFF',
+            },
+          ],
+        }),
+        throwsA(
+          isA<RigFormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('missing bone'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects mesh vertex weights that do not sum to one', () {
+      expect(
+        () => codec.fromJson({
+          'version': 1,
+          'name': 'x',
+          'bones': [validBone()],
+          'meshes': [
+            {
+              'id': 'bad',
+              'vertices': [
+                [
+                  {
+                    'bone': 'a',
+                    'point': [0, 0],
+                    'weight': 0.4,
+                  },
+                ],
+                [
+                  {
+                    'bone': 'a',
+                    'point': [1, 0],
+                    'weight': 1,
+                  },
+                ],
+                [
+                  {
+                    'bone': 'a',
+                    'point': [0, 1],
+                    'weight': 1,
+                  },
+                ],
+              ],
+              'boundary': [0, 1, 2],
+              'z': 0,
+              'color': '#FFFFFFFF',
+            },
+          ],
+        }),
+        throwsA(
+          isA<RigFormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('sum to 1'),
           ),
         ),
       );

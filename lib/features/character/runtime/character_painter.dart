@@ -207,9 +207,14 @@ class CharacterPainter extends CustomPainter {
       final clips = order == null
           ? baseClips
           : [for (final i in order) baseClips[i]];
-      final drawScale = scale * _scaleFactor(members.length);
+      final danceCamera = leadCentreOrder
+          ? _danceCamera(timeSeconds, clip.duration)
+          : (zoom: 1.0, dx: 0.0, dy: 0.0);
+      final drawScale = scale * _scaleFactor(members.length) * danceCamera.zoom;
       final spacing = _spacing(members.length) * drawScale;
-      final startX = centreX - spacing * (members.length - 1) / 2;
+      final groupCentreX = centreX + danceCamera.dx * drawScale;
+      final groupFloorY = floorY + danceCamera.dy * drawScale;
+      final startX = groupCentreX - spacing * (members.length - 1) / 2;
       final paintOrder = members.length >= 3
           ? const [0, 2, 1]
           : [for (final i in Iterable<int>.generate(members.length)) i];
@@ -225,13 +230,23 @@ class CharacterPainter extends CustomPainter {
                 memberClip.duration,
               )
             : memberClip.duration * i / members.length;
+        final formation = leadCentreOrder
+            ? _danceFormationOffset(
+                i,
+                members.length,
+                timeSeconds,
+                memberClip.duration,
+              )
+            : (dx: 0.0, dy: 0.0);
         _paintCharacterAt(
           memberScene,
           canvas,
           size,
           clip: memberClip,
-          floorY: floorY + _roleFloorOffset(i, members.length) * drawScale,
-          centreX: startX + spacing * i,
+          floorY:
+              groupFloorY +
+              (_roleFloorOffset(i, members.length) + formation.dy) * drawScale,
+          centreX: startX + spacing * i + formation.dx * drawScale,
           flip: flip,
           timeSeconds: timeSeconds + phaseOffset,
           expression: expressions[i],
@@ -265,12 +280,51 @@ class CharacterPainter extends CustomPainter {
 
   static double _roleScale(int index, int memberCount) {
     if (memberCount < 3) return 1;
-    return index == 1 ? 1.08 : 0.92;
+    return index == 1 ? 1.03 : 0.96;
   }
 
   static double _roleFloorOffset(int index, int memberCount) {
     if (memberCount < 3) return 0;
-    return index == 1 ? 5 : -10;
+    return index == 1 ? 2 : -5;
+  }
+
+  static ({double zoom, double dx, double dy}) _danceCamera(
+    double timeSeconds,
+    double duration,
+  ) {
+    final p = _cyclePhase(timeSeconds, duration);
+    final groove = math.sin(2 * math.pi * (p * 2 - 0.08));
+    final accent = math.sin(2 * math.pi * (p * 12 + 0.08));
+    final payoff = _smoothUnit((p - 8 / 12) / (4 / 12));
+    return (
+      zoom: 1.0 + 0.018 * groove + 0.022 * payoff,
+      dx: 8 * math.sin(2 * math.pi * (p - 0.1)),
+      dy: -5 * payoff + 1.5 * accent,
+    );
+  }
+
+  static ({double dx, double dy}) _danceFormationOffset(
+    int index,
+    int memberCount,
+    double timeSeconds,
+    double duration,
+  ) {
+    if (memberCount < 3) return (dx: 0, dy: 0);
+    final p = _cyclePhase(timeSeconds, duration);
+    final breathe = math.sin(2 * math.pi * (p * 3 + 0.15));
+    final callResponse = math.sin(2 * math.pi * (p * 1.5 - 0.08));
+    final payoff = _smoothUnit((p - 8 / 12) / (4 / 12));
+    return switch (index) {
+      0 => (dx: -10 - 8 * breathe, dy: -6 + 3 * callResponse),
+      1 => (dx: 0, dy: 8 + 6 * payoff),
+      2 => (dx: 10 + 8 * breathe, dy: -6 - 3 * callResponse),
+      _ => (dx: 0, dy: 0),
+    };
+  }
+
+  static double _smoothUnit(double t) {
+    final x = t.clamp(0.0, 1.0);
+    return x * x * (3 - 2 * x);
   }
 
   static double _ensembleMicroTimingOffset(

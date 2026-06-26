@@ -44,7 +44,7 @@ class CharacterRenderer {
     Map<String, Affine2D> world,
     FaceState face,
   ) {
-    final hiddenBones = rig.ribbonHiddenBoneIds;
+    final hiddenBones = rig.hiddenDrawableBoneIds;
 
     // Ribbons are drawn in the same silhouette/fill two-pass style as bones.
     // They replace selected rigid upper/lower limb drawables with one continuous
@@ -54,6 +54,11 @@ class CharacterRenderer {
       final outline = ribbon.outlineColor;
       if (outline == null || ribbon.outlineWidth <= 0) continue;
       _drawRibbonSilhouette(canvas, ribbon, world, outline);
+    }
+    for (final mesh in rig.meshDrawOrder) {
+      final outline = mesh.outlineColor;
+      if (outline == null || mesh.outlineWidth <= 0) continue;
+      _drawMeshSilhouette(canvas, mesh, world, outline);
     }
 
     // Pass 1: the unified dark silhouette (outer outline, no internal seams).
@@ -95,11 +100,17 @@ class CharacterRenderer {
     Set<String> hiddenBones,
   ) {
     final ribbons = rig.ribbonDrawOrder;
+    final meshes = rig.meshDrawOrder;
     var ribbonIndex = 0;
+    var meshIndex = 0;
     for (final bone in rig.drawOrder) {
       while (ribbonIndex < ribbons.length && ribbons[ribbonIndex].z <= bone.z) {
         _drawRibbonFill(canvas, ribbons[ribbonIndex], world);
         ribbonIndex++;
+      }
+      while (meshIndex < meshes.length && meshes[meshIndex].z <= bone.z) {
+        _drawMeshFill(canvas, meshes[meshIndex], world);
+        meshIndex++;
       }
       if (hiddenBones.contains(bone.id)) continue;
       final drawable = bone.drawable;
@@ -115,6 +126,10 @@ class CharacterRenderer {
     while (ribbonIndex < ribbons.length) {
       _drawRibbonFill(canvas, ribbons[ribbonIndex], world);
       ribbonIndex++;
+    }
+    while (meshIndex < meshes.length) {
+      _drawMeshFill(canvas, meshes[meshIndex], world);
+      meshIndex++;
     }
   }
 
@@ -205,6 +220,90 @@ class CharacterRenderer {
       samplesPerSegment: ribbon.samplesPerSegment,
     );
     canvas.drawPath(path, paint);
+  }
+
+  void _drawMeshFill(
+    Canvas canvas,
+    SkinnedMeshSpec mesh,
+    Map<String, Affine2D> world,
+  ) {
+    _paint
+      ..style = PaintingStyle.fill
+      ..strokeWidth = 0
+      ..color = Color(mesh.color)
+      ..isAntiAlias = antiAlias;
+    _drawMesh(canvas, mesh, world, _paint);
+  }
+
+  void _drawMeshSilhouette(
+    Canvas canvas,
+    SkinnedMeshSpec mesh,
+    Map<String, Affine2D> world,
+    int outlineColor,
+  ) {
+    _paint
+      ..style = PaintingStyle.fill
+      ..strokeWidth = 0
+      ..color = Color(outlineColor)
+      ..isAntiAlias = antiAlias;
+    _drawMesh(canvas, mesh, world, _paint);
+
+    _paint
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = mesh.outlineWidth * 2
+      ..strokeJoin = StrokeJoin.round
+      ..color = Color(outlineColor)
+      ..isAntiAlias = antiAlias;
+    _drawMesh(canvas, mesh, world, _paint);
+  }
+
+  void _drawMesh(
+    Canvas canvas,
+    SkinnedMeshSpec mesh,
+    Map<String, Affine2D> world,
+    Paint paint,
+  ) {
+    final points = <Offset>[];
+    for (final vertex in mesh.vertices) {
+      var x = 0.0;
+      var y = 0.0;
+      for (final influence in vertex.influences) {
+        final transform = world[influence.boneId];
+        if (transform == null) return;
+        final p = transform.transformPoint(influence.x, influence.y);
+        x += p.x * influence.weight;
+        y += p.y * influence.weight;
+      }
+      points.add(Offset(x, y));
+    }
+    canvas.drawPath(_smoothClosedPath(points, mesh.boundary), paint);
+  }
+
+  /// Builds a soft closed contour through a mesh boundary.
+  ///
+  /// The mesh primitive is used for organic character surfaces (jacket, pelvis,
+  /// shoulder mass), where hard polygon corners immediately read as cardboard.
+  /// Quadratic midpoint smoothing keeps every authored boundary vertex on the
+  /// curve while rounding the transitions between them.
+  Path _smoothClosedPath(List<Offset> points, List<int> boundary) {
+    final path = Path();
+    Offset pointAt(int i) => points[boundary[i % boundary.length]];
+    Offset midpoint(Offset a, Offset b) => Offset(
+      (a.dx + b.dx) * 0.5,
+      (a.dy + b.dy) * 0.5,
+    );
+
+    final last = pointAt(boundary.length - 1);
+    final first = pointAt(0);
+    path.moveTo(midpoint(last, first).dx, midpoint(last, first).dy);
+    for (var i = 0; i < boundary.length; i++) {
+      final current = pointAt(i);
+      final next = pointAt(i + 1);
+      final mid = midpoint(current, next);
+      path.quadraticBezierTo(current.dx, current.dy, mid.dx, mid.dy);
+    }
+    path.close();
+    return path;
   }
 
   /// Draws the shape geometry of [d] with [paint] (fill or stroke).

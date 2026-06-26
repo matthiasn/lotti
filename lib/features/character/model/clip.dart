@@ -13,10 +13,35 @@ sealed class JointChannel {
   JointPose sample(double p);
 }
 
+/// Adds several joint channels together.
+///
+/// Rotation is additive. Scale is multiplicative because each child channel is
+/// authored as a multiplier around `1`; multiplying preserves that contract and
+/// lets small pulse layers sit on top of a larger squash/stretch performance.
+class LayeredJointChannel extends JointChannel {
+  const LayeredJointChannel(this.channels);
+
+  final List<JointChannel> channels;
+
+  @override
+  JointPose sample(double p) {
+    var rotation = 0.0;
+    var scaleX = 1.0;
+    var scaleY = 1.0;
+    for (final channel in channels) {
+      final pose = channel.sample(p);
+      rotation += pose.rotation;
+      scaleX *= pose.scaleX;
+      scaleY *= pose.scaleY;
+    }
+    return JointPose(rotation: rotation, scaleX: scaleX, scaleY: scaleY);
+  }
+}
+
 /// Cyclic joint motion as a phase-shifted sinusoid plus an optional second
 /// harmonic (for the sharper snap of a knee/elbow that a pure sine can't make).
 ///
-/// `rotation = bias + amplitude*sin(2π(p)+phase) + harmonicAmp*sin(4π(p)+...)`
+/// `rotation = bias + amplitude*sin(2π(p)+phase) + harmonicAmp*sin(2π·H(p)+...)`
 class SineChannel extends JointChannel {
   const SineChannel({
     this.amplitude = 0,
@@ -24,6 +49,7 @@ class SineChannel extends JointChannel {
     this.bias = 0,
     this.harmonicAmplitude = 0,
     this.harmonicPhase = 0,
+    this.harmonicMultiplier = 2,
     this.scaleYAmplitude = 0,
     this.scaleYPhase = 0,
     this.scaleYHarmonic = 1,
@@ -44,6 +70,7 @@ class SineChannel extends JointChannel {
 
   final double harmonicAmplitude;
   final double harmonicPhase;
+  final double harmonicMultiplier;
 
   /// Squash/stretch oscillation (multiplier delta around 1). The `*Harmonic`
   /// fields set the frequency: a walk takes weight **twice** per cycle, so a
@@ -64,7 +91,8 @@ class SineChannel extends JointChannel {
     final rot =
         bias +
         amplitude * math.sin(twoPi * (p + phase)) +
-        harmonicAmplitude * math.sin(2 * twoPi * (p + harmonicPhase));
+        harmonicAmplitude *
+            math.sin(twoPi * harmonicMultiplier * (p + harmonicPhase));
     final scaleY = scaleYAmplitude == 0
         ? 1.0
         : 1 +
