@@ -1342,12 +1342,12 @@ class CatClips {
     Keyframe(p: 9 / 16, rotation: 0.05, scaleY: 1.014, scaleX: 0.986),
     Keyframe(p: 5 / 8, rotation: 0.058, scaleY: 0.928, scaleX: 1.042),
     Keyframe(p: 11 / 16, rotation: -0.054, scaleY: 1.01, scaleX: 0.99),
-    Keyframe(p: 23 / 32, rotation: -0.086, scaleY: 0.95, scaleX: 1.03),
+    Keyframe(p: 23 / 32, rotation: -0.064, scaleY: 0.965, scaleX: 1.018),
     Keyframe(p: 3 / 4, rotation: -0.108, scaleY: 0.908, scaleX: 1.058),
     Keyframe(p: 13 / 16, rotation: -0.052, scaleY: 1.012, scaleX: 0.988),
     Keyframe(p: 7 / 8, rotation: -0.052, scaleY: 0.93, scaleX: 1.04),
     Keyframe(p: 15 / 16, rotation: -0.092, scaleY: 0.94, scaleX: 1.038),
-    Keyframe(p: 31 / 32, rotation: -0.104, scaleY: 0.9, scaleX: 1.064),
+    Keyframe(p: 31 / 32, rotation: -0.082, scaleY: 0.938, scaleX: 1.04),
     Keyframe(p: 1, rotation: -0.1, scaleY: 0.91, scaleX: 1.056),
   ];
   static const _danceNeckKeys = [
@@ -1395,12 +1395,12 @@ class CatClips {
     Keyframe(p: 9 / 16, rotation: 0.62),
     Keyframe(p: 5 / 8, rotation: 0.84),
     Keyframe(p: 11 / 16, rotation: 0.68),
-    Keyframe(p: 23 / 32, rotation: 1.58),
+    Keyframe(p: 23 / 32, rotation: 0.42),
     Keyframe(p: 3 / 4, rotation: 1.84),
     Keyframe(p: 13 / 16, rotation: 1.48),
     Keyframe(p: 7 / 8, rotation: 0.76),
-    Keyframe(p: 15 / 16, rotation: 0.68),
-    Keyframe(p: 31 / 32, rotation: 0.58),
+    Keyframe(p: 15 / 16, rotation: 0.74),
+    Keyframe(p: 31 / 32, rotation: 0.5),
     Keyframe(p: 1, rotation: 0.54),
   ];
   static const _danceArmLowerLKeys = [
@@ -1418,12 +1418,12 @@ class CatClips {
     Keyframe(p: 9 / 16, rotation: -0.46),
     Keyframe(p: 5 / 8, rotation: -0.02),
     Keyframe(p: 11 / 16, rotation: -0.28),
-    Keyframe(p: 23 / 32, rotation: 0.24),
+    Keyframe(p: 23 / 32, rotation: -0.48),
     Keyframe(p: 3 / 4, rotation: 0.42),
     Keyframe(p: 13 / 16, rotation: 0.12),
     Keyframe(p: 7 / 8, rotation: -0.32),
-    Keyframe(p: 15 / 16, rotation: 0.02),
-    Keyframe(p: 31 / 32, rotation: 0.12),
+    Keyframe(p: 15 / 16, rotation: 0.08),
+    Keyframe(p: 31 / 32, rotation: -0.04),
     Keyframe(p: 1, rotation: -0.02),
   ];
   static const _danceArmUpperRKeys = [
@@ -1441,12 +1441,12 @@ class CatClips {
     Keyframe(p: 9 / 16, rotation: -0.98),
     Keyframe(p: 5 / 8, rotation: -0.56),
     Keyframe(p: 11 / 16, rotation: -0.78),
-    Keyframe(p: 23 / 32, rotation: -0.72),
+    Keyframe(p: 23 / 32, rotation: -1.54),
     Keyframe(p: 3 / 4, rotation: -1.32),
     Keyframe(p: 13 / 16, rotation: -0.84),
     Keyframe(p: 7 / 8, rotation: -0.54),
-    Keyframe(p: 15 / 16, rotation: -0.82),
-    Keyframe(p: 31 / 32, rotation: -0.62),
+    Keyframe(p: 15 / 16, rotation: -0.92),
+    Keyframe(p: 31 / 32, rotation: -0.54),
     Keyframe(p: 1, rotation: -0.48),
   ];
   static const _danceArmLowerRKeys = [
@@ -1464,12 +1464,12 @@ class CatClips {
     Keyframe(p: 9 / 16, rotation: 0.46),
     Keyframe(p: 5 / 8, rotation: 0.06),
     Keyframe(p: 11 / 16, rotation: 0.28),
-    Keyframe(p: 23 / 32, rotation: 0.14),
+    Keyframe(p: 23 / 32, rotation: -0.1),
     Keyframe(p: 3 / 4, rotation: 0.48),
     Keyframe(p: 13 / 16, rotation: 0.18),
     Keyframe(p: 7 / 8, rotation: 0.32),
-    Keyframe(p: 15 / 16, rotation: 0.5),
-    Keyframe(p: 31 / 32, rotation: 0.3),
+    Keyframe(p: 15 / 16, rotation: 0.58),
+    Keyframe(p: 31 / 32, rotation: 0.16),
     Keyframe(p: 1, rotation: 0.04),
   ];
   static const _danceTieKeys = [
