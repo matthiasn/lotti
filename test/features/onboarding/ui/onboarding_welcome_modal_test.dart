@@ -107,7 +107,7 @@ void main() {
     await openWelcome(tester);
 
     expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
-    expect(find.text('Connect your brain'), findsOneWidget);
+    expect(find.text('Choose your AI brain'), findsOneWidget);
 
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.welcomeShown), isTrue);
@@ -116,7 +116,7 @@ void main() {
   testWidgets('advancing to connect reveals the three providers and records '
       'providerModalShown', (tester) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Connect your brain'));
+    await tester.tap(find.text('Choose your AI brain'));
     await tester.pumpAndSettle();
 
     expect(find.text('Gemini'), findsOneWidget);
@@ -129,7 +129,7 @@ void main() {
 
   testWidgets('back from connect returns to the welcome', (tester) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Connect your brain'));
+    await tester.tap(find.text('Choose your AI brain'));
     await tester.pumpAndSettle();
     expect(find.text('Gemini'), findsOneWidget);
 
@@ -140,7 +140,7 @@ void main() {
 
   testWidgets('More options reveals OpenAI and Ollama', (tester) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Connect your brain'));
+    await tester.tap(find.text('Choose your AI brain'));
     await tester.pumpAndSettle();
 
     expect(find.text('OpenAI'), findsNothing);
@@ -153,7 +153,7 @@ void main() {
 
   testWidgets('selecting a provider opens the API-key step', (tester) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Connect your brain'));
+    await tester.tap(find.text('Choose your AI brain'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Mistral'));
     await tester.pumpAndSettle();
@@ -165,7 +165,7 @@ void main() {
     tester,
   ) async {
     await openWelcome(tester);
-    await tester.tap(find.text('Connect your brain'));
+    await tester.tap(find.text('Choose your AI brain'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Mistral'));
     await tester.pumpAndSettle();
@@ -201,7 +201,7 @@ void main() {
     (tester) async {
       var dismissed = false;
       await openWelcome(tester, child: host(onDismiss: () => dismissed = true));
-      expect(find.text('Connect your brain'), findsOneWidget);
+      expect(find.text('Choose your AI brain'), findsOneWidget);
 
       // The sheet shrink-wraps to its content at the bottom, leaving empty
       // space above it. A tap there must close the flow — the route's modal
@@ -214,7 +214,7 @@ void main() {
       await tester.tapAt(Offset(195, panelTop - 20));
       await tester.pumpAndSettle();
 
-      expect(find.text('Connect your brain'), findsNothing);
+      expect(find.text('Choose your AI brain'), findsNothing);
       expect(dismissed, isTrue);
       final state = await repo.funnelState();
       expect(state.reached(OnboardingEventName.welcomeSkipped), isTrue);
@@ -284,7 +284,7 @@ void main() {
     );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Connect your brain'));
+    await tester.tap(find.text('Choose your AI brain'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('More options'));
     await tester.pumpAndSettle();
@@ -350,7 +350,7 @@ void main() {
     // first-capture page; provider creation + FTUE setup ran; the chosen area
     // became a category bound to the provider's seeded inference profile; the
     // connected event is recorded.
-    expect(find.text('Connect your brain'), findsNothing);
+    expect(find.text('Choose your AI brain'), findsNothing);
     expect(find.text("What's on your mind?"), findsOneWidget);
     verify(() => aiRepo.saveConfig(any())).called(1);
     verify(

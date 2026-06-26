@@ -163,7 +163,7 @@ void main() {
     // The connect panel lists providers — Gemini's curated name is shown.
     expect(find.text('Gemini'), findsOneWidget);
     expect(
-      find.text('Pick the brain that turns your words into tasks'),
+      find.text('Choose the AI brain for your tasks'),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
@@ -186,12 +186,12 @@ void main() {
       await pumpGallery(tester);
 
       // The in-panel CTA closure flips the gallery from welcome → connect.
-      await tester.tap(find.text('Connect your brain'));
+      await tester.tap(find.text('Choose your AI brain'));
       await settlePanelSwap(tester);
 
       expect(find.byType(OnboardingHeroPanel), findsNothing);
       expect(
-        find.text('Pick the brain that turns your words into tasks'),
+        find.text('Choose the AI brain for your tasks'),
         findsOneWidget,
       );
       expect(chipWithLabel(tester, 'Connect').selected, isTrue);
@@ -267,7 +267,7 @@ void main() {
     await settlePanelSwap(tester);
 
     expect(
-      find.text('Pick the brain that turns your words into tasks'),
+      find.text('Choose the AI brain for your tasks'),
       findsOneWidget,
     );
     expect(chipWithLabel(tester, 'Connect').selected, isTrue);

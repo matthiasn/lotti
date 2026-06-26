@@ -113,10 +113,10 @@ void main() {
       );
 
       final constellation = visual as NeuralConstellation;
-      expect(constellation.vineCount, greaterThan(1));
-      expect(constellation.entanglement, greaterThan(0));
-      expect(constellation.nodeCount, greaterThan(38));
-      expect(constellation.compositionOffset.dy, greaterThan(-0.10));
+      expect(constellation.vineCount, 3);
+      expect(constellation.entanglement, closeTo(0.64, 1e-9));
+      expect(constellation.nodeCount, 62);
+      expect(constellation.compositionOffset.dy, closeTo(0.02, 1e-9));
     });
 
     for (final style in OnboardingHeroStyle.values) {
@@ -328,8 +328,8 @@ void main() {
       );
       expect(constellation.vineCount, 1);
       expect(constellation.entanglement, 0);
-      expect(constellation.glow, 0.28);
-      expect(constellation.compositionOffset.dy, lessThan(0));
+      expect(constellation.glow, closeTo(0.28, 1e-9));
+      expect(constellation.compositionOffset.dy, closeTo(-0.18, 1e-9));
       expect(tester.takeException(), isNull);
     });
 

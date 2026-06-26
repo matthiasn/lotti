@@ -149,6 +149,54 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('updates animation cadence when loop duration changes', (
+      tester,
+    ) async {
+      const key = ValueKey('looping-constellation');
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          wrap(
+            const NeuralConstellation(
+              key: key,
+              nodeColor: Colors.white,
+              lineColor: Colors.blue,
+              pulseColor: Colors.cyan,
+              loop: Duration(seconds: 2),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(_constellationPhase(tester), closeTo(0.5, 0.05));
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          wrap(
+            const NeuralConstellation(
+              key: key,
+              nodeColor: Colors.white,
+              lineColor: Colors.blue,
+              pulseColor: Colors.cyan,
+              loop: Duration(seconds: 10),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(
+        _constellationPhase(tester),
+        allOf(greaterThan(0.55), lessThan(0.75)),
+      );
+    });
+
     testWidgets(
       'paints with no edges and no pulses (sparse field, zero pulses)',
       (tester) async {
@@ -297,4 +345,13 @@ void main() {
       );
     });
   });
+}
+
+double _constellationPhase(WidgetTester tester) {
+  final customPaint = tester
+      .widgetList<CustomPaint>(find.byType(CustomPaint))
+      .last;
+  final painter = customPaint.painter as dynamic;
+  // ignore: avoid_dynamic_calls
+  return painter.t01 as double;
 }

@@ -2451,7 +2451,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 800));
 
         expect(find.byType(AiProviderSelectionModal), findsNothing);
-        expect(find.text('Connect your brain'), findsOneWidget);
+        expect(find.text('Choose your AI brain'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();

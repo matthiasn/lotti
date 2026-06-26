@@ -6662,7 +6662,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingSuccessTitle => 'Tout est prêt';
 
   @override
-  String get onboardingWelcomeConnectButton => 'Choisis ton cerveau IA';
+  String get onboardingWelcomeConnectButton => 'Choisir ton cerveau IA';
 
   @override
   String get onboardingWelcomeMessage =>

@@ -115,6 +115,12 @@ class _NeuralConstellationState extends State<NeuralConstellation>
   @override
   void didUpdateWidget(NeuralConstellation oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.loop != widget.loop) {
+      _controller.duration = _loop;
+      if (_controller.isAnimating) {
+        _controller.repeat();
+      }
+    }
     // Regenerate the seeded node field if the topology inputs change, so a
     // reused element doesn't keep painting the old configuration (matters most
     // under reduced motion, where `t01` is static and won't trigger a repaint).

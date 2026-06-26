@@ -83,7 +83,7 @@ class OnboardingBackdrop extends StatelessWidget {
             // fewer travelling activations than the welcome hero.
             pulseColor: Color.lerp(
               accentColor,
-              Colors.white,
+              dsTokensDark.colors.text.highEmphasis,
               0.42,
             )!.withValues(alpha: 0.36),
             nodeCount: nodeCount,
@@ -136,7 +136,11 @@ Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {
       return NeuralConstellation(
         nodeColor: accent,
         lineColor: accent.withValues(alpha: 0.6),
-        pulseColor: Color.lerp(accent, Colors.white, 0.45)!,
+        pulseColor: Color.lerp(
+          accent,
+          dsTokensDark.colors.text.highEmphasis,
+          0.45,
+        )!,
         nodeCount: 62,
         // The welcome page is the only place where the organism should own the
         // opening beat. Later FTUE pages use OnboardingBackdrop's smaller,
