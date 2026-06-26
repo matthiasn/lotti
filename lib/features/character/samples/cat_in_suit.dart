@@ -1622,6 +1622,57 @@ class CatClips {
         ),
       ]);
 
+  static final KeyframeIkTargetChannel _danceBackupLeftHandROffset =
+      _dancePhrase.ikTargetChannel(
+        const [
+          DanceIkTargetKey(0, x: 0, y: 0, weight: 0),
+          DanceIkTargetKey(16, x: 0, y: 0, weight: 0),
+          DanceIkTargetKey(20, x: -4, y: -3, weight: 0.7),
+          DanceIkTargetKey(24, x: -9, y: -5),
+          DanceIkTargetKey(28, x: -5, y: -3, weight: 0.7),
+          DanceIkTargetKey(32, x: 0, y: 0, weight: 0),
+        ],
+        smooth: true,
+      );
+
+  static final KeyframeIkTargetChannel _danceBackupRightHandLOffset =
+      _dancePhrase.ikTargetChannel(
+        const [
+          DanceIkTargetKey(0, x: 0, y: 0, weight: 0),
+          DanceIkTargetKey(16, x: 0, y: 0, weight: 0),
+          DanceIkTargetKey(20, x: 4, y: -3, weight: 0.7),
+          DanceIkTargetKey(24, x: 9, y: -5),
+          DanceIkTargetKey(28, x: 5, y: -3, weight: 0.7),
+          DanceIkTargetKey(32, x: 0, y: 0, weight: 0),
+        ],
+        smooth: true,
+      );
+
+  static final List<LimbIkTarget> _danceBackupLeftLimbTargets =
+      _danceRoleLimbTargets(handROffset: _danceBackupLeftHandROffset);
+
+  static final List<LimbIkTarget> _danceBackupRightLimbTargets =
+      _danceRoleLimbTargets(handLOffset: _danceBackupRightHandLOffset);
+
+  static List<LimbIkTarget> _danceRoleLimbTargets({
+    IkTargetChannel? handLOffset,
+    IkTargetChannel? handROffset,
+  }) => List<LimbIkTarget>.unmodifiable([
+    _danceLimbTargets[0].withChannel(
+      _layerDanceTarget(_danceHandLTarget, handLOffset),
+    ),
+    _danceLimbTargets[1].withChannel(
+      _layerDanceTarget(_danceHandRTarget, handROffset),
+    ),
+    _danceLimbTargets[2],
+    _danceLimbTargets[3],
+  ]);
+
+  static IkTargetChannel _layerDanceTarget(
+    IkTargetChannel base,
+    IkTargetChannel? offset,
+  ) => offset == null ? base : LayeredIkTargetChannel([base, offset]);
+
   static const _danceTieKeys = [
     Keyframe(p: 0, rotation: 0.02),
     Keyframe(p: 1 / 12, rotation: 0.05),
@@ -2287,6 +2338,7 @@ class CatClips {
 
   static Clip get danceBackupLeft => _danceBodyRole(
     name: 'danceBackupLeft',
+    limbTargets: _danceBackupLeftLimbTargets,
     hips: const LayeredJointChannel([
       SineChannel(amplitude: 0.018, phase: 0.08),
       KeyframeChannel(
@@ -2349,6 +2401,7 @@ class CatClips {
 
   static Clip get danceBackupRight => _danceBodyRole(
     name: 'danceBackupRight',
+    limbTargets: _danceBackupRightLimbTargets,
     hips: const LayeredJointChannel([
       SineChannel(amplitude: 0.02, phase: 0.58),
       KeyframeChannel(
@@ -2411,6 +2464,7 @@ class CatClips {
 
   static Clip _danceBodyRole({
     required String name,
+    required List<LimbIkTarget> limbTargets,
     required JointChannel hips,
     required JointChannel torso,
     required JointChannel armUpperL,
@@ -2424,7 +2478,7 @@ class CatClips {
       duration: base.duration,
       contactSpans: base.contactSpans,
       contactPinning: base.contactPinning,
-      limbTargets: base.limbTargets,
+      limbTargets: limbTargets,
       root: base.root,
       channels: {
         ...base.channels,

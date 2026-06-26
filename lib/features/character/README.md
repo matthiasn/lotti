@@ -186,7 +186,10 @@ stateDiagram-v2
   target-based layer for two-bone limbs, so choreography can place a hand or
   foot relative to an anchor bone before the existing contact/head stabilization
   passes run. The dance sample uses this for torso-relative hand paths and
-  pelvis-relative foot handoffs. New cycles are **data, not code**.
+  pelvis-relative foot handoffs. `LayeredIkTargetChannel` lets a dancer keep the
+  shared semantic target while adding bounded local offsets, which is the path
+  for role/style variation without duplicating an entire coordinate track. New
+  cycles are **data, not code**.
 - **`DancePhrase`** — choreography-facing authoring for dance clips. It stores
   a phrase length in frames, labelled support-foot windows, load/release frames,
   free-foot identity, pelvis-distance guardrails, pocket compression targets,

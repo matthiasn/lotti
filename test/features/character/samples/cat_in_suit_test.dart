@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/samples/cat_in_suit.dart';
 
 void main() {
@@ -163,8 +164,30 @@ void main() {
         expect(right.contactSpans, lead.contactSpans);
         expect(left.contactPinning, lead.contactPinning);
         expect(right.contactPinning, lead.contactPinning);
-        expect(left.limbTargets, lead.limbTargets);
-        expect(right.limbTargets, lead.limbTargets);
+        expect(
+          left.limbTargets.map((target) => target.endBoneId),
+          lead.limbTargets.map((target) => target.endBoneId),
+        );
+        expect(
+          right.limbTargets.map((target) => target.endBoneId),
+          lead.limbTargets.map((target) => target.endBoneId),
+        );
+        final leadHandR = _targetFor(lead, CatBones.handR).channel.sample(
+          3 / 4,
+        );
+        final leftHandR = _targetFor(left, CatBones.handR).channel.sample(
+          3 / 4,
+        );
+        final leadHandL = _targetFor(lead, CatBones.handL).channel.sample(
+          3 / 4,
+        );
+        final rightHandL = _targetFor(right, CatBones.handL).channel.sample(
+          3 / 4,
+        );
+        expect(leftHandR.x, closeTo(leadHandR.x - 9, 0.001));
+        expect(leftHandR.y, closeTo(leadHandR.y - 5, 0.001));
+        expect(rightHandL.x, closeTo(leadHandL.x + 9, 0.001));
+        expect(rightHandL.y, closeTo(leadHandL.y - 5, 0.001));
         expect(
           left.channels[CatBones.legUpperL]!.sample(p).rotation,
           closeTo(lead.channels[CatBones.legUpperL]!.sample(p).rotation, 1e-9),
@@ -374,3 +397,6 @@ void main() {
     });
   });
 }
+
+LimbIkTarget _targetFor(Clip clip, String endBoneId) =>
+    clip.limbTargets.singleWhere((target) => target.endBoneId == endBoneId);

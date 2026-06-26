@@ -216,6 +216,28 @@ void main() {
       expect(sample.weight, 0.4);
     });
 
+    test('layered targets preserve base weight and add weighted offsets', () {
+      const channel = LayeredIkTargetChannel([
+        FixedIkTargetChannel(x: 12, y: 20, weight: 0.35),
+        FixedIkTargetChannel(x: 6, y: -4, weight: 0.5),
+        FixedIkTargetChannel(x: -2, y: -8, weight: 0.25),
+      ]);
+      final sample = channel.sample(0.72);
+
+      expect(sample.x, closeTo(14.5, 1e-9));
+      expect(sample.y, closeTo(16, 1e-9));
+      expect(sample.weight, closeTo(0.35, 1e-9));
+    });
+
+    test('empty layered target contributes no IK weight', () {
+      const channel = LayeredIkTargetChannel([]);
+      final sample = channel.sample(0.72);
+
+      expect(sample.x, 0);
+      expect(sample.y, 0);
+      expect(sample.weight, 0);
+    });
+
     test('keyframed targets interpolate position and blend weight', () {
       const channel = KeyframeIkTargetChannel([
         IkTargetKeyframe(p: 0, x: 0, y: 10, weight: 0),

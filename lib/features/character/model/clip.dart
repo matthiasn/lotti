@@ -265,6 +265,32 @@ class FixedIkTargetChannel extends IkTargetChannel {
   IkTargetPose sample(double p) => IkTargetPose(x: x, y: y, weight: weight);
 }
 
+/// An absolute IK target plus additive offset layers.
+///
+/// The first channel owns the semantic target ("hand near chest"). Later
+/// channels are local offsets whose own [IkTargetPose.weight] scales their
+/// contribution. The final solve weight stays with the base channel so a style
+/// layer can shade the hand/foot path without accidentally disabling IK.
+class LayeredIkTargetChannel extends IkTargetChannel {
+  const LayeredIkTargetChannel(this.channels);
+
+  final List<IkTargetChannel> channels;
+
+  @override
+  IkTargetPose sample(double p) {
+    if (channels.isEmpty) return const IkTargetPose(x: 0, y: 0, weight: 0);
+    final base = channels.first.sample(p);
+    var x = base.x;
+    var y = base.y;
+    for (final channel in channels.skip(1)) {
+      final offset = channel.sample(p);
+      x += offset.x * offset.weight;
+      y += offset.y * offset.weight;
+    }
+    return IkTargetPose(x: x, y: y, weight: base.weight);
+  }
+}
+
 class IkTargetKeyframe {
   const IkTargetKeyframe({
     required this.p,
@@ -386,6 +412,15 @@ class LimbIkTarget {
   /// Selects which side of the shoulder->target line the elbow/knee bends
   /// toward. The rig owns the bone ids; the clip owns the choreographic choice.
   final int bendDirection;
+
+  LimbIkTarget withChannel(IkTargetChannel channel) => LimbIkTarget(
+    upperBoneId: upperBoneId,
+    lowerBoneId: lowerBoneId,
+    endBoneId: endBoneId,
+    anchorBoneId: anchorBoneId,
+    channel: channel,
+    bendDirection: bendDirection,
+  );
 }
 
 /// Root-level body motion layered under forward kinematics: the vertical bob,
