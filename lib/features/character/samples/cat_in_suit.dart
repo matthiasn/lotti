@@ -950,6 +950,38 @@ class CatClips {
         label: 'left-foot loop pickup',
       ),
     ],
+    sections: [
+      DancePhraseSection(
+        name: 'Shaku pocket',
+        startFrame: 0,
+        endFrame: 8,
+        intent: 'low left support with compact crossed-arm groove',
+      ),
+      DancePhraseSection(
+        name: 'Shaku rebound',
+        startFrame: 8,
+        endFrame: 16,
+        intent: 'rebound through the left support without standing tall',
+      ),
+      DancePhraseSection(
+        name: 'answer pocket',
+        startFrame: 16,
+        endFrame: 24,
+        intent: 'right support answer with free-left leg texture',
+      ),
+      DancePhraseSection(
+        name: 'toe-flick release',
+        startFrame: 24,
+        endFrame: 30,
+        intent: 'Gbese-flavoured toe-flick release into the loop',
+      ),
+      DancePhraseSection(
+        name: 'loop pickup',
+        startFrame: 30,
+        endFrame: 32,
+        intent: 'compact pickup that lands back into the first pocket',
+      ),
+    ],
   );
   static DancePhrase get dancePhrase => _dancePhrase;
   static final List<GroundSpan> _danceContactSpans = _dancePhrase

@@ -343,6 +343,16 @@ void main() {
         24,
         32,
       ]);
+      expect(phrase.sections.map((section) => section.name), [
+        'Shaku pocket',
+        'Shaku rebound',
+        'answer pocket',
+        'toe-flick release',
+        'loop pickup',
+      ]);
+      expect(phrase.sectionAtFrame(4).name, 'Shaku pocket');
+      expect(phrase.sectionAtFrame(20).name, 'answer pocket');
+      expect(phrase.sectionAtFrame(31).name, 'loop pickup');
     });
 
     test('walk and run carry forward locomotion, stage moves do not', () {

@@ -29,6 +29,20 @@ void main() {
           label: 'right pocket',
         ),
       ],
+      sections: [
+        DancePhraseSection(
+          name: 'pocket',
+          startFrame: 0,
+          endFrame: 16,
+          intent: 'settle over the left support',
+        ),
+        DancePhraseSection(
+          name: 'answer',
+          startFrame: 16,
+          endFrame: 32,
+          intent: 'answer on the right support',
+        ),
+      ],
     );
 
     test('maps authored frames to normalized clip phase', () {
@@ -65,6 +79,14 @@ void main() {
       expect(rightPocket.pocketScaleY, 0.92);
       expect(rightPocket.containsFrame(31), isTrue);
       expect(rightPocket.containsFrame(32), isFalse);
+    });
+
+    test('looks up named choreographic sections by frame and phase', () {
+      expect(phrase.sectionAtFrame(0).name, 'pocket');
+      expect(phrase.sectionAtFrame(15).name, 'pocket');
+      expect(phrase.sectionAtFrame(16).name, 'answer');
+      expect(phrase.sectionAtFrame(32).name, 'pocket');
+      expect(phrase.sectionAtPhase(0.75).intent, 'answer on the right support');
     });
 
     test('builds joint channels from frame-addressed keys', () {
