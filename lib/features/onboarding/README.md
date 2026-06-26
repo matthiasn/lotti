@@ -241,11 +241,18 @@ The welcome hero (`NeuralConstellation`) and `CompletionCelebration` already
 carry their own reduced-motion fallbacks.
 
 `NeuralConstellation` paints a seeded, deterministic branching organism rather
-than a proximity graph: a main spine grows from a root-like soma, secondary
-branches fork from stable parents, dim hairline offshoots probe outward, and
-travelling activation tips move along the curved tendrils. It loops
-**seamlessly**: every oscillation (node drift, breath, branch activation, and the
-travelling pulses) runs an integer number of cycles per loop and is driven off
-the controller's normalized value, so the frame at the loop wrap is identical to
-the start — no snap (`neuralPulseCyclesForLoop`, `NeuralNode`,
-`neuralPulseEnvAt`, `neuralBranchProgressAt`).
+than a proximity graph. The default topology is one root-like soma and spine:
+secondary branches fork from stable parents, dim hairline offshoots probe
+outward, and travelling activation tips move along the curved tendrils. The
+welcome page opts into the denser variant (`vineCount` + `entanglement`): several
+spines cross through shared convergence clusters, faint cross-links connect only
+nearby separate vines, and the foreground branches draw as bundled strands so the
+hero reads as neural tissue instead of a flat dot mesh. Later steps keep the
+single-vine topology, lower alpha, fewer pulses, a smaller upward-shifted
+composition, and a panel-coloured content scrim so provider cards and forms stay
+dominant. The painter loops **seamlessly**:
+every oscillation (node drift, breath, branch activation, and travelling pulses)
+runs an integer number of cycles per loop and is driven off the controller's
+normalized value, so the frame at the loop wrap is identical to the start — no
+snap (`neuralPulseCyclesForLoop`, `NeuralNode`, `neuralPulseEnvAt`,
+`neuralBranchProgressAt`).

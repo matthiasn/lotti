@@ -32,6 +32,8 @@ class NeuralConstellation extends StatefulWidget {
     this.glow = 1,
     this.compositionScale = 1,
     this.compositionOffset = Offset.zero,
+    this.vineCount = 1,
+    this.entanglement = 0,
     this.loop = const Duration(seconds: 24),
     super.key,
   });
@@ -67,6 +69,15 @@ class NeuralConstellation extends StatefulWidget {
   /// surface; background surfaces keep the default.
   final Offset compositionOffset;
 
+  /// Number of primary vine spines in the organism. The default single spine is
+  /// used by background surfaces; the welcome hero can use a few interleaved
+  /// spines so the structure reads closer to neural tissue.
+  final int vineCount;
+
+  /// Strength of faint cross-links between nearby, separate vine systems.
+  /// Kept at zero for the normal single-vine backdrop.
+  final double entanglement;
+
   /// Period of the drift/pulse loop. Shorter = livelier drift (the per-node
   /// cycle counts are fixed integers, so a shorter loop simply runs them
   /// faster). The welcome hero keeps the slow default; the working-step
@@ -97,7 +108,7 @@ class _NeuralConstellationState extends State<NeuralConstellation>
   @override
   void initState() {
     super.initState();
-    _nodes = _buildNodes(widget.nodeCount, widget.seed);
+    _nodes = _buildNodes(widget.nodeCount, widget.seed, widget.vineCount);
     _controller = AnimationController(vsync: this, duration: _loop);
   }
 
@@ -108,8 +119,9 @@ class _NeuralConstellationState extends State<NeuralConstellation>
     // reused element doesn't keep painting the old configuration (matters most
     // under reduced motion, where `t01` is static and won't trigger a repaint).
     if (oldWidget.nodeCount != widget.nodeCount ||
-        oldWidget.seed != widget.seed) {
-      _nodes = _buildNodes(widget.nodeCount, widget.seed);
+        oldWidget.seed != widget.seed ||
+        oldWidget.vineCount != widget.vineCount) {
+      _nodes = _buildNodes(widget.nodeCount, widget.seed, widget.vineCount);
     }
   }
 
@@ -131,8 +143,12 @@ class _NeuralConstellationState extends State<NeuralConstellation>
     super.dispose();
   }
 
-  static List<NeuralNode> _buildNodes(int count, int seed) {
+  static List<NeuralNode> _buildNodes(int count, int seed, int vineCount) {
     if (count <= 0) return const [];
+    final activeVineCount = math.min(count, math.max(1, vineCount));
+    if (activeVineCount > 1) {
+      return _buildEntangledVines(count, seed, activeVineCount);
+    }
 
     final rng = math.Random(seed);
     final nodes = <NeuralNode>[];
@@ -221,6 +237,189 @@ class _NeuralConstellationState extends State<NeuralConstellation>
     return nodes;
   }
 
+  static List<NeuralNode> _buildEntangledVines(
+    int count,
+    int seed,
+    int vineCount,
+  ) {
+    final rng = math.Random(seed);
+    final nodes = <NeuralNode>[];
+    const roots = [
+      Offset(0.15, 0.70),
+      Offset(0.22, 0.46),
+      Offset(0.36, 0.64),
+      Offset(0.12, 0.38),
+    ];
+    const canopies = [
+      Offset(0.66, 0.34),
+      Offset(0.68, 0.54),
+      Offset(0.56, 0.24),
+      Offset(0.64, 0.62),
+    ];
+    const convergence = [
+      Offset(0.34, 0.50),
+      Offset(0.46, 0.42),
+      Offset(0.52, 0.56),
+    ];
+
+    for (var vine = 0; vine < vineCount; vine++) {
+      final remaining = count - nodes.length;
+      final vinesLeft = vineCount - vine;
+      final vineNodeCount = math.max(1, remaining ~/ vinesLeft);
+      final startIndex = nodes.length;
+      final root =
+          roots[vine % roots.length] +
+          Offset((rng.nextDouble() - 0.5) * 0.04, rng.nextDouble() * 0.04);
+      final canopy =
+          canopies[vine % canopies.length] +
+          Offset(
+            (rng.nextDouble() - 0.5) * 0.05,
+            (rng.nextDouble() - 0.5) * 0.05,
+          );
+      final spineCount = math.min(
+        vineNodeCount,
+        math.max(4, (vineNodeCount * 0.42).round()),
+      );
+
+      for (var localIndex = 0; localIndex < vineNodeCount; localIndex++) {
+        final globalIndex = nodes.length;
+        final parentIndex = switch (localIndex) {
+          0 => null,
+          _ when localIndex < spineCount => globalIndex - 1,
+          _ => _entangledParentIndex(
+            rng,
+            nodes,
+            vine,
+            startIndex,
+            spineCount,
+          ),
+        };
+
+        Offset base;
+        double growthAngle;
+        if (localIndex == 0) {
+          base = root;
+          growthAngle = -math.pi / 5 + vine * 0.34;
+        } else if (localIndex < spineCount) {
+          final p = spineCount == 1 ? 0.0 : localIndex / (spineCount - 1);
+          final phase = seed * 0.03 + vine * math.pi * 0.42;
+          base =
+              Offset.lerp(root, canopy, p)! +
+              Offset(
+                math.sin(p * math.pi * 2.35 + phase) * 0.07,
+                math.cos(p * math.pi * 1.75 + phase) * 0.06,
+              );
+          base += Offset(
+            (rng.nextDouble() - 0.5) * 0.04,
+            (rng.nextDouble() - 0.5) * 0.04,
+          );
+          growthAngle = _angleBetween(nodes[parentIndex!].base, base);
+        } else {
+          final parent = nodes[parentIndex!];
+          final spread =
+              (rng.nextBool() ? -1 : 1) * (0.34 + rng.nextDouble() * 1.06);
+          final reach = 0.06 + rng.nextDouble() * 0.14;
+          growthAngle =
+              parent.growthAngle + spread + (rng.nextDouble() - 0.5) * 0.42;
+          base =
+              parent.base +
+              Offset(
+                math.cos(growthAngle) * reach,
+                math.sin(growthAngle) * reach,
+              );
+
+          if (!_insideGrowthBounds(base)) {
+            final pullTarget = Offset.lerp(root, canopy, 0.58)!;
+            base =
+                Offset.lerp(base, pullTarget, 0.62)! +
+                Offset(
+                  (rng.nextDouble() - 0.5) * 0.04,
+                  (rng.nextDouble() - 0.5) * 0.04,
+                );
+            growthAngle = _angleBetween(parent.base, base);
+          }
+
+          if (rng.nextDouble() < 0.48) {
+            final cluster =
+                convergence[(vine + localIndex + parent.generation) %
+                    convergence.length];
+            base =
+                Offset.lerp(base, cluster, 0.34)! +
+                Offset(
+                  (rng.nextDouble() - 0.5) * 0.035,
+                  (rng.nextDouble() - 0.5) * 0.035,
+                );
+            growthAngle = _angleBetween(parent.base, base);
+          }
+        }
+
+        base = _clampBase(base);
+        nodes.add(
+          NeuralNode(
+            base: base,
+            parentIndex: parentIndex,
+            growthAngle: growthAngle,
+            vineId: vine,
+            generation: parentIndex == null
+                ? 0
+                : nodes[parentIndex].generation + 1,
+            driftX: 0.008 + rng.nextDouble() * 0.023,
+            driftY: 0.008 + rng.nextDouble() * 0.023,
+            phase: rng.nextDouble() * math.pi * 2,
+            driftCycles: 1 + rng.nextInt(3),
+            breathCycles: 1 + rng.nextInt(2),
+            radius: switch (localIndex) {
+              0 => 2.8 + rng.nextDouble() * 0.8,
+              _ when localIndex < spineCount => 1.5 + rng.nextDouble() * 1.7,
+              _ => 0.7 + rng.nextDouble() * 1.5,
+            },
+          ),
+        );
+      }
+    }
+
+    return nodes;
+  }
+
+  static int _entangledParentIndex(
+    math.Random rng,
+    List<NeuralNode> nodes,
+    int vine,
+    int startIndex,
+    int spineCount,
+  ) {
+    final ownSpineEnd = math.min(nodes.length, startIndex + spineCount);
+    final useNeighborVine = startIndex > 0 && rng.nextDouble() < 0.28;
+    if (useNeighborVine) {
+      final candidateBase =
+          nodes[startIndex + rng.nextInt(ownSpineEnd - startIndex)].base;
+      return _nearestOtherVineIndex(candidateBase, nodes, vine) ??
+          startIndex + rng.nextInt(ownSpineEnd - startIndex);
+    }
+    if (rng.nextDouble() < 0.72) {
+      return startIndex + rng.nextInt(ownSpineEnd - startIndex);
+    }
+    return startIndex + rng.nextInt(nodes.length - startIndex);
+  }
+
+  static int? _nearestOtherVineIndex(
+    Offset base,
+    List<NeuralNode> nodes,
+    int vine,
+  ) {
+    int? nearestIndex;
+    var nearestDistance = double.infinity;
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].vineId == vine) continue;
+      final distance = (nodes[i].base - base).distance;
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = i;
+      }
+    }
+    return nearestDistance < 0.32 ? nearestIndex : null;
+  }
+
   static bool _insideGrowthBounds(Offset p) =>
       p.dx >= 0.07 && p.dx <= 0.93 && p.dy >= 0.12 && p.dy <= 0.88;
 
@@ -251,6 +450,7 @@ class _NeuralConstellationState extends State<NeuralConstellation>
               glow: widget.glow,
               compositionScale: widget.compositionScale,
               compositionOffset: widget.compositionOffset,
+              entanglement: widget.entanglement,
             ),
           );
         },
@@ -273,12 +473,14 @@ class NeuralNode {
     this.parentIndex,
     this.growthAngle = 0,
     this.generation = 0,
+    this.vineId = 0,
   });
 
   final Offset base; // normalized 0..1
   final int? parentIndex;
   final double growthAngle;
   final int generation;
+  final int vineId;
   final double driftX;
   final double driftY;
   final double phase;
@@ -353,6 +555,7 @@ class _ConstellationPainter extends CustomPainter {
     required this.glow,
     required this.compositionScale,
     required this.compositionOffset,
+    required this.entanglement,
   });
 
   final List<NeuralNode> nodes;
@@ -369,6 +572,7 @@ class _ConstellationPainter extends CustomPainter {
   final double glow;
   final double compositionScale;
   final Offset compositionOffset;
+  final double entanglement;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -388,6 +592,11 @@ class _ConstellationPainter extends CustomPainter {
       }
     }
 
+    if (entanglement > 0) {
+      _drawTissueBloom(canvas, positions, size);
+      _drawEntanglement(canvas, positions, size);
+    }
+
     for (var i = 0; i < branches.length; i++) {
       final branch = branches[i];
       final from = positions[branch.from];
@@ -401,26 +610,62 @@ class _ConstellationPainter extends CustomPainter {
       final breath = nodes[branch.to].breathAt(t01);
       final generation = nodes[branch.to].generation;
       final branchWeight = math.max(0.36, 1 - generation * 0.13);
+      final entangledBranch = entanglement > 0;
+      final trunkBoost = entangledBranch && generation <= 3 ? 1.34 : 1.0;
+      final layerAlpha = entangledBranch
+          ? 0.72 + ((branch.to + nodes[branch.to].vineId * 3) % 4) * 0.08
+          : 1.0;
       _drawTendrilGlow(
         canvas,
         from: from,
         control: control,
         to: to,
         color: lineColor.withValues(
-          alpha: lineColor.a * branchWeight * (0.10 + 0.05 * breath),
+          alpha:
+              lineColor.a * branchWeight * layerAlpha * (0.12 + 0.06 * breath),
         ),
-        width: 5.6 + nodes[branch.from].radius * 0.42 * branchWeight,
+        width:
+            (5.8 + nodes[branch.from].radius * 0.52 * branchWeight) *
+            trunkBoost,
       );
-      _drawTendril(
-        canvas,
-        from: from,
-        control: control,
-        to: to,
-        color: lineColor.withValues(
-          alpha: lineColor.a * branchWeight * (0.38 + 0.20 * breath),
-        ),
-        width: 1.1 + nodes[branch.from].radius * 0.22 * branchWeight,
+      if (entangledBranch && generation <= 6) {
+        _drawTendrilBundle(
+          canvas,
+          from: from,
+          control: control,
+          to: to,
+          color: lineColor.withValues(
+            alpha: lineColor.a * branchWeight * layerAlpha * 0.22,
+          ),
+          width: (0.58 + branchWeight * 0.34) * trunkBoost,
+          size: size,
+          phase: nodes[branch.to].phase,
+        );
+      }
+      final branchColor = lineColor.withValues(
+        alpha: lineColor.a * branchWeight * layerAlpha * (0.42 + 0.22 * breath),
       );
+      final branchWidth =
+          (1.12 + nodes[branch.from].radius * 0.25 * branchWeight) * trunkBoost;
+      if (entangledBranch) {
+        _drawTendrilPath(
+          canvas,
+          from: from,
+          control: control,
+          to: to,
+          color: branchColor,
+          width: branchWidth,
+        );
+      } else {
+        _drawTendril(
+          canvas,
+          from: from,
+          control: control,
+          to: to,
+          color: branchColor,
+          width: branchWidth,
+        );
+      }
 
       if (generation > 1 && branch.to.isOdd) {
         _drawHairline(
@@ -460,28 +705,54 @@ class _ConstellationPainter extends CustomPainter {
         );
         final eased = Curves.easeInOut.transform(progress);
         final head = _quadraticPoint(from, control, to, eased);
-        final tail = eased <= 0.20 ? 0.0 : eased - 0.20;
-        _drawTendril(
-          canvas,
-          from: _quadraticPoint(from, control, to, tail),
-          control: _quadraticPoint(from, control, to, (tail + eased) / 2),
-          to: head,
-          color: pulseColor.withValues(alpha: 0.20 * env),
-          width: 1.8 + env * 0.8,
-          segments: 6,
+        final entangledPulse = entanglement > 0;
+        final tailLength = entangledPulse ? 0.28 : 0.20;
+        final pulseBoost = entangledPulse ? 1.24 : 1.0;
+        final tail = eased <= tailLength ? 0.0 : eased - tailLength;
+        final tailFrom = _quadraticPoint(from, control, to, tail);
+        final tailControl = _quadraticPoint(
+          from,
+          control,
+          to,
+          (tail + eased) / 2,
         );
+        final pulseTailColor = pulseColor.withValues(
+          alpha: 0.20 * env * pulseBoost,
+        );
+        final pulseTailWidth = (1.8 + env * 0.8) * pulseBoost;
+        if (entangledPulse) {
+          _drawTendrilPath(
+            canvas,
+            from: tailFrom,
+            control: tailControl,
+            to: head,
+            color: pulseTailColor,
+            width: pulseTailWidth,
+          );
+        } else {
+          _drawTendril(
+            canvas,
+            from: tailFrom,
+            control: tailControl,
+            to: head,
+            color: pulseTailColor,
+            width: pulseTailWidth,
+            segments: 6,
+          );
+        }
         canvas
           ..drawCircle(
             head,
-            5.8 * env,
+            5.8 * env * pulseBoost,
             Paint()
-              ..color = pulseColor.withValues(alpha: 0.18 * env)
+              ..color = pulseColor.withValues(alpha: 0.18 * env * pulseBoost)
               ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
           )
           ..drawCircle(
             head,
             1.4 + env * 0.58,
-            Paint()..color = pulseColor.withValues(alpha: 0.62 * env),
+            Paint()
+              ..color = pulseColor.withValues(alpha: 0.62 * env * pulseBoost),
           );
       }
     }
@@ -493,32 +764,46 @@ class _ConstellationPainter extends CustomPainter {
       final isRoot = nodes[i].parentIndex == null;
       final generation = nodes[i].generation;
       final hierarchy = math.max(0.36, 1 - generation * 0.12);
+      final entangledNode = entanglement > 0;
       final coreAlpha = (isRoot ? 0.9 : 0.74) * hierarchy;
       final nodeRadius = nodes[i].radius;
-      final drawCore =
-          isRoot || generation <= 1 || nodeRadius > 1.85 || i.isOdd;
+      final drawCore = entangledNode
+          ? isRoot ||
+                generation <= 1 ||
+                nodeRadius > 2.25 ||
+                (i + nodes[i].vineId) % 6 == 0
+          : isRoot || generation <= 1 || nodeRadius > 1.85 || i.isOdd;
       if (!drawCore) {
         canvas.drawCircle(
           positions[i],
-          nodeRadius * 0.56,
-          Paint()..color = nodeColor.withValues(alpha: 0.24 * hierarchy),
+          nodeRadius * (entangledNode ? 0.32 : 0.56),
+          Paint()
+            ..color = nodeColor.withValues(
+              alpha: (entangledNode ? 0.10 : 0.24) * hierarchy,
+            ),
         );
         continue;
       }
       canvas
         ..drawCircle(
           positions[i],
-          nodeRadius * (3.9 + 0.8 * tw) * glow,
+          nodeRadius * (entangledNode ? 4.35 : 3.9 + 0.8 * tw) * glow,
           Paint()
             ..color = nodeColor.withValues(
-              alpha: (0.13 + 0.07 * tw) * hierarchy * glow,
+              alpha:
+                  (entangledNode ? 0.12 + 0.05 * tw : 0.13 + 0.07 * tw) *
+                  hierarchy *
+                  glow,
             )
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
         )
         ..drawCircle(
           positions[i],
           nodeRadius * (isRoot ? 1.16 : 1),
-          Paint()..color = nodeColor.withValues(alpha: coreAlpha),
+          Paint()
+            ..color = nodeColor.withValues(
+              alpha: entangledNode ? coreAlpha * 0.9 : coreAlpha,
+            ),
         );
     }
   }
@@ -590,6 +875,57 @@ class _ConstellationPainter extends CustomPainter {
     );
   }
 
+  void _drawTendrilPath(
+    Canvas canvas, {
+    required Offset from,
+    required Offset control,
+    required Offset to,
+    required Color color,
+    required double width,
+  }) {
+    final path = Path()
+      ..moveTo(from.dx, from.dy)
+      ..quadraticBezierTo(control.dx, control.dy, to.dx, to.dy);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = width
+        ..color = color,
+    );
+  }
+
+  void _drawTendrilBundle(
+    Canvas canvas, {
+    required Offset from,
+    required Offset control,
+    required Offset to,
+    required Color color,
+    required double width,
+    required Size size,
+    required double phase,
+  }) {
+    final delta = to - from;
+    final dist = delta.distance;
+    if (dist == 0) return;
+
+    final normal = Offset(-delta.dy / dist, delta.dx / dist);
+    final offsetBase = size.shortestSide * (0.0038 + 0.0018 * entanglement);
+    for (final side in const [-1.0, 1.0]) {
+      final offset =
+          normal * offsetBase * side * (0.72 + 0.28 * math.sin(phase).abs());
+      _drawTendrilPath(
+        canvas,
+        from: from + offset,
+        control: control + offset * 1.45,
+        to: to + offset * 0.82,
+        color: color,
+        width: width,
+      );
+    }
+  }
+
   void _drawHairline(
     Canvas canvas, {
     required Offset origin,
@@ -618,6 +954,86 @@ class _ConstellationPainter extends CustomPainter {
     );
   }
 
+  void _drawEntanglement(Canvas canvas, List<Offset> positions, Size size) {
+    final maxDistance = size.shortestSide * (0.13 + 0.04 * entanglement);
+    final maxLinks = math.min(
+      nodes.length,
+      (nodes.length * (0.36 + entanglement * 0.34)).round(),
+    );
+    var drawn = 0;
+
+    for (var i = 0; i < positions.length && drawn < maxLinks; i++) {
+      for (var j = i + 1; j < positions.length && drawn < maxLinks; j++) {
+        if (nodes[i].vineId == nodes[j].vineId) continue;
+        if (_areDirectlyConnected(i, j)) continue;
+        if ((i * 29 + j * 43 + nodes.length) % 7 > 2) continue;
+
+        final distance = (positions[i] - positions[j]).distance;
+        if (distance <= 0 || distance > maxDistance) continue;
+
+        final proximity = 1 - distance / maxDistance;
+        final control = _controlPoint(
+          from: positions[i],
+          to: positions[j],
+          phase: nodes[i].phase + nodes[j].phase,
+          size: size,
+        );
+        _drawTendrilPath(
+          canvas,
+          from: positions[i],
+          control: control,
+          to: positions[j],
+          color: lineColor.withValues(
+            alpha: lineColor.a * entanglement * 0.16 * proximity,
+          ),
+          width: 0.62 + proximity * 0.38,
+        );
+        drawn++;
+      }
+    }
+  }
+
+  bool _areDirectlyConnected(int a, int b) {
+    return nodes[a].parentIndex == b || nodes[b].parentIndex == a;
+  }
+
+  void _drawTissueBloom(Canvas canvas, List<Offset> positions, Size size) {
+    var weightedCenter = Offset.zero;
+    var totalWeight = 0.0;
+    for (var i = 0; i < positions.length; i++) {
+      final node = nodes[i];
+      if (node.generation > 5 || positions[i].dx > size.width * 0.78) {
+        continue;
+      }
+      final weight = math.max(0.2, 1.5 - node.generation * 0.18);
+      weightedCenter += positions[i] * weight;
+      totalWeight += weight;
+    }
+    if (totalWeight == 0) return;
+
+    final center = weightedCenter / totalWeight;
+    final paint = Paint()
+      ..color = nodeColor.withValues(alpha: 0.055 * entanglement)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 28);
+    canvas
+      ..drawOval(
+        Rect.fromCenter(
+          center: center + Offset(size.width * 0.02, size.height * 0.01),
+          width: size.shortestSide * 0.42,
+          height: size.shortestSide * 0.24,
+        ),
+        paint,
+      )
+      ..drawOval(
+        Rect.fromCenter(
+          center: center + Offset(size.width * 0.16, -size.height * 0.03),
+          width: size.shortestSide * 0.32,
+          height: size.shortestSide * 0.18,
+        ),
+        paint..color = nodeColor.withValues(alpha: 0.032 * entanglement),
+      );
+  }
+
   Offset _quadraticPoint(Offset from, Offset control, Offset to, double t) {
     final p0 = Offset.lerp(from, control, t)!;
     final p1 = Offset.lerp(control, to, t)!;
@@ -638,6 +1054,7 @@ class _ConstellationPainter extends CustomPainter {
       oldDelegate.pulseColor != pulseColor ||
       oldDelegate.compositionScale != compositionScale ||
       oldDelegate.compositionOffset != compositionOffset ||
+      oldDelegate.entanglement != entanglement ||
       oldDelegate.glow != glow;
 
   Offset _scaleAroundCenter(Offset point, Size size, double scale) {

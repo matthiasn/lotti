@@ -76,23 +76,52 @@ class OnboardingBackdrop extends StatelessWidget {
             maxAlpha: 0.06,
           ),
           NeuralConstellation(
-            nodeColor: accentColor.withValues(alpha: 0.42),
-            lineColor: accentColor.withValues(alpha: 0.20),
+            nodeColor: accentColor.withValues(alpha: 0.26),
+            lineColor: accentColor.withValues(alpha: 0.09),
             // The working-step backdrop should stay alive but recede behind
             // provider tiles / key fields, so it is smaller, dimmer and uses
             // fewer travelling activations than the welcome hero.
             pulseColor: Color.lerp(
               accentColor,
               Colors.white,
-              0.45,
-            )!.withValues(alpha: 0.54),
+              0.42,
+            )!.withValues(alpha: 0.3),
             nodeCount: nodeCount,
             pulseCount: 2,
-            glow: 0.48,
-            compositionScale: 0.78,
+            glow: 0.24,
+            compositionScale: 0.72,
+            compositionOffset: const Offset(0, -0.2),
             loop: const Duration(seconds: 14),
           ),
+          const _BackdropContentScrim(),
         ],
+      ),
+    );
+  }
+}
+
+/// Keeps later onboarding steps quiet enough for form controls: the organism is
+/// still alive, but it fades before it sits under titles, cards, and text fields.
+class _BackdropContentScrim extends StatelessWidget {
+  const _BackdropContentScrim();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              dsTokensDark.colors.background.level01.withValues(alpha: 0.48),
+              dsTokensDark.colors.background.level01.withValues(alpha: 0.84),
+              dsTokensDark.colors.background.level01.withValues(alpha: 0.9),
+            ],
+            stops: const [0, 0.18, 0.42, 1],
+          ),
+        ),
       ),
     );
   }
@@ -108,13 +137,15 @@ Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {
         nodeColor: accent,
         lineColor: accent.withValues(alpha: 0.6),
         pulseColor: Color.lerp(accent, Colors.white, 0.45)!,
-        nodeCount: 38,
+        nodeCount: 62,
         // The welcome page is the only place where the organism should own the
         // opening beat. Later FTUE pages use OnboardingBackdrop's smaller,
         // dimmer values so form controls stay dominant.
-        glow: 1.02,
-        compositionScale: 1.48,
-        compositionOffset: const Offset(0, -0.14),
+        glow: 0.9,
+        compositionScale: 1.32,
+        compositionOffset: const Offset(0, 0.02),
+        vineCount: 3,
+        entanglement: 0.64,
       );
     case OnboardingHeroStyle.crystallize:
       return CrystallizeHero(
@@ -137,6 +168,59 @@ Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {
         waveColor: accent,
         textColor: dsTokensDark.colors.text.highEmphasis,
       );
+  }
+}
+
+/// Composes the hero artwork into the modal instead of letting it end as a hard
+/// strip above the copy. The overlays are panel-coloured fades, so the underlying
+/// animation topology stays unchanged while edge clipping and the title boundary
+/// are softened.
+class _HeroArtworkFrame extends StatelessWidget {
+  const _HeroArtworkFrame({required this.backgroundColor, required this.child});
+
+  final Color backgroundColor;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        child,
+        IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  backgroundColor.withValues(alpha: 0.52),
+                  Colors.transparent,
+                  Colors.transparent,
+                  backgroundColor.withValues(alpha: 0.34),
+                ],
+                stops: const [0, 0.14, 0.84, 1],
+              ),
+            ),
+          ),
+        ),
+        IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.transparent,
+                  backgroundColor.withValues(alpha: 0.48),
+                  backgroundColor,
+                ],
+                stops: const [0, 0.58, 0.82, 1],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -175,7 +259,10 @@ class OnboardingHeroPanel extends StatelessWidget {
             SizedBox(
               height: heroHeight,
               width: double.infinity,
-              child: buildOnboardingHeroVisual(heroStyle),
+              child: _HeroArtworkFrame(
+                backgroundColor: panelBg,
+                child: buildOnboardingHeroVisual(heroStyle),
+              ),
             ),
             Padding(
               padding: EdgeInsets.fromLTRB(
