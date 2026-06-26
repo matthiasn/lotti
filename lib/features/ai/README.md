@@ -95,7 +95,7 @@ Today the automatic path is narrower than the direct one:
 - automatic: `tryTranscribe()` and `tryAnalyzeImage()`
 - direct: transcription, image analysis, prompt generation, image-prompt generation, and image generation
 
-`promptGeneration` and `imagePromptGeneration` share the same dispatch arm in `triggerSkillProvider`: both route to `runner.runPromptGeneration()`, which derives the persisted response type from `skill.skillType.toResponseType` so the same runner serves both skill types.
+`promptGeneration` and `imagePromptGeneration` share the same dispatch arm in `triggerSkillProvider`: both route to `runner.runPromptGeneration()`, which derives the persisted response type from `skill.skillType.toResponseType` so the same runner serves both skill types. When the caller does not pass a parent task id, `triggerSkillProvider` recovers one from the entry-link graph before resolving the profile: it prefers entry -> task links and falls back to task -> entry child links.
 
 ```mermaid
 flowchart TD
@@ -108,7 +108,8 @@ flowchart TD
   Resolve --> Match["Find exactly one automate=true skill assignment"]
   Match --> Runner["SkillInferenceRunner"]
 
-  Direct --> ResolveDirect["ProfileAutomationResolver.resolveForTask()"]
+  Direct --> LinkTask["Resolve task id from caller or link graph"]
+  LinkTask --> ResolveDirect["ProfileAutomationResolver.resolveForTask()"]
   ResolveDirect --> Runner
 
   Runner --> Prompt["SkillPromptBuilder"]
@@ -126,7 +127,7 @@ The automatic branch is intentionally strict:
 
 - transcription updates `JournalAudio.transcripts` and `entryText`
 - image analysis appends text to the `JournalImage` entry
-- prompt generation creates an `AiResponseEntry`
+- coding/design/research prompt generation creates an `AiResponseEntry` linked to the parent task when a task can be resolved; image-prompt generation keeps the entry link
 - image generation imports a generated image, sets it as task cover art, then triggers automatic image analysis on the generated image
 
 #### Context injection
@@ -371,14 +372,14 @@ flowchart TD
 `availableSkillsForEntityProvider((entityId, linkedFromId))` filters the skill registry per entity. The popup uses it (via `hasAvailableSkillsProvider`) to decide what to show:
 
 - Modality filter — `Modality.audio` only matches `JournalAudio`, `Modality.image` only matches `JournalImage`, `Modality.text` matches any entity with text content (`JournalAudio` qualifies via its transcript).
-- Task-context filter — a skill is considered to "need a task" iff `contextPolicy == ContextPolicy.fullTask`. When the entity is not a `Task` and `linkedFromId` is null (a standalone entry), these skills are hidden. Same skill on a task or on an entry linked from a task remains visible.
+- Task-context filter — a skill is considered to "need a task" iff `contextPolicy == ContextPolicy.fullTask`. Task context is present when the entity is a `Task`, when the caller passes `linkedFromId`, or when the entry-link graph resolves a parent task in either direction (`entry -> task`, then `task -> entry`). Full-task skills are hidden only when all three checks fail.
 - Cover-art source filter — `SkillType.imageGeneration` is narrower than the
   general text-modality rule: it is shown only for `JournalEntry` or
   `JournalAudio` sources that also have a task context. The runner imports the
   generated image back onto the linked task, so a task-only popup would have no
   source note and standalone notes would have nowhere to save the cover art.
 
-The seeded task-context skills (`Transcribe (Task Context)`, `Analyze Image (Task Context)`, `Generate Cover Art`, the coding/design/research prompt generators) are therefore hidden for standalone entries; only their plain counterparts (`Transcribe Audio`, `Analyze Image`) show up. `triggerSkillProvider` also has a defensive guard: a `fullTask` skill triggered without a `linkedTaskId` is captured as an event and aborted — the popup should never offer one in that state, so reaching it is a caller bug.
+The seeded task-context skills (`Transcribe (Task Context)`, `Analyze Image (Task Context)`, `Generate Cover Art`, the coding/design/research prompt generators) are therefore hidden for truly standalone entries; only their plain counterparts (`Transcribe Audio`, `Analyze Image`) show up. `triggerSkillProvider` also has a defensive guard: a `fullTask` skill triggered without a resolvable task id is captured as an event and aborted — the popup should never offer one in that state, so reaching it means the caller or link graph is missing task context.
 
 ### Per-Invocation Model Overrides
 
