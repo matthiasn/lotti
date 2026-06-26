@@ -61,6 +61,7 @@ void main() {
   final cols = int.tryParse(env['GRID_COLS'] ?? '') ?? 6;
   final scale = double.tryParse(env['GRID_SCALE'] ?? '') ?? 0.62;
   final onion = (env['GRID_ONION'] ?? '1') != '0';
+  final labels = (env['GRID_LABELS'] ?? '0') == '1';
   // When set, also write a numbered full-frame PNG sequence per clip into
   // `seq_<clip>/` so ffmpeg can stitch a watchable GIF/APNG of the motion.
   final frameSeq = (env['GRID_FRAMESEQ'] ?? '0') == '1';
@@ -410,12 +411,14 @@ void main() {
         synchronousEnsemble: clip.name == CatClips.dance.name,
       ).paint(canvas, const Size(liveW, liveH));
 
-      drawLabel(
-        canvas,
-        '#$i  p=${p.toStringAsFixed(2)}',
-        6,
-        5,
-      );
+      if (labels) {
+        drawLabel(
+          canvas,
+          '#$i  p=${p.toStringAsFixed(2)}',
+          8,
+          liveH - 22,
+        );
+      }
       canvas.restore();
     }
 

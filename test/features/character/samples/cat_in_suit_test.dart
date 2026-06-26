@@ -137,14 +137,14 @@ void main() {
         expect(
           left.channels[CatBones.hips]!.sample(p).rotation,
           closeTo(
-            lead.channels[CatBones.hips]!.sample(p + 1 / 36).rotation,
+            lead.channels[CatBones.hips]!.sample(p - 1 / 32).rotation,
             0.02,
           ),
         );
         expect(
           right.channels[CatBones.hips]!.sample(p).rotation,
           closeTo(
-            lead.channels[CatBones.hips]!.sample(p + 1 / 36).rotation,
+            lead.channels[CatBones.hips]!.sample(p + 1 / 32).rotation,
             0.02,
           ),
         );
@@ -169,29 +169,48 @@ void main() {
       },
     );
 
-    test('dance keeps body, feet, and hands alive between count hits', () {
-      final channels = CatClips.dance.channels;
-      final torso = channels[CatBones.torso]!;
-      final foot = channels[CatBones.footL]!;
-      final hand = channels[CatBones.armLowerL]!;
+    test(
+      'dance compresses, rebounds, and moves through foot and hand arcs',
+      () {
+        final channels = CatClips.dance.channels;
+        final torso = channels[CatBones.torso]!;
+        final foot = channels[CatBones.footL]!;
+        final hand = channels[CatBones.armLowerL]!;
 
-      final countStartTorso = torso.sample(0);
-      final offBeatTorso = torso.sample(1 / 24);
-      final countEndTorso = torso.sample(1 / 12);
-      expect(offBeatTorso.scaleY, greaterThan(countStartTorso.scaleY + 0.03));
-      expect(offBeatTorso.scaleY, greaterThan(countEndTorso.scaleY + 0.015));
+        final compressionTorso = torso.sample(0);
+        final pickupTorso = torso.sample(1 / 16);
+        final reboundTorso = torso.sample(1 / 8);
+        expect(pickupTorso.scaleY, greaterThan(compressionTorso.scaleY + 0.01));
+        expect(reboundTorso.scaleY, greaterThan(pickupTorso.scaleY + 0.02));
 
-      final countStartFoot = foot.sample(0).rotation;
-      final offBeatFoot = foot.sample(1 / 24).rotation;
-      final countEndFoot = foot.sample(1 / 12).rotation;
-      expect(offBeatFoot, lessThan(countStartFoot - 0.1));
-      expect(offBeatFoot, lessThan(countEndFoot - 0.1));
+        final plantedFoot = foot.sample(0).rotation;
+        final toeRollFoot = foot.sample(1 / 16).rotation;
+        final reboundFoot = foot.sample(1 / 8).rotation;
+        expect(toeRollFoot, lessThan(plantedFoot - 0.04));
+        expect(reboundFoot, greaterThan(toeRollFoot + 0.08));
 
-      final countStartHand = hand.sample(0).rotation;
-      final offBeatHand = hand.sample(1 / 24).rotation;
-      final countEndHand = hand.sample(1 / 12).rotation;
-      expect(offBeatHand, greaterThan(countStartHand + 0.1));
-      expect(offBeatHand, greaterThan(countEndHand + 0.3));
+        final compactHand = hand.sample(0).rotation;
+        final pickupHand = hand.sample(1 / 16).rotation;
+        final openHand = hand.sample(1 / 8).rotation;
+        expect(pickupHand, lessThan(compactHand - 0.14));
+        expect(openHand, lessThan(pickupHand - 0.14));
+      },
+    );
+
+    test('dance pins alternating support feet across the two-bar phrase', () {
+      expect(
+        CatClips.dance.contactSpans.map((span) => span.bone),
+        [
+          CatBones.footL,
+          CatBones.footR,
+          CatBones.footL,
+          CatBones.footR,
+          CatBones.footL,
+          CatBones.footR,
+          CatBones.footL,
+          CatBones.footR,
+        ],
+      );
     });
 
     test('walk and run carry forward locomotion, stage moves do not', () {

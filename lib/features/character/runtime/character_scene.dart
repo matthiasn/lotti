@@ -198,7 +198,11 @@ class CharacterScene {
     final posed = _contactLockedPose(clip, timeSeconds, breathed);
 
     final rawWorld = solver.solve(posed, base: base);
-    final world = _headStabilizedWorld(clip, rawWorld);
+    final world = _headStabilizedWorld(
+      clip,
+      rawWorld,
+      rootDy: posed.rootDy,
+    );
     var face = faceSolver.applyAutonomic(expression.state, auto);
     if (eyeOpenScale != 1) {
       face = face.copyWith(
@@ -217,8 +221,9 @@ class CharacterScene {
   /// controlled skull/neck.
   Map<String, Affine2D> _headStabilizedWorld(
     Clip clip,
-    Map<String, Affine2D> world,
-  ) {
+    Map<String, Affine2D> world, {
+    required double rootDy,
+  }) {
     final headId = rig.face?.anchorBoneId;
     if (headId == null) return world;
     if (clip.name != 'dance' || !world.containsKey(headId)) return world;
@@ -226,16 +231,24 @@ class CharacterScene {
     final headWorld = world[headId]!;
     final headRotation = _worldRotation(headWorld);
     final rotationCorrection = -headRotation * 0.84;
-    if (rotationCorrection.abs() < 0.001) return world;
+    final worldScale = math.sqrt(
+      headWorld.a * headWorld.a + headWorld.b * headWorld.b,
+    );
+    final verticalCorrection = (-rootDy * worldScale * 0.34).clamp(-2.4, 2.4);
+    if (rotationCorrection.abs() < 0.001 && verticalCorrection.abs() < 0.05) {
+      return world;
+    }
 
     final anchor = headWorld.origin;
-    final rotateAroundHead = Affine2D.translation(anchor.x, anchor.y)
-        .multiply(Affine2D.rotation(rotationCorrection))
-        .multiply(Affine2D.translation(-anchor.x, -anchor.y));
+    final stabilizeHead = Affine2D.translation(0, verticalCorrection).multiply(
+      Affine2D.translation(anchor.x, anchor.y)
+          .multiply(Affine2D.rotation(rotationCorrection))
+          .multiply(Affine2D.translation(-anchor.x, -anchor.y)),
+    );
     final shifted = Map<String, Affine2D>.of(world);
     for (final bone in rig.bones) {
       if (bone.id == headId || _hasAncestor(bone.id, headId)) {
-        shifted[bone.id] = rotateAroundHead.multiply(world[bone.id]!);
+        shifted[bone.id] = stabilizeHead.multiply(world[bone.id]!);
       }
     }
     return shifted;
@@ -273,8 +286,8 @@ class CharacterScene {
 
     return Pose(
       joints: pose.joints,
-      rootDx: pose.rootDx + (anchor.x - current.x) * strength,
-      rootDy: pose.rootDy + (anchor.y - current.y) * strength,
+      rootDx: pose.rootDx + (anchor.x - current.x) * strength.x,
+      rootDy: pose.rootDy + (anchor.y - current.y) * strength.y,
       rootRotation: pose.rootRotation,
     );
   }
@@ -293,17 +306,22 @@ class CharacterScene {
     return clip.contactSpans.last;
   }
 
-  double _contactLockStrength(Clip clip, GroundSpan span, double p) {
+  ({double x, double y}) _contactLockStrength(
+    Clip clip,
+    GroundSpan span,
+    double p,
+  ) {
     final dance = clip.name == 'dance';
-    final base = dance ? 0.94 : (clip.loop ? 0.8 : 0.94);
+    final baseX = dance ? 0.985 : (clip.loop ? 0.8 : 0.94);
+    final baseY = dance ? 1.0 : (clip.loop ? 0.8 : 0.94);
     final spanLength = span.end - span.start;
     final fade = dance
-        ? (spanLength * 0.16).clamp(0.018, 0.03)
+        ? (spanLength * 0.12).clamp(0.018, 0.028)
         : (clip.loop ? (spanLength * 0.2).clamp(0.018, 0.035) : 0.08);
     final fadeIn = _smoothUnit((p - span.start) / fade);
     final fadeOut = _smoothUnit((span.end - p) / fade);
     final edge = fadeIn < fadeOut ? fadeIn : fadeOut;
-    return base * edge;
+    return (x: baseX * edge, y: baseY * edge);
   }
 
   double _smoothUnit(double t) {

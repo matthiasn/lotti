@@ -323,11 +323,17 @@ class RootKeyframe {
   final Ease ease;
 }
 
-/// Eased keyframed root motion for one-shots. Keys must be sorted by phase.
+/// Eased or smooth keyframed root motion. Keys must be sorted by phase.
 class KeyframeRootChannel extends RootChannel {
-  const KeyframeRootChannel(this.keys);
+  const KeyframeRootChannel(this.keys, {this.smooth = false});
 
   final List<RootKeyframe> keys;
+
+  /// When true, interpolate with the same periodic Catmull-Rom spline used by
+  /// [KeyframeChannel]. This is meant for cyclic stage movement where the root
+  /// should flow through authored beat positions instead of stopping on every
+  /// count.
+  final bool smooth;
 
   @override
   ({double dx, double dy, double rotation}) sample(double p) {
@@ -346,6 +352,13 @@ class KeyframeRootChannel extends RootChannel {
       if (p >= k0.p && p <= k1.p) {
         final span = k1.p - k0.p;
         final local = span == 0 ? 0.0 : (p - k0.p) / span;
+        if (smooth) {
+          return (
+            dx: _spline(i, local, span, (k) => k.dx),
+            dy: _spline(i, local, span, (k) => k.dy),
+            rotation: _spline(i, local, span, (k) => k.rotation),
+          );
+        }
         final t = k1.ease.apply(local);
         return (
           dx: k0.dx + (k1.dx - k0.dx) * t,
@@ -355,6 +368,45 @@ class KeyframeRootChannel extends RootChannel {
       }
     }
     return (dx: 0, dy: 0, rotation: 0);
+  }
+
+  double _spline(
+    int i,
+    double local,
+    double dp,
+    double Function(RootKeyframe) f,
+  ) {
+    final n = keys.length;
+    final period = keys.last.p - keys.first.p;
+    final v1 = f(keys[i]);
+    final v2 = f(keys[i + 1]);
+    final double v0;
+    final double p0;
+    final double v3;
+    final double p3;
+    if (i == 0) {
+      v0 = f(keys[n - 2]);
+      p0 = keys[n - 2].p - period;
+    } else {
+      v0 = f(keys[i - 1]);
+      p0 = keys[i - 1].p;
+    }
+    if (i + 1 == n - 1) {
+      v3 = f(keys[1]);
+      p3 = keys[1].p + period;
+    } else {
+      v3 = f(keys[i + 2]);
+      p3 = keys[i + 2].p;
+    }
+    final m1 = dp * (v2 - v0) / (keys[i + 1].p - p0);
+    final m2 = dp * (v3 - v1) / (p3 - keys[i].p);
+    final t = local;
+    final t2 = t * t;
+    final t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * v1 +
+        (t3 - 2 * t2 + t) * m1 +
+        (-2 * t3 + 3 * t2) * v2 +
+        (t3 - t2) * m2;
   }
 }
 

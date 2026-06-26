@@ -182,6 +182,21 @@ void main() {
       expect(root.sample(1).dy, closeTo(10, 1e-9));
     });
 
+    test('smooth cyclic root passes through authored beats', () {
+      const smooth = KeyframeRootChannel([
+        RootKeyframe(p: 0),
+        RootKeyframe(p: 0.25, dx: 10, dy: -2),
+        RootKeyframe(p: 0.5),
+        RootKeyframe(p: 0.75, dx: -10, dy: -2),
+        RootKeyframe(p: 1),
+      ], smooth: true);
+
+      expect(smooth.sample(0.25).dx, closeTo(10, 1e-9));
+      expect(smooth.sample(0.75).dx, closeTo(-10, 1e-9));
+      expect(smooth.sample(0.125).dx, greaterThan(0));
+      expect(smooth.sample(0.625).dx, lessThan(0));
+    });
+
     test('empty channel yields no motion', () {
       const empty = KeyframeRootChannel(<RootKeyframe>[]);
       final s = empty.sample(0.4);

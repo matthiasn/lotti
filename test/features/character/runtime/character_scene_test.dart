@@ -158,6 +158,13 @@ void main() {
             'looped performance contact correction should visibly reduce '
             'support-foot drift without hard-locking the whole cycle',
       );
+      expect(
+        lockedDrift,
+        lessThan(3.2),
+        reason:
+            'dance support feet should stay close enough to read planted '
+            'during the groove holds',
+      );
     });
 
     test('is deterministic: identical scenes resolve identical frames', () {

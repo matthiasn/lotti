@@ -28,11 +28,12 @@ Affine2D groundedBase(
   required double centreX,
   double scale = 1,
   double feetFraction = 0.92,
+  double? floorY,
   double feetOffset = 0,
   bool flip = false,
 }) => Affine2D.translation(
   centreX,
-  size.height * feetFraction - feetOffset * scale,
+  (floorY ?? size.height * feetFraction) - feetOffset * scale,
 ).multiply(Affine2D.scale(flip ? -scale : scale, scale));
 
 /// A [CustomPainter] that resolves and draws one frame of a [CharacterScene].
@@ -133,13 +134,25 @@ class CharacterPainter extends CustomPainter {
   // Keep the cat this far from the stage edges as it walks back and forth.
   static const double _edgeMargin = 44;
   static const double _pairScaleFactor = 0.7;
-  static const double _trioScaleFactor = 0.59;
+  static const double _trioScaleFactor = 0.49;
   static const double _pairSpacing = 215;
   static const double _trioSpacing = 236;
 
   @override
   void paint(Canvas canvas, Size size) {
     final floorY = size.height * feetFraction;
+    final memberCount = walkingPair
+        ? (ensembleScenes.isEmpty ? 2 : ensembleScenes.length + 1)
+        : 1;
+    final sceneCamera = walkingPair && clip.name == 'dance' && memberCount == 3
+        ? _danceCamera(timeSeconds, clip.duration)
+        : (zoom: 1.0, dx: 0.0, dy: 0.0);
+
+    canvas
+      ..save()
+      ..clipRect(Offset.zero & size);
+    _applySceneCamera(canvas, size, sceneCamera);
+
     if (backdrop == CharacterBackdrop.waterfront) {
       _paintWaterfrontBackdrop(
         canvas,
@@ -162,9 +175,6 @@ class CharacterPainter extends CustomPainter {
     // the stage when locomotion is on, so the body travels over a planted foot.
     var centreX = size.width / 2;
     var flip = false;
-    final memberCount = walkingPair
-        ? (ensembleScenes.isEmpty ? 2 : ensembleScenes.length + 1)
-        : 1;
     if (locomote && clip.locomotes) {
       final drawScale = walkingPair ? scale * _scaleFactor(memberCount) : scale;
       final travelPx =
@@ -207,13 +217,10 @@ class CharacterPainter extends CustomPainter {
       final clips = order == null
           ? baseClips
           : [for (final i in order) baseClips[i]];
-      final danceCamera = leadCentreOrder
-          ? _danceCamera(timeSeconds, clip.duration)
-          : (zoom: 1.0, dx: 0.0, dy: 0.0);
-      final drawScale = scale * _scaleFactor(members.length) * danceCamera.zoom;
+      final drawScale = scale * _scaleFactor(members.length);
       final spacing = _spacing(members.length) * drawScale;
-      final groupCentreX = centreX + danceCamera.dx * drawScale;
-      final groupFloorY = floorY + danceCamera.dy * drawScale;
+      final groupCentreX = centreX;
+      final groupFloorY = floorY;
       final startX = groupCentreX - spacing * (members.length - 1) / 2;
       final paintOrder = members.length >= 3
           ? const [0, 2, 1]
@@ -254,6 +261,10 @@ class CharacterPainter extends CustomPainter {
           feetFraction: feetFraction,
         );
       }
+      canvas.restore();
+      if (backdrop == CharacterBackdrop.waterfront) {
+        _paintTopSafeSky(canvas, size);
+      }
       return;
     }
 
@@ -270,6 +281,45 @@ class CharacterPainter extends CustomPainter {
       scale: scale,
       feetFraction: feetFraction,
     );
+    canvas.restore();
+    if (backdrop == CharacterBackdrop.waterfront) {
+      _paintTopSafeSky(canvas, size);
+    }
+  }
+
+  void _paintTopSafeSky(Canvas canvas, Size size) {
+    final height = size.height * 0.085;
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, height),
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset.zero,
+          Offset(0, height),
+          const [
+            Color(0xFF3DB9E9),
+            Color(0xCC47BFEA),
+            Color(0x003DB9E9),
+          ],
+          const [0, 0.46, 1],
+        ),
+    );
+  }
+
+  static void _applySceneCamera(
+    Canvas canvas,
+    Size size,
+    ({double zoom, double dx, double dy}) camera,
+  ) {
+    if (camera.zoom == 1 && camera.dx == 0 && camera.dy == 0) return;
+    final pivot = Offset(size.width / 2, size.height * 0.56);
+    final maxDx = size.width * (camera.zoom - 1) / 2;
+    final maxDy = size.height * (camera.zoom - 1) / 2;
+    final dx = camera.dx.clamp(-maxDx, maxDx);
+    final dy = camera.dy.clamp(-maxDy, maxDy);
+    canvas
+      ..translate(pivot.dx + dx, pivot.dy + dy)
+      ..scale(camera.zoom)
+      ..translate(-pivot.dx, -pivot.dy);
   }
 
   static double _scaleFactor(int memberCount) =>
@@ -280,12 +330,12 @@ class CharacterPainter extends CustomPainter {
 
   static double _roleScale(int index, int memberCount) {
     if (memberCount < 3) return 1;
-    return index == 1 ? 1.03 : 0.96;
+    return index == 1 ? 1.06 : 0.94;
   }
 
   static double _roleFloorOffset(int index, int memberCount) {
     if (memberCount < 3) return 0;
-    return index == 1 ? 2 : -5;
+    return index == 1 ? -28 : -40;
   }
 
   static ({double zoom, double dx, double dy}) _danceCamera(
@@ -293,13 +343,14 @@ class CharacterPainter extends CustomPainter {
     double duration,
   ) {
     final p = _cyclePhase(timeSeconds, duration);
-    final groove = math.sin(2 * math.pi * (p * 2 - 0.08));
-    final accent = math.sin(2 * math.pi * (p * 12 + 0.08));
-    final payoff = _smoothUnit((p - 8 / 12) / (4 / 12));
+    final loopGate = math.sin(math.pi * p);
+    final push = loopGate * loopGate;
+    final track = math.sin(2 * math.pi * p) * loopGate;
+    final accent = math.sin(2 * math.pi * p);
     return (
-      zoom: 1.0 + 0.018 * groove + 0.022 * payoff,
-      dx: 8 * math.sin(2 * math.pi * (p - 0.1)),
-      dy: -5 * payoff + 1.5 * accent,
+      zoom: 1.0 + 0.13 * push + 0.025 * accent * accent,
+      dx: 118 * track + 10 * push,
+      dy: -7 * push,
     );
   }
 
@@ -312,19 +363,14 @@ class CharacterPainter extends CustomPainter {
     if (memberCount < 3) return (dx: 0, dy: 0);
     final p = _cyclePhase(timeSeconds, duration);
     final breathe = math.sin(2 * math.pi * (p * 3 + 0.15));
-    final callResponse = math.sin(2 * math.pi * (p * 1.5 - 0.08));
-    final payoff = _smoothUnit((p - 8 / 12) / (4 / 12));
+    final callResponse = math.sin(2 * math.pi * (p * 2 - 0.08));
+    final heroPulse = math.pow(math.sin(math.pi * p), 2).toDouble();
     return switch (index) {
       0 => (dx: -10 - 8 * breathe, dy: -6 + 3 * callResponse),
-      1 => (dx: 0, dy: 8 + 6 * payoff),
+      1 => (dx: 0, dy: 8 + 6 * heroPulse),
       2 => (dx: 10 + 8 * breathe, dy: -6 - 3 * callResponse),
       _ => (dx: 0, dy: 0),
     };
-  }
-
-  static double _smoothUnit(double t) {
-    final x = t.clamp(0.0, 1.0);
-    return x * x * (3 - 2 * x);
   }
 
   static double _ensembleMicroTimingOffset(
@@ -343,9 +389,9 @@ class CharacterPainter extends CustomPainter {
       final phraseDrift = math.sin(2 * math.pi * (p * 3 + index * 0.37));
       final beatDrift = math.sin(2 * math.pi * (p * 12 + index * 0.19));
       return switch (index) {
-        0 => (0.075 + 0.028 * phraseDrift + 0.012 * beatDrift) * damping,
+        0 => (-0.052 + 0.018 * phraseDrift + 0.008 * beatDrift) * damping,
         1 => 0,
-        2 => (-0.066 + 0.024 * phraseDrift - 0.01 * beatDrift) * damping,
+        2 => (0.04 + 0.016 * phraseDrift - 0.008 * beatDrift) * damping,
         _ => (0.03 * phraseDrift) * damping,
       };
     }
@@ -641,6 +687,7 @@ class CharacterPainter extends CustomPainter {
       centreX: centreX,
       scale: scale,
       feetFraction: feetFraction,
+      floorY: floorY,
       feetOffset: drawScene.restFeetOffset,
       flip: flip,
     );
@@ -682,28 +729,44 @@ class CharacterPainter extends CustomPainter {
       return;
     }
 
-    final transform = frame.world[contactBone];
-    final drawable = drawScene.rig.bone(contactBone)?.drawable;
-    if (transform == null || drawable == null) return;
-    final bottom = transform.transformPoint(
-      drawable.dx,
-      drawable.dy + drawable.height / 2,
-    );
-    final lift = ((floorY - bottom.y) / (90 * scale)).clamp(0.0, 1.0);
-    final shadowW = 54 * scale * (1 - 0.35 * lift);
-    final baseAlpha = (shadowColor.a * 255.0).round();
-    final shadowAlpha = (baseAlpha * 1.2 * (1 - 0.75 * lift)).round().clamp(
-      0,
-      255,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(bottom.x, floorY + 2),
-        width: shadowW,
-        height: shadowW * 0.16,
-      ),
-      Paint()..color = shadowColor.withAlpha(shadowAlpha),
-    );
+    _paintBodyShadow(canvas, floorY, centreX, scale, frame, drawScene);
+    for (final boneId in _shadowBones(clip)) {
+      final transform = frame.world[boneId];
+      final drawable = drawScene.rig.bone(boneId)?.drawable;
+      if (transform == null || drawable == null) continue;
+
+      final bottom = transform.transformPoint(
+        drawable.dx,
+        drawable.dy + drawable.height / 2,
+      );
+      final lift = ((floorY - bottom.y) / (90 * scale)).clamp(0.0, 1.0);
+      final active = boneId == contactBone;
+      final shadowW = (active ? 62 : 46) * scale * (1 - 0.35 * lift);
+      final baseAlpha = (shadowColor.a * 255.0).round();
+      final shadowAlpha =
+          (baseAlpha * (active ? 1.75 : 0.72) * (1 - 0.82 * lift))
+              .round()
+              .clamp(0, 255);
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(bottom.x, floorY + (active ? 1.5 : 2.5)),
+          width: shadowW,
+          height: shadowW * (active ? 0.15 : 0.12),
+        ),
+        Paint()..color = shadowColor.withAlpha(shadowAlpha),
+      );
+    }
+  }
+
+  List<String> _shadowBones(Clip clip) {
+    final spans = clip.contactSpans.isNotEmpty
+        ? clip.contactSpans
+        : clip.groundSpans;
+    final ids = <String>{};
+    for (final span in spans) {
+      ids.add(span.bone);
+    }
+    return ids.toList(growable: false);
   }
 
   String? _activeGroundBone(Clip clip, double timeSeconds) {
