@@ -259,7 +259,7 @@ void main() {
                     },
                   },
                   {
-                    'id': 'flux-2-dev',
+                    'id': 'flux-2-klein-9b',
                     'object': 'model',
                     'owned_by': 'melious',
                     '_meta': {
@@ -341,7 +341,7 @@ void main() {
         expect(deepseek.description, contains('Context: 1000000 tokens'));
 
         final image = models.singleWhere(
-          (model) => model.providerModelId == 'flux-2-dev',
+          (model) => model.providerModelId == 'flux-2-klein-9b',
         );
         expect(
           image.inputModalities,

@@ -192,7 +192,7 @@ class ProfileSeedingService {
     }
 
     return profile.copyWith(
-      imageGenerationModelId: meliousFlux2DevModelId,
+      imageGenerationModelId: meliousFlux2Klein9BModelId,
     );
   }
 
@@ -227,7 +227,7 @@ class ProfileSeedingService {
         profile.isDefault &&
         !profile.desktopOnly &&
         profile.pinnedHostId == null &&
-        _slotResolvesToModelRow(meliousFlux2DevModelId, models);
+        _slotResolvesToModelRow(meliousFlux2Klein9BModelId, models);
   }
 
   static bool _isUntouchedOmlxProfileMissingTranscription(
@@ -454,7 +454,7 @@ class ProfileSeedingService {
       thinkingHighEndModelId: meliousDeepseekV4ProModelId,
       imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
       transcriptionModelId: meliousWhisperLargeV3TurboModelId,
-      imageGenerationModelId: meliousFlux2DevModelId,
+      imageGenerationModelId: meliousFlux2Klein9BModelId,
       skillAssignments: _defaultSkillAssignments,
       isDefault: true,
       createdAt: DateTime(2026),

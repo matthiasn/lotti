@@ -324,6 +324,9 @@ Cats in suits in a steampunk laboratory working at a whiteboard with brass machi
           result.userMessage,
           contains('Mood and task clues: Creative planning task'),
         );
+        expect(result.userMessage, contains('Format: 16:9 wide cover art'));
+        expect(result.userMessage, contains('central square-safe area'));
+        expect(result.userMessage, contains('1:1 thumbnail crop'));
         expect(result.userMessage, contains('Render this as an image story'));
         expect(result.userMessage, isNot(contains('**Task Context:**')));
         expect(result.userMessage, isNot(contains('**Task Summary:**')));

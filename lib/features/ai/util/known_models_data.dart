@@ -64,13 +64,13 @@ const List<KnownModel> meliousModels = [
         'thinking tasks.',
   ),
   KnownModel(
-    providerModelId: meliousFlux2DevModelId,
-    name: 'Flux 2 Dev',
+    providerModelId: meliousFlux2Klein9BModelId,
+    name: 'Flux 2 Klein 9B',
     inputModalities: [Modality.text],
     outputModalities: [Modality.image],
     isReasoningModel: false,
     description:
-        'Melious-hosted Black Forest Labs Flux 2 Dev image-generation model '
+        'Melious-hosted Black Forest Labs Flux 2 Klein 9B image-generation model '
         'for higher-quality task cover art.',
   ),
   KnownModel(

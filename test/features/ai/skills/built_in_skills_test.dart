@@ -168,6 +168,16 @@ void main() {
         expect(instructions, contains('ui'));
         expect(instructions, contains('watermark'));
       });
+
+      test('instructions keep the main action square-crop safe', () {
+        final instructions =
+            '${skill.systemInstructions}\n${skill.userInstructions}'
+                .toLowerCase();
+
+        expect(instructions, contains('16:9'));
+        expect(instructions, contains('central square-safe area'));
+        expect(instructions, contains('1:1 thumbnail crop'));
+      });
     });
 
     group('research prompt skill', () {

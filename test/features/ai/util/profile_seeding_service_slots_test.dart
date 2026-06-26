@@ -510,7 +510,7 @@ void main() {
     );
 
     test(
-      'adds Flux 2 Dev image generation to untouched Melious profiles',
+      'adds Flux 2 Klein 9B image generation to untouched Melious profiles',
       () async {
         when(
           () => mockRepo.getConfigsByType(AiConfigType.model),
@@ -529,8 +529,8 @@ void main() {
               providerModelId: meliousWhisperLargeV3TurboModelId,
             ),
             AiTestDataFactory.createTestModel(
-              id: 'model-melious-flux-dev',
-              providerModelId: meliousFlux2DevModelId,
+              id: 'model-melious-flux-klein-9b',
+              providerModelId: meliousFlux2Klein9BModelId,
               outputModalities: const [Modality.image],
             ),
           ],
@@ -570,7 +570,7 @@ void main() {
         final upgraded = captured.single as AiConfigInferenceProfile;
 
         expect(upgraded.id, profileMeliousId);
-        expect(upgraded.imageGenerationModelId, 'model-melious-flux-dev');
+        expect(upgraded.imageGenerationModelId, 'model-melious-flux-klein-9b');
       },
     );
 
@@ -582,8 +582,8 @@ void main() {
         ).thenAnswer(
           (_) async => [
             AiTestDataFactory.createTestModel(
-              id: 'model-melious-flux-dev',
-              providerModelId: meliousFlux2DevModelId,
+              id: 'model-melious-flux-klein-9b',
+              providerModelId: meliousFlux2Klein9BModelId,
               outputModalities: const [Modality.image],
             ),
           ],

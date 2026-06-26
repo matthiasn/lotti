@@ -136,7 +136,7 @@ void main() {
         containsAll([
           meliousMistralSmall4119BInstructModelId,
           meliousDeepseekV4ProModelId,
-          meliousFlux2DevModelId,
+          meliousFlux2Klein9BModelId,
           meliousWhisperLargeV3ModelId,
           meliousWhisperLargeV3TurboModelId,
         ]),
@@ -167,9 +167,9 @@ void main() {
           inferenceProviderId: meliousProvider.id,
         ),
         AiTestDataFactory.createTestModel(
-          id: 'flux-dev',
-          name: 'Flux 2 Dev',
-          providerModelId: meliousFlux2DevModelId,
+          id: 'flux-klein-9b',
+          name: 'Flux 2 Klein 9B',
+          providerModelId: meliousFlux2Klein9BModelId,
           inferenceProviderId: meliousProvider.id,
         ),
         AiTestDataFactory.createTestModel(
