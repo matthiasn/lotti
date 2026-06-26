@@ -223,10 +223,23 @@ void main() {
         );
         expect(
           _distance(seamBefore, seamAfter),
-          lessThan(7),
+          lessThan(4.2),
           reason:
               'the loop-pickup support foot should roll into frame 1 instead of '
               'visibly popping to a new floor point',
+        );
+        final seamCarry = _supportPoint(
+          scene,
+          CatClips.dance,
+          lastSpan.bone,
+          CatClips.dance.duration / 16,
+        );
+        expect(
+          _distance(seamBefore, seamCarry),
+          lessThan(4.2),
+          reason:
+              'matching first/last loop contacts should behave as one '
+              'continuous support hold across the wrap',
         );
       },
     );

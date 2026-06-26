@@ -273,16 +273,20 @@ class CharacterScene {
   /// snapping at support handoffs.
   Pose _contactLockedPose(Clip clip, double timeSeconds, Pose pose) {
     final p = _clipPhase(clip, timeSeconds);
-    final span = _activeContactSpanAt(clip, p);
-    if (span == null) return pose;
+    final contact = _activeContactAt(clip, p);
+    if (contact == null) return pose;
 
-    final anchorPose = evaluator.evaluate(clip, span.start * clip.duration);
+    final span = contact.span;
+    final anchorPose = evaluator.evaluate(
+      clip,
+      contact.anchorPhase * clip.duration,
+    );
     final currentWorld = solver.solve(pose);
     final anchorWorld = solver.solve(anchorPose);
     final current = _contactPoint(currentWorld, span.bone);
     final anchor = _contactPoint(anchorWorld, span.bone);
     if (current == null || anchor == null) return pose;
-    final strength = _contactLockStrength(clip, span, p);
+    final strength = _contactLockStrength(clip, span, contact.strengthPhase);
 
     return Pose(
       joints: pose.joints,
@@ -298,12 +302,33 @@ class CharacterScene {
     return clip.loop ? raw - raw.floorToDouble() : raw.clamp(0.0, 1.0);
   }
 
-  GroundSpan? _activeContactSpanAt(Clip clip, double p) {
+  ({GroundSpan span, double anchorPhase, double strengthPhase})?
+  _activeContactAt(Clip clip, double p) {
     if (clip.contactSpans.isEmpty) return null;
-    for (final span in clip.contactSpans) {
-      if (p >= span.start && p < span.end) return span;
+    final first = clip.contactSpans.first;
+    final last = clip.contactSpans.last;
+    if (clip.loop && first.bone == last.bone) {
+      if (p >= last.start) {
+        return (
+          span: GroundSpan(last.bone, last.start, first.end + 1),
+          anchorPhase: last.start,
+          strengthPhase: p,
+        );
+      }
+      if (p < first.end) {
+        return (
+          span: GroundSpan(first.bone, last.start, first.end + 1),
+          anchorPhase: last.start,
+          strengthPhase: p + 1,
+        );
+      }
     }
-    return clip.contactSpans.last;
+    for (final span in clip.contactSpans) {
+      if (p >= span.start && p < span.end) {
+        return (span: span, anchorPhase: span.start, strengthPhase: p);
+      }
+    }
+    return (span: last, anchorPhase: last.start, strengthPhase: p);
   }
 
   ({double x, double y}) _contactLockStrength(
