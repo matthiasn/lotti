@@ -64,10 +64,21 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
           SkillType.imageGeneration,
         };
 
-        final hasTaskContext = await _hasTaskContext(
-          entity: entity,
-          linkedFromId: params.linkedFromId,
-        );
+        final hasKnownTaskContext =
+            entity is Task || params.linkedFromId != null;
+        final needsResolvedTaskContext =
+            !hasKnownTaskContext &&
+            registry.any(
+              (skill) =>
+                  supportedTypes.contains(skill.skillType) &&
+                  (skill.contextPolicy == ContextPolicy.fullTask ||
+                      skill.skillType == SkillType.imageGeneration),
+            );
+        final hasTaskContext =
+            hasKnownTaskContext ||
+            (needsResolvedTaskContext &&
+                await _findLinkedTaskId(entityId: entity.id) != null);
+
         final hasText =
             entity is JournalEntry ||
             entity is JournalAudio ||
@@ -292,14 +303,6 @@ final triggerSkillProvider = FutureProvider.autoDispose
       },
     );
 
-Future<bool> _hasTaskContext({
-  required JournalEntity entity,
-  required String? linkedFromId,
-}) async {
-  if (entity is Task || linkedFromId != null) return true;
-  return await _findLinkedTaskId(entityId: entity.id) != null;
-}
-
 Future<String?> _resolveLinkedTaskId({
   required String entityId,
   required String? linkedTaskId,
@@ -308,6 +311,7 @@ Future<String?> _resolveLinkedTaskId({
 
   final db = getIt<JournalDb>();
   final entity = await db.journalEntityById(entityId);
+  if (entity == null) return null;
   if (entity is Task) return entity.id;
   return _findLinkedTaskId(entityId: entityId);
 }
@@ -317,17 +321,24 @@ Future<String?> _findLinkedTaskId({
 }) async {
   final db = getIt<JournalDb>();
 
+  final outgoingEntitiesFuture = db.getLinkedEntities(entityId);
+  final incomingEntitiesFuture = db.getLinkedToEntities(entityId);
+
+  final (outgoingEntities, incomingDbEntities) = await (
+    outgoingEntitiesFuture,
+    incomingEntitiesFuture,
+  ).wait;
+
   // Preferred direction: the source entry explicitly links to a task.
-  final outgoingTask = (await db.getLinkedEntities(
-    entityId,
-  )).whereType<Task>().firstOrNull;
+  final outgoingTask = outgoingEntities.whereType<Task>().firstOrNull;
   if (outgoingTask != null) return outgoingTask.id;
 
   // Fallback direction: a task links to the source entry as one of its
   // children. This is the common task timeline direction.
-  final incomingTask = (await db.getLinkedToEntities(
-    entityId,
-  )).map(fromDbEntity).whereType<Task>().firstOrNull;
+  final incomingTask = incomingDbEntities
+      .map(fromDbEntity)
+      .whereType<Task>()
+      .firstOrNull;
   return incomingTask?.id;
 }
 
