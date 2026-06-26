@@ -264,8 +264,6 @@ class CharacterPainter extends CustomPainter {
       }
       canvas.restore();
       if (backdrop == CharacterBackdrop.waterfront) {
-        _paintWaterfrontDirtyGrade(canvas, size, floorY);
-        _paintWaterfrontForegroundGrime(canvas, size, floorY, timeSeconds);
         _paintTopSafeSky(canvas, size);
       }
       return;
@@ -286,177 +284,8 @@ class CharacterPainter extends CustomPainter {
     );
     canvas.restore();
     if (backdrop == CharacterBackdrop.waterfront) {
-      _paintWaterfrontDirtyGrade(canvas, size, floorY);
-      _paintWaterfrontForegroundGrime(canvas, size, floorY, timeSeconds);
       _paintTopSafeSky(canvas, size);
     }
-  }
-
-  void _paintWaterfrontDirtyGrade(Canvas canvas, Size size, double floorY) {
-    _paintDeckGrime(canvas, size, floorY);
-    canvas
-      ..drawRect(
-        Offset.zero & size,
-        Paint()
-          ..blendMode = BlendMode.multiply
-          ..color = const Color(0x6B263D3F),
-      )
-      ..drawRect(
-        Offset.zero & size,
-        Paint()
-          ..blendMode = BlendMode.overlay
-          ..color = const Color(0x2A1B1A16),
-      )
-      ..drawRect(
-        Offset.zero & size,
-        Paint()
-          ..blendMode = BlendMode.color
-          ..color = const Color(0x2420312F),
-      )
-      ..drawRect(
-        Rect.fromLTRB(0, size.height * 0.52, size.width, size.height),
-        Paint()
-          ..shader = ui.Gradient.linear(
-            Offset(0, size.height * 0.52),
-            Offset(0, size.height),
-            const [Color(0x00211D18), Color(0x7A201B16)],
-          ),
-      )
-      ..drawOval(
-        Rect.fromCenter(
-          center: Offset(size.width * 0.5, floorY - size.height * 0.12),
-          width: size.width * 1.18,
-          height: size.height * 0.46,
-        ),
-        Paint()
-          ..blendMode = BlendMode.multiply
-          ..shader = ui.Gradient.radial(
-            Offset(size.width * 0.5, floorY - size.height * 0.12),
-            size.width * 0.58,
-            const [Color(0x00191E20), Color(0x68131617)],
-          ),
-      );
-  }
-
-  void _paintWaterfrontForegroundGrime(
-    Canvas canvas,
-    Size size,
-    double floorY,
-    double timeSeconds,
-  ) {
-    final cablePaint = Paint()
-      ..blendMode = BlendMode.multiply
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = math.max(2, size.width * 0.003)
-      ..color = const Color(0x8A171512);
-    final sway = math.sin(timeSeconds * 0.7) * size.height * 0.004;
-    for (var i = 0; i < 3; i++) {
-      final y = size.height * (0.12 + i * 0.045) + sway * (i + 1);
-      final path = Path()
-        ..moveTo(-size.width * 0.05, y)
-        ..quadraticBezierTo(
-          size.width * (0.34 + i * 0.08),
-          y + size.height * (0.026 + i * 0.008),
-          size.width * 1.05,
-          y - size.height * (0.018 - i * 0.004),
-        );
-      canvas.drawPath(path, cablePaint);
-    }
-
-    final postPaint = Paint()
-      ..blendMode = BlendMode.multiply
-      ..shader = ui.Gradient.linear(
-        Offset(0, floorY - size.height * 0.28),
-        Offset(0, size.height),
-        const [Color(0xBE1B1711), Color(0xF0181511)],
-      );
-    for (final x in [
-      -size.width * 0.025,
-      size.width * 0.965,
-    ]) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
-            x,
-            floorY - size.height * 0.24,
-            size.width * 0.035,
-            size.height * 0.38,
-          ),
-          Radius.circular(size.width * 0.008),
-        ),
-        postPaint,
-      );
-    }
-
-    final puddlePaint = Paint()
-      ..blendMode = BlendMode.screen
-      ..shader = ui.Gradient.radial(
-        Offset(size.width * 0.5, floorY + size.height * 0.07),
-        size.width * 0.48,
-        const [Color(0x2D546461), Color(0x00303A38)],
-      );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(size.width * 0.5, floorY + size.height * 0.07),
-        width: size.width * 0.74,
-        height: size.height * 0.12,
-      ),
-      puddlePaint,
-    );
-
-    final grainPaint = Paint()
-      ..blendMode = BlendMode.multiply
-      ..strokeWidth = 1
-      ..color = const Color(0x1C15120F);
-    for (var i = 0; i < 72; i++) {
-      final x = size.width * ((i * 0.619 + 0.13) % 1);
-      final y = size.height * ((i * 0.347 + 0.08) % 1);
-      final len = size.width * (0.004 + 0.008 * ((i * 11) % 7) / 6);
-      canvas.drawLine(
-        Offset(x, y),
-        Offset(x + len, y + len * 0.28),
-        grainPaint,
-      );
-    }
-  }
-
-  void _paintDeckGrime(Canvas canvas, Size size, double floorY) {
-    final deckTop = size.height * 0.63;
-    canvas
-      ..save()
-      ..clipRect(Rect.fromLTRB(0, deckTop, size.width, size.height));
-    final stainPaint = Paint()
-      ..blendMode = BlendMode.multiply
-      ..color = const Color(0x24201713);
-    for (var i = 0; i < 18; i++) {
-      final x = size.width * ((i * 0.137 + 0.09) % 1);
-      final y = deckTop + (floorY - deckTop) * ((i * 0.173 + 0.21) % 1);
-      final w = size.width * (0.018 + 0.018 * ((i * 7) % 5) / 4);
-      final h = size.height * (0.006 + 0.008 * ((i * 5 + 2) % 6) / 5);
-      canvas.drawOval(
-        Rect.fromCenter(center: Offset(x, y), width: w, height: h),
-        stainPaint,
-      );
-    }
-
-    final scratchPaint = Paint()
-      ..blendMode = BlendMode.multiply
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = math.max(0.7, size.width * 0.001)
-      ..color = const Color(0x34251B12);
-    for (var i = 0; i < 26; i++) {
-      final startX = size.width * ((i * 0.071 + 0.04) % 1);
-      final y = deckTop + (size.height - deckTop) * ((i * 0.113 + 0.17) % 1);
-      final length = size.width * (0.035 + 0.05 * ((i * 3) % 7) / 6);
-      final drift = size.height * (0.003 + 0.009 * ((i * 11) % 5) / 4);
-      canvas.drawLine(
-        Offset(startX, y),
-        Offset(startX + length, y + drift),
-        scratchPaint,
-      );
-    }
-    canvas.restore();
   }
 
   void _paintTopSafeSky(Canvas canvas, Size size) {
@@ -727,7 +556,7 @@ class CharacterPainter extends CustomPainter {
     canvas
       ..drawRect(
         Rect.fromLTRB(0, 0, size.width, deckTop),
-        Paint()..color = const Color(0x4F203639),
+        Paint()..color = const Color(0x14203639),
       )
       ..drawRect(
         Rect.fromLTRB(0, deckTop, size.width, floorY + 18),
@@ -735,7 +564,7 @@ class CharacterPainter extends CustomPainter {
           ..shader = ui.Gradient.linear(
             Offset(0, deckTop),
             Offset(0, floorY + 18),
-            const [Color(0x001B1713), Color(0x7A1A1612)],
+            const [Color(0x001B1713), Color(0x241A1612)],
           ),
       )
       ..drawOval(
@@ -748,63 +577,7 @@ class CharacterPainter extends CustomPainter {
           ..shader = ui.Gradient.radial(
             Offset(size.width * 0.5, floorY - size.height * 0.07),
             size.width * 0.43,
-            const [Color(0x30332621), Color(0x00312621)],
-          ),
-      );
-    _paintDistanceHaze(canvas, size, deckTop);
-  }
-
-  void _paintDistanceHaze(Canvas canvas, Size size, double deckTop) {
-    final horizonY = size.height * 0.43;
-    final skylineTop = size.height * 0.24;
-    final waterFarY = size.height * 0.52;
-    final farSceneClip = Rect.fromLTRB(
-      0,
-      skylineTop,
-      size.width * 0.74,
-      deckTop,
-    );
-
-    canvas
-      // Atmospheric perspective: far forms lose contrast/saturation and shift
-      // toward cool sky colour, while humid city haze adds a warm gray smog band
-      // near the horizon.
-      ..drawRect(
-        farSceneClip,
-        Paint()
-          ..shader = ui.Gradient.linear(
-            Offset(0, skylineTop),
-            Offset(0, deckTop),
-            const [
-              Color(0x00304042),
-              Color(0x78647776),
-              Color(0xA8645E55),
-              Color(0x60475B5D),
-              Color(0x001B2426),
-            ],
-            const [0, 0.3, 0.5, 0.74, 1],
-          ),
-      )
-      ..drawOval(
-        Rect.fromCenter(
-          center: Offset(size.width * 0.36, horizonY),
-          width: size.width * 0.92,
-          height: size.height * 0.24,
-        ),
-        Paint()
-          ..shader = ui.Gradient.radial(
-            Offset(size.width * 0.36, horizonY),
-            size.width * 0.46,
-            const [Color(0xA4645C52), Color(0x00645C52)],
-          ),
-      )
-      ..drawRect(
-        Rect.fromLTRB(0, waterFarY, size.width * 0.7, deckTop),
-        Paint()
-          ..shader = ui.Gradient.linear(
-            Offset(0, waterFarY),
-            Offset(0, deckTop),
-            const [Color(0x56506263), Color(0x00506263)],
+            const [Color(0x14332621), Color(0x00312621)],
           ),
       );
   }
