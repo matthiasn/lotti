@@ -115,7 +115,7 @@ void main() {
     });
 
     test(
-      'backup dance clips keep footwork synced but answer with arm canon',
+      'backup dance clips share support timing and add bounded arm style',
       () {
         final lead = CatClips.dance;
         final left = CatClips.danceBackupLeft;
@@ -126,6 +126,8 @@ void main() {
         expect(right.duration, lead.duration);
         expect(left.contactSpans, lead.contactSpans);
         expect(right.contactSpans, lead.contactSpans);
+        expect(left.contactPinning, lead.contactPinning);
+        expect(right.contactPinning, lead.contactPinning);
         expect(
           left.channels[CatBones.legUpperL]!.sample(p).rotation,
           closeTo(lead.channels[CatBones.legUpperL]!.sample(p).rotation, 1e-9),
@@ -134,40 +136,29 @@ void main() {
           right.channels[CatBones.legUpperR]!.sample(p).rotation,
           closeTo(lead.channels[CatBones.legUpperR]!.sample(p).rotation, 1e-9),
         );
-        final leadHip = lead.channels[CatBones.hips]!.sample(p).rotation;
-        final leftHip = left.channels[CatBones.hips]!.sample(p).rotation;
-        final rightHip = right.channels[CatBones.hips]!.sample(p).rotation;
         expect(
-          (leftHip - leadHip).abs(),
+          left.channels[CatBones.hips]!.sample(p).rotation,
+          closeTo(lead.channels[CatBones.hips]!.sample(p).rotation, 1e-9),
+        );
+        expect(
+          right.channels[CatBones.torso]!.sample(p).rotation,
+          closeTo(lead.channels[CatBones.torso]!.sample(p).rotation, 1e-9),
+        );
+        final leftArmDelta =
+            left.channels[CatBones.armUpperR]!.sample(p).rotation -
+            lead.channels[CatBones.armUpperR]!.sample(p).rotation;
+        final rightArmDelta =
+            right.channels[CatBones.armUpperL]!.sample(p).rotation -
+            lead.channels[CatBones.armUpperL]!.sample(p).rotation;
+        expect(
+          leftArmDelta.abs(),
           inInclusiveRange(0.005, 0.08),
-          reason:
-              'the left backup should echo the lead with a small body delay, '
-              'not clone the exact upper-body groove',
+          reason: 'left backup should vary its inside arm only slightly',
         );
         expect(
-          (rightHip - leadHip).abs(),
+          rightArmDelta.abs(),
           inInclusiveRange(0.005, 0.08),
-          reason:
-              'the right backup should answer with a small body lead, while '
-              'keeping the shared footwork readable',
-        );
-        expect(
-          left.channels[CatBones.armUpperL]!.sample(p).rotation,
-          isNot(
-            closeTo(
-              lead.channels[CatBones.armUpperL]!.sample(p).rotation,
-              1e-9,
-            ),
-          ),
-        );
-        expect(
-          right.channels[CatBones.armUpperR]!.sample(p).rotation,
-          isNot(
-            closeTo(
-              lead.channels[CatBones.armUpperR]!.sample(p).rotation,
-              1e-9,
-            ),
-          ),
+          reason: 'right backup should vary its inside arm only slightly',
         );
       },
     );

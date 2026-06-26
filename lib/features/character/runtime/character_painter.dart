@@ -368,12 +368,9 @@ class CharacterPainter extends CustomPainter {
     final wideV = _pulse(p, 1 / 2, 3 / 4);
     final centreFeature = _pulse(p, 17 / 32, 23 / 32);
     final ensembleHit = _pulse(p, 23 / 32, 27 / 32);
-    final returnLock = _smoothUnit((p - 25 / 32) / (4 / 32));
     return switch (index) {
       0 => (
-        dx:
-            (-27 - 8 * breathe - 12 * sideAnswer - 10 * wideV) *
-            (1 - returnLock),
+        dx: -27 - 8 * breathe - 12 * sideAnswer - 10 * wideV,
         dy:
             -10 +
             1.5 * callResponse -
@@ -393,9 +390,7 @@ class CharacterPainter extends CustomPainter {
             3 * ensembleHit,
       ),
       2 => (
-        dx:
-            (27 + 8 * breathe + 11 * sideAnswer + 13 * blackSolo + 10 * wideV) *
-            (1 - returnLock),
+        dx: 27 + 8 * breathe + 11 * sideAnswer + 13 * blackSolo + 10 * wideV,
         dy:
             -10 -
             1.5 * callResponse -
@@ -445,18 +440,15 @@ class CharacterPainter extends CustomPainter {
     if (duration <= 0) return 0;
     if (memberCount >= 3) {
       // Dance crews should breathe during transitions but land their accents
-      // together. Side cats drift around the centre lead, swap tiny lead/trail
-      // moments inside the phrase, then collapse back to sync at the hits.
-      final p = _cyclePhase(timeSeconds, duration);
-      final damping = _transitionDamping(p);
-      final frame = duration / 32;
-      final phraseDrift = math.sin(2 * math.pi * (p * 2 + index * 0.37));
-      final beatDrift = math.sin(2 * math.pi * (p * 8 + index * 0.19));
+      // together. Keep trio variance in pose, arms, faces, and formation; do
+      // not offset the actual sampled time, because even sub-frame lead/trail
+      // offsets cross support-foot handoffs at different moments and make side
+      // dancers pop while the centre lead stays smooth.
       return switch (index) {
-        0 => (-0.48 * frame + 0.1 * frame * phraseDrift) * damping,
+        0 => 0,
         1 => 0,
-        2 => (0.48 * frame + 0.1 * frame * beatDrift) * damping,
-        _ => (0.08 * frame * phraseDrift) * damping,
+        2 => 0,
+        _ => 0,
       };
     }
     if (index == 0) return 0;
@@ -475,30 +467,6 @@ class CharacterPainter extends CustomPainter {
     final cycle = timeSeconds / duration;
     final p = cycle - cycle.floorToDouble();
     return p < 0 ? p + 1 : p;
-  }
-
-  static double _transitionDamping(double p) {
-    const accentPhases = [
-      0.0,
-      1 / 8,
-      1 / 4,
-      3 / 8,
-      1 / 2,
-      5 / 8,
-      3 / 4,
-      7 / 8,
-    ];
-    var nearest = 1.0;
-    for (final accent in accentPhases) {
-      final direct = (p - accent).abs();
-      final wrapped = (1 - direct).abs();
-      nearest = math.min(nearest, math.min(direct, wrapped));
-    }
-    const syncWindow = 1.5 / 72;
-    const looseWindow = 4.0 / 72;
-    if (nearest <= syncWindow) return 0;
-    if (nearest >= looseWindow) return 1;
-    return (nearest - syncWindow) / (looseWindow - syncWindow);
   }
 
   void _paintWaterfrontBackdrop(
@@ -715,6 +683,21 @@ class CharacterPainter extends CustomPainter {
     double floorY,
   ) {
     if (clip.locomotes) return frame;
+    if (clip.contactPinning == ContactPinning.lowestContact) {
+      final visualBottom = _lowestContactVisualBottom(frame, drawScene, clip);
+      if (visualBottom == null) return frame;
+      final dy = floorY - visualBottom;
+      if (dy.abs() < 0.2) return frame;
+      final correction = Affine2D.translation(0, dy);
+      return CharacterFrame(
+        world: {
+          for (final entry in frame.world.entries)
+            entry.key: correction.multiply(entry.value),
+        },
+        face: frame.face,
+        locomotionX: frame.locomotionX,
+      );
+    }
     final contactSpan = _activeGroundSpan(clip, timeSeconds);
     if (contactSpan == null) return frame;
     final transform = frame.world[contactSpan.bone];
@@ -747,6 +730,24 @@ class CharacterPainter extends CustomPainter {
       face: frame.face,
       locomotionX: frame.locomotionX,
     );
+  }
+
+  double? _lowestContactVisualBottom(
+    CharacterFrame frame,
+    CharacterScene drawScene,
+    Clip clip,
+  ) {
+    double? lowest;
+    final seen = <String>{};
+    for (final span in clip.contactSpans) {
+      if (!seen.add(span.bone)) continue;
+      final transform = frame.world[span.bone];
+      final drawable = drawScene.rig.bone(span.bone)?.drawable;
+      if (transform == null || drawable == null) continue;
+      final bottom = _drawableVisualBottom(transform, drawable);
+      lowest = lowest == null ? bottom : math.max(lowest, bottom);
+    }
+    return lowest;
   }
 
   static double _spanStartTime(Clip clip, double timeSeconds, double start) {

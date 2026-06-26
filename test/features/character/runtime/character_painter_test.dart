@@ -5,8 +5,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/character/model/affine2d.dart';
-import 'package:lotti/features/character/model/bone.dart';
 import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/runtime/character_painter.dart';
@@ -196,23 +194,6 @@ void main() {
       const expectedFloorY = height * feetFraction;
 
       for (final t in const [0.0, 0.75, 1.5, 2.25, 3.0, 3.75, 4.5]) {
-        final base = groundedBase(
-          canvasSize,
-          centreX: canvasSize.width / 2,
-          feetFraction: feetFraction,
-          floorY: expectedFloorY,
-          feetOffset: scene.restFeetOffset,
-        );
-        final frame = scene.frameAt(
-          clip: CatClips.dance,
-          timeSeconds: t,
-          base: base,
-        );
-        final contactBone = _activeContactBone(CatClips.dance, t)!;
-        final transform = frame.world[contactBone]!;
-        final drawable = scene.rig.bone(contactBone)!.drawable!;
-        final footBounds = _drawableBounds(transform, drawable);
-
         final recorder = ui.PictureRecorder();
         final canvas = Canvas(recorder);
         CharacterPainter(
@@ -232,15 +213,17 @@ void main() {
             final floorPixels = _opaquePixelsInBox(
               pixels,
               width,
-              (footBounds.minX - 4).floor(),
-              (footBounds.maxX + 4).ceil(),
+              0,
+              width - 1,
               (expectedFloorY - 4).floor(),
               (expectedFloorY + 5).ceil(),
             );
             expect(
               floorPixels,
               greaterThan(0),
-              reason: 'dance contact foot should reach the floor at t=$t',
+              reason:
+                  'dance lowest declared contact foot should reach the floor '
+                  'at t=$t',
             );
           } finally {
             image.dispose();
@@ -251,6 +234,72 @@ void main() {
       }
     });
   });
+
+  testWidgets(
+    'dance support handoff does not horizontally re-anchor the body',
+    (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        const width = 760;
+        const height = 520;
+        const canvasSize = Size(760, 520);
+
+        Future<({double x, double y})> visibleCenter(
+          Clip clip,
+          double p,
+        ) async {
+          final recorder = ui.PictureRecorder();
+          final canvas = Canvas(recorder);
+          CharacterPainter(
+            scene: scene,
+            clip: clip,
+            timeSeconds: clip.duration * p,
+            shadowColor: const Color(0x00000000),
+            renderer: renderer,
+          ).paint(canvas, canvasSize);
+          final picture = recorder.endRecording();
+          try {
+            final image = await picture.toImage(width, height);
+            try {
+              final data = await image.toByteData();
+              return _visibleCenter(data!.buffer.asUint8List(), width, height);
+            } finally {
+              image.dispose();
+            }
+          } finally {
+            picture.dispose();
+          }
+        }
+
+        for (final clip in [
+          CatClips.dance,
+          CatClips.danceBackupLeft,
+          CatClips.danceBackupRight,
+        ]) {
+          for (final frame in [60, 120, 225]) {
+            final before = await visibleCenter(clip, (frame - 1) / 240);
+            final after = await visibleCenter(clip, frame / 240);
+
+            expect(
+              (after.x - before.x).abs(),
+              lessThan(18),
+              reason:
+                  '${clip.name} should not snap sideways at support handoff '
+                  '$frame',
+            );
+            expect(
+              (after.y - before.y).abs(),
+              lessThan(18),
+              reason:
+                  '${clip.name} should not snap vertically at support handoff '
+                  '$frame',
+            );
+          }
+        }
+      });
+    },
+  );
 
   testWidgets('waterfront backdrop paints distinct stage bands', (
     tester,
@@ -530,42 +579,6 @@ void main() {
   });
 }
 
-String? _activeContactBone(Clip clip, double timeSeconds) {
-  final spans = clip.contactSpans.isNotEmpty
-      ? clip.contactSpans
-      : clip.groundSpans;
-  if (spans.isEmpty || clip.duration <= 0) return null;
-  final raw = timeSeconds / clip.duration;
-  final p = clip.loop ? raw - raw.floorToDouble() : raw.clamp(0.0, 1.0);
-  for (final span in spans) {
-    if (p >= span.start && p < span.end) return span.bone;
-  }
-  return spans.last.bone;
-}
-
-({double minX, double maxX}) _drawableBounds(
-  Affine2D transform,
-  BoneDrawable drawable,
-) {
-  final left = drawable.dx - drawable.width / 2;
-  final right = drawable.dx + drawable.width / 2;
-  final top = drawable.dy - drawable.height / 2;
-  final bottom = drawable.dy + drawable.height / 2;
-  final points = [
-    transform.transformPoint(left, top),
-    transform.transformPoint(right, top),
-    transform.transformPoint(left, bottom),
-    transform.transformPoint(right, bottom),
-  ];
-  var minX = points.first.x;
-  var maxX = points.first.x;
-  for (final point in points.skip(1)) {
-    if (point.x < minX) minX = point.x;
-    if (point.x > maxX) maxX = point.x;
-  }
-  return (minX: minX, maxX: maxX);
-}
-
 int _opaquePixelsInBox(
   Uint8List pixels,
   int width,
@@ -583,6 +596,23 @@ int _opaquePixelsInBox(
     }
   }
   return opaque;
+}
+
+({double x, double y}) _visibleCenter(Uint8List pixels, int width, int height) {
+  var minX = width;
+  var maxX = 0;
+  var minY = height;
+  var maxY = 0;
+  for (var y = 0; y < height; y++) {
+    for (var x = 0; x < width; x++) {
+      if (pixels[(y * width + x) * 4 + 3] == 0) continue;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  return (x: (minX + maxX) / 2, y: (minY + maxY) / 2);
 }
 
 ({int r, int g, int b, int a}) _rgbaAt(

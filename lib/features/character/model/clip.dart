@@ -425,6 +425,20 @@ class GroundSpan {
   final double end;
 }
 
+/// How an in-place performance clip should be kept on the floor.
+///
+/// [activeSpan] pins the authored support foot span. It is useful for one-shot
+/// moves with a single clear plant, such as a kick.
+///
+/// [lowestContact] keeps the lowest declared contact foot on the floor. It is
+/// safer for cyclic dance phrases where support changes are decorative rather
+/// than locomotion anchors: switching the active support foot can otherwise
+/// re-anchor the whole body in one frame.
+enum ContactPinning {
+  activeSpan,
+  lowestContact,
+}
+
 /// A named animation: a bag of per-bone channels plus root motion, evaluated by
 /// the clip evaluator. [loop] distinguishes cyclic clips (walk/run/idle) from
 /// one-shots (sit/jump).
@@ -438,6 +452,7 @@ class Clip {
     this.locomotionSpeed = 0,
     this.groundSpans = const [],
     this.contactSpans = const [],
+    this.contactPinning = ContactPinning.activeSpan,
   });
 
   /// Display/lookup name.
@@ -468,6 +483,9 @@ class Clip {
   /// Per-foot support spans for in-place clips. These drive contact shadows and
   /// review overlays only; they do not make a clip travel across the stage.
   final List<GroundSpan> contactSpans;
+
+  /// Floor-pinning policy for in-place clips with [contactSpans].
+  final ContactPinning contactPinning;
 
   /// Whether this clip travels across the stage at all (either model).
   bool get locomotes => locomotionSpeed != 0 || groundSpans.isNotEmpty;

@@ -224,6 +224,20 @@ void main() {
       expect(clip.contactSpans.single.bone, 'foot.L');
       expect(clip.groundSpans, isEmpty);
       expect(clip.locomotes, isFalse);
+      expect(clip.contactPinning, ContactPinning.activeSpan);
+    });
+
+    test('can declare lowest-contact pinning for dance-style clips', () {
+      const clip = Clip(
+        name: 'dance-role',
+        duration: 1,
+        channels: {},
+        contactSpans: [GroundSpan('foot.L', 0, 1)],
+        contactPinning: ContactPinning.lowestContact,
+      );
+
+      expect(clip.contactPinning, ContactPinning.lowestContact);
+      expect(clip.locomotes, isFalse);
     });
   });
 }
