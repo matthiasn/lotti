@@ -1149,6 +1149,7 @@ class _ConstellationPainter extends CustomPainter {
 
   double _compositionWeight(Offset point, Size size) {
     if (entanglement <= 0) return 1;
+    if (size.width <= 0 || size.height <= 0) return 0;
     final nx = point.dx / size.width;
     final ny = point.dy / size.height;
     final lowerFade = 1 - ((ny - 0.68) / 0.24).clamp(0.0, 1.0) * 0.42;

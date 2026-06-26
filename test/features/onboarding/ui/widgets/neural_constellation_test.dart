@@ -179,6 +179,30 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('zero-size entangled layout does not throw during paint', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const SizedBox.shrink(
+            child: NeuralConstellation(
+              nodeColor: Colors.white,
+              lineColor: Colors.blue,
+              pulseColor: Colors.cyan,
+              entanglement: 0.64,
+              vineCount: 3,
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byType(NeuralConstellation), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('loop seam continuity', () {
