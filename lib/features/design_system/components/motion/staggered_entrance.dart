@@ -21,6 +21,7 @@ class StaggeredEntrance extends StatelessWidget {
     this.interval = const Duration(milliseconds: 70),
     this.duration = const Duration(milliseconds: 360),
     this.rise = 12.0,
+    this.initialOpacity = 0,
     super.key,
   });
 
@@ -35,6 +36,11 @@ class StaggeredEntrance extends StatelessWidget {
 
   /// Pixels each child rises into place.
   final double rise;
+
+  /// Starting opacity for each animated child. Keep the default at fully
+  /// transparent for normal screen entrances; surfaces that must never read as
+  /// empty during their first frame can opt into a visible floor.
+  final double initialOpacity;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +58,11 @@ class StaggeredEntrance extends StatelessWidget {
         for (var i = 0; i < children.length; i++)
           children[i]
               .animate(delay: interval * i)
-              .fadeIn(duration: duration, curve: Curves.easeOutCubic)
+              .fadeIn(
+                begin: initialOpacity,
+                duration: duration,
+                curve: Curves.easeOutCubic,
+              )
               .moveY(
                 begin: rise,
                 end: 0,

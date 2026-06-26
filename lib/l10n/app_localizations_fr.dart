@@ -6614,7 +6614,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboardingConnectNotSure =>
-      'Pas sûr ? Gemini est le plus simple pour commencer.';
+      'Gemini est le moyen le plus rapide de commencer.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';
@@ -6629,8 +6629,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingConnectQwenTagline => 'Chine';
 
   @override
-  String get onboardingConnectTitle =>
-      'Choisis le cerveau qui transforme tes mots en tâches';
+  String get onboardingConnectTitle => 'Choisis le cerveau IA pour tes tâches';
 
   @override
   String get onboardingRecordingStyleAnalogue => 'Analogique — VU-mètre';
@@ -6663,7 +6662,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingSuccessTitle => 'Tout est prêt';
 
   @override
-  String get onboardingWelcomeConnectButton => 'Connecter ton cerveau';
+  String get onboardingWelcomeConnectButton => 'Choisir ton cerveau IA';
 
   @override
   String get onboardingWelcomeMessage =>

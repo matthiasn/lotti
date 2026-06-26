@@ -149,6 +149,54 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('updates animation cadence when loop duration changes', (
+      tester,
+    ) async {
+      const key = ValueKey('looping-constellation');
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          wrap(
+            const NeuralConstellation(
+              key: key,
+              nodeColor: Colors.white,
+              lineColor: Colors.blue,
+              pulseColor: Colors.cyan,
+              loop: Duration(seconds: 2),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(_constellationPhase(tester), closeTo(0.5, 0.05));
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          wrap(
+            const NeuralConstellation(
+              key: key,
+              nodeColor: Colors.white,
+              lineColor: Colors.blue,
+              pulseColor: Colors.cyan,
+              loop: Duration(seconds: 10),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(
+        _constellationPhase(tester),
+        allOf(greaterThan(0.55), lessThan(0.75)),
+      );
+    });
+
     testWidgets(
       'paints with no edges and no pulses (sparse field, zero pulses)',
       (tester) async {
@@ -179,6 +227,30 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('zero-size entangled layout does not throw during paint', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const SizedBox.shrink(
+            child: NeuralConstellation(
+              nodeColor: Colors.white,
+              lineColor: Colors.blue,
+              pulseColor: Colors.cyan,
+              entanglement: 0.64,
+              vineCount: 3,
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byType(NeuralConstellation), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('loop seam continuity', () {
@@ -219,18 +291,49 @@ void main() {
       },
     );
 
-    test('every pulse is fully faded out at the seam, alive mid-loop', () {
+    test('pulses keep a continuous relay through the loop seam', () {
       const pulseCycles = 7; // e.g. a 24s loop
       for (var k = 0; k < 4; k++) {
-        // Envelope is exactly zero at both ends of the loop, so no pulse jumps.
-        expect(neuralPulseEnvAt(0, pulseCycles, k), closeTo(0, 1e-9));
-        expect(neuralPulseEnvAt(1, pulseCycles, k), closeTo(0, 1e-9));
+        // Start and end match, so no pulse jumps at the repeat seam.
+        final start = neuralPulseEnvAt(0, pulseCycles, k);
+        final end = neuralPulseEnvAt(1, pulseCycles, k);
+        expect(end, closeTo(start, 1e-9));
+        // The relay never dies fully between nodes.
+        expect(start, greaterThan(0));
       }
-      // Mid-loop the pulses do light up (so the effect isn't simply absent).
-      final anyAlive = [
+      // Mid-loop some pulses brighten above the floor.
+      final anyBright = [
         for (var k = 0; k < 4; k++) neuralPulseEnvAt(0.5, pulseCycles, k),
-      ].any((env) => env > 0.1);
-      expect(anyAlive, isTrue);
+      ].any((env) => env > 0.8);
+      expect(anyBright, isTrue);
+    });
+
+    test('branch activation progress is stable at the loop seam', () {
+      const pulseCycles = 7;
+      const branchCount = 18;
+
+      for (var branchIndex = 0; branchIndex < branchCount; branchIndex++) {
+        final start = neuralBranchProgressAt(
+          0,
+          pulseCycles,
+          branchIndex,
+          branchCount,
+        );
+        final end = neuralBranchProgressAt(
+          1,
+          pulseCycles,
+          branchIndex,
+          branchCount,
+        );
+
+        expect(end, closeTo(start, 1e-9));
+      }
+
+      final sampledProgress = {
+        for (var branchIndex = 0; branchIndex < branchCount; branchIndex++)
+          neuralBranchProgressAt(0.5, pulseCycles, branchIndex, branchCount),
+      };
+      expect(sampledProgress, hasLength(greaterThan(1)));
     });
 
     test('pulse cycles per loop is a whole number >= 1', () {
@@ -242,4 +345,13 @@ void main() {
       );
     });
   });
+}
+
+double _constellationPhase(WidgetTester tester) {
+  final customPaint = tester
+      .widgetList<CustomPaint>(find.byType(CustomPaint))
+      .last;
+  final painter = customPaint.painter as dynamic;
+  // ignore: avoid_dynamic_calls
+  return painter.t01 as double;
 }

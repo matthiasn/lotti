@@ -6612,7 +6612,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingConnectNotSure =>
-      'Nu sunteți sigur? Gemini este cel mai simplu pentru început.';
+      'Gemini este cea mai rapidă cale de a începe.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';
@@ -6628,7 +6628,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingConnectTitle =>
-      'Alegeți creierul care vă transformă cuvintele în sarcini';
+      'Alegeți creierul AI pentru sarcinile dvs.';
 
   @override
   String get onboardingRecordingStyleAnalogue => 'Analogic — VU-metru';
@@ -6661,7 +6661,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingSuccessTitle => 'Gata de start';
 
   @override
-  String get onboardingWelcomeConnectButton => 'Conectați-vă creierul';
+  String get onboardingWelcomeConnectButton => 'Alegeți creierul AI';
 
   @override
   String get onboardingWelcomeMessage =>

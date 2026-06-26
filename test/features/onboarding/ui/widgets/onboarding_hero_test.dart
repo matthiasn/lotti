@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
@@ -106,6 +107,18 @@ void main() {
   });
 
   group('buildOnboardingHeroVisual', () {
+    test('constellation welcome uses the entangled multi-vine variant', () {
+      final visual = buildOnboardingHeroVisual(
+        OnboardingHeroStyle.constellation,
+      );
+
+      final constellation = visual as NeuralConstellation;
+      expect(constellation.vineCount, 3);
+      expect(constellation.entanglement, closeTo(0.64, 1e-9));
+      expect(constellation.nodeCount, 62);
+      expect(constellation.compositionOffset.dy, closeTo(0.02, 1e-9));
+    });
+
     for (final style in OnboardingHeroStyle.values) {
       testWidgets('builds a non-null visual for ${style.label}', (
         tester,
@@ -310,6 +323,13 @@ void main() {
 
       expect(find.byType(OnboardingBackdrop), findsOneWidget);
       expect(find.byType(CustomPaint), findsWidgets);
+      final constellation = tester.widget<NeuralConstellation>(
+        find.byType(NeuralConstellation),
+      );
+      expect(constellation.vineCount, 1);
+      expect(constellation.entanglement, 0);
+      expect(constellation.glow, closeTo(0.28, 1e-9));
+      expect(constellation.compositionOffset.dy, closeTo(-0.18, 1e-9));
       expect(tester.takeException(), isNull);
     });
 

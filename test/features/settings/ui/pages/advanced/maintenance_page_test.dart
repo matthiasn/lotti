@@ -157,7 +157,7 @@ void main() {
       // Both welcome CTAs are present — the FTUE welcome step, not some other
       // surface. (The dim modal is transparent, so the maintenance list stays
       // in the tree behind it; asserting its absence would be wrong.)
-      expect(find.text('Connect your brain'), findsOneWidget);
+      expect(find.text('Choose your AI brain'), findsOneWidget);
       expect(find.text('Look around first'), findsOneWidget);
     });
 
