@@ -349,7 +349,8 @@ class CharacterPainter extends CustomPainter {
         (p: 1 / 8, v: 1.08),
         (p: 1 / 4, v: 1.13),
         (p: 1 / 2, v: 1.15),
-        (p: 3 / 4, v: 1.12),
+        (p: 5 / 8, v: 1.18),
+        (p: 3 / 4, v: 1.13),
         (p: 29 / 32, v: 1.035),
         (p: 1, v: 1.0),
       ]),
@@ -358,7 +359,8 @@ class CharacterPainter extends CustomPainter {
         (p: 1 / 8, v: -8.0),
         (p: 1 / 4, v: -18.0),
         (p: 1 / 2, v: 30.0),
-        (p: 3 / 4, v: 18.0),
+        (p: 5 / 8, v: 24.0),
+        (p: 3 / 4, v: 16.0),
         (p: 29 / 32, v: 4.0),
         (p: 1, v: 0.0),
       ]),
@@ -366,6 +368,7 @@ class CharacterPainter extends CustomPainter {
         (p: 0, v: 0.0),
         (p: 1 / 4, v: -6.0),
         (p: 1 / 2, v: -10.0),
+        (p: 5 / 8, v: -12.0),
         (p: 3 / 4, v: -7.0),
         (p: 29 / 32, v: 0.0),
         (p: 1, v: 0.0),
@@ -385,19 +388,20 @@ class CharacterPainter extends CustomPainter {
     final callResponse = math.sin(2 * math.pi * (p * 2 - 0.08));
     final blackSolo = _pulse(p, 3 / 8, 1 / 2);
     final wideV = _pulse(p, 1 / 2, 3 / 4);
+    final centreFeature = _pulse(p, 17 / 32, 23 / 32);
     final returnLock = _smoothUnit((p - 25 / 32) / (4 / 32));
     return switch (index) {
       0 => (
-        dx: (-10 - 8 * breathe - 10 * wideV) * (1 - returnLock),
-        dy: -6 + 3 * callResponse - 5 * blackSolo - 5 * wideV,
+        dx: (-12 - 8 * breathe - 12 * wideV) * (1 - returnLock),
+        dy: -6 + 3 * callResponse - 5 * blackSolo - 7 * wideV,
       ),
       1 => (
         dx: 0,
-        dy: 8 - 4 * blackSolo + 5 * wideV,
+        dy: 8 - 4 * blackSolo + 5 * wideV + 8 * centreFeature,
       ),
       2 => (
-        dx: (10 + 8 * breathe + 14 * blackSolo + 10 * wideV) * (1 - returnLock),
-        dy: -6 - 3 * callResponse + 11 * blackSolo - 5 * wideV,
+        dx: (12 + 8 * breathe + 14 * blackSolo + 12 * wideV) * (1 - returnLock),
+        dy: -6 - 3 * callResponse + 11 * blackSolo - 7 * wideV,
       ),
       _ => (dx: 0, dy: 0),
     };
