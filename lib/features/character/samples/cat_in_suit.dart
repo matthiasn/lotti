@@ -1262,6 +1262,21 @@ class CatClips {
       },
     ),
     DanceMoveSignature(
+      moveName: 'left-side camera answer',
+      bodyAccentOffsets: [
+        DanceBodyAccentOffset(
+          offsetFrames: 0,
+          radiusFrames: 2,
+          rootDy: 0.75,
+          rootRotation: 0.001,
+          pelvisRotation: -0.035,
+          chestRotation: 0.055,
+          chestScaleY: 0.982,
+          chestScaleX: 1.016,
+        ),
+      ],
+    ),
+    DanceMoveSignature(
       moveName: 'toe-flick hook reset',
       bodyAccentOffsets: [
         DanceBodyAccentOffset(

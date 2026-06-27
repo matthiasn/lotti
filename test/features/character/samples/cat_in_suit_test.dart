@@ -1025,6 +1025,23 @@ void main() {
             'left-side camera cue should feature the left dancer inside arm',
       );
       expect(leftHandDelta, lessThan(-10));
+      expect(
+        leadChannels[CatBones.hips]!.sample(leftCueP).rotation,
+        lessThan(-0.22),
+        reason:
+            'left-side camera cue should also load the lead hip instead of '
+            'becoming a backup-only arm feature',
+      );
+      expect(
+        leadChannels[CatBones.torso]!.sample(leftCueP).rotation,
+        greaterThan(0.06),
+        reason: 'lead chest should answer the loaded hip at the left-side cue',
+      );
+      expect(
+        leadChannels[CatBones.torso]!.sample(leftCueP).scaleY,
+        lessThan(0.98),
+        reason: 'left-side cue should stay in the pocket before the hook reset',
+      );
 
       final hookP = phrase.moveAtFrame(31).accentFrame / phrase.frameCount;
       final leftSupportFoot = leadChannels[CatBones.footL]!.sample(0).rotation;
