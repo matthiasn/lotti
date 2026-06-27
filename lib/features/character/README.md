@@ -210,7 +210,9 @@ stateDiagram-v2
   `DanceIkTargetOffsetArc` is the role/style counterpart: it emits neutral
   start/end keys around a shaped offset path, so a backup dancer can answer a
   move with a hand arc without dragging that offset through the rest of the
-  loop.
+  loop. `DanceMoveTargetOffsetArc` addresses that offset path relative to a
+  named cue's accent frame, so role/style choreography follows phrase timing
+  edits instead of depending on duplicate raw frame numbers.
   `DanceRoleStyle` groups those body,
   IK-target, and joint accents by dancer role, which keeps backup/alternate
   styles as data overlays instead of separate hand-authored clip forks.

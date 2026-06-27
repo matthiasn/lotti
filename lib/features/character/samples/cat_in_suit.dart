@@ -2395,24 +2395,29 @@ class CatClips {
         DanceIkTargetAccent(12, radiusFrames: 3, x: -1.2, y: -0.9, weight: 0.4),
       ],
     },
-    ikTargetOffsetArcs: {
-      CatBones.handR: [
-        DanceIkTargetOffsetArc(
-          name: 'left backup inside-hand feature answer',
-          startFrame: 21,
-          peakFrame: 24,
-          endFrame: 28,
-          peakX: -12,
-          peakY: -7,
-          controlPoints: [
-            DanceIkTargetOffsetArcPoint(22, x: -4.4, y: -2.2, weight: 0.65),
-            DanceIkTargetOffsetArcPoint(23, x: -9.2, y: -5.8),
-            DanceIkTargetOffsetArcPoint(25, x: -10.2, y: -5.4),
-            DanceIkTargetOffsetArcPoint(26, x: -5.4, y: -2.4, weight: 0.7),
-          ],
-        ),
-      ],
-    },
+    moveTargetOffsetArcs: [
+      DanceMoveTargetOffsetArc(
+        name: 'left backup inside-hand feature answer',
+        moveName: 'left-side camera answer',
+        targetBoneId: CatBones.handR,
+        startOffsetFrames: -3,
+        peakOffsetFrames: 0,
+        endOffsetFrames: 4,
+        peakX: -12,
+        peakY: -7,
+        controlPoints: [
+          DanceMoveTargetOffsetArcPoint(
+            -2,
+            x: -4.4,
+            y: -2.2,
+            weight: 0.65,
+          ),
+          DanceMoveTargetOffsetArcPoint(-1, x: -9.2, y: -5.8),
+          DanceMoveTargetOffsetArcPoint(1, x: -10.2, y: -5.4),
+          DanceMoveTargetOffsetArcPoint(2, x: -5.4, y: -2.4, weight: 0.7),
+        ],
+      ),
+    ],
     jointAccents: {
       CatBones.armUpperR: [
         DanceJointAccent(4, radiusFrames: 3, rotation: -0.12),
@@ -2464,24 +2469,29 @@ class CatClips {
         DanceIkTargetAccent(20, radiusFrames: 4, x: 6.4, y: -4.2),
       ],
     },
-    ikTargetOffsetArcs: {
-      CatBones.handL: [
-        DanceIkTargetOffsetArc(
-          name: 'right backup inside-hand camera answer',
-          startFrame: 9,
-          peakFrame: 12,
-          endFrame: 15,
-          peakX: 9,
-          peakY: -6,
-          controlPoints: [
-            DanceIkTargetOffsetArcPoint(10, x: 3.2, y: -1.8, weight: 0.7),
-            DanceIkTargetOffsetArcPoint(11, x: 6.8, y: -4.6),
-            DanceIkTargetOffsetArcPoint(13, x: 7.4, y: -4.2),
-            DanceIkTargetOffsetArcPoint(14, x: 3.8, y: -2, weight: 0.7),
-          ],
-        ),
-      ],
-    },
+    moveTargetOffsetArcs: [
+      DanceMoveTargetOffsetArc(
+        name: 'right backup inside-hand camera answer',
+        moveName: 'right-side camera answer',
+        targetBoneId: CatBones.handL,
+        startOffsetFrames: -3,
+        peakOffsetFrames: 0,
+        endOffsetFrames: 3,
+        peakX: 9,
+        peakY: -6,
+        controlPoints: [
+          DanceMoveTargetOffsetArcPoint(
+            -2,
+            x: 3.2,
+            y: -1.8,
+            weight: 0.7,
+          ),
+          DanceMoveTargetOffsetArcPoint(-1, x: 6.8, y: -4.6),
+          DanceMoveTargetOffsetArcPoint(1, x: 7.4, y: -4.2),
+          DanceMoveTargetOffsetArcPoint(2, x: 3.8, y: -2, weight: 0.7),
+        ],
+      ),
+    ],
     jointAccents: {
       CatBones.armUpperL: [
         DanceJointAccent(12, radiusFrames: 4, rotation: 0.2),

@@ -113,6 +113,7 @@ void main() {
       expect(phrase.moveAtFrame(16).name, 'right answer hit');
       expect(phrase.moveAtFrame(32).featuredDancer, 'lead');
       expect(phrase.moveAtPhase(0.64).signature, contains('inside-arm lift'));
+      expect(phrase.moveNamed('right answer hit').accentFrame, 20);
     });
 
     test('compiles named move signatures over base choreography keys', () {
@@ -461,6 +462,45 @@ void main() {
       expect(keys[4].weight, 0.7);
     });
 
+    test('builds move-addressed role IK offset arcs from cue timing', () {
+      final keys = phrase.moveTargetOffsetArcKeys(
+        const [
+          DanceMoveTargetOffsetArc(
+            name: 'right answer backup hand',
+            moveName: 'right answer hit',
+            targetBoneId: 'hand.R',
+            startOffsetFrames: -2,
+            peakOffsetFrames: 0,
+            endOffsetFrames: 3,
+            peakX: 9,
+            peakY: -6,
+            controlPoints: [
+              DanceMoveTargetOffsetArcPoint(1, x: 5, y: -3, weight: 0.5),
+            ],
+          ),
+          DanceMoveTargetOffsetArc(
+            name: 'filtered other hand',
+            moveName: 'right answer hit',
+            targetBoneId: 'hand.L',
+            startOffsetFrames: -1,
+            peakOffsetFrames: 0,
+            endOffsetFrames: 1,
+            peakX: -4,
+            peakY: -2,
+          ),
+        ],
+        'hand.R',
+      );
+
+      expect(keys.map((key) => key.frame), [18, 20, 21, 23]);
+      expect(keys.first.weight, 0);
+      expect(keys[1].x, 9);
+      expect(keys[1].y, -6);
+      expect(keys[2].x, 5);
+      expect(keys[2].weight, 0.5);
+      expect(keys.last.weight, 0);
+    });
+
     test('collects role style overlays by body, target, and joint', () {
       const style = DanceRoleStyle(
         bodyAccents: [
@@ -592,6 +632,25 @@ void main() {
       expect(
         () => phrase.ikTargetKey(33, x: 0, y: 0),
         throwsRangeError,
+      );
+      expect(() => phrase.moveNamed('missing move'), throwsStateError);
+      expect(
+        () => phrase.moveTargetOffsetArcKeys(
+          const [
+            DanceMoveTargetOffsetArc(
+              name: 'missing move arc',
+              moveName: 'missing move',
+              targetBoneId: 'hand.R',
+              startOffsetFrames: -1,
+              peakOffsetFrames: 0,
+              endOffsetFrames: 1,
+              peakX: 1,
+              peakY: -1,
+            ),
+          ],
+          'hand.R',
+        ),
+        throwsStateError,
       );
       expect(
         () => phrase.mergeIkTargetKeys(

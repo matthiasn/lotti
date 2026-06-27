@@ -91,6 +91,13 @@ class DancePhrase {
     return moveAtFrame(frame);
   }
 
+  DanceMoveCue moveNamed(String name) {
+    for (final move in moves) {
+      if (move.name == name) return move;
+    }
+    throw StateError('No dance move named "$name".');
+  }
+
   Keyframe jointKey(
     int frame, {
     double rotation = 0,
@@ -341,6 +348,14 @@ class DancePhrase {
     keys.sort((a, b) => a.frame.compareTo(b.frame));
     return List<DanceIkTargetKey>.unmodifiable(keys);
   }
+
+  List<DanceIkTargetKey> moveTargetOffsetArcKeys(
+    List<DanceMoveTargetOffsetArc> arcs,
+    String targetBoneId,
+  ) => ikTargetOffsetArcKeys([
+    for (final arc in arcs)
+      if (arc.targetBoneId == targetBoneId) arc.toOffsetArc(this),
+  ]);
 
   void _checkFrame(int frame) {
     RangeError.checkValueInInterval(frame, 0, frameCount, 'frame');
@@ -920,9 +935,89 @@ class DanceIkTargetOffsetArcPoint {
       );
 }
 
+class DanceMoveTargetOffsetArc {
+  const DanceMoveTargetOffsetArc({
+    required this.name,
+    required this.moveName,
+    required this.targetBoneId,
+    required this.startOffsetFrames,
+    required this.peakOffsetFrames,
+    required this.endOffsetFrames,
+    required this.peakX,
+    required this.peakY,
+    this.controlPoints = const <DanceMoveTargetOffsetArcPoint>[],
+    this.weight = 1,
+    this.ease = Ease.easeInOut,
+  }) : assert(
+         startOffsetFrames < peakOffsetFrames,
+         'arc peak must follow start',
+       ),
+       assert(
+         peakOffsetFrames < endOffsetFrames,
+         'arc end must follow peak',
+       );
+
+  /// Choreography-facing label for a role/style offset path.
+  final String name;
+
+  /// Must match [DanceMoveCue.name]. The arc is addressed relative to that
+  /// cue's accent frame, so style overlays follow phrase timing edits.
+  final String moveName;
+  final String targetBoneId;
+  final int startOffsetFrames;
+  final int peakOffsetFrames;
+  final int endOffsetFrames;
+  final double peakX;
+  final double peakY;
+  final List<DanceMoveTargetOffsetArcPoint> controlPoints;
+  final double weight;
+  final Ease ease;
+
+  DanceIkTargetOffsetArc toOffsetArc(DancePhrase phrase) {
+    final move = phrase.moveNamed(moveName);
+    return DanceIkTargetOffsetArc(
+      name: name,
+      startFrame: move.accentFrame + startOffsetFrames,
+      peakFrame: move.accentFrame + peakOffsetFrames,
+      endFrame: move.accentFrame + endOffsetFrames,
+      peakX: peakX,
+      peakY: peakY,
+      controlPoints: [
+        for (final point in controlPoints)
+          DanceIkTargetOffsetArcPoint(
+            move.accentFrame + point.offsetFrames,
+            x: point.x,
+            y: point.y,
+            weight: point.weight,
+            ease: point.ease,
+          ),
+      ],
+      weight: weight,
+      ease: ease,
+    );
+  }
+}
+
+class DanceMoveTargetOffsetArcPoint {
+  const DanceMoveTargetOffsetArcPoint(
+    this.offsetFrames, {
+    required this.x,
+    required this.y,
+    this.weight,
+    this.ease,
+  });
+
+  final int offsetFrames;
+  final double x;
+  final double y;
+  final double? weight;
+  final Ease? ease;
+}
+
 class DanceRoleStyle {
   const DanceRoleStyle({
     this.bodyAccents = const <DanceBodyAccent>[],
+    this.moveTargetOffsetArcs = const <DanceMoveTargetOffsetArc>[],
     this.ikTargetOffsetArcs = const <String, List<DanceIkTargetOffsetArc>>{},
     this.ikTargetAccents = const <String, List<DanceIkTargetAccent>>{},
     this.jointAccents = const <String, List<DanceJointAccent>>{},
@@ -930,6 +1025,9 @@ class DanceRoleStyle {
 
   /// Body-pocket/style pulses for this dancer role.
   final List<DanceBodyAccent> bodyAccents;
+
+  /// Move-addressed IK target offset paths for role/style variation.
+  final List<DanceMoveTargetOffsetArc> moveTargetOffsetArcs;
 
   /// Local IK target offset paths, keyed by target/end bone id.
   final Map<String, List<DanceIkTargetOffsetArc>> ikTargetOffsetArcs;
@@ -955,6 +1053,11 @@ class DanceRoleStyle {
           ikTargetOffsetArcs[targetBoneId] ?? const <DanceIkTargetOffsetArc>[],
         )
         .forEach(addKey);
+    phrase
+        .moveTargetOffsetArcKeys(moveTargetOffsetArcs, targetBoneId)
+        .forEach(
+          addKey,
+        );
     phrase
         .ikTargetAccentKeys(
           ikTargetAccents[targetBoneId] ?? const <DanceIkTargetAccent>[],
