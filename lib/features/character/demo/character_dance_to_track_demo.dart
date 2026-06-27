@@ -81,6 +81,11 @@ const double kMinCalmSeconds = 4;
 /// changes — bigger = slower, more cinematic zoom (~63% of the way in this long).
 const double kCameraRampSeconds = 1.4;
 
+/// Lyric-driven mouth: how wide the lead's mouth opens on an active word, and how
+/// fast it snaps (small time constant = quick lip movement).
+const double kMouthOpenMax = 0.85;
+const double kMouthRampSeconds = 0.05;
+
 typedef _Section = ({double start, double end, String label, bool energetic});
 typedef _Word = ({double start, double end, String word});
 typedef _Stage = ({
@@ -163,6 +168,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   bool _loop = true;
   bool _showCaptions = true;
   double _cameraStrength = 0; // eased dance-camera ramp (0 = neutral, 1 = full)
+  double _mouthOpen =
+      0; // eased lead mouth open, driven by the active lyric word
   Duration _lastTick = Duration.zero;
   String? _error;
 
@@ -194,8 +201,12 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     final target = (_sectionAt(pos)?.energetic ?? true) ? 1.0 : 0.0;
     var k = dt / kCameraRampSeconds;
     if (k > 1) k = 1;
+    final mouthTarget = _wordActiveAt(pos) ? kMouthOpenMax : 0.0;
+    var km = dt / kMouthRampSeconds;
+    if (km > 1) km = 1;
     setState(() {
       _cameraStrength += (target - _cameraStrength) * k;
+      _mouthOpen += (mouthTarget - _mouthOpen) * km;
     });
   }
 
@@ -350,6 +361,24 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     return recent;
   }
 
+  bool _wordActiveAt(double pos) {
+    for (final w in _words) {
+      if (pos >= w.start && pos < w.end) return true;
+      if (w.start > pos) break;
+    }
+    return false;
+  }
+
+  /// The lead's face with the mouth driven open by the active lyric word (the
+  /// backups don't sing). Neutral when the mouth is essentially closed.
+  Expression _leadExpression() {
+    if (_mouthOpen < 0.04) return Expression.neutral;
+    return Expression(
+      'sing',
+      FaceState(mouthShape: MouthShape.smileOpen, mouthOpen: _mouthOpen),
+    );
+  }
+
   /// A karaoke caption: a short window of lyric words centred on the current one,
   /// which is highlighted. Empty when there is no active word.
   Widget _caption(double pos) {
@@ -494,8 +523,10 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                         scene: _lead,
                         partnerScene: _left,
                         ensembleScenes: [_left, _right],
-                        ensembleExpressions: const [
-                          Expression.neutral,
+                        // The lead's mouth is driven open by the active lyric
+                        // word (the backups don't sing).
+                        ensembleExpressions: [
+                          _leadExpression(),
                           Expression.content,
                           Expression.happy,
                         ],
