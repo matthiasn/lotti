@@ -1096,14 +1096,18 @@ void main() {
       final openingRightToeOut = leadChannels[CatBones.footR]!.sample(
         4 / phrase.frameCount,
       );
-      final openingStepRightHand = _targetFor(
+      final openingFootHitRightHand = _targetFor(
         lead,
         CatBones.handR,
       ).channel.sample(4 / phrase.frameCount);
-      final openingStepLeftHand = _targetFor(
+      final openingDelayedRightHand = _targetFor(
+        lead,
+        CatBones.handR,
+      ).channel.sample(5 / phrase.frameCount);
+      final openingDelayedLeftHand = _targetFor(
         lead,
         CatBones.handL,
-      ).channel.sample(4 / phrase.frameCount);
+      ).channel.sample(5 / phrase.frameCount);
       final openingStepShoulder = leadChannels[CatBones.torso]!.sample(
         4 / phrase.frameCount,
       );
@@ -1198,14 +1202,28 @@ void main() {
             'legwork instead of sliding as a rigid shoe',
       );
       expect(
-        openingStepRightHand.y,
-        lessThan(openingStepLeftHand.y - 6),
+        openingFootHitRightHand.y,
+        greaterThan(openingDelayedRightHand.y + 2),
+        reason:
+            'the opening right hand should still be travelling on the foot hit; '
+            'if it lands with the foot, the move reads like pose swapping',
+      );
+      expect(
+        openingDelayedRightHand.x,
+        greaterThan(openingFootHitRightHand.x + 6),
+        reason:
+            'the loose opposite-side elbow lift should answer one frame after '
+            'the free-right foot plants',
+      );
+      expect(
+        openingDelayedRightHand.y,
+        lessThan(openingDelayedLeftHand.y - 6),
         reason:
             'the opening groove should have a loose opposite-side elbow lift, '
             'not two mirrored hands at belly height',
       );
       expect(
-        openingStepRightHand.x - openingStepLeftHand.x,
+        openingDelayedRightHand.x - openingDelayedLeftHand.x,
         greaterThan(65),
         reason:
             'the opening arms should break symmetry into a relaxed Lagos-party '
