@@ -411,7 +411,7 @@ class CharacterPainter extends CustomPainter {
     final breathe = math.sin(2 * math.pi * (p * 3 + 0.15));
     final callResponse = math.sin(2 * math.pi * (p * 2 - 0.08));
     final leadCall = _pulse(p, 1 / 16, 1 / 4);
-    final rightFeature = _holdPulse(p, 4 / 32, 5 / 32, 7 / 32, 8 / 32);
+    final rightFeature = _holdPulse(p, 3 / 32, 5 / 32, 7 / 32, 9 / 32);
     final greyFeature = _holdPulse(p, 8 / 32, 9 / 32, 11 / 32, 12 / 32);
     final sideAnswer = _pulse(p, 5 / 16, 1 / 2);
     final blackSolo = _pulse(p, 3 / 8, 1 / 2);
@@ -434,6 +434,7 @@ class CharacterPainter extends CustomPainter {
             -17 +
             1.5 * callResponse -
             4 * leadCall -
+            10 * rightFeature -
             6 * sideAnswer +
             2 * wideV +
             54 * greyFeature +
@@ -447,7 +448,7 @@ class CharacterPainter extends CustomPainter {
         dy:
             20 -
             5 * leadCall -
-            17 * rightFeature -
+            8 * rightFeature -
             19 * greyFeature -
             2 * blackSolo +
             2 * wideV +
@@ -470,14 +471,14 @@ class CharacterPainter extends CustomPainter {
             -17 -
             1.5 * callResponse -
             2 * leadCall -
-            42 * rightFeature +
+            18 * rightFeature +
             6 * sideAnswer +
             42 * greyFeature +
             20 * blackSolo +
             2 * wideV +
             5 * ensembleHit +
             10 * finishTriangle,
-        scale: 1 + 0.18 * rightFeature + 0.14 * blackSolo + 0.08 * greyFeature,
+        scale: 1 + 0.14 * rightFeature + 0.14 * blackSolo + 0.08 * greyFeature,
       ),
       _ => (dx: 0, dy: 0, scale: 1),
     };
