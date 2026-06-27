@@ -735,8 +735,10 @@ void main() {
           int orangeWidth,
           int orangeHeight,
           double orangeCenterX,
+          double orangeCenterY,
           int contentMinX,
           int contentMaxX,
+          int contentMinY,
           int contentMaxY,
         })
       >
@@ -812,8 +814,10 @@ void main() {
               orangeWidth: maxX - minX + 1,
               orangeHeight: maxY - minY + 1,
               orangeCenterX: (minX + maxX) / 2,
+              orangeCenterY: (minY + maxY) / 2,
               contentMinX: minOpaqueX,
               contentMaxX: maxOpaqueX,
+              contentMinY: minOpaqueY,
               contentMaxY: maxOpaqueY,
             );
           } finally {
@@ -865,6 +869,20 @@ void main() {
         reason:
             'the right-side pass should commit to a face/torso close-up, not '
             'another mostly full-body medium-wide shot',
+      );
+      expect(
+        rightClose.orangeCenterY,
+        lessThan(wide.orangeCenterY - 24),
+        reason:
+            'the pushed-in camera should lift the dancers toward a face/torso '
+            'composition instead of keeping the enlarged lead low in frame',
+      );
+      expect(
+        rightClose.contentMinY,
+        greaterThan(2),
+        reason:
+            'lifting the close-up should not crop ears or heads through the top '
+            'of the desktop viewport',
       );
       expect(
         rightClose.contentMinX,
