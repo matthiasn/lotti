@@ -1,0 +1,21 @@
+# ASR runtime deps for transcribe.py (word-level timestamps via WhisperX).
+#
+# SEPARATE from requirements.txt (Beat This! beat-map runtime) and
+# requirements-dev.txt (lint/test). Install into a DEDICATED venv so it cannot
+# disturb the working beat venv's torch/numpy/beat-this pins:
+#
+#   python3 -m venv .venv-asr && . .venv-asr/bin/activate
+#   pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+#   pip install --no-cache-dir -r requirements-asr.txt
+#
+# CPU only. Diarization (pyannote + HF token) is intentionally NOT used — we only
+# need word timestamps, so no speaker step and no token are required.
+#
+# WhisperX — BSD-2-Clause. Bundles faster-whisper (transcription) + wav2vec2
+# forced alignment (word timestamps). Pulls torch/torchaudio (install those from
+# the CPU index first, as above), ctranslate2, transformers, etc.
+whisperx>=3.1
+# Audio decode + windowing (also used by analyze.py); lets us feed a numpy
+# segment to WhisperX without a second ffmpeg decode.
+librosa>=0.10
+soundfile>=0.12

@@ -1,5 +1,6 @@
-# Python virtualenv for the offline dance-audio analysis tool — never commit.
+# Python virtualenvs for the offline dance-audio tools — never commit.
 .venv/
+.venv-asr/
 __pycache__/
 *.pyc
 
