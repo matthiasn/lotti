@@ -2325,6 +2325,16 @@ class CatClips {
   static const _danceBackupLeftStyle = DanceRoleStyle(
     bodyAccents: [
       DanceBodyAccent(
+        4,
+        // Low inside-shoulder echo on the lead's first Shaku pocket: enough
+        // variation to read as backup choreography, not a competing solo.
+        radiusFrames: 3,
+        pelvisRotation: 0.035,
+        chestRotation: -0.045,
+        chestScaleY: 0.984,
+        chestScaleX: 1.012,
+      ),
+      DanceBodyAccent(
         12,
         radiusFrames: 3,
         // Camera is on the right-side dancer here; keep the left-side answer
@@ -2346,16 +2356,19 @@ class CatClips {
     ],
     ikTargetAccents: {
       CatBones.handR: [
+        DanceIkTargetAccent(4, radiusFrames: 3, x: -5.8, y: -3.2),
         DanceIkTargetAccent(12, radiusFrames: 3, x: -1.2, y: -0.9, weight: 0.4),
         DanceIkTargetAccent(24, radiusFrames: 7, x: -12, y: -7),
       ],
     },
     jointAccents: {
       CatBones.armUpperR: [
+        DanceJointAccent(4, radiusFrames: 3, rotation: -0.12),
         DanceJointAccent(12, radiusFrames: 3, rotation: -0.035),
         DanceJointAccent(24, radiusFrames: 7, rotation: -0.26),
       ],
       CatBones.armLowerR: [
+        DanceJointAccent(4, radiusFrames: 3, rotation: 0.16),
         DanceJointAccent(12, radiusFrames: 3, rotation: 0.035),
         DanceJointAccent(24, radiusFrames: 7, rotation: 0.3),
       ],
@@ -2374,6 +2387,16 @@ class CatClips {
         chestScaleX: 1.022,
       ),
       DanceBodyAccent(
+        20,
+        // Secondary answer to the lead's right-foot groove: a small delayed
+        // shoulder bite on the dark cat so the trio has call/response.
+        radiusFrames: 4,
+        pelvisRotation: -0.04,
+        chestRotation: 0.052,
+        chestScaleY: 0.982,
+        chestScaleX: 1.014,
+      ),
+      DanceBodyAccent(
         24,
         // Camera has moved left by this point; keep the right-side dancer from
         // competing with the featured left-side answer.
@@ -2387,16 +2410,19 @@ class CatClips {
     ikTargetAccents: {
       CatBones.handL: [
         DanceIkTargetAccent(12, radiusFrames: 4, x: 9, y: -6),
+        DanceIkTargetAccent(20, radiusFrames: 4, x: 6.4, y: -4.2),
         DanceIkTargetAccent(24, radiusFrames: 6, x: 3, y: -1.8, weight: 0.45),
       ],
     },
     jointAccents: {
       CatBones.armUpperL: [
         DanceJointAccent(12, radiusFrames: 4, rotation: 0.2),
+        DanceJointAccent(20, radiusFrames: 4, rotation: 0.13),
         DanceJointAccent(24, radiusFrames: 6, rotation: 0.07),
       ],
       CatBones.armLowerL: [
         DanceJointAccent(12, radiusFrames: 4, rotation: 0.24),
+        DanceJointAccent(20, radiusFrames: 4, rotation: 0.18),
         DanceJointAccent(24, radiusFrames: 6, rotation: 0.08),
       ],
     },

@@ -224,7 +224,9 @@ void main() {
         final left = CatClips.danceBackupLeft;
         final right = CatClips.danceBackupRight;
         const supportCheckP = 7 / 12;
+        const firstEchoP = 1 / 8;
         const rightFeatureP = 3 / 8;
+        const delayedEchoP = 5 / 8;
         const leftFeatureP = 3 / 4;
 
         expect(left.duration, lead.duration);
@@ -272,10 +274,40 @@ void main() {
           right,
           CatBones.handL,
         ).channel.sample(3 / 8);
+        final leadHandRFirstEcho = _targetFor(
+          lead,
+          CatBones.handR,
+        ).channel.sample(firstEchoP);
+        final leftHandRFirstEcho = _targetFor(
+          left,
+          CatBones.handR,
+        ).channel.sample(firstEchoP);
+        final rightHandRFirstEcho = _targetFor(
+          right,
+          CatBones.handR,
+        ).channel.sample(firstEchoP);
+        final leadHandLDelayedEcho = _targetFor(
+          lead,
+          CatBones.handL,
+        ).channel.sample(delayedEchoP);
+        final leftHandLDelayedEcho = _targetFor(
+          left,
+          CatBones.handL,
+        ).channel.sample(delayedEchoP);
+        final rightHandLDelayedEcho = _targetFor(
+          right,
+          CatBones.handL,
+        ).channel.sample(delayedEchoP);
         expect(leftHandR.x, closeTo(leadHandR.x - 12, 0.001));
         expect(leftHandR.y, closeTo(leadHandR.y - 7, 0.001));
-        expect(rightHandL.x, closeTo(leadHandL.x + 1.35, 0.001));
-        expect(rightHandL.y, closeTo(leadHandL.y - 0.81, 0.001));
+        expect(
+          rightHandL.x,
+          closeTo(leadHandL.x, 0.001),
+          reason:
+              'right backup should stay neutral while the left-side dancer '
+              'owns the later feature',
+        );
+        expect(rightHandL.y, closeTo(leadHandL.y, 0.001));
         expect(
           leftHandRFirstAnswer.x,
           closeTo(leadHandRFirstAnswer.x - 0.48, 0.001),
@@ -291,6 +323,39 @@ void main() {
         expect(
           rightHandLFirstAnswer.y,
           closeTo(leadHandLFirstAnswer.y - 6, 0.001),
+        );
+        expect(
+          leftHandRFirstEcho.x,
+          closeTo(leadHandRFirstEcho.x - 5.8, 0.001),
+          reason:
+              'left backup should echo the lead Shaku pocket with its inside '
+              'hand, making the first eight count choreographed',
+        );
+        expect(
+          leftHandRFirstEcho.y,
+          closeTo(leadHandRFirstEcho.y - 3.2, 0.001),
+        );
+        expect(
+          rightHandRFirstEcho.x,
+          closeTo(leadHandRFirstEcho.x, 0.001),
+          reason:
+              'right backup should not mirror the left echo on the same beat',
+        );
+        expect(
+          rightHandLDelayedEcho.x,
+          closeTo(leadHandLDelayedEcho.x + 6.4, 0.001),
+          reason:
+              'right backup should answer later on the lead right-foot groove',
+        );
+        expect(
+          rightHandLDelayedEcho.y,
+          closeTo(leadHandLDelayedEcho.y - 4.2, 0.001),
+        );
+        expect(
+          leftHandLDelayedEcho.x,
+          closeTo(leadHandLDelayedEcho.x, 0.001),
+          reason:
+              'left backup should leave the delayed answer to the right dancer',
         );
         expect(
           left.channels[CatBones.legUpperL]!.sample(supportCheckP).rotation,
@@ -312,6 +377,12 @@ void main() {
         final rightTorsoDelta =
             right.channels[CatBones.torso]!.sample(rightFeatureP).rotation -
             lead.channels[CatBones.torso]!.sample(rightFeatureP).rotation;
+        final leftFirstEchoTorsoDelta =
+            left.channels[CatBones.torso]!.sample(firstEchoP).rotation -
+            lead.channels[CatBones.torso]!.sample(firstEchoP).rotation;
+        final rightDelayedEchoTorsoDelta =
+            right.channels[CatBones.torso]!.sample(delayedEchoP).rotation -
+            lead.channels[CatBones.torso]!.sample(delayedEchoP).rotation;
         final leftArmDelta =
             left.channels[CatBones.armUpperR]!.sample(leftFeatureP).rotation -
             lead.channels[CatBones.armUpperR]!.sample(leftFeatureP).rotation;
@@ -342,6 +413,20 @@ void main() {
           inInclusiveRange(0.08, 0.28),
           reason:
               'right backup should feature its inside arm on the right pass',
+        );
+        expect(
+          leftFirstEchoTorsoDelta.abs(),
+          inInclusiveRange(0.025, 0.07),
+          reason:
+              'left backup should have a visible but secondary first-pocket '
+              'shoulder echo',
+        );
+        expect(
+          rightDelayedEchoTorsoDelta.abs(),
+          inInclusiveRange(0.03, 0.08),
+          reason:
+              'right backup should answer on the later right-foot groove '
+              'without becoming the lead',
         );
         final rightOffCameraArmDelta =
             right.channels[CatBones.armUpperL]!.sample(leftFeatureP).rotation -
