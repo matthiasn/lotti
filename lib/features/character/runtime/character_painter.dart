@@ -338,14 +338,74 @@ class CharacterPainter extends CustomPainter {
     Size size,
     ({double zoom, double dx, double dy}) camera,
   ) {
-    _applySceneCamera(
-      canvas,
-      size,
-      (
-        zoom: 1 + (camera.zoom - 1) * 0.34,
-        dx: camera.dx * 0.28,
-        dy: camera.dy * 0.18,
-      ),
+    _applySceneCamera(canvas, size, _parallaxCamera(camera));
+  }
+
+  /// Reduces a scene camera to the gentler backdrop parallax (it lags the
+  /// foreground so the scene reads as deeper).
+  static ({double zoom, double dx, double dy}) _parallaxCamera(
+    ({double zoom, double dx, double dy}) camera,
+  ) {
+    return (
+      zoom: 1 + (camera.zoom - 1) * 0.34,
+      dx: camera.dx * 0.28,
+      dy: camera.dy * 0.18,
+    );
+  }
+
+  /// The reduced parallax transform a *separate* backdrop widget (e.g. the
+  /// layered scenery backdrop drawn behind the dancers in a `Stack`) should
+  /// apply so it drifts with the dance camera, matching the legacy in-painter
+  /// waterfront parallax. Returns the identity matrix when the dance camera is
+  /// inactive. [active] should mirror this painter's gate — the performing trio
+  /// on the `dance` clip.
+  static Matrix4 danceParallaxTransform({
+    required double timeSeconds,
+    required double clipDuration,
+    required Size size,
+    double danceCameraStrength = 1,
+    bool active = true,
+  }) {
+    if (!active || clipDuration <= 0 || size.isEmpty) {
+      return Matrix4.identity();
+    }
+    final raw = _danceCamera(timeSeconds, clipDuration);
+    final scene = (
+      zoom: 1 + (raw.zoom - 1) * danceCameraStrength,
+      dx: raw.dx * danceCameraStrength,
+      dy: raw.dy * danceCameraStrength,
+    );
+    final parallax = _parallaxCamera(scene);
+    if (parallax.zoom == 1 && parallax.dx == 0 && parallax.dy == 0) {
+      return Matrix4.identity();
+    }
+    final pivot = Offset(size.width / 2, size.height * 0.56);
+    final maxDx = size.width * (parallax.zoom - 1) / 2;
+    final maxDy = size.height * (parallax.zoom - 1) / 2;
+    final dx = parallax.dx.clamp(-maxDx, maxDx);
+    final dy = parallax.dy.clamp(-maxDy, maxDy);
+    // Uniform scale about [pivot] then translate by (dx, dy), written directly
+    // as a column-major matrix (avoids the deprecated Matrix4.translate/scale).
+    final z = parallax.zoom;
+    final tx = pivot.dx * (1 - z) + dx;
+    final ty = pivot.dy * (1 - z) + dy;
+    return Matrix4(
+      z,
+      0,
+      0,
+      0, //
+      0,
+      z,
+      0,
+      0, //
+      0,
+      0,
+      1,
+      0, //
+      tx,
+      ty,
+      0,
+      1,
     );
   }
 

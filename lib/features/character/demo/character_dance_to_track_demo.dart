@@ -549,6 +549,16 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                 // (the painter scales uniformly, so this is what keeps the cats
                 // correctly proportioned instead of squat at the default scale 1).
                 final scale = constraints.maxHeight * 0.78 / 300.0;
+                // Parallax the layered scene with the dance camera so it drifts
+                // behind the dancers instead of sitting dead still.
+                final backdropTransform =
+                    CharacterPainter.danceParallaxTransform(
+                      timeSeconds: stage.seconds,
+                      clipDuration: stage.lead.duration,
+                      size: Size(constraints.maxWidth, constraints.maxHeight),
+                      danceCameraStrength: _cameraStrength,
+                      active: stage.lead.name == 'dance',
+                    );
                 return Stack(
                   fit: StackFit.expand,
                   children: [
@@ -556,9 +566,13 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                     // same audio/dance clock so it moves with the music. Toggle
                     // to the old single-plate waterfront via the panel button.
                     if (_useNewBackdrop)
-                      LayeredBackdrop(
-                        scene: BackdropScene.blueHourWaterfront(),
-                        timeSeconds: stage.seconds,
+                      Transform(
+                        transform: backdropTransform,
+                        filterQuality: FilterQuality.low,
+                        child: LayeredBackdrop(
+                          scene: BackdropScene.blueHourWaterfront(),
+                          timeSeconds: stage.seconds,
+                        ),
                       ),
                     CustomPaint(
                       painter: CharacterPainter(

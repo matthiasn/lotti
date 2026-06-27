@@ -977,6 +977,65 @@ void main() {
       );
     });
   });
+
+  group('danceParallaxTransform', () {
+    const size = Size(800, 450);
+
+    test('is the identity matrix when the dance camera is inactive', () {
+      expect(
+        CharacterPainter.danceParallaxTransform(
+          timeSeconds: 1.2,
+          clipDuration: 6,
+          size: size,
+          active: false,
+        ),
+        Matrix4.identity(),
+      );
+      expect(
+        CharacterPainter.danceParallaxTransform(
+          timeSeconds: 1.2,
+          clipDuration: 6,
+          size: size,
+          danceCameraStrength: 0,
+        ),
+        Matrix4.identity(),
+      );
+    });
+
+    test('parallaxes the backdrop less than the foreground dance camera', () {
+      // Mid-phrase the shot pushes in; the backdrop scales up too, but by a
+      // gentler factor than the full ~2x camera (zoom reduced to 34%).
+      final m = CharacterPainter.danceParallaxTransform(
+        timeSeconds: 3, // ~half of a 6s phrase → peak push-in
+        clipDuration: 6,
+        size: size,
+      );
+      final scale = m.entry(0, 0);
+      expect(
+        scale,
+        greaterThan(1.0),
+        reason: 'backdrop zooms with the push-in',
+      );
+      expect(scale, lessThan(1.4), reason: 'far less than the ~2x foreground');
+      expect(m.entry(0, 3), isNot(0), reason: 'a horizontal drift is applied');
+    });
+
+    test('strength eases the parallax toward neutral', () {
+      final full = CharacterPainter.danceParallaxTransform(
+        timeSeconds: 3,
+        clipDuration: 6,
+        size: size,
+      );
+      final half = CharacterPainter.danceParallaxTransform(
+        timeSeconds: 3,
+        clipDuration: 6,
+        size: size,
+        danceCameraStrength: 0.5,
+      );
+      expect(half.entry(0, 0), lessThan(full.entry(0, 0)));
+      expect(half.entry(0, 0), greaterThan(1.0));
+    });
+  });
 }
 
 int _opaquePixelsInBox(
