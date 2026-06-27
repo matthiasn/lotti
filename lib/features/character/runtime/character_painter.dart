@@ -417,9 +417,12 @@ class CharacterPainter extends CustomPainter {
     final blackSolo = _pulse(p, 3 / 8, 1 / 2);
     final wideV = _pulse(p, 1 / 2, 3 / 4);
     final centreFeature = _pulse(p, 17 / 32, 23 / 32);
-    final greyFinish = _pulse(p, 24 / 32, 28 / 32);
     final ensembleHit = _pulse(p, 23 / 32, 27 / 32);
     final finishTriangle = _holdPulse(p, 27 / 32, 29 / 32, 31 / 32, 1);
+    // Stage depth is deliberately stable. The dancers' apparent foreground /
+    // background position comes from _roleFloorOffset + _roleScale, not from
+    // animated perspective jumps that their footwork does not earn.
+    final sideDepthBreath = 1.5 * callResponse;
     return switch (index) {
       0 => (
         dx:
@@ -428,34 +431,22 @@ class CharacterPainter extends CustomPainter {
             14 * sideAnswer -
             13 * wideV +
             14 * greyFeature +
-            16 * greyFinish +
             6 * finishTriangle,
-        dy:
-            -17 +
-            1.5 * callResponse -
-            4 * leadCall -
-            10 * rightFeature -
-            6 * sideAnswer +
-            2 * wideV +
-            54 * greyFeature +
-            50 * greyFinish +
-            5 * ensembleHit +
-            2 * finishTriangle,
-        scale: 1 + 0.2 * greyFeature + 0.2 * greyFinish,
+        dy: -17 + sideDepthBreath,
+        scale: 1,
       ),
       1 => (
-        dx: 3 * leadCall - 2 * greyFeature - 4 * greyFinish - 3 * ensembleHit,
+        dx: 3 * leadCall - 2 * greyFeature - 3 * ensembleHit,
         dy:
             20 -
             5 * leadCall -
             8 * rightFeature -
-            19 * greyFeature -
+            4 * greyFeature -
             2 * blackSolo +
             2 * wideV +
             5 * centreFeature -
-            14 * greyFinish -
             3 * ensembleHit,
-        scale: 1 - 0.08 * rightFeature - 0.08 * greyFeature - 0.07 * greyFinish,
+        scale: 1,
       ),
       2 => (
         dx:
@@ -467,18 +458,8 @@ class CharacterPainter extends CustomPainter {
             12 * wideV -
             8 * greyFeature -
             22 * finishTriangle,
-        dy:
-            -17 -
-            1.5 * callResponse -
-            2 * leadCall -
-            18 * rightFeature +
-            6 * sideAnswer +
-            42 * greyFeature +
-            20 * blackSolo +
-            2 * wideV +
-            5 * ensembleHit +
-            10 * finishTriangle,
-        scale: 1 + 0.14 * rightFeature + 0.14 * blackSolo + 0.08 * greyFeature,
+        dy: -17 - sideDepthBreath,
+        scale: 1,
       ),
       _ => (dx: 0, dy: 0, scale: 1),
     };

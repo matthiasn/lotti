@@ -603,185 +603,89 @@ void main() {
     });
   });
 
-  testWidgets('dance trio gives backup dancers featured depth beats', (
-    tester,
-  ) async {
-    await tester.runAsync(() async {
-      Future<
-        ({
-          double leadHeight,
-          double silverHeight,
-          double darkHeight,
-          int leadPixels,
-          int darkPixels,
-        })
-      >
-      boundsAt(double p) async {
-        final recorder = ui.PictureRecorder();
-        final canvas = Canvas(recorder);
-        CharacterPainter(
-          scene: scene,
-          partnerScene: CharacterScene(
-            buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
-          ),
-          ensembleScenes: [
-            CharacterScene(
-              buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
-            ),
-            CharacterScene(
-              buildCatInSuitRig(palette: CatInSuitPalette.darkBrown),
-            ),
-          ],
-          ensembleClips: [
-            CatClips.dance,
-            CatClips.danceBackupLeft,
-            CatClips.danceBackupRight,
-          ],
-          synchronousEnsemble: true,
-          clip: CatClips.dance,
-          timeSeconds: CatClips.dance.duration * p,
-          walkingPair: true,
-          shadowColor: const Color(0x00000000),
-          renderer: renderer,
-        ).paint(canvas, const Size(760, 420));
-        final picture = recorder.endRecording();
-        try {
-          final image = await picture.toImage(760, 420);
-          try {
-            final data = await image.toByteData();
-            final pixels = data!.buffer.asUint8List();
-            final lead = _boundsForPixels(
-              pixels,
-              760,
-              420,
-              (red, green, blue, alpha, x, y) =>
-                  alpha > 180 &&
-                  red > 200 &&
-                  green > 120 &&
-                  green < 190 &&
-                  blue < 120,
-            );
-            final silver = _boundsForPixels(
-              pixels,
-              760,
-              420,
-              (red, green, blue, alpha, x, y) =>
-                  x < lead.centerX - 20 &&
-                  alpha > 180 &&
-                  red >= 120 &&
-                  red <= 210 &&
-                  green >= 125 &&
-                  green <= 220 &&
-                  blue >= 140 &&
-                  blue <= 235,
-            );
-            final dark = _boundsForPixels(
-              pixels,
-              760,
-              420,
-              (red, green, blue, alpha, x, y) =>
-                  x > lead.centerX + 20 &&
-                  alpha > 180 &&
-                  red >= 28 &&
-                  red <= 78 &&
-                  green >= 20 &&
-                  green <= 64 &&
-                  blue <= 52,
-            );
+  test('dance trio keeps backup depth stable while focus moves laterally', () {
+    ({double dx, double dy, double scale}) formationAt(int index, double p) =>
+        CharacterPainter.debugDanceFormation(
+          index,
+          3,
+          CatClips.dance.duration * p,
+          CatClips.dance.duration,
+        );
 
-            expect(lead.count, greaterThan(250));
-            expect(silver.count, greaterThan(180));
-            expect(dark.count, greaterThan(180));
-            return (
-              leadHeight: (lead.maxY - lead.minY + 1).toDouble(),
-              silverHeight: (silver.maxY - silver.minY + 1).toDouble(),
-              darkHeight: (dark.maxY - dark.minY + 1).toDouble(),
-              leadPixels: lead.count,
-              darkPixels: dark.count,
-            );
-          } finally {
-            image.dispose();
-          }
-        } finally {
-          picture.dispose();
-        }
+    final silverFrames = [
+      for (var frame = 0; frame <= 32; frame++) formationAt(0, frame / 32),
+    ];
+    final darkFrames = [
+      for (var frame = 0; frame <= 32; frame++) formationAt(2, frame / 32),
+    ];
+    final allFrames = [
+      ...silverFrames,
+      for (var frame = 0; frame <= 32; frame++) formationAt(1, frame / 32),
+      ...darkFrames,
+    ];
+
+    double range(Iterable<double> values) {
+      final list = values.toList();
+      return list.reduce(math.max) - list.reduce(math.min);
+    }
+
+    double largestFrameStep(
+      List<({double dx, double dy, double scale})> frames,
+    ) {
+      var largest = 0.0;
+      for (var i = 1; i < frames.length; i++) {
+        largest = math.max(largest, (frames[i].dy - frames[i - 1].dy).abs());
       }
+      return largest;
+    }
 
-      ({double dx, double dy, double scale}) formationAt(int index, double p) =>
-          CharacterPainter.debugDanceFormation(
-            index,
-            3,
-            CatClips.dance.duration * p,
-            CatClips.dance.duration,
-          );
-
-      final wide = await boundsAt(0);
-      final darkFeature = await boundsAt(6 / 32);
-      final greyFeature = await boundsAt(10 / 32);
-      final greyLineHold = await boundsAt(11 / 32);
-      final greyFinish = await boundsAt(26 / 32);
-      final greyFeatureFormation = formationAt(0, 10 / 32);
-      final greyLineHoldFormation = formationAt(0, 11 / 32);
-      final darkLineHoldFormation = formationAt(2, 11 / 32);
-
+    expect(
+      range(silverFrames.map((frame) => frame.dx)),
+      greaterThan(28),
+      reason:
+          'the silver backup should still trade focus through lateral '
+          'formation changes instead of standing in a static chorus lane',
+    );
+    expect(
+      range(darkFrames.map((frame) => frame.dx)),
+      greaterThan(34),
+      reason:
+          'the dark backup should still trade focus through lateral formation '
+          'changes instead of standing in a static chorus lane',
+    );
+    expect(
+      range(silverFrames.map((frame) => frame.dy)),
+      lessThanOrEqualTo(3.1),
+      reason:
+          'the silver backup should not appear to walk downstage/upstage when '
+          'its feet are dancing in place',
+    );
+    expect(
+      range(darkFrames.map((frame) => frame.dy)),
+      lessThanOrEqualTo(3.1),
+      reason:
+          'the dark backup should not appear to walk downstage/upstage when '
+          'its feet are dancing in place',
+    );
+    expect(
+      largestFrameStep(silverFrames),
+      lessThan(1),
+      reason: 'backup depth breathing must be sub-pixel smooth per frame',
+    );
+    expect(
+      largestFrameStep(darkFrames),
+      lessThan(1),
+      reason: 'backup depth breathing must be sub-pixel smooth per frame',
+    );
+    for (final frame in allFrames) {
       expect(
-        darkFeature.darkPixels / darkFeature.leadPixels,
-        greaterThan(wide.darkPixels / wide.leadPixels + 0.08),
+        frame.scale,
+        closeTo(1, 0.001),
         reason:
-            'F4-F7 should make the dark backup visually larger/denser for a '
-            'real feature beat instead of leaving the trio in a flat chorus '
-            'line',
+            'dance focus should not come from perspective scale pulses that '
+            'are disconnected from the legwork',
       );
-      expect(
-        greyFeature.silverHeight / greyFeature.leadHeight,
-        greaterThan(wide.silverHeight / wide.leadHeight + 0.05),
-        reason:
-            'F8-F11 should pull the silver backup forward to create a diagonal '
-            'depth swap instead of keeping orange dominant every count',
-      );
-      expect(
-        greyLineHold.silverHeight / greyLineHold.leadHeight,
-        greaterThan(wide.silverHeight / wide.leadHeight + 0.02),
-        reason:
-            'the second line-change frame should still read forward in the '
-            'render instead of collapsing back to the wide chorus line',
-      );
-      expect(
-        greyLineHoldFormation.dy,
-        closeTo(greyFeatureFormation.dy, 3),
-        reason:
-            'the grey feature should hold nearly the same stage depth across '
-            'F10-F11, allowing only the small breathing offset instead of '
-            'passing through the formation as a one-frame smear',
-      );
-      expect(
-        greyLineHoldFormation.scale,
-        closeTo(greyFeatureFormation.scale, 0.001),
-        reason:
-            'the grey feature should hold the same stage scale across F10-F11',
-      );
-      expect(
-        greyLineHold.darkHeight / greyLineHold.leadHeight,
-        greaterThan(wide.darkHeight / wide.leadHeight + 0.03),
-        reason:
-            'the line hold should pull both side dancers toward the same '
-            'foreground band, not only feature the silver cat',
-      );
-      expect(
-        darkLineHoldFormation.dy,
-        greaterThan(0),
-        reason:
-            'the dark backup should come downstage during the line hold '
-            'instead of popping upward/back like a floating cutout',
-      );
-      expect(
-        greyFinish.silverHeight / greyFinish.leadHeight,
-        greaterThan(wide.silverHeight / wide.leadHeight + 0.06),
-        reason:
-            'F24-F27 should feature the silver backup before the finish so the '
-            'last phrase is not another center-lead chorus-line reset',
-      );
-    });
+    }
   });
 
   testWidgets('dance trio camera pushes into torso close-up then pulls out', (
@@ -1028,7 +932,7 @@ void main() {
       );
       expect(
         leftPan.orangeCenterX - postRightRecovery.orangeCenterX,
-        inInclusiveRange(24, 108),
+        inInclusiveRange(24, 116),
         reason:
             'the next beat should truck toward the left-side dancer, moving '
             'the lead right on screen',
