@@ -613,23 +613,23 @@ void main() {
           leftHandRHookPickup.x,
           closeTo(leadHandRHookPickup.x - 5.4, 0.001),
           reason:
-              'left backup should pick up the lead hook reset after the '
+              'left backup should prepare the low final hook after the '
               'side-feature has settled',
         );
         expect(
           leftHandRHookPickup.y,
-          closeTo(leadHandRHookPickup.y - 4.2, 0.001),
+          closeTo(leadHandRHookPickup.y + 4.2, 0.001),
         );
         expect(
           rightHandLHookPickup.x,
-          closeTo(leadHandLHookPickup.x + 4.4, 0.001),
+          closeTo(leadHandLHookPickup.x + 5.8, 0.001),
           reason:
-              'right backup should answer the loop pickup without copying the '
-              'left backup on the same frame',
+              'right backup should answer the loop pickup high/across without '
+              'copying the low silver answer',
         );
         expect(
           rightHandLHookPickup.y,
-          closeTo(leadHandLHookPickup.y - 3.2, 0.001),
+          closeTo(leadHandLHookPickup.y - 5.8, 0.001),
         );
         expect(
           left.channels[CatBones.legUpperL]!.sample(supportCheckP).rotation,
@@ -1878,6 +1878,53 @@ void main() {
         reason:
             'the final hook should finish as a low freeze before the loop '
             'returns home, not fade into a neutral reset',
+      );
+      final leadFinalLeftHand = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(hookPickupP);
+      final leadFinalRightHand = _targetFor(
+        lead,
+        CatBones.handR,
+      ).channel.sample(hookPickupP);
+      final silverFinalInsideHand = _targetFor(
+        left,
+        CatBones.handR,
+      ).channel.sample(hookPickupP);
+      final darkFinalInsideHand = _targetFor(
+        right,
+        CatBones.handL,
+      ).channel.sample(hookPickupP);
+      expect(
+        silverFinalInsideHand.y,
+        greaterThan(leadFinalRightHand.y + 7),
+        reason:
+            'the final crew button should put silver low/out instead of '
+            'matching the lead hook height',
+      );
+      expect(
+        silverFinalInsideHand.x,
+        lessThan(leadFinalRightHand.x - 7),
+        reason: 'silver low answer should travel outward from the lead shape',
+      );
+      expect(
+        darkFinalInsideHand.y,
+        lessThan(leadFinalLeftHand.y - 5.2),
+        reason:
+            'the final crew button should put dark high/across while the lead '
+            'stays mid-level',
+      );
+      expect(
+        darkFinalInsideHand.x,
+        greaterThan(leadFinalLeftHand.x + 5.2),
+        reason: 'dark high answer should cross inward instead of mirroring low',
+      );
+      expect(
+        silverFinalInsideHand.y - darkFinalInsideHand.y,
+        greaterThan(19),
+        reason:
+            'the ending should read as a staggered tableau with distinct '
+            'vertical levels, not a boy-band unison reset',
       );
     });
 
