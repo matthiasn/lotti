@@ -1066,6 +1066,32 @@ class CatClips {
           DanceIkTargetKey(12, x: 46.4, y: 25.2),
         ],
       },
+      jointKeys: {
+        CatBones.armUpperL: [
+          DanceJointKey(9, rotation: 0.68),
+          DanceJointKey(10, rotation: 0.72),
+          DanceJointKey(11, rotation: 0.42),
+          DanceJointKey(12, rotation: 0.08),
+        ],
+        CatBones.armLowerL: [
+          DanceJointKey(9, rotation: 0.12),
+          DanceJointKey(10),
+          DanceJointKey(11, rotation: 0.18),
+          DanceJointKey(12, rotation: 0.38),
+        ],
+        CatBones.armUpperR: [
+          DanceJointKey(9, rotation: 0.1),
+          DanceJointKey(10, rotation: 0.28),
+          DanceJointKey(11, rotation: 0.08),
+          DanceJointKey(12, rotation: -0.16),
+        ],
+        CatBones.armLowerR: [
+          DanceJointKey(9, rotation: 0.62),
+          DanceJointKey(10, rotation: 0.68),
+          DanceJointKey(11, rotation: 0.56),
+          DanceJointKey(12, rotation: 0.44),
+        ],
+      },
     ),
     DanceMoveSignature(
       moveName: 'right-foot groove pocket',
@@ -1082,6 +1108,15 @@ class CatClips {
         CatBones.footL: [
           DanceJointKey(20, rotation: 0.48),
           DanceJointKey(21, rotation: 0.36),
+        ],
+        CatBones.footR: [
+          DanceJointKey(16, rotation: -0.12),
+          DanceJointKey(17, rotation: 0.02),
+          DanceJointKey(18, rotation: -0.02),
+          DanceJointKey(19, rotation: -0.14),
+          DanceJointKey(20, rotation: -0.08),
+          DanceJointKey(21, rotation: -0.02),
+          DanceJointKey(22, rotation: -0.08),
         ],
       },
     ),
@@ -1357,6 +1392,12 @@ class CatClips {
     DanceJointKey(30, rotation: -0.08),
     DanceJointKey(32, rotation: 0.34),
   ];
+  static final List<DanceJointKey> _danceFootRLeadKeys = _dancePhrase
+      .mergeJointKeys(
+        baseKeys: _danceFootRKeys,
+        signatures: _danceLeadMoveSignatures,
+        boneId: CatBones.footR,
+      );
 
   // Hip-space foot targets make lower-body choreography explicit: the thigh and
   // shin solve toward where the foot should live relative to the pelvis, while
@@ -1887,6 +1928,30 @@ class CatClips {
     DanceJointKey(31, rotation: 0.22),
     DanceJointKey(32, rotation: 0.14),
   ];
+  static final List<DanceJointKey> _danceArmUpperLLeadKeys = _dancePhrase
+      .mergeJointKeys(
+        baseKeys: _danceArmUpperLKeys,
+        signatures: _danceLeadMoveSignatures,
+        boneId: CatBones.armUpperL,
+      );
+  static final List<DanceJointKey> _danceArmLowerLLeadKeys = _dancePhrase
+      .mergeJointKeys(
+        baseKeys: _danceArmLowerLKeys,
+        signatures: _danceLeadMoveSignatures,
+        boneId: CatBones.armLowerL,
+      );
+  static final List<DanceJointKey> _danceArmUpperRLeadKeys = _dancePhrase
+      .mergeJointKeys(
+        baseKeys: _danceArmUpperRKeys,
+        signatures: _danceLeadMoveSignatures,
+        boneId: CatBones.armUpperR,
+      );
+  static final List<DanceJointKey> _danceArmLowerRLeadKeys = _dancePhrase
+      .mergeJointKeys(
+        baseKeys: _danceArmLowerRKeys,
+        signatures: _danceLeadMoveSignatures,
+        boneId: CatBones.armLowerR,
+      );
 
   // Torso-space hand paths seeded from the resolved dance phrase, then evened
   // at the abrupt section returns. The IK layer now owns hand placement; the FK
@@ -2770,12 +2835,15 @@ class CatClips {
         _dancePhrase.jointChannel(_danceFootLLeadKeys, smooth: true),
         _dancePhrase.jointChannel(_danceFootLAccentKeys, smooth: true),
       ]),
-      CatBones.footR: _dancePhrase.jointChannel(_danceFootRKeys, smooth: true),
+      CatBones.footR: _dancePhrase.jointChannel(
+        _danceFootRLeadKeys,
+        smooth: true,
+      ),
 
       // Alternating groove arms for counts 1-8, then compact elbow pops for the
       // Gbese phrase so hands stay visible outside the belly silhouette.
       CatBones.armUpperL: LayeredJointChannel([
-        _dancePhrase.jointChannel(_danceArmUpperLKeys, smooth: true),
+        _dancePhrase.jointChannel(_danceArmUpperLLeadKeys, smooth: true),
         const SineChannel(
           harmonicAmplitude: 0.018,
           harmonicPhase: 0.02,
@@ -2783,7 +2851,7 @@ class CatClips {
         ),
       ]),
       CatBones.armUpperR: LayeredJointChannel([
-        _dancePhrase.jointChannel(_danceArmUpperRKeys, smooth: true),
+        _dancePhrase.jointChannel(_danceArmUpperRLeadKeys, smooth: true),
         const SineChannel(
           harmonicAmplitude: 0.018,
           harmonicPhase: 0.52,
@@ -2791,7 +2859,7 @@ class CatClips {
         ),
       ]),
       CatBones.armLowerL: LayeredJointChannel([
-        _dancePhrase.jointChannel(_danceArmLowerLKeys, smooth: true),
+        _dancePhrase.jointChannel(_danceArmLowerLLeadKeys, smooth: true),
         const SineChannel(
           harmonicAmplitude: 0.022,
           harmonicPhase: 0.08,
@@ -2799,7 +2867,7 @@ class CatClips {
         ),
       ]),
       CatBones.armLowerR: LayeredJointChannel([
-        _dancePhrase.jointChannel(_danceArmLowerRKeys, smooth: true),
+        _dancePhrase.jointChannel(_danceArmLowerRLeadKeys, smooth: true),
         const SineChannel(
           harmonicAmplitude: 0.022,
           harmonicPhase: 0.58,

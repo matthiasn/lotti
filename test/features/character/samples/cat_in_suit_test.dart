@@ -397,6 +397,19 @@ void main() {
         expect(rightSupportFoot, closeTo(-0.08, 0.001));
         expect(rightFreeFoot, greaterThan(rightSupportFoot + 0.45));
         expect(
+          footR.sample(17 / 32).rotation,
+          greaterThan(rightSupportFoot + 0.08),
+          reason:
+              'the right-foot pocket should show a heel-lift before settling',
+        );
+        expect(
+          footR.sample(19 / 32).rotation,
+          lessThan(rightSupportFoot - 0.04),
+          reason:
+              'the right-foot pocket should answer with a toe-down plant, not '
+              'a flat support throughout',
+        );
+        expect(
           leftFreeFoot,
           inInclusiveRange(leftSupportFoot + 0.35, leftSupportFoot + 0.56),
           reason:
@@ -591,6 +604,22 @@ void main() {
         reboundRightHand.x - reboundLeftHand.x,
         greaterThan(135),
         reason: 'scoop should read as a broad shoulder-level shape',
+      );
+      expect(
+        leadChannels[CatBones.armUpperL]!.sample(reboundP).rotation,
+        greaterThan(0.65),
+        reason: 'left shoulder should visibly lift through the scoop accent',
+      );
+      expect(
+        leadChannels[CatBones.armUpperR]!.sample(reboundP).rotation,
+        greaterThan(0.24),
+        reason:
+            'right shoulder should stop hanging neutral during the scoop accent',
+      );
+      expect(
+        leadChannels[CatBones.armLowerR]!.sample(reboundP).rotation,
+        greaterThan(0.6),
+        reason: 'right forearm should carve the scoop instead of dangling',
       );
 
       final rightCueP = phrase.moveAtFrame(12).accentFrame / phrase.frameCount;
