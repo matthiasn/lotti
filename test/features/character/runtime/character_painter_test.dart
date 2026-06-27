@@ -493,7 +493,7 @@ void main() {
     });
   });
 
-  testWidgets('dance trio camera follows a multi-shot centre/right/left pass', (
+  testWidgets('dance trio camera keeps medium-wide centre/right/left passes', (
     tester,
   ) async {
     await tester.runAsync(() async {
@@ -595,31 +595,37 @@ void main() {
 
       expect(
         centerPush.orangeCenterX,
-        closeTo(wide.orangeCenterX, 36),
+        closeTo(wide.orangeCenterX, 28),
         reason:
-            'the first push should zoom on the centre lead before travelling',
+            'the first push should stay centred on the trio before travelling',
       );
       expect(
         centerPush.orangeHeight,
-        greaterThan(wide.orangeHeight * 1.12),
-        reason: 'the centre beat should read as a real push-in',
+        inInclusiveRange(wide.orangeHeight * 0.95, wide.orangeHeight * 1.16),
+        reason:
+            'the centre beat should avoid a visible scale pop or solo close-up',
       );
       expect(
         centerPush.orangeCenterX - rightPan.orangeCenterX,
-        greaterThan(80),
+        inInclusiveRange(18, 72),
         reason:
             'the second beat should pan toward the right-side dancer, moving '
-            'the lead left on screen',
+            'the lead left on screen without losing the trio',
       );
       expect(
         rightClose.orangeHeight,
-        greaterThan(rightPan.orangeHeight * 1.16),
-        reason: 'the right-side pass should push tighter before pulling back',
+        inInclusiveRange(
+          rightPan.orangeHeight * 1.04,
+          wide.orangeHeight * 1.32,
+        ),
+        reason:
+            'the right-side pass should push in, but remain a medium ensemble '
+            'shot',
       );
       expect(
         rightClose.contentMaxY,
-        greaterThan(416),
-        reason: 'the tight right pass should intentionally crop to upper body',
+        lessThan(420),
+        reason: 'the right pass should not crop feet out of the desktop frame',
       );
       expect(
         rightHold.orangeCenterX,
@@ -634,26 +640,26 @@ void main() {
       );
       expect(
         leadLevel.orangeCenterX,
-        closeTo(wide.orangeCenterX, 48),
-        reason: 'after the tight right pass, the camera should reset to lead',
+        closeTo(wide.orangeCenterX, 40),
+        reason: 'after the right pass, the camera should reset to the trio',
       );
       expect(
         leadLevel.orangeHeight,
-        lessThan(rightClose.orangeHeight * 0.82),
+        lessThan(rightClose.orangeHeight * 0.94),
         reason:
-            'the middle reset should zoom out enough to feel like lead/front '
-            'cat level, not another close crop',
+            'the middle reset should zoom out enough to restore ensemble '
+            'readability',
       );
       expect(
         leftPan.orangeCenterX - leadLevel.orangeCenterX,
-        greaterThan(80),
+        inInclusiveRange(18, 78),
         reason:
             'the next beat should pan toward the left-side dancer, moving the '
-            'lead right on screen',
+            'lead right on screen without making a close-up',
       );
       expect(
         leftClose.orangeHeight,
-        greaterThan(leftPan.orangeHeight * 1.08),
+        inInclusiveRange(leftPan.orangeHeight * 1.02, wide.orangeHeight * 1.3),
         reason: 'the left-side pass should also push in before the reset',
       );
       expect(
@@ -668,7 +674,7 @@ void main() {
       );
       expect(
         reset.orangeHeight,
-        closeTo(wide.orangeHeight, wide.orangeHeight * 0.12),
+        closeTo(wide.orangeHeight, wide.orangeHeight * 0.14),
         reason: 'the final beat should return to the wide stage frame',
       );
     });

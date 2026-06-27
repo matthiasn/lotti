@@ -137,7 +137,7 @@ class CharacterPainter extends CustomPainter {
   static const double _pairScaleFactor = 0.7;
   static const double _trioScaleFactor = 0.54;
   static const double _pairSpacing = 215;
-  static const double _trioSpacing = 214;
+  static const double _trioSpacing = 238;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -308,7 +308,7 @@ class CharacterPainter extends CustomPainter {
 
   static double _roleScale(int index, int memberCount) {
     if (memberCount < 3) return 1;
-    return index == 1 ? 1.32 : 0.79;
+    return index == 1 ? 1.2 : 0.86;
   }
 
   static double _roleHorizontalScale(int index, int memberCount) {
@@ -329,43 +329,43 @@ class CharacterPainter extends CustomPainter {
     return (
       zoom: _smoothKeys(p, const [
         (p: 0, v: 1.0),
-        (p: 1 / 8, v: 1.28),
-        (p: 3 / 16, v: 1.28),
-        (p: 1 / 4, v: 1.34),
-        (p: 3 / 8, v: 1.72),
-        (p: 7 / 16, v: 1.72),
-        (p: 1 / 2, v: 1.16),
-        (p: 5 / 8, v: 1.38),
-        (p: 3 / 4, v: 1.68),
-        (p: 13 / 16, v: 1.68),
-        (p: 29 / 32, v: 1.06),
+        (p: 1 / 8, v: 1.08),
+        (p: 3 / 16, v: 1.1),
+        (p: 1 / 4, v: 1.12),
+        (p: 3 / 8, v: 1.22),
+        (p: 7 / 16, v: 1.22),
+        (p: 1 / 2, v: 1.08),
+        (p: 5 / 8, v: 1.14),
+        (p: 3 / 4, v: 1.2),
+        (p: 13 / 16, v: 1.18),
+        (p: 29 / 32, v: 1.04),
         (p: 1, v: 1.0),
       ]),
       dx: _smoothKeys(p, const [
         (p: 0, v: 0.0),
         (p: 1 / 8, v: 0.0),
         (p: 3 / 16, v: 0.0),
-        (p: 1 / 4, v: -116.0),
-        (p: 3 / 8, v: -170.0),
-        (p: 7 / 16, v: -170.0),
+        (p: 1 / 4, v: -34.0),
+        (p: 3 / 8, v: -56.0),
+        (p: 7 / 16, v: -52.0),
         (p: 1 / 2, v: 0.0),
-        (p: 5 / 8, v: 136.0),
-        (p: 3 / 4, v: 184.0),
-        (p: 13 / 16, v: 184.0),
-        (p: 29 / 32, v: 18.0),
+        (p: 5 / 8, v: 42.0),
+        (p: 3 / 4, v: 62.0),
+        (p: 13 / 16, v: 56.0),
+        (p: 29 / 32, v: 8.0),
         (p: 1, v: 0.0),
       ]),
       dy: _smoothKeys(p, const [
         (p: 0, v: 0.0),
-        (p: 1 / 8, v: -8.0),
-        (p: 3 / 16, v: -8.0),
-        (p: 1 / 4, v: -12.0),
-        (p: 3 / 8, v: -24.0),
-        (p: 7 / 16, v: -24.0),
+        (p: 1 / 8, v: -2.0),
+        (p: 3 / 16, v: -3.0),
+        (p: 1 / 4, v: -4.0),
+        (p: 3 / 8, v: -8.0),
+        (p: 7 / 16, v: -8.0),
         (p: 1 / 2, v: -4.0),
-        (p: 5 / 8, v: -12.0),
-        (p: 3 / 4, v: -22.0),
-        (p: 13 / 16, v: -22.0),
+        (p: 5 / 8, v: -5.0),
+        (p: 3 / 4, v: -7.0),
+        (p: 13 / 16, v: -6.0),
         (p: 29 / 32, v: 0.0),
         (p: 1, v: 0.0),
       ]),
