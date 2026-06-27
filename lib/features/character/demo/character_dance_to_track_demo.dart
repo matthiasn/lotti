@@ -56,6 +56,14 @@ const String kDanceBeatMapPath = String.fromEnvironment(
       '/home/parallels/github/lotti/tools/dance_audio/out/moving.json',
 );
 
+/// Optional word-level lyrics (from `tools/dance_audio/transcribe.py`). Absent →
+/// no captions. Original artwork derivative — kept local, never committed.
+const String kDanceWordsPath = String.fromEnvironment(
+  'DANCE_WORDS',
+  defaultValue:
+      '/home/parallels/github/lotti/tools/dance_audio/out/moving.words.json',
+);
+
 /// Bars the 32-frame [CatClips.dance] phrase spans: `duration 6 s` at
 /// `kAuthoredDanceBpm 120` = 12 beats = 3 bars of 4/4.
 const int kDancePhraseBars = 3;
@@ -74,6 +82,7 @@ const double kMinCalmSeconds = 4;
 const double kCameraRampSeconds = 1.4;
 
 typedef _Section = ({double start, double end, String label, bool energetic});
+typedef _Word = ({double start, double end, String word});
 typedef _Stage = ({
   Clip lead,
   List<Clip> ensemble,
@@ -152,9 +161,11 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   BeatLoopBinding? _binding;
   List<double>? _amplitudes; // full-track waveform, normalized 0..1
   List<_Section> _sections = const [];
+  List<_Word> _words = const []; // synced lyrics (optional)
   double _trackDurationSec = 0;
   double _bpm = 0;
   bool _loop = true;
+  bool _showCaptions = true;
   double _cameraStrength = 0; // eased dance-camera ramp (0 = neutral, 1 = full)
   Duration _lastTick = Duration.zero;
   String? _error;
@@ -230,6 +241,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
           )
           .toList();
       final sections = _classifySections(rawSections, amplitudes, duration);
+      final words = await _loadWords();
 
       if (!mounted) return;
       setState(() {
@@ -241,6 +253,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         _binding = BeatLoopBinding.barAligned(map, bars: kDancePhraseBars);
         _amplitudes = amplitudes;
         _sections = sections;
+        _words = words;
       });
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
@@ -302,6 +315,78 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       if (pos >= s.start && pos < s.end) return s;
     }
     return _sections.isEmpty ? null : _sections.last;
+  }
+
+  /// Loads the optional word-level lyrics file (absent → no captions).
+  Future<List<_Word>> _loadWords() async {
+    final file = File(kDanceWordsPath);
+    if (!file.existsSync()) return const [];
+    try {
+      final wj = jsonDecode(await file.readAsString()) as Map<String, Object?>;
+      return ((wj['words'] as List?) ?? const [])
+          .cast<Map<String, Object?>>()
+          .where((w) => w['start_sec'] != null && w['end_sec'] != null)
+          .map(
+            (w) => (
+              start: (w['start_sec']! as num).toDouble(),
+              end: (w['end_sec']! as num).toDouble(),
+              word: (w['word'] as String?) ?? '',
+            ),
+          )
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Index of the lyric word to caption at [pos]: the most recent word that has
+  /// started, hidden during instrumental gaps (>2 s after the last word ended).
+  int? _captionWordIndex(double pos) {
+    int? recent;
+    for (var i = 0; i < _words.length; i++) {
+      if (_words[i].start <= pos) {
+        recent = i;
+      } else {
+        break;
+      }
+    }
+    if (recent == null) return null;
+    if (pos - _words[recent].end > 2.0) return null;
+    return recent;
+  }
+
+  /// A karaoke caption: a short window of lyric words centred on the current one,
+  /// which is highlighted. Empty when there is no active word.
+  Widget _caption(double pos) {
+    final i = _captionWordIndex(pos);
+    if (i == null) return const SizedBox.shrink();
+    final from = i - 3 < 0 ? 0 : i - 3;
+    final to = i + 4 > _words.length ? _words.length : i + 4;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: RichText(
+          text: TextSpan(
+            children: [
+              for (var j = from; j < to; j++)
+                TextSpan(
+                  text: '${_words[j].word} ',
+                  style: TextStyle(
+                    color: j == i ? Colors.white : Colors.white54,
+                    fontSize: j == i ? 26 : 21,
+                    fontWeight: j == i ? FontWeight.w700 : FontWeight.w400,
+                    height: 1.2,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Picks the clip + clock for the current section: the beat-locked energetic
@@ -418,6 +503,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     }
 
     final stage = _stageNow();
+    final posSec = _player.state.position.inMicroseconds / 1e6;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
@@ -429,35 +515,47 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                 // (the painter scales uniformly, so this is what keeps the cats
                 // correctly proportioned instead of squat at the default scale 1).
                 final scale = constraints.maxHeight * 0.78 / 300.0;
-                return CustomPaint(
-                  painter: CharacterPainter(
-                    scene: _lead,
-                    partnerScene: _left,
-                    ensembleScenes: [_left, _right],
-                    ensembleExpressions: const [
-                      Expression.neutral,
-                      Expression.content,
-                      Expression.happy,
-                    ],
-                    // Section-aware: the energetic dance trio in loud sections,
-                    // an eased idle in calm ones.
-                    ensembleClips: stage.ensemble,
-                    synchronousEnsemble: true,
-                    // Enables the multi-member (trio) render path; without it the
-                    // painter draws only the lead scene.
-                    walkingPair: true,
-                    clip: stage.lead,
-                    timeSeconds: stage.seconds,
-                    danceCameraStrength: _cameraStrength,
-                    scale: scale,
-                    groundColor: const Color(0xFF374551),
-                    backdrop: CharacterBackdrop.waterfront,
-                    backdropImage: _backdrop,
-                    backdropCloudsImage: _clouds,
-                    backdropWavesImage: _waves,
-                    renderer: _renderer,
-                  ),
-                  child: const SizedBox.expand(),
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CustomPaint(
+                      painter: CharacterPainter(
+                        scene: _lead,
+                        partnerScene: _left,
+                        ensembleScenes: [_left, _right],
+                        ensembleExpressions: const [
+                          Expression.neutral,
+                          Expression.content,
+                          Expression.happy,
+                        ],
+                        // Section-aware: the energetic dance trio in loud sections,
+                        // an eased idle in calm ones.
+                        ensembleClips: stage.ensemble,
+                        synchronousEnsemble: true,
+                        // Enables the multi-member (trio) render path; without it the
+                        // painter draws only the lead scene.
+                        walkingPair: true,
+                        clip: stage.lead,
+                        timeSeconds: stage.seconds,
+                        danceCameraStrength: _cameraStrength,
+                        scale: scale,
+                        groundColor: const Color(0xFF374551),
+                        backdrop: CharacterBackdrop.waterfront,
+                        backdropImage: _backdrop,
+                        backdropCloudsImage: _clouds,
+                        backdropWavesImage: _waves,
+                        renderer: _renderer,
+                      ),
+                      child: const SizedBox.expand(),
+                    ),
+                    if (_showCaptions && _words.isNotEmpty)
+                      Positioned(
+                        left: 24,
+                        right: 24,
+                        bottom: 20,
+                        child: Center(child: _caption(posSec)),
+                      ),
+                  ],
                 );
               },
             ),
@@ -491,6 +589,21 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                 icon: Icon(
                   Icons.repeat,
                   color: _loop ? Colors.tealAccent : Colors.white38,
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                onPressed: _words.isEmpty
+                    ? null
+                    : () => setState(() => _showCaptions = !_showCaptions),
+                tooltip: _showCaptions ? 'Hide lyrics' : 'Show lyrics',
+                icon: Icon(
+                  _showCaptions
+                      ? Icons.closed_caption
+                      : Icons.closed_caption_off,
+                  color: _showCaptions && _words.isNotEmpty
+                      ? Colors.tealAccent
+                      : Colors.white38,
                 ),
               ),
               const SizedBox(width: 12),
