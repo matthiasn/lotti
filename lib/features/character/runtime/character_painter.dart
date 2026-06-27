@@ -433,27 +433,27 @@ class CharacterPainter extends CustomPainter {
             -17 +
             1.5 * callResponse -
             4 * leadCall -
-            3 * sideAnswer -
+            6 * sideAnswer +
             2 * wideV +
-            26 * greyFeature +
-            28 * greyFinish +
-            4 * ensembleHit +
+            48 * greyFeature +
+            48 * greyFinish +
+            5 * ensembleHit +
             2 * finishTriangle,
-        scale: 1 + 0.16 * greyFeature + 0.18 * greyFinish,
+        scale: 1 + 0.22 * greyFeature + 0.22 * greyFinish,
       ),
       1 => (
         dx: 3 * leadCall - 2 * greyFeature - 4 * greyFinish - 3 * ensembleHit,
         dy:
             20 -
             5 * leadCall -
-            12 * rightFeature -
-            15 * greyFeature -
+            17 * rightFeature -
+            19 * greyFeature -
             2 * blackSolo +
             2 * wideV +
             5 * centreFeature -
-            13 * greyFinish -
+            14 * greyFinish -
             3 * ensembleHit,
-        scale: 1 - 0.06 * rightFeature - 0.07 * greyFeature - 0.06 * greyFinish,
+        scale: 1 - 0.08 * rightFeature - 0.08 * greyFeature - 0.07 * greyFinish,
       ),
       2 => (
         dx:
@@ -469,13 +469,13 @@ class CharacterPainter extends CustomPainter {
             -17 -
             1.5 * callResponse -
             2 * leadCall -
-            18 * rightFeature -
-            2 * sideAnswer +
-            14 * blackSolo -
+            48 * rightFeature +
+            6 * sideAnswer +
+            25 * blackSolo +
             2 * wideV +
-            4 * ensembleHit +
-            7 * finishTriangle,
-        scale: 1 + 0.16 * rightFeature + 0.12 * blackSolo - 0.02 * greyFeature,
+            5 * ensembleHit +
+            10 * finishTriangle,
+        scale: 1 + 0.22 * rightFeature + 0.16 * blackSolo - 0.02 * greyFeature,
       ),
       _ => (dx: 0, dy: 0, scale: 1),
     };
