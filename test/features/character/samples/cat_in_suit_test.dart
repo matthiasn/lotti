@@ -954,6 +954,35 @@ void main() {
       );
       expect(rightHandDelta, greaterThan(8));
 
+      final lungeAnticipation = lead.root.sample(14 / phrase.frameCount);
+      final lungePeak = lead.root.sample(15 / phrase.frameCount);
+      final lungeRecovery = lead.root.sample(16 / phrase.frameCount);
+      final lungeSettle = lead.root.sample(17 / phrase.frameCount);
+      expect(
+        lungePeak.dy,
+        greaterThan(lungeAnticipation.dy + 0.5),
+        reason:
+            'the right-side feature should compress into a real lunge instead '
+            'of drifting through the camera move',
+      );
+      expect(
+        lungePeak.dy,
+        greaterThan(lungeRecovery.dy + 0.7),
+        reason: 'the lunge should rebound through a visible recovery frame',
+      );
+      expect(
+        lungeRecovery.dx,
+        lessThan(lungeAnticipation.dx),
+        reason:
+            'the recovery should keep travelling across the lunge arc instead '
+            'of snapping back to the anticipation side',
+      );
+      expect(
+        lungeSettle.dx,
+        lessThan(lungeRecovery.dx),
+        reason: 'the lunge should settle over several frames, not teleport',
+      );
+
       final rightFootCueP =
           phrase.moveAtFrame(20).accentFrame / phrase.frameCount;
       expect(

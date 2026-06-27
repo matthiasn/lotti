@@ -588,6 +588,7 @@ void main() {
       final rightClose = await boundsAt(3 / 8);
       final rightHold = await boundsAt(7 / 16);
       final leadLevel = await boundsAt(1 / 2);
+      final postRightRecovery = await boundsAt(17 / 32);
       final leftPan = await boundsAt(5 / 8);
       final leftClose = await boundsAt(3 / 4);
       final leftHold = await boundsAt(13 / 16);
@@ -615,12 +616,12 @@ void main() {
       expect(
         rightClose.orangeHeight,
         inInclusiveRange(
-          rightPan.orangeHeight * 1.04,
-          wide.orangeHeight * 1.32,
+          rightPan.orangeHeight * 1.0,
+          wide.orangeHeight * 1.24,
         ),
         reason:
-            'the right-side pass should push in, but remain a medium ensemble '
-            'shot',
+            'the right-side pass should stay as a subtle medium push, not a '
+            'cropped solo close-up',
       );
       expect(
         rightClose.contentMaxY,
@@ -640,18 +641,37 @@ void main() {
       );
       expect(
         leadLevel.orangeCenterX,
-        closeTo(wide.orangeCenterX, 40),
-        reason: 'after the right pass, the camera should reset to the trio',
+        closeTo(rightHold.orangeCenterX, 64),
+        reason:
+            'the right pass should ease through the lunge recovery instead of '
+            'snapping straight back to the trio centre',
       );
       expect(
         leadLevel.orangeHeight,
-        lessThan(rightClose.orangeHeight * 0.94),
+        inInclusiveRange(
+          rightClose.orangeHeight * 0.9,
+          rightClose.orangeHeight * 1.06,
+        ),
         reason:
-            'the middle reset should zoom out enough to restore ensemble '
-            'readability',
+            'the right-pass recovery should avoid the visible scale reset that '
+            'made frames 15-16 pop',
       );
       expect(
-        leftPan.orangeCenterX - leadLevel.orangeCenterX,
+        postRightRecovery.orangeCenterX,
+        closeTo(wide.orangeCenterX, 46),
+        reason:
+            'after the lunge recovery, the camera should restore the ensemble '
+            'before the next left-side pass',
+      );
+      expect(
+        postRightRecovery.orangeHeight,
+        lessThan(rightClose.orangeHeight * 0.99),
+        reason:
+            'after the recovery beat, the camera should zoom out enough to '
+            'restore ensemble readability',
+      );
+      expect(
+        leftPan.orangeCenterX - postRightRecovery.orangeCenterX,
         inInclusiveRange(18, 78),
         reason:
             'the next beat should pan toward the left-side dancer, moving the '
@@ -659,8 +679,10 @@ void main() {
       );
       expect(
         leftClose.orangeHeight,
-        inInclusiveRange(leftPan.orangeHeight * 1.02, wide.orangeHeight * 1.3),
-        reason: 'the left-side pass should also push in before the reset',
+        inInclusiveRange(leftPan.orangeHeight * 1.0, wide.orangeHeight * 1.24),
+        reason:
+            'the left-side pass should also stay as a subtle medium push '
+            'before the reset',
       );
       expect(
         leftHold.orangeCenterX,
