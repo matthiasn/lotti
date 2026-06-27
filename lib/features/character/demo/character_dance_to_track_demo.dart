@@ -7,7 +7,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:just_waveform/just_waveform.dart';
 import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
 import 'package:lotti/features/character/model/clip.dart';
@@ -35,9 +34,10 @@ import 'package:media_kit/media_kit.dart';
 /// and the 30 s window just selects a sub-range (re-anchored to the nearest
 /// downbeat) — no detection at runtime.
 ///
-/// Deliberately **self-contained**: depends only on packages (`media_kit`,
-/// `just_waveform`) + this character feature — no journal/speech code — so it
-/// travels cleanly when the feature is ejected into its own repo.
+/// Deliberately **self-contained**: depends only on the `media_kit` package +
+/// this character feature — no journal/speech code, and the waveform is read from
+/// the beat-map JSON (computed offline) rather than decoded in-app — so it travels
+/// cleanly when the feature is ejected into its own repo.
 ///
 /// Run it (defaults to local dev files; override with --dart-define):
 /// ```sh
@@ -179,7 +179,13 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       );
       await _player.seek(Duration(microseconds: (start * 1e6).round()));
 
-      final amplitudes = await _extractAmplitudes(kDanceAudioPath);
+      // The waveform is computed offline by tools/dance_audio and embedded in the
+      // beat map — no in-app audio decoding (just_waveform has no Linux plugin).
+      final amplitudes =
+          (json['waveform'] as List?)
+              ?.map((e) => (e as num).toDouble())
+              .toList() ??
+          const <double>[];
 
       if (!mounted) return;
       setState(() {
@@ -271,47 +277,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       await _player.play();
     }
     if (mounted) setState(() {});
-  }
-
-  Future<List<double>> _extractAmplitudes(
-    String path, {
-    int buckets = 800,
-  }) async {
-    final out = File(
-      '${Directory.systemTemp.path}/lotti_dance_wave_${path.hashCode}.wave',
-    );
-    Waveform? waveform;
-    await for (final progress in JustWaveform.extract(
-      audioInFile: File(path),
-      waveOutFile: out,
-    )) {
-      waveform = progress.waveform ?? waveform;
-    }
-    try {
-      if (out.existsSync()) out.deleteSync();
-    } catch (_) {
-      // ignore cleanup failure
-    }
-    final w = waveform;
-    if (w == null || w.length == 0) return const [];
-    final maxAmp = w.flags == 0 ? 32768.0 : 128.0;
-    double pixel(int i) => math.min(
-      1,
-      math.max(w.getPixelMin(i).abs(), w.getPixelMax(i).abs()) / maxAmp,
-    );
-    final n = w.length;
-    if (n <= buckets) return [for (var i = 0; i < n; i++) pixel(i)];
-    final bucketSize = n / buckets;
-    return List<double>.generate(buckets, (b) {
-      final start = (b * bucketSize).floor();
-      final end = math.min(n, ((b + 1) * bucketSize).ceil());
-      var peak = 0.0;
-      for (var i = start; i < end; i++) {
-        final v = pixel(i);
-        if (v > peak) peak = v;
-      }
-      return peak;
-    });
   }
 
   Future<void> _loadBackdrop() async {
@@ -453,7 +418,14 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                 final width = constraints.maxWidth;
                 final amplitudes = _amplitudes;
                 if (amplitudes == null || _trackDurationSec <= 0) {
-                  return const Center(child: Text('extracting waveform…'));
+                  return const Center(child: Text('loading…'));
+                }
+                if (amplitudes.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'no waveform in beat map — regenerate with analyze.py',
+                    ),
+                  );
                 }
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
