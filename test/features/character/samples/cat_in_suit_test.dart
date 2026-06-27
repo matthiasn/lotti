@@ -902,6 +902,8 @@ void main() {
       final left = CatClips.danceBackupLeft;
       final right = CatClips.danceBackupRight;
       final leadChannels = lead.channels;
+      final leadFootLTarget = _targetFor(lead, CatBones.footL).channel;
+      final leadFootRTarget = _targetFor(lead, CatBones.footR).channel;
 
       final shakuP = phrase.moveAtFrame(4).accentFrame / phrase.frameCount;
       expect(
@@ -1065,6 +1067,37 @@ void main() {
             'answer instead of returning to the belly silhouette',
       );
       expect(leadLowCarve.y, greaterThan(26));
+      final answerCrossLeft = leadFootLTarget.sample(13 / phrase.frameCount);
+      final answerCrossRight = leadFootRTarget.sample(13 / phrase.frameCount);
+      final answerSinkLeft = leadFootLTarget.sample(14 / phrase.frameCount);
+      final answerSinkRight = leadFootRTarget.sample(14 / phrase.frameCount);
+      final answerUncrossLeft = leadFootLTarget.sample(15 / phrase.frameCount);
+      final answerUncrossRight = leadFootRTarget.sample(15 / phrase.frameCount);
+      expect(
+        answerSinkLeft.y,
+        greaterThan(answerCrossLeft.y + 4),
+        reason:
+            'F14 should be the visible low cross-beat, not another floating '
+            'slide through the camera answer',
+      );
+      expect(
+        answerUncrossLeft.x,
+        lessThan(answerSinkLeft.x - 18),
+        reason:
+            'F15 should uncross the lead left foot outward after the F14 sink',
+      );
+      expect(
+        answerUncrossRight.x - answerUncrossLeft.x,
+        greaterThan(answerSinkRight.x - answerSinkLeft.x + 8),
+        reason: 'the F15 uncross needs a wider foot shape than the F14 cross',
+      );
+      expect(
+        answerCrossRight.y,
+        greaterThan(104),
+        reason:
+            'the crossing right foot should stay low enough to read as '
+            'footwork instead of a hidden knee lift',
+      );
       final rightArmDelta =
           right.channels[CatBones.armUpperL]!.sample(rightCueP).rotation -
           leadChannels[CatBones.armUpperL]!.sample(rightCueP).rotation;
@@ -1079,20 +1112,20 @@ void main() {
       );
       expect(rightHandDelta, greaterThan(8));
 
-      final lungeAnticipation = lead.root.sample(14 / phrase.frameCount);
-      final lungePeak = lead.root.sample(15 / phrase.frameCount);
-      final lungeRecovery = lead.root.sample(16 / phrase.frameCount);
+      final lungeAnticipation = lead.root.sample(13 / phrase.frameCount);
+      final lungePeak = lead.root.sample(14 / phrase.frameCount);
+      final lungeRecovery = lead.root.sample(15 / phrase.frameCount);
       final lungeSettle = lead.root.sample(17 / phrase.frameCount);
       expect(
         lungePeak.dy,
-        greaterThan(lungeAnticipation.dy + 0.5),
+        greaterThan(lungeAnticipation.dy + 2),
         reason:
             'the right-side feature should compress into a real lunge instead '
             'of drifting through the camera move',
       );
       expect(
         lungePeak.dy,
-        greaterThan(lungeRecovery.dy + 0.7),
+        greaterThan(lungeRecovery.dy + 0.4),
         reason: 'the lunge should rebound through a visible recovery frame',
       );
       expect(
@@ -1164,6 +1197,60 @@ void main() {
             'punctuation',
       );
       expect(grooveRightHand.y, lessThan(22));
+      final groovePopP = 16 / phrase.frameCount;
+      final grooveRecoilP = 17 / phrase.frameCount;
+      final grooveStopP = 18 / phrase.frameCount;
+      expect(
+        leadChannels[CatBones.torso]!.sample(groovePopP).rotation,
+        greaterThan(
+          leadChannels[CatBones.torso]!.sample(grooveRecoilP).rotation + 0.05,
+        ),
+        reason:
+            'F16 should read as a chest pop before the frame-17 recoil, not '
+            'one constant torso lean',
+      );
+      expect(
+        lead.root.sample(grooveStopP).dy,
+        greaterThan(lead.root.sample(grooveRecoilP).dy + 1),
+        reason:
+            'F18 should stop into a knee/hand hit after the recoil instead of '
+            'floating into the groove pocket',
+      );
+      final grooveStopLeftHand = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(grooveStopP);
+      final grooveStopRightHand = _targetFor(
+        lead,
+        CatBones.handR,
+      ).channel.sample(grooveStopP);
+      expect(
+        grooveStopLeftHand.x,
+        lessThan(-50),
+        reason: 'the F18 stop needs the left hand outside the belly silhouette',
+      );
+      expect(
+        grooveStopRightHand.x,
+        greaterThan(70),
+        reason:
+            'the F18 stop needs a matching right-hand punctuation, not a '
+            'single-arm pose',
+      );
+      final grooveHitLeftHand = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(23 / phrase.frameCount);
+      final grooveHitRightHand = _targetFor(
+        lead,
+        CatBones.handR,
+      ).channel.sample(23 / phrase.frameCount);
+      expect(
+        grooveHitRightHand.x - grooveHitLeftHand.x,
+        greaterThan(145),
+        reason:
+            'F23 should land as an all-crew outward hit before the left-side '
+            'answer, not a hidden transition pose',
+      );
 
       final leftCueP = phrase.moveAtFrame(24).accentFrame / phrase.frameCount;
       final leftArmDelta =
@@ -1205,8 +1292,6 @@ void main() {
             'F24-F26 should read as downbeat settle then push-off, not an '
             'even floating glide into the hook reset',
       );
-      final leadFootLTarget = _targetFor(lead, CatBones.footL).channel;
-      final leadFootRTarget = _targetFor(lead, CatBones.footR).channel;
       final stepTapOut = leadFootLTarget.sample(25 / phrase.frameCount);
       final stepTapReturn = leadFootLTarget.sample(26 / phrase.frameCount);
       expect(
