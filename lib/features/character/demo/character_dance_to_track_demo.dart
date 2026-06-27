@@ -583,7 +583,12 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                         timeSeconds: stage.seconds,
                         danceCameraStrength: _cameraStrength,
                         scale: scale,
-                        groundColor: const Color(0xFF374551),
+                        // New painted scene already has the deck, so drop the
+                        // flat grey floor band (it would sit over the painting);
+                        // the old plate keeps its band.
+                        groundColor: _useNewBackdrop
+                            ? null
+                            : const Color(0xFF374551),
                         // New scene: LayeredBackdrop draws everything, so the
                         // painter's own backdrop is off. Old scene: the painter
                         // draws the single waterfront plate.

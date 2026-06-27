@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/features/scenery/layers/backdrop_layer.dart';
 import 'package:lotti/features/scenery/model/backdrop_palette.dart';
@@ -11,29 +12,48 @@ import 'package:lotti/features/scenery/runtime/scenery_shaders.dart';
 /// The static frame the scene holds on when OS reduce-motion is enabled.
 const double kSceneryCalmFrameSeconds = 0;
 
+/// Decodes a bundled image asset to a [ui.Image]. Injectable so tests can
+/// supply fakes.
+typedef SceneryImageLoader = Future<ui.Image> Function(String assetPath);
+
+Future<ui.Image> _defaultImageLoader(String assetPath) async {
+  final data = await rootBundle.load(assetPath);
+  final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+  final frame = await codec.getNextFrame();
+  codec.dispose();
+  return frame.image;
+}
+
 /// A reusable, layered animated backdrop. Composites the [scene]'s ordered
-/// layers (shaders interleaved with bitmaps and canvas signals) into a single
-/// [CustomPaint], loading the GPU programs once and degrading to per-layer CPU
-/// fallbacks until they resolve.
+/// layers (painted bitmaps, shaders and canvas signals) behind an optional
+/// [child], with the scene's foreground layers drawn in front of it. GPU
+/// programs and bitmap assets load once and the affected layers degrade to CPU
+/// fallbacks / no-ops until they resolve.
 ///
 /// The clock is injectable: pass [timeSeconds] to drive the scene from an
-/// external clock (e.g. the audio-player position) — the widget then repaints
+/// external clock (e.g. the audio-player position) — the widget repaints
 /// whenever its parent rebuilds with a new value. Leave it null to self-drive a
-/// [Ticker]. [timeOverride] pins the clock for deterministic tests, and OS
-/// reduce-motion freezes the scene on [kSceneryCalmFrameSeconds].
+/// [Ticker]. [timeOverride] pins the clock for tests, and OS reduce-motion
+/// freezes the scene on [kSceneryCalmFrameSeconds].
 class LayeredBackdrop extends StatefulWidget {
   const LayeredBackdrop({
     required this.scene,
+    this.child,
     this.palette = kBlueHourPalette,
     this.timeSeconds,
     this.beatPulse = 0,
     this.skyProgramLoader,
     this.oceanProgramLoader,
+    this.imageLoader,
     this.timeOverride,
     super.key,
   });
 
   final BackdropScene scene;
+
+  /// Content drawn between the scene's background and foreground layers.
+  final Widget? child;
+
   final BackdropPalette palette;
 
   /// External clock in seconds; null self-drives a [Ticker].
@@ -44,6 +64,7 @@ class LayeredBackdrop extends StatefulWidget {
 
   final SceneryShaderProgramLoader? skyProgramLoader;
   final SceneryShaderProgramLoader? oceanProgramLoader;
+  final SceneryImageLoader? imageLoader;
 
   /// Pins the clock for golden/unit tests.
   final double? timeOverride;
@@ -60,6 +81,8 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
 
   ui.FragmentProgram? _skyProgram;
   ui.FragmentProgram? _oceanProgram;
+  final Map<String, ui.Image> _images = {};
+  int _imagesVersion = 0;
 
   bool get _usesSelfClock =>
       widget.timeSeconds == null && widget.timeOverride == null;
@@ -69,6 +92,7 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
     super.initState();
     _ticker = createTicker((elapsed) => setState(() => _elapsed = elapsed));
     _loadPrograms();
+    _loadImages();
   }
 
   @override
@@ -84,6 +108,9 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
     if (oldWidget.skyProgramLoader != widget.skyProgramLoader ||
         oldWidget.oceanProgramLoader != widget.oceanProgramLoader) {
       _loadPrograms();
+    }
+    if (oldWidget.scene.imageAssets != widget.scene.imageAssets) {
+      _loadImages();
     }
     _syncTicker();
   }
@@ -102,11 +129,11 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
         widget.skyProgramLoader ?? SceneryShaderProgramCache.loadSky;
     final oceanLoader =
         widget.oceanProgramLoader ?? SceneryShaderProgramCache.loadOcean;
-    unawaited(_assign(skyLoader, (p) => _skyProgram = p));
-    unawaited(_assign(oceanLoader, (p) => _oceanProgram = p));
+    unawaited(_assignProgram(skyLoader, (p) => _skyProgram = p));
+    unawaited(_assignProgram(oceanLoader, (p) => _oceanProgram = p));
   }
 
-  Future<void> _assign(
+  Future<void> _assignProgram(
     SceneryShaderProgramLoader loader,
     void Function(ui.FragmentProgram) store,
   ) async {
@@ -119,9 +146,36 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
     }
   }
 
+  void _loadImages() {
+    final loader = widget.imageLoader ?? _defaultImageLoader;
+    for (final asset in widget.scene.imageAssets) {
+      if (_images.containsKey(asset)) continue;
+      unawaited(_assignImage(loader, asset));
+    }
+  }
+
+  Future<void> _assignImage(SceneryImageLoader loader, String asset) async {
+    try {
+      final image = await loader(asset);
+      if (!mounted) {
+        image.dispose();
+        return;
+      }
+      setState(() {
+        _images[asset] = image;
+        _imagesVersion++;
+      });
+    } on Object catch (_) {
+      // Asset failed to decode; the ImageLayer no-ops (graceful degrade).
+    }
+  }
+
   @override
   void dispose() {
     _ticker.dispose();
+    for (final image in _images.values) {
+      image.dispose();
+    }
     super.dispose();
   }
 
@@ -134,39 +188,75 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
+    final time = _time;
+    final background = RepaintBoundary(
       child: CustomPaint(
         painter: _BackdropPainter(
-          scene: widget.scene,
+          layers: widget.scene.layers,
           palette: widget.palette,
-          timeSeconds: _time,
+          timeSeconds: time,
           beatPulse: widget.beatPulse,
           reducedMotion: _reducedMotion,
           skyProgram: _skyProgram,
           oceanProgram: _oceanProgram,
+          images: _images,
+          imagesVersion: _imagesVersion,
         ),
         child: const SizedBox.expand(),
       ),
+    );
+
+    if (widget.child == null && widget.scene.foregroundLayers.isEmpty) {
+      return background;
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        background,
+        if (widget.child != null) widget.child!,
+        if (widget.scene.foregroundLayers.isNotEmpty)
+          RepaintBoundary(
+            child: CustomPaint(
+              painter: _BackdropPainter(
+                layers: widget.scene.foregroundLayers,
+                palette: widget.palette,
+                timeSeconds: time,
+                beatPulse: widget.beatPulse,
+                reducedMotion: _reducedMotion,
+                skyProgram: _skyProgram,
+                oceanProgram: _oceanProgram,
+                images: _images,
+                imagesVersion: _imagesVersion,
+              ),
+              child: const SizedBox.expand(),
+            ),
+          ),
+      ],
     );
   }
 }
 
 class _BackdropPainter extends CustomPainter {
   _BackdropPainter({
-    required this.scene,
+    required this.layers,
     required this.palette,
     required this.timeSeconds,
     required this.beatPulse,
     required this.reducedMotion,
+    required this.images,
+    required this.imagesVersion,
     this.skyProgram,
     this.oceanProgram,
   });
 
-  final BackdropScene scene;
+  final List<BackdropLayer> layers;
   final BackdropPalette palette;
   final double timeSeconds;
   final double beatPulse;
   final bool reducedMotion;
+  final Map<String, ui.Image> images;
+  final int imagesVersion;
   final ui.FragmentProgram? skyProgram;
   final ui.FragmentProgram? oceanProgram;
 
@@ -181,20 +271,22 @@ class _BackdropPainter extends CustomPainter {
       beatPulse: beatPulse,
       skyProgram: skyProgram,
       oceanProgram: oceanProgram,
+      images: images,
     );
-    for (final layer in scene.layers) {
+    for (final layer in layers) {
       layer.paint(canvas, ctx);
     }
   }
 
   @override
   bool shouldRepaint(_BackdropPainter old) {
-    return old.scene != scene ||
+    return old.layers != layers ||
         old.palette != palette ||
         old.timeSeconds != timeSeconds ||
         old.beatPulse != beatPulse ||
         old.reducedMotion != reducedMotion ||
         old.skyProgram != skyProgram ||
-        old.oceanProgram != oceanProgram;
+        old.oceanProgram != oceanProgram ||
+        old.imagesVersion != imagesVersion;
   }
 }
