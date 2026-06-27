@@ -1453,7 +1453,9 @@ class CatClips {
           DanceIkTargetKey(20, x: 72.4, y: 18.8),
           DanceIkTargetKey(21, x: 67.4, y: 20.4),
           DanceIkTargetKey(22, x: 88.4, y: 13.9),
-          DanceIkTargetKey(23, x: 100.8, y: 9.6),
+          // Prep the F24 left-side feature by already lowering the hand into a
+          // chest-level sweep; the old high F23 reach made the transition drop.
+          DanceIkTargetKey(23, x: 96, y: 16.8),
         ],
         CatBones.footL: [
           DanceIkTargetKey(18, x: -58, y: 101.4),
@@ -4059,13 +4061,13 @@ class CatClips {
         phase: 0.16,
         bias: -0.04,
       ),
-      CatBones.tail3: const SineChannel(amplitude: 0.17, phase: 0.24),
-      CatBones.tail4: const SineChannel(amplitude: 0.22, phase: 0.32),
-      CatBones.tail5: const SineChannel(amplitude: 0.18, phase: 0.4),
+      CatBones.tail3: const SineChannel(amplitude: 0.15, phase: 0.24),
+      CatBones.tail4: const SineChannel(amplitude: 0.18, phase: 0.32),
+      CatBones.tail5: const SineChannel(amplitude: 0.14, phase: 0.4),
       CatBones.tail6: const SineChannel(
-        amplitude: 0.21,
+        amplitude: 0.18,
         phase: 0.48,
-        harmonicAmplitude: 0.05,
+        harmonicAmplitude: 0.024,
         harmonicPhase: 0.12,
       ),
     },

@@ -2139,6 +2139,13 @@ void main() {
             'hit without throwing the arm across the frame',
       );
       expect(
+        _targetDistance(handR, 23, 24),
+        lessThan(7),
+        reason:
+            'the right hand should bridge into the left-side feature as a '
+            'sweep, not drop from an over-high F23 reach',
+      );
+      expect(
         _targetDistance(handR, 3, 4),
         lessThan(8),
         reason:
