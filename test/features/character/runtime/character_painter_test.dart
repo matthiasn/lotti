@@ -592,6 +592,140 @@ void main() {
     });
   });
 
+  testWidgets('dance trio gives backup dancers featured depth beats', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      Future<
+        ({
+          double leadHeight,
+          double silverHeight,
+          double darkHeight,
+          int leadPixels,
+          int darkPixels,
+        })
+      >
+      boundsAt(double p) async {
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(recorder);
+        CharacterPainter(
+          scene: scene,
+          partnerScene: CharacterScene(
+            buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+          ),
+          ensembleScenes: [
+            CharacterScene(
+              buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+            ),
+            CharacterScene(
+              buildCatInSuitRig(palette: CatInSuitPalette.darkBrown),
+            ),
+          ],
+          ensembleClips: [
+            CatClips.dance,
+            CatClips.danceBackupLeft,
+            CatClips.danceBackupRight,
+          ],
+          synchronousEnsemble: true,
+          clip: CatClips.dance,
+          timeSeconds: CatClips.dance.duration * p,
+          walkingPair: true,
+          shadowColor: const Color(0x00000000),
+          renderer: renderer,
+        ).paint(canvas, const Size(760, 420));
+        final picture = recorder.endRecording();
+        try {
+          final image = await picture.toImage(760, 420);
+          try {
+            final data = await image.toByteData();
+            final pixels = data!.buffer.asUint8List();
+            final lead = _boundsForPixels(
+              pixels,
+              760,
+              420,
+              (red, green, blue, alpha, x, y) =>
+                  alpha > 180 &&
+                  red > 200 &&
+                  green > 120 &&
+                  green < 190 &&
+                  blue < 120,
+            );
+            final silver = _boundsForPixels(
+              pixels,
+              760,
+              420,
+              (red, green, blue, alpha, x, y) =>
+                  x < lead.centerX - 20 &&
+                  alpha > 180 &&
+                  red >= 120 &&
+                  red <= 210 &&
+                  green >= 125 &&
+                  green <= 220 &&
+                  blue >= 140 &&
+                  blue <= 235,
+            );
+            final dark = _boundsForPixels(
+              pixels,
+              760,
+              420,
+              (red, green, blue, alpha, x, y) =>
+                  x > lead.centerX + 20 &&
+                  alpha > 180 &&
+                  red >= 28 &&
+                  red <= 78 &&
+                  green >= 20 &&
+                  green <= 64 &&
+                  blue <= 52,
+            );
+
+            expect(lead.count, greaterThan(250));
+            expect(silver.count, greaterThan(180));
+            expect(dark.count, greaterThan(180));
+            return (
+              leadHeight: (lead.maxY - lead.minY + 1).toDouble(),
+              silverHeight: (silver.maxY - silver.minY + 1).toDouble(),
+              darkHeight: (dark.maxY - dark.minY + 1).toDouble(),
+              leadPixels: lead.count,
+              darkPixels: dark.count,
+            );
+          } finally {
+            image.dispose();
+          }
+        } finally {
+          picture.dispose();
+        }
+      }
+
+      final wide = await boundsAt(0);
+      final darkFeature = await boundsAt(6 / 32);
+      final greyFeature = await boundsAt(10 / 32);
+      final greyFinish = await boundsAt(26 / 32);
+
+      expect(
+        darkFeature.darkPixels / darkFeature.leadPixels,
+        greaterThan(wide.darkPixels / wide.leadPixels + 0.08),
+        reason:
+            'F4-F7 should make the dark backup visually larger/denser for a '
+            'real feature beat instead of leaving the trio in a flat chorus '
+            'line',
+      );
+      expect(
+        greyFeature.silverHeight / greyFeature.leadHeight,
+        greaterThan(wide.silverHeight / wide.leadHeight + 0.05),
+        reason:
+            'F8-F11 should pull the silver backup forward to create a diagonal '
+            'depth swap instead of keeping orange dominant every count',
+      );
+      expect(
+        greyFinish.silverHeight / greyFinish.leadHeight,
+        greaterThan(wide.silverHeight / wide.leadHeight + 0.06),
+        reason:
+            'F24-F27 should feature the silver backup before the finish so the '
+            'last phrase is not another center-lead chorus-line reset',
+      );
+    });
+  });
+
   testWidgets('dance trio camera keeps medium-wide centre/right/left passes', (
     tester,
   ) async {

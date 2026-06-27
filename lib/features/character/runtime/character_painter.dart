@@ -228,8 +228,6 @@ class CharacterPainter extends CustomPainter {
       for (final i in paintOrder) {
         final memberScene = members[i];
         final memberClip = clips[i];
-        final memberScale = drawScale * _roleScale(i, members.length);
-        final memberHorizontalScale = _roleHorizontalScale(i, members.length);
         final phaseOffset = synchronousEnsemble
             ? _ensembleMicroTimingOffset(
                 i,
@@ -239,13 +237,16 @@ class CharacterPainter extends CustomPainter {
               )
             : memberClip.duration * i / members.length;
         final formation = leadCentreOrder
-            ? _danceFormationOffset(
+            ? _danceFormation(
                 i,
                 members.length,
                 timeSeconds,
                 memberClip.duration,
               )
-            : (dx: 0.0, dy: 0.0);
+            : (dx: 0.0, dy: 0.0, scale: 1.0);
+        final memberScale =
+            drawScale * _roleScale(i, members.length) * formation.scale;
+        final memberHorizontalScale = _roleHorizontalScale(i, members.length);
         _paintCharacterAt(
           memberScene,
           canvas,
@@ -329,6 +330,8 @@ class CharacterPainter extends CustomPainter {
     return (
       zoom: _smoothKeys(p, const [
         (p: 0, v: 1.0),
+        (p: 1 / 16, v: 1.04),
+        (p: 3 / 32, v: 1.025),
         (p: 1 / 8, v: 1.06),
         (p: 3 / 16, v: 1.08),
         (p: 1 / 4, v: 1.1),
@@ -346,7 +349,8 @@ class CharacterPainter extends CustomPainter {
       dx: _smoothKeys(p, const [
         (p: 0, v: 0.0),
         (p: 1 / 8, v: 0.0),
-        (p: 3 / 16, v: 0.0),
+        (p: 3 / 16, v: -10.0),
+        (p: 7 / 32, v: -18.0),
         (p: 1 / 4, v: -28.0),
         (p: 3 / 8, v: -34.0),
         (p: 7 / 16, v: -34.0),
@@ -378,21 +382,24 @@ class CharacterPainter extends CustomPainter {
     );
   }
 
-  static ({double dx, double dy}) _danceFormationOffset(
+  static ({double dx, double dy, double scale}) _danceFormation(
     int index,
     int memberCount,
     double timeSeconds,
     double duration,
   ) {
-    if (memberCount < 3) return (dx: 0, dy: 0);
+    if (memberCount < 3) return (dx: 0, dy: 0, scale: 1);
     final p = _cyclePhase(timeSeconds, duration);
     final breathe = math.sin(2 * math.pi * (p * 3 + 0.15));
     final callResponse = math.sin(2 * math.pi * (p * 2 - 0.08));
     final leadCall = _pulse(p, 1 / 16, 1 / 4);
+    final rightFeature = _pulse(p, 4 / 32, 8 / 32);
+    final greyFeature = _pulse(p, 8 / 32, 12 / 32);
     final sideAnswer = _pulse(p, 5 / 16, 1 / 2);
     final blackSolo = _pulse(p, 3 / 8, 1 / 2);
     final wideV = _pulse(p, 1 / 2, 3 / 4);
     final centreFeature = _pulse(p, 17 / 32, 23 / 32);
+    final greyFinish = _pulse(p, 24 / 32, 28 / 32);
     final ensembleHit = _pulse(p, 23 / 32, 27 / 32);
     final finishTriangle = _pulse(p, 27 / 32, 1);
     return switch (index) {
@@ -402,6 +409,8 @@ class CharacterPainter extends CustomPainter {
             7 * breathe -
             10 * sideAnswer -
             9 * wideV +
+            8 * greyFeature +
+            10 * greyFinish +
             3 * finishTriangle,
         dy:
             -17 +
@@ -409,38 +418,50 @@ class CharacterPainter extends CustomPainter {
             4 * leadCall -
             5 * sideAnswer -
             4 * wideV +
+            12 * greyFeature +
+            14 * greyFinish +
             3 * ensembleHit +
             2 * finishTriangle,
+        scale: 1 + 0.1 * greyFeature + 0.12 * greyFinish,
       ),
       1 => (
-        dx: 3 * leadCall - 3 * ensembleHit,
+        dx: 3 * leadCall - 2 * greyFeature - 4 * greyFinish - 3 * ensembleHit,
         dy:
             20 -
             5 * leadCall -
+            4 * rightFeature -
+            5 * greyFeature -
             2 * blackSolo +
             4 * wideV +
             7 * centreFeature -
+            6 * greyFinish -
             3 * ensembleHit,
+        scale:
+            1 - 0.035 * rightFeature - 0.04 * greyFeature - 0.045 * greyFinish,
       ),
       2 => (
         dx:
             34 +
             7 * breathe +
+            6 * rightFeature +
             10 * sideAnswer +
             11 * blackSolo +
             9 * wideV -
+            4 * greyFeature -
             18 * finishTriangle,
         dy:
             -17 -
             1.5 * callResponse -
             2 * leadCall -
+            13 * rightFeature -
             4 * sideAnswer +
             7 * blackSolo -
             4 * wideV +
             3 * ensembleHit +
             7 * finishTriangle,
+        scale: 1 + 0.1 * rightFeature + 0.08 * blackSolo - 0.025 * greyFeature,
       ),
-      _ => (dx: 0, dy: 0),
+      _ => (dx: 0, dy: 0, scale: 1),
     };
   }
 
