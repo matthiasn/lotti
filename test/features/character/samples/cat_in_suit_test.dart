@@ -921,6 +921,17 @@ void main() {
       final shakuRebound = lead.root.sample(8 / phrase.frameCount);
       final openingPlant = lead.root.sample(0);
       final openingDownbeat = lead.root.sample(2 / phrase.frameCount);
+      final openingSupportXs = [
+        for (final frame in [0, 1, 2, 3, 4, 5, 6])
+          leadFootLTarget.sample(frame / phrase.frameCount).x,
+      ];
+      final openingFreeRightStart = leadFootRTarget.sample(0);
+      final openingFreeRightStep = leadFootRTarget.sample(
+        4 / phrase.frameCount,
+      );
+      final openingFreeRightRecoil = leadFootRTarget.sample(
+        6 / phrase.frameCount,
+      );
       expect(
         openingDownbeat.dy,
         greaterThan(openingPlant.dy + 0.4),
@@ -934,6 +945,34 @@ void main() {
         reason:
             'the opening downbeat needs torso squash to sell foot pressure, '
             'not just a sideways sway',
+      );
+      expect(
+        openingSupportXs.reduce(math.max) - openingSupportXs.reduce(math.min),
+        lessThan(4),
+        reason:
+            'the opening Shaku/Gbese pocket needs a planted left support foot; '
+            'if it drifts, the footwork reads as body slide',
+      );
+      expect(
+        openingFreeRightStep.x,
+        greaterThan(openingFreeRightStart.x + 20),
+        reason:
+            'the free right foot should drive the opening phrase with a clear '
+            'step-out before the torso/arms sell the groove',
+      );
+      expect(
+        openingFreeRightStep.y,
+        greaterThan(92),
+        reason:
+            'the free right step should stay low enough to read as floor '
+            'footwork, not a knee lift',
+      );
+      expect(
+        openingFreeRightRecoil.x,
+        lessThan(openingFreeRightStep.x - 16),
+        reason:
+            'after the step-out, the free right foot should recoil through the '
+            'floor instead of freezing at the side',
       );
       expect(
         (shakuSink.dx - shakuHit.dx).abs(),
@@ -1143,13 +1182,24 @@ void main() {
 
       final rightFootCueP =
           phrase.moveAtFrame(20).accentFrame / phrase.frameCount;
+      final rightSupportXs = [
+        for (final frame in [16, 17, 18, 19, 20, 21, 22])
+          leadFootRTarget.sample(frame / phrase.frameCount).x,
+      ];
       expect(
         phrase.moveAtFrame(20).signature,
         contains('lifted free-left toe'),
       );
       expect(
+        rightSupportXs.reduce(math.max) - rightSupportXs.reduce(math.min),
+        lessThan(5),
+        reason:
+            'the right foot is the support during the answer pocket; it should '
+            'hold while the free-left toe flicks instead of sliding backward',
+      );
+      expect(
         leadChannels[CatBones.hips]!.sample(rightFootCueP).rotation,
-        lessThan(-0.35),
+        lessThan(-0.42),
         reason: 'right-foot groove cue should visibly load the opposite hip',
       );
       final freeLeftFoot = _targetFor(
@@ -1200,6 +1250,15 @@ void main() {
       final groovePopP = 16 / phrase.frameCount;
       final grooveRecoilP = 17 / phrase.frameCount;
       final grooveStopP = 18 / phrase.frameCount;
+      final grooveLoad = lead.root.sample(rightFootCueP);
+      final grooveRelease = lead.root.sample(22 / phrase.frameCount);
+      expect(
+        grooveLoad.dy,
+        greaterThan(grooveRelease.dy + 2),
+        reason:
+            'F20 should visibly load into the planted right foot before the '
+            'phrase rebounds; otherwise the footwork stays decorative',
+      );
       expect(
         leadChannels[CatBones.torso]!.sample(groovePopP).rotation,
         greaterThan(

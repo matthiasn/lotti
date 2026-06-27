@@ -1046,21 +1046,35 @@ class CatClips {
           // section change read as a snap instead of a pickup.
           DanceIkTargetKey(7, x: -39.5, y: 30.8),
         ],
+        CatBones.footL: [
+          // Plant the support foot for the Shaku/Gbese pocket. Earlier, the
+          // support drifted across the first six frames while the free foot was
+          // supposedly tapping; that made the whole body feel like it floated
+          // over the floor instead of loading one planted leg.
+          DanceIkTargetKey(0, x: 9.6, y: 94.4),
+          DanceIkTargetKey(1, x: 9.8, y: 94),
+          DanceIkTargetKey(2, x: 10.6, y: 93.8),
+          DanceIkTargetKey(3, x: 11.2, y: 94.2),
+          DanceIkTargetKey(4, x: 12.4, y: 94.8),
+          DanceIkTargetKey(5, x: 12.8, y: 95),
+          DanceIkTargetKey(6, x: 11.8, y: 95.3),
+        ],
         CatBones.footR: [
           // Keep the free-right foot low enough to read as a toe tap, not a
           // tucked invisible lift under the suit.
-          DanceIkTargetKey(1, x: 73.2, y: 88.6),
-          DanceIkTargetKey(2, x: 77.4, y: 90.4),
-          DanceIkTargetKey(3, x: 83.2, y: 92.4),
-          DanceIkTargetKey(4, x: 87.4, y: 93.7),
-          DanceIkTargetKey(5, x: 80.2, y: 96),
-          DanceIkTargetKey(6, x: 72.2, y: 96.6),
+          DanceIkTargetKey(1, x: 75.4, y: 88.6),
+          DanceIkTargetKey(2, x: 81.2, y: 90.4),
+          DanceIkTargetKey(3, x: 88.4, y: 92.4),
+          DanceIkTargetKey(4, x: 93.2, y: 93.7),
+          DanceIkTargetKey(5, x: 84.8, y: 96),
+          DanceIkTargetKey(6, x: 75.4, y: 96.6),
           DanceIkTargetKey(7, x: 65.8, y: 96.2),
           DanceIkTargetKey(8, x: 59.6, y: 94.6),
         ],
       },
       jointKeys: {
         CatBones.footL: [
+          DanceJointKey(2, rotation: -0.28),
           DanceJointKey(4, rotation: -0.15),
           DanceJointKey(6, rotation: -0.04),
           DanceJointKey(8, rotation: -0.08),
@@ -1304,6 +1318,19 @@ class CatClips {
           DanceIkTargetKey(21, x: -42.8, y: 100.5),
           DanceIkTargetKey(22, x: -28.2, y: 102.2),
           DanceIkTargetKey(23, x: -34.4, y: 102.8),
+        ],
+        CatBones.footR: [
+          // The right foot is the support here; keep it nearly planted while
+          // the free-left foot flicks. Otherwise the groove reads as a body
+          // slide with a decorative foot, not a weight transfer.
+          DanceIkTargetKey(16, x: -4.2, y: 100.2),
+          DanceIkTargetKey(17, x: -6.6, y: 100.1),
+          DanceIkTargetKey(18, x: -7.4, y: 100.2),
+          DanceIkTargetKey(19, x: -7.2, y: 100.1),
+          DanceIkTargetKey(20, x: -7, y: 100.2),
+          DanceIkTargetKey(21, x: -6.8, y: 100.6),
+          DanceIkTargetKey(22, x: -5.5, y: 101.6),
+          DanceIkTargetKey(23, x: -2.5, y: 102.4),
         ],
       },
       jointKeys: {
@@ -1989,12 +2016,12 @@ class CatClips {
     DanceBodyKey(
       20,
       rootDx: -13,
-      rootDy: 16.4,
+      rootDy: 17.7,
       rootRotation: -0.006,
-      pelvisRotation: -0.43,
-      chestRotation: 0.18,
-      chestScaleY: 0.918,
-      chestScaleX: 1.052,
+      pelvisRotation: -0.48,
+      chestRotation: 0.2,
+      chestScaleY: 0.912,
+      chestScaleX: 1.058,
     ),
     DanceBodyKey(
       22,
