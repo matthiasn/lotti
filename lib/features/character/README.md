@@ -54,7 +54,7 @@ channels. That keeps the movement review language ("frame 16 right-foot plant",
 normalized phases through the sample. The current phrase is a compact 12-count
 Afrobeats groove: an 8-count pocket plus a 4-count toe-flick bounce, with a
 small additive root pulse layered over the keyed body motion so slower tempos
-still have off-beat life. The demo previews that same authored phrase at 105 BPM
+still have off-beat life. The demo previews that same authored phrase at 124 BPM
 by default, using Omah Lay's "soso" as the current movement reference: warm,
 compact, waist-led pocket before bigger stage hits. The BPM slider still spans
 80–240 BPM for review. The dance view also uses

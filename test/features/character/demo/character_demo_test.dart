@@ -36,9 +36,9 @@ void main() {
       ['dance', 'danceBackupLeft', 'danceBackupRight'],
     );
     expect(view(tester).synchronousEnsemble, isTrue);
-    expect(view(tester).playbackRate, closeTo(105 / 120, 1e-9));
+    expect(view(tester).playbackRate, closeTo(124 / 120, 1e-9));
     expect(view(tester).backdrop, CharacterBackdrop.waterfront);
-    expect(find.text('BPM 105'), findsOneWidget);
+    expect(find.text('BPM 124'), findsOneWidget);
   });
 
   testWidgets('selecting a motion chip switches the clip', (tester) async {
@@ -109,7 +109,7 @@ void main() {
 
     expect(slider.min, 80);
     expect(slider.max, 240);
-    expect(slider.value, 105);
+    expect(slider.value, 124);
 
     await tester.drag(find.byType(Slider), const Offset(500, 0));
     await tester.pump();
