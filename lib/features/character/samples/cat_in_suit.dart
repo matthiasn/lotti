@@ -2788,10 +2788,11 @@ class CatClips {
       ),
       DanceMoveBodyAccent(
         moveName: 'right-side camera answer',
-        offsetFrames: -1,
+        offsetFrames: 0,
         radiusFrames: 4,
-        // Silver answers first (F10), before the dark cat's F13 response. Make
-        // the foot hit land first, then let the body compress a frame later.
+        // Silver answers first (hand/foot at F11), before the dark cat's F14
+        // response. Make the foot hit land first, then let the body compress a
+        // frame later at F12.
         // The silhouette opens side/low instead of copying the dark cat's high
         // inside-arm answer.
         rootDx: -1.3,
@@ -2843,46 +2844,45 @@ class CatClips {
         name: 'left backup mirrored flanker answer',
         moveName: 'right-side camera answer',
         targetBoneId: CatBones.handR,
-        startOffsetFrames: -4,
-        peakOffsetFrames: -2,
-        endOffsetFrames: 1,
+        startOffsetFrames: -3,
+        peakOffsetFrames: -1,
+        endOffsetFrames: 2,
         peakX: -34,
         peakY: -17,
         controlPoints: [
-          DanceMoveTargetOffsetArcPoint(-3, x: -20.5, y: -10.2, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(-1, x: -28.4, y: -13.4),
-          DanceMoveTargetOffsetArcPoint(0, x: -15.8, y: -8.2),
+          DanceMoveTargetOffsetArcPoint(-2, x: -20.5, y: -10.2, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(0, x: -28.4, y: -13.4),
+          DanceMoveTargetOffsetArcPoint(1, x: -15.8, y: -8.2),
         ],
       ),
       DanceMoveTargetOffsetArc(
         name: 'left backup outside-hand tuck',
         moveName: 'right-side camera answer',
         targetBoneId: CatBones.handL,
-        startOffsetFrames: -4,
-        peakOffsetFrames: -2,
-        endOffsetFrames: 1,
-        peakX: 21,
-        peakY: 23,
+        startOffsetFrames: -3,
+        peakOffsetFrames: -1,
+        endOffsetFrames: 2,
+        peakX: 14.8,
+        peakY: 16,
         controlPoints: [
-          DanceMoveTargetOffsetArcPoint(-3, x: 7.2, y: 8.4, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(-1, x: 14.5, y: 16.4),
-          DanceMoveTargetOffsetArcPoint(0, x: 8.4, y: 10.2),
+          DanceMoveTargetOffsetArcPoint(-2, x: 7.2, y: 8, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(0, x: 12.2, y: 13.2),
+          DanceMoveTargetOffsetArcPoint(1, x: 7.2, y: 8.6),
         ],
       ),
       DanceMoveTargetOffsetArc(
         name: 'left backup early right-toe step-plant',
         moveName: 'right-side camera answer',
         targetBoneId: CatBones.footR,
-        startOffsetFrames: -4,
-        peakOffsetFrames: -2,
+        startOffsetFrames: -3,
+        peakOffsetFrames: -1,
         endOffsetFrames: 2,
         peakX: 12.4,
         peakY: 3.1,
         controlPoints: [
-          DanceMoveTargetOffsetArcPoint(-3, x: 5.8, y: 1.5, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(-1, x: 10.6, y: 2.7),
-          DanceMoveTargetOffsetArcPoint(0, x: 5.4, y: 1.4),
-          DanceMoveTargetOffsetArcPoint(1, x: 1.6, y: 0.5, weight: 0.65),
+          DanceMoveTargetOffsetArcPoint(-2, x: 5.8, y: 1.5, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(0, x: 10.6, y: 2.7),
+          DanceMoveTargetOffsetArcPoint(1, x: 5.4, y: 1.4),
         ],
       ),
       DanceMoveTargetOffsetArc(
@@ -2954,7 +2954,7 @@ class CatClips {
       DanceMoveJointAccent(
         moveName: 'right-side camera answer',
         boneId: CatBones.armUpperR,
-        offsetFrames: -2,
+        offsetFrames: -1,
         radiusFrames: 4,
         rotation: -0.46,
       ),
@@ -2989,14 +2989,14 @@ class CatClips {
       DanceMoveJointAccent(
         moveName: 'right-side camera answer',
         boneId: CatBones.armLowerR,
-        offsetFrames: -2,
+        offsetFrames: -1,
         radiusFrames: 4,
         rotation: 0.48,
       ),
       DanceMoveJointAccent(
         moveName: 'right-side camera answer',
         boneId: CatBones.footR,
-        offsetFrames: -2,
+        offsetFrames: -1,
         radiusFrames: 3,
         rotation: 0.16,
       ),
@@ -3045,11 +3045,11 @@ class CatClips {
       ),
       DanceMoveBodyAccent(
         moveName: 'right-side camera answer',
-        offsetFrames: 2,
-        // Dark answers after silver (F13), lower and sharper, so the side
-        // response is a visible crew ripple rather than mirrored timing. The
-        // foot marks F13; the chest/hips bite on F14 so it reads danced rather
-        // than snapped into position.
+        offsetFrames: 3,
+        // Dark answers after silver (hand/foot at F14), lower and sharper, so
+        // the side response is a visible crew ripple rather than mirrored
+        // timing. The foot marks F14; the chest/hips bite on F15 so it reads
+        // danced rather than snapped into position.
         radiusFrames: 4,
         rootDx: 1.5,
         rootDy: 2.2,
@@ -3116,49 +3116,47 @@ class CatClips {
         name: 'right backup inside-hand camera answer',
         moveName: 'right-side camera answer',
         targetBoneId: CatBones.handL,
-        startOffsetFrames: -1,
-        peakOffsetFrames: 1,
-        endOffsetFrames: 4,
-        peakX: 34,
-        peakY: -34,
+        startOffsetFrames: 0,
+        peakOffsetFrames: 2,
+        endOffsetFrames: 5,
+        peakX: 22.5,
+        peakY: -23.5,
         controlPoints: [
           DanceMoveTargetOffsetArcPoint(
-            0,
-            x: 22.4,
-            y: -21.8,
+            1,
+            x: 14,
+            y: -14.8,
             weight: 0.7,
           ),
-          DanceMoveTargetOffsetArcPoint(2, x: 27.2, y: -24.4),
-          DanceMoveTargetOffsetArcPoint(3, x: 13.2, y: -11.8, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(3, x: 13.4, y: -14.2, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(4, x: 8, y: -10, weight: 0.7),
         ],
       ),
       DanceMoveTargetOffsetArc(
         name: 'right backup outside-hand tuck',
         moveName: 'right-side camera answer',
         targetBoneId: CatBones.handR,
-        startOffsetFrames: -1,
-        peakOffsetFrames: 1,
+        startOffsetFrames: 0,
+        peakOffsetFrames: 2,
         endOffsetFrames: 4,
-        peakX: -20,
-        peakY: 23,
+        peakX: -5.4,
+        peakY: 6.4,
         controlPoints: [
-          DanceMoveTargetOffsetArcPoint(0, x: -9.2, y: 10.5, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(2, x: -14.6, y: 16.8),
-          DanceMoveTargetOffsetArcPoint(3, x: -7.8, y: 10.4, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(1, x: -3.2, y: 3.8, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(3, x: -3, y: 3.6, weight: 0.7),
         ],
       ),
       DanceMoveTargetOffsetArc(
         name: 'right backup late right-toe step-plant',
         moveName: 'right-side camera answer',
         targetBoneId: CatBones.footR,
-        startOffsetFrames: -1,
-        peakOffsetFrames: 1,
+        startOffsetFrames: 0,
+        peakOffsetFrames: 2,
         endOffsetFrames: 4,
         peakX: 14.2,
         peakY: 3.2,
         controlPoints: [
-          DanceMoveTargetOffsetArcPoint(0, x: 6.2, y: 1.5, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(2, x: 11.2, y: 2.7),
+          DanceMoveTargetOffsetArcPoint(1, x: 6.2, y: 1.5, weight: 0.7),
           DanceMoveTargetOffsetArcPoint(3, x: 5.8, y: 1.3, weight: 0.7),
         ],
       ),
@@ -3208,7 +3206,7 @@ class CatClips {
       DanceMoveJointAccent(
         moveName: 'right-side camera answer',
         boneId: CatBones.armUpperL,
-        offsetFrames: 1,
+        offsetFrames: 2,
         radiusFrames: 4,
         rotation: 0.6,
       ),
@@ -3250,14 +3248,14 @@ class CatClips {
       DanceMoveJointAccent(
         moveName: 'right-side camera answer',
         boneId: CatBones.armLowerL,
-        offsetFrames: 1,
+        offsetFrames: 2,
         radiusFrames: 4,
         rotation: 0.66,
       ),
       DanceMoveJointAccent(
         moveName: 'right-side camera answer',
         boneId: CatBones.footR,
-        offsetFrames: 1,
+        offsetFrames: 2,
         radiusFrames: 3,
         rotation: 0.14,
       ),

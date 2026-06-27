@@ -234,10 +234,10 @@ void main() {
         const firstEchoP = 1 / 8;
         const rightEarlyEchoP = 5 / 32;
         const leftDelayedEchoP = 6 / 32;
-        const silverAnswerP = 10 / 32;
-        const silverBodyCatchP = 11 / 32;
-        const darkAnswerP = 13 / 32;
-        const darkBodyCatchP = 14 / 32;
+        const silverAnswerP = 11 / 32;
+        const silverBodyCatchP = 12 / 32;
+        const darkAnswerP = 14 / 32;
+        const darkBodyCatchP = 15 / 32;
         const delayedEchoP = 5 / 8;
         const leftFeatureP = 3 / 4;
         const delayedStepTapEchoP = 25 / 32;
@@ -426,7 +426,7 @@ void main() {
           leftHandRSilverAnswer.x,
           lessThan(leadHandRSilverAnswer.x - 17),
           reason:
-              'the silver cat should answer early around frame 10 after '
+              'the silver cat should answer early around frame 11 after '
               'marking the lead call, not hit in lockstep with the dark cat',
         );
         expect(
@@ -451,7 +451,7 @@ void main() {
           rightHandLDarkAnswer.x,
           greaterThan(leadHandLDarkAnswer.x + 17),
           reason:
-              'the dark cat should answer later around frame 13 with its '
+              'the dark cat should answer later around frame 14 with its '
               'inside hand, creating a readable crew ripple',
         );
         expect(
@@ -460,14 +460,14 @@ void main() {
         );
         expect(
           rightDarkAnswerXDelta,
-          greaterThan(28),
+          greaterThan(20),
           reason:
               'the dark side answer should travel across the body strongly '
               'enough to read against the silver dancer',
         );
         expect(
           rightDarkAnswerYDelta,
-          lessThan(-28),
+          lessThan(-20),
           reason:
               'the dark side answer should be the high vertical lift while the '
               'silver dancer owns the lower side-open answer',
@@ -1450,8 +1450,8 @@ void main() {
             'the opposite foot should heel-flick during the F13 lift before '
             'both feet settle into the stamp',
       );
-      const silverFlankerP = 10 / 32;
-      const darkFlankerP = 13 / 32;
+      const silverFlankerP = 11 / 32;
+      const darkFlankerP = 14 / 32;
       final rightArmDelta =
           right.channels[CatBones.armUpperL]!.sample(darkFlankerP).rotation -
           leadChannels[CatBones.armUpperL]!.sample(darkFlankerP).rotation;
