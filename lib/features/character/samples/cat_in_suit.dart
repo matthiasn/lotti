@@ -1181,16 +1181,58 @@ class CatClips {
     ),
     DanceMoveSignature(
       moveName: 'right-foot groove pocket',
+      bodyAccents: [
+        DanceBodyAccent(
+          20,
+          radiusFrames: 2,
+          rootDy: 0.85,
+          rootRotation: -0.001,
+          pelvisRotation: -0.026,
+          chestRotation: 0.055,
+          chestScaleY: 0.976,
+          chestScaleX: 1.018,
+        ),
+      ],
       ikTargetKeys: {
+        CatBones.handL: [
+          DanceIkTargetKey(19, x: -44.2, y: 31.5),
+          DanceIkTargetKey(20, x: -57.6, y: 25.6),
+          DanceIkTargetKey(21, x: -46.8, y: 30.8),
+        ],
+        CatBones.handR: [
+          DanceIkTargetKey(19, x: 62.8, y: 27.4),
+          DanceIkTargetKey(20, x: 72.4, y: 20.4),
+          DanceIkTargetKey(21, x: 65.2, y: 26.4),
+        ],
         CatBones.footL: [
           DanceIkTargetKey(18, x: -40.4, y: 102.2),
           DanceIkTargetKey(19, x: -43.5, y: 100.7),
-          DanceIkTargetKey(20, x: -48.6, y: 99.4),
+          DanceIkTargetKey(20, x: -50.4, y: 98.7),
           DanceIkTargetKey(21, x: -41.8, y: 100.6),
           DanceIkTargetKey(22, x: -28.2, y: 102.2),
         ],
       },
       jointKeys: {
+        CatBones.armUpperL: [
+          DanceJointKey(19, rotation: -0.06),
+          DanceJointKey(20, rotation: 0.34),
+          DanceJointKey(21, rotation: 0.12),
+        ],
+        CatBones.armLowerL: [
+          DanceJointKey(19, rotation: 0.02),
+          DanceJointKey(20, rotation: -0.12),
+          DanceJointKey(21, rotation: -0.02),
+        ],
+        CatBones.armUpperR: [
+          DanceJointKey(19, rotation: -0.48),
+          DanceJointKey(20, rotation: -0.18),
+          DanceJointKey(21, rotation: -0.36),
+        ],
+        CatBones.armLowerR: [
+          DanceJointKey(19, rotation: 0.34),
+          DanceJointKey(20, rotation: 0.56),
+          DanceJointKey(21, rotation: 0.42),
+        ],
         CatBones.footL: [
           DanceJointKey(20, rotation: 0.48),
           DanceJointKey(21, rotation: 0.36),

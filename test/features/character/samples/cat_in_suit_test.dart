@@ -786,16 +786,47 @@ void main() {
         lead,
         CatBones.footL,
       ).channel.sample(rightFootCueP);
+      final grooveLeftHand = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(rightFootCueP);
+      final grooveRightHand = _targetFor(
+        lead,
+        CatBones.handR,
+      ).channel.sample(rightFootCueP);
       expect(
         freeLeftFoot.x,
-        lessThan(-45),
+        lessThan(-49),
         reason: 'free-left foot should flick outward in the right-foot groove',
       );
       expect(
         freeLeftFoot.y,
-        lessThan(100.5),
+        lessThan(99.5),
         reason: 'free-left foot should lift instead of dragging at frame 20',
       );
+      expect(
+        leadChannels[CatBones.torso]!.sample(rightFootCueP).rotation,
+        greaterThan(0.23),
+        reason:
+            'right-foot groove should include a shoulder bite, not just a '
+            'foot target',
+      );
+      expect(
+        grooveLeftHand.x,
+        lessThan(-55),
+        reason:
+            'left hand should punctuate the right-foot groove outside the '
+            'belly silhouette',
+      );
+      expect(grooveLeftHand.y, lessThan(27));
+      expect(
+        grooveRightHand.x,
+        greaterThan(70),
+        reason:
+            'right hand should answer the shoulder bite with a visible outward '
+            'punctuation',
+      );
+      expect(grooveRightHand.y, lessThan(22));
 
       final leftCueP = phrase.moveAtFrame(24).accentFrame / phrase.frameCount;
       final leftArmDelta =
@@ -844,6 +875,20 @@ void main() {
         lessThan(20),
         reason:
             'the right-hand lift answer should hit as a pickup, not a teleport',
+      );
+      expect(
+        _targetDistance(handL, 19, 20),
+        lessThan(16),
+        reason:
+            'the right-foot groove shoulder bite should pull the left hand '
+            'through a compact accent, not a jump',
+      );
+      expect(
+        _targetDistance(handR, 19, 20),
+        lessThan(13),
+        reason:
+            'the right-hand punctuation should be a readable wrist/shoulder '
+            'hit without throwing the arm across the frame',
       );
       expect(
         _targetDistance(handL, 28, 29),
