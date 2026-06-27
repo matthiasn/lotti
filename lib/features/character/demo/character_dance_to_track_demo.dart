@@ -356,6 +356,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                   CatClips.danceBackupRight,
                 ],
                 synchronousEnsemble: true,
+                // Enables the multi-member (trio) render path in CharacterPainter;
+                // without it the painter draws only the lead scene.
+                walkingPair: true,
                 clip: _clip,
                 timeSeconds: seconds,
                 groundColor: const Color(0xFF374551),
