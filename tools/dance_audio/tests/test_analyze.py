@@ -123,3 +123,30 @@ class TestCli:
         # The synthetic-click self-test asserts the beat grid is recovered; with a
         # stubbed tracker it must report success (exit 0) without touching torch.
         assert analyze.main(["--selftest"]) == 0
+
+
+class TestSegment:
+    def test_load_audio_offset_and_duration_select_a_window(self, tmp_path):
+        import soundfile as sf
+
+        sf.write(
+            tmp_path / "c.wav",
+            analyze._synth_click(bpm=120, n_beats=16),  # 8 s of audio
+            analyze.ANALYSIS_SR,
+        )
+        y, sr = analyze.load_audio(str(tmp_path / "c.wav"), offset=2.0, duration=3.0)
+        assert sr == analyze.ANALYSIS_SR
+        assert abs(len(y) / sr - 3.0) < 0.05  # ~3 s window from offset 2 s
+
+    def test_analyze_records_the_segment_start(self, monkeypatch, steady_grid):
+        beats, downbeats = steady_grid
+        monkeypatch.setattr(analyze, "_run_beat_this", _fake_beat_this(beats, downbeats))
+        beatmap = analyze.analyze(
+            analyze._synth_click(),
+            analyze.ANALYSIS_SR,
+            audio_path="x.wav",
+            segment_start=72.5,
+        )
+        assert beatmap["audio"]["segment_start_sec"] == 72.5
+        # Beat times stay relative to the segment (0-based), not shifted by start.
+        assert beatmap["beats"][0]["time_sec"] == 0.0

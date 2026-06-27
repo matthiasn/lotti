@@ -19,6 +19,7 @@ to embed a creation time.
 
 Usage:
     python analyze.py path/to/track.wav [-o out.json] [--bpm-hint 124]
+    python analyze.py track.mp3 --start 60 --duration 30 -o seg.json  # mid-song window
     python analyze.py --selftest        # synthetic click track, no audio needed
 """
 
@@ -60,9 +61,20 @@ def _pkg_version(name: str) -> str:
         return "unknown"
 
 
-def load_audio(path: str, sr: int = ANALYSIS_SR) -> tuple[np.ndarray, int]:
-    """Decode `path` to a mono float32 signal at `sr`."""
-    y, sr = librosa.load(path, sr=sr, mono=True)
+def load_audio(
+    path: str,
+    sr: int = ANALYSIS_SR,
+    *,
+    offset: float = 0.0,
+    duration: float | None = None,
+) -> tuple[np.ndarray, int]:
+    """Decode `path` to a mono float32 signal at `sr`.
+
+    `offset` / `duration` (seconds) select a sub-window, so a beat map can be made
+    for a 30 s segment in the *middle* of a track. The returned signal is 0-based,
+    so the emitted beat times are relative to the segment start.
+    """
+    y, sr = librosa.load(path, sr=sr, mono=True, offset=offset, duration=duration)
     return y.astype(np.float32), sr
 
 
@@ -168,8 +180,13 @@ def analyze(
     bpm_hint: float | None = None,
     dbn: bool = False,
     stamp: str | None = None,
+    segment_start: float = 0.0,
 ) -> dict:
-    """Run the full pipeline and return the beat-map dict (§5 schema)."""
+    """Run the full pipeline and return the beat-map dict (§5 schema).
+
+    `segment_start` is the offset (seconds) this signal was decoded from; it is
+    recorded for traceability. Beat times stay relative to the segment (0-based).
+    """
     beats, downbeats = _run_beat_this(signal, sr, dbn=dbn)
     if beats.size == 0:
         raise SystemExit("Beat This! found no beats — is the audio silent/too short?")
@@ -222,6 +239,7 @@ def analyze(
             "path": audio_path,
             "duration_sec": round(len(signal) / sr, _T),
             "sample_rate": sr,
+            "segment_start_sec": round(segment_start, _T),
         },
         "analysis": {
             "tracker": tracker,
@@ -306,6 +324,18 @@ def main(argv: list[str] | None = None) -> int:
         help="known/approx BPM, recorded for reference (octave sanity)",
     )
     ap.add_argument(
+        "--start",
+        type=float,
+        default=0.0,
+        help="analyse from this offset in seconds (for a mid-song segment)",
+    )
+    ap.add_argument(
+        "--duration",
+        type=float,
+        default=None,
+        help="analyse only this many seconds from --start (e.g. 30)",
+    )
+    ap.add_argument(
         "--dbn",
         action="store_true",
         help="use Beat This!'s DBN postproc (requires madmom — NonCommercial)",
@@ -331,7 +361,7 @@ def main(argv: list[str] | None = None) -> int:
 
         stamp = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
 
-    signal, sr = load_audio(args.audio)
+    signal, sr = load_audio(args.audio, offset=args.start, duration=args.duration)
     beatmap = analyze(
         signal,
         sr,
@@ -339,6 +369,7 @@ def main(argv: list[str] | None = None) -> int:
         bpm_hint=args.bpm_hint,
         dbn=args.dbn,
         stamp=stamp,
+        segment_start=args.start,
     )
     text = json.dumps(beatmap, indent=2)
     if args.out:
