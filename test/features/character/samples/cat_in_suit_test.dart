@@ -891,6 +891,40 @@ void main() {
         lessThan(-0.35),
         reason: 'lead Shaku cue should read as crossed-arm groove',
       );
+      final shakuHit = lead.root.sample(4 / phrase.frameCount);
+      final shakuSink = lead.root.sample(6 / phrase.frameCount);
+      final shakuRebound = lead.root.sample(8 / phrase.frameCount);
+      expect(
+        (shakuSink.dx - shakuHit.dx).abs(),
+        lessThan(6),
+        reason:
+            'the Shaku sink should hold over the left support before '
+            'travelling, not drift sideways through the weight transfer',
+      );
+      expect(
+        shakuSink.dy,
+        greaterThan(shakuRebound.dy + 1),
+        reason:
+            'frame 6 should visibly sink before the frame 8 rebound, so the '
+            'beat reads step/sink/rebound instead of a flat slide',
+      );
+      expect(
+        shakuRebound.dx,
+        greaterThan(shakuSink.dx + 12),
+        reason:
+            'the Shaku rebound should travel across after the sink has landed',
+      );
+      final shakuToeTap = _targetFor(
+        lead,
+        CatBones.footR,
+      ).channel.sample(6 / phrase.frameCount);
+      expect(
+        shakuToeTap.y,
+        greaterThan(95),
+        reason:
+            'the free right foot should stay low enough to read as a toe tap '
+            'on the Shaku sink',
+      );
 
       final reboundP = phrase.moveAtFrame(10).accentFrame / phrase.frameCount;
       expect(phrase.moveAtFrame(10).name, 'lead rebound shoulder scoop');
