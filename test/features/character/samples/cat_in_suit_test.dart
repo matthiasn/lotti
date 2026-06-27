@@ -956,6 +956,21 @@ void main() {
         greaterThan(135),
         reason: 'scoop should read as a broad shoulder-level shape',
       );
+      final delayedRollP = 12 / phrase.frameCount;
+      expect(
+        leadChannels[CatBones.torso]!.sample(delayedRollP).rotation,
+        lessThan(0.04),
+        reason:
+            'the shoulder scoop should roll through delayed chest opposition '
+            'instead of staying upright and symmetrical through frames 9-14',
+      );
+      expect(
+        leadChannels[CatBones.hips]!.sample(delayedRollP).rotation,
+        lessThan(0),
+        reason:
+            'the delayed shoulder roll should keep the hip loaded under it, '
+            'not turn into an ungrounded upper-body flourish',
+      );
       expect(
         leadChannels[CatBones.armUpperL]!.sample(reboundP).rotation,
         greaterThan(0.65),
