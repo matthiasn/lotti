@@ -1263,6 +1263,19 @@ class CatClips {
     ),
     DanceMoveSignature(
       moveName: 'toe-flick hook reset',
+      bodyAccentOffsets: [
+        DanceBodyAccentOffset(
+          offsetFrames: 2,
+          radiusFrames: 2,
+          rootDx: -0.7,
+          rootDy: 0.55,
+          rootRotation: -0.001,
+          pelvisRotation: 0.028,
+          chestRotation: -0.044,
+          chestScaleY: 0.984,
+          chestScaleX: 1.014,
+        ),
+      ],
       ikTargetKeys: {
         CatBones.handL: [
           DanceIkTargetKey(28, x: -82.4, y: 12.4),
@@ -2391,6 +2404,17 @@ class CatClips {
         chestScaleY: 0.966,
         chestScaleX: 1.026,
       ),
+      DanceMoveBodyAccent(
+        moveName: 'toe-flick hook reset',
+        offsetFrames: 2,
+        // Pick up the lead's hook on the second half of the reset and release
+        // at frame 32 so the loop closes as crew choreography, not a dead stop.
+        radiusFrames: 2,
+        pelvisRotation: 0.026,
+        chestRotation: -0.036,
+        chestScaleY: 0.988,
+        chestScaleX: 1.01,
+      ),
     ],
     ikTargetAccents: {
       CatBones.handR: [
@@ -2420,6 +2444,20 @@ class CatClips {
           DanceMoveTargetOffsetArcPoint(2, x: -5.4, y: -2.4, weight: 0.7),
         ],
       ),
+      DanceMoveTargetOffsetArc(
+        name: 'left backup hook-reset pickup',
+        moveName: 'toe-flick hook reset',
+        targetBoneId: CatBones.handR,
+        startOffsetFrames: 0,
+        peakOffsetFrames: 2,
+        endOffsetFrames: 4,
+        peakX: -5.4,
+        peakY: -4.2,
+        controlPoints: [
+          DanceMoveTargetOffsetArcPoint(1, x: -2.8, y: -2.1, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(3, x: -3.2, y: -2.3, weight: 0.7),
+        ],
+      ),
     ],
     moveJointAccents: [
       DanceMoveJointAccent(
@@ -2444,6 +2482,13 @@ class CatClips {
         rotation: -0.26,
       ),
       DanceMoveJointAccent(
+        moveName: 'toe-flick hook reset',
+        boneId: CatBones.armUpperR,
+        offsetFrames: 2,
+        radiusFrames: 2,
+        rotation: -0.1,
+      ),
+      DanceMoveJointAccent(
         moveName: 'lead Shaku pocket hit',
         boneId: CatBones.armLowerR,
         offsetFrames: 0,
@@ -2463,6 +2508,13 @@ class CatClips {
         offsetFrames: 0,
         radiusFrames: 7,
         rotation: 0.3,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'toe-flick hook reset',
+        boneId: CatBones.armLowerR,
+        offsetFrames: 2,
+        radiusFrames: 2,
+        rotation: 0.13,
       ),
     ],
   );
@@ -2501,6 +2553,15 @@ class CatClips {
         chestScaleY: 0.99,
         chestScaleX: 1.008,
       ),
+      DanceMoveBodyAccent(
+        moveName: 'toe-flick hook reset',
+        offsetFrames: 3,
+        radiusFrames: 1,
+        pelvisRotation: -0.02,
+        chestRotation: 0.03,
+        chestScaleY: 0.992,
+        chestScaleX: 1.008,
+      ),
     ],
     ikTargetAccents: {
       CatBones.handL: [
@@ -2529,6 +2590,19 @@ class CatClips {
           DanceMoveTargetOffsetArcPoint(2, x: 3.8, y: -2, weight: 0.7),
         ],
       ),
+      DanceMoveTargetOffsetArc(
+        name: 'right backup hook-reset pickup',
+        moveName: 'toe-flick hook reset',
+        targetBoneId: CatBones.handL,
+        startOffsetFrames: 1,
+        peakOffsetFrames: 3,
+        endOffsetFrames: 4,
+        peakX: 4.4,
+        peakY: -3.2,
+        controlPoints: [
+          DanceMoveTargetOffsetArcPoint(2, x: 2.6, y: -1.9, weight: 0.7),
+        ],
+      ),
     ],
     moveJointAccents: [
       DanceMoveJointAccent(
@@ -2553,6 +2627,13 @@ class CatClips {
         rotation: 0.07,
       ),
       DanceMoveJointAccent(
+        moveName: 'toe-flick hook reset',
+        boneId: CatBones.armUpperL,
+        offsetFrames: 3,
+        radiusFrames: 1,
+        rotation: 0.08,
+      ),
+      DanceMoveJointAccent(
         moveName: 'right-side camera answer',
         boneId: CatBones.armLowerL,
         offsetFrames: 0,
@@ -2572,6 +2653,13 @@ class CatClips {
         offsetFrames: 0,
         radiusFrames: 6,
         rotation: 0.08,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'toe-flick hook reset',
+        boneId: CatBones.armLowerL,
+        offsetFrames: 3,
+        radiusFrames: 1,
+        rotation: 0.1,
       ),
     ],
   );

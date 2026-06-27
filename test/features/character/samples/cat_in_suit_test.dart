@@ -230,6 +230,8 @@ void main() {
         const leftFeatureP = 3 / 4;
         const rightAnswerSettleP = 15 / 32;
         const leftFeatureSettleP = 28 / 32;
+        const leftHookPickupP = 30 / 32;
+        const rightHookPickupP = 31 / 32;
 
         expect(left.duration, lead.duration);
         expect(right.duration, lead.duration);
@@ -316,6 +318,22 @@ void main() {
           left,
           CatBones.handR,
         ).channel.sample(leftFeatureSettleP);
+        final leadHandRHookPickup = _targetFor(
+          lead,
+          CatBones.handR,
+        ).channel.sample(leftHookPickupP);
+        final leftHandRHookPickup = _targetFor(
+          left,
+          CatBones.handR,
+        ).channel.sample(leftHookPickupP);
+        final leadHandLHookPickup = _targetFor(
+          lead,
+          CatBones.handL,
+        ).channel.sample(rightHookPickupP);
+        final rightHandLHookPickup = _targetFor(
+          right,
+          CatBones.handL,
+        ).channel.sample(rightHookPickupP);
         expect(leftHandR.x, closeTo(leadHandR.x - 12, 0.001));
         expect(leftHandR.y, closeTo(leadHandR.y - 7, 0.001));
         expect(
@@ -398,6 +416,28 @@ void main() {
           closeTo(leadHandRLeftFeatureSettle.y, 0.001),
         );
         expect(
+          leftHandRHookPickup.x,
+          closeTo(leadHandRHookPickup.x - 5.4, 0.001),
+          reason:
+              'left backup should pick up the lead hook reset after the '
+              'side-feature has settled',
+        );
+        expect(
+          leftHandRHookPickup.y,
+          closeTo(leadHandRHookPickup.y - 4.2, 0.001),
+        );
+        expect(
+          rightHandLHookPickup.x,
+          closeTo(leadHandLHookPickup.x + 4.4, 0.001),
+          reason:
+              'right backup should answer the loop pickup without copying the '
+              'left backup on the same frame',
+        );
+        expect(
+          rightHandLHookPickup.y,
+          closeTo(leadHandLHookPickup.y - 3.2, 0.001),
+        );
+        expect(
           left.channels[CatBones.legUpperL]!.sample(supportCheckP).rotation,
           closeTo(
             lead.channels[CatBones.legUpperL]!.sample(supportCheckP).rotation,
@@ -423,12 +463,30 @@ void main() {
         final rightDelayedEchoTorsoDelta =
             right.channels[CatBones.torso]!.sample(delayedEchoP).rotation -
             lead.channels[CatBones.torso]!.sample(delayedEchoP).rotation;
+        final leftHookTorsoDelta =
+            left.channels[CatBones.torso]!.sample(leftHookPickupP).rotation -
+            lead.channels[CatBones.torso]!.sample(leftHookPickupP).rotation;
+        final rightHookTorsoDelta =
+            right.channels[CatBones.torso]!.sample(rightHookPickupP).rotation -
+            lead.channels[CatBones.torso]!.sample(rightHookPickupP).rotation;
         final leftArmDelta =
             left.channels[CatBones.armUpperR]!.sample(leftFeatureP).rotation -
             lead.channels[CatBones.armUpperR]!.sample(leftFeatureP).rotation;
         final rightArmDelta =
             right.channels[CatBones.armUpperL]!.sample(rightFeatureP).rotation -
             lead.channels[CatBones.armUpperL]!.sample(rightFeatureP).rotation;
+        final leftHookArmDelta =
+            left.channels[CatBones.armUpperR]!
+                .sample(leftHookPickupP)
+                .rotation -
+            lead.channels[CatBones.armUpperR]!.sample(leftHookPickupP).rotation;
+        final rightHookArmDelta =
+            right.channels[CatBones.armUpperL]!
+                .sample(rightHookPickupP)
+                .rotation -
+            lead.channels[CatBones.armUpperL]!
+                .sample(rightHookPickupP)
+                .rotation;
         expect(
           leftHipDelta.abs(),
           inInclusiveRange(0.04, 0.12),
@@ -467,6 +525,28 @@ void main() {
           reason:
               'right backup should answer on the later right-foot groove '
               'without becoming the lead',
+        );
+        expect(
+          leftHookTorsoDelta.abs(),
+          inInclusiveRange(0.025, 0.055),
+          reason: 'left backup should visibly join the loop pickup',
+        );
+        expect(
+          rightHookTorsoDelta.abs(),
+          inInclusiveRange(0.02, 0.045),
+          reason:
+              'right backup should join the loop pickup as a smaller delayed '
+              'answer',
+        );
+        expect(
+          leftHookArmDelta,
+          lessThan(-0.07),
+          reason: 'left backup should mark the pickup with its inside arm',
+        );
+        expect(
+          rightHookArmDelta,
+          greaterThan(0.05),
+          reason: 'right backup should answer the pickup with its inside arm',
         );
         final rightOffCameraArmDelta =
             right.channels[CatBones.armUpperL]!.sample(leftFeatureP).rotation -
