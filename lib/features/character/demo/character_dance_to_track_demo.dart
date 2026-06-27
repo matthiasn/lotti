@@ -60,6 +60,24 @@ const String kDanceBeatMapPath = String.fromEnvironment(
 /// `kAuthoredDanceBpm 120` = 12 beats = 3 bars of 4/4.
 const int kDancePhraseBars = 3;
 
+/// Section-aware choreography: a section below this fraction of the energy range
+/// (and long enough, see [kMinCalmSeconds]) is "calm" — the trio eases into idle
+/// instead of the energetic beat-locked dance.
+const double kSectionEnergyThreshold = 0.5;
+
+/// Calm sections shorter than this stay energetic, to avoid flicker on the short
+/// transition sections between routines.
+const double kMinCalmSeconds = 4;
+
+typedef _Section = ({double start, double end, String label, bool energetic});
+typedef _Stage = ({
+  Clip lead,
+  List<Clip> ensemble,
+  double seconds,
+  _Section? section,
+  bool energetic,
+});
+
 void main() {
   MediaKit.ensureInitialized();
   runApp(const DanceToTrackApp());
@@ -108,7 +126,17 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
 
   final CharacterRenderer _renderer = CharacterRenderer();
   final Player _player = Player();
-  final Clip _clip = CatClips.dance;
+
+  // Cached clips: rebuilding CatClips.dance compiles the whole DancePhrase, so
+  // build the trio once instead of every frame.
+  late final Clip _danceLead = CatClips.dance;
+  late final List<Clip> _danceEnsemble = [
+    CatClips.dance,
+    CatClips.danceBackupLeft,
+    CatClips.danceBackupRight,
+  ];
+  late final Clip _idle = CatClips.idle;
+  late final List<Clip> _idleEnsemble = [_idle, _idle, _idle];
 
   late final Ticker _ticker; // 60 fps repaint pump; time comes from the player.
 
@@ -119,7 +147,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   BeatMap? _map;
   BeatLoopBinding? _binding;
   List<double>? _amplitudes; // full-track waveform, normalized 0..1
-  List<({double start, double end, String label})> _sections = const [];
+  List<_Section> _sections = const [];
   double _trackDurationSec = 0;
   double _bpm = 0;
   bool _loop = true;
@@ -167,7 +195,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
               ?.map((e) => (e as num).toDouble())
               .toList() ??
           const <double>[];
-      final sections = ((json['sections'] as List?) ?? const [])
+      final rawSections = ((json['sections'] as List?) ?? const [])
           .cast<Map<String, Object?>>()
           .map(
             (s) => (
@@ -177,6 +205,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
             ),
           )
           .toList();
+      final sections = _classifySections(rawSections, amplitudes, duration);
 
       if (!mounted) return;
       setState(() {
@@ -194,17 +223,90 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     }
   }
 
-  /// Audio position → dance-clip seconds. The phrase loops via clipSecondsAt's
-  /// own modulo, so it repeats on-beat across the whole (looped) track.
-  double _danceSecondsNow() {
+  /// Tags each detected section energetic/calm by its mean waveform energy
+  /// (relative to the track's energy range). Calm only when genuinely low-energy
+  /// AND long enough — short transition sections stay energetic to avoid flicker.
+  List<_Section> _classifySections(
+    List<({double start, double end, String label})> raw,
+    List<double> amplitudes,
+    double duration,
+  ) {
+    if (raw.isEmpty || amplitudes.isEmpty || duration <= 0) {
+      return [
+        for (final s in raw)
+          (start: s.start, end: s.end, label: s.label, energetic: true),
+      ];
+    }
+    final n = amplitudes.length;
+    double energyOf(double start, double end) {
+      var i0 = (start / duration * n).floor();
+      var i1 = (end / duration * n).ceil();
+      if (i0 < 0) i0 = 0;
+      if (i0 >= n) i0 = n - 1;
+      if (i1 > n) i1 = n;
+      if (i1 <= i0) i1 = i0 + 1;
+      var sum = 0.0;
+      for (var i = i0; i < i1; i++) {
+        sum += amplitudes[i];
+      }
+      return sum / (i1 - i0);
+    }
+
+    final energies = [for (final s in raw) energyOf(s.start, s.end)];
+    var minE = energies.first;
+    var maxE = energies.first;
+    for (final e in energies) {
+      if (e < minE) minE = e;
+      if (e > maxE) maxE = e;
+    }
+    final threshold = minE + kSectionEnergyThreshold * (maxE - minE);
+    return [
+      for (var i = 0; i < raw.length; i++)
+        (
+          start: raw[i].start,
+          end: raw[i].end,
+          label: raw[i].label,
+          energetic:
+              !(energies[i] < threshold &&
+                  (raw[i].end - raw[i].start) >= kMinCalmSeconds),
+        ),
+    ];
+  }
+
+  _Section? _sectionAt(double pos) {
+    for (final s in _sections) {
+      if (pos >= s.start && pos < s.end) return s;
+    }
+    return _sections.isEmpty ? null : _sections.last;
+  }
+
+  /// Picks the clip + clock for the current section: the beat-locked energetic
+  /// dance in loud sections, an eased idle (driven by raw playback time) in calm
+  /// ones. The phrase loops via clipSecondsAt's own modulo across the track.
+  _Stage _stageNow() {
+    final pos = _player.state.position.inMicroseconds / 1e6;
+    final section = _sectionAt(pos);
     final map = _map;
     final binding = _binding;
-    if (map == null || binding == null) return 0;
-    final posSec = _player.state.position.inMicroseconds / 1e6;
-    return map.clipSecondsAt(
-      posSec,
-      clipDuration: _clip.duration,
-      binding: binding,
+    if ((section?.energetic ?? true) && map != null && binding != null) {
+      return (
+        lead: _danceLead,
+        ensemble: _danceEnsemble,
+        seconds: map.clipSecondsAt(
+          pos,
+          clipDuration: _danceLead.duration,
+          binding: binding,
+        ),
+        section: section,
+        energetic: true,
+      );
+    }
+    return (
+      lead: _idle,
+      ensemble: _idleEnsemble,
+      seconds: pos,
+      section: section,
+      energetic: false,
     );
   }
 
@@ -289,7 +391,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       );
     }
 
-    final seconds = _danceSecondsNow();
+    final stage = _stageNow();
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
@@ -311,17 +413,15 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                       Expression.content,
                       Expression.happy,
                     ],
-                    ensembleClips: [
-                      CatClips.dance,
-                      CatClips.danceBackupLeft,
-                      CatClips.danceBackupRight,
-                    ],
+                    // Section-aware: the energetic dance trio in loud sections,
+                    // an eased idle in calm ones.
+                    ensembleClips: stage.ensemble,
                     synchronousEnsemble: true,
                     // Enables the multi-member (trio) render path; without it the
                     // painter draws only the lead scene.
                     walkingPair: true,
-                    clip: _clip,
-                    timeSeconds: seconds,
+                    clip: stage.lead,
+                    timeSeconds: stage.seconds,
                     scale: scale,
                     groundColor: const Color(0xFF374551),
                     backdrop: CharacterBackdrop.waterfront,
@@ -344,6 +444,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   Widget _waveformPanel() {
     final posSec = _player.state.position.inMicroseconds / 1e6;
     final playing = _player.state.playing;
+    final section = _sectionAt(posSec);
     return Container(
       color: const Color(0xFF14181D),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -373,7 +474,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                       : '${_bpm.toStringAsFixed(0)} BPM   ·   '
                             'pos ${posSec.toStringAsFixed(1)} / '
                             '${_trackDurationSec.toStringAsFixed(0)} s   ·   '
-                            'phrase loops every $kDancePhraseBars bars',
+                            'section ${section?.label ?? '–'} · '
+                            '${(section?.energetic ?? true) ? 'dance' : 'calm'}',
                   style: const TextStyle(
                     fontFeatures: [FontFeature.tabularFigures()],
                   ),
@@ -441,7 +543,7 @@ class _WaveformPainter extends CustomPainter {
   });
 
   final List<double> amplitudes;
-  final List<({double start, double end, String label})> sections;
+  final List<_Section> sections;
   final double trackDurationSec;
   final double positionSec;
   final bool playing;
@@ -457,6 +559,7 @@ class _WaveformPainter extends CustomPainter {
     for (final s in sections) {
       final sx0 = s.start / trackDurationSec * size.width;
       final sx1 = s.end / trackDurationSec * size.width;
+      final active = positionSec >= s.start && positionSec < s.end;
       canvas
         ..drawRect(
           Rect.fromLTRB(sx0, 0, sx1, size.height),
@@ -469,10 +572,26 @@ class _WaveformPainter extends CustomPainter {
             ..color = const Color(0x33FFFFFF)
             ..strokeWidth = 1,
         );
+      if (active) {
+        // Brighten the current section + a top accent bar.
+        canvas
+          ..drawRect(
+            Rect.fromLTRB(sx0, 0, sx1, size.height),
+            Paint()..color = const Color(0x14FFFFFF),
+          )
+          ..drawRect(
+            Rect.fromLTRB(sx0, 0, sx1, 3),
+            Paint()..color = Colors.white70,
+          );
+      }
       TextPainter(
           text: TextSpan(
             text: s.label,
-            style: const TextStyle(color: Colors.white60, fontSize: 10),
+            style: TextStyle(
+              color: active ? Colors.white : Colors.white60,
+              fontSize: 10,
+              fontWeight: active ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
           textDirection: TextDirection.ltr,
         )
