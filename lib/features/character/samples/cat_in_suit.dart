@@ -1075,9 +1075,9 @@ class CatClips {
     ),
     DanceMoveSignature(
       moveName: 'lead rebound shoulder scoop',
-      bodyAccents: [
-        DanceBodyAccent(
-          10,
+      bodyAccentOffsets: [
+        DanceBodyAccentOffset(
+          offsetFrames: 0,
           radiusFrames: 2,
           rootDy: 1.05,
           rootRotation: 0.001,
@@ -1194,9 +1194,9 @@ class CatClips {
     ),
     DanceMoveSignature(
       moveName: 'right-foot groove pocket',
-      bodyAccents: [
-        DanceBodyAccent(
-          20,
+      bodyAccentOffsets: [
+        DanceBodyAccentOffset(
+          offsetFrames: 0,
           radiusFrames: 2,
           rootDy: 0.85,
           rootRotation: -0.001,
@@ -2358,9 +2358,10 @@ class CatClips {
       ]);
 
   static const _danceBackupLeftStyle = DanceRoleStyle(
-    bodyAccents: [
-      DanceBodyAccent(
-        4,
+    moveBodyAccents: [
+      DanceMoveBodyAccent(
+        moveName: 'lead Shaku pocket hit',
+        offsetFrames: 0,
         // Low inside-shoulder echo on the lead's first Shaku pocket: enough
         // variation to read as backup choreography, not a competing solo.
         radiusFrames: 3,
@@ -2369,8 +2370,9 @@ class CatClips {
         chestScaleY: 0.984,
         chestScaleX: 1.012,
       ),
-      DanceBodyAccent(
-        12,
+      DanceMoveBodyAccent(
+        moveName: 'right-side camera answer',
+        offsetFrames: 0,
         radiusFrames: 3,
         // Camera is on the right-side dancer here; keep the left-side answer
         // alive but secondary.
@@ -2379,8 +2381,9 @@ class CatClips {
         chestScaleY: 0.994,
         chestScaleX: 1.004,
       ),
-      DanceBodyAccent(
-        24,
+      DanceMoveBodyAccent(
+        moveName: 'left-side camera answer',
+        offsetFrames: 0,
         // Left-side feature when the camera pans back across the crew.
         radiusFrames: 7,
         pelvisRotation: -0.09,
@@ -2433,9 +2436,10 @@ class CatClips {
   );
 
   static const _danceBackupRightStyle = DanceRoleStyle(
-    bodyAccents: [
-      DanceBodyAccent(
-        12,
+    moveBodyAccents: [
+      DanceMoveBodyAccent(
+        moveName: 'right-side camera answer',
+        offsetFrames: 0,
         // Right-side feature: this lands under the camera's first lateral pan.
         radiusFrames: 4,
         pelvisRotation: 0.07,
@@ -2443,8 +2447,9 @@ class CatClips {
         chestScaleY: 0.974,
         chestScaleX: 1.022,
       ),
-      DanceBodyAccent(
-        20,
+      DanceMoveBodyAccent(
+        moveName: 'right-foot groove pocket',
+        offsetFrames: 0,
         // Secondary answer to the lead's right-foot groove: a small delayed
         // shoulder bite on the dark cat so the trio has call/response.
         radiusFrames: 4,
@@ -2453,8 +2458,9 @@ class CatClips {
         chestScaleY: 0.982,
         chestScaleX: 1.014,
       ),
-      DanceBodyAccent(
-        24,
+      DanceMoveBodyAccent(
+        moveName: 'left-side camera answer',
+        offsetFrames: 0,
         // Camera has moved left by this point; keep the right-side dancer from
         // competing with the featured left-side answer.
         radiusFrames: 6,

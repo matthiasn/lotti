@@ -198,7 +198,10 @@ stateDiagram-v2
   neutralized pulse keys around named hits, so a pocket or rebound can deepen
   root, pelvis, and chest together without hand-editing three separate tracks;
   overlapping body accents merge on the same frame so move blocks can compose
-  without duplicate spline keys.
+  without duplicate spline keys. `DanceBodyAccentOffset` and
+  `DanceMoveBodyAccent` bind those body pulses to move accent frames, which
+  keeps named choreography and role styles attached to cue timing instead of
+  duplicate raw frame numbers.
   `DanceIkTargetAccent` does the same for local hand/foot target pulses, so a
   lead-hand hit can be layered over the shared semantic hand path without
   duplicating the whole coordinate track. `DanceIkTargetArc` groups named

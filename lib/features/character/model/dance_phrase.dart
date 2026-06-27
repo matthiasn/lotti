@@ -204,9 +204,20 @@ class DancePhrase {
     for (final signature in signatures) {
       _checkSignatureMove(signature);
       accents.addAll(signature.bodyAccents);
+      final move = moveNamed(signature.moveName);
+      accents.addAll([
+        for (final accent in signature.bodyAccentOffsets)
+          accent.toBodyAccent(move.accentFrame),
+      ]);
     }
     return List<DanceBodyAccent>.unmodifiable(accents);
   }
+
+  List<DanceBodyAccent> moveRoleBodyAccents(
+    List<DanceMoveBodyAccent> accents,
+  ) => List<DanceBodyAccent>.unmodifiable([
+    for (final accent in accents) accent.toBodyAccent(this),
+  ]);
 
   List<DanceJointKey> mergeJointKeys({
     required List<DanceJointKey> baseKeys,
@@ -494,6 +505,7 @@ class DanceMoveSignature {
   const DanceMoveSignature({
     required this.moveName,
     this.bodyAccents = const <DanceBodyAccent>[],
+    this.bodyAccentOffsets = const <DanceBodyAccentOffset>[],
     this.ikTargetArcs = const <String, List<DanceIkTargetArc>>{},
     this.ikTargetKeys = const <String, List<DanceIkTargetKey>>{},
     this.jointKeys = const <String, List<DanceJointKey>>{},
@@ -505,6 +517,9 @@ class DanceMoveSignature {
 
   /// Additive body pulses that define the move's weight or shoulder action.
   final List<DanceBodyAccent> bodyAccents;
+
+  /// Additive body pulses addressed relative to this move's accent frame.
+  final List<DanceBodyAccentOffset> bodyAccentOffsets;
 
   /// Named hand/foot target arcs for this move, keyed by end-bone id. Arcs are
   /// expanded before [ikTargetKeys], so exact keys can still override a single
@@ -727,6 +742,91 @@ class DanceBodyAccent {
     chestScaleY: _hasChest ? chestScaleY ?? 1 : null,
     ease: ease,
   );
+}
+
+class DanceBodyAccentOffset {
+  const DanceBodyAccentOffset({
+    required this.offsetFrames,
+    required this.radiusFrames,
+    this.rootDx,
+    this.rootDy,
+    this.rootRotation,
+    this.pelvisRotation,
+    this.chestRotation,
+    this.chestScaleX,
+    this.chestScaleY,
+    this.ease = Ease.easeInOut,
+  }) : assert(radiusFrames > 0, 'radiusFrames must be positive');
+
+  final int offsetFrames;
+  final int radiusFrames;
+  final double? rootDx;
+  final double? rootDy;
+  final double? rootRotation;
+  final double? pelvisRotation;
+  final double? chestRotation;
+  final double? chestScaleX;
+  final double? chestScaleY;
+  final Ease ease;
+
+  DanceBodyAccent toBodyAccent(int accentFrame) => DanceBodyAccent(
+    accentFrame + offsetFrames,
+    radiusFrames: radiusFrames,
+    rootDx: rootDx,
+    rootDy: rootDy,
+    rootRotation: rootRotation,
+    pelvisRotation: pelvisRotation,
+    chestRotation: chestRotation,
+    chestScaleX: chestScaleX,
+    chestScaleY: chestScaleY,
+    ease: ease,
+  );
+}
+
+class DanceMoveBodyAccent {
+  const DanceMoveBodyAccent({
+    required this.moveName,
+    required this.offsetFrames,
+    required this.radiusFrames,
+    this.rootDx,
+    this.rootDy,
+    this.rootRotation,
+    this.pelvisRotation,
+    this.chestRotation,
+    this.chestScaleX,
+    this.chestScaleY,
+    this.ease = Ease.easeInOut,
+  }) : assert(radiusFrames > 0, 'radiusFrames must be positive');
+
+  /// Must match [DanceMoveCue.name]. The body accent follows that cue's accent
+  /// frame when phrase timing changes.
+  final String moveName;
+  final int offsetFrames;
+  final int radiusFrames;
+  final double? rootDx;
+  final double? rootDy;
+  final double? rootRotation;
+  final double? pelvisRotation;
+  final double? chestRotation;
+  final double? chestScaleX;
+  final double? chestScaleY;
+  final Ease ease;
+
+  DanceBodyAccent toBodyAccent(DancePhrase phrase) {
+    final move = phrase.moveNamed(moveName);
+    return DanceBodyAccent(
+      move.accentFrame + offsetFrames,
+      radiusFrames: radiusFrames,
+      rootDx: rootDx,
+      rootDy: rootDy,
+      rootRotation: rootRotation,
+      pelvisRotation: pelvisRotation,
+      chestRotation: chestRotation,
+      chestScaleX: chestScaleX,
+      chestScaleY: chestScaleY,
+      ease: ease,
+    );
+  }
 }
 
 class DanceIkTargetKey {
@@ -1017,6 +1117,7 @@ class DanceMoveTargetOffsetArcPoint {
 class DanceRoleStyle {
   const DanceRoleStyle({
     this.bodyAccents = const <DanceBodyAccent>[],
+    this.moveBodyAccents = const <DanceMoveBodyAccent>[],
     this.moveTargetOffsetArcs = const <DanceMoveTargetOffsetArc>[],
     this.ikTargetOffsetArcs = const <String, List<DanceIkTargetOffsetArc>>{},
     this.ikTargetAccents = const <String, List<DanceIkTargetAccent>>{},
@@ -1025,6 +1126,9 @@ class DanceRoleStyle {
 
   /// Body-pocket/style pulses for this dancer role.
   final List<DanceBodyAccent> bodyAccents;
+
+  /// Move-addressed body pulses for role/style variation.
+  final List<DanceMoveBodyAccent> moveBodyAccents;
 
   /// Move-addressed IK target offset paths for role/style variation.
   final List<DanceMoveTargetOffsetArc> moveTargetOffsetArcs;
@@ -1038,8 +1142,10 @@ class DanceRoleStyle {
   /// Additive FK joint pulses, keyed by bone id.
   final Map<String, List<DanceJointAccent>> jointAccents;
 
-  List<DanceBodyKey> bodyKeys(DancePhrase phrase) =>
-      phrase.bodyAccentKeys(bodyAccents);
+  List<DanceBodyKey> bodyKeys(DancePhrase phrase) => phrase.bodyAccentKeys([
+    ...bodyAccents,
+    ...phrase.moveRoleBodyAccents(moveBodyAccents),
+  ]);
 
   List<DanceIkTargetKey> ikTargetKeys(
     DancePhrase phrase,

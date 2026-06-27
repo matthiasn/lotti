@@ -128,6 +128,14 @@ void main() {
               chestRotation: -0.04,
             ),
           ],
+          bodyAccentOffsets: [
+            DanceBodyAccentOffset(
+              offsetFrames: 1,
+              radiusFrames: 2,
+              pelvisRotation: 0.03,
+              chestScaleX: 1.01,
+            ),
+          ],
           ikTargetArcs: {
             'hand.R': [
               DanceIkTargetArc(
@@ -193,9 +201,11 @@ void main() {
         targetBoneId: 'hand.R',
       );
 
-      expect(bodyAccents.single.frame, 4);
-      expect(bodyAccents.single.rootDy, 1.5);
-      expect(bodyAccents.single.chestRotation, -0.04);
+      expect(bodyAccents.map((accent) => accent.frame), [4, 5]);
+      expect(bodyAccents.first.rootDy, 1.5);
+      expect(bodyAccents.first.chestRotation, -0.04);
+      expect(bodyAccents.last.pelvisRotation, 0.03);
+      expect(bodyAccents.last.chestScaleX, 1.01);
       expect(footKeys.map((key) => key.frame), [0, 4, 32]);
       expect(footKeys[1].rotation, 0.32);
       expect(handKeys.map((key) => key.frame), [0, 4, 32]);
@@ -506,6 +516,15 @@ void main() {
         bodyAccents: [
           DanceBodyAccent(8, radiusFrames: 2, rootDy: 2),
         ],
+        moveBodyAccents: [
+          DanceMoveBodyAccent(
+            moveName: 'right answer hit',
+            offsetFrames: 0,
+            radiusFrames: 2,
+            pelvisRotation: -0.04,
+            chestRotation: 0.05,
+          ),
+        ],
         ikTargetAccents: {
           'hand.L': [
             DanceIkTargetAccent(12, radiusFrames: 2, x: -4, y: -3),
@@ -540,8 +559,10 @@ void main() {
       final torsoKeys = style.jointKeys(phrase, 'torso');
       final missingJointKeys = style.jointKeys(phrase, 'head');
 
-      expect(bodyKeys.map((key) => key.frame), [6, 8, 10]);
+      expect(bodyKeys.map((key) => key.frame), [6, 8, 10, 18, 20, 22]);
       expect(bodyKeys[1].rootDy, 2);
+      expect(bodyKeys[4].pelvisRotation, -0.04);
+      expect(bodyKeys[4].chestRotation, 0.05);
       expect(handKeys.map((key) => key.frame), [
         10,
         12,
@@ -634,6 +655,19 @@ void main() {
         throwsRangeError,
       );
       expect(() => phrase.moveNamed('missing move'), throwsStateError);
+      expect(
+        () => phrase.moveRoleBodyAccents(
+          const [
+            DanceMoveBodyAccent(
+              moveName: 'missing move',
+              offsetFrames: 0,
+              radiusFrames: 2,
+              rootDy: 1,
+            ),
+          ],
+        ),
+        throwsStateError,
+      );
       expect(
         () => phrase.moveTargetOffsetArcKeys(
           const [
