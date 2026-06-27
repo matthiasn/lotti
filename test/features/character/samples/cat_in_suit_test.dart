@@ -228,6 +228,8 @@ void main() {
         const rightFeatureP = 3 / 8;
         const delayedEchoP = 5 / 8;
         const leftFeatureP = 3 / 4;
+        const rightAnswerSettleP = 15 / 32;
+        const leftFeatureSettleP = 28 / 32;
 
         expect(left.duration, lead.duration);
         expect(right.duration, lead.duration);
@@ -298,6 +300,22 @@ void main() {
           right,
           CatBones.handL,
         ).channel.sample(delayedEchoP);
+        final leadHandLRightAnswerSettle = _targetFor(
+          lead,
+          CatBones.handL,
+        ).channel.sample(rightAnswerSettleP);
+        final rightHandLRightAnswerSettle = _targetFor(
+          right,
+          CatBones.handL,
+        ).channel.sample(rightAnswerSettleP);
+        final leadHandRLeftFeatureSettle = _targetFor(
+          lead,
+          CatBones.handR,
+        ).channel.sample(leftFeatureSettleP);
+        final leftHandRLeftFeatureSettle = _targetFor(
+          left,
+          CatBones.handR,
+        ).channel.sample(leftFeatureSettleP);
         expect(leftHandR.x, closeTo(leadHandR.x - 12, 0.001));
         expect(leftHandR.y, closeTo(leadHandR.y - 7, 0.001));
         expect(
@@ -323,6 +341,17 @@ void main() {
         expect(
           rightHandLFirstAnswer.y,
           closeTo(leadHandLFirstAnswer.y - 6, 0.001),
+        );
+        expect(
+          rightHandLRightAnswerSettle.x,
+          closeTo(leadHandLRightAnswerSettle.x, 0.001),
+          reason:
+              'right backup inside-hand arc should settle back to neutral '
+              'before the next phrase answer',
+        );
+        expect(
+          rightHandLRightAnswerSettle.y,
+          closeTo(leadHandLRightAnswerSettle.y, 0.001),
         );
         expect(
           leftHandRFirstEcho.x,
@@ -356,6 +385,17 @@ void main() {
           closeTo(leadHandLDelayedEcho.x, 0.001),
           reason:
               'left backup should leave the delayed answer to the right dancer',
+        );
+        expect(
+          leftHandRLeftFeatureSettle.x,
+          closeTo(leadHandRLeftFeatureSettle.x, 0.001),
+          reason:
+              'left backup feature arc should not keep pulling the hand after '
+              'the side feature has settled',
+        );
+        expect(
+          leftHandRLeftFeatureSettle.y,
+          closeTo(leadHandRLeftFeatureSettle.y, 0.001),
         );
         expect(
           left.channels[CatBones.legUpperL]!.sample(supportCheckP).rotation,

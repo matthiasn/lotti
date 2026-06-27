@@ -207,6 +207,10 @@ stateDiagram-v2
   `DanceMoveSignature` can own those arcs directly, so a named cue such as a
   camera-answer hand lift carries its own target sweep while still allowing
   exact frame keys to override single silhouette-critical frames.
+  `DanceIkTargetOffsetArc` is the role/style counterpart: it emits neutral
+  start/end keys around a shaped offset path, so a backup dancer can answer a
+  move with a hand arc without dragging that offset through the rest of the
+  loop.
   `DanceRoleStyle` groups those body,
   IK-target, and joint accents by dancer role, which keeps backup/alternate
   styles as data overlays instead of separate hand-authored clip forks.

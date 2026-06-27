@@ -327,6 +327,21 @@ class DancePhrase {
     return List<DanceIkTargetKey>.unmodifiable(keys);
   }
 
+  List<DanceIkTargetKey> ikTargetOffsetArcKeys(
+    List<DanceIkTargetOffsetArc> arcs,
+  ) {
+    final keys = <DanceIkTargetKey>[];
+    for (final arc in arcs) {
+      final arcKeys = arc.keys;
+      for (final key in arcKeys) {
+        _checkFrame(key.frame);
+      }
+      keys.addAll(arcKeys);
+    }
+    keys.sort((a, b) => a.frame.compareTo(b.frame));
+    return List<DanceIkTargetKey>.unmodifiable(keys);
+  }
+
   void _checkFrame(int frame) {
     RangeError.checkValueInInterval(frame, 0, frameCount, 'frame');
   }
@@ -838,15 +853,86 @@ class DanceIkTargetAccent {
   );
 }
 
+class DanceIkTargetOffsetArc {
+  const DanceIkTargetOffsetArc({
+    required this.name,
+    required this.startFrame,
+    required this.peakFrame,
+    required this.endFrame,
+    required this.peakX,
+    required this.peakY,
+    this.controlPoints = const <DanceIkTargetOffsetArcPoint>[],
+    this.weight = 1,
+    this.ease = Ease.easeInOut,
+  }) : assert(startFrame < peakFrame, 'arc peak must follow start'),
+       assert(peakFrame < endFrame, 'arc end must follow peak');
+
+  /// Choreography-facing label for a role/style offset path.
+  final String name;
+  final int startFrame;
+  final int peakFrame;
+  final int endFrame;
+  final double peakX;
+  final double peakY;
+  final List<DanceIkTargetOffsetArcPoint> controlPoints;
+  final double weight;
+  final Ease ease;
+
+  List<DanceIkTargetKey> get keys {
+    final keys = [
+      DanceIkTargetKey(startFrame, x: 0, y: 0, weight: 0, ease: ease),
+      for (final point in controlPoints) point.toKey(weight, ease),
+      DanceIkTargetKey(
+        peakFrame,
+        x: peakX,
+        y: peakY,
+        weight: weight,
+        ease: ease,
+      ),
+      DanceIkTargetKey(endFrame, x: 0, y: 0, weight: 0, ease: ease),
+    ]..sort((a, b) => a.frame.compareTo(b.frame));
+    return keys;
+  }
+}
+
+class DanceIkTargetOffsetArcPoint {
+  const DanceIkTargetOffsetArcPoint(
+    this.frame, {
+    required this.x,
+    required this.y,
+    this.weight,
+    this.ease,
+  });
+
+  final int frame;
+  final double x;
+  final double y;
+  final double? weight;
+  final Ease? ease;
+
+  DanceIkTargetKey toKey(double defaultWeight, Ease defaultEase) =>
+      DanceIkTargetKey(
+        frame,
+        x: x,
+        y: y,
+        weight: weight ?? defaultWeight,
+        ease: ease ?? defaultEase,
+      );
+}
+
 class DanceRoleStyle {
   const DanceRoleStyle({
     this.bodyAccents = const <DanceBodyAccent>[],
+    this.ikTargetOffsetArcs = const <String, List<DanceIkTargetOffsetArc>>{},
     this.ikTargetAccents = const <String, List<DanceIkTargetAccent>>{},
     this.jointAccents = const <String, List<DanceJointAccent>>{},
   });
 
   /// Body-pocket/style pulses for this dancer role.
   final List<DanceBodyAccent> bodyAccents;
+
+  /// Local IK target offset paths, keyed by target/end bone id.
+  final Map<String, List<DanceIkTargetOffsetArc>> ikTargetOffsetArcs;
 
   /// Local IK target pulses, keyed by target/end bone id.
   final Map<String, List<DanceIkTargetAccent>> ikTargetAccents;
@@ -860,9 +946,25 @@ class DanceRoleStyle {
   List<DanceIkTargetKey> ikTargetKeys(
     DancePhrase phrase,
     String targetBoneId,
-  ) => phrase.ikTargetAccentKeys(
-    ikTargetAccents[targetBoneId] ?? const <DanceIkTargetAccent>[],
-  );
+  ) {
+    final keysByFrame = <int, DanceIkTargetKey>{};
+    void addKey(DanceIkTargetKey key) => keysByFrame[key.frame] = key;
+
+    phrase
+        .ikTargetOffsetArcKeys(
+          ikTargetOffsetArcs[targetBoneId] ?? const <DanceIkTargetOffsetArc>[],
+        )
+        .forEach(addKey);
+    phrase
+        .ikTargetAccentKeys(
+          ikTargetAccents[targetBoneId] ?? const <DanceIkTargetAccent>[],
+        )
+        .forEach(addKey);
+
+    final keys = keysByFrame.values.toList()
+      ..sort((a, b) => a.frame.compareTo(b.frame));
+    return List<DanceIkTargetKey>.unmodifiable(keys);
+  }
 
   List<DanceJointKey> jointKeys(
     DancePhrase phrase,

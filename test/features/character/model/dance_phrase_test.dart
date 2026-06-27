@@ -471,6 +471,22 @@ void main() {
             DanceIkTargetAccent(12, radiusFrames: 2, x: -4, y: -3),
           ],
         },
+        ikTargetOffsetArcs: {
+          'hand.L': [
+            DanceIkTargetOffsetArc(
+              name: 'backup hand scoop offset',
+              startFrame: 16,
+              peakFrame: 18,
+              endFrame: 20,
+              peakX: 7,
+              peakY: -5,
+              controlPoints: [
+                DanceIkTargetOffsetArcPoint(17, x: 4, y: -2),
+                DanceIkTargetOffsetArcPoint(19, x: 5, y: -3, weight: 0.6),
+              ],
+            ),
+          ],
+        },
         jointAccents: {
           'torso': [
             DanceJointAccent(20, radiusFrames: 4, rotation: 0.05),
@@ -486,9 +502,26 @@ void main() {
 
       expect(bodyKeys.map((key) => key.frame), [6, 8, 10]);
       expect(bodyKeys[1].rootDy, 2);
-      expect(handKeys.map((key) => key.frame), [10, 12, 14]);
+      expect(handKeys.map((key) => key.frame), [
+        10,
+        12,
+        14,
+        16,
+        17,
+        18,
+        19,
+        20,
+      ]);
       expect(handKeys[1].x, -4);
       expect(handKeys[1].y, -3);
+      expect(handKeys[3].weight, 0);
+      expect(handKeys[4].x, 4);
+      expect(handKeys[5].x, 7);
+      expect(handKeys[5].y, -5);
+      expect(handKeys[6].weight, 0.6);
+      expect(handKeys[7].x, 0);
+      expect(handKeys[7].y, 0);
+      expect(handKeys[7].weight, 0);
       expect(missingHandKeys, isEmpty);
       expect(torsoKeys.map((key) => key.frame), [16, 20, 24]);
       expect(torsoKeys[1].rotation, 0.05);
@@ -536,6 +569,21 @@ void main() {
               peakY: 1,
               endX: 2,
               endY: 2,
+            ),
+          ],
+        ),
+        throwsRangeError,
+      );
+      expect(
+        () => phrase.ikTargetOffsetArcKeys(
+          const [
+            DanceIkTargetOffsetArc(
+              name: 'bad offset',
+              startFrame: 28,
+              peakFrame: 31,
+              endFrame: 34,
+              peakX: 2,
+              peakY: -2,
             ),
           ],
         ),
