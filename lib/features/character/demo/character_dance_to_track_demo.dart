@@ -139,6 +139,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     CatClips.danceBackupLeft,
     CatClips.danceBackupRight,
   ];
+  late final Clip _idle = CatClips.idle;
+  late final List<Clip> _idleEnsemble = [_idle, _idle, _idle];
 
   late final Ticker _ticker; // 60 fps repaint pump; time comes from the player.
 
@@ -302,28 +304,35 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     return _sections.isEmpty ? null : _sections.last;
   }
 
-  /// The trio always dances beat-locked (the phrase loops via clipSecondsAt's
-  /// own modulo across the track), so there is always movement. The per-section
-  /// energy only drives the camera — zoomed in loud sections, wide in calm ones
-  /// (see [_onTick] / [CharacterPainter.danceCameraStrength]).
+  /// Picks the clip + clock for the current section: the beat-locked energetic
+  /// dance in loud sections, an eased idle (driven by raw playback time) in calm
+  /// ones — so the quiet intro stays calm until the beat kicks in. The phrase
+  /// loops via clipSecondsAt's own modulo across the track; the camera ramp
+  /// ([_onTick] / [CharacterPainter.danceCameraStrength]) glides in on the dance.
   _Stage _stageNow() {
     final pos = _player.state.position.inMicroseconds / 1e6;
     final section = _sectionAt(pos);
     final map = _map;
     final binding = _binding;
-    final seconds = (map != null && binding != null)
-        ? map.clipSecondsAt(
-            pos,
-            clipDuration: _danceLead.duration,
-            binding: binding,
-          )
-        : 0.0;
+    if ((section?.energetic ?? true) && map != null && binding != null) {
+      return (
+        lead: _danceLead,
+        ensemble: _danceEnsemble,
+        seconds: map.clipSecondsAt(
+          pos,
+          clipDuration: _danceLead.duration,
+          binding: binding,
+        ),
+        section: section,
+        energetic: true,
+      );
+    }
     return (
-      lead: _danceLead,
-      ensemble: _danceEnsemble,
-      seconds: seconds,
+      lead: _idle,
+      ensemble: _idleEnsemble,
+      seconds: pos,
       section: section,
-      energetic: section?.energetic ?? true,
+      energetic: false,
     );
   }
 
