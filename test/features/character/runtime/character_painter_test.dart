@@ -586,9 +586,11 @@ void main() {
       final centerPush = await boundsAt(1 / 8);
       final rightPan = await boundsAt(1 / 4);
       final rightClose = await boundsAt(3 / 8);
+      final rightHold = await boundsAt(7 / 16);
       final leadLevel = await boundsAt(1 / 2);
       final leftPan = await boundsAt(5 / 8);
       final leftClose = await boundsAt(3 / 4);
+      final leftHold = await boundsAt(13 / 16);
       final reset = await boundsAt(1);
 
       expect(
@@ -620,6 +622,17 @@ void main() {
         reason: 'the tight right pass should intentionally crop to upper body',
       );
       expect(
+        rightHold.orangeCenterX,
+        closeTo(rightClose.orangeCenterX, 24),
+        reason:
+            'the right feature should settle for a short held shot instead of '
+            'drifting immediately back to centre',
+      );
+      expect(
+        rightHold.orangeHeight,
+        closeTo(rightClose.orangeHeight, rightClose.orangeHeight * 0.08),
+      );
+      expect(
         leadLevel.orangeCenterX,
         closeTo(wide.orangeCenterX, 48),
         reason: 'after the tight right pass, the camera should reset to lead',
@@ -642,6 +655,16 @@ void main() {
         leftClose.orangeHeight,
         greaterThan(leftPan.orangeHeight * 1.08),
         reason: 'the left-side pass should also push in before the reset',
+      );
+      expect(
+        leftHold.orangeCenterX,
+        closeTo(leftClose.orangeCenterX, 36),
+        reason:
+            'the left feature should also hold briefly before the wide reset',
+      );
+      expect(
+        leftHold.orangeHeight,
+        closeTo(leftClose.orangeHeight, leftClose.orangeHeight * 0.08),
       );
       expect(
         reset.orangeHeight,
