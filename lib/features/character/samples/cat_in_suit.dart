@@ -1409,6 +1409,18 @@ class CatClips {
           chestScaleX: 1.038,
         ),
         DanceBodyAccentOffset(
+          offsetFrames: 1,
+          radiusFrames: 1,
+          // Hold the komole pocket for one extra count after the F20 load:
+          // the planted right foot stays fixed while the torso compresses
+          // again, so F21 reads as a low dance dip rather than a pass-through.
+          rootDy: 0.54,
+          pelvisRotation: -0.028,
+          chestRotation: 0.035,
+          chestScaleY: 0.976,
+          chestScaleX: 1.012,
+        ),
+        DanceBodyAccentOffset(
           offsetFrames: 2,
           radiusFrames: 1,
           // Center close-up release: after the F20 load, the chest rolls back
@@ -1432,24 +1444,24 @@ class CatClips {
           // the close-up reads as isolation instead of one simultaneous pose.
           DanceIkTargetKey(20, x: -55.8, y: 21.8),
           DanceIkTargetKey(21, x: -65, y: 18.4),
-          DanceIkTargetKey(22, x: -82.6, y: 14.2),
-          DanceIkTargetKey(23, x: -83, y: 12.7),
+          DanceIkTargetKey(22, x: -85.4, y: 13.8),
+          DanceIkTargetKey(23, x: -87.2, y: 12.2),
         ],
         CatBones.handR: [
           DanceIkTargetKey(18, x: 72.8, y: 23.2),
           DanceIkTargetKey(19, x: 74.8, y: 18.4),
           DanceIkTargetKey(20, x: 72.4, y: 18.8),
           DanceIkTargetKey(21, x: 67.4, y: 20.4),
-          DanceIkTargetKey(22, x: 86.4, y: 14.2),
-          DanceIkTargetKey(23, x: 100.2, y: 9.8),
+          DanceIkTargetKey(22, x: 88.4, y: 13.9),
+          DanceIkTargetKey(23, x: 100.8, y: 9.6),
         ],
         CatBones.footL: [
           DanceIkTargetKey(18, x: -58, y: 101.4),
           DanceIkTargetKey(19, x: -71.2, y: 98),
-          DanceIkTargetKey(20, x: -78.8, y: 97.2),
-          DanceIkTargetKey(21, x: -71.2, y: 100.4),
-          DanceIkTargetKey(22, x: -56.5, y: 103.4),
-          DanceIkTargetKey(23, x: -38, y: 103.2),
+          DanceIkTargetKey(20, x: -82.6, y: 96.6),
+          DanceIkTargetKey(21, x: -75.6, y: 99.6),
+          DanceIkTargetKey(22, x: -54.2, y: 103.8),
+          DanceIkTargetKey(23, x: -34.6, y: 103.4),
         ],
         CatBones.footR: [
           // The right foot is the support here; keep it nearly planted while
