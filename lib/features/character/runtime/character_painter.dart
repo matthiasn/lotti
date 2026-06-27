@@ -135,7 +135,7 @@ class CharacterPainter extends CustomPainter {
   // Keep the cat this far from the stage edges as it walks back and forth.
   static const double _edgeMargin = 44;
   static const double _pairScaleFactor = 0.7;
-  static const double _trioScaleFactor = 0.54;
+  static const double _trioScaleFactor = 0.51;
   static const double _pairSpacing = 215;
   static const double _trioSpacing = 238;
 
@@ -149,12 +149,11 @@ class CharacterPainter extends CustomPainter {
         ? _danceCamera(timeSeconds, clip.duration)
         : (zoom: 1.0, dx: 0.0, dy: 0.0);
 
-    canvas
-      ..save()
-      ..clipRect(Offset.zero & size);
-    _applySceneCamera(canvas, size, sceneCamera);
-
     if (backdrop == CharacterBackdrop.waterfront) {
+      canvas
+        ..save()
+        ..clipRect(Offset.zero & size);
+      _applyParallaxCamera(canvas, size, sceneCamera);
       _paintWaterfrontBackdrop(
         canvas,
         size,
@@ -164,7 +163,15 @@ class CharacterPainter extends CustomPainter {
         backdropCloudsImage,
         backdropWavesImage,
       );
-    } else if (groundColor != null) {
+      canvas.restore();
+    }
+
+    canvas
+      ..save()
+      ..clipRect(Offset.zero & size);
+    _applySceneCamera(canvas, size, sceneCamera);
+
+    if (backdrop != CharacterBackdrop.waterfront && groundColor != null) {
       canvas.drawRect(
         Rect.fromLTWH(0, floorY, size.width, size.height - floorY),
         Paint()..color = groundColor!,
@@ -301,6 +308,22 @@ class CharacterPainter extends CustomPainter {
       ..translate(-pivot.dx, -pivot.dy);
   }
 
+  static void _applyParallaxCamera(
+    Canvas canvas,
+    Size size,
+    ({double zoom, double dx, double dy}) camera,
+  ) {
+    _applySceneCamera(
+      canvas,
+      size,
+      (
+        zoom: 1 + (camera.zoom - 1) * 0.34,
+        dx: camera.dx * 0.28,
+        dy: camera.dy * 0.18,
+      ),
+    );
+  }
+
   static double _scaleFactor(int memberCount) =>
       memberCount >= 3 ? _trioScaleFactor : _pairScaleFactor;
 
@@ -330,53 +353,35 @@ class CharacterPainter extends CustomPainter {
     return (
       zoom: _smoothKeys(p, const [
         (p: 0, v: 1.0),
-        (p: 1 / 16, v: 1.04),
-        (p: 3 / 32, v: 1.025),
-        (p: 1 / 8, v: 1.06),
-        (p: 3 / 16, v: 1.08),
-        (p: 1 / 4, v: 1.1),
-        (p: 3 / 8, v: 1.11),
-        (p: 7 / 16, v: 1.12),
-        (p: 15 / 32, v: 1.11),
-        (p: 1 / 2, v: 1.09),
-        (p: 17 / 32, v: 1.08),
-        (p: 5 / 8, v: 1.12),
-        (p: 3 / 4, v: 1.16),
-        (p: 13 / 16, v: 1.14),
-        (p: 29 / 32, v: 1.04),
+        (p: 1 / 8, v: 1.035),
+        (p: 1 / 4, v: 1.075),
+        (p: 3 / 8, v: 1.105),
+        (p: 1 / 2, v: 1.125),
+        (p: 5 / 8, v: 1.135),
+        (p: 3 / 4, v: 1.125),
+        (p: 7 / 8, v: 1.055),
         (p: 1, v: 1.0),
       ]),
       dx: _smoothKeys(p, const [
         (p: 0, v: 0.0),
-        (p: 1 / 8, v: 0.0),
-        (p: 3 / 16, v: -10.0),
-        (p: 7 / 32, v: -18.0),
-        (p: 1 / 4, v: -28.0),
-        (p: 3 / 8, v: -34.0),
-        (p: 7 / 16, v: -34.0),
-        (p: 15 / 32, v: -30.0),
-        (p: 1 / 2, v: -20.0),
-        (p: 17 / 32, v: -6.0),
-        (p: 5 / 8, v: 30.0),
-        (p: 3 / 4, v: 44.0),
-        (p: 13 / 16, v: 38.0),
-        (p: 29 / 32, v: 6.0),
+        (p: 1 / 8, v: -8.0),
+        (p: 1 / 4, v: -24.0),
+        (p: 3 / 8, v: -38.0),
+        (p: 1 / 2, v: -30.0),
+        (p: 5 / 8, v: 8.0),
+        (p: 3 / 4, v: 38.0),
+        (p: 7 / 8, v: 26.0),
         (p: 1, v: 0.0),
       ]),
       dy: _smoothKeys(p, const [
         (p: 0, v: 0.0),
-        (p: 1 / 8, v: -2.0),
-        (p: 3 / 16, v: -3.0),
-        (p: 1 / 4, v: -4.0),
-        (p: 3 / 8, v: -6.0),
-        (p: 7 / 16, v: -6.0),
-        (p: 15 / 32, v: -6.0),
-        (p: 1 / 2, v: -5.0),
-        (p: 17 / 32, v: -4.0),
-        (p: 5 / 8, v: -5.0),
-        (p: 3 / 4, v: -6.0),
-        (p: 13 / 16, v: -5.0),
-        (p: 29 / 32, v: 0.0),
+        (p: 1 / 8, v: -1.0),
+        (p: 1 / 4, v: -2.0),
+        (p: 3 / 8, v: -3.5),
+        (p: 1 / 2, v: -4.5),
+        (p: 5 / 8, v: -4.5),
+        (p: 3 / 4, v: -3.0),
+        (p: 7 / 8, v: -1.0),
         (p: 1, v: 0.0),
       ]),
     );

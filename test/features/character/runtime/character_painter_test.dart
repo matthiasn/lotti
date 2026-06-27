@@ -906,11 +906,11 @@ void main() {
         leadLevel.orangeHeight,
         inInclusiveRange(
           rightClose.orangeHeight * 0.9,
-          rightClose.orangeHeight * 1.06,
+          rightClose.orangeHeight * 1.12,
         ),
         reason:
-            'the right-pass recovery should avoid the visible scale reset that '
-            'made frames 15-16 pop',
+            'the right-pass recovery should continue the slow dolly without '
+            'popping into a close-up or resetting scale early',
       );
       expect(
         postRightRecovery.orangeCenterX,
@@ -921,10 +921,10 @@ void main() {
       );
       expect(
         postRightRecovery.orangeHeight,
-        lessThan(wide.orangeHeight * 1.12),
+        lessThan(wide.orangeHeight * 1.18),
         reason:
-            'after the recovery beat, the camera should zoom out enough to '
-            'restore ensemble readability',
+            'after the recovery beat, the camera should continue the slow '
+            'arc as a medium-wide move without becoming a cropped close-up',
       );
       expect(
         leftPan.orangeCenterX - postRightRecovery.orangeCenterX,
