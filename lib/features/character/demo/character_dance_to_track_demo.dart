@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
 import 'package:lotti/features/character/model/clip.dart';
@@ -167,6 +169,12 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   double _bpm = 0;
   bool _loop = true;
   bool _showCaptions = true;
+  // Dev A/B switch: the new layered blue-hour scene vs. the old single-plate
+  // waterfront backdrop.
+  bool _useNewBackdrop = true;
+  ui.Image? _backdrop;
+  ui.Image? _clouds;
+  ui.Image? _waves;
   double _cameraStrength = 0; // eased dance-camera ramp (0 = neutral, 1 = full)
   double _mouthOpen =
       0; // eased lead mouth open, driven by the active lyric word
@@ -186,6 +194,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     super.initState();
     _ticker = createTicker(_onTick)..start();
     unawaited(_load());
+    // Old-backdrop plate, loaded so the A/B toggle can switch to it instantly.
+    unawaited(_loadBackdrop());
   }
 
   // Per-frame: repaint, and ease the dance-camera strength toward the current
@@ -471,10 +481,40 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     if (mounted) setState(() {});
   }
 
+  Future<void> _loadBackdrop() async {
+    final images = await Future.wait([
+      _loadUiImage(kCharacterWaterfrontBackdropAsset),
+      _loadUiImage(kCharacterWaterfrontCloudsAsset),
+      _loadUiImage(kCharacterWaterfrontWavesAsset),
+    ]);
+    if (!mounted) {
+      for (final image in images) {
+        image.dispose();
+      }
+      return;
+    }
+    setState(() {
+      _backdrop = images[0];
+      _clouds = images[1];
+      _waves = images[2];
+    });
+  }
+
+  Future<ui.Image> _loadUiImage(String asset) async {
+    final data = await rootBundle.load(asset);
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final frame = await codec.getNextFrame();
+    codec.dispose();
+    return frame.image;
+  }
+
   @override
   void dispose() {
     _ticker.dispose();
     unawaited(_player.dispose());
+    _backdrop?.dispose();
+    _clouds?.dispose();
+    _waves?.dispose();
     super.dispose();
   }
 
@@ -513,11 +553,13 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                   fit: StackFit.expand,
                   children: [
                     // Layered blue-hour scene behind the dancers, driven by the
-                    // same audio/dance clock so it moves with the music.
-                    LayeredBackdrop(
-                      scene: BackdropScene.blueHourWaterfront(),
-                      timeSeconds: stage.seconds,
-                    ),
+                    // same audio/dance clock so it moves with the music. Toggle
+                    // to the old single-plate waterfront via the panel button.
+                    if (_useNewBackdrop)
+                      LayeredBackdrop(
+                        scene: BackdropScene.blueHourWaterfront(),
+                        timeSeconds: stage.seconds,
+                      ),
                     CustomPaint(
                       painter: CharacterPainter(
                         scene: _lead,
@@ -542,8 +584,15 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                         danceCameraStrength: _cameraStrength,
                         scale: scale,
                         groundColor: const Color(0xFF374551),
-                        // backdrop defaults to CharacterBackdrop.none — the
-                        // LayeredBackdrop above provides the scene now.
+                        // New scene: LayeredBackdrop draws everything, so the
+                        // painter's own backdrop is off. Old scene: the painter
+                        // draws the single waterfront plate.
+                        backdrop: _useNewBackdrop
+                            ? CharacterBackdrop.none
+                            : CharacterBackdrop.waterfront,
+                        backdropImage: _useNewBackdrop ? null : _backdrop,
+                        backdropCloudsImage: _useNewBackdrop ? null : _clouds,
+                        backdropWavesImage: _useNewBackdrop ? null : _waves,
                         renderer: _renderer,
                       ),
                       child: const SizedBox.expand(),
@@ -604,6 +653,18 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                   color: _showCaptions && _words.isNotEmpty
                       ? Colors.tealAccent
                       : Colors.white38,
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                onPressed: () =>
+                    setState(() => _useNewBackdrop = !_useNewBackdrop),
+                tooltip: _useNewBackdrop
+                    ? 'New blue-hour scene'
+                    : 'Old waterfront plate',
+                icon: Icon(
+                  _useNewBackdrop ? Icons.nightlight_round : Icons.image,
+                  color: _useNewBackdrop ? Colors.tealAccent : Colors.white38,
                 ),
               ),
               const SizedBox(width: 12),
