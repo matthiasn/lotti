@@ -127,6 +127,25 @@ void main() {
               chestRotation: -0.04,
             ),
           ],
+          ikTargetArcs: {
+            'hand.R': [
+              DanceIkTargetArc(
+                name: 'right hand move-level lift',
+                startFrame: 4,
+                peakFrame: 6,
+                endFrame: 8,
+                startX: 18,
+                startY: 30,
+                peakX: 48,
+                peakY: -12,
+                endX: 28,
+                endY: 24,
+                controlPoints: [
+                  DanceIkTargetArcPoint(5, x: 36, y: 10),
+                ],
+              ),
+            ],
+          },
           jointKeys: {
             'foot.R': [
               DanceJointKey(4, rotation: 0.32),
@@ -135,6 +154,9 @@ void main() {
           ikTargetKeys: {
             'hand.L': [
               DanceIkTargetKey(4, x: -42, y: 6),
+            ],
+            'hand.R': [
+              DanceIkTargetKey(6, x: 42, y: -8),
             ],
           },
         ),
@@ -159,6 +181,16 @@ void main() {
         signatures: signatures,
         targetBoneId: 'hand.L',
       );
+      final rightHandKeys = phrase.mergeIkTargetKeys(
+        baseKeys: const [
+          DanceIkTargetKey(0, x: 12, y: 24),
+          DanceIkTargetKey(4, x: 16, y: 28),
+          DanceIkTargetKey(8, x: 20, y: 28),
+          DanceIkTargetKey(32, x: 12, y: 24),
+        ],
+        signatures: signatures,
+        targetBoneId: 'hand.R',
+      );
 
       expect(bodyAccents.single.frame, 4);
       expect(bodyAccents.single.rootDy, 1.5);
@@ -168,6 +200,12 @@ void main() {
       expect(handKeys.map((key) => key.frame), [0, 4, 32]);
       expect(handKeys[1].x, -42);
       expect(handKeys[1].y, 6);
+      expect(rightHandKeys.map((key) => key.frame), [0, 4, 5, 6, 8, 32]);
+      expect(rightHandKeys[1].x, 18);
+      expect(rightHandKeys[2].x, 36);
+      expect(rightHandKeys[3].x, 42);
+      expect(rightHandKeys[3].y, -8);
+      expect(rightHandKeys[4].x, 28);
     });
 
     test('builds joint channels from frame-addressed keys', () {

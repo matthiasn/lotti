@@ -204,6 +204,9 @@ stateDiagram-v2
   duplicating the whole coordinate track. `DanceIkTargetArc` groups named
   hand/foot sweeps as start, peak, settle, and optional control points so
   choreography can point to a move instead of an anonymous run of coordinates.
+  `DanceMoveSignature` can own those arcs directly, so a named cue such as a
+  camera-answer hand lift carries its own target sweep while still allowing
+  exact frame keys to override single silhouette-critical frames.
   `DanceRoleStyle` groups those body,
   IK-target, and joint accents by dancer role, which keeps backup/alternate
   styles as data overlays instead of separate hand-authored clip forks.

@@ -295,6 +295,11 @@ class DancePhrase {
     baseKeys.forEach(addKey);
     for (final signature in signatures) {
       _checkSignatureMove(signature);
+      for (final arc
+          in signature.ikTargetArcs[targetBoneId] ??
+              const <DanceIkTargetArc>[]) {
+        arc.keys.forEach(addKey);
+      }
       (signature.ikTargetKeys[targetBoneId] ?? const <DanceIkTargetKey>[])
           .forEach(addKey);
     }
@@ -459,6 +464,7 @@ class DanceMoveSignature {
   const DanceMoveSignature({
     required this.moveName,
     this.bodyAccents = const <DanceBodyAccent>[],
+    this.ikTargetArcs = const <String, List<DanceIkTargetArc>>{},
     this.ikTargetKeys = const <String, List<DanceIkTargetKey>>{},
     this.jointKeys = const <String, List<DanceJointKey>>{},
   });
@@ -469,6 +475,11 @@ class DanceMoveSignature {
 
   /// Additive body pulses that define the move's weight or shoulder action.
   final List<DanceBodyAccent> bodyAccents;
+
+  /// Named hand/foot target arcs for this move, keyed by end-bone id. Arcs are
+  /// expanded before [ikTargetKeys], so exact keys can still override a single
+  /// frame in the generated path when a silhouette needs manual correction.
+  final Map<String, List<DanceIkTargetArc>> ikTargetArcs;
 
   /// Absolute IK target keys for this move, keyed by end-bone id. These replace
   /// base keys on matching frames when compiled by [DancePhrase.mergeIkTargetKeys].

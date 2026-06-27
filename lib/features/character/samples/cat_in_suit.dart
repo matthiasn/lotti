@@ -1132,6 +1132,26 @@ class CatClips {
     ),
     DanceMoveSignature(
       moveName: 'right-side camera answer',
+      ikTargetArcs: {
+        CatBones.handR: [
+          DanceIkTargetArc(
+            name: 'right hand camera-answer lift',
+            startFrame: 14,
+            peakFrame: 16,
+            endFrame: 18,
+            startX: 54.4,
+            startY: 29.2,
+            peakX: 80.2,
+            peakY: 14.6,
+            endX: 72.8,
+            endY: 23.2,
+            controlPoints: [
+              DanceIkTargetArcPoint(15, x: 70.2, y: 22.4),
+              DanceIkTargetArcPoint(17, x: 78.6, y: 18.4),
+            ],
+          ),
+        ],
+      },
       ikTargetKeys: {
         CatBones.handL: [
           DanceIkTargetKey(12, x: -52.6, y: 22.2),
@@ -1139,13 +1159,6 @@ class CatClips {
           DanceIkTargetKey(14, x: -66.4, y: 26.1),
           DanceIkTargetKey(15, x: -59.6, y: 28),
           DanceIkTargetKey(16, x: -47, y: 31.5),
-        ],
-        CatBones.handR: [
-          DanceIkTargetKey(14, x: 54.4, y: 29.2),
-          DanceIkTargetKey(15, x: 70.2, y: 22.4),
-          DanceIkTargetKey(16, x: 80.2, y: 14.6),
-          DanceIkTargetKey(17, x: 78.6, y: 18.4),
-          DanceIkTargetKey(18, x: 72.8, y: 23.2),
         ],
       },
       jointKeys: {
@@ -1682,7 +1695,7 @@ class CatClips {
             DanceIkTargetKey(17, x: -5.3, y: 99.2),
             DanceIkTargetKey(18, x: -3.4, y: 99.6),
             DanceIkTargetKey(19, x: -4.9, y: 99.3),
-            DanceIkTargetKey(20, x: -5.9, y: 99.5),
+            DanceIkTargetKey(20, x: -9.2, y: 99.5),
             DanceIkTargetKey(21, x: -4.1, y: 100.3),
             DanceIkTargetKey(22, x: -1, y: 101.5),
             DanceIkTargetKey(23, x: 1.9, y: 102.4),
@@ -2254,26 +2267,6 @@ class CatClips {
             DanceIkTargetKey(12, x: 44.8, y: 30.3),
             DanceIkTargetKey(13, x: 48.6, y: 30.2),
           ],
-          ..._dancePhrase.ikTargetArcKeys(
-            const [
-              DanceIkTargetArc(
-                name: 'right hand lift answer',
-                startFrame: 14,
-                peakFrame: 16,
-                endFrame: 18,
-                startX: 54.4,
-                startY: 29.2,
-                peakX: 94.6,
-                peakY: 10.1,
-                endX: 72.8,
-                endY: 23.2,
-                controlPoints: [
-                  DanceIkTargetArcPoint(15, x: 74, y: 23.6),
-                  DanceIkTargetArcPoint(17, x: 87.6, y: 15.5),
-                ],
-              ),
-            ],
-          ),
           ...const [
             DanceIkTargetKey(19, x: 61.4, y: 27.2),
             DanceIkTargetKey(20, x: 60, y: 27.9),
