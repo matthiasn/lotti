@@ -1076,16 +1076,16 @@ class CatClips {
       bodyAccentOffsets: [
         DanceBodyAccentOffset(
           offsetFrames: 1,
-          radiusFrames: 1,
+          radiusFrames: 2,
           // Foot hits on F4; the shoulder/torso answers on F5. That tiny lag
           // is the difference between a posed mascot hit and a danced pocket.
           // Make it a real Lagos-party pocket: the body sinks after the toe
           // step, the hip keeps loading, and the chest bites back a frame late.
           rootDy: 0.7,
-          pelvisRotation: -0.045,
-          chestRotation: -0.13,
-          chestScaleY: 0.962,
-          chestScaleX: 1.03,
+          pelvisRotation: -0.03,
+          chestRotation: -0.072,
+          chestScaleY: 0.974,
+          chestScaleX: 1.02,
         ),
         DanceBodyAccentOffset(
           offsetFrames: 3,

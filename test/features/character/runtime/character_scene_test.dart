@@ -487,11 +487,13 @@ void main() {
 
     test('dance keeps the head rigid while the torso squashes', () {
       final scene = CharacterScene(buildCatInSuitRig());
-      const samples = 48;
+      const samples = 120;
       var minTorsoScaleY = double.infinity;
       var maxTorsoScaleY = double.negativeInfinity;
       var minHeadY = double.infinity;
       var maxHeadY = double.negativeInfinity;
+      var maxHeadStep = 0.0;
+      ({double x, double y})? previousHeadOrigin;
 
       for (var i = 0; i < samples; i++) {
         final frame = scene.frameAt(
@@ -508,6 +510,14 @@ void main() {
         maxTorsoScaleY = math.max(maxTorsoScaleY, torsoScaleY);
         minHeadY = math.min(minHeadY, head.ty);
         maxHeadY = math.max(maxHeadY, head.ty);
+        final headOrigin = (x: head.tx, y: head.ty);
+        final previous = previousHeadOrigin;
+        if (previous != null) {
+          final dx = headOrigin.x - previous.x;
+          final dy = headOrigin.y - previous.y;
+          maxHeadStep = math.max(maxHeadStep, math.sqrt(dx * dx + dy * dy));
+        }
+        previousHeadOrigin = headOrigin;
         expect(
           headScaleX,
           closeTo(1, 1e-6),
@@ -531,6 +541,13 @@ void main() {
         reason:
             'dance head travel should read like a rigid skull riding the body, '
             'not a rubber bobble',
+      );
+      expect(
+        maxHeadStep,
+        lessThan(10.5),
+        reason:
+            'the Shaku chest bite should not whip the rigid skull sideways '
+            'between dense frame samples',
       );
     });
 
