@@ -1038,13 +1038,38 @@ class CatClips {
   static const _danceLeadMoveSignatures = [
     DanceMoveSignature(
       moveName: 'lead Shaku pocket hit',
+      bodyAccentOffsets: [
+        DanceBodyAccentOffset(
+          offsetFrames: 1,
+          radiusFrames: 1,
+          // Foot hits on F4; the shoulder/torso answers on F5. That tiny lag
+          // is the difference between a posed mascot hit and a danced pocket.
+          rootDy: 0.35,
+          pelvisRotation: -0.018,
+          chestRotation: -0.085,
+          chestScaleY: 0.982,
+          chestScaleX: 1.012,
+        ),
+      ],
       ikTargetKeys: {
         CatBones.handL: [
+          DanceIkTargetKey(2, x: -32.4, y: 33.2),
+          DanceIkTargetKey(4, x: -22.6, y: 30.4),
+          DanceIkTargetKey(5, x: -16.8, y: 30.8),
           DanceIkTargetKey(6, x: -19.7, y: 30.4),
           // Frame 7 bridges the crossed pocket into the shoulder scoop. The
           // old path jumped straight out to the side here, which made the
           // section change read as a snap instead of a pickup.
           DanceIkTargetKey(7, x: -39.5, y: 30.8),
+        ],
+        CatBones.handR: [
+          // Loose opposite-side elbow lift: the right foot steps out first,
+          // then this hand floats up a frame later instead of mirroring the
+          // left hand into a stiff X.
+          DanceIkTargetKey(2, x: 34.8, y: 28.8),
+          DanceIkTargetKey(4, x: 47.8, y: 21.6),
+          DanceIkTargetKey(5, x: 39.6, y: 27.8),
+          DanceIkTargetKey(6, x: 30.5, y: 32),
         ],
         CatBones.footL: [
           // Plant the support foot for the Shaku/Gbese pocket. Earlier, the
@@ -1249,6 +1274,16 @@ class CatClips {
           DanceJointKey(16, rotation: 0.04),
           DanceJointKey(17, rotation: 0.18),
           DanceJointKey(18, rotation: 0.34),
+        ],
+        CatBones.footL: [
+          DanceJointKey(13, rotation: 0.42),
+          DanceJointKey(14, rotation: 0.08),
+          DanceJointKey(15, rotation: 0.28),
+        ],
+        CatBones.footR: [
+          DanceJointKey(13, rotation: -0.22),
+          DanceJointKey(14, rotation: -0.02),
+          DanceJointKey(15, rotation: -0.14),
         ],
       },
     ),

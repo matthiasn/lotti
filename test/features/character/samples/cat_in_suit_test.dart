@@ -932,6 +932,20 @@ void main() {
       final openingFreeRightRecoil = leadFootRTarget.sample(
         6 / phrase.frameCount,
       );
+      final openingStepRightHand = _targetFor(
+        lead,
+        CatBones.handR,
+      ).channel.sample(4 / phrase.frameCount);
+      final openingStepLeftHand = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(4 / phrase.frameCount);
+      final openingStepShoulder = leadChannels[CatBones.torso]!.sample(
+        4 / phrase.frameCount,
+      );
+      final openingDelayedShoulder = leadChannels[CatBones.torso]!.sample(
+        5 / phrase.frameCount,
+      );
       expect(
         openingDownbeat.dy,
         greaterThan(openingPlant.dy + 0.4),
@@ -973,6 +987,27 @@ void main() {
         reason:
             'after the step-out, the free right foot should recoil through the '
             'floor instead of freezing at the side',
+      );
+      expect(
+        openingStepRightHand.y,
+        lessThan(openingStepLeftHand.y - 6),
+        reason:
+            'the opening groove should have a loose opposite-side elbow lift, '
+            'not two mirrored hands at belly height',
+      );
+      expect(
+        openingStepRightHand.x - openingStepLeftHand.x,
+        greaterThan(65),
+        reason:
+            'the opening arms should break symmetry into a relaxed Lagos-party '
+            'shape after the foot hits',
+      );
+      expect(
+        openingDelayedShoulder.rotation,
+        lessThan(openingStepShoulder.rotation - 0.04),
+        reason:
+            'the opening shoulder should answer one frame after the foot hit; '
+            'if shoulder and foot land together, the phrase reads robotic',
       );
       expect(
         (shakuSink.dx - shakuHit.dx).abs(),
@@ -1112,6 +1147,18 @@ void main() {
       final answerSinkRight = leadFootRTarget.sample(14 / phrase.frameCount);
       final answerUncrossLeft = leadFootLTarget.sample(15 / phrase.frameCount);
       final answerUncrossRight = leadFootRTarget.sample(15 / phrase.frameCount);
+      final zankuLiftLeftFoot = leadChannels[CatBones.footL]!.sample(
+        13 / phrase.frameCount,
+      );
+      final zankuStampLeftFoot = leadChannels[CatBones.footL]!.sample(
+        14 / phrase.frameCount,
+      );
+      final zankuFlickRightFoot = leadChannels[CatBones.footR]!.sample(
+        13 / phrase.frameCount,
+      );
+      final zankuStampRightFoot = leadChannels[CatBones.footR]!.sample(
+        14 / phrase.frameCount,
+      );
       expect(
         answerSinkLeft.y,
         greaterThan(answerCrossLeft.y + 4),
@@ -1136,6 +1183,21 @@ void main() {
         reason:
             'the crossing right foot should stay low enough to read as '
             'footwork instead of a hidden knee lift',
+      );
+      expect(
+        zankuLiftLeftFoot.rotation,
+        greaterThan(zankuStampLeftFoot.rotation + 0.25),
+        reason:
+            'F13 should show the lifted-knee/toe accent before the F14 stamp, '
+            'so the camera-answer beat reads zanku-inspired rather than a '
+            'plain side sway',
+      );
+      expect(
+        zankuFlickRightFoot.rotation,
+        lessThan(zankuStampRightFoot.rotation - 0.12),
+        reason:
+            'the opposite foot should heel-flick during the F13 lift before '
+            'both feet settle into the stamp',
       );
       final rightArmDelta =
           right.channels[CatBones.armUpperL]!.sample(rightCueP).rotation -

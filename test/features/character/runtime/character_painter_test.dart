@@ -859,12 +859,12 @@ void main() {
       expect(
         rightClose.orangeHeight,
         inInclusiveRange(
-          wide.orangeHeight * 1.24,
-          wide.orangeHeight * 1.48,
+          wide.orangeHeight * 1.55,
+          wide.orangeHeight * 1.9,
         ),
         reason:
-            'the right-side pass should be an intentional torso close-up, not '
-            'another barely-moving medium-wide shot',
+            'the right-side pass should commit to a face/torso close-up, not '
+            'another mostly full-body medium-wide shot',
       );
       expect(
         rightClose.contentMinX,
@@ -924,7 +924,7 @@ void main() {
       );
       expect(
         postRightRecovery.orangeHeight,
-        greaterThan(wide.orangeHeight * 1.24),
+        greaterThan(wide.orangeHeight * 1.5),
         reason:
             'the camera should still be in face/torso territory at the middle '
             'of the shot phrase',
@@ -938,7 +938,7 @@ void main() {
       );
       expect(
         leftClose.orangeHeight,
-        inInclusiveRange(wide.orangeHeight * 1.16, wide.orangeHeight * 1.42),
+        inInclusiveRange(wide.orangeHeight * 1.34, wide.orangeHeight * 1.72),
         reason:
             'the left-side pass should stay visibly pushed in before the final '
             'pull-out',

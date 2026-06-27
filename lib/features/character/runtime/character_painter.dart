@@ -135,7 +135,7 @@ class CharacterPainter extends CustomPainter {
   // Keep the cat this far from the stage edges as it walks back and forth.
   static const double _edgeMargin = 44;
   static const double _pairScaleFactor = 0.7;
-  static const double _trioScaleFactor = 0.51;
+  static const double _trioScaleFactor = 0.48;
   static const double _pairSpacing = 215;
   static const double _trioSpacing = 238;
 
@@ -351,37 +351,40 @@ class CharacterPainter extends CustomPainter {
   ) {
     final p = _cyclePhase(timeSeconds, duration);
     return (
+      // Shot plan: establish the trio, push into the lead's face/torso, truck
+      // across the side dancers, then pull back. The easing keeps it on rails
+      // rather than feeling like a fast handheld pan.
       zoom: _smoothKeys(p, const [
         (p: 0, v: 1.0),
-        (p: 1 / 8, v: 1.08),
-        (p: 1 / 4, v: 1.22),
-        (p: 3 / 8, v: 1.38),
-        (p: 1 / 2, v: 1.46),
-        (p: 5 / 8, v: 1.42),
-        (p: 3 / 4, v: 1.32),
-        (p: 7 / 8, v: 1.12),
+        (p: 1 / 8, v: 1.18),
+        (p: 1 / 4, v: 1.52),
+        (p: 3 / 8, v: 1.78),
+        (p: 1 / 2, v: 1.84),
+        (p: 5 / 8, v: 1.76),
+        (p: 3 / 4, v: 1.58),
+        (p: 7 / 8, v: 1.22),
         (p: 1, v: 1.0),
       ]),
       dx: _smoothKeys(p, const [
         (p: 0, v: 0.0),
-        (p: 1 / 8, v: -10.0),
-        (p: 1 / 4, v: -50.0),
-        (p: 3 / 8, v: -82.0),
-        (p: 1 / 2, v: -45.0),
-        (p: 5 / 8, v: 35.0),
-        (p: 3 / 4, v: 82.0),
-        (p: 7 / 8, v: 48.0),
+        (p: 1 / 8, v: -18.0),
+        (p: 1 / 4, v: -86.0),
+        (p: 3 / 8, v: -142.0),
+        (p: 1 / 2, v: -112.0),
+        (p: 5 / 8, v: 24.0),
+        (p: 3 / 4, v: 142.0),
+        (p: 7 / 8, v: 62.0),
         (p: 1, v: 0.0),
       ]),
       dy: _smoothKeys(p, const [
         (p: 0, v: 0.0),
-        (p: 1 / 8, v: 4.0),
-        (p: 1 / 4, v: 10.0),
-        (p: 3 / 8, v: 18.0),
-        (p: 1 / 2, v: 22.0),
-        (p: 5 / 8, v: 18.0),
-        (p: 3 / 4, v: 12.0),
-        (p: 7 / 8, v: 4.0),
+        (p: 1 / 8, v: -6.0),
+        (p: 1 / 4, v: -18.0),
+        (p: 3 / 8, v: -28.0),
+        (p: 1 / 2, v: -30.0),
+        (p: 5 / 8, v: -24.0),
+        (p: 3 / 4, v: -14.0),
+        (p: 7 / 8, v: -4.0),
         (p: 1, v: 0.0),
       ]),
     );
