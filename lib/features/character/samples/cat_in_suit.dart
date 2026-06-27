@@ -1589,11 +1589,11 @@ class CatClips {
           radiusFrames: 1,
           // End as a low asymmetrical freeze, not a neutral reset: hip pickup
           // under a counter-shoulder bite, then frame 32 can loop home.
-          rootDy: 0.74,
-          pelvisRotation: 0.064,
-          chestRotation: -0.238,
-          chestScaleY: 0.95,
-          chestScaleX: 1.032,
+          rootDy: 0.84,
+          pelvisRotation: 0.07,
+          chestRotation: -0.252,
+          chestScaleY: 0.944,
+          chestScaleX: 1.036,
         ),
       ],
       ikTargetKeys: {
