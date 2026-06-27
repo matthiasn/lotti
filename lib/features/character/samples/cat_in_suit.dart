@@ -24,6 +24,7 @@ const int _furDark = 0xFFD08A3C; // tail tip / shading
 const int _shirt = 0xFFF3EFE6; // collar
 const int _tie = 0xFF7A2233; // maroon
 const int _shoe = 0xFF15151F; // near-black
+const int _shoeHighlight = 0xFF3A3B4D; // moving toe/sole read at stage scale
 const int _outline = 0xFF1B1B2A;
 const int _innerEar = 0xFFE7A39B; // soft pink ear
 const int _muzzle = 0xFFF3DCB8; // lighter snout patch
@@ -112,11 +113,13 @@ class CatBones {
   static const legLowerL = 'leg_lower.L';
   static const legCalfL = 'leg_calf.L';
   static const footL = 'foot.L';
+  static const shoeHighlightL = 'shoe_highlight.L';
   static const legUpperR = 'leg_upper.R';
   static const legQuadR = 'leg_quad.R';
   static const legLowerR = 'leg_lower.R';
   static const legCalfR = 'leg_calf.R';
   static const footR = 'foot.R';
+  static const shoeHighlightR = 'shoe_highlight.R';
   static const tail0 = 'tail_0';
   static const tail1 = 'tail_1';
   static const tail2 = 'tail_2';
@@ -330,6 +333,22 @@ RigSpec buildCatInSuitRig({
         outlineWidth: 2,
       ),
     ),
+    const Bone(
+      id: CatBones.shoeHighlightR,
+      parent: CatBones.footR,
+      pivotX: 0,
+      pivotY: 0,
+      z: 6,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 12,
+        height: 3,
+        dx: -20,
+        dy: 8,
+        cornerRadius: 2,
+        color: _shoeHighlight,
+      ),
+    ),
 
     // Near (left) leg controls. The visible leg is a continuous ribbon that
     // starts inside the hip volume; the hip is drawn over the top so the leg
@@ -381,6 +400,22 @@ RigSpec buildCatInSuitRig({
         color: _shoe,
         outlineColor: _outline,
         outlineWidth: 2,
+      ),
+    ),
+    const Bone(
+      id: CatBones.shoeHighlightL,
+      parent: CatBones.footL,
+      pivotX: 0,
+      pivotY: 0,
+      z: 9,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 12,
+        height: 3,
+        dx: -20,
+        dy: 8,
+        cornerRadius: 2,
+        color: _shoeHighlight,
       ),
     ),
 
@@ -2806,17 +2841,19 @@ class CatClips {
         ],
       ),
       DanceMoveTargetOffsetArc(
-        name: 'left backup early right-toe drag',
+        name: 'left backup early right-toe step-plant',
         moveName: 'right-side camera answer',
         targetBoneId: CatBones.footR,
         startOffsetFrames: -4,
         peakOffsetFrames: -2,
-        endOffsetFrames: 1,
-        peakX: -9.5,
-        peakY: 2.2,
+        endOffsetFrames: 2,
+        peakX: 12.4,
+        peakY: 3.1,
         controlPoints: [
-          DanceMoveTargetOffsetArcPoint(-3, x: -4.8, y: 1.2, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(-1, x: -7.2, y: 1.8),
+          DanceMoveTargetOffsetArcPoint(-3, x: 5.8, y: 1.5, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(-1, x: 10.6, y: 2.7),
+          DanceMoveTargetOffsetArcPoint(0, x: 5.4, y: 1.4),
+          DanceMoveTargetOffsetArcPoint(1, x: 1.6, y: 0.5, weight: 0.65),
         ],
       ),
       DanceMoveTargetOffsetArc(
@@ -2926,6 +2963,13 @@ class CatClips {
         offsetFrames: -2,
         radiusFrames: 4,
         rotation: 0.48,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'right-side camera answer',
+        boneId: CatBones.footR,
+        offsetFrames: -2,
+        radiusFrames: 3,
+        rotation: 0.16,
       ),
       DanceMoveJointAccent(
         moveName: 'left-side camera answer',
@@ -3073,17 +3117,18 @@ class CatClips {
         ],
       ),
       DanceMoveTargetOffsetArc(
-        name: 'right backup late right-toe drag',
+        name: 'right backup late right-toe step-plant',
         moveName: 'right-side camera answer',
         targetBoneId: CatBones.footR,
         startOffsetFrames: -1,
         peakOffsetFrames: 1,
         endOffsetFrames: 4,
-        peakX: 9.2,
-        peakY: 2.4,
+        peakX: 14.2,
+        peakY: 3.2,
         controlPoints: [
-          DanceMoveTargetOffsetArcPoint(0, x: 4.8, y: 1.2, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(2, x: 7.4, y: 1.9),
+          DanceMoveTargetOffsetArcPoint(0, x: 6.2, y: 1.5, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(2, x: 11.2, y: 2.7),
+          DanceMoveTargetOffsetArcPoint(3, x: 5.8, y: 1.3, weight: 0.7),
         ],
       ),
       DanceMoveTargetOffsetArc(
@@ -3177,6 +3222,13 @@ class CatClips {
         offsetFrames: 1,
         radiusFrames: 4,
         rotation: 0.58,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'right-side camera answer',
+        boneId: CatBones.footR,
+        offsetFrames: 1,
+        radiusFrames: 3,
+        rotation: 0.14,
       ),
       DanceMoveJointAccent(
         moveName: 'right-foot groove pocket',

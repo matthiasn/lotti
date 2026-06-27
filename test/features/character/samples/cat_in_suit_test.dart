@@ -21,6 +21,13 @@ void main() {
       expect(rig.bone(CatBones.neck)?.drawable, isNotNull);
     });
 
+    test('shoes carry small moving highlights for footwork readability', () {
+      expect(rig.bone(CatBones.shoeHighlightL)?.parent, CatBones.footL);
+      expect(rig.bone(CatBones.shoeHighlightR)?.parent, CatBones.footR);
+      expect(rig.bone(CatBones.shoeHighlightL)?.drawable?.width, 12);
+      expect(rig.bone(CatBones.shoeHighlightR)?.drawable?.color, 0xFF3A3B4D);
+    });
+
     test('hips are the single root', () {
       final roots = rig.bones.where((b) => b.parent == null).toList();
       expect(roots.length, 1);
@@ -283,6 +290,22 @@ void main() {
           right,
           CatBones.handL,
         ).channel.sample(darkAnswerP);
+        final leadFootRSilverAnswer = _targetFor(
+          lead,
+          CatBones.footR,
+        ).channel.sample(silverAnswerP);
+        final leftFootRSilverAnswer = _targetFor(
+          left,
+          CatBones.footR,
+        ).channel.sample(silverAnswerP);
+        final leadFootRDarkAnswer = _targetFor(
+          lead,
+          CatBones.footR,
+        ).channel.sample(darkAnswerP);
+        final rightFootRDarkAnswer = _targetFor(
+          right,
+          CatBones.footR,
+        ).channel.sample(darkAnswerP);
         final leadHandRFirstEcho = _targetFor(
           lead,
           CatBones.handR,
@@ -410,6 +433,28 @@ void main() {
         expect(
           rightHandLDarkAnswer.y,
           lessThan(leadHandLDarkAnswer.y - 12),
+        );
+        expect(
+          leftFootRSilverAnswer.x,
+          closeTo(leadFootRSilverAnswer.x + 12.4, 0.001),
+          reason:
+              'the silver answer should be paid for by a visible free-foot '
+              'step-plant, not only an upper-body lane change',
+        );
+        expect(
+          leftFootRSilverAnswer.y,
+          closeTo(leadFootRSilverAnswer.y + 3.1, 0.001),
+        );
+        expect(
+          rightFootRDarkAnswer.x,
+          closeTo(leadFootRDarkAnswer.x + 14.2, 0.001),
+          reason:
+              'the dark answer should also show the free foot planting before '
+              'the body finishes the response',
+        );
+        expect(
+          rightFootRDarkAnswer.y,
+          closeTo(leadFootRDarkAnswer.y + 3.2, 0.001),
         );
         expect(
           rightHandLRightAnswerSettle.x,
