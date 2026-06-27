@@ -1067,6 +1067,7 @@ class CatClips {
           // then this hand floats up a frame later instead of mirroring the
           // left hand into a stiff X.
           DanceIkTargetKey(2, x: 34.8, y: 28.8),
+          DanceIkTargetKey(3, x: 42.2, y: 25.2),
           DanceIkTargetKey(4, x: 47.8, y: 21.6),
           DanceIkTargetKey(5, x: 39.6, y: 27.8),
           DanceIkTargetKey(6, x: 30.5, y: 32),
@@ -1227,8 +1228,8 @@ class CatClips {
       },
       ikTargetKeys: {
         CatBones.handL: [
-          DanceIkTargetKey(12, x: -52.6, y: 22.2),
-          DanceIkTargetKey(13, x: -60.4, y: 25.1),
+          DanceIkTargetKey(12, x: -58.8, y: 23.6),
+          DanceIkTargetKey(13, x: -67.2, y: 25.4),
           DanceIkTargetKey(14, x: -74.6, y: 27.2),
           DanceIkTargetKey(15, x: -81.4, y: 22.8),
           DanceIkTargetKey(16, x: -57.5, y: 29.2),
@@ -1327,24 +1328,38 @@ class CatClips {
           chestScaleY: 0.976,
           chestScaleX: 1.018,
         ),
+        DanceBodyAccentOffset(
+          offsetFrames: 2,
+          radiusFrames: 1,
+          // Center close-up release: after the F20 load, the chest rolls back
+          // the other way while the hips stay grounded. This keeps the close-up
+          // from reading as one long held lean.
+          rootDy: -0.45,
+          pelvisRotation: 0.034,
+          chestRotation: -0.11,
+          chestScaleY: 1.004,
+          chestScaleX: 0.996,
+        ),
       ],
       ikTargetKeys: {
         CatBones.handL: [
-          DanceIkTargetKey(17, x: -38.2, y: 31.8),
-          DanceIkTargetKey(18, x: -51.8, y: 28.4),
-          DanceIkTargetKey(19, x: -44.2, y: 31.5),
-          DanceIkTargetKey(20, x: -57.6, y: 25.6),
-          DanceIkTargetKey(21, x: -46.8, y: 30.8),
-          DanceIkTargetKey(22, x: -49.2, y: 29.2),
-          DanceIkTargetKey(23, x: -61.8, y: 24.8),
+          // Close-up hand phrase: sweep up through the chest, answer the
+          // shoulder roll, then throw the F23 hit outside the body silhouette.
+          DanceIkTargetKey(17, x: -58.4, y: 25.2),
+          DanceIkTargetKey(18, x: -67.2, y: 18.6),
+          DanceIkTargetKey(19, x: -63.4, y: 15.4),
+          DanceIkTargetKey(20, x: -57.6, y: 20.8),
+          DanceIkTargetKey(21, x: -50.8, y: 24.8),
+          DanceIkTargetKey(22, x: -62.6, y: 17.6),
+          DanceIkTargetKey(23, x: -82.4, y: 10.8),
         ],
         CatBones.handR: [
           DanceIkTargetKey(18, x: 72.8, y: 23.2),
-          DanceIkTargetKey(19, x: 62.8, y: 27.4),
-          DanceIkTargetKey(20, x: 72.4, y: 20.4),
-          DanceIkTargetKey(21, x: 65.2, y: 26.4),
-          DanceIkTargetKey(22, x: 76.6, y: 22.6),
-          DanceIkTargetKey(23, x: 86.8, y: 16.8),
+          DanceIkTargetKey(19, x: 78.2, y: 18.6),
+          DanceIkTargetKey(20, x: 72.4, y: 15.8),
+          DanceIkTargetKey(21, x: 82.4, y: 19.4),
+          DanceIkTargetKey(22, x: 88.6, y: 15.8),
+          DanceIkTargetKey(23, x: 96.8, y: 9.8),
         ],
         CatBones.footL: [
           DanceIkTargetKey(18, x: -40.4, y: 102.2),

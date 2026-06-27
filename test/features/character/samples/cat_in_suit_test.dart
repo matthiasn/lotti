@@ -1276,6 +1276,19 @@ void main() {
         lead,
         CatBones.handR,
       ).channel.sample(rightFootCueP);
+      final centerSweepLeftHand = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(19 / phrase.frameCount);
+      final centerRollLeftHand = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(22 / phrase.frameCount);
+      final centerRollRightHand = _targetFor(
+        lead,
+        CatBones.handR,
+      ).channel.sample(22 / phrase.frameCount);
+      final grooveRollReleaseP = 22 / phrase.frameCount;
       expect(
         freeLeftFoot.x,
         lessThan(-53),
@@ -1309,6 +1322,27 @@ void main() {
             'punctuation',
       );
       expect(grooveRightHand.y, lessThan(22));
+      expect(
+        centerSweepLeftHand.y,
+        lessThan(18),
+        reason:
+            'the center close-up needs a visible chest-level hand sweep, not a '
+            'left hand hovering down around the belly',
+      );
+      expect(
+        centerRollLeftHand.y,
+        lessThan(20),
+        reason:
+            'the shoulder-roll release should keep the left hand high enough '
+            'to read in the torso close-up',
+      );
+      expect(
+        centerRollRightHand.y,
+        lessThan(18),
+        reason:
+            'the right hand should answer the center roll at chest level, not '
+            'drop back to a low mascot pose',
+      );
       final groovePopP = 16 / phrase.frameCount;
       final grooveRecoilP = 17 / phrase.frameCount;
       final grooveStopP = 18 / phrase.frameCount;
@@ -1336,6 +1370,15 @@ void main() {
         reason:
             'F18 should stop into a knee/hand hit after the recoil instead of '
             'floating into the groove pocket',
+      );
+      expect(
+        leadChannels[CatBones.torso]!.sample(grooveRollReleaseP).rotation,
+        lessThan(
+          leadChannels[CatBones.torso]!.sample(rightFootCueP).rotation - 0.14,
+        ),
+        reason:
+            'after the F20 load, the close-up phrase should roll the chest back '
+            'the other way instead of holding one long lean',
       );
       final grooveStopLeftHand = _targetFor(
         lead,
@@ -1367,10 +1410,17 @@ void main() {
       ).channel.sample(23 / phrase.frameCount);
       expect(
         grooveHitRightHand.x - grooveHitLeftHand.x,
-        greaterThan(145),
+        greaterThan(175),
         reason:
             'F23 should land as an all-crew outward hit before the left-side '
             'answer, not a hidden transition pose',
+      );
+      expect(
+        grooveHitLeftHand.y,
+        lessThan(13),
+        reason:
+            'the F23 outward hit should finish high in the close-up frame, not '
+            'collapse back to waist height',
       );
 
       final leftCueP = phrase.moveAtFrame(24).accentFrame / phrase.frameCount;
@@ -1530,6 +1580,13 @@ void main() {
         reason:
             'the right-hand punctuation should be a readable wrist/shoulder '
             'hit without throwing the arm across the frame',
+      );
+      expect(
+        _targetDistance(handR, 3, 4),
+        lessThan(8),
+        reason:
+            'the opening right elbow lift should travel into the Shaku hit '
+            'instead of popping from the base belly-height key',
       );
       expect(
         _targetDistance(handL, 28, 29),
