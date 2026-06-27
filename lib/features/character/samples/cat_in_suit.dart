@@ -2814,9 +2814,9 @@ class CatClips {
         moveName: 'right-side camera answer',
         offsetFrames: 0,
         radiusFrames: 4,
-        // Silver answers first (hand/foot at F11), before the dark cat's F14
-        // response. Make the foot hit land first, then let the body compress a
-        // frame later at F12.
+        // Silver answers first: the foot marks F11, then body + hand answer on
+        // F12. Keeping the hand one frame behind the foot avoids pose-swapping
+        // and matches the lead's body-led opening pocket.
         // The silhouette opens side/low instead of copying the dark cat's high
         // inside-arm answer.
         rootDx: -1.34,
@@ -2869,14 +2869,17 @@ class CatClips {
         moveName: 'right-side camera answer',
         targetBoneId: CatBones.handR,
         startOffsetFrames: -3,
-        peakOffsetFrames: -1,
-        endOffsetFrames: 2,
-        peakX: -36,
-        peakY: -18.5,
+        peakOffsetFrames: 0,
+        endOffsetFrames: 5,
+        peakX: -31.8,
+        peakY: -16.4,
         controlPoints: [
           DanceMoveTargetOffsetArcPoint(-2, x: -21.2, y: -10.8, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(0, x: -29.4, y: -14.5),
-          DanceMoveTargetOffsetArcPoint(1, x: -17.2, y: -8.6),
+          DanceMoveTargetOffsetArcPoint(-1, x: -26.4, y: -12.8),
+          DanceMoveTargetOffsetArcPoint(1, x: -21.2, y: -10.6),
+          DanceMoveTargetOffsetArcPoint(2, x: -13.4, y: -6.8, weight: 0.72),
+          DanceMoveTargetOffsetArcPoint(3, x: -8.2, y: -4.1, weight: 0.72),
+          DanceMoveTargetOffsetArcPoint(4, x: -3.4, y: -1.7, weight: 0.68),
         ],
       ),
       DanceMoveTargetOffsetArc(
@@ -2884,14 +2887,16 @@ class CatClips {
         moveName: 'right-side camera answer',
         targetBoneId: CatBones.handL,
         startOffsetFrames: -3,
-        peakOffsetFrames: -1,
-        endOffsetFrames: 2,
-        peakX: 12.6,
-        peakY: 20.5,
+        peakOffsetFrames: 0,
+        endOffsetFrames: 4,
+        peakX: 11,
+        peakY: 17.8,
         controlPoints: [
           DanceMoveTargetOffsetArcPoint(-2, x: 6.4, y: 10.8, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(0, x: 10.6, y: 16.8),
-          DanceMoveTargetOffsetArcPoint(1, x: 6.6, y: 11.4),
+          DanceMoveTargetOffsetArcPoint(-1, x: 9, y: 14.6),
+          DanceMoveTargetOffsetArcPoint(1, x: 7.1, y: 11.4),
+          DanceMoveTargetOffsetArcPoint(2, x: 4.5, y: 7.2, weight: 0.72),
+          DanceMoveTargetOffsetArcPoint(3, x: 2, y: 3.5, weight: 0.7),
         ],
       ),
       DanceMoveTargetOffsetArc(
@@ -2977,7 +2982,7 @@ class CatClips {
       DanceMoveJointAccent(
         moveName: 'right-side camera answer',
         boneId: CatBones.armUpperR,
-        offsetFrames: -1,
+        offsetFrames: 0,
         radiusFrames: 4,
         rotation: -0.52,
       ),
@@ -3012,7 +3017,7 @@ class CatClips {
       DanceMoveJointAccent(
         moveName: 'right-side camera answer',
         boneId: CatBones.armLowerR,
-        offsetFrames: -1,
+        offsetFrames: 0,
         radiusFrames: 4,
         rotation: 0.52,
       ),
@@ -3069,10 +3074,9 @@ class CatClips {
       DanceMoveBodyAccent(
         moveName: 'right-side camera answer',
         offsetFrames: 3,
-        // Dark answers after silver (hand/foot at F14), lower and sharper, so
-        // the side response is a visible crew ripple rather than mirrored
-        // timing. The foot marks F14; the chest/hips bite on F15 so it reads
-        // danced rather than snapped into position.
+        // Dark answers after silver: foot marks F14, then chest/hips and hand
+        // bite on F15. That keeps the response body-led instead of snapping
+        // every layer into the same frame.
         radiusFrames: 4,
         rootDx: 1.52,
         rootDy: 2.25,
@@ -3131,7 +3135,7 @@ class CatClips {
     ],
     ikTargetAccents: {
       CatBones.handL: [
-        DanceIkTargetAccent(20, radiusFrames: 4, x: 6.4, y: -4.2),
+        DanceIkTargetAccent(20, radiusFrames: 3, x: 6.4, y: -4.2),
       ],
       CatBones.footR: [
         DanceIkTargetAccent(20, radiusFrames: 2, x: -1.4, y: 0),
@@ -3143,19 +3147,19 @@ class CatClips {
         moveName: 'right-side camera answer',
         targetBoneId: CatBones.handL,
         startOffsetFrames: 0,
-        peakOffsetFrames: 2,
+        peakOffsetFrames: 3,
         endOffsetFrames: 5,
-        peakX: 22.5,
-        peakY: -23.5,
+        peakX: 21.2,
+        peakY: -20.8,
         controlPoints: [
           DanceMoveTargetOffsetArcPoint(
             1,
-            x: 14,
-            y: -14.8,
+            x: 13.2,
+            y: -13.7,
             weight: 0.7,
           ),
-          DanceMoveTargetOffsetArcPoint(3, x: 13.4, y: -14.2, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(4, x: 8, y: -10, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(2, x: 17.4, y: -17.2, weight: 0.75),
+          DanceMoveTargetOffsetArcPoint(4, x: 14.2, y: -13.8, weight: 0.72),
         ],
       ),
       DanceMoveTargetOffsetArc(
@@ -3163,13 +3167,13 @@ class CatClips {
         moveName: 'right-side camera answer',
         targetBoneId: CatBones.handR,
         startOffsetFrames: 0,
-        peakOffsetFrames: 2,
+        peakOffsetFrames: 3,
         endOffsetFrames: 4,
         peakX: -5.8,
         peakY: 8.5,
         controlPoints: [
           DanceMoveTargetOffsetArcPoint(1, x: -3.6, y: 5, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(3, x: -3.4, y: 4.8, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(2, x: -4.4, y: 6.4, weight: 0.75),
         ],
       ),
       DanceMoveTargetOffsetArc(
@@ -3232,7 +3236,7 @@ class CatClips {
       DanceMoveJointAccent(
         moveName: 'right-side camera answer',
         boneId: CatBones.armUpperL,
-        offsetFrames: 2,
+        offsetFrames: 3,
         radiusFrames: 4,
         rotation: 0.6,
       ),
@@ -3274,7 +3278,7 @@ class CatClips {
       DanceMoveJointAccent(
         moveName: 'right-side camera answer',
         boneId: CatBones.armLowerL,
-        offsetFrames: 2,
+        offsetFrames: 3,
         radiusFrames: 4,
         rotation: 0.66,
       ),

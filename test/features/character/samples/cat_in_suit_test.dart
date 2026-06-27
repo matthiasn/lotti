@@ -235,8 +235,10 @@ void main() {
         const rightEarlyEchoP = 5 / 32;
         const leftDelayedEchoP = 6 / 32;
         const silverAnswerP = 11 / 32;
+        const silverHandAnswerP = 12 / 32;
         const silverBodyCatchP = 12 / 32;
         const darkAnswerP = 14 / 32;
+        const darkHandAnswerP = 15 / 32;
         const darkBodyCatchP = 15 / 32;
         const delayedEchoP = 5 / 8;
         const leftFeatureP = 3 / 4;
@@ -279,16 +281,24 @@ void main() {
         final leadHandRSilverAnswer = _targetFor(
           lead,
           CatBones.handR,
-        ).channel.sample(silverAnswerP);
+        ).channel.sample(silverHandAnswerP);
         final leftHandRSilverAnswer = _targetFor(
+          left,
+          CatBones.handR,
+        ).channel.sample(silverHandAnswerP);
+        final leftHandRSilverFootMark = _targetFor(
           left,
           CatBones.handR,
         ).channel.sample(silverAnswerP);
         final leadHandLDarkAnswer = _targetFor(
           lead,
           CatBones.handL,
-        ).channel.sample(darkAnswerP);
+        ).channel.sample(darkHandAnswerP);
         final rightHandLDarkAnswer = _targetFor(
+          right,
+          CatBones.handL,
+        ).channel.sample(darkHandAnswerP);
+        final rightHandLDarkFootMark = _targetFor(
           right,
           CatBones.handL,
         ).channel.sample(darkAnswerP);
@@ -426,12 +436,19 @@ void main() {
           leftHandRSilverAnswer.x,
           lessThan(leadHandRSilverAnswer.x - 17),
           reason:
-              'the silver cat should answer early around frame 11 after '
-              'marking the lead call, not hit in lockstep with the dark cat',
+              'the silver cat should answer around frame 12 after its foot '
+              'mark, not hit in lockstep with the dark cat',
         );
         expect(
           leftHandRSilverAnswer.y,
           lessThan(leadHandRSilverAnswer.y - 12),
+        );
+        expect(
+          leftHandRSilverFootMark.x,
+          greaterThan(leftHandRSilverAnswer.x + 4),
+          reason:
+              'the silver hand should still be travelling when the F11 foot '
+              'plant lands; body/foot lead, hand follows',
         );
         expect(
           leftSilverAnswerXDelta,
@@ -451,12 +468,19 @@ void main() {
           rightHandLDarkAnswer.x,
           greaterThan(leadHandLDarkAnswer.x + 17),
           reason:
-              'the dark cat should answer later around frame 14 with its '
-              'inside hand, creating a readable crew ripple',
+              'the dark cat should answer later around frame 15 with its '
+              'inside hand, after the F14 foot mark',
         );
         expect(
           rightHandLDarkAnswer.y,
           lessThan(leadHandLDarkAnswer.y - 12),
+        );
+        expect(
+          rightHandLDarkFootMark.x,
+          lessThan(rightHandLDarkAnswer.x - 4),
+          reason:
+              'the dark hand should still be travelling when the F14 foot '
+              'plant lands; body/foot lead, hand follows',
         );
         expect(
           rightDarkAnswerXDelta,
@@ -1468,8 +1492,8 @@ void main() {
             'the opposite foot should heel-flick during the F13 lift before '
             'both feet settle into the stamp',
       );
-      const silverFlankerP = 11 / 32;
-      const darkFlankerP = 14 / 32;
+      const silverFlankerP = 12 / 32;
+      const darkFlankerP = 15 / 32;
       final silverInsideHand = _targetFor(
         left,
         CatBones.handR,
