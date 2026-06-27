@@ -232,6 +232,7 @@ void main() {
         const leftFeatureSettleP = 28 / 32;
         const leftHookPickupP = 30 / 32;
         const rightHookPickupP = 31 / 32;
+        const rightToePickupP = 21 / 32;
 
         expect(left.duration, lead.duration);
         expect(right.duration, lead.duration);
@@ -290,6 +291,18 @@ void main() {
           right,
           CatBones.handR,
         ).channel.sample(firstEchoP);
+        final leadFootRFirstEcho = _targetFor(
+          lead,
+          CatBones.footR,
+        ).channel.sample(firstEchoP);
+        final leftFootRFirstEcho = _targetFor(
+          left,
+          CatBones.footR,
+        ).channel.sample(firstEchoP);
+        final rightFootRFirstEcho = _targetFor(
+          right,
+          CatBones.footR,
+        ).channel.sample(firstEchoP);
         final leadHandLDelayedEcho = _targetFor(
           lead,
           CatBones.handL,
@@ -302,6 +315,18 @@ void main() {
           right,
           CatBones.handL,
         ).channel.sample(delayedEchoP);
+        final leadFootLRightPickup = _targetFor(
+          lead,
+          CatBones.footL,
+        ).channel.sample(rightToePickupP);
+        final leftFootLRightPickup = _targetFor(
+          left,
+          CatBones.footL,
+        ).channel.sample(rightToePickupP);
+        final rightFootLRightPickup = _targetFor(
+          right,
+          CatBones.footL,
+        ).channel.sample(rightToePickupP);
         final leadHandLRightAnswerSettle = _targetFor(
           lead,
           CatBones.handL,
@@ -389,6 +414,25 @@ void main() {
               'right backup should not mirror the left echo on the same beat',
         );
         expect(
+          leftFootRFirstEcho.x,
+          closeTo(leadFootRFirstEcho.x - 5.2, 0.001),
+          reason:
+              'left backup should answer the first pocket with a distinct '
+              'low right-toe variation',
+        );
+        expect(
+          leftFootRFirstEcho.y,
+          closeTo(leadFootRFirstEcho.y + 1.4, 0.001),
+        );
+        expect(
+          rightFootRFirstEcho.x,
+          closeTo(leadFootRFirstEcho.x, 0.001),
+          reason:
+              'right backup should leave the first low toe answer to the left '
+              'dancer',
+        );
+        expect(rightFootRFirstEcho.y, closeTo(leadFootRFirstEcho.y, 0.001));
+        expect(
           rightHandLDelayedEcho.x,
           closeTo(leadHandLDelayedEcho.x + 6.4, 0.001),
           reason:
@@ -404,6 +448,25 @@ void main() {
           reason:
               'left backup should leave the delayed answer to the right dancer',
         );
+        expect(
+          rightFootLRightPickup.x,
+          closeTo(leadFootLRightPickup.x + 5.8, 0.001),
+          reason:
+              'right backup should answer the second pocket with a delayed '
+              'left-toe pickup',
+        );
+        expect(
+          rightFootLRightPickup.y,
+          closeTo(leadFootLRightPickup.y - 3.6, 0.001),
+        );
+        expect(
+          leftFootLRightPickup.x,
+          closeTo(leadFootLRightPickup.x, 0.001),
+          reason:
+              'left backup should not copy the right dancer delayed toe '
+              'pickup',
+        );
+        expect(leftFootLRightPickup.y, closeTo(leadFootLRightPickup.y, 0.001));
         expect(
           leftHandRLeftFeatureSettle.x,
           closeTo(leadHandRLeftFeatureSettle.x, 0.001),

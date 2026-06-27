@@ -2458,6 +2458,21 @@ class CatClips {
           DanceMoveTargetOffsetArcPoint(3, x: -3.2, y: -2.3, weight: 0.7),
         ],
       ),
+      DanceMoveTargetOffsetArc(
+        name: 'left backup low right-toe answer',
+        moveName: 'lead Shaku pocket hit',
+        targetBoneId: CatBones.footR,
+        startOffsetFrames: -2,
+        peakOffsetFrames: 0,
+        endOffsetFrames: 3,
+        peakX: -5.2,
+        peakY: 1.4,
+        controlPoints: [
+          DanceMoveTargetOffsetArcPoint(-1, x: -3.1, y: 0.9, weight: 0.75),
+          DanceMoveTargetOffsetArcPoint(1, x: -4.6, y: 1.2, weight: 0.8),
+          DanceMoveTargetOffsetArcPoint(2, x: -2.5, y: 0.7, weight: 0.65),
+        ],
+      ),
     ],
     moveJointAccents: [
       DanceMoveJointAccent(
@@ -2603,6 +2618,20 @@ class CatClips {
           DanceMoveTargetOffsetArcPoint(2, x: 2.6, y: -1.9, weight: 0.7),
         ],
       ),
+      DanceMoveTargetOffsetArc(
+        name: 'right backup delayed left-toe pickup',
+        moveName: 'right-foot groove pocket',
+        targetBoneId: CatBones.footL,
+        startOffsetFrames: -1,
+        peakOffsetFrames: 1,
+        endOffsetFrames: 3,
+        peakX: 5.8,
+        peakY: -3.6,
+        controlPoints: [
+          DanceMoveTargetOffsetArcPoint(0, x: 3.6, y: -2.2, weight: 0.75),
+          DanceMoveTargetOffsetArcPoint(2, x: 4.2, y: -2.4, weight: 0.75),
+        ],
+      ),
     ],
     moveJointAccents: [
       DanceMoveJointAccent(
@@ -2678,8 +2707,18 @@ class CatClips {
             _danceRoleTargetOffset(style, CatBones.handR),
           ),
         ),
-        _danceLimbTargets[2],
-        _danceLimbTargets[3],
+        _danceLimbTargets[2].withChannel(
+          _layerDanceTarget(
+            _danceFootLTarget,
+            _danceRoleTargetOffset(style, CatBones.footL),
+          ),
+        ),
+        _danceLimbTargets[3].withChannel(
+          _layerDanceTarget(
+            _danceFootRTarget,
+            _danceRoleTargetOffset(style, CatBones.footR),
+          ),
+        ),
       ]);
 
   static KeyframeIkTargetChannel _danceRoleTargetOffset(
