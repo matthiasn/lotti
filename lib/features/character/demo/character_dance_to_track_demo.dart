@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart';
 import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
 import 'package:lotti/features/character/model/clip.dart';
@@ -14,6 +12,8 @@ import 'package:lotti/features/character/runtime/character_painter.dart';
 import 'package:lotti/features/character/runtime/character_renderer.dart';
 import 'package:lotti/features/character/runtime/character_scene.dart';
 import 'package:lotti/features/character/samples/cat_in_suit.dart';
+import 'package:lotti/features/scenery/layered_backdrop.dart';
+import 'package:lotti/features/scenery/model/backdrop_scene.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// Beat-synced dance demo — the first wiring of the offline beat map into live
@@ -153,10 +153,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
 
   late final Ticker _ticker; // 60 fps repaint pump; time comes from the player.
 
-  ui.Image? _backdrop;
-  ui.Image? _clouds;
-  ui.Image? _waves;
-
   BeatMap? _map;
   BeatLoopBinding? _binding;
   List<double>? _amplitudes; // full-track waveform, normalized 0..1
@@ -182,7 +178,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   void initState() {
     super.initState();
     _ticker = createTicker(_onTick)..start();
-    unawaited(_loadBackdrop());
     unawaited(_load());
   }
 
@@ -447,40 +442,10 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     if (mounted) setState(() {});
   }
 
-  Future<void> _loadBackdrop() async {
-    final images = await Future.wait([
-      _loadUiImage(kCharacterWaterfrontBackdropAsset),
-      _loadUiImage(kCharacterWaterfrontCloudsAsset),
-      _loadUiImage(kCharacterWaterfrontWavesAsset),
-    ]);
-    if (!mounted) {
-      for (final image in images) {
-        image.dispose();
-      }
-      return;
-    }
-    setState(() {
-      _backdrop = images[0];
-      _clouds = images[1];
-      _waves = images[2];
-    });
-  }
-
-  Future<ui.Image> _loadUiImage(String asset) async {
-    final data = await rootBundle.load(asset);
-    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-    final frame = await codec.getNextFrame();
-    codec.dispose();
-    return frame.image;
-  }
-
   @override
   void dispose() {
     _ticker.dispose();
     unawaited(_player.dispose());
-    _backdrop?.dispose();
-    _clouds?.dispose();
-    _waves?.dispose();
     super.dispose();
   }
 
@@ -518,6 +483,12 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                 return Stack(
                   fit: StackFit.expand,
                   children: [
+                    // Layered blue-hour scene behind the dancers, driven by the
+                    // same audio/dance clock so it moves with the music.
+                    LayeredBackdrop(
+                      scene: BackdropScene.blueHourWaterfront(),
+                      timeSeconds: stage.seconds,
+                    ),
                     CustomPaint(
                       painter: CharacterPainter(
                         scene: _lead,
@@ -528,22 +499,20 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                           Expression.content,
                           Expression.happy,
                         ],
-                        // Section-aware: the energetic dance trio in loud sections,
-                        // an eased idle in calm ones.
+                        // Section-aware: the energetic dance trio in loud
+                        // sections, an eased idle in calm ones.
                         ensembleClips: stage.ensemble,
                         synchronousEnsemble: true,
-                        // Enables the multi-member (trio) render path; without it the
-                        // painter draws only the lead scene.
+                        // Enables the multi-member (trio) render path; without
+                        // it the painter draws only the lead scene.
                         walkingPair: true,
                         clip: stage.lead,
                         timeSeconds: stage.seconds,
                         danceCameraStrength: _cameraStrength,
                         scale: scale,
                         groundColor: const Color(0xFF374551),
-                        backdrop: CharacterBackdrop.waterfront,
-                        backdropImage: _backdrop,
-                        backdropCloudsImage: _clouds,
-                        backdropWavesImage: _waves,
+                        // backdrop defaults to CharacterBackdrop.none — the
+                        // LayeredBackdrop above provides the scene now.
                         renderer: _renderer,
                       ),
                       child: const SizedBox.expand(),

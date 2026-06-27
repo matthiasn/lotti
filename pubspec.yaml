@@ -211,6 +211,8 @@ flutter:
   shaders:
     - shaders/ai_voice_input.frag
     - shaders/ai_thinking_line.frag
+    - shaders/scenery_sky.frag
+    - shaders/scenery_ocean.frag
 
   fonts:
     - family: Inconsolata
