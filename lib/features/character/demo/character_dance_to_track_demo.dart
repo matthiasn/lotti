@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -17,27 +16,24 @@ import 'package:lotti/features/character/runtime/character_scene.dart';
 import 'package:lotti/features/character/samples/cat_in_suit.dart';
 import 'package:media_kit/media_kit.dart';
 
-/// Beat-synced dance demo with a waveform picker — the first wiring of the
-/// offline beat map into live playback (see
-/// `docs/implementation_plans/2026-06-27_dance_audio_analysis.md` §15). A dev
-/// tool, not a product surface.
+/// Beat-synced dance demo — the first wiring of the offline beat map into live
+/// playback (see `docs/implementation_plans/2026-06-27_dance_audio_analysis.md`
+/// §15). A dev tool, not a product surface.
 ///
-/// Flow: load a track, render its **full waveform**, drag a **30-second window**
-/// anywhere over it, and press **play** to hear just that window while the trio
-/// dances **locked to the track's beats**. Each frame, the dance time is the
-/// audio playback position warped through [BeatMap.clipSecondsAt], so the looping
-/// 32-frame phrase (12 beats = 3 bars at the authored 120 BPM) lands on-beat and
-/// follows tempo drift instead of free-running at a guessed BPM.
+/// It plays a track (looped) and locks the looping dance phrase to the detected
+/// beats/downbeats: each frame the dance time is the audio playback position
+/// warped through [BeatMap.clipSecondsAt], so the 32-frame phrase (12 beats =
+/// 3 bars at the authored 120 BPM) lands on-beat and follows tempo drift for the
+/// whole track instead of free-running at a guessed BPM. The waveform below is a
+/// seek bar — tap or drag to scrub.
 ///
 /// Beat detection is the **offline** `tools/dance_audio` tool (Beat This!); it
 /// cannot run in-app. This demo loads a **pre-generated full-track beat-map JSON**
-/// and the 30 s window just selects a sub-range (re-anchored to the nearest
-/// downbeat) — no detection at runtime.
+/// (no detection at runtime), including the offline-computed waveform.
 ///
 /// Deliberately **self-contained**: depends only on the `media_kit` package +
-/// this character feature — no journal/speech code, and the waveform is read from
-/// the beat-map JSON (computed offline) rather than decoded in-app — so it travels
-/// cleanly when the feature is ejected into its own repo.
+/// this character feature — no journal/speech code — so it travels cleanly when
+/// the feature is ejected into its own repo.
 ///
 /// Run it (defaults to local dev files; override with --dart-define):
 /// ```sh
@@ -60,15 +56,9 @@ const String kDanceBeatMapPath = String.fromEnvironment(
       '/home/parallels/github/lotti/tools/dance_audio/out/moving.json',
 );
 
-/// Length of the playable selection window, in seconds.
-const double kWindowSeconds = 30;
-
 /// Bars the 32-frame [CatClips.dance] phrase spans: `duration 6 s` at
 /// `kAuthoredDanceBpm 120` = 12 beats = 3 bars of 4/4.
 const int kDancePhraseBars = 3;
-
-double _clampDouble(double v, double lo, double hi) =>
-    v < lo ? lo : (v > hi ? hi : v);
 
 void main() {
   MediaKit.ensureInitialized();
@@ -126,13 +116,12 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   ui.Image? _clouds;
   ui.Image? _waves;
 
-  BeatMap? _map; // full-track beat map
-  BeatLoopBinding? _binding; // re-anchored when the window moves
+  BeatMap? _map;
+  BeatLoopBinding? _binding;
   List<double>? _amplitudes; // full-track waveform, normalized 0..1
   double _trackDurationSec = 0;
-  double _windowStartSec = 0;
   double _bpm = 0;
-  bool _loopSeeking = false;
+  bool _loop = true;
   String? _error;
 
   AutonomicLayer _danceAutonomic(int seed) => AutonomicLayer(
@@ -142,11 +131,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     eyeDartInterval: 1.05,
     eyeDartAmplitude: 0.75,
   );
-
-  double get _maxWindowStart {
-    final m = _trackDurationSec - kWindowSeconds;
-    return m < 0 ? 0 : m;
-  }
 
   @override
   void initState() {
@@ -171,13 +155,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
           (audio?['duration_sec'] as num?)?.toDouble() ?? map.beatTimesSec.last;
 
       await _player.open(Media(kDanceAudioPath), play: false);
-      final maxStart = duration - kWindowSeconds;
-      final start = _clampDouble(
-        duration / 2 - kWindowSeconds / 2,
-        0,
-        maxStart < 0 ? 0 : maxStart,
+      await _player.setPlaylistMode(
+        _loop ? PlaylistMode.loop : PlaylistMode.none,
       );
-      await _player.seek(Duration(microseconds: (start * 1e6).round()));
 
       // The waveform is computed offline by tools/dance_audio and embedded in the
       // beat map — no in-app audio decoding (just_waveform has no Linux plugin).
@@ -192,8 +172,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         _map = map;
         _trackDurationSec = duration;
         _bpm = (tempo?['global_bpm'] as num?)?.toDouble() ?? 0;
-        _windowStartSec = start;
-        _binding = _bindingForWindow(map, start);
+        // Anchor the looping phrase on the first downbeat and span whole bars;
+        // the 3-bar loop then stays beat-locked for the entire track.
+        _binding = BeatLoopBinding.barAligned(map, bars: kDancePhraseBars);
         _amplitudes = amplitudes;
       });
     } catch (e) {
@@ -201,43 +182,13 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     }
   }
 
-  /// Re-anchor the looping phrase on the first detected downbeat at/after the
-  /// window start (falls back to a beat-level binding if no downbeats exist).
-  BeatLoopBinding _bindingForWindow(BeatMap map, double windowStart) {
-    if (map.downbeatIndices.isEmpty) {
-      return BeatLoopBinding.beatAligned(
-        loopLengthBeats: kDancePhraseBars * map.timeSignatureNumerator,
-      );
-    }
-    var ordinal = map.downbeatIndices.length - 1;
-    for (var k = 0; k < map.downbeatIndices.length; k++) {
-      if (map.beatTimesSec[map.downbeatIndices[k]] >= windowStart - 1e-3) {
-        ordinal = k;
-        break;
-      }
-    }
-    return BeatLoopBinding.barAligned(
-      map,
-      bars: kDancePhraseBars,
-      fromDownbeat: ordinal,
-    );
-  }
-
-  /// Audio position → dance-clip seconds, looping the audio inside the window so
-  /// audio and dance stay in lockstep (the audio clock is the source of truth).
+  /// Audio position → dance-clip seconds. The phrase loops via clipSecondsAt's
+  /// own modulo, so it repeats on-beat across the whole (looped) track.
   double _danceSecondsNow() {
     final map = _map;
     final binding = _binding;
     if (map == null || binding == null) return 0;
     final posSec = _player.state.position.inMicroseconds / 1e6;
-    if (_player.state.playing &&
-        posSec >= _windowStartSec + kWindowSeconds &&
-        !_loopSeeking) {
-      _loopSeeking = true;
-      _player
-          .seek(Duration(microseconds: (_windowStartSec * 1e6).round()))
-          .whenComplete(() => _loopSeeking = false);
-    }
     return map.clipSecondsAt(
       posSec,
       clipDuration: _clip.duration,
@@ -245,55 +196,31 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     );
   }
 
-  void _moveWindowTo(double startSec) {
-    final map = _map;
-    if (map == null) return;
-    setState(() {
-      _windowStartSec = _clampDouble(startSec, 0, _maxWindowStart);
-      _binding = _bindingForWindow(map, _windowStartSec);
-    });
-    // Keep playback inside the (possibly moved) window.
-    final posSec = _player.state.position.inMicroseconds / 1e6;
-    if (_player.state.playing &&
-        (posSec < _windowStartSec ||
-            posSec >= _windowStartSec + kWindowSeconds)) {
-      unawaited(
-        _player.seek(Duration(microseconds: (_windowStartSec * 1e6).round())),
-      );
-    }
-  }
-
   Future<void> _togglePlay() async {
     if (_player.state.playing) {
       await _player.pause();
     } else {
-      final posSec = _player.state.position.inMicroseconds / 1e6;
-      if (posSec < _windowStartSec ||
-          posSec >= _windowStartSec + kWindowSeconds) {
-        await _player.seek(
-          Duration(microseconds: (_windowStartSec * 1e6).round()),
-        );
-      }
       await _player.play();
     }
     if (mounted) setState(() {});
   }
 
-  /// Tap to move the playhead: inside the window → seek there (scrub); outside →
-  /// relocate the window around the tap and start from its beginning.
-  void _handleTap(double tSec) {
-    if (_map == null || _trackDurationSec <= 0) return;
-    if (tSec >= _windowStartSec && tSec <= _windowStartSec + kWindowSeconds) {
-      unawaited(_seek(tSec));
-    } else {
-      _moveWindowTo(tSec - kWindowSeconds / 2);
-      unawaited(_seek(_windowStartSec));
-    }
+  Future<void> _toggleLoop() async {
+    _loop = !_loop;
+    await _player.setPlaylistMode(
+      _loop ? PlaylistMode.loop : PlaylistMode.none,
+    );
     if (mounted) setState(() {});
   }
 
-  Future<void> _seek(double sec) =>
-      _player.seek(Duration(microseconds: (sec * 1e6).round()));
+  void _seekToTime(double tSec) {
+    if (_trackDurationSec <= 0) return;
+    final t = tSec < 0
+        ? 0.0
+        : (tSec > _trackDurationSec ? _trackDurationSec : tSec);
+    unawaited(_player.seek(Duration(microseconds: (t * 1e6).round())));
+    if (mounted) setState(() {});
+  }
 
   Future<void> _loadBackdrop() async {
     final images = await Future.wait([
@@ -405,7 +332,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   Widget _waveformPanel() {
     final posSec = _player.state.position.inMicroseconds / 1e6;
     final playing = _player.state.playing;
-    final windowEnd = _windowStartSec + kWindowSeconds;
     return Container(
       color: const Color(0xFF14181D),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -418,22 +344,31 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                 onPressed: _map == null ? null : _togglePlay,
                 icon: Icon(playing ? Icons.pause : Icons.play_arrow),
               ),
+              const SizedBox(width: 4),
+              IconButton(
+                onPressed: _map == null ? null : _toggleLoop,
+                tooltip: _loop ? 'Looping track' : 'Play once',
+                icon: Icon(
+                  Icons.repeat,
+                  color: _loop ? Colors.tealAccent : Colors.white38,
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   _map == null
                       ? 'loading…'
-                      : 'window ${_windowStartSec.toStringAsFixed(1)}–'
-                            '${windowEnd.toStringAsFixed(1)} s   ·   '
-                            '${_bpm.toStringAsFixed(0)} BPM   ·   '
-                            'pos ${posSec.toStringAsFixed(1)} s',
+                      : '${_bpm.toStringAsFixed(0)} BPM   ·   '
+                            'pos ${posSec.toStringAsFixed(1)} / '
+                            '${_trackDurationSec.toStringAsFixed(0)} s   ·   '
+                            'phrase loops every $kDancePhraseBars bars',
                   style: const TextStyle(
                     fontFeatures: [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
               const Text(
-                'tap to seek · drag to move the 30 s window',
+                'tap / drag the waveform to seek',
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
             ],
@@ -457,19 +392,17 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                 }
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTapUp: (d) => _handleTap(
+                  onTapUp: (d) => _seekToTime(
                     d.localPosition.dx / width * _trackDurationSec,
                   ),
-                  onHorizontalDragUpdate: (d) => _moveWindowTo(
-                    _windowStartSec + d.delta.dx / width * _trackDurationSec,
+                  onHorizontalDragUpdate: (d) => _seekToTime(
+                    d.localPosition.dx / width * _trackDurationSec,
                   ),
                   child: CustomPaint(
                     size: Size(width, constraints.maxHeight),
                     painter: _WaveformPainter(
                       amplitudes: amplitudes,
                       trackDurationSec: _trackDurationSec,
-                      windowStartSec: _windowStartSec,
-                      windowSeconds: kWindowSeconds,
                       positionSec: posSec,
                       playing: playing,
                     ),
@@ -484,22 +417,17 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   }
 }
 
-/// Paints the full-track waveform with the selected 30 s window highlighted and
-/// the live playback position marked.
+/// Paints the full-track waveform as a seek bar with the live playhead.
 class _WaveformPainter extends CustomPainter {
   _WaveformPainter({
     required this.amplitudes,
     required this.trackDurationSec,
-    required this.windowStartSec,
-    required this.windowSeconds,
     required this.positionSec,
     required this.playing,
   });
 
   final List<double> amplitudes;
   final double trackDurationSec;
-  final double windowStartSec;
-  final double windowSeconds;
   final double positionSec;
   final bool playing;
 
@@ -507,37 +435,22 @@ class _WaveformPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (amplitudes.isEmpty || trackDurationSec <= 0) return;
     final mid = size.height / 2;
-    final x0 = windowStartSec / trackDurationSec * size.width;
-    final x1 = (windowStartSec + windowSeconds) / trackDurationSec * size.width;
+    final px = positionSec / trackDurationSec * size.width;
 
-    // Window highlight band.
-    final band = Paint()..color = const Color(0x3354B4FF);
-    canvas.drawRect(Rect.fromLTRB(x0, 0, x1, size.height), band);
-
-    // Bars: dim outside the window, bright inside.
+    // Bars: brighter up to the playhead (played), dim ahead.
     final barWidth = size.width / amplitudes.length;
-    final dim = Paint()..color = const Color(0xFF3A4654);
-    final bright = Paint()..color = const Color(0xFF8FD0FF);
+    final played = Paint()..color = const Color(0xFF8FD0FF);
+    final ahead = Paint()..color = const Color(0xFF3A4654);
     for (var i = 0; i < amplitudes.length; i++) {
       final x = i * barWidth;
-      final double h = math.max(1, amplitudes[i] * (size.height - 2));
-      final inWindow = x >= x0 && x <= x1;
+      final h = _atLeast1(amplitudes[i] * (size.height - 2));
       canvas.drawRect(
-        Rect.fromLTWH(x, mid - h / 2, math.max(1, barWidth - 0.5), h),
-        inWindow ? bright : dim,
+        Rect.fromLTWH(x, mid - h / 2, _barWidth(barWidth), h),
+        x <= px ? played : ahead,
       );
     }
 
-    // Window borders.
-    final border = Paint()
-      ..color = const Color(0xCC54B4FF)
-      ..strokeWidth = 2;
-    canvas
-      ..drawLine(Offset(x0, 0), Offset(x0, size.height), border)
-      ..drawLine(Offset(x1, 0), Offset(x1, size.height), border);
-
-    // Playhead (always shown so a paused seek is visible). Brighter while playing.
-    final px = positionSec / trackDurationSec * size.width;
+    // Playhead (always shown so a paused seek is visible).
     canvas.drawLine(
       Offset(px, 0),
       Offset(px, size.height),
@@ -547,9 +460,11 @@ class _WaveformPainter extends CustomPainter {
     );
   }
 
+  static double _atLeast1(double v) => v < 1 ? 1 : v;
+  static double _barWidth(double w) => w - 0.5 < 1 ? 1 : w - 0.5;
+
   @override
   bool shouldRepaint(_WaveformPainter old) =>
-      old.windowStartSec != windowStartSec ||
       old.positionSec != positionSec ||
       old.playing != playing ||
       !identical(old.amplitudes, amplitudes);
