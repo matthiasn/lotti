@@ -421,7 +421,30 @@ void main() {
         final leftReleaseFoot = footL.sample(7 / 8).rotation;
         expect(leftSupportFoot, closeTo(-0.08, 0.001));
         expect(rightSupportFoot, closeTo(-0.08, 0.001));
+        expect(
+          footL.sample(1 / 8).rotation,
+          lessThan(leftSupportFoot - 0.04),
+          reason:
+              'the planted left foot should roll into the Shaku pocket instead '
+              'of staying perfectly flat while the body loads it',
+        );
         expect(rightFreeFoot, greaterThan(rightSupportFoot + 0.45));
+        final shakuToeTap = _targetFor(
+          CatClips.dance,
+          CatBones.footR,
+        ).channel.sample(1 / 8);
+        expect(
+          shakuToeTap.x,
+          greaterThan(80),
+          reason:
+              'the first pocket should show a low outward free-foot toe tap',
+        );
+        expect(
+          shakuToeTap.y,
+          greaterThan(90),
+          reason:
+              'the free-right foot should stay low enough to read as footwork',
+        );
         expect(
           footR.sample(17 / 32).rotation,
           greaterThan(rightSupportFoot + 0.08),
@@ -718,6 +741,43 @@ void main() {
       );
     });
 
+    test('dance keeps major phrase handoffs in continuous hand paths', () {
+      final lead = CatClips.dance;
+      final handL = _targetFor(lead, CatBones.handL).channel;
+      final handR = _targetFor(lead, CatBones.handR).channel;
+      final footL = _targetFor(lead, CatBones.footL).channel;
+
+      expect(
+        _targetDistance(handL, 12, 13),
+        lessThan(9),
+        reason:
+            'the lead left hand should bridge the right-side answer instead of '
+            'snapping back out after the rebound scoop',
+      );
+      expect(
+        _targetDistance(handR, 15, 16),
+        lessThan(20),
+        reason:
+            'the right-hand lift answer should hit as a pickup, not a teleport',
+      );
+      expect(
+        _targetDistance(handL, 28, 29),
+        lessThan(10),
+        reason: 'the hook reset should close in a readable hand arc',
+      );
+      expect(
+        _targetDistance(handL, 31, 32),
+        lessThan(17),
+        reason:
+            'the loop seam should bring the hand home without a one-frame jump',
+      );
+      expect(
+        _targetDistance(footL, 28, 29),
+        lessThan(15),
+        reason: 'the toe-flick release should travel home over multiple frames',
+      );
+    });
+
     test('walk and run carry forward locomotion, stage moves do not', () {
       // The walk uses foot-locked locomotion (ground spans, no speed); the run
       // still uses a constant speed; kick/dance/idle animate in place.
@@ -734,3 +794,11 @@ void main() {
 
 LimbIkTarget _targetFor(Clip clip, String endBoneId) =>
     clip.limbTargets.singleWhere((target) => target.endBoneId == endBoneId);
+
+double _targetDistance(IkTargetChannel channel, int fromFrame, int toFrame) {
+  final from = channel.sample(fromFrame / CatClips.dancePhrase.frameCount);
+  final to = channel.sample(toFrame / CatClips.dancePhrase.frameCount);
+  final dx = to.x - from.x;
+  final dy = to.y - from.y;
+  return math.sqrt(dx * dx + dy * dy);
+}

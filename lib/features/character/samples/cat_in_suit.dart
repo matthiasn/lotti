@@ -1037,6 +1037,43 @@ class CatClips {
 
   static const _danceLeadMoveSignatures = [
     DanceMoveSignature(
+      moveName: 'lead Shaku pocket hit',
+      ikTargetKeys: {
+        CatBones.handL: [
+          DanceIkTargetKey(6, x: -19.7, y: 30.4),
+          // Frame 7 bridges the crossed pocket into the shoulder scoop. The
+          // old path jumped straight out to the side here, which made the
+          // section change read as a snap instead of a pickup.
+          DanceIkTargetKey(7, x: -39.5, y: 30.8),
+        ],
+        CatBones.footR: [
+          // Keep the free-right foot low enough to read as a toe tap, not a
+          // tucked invisible lift under the suit.
+          DanceIkTargetKey(1, x: 73.2, y: 88.6),
+          DanceIkTargetKey(2, x: 77.4, y: 90.4),
+          DanceIkTargetKey(3, x: 81.2, y: 91.6),
+          DanceIkTargetKey(4, x: 83.8, y: 92.2),
+          DanceIkTargetKey(5, x: 80.2, y: 93.1),
+          DanceIkTargetKey(6, x: 72.4, y: 94.1),
+          DanceIkTargetKey(7, x: 64.2, y: 94.2),
+          DanceIkTargetKey(8, x: 57.8, y: 93.2),
+        ],
+      },
+      jointKeys: {
+        CatBones.footL: [
+          DanceJointKey(4, rotation: -0.15),
+          DanceJointKey(6, rotation: -0.04),
+          DanceJointKey(8, rotation: -0.08),
+        ],
+        CatBones.footR: [
+          DanceJointKey(2, rotation: 0.48),
+          DanceJointKey(4, rotation: 0.62),
+          DanceJointKey(6, rotation: 0.38),
+          DanceJointKey(8, rotation: 0.2),
+        ],
+      },
+    ),
+    DanceMoveSignature(
       moveName: 'lead rebound shoulder scoop',
       bodyAccents: [
         DanceBodyAccent(
@@ -1052,8 +1089,8 @@ class CatClips {
       ],
       ikTargetKeys: {
         CatBones.handL: [
-          DanceIkTargetKey(8, x: -74.5, y: 17.8),
-          DanceIkTargetKey(9, x: -72.4, y: -2.2),
+          DanceIkTargetKey(8, x: -66.5, y: 15.2),
+          DanceIkTargetKey(9, x: -69.6, y: -1.6),
           DanceIkTargetKey(10, x: -67.8, y: -12.4),
           DanceIkTargetKey(11, x: -56.4, y: 0.4),
           DanceIkTargetKey(12, x: -52.6, y: 22.2),
@@ -1094,6 +1131,55 @@ class CatClips {
       },
     ),
     DanceMoveSignature(
+      moveName: 'right-side camera answer',
+      ikTargetKeys: {
+        CatBones.handL: [
+          DanceIkTargetKey(12, x: -52.6, y: 22.2),
+          DanceIkTargetKey(13, x: -59.2, y: 24.8),
+          DanceIkTargetKey(14, x: -66.4, y: 26.1),
+          DanceIkTargetKey(15, x: -59.6, y: 28),
+          DanceIkTargetKey(16, x: -47, y: 31.5),
+        ],
+        CatBones.handR: [
+          DanceIkTargetKey(14, x: 54.4, y: 29.2),
+          DanceIkTargetKey(15, x: 70.2, y: 22.4),
+          DanceIkTargetKey(16, x: 80.2, y: 14.6),
+          DanceIkTargetKey(17, x: 78.6, y: 18.4),
+          DanceIkTargetKey(18, x: 72.8, y: 23.2),
+        ],
+      },
+      jointKeys: {
+        CatBones.armUpperL: [
+          DanceJointKey(12, rotation: 0.08),
+          DanceJointKey(13, rotation: 0.16),
+          DanceJointKey(14, rotation: 0.24),
+          DanceJointKey(15, rotation: 0.18),
+          DanceJointKey(16, rotation: 0.06),
+        ],
+        CatBones.armLowerL: [
+          DanceJointKey(12, rotation: 0.38),
+          DanceJointKey(13, rotation: 0.32),
+          DanceJointKey(14, rotation: 0.24),
+          DanceJointKey(15, rotation: 0.06),
+          DanceJointKey(16, rotation: -0.16),
+        ],
+        CatBones.armUpperR: [
+          DanceJointKey(14, rotation: -0.3),
+          DanceJointKey(15, rotation: -0.44),
+          DanceJointKey(16, rotation: -0.62),
+          DanceJointKey(17, rotation: -0.58),
+          DanceJointKey(18, rotation: -0.5),
+        ],
+        CatBones.armLowerR: [
+          DanceJointKey(14, rotation: 0.34),
+          DanceJointKey(15, rotation: 0.22),
+          DanceJointKey(16, rotation: 0.04),
+          DanceJointKey(17, rotation: 0.18),
+          DanceJointKey(18, rotation: 0.34),
+        ],
+      },
+    ),
+    DanceMoveSignature(
       moveName: 'right-foot groove pocket',
       ikTargetKeys: {
         CatBones.footL: [
@@ -1117,6 +1203,71 @@ class CatClips {
           DanceJointKey(20, rotation: -0.08),
           DanceJointKey(21, rotation: -0.02),
           DanceJointKey(22, rotation: -0.08),
+        ],
+      },
+    ),
+    DanceMoveSignature(
+      moveName: 'toe-flick hook reset',
+      ikTargetKeys: {
+        CatBones.handL: [
+          DanceIkTargetKey(28, x: -82.4, y: 12.4),
+          DanceIkTargetKey(29, x: -89.2, y: 7.2),
+          DanceIkTargetKey(30, x: -84.4, y: 13.2),
+          DanceIkTargetKey(31, x: -70.2, y: 23.4),
+          DanceIkTargetKey(32, x: -56.1, y: 30.3),
+        ],
+        CatBones.handR: [
+          DanceIkTargetKey(28, x: 51.2, y: 24.7),
+          DanceIkTargetKey(29, x: 58.4, y: 22.6),
+          DanceIkTargetKey(30, x: 60.2, y: 23.4),
+          DanceIkTargetKey(31, x: 66.8, y: 25.2),
+          DanceIkTargetKey(32, x: 54.4, y: 30.7),
+        ],
+        CatBones.footL: [
+          DanceIkTargetKey(28, x: -27.4, y: 105),
+          DanceIkTargetKey(29, x: -14.2, y: 100.2),
+          DanceIkTargetKey(30, x: 5.4, y: 95.7),
+          DanceIkTargetKey(31, x: 10.6, y: 94.2),
+          DanceIkTargetKey(32, x: 9.6, y: 94.4),
+        ],
+      },
+      jointKeys: {
+        CatBones.armUpperL: [
+          DanceJointKey(27, rotation: 0.32),
+          DanceJointKey(28, rotation: 0.4),
+          DanceJointKey(29, rotation: 0.54),
+          DanceJointKey(30, rotation: 0.5),
+          DanceJointKey(31, rotation: 0.32),
+          DanceJointKey(32, rotation: 0.22),
+        ],
+        CatBones.armLowerL: [
+          DanceJointKey(27, rotation: -0.12),
+          DanceJointKey(28, rotation: 0.22),
+          DanceJointKey(29, rotation: 0.42),
+          DanceJointKey(30, rotation: 0.46),
+          DanceJointKey(31, rotation: 0.18),
+          DanceJointKey(32, rotation: -0.12),
+        ],
+        CatBones.armUpperR: [
+          DanceJointKey(28, rotation: -0.46),
+          DanceJointKey(29, rotation: -0.58),
+          DanceJointKey(30, rotation: -0.54),
+          DanceJointKey(31, rotation: -0.44),
+          DanceJointKey(32, rotation: -0.24),
+        ],
+        CatBones.armLowerR: [
+          DanceJointKey(28, rotation: 0.58),
+          DanceJointKey(29, rotation: 0.68),
+          DanceJointKey(30, rotation: 0.58),
+          DanceJointKey(31, rotation: 0.22),
+          DanceJointKey(32, rotation: 0.14),
+        ],
+        CatBones.footL: [
+          DanceJointKey(28, rotation: 0.46),
+          DanceJointKey(29, rotation: 0.32),
+          DanceJointKey(30, rotation: 0.08),
+          DanceJointKey(31, rotation: -0.04),
+          DanceJointKey(32, rotation: -0.08),
         ],
       },
     ),
@@ -1467,41 +1618,45 @@ class CatClips {
 
   static final KeyframeIkTargetChannel _danceFootRTarget = _dancePhrase
       .ikTargetChannel(
-        const [
-          DanceIkTargetKey(0, x: 71.5, y: 85.2),
-          DanceIkTargetKey(1, x: 72.1, y: 81.1),
-          DanceIkTargetKey(2, x: 70.8, y: 78.4),
-          DanceIkTargetKey(3, x: 68.3, y: 78.7),
-          DanceIkTargetKey(4, x: 65.9, y: 80.6),
-          DanceIkTargetKey(5, x: 66.1, y: 83.2),
-          DanceIkTargetKey(6, x: 65.2, y: 87.6),
-          DanceIkTargetKey(7, x: 57.3, y: 96),
-          DanceIkTargetKey(8, x: 57.8, y: 91.1),
-          DanceIkTargetKey(9, x: 54.8, y: 94.5),
-          DanceIkTargetKey(10, x: 50.9, y: 98.7),
-          DanceIkTargetKey(11, x: 47.7, y: 101),
-          DanceIkTargetKey(12, x: 42.7, y: 103),
-          DanceIkTargetKey(13, x: 32.5, y: 105),
-          DanceIkTargetKey(14, x: 19.9, y: 105.5),
-          DanceIkTargetKey(15, x: 5.3, y: 103.8),
-          DanceIkTargetKey(16, x: -4.2, y: 100.2),
-          DanceIkTargetKey(17, x: -5.3, y: 99.2),
-          DanceIkTargetKey(18, x: -3.4, y: 99.6),
-          DanceIkTargetKey(19, x: -4.9, y: 99.3),
-          DanceIkTargetKey(20, x: -5.9, y: 99.5),
-          DanceIkTargetKey(21, x: -4.1, y: 100.3),
-          DanceIkTargetKey(22, x: -1, y: 101.5),
-          DanceIkTargetKey(23, x: 1.9, y: 102.4),
-          DanceIkTargetKey(24, x: 7.6, y: 102.3),
-          DanceIkTargetKey(25, x: 8.9, y: 102.7),
-          DanceIkTargetKey(26, x: 9.5, y: 103.3),
-          DanceIkTargetKey(27, x: 8.9, y: 103.6),
-          DanceIkTargetKey(28, x: 14.4, y: 104.4),
-          DanceIkTargetKey(29, x: 39.5, y: 102.6),
-          DanceIkTargetKey(30, x: 62.3, y: 94),
-          DanceIkTargetKey(31, x: 69.5, y: 88.6),
-          DanceIkTargetKey(32, x: 71.5, y: 85.2),
-        ],
+        _dancePhrase.mergeIkTargetKeys(
+          baseKeys: const [
+            DanceIkTargetKey(0, x: 71.5, y: 85.2),
+            DanceIkTargetKey(1, x: 72.1, y: 81.1),
+            DanceIkTargetKey(2, x: 70.8, y: 78.4),
+            DanceIkTargetKey(3, x: 68.3, y: 78.7),
+            DanceIkTargetKey(4, x: 65.9, y: 80.6),
+            DanceIkTargetKey(5, x: 66.1, y: 83.2),
+            DanceIkTargetKey(6, x: 65.2, y: 87.6),
+            DanceIkTargetKey(7, x: 57.3, y: 96),
+            DanceIkTargetKey(8, x: 57.8, y: 91.1),
+            DanceIkTargetKey(9, x: 54.8, y: 94.5),
+            DanceIkTargetKey(10, x: 50.9, y: 98.7),
+            DanceIkTargetKey(11, x: 47.7, y: 101),
+            DanceIkTargetKey(12, x: 42.7, y: 103),
+            DanceIkTargetKey(13, x: 32.5, y: 105),
+            DanceIkTargetKey(14, x: 19.9, y: 105.5),
+            DanceIkTargetKey(15, x: 5.3, y: 103.8),
+            DanceIkTargetKey(16, x: -4.2, y: 100.2),
+            DanceIkTargetKey(17, x: -5.3, y: 99.2),
+            DanceIkTargetKey(18, x: -3.4, y: 99.6),
+            DanceIkTargetKey(19, x: -4.9, y: 99.3),
+            DanceIkTargetKey(20, x: -5.9, y: 99.5),
+            DanceIkTargetKey(21, x: -4.1, y: 100.3),
+            DanceIkTargetKey(22, x: -1, y: 101.5),
+            DanceIkTargetKey(23, x: 1.9, y: 102.4),
+            DanceIkTargetKey(24, x: 7.6, y: 102.3),
+            DanceIkTargetKey(25, x: 8.9, y: 102.7),
+            DanceIkTargetKey(26, x: 9.5, y: 103.3),
+            DanceIkTargetKey(27, x: 8.9, y: 103.6),
+            DanceIkTargetKey(28, x: 14.4, y: 104.4),
+            DanceIkTargetKey(29, x: 39.5, y: 102.6),
+            DanceIkTargetKey(30, x: 62.3, y: 94),
+            DanceIkTargetKey(31, x: 69.5, y: 88.6),
+            DanceIkTargetKey(32, x: 71.5, y: 85.2),
+          ],
+          signatures: _danceLeadMoveSignatures,
+          targetBoneId: CatBones.footR,
+        ),
         smooth: true,
       );
 
