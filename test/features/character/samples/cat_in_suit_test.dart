@@ -1928,6 +1928,32 @@ void main() {
       );
     });
 
+    test('dance release keeps lead paws outside the torso silhouette', () {
+      final handL = _targetFor(CatClips.dance, CatBones.handL).channel;
+      final handR = _targetFor(CatClips.dance, CatBones.handR).channel;
+
+      for (final frameIndex in [24, 25, 26]) {
+        final p = frameIndex / CatClips.dancePhrase.frameCount;
+        final left = handL.sample(p);
+        final right = handR.sample(p);
+
+        expect(
+          left.x,
+          lessThan(-62),
+          reason:
+              'dance frame $frameIndex should keep the lead left paw outside '
+              'the jacket instead of sliding into the torso silhouette',
+        );
+        expect(
+          right.x,
+          greaterThan(82),
+          reason:
+              'dance frame $frameIndex should keep the lead right paw outside '
+              'the jacket instead of sliding into the torso silhouette',
+        );
+      }
+    });
+
     test('dance keeps major phrase handoffs in continuous hand paths', () {
       final lead = CatClips.dance;
       final handL = _targetFor(lead, CatBones.handL).channel;
