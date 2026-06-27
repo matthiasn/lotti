@@ -190,6 +190,84 @@ def _waveform(signal: np.ndarray, buckets: int = 1000) -> list[float]:
     return [round(float(p) / peak, 3) for p in peaks]
 
 
+def _label_segments(seg_means: np.ndarray) -> list[str]:
+    """Label segments A/B/C... so a recurring section (e.g. a chorus) repeats its
+    letter. Clusters the per-segment mean features; falls back to sequential
+    labels if clustering is unavailable."""
+    n = len(seg_means)
+    if n == 0:
+        return []
+    n_labels = min(4, n)
+    try:
+        from sklearn.cluster import AgglomerativeClustering
+
+        ids = AgglomerativeClustering(n_clusters=n_labels).fit_predict(seg_means)
+    except Exception:  # noqa: BLE001 - clustering is best-effort decoration
+        ids = list(range(n))
+    order: dict[int, str] = {}
+    labels = []
+    for cluster_id in ids:
+        key = int(cluster_id)
+        if key not in order:
+            order[key] = chr(ord("A") + len(order))
+        labels.append(order[key])
+    return labels
+
+
+def _sections(signal: np.ndarray, sr: int) -> list[dict]:
+    """Coarse song-structure segmentation: boundaries + repeating-section labels.
+
+    Stacks loudness (RMS) + harmony (chroma) + timbre (MFCC), finds k segment
+    boundaries with librosa's agglomerative clustering, then labels segments by
+    clustering their mean features. Boundaries are approximate — this is the
+    rung-4 structure hook for section-aware choreography, not a precise functional
+    labeler. Segments tile the track `[0, duration)`.
+    """
+    n = len(signal)
+    if n == 0:
+        return []
+    hop = 512
+    feat = np.vstack(
+        [
+            librosa.util.normalize(librosa.feature.rms(y=signal, hop_length=hop), axis=1),
+            librosa.util.normalize(
+                librosa.feature.chroma_cqt(y=signal, sr=sr, hop_length=hop), axis=1
+            ),
+            librosa.util.normalize(
+                librosa.feature.mfcc(y=signal, sr=sr, hop_length=hop, n_mfcc=13),
+                axis=1,
+            ),
+        ]
+    )
+    frames = feat.shape[1]
+    if frames < 4:
+        return []
+    duration = n / sr
+    k = int(max(3, min(14, round(duration / 12))))
+    k = min(k, frames - 1)
+    bounds = librosa.segment.agglomerative(feat, k)
+    edges = sorted({0, frames, *[int(b) for b in bounds]})
+    times = librosa.frames_to_time(np.array(edges), sr=sr, hop_length=hop)
+    seg_means = np.array(
+        [feat[:, s:e].mean(axis=1) for s, e in zip(edges[:-1], edges[1:]) if e > s]
+    )
+    labels = _label_segments(seg_means)
+    sections = []
+    for i in range(len(edges) - 1):
+        start = round(float(times[i]), _T)
+        end = round(float(times[i + 1]), _T)
+        if i == len(edges) - 2:
+            end = round(duration, _T)
+        sections.append(
+            {
+                "start_sec": start,
+                "end_sec": end,
+                "label": labels[i] if i < len(labels) else "A",
+            }
+        )
+    return sections
+
+
 def analyze(
     signal: np.ndarray,
     sr: int,
@@ -295,6 +373,8 @@ def analyze(
         # Peak-amplitude envelope for drawing the waveform in a picker UI; offline
         # so the consumer needs no platform audio plugin.
         "waveform": _waveform(signal),
+        # Coarse song structure (rung 4) for section-aware choreography.
+        "sections": _sections(signal, sr),
     }
 
 

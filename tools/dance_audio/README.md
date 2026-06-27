@@ -100,6 +100,7 @@ python analyze.py --selftest
 | `loop` | `{length_beats, anchor_downbeat_index}` — default 2-bar loop on the first downbeat; the choreographer overrides |
 | `onsets[]` | accent onsets: `{time_sec, strength}` (normalized 0..1) — drives later "hit" accents |
 | `waveform[]` | downsampled peak-amplitude envelope (0..1, ~1000 buckets) for drawing a waveform picker — computed offline so the consumer needs no platform audio plugin |
+| `sections[]` | coarse song structure (rung 4): `{start_sec, end_sec, label}` tiling the track; labels (A/B/C…) repeat for recurring sections. Boundaries are approximate (librosa agglomerative segmentation), for section-aware choreography — not a precise functional labeler |
 
 `confidence` (per beat and the `tempo` mean) is a **heuristic** from local tempo
 consistency — high when an inter-beat interval is near the median — not a native

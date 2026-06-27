@@ -100,6 +100,23 @@ class TestAnalyze:
         assert all(0.0 <= v <= 1.0 for v in wave)
         assert max(wave) == 1.0  # normalized to the loudest bucket
 
+    def test_includes_tiled_structure_sections(self, monkeypatch, steady_grid):
+        beats, downbeats = steady_grid
+        monkeypatch.setattr(analyze, "_run_beat_this", _fake_beat_this(beats, downbeats))
+        beatmap = analyze.analyze(
+            analyze._synth_click(bpm=120, n_beats=16),
+            analyze.ANALYSIS_SR,
+            audio_path="x.wav",
+        )
+        sections = beatmap["sections"]
+        assert isinstance(sections, list) and len(sections) >= 1
+        # Tile the track edge-to-edge from 0 with no gaps/overlaps.
+        assert sections[0]["start_sec"] == 0.0
+        for a, b in zip(sections, sections[1:]):
+            assert a["end_sec"] == b["start_sec"]
+        assert all(s["start_sec"] < s["end_sec"] for s in sections)
+        assert all(isinstance(s["label"], str) and s["label"] for s in sections)
+
     def test_output_is_deterministic_without_a_stamp(self, monkeypatch, steady_grid):
         beats, downbeats = steady_grid
         monkeypatch.setattr(analyze, "_run_beat_this", _fake_beat_this(beats, downbeats))
