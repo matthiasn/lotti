@@ -440,7 +440,7 @@ class CharacterScene {
     // Counter only part of the root bob so the skull reads rigid without
     // visually detaching from the neck.
     const neutralDanceRootDy = 17.4;
-    return -(rootDy - neutralDanceRootDy) * 0.32;
+    return -(rootDy - neutralDanceRootDy) * 0.4;
   }
 
   double _danceHeadAttitude(double p) {

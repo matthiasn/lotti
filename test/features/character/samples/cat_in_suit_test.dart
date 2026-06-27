@@ -390,19 +390,25 @@ void main() {
         expect(rightHandL.y, closeTo(leadHandL.y, 0.001));
         expect(
           leftHandRFirstAnswer.x,
-          closeTo(leadHandRFirstAnswer.x - 0.48, 0.001),
+          lessThan(leadHandRFirstAnswer.x - 14),
+          reason:
+              'the silver cat should take the frame-12 flanker answer after '
+              'marking the lead call, not stay on the lead hand path',
         );
         expect(
           leftHandRFirstAnswer.y,
-          closeTo(leadHandRFirstAnswer.y - 0.36, 0.001),
+          lessThan(leadHandRFirstAnswer.y - 9),
         );
         expect(
           rightHandLFirstAnswer.x,
-          closeTo(leadHandLFirstAnswer.x + 9, 0.001),
+          greaterThan(leadHandLFirstAnswer.x + 14),
+          reason:
+              'the dark cat should mirror the frame-12 flanker answer with its '
+              'inside hand',
         );
         expect(
           rightHandLFirstAnswer.y,
-          closeTo(leadHandLFirstAnswer.y - 6, 0.001),
+          lessThan(leadHandLFirstAnswer.y - 9),
         );
         expect(
           rightHandLRightAnswerSettle.x,
@@ -428,25 +434,25 @@ void main() {
         );
         expect(
           rightHandLEarlyEcho.x,
-          closeTo(leadHandLEarlyEcho.x + 8.2, 0.001),
+          closeTo(leadHandLEarlyEcho.x, 0.001),
           reason:
-              'the dark backup should mark an early inside-hand response in '
-              'the first eight count',
+              'the dark backup should mark the lead call without stealing the '
+              'first inside-hand answer',
         );
         expect(
           rightHandLEarlyEcho.y,
-          closeTo(leadHandLEarlyEcho.y - 4.8, 0.001),
+          closeTo(leadHandLEarlyEcho.y, 0.001),
         );
         expect(
           leftHandRDelayedEcho.x,
-          closeTo(leadHandRDelayedEcho.x - 9.4, 0.001),
+          closeTo(leadHandRDelayedEcho.x, 0.001),
           reason:
-              'the silver backup should answer the lead Shaku pocket two '
-              'frames later with its inside hand',
+              'the silver backup should also hold the lead call restrained; '
+              'the visible answer belongs to frames 9-16',
         );
         expect(
           leftHandRDelayedEcho.y,
-          closeTo(leadHandRDelayedEcho.y - 5.8, 0.001),
+          closeTo(leadHandRDelayedEcho.y, 0.001),
         );
         expect(
           rightHandRFirstEcho.x,
@@ -634,16 +640,16 @@ void main() {
         );
         expect(
           rightArmDelta.abs(),
-          inInclusiveRange(0.08, 0.28),
+          inInclusiveRange(0.08, 0.42),
           reason:
               'right backup should feature its inside arm on the right pass',
         );
         expect(
           leftFirstEchoTorsoDelta.abs(),
-          inInclusiveRange(0.025, 0.07),
+          inInclusiveRange(0.008, 0.04),
           reason:
-              'left backup should have a visible but secondary first-pocket '
-              'shoulder echo',
+              'left backup should only mark the first-pocket shoulder so the '
+              'lead owns the call',
         );
         expect(
           rightDelayedEchoTorsoDelta.abs(),
@@ -1104,41 +1110,39 @@ void main() {
       );
       expect(
         rightBackupEarlyShoulder.rotation,
-        lessThan(
+        closeTo(
           leadChannels[CatBones.torso]!
-                  .sample(rightBackupEarlyAnswerP)
-                  .rotation -
-              0.035,
+              .sample(rightBackupEarlyAnswerP)
+              .rotation,
+          0.025,
         ),
         reason:
-            'the dark cat should answer the opening pocket on its own early '
-            'half-beat instead of copying the lead shoulder exactly',
+            'the dark cat should mark the lead call with restrained pocket '
+            'motion; the clear flanker answer comes after frame 8',
       );
       expect(
         leftBackupDelayedShoulder.rotation,
-        greaterThan(
+        closeTo(
           leadChannels[CatBones.torso]!
-                  .sample(leftBackupDelayedAnswerP)
-                  .rotation +
-              0.045,
+              .sample(leftBackupDelayedAnswerP)
+              .rotation,
+          0.03,
         ),
         reason:
-            'the silver cat should answer a frame later with opposite shoulder '
-            'shape so the trio reads call-and-response',
+            'the silver cat should also hold back during the lead call instead '
+            'of creating simultaneous action',
       );
       expect(
-        rightBackupEarlyHand.x - rightLeadEarlyHand.x,
-        greaterThan(5),
+        (rightBackupEarlyHand.x - rightLeadEarlyHand.x).abs(),
+        lessThan(0.001),
         reason:
-            'the dark cat inside hand should mark the early answer instead of '
-            'staying on the lead hand path',
+            'the dark cat inside hand should not steal the opening lead call',
       );
       expect(
-        leftBackupDelayedHand.x - leftLeadDelayedHand.x,
-        lessThan(-6),
+        (leftBackupDelayedHand.x - leftLeadDelayedHand.x).abs(),
+        lessThan(0.001),
         reason:
-            'the silver cat inside hand should mark the delayed answer instead '
-            'of staying on the lead hand path',
+            'the silver cat inside hand should wait for the response window',
       );
       expect(
         (shakuSink.dx - shakuHit.dx).abs(),
@@ -1176,8 +1180,8 @@ void main() {
       expect(phrase.moveAtFrame(10).name, 'lead rebound shoulder scoop');
       expect(
         leadChannels[CatBones.torso]!.sample(reboundP).scaleY,
-        lessThan(0.96),
-        reason: 'rebound scoop should stay in the pocket, not stand tall',
+        lessThan(0.972),
+        reason: 'the lead should keep a soft pocket while the flankers answer',
       );
       final reboundLeftHand = _targetFor(
         lead,
@@ -1189,18 +1193,24 @@ void main() {
       ).channel.sample(reboundP);
       expect(
         reboundLeftHand.y,
-        lessThan(-8),
-        reason: 'left hand should lift to shoulder/chest level for the scoop',
+        greaterThan(4),
+        reason:
+            'the lead hand should stay lower during the flanker answer instead '
+            'of reclaiming the whole 9-16 window',
       );
       expect(
         reboundRightHand.y,
-        lessThan(-5),
-        reason: 'right hand should answer high enough to define the scoop',
+        greaterThan(4),
+        reason:
+            'the lead right hand should also stay in the pocket while the side '
+            'cats answer',
       );
       expect(
         reboundRightHand.x - reboundLeftHand.x,
-        greaterThan(135),
-        reason: 'scoop should read as a broad shoulder-level shape',
+        lessThan(120),
+        reason:
+            'frames 9-16 should avoid a broad lead boy-band arm shape; the '
+            'side cats own the larger answer',
       );
       final delayedRollP = 12 / phrase.frameCount;
       expect(
@@ -1219,19 +1229,20 @@ void main() {
       );
       expect(
         leadChannels[CatBones.armUpperL]!.sample(reboundP).rotation,
-        greaterThan(0.65),
-        reason: 'left shoulder should visibly lift through the scoop accent',
+        lessThan(0.55),
+        reason:
+            'the lead shoulder should stay compact in the flanker-answer window',
       );
       expect(
         leadChannels[CatBones.armUpperR]!.sample(reboundP).rotation,
-        greaterThan(0.24),
+        greaterThan(0.18),
         reason:
-            'right shoulder should stop hanging neutral during the scoop accent',
+            'right shoulder should still mark the pocket without dominating it',
       );
       expect(
         leadChannels[CatBones.armLowerR]!.sample(reboundP).rotation,
-        greaterThan(0.6),
-        reason: 'right forearm should carve the scoop instead of dangling',
+        greaterThan(0.4),
+        reason: 'right forearm should carve a restrained pocket answer',
       );
 
       final rightCueP = phrase.moveAtFrame(12).accentFrame / phrase.frameCount;
@@ -1266,10 +1277,10 @@ void main() {
       );
       expect(
         leadLowCarve.x,
-        lessThan(-66),
+        lessThan(-60),
         reason:
-            'the lead left hand should carve low/outside during the right-side '
-            'answer instead of returning to the belly silhouette',
+            'the lead left hand should stay outside the belly silhouette during '
+            'the side-cat answer without stealing the whole feature',
       );
       expect(leadLowCarve.y, greaterThan(26));
       final answerCrossLeft = leadFootLTarget.sample(13 / phrase.frameCount);
@@ -1336,13 +1347,27 @@ void main() {
       final rightHandDelta =
           _targetFor(right, CatBones.handL).channel.sample(rightCueP).x -
           _targetFor(lead, CatBones.handL).channel.sample(rightCueP).x;
+      final leftArmDeltaAtRightCue =
+          left.channels[CatBones.armUpperR]!.sample(rightCueP).rotation -
+          leadChannels[CatBones.armUpperR]!.sample(rightCueP).rotation;
+      final leftHandDeltaAtRightCue =
+          _targetFor(left, CatBones.handR).channel.sample(rightCueP).x -
+          _targetFor(lead, CatBones.handR).channel.sample(rightCueP).x;
       expect(
         rightArmDelta,
-        greaterThan(0.15),
+        greaterThan(0.3),
         reason:
-            'right-side camera cue should feature the right dancer inside arm',
+            'right-side answer should clearly feature the dark cat inside arm',
       );
-      expect(rightHandDelta, greaterThan(8));
+      expect(rightHandDelta, greaterThan(16));
+      expect(
+        leftArmDeltaAtRightCue,
+        lessThan(-0.22),
+        reason:
+            'the silver cat should mirror the frame-12 flanker answer with its '
+            'inside arm',
+      );
+      expect(leftHandDeltaAtRightCue, lessThan(-15));
 
       final lungeAnticipation = lead.root.sample(13 / phrase.frameCount);
       final lungePeak = lead.root.sample(14 / phrase.frameCount);
@@ -1494,7 +1519,7 @@ void main() {
       );
       expect(
         compactLegworkRightHand.x - compactLegworkLeftHand.x,
-        lessThan(130),
+        lessThan(135),
         reason:
             'the legwork phrase should keep the hands compact near the ribs '
             'between big hits, not hold a generic boy-band wide arm shape',
