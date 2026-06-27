@@ -872,7 +872,7 @@ void main() {
       );
       expect(
         rightClose.orangeCenterY,
-        lessThan(wide.orangeCenterY - 24),
+        lessThan(wide.orangeCenterY - 38),
         reason:
             'the pushed-in camera should lift the dancers toward a face/torso '
             'composition instead of keeping the enlarged lead low in frame',
@@ -914,11 +914,17 @@ void main() {
       );
       expect(
         rightHold.orangeHeight,
-        closeTo(rightClose.orangeHeight, rightClose.orangeHeight * 0.08),
+        inInclusiveRange(
+          rightClose.orangeHeight * 0.98,
+          rightClose.orangeHeight * 1.12,
+        ),
+        reason:
+            'the right feature can begin the center push-in, but it should '
+            'still read as a settled held shot rather than a zoom jump',
       );
       expect(
         leadLevel.orangeCenterX,
-        closeTo(rightHold.orangeCenterX, 64),
+        closeTo(rightHold.orangeCenterX, 72),
         reason:
             'the right pass should ease through the lunge recovery instead of '
             'snapping straight back to the trio centre',
@@ -926,12 +932,24 @@ void main() {
       expect(
         leadLevel.orangeHeight,
         inInclusiveRange(
-          rightClose.orangeHeight * 0.98,
-          rightClose.orangeHeight * 1.18,
+          rightClose.orangeHeight * 1.08,
+          rightClose.orangeHeight * 1.34,
         ),
         reason:
-            'the mid-phrase should continue the face/torso push smoothly, not '
-            'snap back to wide after the right-side pass',
+            'the mid-phrase should punch into the lead face/torso instead of '
+            'staying at the same side-pass close-up size',
+      );
+      expect(
+        leadLevel.contentMinY,
+        greaterThan(2),
+        reason: 'the tighter center close-up should not crop ears or heads',
+      );
+      expect(
+        leadLevel.contentMaxY,
+        lessThanOrEqualTo(419),
+        reason:
+            'the tighter center close-up should stay inside the desktop '
+            'viewport',
       );
       expect(
         postRightRecovery.orangeCenterX,
