@@ -424,59 +424,58 @@ class CharacterPainter extends CustomPainter {
         dx:
             -34 -
             7 * breathe -
-            10 * sideAnswer -
-            9 * wideV +
-            8 * greyFeature +
-            10 * greyFinish +
-            3 * finishTriangle,
+            14 * sideAnswer -
+            13 * wideV +
+            14 * greyFeature +
+            16 * greyFinish +
+            6 * finishTriangle,
         dy:
             -17 +
             1.5 * callResponse -
             4 * leadCall -
-            5 * sideAnswer -
-            4 * wideV +
-            12 * greyFeature +
-            14 * greyFinish +
-            3 * ensembleHit +
+            3 * sideAnswer -
+            2 * wideV +
+            26 * greyFeature +
+            28 * greyFinish +
+            4 * ensembleHit +
             2 * finishTriangle,
-        scale: 1 + 0.1 * greyFeature + 0.12 * greyFinish,
+        scale: 1 + 0.16 * greyFeature + 0.18 * greyFinish,
       ),
       1 => (
         dx: 3 * leadCall - 2 * greyFeature - 4 * greyFinish - 3 * ensembleHit,
         dy:
             20 -
             5 * leadCall -
-            4 * rightFeature -
-            5 * greyFeature -
+            12 * rightFeature -
+            15 * greyFeature -
             2 * blackSolo +
-            4 * wideV +
-            7 * centreFeature -
-            6 * greyFinish -
+            2 * wideV +
+            5 * centreFeature -
+            13 * greyFinish -
             3 * ensembleHit,
-        scale:
-            1 - 0.035 * rightFeature - 0.04 * greyFeature - 0.045 * greyFinish,
+        scale: 1 - 0.06 * rightFeature - 0.07 * greyFeature - 0.06 * greyFinish,
       ),
       2 => (
         dx:
             34 +
             7 * breathe +
-            6 * rightFeature +
-            10 * sideAnswer +
-            11 * blackSolo +
-            9 * wideV -
-            4 * greyFeature -
-            18 * finishTriangle,
+            12 * rightFeature +
+            12 * sideAnswer +
+            12 * blackSolo +
+            12 * wideV -
+            8 * greyFeature -
+            22 * finishTriangle,
         dy:
             -17 -
             1.5 * callResponse -
             2 * leadCall -
-            13 * rightFeature -
-            4 * sideAnswer +
-            7 * blackSolo -
-            4 * wideV +
-            3 * ensembleHit +
+            18 * rightFeature -
+            2 * sideAnswer +
+            14 * blackSolo -
+            2 * wideV +
+            4 * ensembleHit +
             7 * finishTriangle,
-        scale: 1 + 0.1 * rightFeature + 0.08 * blackSolo - 0.025 * greyFeature,
+        scale: 1 + 0.16 * rightFeature + 0.12 * blackSolo - 0.02 * greyFeature,
       ),
       _ => (dx: 0, dy: 0, scale: 1),
     };
