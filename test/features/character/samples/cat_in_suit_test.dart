@@ -640,13 +640,13 @@ void main() {
         ).channel.sample(1 / 8);
         expect(
           shakuToeTap.x,
-          greaterThan(80),
+          greaterThan(84),
           reason:
               'the first pocket should show a low outward free-foot toe tap',
         );
         expect(
           shakuToeTap.y,
-          greaterThan(90),
+          greaterThan(92),
           reason:
               'the free-right foot should stay low enough to read as footwork',
         );
@@ -665,10 +665,10 @@ void main() {
         );
         expect(
           leftFreeFoot,
-          inInclusiveRange(leftSupportFoot + 0.35, leftSupportFoot + 0.56),
+          inInclusiveRange(leftSupportFoot + 0.35, leftSupportFoot + 0.7),
           reason:
-              'the left toe accent should read as compact Afrobeats texture, '
-              'not a large flick that pulls the foot across the body',
+              'the left toe accent should read as defined Afrobeats texture '
+              'without pulling the foot across the body',
         );
         expect(
           leftReleaseFoot,
@@ -916,12 +916,12 @@ void main() {
       ).channel.sample(rightFootCueP);
       expect(
         freeLeftFoot.x,
-        lessThan(-49),
+        lessThan(-53),
         reason: 'free-left foot should flick outward in the right-foot groove',
       );
       expect(
         freeLeftFoot.y,
-        lessThan(99.5),
+        lessThan(99),
         reason: 'free-left foot should lift instead of dragging at frame 20',
       );
       expect(

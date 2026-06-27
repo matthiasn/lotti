@@ -1051,10 +1051,10 @@ class CatClips {
           // tucked invisible lift under the suit.
           DanceIkTargetKey(1, x: 73.2, y: 88.6),
           DanceIkTargetKey(2, x: 77.4, y: 90.4),
-          DanceIkTargetKey(3, x: 81.2, y: 91.6),
-          DanceIkTargetKey(4, x: 83.8, y: 92.2),
-          DanceIkTargetKey(5, x: 80.2, y: 93.1),
-          DanceIkTargetKey(6, x: 72.4, y: 94.1),
+          DanceIkTargetKey(3, x: 83.2, y: 92.4),
+          DanceIkTargetKey(4, x: 87.4, y: 93.7),
+          DanceIkTargetKey(5, x: 82.8, y: 94),
+          DanceIkTargetKey(6, x: 72.4, y: 94.3),
           DanceIkTargetKey(7, x: 64.2, y: 94.2),
           DanceIkTargetKey(8, x: 57.8, y: 93.2),
         ],
@@ -1067,7 +1067,7 @@ class CatClips {
         ],
         CatBones.footR: [
           DanceJointKey(2, rotation: 0.48),
-          DanceJointKey(4, rotation: 0.62),
+          DanceJointKey(4, rotation: 0.68),
           DanceJointKey(6, rotation: 0.38),
           DanceJointKey(8, rotation: 0.2),
         ],
@@ -1220,8 +1220,8 @@ class CatClips {
         CatBones.footL: [
           DanceIkTargetKey(18, x: -40.4, y: 102.2),
           DanceIkTargetKey(19, x: -43.5, y: 100.7),
-          DanceIkTargetKey(20, x: -50.4, y: 98.7),
-          DanceIkTargetKey(21, x: -41.8, y: 100.6),
+          DanceIkTargetKey(20, x: -54.2, y: 98.2),
+          DanceIkTargetKey(21, x: -42.8, y: 100.5),
           DanceIkTargetKey(22, x: -28.2, y: 102.2),
         ],
       },
@@ -1247,7 +1247,7 @@ class CatClips {
           DanceJointKey(21, rotation: 0.42),
         ],
         CatBones.footL: [
-          DanceJointKey(20, rotation: 0.48),
+          DanceJointKey(20, rotation: 0.56),
           DanceJointKey(21, rotation: 0.36),
         ],
         CatBones.footR: [
