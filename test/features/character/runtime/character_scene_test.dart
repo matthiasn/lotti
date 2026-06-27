@@ -356,6 +356,37 @@ void main() {
       }
     });
 
+    test('dance crew keeps the right-support groove under the hips', () {
+      final scene = CharacterScene(buildCatInSuitRig());
+
+      for (final clip in [
+        CatClips.dance,
+        CatClips.danceBackupLeft,
+        CatClips.danceBackupRight,
+      ]) {
+        for (final frameIndex in [19, 20, 21, 22, 23]) {
+          final timeSeconds = CatClips.dance.duration * frameIndex / 32;
+          final frame = scene.frameAt(clip: clip, timeSeconds: timeSeconds);
+          final hip = frame.world[CatBones.hips]!.origin;
+          final support = _supportPoint(
+            scene,
+            clip,
+            CatBones.footR,
+            timeSeconds,
+          );
+
+          expect(
+            (hip.x - support.x).abs(),
+            lessThan(40),
+            reason:
+                '${clip.name} frame $frameIndex should keep the right-support '
+                'groove visibly loaded under the hip, not sliding out from '
+                'under the dancer',
+          );
+        }
+      }
+    });
+
     test('dance loads declared torso pockets over support frames', () {
       final scene = CharacterScene(buildCatInSuitRig());
       final phrase = CatClips.dancePhrase;
