@@ -474,25 +474,25 @@ void main() {
         );
         expect(
           leftFootRSilverAnswer.x,
-          closeTo(leadFootRSilverAnswer.x + 12.4, 0.001),
+          closeTo(leadFootRSilverAnswer.x + 16.2, 0.001),
           reason:
               'the silver answer should be paid for by a visible free-foot '
               'step-plant, not only an upper-body lane change',
         );
         expect(
           leftFootRSilverAnswer.y,
-          closeTo(leadFootRSilverAnswer.y + 3.1, 0.001),
+          closeTo(leadFootRSilverAnswer.y + 4.1, 0.001),
         );
         expect(
           rightFootRDarkAnswer.x,
-          closeTo(leadFootRDarkAnswer.x + 14.2, 0.001),
+          closeTo(leadFootRDarkAnswer.x + 18.4, 0.001),
           reason:
               'the dark answer should also show the free foot planting before '
               'the body finishes the response',
         );
         expect(
           rightFootRDarkAnswer.y,
-          closeTo(leadFootRDarkAnswer.y + 3.2, 0.001),
+          closeTo(leadFootRDarkAnswer.y + 4.3, 0.001),
         );
         expect(
           rightHandLRightAnswerSettle.x,
@@ -1452,33 +1452,60 @@ void main() {
       );
       const silverFlankerP = 11 / 32;
       const darkFlankerP = 14 / 32;
+      final silverInsideHand = _targetFor(
+        left,
+        CatBones.handR,
+      ).channel.sample(silverFlankerP);
+      final leadHandAtSilverCue = _targetFor(
+        lead,
+        CatBones.handR,
+      ).channel.sample(silverFlankerP);
+      final darkInsideHand = _targetFor(
+        right,
+        CatBones.handL,
+      ).channel.sample(darkFlankerP);
+      final leadHandAtDarkCue = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(darkFlankerP);
       final rightArmDelta =
           right.channels[CatBones.armUpperL]!.sample(darkFlankerP).rotation -
           leadChannels[CatBones.armUpperL]!.sample(darkFlankerP).rotation;
-      final rightHandDelta =
-          _targetFor(right, CatBones.handL).channel.sample(darkFlankerP).x -
-          _targetFor(lead, CatBones.handL).channel.sample(darkFlankerP).x;
+      final rightHandDelta = darkInsideHand.x - leadHandAtDarkCue.x;
       final leftArmDeltaAtRightCue =
           left.channels[CatBones.armUpperR]!.sample(silverFlankerP).rotation -
           leadChannels[CatBones.armUpperR]!.sample(silverFlankerP).rotation;
       final leftHandDeltaAtRightCue =
-          _targetFor(left, CatBones.handR).channel.sample(silverFlankerP).x -
-          _targetFor(lead, CatBones.handR).channel.sample(silverFlankerP).x;
+          silverInsideHand.x - leadHandAtSilverCue.x;
       expect(
         rightArmDelta,
-        greaterThan(0.3),
+        greaterThan(0.38),
         reason:
             'right-side answer should clearly feature the dark cat inside arm',
       );
-      expect(rightHandDelta, greaterThan(16));
+      expect(rightHandDelta, greaterThan(21));
+      expect(
+        darkInsideHand.y,
+        lessThan(leadHandAtDarkCue.y - 10),
+        reason:
+            'the dark cat answer should lift high enough to read at ensemble '
+            'scale instead of staying near the lead hand lane',
+      );
       expect(
         leftArmDeltaAtRightCue,
-        lessThan(-0.22),
+        lessThan(-0.3),
         reason:
             'the silver cat should answer earlier with its inside arm instead '
             'of matching the dark cat on the same frame',
       );
-      expect(leftHandDeltaAtRightCue, lessThan(-15));
+      expect(leftHandDeltaAtRightCue, lessThan(-24));
+      expect(
+        silverInsideHand.y,
+        lessThan(leadHandAtSilverCue.y - 10),
+        reason:
+            'the silver cat answer should arrive high/outside before the dark '
+            'cat response, not hide in the lead hand silhouette',
+      );
 
       final lungeAnticipation = lead.root.sample(13 / phrase.frameCount);
       final lungePeak = lead.root.sample(14 / phrase.frameCount);
