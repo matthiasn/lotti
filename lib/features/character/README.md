@@ -26,6 +26,7 @@ AI-assisted SVG → rig pipeline and the low-end `drawAtlas` runtime — lives i
 | Dance waterfront backdrop — Lagos lagoon plate, skyline/bridge, yacht, palms, alpha-mask cloud/wave motion | ✅ `runtime/character_painter.dart` + `assets/images/character/` |
 | Film-strip + frame-grid + onion + travel + live harness | ✅ `test/.../{film_strip,frame_grid}_test.dart` |
 | Interactive demo (clip/expression/blink/wander/BPM keys) | ✅ `demo/character_demo.dart` |
+| Offline audio beat-sync (beat map → on-beat dance) | 🚧 tool + `BeatMap` built & tested; **not wired into the runtime yet** |
 | Offline AI rigging (SVG → rig) | ⛔ not started (Phase 2) |
 | Batched `drawAtlas` runtime + degradation ladder | ⛔ Phase 2 |
 | Quadruped (4-leg) stance + rear-up transition | ⛔ Phase 2 |
@@ -225,6 +226,16 @@ stateDiagram-v2
   handoff point for beat-synced
   choreography, support/weight checks, panel-addressable move windows, and
   future per-character dance styles.
+- **`BeatMap` / `BeatLoopBinding`** (`model/beat_map.dart`) — the bridge from the
+  authored beat grid to a *real track's* beats. A `BeatMap` (parsed from the
+  offline `tools/dance_audio` analysis JSON via `fromJson`) holds detected beat
+  and downbeat times; `beatAt` / `timeAtBeat` form a piecewise-linear time warp
+  over those anchors, and `clipSecondsAt` maps wall-clock time → clip seconds so a
+  looped clip lands on the detected beats — absorbing tempo drift for free.
+  `BeatLoopBinding.barAligned` anchors a loop on a real downbeat over whole bars
+  (bar-correct); `beatAligned` is the beat-level fallback. It warps only the
+  *input time*, leaving `frameAt` untouched, and is **not wired into the runtime
+  yet** (see [Audio beat-sync](#audio-beat-sync-offline-tooling--not-yet-wired)).
 - **`TemporalMotionAnalyzer`** — a resolved-frame diagnostic over
   `CharacterScene`. It records per-bone frame-to-frame displacement and
   acceleration after clip evaluation, contact pinning, head stabilization, and
@@ -277,6 +288,54 @@ the film-strip harness. No `Future.delayed`, no `pumpAndSettle`, no
 ```bash
 fvm flutter test test/features/character/
 ```
+
+## Audio beat-sync (offline tooling — not yet wired)
+
+The dance is authored on a normalized beat grid (`DancePhrase` frames), but the
+mapping from those counts to wall-clock seconds is currently a single global
+tempo scalar (the demo's BPM slider: `seconds = elapsed × bpm/120`). That has no
+phase anchor and assumes constant tempo, so aligning the dance to a real track is
+manual and drifts. The path to true on-beat playback is a **beat map**: an
+offline analysis of an audio file (beats + downbeats) that the runtime warps the
+dance onto.
+
+```mermaid
+flowchart LR
+  audio[audio file] -->|tools/dance_audio Beat This!| json[(beat-map JSON)]
+  json -->|BeatMap.fromJson| bm[BeatMap]
+  bm -->|clipSecondsAt warps the input time| frame["scene.frameAt(clip, seconds)"]
+```
+
+- `model/beat_map.dart` — `BeatMap` (piecewise-linear `beatAt` / `timeAtBeat`
+  warp + `clipSecondsAt`, parsed via `fromJson`) and `BeatLoopBinding`
+  (`barAligned` = downbeat-anchored whole bars; `beatAligned` = beat-level
+  fallback). Pure, deterministic, fully unit-tested (incl. a Glados round-trip
+  property). It warps only the *input time*, so when wired it leaves `frameAt`
+  and the film-strip byte-identical invariant untouched. **Not imported by the
+  runtime yet** — wiring it into `CharacterView` is a later, deliberate step.
+- `tools/dance_audio/` — the offline Python tool (Beat This! + librosa) that
+  produces the beat-map JSON `BeatMap` consumes; see its README for the schema.
+
+When wired (the deliberate later step), the ticker swaps its constant scalar for
+the beat-map warp — everything downstream of `frameAt` is unchanged:
+
+```dart
+// today (constant tempo, no phase anchor):
+final seconds = elapsed * (danceBpm / kAuthoredDanceBpm);
+
+// with a beat map (on-beat, drift-following, bar-anchored):
+final binding = BeatLoopBinding.barAligned(beatMap, bars: 2);
+final seconds = beatMap.clipSecondsAt(
+  elapsed,
+  clipDuration: clip.duration,
+  binding: binding,
+);
+// → scene.frameAt(clip, seconds) exactly as before.
+```
+
+Design rationale, the tooling survey, and the quality ladder (on-beat → bar-correct
+→ structure → choreography) live in
+[`docs/implementation_plans/2026-06-27_dance_audio_analysis.md`](../../../docs/implementation_plans/2026-06-27_dance_audio_analysis.md).
 
 ## Known Phase-1 limitations / next steps
 
