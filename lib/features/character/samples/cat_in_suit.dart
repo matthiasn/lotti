@@ -1024,7 +1024,7 @@ class CatClips {
         endFrame: 8,
         accentFrame: 4,
         featuredDancer: 'lead',
-        signature: 'low left support, crossed hands, right toe flick',
+        signature: 'left support step-drag, crossed hands, right toe flick',
       ),
       DanceMoveCue(
         name: 'lead rebound shoulder scoop',
@@ -1087,6 +1087,19 @@ class CatClips {
           chestScaleY: 0.962,
           chestScaleX: 1.03,
         ),
+        DanceBodyAccentOffset(
+          offsetFrames: 3,
+          radiusFrames: 1,
+          // A small rebound after the F4 foot mark keeps the first phrase from
+          // reading as a held mascot pose: hips release first, then the chest
+          // answers as the free toe drags back under the suit.
+          rootDx: 0.45,
+          rootDy: -0.58,
+          pelvisRotation: -0.035,
+          chestRotation: 0.08,
+          chestScaleY: 1.012,
+          chestScaleX: 0.996,
+        ),
       ],
       ikTargetKeys: {
         CatBones.handL: [
@@ -1127,14 +1140,16 @@ class CatClips {
         ],
         CatBones.footR: [
           // Keep the free-right foot low enough to read as a toe tap, not a
-          // tucked invisible lift under the suit.
+          // tucked invisible lift under the suit. The outward step is paid off
+          // by a low drag back through F6-F8 so the lead pocket has a legwork
+          // signature, not only changing hand poses.
           DanceIkTargetKey(1, x: 75.4, y: 88.6),
-          DanceIkTargetKey(2, x: 82.4, y: 91),
-          DanceIkTargetKey(3, x: 90.8, y: 93),
-          DanceIkTargetKey(4, x: 95.2, y: 94.2),
-          DanceIkTargetKey(5, x: 86.2, y: 96.3),
-          DanceIkTargetKey(6, x: 72.4, y: 96.9),
-          DanceIkTargetKey(7, x: 61.8, y: 96.4),
+          DanceIkTargetKey(2, x: 84.6, y: 90.6),
+          DanceIkTargetKey(3, x: 93.2, y: 92.8),
+          DanceIkTargetKey(4, x: 98.4, y: 94.6),
+          DanceIkTargetKey(5, x: 88.4, y: 96.4),
+          DanceIkTargetKey(6, x: 73.2, y: 97),
+          DanceIkTargetKey(7, x: 61.2, y: 96.2),
           DanceIkTargetKey(8, x: 59.6, y: 94.6),
         ],
       },
@@ -1149,10 +1164,10 @@ class CatClips {
           // Toe-in/toe-out pivots on the free foot: small, low, fast texture
           // that reads as Afrobeats legwork instead of a mascot side shuffle.
           DanceJointKey(1, rotation: 0.3),
-          DanceJointKey(2, rotation: 0.62),
-          DanceJointKey(3, rotation: 0.34),
-          DanceJointKey(4, rotation: 0.72),
-          DanceJointKey(5, rotation: 0.28),
+          DanceJointKey(2, rotation: 0.66),
+          DanceJointKey(3, rotation: 0.3),
+          DanceJointKey(4, rotation: 0.76),
+          DanceJointKey(5, rotation: 0.24),
           DanceJointKey(6, rotation: 0.52),
           DanceJointKey(7, rotation: 0.16),
           DanceJointKey(8, rotation: 0.2),
@@ -1510,6 +1525,19 @@ class CatClips {
       moveName: 'toe-flick hook reset',
       bodyAccentOffsets: [
         DanceBodyAccentOffset(
+          offsetFrames: 1,
+          radiusFrames: 1,
+          // First beat of the closing button: compact hip scoop before the
+          // hook resets. This gives the phrase a visible finish without making
+          // frame 32 a different pose from the loop's frame 0.
+          rootDx: 0.35,
+          rootDy: 0.45,
+          pelvisRotation: 0.035,
+          chestRotation: -0.09,
+          chestScaleY: 0.972,
+          chestScaleX: 1.018,
+        ),
+        DanceBodyAccentOffset(
           offsetFrames: 2,
           radiusFrames: 2,
           rootDx: -0.7,
@@ -1535,16 +1563,16 @@ class CatClips {
       ikTargetKeys: {
         CatBones.handL: [
           DanceIkTargetKey(28, x: -82.4, y: 12.4),
-          DanceIkTargetKey(29, x: -89.2, y: 7.2),
-          DanceIkTargetKey(30, x: -84.4, y: 13.2),
-          DanceIkTargetKey(31, x: -65.4, y: 23.2),
+          DanceIkTargetKey(29, x: -90, y: 6.8),
+          DanceIkTargetKey(30, x: -83.8, y: 11.8),
+          DanceIkTargetKey(31, x: -64.8, y: 22.2),
           DanceIkTargetKey(32, x: -59.2, y: 26.4),
         ],
         CatBones.handR: [
           DanceIkTargetKey(28, x: 58.4, y: 22.4),
-          DanceIkTargetKey(29, x: 72.4, y: 14.2),
-          DanceIkTargetKey(30, x: 76.2, y: 16.8),
-          DanceIkTargetKey(31, x: 56.4, y: 29.4),
+          DanceIkTargetKey(29, x: 74.6, y: 12.8),
+          DanceIkTargetKey(30, x: 76.6, y: 15.2),
+          DanceIkTargetKey(31, x: 55.2, y: 28.4),
           DanceIkTargetKey(32, x: 49.2, y: 33.2),
         ],
         CatBones.footL: [
@@ -1552,7 +1580,7 @@ class CatClips {
           DanceIkTargetKey(29, x: -14.2, y: 100.2),
           DanceIkTargetKey(30, x: 5.4, y: 95.7),
           DanceIkTargetKey(31, x: 10.6, y: 94.2),
-          DanceIkTargetKey(32, x: 9.6, y: 94.4),
+          DanceIkTargetKey(32, x: 13.6, y: 94.4),
         ],
       },
       jointKeys: {
