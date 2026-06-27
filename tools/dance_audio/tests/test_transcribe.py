@@ -99,6 +99,25 @@ class TestTranscribe:
             "created_utc": None,
         }
 
+    def test_drops_trailing_boilerplate_hallucination(self, monkeypatch):
+        segments = [
+            {"start": 0.0, "end": 1.5, "text": "hello there"},
+            {"start": 130.0, "end": 131.0, "text": "Thank you."},
+        ]
+        words = [
+            {"word": "hello", "start": 0.0, "end": 0.6, "score": 0.9},
+            {"word": "there", "start": 0.6, "end": 1.5, "score": 0.9},
+            {"word": "Thank", "start": 130.0, "end": 130.5, "score": 0.3},
+            {"word": "you.", "start": 130.5, "end": 131.0, "score": 0.3},
+        ]
+        monkeypatch.setattr(transcribe, "_run_asr", _fake_asr(segments, words))
+        out = transcribe.transcribe(
+            _silence(1), transcribe.ASR_SR, audio_path="x.wav", model="base"
+        )
+        # The trailing "Thank you." line and its words are gone; real lyrics stay.
+        assert [s["text"] for s in out["segments"]] == ["hello there"]
+        assert [w["word"] for w in out["words"]] == ["hello", "there"]
+
     def test_segments_are_stripped_and_rounded(self, monkeypatch):
         monkeypatch.setattr(transcribe, "_run_asr", _fake_asr(_SEGMENTS, _WORDS))
         out = transcribe.transcribe(

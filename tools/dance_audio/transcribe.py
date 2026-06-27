@@ -162,6 +162,25 @@ def _round_t(value: float | None) -> float | None:
     return round(float(value), _T) if value is not None else None
 
 
+# Common Whisper end-of-silence hallucinations (whole lines), normalized
+# (lowercased, surrounding punctuation/space stripped). Matched per SEGMENT — not
+# per word — so a real lyric word like "you" inside a line is never dropped.
+_BOILERPLATE = {
+    "thank you",
+    "thank you for watching",
+    "thanks for watching",
+    "thanks",
+    "you",
+    "bye",
+    "subscribe",
+    "please subscribe",
+}
+
+
+def _is_boilerplate(text: str) -> bool:
+    return text.strip().strip(".!?… ").lower() in _BOILERPLATE
+
+
 def transcribe(
     signal: np.ndarray,
     sr: int,
@@ -180,7 +199,7 @@ def transcribe(
     """
     asr = _run_asr(signal, sr, model=model, language=language)
 
-    segments = [
+    raw_segments = [
         {
             "start_sec": _round_t(s.get("start")),
             "end_sec": _round_t(s.get("end")),
@@ -188,6 +207,18 @@ def transcribe(
         }
         for s in asr["segments"]
     ]
+    # Drop whole-line hallucinations (e.g. a trailing "Thank you.") and any words
+    # that fall inside a dropped segment's time window.
+    boiler_ranges = [
+        (s["start_sec"], s["end_sec"])
+        for s in raw_segments
+        if _is_boilerplate(s["text"]) and s["start_sec"] is not None and s["end_sec"] is not None
+    ]
+
+    def _in_boilerplate(t: float | None) -> bool:
+        return t is not None and any(lo <= t <= hi for lo, hi in boiler_ranges)
+
+    segments = [s for s in raw_segments if not _is_boilerplate(s["text"])]
     words = [
         {
             "word": (w.get("word") or "").strip(),
@@ -196,6 +227,7 @@ def transcribe(
             "score": round(float(w["score"]), _SCORE) if w.get("score") is not None else None,
         }
         for w in asr["words"]
+        if not _in_boilerplate(_round_t(w.get("start")))
     ]
 
     return {
