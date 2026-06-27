@@ -1,0 +1,17 @@
+# Python virtualenv for the offline dance-audio analysis tool — never commit.
+.venv/
+__pycache__/
+*.pyc
+
+# Test / coverage artifacts.
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Local audio + generated beat maps (authoring artifacts, not source).
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.ogg
+out/

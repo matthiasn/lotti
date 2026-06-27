@@ -1,0 +1,13 @@
+# Offline dance-audio analysis tool (authoring-time only; not shipped in-app).
+# Install into tool/dance_audio/.venv. Torch is installed separately from the
+# CPU-only index (see README) to keep the footprint small.
+#
+#   python3 -m venv .venv && . .venv/bin/activate
+#   pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install --no-cache-dir -r requirements.txt
+#
+# Beat This! (MIT, code + weights) — joint beat + downbeat tracking.
+beat-this @ git+https://github.com/CPJKU/beat_this.git
+# DSP cross-check: global tempo + onset envelope + audio IO.
+librosa>=0.10
+soundfile>=0.12

@@ -1,0 +1,14 @@
+# Lint + test dependencies.
+#
+# Intentionally LIGHT: no torch / beat-this here. The unit tests monkeypatch the
+# Beat This! call, so they need only the deps analyze.py imports at module load
+# (numpy + librosa, with soundfile for the file-IO test). Run `make install` for
+# the full runtime (CPU torch + Beat This!).
+flake8
+black
+isort
+pytest
+pytest-cov
+numpy
+librosa>=0.10
+soundfile>=0.12
