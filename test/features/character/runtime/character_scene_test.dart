@@ -377,7 +377,7 @@ void main() {
 
           expect(
             (hip.x - support.x).abs(),
-            lessThan(40),
+            lessThan(35),
             reason:
                 '${clip.name} frame $frameIndex should keep the right-support '
                 'groove visibly loaded under the hip, not sliding out from '
@@ -412,8 +412,8 @@ void main() {
     test('dance keeps feet separated through second-half phrase accents', () {
       final scene = CharacterScene(buildCatInSuitRig());
 
-      for (final frameIndex in [12, 15, 18]) {
-        final timeSeconds = CatClips.dance.duration * frameIndex / 24;
+      for (final frameIndex in [16, 18, 20, 22, 24]) {
+        final timeSeconds = CatClips.dance.duration * frameIndex / 32;
         final left = _supportPoint(
           scene,
           CatClips.dance,
@@ -430,11 +430,11 @@ void main() {
 
         expect(
           separation,
-          greaterThan(30),
+          greaterThan(32),
           reason:
-              '24-frame dance sample $frameIndex should keep the feet '
-              'separated enough that the leg ribbons do not merge into one '
-              'dark shape',
+              'dance frame $frameIndex should keep the second-half feet '
+              'separated enough that the leg ribbons do not merge into a '
+              'crossed dark tangle',
         );
       }
     });
