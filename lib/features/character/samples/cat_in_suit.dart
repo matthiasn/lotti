@@ -2760,17 +2760,18 @@ class CatClips {
       ),
       DanceMoveBodyAccent(
         moveName: 'right-side camera answer',
-        offsetFrames: -2,
+        offsetFrames: -1,
         radiusFrames: 4,
         // Silver answers first (F10), before the dark cat's F13 response. Make
-        // it a real level change: pelvis drops and drives, chest answers after,
-        // and the silhouette opens high/low instead of merely wiggling.
-        rootDx: -1.45,
-        rootDy: 1.95,
-        pelvisRotation: -0.13,
-        chestRotation: 0.16,
-        chestScaleY: 0.93,
-        chestScaleX: 1.052,
+        // the foot hit land first, then let the body compress a frame later.
+        // The silhouette opens side/low instead of copying the dark cat's high
+        // inside-arm answer.
+        rootDx: -1.3,
+        rootDy: 2.15,
+        pelvisRotation: -0.12,
+        chestRotation: 0.145,
+        chestScaleY: 0.925,
+        chestScaleX: 1.05,
       ),
       DanceMoveBodyAccent(
         moveName: 'left-side camera answer',
@@ -2817,12 +2818,12 @@ class CatClips {
         startOffsetFrames: -4,
         peakOffsetFrames: -2,
         endOffsetFrames: 1,
-        peakX: -27,
-        peakY: -23,
+        peakX: -34,
+        peakY: -17,
         controlPoints: [
-          DanceMoveTargetOffsetArcPoint(-3, x: -16.8, y: -14.4, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(-1, x: -22.2, y: -18.2),
-          DanceMoveTargetOffsetArcPoint(0, x: -13.2, y: -10.1),
+          DanceMoveTargetOffsetArcPoint(-3, x: -20.5, y: -10.2, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(-1, x: -28.4, y: -13.4),
+          DanceMoveTargetOffsetArcPoint(0, x: -15.8, y: -8.2),
         ],
       ),
       DanceMoveTargetOffsetArc(
@@ -2832,12 +2833,12 @@ class CatClips {
         startOffsetFrames: -4,
         peakOffsetFrames: -2,
         endOffsetFrames: 1,
-        peakX: 18,
-        peakY: 18,
+        peakX: 21,
+        peakY: 23,
         controlPoints: [
-          DanceMoveTargetOffsetArcPoint(-3, x: 6.4, y: 6.2, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(-1, x: 12.2, y: 12.8),
-          DanceMoveTargetOffsetArcPoint(0, x: 7.2, y: 8.4),
+          DanceMoveTargetOffsetArcPoint(-3, x: 7.2, y: 8.4, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(-1, x: 14.5, y: 16.4),
+          DanceMoveTargetOffsetArcPoint(0, x: 8.4, y: 10.2),
         ],
       ),
       DanceMoveTargetOffsetArc(
@@ -3016,16 +3017,18 @@ class CatClips {
       ),
       DanceMoveBodyAccent(
         moveName: 'right-side camera answer',
-        offsetFrames: 1,
+        offsetFrames: 2,
         // Dark answers after silver (F13), lower and sharper, so the side
-        // response is a visible crew ripple rather than mirrored timing.
+        // response is a visible crew ripple rather than mirrored timing. The
+        // foot marks F13; the chest/hips bite on F14 so it reads danced rather
+        // than snapped into position.
         radiusFrames: 4,
-        rootDx: 1.65,
-        rootDy: 2.35,
-        pelvisRotation: 0.16,
-        chestRotation: -0.18,
-        chestScaleY: 0.918,
-        chestScaleX: 1.06,
+        rootDx: 1.5,
+        rootDy: 2.2,
+        pelvisRotation: 0.145,
+        chestRotation: -0.165,
+        chestScaleY: 0.925,
+        chestScaleX: 1.052,
       ),
       DanceMoveBodyAccent(
         moveName: 'right-foot groove pocket',
@@ -3088,17 +3091,17 @@ class CatClips {
         startOffsetFrames: -1,
         peakOffsetFrames: 1,
         endOffsetFrames: 4,
-        peakX: 30,
-        peakY: -25,
+        peakX: 34,
+        peakY: -34,
         controlPoints: [
           DanceMoveTargetOffsetArcPoint(
             0,
-            x: 19.2,
-            y: -15.4,
+            x: 22.4,
+            y: -21.8,
             weight: 0.7,
           ),
-          DanceMoveTargetOffsetArcPoint(2, x: 23.8, y: -17.2),
-          DanceMoveTargetOffsetArcPoint(3, x: 11.4, y: -8.8, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(2, x: 27.2, y: -24.4),
+          DanceMoveTargetOffsetArcPoint(3, x: 13.2, y: -11.8, weight: 0.7),
         ],
       ),
       DanceMoveTargetOffsetArc(
@@ -3108,12 +3111,12 @@ class CatClips {
         startOffsetFrames: -1,
         peakOffsetFrames: 1,
         endOffsetFrames: 4,
-        peakX: -18,
-        peakY: 18,
+        peakX: -20,
+        peakY: 23,
         controlPoints: [
-          DanceMoveTargetOffsetArcPoint(0, x: -8.4, y: 7.8, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(2, x: -13.6, y: 13.2),
-          DanceMoveTargetOffsetArcPoint(3, x: -7.2, y: 8.2, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(0, x: -9.2, y: 10.5, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(2, x: -14.6, y: 16.8),
+          DanceMoveTargetOffsetArcPoint(3, x: -7.8, y: 10.4, weight: 0.7),
         ],
       ),
       DanceMoveTargetOffsetArc(
@@ -3179,7 +3182,7 @@ class CatClips {
         boneId: CatBones.armUpperL,
         offsetFrames: 1,
         radiusFrames: 4,
-        rotation: 0.52,
+        rotation: 0.6,
       ),
       DanceMoveJointAccent(
         moveName: 'right-foot groove pocket',
@@ -3221,7 +3224,7 @@ class CatClips {
         boneId: CatBones.armLowerL,
         offsetFrames: 1,
         radiusFrames: 4,
-        rotation: 0.58,
+        rotation: 0.66,
       ),
       DanceMoveJointAccent(
         moveName: 'right-side camera answer',

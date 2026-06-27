@@ -235,7 +235,9 @@ void main() {
         const rightEarlyEchoP = 5 / 32;
         const leftDelayedEchoP = 6 / 32;
         const silverAnswerP = 10 / 32;
+        const silverBodyCatchP = 11 / 32;
         const darkAnswerP = 13 / 32;
+        const darkBodyCatchP = 14 / 32;
         const delayedEchoP = 5 / 8;
         const leftFeatureP = 3 / 4;
         const delayedStepTapEchoP = 25 / 32;
@@ -290,6 +292,14 @@ void main() {
           right,
           CatBones.handL,
         ).channel.sample(darkAnswerP);
+        final leftSilverAnswerXDelta =
+            leftHandRSilverAnswer.x - leadHandRSilverAnswer.x;
+        final leftSilverAnswerYDelta =
+            leftHandRSilverAnswer.y - leadHandRSilverAnswer.y;
+        final rightDarkAnswerXDelta =
+            rightHandLDarkAnswer.x - leadHandLDarkAnswer.x;
+        final rightDarkAnswerYDelta =
+            rightHandLDarkAnswer.y - leadHandLDarkAnswer.y;
         final leadFootRSilverAnswer = _targetFor(
           lead,
           CatBones.footR,
@@ -424,6 +434,20 @@ void main() {
           lessThan(leadHandRSilverAnswer.y - 12),
         );
         expect(
+          leftSilverAnswerXDelta,
+          lessThan(-24),
+          reason:
+              'the silver side answer should open laterally, not only lift its '
+              'inside hand upward like the dark cat',
+        );
+        expect(
+          leftSilverAnswerYDelta,
+          inInclusiveRange(-22, -12),
+          reason:
+              'the silver side answer should stay chest-height/low so its '
+              'silhouette differs from the dark cat vertical lift',
+        );
+        expect(
           rightHandLDarkAnswer.x,
           greaterThan(leadHandLDarkAnswer.x + 17),
           reason:
@@ -433,6 +457,20 @@ void main() {
         expect(
           rightHandLDarkAnswer.y,
           lessThan(leadHandLDarkAnswer.y - 12),
+        );
+        expect(
+          rightDarkAnswerXDelta,
+          greaterThan(28),
+          reason:
+              'the dark side answer should travel across the body strongly '
+              'enough to read against the silver dancer',
+        );
+        expect(
+          rightDarkAnswerYDelta,
+          lessThan(-28),
+          reason:
+              'the dark side answer should be the high vertical lift while the '
+              'silver dancer owns the lower side-open answer',
         );
         expect(
           leftFootRSilverAnswer.x,
@@ -633,6 +671,18 @@ void main() {
         final rightHookTorsoDelta =
             right.channels[CatBones.torso]!.sample(rightHookPickupP).rotation -
             lead.channels[CatBones.torso]!.sample(rightHookPickupP).rotation;
+        final leftTorsoAtFootPlant =
+            left.channels[CatBones.torso]!.sample(silverAnswerP).rotation -
+            lead.channels[CatBones.torso]!.sample(silverAnswerP).rotation;
+        final leftTorsoAfterFootPlant =
+            left.channels[CatBones.torso]!.sample(silverBodyCatchP).rotation -
+            lead.channels[CatBones.torso]!.sample(silverBodyCatchP).rotation;
+        final rightTorsoAtFootPlant =
+            right.channels[CatBones.torso]!.sample(darkAnswerP).rotation -
+            lead.channels[CatBones.torso]!.sample(darkAnswerP).rotation;
+        final rightTorsoAfterFootPlant =
+            right.channels[CatBones.torso]!.sample(darkBodyCatchP).rotation -
+            lead.channels[CatBones.torso]!.sample(darkBodyCatchP).rotation;
         final leftArmDelta =
             left.channels[CatBones.armUpperR]!.sample(leftFeatureP).rotation -
             lead.channels[CatBones.armUpperR]!.sample(leftFeatureP).rotation;
@@ -664,6 +714,20 @@ void main() {
           reason:
               'right backup should answer with a visible chest variation when '
               'the camera pans right',
+        );
+        expect(
+          leftTorsoAfterFootPlant.abs(),
+          greaterThan(leftTorsoAtFootPlant.abs() + 0.006),
+          reason:
+              'silver backup foot should mark first, with the torso compressing '
+              'one frame later instead of snapping everything at contact',
+        );
+        expect(
+          rightTorsoAfterFootPlant.abs(),
+          greaterThan(rightTorsoAtFootPlant.abs() + 0.006),
+          reason:
+              'dark backup foot should mark first, with the torso bite landing '
+              'one frame later for a danced ripple',
         );
         expect(
           leftStepTapEchoHipDelta.abs(),
