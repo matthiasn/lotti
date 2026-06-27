@@ -601,6 +601,8 @@ void main() {
           int orangeWidth,
           int orangeHeight,
           double orangeCenterX,
+          int contentMinX,
+          int contentMaxX,
           int contentMaxY,
         })
       >
@@ -642,12 +644,16 @@ void main() {
             var maxX = -1;
             var minY = 420;
             var maxY = -1;
+            var minOpaqueX = 760;
+            var maxOpaqueX = -1;
             var minOpaqueY = 420;
             var maxOpaqueY = -1;
             for (var y = 0; y < 420; y++) {
               for (var x = 0; x < 760; x++) {
                 final offset = (y * 760 + x) * 4;
                 if (pixels[offset + 3] != 0) {
+                  minOpaqueX = math.min(minOpaqueX, x);
+                  maxOpaqueX = math.max(maxOpaqueX, x);
                   minOpaqueY = math.min(minOpaqueY, y);
                   maxOpaqueY = math.max(maxOpaqueY, y);
                 }
@@ -666,11 +672,14 @@ void main() {
 
             expect(maxX, greaterThanOrEqualTo(minX));
             expect(maxY, greaterThanOrEqualTo(minY));
+            expect(maxOpaqueX, greaterThanOrEqualTo(minOpaqueX));
             expect(maxOpaqueY, greaterThanOrEqualTo(minOpaqueY));
             return (
               orangeWidth: maxX - minX + 1,
               orangeHeight: maxY - minY + 1,
               orangeCenterX: (minX + maxX) / 2,
+              contentMinX: minOpaqueX,
+              contentMaxX: maxOpaqueX,
               contentMaxY: maxOpaqueY,
             );
           } finally {
@@ -715,16 +724,30 @@ void main() {
       expect(
         rightClose.orangeHeight,
         inInclusiveRange(
-          rightPan.orangeHeight * 1.0,
-          wide.orangeHeight * 1.24,
+          wide.orangeHeight * 1.02,
+          wide.orangeHeight * 1.18,
         ),
         reason:
             'the right-side pass should stay as a subtle medium push, not a '
             'cropped solo close-up',
       );
       expect(
+        rightClose.contentMinX,
+        greaterThan(3),
+        reason:
+            'the F12-F15 right-side pass should keep the left backup inside '
+            'the frame instead of clipping it at the desktop edge',
+      );
+      expect(
+        rightClose.contentMaxX,
+        lessThan(756),
+        reason:
+            'the F12-F15 right-side pass should remain an ensemble shot, not '
+            'throw any dancer out of the desktop frame',
+      );
+      expect(
         rightClose.contentMaxY,
-        lessThan(420),
+        lessThan(418),
         reason: 'the right pass should not crop feet out of the desktop frame',
       );
       expect(
@@ -764,7 +787,7 @@ void main() {
       );
       expect(
         postRightRecovery.orangeHeight,
-        lessThan(rightClose.orangeHeight * 0.99),
+        lessThan(wide.orangeHeight * 1.12),
         reason:
             'after the recovery beat, the camera should zoom out enough to '
             'restore ensemble readability',

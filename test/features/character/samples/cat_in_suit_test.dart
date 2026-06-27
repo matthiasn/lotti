@@ -917,6 +917,22 @@ void main() {
       final shakuHit = lead.root.sample(4 / phrase.frameCount);
       final shakuSink = lead.root.sample(6 / phrase.frameCount);
       final shakuRebound = lead.root.sample(8 / phrase.frameCount);
+      final openingPlant = lead.root.sample(0);
+      final openingDownbeat = lead.root.sample(2 / phrase.frameCount);
+      expect(
+        openingDownbeat.dy,
+        greaterThan(openingPlant.dy + 0.4),
+        reason:
+            'F2 should visibly compress into the opening support foot so the '
+            'loop lands as a downbeat instead of resetting to neutral',
+      );
+      expect(
+        leadChannels[CatBones.torso]!.sample(2 / phrase.frameCount).scaleY,
+        lessThan(leadChannels[CatBones.torso]!.sample(0).scaleY - 0.008),
+        reason:
+            'the opening downbeat needs torso squash to sell foot pressure, '
+            'not just a sideways sway',
+      );
       expect(
         (shakuSink.dx - shakuHit.dx).abs(),
         lessThan(6),
@@ -1316,9 +1332,16 @@ void main() {
       );
       expect(
         _targetDistance(handL, 31, 32),
-        lessThan(17),
+        lessThan(11),
         reason:
             'the loop seam should bring the hand home without a one-frame jump',
+      );
+      expect(
+        _targetDistance(handR, 31, 32),
+        lessThan(9),
+        reason:
+            'the right hand should also close into F0 through a compact seam, '
+            'not a visible reset',
       );
       expect(
         _targetDistance(footL, 28, 29),

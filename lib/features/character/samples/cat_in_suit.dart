@@ -1357,14 +1357,14 @@ class CatClips {
           DanceIkTargetKey(28, x: -82.4, y: 12.4),
           DanceIkTargetKey(29, x: -89.2, y: 7.2),
           DanceIkTargetKey(30, x: -84.4, y: 13.2),
-          DanceIkTargetKey(31, x: -70.2, y: 23.4),
+          DanceIkTargetKey(31, x: -64.6, y: 25.8),
           DanceIkTargetKey(32, x: -56.1, y: 30.3),
         ],
         CatBones.handR: [
           DanceIkTargetKey(28, x: 51.2, y: 24.7),
           DanceIkTargetKey(29, x: 58.4, y: 22.6),
           DanceIkTargetKey(30, x: 60.2, y: 23.4),
-          DanceIkTargetKey(31, x: 66.8, y: 25.2),
+          DanceIkTargetKey(31, x: 61.2, y: 27.3),
           DanceIkTargetKey(32, x: 54.4, y: 30.7),
         ],
         CatBones.footL: [
@@ -1821,12 +1821,12 @@ class CatClips {
     DanceBodyKey(
       2,
       rootDx: -14,
-      rootDy: 15.6,
+      rootDy: 18.9,
       rootRotation: -0.008,
       pelvisRotation: 0.36,
       chestRotation: -0.13,
-      chestScaleY: 0.94,
-      chestScaleX: 1.034,
+      chestScaleY: 0.928,
+      chestScaleX: 1.042,
     ),
     DanceBodyKey(
       4,
