@@ -1426,11 +1426,11 @@ class CatClips {
           DanceIkTargetKey(23, x: 98.3, y: 10.2),
         ],
         CatBones.footL: [
-          DanceIkTargetKey(18, x: -39.4, y: 101.8),
-          DanceIkTargetKey(19, x: -55.8, y: 99.2),
-          DanceIkTargetKey(20, x: -64.2, y: 96.6),
-          DanceIkTargetKey(21, x: -52.4, y: 101.1),
-          DanceIkTargetKey(22, x: -35.8, y: 103.4),
+          DanceIkTargetKey(18, x: -42.8, y: 102),
+          DanceIkTargetKey(19, x: -61.2, y: 100.2),
+          DanceIkTargetKey(20, x: -70.4, y: 98.7),
+          DanceIkTargetKey(21, x: -58.8, y: 101.6),
+          DanceIkTargetKey(22, x: -38.8, y: 103.5),
           DanceIkTargetKey(23, x: -30.6, y: 103.1),
         ],
         CatBones.footR: [
