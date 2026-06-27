@@ -1,16 +1,18 @@
 # Dance Audio Analysis — Beat Alignment & Choreography Support (Research + Plan)
 
-**Status:** Research complete, plan drafted. No code yet. This document is the
-landscape survey + integration design for *audio-analysis support* of the
-character dance system. The movement-vocabulary / choreography work is a
-separate, ongoing track; here we define the audio side and the interface the
-choreographer will consume.
+**Status:** Research complete; the offline tooling (`tools/dance_audio`) and the
+Dart `BeatMap` consumer are **built, tested, and committed**, and downbeat
+feasibility is **verified on a real track** (rung 3 is viable). §15 plans the
+first wiring (implementation deferred). This document is the landscape survey +
+integration design for *audio-analysis support* of the character dance; the
+movement-vocabulary / choreography work is a separate, ongoing track.
 **Created:** 2026-06-27
 **Owner:** main thread (synthesizing four verified web-research passes + codebase grounding)
 **Scope (locked with stakeholder):** Research + plan document. Depth concentrated
 on **getting the dance on-beat** (tempo / beat / downbeat tracking); the later
 rungs (structure, vocals, lyrics, AI choreographer) are surveyed lighter as
-"future rungs." No tooling installed; no verified prototype in this pass.
+"future rungs." Beat/downbeat rungs are now built (offline tool + Dart
+`BeatMap`, committed); later rungs remain a lighter survey.
 **Companion doc:** [`2026-06-22_bones_animation_framework.md`](./2026-06-22_bones_animation_framework.md)
 (the rig/runtime framework this builds on).
 
@@ -564,7 +566,102 @@ free to build on the §5 music map.
 
 ---
 
-## 15. Sources (verified this pass)
+## 15. Integration plan — first wiring (beat-sync a 30s segment, looped phrase)
+
+**Status (2026-06-27):** downbeat detection verified on a real Afrobeats track
+(120 BPM, 4/4, downbeats 99% regular, no octave error) → rung 3 is viable. Dance
+choreography dev is on halt at the current phrase (the recent commits are pure
+`tune(character)` tweaks, no architectural impact). This is the first wiring.
+
+### 15.1 Scope ("for now", per stakeholder)
+
+- Sync the dance to the track's **beats/downbeats**.
+- **Loop the single 32-frame `DancePhrase`** continuously until the segment ends —
+  no per-section choreography yet (that is rung 4).
+- Only a **30-second segment from the middle** of a song.
+
+### 15.2 The fact that pins everything: the loop is 12 beats
+
+`CatClips.dance` has `duration: 6` s and is authored at `kAuthoredDanceBpm = 120`,
+so one loop = 6 s × 120/60 = **12 beats = 3 bars of 4/4** at the authored tempo.
+(The 32 `frameCount` is the *addressing granularity*, not the beat count; the
+character README's older "2 bars" note predates the current 12-count groove.)
+Hence the loop binding is:
+
+```dart
+final binding = BeatLoopBinding.barAligned(beatMap, bars: 3); // loopLengthBeats = 12
+```
+
+Each loop spans exactly 3 bars and re-anchors frame 0 on a real downbeat.
+
+### 15.3 The clock: drive the dance from the audio position
+
+Today the dance time is a free-running ticker × a constant scalar. Beat-sync
+requires the dance phase to be a function of **where the audio actually is**, so
+the two can never drift apart:
+
+```mermaid
+flowchart LR
+  P["media_kit player.position (s into segment)"] --> CS["beatMap.clipSecondsAt(position, clipDuration: 6, binding)"]
+  CS --> FA["scene.frameAt(clip, clipSeconds)"]
+  T["Ticker (60 fps repaint only)"] -.reads.-> P
+```
+
+A `Ticker` still drives 60 fps repaints, but each frame it **reads the player
+position** instead of accumulating its own elapsed. `clipSecondsAt` warps that
+position onto the detected beats (drift-following) and loops via its own modulo —
+so the phrase repeats on-beat for the whole segment with no extra loop logic.
+
+The project already ships **`media_kit`** (`pubspec.yaml`), so playback +
+`position` need no new dependency.
+
+### 15.4 The 30-second segment (offline)
+
+Cut and analyse the window offline so the beat map is **relative to the segment**
+(t = 0 at the segment start):
+
+- Add `--start SEC --duration SEC` to `analyze.py` (`librosa.load` already takes
+  `offset` / `duration`); emit a beat map for the 30 s window.
+- Export the matching 30 s audio clip for the demo to play (ffmpeg, or the same
+  trimmed decode). Original artwork → kept local, **gitignored, never committed**.
+- **Seamless-loop refinement:** choose the window to start on a detected
+  **downbeat** and span a whole number of 3-bar phrases (e.g. 15 bars ≈ 30 s at
+  120 BPM = 5 phrases). Then both the audio-segment loop and the phrase loop stay
+  phase-aligned across the segment seam. An arbitrary 30 s is fine for a first
+  pass (minor seam at the wrap).
+
+### 15.5 Where it lives (additive)
+
+No change to the `frameAt` pipeline. Keep it additive:
+
+- New dev surface `demo/character_dance_to_track_demo.dart`: a small stateful
+  widget that owns a `media_kit` `Player`, loads the 30 s clip + its beat-map JSON
+  from local paths, and paints via `CharacterPainter` directly, feeding
+  `timeSeconds = beatMap.clipSecondsAt(player.position, …)`.
+- It replicates the small backdrop-asset/ticker setup `CharacterView` does (or, if
+  preferred later, add one optional `timeSecondsOverride` parameter to
+  `CharacterView` — a minimal opt-in change to an existing file).
+
+### 15.6 Determinism note
+
+The live, audio-synced view is driven by a real-time audio clock, so it is **not**
+byte-deterministic like the film strip (position jitters frame to frame) — that is
+expected for live playback. The beat-map artifact and the offline frame-rendering
+path stay deterministic (render at fixed `clipSeconds` for review).
+
+### 15.7 Steps
+
+1. `analyze.py`: add `--start/--duration`; produce a 30 s segment beat map (+ tests).
+2. Cut the 30 s clip; pick the start on a downbeat spanning whole phrases.
+3. New `demo/character_dance_to_track_demo.dart`: media_kit player + `BeatMap`
+   clock + `CharacterPainter`, `BeatLoopBinding.barAligned(map, bars: 3)`.
+4. Manual check: play the 30 s, confirm the phrase lands on the beat and
+   re-anchors on downbeats; nudge the anchor if the "1" is off (downbeat phase is
+   the least-reliable output).
+5. (Optional, rung-3 validation) BAS: motion beats (velocity minima via
+   `TemporalMotionAnalyzer`) vs the music beats.
+
+## 16. Sources (verified this pass)
 
 **Beat / downbeat / tempo:** Beat This! [[repo]](https://github.com/CPJKU/beat_this)
 [[arXiv:2407.21658]](https://arxiv.org/abs/2407.21658) ·
