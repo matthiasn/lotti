@@ -99,6 +99,7 @@ python analyze.py --selftest
 | `downbeats_sec[]` | downbeat times (derivable from `beats[]` where `is_downbeat`) |
 | `loop` | `{length_beats, anchor_downbeat_index}` — default 2-bar loop on the first downbeat; the choreographer overrides |
 | `onsets[]` | accent onsets: `{time_sec, strength}` (normalized 0..1) — drives later "hit" accents |
+| `waveform[]` | downsampled peak-amplitude envelope (0..1, ~1000 buckets) for drawing a waveform picker — computed offline so the consumer needs no platform audio plugin |
 
 `confidence` (per beat and the `tempo` mean) is a **heuristic** from local tempo
 consistency — high when an inter-beat interval is near the median — not a native

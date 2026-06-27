@@ -87,6 +87,19 @@ class TestAnalyze:
         assert beatmap["downbeats_sec"][:2] == [0.0, 2.0]
         assert beatmap["loop"] == {"length_beats": 8, "anchor_downbeat_index": 0}
 
+    def test_includes_a_normalized_waveform(self, monkeypatch, steady_grid):
+        beats, downbeats = steady_grid
+        monkeypatch.setattr(analyze, "_run_beat_this", _fake_beat_this(beats, downbeats))
+        beatmap = analyze.analyze(
+            analyze._synth_click(),
+            analyze.ANALYSIS_SR,
+            audio_path="x.wav",
+        )
+        wave = beatmap["waveform"]
+        assert isinstance(wave, list) and len(wave) > 0
+        assert all(0.0 <= v <= 1.0 for v in wave)
+        assert max(wave) == 1.0  # normalized to the loudest bucket
+
     def test_output_is_deterministic_without_a_stamp(self, monkeypatch, steady_grid):
         beats, downbeats = steady_grid
         monkeypatch.setattr(analyze, "_run_beat_this", _fake_beat_this(beats, downbeats))

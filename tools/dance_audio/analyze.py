@@ -172,6 +172,24 @@ def _tempo_segments(beats: np.ndarray) -> list[dict]:
     return segments
 
 
+def _waveform(signal: np.ndarray, buckets: int = 1000) -> list[float]:
+    """Downsampled peak-amplitude envelope (0..1) for drawing a waveform.
+
+    Computed offline so the consumer needs no in-app audio decoding — the
+    just_waveform plugin has no Linux/desktop implementation. Peak per bucket,
+    normalized by the track's loudest bucket. Deterministic.
+    """
+    n = len(signal)
+    if n == 0:
+        return []
+    count = min(buckets, n)
+    edges = np.linspace(0, n, count + 1).astype(int)
+    amp = np.abs(signal)
+    peaks = np.maximum.reduceat(amp, edges[:-1])
+    peak = float(peaks.max()) or 1.0
+    return [round(float(p) / peak, 3) for p in peaks]
+
+
 def analyze(
     signal: np.ndarray,
     sr: int,
@@ -274,6 +292,9 @@ def analyze(
             "anchor_downbeat_index": 0,
         },
         "onsets": _onsets(signal, sr),
+        # Peak-amplitude envelope for drawing the waveform in a picker UI; offline
+        # so the consumer needs no platform audio plugin.
+        "waveform": _waveform(signal),
     }
 
 
