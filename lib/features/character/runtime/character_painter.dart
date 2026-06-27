@@ -394,16 +394,23 @@ class CharacterPainter extends CustomPainter {
     final wideV = _pulse(p, 1 / 2, 3 / 4);
     final centreFeature = _pulse(p, 17 / 32, 23 / 32);
     final ensembleHit = _pulse(p, 23 / 32, 27 / 32);
+    final finishTriangle = _pulse(p, 27 / 32, 1);
     return switch (index) {
       0 => (
-        dx: -34 - 7 * breathe - 10 * sideAnswer - 9 * wideV,
+        dx:
+            -34 -
+            7 * breathe -
+            10 * sideAnswer -
+            9 * wideV +
+            3 * finishTriangle,
         dy:
             -17 +
             1.5 * callResponse -
             4 * leadCall -
             5 * sideAnswer -
             4 * wideV +
-            3 * ensembleHit,
+            3 * ensembleHit +
+            2 * finishTriangle,
       ),
       1 => (
         dx: 3 * leadCall - 3 * ensembleHit,
@@ -416,7 +423,13 @@ class CharacterPainter extends CustomPainter {
             3 * ensembleHit,
       ),
       2 => (
-        dx: 34 + 7 * breathe + 10 * sideAnswer + 11 * blackSolo + 9 * wideV,
+        dx:
+            34 +
+            7 * breathe +
+            10 * sideAnswer +
+            11 * blackSolo +
+            9 * wideV -
+            18 * finishTriangle,
         dy:
             -17 -
             1.5 * callResponse -
@@ -424,7 +437,8 @@ class CharacterPainter extends CustomPainter {
             4 * sideAnswer +
             7 * blackSolo -
             4 * wideV +
-            3 * ensembleHit,
+            3 * ensembleHit +
+            7 * finishTriangle,
       ),
       _ => (dx: 0, dy: 0),
     };

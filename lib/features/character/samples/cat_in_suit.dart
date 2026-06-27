@@ -1345,11 +1345,11 @@ class CatClips {
         DanceBodyAccentOffset(
           offsetFrames: 3,
           radiusFrames: 1,
-          rootDy: 0.35,
-          pelvisRotation: 0.038,
-          chestRotation: -0.055,
-          chestScaleY: 0.98,
-          chestScaleX: 1.014,
+          rootDy: 0.55,
+          pelvisRotation: 0.052,
+          chestRotation: -0.17,
+          chestScaleY: 0.972,
+          chestScaleX: 1.018,
         ),
       ],
       ikTargetKeys: {

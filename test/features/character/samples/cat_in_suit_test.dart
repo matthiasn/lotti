@@ -1250,6 +1250,26 @@ void main() {
             'relaxed upper body before the loop',
       );
       expect(
+        leadChannels[CatBones.hips]!.sample(hookPickupP).rotation -
+            leadChannels[CatBones.hips]!
+                .sample(30 / phrase.frameCount)
+                .rotation,
+        greaterThan(0.07),
+        reason:
+            'frame 31 should add a clear hip pickup after the frame 30 toe '
+            'flick instead of flattening into the loop seam',
+      );
+      expect(
+        leadChannels[CatBones.torso]!.sample(hookPickupP).rotation -
+            leadChannels[CatBones.torso]!
+                .sample(30 / phrase.frameCount)
+                .rotation,
+        lessThan(-0.05),
+        reason:
+            'frame 31 should answer the hip pickup with stronger chest '
+            'opposition, not a neutral reset',
+      );
+      expect(
         leadChannels[CatBones.torso]!.sample(hookPickupP).scaleY,
         lessThan(0.945),
         reason: 'hook reset should stay pocketed through the loop pickup',

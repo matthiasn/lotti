@@ -493,6 +493,105 @@ void main() {
     });
   });
 
+  testWidgets('dance trio clears the dark backup during the finish', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      Future<({double darkCenterX, double leadCenterX, int darkPixels})>
+      boundsAt(double p) async {
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(recorder);
+        CharacterPainter(
+          scene: scene,
+          partnerScene: CharacterScene(
+            buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+          ),
+          ensembleScenes: [
+            CharacterScene(
+              buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+            ),
+            CharacterScene(
+              buildCatInSuitRig(palette: CatInSuitPalette.darkBrown),
+            ),
+          ],
+          ensembleClips: [
+            CatClips.dance,
+            CatClips.danceBackupLeft,
+            CatClips.danceBackupRight,
+          ],
+          synchronousEnsemble: true,
+          clip: CatClips.dance,
+          timeSeconds: CatClips.dance.duration * p,
+          walkingPair: true,
+          shadowColor: const Color(0x00000000),
+          renderer: renderer,
+        ).paint(canvas, const Size(760, 420));
+        final picture = recorder.endRecording();
+        try {
+          final image = await picture.toImage(760, 420);
+          try {
+            final data = await image.toByteData();
+            final pixels = data!.buffer.asUint8List();
+            final lead = _boundsForPixels(
+              pixels,
+              760,
+              420,
+              (red, green, blue, alpha, x, y) =>
+                  alpha > 180 &&
+                  red > 200 &&
+                  green > 120 &&
+                  green < 190 &&
+                  blue < 120,
+            );
+            final dark = _boundsForPixels(
+              pixels,
+              760,
+              420,
+              (red, green, blue, alpha, x, y) =>
+                  x > lead.centerX + 20 &&
+                  alpha > 180 &&
+                  red >= 28 &&
+                  red <= 78 &&
+                  green >= 20 &&
+                  green <= 64 &&
+                  blue <= 52,
+            );
+
+            expect(dark.count, greaterThan(250));
+            expect(lead.count, greaterThan(250));
+            return (
+              darkCenterX: dark.centerX,
+              leadCenterX: lead.centerX,
+              darkPixels: dark.count,
+            );
+          } finally {
+            image.dispose();
+          }
+        } finally {
+          picture.dispose();
+        }
+      }
+
+      final preFinish = await boundsAt(3 / 4);
+      final finish = await boundsAt(29 / 32);
+
+      expect(
+        finish.darkCenterX,
+        lessThan(preFinish.darkCenterX - 8),
+        reason:
+            'the final hook-reset triangle should pull the dark backup inward '
+            'instead of leaving it parked in the right-side clutter lane',
+      );
+      expect(
+        finish.darkCenterX,
+        greaterThan(finish.leadCenterX + 34),
+        reason:
+            'the dark backup should still read as the right-side dancer, not '
+            'cross into the lead lane during the finish',
+      );
+    });
+  });
+
   testWidgets('dance trio camera keeps medium-wide centre/right/left passes', (
     tester,
   ) async {
@@ -737,6 +836,58 @@ int _opaquePixelsInBox(
     }
   }
   return (x: (minX + maxX) / 2, y: (minY + maxY) / 2);
+}
+
+({
+  int minX,
+  int maxX,
+  int minY,
+  int maxY,
+  int count,
+  double centerX,
+})
+_boundsForPixels(
+  Uint8List pixels,
+  int width,
+  int height,
+  bool Function(int red, int green, int blue, int alpha, int x, int y)
+  predicate,
+) {
+  var minX = width;
+  var maxX = -1;
+  var minY = height;
+  var maxY = -1;
+  var count = 0;
+  for (var y = 0; y < height; y++) {
+    for (var x = 0; x < width; x++) {
+      final offset = (y * width + x) * 4;
+      if (!predicate(
+        pixels[offset],
+        pixels[offset + 1],
+        pixels[offset + 2],
+        pixels[offset + 3],
+        x,
+        y,
+      )) {
+        continue;
+      }
+      minX = math.min(minX, x);
+      maxX = math.max(maxX, x);
+      minY = math.min(minY, y);
+      maxY = math.max(maxY, y);
+      count++;
+    }
+  }
+  expect(maxX, greaterThanOrEqualTo(minX));
+  expect(maxY, greaterThanOrEqualTo(minY));
+  return (
+    minX: minX,
+    maxX: maxX,
+    minY: minY,
+    maxY: maxY,
+    count: count,
+    centerX: (minX + maxX) / 2,
+  );
 }
 
 ({int r, int g, int b, int a}) _rgbaAt(
