@@ -17,6 +17,7 @@ void main() {
     required bool paused,
     Clip? clip,
     CharacterBackdrop backdrop = CharacterBackdrop.none,
+    bool enableDanceCamera = true,
   }) => Center(
     child: SizedBox(
       width: 200,
@@ -26,6 +27,7 @@ void main() {
         clip: clip ?? CatClips.walk,
         paused: paused,
         backdrop: backdrop,
+        enableDanceCamera: enableDanceCamera,
       ),
     ),
   );
@@ -116,5 +118,13 @@ void main() {
     );
 
     expect(readPainter(tester).backdrop, CharacterBackdrop.waterfront);
+  });
+
+  testWidgets('forwards the dance camera review flag to the painter', (
+    tester,
+  ) async {
+    await tester.pumpWidget(host(paused: true, enableDanceCamera: false));
+
+    expect(readPainter(tester).enableDanceCamera, isFalse);
   });
 }

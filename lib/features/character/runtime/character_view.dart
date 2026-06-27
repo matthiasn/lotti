@@ -30,6 +30,7 @@ class CharacterView extends StatefulWidget {
     this.eyeOpenScale = 1,
     this.groundColor,
     this.backdrop = CharacterBackdrop.none,
+    this.enableDanceCamera = true,
     this.locomote = false,
     this.walkingPair = false,
     super.key,
@@ -68,6 +69,10 @@ class CharacterView extends StatefulWidget {
 
   /// Optional animated background painted behind the character.
   final CharacterBackdrop backdrop;
+
+  /// Enables the dance trio's music-video camera move. Turn this off for
+  /// locked-camera choreography review.
+  final bool enableDanceCamera;
 
   /// When true, locomoting clips (walk/run) travel across the stage and turn at
   /// the edges instead of cycling in place (which kills the foot-skate).
@@ -195,6 +200,7 @@ class _CharacterViewState extends State<CharacterView>
         backdropWavesImage: widget.backdrop == CharacterBackdrop.waterfront
             ? _backdropWavesImage
             : null,
+        enableDanceCamera: widget.enableDanceCamera,
         locomote: widget.locomote,
         walkingPair: widget.walkingPair,
         renderer: _renderer,

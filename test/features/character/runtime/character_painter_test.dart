@@ -115,6 +115,17 @@ void main() {
       expect(waterfront.shouldRepaint(painterAt(0.5)), isTrue);
     });
 
+    test('repaints when the dance camera review mode changes', () {
+      final locked = CharacterPainter(
+        scene: scene,
+        clip: CatClips.dance,
+        timeSeconds: 0.5,
+        enableDanceCamera: false,
+        renderer: renderer,
+      );
+      expect(locked.shouldRepaint(painterAt(0.5)), isTrue);
+    });
+
     test('does not repaint for identical inputs', () {
       expect(painterAt(0.5).shouldRepaint(painterAt(0.5)), isFalse);
     });
@@ -742,7 +753,7 @@ void main() {
           int contentMaxY,
         })
       >
-      boundsAt(double p) async {
+      boundsAt(double p, {bool enableDanceCamera = true}) async {
         final recorder = ui.PictureRecorder();
         final canvas = Canvas(recorder);
         CharacterPainter(
@@ -767,6 +778,7 @@ void main() {
           clip: CatClips.dance,
           timeSeconds: CatClips.dance.duration * p,
           walkingPair: true,
+          enableDanceCamera: enableDanceCamera,
           shadowColor: const Color(0x00000000),
           renderer: renderer,
         ).paint(canvas, const Size(760, 420));
@@ -839,6 +851,8 @@ void main() {
       final leftClose = await boundsAt(3 / 4);
       final leftHold = await boundsAt(13 / 16);
       final reset = await boundsAt(1);
+      final lockedWide = await boundsAt(0, enableDanceCamera: false);
+      final lockedMid = await boundsAt(1 / 2, enableDanceCamera: false);
 
       expect(
         centerPush.orangeCenterX,
@@ -996,6 +1010,19 @@ void main() {
         reset.orangeHeight,
         closeTo(wide.orangeHeight, wide.orangeHeight * 0.14),
         reason: 'the final beat should return to the wide stage frame',
+      );
+      expect(
+        lockedMid.orangeHeight,
+        closeTo(lockedWide.orangeHeight, lockedWide.orangeHeight * 0.2),
+        reason:
+            'locked-camera review should preserve the choreo formation without '
+            'the music-video zoom changing dancer size',
+      );
+      expect(
+        lockedMid.orangeHeight,
+        lessThan(leadLevel.orangeHeight * 0.68),
+        reason:
+            'turning off the dance camera should disable the close-up push-in',
       );
     });
   });

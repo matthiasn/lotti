@@ -38,6 +38,7 @@ void main() {
     expect(view(tester).synchronousEnsemble, isTrue);
     expect(view(tester).playbackRate, closeTo(124 / 120, 1e-9));
     expect(view(tester).backdrop, CharacterBackdrop.waterfront);
+    expect(view(tester).enableDanceCamera, isTrue);
     expect(find.text('BPM 124'), findsOneWidget);
   });
 
@@ -80,6 +81,7 @@ void main() {
       ['dance', 'danceBackupLeft', 'danceBackupRight'],
     );
     expect(view(tester).synchronousEnsemble, isTrue);
+    expect(view(tester).enableDanceCamera, isTrue);
   });
 
   testWidgets('letter keys select the expression', (tester) async {
@@ -115,6 +117,20 @@ void main() {
     await tester.pump();
 
     expect(view(tester).playbackRate, greaterThan(1));
+  });
+
+  testWidgets('the camera review toggle disables the dance camera', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const CharacterDemoApp());
+    expect(view(tester).enableDanceCamera, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+    await tester.pump();
+
+    expect(view(tester).enableDanceCamera, isFalse);
+    expect(painter(tester).enableDanceCamera, isFalse);
+    expect(find.text('Locked camera'), findsOneWidget);
   });
 
   testWidgets('the pause action freezes the painter clock', (tester) async {

@@ -25,7 +25,8 @@ import 'package:lotti/features/character/samples/cat_in_suit.dart';
 ///   (also `←` / `→` to cycle)
 /// - `N C H S D A` — neutral / content / happy / surprised / sad / angry
 ///   (also `↑` / `↓` to cycle)
-/// - `B` — blink · `X` — auto-cycle faces · `M` — wander/in-place
+/// - `B` — blink · `X` — auto-cycle faces · `K` — dance camera/locked review
+/// - `M` — wander/in-place
 /// - `Space` — play/pause · `0` — replay
 void main() {
   runApp(const CharacterDemoApp());
@@ -107,6 +108,7 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
   Expression _expression = Expression.neutral;
   double _danceBpm = kDefaultDanceBpm;
   bool _paused = false;
+  bool _danceCamera = true;
 
   // When true, walk/run travel across the stage and turn at the edges (the cat
   // "moves around"); off shows the cycle in place for pose review.
@@ -224,6 +226,8 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
         _triggerBlink();
       case LogicalKeyboardKey.keyX:
         _toggleExpressionCycle();
+      case LogicalKeyboardKey.keyK:
+        setState(() => _danceCamera = !_danceCamera);
       case LogicalKeyboardKey.keyM:
         setState(() => _wander = !_wander);
       case LogicalKeyboardKey.space:
@@ -255,6 +259,15 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
               tooltip: 'Blink (B)',
               icon: const Icon(Icons.remove_red_eye_outlined),
               onPressed: _triggerBlink,
+            ),
+            IconButton(
+              tooltip: _danceCamera
+                  ? 'Lock dance camera (K)'
+                  : 'Enable dance camera (K)',
+              icon: Icon(
+                _danceCamera ? Icons.videocam_outlined : Icons.videocam_off,
+              ),
+              onPressed: () => setState(() => _danceCamera = !_danceCamera),
             ),
             IconButton(
               tooltip: _paused ? 'Play (Space)' : 'Pause (Space)',
@@ -318,6 +331,8 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
                         backdrop: _clip.name == CatClips.dance.name
                             ? CharacterBackdrop.waterfront
                             : CharacterBackdrop.none,
+                        enableDanceCamera:
+                            _clip.name == CatClips.dance.name && _danceCamera,
                         locomote: _wander,
                         walkingPair: _showPair,
                       ),
@@ -333,14 +348,16 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
                 children: [
                   // A prominent blink button (the immediate-blink action the
                   // reviewer reaches for) alongside the motion/expression picks.
-                  Row(
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       FilledButton.icon(
                         onPressed: _triggerBlink,
                         icon: const Icon(Icons.remove_red_eye_outlined),
                         label: const Text('Blink'),
                       ),
-                      const SizedBox(width: 12),
                       FilledButton.tonalIcon(
                         onPressed: _toggleExpressionCycle,
                         icon: Icon(
@@ -352,9 +369,21 @@ class _CharacterDemoPageState extends State<CharacterDemoPage>
                           _exprCycle != null ? 'Stop cycle' : 'Cycle faces',
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      FilledButton.tonalIcon(
+                        onPressed: _clip.name == CatClips.dance.name
+                            ? () => setState(() => _danceCamera = !_danceCamera)
+                            : null,
+                        icon: Icon(
+                          _danceCamera
+                              ? Icons.videocam_outlined
+                              : Icons.videocam_off,
+                        ),
+                        label: Text(
+                          _danceCamera ? 'Camera move' : 'Locked camera',
+                        ),
+                      ),
                       Text(
-                        'B blink · X cycle',
+                        'B blink · X cycle · K camera',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.54),
                           fontSize: 12,

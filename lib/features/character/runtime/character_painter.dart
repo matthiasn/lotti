@@ -57,6 +57,7 @@ class CharacterPainter extends CustomPainter {
     this.backdropImage,
     this.backdropCloudsImage,
     this.backdropWavesImage,
+    this.enableDanceCamera = true,
     this.locomote = false,
     this.walkingPair = false,
     this.partnerScene,
@@ -120,6 +121,10 @@ class CharacterPainter extends CustomPainter {
   /// Transparent lagoon shimmer overlay for [CharacterBackdrop.waterfront].
   final ui.Image? backdropWavesImage;
 
+  /// Enables the music-video camera pass for the three-cat dance ensemble.
+  /// Disable this for locked-camera choreography review.
+  final bool enableDanceCamera;
+
   /// When true (and the clip carries a [Clip.locomotionSpeed]) the character
   /// travels: it walks across the stage and ping-pongs at the edges (turning to
   /// face the direction of travel). Travelling is what makes the planted foot
@@ -145,7 +150,11 @@ class CharacterPainter extends CustomPainter {
     final memberCount = walkingPair
         ? (ensembleScenes.isEmpty ? 2 : ensembleScenes.length + 1)
         : 1;
-    final sceneCamera = walkingPair && clip.name == 'dance' && memberCount == 3
+    final sceneCamera =
+        enableDanceCamera &&
+            walkingPair &&
+            clip.name == 'dance' &&
+            memberCount == 3
         ? _danceCamera(timeSeconds, clip.duration)
         : (zoom: 1.0, dx: 0.0, dy: 0.0);
 
@@ -1026,6 +1035,7 @@ class CharacterPainter extends CustomPainter {
       old.backdropImage != backdropImage ||
       old.backdropCloudsImage != backdropCloudsImage ||
       old.backdropWavesImage != backdropWavesImage ||
+      old.enableDanceCamera != enableDanceCamera ||
       old.locomote != locomote ||
       old.walkingPair != walkingPair ||
       old.partnerScene != partnerScene ||
