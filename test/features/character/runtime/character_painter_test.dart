@@ -655,27 +655,27 @@ void main() {
     );
     expect(
       range(silverFrames.map((frame) => frame.dy)),
-      lessThanOrEqualTo(3.1),
+      lessThanOrEqualTo(0.001),
       reason:
-          'the silver backup should not appear to walk downstage/upstage when '
-          'its feet are dancing in place',
+          'the silver backup floor row should stay locked when its feet are '
+          'dancing in place',
     );
     expect(
       range(darkFrames.map((frame) => frame.dy)),
-      lessThanOrEqualTo(3.1),
+      lessThanOrEqualTo(0.001),
       reason:
-          'the dark backup should not appear to walk downstage/upstage when '
-          'its feet are dancing in place',
+          'the dark backup floor row should stay locked when its feet are '
+          'dancing in place',
     );
     expect(
       largestFrameStep(silverFrames),
-      lessThan(1),
-      reason: 'backup depth breathing must be sub-pixel smooth per frame',
+      lessThanOrEqualTo(0.001),
+      reason: 'backup depth should not animate without matching footwork',
     );
     expect(
       largestFrameStep(darkFrames),
-      lessThan(1),
-      reason: 'backup depth breathing must be sub-pixel smooth per frame',
+      lessThanOrEqualTo(0.001),
+      reason: 'backup depth should not animate without matching footwork',
     );
     for (final frame in allFrames) {
       expect(

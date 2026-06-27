@@ -409,7 +409,6 @@ class CharacterPainter extends CustomPainter {
     if (memberCount < 3) return (dx: 0, dy: 0, scale: 1);
     final p = _cyclePhase(timeSeconds, duration);
     final breathe = math.sin(2 * math.pi * (p * 3 + 0.15));
-    final callResponse = math.sin(2 * math.pi * (p * 2 - 0.08));
     final leadCall = _pulse(p, 1 / 16, 1 / 4);
     final rightFeature = _holdPulse(p, 3 / 32, 5 / 32, 7 / 32, 9 / 32);
     final greyFeature = _holdPulse(p, 8 / 32, 9 / 32, 11 / 32, 12 / 32);
@@ -419,10 +418,9 @@ class CharacterPainter extends CustomPainter {
     final centreFeature = _pulse(p, 17 / 32, 23 / 32);
     final ensembleHit = _pulse(p, 23 / 32, 27 / 32);
     final finishTriangle = _holdPulse(p, 27 / 32, 29 / 32, 31 / 32, 1);
-    // Stage depth is deliberately stable. The dancers' apparent foreground /
-    // background position comes from _roleFloorOffset + _roleScale, not from
-    // animated perspective jumps that their footwork does not earn.
-    final sideDepthBreath = 1.5 * callResponse;
+    // Stage depth is locked. The dancers' apparent foreground/background row
+    // comes from _roleFloorOffset + _roleScale, not animated perspective motion
+    // that their in-place legwork cannot physically earn.
     return switch (index) {
       0 => (
         dx:
@@ -432,7 +430,7 @@ class CharacterPainter extends CustomPainter {
             13 * wideV +
             14 * greyFeature +
             6 * finishTriangle,
-        dy: -17 + sideDepthBreath,
+        dy: -17,
         scale: 1,
       ),
       1 => (
@@ -458,7 +456,7 @@ class CharacterPainter extends CustomPainter {
             12 * wideV -
             8 * greyFeature -
             22 * finishTriangle,
-        dy: -17 - sideDepthBreath,
+        dy: -17,
         scale: 1,
       ),
       _ => (dx: 0, dy: 0, scale: 1),
