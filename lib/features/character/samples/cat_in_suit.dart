@@ -2421,18 +2421,50 @@ class CatClips {
         ],
       ),
     ],
-    jointAccents: {
-      CatBones.armUpperR: [
-        DanceJointAccent(4, radiusFrames: 3, rotation: -0.12),
-        DanceJointAccent(12, radiusFrames: 3, rotation: -0.035),
-        DanceJointAccent(24, radiusFrames: 7, rotation: -0.26),
-      ],
-      CatBones.armLowerR: [
-        DanceJointAccent(4, radiusFrames: 3, rotation: 0.16),
-        DanceJointAccent(12, radiusFrames: 3, rotation: 0.035),
-        DanceJointAccent(24, radiusFrames: 7, rotation: 0.3),
-      ],
-    },
+    moveJointAccents: [
+      DanceMoveJointAccent(
+        moveName: 'lead Shaku pocket hit',
+        boneId: CatBones.armUpperR,
+        offsetFrames: 0,
+        radiusFrames: 3,
+        rotation: -0.12,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'right-side camera answer',
+        boneId: CatBones.armUpperR,
+        offsetFrames: 0,
+        radiusFrames: 3,
+        rotation: -0.035,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'left-side camera answer',
+        boneId: CatBones.armUpperR,
+        offsetFrames: 0,
+        radiusFrames: 7,
+        rotation: -0.26,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'lead Shaku pocket hit',
+        boneId: CatBones.armLowerR,
+        offsetFrames: 0,
+        radiusFrames: 3,
+        rotation: 0.16,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'right-side camera answer',
+        boneId: CatBones.armLowerR,
+        offsetFrames: 0,
+        radiusFrames: 3,
+        rotation: 0.035,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'left-side camera answer',
+        boneId: CatBones.armLowerR,
+        offsetFrames: 0,
+        radiusFrames: 7,
+        rotation: 0.3,
+      ),
+    ],
   );
 
   static const _danceBackupRightStyle = DanceRoleStyle(
@@ -2498,18 +2530,50 @@ class CatClips {
         ],
       ),
     ],
-    jointAccents: {
-      CatBones.armUpperL: [
-        DanceJointAccent(12, radiusFrames: 4, rotation: 0.2),
-        DanceJointAccent(20, radiusFrames: 4, rotation: 0.13),
-        DanceJointAccent(24, radiusFrames: 6, rotation: 0.07),
-      ],
-      CatBones.armLowerL: [
-        DanceJointAccent(12, radiusFrames: 4, rotation: 0.24),
-        DanceJointAccent(20, radiusFrames: 4, rotation: 0.18),
-        DanceJointAccent(24, radiusFrames: 6, rotation: 0.08),
-      ],
-    },
+    moveJointAccents: [
+      DanceMoveJointAccent(
+        moveName: 'right-side camera answer',
+        boneId: CatBones.armUpperL,
+        offsetFrames: 0,
+        radiusFrames: 4,
+        rotation: 0.2,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'right-foot groove pocket',
+        boneId: CatBones.armUpperL,
+        offsetFrames: 0,
+        radiusFrames: 4,
+        rotation: 0.13,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'left-side camera answer',
+        boneId: CatBones.armUpperL,
+        offsetFrames: 0,
+        radiusFrames: 6,
+        rotation: 0.07,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'right-side camera answer',
+        boneId: CatBones.armLowerL,
+        offsetFrames: 0,
+        radiusFrames: 4,
+        rotation: 0.24,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'right-foot groove pocket',
+        boneId: CatBones.armLowerL,
+        offsetFrames: 0,
+        radiusFrames: 4,
+        rotation: 0.18,
+      ),
+      DanceMoveJointAccent(
+        moveName: 'left-side camera answer',
+        boneId: CatBones.armLowerL,
+        offsetFrames: 0,
+        radiusFrames: 6,
+        rotation: 0.08,
+      ),
+    ],
   );
 
   static List<LimbIkTarget> _danceRoleLimbTargets(DanceRoleStyle style) =>

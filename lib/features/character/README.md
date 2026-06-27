@@ -201,7 +201,8 @@ stateDiagram-v2
   without duplicate spline keys. `DanceBodyAccentOffset` and
   `DanceMoveBodyAccent` bind those body pulses to move accent frames, which
   keeps named choreography and role styles attached to cue timing instead of
-  duplicate raw frame numbers.
+  duplicate raw frame numbers. `DanceMoveJointAccent` does the same for
+  role-specific FK shoulder, elbow, and other joint pulses.
   `DanceIkTargetAccent` does the same for local hand/foot target pulses, so a
   lead-hand hit can be layered over the shared semantic hand path without
   duplicating the whole coordinate track. `DanceIkTargetArc` groups named

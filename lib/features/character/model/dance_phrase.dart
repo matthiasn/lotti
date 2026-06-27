@@ -219,6 +219,14 @@ class DancePhrase {
     for (final accent in accents) accent.toBodyAccent(this),
   ]);
 
+  List<DanceJointAccent> moveRoleJointAccents(
+    List<DanceMoveJointAccent> accents,
+    String boneId,
+  ) => List<DanceJointAccent>.unmodifiable([
+    for (final accent in accents)
+      if (accent.boneId == boneId) accent.toJointAccent(this),
+  ]);
+
   List<DanceJointKey> mergeJointKeys({
     required List<DanceJointKey> baseKeys,
     required List<DanceMoveSignature> signatures,
@@ -588,6 +596,42 @@ class DanceJointAccent {
     scaleY: scaleY,
     ease: ease,
   );
+}
+
+class DanceMoveJointAccent {
+  const DanceMoveJointAccent({
+    required this.moveName,
+    required this.boneId,
+    required this.offsetFrames,
+    required this.radiusFrames,
+    this.rotation = 0,
+    this.scaleX = 1,
+    this.scaleY = 1,
+    this.ease = Ease.easeInOut,
+  }) : assert(radiusFrames > 0, 'radiusFrames must be positive');
+
+  /// Must match [DanceMoveCue.name]. The joint accent follows that cue's accent
+  /// frame when phrase timing changes.
+  final String moveName;
+  final String boneId;
+  final int offsetFrames;
+  final int radiusFrames;
+  final double rotation;
+  final double scaleX;
+  final double scaleY;
+  final Ease ease;
+
+  DanceJointAccent toJointAccent(DancePhrase phrase) {
+    final move = phrase.moveNamed(moveName);
+    return DanceJointAccent(
+      move.accentFrame + offsetFrames,
+      radiusFrames: radiusFrames,
+      rotation: rotation,
+      scaleX: scaleX,
+      scaleY: scaleY,
+      ease: ease,
+    );
+  }
 }
 
 class DanceRootKey {
@@ -1121,6 +1165,7 @@ class DanceRoleStyle {
     this.moveTargetOffsetArcs = const <DanceMoveTargetOffsetArc>[],
     this.ikTargetOffsetArcs = const <String, List<DanceIkTargetOffsetArc>>{},
     this.ikTargetAccents = const <String, List<DanceIkTargetAccent>>{},
+    this.moveJointAccents = const <DanceMoveJointAccent>[],
     this.jointAccents = const <String, List<DanceJointAccent>>{},
   });
 
@@ -1138,6 +1183,9 @@ class DanceRoleStyle {
 
   /// Local IK target pulses, keyed by target/end bone id.
   final Map<String, List<DanceIkTargetAccent>> ikTargetAccents;
+
+  /// Move-addressed FK joint pulses for role/style variation.
+  final List<DanceMoveJointAccent> moveJointAccents;
 
   /// Additive FK joint pulses, keyed by bone id.
   final Map<String, List<DanceJointAccent>> jointAccents;
@@ -1178,7 +1226,8 @@ class DanceRoleStyle {
   List<DanceJointKey> jointKeys(
     DancePhrase phrase,
     String boneId,
-  ) => phrase.jointAccentKeys(
-    jointAccents[boneId] ?? const <DanceJointAccent>[],
-  );
+  ) => phrase.jointAccentKeys([
+    ...phrase.moveRoleJointAccents(moveJointAccents, boneId),
+    ...(jointAccents[boneId] ?? const <DanceJointAccent>[]),
+  ]);
 }

@@ -551,12 +551,22 @@ void main() {
             DanceJointAccent(20, radiusFrames: 4, rotation: 0.05),
           ],
         },
+        moveJointAccents: [
+          DanceMoveJointAccent(
+            moveName: 'right answer hit',
+            boneId: 'arm.R',
+            offsetFrames: 0,
+            radiusFrames: 2,
+            rotation: 0.18,
+          ),
+        ],
       );
 
       final bodyKeys = style.bodyKeys(phrase);
       final handKeys = style.ikTargetKeys(phrase, 'hand.L');
       final missingHandKeys = style.ikTargetKeys(phrase, 'hand.R');
       final torsoKeys = style.jointKeys(phrase, 'torso');
+      final armKeys = style.jointKeys(phrase, 'arm.R');
       final missingJointKeys = style.jointKeys(phrase, 'head');
 
       expect(bodyKeys.map((key) => key.frame), [6, 8, 10, 18, 20, 22]);
@@ -586,6 +596,8 @@ void main() {
       expect(missingHandKeys, isEmpty);
       expect(torsoKeys.map((key) => key.frame), [16, 20, 24]);
       expect(torsoKeys[1].rotation, 0.05);
+      expect(armKeys.map((key) => key.frame), [18, 20, 22]);
+      expect(armKeys[1].rotation, 0.18);
       expect(missingJointKeys, isEmpty);
     });
 
@@ -665,6 +677,21 @@ void main() {
               rootDy: 1,
             ),
           ],
+        ),
+        throwsStateError,
+      );
+      expect(
+        () => phrase.moveRoleJointAccents(
+          const [
+            DanceMoveJointAccent(
+              moveName: 'missing move',
+              boneId: 'arm.R',
+              offsetFrames: 0,
+              radiusFrames: 2,
+              rotation: 0.1,
+            ),
+          ],
+          'arm.R',
         ),
         throwsStateError,
       );
