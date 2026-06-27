@@ -80,6 +80,28 @@ Flags: `-o/--out`, `--model` (tiny/base/small/medium/large-v3; default `base`),
 Outputs belong under `out/` (gitignored). Original-artwork audio and the
 transcription JSON are **never** committed.
 
+## Better captions: separate the vocals first (Demucs)
+
+Whisper's voice-activity stage skips vocals it can't pick out of a dense mix, so
+on full-mix Afrobeats it leaves large gaps **even with `large-v3`**. Transcribing
+a **vocals-only stem** closes most of them. Separate with **Demucs**, then point
+`transcribe.py` at the stem — the stem keeps the original timeline, so the word
+times still line up with the track.
+
+```bash
+. .venv-asr/bin/activate
+pip install --no-cache-dir demucs
+# isolate the vocal stem (htdemucs; ~1-2 min CPU for a ~2.5-min track)
+python -m demucs --two-stems vocals -o out/sep track.mp3
+# transcribe the stem (large-v3 for best coverage)
+python transcribe.py out/sep/htdemucs/track/vocals.wav -o out/track.words.json --model large-v3
+```
+
+Measured on the Afrobeats reference (full mix → vocal stem, both `large-v3`):
+word coverage rose from ~57 s to ~75 s of 144 s and the two ~20 s mid-song gaps
+disappeared. Demucs is **MIT**-licensed. Stems live under `out/` (gitignored) —
+never commit them.
+
 ## License
 
 WhisperX is **BSD-2-Clause** — license-clean for this use. We deliberately avoid
@@ -92,9 +114,9 @@ don't use it.
 Whisper and the wav2vec2 aligner are trained on **speech**. On sung lyrics —
 sustained vowels, melisma, falsetto, ad-libs, and loud backing instrumentation —
 both the transcription text and the word timing degrade. Treat the output as a
-strong **first draft to hand-correct**, not ground truth. Feeding a
-**vocals-only stem** (source-separated, e.g. Demucs) improves results markedly;
-a larger `--model` helps text accuracy at the cost of speed.
+strong **first draft to hand-correct**, not ground truth. The biggest win is a
+**vocals-only stem** (see *Better captions* above); a larger `--model` helps text
+accuracy at the cost of speed.
 
 ## Testing
 

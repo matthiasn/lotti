@@ -19,3 +19,6 @@ whisperx>=3.1
 # segment to WhisperX without a second ffmpeg decode.
 librosa>=0.10
 soundfile>=0.12
+# Optional but recommended for sung vocals: source-separate a vocals-only stem
+# before transcribing (markedly fewer gaps — see TRANSCRIBE.md). MIT-licensed.
+demucs>=4.0
