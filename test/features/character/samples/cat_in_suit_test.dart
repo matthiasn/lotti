@@ -1920,6 +1920,43 @@ void main() {
             'the final hook should finish as a low freeze before the loop '
             'returns home, not fade into a neutral reset',
       );
+      final hookBlinkP = 30 / phrase.frameCount;
+      final hookLoopP = 32 / phrase.frameCount;
+      final hookBlinkRoot = lead.root.sample(hookBlinkP);
+      final hookLoopRoot = lead.root.sample(hookLoopP);
+      final hookBlinkTorso = leadChannels[CatBones.torso]!.sample(hookBlinkP);
+      final hookLoopTorso = leadChannels[CatBones.torso]!.sample(hookLoopP);
+      expect(
+        hookBlinkRoot.dy,
+        greaterThan(hookLoopRoot.dy + 1.2),
+        reason:
+            'the blink frame should also be a body pickup, not a facial '
+            'expression change on a held pose',
+      );
+      expect(
+        hookBlinkTorso.scaleY,
+        lessThan(hookLoopTorso.scaleY - 0.025),
+        reason:
+            'F30 needs visible torso compression so the final phrase keeps '
+            'grooving between the F29 button and the loop home',
+      );
+      final hookBlinkFoot = leadFootLTarget.sample(hookBlinkP);
+      final hookPickupFoot = leadFootLTarget.sample(hookPickupP);
+      final hookLoopFoot = leadFootLTarget.sample(hookLoopP);
+      expect(
+        hookPickupFoot.x,
+        greaterThan(hookBlinkFoot.x + 6),
+        reason:
+            'the final toe flick should keep resolving through F31 instead of '
+            'freezing after the blink frame',
+      );
+      expect(
+        (hookLoopFoot.x - hookPickupFoot.x).abs(),
+        lessThan(4),
+        reason:
+            'the final toe flick should settle into the loop home without a '
+            'one-frame foot teleport',
+      );
       final leadFinalLeftHand = _targetFor(
         lead,
         CatBones.handL,

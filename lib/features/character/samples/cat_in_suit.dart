@@ -1545,13 +1545,16 @@ class CatClips {
         DanceBodyAccentOffset(
           offsetFrames: 2,
           radiusFrames: 2,
+          // The blink frame was reading like a facial change on a held body.
+          // Make F30 a real pocketed pickup so the phrase keeps dancing into
+          // the loop seam instead of freezing after the F29 button.
           rootDx: -0.7,
-          rootDy: 0.55,
+          rootDy: 0.72,
           rootRotation: -0.001,
-          pelvisRotation: 0.028,
-          chestRotation: -0.044,
-          chestScaleY: 0.984,
-          chestScaleX: 1.014,
+          pelvisRotation: 0.03,
+          chestRotation: -0.055,
+          chestScaleY: 0.978,
+          chestScaleX: 1.016,
         ),
         DanceBodyAccentOffset(
           offsetFrames: 3,
@@ -1559,9 +1562,9 @@ class CatClips {
           // End as a low asymmetrical freeze, not a neutral reset: hip pickup
           // under a counter-shoulder bite, then frame 32 can loop home.
           rootDy: 0.74,
-          pelvisRotation: 0.062,
-          chestRotation: -0.235,
-          chestScaleY: 0.952,
+          pelvisRotation: 0.064,
+          chestRotation: -0.238,
+          chestScaleY: 0.95,
           chestScaleX: 1.032,
         ),
       ],
@@ -1583,9 +1586,9 @@ class CatClips {
         CatBones.footL: [
           DanceIkTargetKey(28, x: -27.4, y: 105),
           DanceIkTargetKey(29, x: -14.2, y: 100.2),
-          DanceIkTargetKey(30, x: 5.4, y: 95.7),
-          DanceIkTargetKey(31, x: 10.6, y: 94.2),
-          DanceIkTargetKey(32, x: 13.6, y: 94.4),
+          DanceIkTargetKey(30, x: 4.8, y: 96),
+          DanceIkTargetKey(31, x: 12.8, y: 93.6),
+          DanceIkTargetKey(32, x: 14.2, y: 94.2),
         ],
       },
       jointKeys: {
