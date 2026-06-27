@@ -1170,6 +1170,26 @@ void main() {
         greaterThan(0.25),
         reason: 'hook reset should close back into a compact arm shape',
       );
+      final hookPickupP = 31 / phrase.frameCount;
+      expect(
+        leadChannels[CatBones.hips]!.sample(hookPickupP).rotation,
+        greaterThan(0.28),
+        reason:
+            'hook reset should keep a hip pickup under the arms instead of '
+            'ending as a neutral pose',
+      );
+      expect(
+        leadChannels[CatBones.torso]!.sample(hookPickupP).rotation,
+        lessThan(-0.13),
+        reason:
+            'hook reset should finish with a counter-shoulder pickup, not a '
+            'relaxed upper body before the loop',
+      );
+      expect(
+        leadChannels[CatBones.torso]!.sample(hookPickupP).scaleY,
+        lessThan(0.945),
+        reason: 'hook reset should stay pocketed through the loop pickup',
+      );
     });
 
     test('dance keeps major phrase handoffs in continuous hand paths', () {

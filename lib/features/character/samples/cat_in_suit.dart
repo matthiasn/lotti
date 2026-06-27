@@ -1324,6 +1324,15 @@ class CatClips {
           chestScaleY: 0.984,
           chestScaleX: 1.014,
         ),
+        DanceBodyAccentOffset(
+          offsetFrames: 3,
+          radiusFrames: 1,
+          rootDy: 0.35,
+          pelvisRotation: 0.038,
+          chestRotation: -0.055,
+          chestScaleY: 0.98,
+          chestScaleX: 1.014,
+        ),
       ],
       ikTargetKeys: {
         CatBones.handL: [
