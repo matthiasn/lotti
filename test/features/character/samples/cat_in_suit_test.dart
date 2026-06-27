@@ -225,6 +225,8 @@ void main() {
         final right = CatClips.danceBackupRight;
         const supportCheckP = 7 / 12;
         const firstEchoP = 1 / 8;
+        const rightEarlyEchoP = 5 / 32;
+        const leftDelayedEchoP = 6 / 32;
         const rightFeatureP = 3 / 8;
         const delayedEchoP = 5 / 8;
         const leftFeatureP = 3 / 4;
@@ -292,6 +294,22 @@ void main() {
           right,
           CatBones.handR,
         ).channel.sample(firstEchoP);
+        final leadHandLEarlyEcho = _targetFor(
+          lead,
+          CatBones.handL,
+        ).channel.sample(rightEarlyEchoP);
+        final rightHandLEarlyEcho = _targetFor(
+          right,
+          CatBones.handL,
+        ).channel.sample(rightEarlyEchoP);
+        final leadHandRDelayedEcho = _targetFor(
+          lead,
+          CatBones.handR,
+        ).channel.sample(leftDelayedEchoP);
+        final leftHandRDelayedEcho = _targetFor(
+          left,
+          CatBones.handR,
+        ).channel.sample(leftDelayedEchoP);
         final leadFootRFirstEcho = _targetFor(
           lead,
           CatBones.footR,
@@ -399,14 +417,36 @@ void main() {
         );
         expect(
           leftHandRFirstEcho.x,
-          closeTo(leadHandRFirstEcho.x - 5.8, 0.001),
+          closeTo(leadHandRFirstEcho.x, 0.001),
           reason:
-              'left backup should echo the lead Shaku pocket with its inside '
-              'hand, making the first eight count choreographed',
+              'the lead should own the first Shaku hand hit before the silver '
+              'backup answers two frames later',
         );
         expect(
           leftHandRFirstEcho.y,
-          closeTo(leadHandRFirstEcho.y - 3.2, 0.001),
+          closeTo(leadHandRFirstEcho.y, 0.001),
+        );
+        expect(
+          rightHandLEarlyEcho.x,
+          closeTo(leadHandLEarlyEcho.x + 8.2, 0.001),
+          reason:
+              'the dark backup should mark an early inside-hand response in '
+              'the first eight count',
+        );
+        expect(
+          rightHandLEarlyEcho.y,
+          closeTo(leadHandLEarlyEcho.y - 4.8, 0.001),
+        );
+        expect(
+          leftHandRDelayedEcho.x,
+          closeTo(leadHandRDelayedEcho.x - 9.4, 0.001),
+          reason:
+              'the silver backup should answer the lead Shaku pocket two '
+              'frames later with its inside hand',
+        );
+        expect(
+          leftHandRDelayedEcho.y,
+          closeTo(leadHandRDelayedEcho.y - 5.8, 0.001),
         );
         expect(
           rightHandRFirstEcho.x,
@@ -954,6 +994,30 @@ void main() {
       final openingDelayedShoulder = leadChannels[CatBones.torso]!.sample(
         5 / phrase.frameCount,
       );
+      final rightBackupEarlyAnswerP = 5 / phrase.frameCount;
+      final leftBackupDelayedAnswerP = 6 / phrase.frameCount;
+      final rightBackupEarlyShoulder = right.channels[CatBones.torso]!.sample(
+        rightBackupEarlyAnswerP,
+      );
+      final leftBackupDelayedShoulder = left.channels[CatBones.torso]!.sample(
+        leftBackupDelayedAnswerP,
+      );
+      final rightBackupEarlyHand = _targetFor(
+        right,
+        CatBones.handL,
+      ).channel.sample(rightBackupEarlyAnswerP);
+      final rightLeadEarlyHand = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(rightBackupEarlyAnswerP);
+      final leftBackupDelayedHand = _targetFor(
+        left,
+        CatBones.handR,
+      ).channel.sample(leftBackupDelayedAnswerP);
+      final leftLeadDelayedHand = _targetFor(
+        lead,
+        CatBones.handR,
+      ).channel.sample(leftBackupDelayedAnswerP);
       expect(
         openingDownbeat.dy,
         greaterThan(openingPlant.dy + 0.4),
@@ -1037,6 +1101,44 @@ void main() {
         reason:
             'the opening shoulder should answer one frame after the foot hit; '
             'if shoulder and foot land together, the phrase reads robotic',
+      );
+      expect(
+        rightBackupEarlyShoulder.rotation,
+        lessThan(
+          leadChannels[CatBones.torso]!
+                  .sample(rightBackupEarlyAnswerP)
+                  .rotation -
+              0.035,
+        ),
+        reason:
+            'the dark cat should answer the opening pocket on its own early '
+            'half-beat instead of copying the lead shoulder exactly',
+      );
+      expect(
+        leftBackupDelayedShoulder.rotation,
+        greaterThan(
+          leadChannels[CatBones.torso]!
+                  .sample(leftBackupDelayedAnswerP)
+                  .rotation +
+              0.045,
+        ),
+        reason:
+            'the silver cat should answer a frame later with opposite shoulder '
+            'shape so the trio reads call-and-response',
+      );
+      expect(
+        rightBackupEarlyHand.x - rightLeadEarlyHand.x,
+        greaterThan(5),
+        reason:
+            'the dark cat inside hand should mark the early answer instead of '
+            'staying on the lead hand path',
+      );
+      expect(
+        leftBackupDelayedHand.x - leftLeadDelayedHand.x,
+        lessThan(-6),
+        reason:
+            'the silver cat inside hand should mark the delayed answer instead '
+            'of staying on the lead hand path',
       );
       expect(
         (shakuSink.dx - shakuHit.dx).abs(),
@@ -1282,6 +1384,10 @@ void main() {
         contains('lifted free-left toe'),
       );
       expect(
+        phrase.moveAtFrame(20).signature,
+        contains('komole'),
+      );
+      expect(
         rightSupportXs.reduce(math.max) - rightSupportXs.reduce(math.min),
         lessThan(5),
         reason:
@@ -1404,6 +1510,8 @@ void main() {
       final grooveRecoilP = 17 / phrase.frameCount;
       final grooveStopP = 18 / phrase.frameCount;
       final grooveLoad = lead.root.sample(rightFootCueP);
+      final komoleLowP = 21 / phrase.frameCount;
+      final komoleLow = lead.root.sample(komoleLowP);
       final grooveRelease = lead.root.sample(22 / phrase.frameCount);
       expect(
         grooveLoad.dy,
@@ -1411,6 +1519,29 @@ void main() {
         reason:
             'F20 should visibly load into the planted right foot before the '
             'phrase rebounds; otherwise the footwork stays decorative',
+      );
+      expect(
+        komoleLow.dy,
+        greaterThan(grooveRelease.dy + 3),
+        reason:
+            'F21 should extend the right-foot groove into a real low komole '
+            'dip before the F22 rebound',
+      );
+      expect(
+        leadChannels[CatBones.torso]!.sample(komoleLowP).scaleY,
+        lessThan(0.915),
+        reason:
+            'the F21 komole dip needs a visibly compressed torso, not only a '
+            'foot target or hand pose',
+      );
+      expect(
+        leadChannels[CatBones.torso]!.sample(grooveRollReleaseP).rotation,
+        lessThan(
+          leadChannels[CatBones.torso]!.sample(komoleLowP).rotation - 0.22,
+        ),
+        reason:
+            'F22 should rebound out of the low komole dip with a clear chest '
+            'pop in the opposite direction',
       );
       expect(
         leadChannels[CatBones.torso]!.sample(groovePopP).rotation,

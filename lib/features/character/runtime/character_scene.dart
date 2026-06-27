@@ -210,6 +210,7 @@ class CharacterScene {
       footStabilizedWorld,
       timeSeconds: timeSeconds,
       baseScale: _uniformScale(base),
+      rootDy: posed.rootDy,
     );
     var face = faceSolver.applyAutonomic(expression.state, auto);
     if (eyeOpenScale != 1) {
@@ -391,6 +392,7 @@ class CharacterScene {
     Map<String, Affine2D> world, {
     required double timeSeconds,
     required double baseScale,
+    required double rootDy,
   }) {
     final headId = rig.face?.anchorBoneId;
     if (headId == null) return world;
@@ -417,13 +419,28 @@ class CharacterScene {
       anchor.x,
       anchor.y,
     ).multiply(correction).multiply(Affine2D.translation(-anchor.x, -anchor.y));
+    final headCounterTranslate = _isDanceFamily(clip)
+        ? Affine2D.translation(
+            0,
+            _danceHeadVerticalCounter(rootDy) * baseScale,
+          )
+        : Affine2D.identity;
+    final headTransform = headCounterTranslate.multiply(stabilizeHead);
     final shifted = Map<String, Affine2D>.of(world);
     for (final bone in rig.bones) {
       if (bone.id == headId || _hasAncestor(bone.id, headId)) {
-        shifted[bone.id] = stabilizeHead.multiply(world[bone.id]!);
+        shifted[bone.id] = headTransform.multiply(world[bone.id]!);
       }
     }
     return shifted;
+  }
+
+  double _danceHeadVerticalCounter(double rootDy) {
+    // The dance phrase now gets its level change from knees/hips/torso.
+    // Counter only part of the root bob so the skull reads rigid without
+    // visually detaching from the neck.
+    const neutralDanceRootDy = 17.4;
+    return -(rootDy - neutralDanceRootDy) * 0.32;
   }
 
   double _danceHeadAttitude(double p) {
