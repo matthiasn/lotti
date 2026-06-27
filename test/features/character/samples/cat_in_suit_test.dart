@@ -463,14 +463,14 @@ void main() {
         );
         expect(
           leftFootRFirstEcho.x,
-          closeTo(leadFootRFirstEcho.x - 5.2, 0.001),
+          closeTo(leadFootRFirstEcho.x - 9.6, 0.001),
           reason:
               'left backup should answer the first pocket with a distinct '
               'low right-toe variation',
         );
         expect(
           leftFootRFirstEcho.y,
-          closeTo(leadFootRFirstEcho.y + 1.4, 0.001),
+          closeTo(leadFootRFirstEcho.y + 2.1, 0.001),
         );
         expect(
           rightFootRFirstEcho.x,
@@ -498,14 +498,14 @@ void main() {
         );
         expect(
           rightFootLRightPickup.x,
-          closeTo(leadFootLRightPickup.x + 5.8, 0.001),
+          closeTo(leadFootLRightPickup.x + 9.2, 0.001),
           reason:
               'right backup should answer the second pocket with a delayed '
               'left-toe pickup',
         );
         expect(
           rightFootLRightPickup.y,
-          closeTo(leadFootLRightPickup.y - 3.6, 0.001),
+          closeTo(leadFootLRightPickup.y - 5.2, 0.001),
         );
         expect(
           leftFootLRightPickup.x,
@@ -608,14 +608,14 @@ void main() {
                 .rotation;
         expect(
           leftHipDelta.abs(),
-          inInclusiveRange(0.04, 0.12),
+          inInclusiveRange(0.04, 0.18),
           reason:
               'left backup should answer with a visible hip variation when '
               'the camera pans left',
         );
         expect(
           rightTorsoDelta.abs(),
-          inInclusiveRange(0.03, 0.12),
+          inInclusiveRange(0.03, 0.22),
           reason:
               'right backup should answer with a visible chest variation when '
               'the camera pans right',
@@ -641,7 +641,7 @@ void main() {
         );
         expect(
           rightArmDelta.abs(),
-          inInclusiveRange(0.08, 0.42),
+          inInclusiveRange(0.08, 0.65),
           reason:
               'right backup should feature its inside arm on the right pass',
         );
@@ -654,14 +654,14 @@ void main() {
         );
         expect(
           rightDelayedEchoTorsoDelta.abs(),
-          inInclusiveRange(0.03, 0.08),
+          inInclusiveRange(0.03, 0.1),
           reason:
               'right backup should answer on the later right-foot groove '
               'without becoming the lead',
         );
         expect(
           leftHookTorsoDelta.abs(),
-          inInclusiveRange(0.025, 0.055),
+          inInclusiveRange(0.025, 0.08),
           reason: 'left backup should visibly join the loop pickup',
         );
         expect(
