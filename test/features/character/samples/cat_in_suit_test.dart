@@ -228,6 +228,7 @@ void main() {
         const rightFeatureP = 3 / 8;
         const delayedEchoP = 5 / 8;
         const leftFeatureP = 3 / 4;
+        const delayedStepTapEchoP = 25 / 32;
         const rightAnswerSettleP = 15 / 32;
         const leftFeatureSettleP = 28 / 32;
         const leftHookPickupP = 30 / 32;
@@ -520,6 +521,14 @@ void main() {
         final rightTorsoDelta =
             right.channels[CatBones.torso]!.sample(rightFeatureP).rotation -
             lead.channels[CatBones.torso]!.sample(rightFeatureP).rotation;
+        final leftStepTapEchoHipDelta =
+            left.channels[CatBones.hips]!.sample(delayedStepTapEchoP).rotation -
+            lead.channels[CatBones.hips]!.sample(delayedStepTapEchoP).rotation;
+        final rightStepTapEchoTorsoDelta =
+            right.channels[CatBones.torso]!
+                .sample(delayedStepTapEchoP)
+                .rotation -
+            lead.channels[CatBones.torso]!.sample(delayedStepTapEchoP).rotation;
         final leftFirstEchoTorsoDelta =
             left.channels[CatBones.torso]!.sample(firstEchoP).rotation -
             lead.channels[CatBones.torso]!.sample(firstEchoP).rotation;
@@ -563,6 +572,20 @@ void main() {
           reason:
               'right backup should answer with a visible chest variation when '
               'the camera pans right',
+        );
+        expect(
+          leftStepTapEchoHipDelta.abs(),
+          inInclusiveRange(0.01, 0.16),
+          reason:
+              'left backup should echo the F24 step-tap one frame later, not '
+              'move in exact lockstep with the lead',
+        );
+        expect(
+          rightStepTapEchoTorsoDelta.abs(),
+          inInclusiveRange(0.01, 0.12),
+          reason:
+              'right backup should carry a smaller delayed shoulder answer on '
+              'the step-tap release',
         );
         expect(
           leftArmDelta.abs(),
@@ -1156,6 +1179,47 @@ void main() {
         leadChannels[CatBones.torso]!.sample(leftCueP).scaleY,
         lessThan(0.98),
         reason: 'left-side cue should stay in the pocket before the hook reset',
+      );
+      final stepTapDownbeat = lead.root.sample(24 / phrase.frameCount);
+      final stepTapPushOff = lead.root.sample(26 / phrase.frameCount);
+      expect(
+        stepTapDownbeat.dy,
+        greaterThan(stepTapPushOff.dy + 2.5),
+        reason:
+            'F24-F26 should read as downbeat settle then push-off, not an '
+            'even floating glide into the hook reset',
+      );
+      final leadFootLTarget = _targetFor(lead, CatBones.footL).channel;
+      final leadFootRTarget = _targetFor(lead, CatBones.footR).channel;
+      final stepTapOut = leadFootLTarget.sample(25 / phrase.frameCount);
+      final stepTapReturn = leadFootLTarget.sample(26 / phrase.frameCount);
+      expect(
+        stepTapOut.x,
+        lessThan(-38),
+        reason:
+            'the F25 free-left step should travel visibly outward before the '
+            'toe-flick release',
+      );
+      expect(
+        stepTapReturn.y,
+        greaterThan(104),
+        reason:
+            'the F26 free-left return should stay low enough to read as a '
+            'tap/push-off rather than a hidden knee lift',
+      );
+      final supportX = [
+        leadFootRTarget.sample(24 / phrase.frameCount).x,
+        leadFootRTarget.sample(25 / phrase.frameCount).x,
+        leadFootRTarget.sample(26 / phrase.frameCount).x,
+        leadFootRTarget.sample(27 / phrase.frameCount).x,
+        leadFootRTarget.sample(28 / phrase.frameCount).x,
+      ];
+      expect(
+        supportX.reduce(math.max) - supportX.reduce(math.min),
+        lessThan(8),
+        reason:
+            'right support should stay pinned through the step-tap downbeat '
+            'before it releases into the loop pickup',
       );
 
       final hookP = phrase.moveAtFrame(31).accentFrame / phrase.frameCount;
