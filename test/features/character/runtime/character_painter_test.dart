@@ -726,7 +726,7 @@ void main() {
     });
   });
 
-  testWidgets('dance trio camera keeps medium-wide centre/right/left passes', (
+  testWidgets('dance trio camera pushes into torso close-up then pulls out', (
     tester,
   ) async {
     await tester.runAsync(() async {
@@ -844,45 +844,48 @@ void main() {
       );
       expect(
         centerPush.orangeHeight,
-        inInclusiveRange(wide.orangeHeight * 0.95, wide.orangeHeight * 1.16),
+        inInclusiveRange(wide.orangeHeight * 0.95, wide.orangeHeight * 1.18),
         reason:
-            'the centre beat should avoid a visible scale pop or solo close-up',
+            'the first beat should begin a visible dolly-in without jumping '
+            'straight to a close-up',
       );
       expect(
         centerPush.orangeCenterX - rightPan.orangeCenterX,
-        inInclusiveRange(18, 72),
+        inInclusiveRange(24, 96),
         reason:
-            'the second beat should pan toward the right-side dancer, moving '
-            'the lead left on screen without losing the trio',
+            'the second beat should truck toward the right-side dancer, moving '
+            'the lead left on screen',
       );
       expect(
         rightClose.orangeHeight,
         inInclusiveRange(
-          wide.orangeHeight * 1.02,
-          wide.orangeHeight * 1.18,
+          wide.orangeHeight * 1.24,
+          wide.orangeHeight * 1.48,
         ),
         reason:
-            'the right-side pass should stay as a subtle medium push, not a '
-            'cropped solo close-up',
+            'the right-side pass should be an intentional torso close-up, not '
+            'another barely-moving medium-wide shot',
       );
       expect(
         rightClose.contentMinX,
-        greaterThan(3),
+        greaterThanOrEqualTo(0),
         reason:
-            'the F12-F15 right-side pass should keep the left backup inside '
-            'the frame instead of clipping it at the desktop edge',
+            'the close-up may crop feet, but it must stay within the desktop '
+            'viewport horizontally',
       );
       expect(
         rightClose.contentMaxX,
-        lessThan(756),
+        lessThanOrEqualTo(759),
         reason:
-            'the F12-F15 right-side pass should remain an ensemble shot, not '
-            'throw any dancer out of the desktop frame',
+            'the close-up must not move the visible trio out of the desktop '
+            'viewport horizontally',
       );
       expect(
         rightClose.contentMaxY,
-        lessThan(418),
-        reason: 'the right pass should not crop feet out of the desktop frame',
+        lessThanOrEqualTo(419),
+        reason:
+            'the torso close-up can crop feet, but it should not move the shot '
+            'outside the desktop canvas',
       );
       expect(
         rightHold.orangeCenterX,
@@ -905,40 +908,40 @@ void main() {
       expect(
         leadLevel.orangeHeight,
         inInclusiveRange(
-          rightClose.orangeHeight * 0.9,
-          rightClose.orangeHeight * 1.12,
+          rightClose.orangeHeight * 0.98,
+          rightClose.orangeHeight * 1.18,
         ),
         reason:
-            'the right-pass recovery should continue the slow dolly without '
-            'popping into a close-up or resetting scale early',
+            'the mid-phrase should continue the face/torso push smoothly, not '
+            'snap back to wide after the right-side pass',
       );
       expect(
         postRightRecovery.orangeCenterX,
-        closeTo(wide.orangeCenterX, 46),
+        closeTo(leadLevel.orangeCenterX, 72),
         reason:
-            'after the lunge recovery, the camera should restore the ensemble '
-            'before the next left-side pass',
+            'the truck/arc should glide through the centre instead of resetting '
+            'to the original wide composition',
       );
       expect(
         postRightRecovery.orangeHeight,
-        lessThan(wide.orangeHeight * 1.18),
+        greaterThan(wide.orangeHeight * 1.24),
         reason:
-            'after the recovery beat, the camera should continue the slow '
-            'arc as a medium-wide move without becoming a cropped close-up',
+            'the camera should still be in face/torso territory at the middle '
+            'of the shot phrase',
       );
       expect(
         leftPan.orangeCenterX - postRightRecovery.orangeCenterX,
-        inInclusiveRange(18, 78),
+        inInclusiveRange(24, 108),
         reason:
-            'the next beat should pan toward the left-side dancer, moving the '
-            'lead right on screen without making a close-up',
+            'the next beat should truck toward the left-side dancer, moving '
+            'the lead right on screen',
       );
       expect(
         leftClose.orangeHeight,
-        inInclusiveRange(leftPan.orangeHeight * 1.0, wide.orangeHeight * 1.24),
+        inInclusiveRange(wide.orangeHeight * 1.16, wide.orangeHeight * 1.42),
         reason:
-            'the left-side pass should also stay as a subtle medium push '
-            'before the reset',
+            'the left-side pass should stay visibly pushed in before the final '
+            'pull-out',
       );
       expect(
         leftHold.orangeCenterX,
@@ -948,7 +951,10 @@ void main() {
       );
       expect(
         leftHold.orangeHeight,
-        closeTo(leftClose.orangeHeight, leftClose.orangeHeight * 0.08),
+        inInclusiveRange(wide.orangeHeight * 1.06, leftClose.orangeHeight),
+        reason:
+            'the left-side hold should begin the pull-out without snapping '
+            'straight back to the wide frame',
       );
       expect(
         reset.orangeHeight,
