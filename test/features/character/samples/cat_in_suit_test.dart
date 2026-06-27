@@ -553,14 +553,14 @@ void main() {
         );
         expect(
           leftHandRDelayedEcho.x,
-          closeTo(leadHandRDelayedEcho.x, 0.001),
+          lessThan(leadHandRDelayedEcho.x - 12),
           reason:
-              'the silver backup should also hold the lead call restrained; '
-              'the visible answer belongs to frames 9-16',
+              'the silver backup should visibly answer the lead in the '
+              'opening 5-8 pocket instead of copying the lead exactly',
         );
         expect(
           leftHandRDelayedEcho.y,
-          closeTo(leadHandRDelayedEcho.y, 0.001),
+          lessThan(leadHandRDelayedEcho.y - 6),
         );
         expect(
           rightHandRFirstEcho.x,
@@ -780,10 +780,10 @@ void main() {
         );
         expect(
           leftFirstEchoTorsoDelta.abs(),
-          inInclusiveRange(0.008, 0.04),
+          inInclusiveRange(0.035, 0.075),
           reason:
-              'left backup should only mark the first-pocket shoulder so the '
-              'lead owns the call',
+              'left backup should answer the first-pocket shoulder visibly '
+              'without overtaking the lead call',
         );
         expect(
           rightDelayedEchoTorsoDelta.abs(),
@@ -1138,30 +1138,36 @@ void main() {
       final openingDelayedShoulder = leadChannels[CatBones.torso]!.sample(
         5 / phrase.frameCount,
       );
-      final rightBackupEarlyAnswerP = 5 / phrase.frameCount;
-      final leftBackupDelayedAnswerP = 6 / phrase.frameCount;
-      final rightBackupEarlyShoulder = right.channels[CatBones.torso]!.sample(
-        rightBackupEarlyAnswerP,
+      final silverOpeningAnswerP = 6 / phrase.frameCount;
+      final darkOpeningAnswerP = 7 / phrase.frameCount;
+      final silverOpeningShoulder = left.channels[CatBones.torso]!.sample(
+        silverOpeningAnswerP,
       );
-      final leftBackupDelayedShoulder = left.channels[CatBones.torso]!.sample(
-        leftBackupDelayedAnswerP,
+      final leadAtSilverOpeningShoulder = leadChannels[CatBones.torso]!.sample(
+        silverOpeningAnswerP,
       );
-      final rightBackupEarlyHand = _targetFor(
-        right,
-        CatBones.handL,
-      ).channel.sample(rightBackupEarlyAnswerP);
-      final rightLeadEarlyHand = _targetFor(
-        lead,
-        CatBones.handL,
-      ).channel.sample(rightBackupEarlyAnswerP);
-      final leftBackupDelayedHand = _targetFor(
+      final darkOpeningShoulder = right.channels[CatBones.torso]!.sample(
+        darkOpeningAnswerP,
+      );
+      final leadAtDarkOpeningShoulder = leadChannels[CatBones.torso]!.sample(
+        darkOpeningAnswerP,
+      );
+      final silverOpeningHand = _targetFor(
         left,
         CatBones.handR,
-      ).channel.sample(leftBackupDelayedAnswerP);
-      final leftLeadDelayedHand = _targetFor(
+      ).channel.sample(silverOpeningAnswerP);
+      final leadHandAtSilverOpening = _targetFor(
         lead,
         CatBones.handR,
-      ).channel.sample(leftBackupDelayedAnswerP);
+      ).channel.sample(silverOpeningAnswerP);
+      final darkOpeningHand = _targetFor(
+        right,
+        CatBones.handL,
+      ).channel.sample(darkOpeningAnswerP);
+      final leadHandAtDarkOpening = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(darkOpeningAnswerP);
       expect(
         openingDownbeat.dy,
         greaterThan(openingPlant.dy + 0.4),
@@ -1261,40 +1267,38 @@ void main() {
             'if shoulder and foot land together, the phrase reads robotic',
       );
       expect(
-        rightBackupEarlyShoulder.rotation,
-        closeTo(
-          leadChannels[CatBones.torso]!
-              .sample(rightBackupEarlyAnswerP)
-              .rotation,
-          0.025,
-        ),
+        silverOpeningShoulder.rotation,
+        greaterThan(leadAtSilverOpeningShoulder.rotation + 0.035),
         reason:
-            'the dark cat should mark the lead call with restrained pocket '
-            'motion; the clear flanker answer comes after frame 8',
+            'silver should answer inside the opening 5-8 window with a '
+            'smaller counter-shoulder, not copy the lead pose',
       );
       expect(
-        leftBackupDelayedShoulder.rotation,
-        closeTo(
-          leadChannels[CatBones.torso]!
-              .sample(leftBackupDelayedAnswerP)
-              .rotation,
-          0.03,
-        ),
+        darkOpeningShoulder.rotation,
+        lessThan(leadAtDarkOpeningShoulder.rotation - 0.035),
         reason:
-            'the silver cat should also hold back during the lead call instead '
-            'of creating simultaneous action',
+            'dark should trail silver with an opposite shoulder bite so the '
+            'opening reads call-response instead of synchronized copying',
       );
       expect(
-        (rightBackupEarlyHand.x - rightLeadEarlyHand.x).abs(),
-        lessThan(0.001),
-        reason:
-            'the dark cat inside hand should not steal the opening lead call',
+        silverOpeningHand.x,
+        lessThan(leadHandAtSilverOpening.x - 12),
+        reason: 'silver inside hand should pull inward for the early answer',
       );
       expect(
-        (leftBackupDelayedHand.x - leftLeadDelayedHand.x).abs(),
-        lessThan(0.001),
-        reason:
-            'the silver cat inside hand should wait for the response window',
+        silverOpeningHand.y,
+        lessThan(leadHandAtSilverOpening.y - 6),
+        reason: 'silver inside hand should lift, not stay at belly height',
+      );
+      expect(
+        darkOpeningHand.x,
+        greaterThan(leadHandAtDarkOpening.x + 10),
+        reason: 'dark inside hand should trail inward after silver answers',
+      );
+      expect(
+        darkOpeningHand.y,
+        lessThan(leadHandAtDarkOpening.y - 6),
+        reason: 'dark inside hand should lift visibly in the delayed answer',
       );
       expect(
         (shakuSink.dx - shakuHit.dx).abs(),

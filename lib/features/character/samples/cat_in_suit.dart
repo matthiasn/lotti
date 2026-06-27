@@ -2803,24 +2803,26 @@ class CatClips {
       DanceMoveBodyAccent(
         moveName: 'lead Shaku pocket hit',
         offsetFrames: 0,
-        // Backup cats mark the lead call with a pocket bounce only. Strong
-        // answers now live in frames 9-16; early echoes made the trio look like
-        // everyone was active at once.
+        // Silver answers inside the lead's 5-8 window: smaller than the lead
+        // call, but visible enough that the opening reads call-response instead
+        // of three duplicated mascots.
         radiusFrames: 3,
-        pelvisRotation: 0.012,
-        chestRotation: -0.016,
-        chestScaleY: 0.994,
-        chestScaleX: 1.004,
+        rootDy: 0.28,
+        pelvisRotation: -0.036,
+        chestRotation: 0.046,
+        chestScaleY: 0.982,
+        chestScaleX: 1.014,
       ),
       DanceMoveBodyAccent(
         moveName: 'lead Shaku pocket hit',
         offsetFrames: 2,
         radiusFrames: 2,
-        rootDy: 0.12,
-        pelvisRotation: -0.018,
-        chestRotation: 0.022,
-        chestScaleY: 0.992,
-        chestScaleX: 1.006,
+        rootDx: -0.28,
+        rootDy: 0.42,
+        pelvisRotation: -0.046,
+        chestRotation: 0.058,
+        chestScaleY: 0.976,
+        chestScaleX: 1.018,
       ),
       DanceMoveBodyAccent(
         moveName: 'right-side camera answer',
@@ -2876,6 +2878,34 @@ class CatClips {
       ),
     ],
     moveTargetOffsetArcs: [
+      DanceMoveTargetOffsetArc(
+        name: 'left backup early inside-hand answer',
+        moveName: 'lead Shaku pocket hit',
+        targetBoneId: CatBones.handR,
+        startOffsetFrames: 0,
+        peakOffsetFrames: 2,
+        endOffsetFrames: 4,
+        peakX: -17.4,
+        peakY: -8.8,
+        controlPoints: [
+          DanceMoveTargetOffsetArcPoint(1, x: -11.6, y: -5.4, weight: 0.72),
+          DanceMoveTargetOffsetArcPoint(3, x: -8.2, y: -3.6, weight: 0.68),
+        ],
+      ),
+      DanceMoveTargetOffsetArc(
+        name: 'left backup early right-toe answer',
+        moveName: 'lead Shaku pocket hit',
+        targetBoneId: CatBones.footR,
+        startOffsetFrames: 0,
+        peakOffsetFrames: 2,
+        endOffsetFrames: 4,
+        peakX: -8.8,
+        peakY: 2.4,
+        controlPoints: [
+          DanceMoveTargetOffsetArcPoint(1, x: -6.6, y: 1.7, weight: 0.75),
+          DanceMoveTargetOffsetArcPoint(3, x: -4.2, y: 1.1, weight: 0.68),
+        ],
+      ),
       DanceMoveTargetOffsetArc(
         name: 'left backup mirrored flanker answer',
         moveName: 'right-side camera answer',
@@ -3063,26 +3093,26 @@ class CatClips {
       DanceMoveBodyAccent(
         moveName: 'lead Shaku pocket hit',
         offsetFrames: 1,
-        // Mark the lead's first call with a small pocket bounce only. The clear
-        // side-cat answer now starts after the lead call.
+        // Dark trails silver by a beatlet in the opening 5-8 answer, so the
+        // crew reads as a danced ripple instead of a synchronized copy.
         radiusFrames: 2,
-        rootDx: 0.18,
-        rootDy: 0.1,
-        pelvisRotation: 0.014,
-        chestRotation: -0.018,
-        chestScaleY: 0.994,
-        chestScaleX: 1.004,
+        rootDx: 0.22,
+        rootDy: 0.26,
+        pelvisRotation: 0.03,
+        chestRotation: -0.04,
+        chestScaleY: 0.984,
+        chestScaleX: 1.012,
       ),
       DanceMoveBodyAccent(
         moveName: 'lead Shaku pocket hit',
         offsetFrames: 3,
         radiusFrames: 2,
-        rootDx: 0.2,
-        rootDy: 0.12,
-        pelvisRotation: -0.012,
-        chestRotation: 0.016,
-        chestScaleY: 0.994,
-        chestScaleX: 1.004,
+        rootDx: 0.34,
+        rootDy: 0.42,
+        pelvisRotation: 0.044,
+        chestRotation: -0.056,
+        chestScaleY: 0.976,
+        chestScaleX: 1.018,
       ),
       DanceMoveBodyAccent(
         moveName: 'right-side camera answer',
@@ -3155,6 +3185,34 @@ class CatClips {
       ],
     },
     moveTargetOffsetArcs: [
+      DanceMoveTargetOffsetArc(
+        name: 'right backup early inside-hand answer',
+        moveName: 'lead Shaku pocket hit',
+        targetBoneId: CatBones.handL,
+        startOffsetFrames: 1,
+        peakOffsetFrames: 3,
+        endOffsetFrames: 5,
+        peakX: 13.2,
+        peakY: -7.2,
+        controlPoints: [
+          DanceMoveTargetOffsetArcPoint(2, x: 9.2, y: -4.8, weight: 0.72),
+          DanceMoveTargetOffsetArcPoint(4, x: 7, y: -3.6, weight: 0.65),
+        ],
+      ),
+      DanceMoveTargetOffsetArc(
+        name: 'right backup delayed right-toe answer',
+        moveName: 'lead Shaku pocket hit',
+        targetBoneId: CatBones.footR,
+        startOffsetFrames: 1,
+        peakOffsetFrames: 3,
+        endOffsetFrames: 5,
+        peakX: -5.2,
+        peakY: 1.5,
+        controlPoints: [
+          DanceMoveTargetOffsetArcPoint(2, x: -3.6, y: 0.9, weight: 0.72),
+          DanceMoveTargetOffsetArcPoint(4, x: -2.4, y: 0.7, weight: 0.65),
+        ],
+      ),
       DanceMoveTargetOffsetArc(
         name: 'right backup inside-hand camera answer',
         moveName: 'right-side camera answer',
