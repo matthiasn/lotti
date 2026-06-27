@@ -279,6 +279,22 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     if (mounted) setState(() {});
   }
 
+  /// Tap to move the playhead: inside the window → seek there (scrub); outside →
+  /// relocate the window around the tap and start from its beginning.
+  void _handleTap(double tSec) {
+    if (_map == null || _trackDurationSec <= 0) return;
+    if (tSec >= _windowStartSec && tSec <= _windowStartSec + kWindowSeconds) {
+      unawaited(_seek(tSec));
+    } else {
+      _moveWindowTo(tSec - kWindowSeconds / 2);
+      unawaited(_seek(_windowStartSec));
+    }
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _seek(double sec) =>
+      _player.seek(Duration(microseconds: (sec * 1e6).round()));
+
   Future<void> _loadBackdrop() async {
     final images = await Future.wait([
       _loadUiImage(kCharacterWaterfrontBackdropAsset),
@@ -340,35 +356,44 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       body: Column(
         children: [
           Expanded(
-            child: CustomPaint(
-              painter: CharacterPainter(
-                scene: _lead,
-                partnerScene: _left,
-                ensembleScenes: [_left, _right],
-                ensembleExpressions: const [
-                  Expression.neutral,
-                  Expression.content,
-                  Expression.happy,
-                ],
-                ensembleClips: [
-                  CatClips.dance,
-                  CatClips.danceBackupLeft,
-                  CatClips.danceBackupRight,
-                ],
-                synchronousEnsemble: true,
-                // Enables the multi-member (trio) render path in CharacterPainter;
-                // without it the painter draws only the lead scene.
-                walkingPair: true,
-                clip: _clip,
-                timeSeconds: seconds,
-                groundColor: const Color(0xFF374551),
-                backdrop: CharacterBackdrop.waterfront,
-                backdropImage: _backdrop,
-                backdropCloudsImage: _clouds,
-                backdropWavesImage: _waves,
-                renderer: _renderer,
-              ),
-              child: const SizedBox.expand(),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Match character_demo: size the cast to the available height
+                // (the painter scales uniformly, so this is what keeps the cats
+                // correctly proportioned instead of squat at the default scale 1).
+                final scale = constraints.maxHeight * 0.78 / 300.0;
+                return CustomPaint(
+                  painter: CharacterPainter(
+                    scene: _lead,
+                    partnerScene: _left,
+                    ensembleScenes: [_left, _right],
+                    ensembleExpressions: const [
+                      Expression.neutral,
+                      Expression.content,
+                      Expression.happy,
+                    ],
+                    ensembleClips: [
+                      CatClips.dance,
+                      CatClips.danceBackupLeft,
+                      CatClips.danceBackupRight,
+                    ],
+                    synchronousEnsemble: true,
+                    // Enables the multi-member (trio) render path; without it the
+                    // painter draws only the lead scene.
+                    walkingPair: true,
+                    clip: _clip,
+                    timeSeconds: seconds,
+                    scale: scale,
+                    groundColor: const Color(0xFF374551),
+                    backdrop: CharacterBackdrop.waterfront,
+                    backdropImage: _backdrop,
+                    backdropCloudsImage: _clouds,
+                    backdropWavesImage: _waves,
+                    renderer: _renderer,
+                  ),
+                  child: const SizedBox.expand(),
+                );
+              },
             ),
           ),
           _waveformPanel(),
@@ -408,7 +433,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                 ),
               ),
               const Text(
-                'drag / tap the waveform to move the 30s window',
+                'tap to seek · drag to move the 30 s window',
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
             ],
@@ -432,9 +457,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                 }
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTapDown: (d) => _moveWindowTo(
-                    d.localPosition.dx / width * _trackDurationSec -
-                        kWindowSeconds / 2,
+                  onTapUp: (d) => _handleTap(
+                    d.localPosition.dx / width * _trackDurationSec,
                   ),
                   onHorizontalDragUpdate: (d) => _moveWindowTo(
                     _windowStartSec + d.delta.dx / width * _trackDurationSec,
@@ -512,17 +536,15 @@ class _WaveformPainter extends CustomPainter {
       ..drawLine(Offset(x0, 0), Offset(x0, size.height), border)
       ..drawLine(Offset(x1, 0), Offset(x1, size.height), border);
 
-    // Live playback position.
-    if (playing) {
-      final px = positionSec / trackDurationSec * size.width;
-      canvas.drawLine(
-        Offset(px, 0),
-        Offset(px, size.height),
-        Paint()
-          ..color = Colors.white
-          ..strokeWidth = 1.5,
-      );
-    }
+    // Playhead (always shown so a paused seek is visible). Brighter while playing.
+    final px = positionSec / trackDurationSec * size.width;
+    canvas.drawLine(
+      Offset(px, 0),
+      Offset(px, size.height),
+      Paint()
+        ..color = playing ? Colors.white : Colors.white70
+        ..strokeWidth = 1.5,
+    );
   }
 
   @override
