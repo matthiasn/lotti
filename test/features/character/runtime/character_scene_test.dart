@@ -544,7 +544,7 @@ void main() {
       );
       expect(
         maxHeadStep,
-        lessThan(10.5),
+        lessThan(9.8),
         reason:
             'the Shaku chest bite should not whip the rigid skull sideways '
             'between dense frame samples',

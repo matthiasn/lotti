@@ -635,14 +635,14 @@ void main() {
         );
         expect(
           leftHandRHookPickup.x,
-          closeTo(leadHandRHookPickup.x - 5.4, 0.001),
+          lessThan(leadHandRHookPickup.x - 10),
           reason:
-              'left backup should prepare the low final hook after the '
-              'side-feature has settled',
+              'left backup should already be sweeping out toward the low '
+              'final hook after the side-feature has settled',
         );
         expect(
           leftHandRHookPickup.y,
-          closeTo(leadHandRHookPickup.y + 4.2, 0.001),
+          greaterThan(leadHandRHookPickup.y + 8),
         );
         expect(
           rightHandLHookPickup.x,

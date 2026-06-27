@@ -2345,13 +2345,13 @@ class CatClips {
     ),
     DanceBodyKey(
       31,
-      rootDx: -11,
-      rootDy: 18.2,
+      rootDx: -12.4,
+      rootDy: 17.8,
       rootRotation: -0.006,
-      pelvisRotation: 0.3,
-      chestRotation: -0.2,
-      chestScaleY: 0.936,
-      chestScaleX: 1.04,
+      pelvisRotation: 0.27,
+      chestRotation: -0.125,
+      chestScaleY: 0.952,
+      chestScaleX: 1.03,
     ),
     DanceBodyKey(
       32,
@@ -2987,8 +2987,8 @@ class CatClips {
         peakX: -7.8,
         peakY: 7.6,
         controlPoints: [
-          DanceMoveTargetOffsetArcPoint(1, x: -2.8, y: 2.1, weight: 0.7),
-          DanceMoveTargetOffsetArcPoint(2, x: -7.2, y: 5.6, weight: 0.75),
+          DanceMoveTargetOffsetArcPoint(1, x: -4.8, y: 3.2, weight: 0.7),
+          DanceMoveTargetOffsetArcPoint(2, x: -15.2, y: 12.4, weight: 0.78),
         ],
       ),
       DanceMoveTargetOffsetArc(

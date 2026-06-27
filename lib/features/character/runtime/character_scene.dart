@@ -210,6 +210,7 @@ class CharacterScene {
       footStabilizedWorld,
       timeSeconds: timeSeconds,
       baseScale: _uniformScale(base),
+      rootDx: posed.rootDx,
       rootDy: posed.rootDy,
     );
     var face = faceSolver.applyAutonomic(expression.state, auto);
@@ -392,6 +393,7 @@ class CharacterScene {
     Map<String, Affine2D> world, {
     required double timeSeconds,
     required double baseScale,
+    required double rootDx,
     required double rootDy,
   }) {
     final headId = rig.face?.anchorBoneId;
@@ -421,7 +423,7 @@ class CharacterScene {
     ).multiply(correction).multiply(Affine2D.translation(-anchor.x, -anchor.y));
     final headCounterTranslate = _isDanceFamily(clip)
         ? Affine2D.translation(
-            0,
+            _danceHeadHorizontalCounter(rootDx) * baseScale,
             _danceHeadVerticalCounter(rootDy) * baseScale,
           )
         : Affine2D.identity;
@@ -441,6 +443,14 @@ class CharacterScene {
     // visually detaching from the neck.
     const neutralDanceRootDy = 17.4;
     return -(rootDy - neutralDanceRootDy) * 0.4;
+  }
+
+  double _danceHeadHorizontalCounter(double rootDx) {
+    // The deck/contact solver shifts the whole body to keep support feet
+    // planted. Let the torso take that groove, but give the skull a small
+    // inertial counter so it reads as a rigid head riding a neck, not rubber.
+    const neutralDanceRootDx = 0.0;
+    return -(rootDx - neutralDanceRootDx) * 0.16;
   }
 
   double _danceHeadAttitude(double p) {
