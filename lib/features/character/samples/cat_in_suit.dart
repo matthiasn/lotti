@@ -1385,12 +1385,12 @@ class CatClips {
         DanceBodyAccentOffset(
           offsetFrames: 0,
           radiusFrames: 2,
-          rootDy: 0.45,
+          rootDy: 0.85,
           rootRotation: -0.001,
-          pelvisRotation: -0.035,
-          chestRotation: 0.07,
-          chestScaleY: 0.962,
-          chestScaleX: 1.03,
+          pelvisRotation: -0.05,
+          chestRotation: 0.09,
+          chestScaleY: 0.952,
+          chestScaleX: 1.038,
         ),
         DanceBodyAccentOffset(
           offsetFrames: 2,
@@ -1412,26 +1412,28 @@ class CatClips {
           DanceIkTargetKey(17, x: -58.4, y: 25.2),
           DanceIkTargetKey(18, x: -67.2, y: 18.6),
           DanceIkTargetKey(19, x: -61, y: 15.8),
-          DanceIkTargetKey(20, x: -57.2, y: 20.4),
+          // F20 is the body/foot load; the bigger hand reach answers later so
+          // the close-up reads as isolation instead of one simultaneous pose.
+          DanceIkTargetKey(20, x: -55.8, y: 21.8),
           DanceIkTargetKey(21, x: -65, y: 18.4),
-          DanceIkTargetKey(22, x: -80, y: 15.5),
+          DanceIkTargetKey(22, x: -82.6, y: 14.2),
           DanceIkTargetKey(23, x: -83, y: 12.7),
         ],
         CatBones.handR: [
           DanceIkTargetKey(18, x: 72.8, y: 23.2),
           DanceIkTargetKey(19, x: 74.8, y: 18.4),
-          DanceIkTargetKey(20, x: 78.2, y: 16.2),
-          DanceIkTargetKey(21, x: 68, y: 20.2),
-          DanceIkTargetKey(22, x: 83.4, y: 16),
-          DanceIkTargetKey(23, x: 98.3, y: 10.2),
+          DanceIkTargetKey(20, x: 72.4, y: 18.8),
+          DanceIkTargetKey(21, x: 67.4, y: 20.4),
+          DanceIkTargetKey(22, x: 86.4, y: 14.2),
+          DanceIkTargetKey(23, x: 100.2, y: 9.8),
         ],
         CatBones.footL: [
-          DanceIkTargetKey(18, x: -56, y: 101.2),
-          DanceIkTargetKey(19, x: -67, y: 97.8),
-          DanceIkTargetKey(20, x: -72.6, y: 97.4),
-          DanceIkTargetKey(21, x: -66, y: 100.3),
-          DanceIkTargetKey(22, x: -54, y: 103.2),
-          DanceIkTargetKey(23, x: -36, y: 103.1),
+          DanceIkTargetKey(18, x: -58, y: 101.4),
+          DanceIkTargetKey(19, x: -71.2, y: 98),
+          DanceIkTargetKey(20, x: -78.8, y: 97.2),
+          DanceIkTargetKey(21, x: -71.2, y: 100.4),
+          DanceIkTargetKey(22, x: -56.5, y: 103.4),
+          DanceIkTargetKey(23, x: -38, y: 103.2),
         ],
         CatBones.footR: [
           // The right foot is the support here; keep it nearly planted while
@@ -1440,14 +1442,14 @@ class CatClips {
           // Hold the visible shoe contact under the pelvis. The free-left foot
           // supplies the width; moving this support pivot toward zero pushes
           // the rotated shoe contact away from the body.
-          DanceIkTargetKey(16, x: -17, y: 101.7),
-          DanceIkTargetKey(17, x: -17.3, y: 102),
-          DanceIkTargetKey(18, x: -17.5, y: 102.2),
-          DanceIkTargetKey(19, x: -18, y: 102.3),
-          DanceIkTargetKey(20, x: -19.4, y: 102.5),
-          DanceIkTargetKey(21, x: -18.8, y: 102.8),
-          DanceIkTargetKey(22, x: -17, y: 103.2),
-          DanceIkTargetKey(23, x: -15.5, y: 103.2),
+          DanceIkTargetKey(16, x: -17, y: 103.8),
+          DanceIkTargetKey(17, x: -17.3, y: 104.1),
+          DanceIkTargetKey(18, x: -17.5, y: 104.4),
+          DanceIkTargetKey(19, x: -18, y: 104.6),
+          DanceIkTargetKey(20, x: -20.2, y: 104.2),
+          DanceIkTargetKey(21, x: -18.8, y: 105.1),
+          DanceIkTargetKey(22, x: -17, y: 105.3),
+          DanceIkTargetKey(23, x: -15.5, y: 105.2),
         ],
       },
       jointKeys: {
@@ -3111,6 +3113,9 @@ class CatClips {
     ikTargetAccents: {
       CatBones.handL: [
         DanceIkTargetAccent(20, radiusFrames: 4, x: 6.4, y: -4.2),
+      ],
+      CatBones.footR: [
+        DanceIkTargetAccent(20, radiusFrames: 2, x: -1.4, y: 0),
       ],
     },
     moveTargetOffsetArcs: [

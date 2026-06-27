@@ -1539,6 +1539,10 @@ void main() {
         lead,
         CatBones.footL,
       ).channel.sample(rightFootCueP);
+      final plantedRightFoot = _targetFor(
+        lead,
+        CatBones.footR,
+      ).channel.sample(rightFootCueP);
       final grooveLeftHand = _targetFor(
         lead,
         CatBones.handL,
@@ -1559,6 +1563,8 @@ void main() {
         lead,
         CatBones.handR,
       ).channel.sample(22 / phrase.frameCount);
+      final lateReachLeftHand = centerRollLeftHand;
+      final lateReachRightHand = centerRollRightHand;
       final compactLegworkLeftHand = _targetFor(
         lead,
         CatBones.handL,
@@ -1578,6 +1584,27 @@ void main() {
         freeLeftFoot.x,
         lessThan(-53),
         reason: 'free-left foot should flick outward in the right-foot groove',
+      );
+      expect(
+        plantedRightFoot.x,
+        lessThan(-17),
+        reason:
+            'the planted right support should hold its established loaded '
+            'line instead of drifting out from under the hip',
+      );
+      expect(
+        plantedRightFoot.y,
+        greaterThan(104),
+        reason:
+            'the planted right shoe should visibly press into the floor during '
+            'the komole load',
+      );
+      expect(
+        plantedRightFoot.x - freeLeftFoot.x,
+        greaterThan(58),
+        reason:
+            'F20 needs a wide enough foot base to justify the centre body mass '
+            'moving over the right support',
       );
       expect(
         freeLeftFoot.y,
@@ -1607,6 +1634,20 @@ void main() {
             'punctuation',
       );
       expect(grooveRightHand.y, lessThan(22));
+      expect(
+        lateReachRightHand.x,
+        greaterThan(grooveRightHand.x + 10),
+        reason:
+            'the right hand should answer the body/foot load after F20 instead '
+            'of reaching max extension on the same frame',
+      );
+      expect(
+        lateReachLeftHand.x,
+        lessThan(grooveLeftHand.x - 20),
+        reason:
+            'the left hand should also finish the close-up reach after the '
+            'body load, giving the move shoulder/arm overlap',
+      );
       expect(
         centerSweepLeftHand.y,
         lessThan(18),
