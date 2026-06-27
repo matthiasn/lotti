@@ -989,6 +989,43 @@ void main() {
       );
 
       final rightCueP = phrase.moveAtFrame(12).accentFrame / phrase.frameCount;
+      final ribRollEntryP = 11 / phrase.frameCount;
+      final ribRollPeakP = 14 / phrase.frameCount;
+      final leadRibRollEntry = leadChannels[CatBones.torso]!.sample(
+        ribRollEntryP,
+      );
+      final leadRibRollPeak = leadChannels[CatBones.torso]!.sample(
+        ribRollPeakP,
+      );
+      final leadHipRollPeak = leadChannels[CatBones.hips]!.sample(
+        ribRollPeakP,
+      );
+      final leadLowCarve = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(ribRollPeakP);
+      expect(
+        leadRibRollPeak.rotation - leadRibRollEntry.rotation,
+        greaterThan(0.14),
+        reason:
+            'frames 11-14 should read as a real rib roll into the camera '
+            'answer, not a neutral bridge between poses',
+      );
+      expect(
+        leadRibRollPeak.rotation - leadHipRollPeak.rotation,
+        greaterThan(0.45),
+        reason:
+            'the camera-answer rib roll should keep chest and hips in '
+            'opposition instead of swinging the whole body as one block',
+      );
+      expect(
+        leadLowCarve.x,
+        lessThan(-66),
+        reason:
+            'the lead left hand should carve low/outside during the right-side '
+            'answer instead of returning to the belly silhouette',
+      );
+      expect(leadLowCarve.y, greaterThan(26));
       final rightArmDelta =
           right.channels[CatBones.armUpperL]!.sample(rightCueP).rotation -
           leadChannels[CatBones.armUpperL]!.sample(rightCueP).rotation;

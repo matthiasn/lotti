@@ -1143,6 +1143,29 @@ class CatClips {
     ),
     DanceMoveSignature(
       moveName: 'right-side camera answer',
+      bodyAccentOffsets: [
+        DanceBodyAccentOffset(
+          offsetFrames: -1,
+          radiusFrames: 2,
+          rootDx: 0.4,
+          rootDy: 0.2,
+          pelvisRotation: 0.035,
+          chestRotation: -0.07,
+          chestScaleY: 0.988,
+          chestScaleX: 1.012,
+        ),
+        DanceBodyAccentOffset(
+          offsetFrames: 2,
+          radiusFrames: 2,
+          rootDx: -0.6,
+          rootDy: 0.55,
+          rootRotation: -0.001,
+          pelvisRotation: -0.05,
+          chestRotation: 0.075,
+          chestScaleY: 0.976,
+          chestScaleX: 1.018,
+        ),
+      ],
       ikTargetArcs: {
         CatBones.handR: [
           DanceIkTargetArc(
@@ -1152,13 +1175,13 @@ class CatClips {
             endFrame: 18,
             startX: 54.4,
             startY: 29.2,
-            peakX: 80.2,
-            peakY: 14.6,
+            peakX: 78.2,
+            peakY: 15.6,
             endX: 72.8,
             endY: 23.2,
             controlPoints: [
-              DanceIkTargetArcPoint(15, x: 70.2, y: 22.4),
-              DanceIkTargetArcPoint(17, x: 78.6, y: 18.4),
+              DanceIkTargetArcPoint(15, x: 66.5, y: 24.2),
+              DanceIkTargetArcPoint(17, x: 77, y: 19.2),
             ],
           ),
         ],
@@ -1166,9 +1189,9 @@ class CatClips {
       ikTargetKeys: {
         CatBones.handL: [
           DanceIkTargetKey(12, x: -52.6, y: 22.2),
-          DanceIkTargetKey(13, x: -59.2, y: 24.8),
-          DanceIkTargetKey(14, x: -66.4, y: 26.1),
-          DanceIkTargetKey(15, x: -59.6, y: 28),
+          DanceIkTargetKey(13, x: -60.4, y: 25.1),
+          DanceIkTargetKey(14, x: -68.4, y: 27.2),
+          DanceIkTargetKey(15, x: -61.5, y: 28.4),
           DanceIkTargetKey(16, x: -47, y: 31.5),
         ],
       },
