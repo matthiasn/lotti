@@ -8,6 +8,7 @@ import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/runtime/character_renderer.dart';
 import 'package:lotti/features/character/runtime/character_scene.dart';
+import 'package:meta/meta.dart';
 
 enum CharacterBackdrop { none, waterfront }
 
@@ -410,15 +411,15 @@ class CharacterPainter extends CustomPainter {
     final breathe = math.sin(2 * math.pi * (p * 3 + 0.15));
     final callResponse = math.sin(2 * math.pi * (p * 2 - 0.08));
     final leadCall = _pulse(p, 1 / 16, 1 / 4);
-    final rightFeature = _pulse(p, 4 / 32, 8 / 32);
-    final greyFeature = _pulse(p, 8 / 32, 12 / 32);
+    final rightFeature = _holdPulse(p, 4 / 32, 5 / 32, 7 / 32, 8 / 32);
+    final greyFeature = _holdPulse(p, 8 / 32, 9 / 32, 11 / 32, 12 / 32);
     final sideAnswer = _pulse(p, 5 / 16, 1 / 2);
     final blackSolo = _pulse(p, 3 / 8, 1 / 2);
     final wideV = _pulse(p, 1 / 2, 3 / 4);
     final centreFeature = _pulse(p, 17 / 32, 23 / 32);
     final greyFinish = _pulse(p, 24 / 32, 28 / 32);
     final ensembleHit = _pulse(p, 23 / 32, 27 / 32);
-    final finishTriangle = _pulse(p, 27 / 32, 1);
+    final finishTriangle = _holdPulse(p, 27 / 32, 29 / 32, 31 / 32, 1);
     return switch (index) {
       0 => (
         dx:
@@ -435,11 +436,11 @@ class CharacterPainter extends CustomPainter {
             4 * leadCall -
             6 * sideAnswer +
             2 * wideV +
-            48 * greyFeature +
-            48 * greyFinish +
+            54 * greyFeature +
+            50 * greyFinish +
             5 * ensembleHit +
             2 * finishTriangle,
-        scale: 1 + 0.22 * greyFeature + 0.22 * greyFinish,
+        scale: 1 + 0.2 * greyFeature + 0.2 * greyFinish,
       ),
       1 => (
         dx: 3 * leadCall - 2 * greyFeature - 4 * greyFinish - 3 * ensembleHit,
@@ -469,17 +470,26 @@ class CharacterPainter extends CustomPainter {
             -17 -
             1.5 * callResponse -
             2 * leadCall -
-            48 * rightFeature +
+            42 * rightFeature +
             6 * sideAnswer +
-            25 * blackSolo +
+            42 * greyFeature +
+            20 * blackSolo +
             2 * wideV +
             5 * ensembleHit +
             10 * finishTriangle,
-        scale: 1 + 0.22 * rightFeature + 0.16 * blackSolo - 0.02 * greyFeature,
+        scale: 1 + 0.18 * rightFeature + 0.14 * blackSolo + 0.08 * greyFeature,
       ),
       _ => (dx: 0, dy: 0, scale: 1),
     };
   }
+
+  @visibleForTesting
+  static ({double dx, double dy, double scale}) debugDanceFormation(
+    int index,
+    int memberCount,
+    double timeSeconds,
+    double duration,
+  ) => _danceFormation(index, memberCount, timeSeconds, duration);
 
   static double _smoothKeys(
     double p,
@@ -501,6 +511,19 @@ class CharacterPainter extends CustomPainter {
     if (p < start || p > end) return 0;
     if (p <= mid) return _smoothUnit((p - start) / (mid - start));
     return 1 - _smoothUnit((p - mid) / (end - mid));
+  }
+
+  static double _holdPulse(
+    double p,
+    double start,
+    double holdStart,
+    double holdEnd,
+    double end,
+  ) {
+    if (p < start || p > end) return 0;
+    if (p < holdStart) return _smoothUnit((p - start) / (holdStart - start));
+    if (p <= holdEnd) return 1;
+    return 1 - _smoothUnit((p - holdEnd) / (end - holdEnd));
   }
 
   static double _smoothUnit(double t) {

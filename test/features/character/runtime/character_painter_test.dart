@@ -707,10 +707,22 @@ void main() {
         }
       }
 
+      ({double dx, double dy, double scale}) formationAt(int index, double p) =>
+          CharacterPainter.debugDanceFormation(
+            index,
+            3,
+            CatClips.dance.duration * p,
+            CatClips.dance.duration,
+          );
+
       final wide = await boundsAt(0);
       final darkFeature = await boundsAt(6 / 32);
       final greyFeature = await boundsAt(10 / 32);
+      final greyLineHold = await boundsAt(11 / 32);
       final greyFinish = await boundsAt(26 / 32);
+      final greyFeatureFormation = formationAt(0, 10 / 32);
+      final greyLineHoldFormation = formationAt(0, 11 / 32);
+      final darkLineHoldFormation = formationAt(2, 11 / 32);
 
       expect(
         darkFeature.darkPixels / darkFeature.leadPixels,
@@ -726,6 +738,41 @@ void main() {
         reason:
             'F8-F11 should pull the silver backup forward to create a diagonal '
             'depth swap instead of keeping orange dominant every count',
+      );
+      expect(
+        greyLineHold.silverHeight / greyLineHold.leadHeight,
+        greaterThan(wide.silverHeight / wide.leadHeight + 0.02),
+        reason:
+            'the second line-change frame should still read forward in the '
+            'render instead of collapsing back to the wide chorus line',
+      );
+      expect(
+        greyLineHoldFormation.dy,
+        closeTo(greyFeatureFormation.dy, 3),
+        reason:
+            'the grey feature should hold nearly the same stage depth across '
+            'F10-F11, allowing only the small breathing offset instead of '
+            'passing through the formation as a one-frame smear',
+      );
+      expect(
+        greyLineHoldFormation.scale,
+        closeTo(greyFeatureFormation.scale, 0.001),
+        reason:
+            'the grey feature should hold the same stage scale across F10-F11',
+      );
+      expect(
+        greyLineHold.darkHeight / greyLineHold.leadHeight,
+        greaterThan(wide.darkHeight / wide.leadHeight + 0.03),
+        reason:
+            'the line hold should pull both side dancers toward the same '
+            'foreground band, not only feature the silver cat',
+      );
+      expect(
+        darkLineHoldFormation.dy,
+        greaterThan(0),
+        reason:
+            'the dark backup should come downstage during the line hold '
+            'instead of popping upward/back like a floating cutout',
       );
       expect(
         greyFinish.silverHeight / greyFinish.leadHeight,
