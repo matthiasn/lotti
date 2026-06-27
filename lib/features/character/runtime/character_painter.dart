@@ -59,6 +59,7 @@ class CharacterPainter extends CustomPainter {
     this.backdropCloudsImage,
     this.backdropWavesImage,
     this.enableDanceCamera = true,
+    this.danceCameraStrength = 1,
     this.locomote = false,
     this.walkingPair = false,
     this.partnerScene,
@@ -126,6 +127,11 @@ class CharacterPainter extends CustomPainter {
   /// Disable this for locked-camera choreography review.
   final bool enableDanceCamera;
 
+  /// Scales the dance camera toward neutral: `1` = the full move, `0` = no
+  /// zoom/pan. Lets a caller ramp the camera in/out smoothly instead of snapping
+  /// it on the instant the dance starts.
+  final double danceCameraStrength;
+
   /// When true (and the clip carries a [Clip.locomotionSpeed]) the character
   /// travels: it walks across the stage and ping-pongs at the edges (turning to
   /// face the direction of travel). Travelling is what makes the planted foot
@@ -151,13 +157,22 @@ class CharacterPainter extends CustomPainter {
     final memberCount = walkingPair
         ? (ensembleScenes.isEmpty ? 2 : ensembleScenes.length + 1)
         : 1;
-    final sceneCamera =
+    final rawCamera =
         enableDanceCamera &&
             walkingPair &&
             clip.name == 'dance' &&
             memberCount == 3
         ? _danceCamera(timeSeconds, clip.duration)
         : (zoom: 1.0, dx: 0.0, dy: 0.0);
+    // Scale toward neutral so a caller can ramp the camera in/out smoothly.
+    // Identity at strength 1 (the default) keeps existing renders bit-identical.
+    final sceneCamera = danceCameraStrength == 1
+        ? rawCamera
+        : (
+            zoom: 1 + (rawCamera.zoom - 1) * danceCameraStrength,
+            dx: rawCamera.dx * danceCameraStrength,
+            dy: rawCamera.dy * danceCameraStrength,
+          );
 
     if (backdrop == CharacterBackdrop.waterfront) {
       canvas
@@ -1038,6 +1053,7 @@ class CharacterPainter extends CustomPainter {
       old.backdropCloudsImage != backdropCloudsImage ||
       old.backdropWavesImage != backdropWavesImage ||
       old.enableDanceCamera != enableDanceCamera ||
+      old.danceCameraStrength != danceCameraStrength ||
       old.locomote != locomote ||
       old.walkingPair != walkingPair ||
       old.partnerScene != partnerScene ||

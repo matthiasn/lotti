@@ -69,6 +69,10 @@ const double kSectionEnergyThreshold = 0.5;
 /// transition sections between routines.
 const double kMinCalmSeconds = 4;
 
+/// Time constant (seconds) for easing the dance camera in/out across section
+/// changes — bigger = slower, more cinematic zoom (~63% of the way in this long).
+const double kCameraRampSeconds = 1.4;
+
 typedef _Section = ({double start, double end, String label, bool energetic});
 typedef _Stage = ({
   Clip lead,
@@ -135,8 +139,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     CatClips.danceBackupLeft,
     CatClips.danceBackupRight,
   ];
-  late final Clip _idle = CatClips.idle;
-  late final List<Clip> _idleEnsemble = [_idle, _idle, _idle];
 
   late final Ticker _ticker; // 60 fps repaint pump; time comes from the player.
 
@@ -151,6 +153,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   double _trackDurationSec = 0;
   double _bpm = 0;
   bool _loop = true;
+  double _cameraStrength = 0; // eased dance-camera ramp (0 = neutral, 1 = full)
+  Duration _lastTick = Duration.zero;
   String? _error;
 
   AutonomicLayer _danceAutonomic(int seed) => AutonomicLayer(
@@ -164,9 +168,27 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker((_) => setState(() {}))..start();
+    _ticker = createTicker(_onTick)..start();
     unawaited(_loadBackdrop());
     unawaited(_load());
+  }
+
+  // Per-frame: repaint, and ease the dance-camera strength toward the current
+  // section's target (1 = energetic, 0 = calm) so the camera zoom ramps in and
+  // out smoothly. Frame-rate independent: uses the real frame dt and a time
+  // constant, so the ramp speed is the same regardless of refresh rate.
+  void _onTick(Duration elapsed) {
+    var dt = (elapsed - _lastTick).inMicroseconds / 1e6;
+    _lastTick = elapsed;
+    if (dt < 0) dt = 0;
+    if (dt > 0.1) dt = 0.1; // ignore long stalls (tab switch, etc.)
+    final pos = _player.state.position.inMicroseconds / 1e6;
+    final target = (_sectionAt(pos)?.energetic ?? true) ? 1.0 : 0.0;
+    var k = dt / kCameraRampSeconds;
+    if (k > 1) k = 1;
+    setState(() {
+      _cameraStrength += (target - _cameraStrength) * k;
+    });
   }
 
   Future<void> _load() async {
@@ -280,33 +302,28 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     return _sections.isEmpty ? null : _sections.last;
   }
 
-  /// Picks the clip + clock for the current section: the beat-locked energetic
-  /// dance in loud sections, an eased idle (driven by raw playback time) in calm
-  /// ones. The phrase loops via clipSecondsAt's own modulo across the track.
+  /// The trio always dances beat-locked (the phrase loops via clipSecondsAt's
+  /// own modulo across the track), so there is always movement. The per-section
+  /// energy only drives the camera — zoomed in loud sections, wide in calm ones
+  /// (see [_onTick] / [CharacterPainter.danceCameraStrength]).
   _Stage _stageNow() {
     final pos = _player.state.position.inMicroseconds / 1e6;
     final section = _sectionAt(pos);
     final map = _map;
     final binding = _binding;
-    if ((section?.energetic ?? true) && map != null && binding != null) {
-      return (
-        lead: _danceLead,
-        ensemble: _danceEnsemble,
-        seconds: map.clipSecondsAt(
-          pos,
-          clipDuration: _danceLead.duration,
-          binding: binding,
-        ),
-        section: section,
-        energetic: true,
-      );
-    }
+    final seconds = (map != null && binding != null)
+        ? map.clipSecondsAt(
+            pos,
+            clipDuration: _danceLead.duration,
+            binding: binding,
+          )
+        : 0.0;
     return (
-      lead: _idle,
-      ensemble: _idleEnsemble,
-      seconds: pos,
+      lead: _danceLead,
+      ensemble: _danceEnsemble,
+      seconds: seconds,
       section: section,
-      energetic: false,
+      energetic: section?.energetic ?? true,
     );
   }
 
@@ -422,6 +439,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                     walkingPair: true,
                     clip: stage.lead,
                     timeSeconds: stage.seconds,
+                    danceCameraStrength: _cameraStrength,
                     scale: scale,
                     groundColor: const Color(0xFF374551),
                     backdrop: CharacterBackdrop.waterfront,
