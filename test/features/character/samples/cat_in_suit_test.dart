@@ -920,7 +920,9 @@ void main() {
       final shakuSink = lead.root.sample(6 / phrase.frameCount);
       final shakuRebound = lead.root.sample(8 / phrase.frameCount);
       final openingPlant = lead.root.sample(0);
+      final openingAndOne = lead.root.sample(1 / phrase.frameCount);
       final openingDownbeat = lead.root.sample(2 / phrase.frameCount);
+      final openingAndTwo = lead.root.sample(3 / phrase.frameCount);
       final openingSupportXs = [
         for (final frame in [0, 1, 2, 3, 4, 5, 6])
           leadFootLTarget.sample(frame / phrase.frameCount).x,
@@ -931,6 +933,12 @@ void main() {
       );
       final openingFreeRightRecoil = leadFootRTarget.sample(
         6 / phrase.frameCount,
+      );
+      final openingRightToeIn = leadChannels[CatBones.footR]!.sample(
+        3 / phrase.frameCount,
+      );
+      final openingRightToeOut = leadChannels[CatBones.footR]!.sample(
+        4 / phrase.frameCount,
       );
       final openingStepRightHand = _targetFor(
         lead,
@@ -961,6 +969,20 @@ void main() {
             'not just a sideways sway',
       );
       expect(
+        openingAndOne.dy,
+        greaterThan(openingPlant.dy + 2.6),
+        reason:
+            'the first half-beat should already drop into a grounded bounce; '
+            'otherwise frames 1-8 read like a held pose',
+      );
+      expect(
+        openingAndTwo.dy,
+        greaterThan(openingDownbeat.dy + 1),
+        reason:
+            'the opening Shaku phrase needs a 1-and-2-and knee pulse, not just '
+            'one polite downbeat',
+      );
+      expect(
         openingSupportXs.reduce(math.max) - openingSupportXs.reduce(math.min),
         lessThan(4),
         reason:
@@ -987,6 +1009,13 @@ void main() {
         reason:
             'after the step-out, the free right foot should recoil through the '
             'floor instead of freezing at the side',
+      );
+      expect(
+        openingRightToeOut.rotation - openingRightToeIn.rotation,
+        greaterThan(0.25),
+        reason:
+            'the free right foot should visibly toe-in/toe-out on the opening '
+            'legwork instead of sliding as a rigid shoe',
       );
       expect(
         openingStepRightHand.y,
@@ -1288,6 +1317,20 @@ void main() {
         lead,
         CatBones.handR,
       ).channel.sample(22 / phrase.frameCount);
+      final compactLegworkLeftHand = _targetFor(
+        lead,
+        CatBones.handL,
+      ).channel.sample(21 / phrase.frameCount);
+      final compactLegworkRightHand = _targetFor(
+        lead,
+        CatBones.handR,
+      ).channel.sample(21 / phrase.frameCount);
+      final grooveToeIn = leadChannels[CatBones.footL]!.sample(
+        20 / phrase.frameCount,
+      );
+      final grooveToeOut = leadChannels[CatBones.footL]!.sample(
+        21 / phrase.frameCount,
+      );
       final grooveRollReleaseP = 22 / phrase.frameCount;
       expect(
         freeLeftFoot.x,
@@ -1342,6 +1385,20 @@ void main() {
         reason:
             'the right hand should answer the center roll at chest level, not '
             'drop back to a low mascot pose',
+      );
+      expect(
+        compactLegworkRightHand.x - compactLegworkLeftHand.x,
+        lessThan(130),
+        reason:
+            'the legwork phrase should keep the hands compact near the ribs '
+            'between big hits, not hold a generic boy-band wide arm shape',
+      );
+      expect(
+        grooveToeOut.rotation - grooveToeIn.rotation,
+        greaterThan(0.2),
+        reason:
+            'the right-foot groove should show free-left toe pivot texture, '
+            'not just a foot target moving across the floor',
       );
       final groovePopP = 16 / phrase.frameCount;
       final grooveRecoilP = 17 / phrase.frameCount;
@@ -1496,6 +1553,7 @@ void main() {
 
       final hookP = phrase.moveAtFrame(31).accentFrame / phrase.frameCount;
       final leftSupportFoot = leadChannels[CatBones.footL]!.sample(0).rotation;
+      final loopHome = lead.root.sample(0);
       expect(
         leadChannels[CatBones.footL]!.sample(hookP).rotation,
         greaterThan(leftSupportFoot + 0.28),
@@ -1507,6 +1565,7 @@ void main() {
         reason: 'hook reset should close back into a compact arm shape',
       );
       final hookPickupP = 31 / phrase.frameCount;
+      final hookFreeze = lead.root.sample(hookPickupP);
       expect(
         leadChannels[CatBones.hips]!.sample(hookPickupP).rotation,
         greaterThan(0.28),
@@ -1545,6 +1604,13 @@ void main() {
         leadChannels[CatBones.torso]!.sample(hookPickupP).scaleY,
         lessThan(0.945),
         reason: 'hook reset should stay pocketed through the loop pickup',
+      );
+      expect(
+        hookFreeze.dy,
+        greaterThan(loopHome.dy + 1.2),
+        reason:
+            'the final hook should finish as a low freeze before the loop '
+            'returns home, not fade into a neutral reset',
       );
     });
 

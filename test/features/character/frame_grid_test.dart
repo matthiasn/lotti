@@ -32,6 +32,7 @@ import 'package:lotti/features/character/samples/cat_in_suit.dart';
 /// | `GRID_SCALE`         | character scale                          | 0.62    |
 /// | `GRID_EXPRESSION`    | neutral/content/happy/surprised/sad/angry| content |
 /// | `GRID_ONION`         | also write `<clip>_onion.png` (1/0)      | 1       |
+/// | `GRID_DANCE_CAMERA`  | enable dance trio camera move (1/0)      | 1       |
 ///
 /// Run a single motion densely, for example:
 /// ```sh
@@ -69,6 +70,7 @@ void main() {
   // CharacterPainter (floor band + contact shadow + grounded framing) so the
   // offline review matches the live demo exactly.
   final live = (env['GRID_LIVE'] ?? '1') == '1';
+  final enableDanceCamera = (env['GRID_DANCE_CAMERA'] ?? '1') != '0';
   final expression = _expressionByName(env['GRID_EXPRESSION'] ?? 'content');
 
   final clipsByName = <String, Clip>{
@@ -331,6 +333,7 @@ void main() {
           ? _ensembleExpressionsAt(clip.duration * 0.5, expression)
           : const [],
       synchronousEnsemble: clip.name == CatClips.dance.name,
+      enableDanceCamera: enableDanceCamera,
     ).paint(canvas, Size(w, h));
     return _pngOf(recorder.endRecording(), w.round(), h.round());
   }
@@ -409,6 +412,7 @@ void main() {
             ? _ensembleExpressionsAt(t, expression)
             : const [],
         synchronousEnsemble: clip.name == CatClips.dance.name,
+        enableDanceCamera: enableDanceCamera,
       ).paint(canvas, const Size(liveW, liveH));
 
       if (labels) {
