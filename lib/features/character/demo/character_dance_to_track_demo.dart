@@ -119,6 +119,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   BeatMap? _map;
   BeatLoopBinding? _binding;
   List<double>? _amplitudes; // full-track waveform, normalized 0..1
+  List<({double start, double end, String label})> _sections = const [];
   double _trackDurationSec = 0;
   double _bpm = 0;
   bool _loop = true;
@@ -166,6 +167,16 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
               ?.map((e) => (e as num).toDouble())
               .toList() ??
           const <double>[];
+      final sections = ((json['sections'] as List?) ?? const [])
+          .cast<Map<String, Object?>>()
+          .map(
+            (s) => (
+              start: (s['start_sec']! as num).toDouble(),
+              end: (s['end_sec']! as num).toDouble(),
+              label: (s['label'] as String?) ?? '',
+            ),
+          )
+          .toList();
 
       if (!mounted) return;
       setState(() {
@@ -176,6 +187,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         // the 3-bar loop then stays beat-locked for the entire track.
         _binding = BeatLoopBinding.barAligned(map, bars: kDancePhraseBars);
         _amplitudes = amplitudes;
+        _sections = sections;
       });
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
@@ -402,6 +414,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                     size: Size(width, constraints.maxHeight),
                     painter: _WaveformPainter(
                       amplitudes: amplitudes,
+                      sections: _sections,
                       trackDurationSec: _trackDurationSec,
                       positionSec: posSec,
                       playing: playing,
@@ -421,12 +434,14 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
 class _WaveformPainter extends CustomPainter {
   _WaveformPainter({
     required this.amplitudes,
+    required this.sections,
     required this.trackDurationSec,
     required this.positionSec,
     required this.playing,
   });
 
   final List<double> amplitudes;
+  final List<({double start, double end, String label})> sections;
   final double trackDurationSec;
   final double positionSec;
   final bool playing;
@@ -436,6 +451,34 @@ class _WaveformPainter extends CustomPainter {
     if (amplitudes.isEmpty || trackDurationSec <= 0) return;
     final mid = size.height / 2;
     final px = positionSec / trackDurationSec * size.width;
+
+    // Section bands (rung-4 structure) behind the bars: a faint hue per label
+    // (recurring sections share a colour), a boundary line, and the label.
+    for (final s in sections) {
+      final sx0 = s.start / trackDurationSec * size.width;
+      final sx1 = s.end / trackDurationSec * size.width;
+      canvas
+        ..drawRect(
+          Rect.fromLTRB(sx0, 0, sx1, size.height),
+          Paint()..color = _sectionColor(s.label),
+        )
+        ..drawLine(
+          Offset(sx0, 0),
+          Offset(sx0, size.height),
+          Paint()
+            ..color = const Color(0x33FFFFFF)
+            ..strokeWidth = 1,
+        );
+      TextPainter(
+          text: TextSpan(
+            text: s.label,
+            style: const TextStyle(color: Colors.white60, fontSize: 10),
+          ),
+          textDirection: TextDirection.ltr,
+        )
+        ..layout()
+        ..paint(canvas, Offset(sx0 + 2, 1));
+    }
 
     // Bars: brighter up to the playhead (played), dim ahead.
     final barWidth = size.width / amplitudes.length;
@@ -463,9 +506,22 @@ class _WaveformPainter extends CustomPainter {
   static double _atLeast1(double v) => v < 1 ? 1 : v;
   static double _barWidth(double w) => w - 0.5 < 1 ? 1 : w - 0.5;
 
+  static Color _sectionColor(String label) {
+    const palette = <String, Color>{
+      'A': Color(0x22FF6B6B),
+      'B': Color(0x2245C7B8),
+      'C': Color(0x22FFD166),
+      'D': Color(0x22A78BFA),
+      'E': Color(0x2206D6A0),
+      'F': Color(0x22EF476F),
+    };
+    return palette[label] ?? const Color(0x18FFFFFF);
+  }
+
   @override
   bool shouldRepaint(_WaveformPainter old) =>
       old.positionSec != positionSec ||
       old.playing != playing ||
-      !identical(old.amplitudes, amplitudes);
+      !identical(old.amplitudes, amplitudes) ||
+      !identical(old.sections, sections);
 }
