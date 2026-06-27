@@ -360,6 +360,7 @@ void main() {
       'dance compresses into a soft pocket, rebounds, and lifts free feet',
       () {
         final channels = CatClips.dance.channels;
+        final root = CatClips.dance.root;
         final hips = channels[CatBones.hips]!;
         final torso = channels[CatBones.torso]!;
         final footL = channels[CatBones.footL]!;
@@ -387,6 +388,31 @@ void main() {
         expect(hips.sample(5 / 8).rotation, lessThan(-0.35));
         expect(torso.sample(1 / 8).rotation, lessThan(-0.15));
         expect(torso.sample(5 / 8).rotation, greaterThan(0.15));
+        final bridgeRoot = [
+          root.sample(12 / 32).dx,
+          root.sample(13 / 32).dx,
+          root.sample(14 / 32).dx,
+          root.sample(15 / 32).dx,
+          root.sample(16 / 32).dx,
+        ];
+        expect(
+          bridgeRoot,
+          orderedEquals(bridgeRoot.toList()..sort((a, b) => b.compareTo(a))),
+          reason:
+              'frames 12-16 should bridge the weight transfer monotonically '
+              'instead of popping from one side to the other',
+        );
+        for (var i = 0; i < bridgeRoot.length - 1; i++) {
+          expect(
+            (bridgeRoot[i] - bridgeRoot[i + 1]).abs(),
+            lessThan(11),
+            reason:
+                'frame ${12 + i}->${13 + i} should not jump more than the '
+                'authored support-transfer step',
+          );
+        }
+        expect(hips.sample(14 / 32).rotation, lessThan(-0.2));
+        expect(torso.sample(14 / 32).rotation, greaterThan(0.1));
 
         final leftSupportFoot = footL.sample(0).rotation;
         final rightFreeFoot = footR.sample(1 / 8).rotation;
