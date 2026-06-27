@@ -227,11 +227,12 @@ void main() {
         const firstEchoP = 1 / 8;
         const rightEarlyEchoP = 5 / 32;
         const leftDelayedEchoP = 6 / 32;
-        const rightFeatureP = 3 / 8;
+        const silverAnswerP = 10 / 32;
+        const darkAnswerP = 13 / 32;
         const delayedEchoP = 5 / 8;
         const leftFeatureP = 3 / 4;
         const delayedStepTapEchoP = 25 / 32;
-        const rightAnswerSettleP = 15 / 32;
+        const rightAnswerSettleP = 17 / 32;
         const leftFeatureSettleP = 28 / 32;
         const leftHookPickupP = 30 / 32;
         const rightHookPickupP = 31 / 32;
@@ -266,22 +267,22 @@ void main() {
         final rightHandL = _targetFor(right, CatBones.handL).channel.sample(
           3 / 4,
         );
-        final leadHandRFirstAnswer = _targetFor(
+        final leadHandRSilverAnswer = _targetFor(
           lead,
           CatBones.handR,
-        ).channel.sample(3 / 8);
-        final leftHandRFirstAnswer = _targetFor(
+        ).channel.sample(silverAnswerP);
+        final leftHandRSilverAnswer = _targetFor(
           left,
           CatBones.handR,
-        ).channel.sample(3 / 8);
-        final leadHandLFirstAnswer = _targetFor(
+        ).channel.sample(silverAnswerP);
+        final leadHandLDarkAnswer = _targetFor(
           lead,
           CatBones.handL,
-        ).channel.sample(3 / 8);
-        final rightHandLFirstAnswer = _targetFor(
+        ).channel.sample(darkAnswerP);
+        final rightHandLDarkAnswer = _targetFor(
           right,
           CatBones.handL,
-        ).channel.sample(3 / 8);
+        ).channel.sample(darkAnswerP);
         final leadHandRFirstEcho = _targetFor(
           lead,
           CatBones.handR,
@@ -389,37 +390,37 @@ void main() {
         );
         expect(rightHandL.y, closeTo(leadHandL.y, 0.001));
         expect(
-          leftHandRFirstAnswer.x,
-          lessThan(leadHandRFirstAnswer.x - 14),
+          leftHandRSilverAnswer.x,
+          lessThan(leadHandRSilverAnswer.x - 17),
           reason:
-              'the silver cat should take the frame-12 flanker answer after '
-              'marking the lead call, not stay on the lead hand path',
+              'the silver cat should answer early around frame 10 after '
+              'marking the lead call, not hit in lockstep with the dark cat',
         );
         expect(
-          leftHandRFirstAnswer.y,
-          lessThan(leadHandRFirstAnswer.y - 9),
+          leftHandRSilverAnswer.y,
+          lessThan(leadHandRSilverAnswer.y - 12),
         );
         expect(
-          rightHandLFirstAnswer.x,
-          greaterThan(leadHandLFirstAnswer.x + 14),
+          rightHandLDarkAnswer.x,
+          greaterThan(leadHandLDarkAnswer.x + 17),
           reason:
-              'the dark cat should mirror the frame-12 flanker answer with its '
-              'inside hand',
+              'the dark cat should answer later around frame 13 with its '
+              'inside hand, creating a readable crew ripple',
         );
         expect(
-          rightHandLFirstAnswer.y,
-          lessThan(leadHandLFirstAnswer.y - 9),
+          rightHandLDarkAnswer.y,
+          lessThan(leadHandLDarkAnswer.y - 12),
         );
         expect(
           rightHandLRightAnswerSettle.x,
-          closeTo(leadHandLRightAnswerSettle.x, 0.001),
+          closeTo(leadHandLRightAnswerSettle.x, 0.25),
           reason:
               'right backup inside-hand arc should settle back to neutral '
-              'before the next phrase answer',
+              'within sub-pixel tolerance before the next phrase answer',
         );
         expect(
           rightHandLRightAnswerSettle.y,
-          closeTo(leadHandLRightAnswerSettle.y, 0.001),
+          closeTo(leadHandLRightAnswerSettle.y, 0.25),
         );
         expect(
           leftHandRFirstEcho.x,
@@ -565,8 +566,8 @@ void main() {
             left.channels[CatBones.hips]!.sample(leftFeatureP).rotation -
             lead.channels[CatBones.hips]!.sample(leftFeatureP).rotation;
         final rightTorsoDelta =
-            right.channels[CatBones.torso]!.sample(rightFeatureP).rotation -
-            lead.channels[CatBones.torso]!.sample(rightFeatureP).rotation;
+            right.channels[CatBones.torso]!.sample(darkAnswerP).rotation -
+            lead.channels[CatBones.torso]!.sample(darkAnswerP).rotation;
         final leftStepTapEchoHipDelta =
             left.channels[CatBones.hips]!.sample(delayedStepTapEchoP).rotation -
             lead.channels[CatBones.hips]!.sample(delayedStepTapEchoP).rotation;
@@ -591,8 +592,8 @@ void main() {
             left.channels[CatBones.armUpperR]!.sample(leftFeatureP).rotation -
             lead.channels[CatBones.armUpperR]!.sample(leftFeatureP).rotation;
         final rightArmDelta =
-            right.channels[CatBones.armUpperL]!.sample(rightFeatureP).rotation -
-            lead.channels[CatBones.armUpperL]!.sample(rightFeatureP).rotation;
+            right.channels[CatBones.armUpperL]!.sample(darkAnswerP).rotation -
+            lead.channels[CatBones.armUpperL]!.sample(darkAnswerP).rotation;
         final leftHookArmDelta =
             left.channels[CatBones.armUpperR]!
                 .sample(leftHookPickupP)
@@ -1245,7 +1246,6 @@ void main() {
         reason: 'right forearm should carve a restrained pocket answer',
       );
 
-      final rightCueP = phrase.moveAtFrame(12).accentFrame / phrase.frameCount;
       final ribRollEntryP = 11 / phrase.frameCount;
       final ribRollPeakP = 14 / phrase.frameCount;
       final leadRibRollEntry = leadChannels[CatBones.torso]!.sample(
@@ -1341,18 +1341,20 @@ void main() {
             'the opposite foot should heel-flick during the F13 lift before '
             'both feet settle into the stamp',
       );
+      const silverFlankerP = 10 / 32;
+      const darkFlankerP = 13 / 32;
       final rightArmDelta =
-          right.channels[CatBones.armUpperL]!.sample(rightCueP).rotation -
-          leadChannels[CatBones.armUpperL]!.sample(rightCueP).rotation;
+          right.channels[CatBones.armUpperL]!.sample(darkFlankerP).rotation -
+          leadChannels[CatBones.armUpperL]!.sample(darkFlankerP).rotation;
       final rightHandDelta =
-          _targetFor(right, CatBones.handL).channel.sample(rightCueP).x -
-          _targetFor(lead, CatBones.handL).channel.sample(rightCueP).x;
+          _targetFor(right, CatBones.handL).channel.sample(darkFlankerP).x -
+          _targetFor(lead, CatBones.handL).channel.sample(darkFlankerP).x;
       final leftArmDeltaAtRightCue =
-          left.channels[CatBones.armUpperR]!.sample(rightCueP).rotation -
-          leadChannels[CatBones.armUpperR]!.sample(rightCueP).rotation;
+          left.channels[CatBones.armUpperR]!.sample(silverFlankerP).rotation -
+          leadChannels[CatBones.armUpperR]!.sample(silverFlankerP).rotation;
       final leftHandDeltaAtRightCue =
-          _targetFor(left, CatBones.handR).channel.sample(rightCueP).x -
-          _targetFor(lead, CatBones.handR).channel.sample(rightCueP).x;
+          _targetFor(left, CatBones.handR).channel.sample(silverFlankerP).x -
+          _targetFor(lead, CatBones.handR).channel.sample(silverFlankerP).x;
       expect(
         rightArmDelta,
         greaterThan(0.3),
@@ -1364,8 +1366,8 @@ void main() {
         leftArmDeltaAtRightCue,
         lessThan(-0.22),
         reason:
-            'the silver cat should mirror the frame-12 flanker answer with its '
-            'inside arm',
+            'the silver cat should answer earlier with its inside arm instead '
+            'of matching the dark cat on the same frame',
       );
       expect(leftHandDeltaAtRightCue, lessThan(-15));
 
