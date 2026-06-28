@@ -79,6 +79,38 @@ void main() {
       });
     });
 
+    testWidgets('flat dim pulls the whole field down uniformly', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        final bytes = await _renderOverWhite(
+          const VignetteLayer(strength: 0, dim: 0.2),
+        );
+        // No radial component when strength is 0, so every sample is ~1 - dim.
+        final centre = _at(bytes, _w ~/ 2, (_h * 0.42).round()).r;
+        final corner = _at(bytes, _w - 1, _h - 1).r;
+        expect(centre, closeTo(0.8, 0.05));
+        expect(corner, closeTo(0.8, 0.05));
+      });
+    });
+
+    testWidgets(
+      'dim stacks with strength: corners sink below the dimmed centre',
+      (tester) async {
+        await tester.runAsync(() async {
+          final bytes = await _renderOverWhite(
+            const VignetteLayer(strength: 0.2, dim: 0.15),
+          );
+          final centre = _at(bytes, _w ~/ 2, (_h * 0.42).round()).r;
+          final corner = _at(bytes, _w - 1, _h - 1).r;
+          // Centre is pulled down by dim only (~1 - dim); corners take the extra
+          // radial falloff on top.
+          expect(centre, closeTo(0.85, 0.05));
+          expect(corner, lessThan(centre));
+        });
+      },
+    );
+
     test('no-ops without throwing for an empty viewport', () {
       const layer = VignetteLayer();
       const ctx = BackdropContext(

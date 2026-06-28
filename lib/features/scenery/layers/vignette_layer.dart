@@ -11,11 +11,17 @@ import 'package:lotti/features/scenery/layers/backdrop_layer.dart';
 class VignetteLayer implements BackdropLayer {
   const VignetteLayer({
     this.strength = 0.22,
+    this.dim = 0,
     this.center = const Offset(0.5, 0.42),
   });
 
   /// 0 = none; the fraction of luminance removed at the far corners.
   final double strength;
+
+  /// 0 = none; a flat fraction of luminance removed across the WHOLE frame
+  /// (a global exposure pull-down), on top of which [strength] adds the radial
+  /// edge falloff. Keeps the blue-hour scene reading as twilight, not daylight.
+  final double dim;
 
   /// Normalized focal centre the vignette opens around.
   final Offset center;
@@ -23,10 +29,15 @@ class VignetteLayer implements BackdropLayer {
   @override
   void paint(Canvas canvas, BackdropContext ctx) {
     final size = ctx.size;
-    if (size.isEmpty || strength <= 0) return;
+    final d = dim.clamp(0.0, 1.0);
+    if (size.isEmpty || (strength <= 0 && d <= 0)) return;
     final c = Offset(center.dx * size.width, center.dy * size.height);
     final radius = size.longestSide * 0.72;
-    final edge = (255 * (1.0 - strength.clamp(0.0, 1.0))).round();
+    // Flat dim is the inner luminance (centre + mid); the edge sinks further by
+    // [strength] on top of it.
+    final inner = (255 * (1.0 - d)).round();
+    final edge = (255 * (1.0 - (d + strength).clamp(0.0, 1.0))).round();
+    final innerColor = Color.fromARGB(255, inner, inner, inner);
     final dark = Color.fromARGB(255, edge, edge, edge);
     canvas.drawRect(
       Offset.zero & size,
@@ -35,7 +46,7 @@ class VignetteLayer implements BackdropLayer {
         ..shader = ui.Gradient.radial(
           c,
           radius,
-          [const Color(0xFFFFFFFF), const Color(0xFFFFFFFF), dark],
+          [innerColor, innerColor, dark],
           [0.0, 0.55, 1.0],
         ),
     );

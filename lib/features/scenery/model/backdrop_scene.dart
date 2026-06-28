@@ -45,7 +45,7 @@ class BackdropScene {
         ImageLayer(SceneryAssets.foreground),
         DeckGlowLayer(),
       ],
-      foregroundLayers: [VignetteLayer()],
+      foregroundLayers: [VignetteLayer(dim: 0.12)],
       imageAssets: [
         SceneryAssets.masterPlate,
         SceneryAssets.cityWindows,
