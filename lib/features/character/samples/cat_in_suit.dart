@@ -5292,26 +5292,34 @@ class CatClips {
     GroundSpan(CatBones.footR, 0.875, 1),
   ];
   static const _sekemBodyKeys = [
-    // A hard per-beat squash: the body drops DEEP and the chest compresses on
-    // each plant (on-counts), then lifts on the off-frame — a clear heavy stomp
-    // accent, not a flat sway.
-    DanceBodyKey(0, rootDy: 25, chestScaleY: 0.92), // PLANT (deep squash)
-    DanceBodyKey(2, rootDy: 12, chestScaleY: 0.98), // lift (off-beat)
-    DanceBodyKey(4, rootDy: 25, chestScaleY: 0.92),
-    DanceBodyKey(6, rootDy: 12, chestScaleY: 0.98),
-    DanceBodyKey(8, rootDy: 25, chestScaleY: 0.92),
-    DanceBodyKey(10, rootDy: 12, chestScaleY: 0.98),
-    DanceBodyKey(12, rootDy: 25, chestScaleY: 0.92),
-    DanceBodyKey(14, rootDy: 12, chestScaleY: 0.98),
-    DanceBodyKey(16, rootDy: 25, chestScaleY: 0.92),
-    DanceBodyKey(18, rootDy: 12, chestScaleY: 0.98),
-    DanceBodyKey(20, rootDy: 25, chestScaleY: 0.92),
-    DanceBodyKey(22, rootDy: 12, chestScaleY: 0.98),
-    DanceBodyKey(24, rootDy: 25, chestScaleY: 0.92),
-    DanceBodyKey(26, rootDy: 12, chestScaleY: 0.98),
-    DanceBodyKey(28, rootDy: 25, chestScaleY: 0.92),
-    DanceBodyKey(30, rootDy: 12, chestScaleY: 0.98),
-    DanceBodyKey(32, rootDy: 25, chestScaleY: 0.92),
+    // The weight COMMIT, keyframed to DWELL over the planting foot (a sine sway
+    // just passes through centre and reads uncommitted). rootDx holds at one
+    // side for the beat then snaps to the other on the plant, so the COM parks
+    // over each foot (two distinct clusters), L,R,L,R. rootDy adds the hard
+    // per-beat squash: deep drop + chest compress on the plant, lift on the
+    // off-frame.
+    DanceBodyKey(
+      0,
+      rootDx: -34,
+      rootDy: 25,
+      chestScaleY: 0.92,
+    ), // over LEFT foot
+    DanceBodyKey(2, rootDx: -34, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(4, rootDx: 34, rootDy: 25, chestScaleY: 0.92), // snap to RIGHT
+    DanceBodyKey(6, rootDx: 34, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(8, rootDx: -34, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(10, rootDx: -34, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(12, rootDx: 34, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(14, rootDx: 34, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(16, rootDx: -34, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(18, rootDx: -34, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(20, rootDx: 34, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(22, rootDx: 34, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(24, rootDx: -34, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(26, rootDx: -34, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(28, rootDx: 34, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(30, rootDx: 34, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(32, rootDx: -34, rootDy: 25, chestScaleY: 0.92),
   ];
   // Feet STOMP in place (no lateral travel): each foot plants hard low on its
   // beats and lifts only shin-low on the off-frame, with a small twist (x nudge)
@@ -5398,17 +5406,9 @@ class CatClips {
       contactPinning: base.contactPinning,
       limbTargets: _sekemLimbTargets,
       supportFootWorldAnchor: true,
-      root: LayeredRootChannel([
-        _dancePhrase.bodyRootChannel(_sekemBodyKeys, smooth: true),
-        // Full lateral shift over the planting foot, one plant per beat — pushed
-        // wide so the COM visibly parks over the support foot (two onion
-        // clusters), not a centered sway.
-        const SineRootChannel(
-          swayAmplitude: -34,
-          swayHarmonic: 4,
-          swayPhase: 0.0625,
-        ),
-      ]),
+      // The dwelling weight commit now lives in _sekemBodyKeys' rootDx (no sine
+      // sway — that just passed through centre).
+      root: _dancePhrase.bodyRootChannel(_sekemBodyKeys, smooth: true),
       channels: {
         ...base.channels,
         CatBones.hips: LayeredJointChannel([
