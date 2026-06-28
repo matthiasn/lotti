@@ -4921,10 +4921,11 @@ class CatClips {
         _dancePhrase.bodyRootChannel(_zankuCommitKeys, smooth: true),
         const SineRootChannel(
           // A vertical HOP synced to the legwork — Zanku rides a spring, not a
-          // flat side sway. Most of the bounce restored; the head no longer fans
+          // flat side sway. Deepened so the push-off airtime reads on every beat
+          // (bars 2/3 hopped lower than 1/4 before). The head no longer fans
           // because the ears are clamped (below) and the head-counter holds the
           // skull's rotation while it rides the bob.
-          bobAmplitude: -0.045,
+          bobAmplitude: -0.06,
           bobPhase: 0.125,
           bobHarmonic: 8,
         ),
@@ -5168,8 +5169,8 @@ class CatClips {
     DanceIkTargetKey(8, x: 12, y: -20),
     DanceIkTargetKey(11, x: 10, y: -20),
     DanceIkTargetKey(12, x: 100, y: -88), // THRUST UP+OUT — present (the hit)
-    DanceIkTargetKey(13, x: 104, y: -91), // overshoot past the peak
-    DanceIkTargetKey(14, x: 92, y: -80), // settle back
+    DanceIkTargetKey(13, x: 110, y: -96), // overshoot well past the peak
+    DanceIkTargetKey(14, x: 90, y: -78), // settle back
     DanceIkTargetKey(16, x: 15, y: -16),
     DanceIkTargetKey(20, x: 14, y: -18),
     DanceIkTargetKey(24, x: 13, y: -19),
@@ -5195,8 +5196,8 @@ class CatClips {
       x: -100,
       y: -88,
     ), // THRUST UP+OUT — present (mirror hit)
-    DanceIkTargetKey(29, x: -104, y: -91), // overshoot past the peak
-    DanceIkTargetKey(30, x: -92, y: -80), // settle back
+    DanceIkTargetKey(29, x: -110, y: -96), // overshoot well past the peak
+    DanceIkTargetKey(30, x: -90, y: -78), // settle back
     DanceIkTargetKey(32, x: -15, y: -16),
   ];
   static final KeyframeIkTargetChannel _bugaHandLTarget = _dancePhrase
@@ -5236,9 +5237,11 @@ class CatClips {
         ]),
         CatBones.earL: const SineChannel(amplitude: 0.008),
         CatBones.earR: const SineChannel(amplitude: 0.008, phase: 0.5),
-        CatBones.tail0: const SineChannel(amplitude: 0.02, bias: -0.34),
-        CatBones.tail3: const SineChannel(amplitude: 0.05, phase: 0.24),
-        CatBones.tail6: const SineChannel(amplitude: 0.06, phase: 0.48),
+        // Tail carries the follow-through off the rise — boosted so it lags and
+        // whips behind the big presenting arm instead of reading stiff.
+        CatBones.tail0: const SineChannel(amplitude: 0.035, bias: -0.34),
+        CatBones.tail3: const SineChannel(amplitude: 0.09, phase: 0.24),
+        CatBones.tail6: const SineChannel(amplitude: 0.12, phase: 0.48),
       },
     );
   }
