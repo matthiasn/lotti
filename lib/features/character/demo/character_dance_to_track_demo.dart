@@ -23,6 +23,7 @@ import 'package:lotti/features/scenery/runtime/stage_lights.dart';
 import 'package:lotti/features/scenery/scene_texture_overlay.dart';
 import 'package:lotti/features/scenery/stage_lights_overlay.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:window_manager/window_manager.dart';
 
 /// Beat-synced dance demo — the first wiring of the offline beat map into live
 /// playback (see `docs/implementation_plans/2026-06-27_dance_audio_analysis.md`
@@ -81,6 +82,13 @@ const String kDanceCuesPath = String.fromEnvironment(
       '/home/parallels/github/lotti/tools/dance_audio/out/moving.cues.json',
 );
 
+/// Native review window for the audio demo. The content being judged is the
+/// stage image, so keep the desktop window itself 16:9 during choreography and
+/// scenery review. If the WM still letterboxes, those bars are intentionally
+/// plain black.
+const Size kDanceDemoWindowSize = Size(1600, 900);
+const double kDanceDemoAspectRatio = 16 / 9;
+
 /// Bars the 32-frame [CatClips.dance] phrase spans: `duration 6 s` at
 /// `kAuthoredDanceBpm 120` = 12 beats = 3 bars of 4/4.
 const int kDancePhraseBars = 3;
@@ -124,9 +132,20 @@ typedef _Stage = ({
   bool energetic,
 });
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
+  await _configureDanceDemoWindow();
   runApp(const DanceToTrackApp());
+}
+
+Future<void> _configureDanceDemoWindow() async {
+  if (!Platform.isLinux && !Platform.isMacOS && !Platform.isWindows) return;
+  await windowManager.ensureInitialized();
+  await windowManager.setAspectRatio(kDanceDemoAspectRatio);
+  await windowManager.setMinimumSize(const Size(960, 540));
+  await windowManager.setSize(kDanceDemoWindowSize);
+  await windowManager.center();
 }
 
 class DanceToTrackApp extends StatelessWidget {
