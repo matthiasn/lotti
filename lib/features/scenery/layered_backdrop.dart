@@ -81,6 +81,7 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
 
   ui.FragmentProgram? _skyProgram;
   ui.FragmentProgram? _oceanProgram;
+  ui.FragmentProgram? _cityLightsProgram;
   final Map<String, ui.Image> _images = {};
   int _imagesVersion = 0;
 
@@ -131,6 +132,12 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
         widget.oceanProgramLoader ?? SceneryShaderProgramCache.loadOcean;
     unawaited(_assignProgram(skyLoader, (p) => _skyProgram = p));
     unawaited(_assignProgram(oceanLoader, (p) => _oceanProgram = p));
+    unawaited(
+      _assignProgram(
+        SceneryShaderProgramCache.loadCityLights,
+        (p) => _cityLightsProgram = p,
+      ),
+    );
   }
 
   Future<void> _assignProgram(
@@ -189,22 +196,7 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
   @override
   Widget build(BuildContext context) {
     final time = _time;
-    final background = RepaintBoundary(
-      child: CustomPaint(
-        painter: _BackdropPainter(
-          layers: widget.scene.layers,
-          palette: widget.palette,
-          timeSeconds: time,
-          beatPulse: widget.beatPulse,
-          reducedMotion: _reducedMotion,
-          skyProgram: _skyProgram,
-          oceanProgram: _oceanProgram,
-          images: _images,
-          imagesVersion: _imagesVersion,
-        ),
-        child: const SizedBox.expand(),
-      ),
-    );
+    final background = _backdropPaint(widget.scene.layers, time);
 
     if (widget.child == null && widget.scene.foregroundLayers.isEmpty) {
       return background;
@@ -216,23 +208,32 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
         background,
         if (widget.child != null) widget.child!,
         if (widget.scene.foregroundLayers.isNotEmpty)
-          RepaintBoundary(
-            child: CustomPaint(
-              painter: _BackdropPainter(
-                layers: widget.scene.foregroundLayers,
-                palette: widget.palette,
-                timeSeconds: time,
-                beatPulse: widget.beatPulse,
-                reducedMotion: _reducedMotion,
-                skyProgram: _skyProgram,
-                oceanProgram: _oceanProgram,
-                images: _images,
-                imagesVersion: _imagesVersion,
-              ),
-              child: const SizedBox.expand(),
-            ),
-          ),
+          _backdropPaint(widget.scene.foregroundLayers, time),
       ],
+    );
+  }
+
+  // Paints [layers] at the viewport size. Each layer cover-fits the art into the
+  // viewport itself (the master plate via BoxFit.cover, the lights via the same
+  // coverFit mapping), so painted art, shader mask sampling and light anchors
+  // all stay aligned at any aspect ratio.
+  Widget _backdropPaint(List<BackdropLayer> layers, double time) {
+    return RepaintBoundary(
+      child: CustomPaint(
+        painter: _BackdropPainter(
+          layers: layers,
+          palette: widget.palette,
+          timeSeconds: time,
+          beatPulse: widget.beatPulse,
+          reducedMotion: _reducedMotion,
+          skyProgram: _skyProgram,
+          oceanProgram: _oceanProgram,
+          cityLightsProgram: _cityLightsProgram,
+          images: _images,
+          imagesVersion: _imagesVersion,
+        ),
+        child: const SizedBox.expand(),
+      ),
     );
   }
 }
@@ -248,6 +249,7 @@ class _BackdropPainter extends CustomPainter {
     required this.imagesVersion,
     this.skyProgram,
     this.oceanProgram,
+    this.cityLightsProgram,
   });
 
   final List<BackdropLayer> layers;
@@ -259,6 +261,7 @@ class _BackdropPainter extends CustomPainter {
   final int imagesVersion;
   final ui.FragmentProgram? skyProgram;
   final ui.FragmentProgram? oceanProgram;
+  final ui.FragmentProgram? cityLightsProgram;
 
   @override
   void paint(Canvas canvas, Size size) {

@@ -17,6 +17,7 @@ class BackdropContext {
     this.beatPulse = 0,
     this.skyProgram,
     this.oceanProgram,
+    this.cityLightsProgram,
     this.images = const {},
     this.manifest,
   });
@@ -41,6 +42,9 @@ class BackdropContext {
 
   /// Compiled ocean shader program (null until loaded → CPU fallback).
   final ui.FragmentProgram? oceanProgram;
+
+  /// Compiled additive city/yacht night-lights shader program.
+  final ui.FragmentProgram? cityLightsProgram;
 
   /// Decoded bitmap layers keyed by asset basename (e.g. `skyline_near`).
   final Map<String, ui.Image> images;

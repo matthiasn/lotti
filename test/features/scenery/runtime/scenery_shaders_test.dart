@@ -12,6 +12,7 @@ void main() {
       final pubspec = File('pubspec.yaml').readAsStringSync();
       expect(pubspec, contains(SceneryShaderAssets.sky));
       expect(pubspec, contains(SceneryShaderAssets.ocean));
+      expect(pubspec, contains(SceneryShaderAssets.cityLights));
       expect(pubspec, contains('shaders:'));
     });
 
@@ -20,8 +21,12 @@ void main() {
       final ocean = await ui.FragmentProgram.fromAsset(
         SceneryShaderAssets.ocean,
       );
+      final cityLights = await ui.FragmentProgram.fromAsset(
+        SceneryShaderAssets.cityLights,
+      );
       expect(sky, isA<ui.FragmentProgram>());
       expect(ocean, isA<ui.FragmentProgram>());
+      expect(cityLights, isA<ui.FragmentProgram>());
     });
 
     testWidgets('cache returns the identical program across many calls', (
@@ -43,7 +48,7 @@ void main() {
     // setSceneryColor / buildSkyUniforms write floats by index; these tests pin
     // the exact uniform count each .frag declares so the Dart wiring and the
     // GLSL cannot silently drift apart.
-    testWidgets('sky shader declares exactly 49 float uniforms (0..48)', (
+    testWidgets('sky shader declares exactly 54 float uniforms (0..53)', (
       tester,
     ) async {
       final program = await ui.FragmentProgram.fromAsset(
@@ -52,14 +57,14 @@ void main() {
       final shader = program.fragmentShader();
       expect(
         () {
-          for (var i = 0; i <= 12; i++) {
+          for (var i = 0; i <= 13; i++) {
             shader.setFloat(i, 0);
           }
-          setSceneryColor(shader, 45, const ui.Color(0xFFFFFFFF));
+          setSceneryColor(shader, 50, const ui.Color(0xFFFFFFFF));
         },
         returnsNormally,
       );
-      expect(() => shader.setFloat(49, 0), throwsA(isA<Error>()));
+      expect(() => shader.setFloat(54, 0), throwsA(isA<Error>()));
     });
 
     testWidgets('ocean shader declares exactly 31 float uniforms (0..30)', (

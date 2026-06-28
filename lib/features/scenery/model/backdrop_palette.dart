@@ -33,6 +33,8 @@ class BackdropPalette {
     required this.skyUpper,
     required this.skyHorizonCool,
     required this.skyEmber,
+    required this.sunsetGlow,
+    required this.sunsetHot,
     required this.hazeSmog,
     required this.moonDisk,
     required this.moonHalo,
@@ -73,6 +75,12 @@ class BackdropPalette {
 
   /// Muted warm residual on the sunset azimuth (used sparingly, low).
   final Color skyEmber;
+
+  /// Dramatic post-sunset afterglow band rising off the horizon (burnt orange).
+  final Color sunsetGlow;
+
+  /// Hot core of the afterglow right at the horizon / sun azimuth (amber).
+  final Color sunsetHot;
 
   /// Low pollution/haze band over the lagoon — lifts blacks, desaturates.
   final Color hazeSmog;
@@ -160,6 +168,8 @@ class BackdropPalette {
     Color? skyUpper,
     Color? skyHorizonCool,
     Color? skyEmber,
+    Color? sunsetGlow,
+    Color? sunsetHot,
     Color? hazeSmog,
     Color? moonDisk,
     Color? moonHalo,
@@ -193,6 +203,8 @@ class BackdropPalette {
       skyUpper: skyUpper ?? this.skyUpper,
       skyHorizonCool: skyHorizonCool ?? this.skyHorizonCool,
       skyEmber: skyEmber ?? this.skyEmber,
+      sunsetGlow: sunsetGlow ?? this.sunsetGlow,
+      sunsetHot: sunsetHot ?? this.sunsetHot,
       hazeSmog: hazeSmog ?? this.hazeSmog,
       moonDisk: moonDisk ?? this.moonDisk,
       moonHalo: moonHalo ?? this.moonHalo,
@@ -231,6 +243,8 @@ const BackdropPalette kBlueHourPalette = BackdropPalette(
   skyUpper: Color(0xFF12305C),
   skyHorizonCool: Color(0xFF285E78),
   skyEmber: Color(0xFF9C5A33),
+  sunsetGlow: Color(0xFFB5532E),
+  sunsetHot: Color(0xFFE8A552),
   hazeSmog: Color(0xFF3A4252),
   moonDisk: Color(0xFFF2E9CF),
   moonHalo: Color(0xFF9FBBD6),

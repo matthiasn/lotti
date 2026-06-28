@@ -39,8 +39,9 @@ void main() {
     test('packs resolution, time and layer knobs in index order', () {
       const layer = SkyLayer(
         horizon: 0.6,
+        sunGlowX: 0.65,
         moonX: 0.7,
-        moonY: 0.2,
+        moonY: 0.22,
         moonRadius: 0.08,
         starDensity: 0.5,
         cloudCoverage: 0.55,
@@ -51,20 +52,21 @@ void main() {
       );
       final u = buildSkyUniforms(const Size(800, 600), 1.5, layer);
 
-      expect(u, hasLength(13));
+      expect(u, hasLength(14));
       expect(u[0], 800); // width
       expect(u[1], 600); // height
       expect(u[2], 1.5); // time
       expect(u[3], 0.6); // horizon
-      expect(u[4], 0.7); // moonX
-      expect(u[5], 0.2); // moonY
-      expect(u[6], 0.08); // moonRadius
-      expect(u[7], 0.5); // starDensity
-      expect(u[8], 0.55); // cloudCoverage
-      expect(u[9], 0.2); // cloudSoftness
-      expect(u[10], 2); // cloudScale
-      expect(u[11], 0.4); // hazeStrength
-      expect(u[12], 0.03); // grain
+      expect(u[4], 0.65); // sunGlowX
+      expect(u[5], 0.7); // moonX
+      expect(u[6], 0.22); // moonY
+      expect(u[7], 0.08); // moonRadius
+      expect(u[8], 0.5); // starDensity
+      expect(u[9], 0.55); // cloudCoverage
+      expect(u[10], 0.2); // cloudSoftness
+      expect(u[11], 2); // cloudScale
+      expect(u[12], 0.4); // hazeStrength
+      expect(u[13], 0.03); // grain
     });
 
     test('tracks resolution and time across samples', () {
@@ -90,8 +92,7 @@ void main() {
       // outside the fake-async test zone — hence runAsync.
       await tester.runAsync(() async {
         const size = Size(240, 200);
-        // Moon at the layer's default position (0.74, 0.22).
-        const layer = SkyLayer(moonRadius: 0.09);
+        const layer = SkyLayer(moonX: 0.74, moonY: 0.22, moonRadius: 0.09);
         final image = await _renderFallback(size, 2, layer: layer);
         final pixel = await _pixelReader(image);
 

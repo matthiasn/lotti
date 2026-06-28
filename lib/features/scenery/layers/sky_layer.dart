@@ -14,20 +14,24 @@ import 'package:lotti/features/scenery/runtime/scenery_shaders.dart';
 class SkyLayer implements BackdropLayer {
   const SkyLayer({
     this.horizon = 0.62,
-    this.moonX = 0.74,
-    this.moonY = 0.22,
-    this.moonRadius = 0.07,
-    this.starDensity = 0.6,
-    this.cloudCoverage = 0.52,
-    this.cloudSoftness = 0.18,
-    this.cloudScale = 2.2,
-    this.hazeStrength = 0.5,
-    this.grain = 0.04,
+    this.sunGlowX = 0.66,
+    this.moonX = 0.78,
+    this.moonY = 0.2,
+    this.moonRadius = 0.055,
+    this.starDensity = 0.7,
+    this.cloudCoverage = 0.5,
+    this.cloudSoftness = 0.14,
+    this.cloudScale = 1.6,
+    this.hazeStrength = 0.45,
+    this.grain = 0.035,
     this.speed = 1,
   });
 
   /// y-fraction of the horizon/waterline.
   final double horizon;
+
+  /// x-fraction of the post-sunset afterglow hotspot on the horizon.
+  final double sunGlowX;
 
   /// Moon center (0..1, top-left origin).
   final double moonX;
@@ -67,21 +71,22 @@ class SkyLayer implements BackdropLayer {
       shader.setFloat(i, scalars[i]);
     }
     final p = ctx.palette;
-    setSceneryColor(shader, 13, p.skyZenith);
-    setSceneryColor(shader, 17, p.skyUpper);
-    setSceneryColor(shader, 21, p.skyHorizonCool);
-    setSceneryColor(shader, 25, p.moonDisk);
-    setSceneryColor(shader, 29, p.moonHalo);
-    setSceneryColor(shader, 33, p.star);
-    setSceneryColor(shader, 37, p.cloudLit);
-    setSceneryColor(shader, 41, p.cloudBase);
-    setSceneryColor(shader, 45, p.hazeSmog);
+    setSceneryColor(shader, 14, p.skyZenith);
+    setSceneryColor(shader, 18, p.skyUpper);
+    setSceneryColor(shader, 22, p.skyHorizonCool);
+    setSceneryColor(shader, 26, p.sunsetGlow);
+    setSceneryColor(shader, 30, p.sunsetHot);
+    setSceneryColor(shader, 34, p.cloudBase);
+    setSceneryColor(shader, 38, p.moonDisk);
+    setSceneryColor(shader, 42, p.moonHalo);
+    setSceneryColor(shader, 46, p.star);
+    setSceneryColor(shader, 50, p.hazeSmog);
     canvas.drawRect(Offset.zero & ctx.size, Paint()..shader = shader);
   }
 }
 
-/// Builds the 13 scalar uniforms (indices 0..12) for `scenery_sky.frag`. The
-/// vec4 color uniforms follow at index 13. Pure + deterministic so the wiring
+/// Builds the 14 scalar uniforms (indices 0..13) for `scenery_sky.frag`. The
+/// vec4 color uniforms follow at index 14. Pure + deterministic so the wiring
 /// can be unit-tested without a GPU.
 List<double> buildSkyUniforms(ui.Size size, double time, SkyLayer layer) {
   return <double>[
@@ -89,15 +94,16 @@ List<double> buildSkyUniforms(ui.Size size, double time, SkyLayer layer) {
     size.height, // 1
     time, // 2
     layer.horizon, // 3
-    layer.moonX, // 4
-    layer.moonY, // 5
-    layer.moonRadius, // 6
-    layer.starDensity, // 7
-    layer.cloudCoverage, // 8
-    layer.cloudSoftness, // 9
-    layer.cloudScale, // 10
-    layer.hazeStrength, // 11
-    layer.grain, // 12
+    layer.sunGlowX, // 4
+    layer.moonX, // 5
+    layer.moonY, // 6
+    layer.moonRadius, // 7
+    layer.starDensity, // 8
+    layer.cloudCoverage, // 9
+    layer.cloudSoftness, // 10
+    layer.cloudScale, // 11
+    layer.hazeStrength, // 12
+    layer.grain, // 13
   ];
 }
 

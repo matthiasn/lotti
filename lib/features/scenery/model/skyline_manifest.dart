@@ -47,15 +47,15 @@ class SkylineManifest {
 /// A coarse stand-in until the Codex-generated, art-matched manifest replaces
 /// it. Values are plausible but not tied to any real artwork.
 const SkylineManifest kPlaceholderSkylineManifest = SkylineManifest(
+  // Measured against assets/scenery/blue_hour_master.png — the tallest hi-rise
+  // tops, left→right: left tower, spired tower (on the spire), peaked-roof
+  // tower, dark flat-top tower, slim tall tower.
   buildingTops: [
-    Offset(0.12, 0.46),
-    Offset(0.22, 0.40),
-    Offset(0.34, 0.49),
-    Offset(0.46, 0.36),
-    Offset(0.58, 0.44),
-    Offset(0.71, 0.41),
-    Offset(0.84, 0.47),
-    Offset(0.92, 0.43),
+    Offset(0.150, 0.323),
+    Offset(0.209, 0.245),
+    Offset(0.250, 0.357),
+    Offset(0.342, 0.335),
+    Offset(0.430, 0.369),
   ],
   windowCells: [
     Rect.fromLTWH(0.10, 0.47, 0.05, 0.13),
@@ -66,9 +66,10 @@ const SkylineManifest kPlaceholderSkylineManifest = SkylineManifest(
     Rect.fromLTWH(0.69, 0.42, 0.05, 0.17),
     Rect.fromLTWH(0.82, 0.48, 0.05, 0.11),
   ],
+  // The two mast tips of the cable-stayed bridge A-frame pylon.
   bridgeTowerTops: [
-    Offset(0.30, 0.30),
-    Offset(0.66, 0.30),
+    Offset(0.645, 0.363),
+    Offset(0.659, 0.365),
   ],
   bridgeDeck: [
     Offset(0, 0.64),

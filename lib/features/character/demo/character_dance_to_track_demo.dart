@@ -190,6 +190,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   ui.Image? _clouds;
   ui.Image? _waves;
   double _cameraStrength = 0; // eased dance-camera ramp (0 = neutral, 1 = full)
+  double _wallSeconds = 0; // steady clock for ambient backdrop animation
   double _leadMouth = 0; // eased frontman mouth (lead lyric words)
   double _bgMouth = 0; // eased backup-dancers' mouth (background ad-libs)
   MouthShape _leadShape = MouthShape.singAh; // viseme for the active lead word
@@ -223,6 +224,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     _lastTick = elapsed;
     if (dt < 0) dt = 0;
     if (dt > 0.1) dt = 0.1; // ignore long stalls (tab switch, etc.)
+    // Advance the ambient backdrop clock only while playing, so the lights
+    // freeze with the dancers when the track is paused.
+    if (_player.state.playing) _wallSeconds += dt;
     final pos = _player.state.position.inMicroseconds / 1e6;
     final target = (_sectionAt(pos)?.energetic ?? true) ? 1.0 : 0.0;
     var k = dt / kCameraRampSeconds;
@@ -483,6 +487,30 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     );
   }
 
+  /// A 0..1 musical pulse that spikes on each detected beat and decays, so the
+  /// backdrop lights shimmer with the track. Driven by the audio position, so
+  /// it freezes with playback.
+  double _beatPulse(double pos) {
+    final beats = _map?.beatTimesSec;
+    if (beats == null || beats.isEmpty) return 0;
+    var lo = 0;
+    var hi = beats.length - 1;
+    var idx = 0;
+    while (lo <= hi) {
+      final mid = (lo + hi) >> 1;
+      if (beats[mid] <= pos) {
+        idx = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    final since = pos - beats[idx];
+    if (since < 0) return 0;
+    final v = 1 - since / 0.18;
+    return v <= 0 ? 0 : v * v;
+  }
+
   /// Picks the clip + clock for the current section: the beat-locked energetic
   /// dance in loud sections, an eased idle (driven by raw playback time) in calm
   /// ones — so the quiet intro stays calm until the beat kicks in. The phrase
@@ -598,6 +626,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
 
     final stage = _stageNow();
     final posSec = _player.state.position.inMicroseconds / 1e6;
+    final beat = _beatPulse(posSec);
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
@@ -631,7 +660,11 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                         filterQuality: FilterQuality.low,
                         child: LayeredBackdrop(
                           scene: BackdropScene.blueHourWaterfront(),
-                          timeSeconds: stage.seconds,
+                          // Steady wall clock for blink/flicker timing (not the
+                          // looping dance clock); beatPulse makes the windows
+                          // shimmer on the beat.
+                          timeSeconds: _wallSeconds,
+                          beatPulse: beat,
                         ),
                       ),
                     CustomPaint(

@@ -2,30 +2,31 @@
 
 precision highp float;
 
-// Blue-hour sky: vertical twilight gradient + twinkling stars + a moon with
-// bloom and a faint crescent + drifting domain-warped cumulus clouds, finished
-// with a low smog/haze band and film grain so it reads grimy, not pristine.
-// Uniform order here MUST match buildSkyUniforms() on the Dart side.
+// Dramatic post-sunset sky: deep zenith fading to a warm afterglow at the
+// horizon with a hot sun hotspot, twinkling stars, a soft moon, and cumulus
+// clouds underlit by the sunset. Uniform order MUST match buildSkyUniforms().
 
 uniform vec2 uResolution;
 uniform float uTime;
-uniform float uHorizon;        // y-fraction of the horizon/waterline
+uniform float uHorizon;        // y-fraction of the horizon
+uniform float uSunGlowX;       // 0..1 x of the afterglow hotspot
 uniform vec2 uMoonPos;         // 0..1, top-left origin
 uniform float uMoonRadius;     // fraction of the smaller dimension
 uniform float uStarDensity;    // 0..1
-uniform float uCloudCoverage;  // 0..1 (higher => fewer clouds)
+uniform float uCloudCoverage;  // threshold (higher => fewer clouds)
 uniform float uCloudSoftness;  // edge feather
 uniform float uCloudScale;     // spatial frequency
 uniform float uHazeStrength;   // 0..1 smog band
 uniform float uGrain;          // 0..1 film grain
 uniform vec4 uSkyZenith;
 uniform vec4 uSkyUpper;
-uniform vec4 uSkyHorizon;
-uniform vec4 uMoonColor;
+uniform vec4 uSkyHorizon;      // cool transitional band above the warm
+uniform vec4 uSunsetGlow;      // burnt-orange afterglow
+uniform vec4 uSunsetHot;       // hot amber core at the horizon
+uniform vec4 uCloudDark;       // shadowed cloud top
+uniform vec4 uMoon;
 uniform vec4 uMoonHalo;
-uniform vec4 uStarColor;
-uniform vec4 uCloudLit;
-uniform vec4 uCloudShadow;
+uniform vec4 uStar;
 uniform vec4 uHaze;
 
 out vec4 fragColor;
@@ -48,9 +49,9 @@ float noise(vec2 p) {
 float fbm(vec2 p) {
   float v = 0.0;
   float a = 0.5;
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 6; i++) {
     v += a * noise(p);
-    p *= 2.02;
+    p = p * 2.0 + vec2(11.3, 7.7);
     a *= 0.5;
   }
   return v;
@@ -61,58 +62,70 @@ void main() {
   vec2 uv = frag / uResolution;
   float aspect = uResolution.x / max(uResolution.y, 1.0);
 
-  // Vertical twilight gradient: zenith at the top, cyan at the horizon.
-  float h = clamp(uv.y / max(uHorizon, 0.001), 0.0, 1.0);
-  vec3 col = mix(uSkyZenith.rgb, uSkyUpper.rgb, smoothstep(0.0, 0.72, h));
-  col = mix(col, uSkyHorizon.rgb, smoothstep(0.55, 1.0, h));
+  // t: 0 at the top of the frame, 1 at the horizon.
+  float t = clamp(uv.y / max(uHorizon, 0.001), 0.0, 1.0);
 
-  // Stars — sparse per-cell, twinkling, fading toward the horizon.
-  float starBand = 1.0 - smoothstep(uHorizon * 0.5, uHorizon, uv.y);
-  vec2 sc = vec2(uv.x * aspect, uv.y) * 150.0;
+  // --- Dramatic post-sunset vertical gradient ---
+  vec3 sky = mix(uSkyZenith.rgb, uSkyUpper.rgb, smoothstep(0.0, 0.52, t));
+  sky = mix(sky, uSkyHorizon.rgb, smoothstep(0.46, 0.80, t));
+  sky = mix(sky, uSunsetGlow.rgb, smoothstep(0.80, 1.0, t));
+
+  // Warm sun hotspot sitting on the horizon at uSunGlowX.
+  float sdx = (uv.x - uSunGlowX) * aspect;
+  float sdy = (t - 1.0) * 1.5;
+  float sun = exp(-(sdx * sdx + sdy * sdy) * 2.2);
+  sky = mix(sky, uSunsetHot.rgb, clamp(sun, 0.0, 1.0));
+
+  // --- Stars (high sky only, dimmed by the afterglow) ---
+  float starBand = 1.0 - smoothstep(0.35, 0.75, t);
+  vec2 sc = vec2(uv.x * aspect, uv.y) * 170.0;
   vec2 scell = floor(sc);
   float sh = hash(scell);
-  float lit = step(1.0 - clamp(uStarDensity, 0.0, 1.0) * 0.16, sh);
+  float lit = step(1.0 - clamp(uStarDensity, 0.0, 1.0) * 0.14, sh);
   vec2 sp = fract(sc) - 0.5;
-  float sd = length(sp);
-  float tw = 0.5 + 0.5 * sin(uTime * (1.5 + 3.0 * hash(scell + 7.3)) + sh * 6.2831);
-  col += uStarColor.rgb * (lit * smoothstep(0.16, 0.0, sd) * tw * starBand);
+  float tw = 0.5 + 0.5 * sin(uTime * (1.4 + 2.6 * hash(scell + 3.3)) + sh * 6.2831);
+  sky += uStar.rgb * (lit * smoothstep(0.16, 0.0, length(sp)) * tw * starBand * 0.9);
 
-  // Moon — disc, crescent terminator, bloom and slow sparkle spikes.
-  vec2 md = uv - uMoonPos;
-  md.x *= aspect;
-  float mr = uMoonRadius;
-  float mlen = length(md);
-  float disc = smoothstep(mr, mr * 0.86, mlen);
-  float term = smoothstep(
-      mr * 0.96, mr * 0.70, length(md + vec2(mr * 0.34, -mr * 0.10)));
-  float body = clamp(disc - term * 0.4, 0.0, 1.0);
-  float halo = exp(-pow(mlen / (mr * 3.6), 2.0));
-  float ang = atan(md.y, md.x);
-  float spike = pow(max(0.0, cos(ang * 2.0 + uTime * 0.12)), 48.0) +
-      pow(max(0.0, cos(ang * 2.0 - 0.785 + uTime * 0.12)), 48.0);
-  float sparkle = spike * exp(-pow(mlen / (mr * 2.2), 2.0)) * 0.5;
-  col = mix(col, uMoonHalo.rgb, halo * 0.45);
-  col += uMoonColor.rgb * (body + sparkle);
+  // --- Moon: soft disc + gentle bloom (no cross flare) ---
+  vec2 mdv = uv - uMoonPos;
+  mdv.x *= aspect;
+  float ml = length(mdv);
+  float disc = smoothstep(uMoonRadius, uMoonRadius * 0.92, ml);
+  float bloom = exp(-pow(ml / (uMoonRadius * 2.6), 2.0));
+  sky = mix(sky, uMoonHalo.rgb, bloom * 0.35);
+  sky += uMoon.rgb * disc;
 
-  // Cumulus clouds — domain-warped fbm, drifting, confined to the upper band.
-  vec2 cuv = vec2(uv.x * aspect, uv.y) * max(uCloudScale, 0.001);
-  vec2 drift = vec2(uTime * 0.012, uTime * 0.002);
-  vec2 warp = vec2(fbm(cuv + drift), fbm(cuv + drift + vec2(5.2, 1.3)));
-  float d = fbm(cuv + 1.8 * warp + drift);
-  float band = smoothstep(0.0, 0.16, uv.y) *
-      (1.0 - smoothstep(uHorizon * 0.65, uHorizon, uv.y));
-  float cov = smoothstep(uCloudCoverage, uCloudCoverage + uCloudSoftness, d) * band;
-  vec3 cloudCol = mix(uCloudShadow.rgb, uCloudLit.rgb, smoothstep(0.2, 1.0, d));
-  col = mix(col, cloudCol, clamp(cov, 0.0, 1.0) * 0.92);
+  // --- Cumulus clouds, underlit by the sunset ---
+  // Compress vertically toward the horizon so cloud rows stack near the skyline.
+  vec2 cuv = vec2(uv.x * aspect, t * 1.6) * max(uCloudScale, 0.001);
+  vec2 wind = vec2(uTime * 0.010, 0.0);
+  vec2 warp = vec2(
+    fbm(cuv * 0.6 + wind),
+    fbm(cuv * 0.6 + vec2(5.2, 1.3) + wind)
+  );
+  float dens = fbm(cuv + 0.7 * warp + wind);
+  // Sample a touch toward the zenith to get a vertical density slope (a fake
+  // surface normal): bottoms (slope > 0) catch the warm underlight.
+  float densUp = fbm(cuv + 0.7 * warp + wind + vec2(0.0, -0.18));
+  float slope = clamp((dens - densUp) * 4.0 + 0.45, 0.0, 1.0);
 
-  // Smog/haze band near the horizon — lifts blacks, desaturates (grime).
-  float haze = clamp(uHazeStrength, 0.0, 1.0) *
-      smoothstep(uHorizon * 0.45, uHorizon, uv.y);
-  col = mix(col, uHaze.rgb, haze * 0.6);
+  // Float in the mid sky and fade out before the horizon glow.
+  float band = smoothstep(0.05, 0.26, t) * (1.0 - smoothstep(0.78, 0.93, t));
+  float cover =
+      smoothstep(uCloudCoverage, uCloudCoverage + uCloudSoftness, dens) * band;
+  float core =
+      smoothstep(uCloudCoverage + uCloudSoftness, uCloudCoverage + 0.35, dens);
 
-  // Film grain.
-  float g = (hash(frag + fract(uTime) * vec2(13.1, 7.7)) - 0.5) * uGrain;
-  col += g;
+  float warmth = clamp(sun * 1.6 + t * 0.5, 0.0, 1.0);
+  vec3 litCloud = mix(uSunsetGlow.rgb, uSunsetHot.rgb, warmth * 0.7) * 1.05;
+  vec3 cloudCol = mix(uCloudDark.rgb, litCloud, slope * (0.35 + 0.65 * warmth));
+  cloudCol = mix(cloudCol, uCloudDark.rgb, core * 0.5);
+  sky = mix(sky, cloudCol, clamp(cover, 0.0, 1.0));
 
-  fragColor = vec4(col, 1.0);
+  // --- Smog band + film grain ---
+  float haze = clamp(uHazeStrength, 0.0, 1.0) * smoothstep(0.55, 1.0, t);
+  sky = mix(sky, uHaze.rgb, haze * 0.45);
+  sky += (hash(frag + fract(uTime) * vec2(13.1, 7.7)) - 0.5) * uGrain;
+
+  fragColor = vec4(sky, 1.0);
 }

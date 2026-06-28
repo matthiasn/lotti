@@ -71,11 +71,11 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(() async {
-      final image = await _solid(const Color(0xFF112233), 4, 4);
       final requested = <String>[];
+      // A fresh image per asset — the widget owns and disposes each one.
       Future<ui.Image> loader(String path) async {
         requested.add(path);
-        return image;
+        return _solid(const Color(0xFF112233), 4, 4);
       }
 
       await tester.pumpWidget(

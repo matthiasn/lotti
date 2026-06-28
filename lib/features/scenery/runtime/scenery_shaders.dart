@@ -10,6 +10,7 @@ typedef SceneryShaderProgramLoader = Future<ui.FragmentProgram> Function();
 abstract final class SceneryShaderAssets {
   static const sky = 'shaders/scenery_sky.frag';
   static const ocean = 'shaders/scenery_ocean.frag';
+  static const cityLights = 'shaders/scenery_city_lights.frag';
 }
 
 /// Memoizing cache for the scenery fragment programs — each `.frag` is compiled
@@ -18,6 +19,7 @@ abstract final class SceneryShaderAssets {
 abstract final class SceneryShaderProgramCache {
   static Future<ui.FragmentProgram>? _sky;
   static Future<ui.FragmentProgram>? _ocean;
+  static Future<ui.FragmentProgram>? _cityLights;
 
   static Future<ui.FragmentProgram> loadSky() {
     return _sky ??= ui.FragmentProgram.fromAsset(SceneryShaderAssets.sky);
@@ -27,10 +29,17 @@ abstract final class SceneryShaderProgramCache {
     return _ocean ??= ui.FragmentProgram.fromAsset(SceneryShaderAssets.ocean);
   }
 
+  static Future<ui.FragmentProgram> loadCityLights() {
+    return _cityLights ??= ui.FragmentProgram.fromAsset(
+      SceneryShaderAssets.cityLights,
+    );
+  }
+
   @visibleForTesting
   static void reset() {
     _sky = null;
     _ocean = null;
+    _cityLights = null;
   }
 }
 
