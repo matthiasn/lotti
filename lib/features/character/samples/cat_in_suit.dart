@@ -4663,7 +4663,7 @@ class CatClips {
         // committed weight transfer rather than the whole trio sliding.
         // Deepened so the COM clearly commits over the planted foot each bar.
         const SineRootChannel(
-          swayAmplitude: -20,
+          swayAmplitude: -28,
         ),
         const SineRootChannel(
           bobAmplitude: -0.055,
@@ -5316,41 +5316,41 @@ class CatClips {
   // lateral travel comes from the root glide, not the feet.
   static const _pounceFootLTargetKeys = [
     DanceIkTargetKey(0, x: -22, y: 99),
-    DanceIkTargetKey(2, x: -22, y: 93),
+    DanceIkTargetKey(2, x: -22, y: 81),
     DanceIkTargetKey(4, x: -22, y: 99),
-    DanceIkTargetKey(6, x: -22, y: 93),
+    DanceIkTargetKey(6, x: -22, y: 81),
     DanceIkTargetKey(8, x: -22, y: 99),
-    DanceIkTargetKey(10, x: -22, y: 93),
+    DanceIkTargetKey(10, x: -22, y: 81),
     DanceIkTargetKey(12, x: -22, y: 99),
-    DanceIkTargetKey(14, x: -22, y: 93),
+    DanceIkTargetKey(14, x: -22, y: 81),
     DanceIkTargetKey(16, x: -22, y: 99),
-    DanceIkTargetKey(18, x: -22, y: 93),
+    DanceIkTargetKey(18, x: -22, y: 81),
     DanceIkTargetKey(20, x: -22, y: 99),
-    DanceIkTargetKey(22, x: -22, y: 93),
+    DanceIkTargetKey(22, x: -22, y: 81),
     DanceIkTargetKey(24, x: -22, y: 99),
-    DanceIkTargetKey(26, x: -22, y: 93),
+    DanceIkTargetKey(26, x: -22, y: 81),
     DanceIkTargetKey(28, x: -22, y: 99),
-    DanceIkTargetKey(30, x: -22, y: 93),
+    DanceIkTargetKey(30, x: -22, y: 81),
     DanceIkTargetKey(32, x: -22, y: 99),
   ];
   static const _pounceFootRTargetKeys = [
-    DanceIkTargetKey(0, x: 22, y: 93),
+    DanceIkTargetKey(0, x: 22, y: 81),
     DanceIkTargetKey(2, x: 22, y: 99),
-    DanceIkTargetKey(4, x: 22, y: 93),
+    DanceIkTargetKey(4, x: 22, y: 81),
     DanceIkTargetKey(6, x: 22, y: 99),
-    DanceIkTargetKey(8, x: 22, y: 93),
+    DanceIkTargetKey(8, x: 22, y: 81),
     DanceIkTargetKey(10, x: 22, y: 99),
-    DanceIkTargetKey(12, x: 22, y: 93),
+    DanceIkTargetKey(12, x: 22, y: 81),
     DanceIkTargetKey(14, x: 22, y: 99),
-    DanceIkTargetKey(16, x: 22, y: 93),
+    DanceIkTargetKey(16, x: 22, y: 81),
     DanceIkTargetKey(18, x: 22, y: 99),
-    DanceIkTargetKey(20, x: 22, y: 93),
+    DanceIkTargetKey(20, x: 22, y: 81),
     DanceIkTargetKey(22, x: 22, y: 99),
-    DanceIkTargetKey(24, x: 22, y: 93),
+    DanceIkTargetKey(24, x: 22, y: 81),
     DanceIkTargetKey(26, x: 22, y: 99),
-    DanceIkTargetKey(28, x: 22, y: 93),
+    DanceIkTargetKey(28, x: 22, y: 81),
     DanceIkTargetKey(30, x: 22, y: 99),
-    DanceIkTargetKey(32, x: 22, y: 93),
+    DanceIkTargetKey(32, x: 22, y: 81),
   ];
   // Arms hang loose at the waist and swing as a damped pendulum CLUSTER that
   // trails the lateral glide (both hands translate the same way, ~2 frames
