@@ -166,7 +166,9 @@ void main() {
     return;
   }
 
-  float beat = 0.85 + 0.3 * uBeat;
+  // Subtle musical pulse only: the whole skyline brightening ~12% on the beat
+  // reads as "alive", whereas a big swing throbs distractingly. Keep it gentle.
+  float beat = 0.94 + 0.12 * uBeat;
   vec3 lights = vec3(0.0);
   float intensity = 0.0;
 
@@ -345,7 +347,7 @@ void main() {
       (1.0 - smoothstep(0.46, kWaterline, muv.y));
   float domeX =
       smoothstep(0.02, 0.14, muv.x) * (1.0 - smoothstep(0.44, 0.62, muv.x));
-  float dome = domeY * domeX * 0.11 * (0.85 + 0.3 * uBeat);
+  float dome = domeY * domeX * 0.11 * (0.94 + 0.12 * uBeat);
   lights += uWarm.rgb * dome;
   intensity += dome;
 
