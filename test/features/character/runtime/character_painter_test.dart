@@ -955,11 +955,7 @@ void main() {
       );
       expect(
         centerPush.orangeCenterX - rightPan.orangeCenterX,
-        // Directional truck (lead moves left on screen toward the right-side
-        // dancer); the lower bound is intentionally generous so the exact pixel
-        // delta stays robust to legitimate dance-geometry changes (e.g. the
-        // support-foot world-anchor) rather than over-fitting one groove.
-        inInclusiveRange(12, 96),
+        inInclusiveRange(24, 96),
         reason:
             'the second beat should truck toward the right-side dancer, moving '
             'the lead left on screen',
