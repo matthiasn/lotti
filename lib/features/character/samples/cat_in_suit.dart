@@ -5063,8 +5063,9 @@ class CatClips {
         ),
         // Weight transfer in step with the waist swivel (harmonic 2): the COM
         // rides foot-to-foot so the swivel commits weight instead of twisting
-        // in place over a world-anchored foot.
-        const SineRootChannel(swayAmplitude: -16, swayHarmonic: 2),
+        // in place over a world-anchored foot. Deepened so the side-to-side
+        // shift reads as a committed weight drop, not a lean.
+        const SineRootChannel(swayAmplitude: -26, swayHarmonic: 2),
       ]),
       channels: {
         ...base.channels,
@@ -5072,14 +5073,17 @@ class CatClips {
           _dancePhrase.bodyPelvisChannel(_shakuBodyGrooveKeys),
           _dancePhrase.bodyPelvisChannel(_danceBodyAccentKeys, smooth: true),
           // Azonto waist swivel — the hips roll side to side, twice per phrase
-          // (harmonicMultiplier defaults to 2).
-          const SineChannel(harmonicAmplitude: 0.13),
+          // (harmonicMultiplier defaults to 2). Sharpened so the pelvis snap
+          // reads as an isolated swivel, not a whole-body turn.
+          const SineChannel(harmonicAmplitude: 0.17),
         ]),
         CatBones.torso: LayeredJointChannel([
           _dancePhrase.bodyChestChannel(_shakuBodyGrooveKeys),
           _dancePhrase.bodyChestChannel(_danceBodyAccentKeys, smooth: true),
           // Chest counters the hip swivel — the Azonto torso/hip opposition.
-          const SineChannel(harmonicAmplitude: -0.08),
+          // Stronger counter so the shoulders hold while the pelvis snaps under
+          // them (hip-vs-shoulder isolation).
+          const SineChannel(harmonicAmplitude: -0.13),
         ]),
         CatBones.earL: const SineChannel(amplitude: 0.008),
         CatBones.earR: const SineChannel(amplitude: 0.008, phase: 0.5),
@@ -5279,20 +5283,23 @@ class CatClips {
     DanceIkTargetKey(30, x: 22, y: 99),
     DanceIkTargetKey(32, x: 22, y: 93),
   ];
-  // Arms hang loose and low, passively lagging the glide (no active gesture).
+  // Arms hang loose at the waist and swing as a damped pendulum CLUSTER that
+  // trails the lateral glide (both hands translate the same way, ~2 frames
+  // behind the COM — passive overlapping action, no active gesture). Wider
+  // lateral throw than before so they read loose, not welded at center.
   static const _pounceHandLTargetKeys = [
-    DanceIkTargetKey(0, x: -20, y: 26),
-    DanceIkTargetKey(8, x: -28, y: 24),
-    DanceIkTargetKey(16, x: -20, y: 26),
-    DanceIkTargetKey(24, x: -14, y: 24),
-    DanceIkTargetKey(32, x: -20, y: 26),
+    DanceIkTargetKey(0, x: -32, y: 14),
+    DanceIkTargetKey(8, x: -50, y: 16), // trailing left (lags the glide)
+    DanceIkTargetKey(16, x: -32, y: 14),
+    DanceIkTargetKey(24, x: -14, y: 16), // trailing right
+    DanceIkTargetKey(32, x: -32, y: 14),
   ];
   static const _pounceHandRTargetKeys = [
-    DanceIkTargetKey(0, x: 20, y: 26),
-    DanceIkTargetKey(8, x: 14, y: 24),
-    DanceIkTargetKey(16, x: 20, y: 26),
-    DanceIkTargetKey(24, x: 28, y: 24),
-    DanceIkTargetKey(32, x: 20, y: 26),
+    DanceIkTargetKey(0, x: 32, y: 14),
+    DanceIkTargetKey(8, x: 14, y: 16), // trailing left
+    DanceIkTargetKey(16, x: 32, y: 14),
+    DanceIkTargetKey(24, x: 50, y: 16), // trailing right
+    DanceIkTargetKey(32, x: 32, y: 14),
   ];
   static final KeyframeIkTargetChannel _pounceFootLTarget = _dancePhrase
       .ikTargetChannel(_pounceFootLTargetKeys, smooth: true);
