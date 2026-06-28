@@ -4825,10 +4825,12 @@ class CatClips {
     DanceIkTargetKey(8, x: 6, y: 97), // stamp (support [8-12])
     DanceIkTargetKey(10, x: 7, y: 96),
     DanceIkTargetKey(12, x: 6, y: 97), // plant end — swap
+    DanceIkTargetKey(13, x: -34, y: 86), // peel OUT early (daylight off torso)
     DanceIkTargetKey(14, x: -92, y: 76), // KICK OUT (widest)
     DanceIkTargetKey(16, x: 6, y: 97), // stamp (support [16-20])
     DanceIkTargetKey(18, x: 7, y: 96),
     DanceIkTargetKey(20, x: 6, y: 97), // plant end — swap
+    DanceIkTargetKey(21, x: -34, y: 86), // peel OUT early (daylight off torso)
     DanceIkTargetKey(22, x: -89, y: 80), // KICK OUT
     DanceIkTargetKey(24, x: 6, y: 97), // stamp (support [24-28])
     DanceIkTargetKey(26, x: 7, y: 96),
@@ -5178,6 +5180,24 @@ class CatClips {
     DanceBodyKey(30, rootDy: -3, chestScaleY: 1.08),
     DanceBodyKey(32, rootDy: 18, chestScaleY: 0.93),
   ];
+  // Shins drive the hit: knees flex DEEP through the three dips (loading), then
+  // EXTEND hard on the BUGA frame so the rise is powered from the ground/legs,
+  // not just an arm raise. Both legs together (unison move).
+  static const _bugaLegLowerKeys = [
+    DanceJointKey(0, rotation: -1),
+    DanceJointKey(4, rotation: -1.12),
+    DanceJointKey(8, rotation: -1.3), // deep load
+    DanceJointKey(11, rotation: -1.34),
+    DanceJointKey(12, rotation: -0.64), // EXTEND — leg drive
+    DanceJointKey(14, rotation: -0.74),
+    DanceJointKey(16, rotation: -1),
+    DanceJointKey(20, rotation: -1.12),
+    DanceJointKey(24, rotation: -1.3),
+    DanceJointKey(27, rotation: -1.34),
+    DanceJointKey(28, rotation: -0.64), // EXTEND
+    DanceJointKey(30, rotation: -0.74),
+    DanceJointKey(32, rotation: -1),
+  ];
   // The present is a HIGH diagonal "show-off" thrust (up AND out, above the
   // shoulder at y -56), not a horizontal side-poke at chest height. The non-
   // presenting hand drops low/back on the hit so the silhouette opens into a
@@ -5254,6 +5274,14 @@ class CatClips {
         CatBones.torso: LayeredJointChannel([
           _dancePhrase.bodyChestChannel(_bugaBodyKeys),
         ]),
+        CatBones.legLowerL: _dancePhrase.jointChannel(
+          _bugaLegLowerKeys,
+          smooth: true,
+        ),
+        CatBones.legLowerR: _dancePhrase.jointChannel(
+          _bugaLegLowerKeys,
+          smooth: true,
+        ),
         CatBones.earL: const SineChannel(amplitude: 0.008),
         CatBones.earR: const SineChannel(amplitude: 0.008, phase: 0.5),
         // Tail carries the follow-through off the rise — boosted so it lags and
