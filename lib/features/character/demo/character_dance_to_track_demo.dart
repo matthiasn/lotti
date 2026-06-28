@@ -89,7 +89,7 @@ const double kMouthOpenMax = 0.85;
 const double kMouthRampSeconds = 0.05;
 
 typedef _Section = ({double start, double end, String label, bool energetic});
-typedef _Word = ({double start, double end, String word});
+typedef _Word = ({double start, double end, String word, String voice});
 typedef _Stage = ({
   Clip lead,
   List<Clip> ensemble,
@@ -176,8 +176,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   ui.Image? _clouds;
   ui.Image? _waves;
   double _cameraStrength = 0; // eased dance-camera ramp (0 = neutral, 1 = full)
-  double _mouthOpen =
-      0; // eased lead mouth open, driven by the active lyric word
+  double _leadMouth = 0; // eased frontman mouth (lead lyric words)
+  double _bgMouth = 0; // eased backup-dancers' mouth (background ad-libs)
   Duration _lastTick = Duration.zero;
   String? _error;
 
@@ -211,12 +211,14 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     final target = (_sectionAt(pos)?.energetic ?? true) ? 1.0 : 0.0;
     var k = dt / kCameraRampSeconds;
     if (k > 1) k = 1;
-    final mouthTarget = _wordActiveAt(pos) ? kMouthOpenMax : 0.0;
+    final leadTarget = _voiceActiveAt(pos, 'lead') ? kMouthOpenMax : 0.0;
+    final bgTarget = _voiceActiveAt(pos, 'background') ? kMouthOpenMax : 0.0;
     var km = dt / kMouthRampSeconds;
     if (km > 1) km = 1;
     setState(() {
       _cameraStrength += (target - _cameraStrength) * k;
-      _mouthOpen += (mouthTarget - _mouthOpen) * km;
+      _leadMouth += (leadTarget - _leadMouth) * km;
+      _bgMouth += (bgTarget - _bgMouth) * km;
     });
   }
 
@@ -347,6 +349,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
               start: (w['start_sec']! as num).toDouble(),
               end: (w['end_sec']! as num).toDouble(),
               word: (w['word'] as String?) ?? '',
+              // 'lead' | 'background' (from --lyrics); defaults to lead.
+              voice: (w['voice'] as String?) ?? 'lead',
             ),
           )
           .toList();
@@ -371,21 +375,22 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     return recent;
   }
 
-  bool _wordActiveAt(double pos) {
+  bool _voiceActiveAt(double pos, String voice) {
     for (final w in _words) {
-      if (pos >= w.start && pos < w.end) return true;
+      if (pos >= w.start && pos < w.end && w.voice == voice) return true;
       if (w.start > pos) break;
     }
     return false;
   }
 
-  /// The lead's face with the mouth driven open by the active lyric word (the
-  /// backups don't sing). Neutral when the mouth is essentially closed.
-  Expression _leadExpression() {
-    if (_mouthOpen < 0.04) return Expression.neutral;
+  /// A face whose mouth is driven open by [mouth] (lyric-synced), falling back to
+  /// [base] when essentially closed. Drives the frontman on lead words and the
+  /// backups on background ad-libs.
+  Expression _singExpression(double mouth, Expression base) {
+    if (mouth < 0.04) return base;
     return Expression(
       'sing',
-      FaceState(mouthShape: MouthShape.smileOpen, mouthOpen: _mouthOpen),
+      FaceState(mouthShape: MouthShape.smileOpen, mouthOpen: mouth),
     );
   }
 
@@ -579,12 +584,12 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                         scene: _lead,
                         partnerScene: _left,
                         ensembleScenes: [_left, _right],
-                        // The lead's mouth is driven open by the active lyric
-                        // word (the backups don't sing).
+                        // Lip-sync: the frontman moves on lead words, the two
+                        // backups on background ad-libs.
                         ensembleExpressions: [
-                          _leadExpression(),
-                          Expression.content,
-                          Expression.happy,
+                          _singExpression(_leadMouth, Expression.neutral),
+                          _singExpression(_bgMouth, Expression.content),
+                          _singExpression(_bgMouth, Expression.happy),
                         ],
                         // Section-aware: the energetic dance trio in loud
                         // sections, an eased idle in calm ones.
