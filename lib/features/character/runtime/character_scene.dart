@@ -231,16 +231,26 @@ class CharacterScene {
     final joints = Map<String, JointPose>.of(pose.joints);
     var currentPose = pose;
 
+    // For an in-place dance, world-anchor the active SUPPORT foot so the body
+    // grooves OVER a planted foot (the dip + weight shift bend the leg) instead
+    // of dragging the foot sideways. The horizontal root-compensation in
+    // [_contactLockedPose] is slackened for dance to match (see
+    // [_contactLockStrength]) so the two no longer fight.
+    final footAnchor = _supportFootWorldAnchor(clip, phase);
+
     for (final target in clip.limbTargets) {
       final sample = target.channel.sample(phase);
       final weight = sample.weight.clamp(0.0, 1.0);
       if (weight <= 0) continue;
 
+      final planted = footAnchor != null && target.endBoneId == footAnchor.bone;
       final solved = _solveLimbTarget(
         target,
         sample,
         currentPose,
         weight,
+        worldAnchor: planted ? (x: footAnchor.x, y: footAnchor.y) : null,
+        anchorBlend: planted ? footAnchor.blend : 0,
       );
       if (solved == null) continue;
 
@@ -261,8 +271,10 @@ class CharacterScene {
     LimbIkTarget target,
     IkTargetPose sample,
     Pose pose,
-    double weight,
-  ) {
+    double weight, {
+    ({double x, double y})? worldAnchor,
+    double anchorBlend = 0,
+  }) {
     final upper = rig.bone(target.upperBoneId);
     final lower = rig.bone(target.lowerBoneId);
     final end = rig.bone(target.endBoneId);
@@ -287,7 +299,22 @@ class CharacterScene {
     final shoulder = upperWorld.origin;
     final elbow = lowerWorld.origin;
     final wrist = endWorld.origin;
-    final targetPoint = anchorWorld.transformPoint(sample.x, sample.y);
+    final authoredTarget = anchorWorld.transformPoint(sample.x, sample.y);
+    // A PLANTED support foot holds its world origin: blend the authored
+    // (anchor-/hips-local, body-relative) target toward the fixed [worldAnchor]
+    // so the hip→knee→ankle chain bends to absorb the body's dip and lateral
+    // sway while the foot stays put — instead of the foot dragging with the
+    // hips (the skate). [anchorBlend] fades to 0 at the support handoff.
+    final targetPoint = worldAnchor == null || anchorBlend <= 0
+        ? authoredTarget
+        : (
+            x:
+                authoredTarget.x +
+                (worldAnchor.x - authoredTarget.x) * anchorBlend,
+            y:
+                authoredTarget.y +
+                (worldAnchor.y - authoredTarget.y) * anchorBlend,
+          );
     final upperLength = _pointDistance(shoulder, elbow);
     final lowerLength = _pointDistance(elbow, wrist);
     if (upperLength <= 0 || lowerLength <= 0) return null;
@@ -646,13 +673,52 @@ class CharacterScene {
     return (span: last, anchorPhase: last.start, strengthPhase: p);
   }
 
+  /// The world-space origin of the active SUPPORT foot at the moment it planted
+  /// (its contact-span start), plus a `blend` that fades to 0 at the span edges
+  /// (the support handoff). Holding the foot to this point while the body grooves
+  /// over it is the engine half of the dance foot-plant. Dance family only.
+  ({String bone, double x, double y, double blend})? _supportFootWorldAnchor(
+    Clip clip,
+    double phase,
+  ) {
+    if (clip.contactSpans.isEmpty || !_isDanceFamily(clip)) return null;
+    final contact = _activeContactAt(clip, phase);
+    if (contact == null) return null;
+    final span = contact.span;
+    final anchorPose = evaluator.evaluate(
+      clip,
+      contact.anchorPhase * clip.duration,
+    );
+    final origin = solver.solve(anchorPose)[span.bone]?.origin;
+    if (origin == null) return null;
+    final blend = _supportFootAnchorBlend(span, contact.strengthPhase);
+    return (bone: span.bone, x: origin.x, y: origin.y, blend: blend);
+  }
+
+  /// Edge-faded strength for the world foot anchor: near-fully held mid-stance,
+  /// eased to 0 at the support handoff so the planted foot releases smoothly into
+  /// the next plant instead of snapping.
+  double _supportFootAnchorBlend(GroundSpan span, double p) {
+    const base = 0.9;
+    final spanLength = span.end - span.start;
+    final fade = (spanLength * 0.24).clamp(0.05, 0.09);
+    final fadeIn = _smoothUnit((p - span.start) / fade);
+    final fadeOut = _smoothUnit((span.end - p) / fade);
+    final edge = fadeIn < fadeOut ? fadeIn : fadeOut;
+    return base * edge;
+  }
+
   ({double x, double y}) _contactLockStrength(
     Clip clip,
     GroundSpan span,
     double p,
   ) {
     final dance = _isDanceFamily(clip);
-    final baseX = dance ? 0.55 : (clip.loop ? 0.8 : 0.94);
+    // Dance support feet are now world-anchored via leg IK
+    // ([_supportFootWorldAnchor]), so the ROOT only needs a light horizontal
+    // nudge — a strong pull would cancel the lateral weight shift and re-skate
+    // the IK-planted foot. Vertical (baseY) still pins the floor via the root.
+    final baseX = dance ? 0.1 : (clip.loop ? 0.8 : 0.94);
     final baseY = dance ? 0.94 : (clip.loop ? 0.8 : 0.94);
     final spanLength = span.end - span.start;
     final fade = dance
