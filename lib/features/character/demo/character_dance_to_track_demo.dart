@@ -298,7 +298,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   double _trackDurationSec = 0;
   double _bpm = 0;
   bool _loop = true;
-  bool _showCaptions = true;
+  bool _showCaptions = false; // lyrics hidden by default; toggle on in the UI
   // Dev A/B switch: the new layered blue-hour scene vs. the old single-plate
   // waterfront backdrop.
   bool _useNewBackdrop = true;
