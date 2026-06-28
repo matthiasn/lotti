@@ -11,6 +11,14 @@ This is **Phase 1** (proof of concept). The full design — including the offlin
 AI-assisted SVG → rig pipeline and the low-end `drawAtlas` runtime — lives in
 [`docs/implementation_plans/2026-06-22_bones_animation_framework.md`](../../../docs/implementation_plans/2026-06-22_bones_animation_framework.md).
 
+Durable design decisions for this feature live in its **own** ADR series under
+[`docs/adr/`](./docs/adr/) (numbered from `CHAR-0001`, kept separate from the
+repo-wide `docs/adr/` so they travel with the code if it is extracted). The dance
+choreography encoding — the Laban-Effort dynamics layer, the move-library /
+notation-as-score model, and which Afrobeats moves the catalog encodes — is
+[`CHAR-0001`](./docs/adr/CHAR-0001-dance-choreography-encoding-and-move-library.md),
+with per-move keying notes under [`docs/research/`](./docs/research/).
+
 ## Status (Phase 1)
 
 | Area | State |
