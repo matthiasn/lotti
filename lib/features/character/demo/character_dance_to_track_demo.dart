@@ -513,7 +513,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   Expression _singExpression(double mouth, Expression base, MouthShape shape) {
     if (mouth < 0.04) return base;
     final brow = 0.4 + mouth * 0.95; // engage hard, more on the open accents
-    final eye = 1 - mouth * 0.32; // squint into the big notes
+    // Squint hard into the big notes (eyeOpen scales eye height linearly, so it
+    // needs to reach ~0.45 on a belt to read as effort, not wide-eyed surprise).
+    final eye = 1 - mouth * 0.72;
     return Expression(
       'sing',
       FaceState(
