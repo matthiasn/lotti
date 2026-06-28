@@ -18,9 +18,13 @@ import 'package:lotti/features/character/model/rig_spec.dart';
 // colours in the rig art (plan decision D6 — no design-system colour tokens).
 const int _suit = 0xFF2E3A59; // navy jacket (torso)
 const int _sleeve =
-    0xFF3A4A6E; // jacket sleeve — a lighter navy so the arm reads as a
-// distinct limb when it crosses over the same-navy torso (e.g. the Shaku
+    0xFF3A4A6E; // FAR (right) jacket sleeve — a lighter navy so the arm reads
+// as a distinct limb when it crosses over the same-navy torso (e.g. the Shaku
 // crossed-X), instead of melting in and leaving the paws floating.
+const int _sleeveNear =
+    0xFF4A5A80; // NEAR (left) sleeve — lighter still. The left arm draws on top
+// (z16/17 > right z15/16), so a 3-step value gradient torso < far < near keeps
+// the two CROSSED forearms reading as two distinct arms, not one fused band.
 const int _cuff = 0xFFB9C0D4; // light dress-shirt cuff at the wrist
 const int _trouser = 0xFF26304A; // darker navy
 const int _trouserRear = 0xFF202941; // slightly darker rear leg
@@ -578,7 +582,7 @@ RigSpec buildCatInSuitRig({
       pivotY: -56,
       z: 16,
       restRotation: 0.06,
-      drawable: _tapered(22, 17, 56, _sleeve, dy: 23),
+      drawable: _tapered(22, 17, 56, _sleeveNear, dy: 23),
     ),
     const Bone(
       id: CatBones.armBicepL,
@@ -593,7 +597,7 @@ RigSpec buildCatInSuitRig({
       pivotX: 0,
       pivotY: 48,
       z: 17,
-      drawable: _tapered(18, 13, 50, _sleeve, dy: 20),
+      drawable: _tapered(18, 13, 50, _sleeveNear, dy: 20),
     ),
     Bone(
       id: CatBones.handL,
@@ -4500,43 +4504,49 @@ class CatClips {
   // count one hand rides HIGH (top of the X) and the other LOW; they swap every
   // count — L high on 0/8/16/24, R high on 4/12/20/28. x stays crossed (L on the
   // right of centre, R on the left) so the diagonals overlap.
+  // Crossed-X hands with a WIDE vertical piston: at every frame one paw is
+  // clearly HIGH+out and the other LOW+in, so the two forearms read as two
+  // distinct diagonals (a real X), not a single fused band across the chest.
+  // The near (left) arm draws on top in the lighter _sleeveNear, separating it
+  // from the far arm at the crossover. Left hand sits on the RIGHT (crossed),
+  // right hand on the LEFT.
   static const _shakuHandLTargetKeys = [
-    DanceIkTargetKey(0, x: 15, y: -27),
-    DanceIkTargetKey(2, x: 14, y: -22),
-    DanceIkTargetKey(4, x: 11, y: -11),
-    DanceIkTargetKey(6, x: 13, y: -20),
-    DanceIkTargetKey(8, x: 15, y: -27),
-    DanceIkTargetKey(10, x: 14, y: -22),
-    DanceIkTargetKey(12, x: 11, y: -11),
-    DanceIkTargetKey(14, x: 13, y: -20),
-    DanceIkTargetKey(16, x: 15, y: -27),
-    DanceIkTargetKey(18, x: 14, y: -22),
-    DanceIkTargetKey(20, x: 11, y: -11),
-    DanceIkTargetKey(22, x: 13, y: -20),
-    DanceIkTargetKey(24, x: 15, y: -27),
-    DanceIkTargetKey(26, x: 14, y: -22),
-    DanceIkTargetKey(28, x: 11, y: -11),
-    DanceIkTargetKey(30, x: 13, y: -20),
-    DanceIkTargetKey(32, x: 15, y: -27),
+    DanceIkTargetKey(0, x: 16, y: -34), // high + out
+    DanceIkTargetKey(2, x: 15, y: -26),
+    DanceIkTargetKey(4, x: 11, y: -6), // low + in
+    DanceIkTargetKey(6, x: 14, y: -22),
+    DanceIkTargetKey(8, x: 16, y: -34),
+    DanceIkTargetKey(10, x: 15, y: -26),
+    DanceIkTargetKey(12, x: 11, y: -6),
+    DanceIkTargetKey(14, x: 14, y: -22),
+    DanceIkTargetKey(16, x: 16, y: -34),
+    DanceIkTargetKey(18, x: 15, y: -26),
+    DanceIkTargetKey(20, x: 11, y: -6),
+    DanceIkTargetKey(22, x: 14, y: -22),
+    DanceIkTargetKey(24, x: 16, y: -34),
+    DanceIkTargetKey(26, x: 15, y: -26),
+    DanceIkTargetKey(28, x: 11, y: -6),
+    DanceIkTargetKey(30, x: 14, y: -22),
+    DanceIkTargetKey(32, x: 16, y: -34),
   ];
   static const _shakuHandRTargetKeys = [
-    DanceIkTargetKey(0, x: -11, y: -11),
-    DanceIkTargetKey(2, x: -13, y: -20),
-    DanceIkTargetKey(4, x: -15, y: -27),
-    DanceIkTargetKey(6, x: -14, y: -22),
-    DanceIkTargetKey(8, x: -11, y: -11),
-    DanceIkTargetKey(10, x: -13, y: -20),
-    DanceIkTargetKey(12, x: -15, y: -27),
-    DanceIkTargetKey(14, x: -14, y: -22),
-    DanceIkTargetKey(16, x: -11, y: -11),
-    DanceIkTargetKey(18, x: -13, y: -20),
-    DanceIkTargetKey(20, x: -15, y: -27),
-    DanceIkTargetKey(22, x: -14, y: -22),
-    DanceIkTargetKey(24, x: -11, y: -11),
-    DanceIkTargetKey(26, x: -13, y: -20),
-    DanceIkTargetKey(28, x: -15, y: -27),
-    DanceIkTargetKey(30, x: -14, y: -22),
-    DanceIkTargetKey(32, x: -11, y: -11),
+    DanceIkTargetKey(0, x: -11, y: -6), // low + in (opposite phase to left)
+    DanceIkTargetKey(2, x: -14, y: -22),
+    DanceIkTargetKey(4, x: -16, y: -34), // high + out
+    DanceIkTargetKey(6, x: -15, y: -26),
+    DanceIkTargetKey(8, x: -11, y: -6),
+    DanceIkTargetKey(10, x: -14, y: -22),
+    DanceIkTargetKey(12, x: -16, y: -34),
+    DanceIkTargetKey(14, x: -15, y: -26),
+    DanceIkTargetKey(16, x: -11, y: -6),
+    DanceIkTargetKey(18, x: -14, y: -22),
+    DanceIkTargetKey(20, x: -16, y: -34),
+    DanceIkTargetKey(22, x: -15, y: -26),
+    DanceIkTargetKey(24, x: -11, y: -6),
+    DanceIkTargetKey(26, x: -14, y: -22),
+    DanceIkTargetKey(28, x: -16, y: -34),
+    DanceIkTargetKey(30, x: -15, y: -26),
+    DanceIkTargetKey(32, x: -11, y: -6),
   ];
   static final KeyframeIkTargetChannel _shakuHandLTarget = _dancePhrase
       .ikTargetChannel(_shakuHandLTargetKeys, smooth: true);
@@ -4740,6 +4750,13 @@ class CatClips {
   // frames; the planted support foot holds near its load frame so the world
   // anchor reinforces (not fights) it.
   //
+  // Hip joints sit at (±18, +11) from the hips with a 55+48=103 leg reach, so an
+  // EXTENDED (near-straight) kick has the foot ~98-100 from the hip joint — which
+  // is WIDE and out at ~45°, not high+tucked (a high foot only bends the knee and
+  // reads as a crouch). The free foot snaps between a tucked, knee-up position
+  // (foot near the hip) and a far, near-straight kick OUT, so each kick throws a
+  // clear extended-leg diagonal into the negative space beside the body.
+  //
   // LEFT foot: SUPPORT/planted over frames 0-16 (load f4), then the FREE leg
   // doing the legwork over 16-30 (big air-kick at f26), re-planting for the loop
   // pickup at f30.
@@ -4748,34 +4765,34 @@ class CatClips {
     DanceIkTargetKey(4, x: 6, y: 97), // plant — load/anchor frame, held
     DanceIkTargetKey(8, x: 5, y: 98), // plant
     DanceIkTargetKey(12, x: 4, y: 97), // plant
-    DanceIkTargetKey(14, x: 1, y: 95), // unweight, about to lift
-    DanceIkTargetKey(16, x: -14, y: 88), // lift off (left becomes free)
-    DanceIkTargetKey(18, x: -42, y: 80), // kick OUT
-    DanceIkTargetKey(20, x: -18, y: 90), // snap in (low)
-    DanceIkTargetKey(22, x: -44, y: 78), // kick OUT
-    DanceIkTargetKey(24, x: -20, y: 89), // in
-    DanceIkTargetKey(26, x: -48, y: 74), // BIG air-kick — bar-2 climax
-    DanceIkTargetKey(28, x: -24, y: 86), // recover, descending
+    DanceIkTargetKey(14, x: -4, y: 93), // unweight, about to lift
+    DanceIkTargetKey(16, x: -16, y: 86), // lift off (left becomes free)
+    DanceIkTargetKey(18, x: -89, y: 80), // KICK OUT (extended ~45°)
+    DanceIkTargetKey(20, x: -40, y: 70), // tuck in + knee up
+    DanceIkTargetKey(22, x: -90, y: 78), // KICK OUT
+    DanceIkTargetKey(24, x: -40, y: 72), // tuck
+    DanceIkTargetKey(26, x: -95, y: 72), // BIG air-kick — bar-2 climax (widest)
+    DanceIkTargetKey(28, x: -54, y: 80), // recover, descending
     DanceIkTargetKey(30, x: 4, y: 97), // plant back down (loop pickup)
     DanceIkTargetKey(32, x: 6, y: 97), // == frame 0
   ];
   // RIGHT foot: the FREE leg doing the legwork over frames 0-16 (big air-kick at
   // f10), then SUPPORT/planted over 16-30 (load f20), lifting for the loop at f30.
   static const _zankuFootRTargetKeys = [
-    DanceIkTargetKey(0, x: 46, y: 88), // lifted/mid (right free)
-    DanceIkTargetKey(2, x: 70, y: 80), // kick OUT
-    DanceIkTargetKey(4, x: 48, y: 90), // snap in
-    DanceIkTargetKey(6, x: 71, y: 78), // kick OUT
-    DanceIkTargetKey(8, x: 50, y: 89), // in
-    DanceIkTargetKey(10, x: 72, y: 74), // BIG air-kick — bar-1 climax
-    DanceIkTargetKey(12, x: 54, y: 85), // recover
-    DanceIkTargetKey(14, x: 44, y: 93), // descend toward plant
+    DanceIkTargetKey(0, x: 52, y: 80), // mid (just kicked, returning)
+    DanceIkTargetKey(2, x: 89, y: 82), // KICK OUT (extended ~45°)
+    DanceIkTargetKey(4, x: 40, y: 70), // tuck in + knee up
+    DanceIkTargetKey(6, x: 90, y: 80), // KICK OUT
+    DanceIkTargetKey(8, x: 40, y: 72), // tuck
+    DanceIkTargetKey(10, x: 95, y: 74), // BIG air-kick — bar-1 climax (widest)
+    DanceIkTargetKey(12, x: 56, y: 78), // recover
+    DanceIkTargetKey(14, x: 44, y: 92), // descend toward plant
     DanceIkTargetKey(16, x: 34, y: 98), // plant (right becomes support)
     DanceIkTargetKey(20, x: 34, y: 98), // plant — load/anchor frame, held
     DanceIkTargetKey(24, x: 34, y: 98), // plant
-    DanceIkTargetKey(28, x: 38, y: 96), // plant, easing up
-    DanceIkTargetKey(30, x: 42, y: 92), // begin lift for next loop
-    DanceIkTargetKey(32, x: 46, y: 88), // == frame 0
+    DanceIkTargetKey(28, x: 40, y: 94), // plant, easing up
+    DanceIkTargetKey(30, x: 48, y: 86), // begin lift for next loop
+    DanceIkTargetKey(32, x: 52, y: 80), // == frame 0
   ];
   static final KeyframeIkTargetChannel _zankuFootLTarget = _dancePhrase
       .ikTargetChannel(_zankuFootLTargetKeys, smooth: true);
