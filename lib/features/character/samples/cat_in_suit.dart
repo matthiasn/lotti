@@ -4577,6 +4577,7 @@ class CatClips {
       contactSpans: base.contactSpans,
       contactPinning: base.contactPinning,
       limbTargets: _shakuLimbTargets,
+      supportFootWorldAnchor: true,
       root: LayeredRootChannel([
         _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),

@@ -659,10 +659,18 @@ class Clip {
     this.contactSpans = const [],
     this.contactPinning = ContactPinning.activeSpan,
     this.limbTargets = const [],
+    this.supportFootWorldAnchor = false,
   });
 
   /// Display/lookup name.
   final String name;
+
+  /// When true, the active SUPPORT foot (per [contactSpans]) is held toward its
+  /// world position via leg IK during its stance, so an in-place performance
+  /// grooves OVER a planted foot instead of dragging it sideways (the skate).
+  /// Opt-in per clip — left false for the shipped clips so their tuned contact
+  /// geometry (and tests) are unchanged.
+  final bool supportFootWorldAnchor;
 
   /// Cycle period (loop) or total length (one-shot), in seconds.
   final double duration;

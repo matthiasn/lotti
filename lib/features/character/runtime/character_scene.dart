@@ -231,16 +231,23 @@ class CharacterScene {
     final joints = Map<String, JointPose>.of(pose.joints);
     var currentPose = pose;
 
+    // Opt-in (per [Clip.supportFootWorldAnchor]): hold the active support foot
+    // toward its planted world position so the body grooves over it.
+    final footAnchor = _supportFootWorldAnchor(clip, phase);
+
     for (final target in clip.limbTargets) {
       final sample = target.channel.sample(phase);
       final weight = sample.weight.clamp(0.0, 1.0);
       if (weight <= 0) continue;
 
+      final planted = footAnchor != null && target.endBoneId == footAnchor.bone;
       final solved = _solveLimbTarget(
         target,
         sample,
         currentPose,
         weight,
+        worldAnchor: planted ? (x: footAnchor.x, y: footAnchor.y) : null,
+        anchorBlend: planted ? footAnchor.blend : 0,
       );
       if (solved == null) continue;
 
@@ -261,8 +268,10 @@ class CharacterScene {
     LimbIkTarget target,
     IkTargetPose sample,
     Pose pose,
-    double weight,
-  ) {
+    double weight, {
+    ({double x, double y})? worldAnchor,
+    double anchorBlend = 0,
+  }) {
     final upper = rig.bone(target.upperBoneId);
     final lower = rig.bone(target.lowerBoneId);
     final end = rig.bone(target.endBoneId);
@@ -287,7 +296,22 @@ class CharacterScene {
     final shoulder = upperWorld.origin;
     final elbow = lowerWorld.origin;
     final wrist = endWorld.origin;
-    final targetPoint = anchorWorld.transformPoint(sample.x, sample.y);
+    final authoredTarget = anchorWorld.transformPoint(sample.x, sample.y);
+    // A PLANTED support foot blends its IK target toward a fixed [worldAnchor]
+    // so the leg bends to absorb the body's groove while the foot stays put
+    // (instead of the foot dragging with the hips). [anchorBlend] fades to 0 at
+    // the support handoff; it is gentle by design so the natural stance width is
+    // preserved (a hard hold narrows the astride into a leg-tangle).
+    final targetPoint = worldAnchor == null || anchorBlend <= 0
+        ? authoredTarget
+        : (
+            x:
+                authoredTarget.x +
+                (worldAnchor.x - authoredTarget.x) * anchorBlend,
+            y:
+                authoredTarget.y +
+                (worldAnchor.y - authoredTarget.y) * anchorBlend,
+          );
     final upperLength = _pointDistance(shoulder, elbow);
     final lowerLength = _pointDistance(elbow, wrist);
     if (upperLength <= 0 || lowerLength <= 0) return null;
@@ -646,13 +670,55 @@ class CharacterScene {
     return (span: last, anchorPhase: last.start, strengthPhase: p);
   }
 
+  /// The world-space origin of the active SUPPORT foot at the moment it planted
+  /// (its contact-span start), plus a `blend` that fades to 0 at the span edges.
+  /// Returns null unless the clip opts in via [Clip.supportFootWorldAnchor].
+  ({String bone, double x, double y, double blend})? _supportFootWorldAnchor(
+    Clip clip,
+    double phase,
+  ) {
+    if (!clip.supportFootWorldAnchor || clip.contactSpans.isEmpty) return null;
+    final contact = _activeContactAt(clip, phase);
+    if (contact == null) return null;
+    final span = contact.span;
+    final anchorPose = evaluator.evaluate(
+      clip,
+      contact.anchorPhase * clip.duration,
+    );
+    final origin = solver.solve(anchorPose)[span.bone]?.origin;
+    if (origin == null) return null;
+    final blend = _supportFootAnchorBlend(span, contact.strengthPhase);
+    return (bone: span.bone, x: origin.x, y: origin.y, blend: blend);
+  }
+
+  /// Edge-faded strength for the world foot anchor. Deliberately GENTLE — a
+  /// strong hold pulls the support foot to its plant point and collapses the
+  /// astride stance; this damps the lateral skate while leaving most of the
+  /// natural foot sweep (and thus the stance width) intact.
+  double _supportFootAnchorBlend(GroundSpan span, double p) {
+    const base = 0.6;
+    final spanLength = span.end - span.start;
+    final fade = (spanLength * 0.24).clamp(0.05, 0.09);
+    final fadeIn = _smoothUnit((p - span.start) / fade);
+    final fadeOut = _smoothUnit((span.end - p) / fade);
+    final edge = fadeIn < fadeOut ? fadeIn : fadeOut;
+    return base * edge;
+  }
+
   ({double x, double y}) _contactLockStrength(
     Clip clip,
     GroundSpan span,
     double p,
   ) {
     final dance = _isDanceFamily(clip);
-    final baseX = dance ? 0.55 : (clip.loop ? 0.8 : 0.94);
+    // A world-anchored support foot already holds itself, so the root only needs
+    // a light horizontal nudge — a strong pull would re-skate the planted foot
+    // and cancel the lateral groove.
+    final baseX = clip.supportFootWorldAnchor
+        ? 0.1
+        : dance
+        ? 0.55
+        : (clip.loop ? 0.8 : 0.94);
     final baseY = dance ? 0.94 : (clip.loop ? 0.8 : 0.94);
     final spanLength = span.end - span.start;
     final fade = dance

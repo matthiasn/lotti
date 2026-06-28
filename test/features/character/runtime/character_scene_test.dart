@@ -176,6 +176,38 @@ void main() {
       );
     });
 
+    test('the opt-in support-foot world anchor plants the foot (low skate)', () {
+      final scene = CharacterScene(buildCatInSuitRig());
+      const dur = 6.0;
+      // Left foot supports bar 1 (grounded frames 0-16); sample its world-x
+      // across mid-stance against the plant point.
+      double driftOf(Clip clip) {
+        final anchor = _supportPoint(scene, clip, CatBones.footL, 6 / 32 * dur);
+        var drift = 0.0;
+        for (final f in const [4, 6, 8, 10, 12]) {
+          final p = _supportPoint(scene, clip, CatBones.footL, f / 32 * dur);
+          drift = math.max(drift, (p.x - anchor.x).abs());
+        }
+        return drift;
+      }
+
+      // `shaku` opts into the anchor; the otherwise-similar shipped `dance` does
+      // not — so shaku's planted foot must drift markedly less, and stay well
+      // under the unanchored skate budget.
+      expect(
+        driftOf(CatClips.shaku),
+        lessThan(driftOf(CatClips.dance)),
+        reason:
+            'the world anchor should plant the support foot harder than the '
+            'unanchored shipped dance',
+      );
+      expect(
+        driftOf(CatClips.shaku),
+        lessThan(20),
+        reason: 'the planted support foot should barely drift laterally',
+      );
+    });
+
     test(
       'dance keeps broad contact holds grounded and loop seam continuous',
       () {
