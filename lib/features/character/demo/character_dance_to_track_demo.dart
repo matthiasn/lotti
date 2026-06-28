@@ -136,6 +136,7 @@ typedef _Stage = ({
   double seconds,
   _Section? section,
   bool energetic,
+  bool synchronous, // false = canon (stagger the trio's phase, e.g. Pouncing)
 });
 
 Future<void> main() async {
@@ -214,28 +215,71 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   // track's quietest section, 1 = its loudest) to a trio drawn from all six
   // moves, building from the gliding Pouncing Cat in the calm pockets up to the
   // full Legwork + Stomp + Buga-hit at the peaks. ensemble[0] is the lead.
-  ({Clip lead, List<Clip> ensemble}) _choreoTrioFor(double level) {
-    if (level >= 0.90) {
-      // The drop's money shot: all three hit Buga in unison (lo-lo-lo-BUGA).
-      return (lead: _buga, ensemble: [_buga, _buga, _buga]);
+  // The full, lyric-driven choreography: each semantic section of the song (from
+  // the synced lyrics) gets its own routine across all six moves, so the dance
+  // reads as a designed set — verses groove, the chorus punches its hook into a
+  // unison Buga hit, the bridge drops to the Pouncing-Cat glide for contrast,
+  // the outro winds down. [phase] is 0..1 progress through the current section.
+  // Falls back to the energy-level map for untagged sections / no lyrics.
+  ({Clip lead, List<Clip> ensemble}) _choreoTrioForSection(
+    String section,
+    double phase,
+    double level,
+    int
+    variant, // section occurrence (0 = first), so repeats don't read identical
+  ) {
+    switch (section) {
+      case 'chorus':
+      case 'post-chorus':
+        // The hook. The back half always lands the lo-lo-lo-BUGA unison hit (the
+        // recognisable money shot); the front half rotates per chorus so the
+        // repeats don't read identical.
+        if (phase >= 0.55) {
+          return (lead: _buga, ensemble: [_buga, _buga, _buga]);
+        }
+        final fronts = [
+          [_zanku, _sekem, _buga],
+          [_sekem, _zanku, _buga],
+          [_zanku, _buga, _sekem],
+        ];
+        final front = fronts[variant % fronts.length];
+        return (lead: front[0], ensemble: front);
+      case 'pre-chorus':
+        // Build into the chorus: groovy lead, legwork + stomp rising behind.
+        return (lead: _shaku, ensemble: [_shaku, _zanku, _sekem]);
+      case 'verse':
+        // Groovy storytelling: the mime/arms trio; swap the lead per verse.
+        return variant.isEven
+            ? (lead: _azonto, ensemble: [_azonto, _shaku, _zanku])
+            : (lead: _shaku, ensemble: [_shaku, _azonto, _zanku]);
+      case 'bridge':
+        // The deliberate low contrast: the whole trio on the Pouncing-Cat glide.
+        return (lead: _pounce, ensemble: [_pounce, _pounce, _pounce]);
+      case 'outro':
+        // Wind down: the glide eases out, one cat still grooving.
+        return (lead: _pounce, ensemble: [_pounce, _pounce, _shaku]);
+      default:
+        // Intro / untagged: follow the raw energy level.
+        return _choreoTrioByLevel(level);
     }
+  }
+
+  // Energy-only fallback (no lyrics): map the section's normalized level to a
+  // trio, building from the Pouncing-Cat glide up to the unison Buga hit.
+  ({Clip lead, List<Clip> ensemble}) _choreoTrioByLevel(double level) {
+    if (level >= 0.90) return (lead: _buga, ensemble: [_buga, _buga, _buga]);
     if (level >= 0.78) {
-      // Peak: legwork lead, stomp + show-off hit behind.
       return (lead: _zanku, ensemble: [_zanku, _sekem, _buga]);
     }
     if (level >= 0.62) {
-      // Chorus: groovy Shaku lead, legwork + stomp behind.
       return (lead: _shaku, ensemble: [_shaku, _zanku, _sekem]);
     }
     if (level >= 0.45) {
-      // Verse / build: the expressive trio (arms, swivel, legwork).
       return (lead: _shaku, ensemble: [_shaku, _azonto, _zanku]);
     }
     if (level >= 0.28) {
-      // Low groove: hip-swivel lead, the glide behind it.
       return (lead: _azonto, ensemble: [_azonto, _shaku, _pounce]);
     }
-    // Calm pocket: the whole trio on the low gliding Pouncing Cat.
     return (lead: _pounce, ensemble: [_pounce, _pounce, _pounce]);
   }
 
@@ -520,6 +564,18 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     return (section: '', phase: 0);
   }
 
+  /// How many earlier spans share [section]'s label — 0 for its first occurrence.
+  /// Lets the choreography vary repeated choruses/verses so they don't read
+  /// identical.
+  int _sectionOccurrenceAt(double pos, String section) {
+    var occ = 0;
+    for (final s in _sectionSpans) {
+      if (pos >= s.start && pos < s.end) break;
+      if (s.section == section) occ++;
+    }
+    return occ;
+  }
+
   /// The virtual director's CONTEXT for the current frame, from which the target
   /// framing ([cameraShot]) and cut predicates are derived.
   /// Null until the beat map loads (the rig then rests neutral). [energetic]
@@ -711,11 +767,19 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     final binding = _binding;
     final level = section?.level ?? 1.0;
     // Only fully rest (idle) on a genuinely dead-quiet section; otherwise the
-    // trio dances a move chosen for the section's energy. The lead's duration
-    // sets the beat-lock clock (all dance moves share the 6s phrase).
+    // trio dances the routine chosen for the current semantic (lyric) section,
+    // falling back to the energy level when the song has no lyrics. The lead's
+    // duration sets the beat-lock clock (all dance moves share the 6s phrase).
     final resting = section != null && !section.energetic && level < 0.15;
     if (!resting && map != null && binding != null) {
-      final trio = _choreoTrioFor(level);
+      final lyric = _sectionInfoAt(pos);
+      final occ = _sectionOccurrenceAt(pos, lyric.section);
+      final trio = _choreoTrioForSection(
+        lyric.section,
+        lyric.phase,
+        level,
+        occ,
+      );
       return (
         lead: trio.lead,
         ensemble: trio.ensemble,
@@ -726,6 +790,10 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         ),
         section: section,
         energetic: section?.energetic ?? true,
+        // Canon (staggered phase) when the trio is on the Pouncing-Cat glide so
+        // they creep in sequence rather than swinging as one pendulum; tight
+        // unison for every other move.
+        synchronous: trio.lead != _pounce,
       );
     }
     return (
@@ -734,6 +802,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       seconds: pos,
       section: section,
       energetic: false,
+      synchronous: true,
     );
   }
 
@@ -977,7 +1046,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                             // Section-aware: the energetic dance trio in loud
                             // sections, an eased idle in calm ones.
                             ensembleClips: stage.ensemble,
-                            synchronousEnsemble: true,
+                            synchronousEnsemble: stage.synchronous,
                             // Heads bob with the music; the singer's head rides the
                             // vocal opening.
                             singingHeadMotion: true,

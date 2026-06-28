@@ -5179,10 +5179,16 @@ class CatClips {
   // "pouncing creep".
   // ─────────────────────────────────────────────────────────────────────────
   static const _pounceBodyKeys = [
-    // Constant deep crouch, no bob — the head must stay level over the glide.
-    DanceBodyKey(0, rootDy: 22, chestScaleY: 0.97),
-    DanceBodyKey(16, rootDy: 23, chestScaleY: 0.97),
-    DanceBodyKey(32, rootDy: 22, chestScaleY: 0.97),
+    // Deep crouch, no bob (head level). The lateral CREEP is keyframed to DWELL:
+    // float to one side and SETTLE there for most of the half, then ease across
+    // — a low gliding creep, not a continuous side-to-side pendulum. Modest
+    // amplitude so it reads as a calm float, especially when the whole trio is
+    // on it in the bridge.
+    DanceBodyKey(0, rootDx: -18, rootDy: 22, chestScaleY: 0.97),
+    DanceBodyKey(12, rootDx: -18, rootDy: 22, chestScaleY: 0.97), // settle left
+    DanceBodyKey(16, rootDx: 18, rootDy: 23, chestScaleY: 0.97), // ease across
+    DanceBodyKey(28, rootDx: 18, rootDy: 22, chestScaleY: 0.97), // settle right
+    DanceBodyKey(32, rootDx: -18, rootDy: 22, chestScaleY: 0.97), // ease back
   ];
   // Fast low heel-toe shuffle taps (sole skims, never lifts past shin-low); the
   // lateral travel comes from the root glide, not the feet.
@@ -5268,13 +5274,9 @@ class CatClips {
       // glide IS the move, so the feet skim freely (driven only by their low IK
       // targets).
       limbTargets: _pounceLimbTargets,
-      root: LayeredRootChannel([
-        _dancePhrase.bodyRootChannel(_pounceBodyKeys, smooth: true),
-        // Slow lateral GLIDE — the signature. Harmonic 2 = a half-time shift
-        // (left half, right half); no bob keeps the head level. Pushed wide so
-        // the whole body (head included) visibly travels sideways.
-        const SineRootChannel(swayAmplitude: 40, swayHarmonic: 2),
-      ]),
+      // The dwelling lateral creep now lives in _pounceBodyKeys' rootDx (no sine
+      // sway — that read as a side-to-side pendulum, worse in unison).
+      root: _dancePhrase.bodyRootChannel(_pounceBodyKeys, smooth: true),
       channels: {
         ...base.channels,
         CatBones.hips: LayeredJointChannel([
