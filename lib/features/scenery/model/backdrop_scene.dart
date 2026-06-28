@@ -24,13 +24,12 @@ class BackdropScene {
 
   /// The painted Lagos-lagoon blue-hour scene, back to front: the cloudless
   /// master-derived base plate, three exact-pixel cloud layers drifting at
-  /// different depths, the sky phases of the drone show, the animated ocean,
-  /// solid skyline/bridge/yacht structure re-drawn OVER atmosphere/water so
-  /// clouds/sky-drones/foam never slide across them, the additive city/yacht
-  /// night lights, the launch-road drone pass over the bridge deck so bridge
-  /// cables do not slice holes in the takeoff line, the foreground deck/palms,
-  /// and the warm lantern glow pooling on the now-lit deck. All sit behind the
-  /// dancers (they are background layers).
+  /// different depths, the animated ocean, solid skyline/bridge/yacht structure
+  /// re-drawn OVER atmosphere/water so clouds/foam never slide across them, the
+  /// additive city/yacht night lights, the foreground deck/palms, the warm
+  /// lantern glow pooling on the now-lit deck, and finally both drone-show
+  /// passes above the painted structures so bridge cables cannot slice holes in
+  /// the ascent. All sit behind the dancers (they are background layers).
   factory BackdropScene.blueHourWaterfront() {
     return const BackdropScene(
       layers: [
@@ -58,7 +57,6 @@ class BackdropScene {
           dyCycleSeconds: 46,
           phase: 0.71,
         ),
-        DroneShowLayer.sky(),
         // Animated water first; the additive ocean and additive city lights
         // commute, so the only thing the order buys us is letting the opaque
         // yacht sit BETWEEN them.
@@ -72,12 +70,13 @@ class BackdropScene {
         // More windows lit (brighter highrises) than the 0.6 default; drawn
         // after the yacht so the warm cabin glow reads on top of the hull.
         CityLightsLayer(windowAmount: 0.8),
-        // Launch drones are visually on the bridge road, so draw only that
-        // phase after the bridge redraw; otherwise the painted cable stays cut
-        // artificial gaps through the dense takeoff row.
-        DroneShowLayer.launchRoad(),
         ImageLayer(SceneryAssets.foreground),
         DeckGlowLayer(),
+        // Drones are the highest backdrop art pass: the takeoff starts as
+        // unlit dark dots and switches on above the cable-stayed bridge, so
+        // painted bridge cables/trees must not cut gaps through the aircraft.
+        DroneShowLayer.sky(),
+        DroneShowLayer.launchRoad(),
       ],
       foregroundLayers: [VignetteLayer(dim: 0.12)],
       imageAssets: [

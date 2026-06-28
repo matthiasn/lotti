@@ -30,6 +30,15 @@ const double _stagingHoldStart = 0.56;
 const double _stagingHoldEnd = 0.62;
 const double _textTransitionEnd = 0.74;
 const double _reducedMotionCycleProgress = 0.9;
+const double _droneLightOnY = 0.405;
+const int _ascentSpiralCount = 5;
+const double _launchStartX = 0.47;
+const double _launchSpanX = 0.22;
+const double _launchBaseY = 0.475;
+const double _launchSlopeY = 0.005;
+const double _ascentSpiralXRadius = 0.014;
+const double _ascentSpiralYRadius = 0.011;
+const double _ascentSpiralStretchY = 0.024;
 
 /// Coarse segment in the repeatable drone-show choreography.
 enum DroneShowPhase { launch, beam, fan, formation }
@@ -59,12 +68,14 @@ class DroneShowSample {
     required this.opacity,
     required this.radius,
     required this.phase,
+    required this.isLit,
   });
 
   final ui.Offset position;
   final double opacity;
   final double radius;
   final DroneShowPhase phase;
+  final bool isLit;
 }
 
 /// Additive drone-show layer for the blue-hour sky.
@@ -121,6 +132,8 @@ class DroneShowLayer implements BackdropLayer {
     final shortestSide = math.min(ctx.size.width, ctx.size.height);
     final haloPaint = ui.Paint()..blendMode = ui.BlendMode.plus;
     final corePaint = ui.Paint()..blendMode = ui.BlendMode.plus;
+    final offPaint = ui.Paint()
+      ..color = const ui.Color(0xFF03060A).withValues(alpha: 0.64);
     final cool = ctx.palette.moonHalo;
     final warm = ctx.palette.windowLed;
 
@@ -131,6 +144,11 @@ class DroneShowLayer implements BackdropLayer {
       );
       final radius = shortestSide * sample.radius;
       final alpha = sample.opacity.clamp(0.0, 1.0);
+      if (!sample.isLit) {
+        canvas.drawCircle(c, radius, offPaint);
+        continue;
+      }
+
       final color = ui.Color.lerp(cool, warm, _unitForIndex(c.dx.toInt()))!;
       haloPaint.shader = ui.Gradient.radial(
         c,
@@ -234,6 +252,8 @@ List<DroneShowSample> sampleDroneShow(
     final fan = _fanPoint(i, count);
     final position = switch (timeline.phase) {
       DroneShowPhase.launch => _launchPhasePoint(
+        i,
+        count,
         launch,
         rise,
         timeline.progress,
@@ -255,34 +275,78 @@ List<DroneShowSample> sampleDroneShow(
               math.sin(timeSeconds * 1.35 + i * 0.42 + _unitForIndex(i) * 2);
     final coordinated = timeline.phase == DroneShowPhase.launch;
     final formation = timeline.phase == DroneShowPhase.formation;
+    final isLit = _isDroneLit(i, position, timeline.phase);
+    final litOpacity = (coordinated ? 0.86 : 0.74 + twinkle).clamp(0.0, 1.0);
+    final litRadius = coordinated || formation
+        ? 0.00255
+        : 0.0020 + _unitForIndex(i + 17) * 0.0009;
     return DroneShowSample(
       position: position,
-      opacity: (coordinated ? 0.86 : 0.74 + twinkle).clamp(0.0, 1.0),
-      radius: coordinated || formation
-          ? 0.00255
-          : 0.0020 + _unitForIndex(i + 17) * 0.0009,
+      opacity: isLit ? litOpacity : 0.64,
+      radius: isLit ? litRadius : 0.00185,
       phase: timeline.phase,
+      isLit: isLit,
     );
   }, growable: false);
 }
 
+bool _isDroneLit(int index, ui.Offset position, DroneShowPhase phase) {
+  if (phase != DroneShowPhase.launch) return true;
+  final threshold = _droneLightOnY + (_unitForIndex(index + 131) - 0.5) * 0.018;
+  return position.dy <= threshold;
+}
+
 ui.Offset _launchPoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
-  final x = 0.47 + u * 0.22;
-  final y = 0.475 + (u - 0.5) * 0.005;
+  final x = _launchStartX + u * _launchSpanX;
+  final y = _launchBaseY + (u - 0.5) * _launchSlopeY;
   return ui.Offset(x, y);
 }
 
-ui.Offset _launchPhasePoint(ui.Offset launch, ui.Offset rise, double progress) {
+ui.Offset _launchPhasePoint(
+  int index,
+  int count,
+  ui.Offset launch,
+  ui.Offset rise,
+  double progress,
+) {
   if (progress < _launchHoldProgress) return launch;
-  final t = (progress - _launchHoldProgress) / (1 - _launchHoldProgress);
-  return ui.Offset.lerp(launch, rise, _easeInOut(t))!;
+  final rawClimb = (progress - _launchHoldProgress) / (1 - _launchHoldProgress);
+  final climb = _easeInOut(rawClimb);
+  final base = ui.Offset.lerp(launch, rise, climb)!;
+  final envelope = math.sin(climb * math.pi).clamp(0.0, 1.0);
+  if (envelope == 0) return base;
+
+  final u = count <= 1 ? 0.5 : index / (count - 1);
+  final pod = math.min(
+    (u * _ascentSpiralCount).floor(),
+    _ascentSpiralCount - 1,
+  );
+  final podStart = pod / _ascentSpiralCount;
+  final localU = ((u - podStart) * _ascentSpiralCount).clamp(0.0, 1.0);
+  final podCenterX =
+      _launchStartX + (pod + 0.5) / _ascentSpiralCount * _launchSpanX;
+  final columned = ui.Offset.lerp(
+    base,
+    ui.Offset(podCenterX, base.dy),
+    envelope * 0.36,
+  )!;
+  final angle = localU * math.pi * 2 + pod * 0.72 + climb * math.pi * 2.7;
+  final stretchY = (localU - 0.5) * _ascentSpiralStretchY * envelope * climb;
+  return ui.Offset(
+    columned.dx +
+        math.cos(angle) *
+            _ascentSpiralXRadius *
+            envelope *
+            (0.72 + climb * 0.28),
+    columned.dy + math.sin(angle) * _ascentSpiralYRadius * envelope + stretchY,
+  );
 }
 
 ui.Offset _risePoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
   return ui.Offset(
-    0.47 + u * 0.22,
+    _launchStartX + u * _launchSpanX,
     0.392 - u * 0.018,
   );
 }

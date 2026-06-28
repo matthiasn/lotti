@@ -50,17 +50,17 @@ flowchart BT
   glow[DeckGlowLayer]
   fg[foreground.png]
   lights[CityLightsLayer]
-  launchDrones[DroneShowLayer launch-road pass]
+  launchDrones[DroneShowLayer launch/ascent pass]
+  skyDrones[DroneShowLayer sky pass]
   yacht[yacht.png]
   city[city_bridge.png]
   ocean[OceanLayer shader/fallback]
-  skyDrones[DroneShowLayer sky pass]
   near[clouds_near.png parallax]
   mid[clouds_mid.png parallax]
   far[clouds_far.png parallax]
   base[blue_hour_cloudless.png]
 
-  base --> far --> mid --> near --> skyDrones --> ocean --> city --> yacht --> lights --> launchDrones --> fg --> glow --> child --> vignette
+  base --> far --> mid --> near --> ocean --> city --> yacht --> lights --> fg --> glow --> skyDrones --> launchDrones --> child --> vignette
 ```
 
 The ordering is the important contract:
@@ -68,19 +68,17 @@ The ordering is the important contract:
 - The base is `blue_hour_cloudless.png`, not the original master plate.
 - Clouds are reintroduced as transparent full-frame PNGs and drift with
   `CloudParallaxLayer`.
-- `DroneShowLayer.sky()` paints additive sky lights after clouds but before the
-  animated water and fixed structure redraw. Its show holds `Omah Lay` first,
-  then morphs into `Moving`.
 - `OceanLayer` adds animated foam/glint over the painted lagoon.
-- `city_bridge.png` and `yacht.png` are redrawn after the moving clouds, sky
-  drones, and ocean so clouds, text drones, and foam never slide across solid
-  structure.
+- `city_bridge.png` and `yacht.png` are redrawn after the moving clouds and
+  ocean so clouds and foam never slide across solid structure.
 - `CityLightsLayer` draws additive windows, yacht lamps, and beacon glows on top
   of the structure layers.
-- `DroneShowLayer.launchRoad()` draws only the takeoff phase after the fixed
-  bridge redraw so the painted bridge cables do not cut artificial gaps through
-  the dense road-line launch.
 - `foreground.png` and `DeckGlowLayer` sit over the animated water/deck area.
+- `DroneShowLayer.sky()` and `DroneShowLayer.launchRoad()` are the highest
+  background art passes. The ascent starts as small unlit aircraft dots, then
+  switches on above the cable-stayed bridge; drawing both passes here keeps
+  bridge cables, palms, and deck masks from cutting artificial gaps through the
+  show.
 - Foreground layers, currently the vignette, paint over the caller child.
 
 ## Bitmap Assets
@@ -141,14 +139,15 @@ on desktop and phone aspect ratios.
 not a bitmap asset. It samples normalized drone positions from the scene clock
 and paints additive glows in the sky. The current show is aircraft-paced rather
 than particle-paced: 280 drones hold a dense, evenly spaced cable-stayed
-bridge-road launch line, rise mostly vertically, converge into a controlled
-beam, fan out, hold compact dot-matrix `Omah Lay`, collapse through a
+bridge-road launch line as dark aircraft dots, rise through five local spiral
+columns, switch lights on progressively above the bridge cables, converge into a
+controlled beam, fan out, hold compact dot-matrix `Omah Lay`, collapse through a
 coordinated staging row, then form `Moving` over a 144-second cycle.
 
 ```mermaid
 stateDiagram-v2
   [*] --> Launch
-  Launch --> Beam: road hold + vertical rise
+  Launch --> Beam: dark road hold + five spiral ascents
   Beam --> Fan: controlled convergence
   Fan --> Formation: spread into text points
   Formation --> Launch: loop wraps
@@ -167,13 +166,13 @@ The pure functions are the contract:
   readable. The tests also bound one-second normalized travel so retunes do not
   accidentally make the aircraft move like fireworks.
 
-The layer belongs behind the city/yacht redraw. That lets the launch read as
-coming from the bridge area while solid painted structures still occlude the
-sky phases naturally. The runtime scene uses two configured layer instances:
-`DroneShowLayer.sky()` behind the structure redraw for beam/fan/text phases, and
-`DroneShowLayer.launchRoad()` after the structure redraw for launch only. That
-keeps the takeoff row continuous instead of letting the bridge-cable alpha mask
-slice holes through it.
+The runtime scene uses two configured layer instances:
+`DroneShowLayer.sky()` for beam/fan/text phases and
+`DroneShowLayer.launchRoad()` for launch/ascent only. Both draw above the fixed
+structure redraw, but the launch samples stay visually dark until they clear the
+cable-stayed bridge. That keeps the aircraft readable as physical objects on the
+bridge while preventing the bridge-cable alpha mask from slicing holes through
+the show.
 
 ## Stage Lighting
 

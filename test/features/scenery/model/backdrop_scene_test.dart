@@ -41,7 +41,7 @@ void main() {
     });
 
     test(
-      'composites plate -> clouds -> sky drones -> ocean -> city/yacht -> launch drones -> deck',
+      'composites plate -> clouds -> ocean -> city/yacht -> deck -> drones',
       () {
         final layers = BackdropScene.blueHourWaterfront().layers;
         final plate = layers.indexWhere(
@@ -70,11 +70,9 @@ void main() {
         final glow = layers.indexWhere((l) => l is DeckGlowLayer);
         expect(plate, 0);
         expect(cloud, greaterThan(plate));
-        expect(skyDrones, greaterThan(cloud));
         // Animated water sits over the painted plate.
         expect(ocean, greaterThan(plate));
         expect(ocean, greaterThan(cloud));
-        expect(ocean, greaterThan(skyDrones));
         // The fixed skyline/bridge is re-drawn over drifting clouds so the clouds
         // stay behind the city instead of sliding across tower silhouettes.
         expect(city, greaterThan(ocean));
@@ -83,15 +81,14 @@ void main() {
         // of the yacht so the warm cabin glow is not hidden behind the hull.
         expect(yacht, greaterThan(ocean));
         expect(lights, greaterThan(yacht));
-        // The bridge-road launch pass draws after the fixed bridge/yacht layer
-        // so cable stays do not slice visible holes through the takeoff row.
-        expect(launchDrones, greaterThan(city));
-        expect(launchDrones, greaterThan(yacht));
-        expect(launchDrones, greaterThan(lights));
         // The foreground deck is the LAST bitmap, drawn over the ocean so foam
         // never streaks the planks; the lantern glow pools on the now-lit deck.
-        expect(deck, greaterThan(launchDrones));
+        expect(deck, greaterThan(ocean));
         expect(glow, greaterThan(deck));
+        // Drone passes are the highest background art pass: bridge cables,
+        // palms and deck masks must not slice gaps through the ascent.
+        expect(skyDrones, greaterThan(glow));
+        expect(launchDrones, greaterThan(skyDrones));
       },
     );
 

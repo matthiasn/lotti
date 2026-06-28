@@ -103,6 +103,7 @@ void main() {
         expect(a[i].position.dy, closeTo(b[i].position.dy, 1e-12));
         expect(a[i].opacity, closeTo(b[i].opacity, 1e-12));
         expect(a[i].radius, closeTo(b[i].radius, 1e-12));
+        expect(a[i].isLit, b[i].isLit);
       }
     });
 
@@ -132,8 +133,9 @@ void main() {
       expect(minY, greaterThanOrEqualTo(0.472));
       expect(maxY, lessThanOrEqualTo(0.48));
       for (final sample in samples) {
-        expect(sample.opacity, closeTo(0.86, 1e-12));
-        expect(sample.radius, closeTo(0.00255, 1e-12));
+        expect(sample.isLit, isFalse);
+        expect(sample.opacity, closeTo(0.64, 1e-12));
+        expect(sample.radius, closeTo(0.00185, 1e-12));
       }
     });
 
@@ -148,7 +150,31 @@ void main() {
       }
     });
 
-    test('rises vertically before converging into the beam', () {
+    test('switches lights on progressively after clearing the bridge', () {
+      final dark = sampleDroneShow(0, count: 80);
+      final partial = sampleDroneShow(
+        kDroneShowCycleSeconds * 0.145,
+        count: 80,
+      );
+      final lit = sampleDroneShow(
+        kDroneShowCycleSeconds * 0.2,
+        count: 80,
+      );
+      final partialLitCount = partial.where((s) => s.isLit).length;
+
+      expect(dark.map((s) => s.isLit), everyElement(isFalse));
+      expect(partial.map((s) => s.phase), everyElement(DroneShowPhase.launch));
+      expect(partialLitCount, greaterThan(0));
+      expect(partialLitCount, lessThan(partial.length));
+      expect(lit.map((s) => s.phase), everyElement(DroneShowPhase.launch));
+      expect(lit.map((s) => s.isLit), everyElement(isTrue));
+      for (final sample in lit) {
+        expect(sample.opacity, closeTo(0.86, 1e-12));
+        expect(sample.radius, closeTo(0.00255, 1e-12));
+      }
+    });
+
+    test('rises through five local spiral columns before the beam', () {
       final start = sampleDroneShow(0, count: 40);
       final rising = sampleDroneShow(
         kDroneShowCycleSeconds * 0.15,
@@ -157,8 +183,30 @@ void main() {
 
       for (var i = 0; i < start.length; i++) {
         expect(rising[i].phase, DroneShowPhase.launch);
-        expect(rising[i].position.dx, closeTo(start[i].position.dx, 1e-12));
+        expect(
+          (rising[i].position.dx - start[i].position.dx).abs(),
+          lessThan(0.04),
+        );
         expect(rising[i].position.dy, lessThan(start[i].position.dy));
+      }
+
+      for (var pod = 0; pod < 5; pod++) {
+        final podSamples = rising.skip(pod * 8).take(8).toList();
+        final minX = podSamples
+            .map((s) => s.position.dx)
+            .reduce((a, b) => a < b ? a : b);
+        final maxX = podSamples
+            .map((s) => s.position.dx)
+            .reduce((a, b) => a > b ? a : b);
+        final minY = podSamples
+            .map((s) => s.position.dy)
+            .reduce((a, b) => a < b ? a : b);
+        final maxY = podSamples
+            .map((s) => s.position.dy)
+            .reduce((a, b) => a > b ? a : b);
+
+        expect(maxX - minX, lessThan(0.07), reason: 'pod $pod');
+        expect(maxY - minY, greaterThan(0.01), reason: 'pod $pod');
       }
     });
 
@@ -250,6 +298,8 @@ void main() {
         expect(a[i].position.dx, closeTo(finalTarget[i].dx, 1e-12));
         expect(a[i].position.dy, closeTo(finalTarget[i].dy, 1e-12));
         expect(a[i].opacity, closeTo(b[i].opacity, 1e-12));
+        expect(a[i].isLit, isTrue);
+        expect(b[i].isLit, isTrue);
       }
     });
 
