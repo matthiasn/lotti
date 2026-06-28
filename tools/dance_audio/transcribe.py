@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from importlib.metadata import PackageNotFoundError, version
 
@@ -248,6 +249,131 @@ def transcribe(
     }
 
 
+def _parse_lyrics(text: str) -> list[dict]:
+    """Parse a lyrics sheet into ordered tokens for forced alignment.
+
+    One dict per word, in singing order:
+    ``{"word", "voice": "lead"|"background", "section", "line"}``. Lines wrapped
+    in ``[...]`` are section headers (recorded, not emitted); text in ``(...)`` is
+    taken to be **background** ad-libs and the rest is the **lead** vocal.
+    """
+    tokens: list[dict] = []
+    section = ""
+    line_no = -1
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        header = re.fullmatch(r"\[(.+)\]", line)
+        if header:
+            section = header.group(1).strip().lower()
+            continue
+        line_no += 1
+        for match in re.finditer(r"\(([^)]*)\)|([^()]+)", line):
+            bg, lead = match.group(1), match.group(2)
+            chunk = bg if bg is not None else lead
+            voice = "background" if bg is not None else "lead"
+            for word in chunk.split():
+                if word.strip() and re.search(r"\w", word):
+                    tokens.append(
+                        {
+                            "word": word,
+                            "voice": voice,
+                            "section": section,
+                            "line": line_no,
+                        }
+                    )
+    return tokens
+
+
+def _run_alignment(signal: np.ndarray, sr: int, words: list[str], *, language: str) -> list[dict]:
+    """Force-align a known word sequence to `signal` with WhisperX's wav2vec2.
+
+    Returns ``[{word, start, end, score}, ...]`` (raw floats), one per word in
+    order. Lazy whisperx import + thin wrapper so unit tests can monkeypatch it.
+    """
+    import whisperx
+
+    device = "cpu"
+    align_model, metadata = whisperx.load_align_model(language_code=language, device=device)
+    segment = {"start": 0.0, "end": len(signal) / sr, "text": " ".join(words)}
+    aligned = whisperx.align(
+        [segment], align_model, metadata, signal, device, return_char_alignments=False
+    )
+    return aligned.get("word_segments", [])
+
+
+def transcribe_lyrics(
+    signal: np.ndarray,
+    sr: int,
+    *,
+    audio_path: str,
+    lyrics: str,
+    language: str = "en",
+    stamp: str | None = None,
+    segment_start: float = 0.0,
+) -> dict:
+    """Force-align provided lyrics to `signal`, tagging each word lead/background.
+
+    Far more accurate than free ASR — the text is given, so only word *timing* is
+    estimated. Best fed a vocals-only stem. Times are 0-based within the segment.
+    """
+    tokens = _parse_lyrics(lyrics)
+    if not tokens:
+        raise SystemExit("no lyric words parsed from the lyrics file")
+    aligned = _run_alignment(signal, sr, [t["word"] for t in tokens], language=language)
+
+    words = []
+    for i, tok in enumerate(tokens):
+        a = aligned[i] if i < len(aligned) else {}
+        words.append(
+            {
+                "word": tok["word"],
+                "start_sec": _round_t(a.get("start")),
+                "end_sec": _round_t(a.get("end")),
+                "score": round(float(a["score"]), _SCORE) if a.get("score") is not None else None,
+                "voice": tok["voice"],
+                "section": tok["section"],
+            }
+        )
+
+    segments = []
+    for line_no in sorted({t["line"] for t in tokens}):
+        line = [(w, t) for w, t in zip(words, tokens) if t["line"] == line_no]
+        starts = [w["start_sec"] for w, _ in line if w["start_sec"] is not None]
+        ends = [w["end_sec"] for w, _ in line if w["end_sec"] is not None]
+        if not starts:
+            continue
+        segments.append(
+            {
+                "start_sec": min(starts),
+                "end_sec": max(ends),
+                "text": " ".join(t["word"] for _, t in line),
+                "section": line[0][1]["section"],
+                "voice": (
+                    "background" if all(t["voice"] == "background" for _, t in line) else "lead"
+                ),
+            }
+        )
+
+    return {
+        "schema_version": "1.0",
+        "audio": {
+            "path": audio_path,
+            "duration_sec": round(len(signal) / sr, _T),
+            "segment_start_sec": round(segment_start, _T),
+        },
+        "asr": {
+            "model": "lyrics-aligned",
+            "language": language,
+            "aligner": f"{_align_model_name(language)} (whisperx@{_pkg_version('whisperx')})",
+            "created_utc": stamp,
+        },
+        "segments": segments,
+        "words": words,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="audio -> word/segment-timestamped transcription JSON (WhisperX, CPU)"
@@ -277,6 +403,13 @@ def main(argv: list[str] | None = None) -> int:
         help="transcribe only this many seconds from --start (e.g. 30)",
     )
     ap.add_argument(
+        "--lyrics",
+        default=None,
+        help="path to a lyrics text file: FORCE-ALIGN it instead of free ASR "
+        "(far more accurate). Lines in [..] are section headers; text in (..) is "
+        "tagged 'background' (the rest 'lead'). Best fed a vocals-only stem.",
+    )
+    ap.add_argument(
         "--stamp",
         action="store_true",
         help="embed a UTC creation time (breaks deterministic output)",
@@ -290,15 +423,28 @@ def main(argv: list[str] | None = None) -> int:
         stamp = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
 
     signal, sr = load_audio(args.audio, offset=args.start, duration=args.duration)
-    result = transcribe(
-        signal,
-        sr,
-        audio_path=args.audio,
-        model=args.model,
-        language=args.language,
-        stamp=stamp,
-        segment_start=args.start,
-    )
+    if args.lyrics:
+        with open(args.lyrics) as f:
+            lyrics = f.read()
+        result = transcribe_lyrics(
+            signal,
+            sr,
+            audio_path=args.audio,
+            lyrics=lyrics,
+            language=args.language or "en",
+            stamp=stamp,
+            segment_start=args.start,
+        )
+    else:
+        result = transcribe(
+            signal,
+            sr,
+            audio_path=args.audio,
+            model=args.model,
+            language=args.language,
+            stamp=stamp,
+            segment_start=args.start,
+        )
     text = json.dumps(result, indent=2)
     if args.out:
         with open(args.out, "w") as f:

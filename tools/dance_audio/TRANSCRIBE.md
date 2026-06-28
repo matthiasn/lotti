@@ -75,7 +75,35 @@ python transcribe.py track.mp3 --language en --stamp -o out/track.words.json
 ```
 
 Flags: `-o/--out`, `--model` (tiny/base/small/medium/large-v3; default `base`),
-`--language` (default auto-detect), `--start`, `--duration`, `--stamp`.
+`--language` (default auto-detect), `--lyrics PATH` (force-align known lyrics —
+see below), `--start`, `--duration`, `--stamp`.
+
+## Best accuracy: force-align your own lyrics (`--lyrics`)
+
+If you have the song's lyrics, give them to the tool and it **force-aligns** that
+exact text to the audio (wav2vec2): the text is correct by construction, so only
+the *timing* is estimated — no mishearing, and full coverage. It also tags each
+word **lead vs background** so a consumer can move different mouths.
+
+```bash
+python transcribe.py out/sep/htdemucs/song/vocals.wav \
+  --lyrics out/song.lyrics.txt --language en -o out/song.words.json
+```
+
+Lyrics file (`out/song.lyrics.txt`, plain text, kept local / gitignored):
+- a line in `[...]` is a **section** header (recorded per word);
+- text in `(...)` is tagged **background** (ad-libs / harmonies); the rest is **lead**.
+
+```text
+[Chorus]
+lead line here (ad-lib)
+another lead line
+```
+
+Output adds `voice: lead|background` and `section` to each word, and `asr.model`
+is `lyrics-aligned`. **Do not fetch lyrics off the web into the project** — that
+reproduces copyrighted material; the user supplies the text, the tool only aligns
+it. Aligned 237/237 words in ~20 s on the reference track.
 
 Outputs belong under `out/` (gitignored). Original-artwork audio and the
 transcription JSON are **never** committed.

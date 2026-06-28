@@ -64,6 +64,7 @@ def _guard_real_asr(monkeypatch):
         )
 
     monkeypatch.setattr(transcribe, "_run_asr", _no_real_inference)
+    monkeypatch.setattr(transcribe, "_run_alignment", _no_real_inference)
 
 
 class TestGuard:
@@ -71,6 +72,49 @@ class TestGuard:
         # The autouse guard makes an un-stubbed run fail loudly, not import torch.
         with pytest.raises(AssertionError, match="must be mocked"):
             transcribe.transcribe(_silence(1), transcribe.ASR_SR, audio_path="x.wav", model="base")
+
+
+class TestLyrics:
+    def test_parse_lyrics_tags_voice_and_section(self):
+        text = "[Chorus]\nI've been moving (Ooh), moving\n[Verse]\nbein' honest"
+        toks = transcribe._parse_lyrics(text)
+        assert [t["word"] for t in toks] == [
+            "I've",
+            "been",
+            "moving",
+            "Ooh",
+            "moving",
+            "bein'",
+            "honest",
+        ]
+        by_word = {t["word"]: t for t in toks}
+        assert by_word["Ooh"]["voice"] == "background"
+        assert by_word["moving"]["voice"] == "lead"
+        assert by_word["Ooh"]["section"] == "chorus"
+        assert by_word["honest"]["section"] == "verse"
+
+    def test_transcribe_lyrics_force_aligns_and_tags_voice(self, monkeypatch):
+        text = "[Chorus]\nhello (ooh)\nworld"
+        aligned = [
+            {"word": "hello", "start": 0.0, "end": 0.4, "score": 0.9},
+            {"word": "ooh", "start": 0.4, "end": 0.6, "score": 0.8},
+            {"word": "world", "start": 1.0, "end": 1.5, "score": 0.95},
+        ]
+        monkeypatch.setattr(
+            transcribe,
+            "_run_alignment",
+            lambda signal, sr, words, *, language: aligned,
+        )
+        out = transcribe.transcribe_lyrics(
+            _silence(2), transcribe.ASR_SR, audio_path="x.wav", lyrics=text
+        )
+        assert out["asr"]["model"] == "lyrics-aligned"
+        assert [w["word"] for w in out["words"]] == ["hello", "ooh", "world"]
+        assert [w["voice"] for w in out["words"]] == ["lead", "background", "lead"]
+        assert out["words"][1]["start_sec"] == 0.4
+        # Segments grouped per lyric line; the ad-lib stays on its lead line.
+        assert [s["text"] for s in out["segments"]] == ["hello ooh", "world"]
+        assert out["segments"][1]["voice"] == "lead"
 
 
 class TestPureHelpers:
