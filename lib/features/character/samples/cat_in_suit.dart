@@ -4835,6 +4835,31 @@ class CatClips {
     _danceLimbTargets[3].withChannel(_zankuFootRTarget),
   ];
 
+  // Per-beat weight commit that DWELLS over the stamping foot (a sine sway just
+  // passes through centre and reads uncommitted): hold at one side for the beat,
+  // snap to the other on the stamp. Left over footL's beats (0/8/16/24), right
+  // over footR's (4/12/20/28). rootDx only — the dip/hop stay on other root
+  // layers. Trimmed vs Sekem since the wide kicks already carry the energy.
+  static const _zankuCommitKeys = [
+    DanceBodyKey(0, rootDx: -24),
+    DanceBodyKey(2, rootDx: -24),
+    DanceBodyKey(4, rootDx: 24),
+    DanceBodyKey(6, rootDx: 24),
+    DanceBodyKey(8, rootDx: -24),
+    DanceBodyKey(10, rootDx: -24),
+    DanceBodyKey(12, rootDx: 24),
+    DanceBodyKey(14, rootDx: 24),
+    DanceBodyKey(16, rootDx: -24),
+    DanceBodyKey(18, rootDx: -24),
+    DanceBodyKey(20, rootDx: 24),
+    DanceBodyKey(22, rootDx: 24),
+    DanceBodyKey(24, rootDx: -24),
+    DanceBodyKey(26, rootDx: -24),
+    DanceBodyKey(28, rootDx: 24),
+    DanceBodyKey(30, rootDx: 24),
+    DanceBodyKey(32, rootDx: -24),
+  ];
+
   /// Standalone "Zanku / Legwork" lead clip. Reuses the dance channels + the
   /// proven shaku groove, and adds the Zanku signatures: per-BEAT LEGWORK via
   /// the foot IK targets (the support foot ricochets L,R,L,R every beat while
@@ -4852,15 +4877,9 @@ class CatClips {
       root: LayeredRootChannel([
         _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
-        // Per-BEAT weight transfer (harmonic 4): the COM ping-pongs over the
-        // stamping foot every beat (left on 0/8/16/24, right on 4/12/20/28) to
-        // match the support ricochet. The world-anchored stamp holds while the
-        // body shifts over it.
-        const SineRootChannel(
-          swayAmplitude: -16,
-          swayHarmonic: 4,
-          swayPhase: 0.0625,
-        ),
+        // Per-BEAT weight commit that DWELLS over the stamping foot (replaces the
+        // sine sway that just passed through centre). See [_zankuCommitKeys].
+        _dancePhrase.bodyRootChannel(_zankuCommitKeys, smooth: true),
         const SineRootChannel(
           // A vertical HOP synced to the legwork — Zanku rides a spring, not a
           // flat side sway. Most of the bounce restored; the head no longer fans
