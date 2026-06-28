@@ -172,11 +172,14 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   final CharacterRenderer _renderer = CharacterRenderer();
   final Player _player = Player();
 
-  // Cached clips: rebuilding CatClips.dance compiles the whole DancePhrase, so
-  // build the trio once instead of every frame.
-  late final Clip _danceLead = CatClips.dance;
+  // Cached clips: rebuilding the clip compiles the whole DancePhrase, so build
+  // the trio once instead of every frame.
+  // LEAD-ONLY swap to the in-progress `shaku` redesign so the showcase shows it
+  // with music; the backups still dance the original routine until shaku-styled
+  // backups land (the trio is timing-synced — same 6s/32-frame phrase).
+  late final Clip _danceLead = CatClips.shaku;
   late final List<Clip> _danceEnsemble = [
-    CatClips.dance,
+    CatClips.shaku,
     CatClips.danceBackupLeft,
     CatClips.danceBackupRight,
   ];
