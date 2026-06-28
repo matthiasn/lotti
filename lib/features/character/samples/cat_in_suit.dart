@@ -4515,42 +4515,42 @@ class CatClips {
   // from the far arm at the crossover. Left hand sits on the RIGHT (crossed),
   // right hand on the LEFT.
   static const _shakuHandLTargetKeys = [
-    DanceIkTargetKey(0, x: 16, y: -34), // high + out
-    DanceIkTargetKey(2, x: 15, y: -26),
-    DanceIkTargetKey(4, x: 11, y: -6), // low + in
-    DanceIkTargetKey(6, x: 14, y: -22),
-    DanceIkTargetKey(8, x: 16, y: -34),
-    DanceIkTargetKey(10, x: 15, y: -26),
-    DanceIkTargetKey(12, x: 11, y: -6),
-    DanceIkTargetKey(14, x: 14, y: -22),
-    DanceIkTargetKey(16, x: 16, y: -34),
-    DanceIkTargetKey(18, x: 15, y: -26),
-    DanceIkTargetKey(20, x: 11, y: -6),
-    DanceIkTargetKey(22, x: 14, y: -22),
-    DanceIkTargetKey(24, x: 16, y: -34),
-    DanceIkTargetKey(26, x: 15, y: -26),
-    DanceIkTargetKey(28, x: 11, y: -6),
-    DanceIkTargetKey(30, x: 14, y: -22),
-    DanceIkTargetKey(32, x: 16, y: -34),
+    DanceIkTargetKey(0, x: 27, y: -38), // high + out
+    DanceIkTargetKey(2, x: 25, y: -26),
+    DanceIkTargetKey(4, x: 19, y: -2), // low + in
+    DanceIkTargetKey(6, x: 24, y: -22),
+    DanceIkTargetKey(8, x: 27, y: -38),
+    DanceIkTargetKey(10, x: 25, y: -26),
+    DanceIkTargetKey(12, x: 19, y: -2),
+    DanceIkTargetKey(14, x: 24, y: -22),
+    DanceIkTargetKey(16, x: 27, y: -38),
+    DanceIkTargetKey(18, x: 25, y: -26),
+    DanceIkTargetKey(20, x: 19, y: -2),
+    DanceIkTargetKey(22, x: 24, y: -22),
+    DanceIkTargetKey(24, x: 27, y: -38),
+    DanceIkTargetKey(26, x: 25, y: -26),
+    DanceIkTargetKey(28, x: 19, y: -2),
+    DanceIkTargetKey(30, x: 24, y: -22),
+    DanceIkTargetKey(32, x: 27, y: -38),
   ];
   static const _shakuHandRTargetKeys = [
-    DanceIkTargetKey(0, x: -11, y: -6), // low + in (opposite phase to left)
-    DanceIkTargetKey(2, x: -14, y: -22),
-    DanceIkTargetKey(4, x: -16, y: -34), // high + out
-    DanceIkTargetKey(6, x: -15, y: -26),
-    DanceIkTargetKey(8, x: -11, y: -6),
-    DanceIkTargetKey(10, x: -14, y: -22),
-    DanceIkTargetKey(12, x: -16, y: -34),
-    DanceIkTargetKey(14, x: -15, y: -26),
-    DanceIkTargetKey(16, x: -11, y: -6),
-    DanceIkTargetKey(18, x: -14, y: -22),
-    DanceIkTargetKey(20, x: -16, y: -34),
-    DanceIkTargetKey(22, x: -15, y: -26),
-    DanceIkTargetKey(24, x: -11, y: -6),
-    DanceIkTargetKey(26, x: -14, y: -22),
-    DanceIkTargetKey(28, x: -16, y: -34),
-    DanceIkTargetKey(30, x: -15, y: -26),
-    DanceIkTargetKey(32, x: -11, y: -6),
+    DanceIkTargetKey(0, x: -19, y: -2), // low + in (opposite phase to left)
+    DanceIkTargetKey(2, x: -24, y: -22),
+    DanceIkTargetKey(4, x: -27, y: -38), // high + out
+    DanceIkTargetKey(6, x: -25, y: -26),
+    DanceIkTargetKey(8, x: -19, y: -2),
+    DanceIkTargetKey(10, x: -24, y: -22),
+    DanceIkTargetKey(12, x: -27, y: -38),
+    DanceIkTargetKey(14, x: -25, y: -26),
+    DanceIkTargetKey(16, x: -19, y: -2),
+    DanceIkTargetKey(18, x: -24, y: -22),
+    DanceIkTargetKey(20, x: -27, y: -38),
+    DanceIkTargetKey(22, x: -25, y: -26),
+    DanceIkTargetKey(24, x: -19, y: -2),
+    DanceIkTargetKey(26, x: -24, y: -22),
+    DanceIkTargetKey(28, x: -27, y: -38),
+    DanceIkTargetKey(30, x: -25, y: -26),
+    DanceIkTargetKey(32, x: -19, y: -2),
   ];
   static final KeyframeIkTargetChannel _shakuHandLTarget = _dancePhrase
       .ikTargetChannel(_shakuHandLTargetKeys, smooth: true);
