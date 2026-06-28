@@ -17,6 +17,7 @@ import 'package:lotti/features/character/model/rig_spec.dart';
 // Palette (ARGB). Kept local to the sample; real characters carry their own
 // colours in the rig art (plan decision D6 — no design-system colour tokens).
 const int _suit = 0xFF2E3A59; // navy jacket
+const int _cuff = 0xFFB9C0D4; // light dress-shirt cuff at the wrist
 const int _trouser = 0xFF26304A; // darker navy
 const int _trouserRear = 0xFF202941; // slightly darker rear leg
 const int _fur = 0xFFE8A55A; // orange tabby
@@ -104,10 +105,12 @@ class CatBones {
   static const armBicepL = 'arm_bicep.L';
   static const armLowerL = 'arm_lower.L';
   static const handL = 'hand.L';
+  static const cuffL = 'cuff.L';
   static const armUpperR = 'arm_upper.R';
   static const armBicepR = 'arm_bicep.R';
   static const armLowerR = 'arm_lower.R';
   static const handR = 'hand.R';
+  static const cuffR = 'cuff.R';
   static const legUpperL = 'leg_upper.L';
   static const legQuadL = 'leg_quad.L';
   static const legLowerL = 'leg_lower.L';
@@ -484,6 +487,25 @@ RigSpec buildCatInSuitRig({
         outlineWidth: 2.5,
       ),
     ),
+    // Light shirt-cuff band at the wrist, drawn on top of the suit ribbon so the
+    // forearm reads (the navy-on-navy sleeve was invisible) — what lets the
+    // crossed-arm dance poses read as two distinct forearms.
+    const Bone(
+      id: CatBones.cuffR,
+      parent: CatBones.armLowerR,
+      pivotX: 0,
+      pivotY: 33,
+      z: 17,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 20,
+        height: 11,
+        cornerRadius: 4,
+        color: _cuff,
+        outlineColor: _outline,
+        outlineWidth: 2,
+      ),
+    ),
 
     // Torso (suit jacket): a tapered wedge — wide at the shoulders (top),
     // narrowing to the waist (bottom) — so it reads as a tailored jacket with a
@@ -583,6 +605,22 @@ RigSpec buildCatInSuitRig({
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2.5,
+      ),
+    ),
+    const Bone(
+      id: CatBones.cuffL,
+      parent: CatBones.armLowerL,
+      pivotX: 0,
+      pivotY: 33,
+      z: 18,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 20,
+        height: 11,
+        cornerRadius: 4,
+        color: _cuff,
+        outlineColor: _outline,
+        outlineWidth: 2,
       ),
     ),
 
