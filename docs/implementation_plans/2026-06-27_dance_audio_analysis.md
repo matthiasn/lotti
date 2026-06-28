@@ -661,6 +661,25 @@ path stay deterministic (render at fixed `clipSeconds` for review).
 5. (Optional, rung-3 validation) BAS: motion beats (velocity minima via
    `TemporalMotionAnalyzer`) vs the music beats.
 
+## 15.8 Shipped beyond the first wiring (status)
+
+The demo grew past the 30 s segment: it loops the phrase **beat-locked over the
+whole track**, switches **dance ↔ idle by section energy**, shows **karaoke
+captions**, and **lip-syncs the trio**.
+
+- **Beats/structure (rungs 3–4):** full-track beat map + `sections[]` drive the
+  loop and the dance/idle switch.
+- **Vocals/lyrics (rung 5):** `transcribe.py --lyrics` force-aligns provided
+  lyrics (lead/background + section tags) on a Demucs vocal stem.
+- **Lip-sync (rung 5b):** `lipsync.py` runs **Rhubarb Lip Sync** (built natively
+  from source for ARM64) over the vocal stem → a mouth-shape cue track. The demo
+  maps each cue to a singing viseme (`singAh/Oh/Ee`, `teethOnLip`) with a real
+  jaw drop, gated by the lyric voice tags (frontman = lead, backups = ad-libs /
+  group hooks), with the head bobbing on the beat and dipping into loud
+  syllables (`CharacterPainter.singingHeadMotion`). A 3-expert panel (lip-sync /
+  vocal / animation), judging frames of the actual composition, rated it **9/10
+  across all three**. See the `dance-lipsync` skill and `lib/features/character`.
+
 ## 16. Sources (verified this pass)
 
 **Beat / downbeat / tempo:** Beat This! [[repo]](https://github.com/CPJKU/beat_this)

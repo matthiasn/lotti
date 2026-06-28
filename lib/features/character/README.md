@@ -242,11 +242,34 @@ stateDiagram-v2
   base transforms, so jumpy dance failures report exact bones, frame pairs and
   phases before panel review.
 - **`FaceState` / `Expression`** — ~8 continuous "knobs" (mouth shape + open,
-  brow raise/angle, eyelid open, gaze). Six presets (neutral, content, happy,
-  surprised, sad, angry). Mouths are **shape-swapped**, not deformed.
+  brow raise/angle, eyelid open, gaze). Six emotion presets (neutral, content,
+  happy, surprised, sad, angry). Mouths are **shape-swapped**, not deformed.
+- **Singing visemes** — four extra `MouthShape`s for lip-sync: `singAh` (a tall
+  open jaw cavity with a dark interior + pink tongue), `singOh` (a narrow round
+  ring), `singEe` (a wide flat mouth with a bared upper-teeth band), and
+  `teethOnLip` (the tight near-closed F/V consonant). They share one crafted
+  cavity renderer parameterised by width/height/tongue/teeth. `mouthOpen` drives
+  a real **jaw drop**: the lower snout (muzzle, nose, whiskers, mouth) translates
+  down with the opening, so an open vowel articulates instead of punching a hole
+  in a rigid face. Below ~0.12 the mouth collapses to a closed lip line.
 - **`AutonomicLayer`** — the always-on "alive" signals (asymmetric Poisson
   blink, breathing, micro eye-darts). Deterministic via an internal LCG — never
   `Math.random` / `DateTime.now` — so renders are reproducible.
+
+### Lip-sync — singing to a track
+
+`demo/character_dance_to_track_demo.dart` makes the trio sing along to a song.
+The mouth shapes come from an **offline Rhubarb Lip Sync cue track** (real vocal
+phonemes; see the `dance-lipsync` skill and `tools/dance_audio/lipsync.py`), not
+a per-word guess: each cue letter maps to a viseme + opening, eased fast-attack /
+slow-release. The **lyric word tags** (lead vs background, from
+`transcribe.py --lyrics`) gate *which* cat shows the cues — the frontman on lead
+words, the backups on `(...)` ad-libs and the group-hook sections. The upper face
+sings too (brows lift, eyes squint into the loud notes), and
+`CharacterPainter.singingHeadMotion` bobs the heads on the beat and dips the
+singer's head forward/down into the loud syllables (rotated about the neck joint,
+so nothing detaches). An expert panel (lip-sync / vocal / animation) rated the
+result 9/10 over composition frames.
 
 ## Reviewing motion — film strips, grids, onions, travel
 
