@@ -159,8 +159,11 @@ far side — derived from the shape's own fill, so no per-bone shadow is authore
 Clipping per shape is what makes each limb/torso/head model as its own form
 (unlike a single gradient over the whole figure, which reads flat). The highlight
 tone is essential on dark fills: a near-black navy suit shows no darker shade, but
-a lifted lit side gives it dimensional form. The face features draw after, so they
-stay crisp and bright over the shaded head.
+a lifted lit side gives it dimensional form — kept **gentle and narrow**, though,
+so thin round shapes (arms, hands, tail) read as soft volumes rather than chroming
+out into metallic streaks. This baked cel-shade is the cats' **primary** form
+modelling; the concert `bodyGrade` below is tuned NOT to flatten it. The face
+features draw after, so they stay crisp and bright over the shaded head.
 
 The hot path is intentionally cheap: evaluate a handful of sinusoids/keyframes,
 walk the bone hierarchy composing `Affine2D`s (~30 bones), resolve the face. No
@@ -425,33 +428,48 @@ its floor pool always match:
   a solid gel silhouette (`ColorFilter.mode(gel, srcIn)`) and blurs it
   (`ImageFilter.blur`), in two passes (`_kBacklightPasses`): a soft outer **bloom**
   (lightly biased toward the source so it still wraps a readable arc) then a tight
-  bright **rim** (hard on the source-facing contour). Crucially each pass is **offset toward
+  bright **rim** (hard on the source-facing contour). Each pass is **offset toward
   that lane's light source** before blurring (`_kRimDirections`: a fanned
   overhead back-key array — flankers keyed from their outboard-upper corner, the
-  hero from straight above), so the halo pokes out on the source-facing edge and
-  the body occludes its retreating shadow side. The result is a *directional*
-  kicker with a real shadow side, not a uniform outline. Both passes reuse the
-  member's exact transform, so the halo tracks the dancer through any camera move
-  or formation for free.
-- **`bodyGrade` grades the cat INTO the plate** (static — see below). Inside an
-  isolation layer it composites, masked to the cat's own silhouette (`srcATop`),
-  three passes: a flat cool **ambient fill** (`_kBodyFill`) that lifts the
-  near-black navy fronts/legs (~46/255) out of crush so the figure has a readable
-  base value; a vertical **ambient wrap** (cool sky light up high → warm deck/city
-  bounce down low); and a directional **gel terminator** aligned to
-  `_kRimDirections` — a gel key that **kicks onto the lit fabric** and carries
-  past centre, ramping to a cool-blue cel form-shadow on the far side, so the gel
-  models the torso as a lit volume instead of only ringing it. All are **clipped
-  to below the neckline**, leaving the head/face at its natural, brighter cartoon
-  tone. Its presence also strengthens the deck contact shadows
-  (`_strongDeckShadows`) so the trio is planted on the painted deck rather than
-  floating.
+  hero leaning camera-left). But the offset alone is not enough: where the blur
+  radius exceeds the offset the halo still pokes out on *every* edge and reads as a
+  full-perimeter outer-glow sticker. So each pass is then **clipped to one side by
+  a `dstIn` gradient mask** — opaque on the lamp-facing side, clear on the
+  retreating side — that erases the shadow half outright. The mask split is biased
+  toward the **horizontal** (left/right), because the rim directions are mostly
+  vertical (lamps rake down from above) and masking straight along them would keep
+  the whole *upper* body — both ears, the full crown — still reading as a
+  head-ringing aura. The layer blur softens that hard cut into a real one-sided
+  kicker with a dead shadow side. Both passes reuse the member's exact transform,
+  so the halo tracks the dancer through any camera move or formation for free.
+- **`bodyGrade` seats the cat INTO the plate** (mostly static — see below). The
+  cat's actual modelled *volume* comes from the rig's baked cel-shade (above);
+  this grade only nudges the figure into the plate's exposure and carries the
+  stage gel onto the fabric. Inside an isolation layer it composites, masked to the
+  cat's own silhouette (`srcATop`): below the collar, a **light cool seat**
+  (`_kBodySeat`, ~11% — deliberately faint, since a heavier flat wash would
+  compress the baked cel-shade ramp back into uniform grey) that pulls the
+  value/saturation down toward the plate's shadow floor; a vertical **twilight
+  wrap** (cool sky light up high → warm deck/city bounce down low); a directional
+  **gel terminator** aligned to `_kRimDirections` that **kicks the lane's gel onto
+  the lit fabric** and ramps to a cool ambient floor (`_kBodyShadowFloor`, not a
+  black crush) on the far side; and a short **floor-pool bounce** rising onto the
+  shins. Above the collar, a gentle **face split** (a broad, low-contrast
+  warm-key→cool-fill gradient along the gel direction) seats the bright warm muzzle
+  so it stops reading as the scene's hottest sticker — softer than the body grade,
+  but no longer left untouched. A grounded **contact-shadow** ellipse is pressed
+  under each dancer's feet so the trio is planted on the painted deck.
 - **The floor pools live in `scenery/stage_lights_overlay.dart`** (`StageLightsOverlay`
   → `StageLightsPainter`), an additive (`BlendMode.plus`) screen-space pass over
   the dancers: a gel pool that is **anchored at the foot and rakes forward**
   (downstage, toward camera) with a horizontal shear (`_kPoolLean`) so off-centre
   pools splay along the deck's plank perspective, plus a hot core at the foot
-  contact (kept warm, not white-clipped to a blown puddle). It eases its pool
+  contact (kept warm, not white-clipped to a blown puddle). Finally a small cool
+  near-black **contact occlusion** is punched back into the pool centre (normal
+  alpha-over, on top of the additive gel) hugging the sole — the dancer occluding
+  the floor light where they stand — so the cat reads as anchored by a real dark
+  contact with the gel spilling *around* it, not floating on a bright puddle. The
+  occlusion is **beat-independent** (grounding must not pulse). It eases its pool
   toward the live dancer foot (lazy on small moves, fast catch-up on a camera
   cut), tracking the same anchors the painter publishes via `onDancerAnchors`.
 - **Hero staging (`heroStaging`, opt-in)** stages the trio as a **V-wedge**: the
@@ -465,13 +483,18 @@ its floor pool always match:
   lifts the distant city/water and separates the foreground cat plane — a cheap
   atmospheric-DoF stand-in.
 
-**Seizure safety — the body never blinks.** The cat bodies are never pulsed with
-the beat: a full-figure luminance flash on every beat is a photosensitive-epilepsy
-risk (large area, high contrast, near the 3 Hz threshold at fast tempos).
-`bodyGrade` is a static grade, applied identically every frame. Only the stage
-lighting *around* the cats animates — the thin rim halo and the small floor pools
-— exactly like real concert footage where the performers stay lit and the rig
-pulses around them.
+**Seizure safety — the body never flashes.** A full-figure luminance flash on
+every beat is a photosensitive-epilepsy risk (large area, high contrast, near the
+3 Hz threshold at fast tempos), so the cats are never strobed. The grade's
+**seat, twilight wrap, face split and the baked cel-shade are all static**, held
+identical every frame — the figure's value and form never pulse. Only a single
+**motivated gel-key term** on the lit fabric (and its matching floor-pool bounce
+on the shins) breathes gently with the beat, compressed into a narrow band
+(~0.44→0.62 alpha for the hero) so it reads as the stage gel landing a touch
+harder on the beat, not a strobe — explainable light on the body, well below a
+full-figure flash. Everything else that animates is the stage lighting *around*
+the cats — the thin rim halo and the small floor pools — exactly like real concert
+footage where the performers stay lit and the rig pulses around them.
 
 Both read their gel + beat-pulsed intensity from one pure scheduler,
 `scenery/runtime/stage_lights.dart` (`StageLightRig` → `StageLightSample`): a
@@ -488,7 +511,8 @@ so the front cat never swaps between the calm intro and the dance. Tested in
 `stage_lights_test.dart` (the scheduler maths), `stage_lights_overlay_test.dart`
 (pools land/track/pulse) and `character_painter_test.dart` (the rim rings each
 lane in its gel — and lights up for the shipping `shaku` phrase, not only
-`dance`; `bodyGrade` re-tints the body while leaving the face ungraded).
+`dance`; `bodyGrade` seats both the body and the face into the plate, the face
+more gently).
 
 The background drone show is the spectacle layer: drones launch from the
 cable-stayed bridge road line, build a stem, spread through a measured middle

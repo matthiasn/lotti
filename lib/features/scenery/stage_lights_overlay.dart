@@ -237,20 +237,47 @@ class StageLightsPainter extends CustomPainter {
       width: rx,
       height: ry * 1.1,
     );
+    canvas.drawOval(
+      core,
+      Paint()
+        ..blendMode = BlendMode.plus
+        ..shader = RadialGradient(
+          center: const Alignment(0, -0.3),
+          colors: [
+            hot.withValues(alpha: 0.64 * i),
+            l.color.withValues(alpha: 0.28 * i),
+            l.color.withValues(alpha: 0),
+          ],
+          stops: const [0.0, 0.55, 1.0],
+        ).createShader(core),
+    );
+    // CONTACT OCCLUSION. The additive spill above would otherwise blow out the
+    // exact contact point into a bright puddle, so the cat reads as floating ON
+    // the pool. A dancer actually OCCLUDES the floor light where they stand, so
+    // punch a small, cool near-black shadow back into the pool's centre (normal
+    // alpha-over, on top of the additive gel) hugging the sole: a hard contact
+    // anchor under each cat, the gel spilling AROUND it instead of through it.
+    // Beat-independent (grounding must not pulse) and tight (a foot-length) so it
+    // never becomes a murky hole. This is the grounding the rim/pool alone can't
+    // give — a real dark contact, not just coloured spill.
+    final occ = Rect.fromCenter(
+      center: Offset(0, ry * 0.12),
+      width: rx * 0.86,
+      height: ry * 1.05,
+    );
     canvas
       ..drawOval(
-        core,
+        occ,
         Paint()
-          ..blendMode = BlendMode.plus
-          ..shader = RadialGradient(
-            center: const Alignment(0, -0.3),
+          ..shader = const RadialGradient(
+            center: Alignment(0, -0.1),
             colors: [
-              hot.withValues(alpha: 0.64 * i),
-              l.color.withValues(alpha: 0.28 * i),
-              l.color.withValues(alpha: 0),
+              Color(0xB3060D18), // cool near-black, densest at the sole
+              Color(0x66060D18),
+              Color(0x00060D18),
             ],
-            stops: const [0.0, 0.55, 1.0],
-          ).createShader(core),
+            stops: [0.0, 0.55, 1.0],
+          ).createShader(occ),
       )
       ..restore();
   }

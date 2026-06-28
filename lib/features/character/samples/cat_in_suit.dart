@@ -991,8 +991,22 @@ RigSpec buildCatInSuitRig({
     face: face,
     // Cel-shade the cat: a baked per-shape form shadow so the flat fills read as
     // dimensional cartoon volumes (each limb/torso/head lit from upper-left into
-    // a cool blue-hour shade), not stickers on the painted plate.
-    celShade: const CelShadeSpec(),
+    // a cool blue-hour shade), not stickers on the painted plate. The core shadow
+    // does the modelling (deep, cool, broad coverage with a soft terminator); the
+    // warm key highlight is kept GENTLE and narrow — just enough to lift the lit
+    // side of the near-black navy suit so the form reads, but not so hot/hard that
+    // small round shapes (arms, hands, tail) chrome out into metallic streaks.
+    // This is the structural form-light a film panel said flat fills could never
+    // fake with screen-space gradients; baking it per-shape means it tracks the
+    // geometry through every pose instead of sliding over it.
+    celShade: const CelShadeSpec(
+      shadowFactor: 0.50,
+      coolAmount: 0.26,
+      coverage: 0.52,
+      softness: 0.18,
+      highlightAmount: 0.26,
+      highlightCoverage: 0.26,
+    ),
   );
 }
 

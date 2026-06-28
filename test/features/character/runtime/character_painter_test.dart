@@ -638,7 +638,7 @@ void main() {
       },
     );
 
-    testWidgets('bodyGrade tints the body but leaves the face ungraded', (
+    testWidgets('bodyGrade seats both the body and the face into the plate', (
       tester,
     ) async {
       await tester.runAsync(() async {
@@ -682,17 +682,29 @@ void main() {
             if (y >= bodyCut) bodyChange += d;
           }
         }
-        // The grade visibly re-tints the body…
+        // The grade seats the whole figure into the plate. The BODY (seat +
+        // twilight wrap + gel terminator, below the collar) carries the heaviest
+        // re-tint…
         expect(
           bodyChange,
           greaterThan(5000),
           reason: 'bodyGrade re-tints the torso/legs',
         );
-        // …but the head/face is clipped out of the grade, so it barely moves.
+        // …and the FACE is seated too — a gentle warm-key→cool-fill split above
+        // the collar so the bright warm muzzle stops floating as the scene's
+        // hottest sticker. (It used to be clipped out entirely; the integration
+        // grade now treats it, just more softly than the body.)
         expect(
           headChange,
-          lessThan(bodyChange ~/ 8),
-          reason: 'the face/head is left at its natural tone',
+          greaterThan(1000),
+          reason: 'bodyGrade seats the face with its warm-key/cool-fill split',
+        );
+        // …but the face split is deliberately gentler (broad, low-contrast) than
+        // the body grade, so the head moves LESS than the torso/legs.
+        expect(
+          headChange,
+          lessThan(bodyChange),
+          reason: 'the face is graded more gently than the body',
         );
       });
     });

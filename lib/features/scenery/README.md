@@ -217,15 +217,22 @@ its floor pool always share a gel:
   The grounding half: an additive (`BlendMode.plus`) screen-space pass over the
   dancers drawing a gel pool that is anchored at the foot and **rakes forward**
   (downstage) with a horizontal shear (`_kPoolLean`) so off-centre pools lie along
-  the deck's plank perspective, plus a hot core at the foot contact. It eases its
-  pool toward the live dancer foot (lazy on small moves, fast catch-up on a camera
+  the deck's plank perspective, plus a hot core at the foot contact. A small cool
+  near-black **contact occlusion** is then punched back into the pool centre
+  (normal alpha-over, on top of the additive gel) hugging the sole — the dancer
+  occluding the floor light where they stand — so the cat is anchored by a real
+  dark contact with the gel spilling *around* it, not floating on a bright puddle;
+  the occlusion is beat-independent (grounding must not pulse). It eases its pool
+  toward the live dancer foot (lazy on small moves, fast catch-up on a camera
   cut), tracking the anchors the painter publishes via `onDancerAnchors`.
 
 The demo samples the rig once per frame and feeds the gels to both halves, so the
-whole rig pulses with the music. The cat **bodies never pulse with the beat** (a
-full-figure flash would be a photosensitivity risk): only the rim halo and floor
-pools animate, while `bodyGrade` stays a static grade. Reduce-motion freezes the
-rig to a calm static frame.
+whole rig pulses with the music. The cat **bodies never flash with the beat** (a
+full-figure luminance flash would be a photosensitivity risk): the figure's value
+and form stay static, and only a single motivated gel-key term on the fabric (plus
+the rim halo and floor pools around the cats) breathes gently — see the seizure
+note in `character/README.md`. Reduce-motion freezes the rig to a calm static
+frame.
 
 ## Asset Preparation
 
