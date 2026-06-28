@@ -109,7 +109,13 @@ const double kMinCalmSeconds = 4;
 const double kMouthAttackSeconds = 0.045;
 const double kMouthReleaseSeconds = 0.12;
 
-typedef _Section = ({double start, double end, String label, bool energetic});
+typedef _Section = ({
+  double start,
+  double end,
+  String label,
+  bool energetic,
+  double level, // normalized 0..1 energy across the track's sections
+});
 typedef _Word = ({
   double start,
   double end,
@@ -192,19 +198,46 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   final CharacterRenderer _renderer = CharacterRenderer();
   final Player _player = Player();
 
-  // Cached clips: rebuilding the clip compiles the whole DancePhrase, so build
-  // the trio once instead of every frame.
-  // The showcase now runs the redesigns as a full trio: the LEAD does Shaku,
-  // the LEFT background dancer does Azonto, and the RIGHT does Zanku/Legwork.
-  // All three share the same 6s/32-frame phrase, so they stay beat-synced.
-  late final Clip _danceLead = CatClips.shaku;
-  late final List<Clip> _danceEnsemble = [
-    CatClips.shaku,
-    CatClips.azonto,
-    CatClips.zanku,
-  ];
+  // Cached clips: rebuilding a clip compiles the whole DancePhrase, so build all
+  // six dance moves once and reuse them across sections. They share the same
+  // 6s/32-frame phrase, so a trio (and section-to-section swaps) stay beat-synced.
+  late final Clip _shaku = CatClips.shaku;
+  late final Clip _zanku = CatClips.zanku;
+  late final Clip _azonto = CatClips.azonto;
+  late final Clip _buga = CatClips.buga;
+  late final Clip _pounce = CatClips.pouncingCat;
+  late final Clip _sekem = CatClips.sekem;
   late final Clip _idle = CatClips.idle;
   late final List<Clip> _idleEnsemble = [_idle, _idle, _idle];
+
+  // Energy-aware choreography: map a section's normalized energy level (0 = the
+  // track's quietest section, 1 = its loudest) to a trio drawn from all six
+  // moves, building from the gliding Pouncing Cat in the calm pockets up to the
+  // full Legwork + Stomp + Buga-hit at the peaks. ensemble[0] is the lead.
+  ({Clip lead, List<Clip> ensemble}) _choreoTrioFor(double level) {
+    if (level >= 0.90) {
+      // The drop's money shot: all three hit Buga in unison (lo-lo-lo-BUGA).
+      return (lead: _buga, ensemble: [_buga, _buga, _buga]);
+    }
+    if (level >= 0.78) {
+      // Peak: legwork lead, stomp + show-off hit behind.
+      return (lead: _zanku, ensemble: [_zanku, _sekem, _buga]);
+    }
+    if (level >= 0.62) {
+      // Chorus: groovy Shaku lead, legwork + stomp behind.
+      return (lead: _shaku, ensemble: [_shaku, _zanku, _sekem]);
+    }
+    if (level >= 0.45) {
+      // Verse / build: the expressive trio (arms, swivel, legwork).
+      return (lead: _shaku, ensemble: [_shaku, _azonto, _zanku]);
+    }
+    if (level >= 0.28) {
+      // Low groove: hip-swivel lead, the glide behind it.
+      return (lead: _azonto, ensemble: [_azonto, _shaku, _pounce]);
+    }
+    // Calm pocket: the whole trio on the low gliding Pouncing Cat.
+    return (lead: _pounce, ensemble: [_pounce, _pounce, _pounce]);
+  }
 
   late final Ticker _ticker; // 60 fps repaint pump; time comes from the player.
 
@@ -391,7 +424,13 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     if (raw.isEmpty || amplitudes.isEmpty || duration <= 0) {
       return [
         for (final s in raw)
-          (start: s.start, end: s.end, label: s.label, energetic: true),
+          (
+            start: s.start,
+            end: s.end,
+            label: s.label,
+            energetic: true,
+            level: 1.0,
+          ),
       ];
     }
     final n = amplitudes.length;
@@ -417,6 +456,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       if (e > maxE) maxE = e;
     }
     final threshold = minE + kSectionEnergyThreshold * (maxE - minE);
+    final range = maxE - minE;
     return [
       for (var i = 0; i < raw.length; i++)
         (
@@ -426,6 +466,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
           energetic:
               !(energies[i] < threshold &&
                   (raw[i].end - raw[i].start) >= kMinCalmSeconds),
+          level: range > 0 ? (energies[i] - minE) / range : 1.0,
         ),
     ];
   }
@@ -668,17 +709,23 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     final section = _sectionAt(pos);
     final map = _map;
     final binding = _binding;
-    if ((section?.energetic ?? true) && map != null && binding != null) {
+    final level = section?.level ?? 1.0;
+    // Only fully rest (idle) on a genuinely dead-quiet section; otherwise the
+    // trio dances a move chosen for the section's energy. The lead's duration
+    // sets the beat-lock clock (all dance moves share the 6s phrase).
+    final resting = section != null && !section.energetic && level < 0.15;
+    if (!resting && map != null && binding != null) {
+      final trio = _choreoTrioFor(level);
       return (
-        lead: _danceLead,
-        ensemble: _danceEnsemble,
+        lead: trio.lead,
+        ensemble: trio.ensemble,
         seconds: map.clipSecondsAt(
           pos,
-          clipDuration: _danceLead.duration,
+          clipDuration: trio.lead.duration,
           binding: binding,
         ),
         section: section,
-        energetic: true,
+        energetic: section?.energetic ?? true,
       );
     }
     return (
