@@ -276,9 +276,10 @@ calmer, less over-acted read.
 ### Virtual camera — the dance director
 
 The dance-to-track demo's camera is **dolly-first**: a sustained, motivated
-camera move reads as higher production value than a cut, so the whole piece is
-continuous moves with exactly **one** hard cut (the climax). Two pieces split the
-job:
+camera move reads as higher production value than a cut, so the spine of the
+piece is continuous moves and cuts are spent only where the genre asks for them —
+the Afrobeats downbeat into each chorus, the two bridge singer hand-offs, and the
+one reserved climax. Two pieces split the job:
 
 - **`demo/dance_camera_director.dart` — the director (pure).** A deterministic
   `cameraShot(DanceCameraContext) → Shot` (`Shot = ({double zoom, double dx,
@@ -289,9 +290,11 @@ job:
   eases the *live* camera toward the director's target every tick with a
   critically-damped `smoothDamp` (ease-in **and** ease-out, no overshoot), so a
   change of section or home becomes a motivated **dolly**. The eased shot is what
-  reaches `CharacterPainter.cameraOverride`. The lone exception is the reserved
-  hero: `isHardCut(ctx)` flags that one frame and the rig **snaps** instead of
-  easing — the single cut in the piece.
+  reaches `CharacterPainter.cameraOverride`. The exceptions are the genre **cuts**,
+  where the rig **snaps** to the target on a single frame instead of easing: the
+  downbeat into each chorus (`isChorusDrop`), each of the two bridge singer
+  features (`isBridgeCut`), and the reserved climax hero (`isHardCut`). Verses,
+  pre-choruses and the outro stay dollies.
 
 `cameraContext(...)` derives just what a dolly-first director needs: the
 `section`, the normalized `build` (= position in the whole clip), the per-section
@@ -305,7 +308,7 @@ flowchart LR
   energetic -- no --> est["establish — wide 1.06, slow breath, dy +8 sky"]
   energetic -- yes --> sec{section}
   sec -- chorus / post-chorus --> ch[_chorusShot]
-  sec -- bridge --> br["_bridgeShot — singer handoff swing"]
+  sec -- bridge --> br["_bridgeShot — two singer-feature cuts"]
   sec -- pre-chorus --> pc["_preChorusShot — monotonic tension climb"]
   sec -- outro --> ou["_outroShot — de-escalate to idle"]
   sec -- verse / default --> ve["_verseShot — grounded living-medium"]
@@ -313,16 +316,16 @@ flowchart LR
   home -- "< 0.30" --> c1["chorus 1 — wide, centred"]
   home -- "0.30..0.62" --> c2["chorus 2 — LEFT two-shot (silver)"]
   home -- "> 0.62" --> c3["chorus 3 — RIGHT two-shot (dark)"]
-  home -- "closing hook > 0.74" --> hero["coil ~1.56 → hard CUT to 2.10 hero"]
+  home -- "closing hook > 0.74" --> hero["coil ~1.56 → hard CUT to ~2.30 legwork-hero"]
   est & br & pc & ou & ve & c1 & c2 & c3 --> rig
-  hero --> rig["DanceCameraRig: dolly toward target;<br/>snap iff isHardCut"]
+  hero --> rig["DanceCameraRig: dolly toward target;<br/>snap on chorus / bridge / hero cuts"]
   rig --> cam["CharacterPainter.cameraOverride"]
 ```
 
 **Stable homes, dollied between.** Each section is a *stable* target (a held
 home with a slow breathing push, no per-bar cuts), so across the song the target
 makes a handful of big steps — idle → chorus 1 centre → chorus 2 left → verse →
-bridge swing → chorus 3 right → coil → hero → outro. The rig turns each step into
+bridge features → chorus 3 right → coil → hero → outro. The rig turns each step into
 one deliberate truck across the stage. `smoothTime` (default `0.7s`,
 `kDanceCameraSmoothTime`) is the single knob for how grand vs snappy those moves
 feel.
@@ -345,25 +348,31 @@ the same shot (zoom→34 %, dx→28 %, dy→18 %) about the *feet* pivot so the
 scenery reads as deeper than the dancers under a push.
 
 **Reserve the peak.** Every pre-climax hook is capped around `zoom 1.60`. The
-single tightest framing — a `~2.10` knee-up close-up on the lead — is spent
-**once**, at the end of the final post-chorus, and is the one place the rig is
-told to **cut**: the coil holds ~1.56, then the target steps straight to 2.10 and
-the rig snaps (no dolly), so the money shot lands as a cut into a new register.
-The rig then dollies back *out* of the hero into the outro (only the cut-in
-snaps). During the bridge the lead is silent, so the camera pans to favour a
-background singer — but the pan depth is **capped** (`0.50` of a full side-cat
-centring, ≈ `dx ±340` at the peak): deeper than that shoved the *opposite*
-backup clean off the far edge (it read as a dancer vanishing), so it is held to
-where the far cat keeps a half-figure on frame.
+single tightest framing — a `~2.30` **legwork money-shot** that fills the frame
+with the lead head-to-toe (Afrobeats peaks on the legs, so the hero celebrates
+the footwork rather than craning into a face close-up) — is spent **once**, at the
+very end of the final post-chorus. The coil holds ~1.56, then the target steps
+straight to 2.30 (with a shallow negative `dy`, `kHeroLegworkLiftRef`, that lifts
+the figure just enough to keep the planted feet and the cast shadow in frame) and
+the rig snaps, so the money shot lands as a cut into a register the eye has not
+seen. The rig then dollies back *out* of the hero into the outro. During the
+bridge the lead is silent and the two backups trade the vocal, so the camera
+**cuts** between two committed singer-feature two-shots — onto the silver (left)
+backup for the first half, then onto the brown (right) backup for the second
+(`isBridgeCut`). Each lean is held deep (`0.60` of a full side-cat centring) but
+not total, so the off-singer keeps a thin half-figure on the far edge rather than
+vanishing — the user flagged a cat leaving frame entirely as reading like a glitch.
 
 The dolly-first design is tested across three files: the rig math
 (`dance_camera_rig_test.dart` — convergence, no overshoot, frame-rate
 independence, snap-on-cut, momentum-cleared), the director
 (`dance_camera_director_test.dart` — per-section example shots, a **continuity**
-sweep proving no section jumps mid-move, `isHardCut` agreeing frame-for-frame
-with the 2.10 hero shot, plus Glados invariants: the ceiling never exceeds the
-hero zoom, non-hero frames stay capped, the pan stays inside its clamp), and the
-parallax transform (`character_painter_test.dart`).
+sweep proving no dollied section jumps mid-move, the three cut predicates
+(`isHardCut` agreeing frame-for-frame with the 2.30 hero, `isChorusDrop` firing
+only on chorus downbeats, `isBridgeCut` firing on the two bridge singer hand-offs),
+plus Glados invariants: the ceiling never exceeds the hero zoom, non-hero frames
+stay capped, the pan stays inside its clamp), and the parallax transform
+(`character_painter_test.dart`).
 
 ## Reviewing motion — film strips, grids, onions, travel
 

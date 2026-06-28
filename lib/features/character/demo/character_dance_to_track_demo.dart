@@ -263,13 +263,17 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     );
     if (leadOn) _leadShape = cue.shape;
     if (bgOn) _bgShape = cue.shape;
-    // Advance the camera rig toward the director's target for this frame. Every
-    // framing change eases into a dolly; only the reserved hero snaps (a cut).
+    // Advance the camera rig toward the director's target for this frame. Most
+    // framing changes ease into a dolly; the genre cuts snap — the downbeat into
+    // each chorus ([isChorusDrop]), the bridge singer-features ([isBridgeCut]),
+    // and the reserved climax hero ([isHardCut]).
     final ctx = _directorContext(pos, energetic: _stageNow().energetic);
     final target = ctx == null ? _liveShot : cameraShot(ctx);
     _liveShot = _cameraRig.update(
       target: target,
-      cut: ctx != null && isHardCut(ctx),
+      cut:
+          ctx != null &&
+          (isHardCut(ctx) || isChorusDrop(ctx) || isBridgeCut(ctx)),
       dt: dt,
     );
     setState(() {

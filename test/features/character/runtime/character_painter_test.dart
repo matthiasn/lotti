@@ -1253,8 +1253,9 @@ void main() {
     });
 
     test('a positive dy lowers the backdrop (more sky on top) once zoomed', () {
-      // Reduced dy = 40 * 0.18 = 7.2; positive pushes content DOWN, opening
-      // sky above — the establish padding the director only applies at rest.
+      // dy is parallax-reduced (×0.18) then rescaled to the stage height
+      // (×height/1440), so the same dy frames the same FRACTION at any size:
+      // 40 × 0.18 × 450/1440 = 2.25. Positive pushes content DOWN, opening sky.
       final m = CharacterPainter.danceParallaxTransformForShot(
         shot: (zoom: 2.10, dx: 0.0, dy: 40.0),
         size: size,
@@ -1262,7 +1263,7 @@ void main() {
       final nudged = MatrixUtils.transformPoint(m, directorPivot);
       expect(
         nudged.dy - directorPivot.dy,
-        moreOrLessEquals(7.2, epsilon: 1e-6),
+        moreOrLessEquals(2.25, epsilon: 1e-6),
       );
       expect(nudged.dy, greaterThan(directorPivot.dy));
     });

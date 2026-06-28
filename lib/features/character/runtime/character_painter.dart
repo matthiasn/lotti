@@ -176,9 +176,12 @@ class CharacterPainter extends CustomPainter {
   // the side cats off the edge (the "left cat disappears" bug). So the horizontal
   // pan is scaled by the stage width relative to this reference, keeping it the
   // same fraction — and the side dancers on screen — at any window size. The
-  // vertical lift (dy) is deliberately NOT scaled: it frames the torso/face on
-  // the push-in and is pinned by tests at the reference composition.
+  // virtual director's vertical lift (dy) is rescaled the same way against the
+  // reference HEIGHT, so a negative dy frames the same FRACTION of the figure
+  // (e.g. lifting the legwork to centre for the climax) at any window height. The
+  // legacy built-in keyframes keep raw-px dy (their authored composition).
   static const double _danceCameraRefWidth = 2560;
+  static const double _danceCameraRefHeight = 1440;
 
   /// Vertical position (fraction of stage height) of the zoom pivot — the point
   /// that stays put as the camera pushes in — for the **virtual director**'s
@@ -232,12 +235,21 @@ class CharacterPainter extends CustomPainter {
             );
       pivotFraction = _builtInDancePivotFraction;
     }
+    // Only the director's shots carry a height-rescaled dy (its legwork-climax
+    // lift); the legacy keyframes keep their raw-px vertical framing.
+    final scaleDy = cameraOverride != null;
 
     if (backdrop == CharacterBackdrop.waterfront) {
       canvas
         ..save()
         ..clipRect(Offset.zero & size);
-      _applyParallaxCamera(canvas, size, sceneCamera, pivotFraction);
+      _applyParallaxCamera(
+        canvas,
+        size,
+        sceneCamera,
+        pivotFraction,
+        scaleDy: scaleDy,
+      );
       _paintWaterfrontBackdrop(
         canvas,
         size,
@@ -253,7 +265,13 @@ class CharacterPainter extends CustomPainter {
     canvas
       ..save()
       ..clipRect(Offset.zero & size);
-    _applySceneCamera(canvas, size, sceneCamera, pivotFraction);
+    _applySceneCamera(
+      canvas,
+      size,
+      sceneCamera,
+      pivotFraction,
+      scaleDy: scaleDy,
+    );
 
     if (backdrop != CharacterBackdrop.waterfront && groundColor != null) {
       canvas.drawRect(
@@ -379,8 +397,9 @@ class CharacterPainter extends CustomPainter {
     Canvas canvas,
     Size size,
     ({double zoom, double dx, double dy}) camera,
-    double pivotFraction,
-  ) {
+    double pivotFraction, {
+    bool scaleDy = false,
+  }) {
     if (camera.zoom == 1 && camera.dx == 0 && camera.dy == 0) return;
     final pivot = Offset(size.width / 2, size.height * pivotFraction);
     final maxDx = size.width * (camera.zoom - 1) / 2;
@@ -389,7 +408,13 @@ class CharacterPainter extends CustomPainter {
       -maxDx,
       maxDx,
     );
-    final dy = camera.dy.clamp(-maxDy, maxDy);
+    // The virtual director authors dy in 1440-ref px so a negative dy frames the
+    // same FRACTION of the figure at any height (the legwork-climax lift). The
+    // legacy built-in keyframes author dy in raw px, so they are not rescaled.
+    final rawDy = scaleDy
+        ? camera.dy * size.height / _danceCameraRefHeight
+        : camera.dy;
+    final dy = rawDy.clamp(-maxDy, maxDy);
     canvas
       ..translate(pivot.dx + dx, pivot.dy + dy)
       ..scale(camera.zoom)
@@ -400,9 +425,16 @@ class CharacterPainter extends CustomPainter {
     Canvas canvas,
     Size size,
     ({double zoom, double dx, double dy}) camera,
-    double pivotFraction,
-  ) {
-    _applySceneCamera(canvas, size, _parallaxCamera(camera), pivotFraction);
+    double pivotFraction, {
+    bool scaleDy = false,
+  }) {
+    _applySceneCamera(
+      canvas,
+      size,
+      _parallaxCamera(camera),
+      pivotFraction,
+      scaleDy: scaleDy,
+    );
   }
 
   /// Reduces a scene camera to the gentler backdrop parallax (it lags the
@@ -460,7 +492,12 @@ class CharacterPainter extends CustomPainter {
     bool active = true,
   }) {
     if (!active || size.isEmpty) return Matrix4.identity();
-    return _parallaxMatrix(_parallaxCamera(shot), size, _directorPivotFraction);
+    return _parallaxMatrix(
+      _parallaxCamera(shot),
+      size,
+      _directorPivotFraction,
+      scaleDy: true,
+    );
   }
 
   /// Builds the column-major backdrop matrix for an already-reduced [parallax]
@@ -470,8 +507,9 @@ class CharacterPainter extends CustomPainter {
   static Matrix4 _parallaxMatrix(
     ({double zoom, double dx, double dy}) parallax,
     Size size,
-    double pivotFraction,
-  ) {
+    double pivotFraction, {
+    bool scaleDy = false,
+  }) {
     if (parallax.zoom == 1 && parallax.dx == 0 && parallax.dy == 0) {
       return Matrix4.identity();
     }
@@ -482,7 +520,10 @@ class CharacterPainter extends CustomPainter {
       -maxDx,
       maxDx,
     );
-    final dy = parallax.dy.clamp(-maxDy, maxDy);
+    final rawDy = scaleDy
+        ? parallax.dy * size.height / _danceCameraRefHeight
+        : parallax.dy;
+    final dy = rawDy.clamp(-maxDy, maxDy);
     // Uniform scale about [pivot] then translate by (dx, dy), written directly
     // as a column-major matrix (avoids the deprecated Matrix4.translate/scale).
     final z = parallax.zoom;
