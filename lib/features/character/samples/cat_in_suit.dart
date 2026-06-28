@@ -4815,15 +4815,23 @@ class CatClips {
     DanceIkTargetKey(2, x: 89, y: 82), // KICK OUT (right free, ~45° extended)
     DanceIkTargetKey(4, x: 34, y: 97), // stamp (support [4-8])
     DanceIkTargetKey(6, x: 35, y: 96), // planted, held
-    DanceIkTargetKey(8, x: 34, y: 97), // plant end — swap
+    DanceIkTargetKey(8, x: 58, y: 87), // lifting toward the kick (anticipation)
     DanceIkTargetKey(10, x: 89, y: 82), // KICK OUT
     DanceIkTargetKey(12, x: 34, y: 97), // stamp (support [12-16])
     DanceIkTargetKey(14, x: 35, y: 96),
-    DanceIkTargetKey(16, x: 34, y: 97), // plant end — swap
+    DanceIkTargetKey(
+      16,
+      x: 58,
+      y: 87,
+    ), // lifting toward the kick (anticipation)
     DanceIkTargetKey(18, x: 89, y: 82), // KICK OUT
     DanceIkTargetKey(20, x: 34, y: 97), // stamp (support [20-24])
     DanceIkTargetKey(22, x: 35, y: 96),
-    DanceIkTargetKey(24, x: 34, y: 97), // plant end — swap
+    DanceIkTargetKey(
+      24,
+      x: 58,
+      y: 87,
+    ), // lifting toward the kick (anticipation)
     DanceIkTargetKey(26, x: 89, y: 82), // KICK OUT
     DanceIkTargetKey(28, x: 34, y: 97), // stamp (support [28-32])
     DanceIkTargetKey(30, x: 48, y: 90), // starting to lift
@@ -5131,8 +5139,9 @@ class CatClips {
     DanceIkTargetKey(4, x: 14, y: -18),
     DanceIkTargetKey(8, x: 12, y: -20),
     DanceIkTargetKey(11, x: 10, y: -20),
-    DanceIkTargetKey(12, x: 82, y: -74), // THRUST UP+OUT — present (the hit)
-    DanceIkTargetKey(14, x: 78, y: -68),
+    DanceIkTargetKey(12, x: 100, y: -88), // THRUST UP+OUT — present (the hit)
+    DanceIkTargetKey(13, x: 104, y: -91), // overshoot past the peak
+    DanceIkTargetKey(14, x: 92, y: -80), // settle back
     DanceIkTargetKey(16, x: 15, y: -16),
     DanceIkTargetKey(20, x: 14, y: -18),
     DanceIkTargetKey(24, x: 13, y: -19),
@@ -5155,10 +5164,11 @@ class CatClips {
     DanceIkTargetKey(27, x: -10, y: -20),
     DanceIkTargetKey(
       28,
-      x: -82,
-      y: -74,
+      x: -100,
+      y: -88,
     ), // THRUST UP+OUT — present (mirror hit)
-    DanceIkTargetKey(30, x: -78, y: -68),
+    DanceIkTargetKey(29, x: -104, y: -91), // overshoot past the peak
+    DanceIkTargetKey(30, x: -92, y: -80), // settle back
     DanceIkTargetKey(32, x: -15, y: -16),
   ];
   static final KeyframeIkTargetChannel _bugaHandLTarget = _dancePhrase
