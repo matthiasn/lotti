@@ -135,7 +135,10 @@ on desktop and phone aspect ratios.
 
 `layers/drone_show_layer.dart` is a deterministic background performance layer,
 not a bitmap asset. It samples normalized drone positions from the scene clock
-and paints additive glows in the sky:
+and paints additive glows in the sky. The current show is intentionally slow:
+220 drones launch along the cable-stayed bridge deck over a 144-second cycle,
+climb into a controlled beam, fan into the sky, then settle into a held
+dot-matrix `Omah Lay` formation.
 
 ```mermaid
 stateDiagram-v2
@@ -151,9 +154,11 @@ The pure functions are the contract:
 - `droneShowTimelineAt(timeSeconds)` resolves the current phase and local
   progress inside the repeatable loop.
 - `droneShowFormationPoints()` generates the final text destination points for
-  `Omah Lay`.
+  the denser dot-matrix `Omah Lay` formation.
 - `sampleDroneShow(timeSeconds)` returns per-drone normalized positions,
   opacity, radius, and phase; reduced-motion samples a static formation frame.
+  During formation, drones settle into the text early and then hold, so the
+  lettering stays readable instead of morphing until the loop wraps.
 
 The layer belongs behind the city/yacht redraw. That lets the launch read as
 coming from the bridge area while solid painted structures still occlude the

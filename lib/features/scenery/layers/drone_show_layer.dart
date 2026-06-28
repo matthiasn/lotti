@@ -7,14 +7,18 @@ import 'package:lotti/features/scenery/layers/backdrop_layer.dart';
 const String kDroneShowFinalText = 'Omah Lay';
 
 /// Number of light points in the deterministic show.
-const int kDroneShowDroneCount = 120;
+const int kDroneShowDroneCount = 220;
 
 /// Length of one complete drone-show loop.
-const double kDroneShowCycleSeconds = 18;
+///
+/// Real drone shows read as slow, coordinated aircraft rather than particles:
+/// a long launch, a deliberate grouped climb, then a held formation.
+const double kDroneShowCycleSeconds = 144;
 
-const double _launchEnd = 0.28;
-const double _beamEnd = 0.50;
-const double _fanEnd = 0.72;
+const double _launchEnd = 0.44;
+const double _beamEnd = 0.62;
+const double _fanEnd = 0.70;
+const double _formationSettleFraction = 0.24;
 
 /// Coarse segment in the repeatable drone-show choreography.
 enum DroneShowPhase { launch, beam, fan, formation }
@@ -150,10 +154,15 @@ DroneShowTimeline droneShowTimelineAt(
 /// Generates normalized destination points for [kDroneShowFinalText].
 List<ui.Offset> droneShowFormationPoints({int count = kDroneShowDroneCount}) {
   if (count <= 0) return const [];
-  final strokes = _textStrokes(kDroneShowFinalText);
+  final cells = _textDotCells(kDroneShowFinalText);
   return List<ui.Offset>.generate(count, (i) {
-    final u = count == 1 ? 0.5 : i / (count - 1);
-    return _pointAlongStrokes(strokes, u);
+    final cell = cells[(i * 73) % cells.length];
+    final angle = _unitForIndex(i + 211) * math.pi * 2;
+    final radius = math.sqrt(_unitForIndex(i + 307)) * 0.24;
+    return cell.center.translate(
+      math.cos(angle) * cell.width * radius,
+      math.sin(angle) * cell.height * radius,
+    );
   }, growable: false);
 }
 
@@ -173,7 +182,7 @@ List<DroneShowSample> sampleDroneShow(
   final formation = droneShowFormationPoints(count: count);
   return List<DroneShowSample>.generate(count, (i) {
     final t = _easeInOut(timeline.progress);
-    final launch = _launchPoint(i);
+    final launch = _launchPoint(i, count);
     final beam = _beamPoint(i);
     final fan = _fanPoint(i, count);
     final dest = formation[i];
@@ -181,7 +190,11 @@ List<DroneShowSample> sampleDroneShow(
       DroneShowPhase.launch => ui.Offset.lerp(launch, beam, t)!,
       DroneShowPhase.beam => ui.Offset.lerp(beam, _beamLiftPoint(i), t)!,
       DroneShowPhase.fan => ui.Offset.lerp(_beamLiftPoint(i), fan, t)!,
-      DroneShowPhase.formation => ui.Offset.lerp(fan, dest, t)!,
+      DroneShowPhase.formation => _formationPoint(
+        fan,
+        dest,
+        timeline.progress,
+      ),
     };
     final twinkle = reducedMotion
         ? 0.0
@@ -195,32 +208,42 @@ List<DroneShowSample> sampleDroneShow(
   }, growable: false);
 }
 
-ui.Offset _launchPoint(int index) {
-  final u = _unitForIndex(index);
-  final x = 0.30 + u * 0.40;
-  final y = 0.61 + 0.025 * math.sin(index * 1.9);
+ui.Offset _launchPoint(int index, int count) {
+  final u = count <= 1 ? 0.5 : index / (count - 1);
+  final x = 0.48 + u * 0.27 + (_unitForIndex(index + 101) - 0.5) * 0.006;
+  final y =
+      0.515 -
+      0.018 * math.sin(u * math.pi) +
+      (_unitForIndex(index + 127) - 0.5) * 0.007;
   return ui.Offset(x, y);
 }
 
 ui.Offset _beamPoint(int index) {
   final wobble = (_unitForIndex(index + 11) - 0.5) * 0.035;
   final height = _unitForIndex(index + 29) * 0.22;
-  return ui.Offset(0.50 + wobble, 0.50 - height);
+  return ui.Offset(0.62 + wobble, 0.47 - height);
 }
 
 ui.Offset _beamLiftPoint(int index) {
   final wobble = (_unitForIndex(index + 3) - 0.5) * 0.026;
   final height = _unitForIndex(index + 47) * 0.24;
-  return ui.Offset(0.50 + wobble, 0.36 - height);
+  return ui.Offset(0.62 + wobble, 0.34 - height);
 }
 
 ui.Offset _fanPoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
   final wave = math.sin(u * math.pi * 2.0);
   return ui.Offset(
-    0.18 + u * 0.64,
-    0.19 + 0.17 * _unitForIndex(index + 5) + wave * 0.035,
+    0.15 + u * 0.70,
+    0.15 + 0.18 * _unitForIndex(index + 5) + wave * 0.034,
   );
+}
+
+ui.Offset _formationPoint(ui.Offset fan, ui.Offset dest, double progress) {
+  final settle = _easeInOut(
+    (progress / _formationSettleFraction).clamp(0.0, 1.0),
+  );
+  return ui.Offset.lerp(fan, dest, settle)!;
 }
 
 double _unitForIndex(int index) {
@@ -238,129 +261,134 @@ double _easeInOut(double x) {
   return t * t * (3 - 2 * t);
 }
 
-List<_Stroke> _textStrokes(String text) {
-  const gap = 0.18;
-  final glyphs = <_Glyph>[];
+List<_DotCell> _textDotCells(String text) {
+  const glyphGap = 1;
+  const spaceWidth = 2;
+  final rawCells = <({int x, int y})>[];
   var cursor = 0.0;
   for (final codePoint in text.runes) {
-    final char = String.fromCharCode(codePoint);
+    final char = String.fromCharCode(codePoint).toUpperCase();
     if (char == ' ') {
-      cursor += 0.58;
+      cursor += spaceWidth;
       continue;
     }
-    final glyph = _glyphFor(char);
-    glyphs.add(glyph.shift(cursor));
-    cursor += glyph.width + gap;
+    final glyph = _dotGlyphFor(char);
+    for (var y = 0; y < glyph.rows.length; y++) {
+      final row = glyph.rows[y];
+      for (var x = 0; x < row.length; x++) {
+        if (row.codeUnitAt(x) == 49) {
+          rawCells.add((x: cursor.round() + x, y: y));
+        }
+      }
+    }
+    cursor += glyph.width + glyphGap;
   }
 
-  final width = math.max(cursor - gap, 1);
-  const targetWidth = 0.58;
+  if (rawCells.isEmpty) {
+    return const [_DotCell(ui.Offset(0.5, 0.22), 0.01, 0.01)];
+  }
+
+  final width = math.max(cursor - glyphGap, 1);
+  const rows = 7;
+  const targetWidth = 0.68;
   const targetHeight = 0.18;
-  const left = 0.21;
-  const top = 0.18;
+  const left = 0.16;
+  const top = 0.15;
+  final cellWidth = targetWidth / width;
+  const cellHeight = targetHeight / rows;
   return [
-    for (final glyph in glyphs)
-      for (final stroke in glyph.strokes)
-        _Stroke(
-          ui.Offset(
-            left + stroke.a.dx / width * targetWidth,
-            top + stroke.a.dy * targetHeight,
-          ),
-          ui.Offset(
-            left + stroke.b.dx / width * targetWidth,
-            top + stroke.b.dy * targetHeight,
-          ),
+    for (final cell in rawCells)
+      _DotCell(
+        ui.Offset(
+          left + (cell.x + 0.5) * cellWidth,
+          top + (cell.y + 0.5) * cellHeight,
         ),
+        cellWidth,
+        cellHeight,
+      ),
   ];
 }
 
-ui.Offset _pointAlongStrokes(List<_Stroke> strokes, double progress) {
-  final total = strokes.fold<double>(0, (sum, s) => sum + s.length);
-  var remaining = progress.clamp(0.0, 1.0) * total;
-  for (final stroke in strokes) {
-    if (remaining <= stroke.length) {
-      return ui.Offset.lerp(stroke.a, stroke.b, remaining / stroke.length)!;
-    }
-    remaining -= stroke.length;
-  }
-  return strokes.last.b;
-}
-
-_Glyph _glyphFor(String char) {
+_DotGlyph _dotGlyphFor(String char) {
   return switch (char) {
-    'O' => const _Glyph(1, [
-      _Stroke(ui.Offset(0.50, 0), ui.Offset(0.15, 0.12)),
-      _Stroke(ui.Offset(0.15, 0.12), ui.Offset(0, 0.50)),
-      _Stroke(ui.Offset(0, 0.50), ui.Offset(0.15, 0.88)),
-      _Stroke(ui.Offset(0.15, 0.88), ui.Offset(0.50, 1)),
-      _Stroke(ui.Offset(0.50, 1), ui.Offset(0.85, 0.88)),
-      _Stroke(ui.Offset(0.85, 0.88), ui.Offset(1, 0.50)),
-      _Stroke(ui.Offset(1, 0.50), ui.Offset(0.85, 0.12)),
-      _Stroke(ui.Offset(0.85, 0.12), ui.Offset(0.50, 0)),
+    'O' => const _DotGlyph([
+      '01110',
+      '10001',
+      '10001',
+      '10001',
+      '10001',
+      '10001',
+      '01110',
     ]),
-    'm' => const _Glyph(1.05, [
-      _Stroke(ui.Offset(0, 1), ui.Offset(0, 0.35)),
-      _Stroke(ui.Offset(0, 0.42), ui.Offset(0.25, 0.18)),
-      _Stroke(ui.Offset(0.25, 0.18), ui.Offset(0.50, 0.42)),
-      _Stroke(ui.Offset(0.50, 0.42), ui.Offset(0.50, 1)),
-      _Stroke(ui.Offset(0.50, 0.42), ui.Offset(0.75, 0.18)),
-      _Stroke(ui.Offset(0.75, 0.18), ui.Offset(1.05, 0.42)),
-      _Stroke(ui.Offset(1.05, 0.42), ui.Offset(1.05, 1)),
+    'M' => const _DotGlyph([
+      '10001',
+      '11011',
+      '10101',
+      '10101',
+      '10001',
+      '10001',
+      '10001',
     ]),
-    'a' => const _Glyph(0.82, [
-      _Stroke(ui.Offset(0.72, 1), ui.Offset(0.72, 0.35)),
-      _Stroke(ui.Offset(0.72, 0.35), ui.Offset(0.40, 0.18)),
-      _Stroke(ui.Offset(0.40, 0.18), ui.Offset(0.08, 0.35)),
-      _Stroke(ui.Offset(0.08, 0.35), ui.Offset(0.08, 0.78)),
-      _Stroke(ui.Offset(0.08, 0.78), ui.Offset(0.40, 1)),
-      _Stroke(ui.Offset(0.40, 1), ui.Offset(0.72, 0.78)),
-      _Stroke(ui.Offset(0.08, 0.58), ui.Offset(0.72, 0.58)),
+    'A' => const _DotGlyph([
+      '01110',
+      '10001',
+      '10001',
+      '11111',
+      '10001',
+      '10001',
+      '10001',
     ]),
-    'h' => const _Glyph(0.78, [
-      _Stroke(ui.Offset(0, 1), ui.Offset.zero),
-      _Stroke(ui.Offset(0, 0.45), ui.Offset(0.32, 0.20)),
-      _Stroke(ui.Offset(0.32, 0.20), ui.Offset(0.72, 0.42)),
-      _Stroke(ui.Offset(0.72, 0.42), ui.Offset(0.72, 1)),
+    'H' => const _DotGlyph([
+      '10001',
+      '10001',
+      '10001',
+      '11111',
+      '10001',
+      '10001',
+      '10001',
     ]),
-    'L' => const _Glyph(0.78, [
-      _Stroke(ui.Offset.zero, ui.Offset(0, 1)),
-      _Stroke(ui.Offset(0, 1), ui.Offset(0.78, 1)),
+    'L' => const _DotGlyph([
+      '10000',
+      '10000',
+      '10000',
+      '10000',
+      '10000',
+      '10000',
+      '11111',
     ]),
-    'y' => const _Glyph(0.78, [
-      _Stroke(ui.Offset(0, 0.24), ui.Offset(0.34, 0.78)),
-      _Stroke(ui.Offset(0.72, 0.24), ui.Offset(0.34, 0.78)),
-      _Stroke(ui.Offset(0.34, 0.78), ui.Offset(0.08, 1.18)),
+    'Y' => const _DotGlyph([
+      '10001',
+      '01010',
+      '00100',
+      '00100',
+      '00100',
+      '00100',
+      '00100',
     ]),
-    _ => const _Glyph(0.7, [
-      _Stroke(ui.Offset.zero, ui.Offset(0.70, 1)),
-      _Stroke(ui.Offset(0.70, 0), ui.Offset(0, 1)),
+    _ => const _DotGlyph([
+      '111',
+      '001',
+      '010',
+      '010',
+      '000',
+      '010',
+      '000',
     ]),
   };
 }
 
-class _Glyph {
-  const _Glyph(this.width, this.strokes);
+class _DotGlyph {
+  const _DotGlyph(this.rows);
 
-  final double width;
-  final List<_Stroke> strokes;
+  final List<String> rows;
 
-  _Glyph shift(double dx) => _Glyph(
-    width,
-    [
-      for (final stroke in strokes)
-        _Stroke(
-          stroke.a.translate(dx, 0),
-          stroke.b.translate(dx, 0),
-        ),
-    ],
-  );
+  int get width => rows.first.length;
 }
 
-class _Stroke {
-  const _Stroke(this.a, this.b);
+class _DotCell {
+  const _DotCell(this.center, this.width, this.height);
 
-  final ui.Offset a;
-  final ui.Offset b;
-
-  double get length => (b - a).distance;
+  final ui.Offset center;
+  final double width;
+  final double height;
 }

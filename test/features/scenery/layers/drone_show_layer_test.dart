@@ -7,18 +7,22 @@ import 'package:lotti/features/scenery/model/backdrop_palette.dart';
 
 void main() {
   group('droneShowTimelineAt', () {
+    test('uses a physically slow cycle for aircraft-scale motion', () {
+      expect(kDroneShowCycleSeconds, greaterThanOrEqualTo(120));
+    });
+
     test('resolves launch, beam, fan, and formation phases', () {
       expect(droneShowTimelineAt(0).phase, DroneShowPhase.launch);
       expect(
-        droneShowTimelineAt(kDroneShowCycleSeconds * 0.30).phase,
+        droneShowTimelineAt(kDroneShowCycleSeconds * 0.50).phase,
         DroneShowPhase.beam,
       );
       expect(
-        droneShowTimelineAt(kDroneShowCycleSeconds * 0.55).phase,
+        droneShowTimelineAt(kDroneShowCycleSeconds * 0.65).phase,
         DroneShowPhase.fan,
       );
       expect(
-        droneShowTimelineAt(kDroneShowCycleSeconds * 0.80).phase,
+        droneShowTimelineAt(kDroneShowCycleSeconds * 0.86).phase,
         DroneShowPhase.formation,
       );
     });
@@ -41,6 +45,7 @@ void main() {
   group('droneShowFormationPoints', () {
     test('uses the exact final label', () {
       expect(kDroneShowFinalText, 'Omah Lay');
+      expect(kDroneShowDroneCount, greaterThanOrEqualTo(200));
     });
 
     test('generates the requested number of normalized text points', () {
@@ -60,11 +65,11 @@ void main() {
       final minY = points.map((p) => p.dy).reduce((a, b) => a < b ? a : b);
       final maxY = points.map((p) => p.dy).reduce((a, b) => a > b ? a : b);
 
-      expect(minX, greaterThanOrEqualTo(0.20));
-      expect(maxX, lessThanOrEqualTo(0.80));
-      expect(minY, greaterThanOrEqualTo(0.17));
-      expect(maxY, lessThanOrEqualTo(0.40));
-      expect(maxX - minX, greaterThan(0.45));
+      expect(minX, greaterThanOrEqualTo(0.15));
+      expect(maxX, lessThanOrEqualTo(0.85));
+      expect(minY, greaterThanOrEqualTo(0.14));
+      expect(maxY, lessThanOrEqualTo(0.34));
+      expect(maxX - minX, greaterThan(0.58));
     });
   });
 
@@ -80,6 +85,42 @@ void main() {
         expect(a[i].position.dy, closeTo(b[i].position.dy, 1e-12));
         expect(a[i].opacity, closeTo(b[i].opacity, 1e-12));
         expect(a[i].radius, closeTo(b[i].radius, 1e-12));
+      }
+    });
+
+    test('starts all along the cable-stayed bridge deck', () {
+      final samples = sampleDroneShow(0, count: 80);
+      final minX = samples
+          .map((s) => s.position.dx)
+          .reduce((a, b) => a < b ? a : b);
+      final maxX = samples
+          .map((s) => s.position.dx)
+          .reduce((a, b) => a > b ? a : b);
+      final minY = samples
+          .map((s) => s.position.dy)
+          .reduce((a, b) => a < b ? a : b);
+      final maxY = samples
+          .map((s) => s.position.dy)
+          .reduce((a, b) => a > b ? a : b);
+
+      expect(minX, greaterThanOrEqualTo(0.47));
+      expect(maxX, lessThanOrEqualTo(0.76));
+      expect(maxX - minX, greaterThan(0.24));
+      expect(minY, greaterThanOrEqualTo(0.49));
+      expect(maxY, lessThanOrEqualTo(0.52));
+    });
+
+    test('settles into text early and holds the formation', () {
+      final settled = sampleDroneShow(kDroneShowCycleSeconds * 0.78, count: 80);
+      final held = sampleDroneShow(kDroneShowCycleSeconds * 0.95, count: 80);
+
+      expect(
+        settled.map((s) => s.phase),
+        everyElement(DroneShowPhase.formation),
+      );
+      for (var i = 0; i < settled.length; i++) {
+        expect(settled[i].position.dx, closeTo(held[i].position.dx, 1e-12));
+        expect(settled[i].position.dy, closeTo(held[i].position.dy, 1e-12));
       }
     });
 

@@ -439,8 +439,9 @@ seek with the track:
 index-seeded particles. It is deliberately local to scenery/character rather
 than importing the design-system celebration effects, so the showcase remains
 extractable. The background drone show is another scenery layer: drones launch
-from bridge-height anchors, compress into a vertical beam, fan out, and settle
-into `Omah Lay` in the sky behind the city/yacht redraw.
+slowly along the cable-stayed bridge, compress into a vertical beam, fan out,
+and settle into a held dot-matrix `Omah Lay` in the sky behind the city/yacht
+redraw.
 
 ## Reviewing motion — film strips, grids, onions, travel
 
