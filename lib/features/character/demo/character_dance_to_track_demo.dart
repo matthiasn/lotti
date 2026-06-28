@@ -83,13 +83,27 @@ const double kMinCalmSeconds = 4;
 /// changes — bigger = slower, more cinematic zoom (~63% of the way in this long).
 const double kCameraRampSeconds = 1.4;
 
-/// Lyric-driven mouth: how wide the lead's mouth opens on an active word, and how
-/// fast it snaps (small time constant = quick lip movement).
-const double kMouthOpenMax = 0.85;
-const double kMouthRampSeconds = 0.05;
+/// Lyric-driven mouth: how wide a singer's mouth opens on an active word. The
+/// jaw snaps open fast (attack) and relaxes shut more slowly (release) so each
+/// syllable punches and then settles — a single symmetric ramp just flutters.
+/// Kept deliberately modest: a full gape on every word reads as cartoonish
+/// over-acting, so a typical word only cracks the jaw partway.
+const double kMouthOpenMax = 0.58;
+const double kMouthAttackSeconds = 0.045;
+const double kMouthReleaseSeconds = 0.12;
 
 typedef _Section = ({double start, double end, String label, bool energetic});
-typedef _Word = ({double start, double end, String word, String voice});
+typedef _Word = ({
+  double start,
+  double end,
+  String word,
+  String voice,
+  String section,
+});
+
+/// Sections the whole trio sings (a group hook): the backups' mouths join the
+/// frontman on the *lead* words here, not just on the `(...)` ad-libs.
+const Set<String> kGroupSections = {'chorus', 'post-chorus', 'outro'};
 typedef _Stage = ({
   Clip lead,
   List<Clip> ensemble,
@@ -178,6 +192,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   double _cameraStrength = 0; // eased dance-camera ramp (0 = neutral, 1 = full)
   double _leadMouth = 0; // eased frontman mouth (lead lyric words)
   double _bgMouth = 0; // eased backup-dancers' mouth (background ad-libs)
+  MouthShape _leadShape = MouthShape.singAh; // viseme for the active lead word
+  MouthShape _bgShape = MouthShape.singAh; // viseme for the active backup word
   Duration _lastTick = Duration.zero;
   String? _error;
 
@@ -211,15 +227,54 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     final target = (_sectionAt(pos)?.energetic ?? true) ? 1.0 : 0.0;
     var k = dt / kCameraRampSeconds;
     if (k > 1) k = 1;
-    final leadTarget = _voiceActiveAt(pos, 'lead') ? kMouthOpenMax : 0.0;
-    final bgTarget = _voiceActiveAt(pos, 'background') ? kMouthOpenMax : 0.0;
-    var km = dt / kMouthRampSeconds;
-    if (km > 1) km = 1;
+    // The frontman sings every lead word. The backups sing the `(...)` ad-libs
+    // *and* join the lead on the group-hook sections (chorus / post-chorus /
+    // outro), so the chorus reads as the whole trio — not just the frontman.
+    final leadWord = _activeWordAt(pos, (w) => w.voice == 'lead');
+    final bgWord = _activeWordAt(
+      pos,
+      (w) =>
+          w.voice == 'background' ||
+          (w.voice == 'lead' && kGroupSections.contains(w.section)),
+    );
+    if (leadWord != null) _leadShape = _visemeFor(leadWord.word);
+    if (bgWord != null) _bgShape = _visemeFor(bgWord.word);
     setState(() {
       _cameraStrength += (target - _cameraStrength) * k;
-      _leadMouth += (leadTarget - _leadMouth) * km;
-      _bgMouth += (bgTarget - _bgMouth) * km;
+      _leadMouth = _easeMouth(
+        _leadMouth,
+        leadWord != null ? kMouthOpenMax : 0.0,
+        dt,
+      );
+      _bgMouth = _easeMouth(_bgMouth, bgWord != null ? kMouthOpenMax : 0.0, dt);
     });
+  }
+
+  /// Eases a mouth-open value toward [target] with a fast attack and slower
+  /// release (frame-rate independent), so each sung syllable snaps open and then
+  /// relaxes shut instead of fluttering symmetrically.
+  double _easeMouth(double current, double target, double dt) {
+    final tc = target > current ? kMouthAttackSeconds : kMouthReleaseSeconds;
+    var k = dt / tc;
+    if (k > 1) k = 1;
+    return current + (target - current) * k;
+  }
+
+  /// Picks a singing viseme from a word's first strong vowel: round o/u → "oh",
+  /// front e/i/y → "ee", everything else → the wide "ah" workhorse. Cheap and
+  /// stable (per word), giving mouth-shape variety without per-phoneme timing.
+  MouthShape _visemeFor(String word) {
+    for (final code in word.toLowerCase().codeUnits) {
+      switch (code) {
+        case 0x6F || 0x75: // o, u
+          return MouthShape.singOh;
+        case 0x65 || 0x69 || 0x79: // e, i, y
+          return MouthShape.singEe;
+        case 0x61: // a
+          return MouthShape.singAh;
+      }
+    }
+    return MouthShape.singAh;
   }
 
   Future<void> _load() async {
@@ -351,6 +406,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
               word: (w['word'] as String?) ?? '',
               // 'lead' | 'background' (from --lyrics); defaults to lead.
               voice: (w['voice'] as String?) ?? 'lead',
+              section: (w['section'] as String?) ?? '',
             ),
           )
           .toList();
@@ -375,23 +431,22 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     return recent;
   }
 
-  bool _voiceActiveAt(double pos, String voice) {
+  /// The first word matching [test] that is active at [pos], or null. Words are
+  /// time-ordered, so we can stop once a word starts after [pos].
+  _Word? _activeWordAt(double pos, bool Function(_Word w) test) {
     for (final w in _words) {
-      if (pos >= w.start && pos < w.end && w.voice == voice) return true;
+      if (pos >= w.start && pos < w.end && test(w)) return w;
       if (w.start > pos) break;
     }
-    return false;
+    return null;
   }
 
-  /// A face whose mouth is driven open by [mouth] (lyric-synced), falling back to
-  /// [base] when essentially closed. Drives the frontman on lead words and the
-  /// backups on background ad-libs.
-  Expression _singExpression(double mouth, Expression base) {
+  /// A face whose mouth is driven open by [mouth] (lyric-synced) on the [shape]
+  /// viseme, falling back to [base] when essentially closed. Drives the frontman
+  /// on lead words and the backups on background ad-libs / group hooks.
+  Expression _singExpression(double mouth, Expression base, MouthShape shape) {
     if (mouth < 0.04) return base;
-    return Expression(
-      'sing',
-      FaceState(mouthShape: MouthShape.smileOpen, mouthOpen: mouth),
-    );
+    return Expression('sing', FaceState(mouthShape: shape, mouthOpen: mouth));
   }
 
   /// A karaoke caption: a short window of lyric words centred on the current one,
@@ -587,9 +642,17 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                         // Lip-sync: the frontman moves on lead words, the two
                         // backups on background ad-libs.
                         ensembleExpressions: [
-                          _singExpression(_leadMouth, Expression.neutral),
-                          _singExpression(_bgMouth, Expression.content),
-                          _singExpression(_bgMouth, Expression.happy),
+                          _singExpression(
+                            _leadMouth,
+                            Expression.neutral,
+                            _leadShape,
+                          ),
+                          _singExpression(
+                            _bgMouth,
+                            Expression.content,
+                            _bgShape,
+                          ),
+                          _singExpression(_bgMouth, Expression.happy, _bgShape),
                         ],
                         // Section-aware: the energetic dance trio in loud
                         // sections, an eased idle in calm ones.
