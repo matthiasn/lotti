@@ -31,7 +31,7 @@ with per-move keying notes under [`docs/research/`](./docs/research/).
 | Tapered tie (`taperedCapsule` shape) | ✅ 2-link draping tie |
 | Locomotion — the cat walks/runs across & turns at edges | ✅ `runtime/character_painter.dart` |
 | Ground floor + per-foot contact shadows | ✅ `runtime/character_painter.dart` |
-| Dance waterfront backdrop — Lagos lagoon plate, skyline/bridge, yacht, palms, alpha-mask cloud/wave motion | ✅ `runtime/character_painter.dart` + `assets/images/character/` |
+| Dance waterfront backdrop — legacy painter plate plus layered audio-player scenery | ✅ `runtime/character_painter.dart`, `demo/character_dance_to_track_demo.dart`, `features/scenery/` |
 | Film-strip + frame-grid + onion + travel + live harness | ✅ `test/.../{film_strip,frame_grid}_test.dart` |
 | Interactive demo (clip/expression/blink/wander/BPM keys) | ✅ `demo/character_demo.dart` |
 | Offline audio beat-sync (beat map → on-beat dance) | 🚧 tool + `BeatMap` built & tested; **not wired into the runtime yet** |
@@ -66,14 +66,15 @@ small additive root pulse layered over the keyed body motion so slower tempos
 still have off-beat life. The demo previews that same authored phrase at 124 BPM
 by default, using Omah Lay's "soso" as the current movement reference: warm,
 compact, waist-led pocket before bigger stage hits. The BPM slider still spans
-80–240 BPM for review. The dance view also uses
-`CharacterBackdrop.waterfront`: an asset-backed Lagos-inspired lagoon plate with
-a distant skyline/bridge, palms, and a luxury yacht. `CharacterPainter` adds
-transparent alpha-mask motion layers for drifting clouds and lagoon glints. The
-demo and screenshot harness decode the same assets, so choreography, timing,
-contact shadows, and rendered review frames keep one runtime source of truth.
-The tail is a single ribbon driven by a 7-link drag chain; the tie is a keyed
-2-link cloth shape; ears flick a beat behind the head bob.
+80–240 BPM for review. The standalone character demo and screenshot harness can
+still use `CharacterBackdrop.waterfront`: the legacy painter-owned Lagos lagoon
+plate with alpha-mask cloud/wave motion. The audio-synced dance player now uses
+`LayeredBackdrop` from `features/scenery/` instead: the scenery is driven by the
+same audio position as the choreography, with a cloudless master-derived base,
+independent parallax cloud PNGs, animated ocean/lights, and fixed structure
+layers redrawn over those moving effects. The tail is a single ribbon driven by
+a 7-link drag chain; the tie is a keyed 2-link cloth shape; ears flick a beat
+behind the head bob.
 
 ## Architecture
 

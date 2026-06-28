@@ -1,0 +1,179 @@
+# Scenery
+
+Reusable animated backdrops for character/demo surfaces. The current production
+scene is the Lagos-inspired blue-hour waterfront used by
+`CharacterDanceToTrackDemo`: a generated bitmap plate split into full-frame PNG
+layers, with shader and canvas effects composited between those layers.
+
+The module is deliberately independent from `features/character`. Consumers pass
+a clock and optional child into `LayeredBackdrop`; scenery code owns image/shader
+loading, reduced-motion handling, and layer composition.
+
+## Runtime Architecture
+
+```mermaid
+flowchart TD
+  demo[CharacterDanceToTrackDemo] -->|audio position seconds| lb[LayeredBackdrop]
+  self[Standalone use] -->|null timeSeconds| lb
+  lb --> loader[async loaders]
+  loader --> imgs[decoded ui.Image assets]
+  loader --> shaders[FragmentProgram cache]
+  lb --> painter[_BackdropPainter]
+  painter --> ctx[BackdropContext]
+  ctx --> layers[BackdropLayer stack]
+  imgs --> ctx
+  shaders --> ctx
+  layers --> canvas[Canvas]
+```
+
+`LayeredBackdrop` has two clock modes:
+
+- External clock: pass `timeSeconds`, used by the audio dance player so scenery
+  seeks, pauses, and resumes with playback.
+- Self clock: leave `timeSeconds` and `timeOverride` null; the widget starts its
+  own `Ticker`.
+
+`MediaQuery.disableAnimationsOf(context)` freezes the scene at
+`kSceneryCalmFrameSeconds`. Tests can pin `timeOverride`.
+
+## Layer Stack
+
+`BackdropScene.blueHourWaterfront()` defines the current stack. Every bitmap is
+authored at `kSceneryCanvasSize` (`2560x1440`) and cover-fit into the viewport.
+The same cover-fit mapping is used by bitmap layers, cloud drift, ocean band
+placement, and city/yacht light sampling.
+
+```mermaid
+flowchart BT
+  child[Dancers / caller child]
+  vignette[VignetteLayer foreground]
+  glow[DeckGlowLayer]
+  fg[foreground.png]
+  lights[CityLightsLayer]
+  yacht[yacht.png]
+  city[city_bridge.png]
+  ocean[OceanLayer shader/fallback]
+  near[clouds_near.png parallax]
+  mid[clouds_mid.png parallax]
+  far[clouds_far.png parallax]
+  base[blue_hour_cloudless.png]
+
+  base --> far --> mid --> near --> ocean --> city --> yacht --> lights --> fg --> glow --> child --> vignette
+```
+
+The ordering is the important contract:
+
+- The base is `blue_hour_cloudless.png`, not the original master plate.
+- Clouds are reintroduced as transparent full-frame PNGs and drift with
+  `CloudParallaxLayer`.
+- `OceanLayer` adds animated foam/glint over the painted lagoon.
+- `city_bridge.png` and `yacht.png` are redrawn after the moving clouds/ocean so
+  clouds and foam never slide across solid structure.
+- `CityLightsLayer` draws additive windows, yacht lamps, and beacon glows on top
+  of the structure layers.
+- `foreground.png` and `DeckGlowLayer` sit over the animated water/deck area.
+- Foreground layers, currently the vignette, paint over the caller child.
+
+## Bitmap Assets
+
+`SceneryAssets` names the runtime assets:
+
+- `blue_hour_master.png`: immutable full-frame source plate.
+- `blue_hour_cloudless.png`: source plate with selected cloud pixels removed or
+  blended toward sky color.
+- `clouds_far.png`, `clouds_mid.png`, `clouds_near.png`: exact-size transparent
+  cloud plates derived from the master. They are not cropped.
+- `city_bridge.png`, `yacht.png`, `foreground.png`: structure/occluder layers
+  cut from same-size masks.
+- `city_windows.png`: sampled window field used by `CityLightsLayer`.
+
+Full-frame assets are intentional. Cropping would require independent alignment
+metadata and creates visible drift errors when layers are cover-fit at different
+viewport ratios.
+
+## Cloud Parallax
+
+`CloudParallaxLayer` shifts one full-frame transparent cloud plate horizontally
+and wraps it with three draws (`-1`, `0`, `+1` art widths). The movement is
+one-way and cyclic. `dxPerSecond` is a fraction of the cover-fitted art width per
+second; `0.001` equals 12% of the art width over a two-minute track.
+
+Vertical motion is a very small sine "breathing" offset. Cloud bands use
+different phases and speeds:
+
+- Far/dark upper clouds: subtle but now visible motion.
+- Mid clouds: slightly faster.
+- Near/bright cloud details: most visible motion.
+
+The current asset extraction keeps the left skyline-adjacent cloud band mostly
+baked into the base. That is a deliberate quality tradeoff: those clouds overlap
+tall tower silhouettes in the source art, and moving them independently makes
+building-shaped artifacts read as drifting architecture.
+
+## Shader And Canvas Layers
+
+`SceneryShaderProgramCache` loads:
+
+- `scenery_sky.frag`: procedural fallback scene for
+  `BackdropScene.proceduralBlueHour()`.
+- `scenery_ocean.frag`: additive lagoon foam and glint.
+- `scenery_city_lights.frag`: additive window and yacht-cabin lighting.
+
+Shader load failure is non-fatal. Layers either use CPU fallback rendering or
+no-op until their programs/assets load.
+
+`CityLightsLayer` also paints canvas beacons and yacht lamps. It maps normalized
+art anchors through `coverFit`, so lights stay attached to the painted structures
+on desktop and phone aspect ratios.
+
+## Asset Preparation
+
+The generated PNG stack lives under `assets/scenery/`; the tooling lives under
+`tools/scenery_art/`.
+
+```mermaid
+flowchart LR
+  master[blue_hour_master.png] --> masks[layer masks]
+  masks --> layerer[layer_from_masks.py]
+  layerer --> city[city_bridge.png]
+  layerer --> yacht[yacht.png]
+  layerer --> fg[foreground.png]
+  master --> clouds[isolate_clouds.py]
+  city --> clouds
+  yacht --> clouds
+  fg --> clouds
+  clouds --> base[blue_hour_cloudless.png]
+  clouds --> far[clouds_far.png]
+  clouds --> mid[clouds_mid.png]
+  clouds --> near[clouds_near.png]
+```
+
+Regenerate with:
+
+```bash
+python3 -m venv /tmp/lotti-scenery-opencv
+/tmp/lotti-scenery-opencv/bin/python -m pip install -r tools/scenery_art/requirements.txt
+make -C tools/scenery_art PYTHON=/tmp/lotti-scenery-opencv/bin/python blue-hour
+```
+
+Preview/debug outputs go to `tmp/scenery_work/` and are not runtime assets. See
+`tools/scenery_art/README.md` for the mask-generation details and visual QA
+checks.
+
+## Tests
+
+Focused checks for this feature:
+
+```bash
+fvm flutter analyze lib/features/scenery lib/features/character/demo/character_dance_to_track_demo.dart test/features/scenery/layers/cloud_parallax_layer_test.dart test/features/scenery/model/backdrop_scene_test.dart test/features/scenery/scenery_assets_test.dart
+fvm flutter test test/features/scenery/runtime/scenery_shaders_test.dart test/features/scenery/layers/cloud_parallax_layer_test.dart test/features/scenery/model/backdrop_scene_test.dart test/features/scenery/scenery_assets_test.dart
+```
+
+Coverage responsibilities:
+
+- `backdrop_scene_test.dart`: layer order and declared assets.
+- `scenery_assets_test.dart`: full-frame asset geometry and alpha sanity.
+- `cloud_parallax_layer_test.dart`: deterministic offset/wrap math.
+- `scenery_shaders_test.dart`: registered shader assets compile through Flutter's
+  runtime-effect compiler.
+
