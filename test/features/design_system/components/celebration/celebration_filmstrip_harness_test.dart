@@ -8,6 +8,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:path/path.dart' as p;
@@ -61,10 +62,15 @@ void main() {
                 size: frameSize,
                 child: CompletionBurst(
                   progress: progress,
-                  variant: variant,
+                  // Emit from the exact centre (clearCenter 0) so the spread
+                  // stays inside this 320² frame at reach 1 — otherwise the
+                  // default cleared ring flings particles off-frame and the
+                  // stills read empty.
+                  params: CelebrationParams.defaultsFor(variant)
+                      .withValue('count', 44)
+                      .withValue('reach', 1)
+                      .withValue('clearCenter', 0),
                   origin: Alignment.center,
-                  count: 44,
-                  reachFactor: 1,
                 ),
               ),
             ),

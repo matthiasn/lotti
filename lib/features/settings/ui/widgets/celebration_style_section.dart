@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/celebration_playground_page.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_variant_picker.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -16,14 +18,14 @@ class _SurfaceBinding {
   const _SurfaceBinding({
     required this.surface,
     required this.label,
-    required this.variant,
+    required this.selection,
     required this.onSelect,
   });
 
   final _CelebrationSurface surface;
   final String label;
-  final CelebrationVariant variant;
-  final ValueChanged<CelebrationVariant> onSelect;
+  final CelebrationSelection selection;
+  final ValueChanged<CelebrationSelection> onSelect;
 }
 
 /// The Style section's assignment UI. Rather than stacking one full style picker
@@ -47,6 +49,17 @@ class _CelebrationStyleSectionState
     extends ConsumerState<CelebrationStyleSection> {
   _CelebrationSurface _active = _CelebrationSurface.tasks;
 
+  /// Opens the full-screen slider editor for [variant]. Pushed onto the local
+  /// navigator so it works the same on the mobile route and the Settings V2
+  /// detail pane.
+  void _openPlayground(CelebrationVariant variant) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CelebrationPlaygroundPage(variant: variant),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -60,20 +73,20 @@ class _CelebrationStyleSectionState
       _SurfaceBinding(
         surface: _CelebrationSurface.tasks,
         label: messages.settingsCelebrationsTasksTitle,
-        variant: prefs.tasksVariant,
-        onSelect: controller.setTasksVariant,
+        selection: prefs.tasksSelection,
+        onSelect: controller.setTasksSelection,
       ),
       _SurfaceBinding(
         surface: _CelebrationSurface.habits,
         label: messages.settingsCelebrationsHabitsTitle,
-        variant: prefs.habitsVariant,
-        onSelect: controller.setHabitsVariant,
+        selection: prefs.habitsSelection,
+        onSelect: controller.setHabitsSelection,
       ),
       _SurfaceBinding(
         surface: _CelebrationSurface.checklists,
         label: messages.settingsCelebrationsChecklistTitle,
-        variant: prefs.checklistItemsVariant,
-        onSelect: controller.setChecklistItemsVariant,
+        selection: prefs.checklistItemsSelection,
+        onSelect: controller.setChecklistItemsSelection,
       ),
     ];
     final active = bindings.firstWhere((b) => b.surface == _active);
@@ -105,8 +118,9 @@ class _CelebrationStyleSectionState
         CelebrationVariantPicker(
           key: ValueKey(_active),
           enabled: widget.enabled,
-          selected: active.variant,
+          selected: active.selection,
           onSelect: active.onSelect,
+          onTune: _openPlayground,
         ),
       ],
     );

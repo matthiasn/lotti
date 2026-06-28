@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -37,16 +39,33 @@ void main() {
       expect(prefs.checklistItems, isTrue);
       expect(prefs.tasks, isTrue);
       // Each content type carries its own product-default variant.
-      expect(prefs.tasksVariant, CelebrationPreferences.defaultTasksVariant);
-      expect(prefs.habitsVariant, CelebrationPreferences.defaultHabitsVariant);
       expect(
-        prefs.checklistItemsVariant,
-        CelebrationPreferences.defaultChecklistItemsVariant,
+        prefs.tasksSelection,
+        const FixedSelection(CelebrationPreferences.defaultTasksVariant),
+      );
+      expect(
+        prefs.habitsSelection,
+        const FixedSelection(CelebrationPreferences.defaultHabitsVariant),
+      );
+      expect(
+        prefs.checklistItemsSelection,
+        const FixedSelection(
+          CelebrationPreferences.defaultChecklistItemsVariant,
+        ),
       );
       // The defaults are deliberately distinct per surface.
-      expect(prefs.tasksVariant, CelebrationVariant.sparks);
-      expect(prefs.habitsVariant, CelebrationVariant.confetti);
-      expect(prefs.checklistItemsVariant, CelebrationVariant.bubbles);
+      expect(
+        prefs.tasksSelection,
+        const FixedSelection(CelebrationVariant.sparks),
+      );
+      expect(
+        prefs.habitsSelection,
+        const FixedSelection(CelebrationVariant.confetti),
+      );
+      expect(
+        prefs.checklistItemsSelection,
+        const FixedSelection(CelebrationVariant.bubbles),
+      );
     });
 
     test('copyWith replaces only the named field, with value equality', () {
@@ -67,26 +86,38 @@ void main() {
     test('copyWith carries each per-type variant and equality tracks it', () {
       const base = CelebrationPreferences.allEnabled();
       final tasksFireworks = base.copyWith(
-        tasksVariant: CelebrationVariant.fireworks,
+        tasksSelection: const FixedSelection(CelebrationVariant.fireworks),
       );
 
-      expect(tasksFireworks.tasksVariant, CelebrationVariant.fireworks);
+      expect(
+        tasksFireworks.tasksSelection,
+        const FixedSelection(CelebrationVariant.fireworks),
+      );
       // The other two variants are untouched.
-      expect(tasksFireworks.habitsVariant, base.habitsVariant);
-      expect(tasksFireworks.checklistItemsVariant, base.checklistItemsVariant);
+      expect(tasksFireworks.habitsSelection, base.habitsSelection);
+      expect(
+        tasksFireworks.checklistItemsSelection,
+        base.checklistItemsSelection,
+      );
       expect(tasksFireworks, isNot(base));
       expect(tasksFireworks.hashCode, isNot(base.hashCode));
       expect(
         tasksFireworks,
-        base.copyWith(tasksVariant: CelebrationVariant.fireworks),
+        base.copyWith(
+          tasksSelection: const FixedSelection(CelebrationVariant.fireworks),
+        ),
       );
     });
 
     test('each per-type variant is distinguished by equality', () {
       const base = CelebrationPreferences.allEnabled();
-      final habits = base.copyWith(habitsVariant: CelebrationVariant.embers);
+      final habits = base.copyWith(
+        habitsSelection: const FixedSelection(CelebrationVariant.embers),
+      );
       final checklist = base.copyWith(
-        checklistItemsVariant: CelebrationVariant.embers,
+        checklistItemsSelection: const FixedSelection(
+          CelebrationVariant.embers,
+        ),
       );
       expect(habits, isNot(base));
       expect(checklist, isNot(base));
@@ -251,19 +282,28 @@ void main() {
       container
         ..listen(celebrationPreferencesControllerProvider, (_, next) {
           if (!completer.isCompleted &&
-              next.habitsVariant == CelebrationVariant.embers) {
+              next.habitsSelection ==
+                  const FixedSelection(CelebrationVariant.embers)) {
             completer.complete(next);
           }
         })
         ..read(celebrationPreferencesControllerProvider);
 
       final result = await completer.future.timeout(const Duration(seconds: 1));
-      expect(result.habitsVariant, CelebrationVariant.embers);
-      // The other two keep their own defaults — the per-type key is targeted.
-      expect(result.tasksVariant, CelebrationPreferences.defaultTasksVariant);
       expect(
-        result.checklistItemsVariant,
-        CelebrationPreferences.defaultChecklistItemsVariant,
+        result.habitsSelection,
+        const FixedSelection(CelebrationVariant.embers),
+      );
+      // The other two keep their own defaults — the per-type key is targeted.
+      expect(
+        result.tasksSelection,
+        const FixedSelection(CelebrationPreferences.defaultTasksVariant),
+      );
+      expect(
+        result.checklistItemsSelection,
+        const FixedSelection(
+          CelebrationPreferences.defaultChecklistItemsVariant,
+        ),
       );
     });
 
@@ -286,7 +326,8 @@ void main() {
         container
           ..listen(celebrationPreferencesControllerProvider, (_, next) {
             if (!completer.isCompleted &&
-                next.tasksVariant == CelebrationVariant.fireworks) {
+                next.tasksSelection ==
+                    const FixedSelection(CelebrationVariant.fireworks)) {
               completer.complete(next);
             }
           })
@@ -297,9 +338,18 @@ void main() {
         );
         // The chosen global style seeds all three, overriding the per-type
         // defaults so the upgrade preserves the user's choice everywhere.
-        expect(result.tasksVariant, CelebrationVariant.fireworks);
-        expect(result.habitsVariant, CelebrationVariant.fireworks);
-        expect(result.checklistItemsVariant, CelebrationVariant.fireworks);
+        expect(
+          result.tasksSelection,
+          const FixedSelection(CelebrationVariant.fireworks),
+        );
+        expect(
+          result.habitsSelection,
+          const FixedSelection(CelebrationVariant.fireworks),
+        );
+        expect(
+          result.checklistItemsSelection,
+          const FixedSelection(CelebrationVariant.fireworks),
+        );
       },
     );
 
@@ -322,7 +372,8 @@ void main() {
       container
         ..listen(celebrationPreferencesControllerProvider, (_, next) {
           if (!completer.isCompleted &&
-              next.tasksVariant == CelebrationVariant.embers) {
+              next.tasksSelection ==
+                  const FixedSelection(CelebrationVariant.embers)) {
             completer.complete(next);
           }
         })
@@ -330,9 +381,18 @@ void main() {
 
       final result = await completer.future.timeout(const Duration(seconds: 1));
       // Tasks took its own key; habits/checklists migrated from the legacy one.
-      expect(result.tasksVariant, CelebrationVariant.embers);
-      expect(result.habitsVariant, CelebrationVariant.fireworks);
-      expect(result.checklistItemsVariant, CelebrationVariant.fireworks);
+      expect(
+        result.tasksSelection,
+        const FixedSelection(CelebrationVariant.embers),
+      );
+      expect(
+        result.habitsSelection,
+        const FixedSelection(CelebrationVariant.fireworks),
+      );
+      expect(
+        result.checklistItemsSelection,
+        const FixedSelection(CelebrationVariant.fireworks),
+      );
     });
 
     test('an unrecognised per-type variant falls back to its default', () async {
@@ -362,8 +422,8 @@ void main() {
 
       final result = await completer.future.timeout(const Duration(seconds: 1));
       expect(
-        result.tasksVariant,
-        CelebrationPreferences.defaultTasksVariant,
+        result.tasksSelection,
+        const FixedSelection(CelebrationPreferences.defaultTasksVariant),
       );
     });
 
@@ -490,14 +550,29 @@ void main() {
       final notifier = container.read(
         celebrationPreferencesControllerProvider.notifier,
       );
-      await notifier.setTasksVariant(CelebrationVariant.fireworks);
-      await notifier.setHabitsVariant(CelebrationVariant.embers);
-      await notifier.setChecklistItemsVariant(CelebrationVariant.sparks);
+      await notifier.setTasksSelection(
+        const FixedSelection(CelebrationVariant.fireworks),
+      );
+      await notifier.setHabitsSelection(
+        const FixedSelection(CelebrationVariant.embers),
+      );
+      await notifier.setChecklistItemsSelection(
+        const FixedSelection(CelebrationVariant.sparks),
+      );
 
       final prefs = container.read(celebrationPreferencesControllerProvider);
-      expect(prefs.tasksVariant, CelebrationVariant.fireworks);
-      expect(prefs.habitsVariant, CelebrationVariant.embers);
-      expect(prefs.checklistItemsVariant, CelebrationVariant.sparks);
+      expect(
+        prefs.tasksSelection,
+        const FixedSelection(CelebrationVariant.fireworks),
+      );
+      expect(
+        prefs.habitsSelection,
+        const FixedSelection(CelebrationVariant.embers),
+      );
+      expect(
+        prefs.checklistItemsSelection,
+        const FixedSelection(CelebrationVariant.sparks),
+      );
       verify(
         () => getIt<SettingsDb>().saveSettingsItem(
           'CELEBRATE_VARIANT_TASKS',
@@ -530,12 +605,17 @@ void main() {
         );
         await notifier.setEnabled(enabled: false);
         await notifier.setHaptics(enabled: false);
-        await notifier.setHabitsVariant(CelebrationVariant.bubbles);
+        await notifier.setHabitsSelection(
+          const FixedSelection(CelebrationVariant.bubbles),
+        );
 
         final prefs = container.read(celebrationPreferencesControllerProvider);
         expect(prefs.enabled, isFalse);
         expect(prefs.haptics, isFalse);
-        expect(prefs.habitsVariant, CelebrationVariant.bubbles);
+        expect(
+          prefs.habitsSelection,
+          const FixedSelection(CelebrationVariant.bubbles),
+        );
       },
     );
   });
@@ -551,11 +631,15 @@ void main() {
 
         await container
             .read(celebrationPreferencesControllerProvider.notifier)
-            .setTasksVariant(CelebrationVariant.confetti);
+            .setTasksSelection(
+              const FixedSelection(CelebrationVariant.confetti),
+            );
 
         expect(
-          container.read(celebrationPreferencesControllerProvider).tasksVariant,
-          CelebrationVariant.confetti,
+          container
+              .read(celebrationPreferencesControllerProvider)
+              .tasksSelection,
+          const FixedSelection(CelebrationVariant.confetti),
         );
       },
     );
@@ -574,6 +658,241 @@ void main() {
         container.read(celebrationPreferencesControllerProvider).enabled,
         isFalse,
       );
+    });
+  });
+
+  group('variant params', () {
+    test('paramsFor falls back to defaults for an untouched variant', () {
+      final prefs = container.read(celebrationPreferencesControllerProvider);
+      expect(
+        prefs.paramsFor(CelebrationVariant.embers),
+        CelebrationParams.defaultsFor(CelebrationVariant.embers),
+      );
+    });
+
+    test(
+      'setVariantParams stores the tuned look and persists its JSON',
+      () async {
+        final tuned = CelebrationParams.defaultsFor(
+          CelebrationVariant.confetti,
+        ).withValue('count', 12).withValue('spin', 2);
+        await container
+            .read(celebrationPreferencesControllerProvider.notifier)
+            .setVariantParams(tuned);
+
+        final prefs = container.read(celebrationPreferencesControllerProvider);
+        expect(prefs.paramsFor(CelebrationVariant.confetti), tuned);
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            'CELEBRATE_PARAMS_confetti',
+            tuned.encode(),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('resetVariantParams restores the variant to its defaults', () async {
+      final notifier = container.read(
+        celebrationPreferencesControllerProvider.notifier,
+      );
+      await notifier.setVariantParams(
+        CelebrationParams.defaultsFor(
+          CelebrationVariant.sparks,
+        ).withValue('gravity', 0.5),
+      );
+      await notifier.resetVariantParams(CelebrationVariant.sparks);
+
+      final prefs = container.read(celebrationPreferencesControllerProvider);
+      final reset = prefs.paramsFor(CelebrationVariant.sparks);
+      expect(reset, CelebrationParams.defaultsFor(CelebrationVariant.sparks));
+      expect(reset.isCustomized, isFalse);
+      // A reset clears the override entirely — the map holds only customized
+      // variants, and an empty value is persisted so the key reads "untouched"
+      // (and never freezes today's defaults against a future default change).
+      expect(
+        prefs.variantParams.containsKey(CelebrationVariant.sparks),
+        isFalse,
+      );
+      verify(
+        () =>
+            getIt<SettingsDb>().saveSettingsItem('CELEBRATE_PARAMS_sparks', ''),
+      ).called(1);
+    });
+
+    test('hydration drops a blob whose variant disagrees with its key', () async {
+      // A corrupt / hand-edited row under the sparks key carrying confetti's
+      // payload would otherwise render sparks with confetti's knobs.
+      final mismatched = CelebrationParams.defaultsFor(
+        CelebrationVariant.confetti,
+      ).withValue('count', 9);
+      container.dispose();
+      await tearDownTestGetIt();
+      final mocks = await setUpTestGetIt();
+      when(
+        () => mocks.settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mocks.settingsDb.itemByKey('CELEBRATE_PARAMS_sparks'),
+      ).thenAnswer((_) async => mismatched.encode());
+      // A companion key that flips on hydration; the controller sets every field
+      // in one emission, so waiting for this tells us hydration has completed.
+      when(
+        () => mocks.settingsDb.itemByKey('CELEBRATE_ENABLED'),
+      ).thenAnswer((_) async => 'false');
+      container = ProviderContainer();
+
+      final completer = Completer<CelebrationPreferences>();
+      container.listen(celebrationPreferencesControllerProvider, (_, next) {
+        if (!completer.isCompleted && !next.enabled) completer.complete(next);
+      }, fireImmediately: true);
+      final prefs = await completer.future.timeout(const Duration(seconds: 1));
+
+      // Hydration ran (enabled is now false) yet sparks stayed on its own
+      // defaults rather than adopting the confetti payload.
+      expect(
+        prefs.paramsFor(CelebrationVariant.sparks),
+        CelebrationParams.defaultsFor(CelebrationVariant.sparks),
+      );
+      expect(
+        prefs.variantParams.containsKey(CelebrationVariant.sparks),
+        isFalse,
+      );
+    });
+
+    test('hydrates stored tuned params for a variant', () async {
+      final tuned = CelebrationParams.defaultsFor(
+        CelebrationVariant.sparks,
+      ).withValue('gravity', 0.42);
+      container.dispose();
+      await tearDownTestGetIt();
+      final mocks = await setUpTestGetIt();
+      when(
+        () => mocks.settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mocks.settingsDb.itemByKey('CELEBRATE_PARAMS_sparks'),
+      ).thenAnswer((_) async => tuned.encode());
+      container = ProviderContainer();
+
+      final completer = Completer<CelebrationPreferences>();
+      container.listen(celebrationPreferencesControllerProvider, (_, next) {
+        if (!completer.isCompleted &&
+            next.paramsFor(CelebrationVariant.sparks) == tuned) {
+          completer.complete(next);
+        }
+      }, fireImmediately: true);
+
+      final result = await completer.future.timeout(const Duration(seconds: 1));
+      expect(result.paramsFor(CelebrationVariant.sparks), tuned);
+    });
+
+    test(
+      'a variant tuned before hydration completes is not overwritten',
+      () async {
+        container.dispose();
+        await tearDownTestGetIt();
+        final mocks = await setUpTestGetIt();
+        when(
+          () => mocks.settingsDb.saveSettingsItem(any(), any()),
+        ).thenAnswer((_) async => 1);
+        // A persisted signal so we know the (async) hydration has landed; the
+        // sparks params key is absent in storage.
+        when(
+          () => mocks.settingsDb.itemByKey('CELEBRATE_HABITS'),
+        ).thenAnswer((_) async => 'false');
+        container = ProviderContainer();
+
+        // build() schedules hydration; tune sparks before its async reads resolve.
+        final notifier = container.read(
+          celebrationPreferencesControllerProvider.notifier,
+        );
+        final tuned = CelebrationParams.defaultsFor(
+          CelebrationVariant.sparks,
+        ).withValue('count', 12);
+        final completer = Completer<CelebrationPreferences>();
+        container.listen(celebrationPreferencesControllerProvider, (_, next) {
+          if (!completer.isCompleted && !next.habits) completer.complete(next);
+        });
+        await notifier.setVariantParams(tuned);
+
+        final result = await completer.future.timeout(
+          const Duration(seconds: 1),
+        );
+        // The in-session tuning stuck (hydration kept the adjusted variant) …
+        expect(result.paramsFor(CelebrationVariant.sparks), tuned);
+        // … and did not block the rest of hydration from landing.
+        expect(result.habits, isFalse);
+      },
+    );
+  });
+
+  group('surprise-mode selection', () {
+    test(
+      'setTasksSelection(random) persists the random sentinel token',
+      () async {
+        await container
+            .read(celebrationPreferencesControllerProvider.notifier)
+            .setTasksSelection(CelebrationSelection.random);
+
+        expect(
+          container
+              .read(celebrationPreferencesControllerProvider)
+              .tasksSelection,
+          const RandomSelection(),
+        );
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            'CELEBRATE_VARIANT_TASKS',
+            CelebrationSelection.randomToken,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'setHabitsSelection(combine) persists the combine sentinel token',
+      () async {
+        await container
+            .read(celebrationPreferencesControllerProvider.notifier)
+            .setHabitsSelection(CelebrationSelection.combine);
+
+        expect(
+          container
+              .read(celebrationPreferencesControllerProvider)
+              .habitsSelection,
+          const CombineSelection(),
+        );
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            'CELEBRATE_VARIANT_HABITS',
+            CelebrationSelection.combineToken,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('hydrates a stored random selection token', () async {
+      container.dispose();
+      await tearDownTestGetIt();
+      final mocks = await setUpTestGetIt();
+      when(
+        () => mocks.settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mocks.settingsDb.itemByKey('CELEBRATE_VARIANT_TASKS'),
+      ).thenAnswer((_) async => CelebrationSelection.randomToken);
+      container = ProviderContainer();
+
+      final completer = Completer<CelebrationPreferences>();
+      container.listen(celebrationPreferencesControllerProvider, (_, next) {
+        if (!completer.isCompleted &&
+            next.tasksSelection == const RandomSelection()) {
+          completer.complete(next);
+        }
+      }, fireImmediately: true);
+
+      final result = await completer.future.timeout(const Duration(seconds: 1));
+      expect(result.tasksSelection, const RandomSelection());
     });
   });
 }

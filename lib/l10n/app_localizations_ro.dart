@@ -7652,11 +7652,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCelebrationsChecklistTitle => 'Elemente din listă';
 
   @override
+  String get settingsCelebrationsCustomizeTitle => 'Personalizați';
+
+  @override
+  String get settingsCelebrationsCustomizeTooltip => 'Personalizați acest stil';
+
+  @override
   String get settingsCelebrationsEnabledDescription =>
       'Comutatorul principal pentru efectele de finalizare. Dezactivat, ascunde toate animațiile; vibrațiile au propriul comutator.';
 
   @override
   String get settingsCelebrationsEnabledTitle => 'Animații de finalizare';
+
+  @override
+  String get settingsCelebrationsGroupLook => 'Aspect';
+
+  @override
+  String get settingsCelebrationsGroupMotion => 'Mișcare';
+
+  @override
+  String get settingsCelebrationsGroupShape => 'Formă';
 
   @override
   String get settingsCelebrationsHabitsDescription =>
@@ -7673,6 +7688,150 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCelebrationsHapticsTitle => 'Vibrații la finalizare';
 
   @override
+  String get settingsCelebrationsKnobClearCenter => 'Spațiu central';
+
+  @override
+  String get settingsCelebrationsKnobCount => 'Particule';
+
+  @override
+  String get settingsCelebrationsKnobDescClearCenter =>
+      'Spațiu liber în centru';
+
+  @override
+  String get settingsCelebrationsKnobDescCount => 'Câte particule ies';
+
+  @override
+  String get settingsCelebrationsKnobDescFallout => 'Cât de mult cad scânteile';
+
+  @override
+  String get settingsCelebrationsKnobDescFanSpread => 'Lățimea evantaiului';
+
+  @override
+  String get settingsCelebrationsKnobDescGlow => 'Intensitatea strălucirii';
+
+  @override
+  String get settingsCelebrationsKnobDescGravity => 'Cât de repede cad';
+
+  @override
+  String get settingsCelebrationsKnobDescHalo => 'Intensitatea haloului';
+
+  @override
+  String get settingsCelebrationsKnobDescInnerRing =>
+      'Mărimea inelului interior';
+
+  @override
+  String get settingsCelebrationsKnobDescLaunch =>
+      'Întârzierea înainte de explozie';
+
+  @override
+  String get settingsCelebrationsKnobDescPop => 'Când se sparg';
+
+  @override
+  String get settingsCelebrationsKnobDescReach => 'Cât de departe ajung';
+
+  @override
+  String get settingsCelebrationsKnobDescRise => 'Cât de sus se ridică';
+
+  @override
+  String get settingsCelebrationsKnobDescSize =>
+      'Cât de mare e fiecare particulă';
+
+  @override
+  String get settingsCelebrationsKnobDescSpeedSpread => 'Variația vitezei';
+
+  @override
+  String get settingsCelebrationsKnobDescSpin => 'Cât de repede se rotesc';
+
+  @override
+  String get settingsCelebrationsKnobDescSpread => 'Lățimea jetului';
+
+  @override
+  String get settingsCelebrationsKnobDescSway => 'Cât de mult se leagănă';
+
+  @override
+  String get settingsCelebrationsKnobDescSwell => 'Cât de mult cresc';
+
+  @override
+  String get settingsCelebrationsKnobDescTrail => 'Lungimea dârei';
+
+  @override
+  String get settingsCelebrationsKnobDescTwinkle => 'Cât de mult pâlpâie';
+
+  @override
+  String get settingsCelebrationsKnobDescUpward => 'Cât de puternic se ridică';
+
+  @override
+  String get settingsCelebrationsKnobDescWobble => 'Cât de mult se clatină';
+
+  @override
+  String get settingsCelebrationsKnobFallout => 'Cădere';
+
+  @override
+  String get settingsCelebrationsKnobFanSpread => 'Deschiderea evantaiului';
+
+  @override
+  String get settingsCelebrationsKnobGlow => 'Strălucire';
+
+  @override
+  String get settingsCelebrationsKnobGravity => 'Gravitație';
+
+  @override
+  String get settingsCelebrationsKnobHalo => 'Halou';
+
+  @override
+  String get settingsCelebrationsKnobInnerRing => 'Inel interior';
+
+  @override
+  String get settingsCelebrationsKnobLaunch => 'Timp de lansare';
+
+  @override
+  String get settingsCelebrationsKnobPop => 'Punct de spargere';
+
+  @override
+  String get settingsCelebrationsKnobReach => 'Rază';
+
+  @override
+  String get settingsCelebrationsKnobRise => 'Înălțime de ridicare';
+
+  @override
+  String get settingsCelebrationsKnobSize => 'Dimensiune';
+
+  @override
+  String get settingsCelebrationsKnobSpeedSpread => 'Variația vitezei';
+
+  @override
+  String get settingsCelebrationsKnobSpin => 'Rotire';
+
+  @override
+  String get settingsCelebrationsKnobSpread => 'Unghi de dispersie';
+
+  @override
+  String get settingsCelebrationsKnobSway => 'Legănare';
+
+  @override
+  String get settingsCelebrationsKnobSwell => 'Umflare';
+
+  @override
+  String get settingsCelebrationsKnobTrail => 'Lungimea dârei';
+
+  @override
+  String get settingsCelebrationsKnobTwinkle => 'Sclipire';
+
+  @override
+  String get settingsCelebrationsKnobUpward => 'Ridicare';
+
+  @override
+  String get settingsCelebrationsKnobWobble => 'Tremurat';
+
+  @override
+  String get settingsCelebrationsPlaygroundHint =>
+      'Atingeți rândul evidențiat pentru previzualizare';
+
+  @override
+  String get settingsCelebrationsPlaygroundLiveNote =>
+      'Modificările se salvează și se aplică peste tot instantaneu';
+
+  @override
   String get settingsCelebrationsPreviewChecklistItem => 'Bifați-mă';
 
   @override
@@ -7686,7 +7845,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCelebrationsPreviewHabit => 'Obicei';
 
   @override
+  String get settingsCelebrationsPreviewSample1 => 'Plimbare de dimineață';
+
+  @override
+  String get settingsCelebrationsPreviewSample2 => 'Termină raportul';
+
+  @override
+  String get settingsCelebrationsPreviewSample3 => 'Udă plantele';
+
+  @override
   String get settingsCelebrationsPreviewTitle => 'Încercați';
+
+  @override
+  String get settingsCelebrationsReplay => 'Reia';
+
+  @override
+  String get settingsCelebrationsResetToast =>
+      'Stil resetat la valorile implicite';
+
+  @override
+  String get settingsCelebrationsResetToDefault =>
+      'Resetați la valorile implicite';
+
+  @override
+  String get settingsCelebrationsResetUndo => 'Anulează';
 
   @override
   String get settingsCelebrationsSectionDescription =>
@@ -7719,6 +7901,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCelebrationsVariantBubbles => 'Bule';
 
   @override
+  String get settingsCelebrationsVariantCombine => 'Combinați două stiluri';
+
+  @override
+  String get settingsCelebrationsVariantCombineDescription =>
+      'Două stiluri aleatorii suprapuse de fiecare dată';
+
+  @override
   String get settingsCelebrationsVariantConfetti => 'Confeti';
 
   @override
@@ -7726,6 +7915,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsCelebrationsVariantFireworks => 'Artificii';
+
+  @override
+  String get settingsCelebrationsVariantRandom => 'Aleatoriu';
+
+  @override
+  String get settingsCelebrationsVariantRandomDescription =>
+      'Un stil diferit de fiecare dată';
 
   @override
   String get settingsCelebrationsVariantSparks => 'Scântei';

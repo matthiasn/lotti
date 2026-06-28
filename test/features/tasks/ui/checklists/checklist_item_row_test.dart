@@ -9,6 +9,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
@@ -754,7 +755,9 @@ void main() {
         extraOverrides: [
           celebrationPreferencesProvider.overrideWithValue(
             const CelebrationPreferences.allEnabled().copyWith(
-              checklistItemsVariant: CelebrationVariant.embers,
+              checklistItemsSelection: const FixedSelection(
+                CelebrationVariant.embers,
+              ),
             ),
           ),
         ],
@@ -769,7 +772,7 @@ void main() {
       final burst = tester.widget<CompletionBurst>(
         find.byType(CompletionBurst),
       );
-      expect(burst.variant, CelebrationVariant.embers);
+      expect(burst.params?.variant, CelebrationVariant.embers);
 
       await tester.pumpAndSettle();
     });

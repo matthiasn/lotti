@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
@@ -30,9 +31,9 @@ void main() {
         overrides: [
           celebrationPreferencesProvider.overrideWithValue(
             const CelebrationPreferences.allEnabled().copyWith(
-              tasksVariant: tasksVariant,
-              habitsVariant: habitsVariant,
-              checklistItemsVariant: checklistItemsVariant,
+              tasksSelection: FixedSelection(tasksVariant),
+              habitsSelection: FixedSelection(habitsVariant),
+              checklistItemsSelection: FixedSelection(checklistItemsVariant),
             ),
           ),
         ],
@@ -60,7 +61,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300)); // into its window
 
     final burst = tester.widget<CompletionBurst>(find.byType(CompletionBurst));
-    expect(burst.variant, CelebrationVariant.fireworks);
+    expect(burst.params?.variant, CelebrationVariant.fireworks);
 
     await tester.pumpAndSettle();
   });
@@ -83,9 +84,9 @@ void main() {
       final burst = tester.widget<CompletionBurst>(
         find.byType(CompletionBurst),
       );
-      final variant = burst.variant;
+      final variant = burst.params?.variant;
       await tester.pumpAndSettle();
-      return variant;
+      return variant!;
     }
 
     expect(await burstVariantFor('Done'), CelebrationVariant.fireworks);
@@ -104,6 +105,36 @@ void main() {
       expect(find.byType(CompletionBurst), findsOneWidget, reason: label);
       await tester.pumpAndSettle();
     }
+  });
+
+  testWidgets('a combine selection fires a layered (two-variant) burst', (
+    tester,
+  ) async {
+    debugResetCelebrationSeed();
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const CelebrationPreviewStage(),
+        overrides: [
+          celebrationPreferencesProvider.overrideWithValue(
+            const CelebrationPreferences.allEnabled().copyWith(
+              tasksSelection: const CombineSelection(),
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Done'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final burst = tester.widget<CompletionBurst>(find.byType(CompletionBurst));
+    expect(burst.secondParams, isNotNull);
+    expect(burst.secondParams!.variant, isNot(burst.params!.variant));
+
+    await tester.pumpAndSettle();
   });
 
   testWidgets('greys out and ignores taps when disabled', (tester) async {

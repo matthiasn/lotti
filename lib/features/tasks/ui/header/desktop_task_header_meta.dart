@@ -211,7 +211,8 @@ class TaskHeaderStatusPill extends ConsumerWidget {
       completed: status is TaskDone,
       burstOrigin: Alignment.center,
       anchorScale: true,
-      variant: prefs.tasksVariant,
+      selection: prefs.tasksSelection,
+      paramsFor: prefs.paramsFor,
       // The visual celebration honours the master switch + the task switch; the
       // heavy haptic honours the independent haptics switch.
       animate: prefs.animateTasks,

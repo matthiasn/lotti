@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/components/motion/strikethrough_wipe.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -155,12 +156,15 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     // erupt at the off-screen checkbox position — e.g. clamped over the page
     // title. A direct tap is always on screen, so this never suppresses it.
     if (checkboxContext != null && _checkboxIsInViewport(checkboxContext)) {
+      final resolved = prefs.checklistItemsSelection.resolve(
+        seed: nextCelebrationSeed(),
+      );
       spawnCompletionBurst(
         checkboxContext,
-        variant: prefs.checklistItemsVariant,
-        count: 16,
-        sizeScale: 0.7,
-        clearCenter: 0.3,
+        params: prefs.paramsFor(resolved.primary),
+        secondParams: resolved.secondary == null
+            ? null
+            : prefs.paramsFor(resolved.secondary!),
         duration: const Duration(milliseconds: 850),
       );
     }

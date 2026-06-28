@@ -12868,6 +12868,18 @@ abstract class AppLocalizations {
   /// **'Checklist items'**
   String get settingsCelebrationsChecklistTitle;
 
+  /// No description provided for @settingsCelebrationsCustomizeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize'**
+  String get settingsCelebrationsCustomizeTitle;
+
+  /// No description provided for @settingsCelebrationsCustomizeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize this style'**
+  String get settingsCelebrationsCustomizeTooltip;
+
   /// No description provided for @settingsCelebrationsEnabledDescription.
   ///
   /// In en, this message translates to:
@@ -12879,6 +12891,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Celebration animations'**
   String get settingsCelebrationsEnabledTitle;
+
+  /// No description provided for @settingsCelebrationsGroupLook.
+  ///
+  /// In en, this message translates to:
+  /// **'Look'**
+  String get settingsCelebrationsGroupLook;
+
+  /// No description provided for @settingsCelebrationsGroupMotion.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion'**
+  String get settingsCelebrationsGroupMotion;
+
+  /// No description provided for @settingsCelebrationsGroupShape.
+  ///
+  /// In en, this message translates to:
+  /// **'Shape'**
+  String get settingsCelebrationsGroupShape;
 
   /// No description provided for @settingsCelebrationsHabitsDescription.
   ///
@@ -12904,6 +12934,282 @@ abstract class AppLocalizations {
   /// **'Completion haptics'**
   String get settingsCelebrationsHapticsTitle;
 
+  /// No description provided for @settingsCelebrationsKnobClearCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Center gap'**
+  String get settingsCelebrationsKnobClearCenter;
+
+  /// No description provided for @settingsCelebrationsKnobCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Particles'**
+  String get settingsCelebrationsKnobCount;
+
+  /// No description provided for @settingsCelebrationsKnobDescClearCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty space at the center'**
+  String get settingsCelebrationsKnobDescClearCenter;
+
+  /// No description provided for @settingsCelebrationsKnobDescCount.
+  ///
+  /// In en, this message translates to:
+  /// **'How many particles fly out'**
+  String get settingsCelebrationsKnobDescCount;
+
+  /// No description provided for @settingsCelebrationsKnobDescFallout.
+  ///
+  /// In en, this message translates to:
+  /// **'How far sparks drift down'**
+  String get settingsCelebrationsKnobDescFallout;
+
+  /// No description provided for @settingsCelebrationsKnobDescFanSpread.
+  ///
+  /// In en, this message translates to:
+  /// **'Width of the fan'**
+  String get settingsCelebrationsKnobDescFanSpread;
+
+  /// No description provided for @settingsCelebrationsKnobDescGlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Strength of the glow'**
+  String get settingsCelebrationsKnobDescGlow;
+
+  /// No description provided for @settingsCelebrationsKnobDescGravity.
+  ///
+  /// In en, this message translates to:
+  /// **'How quickly particles fall'**
+  String get settingsCelebrationsKnobDescGravity;
+
+  /// No description provided for @settingsCelebrationsKnobDescHalo.
+  ///
+  /// In en, this message translates to:
+  /// **'Strength of the halo'**
+  String get settingsCelebrationsKnobDescHalo;
+
+  /// No description provided for @settingsCelebrationsKnobDescInnerRing.
+  ///
+  /// In en, this message translates to:
+  /// **'Size of the inner ring'**
+  String get settingsCelebrationsKnobDescInnerRing;
+
+  /// No description provided for @settingsCelebrationsKnobDescLaunch.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay before the burst'**
+  String get settingsCelebrationsKnobDescLaunch;
+
+  /// No description provided for @settingsCelebrationsKnobDescPop.
+  ///
+  /// In en, this message translates to:
+  /// **'When they pop'**
+  String get settingsCelebrationsKnobDescPop;
+
+  /// No description provided for @settingsCelebrationsKnobDescReach.
+  ///
+  /// In en, this message translates to:
+  /// **'How far particles travel'**
+  String get settingsCelebrationsKnobDescReach;
+
+  /// No description provided for @settingsCelebrationsKnobDescRise.
+  ///
+  /// In en, this message translates to:
+  /// **'How high particles rise'**
+  String get settingsCelebrationsKnobDescRise;
+
+  /// No description provided for @settingsCelebrationsKnobDescSize.
+  ///
+  /// In en, this message translates to:
+  /// **'How big each particle is'**
+  String get settingsCelebrationsKnobDescSize;
+
+  /// No description provided for @settingsCelebrationsKnobDescSpeedSpread.
+  ///
+  /// In en, this message translates to:
+  /// **'Variation in particle speed'**
+  String get settingsCelebrationsKnobDescSpeedSpread;
+
+  /// No description provided for @settingsCelebrationsKnobDescSpin.
+  ///
+  /// In en, this message translates to:
+  /// **'How fast pieces spin'**
+  String get settingsCelebrationsKnobDescSpin;
+
+  /// No description provided for @settingsCelebrationsKnobDescSpread.
+  ///
+  /// In en, this message translates to:
+  /// **'Width of the spray'**
+  String get settingsCelebrationsKnobDescSpread;
+
+  /// No description provided for @settingsCelebrationsKnobDescSway.
+  ///
+  /// In en, this message translates to:
+  /// **'How much pieces sway'**
+  String get settingsCelebrationsKnobDescSway;
+
+  /// No description provided for @settingsCelebrationsKnobDescSwell.
+  ///
+  /// In en, this message translates to:
+  /// **'How much they grow'**
+  String get settingsCelebrationsKnobDescSwell;
+
+  /// No description provided for @settingsCelebrationsKnobDescTrail.
+  ///
+  /// In en, this message translates to:
+  /// **'Length of each trail'**
+  String get settingsCelebrationsKnobDescTrail;
+
+  /// No description provided for @settingsCelebrationsKnobDescTwinkle.
+  ///
+  /// In en, this message translates to:
+  /// **'How much particles flicker'**
+  String get settingsCelebrationsKnobDescTwinkle;
+
+  /// No description provided for @settingsCelebrationsKnobDescUpward.
+  ///
+  /// In en, this message translates to:
+  /// **'How strongly they rise'**
+  String get settingsCelebrationsKnobDescUpward;
+
+  /// No description provided for @settingsCelebrationsKnobDescWobble.
+  ///
+  /// In en, this message translates to:
+  /// **'How much pieces wobble'**
+  String get settingsCelebrationsKnobDescWobble;
+
+  /// No description provided for @settingsCelebrationsKnobFallout.
+  ///
+  /// In en, this message translates to:
+  /// **'Fallout'**
+  String get settingsCelebrationsKnobFallout;
+
+  /// No description provided for @settingsCelebrationsKnobFanSpread.
+  ///
+  /// In en, this message translates to:
+  /// **'Fan spread'**
+  String get settingsCelebrationsKnobFanSpread;
+
+  /// No description provided for @settingsCelebrationsKnobGlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Glow'**
+  String get settingsCelebrationsKnobGlow;
+
+  /// No description provided for @settingsCelebrationsKnobGravity.
+  ///
+  /// In en, this message translates to:
+  /// **'Gravity'**
+  String get settingsCelebrationsKnobGravity;
+
+  /// No description provided for @settingsCelebrationsKnobHalo.
+  ///
+  /// In en, this message translates to:
+  /// **'Halo'**
+  String get settingsCelebrationsKnobHalo;
+
+  /// No description provided for @settingsCelebrationsKnobInnerRing.
+  ///
+  /// In en, this message translates to:
+  /// **'Inner ring'**
+  String get settingsCelebrationsKnobInnerRing;
+
+  /// No description provided for @settingsCelebrationsKnobLaunch.
+  ///
+  /// In en, this message translates to:
+  /// **'Launch time'**
+  String get settingsCelebrationsKnobLaunch;
+
+  /// No description provided for @settingsCelebrationsKnobPop.
+  ///
+  /// In en, this message translates to:
+  /// **'Pop point'**
+  String get settingsCelebrationsKnobPop;
+
+  /// No description provided for @settingsCelebrationsKnobReach.
+  ///
+  /// In en, this message translates to:
+  /// **'Reach'**
+  String get settingsCelebrationsKnobReach;
+
+  /// No description provided for @settingsCelebrationsKnobRise.
+  ///
+  /// In en, this message translates to:
+  /// **'Rise height'**
+  String get settingsCelebrationsKnobRise;
+
+  /// No description provided for @settingsCelebrationsKnobSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get settingsCelebrationsKnobSize;
+
+  /// No description provided for @settingsCelebrationsKnobSpeedSpread.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed variation'**
+  String get settingsCelebrationsKnobSpeedSpread;
+
+  /// No description provided for @settingsCelebrationsKnobSpin.
+  ///
+  /// In en, this message translates to:
+  /// **'Spin'**
+  String get settingsCelebrationsKnobSpin;
+
+  /// No description provided for @settingsCelebrationsKnobSpread.
+  ///
+  /// In en, this message translates to:
+  /// **'Spread arc'**
+  String get settingsCelebrationsKnobSpread;
+
+  /// No description provided for @settingsCelebrationsKnobSway.
+  ///
+  /// In en, this message translates to:
+  /// **'Sway'**
+  String get settingsCelebrationsKnobSway;
+
+  /// No description provided for @settingsCelebrationsKnobSwell.
+  ///
+  /// In en, this message translates to:
+  /// **'Swell'**
+  String get settingsCelebrationsKnobSwell;
+
+  /// No description provided for @settingsCelebrationsKnobTrail.
+  ///
+  /// In en, this message translates to:
+  /// **'Trail length'**
+  String get settingsCelebrationsKnobTrail;
+
+  /// No description provided for @settingsCelebrationsKnobTwinkle.
+  ///
+  /// In en, this message translates to:
+  /// **'Twinkle'**
+  String get settingsCelebrationsKnobTwinkle;
+
+  /// No description provided for @settingsCelebrationsKnobUpward.
+  ///
+  /// In en, this message translates to:
+  /// **'Rise'**
+  String get settingsCelebrationsKnobUpward;
+
+  /// No description provided for @settingsCelebrationsKnobWobble.
+  ///
+  /// In en, this message translates to:
+  /// **'Wobble'**
+  String get settingsCelebrationsKnobWobble;
+
+  /// No description provided for @settingsCelebrationsPlaygroundHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the highlighted row to preview'**
+  String get settingsCelebrationsPlaygroundHint;
+
+  /// No description provided for @settingsCelebrationsPlaygroundLiveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes save and apply everywhere instantly'**
+  String get settingsCelebrationsPlaygroundLiveNote;
+
   /// No description provided for @settingsCelebrationsPreviewChecklistItem.
   ///
   /// In en, this message translates to:
@@ -12928,11 +13234,53 @@ abstract class AppLocalizations {
   /// **'Habit'**
   String get settingsCelebrationsPreviewHabit;
 
+  /// No description provided for @settingsCelebrationsPreviewSample1.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning walk'**
+  String get settingsCelebrationsPreviewSample1;
+
+  /// No description provided for @settingsCelebrationsPreviewSample2.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish the report'**
+  String get settingsCelebrationsPreviewSample2;
+
+  /// No description provided for @settingsCelebrationsPreviewSample3.
+  ///
+  /// In en, this message translates to:
+  /// **'Water the plants'**
+  String get settingsCelebrationsPreviewSample3;
+
   /// No description provided for @settingsCelebrationsPreviewTitle.
   ///
   /// In en, this message translates to:
   /// **'Try it'**
   String get settingsCelebrationsPreviewTitle;
+
+  /// No description provided for @settingsCelebrationsReplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay'**
+  String get settingsCelebrationsReplay;
+
+  /// No description provided for @settingsCelebrationsResetToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Style reset to default'**
+  String get settingsCelebrationsResetToast;
+
+  /// No description provided for @settingsCelebrationsResetToDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to default'**
+  String get settingsCelebrationsResetToDefault;
+
+  /// No description provided for @settingsCelebrationsResetUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get settingsCelebrationsResetUndo;
 
   /// No description provided for @settingsCelebrationsSectionDescription.
   ///
@@ -12988,6 +13336,18 @@ abstract class AppLocalizations {
   /// **'Bubbles'**
   String get settingsCelebrationsVariantBubbles;
 
+  /// No description provided for @settingsCelebrationsVariantCombine.
+  ///
+  /// In en, this message translates to:
+  /// **'Combine two'**
+  String get settingsCelebrationsVariantCombine;
+
+  /// No description provided for @settingsCelebrationsVariantCombineDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Two random styles, layered, each time'**
+  String get settingsCelebrationsVariantCombineDescription;
+
   /// No description provided for @settingsCelebrationsVariantConfetti.
   ///
   /// In en, this message translates to:
@@ -13005,6 +13365,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fireworks'**
   String get settingsCelebrationsVariantFireworks;
+
+  /// No description provided for @settingsCelebrationsVariantRandom.
+  ///
+  /// In en, this message translates to:
+  /// **'Random'**
+  String get settingsCelebrationsVariantRandom;
+
+  /// No description provided for @settingsCelebrationsVariantRandomDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A fresh style on every completion'**
+  String get settingsCelebrationsVariantRandomDescription;
 
   /// No description provided for @settingsCelebrationsVariantSparks.
   ///
