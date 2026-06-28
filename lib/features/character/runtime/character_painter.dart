@@ -160,6 +160,17 @@ class CharacterPainter extends CustomPainter {
   static const double _pairSpacing = 215;
   static const double _trioSpacing = 238;
 
+  // The dance camera's horizontal truck keyframes (_danceCamera.dx) are authored
+  // in pixels of this reference stage (the 2560-wide art space), where the truck
+  // across the side dancers keeps them in frame. Applied verbatim to a narrower
+  // stage, the same pixel pan is a much larger FRACTION of the width and slides
+  // the side cats off the edge (the "left cat disappears" bug). So the horizontal
+  // pan is scaled by the stage width relative to this reference, keeping it the
+  // same fraction — and the side dancers on screen — at any window size. The
+  // vertical lift (dy) is deliberately NOT scaled: it frames the torso/face on
+  // the push-in and is pinned by tests at the reference composition.
+  static const double _danceCameraRefWidth = 2560;
+
   @override
   void paint(Canvas canvas, Size size) {
     final floorY = size.height * feetFraction;
@@ -334,7 +345,10 @@ class CharacterPainter extends CustomPainter {
     final pivot = Offset(size.width / 2, size.height * 0.56);
     final maxDx = size.width * (camera.zoom - 1) / 2;
     final maxDy = size.height * (camera.zoom - 1) / 2;
-    final dx = camera.dx.clamp(-maxDx, maxDx);
+    final dx = (camera.dx * size.width / _danceCameraRefWidth).clamp(
+      -maxDx,
+      maxDx,
+    );
     final dy = camera.dy.clamp(-maxDy, maxDy);
     canvas
       ..translate(pivot.dx + dx, pivot.dy + dy)
@@ -391,7 +405,10 @@ class CharacterPainter extends CustomPainter {
     final pivot = Offset(size.width / 2, size.height * 0.56);
     final maxDx = size.width * (parallax.zoom - 1) / 2;
     final maxDy = size.height * (parallax.zoom - 1) / 2;
-    final dx = parallax.dx.clamp(-maxDx, maxDx);
+    final dx = (parallax.dx * size.width / _danceCameraRefWidth).clamp(
+      -maxDx,
+      maxDx,
+    );
     final dy = parallax.dy.clamp(-maxDy, maxDy);
     // Uniform scale about [pivot] then translate by (dx, dy), written directly
     // as a column-major matrix (avoids the deprecated Matrix4.translate/scale).

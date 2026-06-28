@@ -978,6 +978,117 @@ void main() {
     });
   });
 
+  testWidgets(
+    'capped dance-camera strength keeps the left backup off the stage edge '
+    'during the push-in (the "left cat cut off" fix)',
+    (tester) async {
+      await tester.runAsync(() async {
+        // At FULL strength the push-in (zoom ~2.08 about centre) shoves the left
+        // silver-tabby backup off the 16:9 stage box at the demo's scale — the
+        // "left cat cut off well within the window" bug. The demo caps the
+        // energetic ramp (kEnergeticCameraStrength) so the whole trio stays on
+        // the locked stage. This renders both strengths at the demo's stage and
+        // asserts the cap pulls the left backup clear of the edge it hit at full.
+        Future<({int count, double centerX, int minX})> silverAt(
+          double p,
+          double strength,
+        ) async {
+          const size = Size(1333, 750); // demo-representative locked 16:9 stage
+          final recorder = ui.PictureRecorder();
+          final canvas = Canvas(recorder);
+          CharacterPainter(
+            scene: scene,
+            partnerScene: CharacterScene(
+              buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+            ),
+            ensembleScenes: [
+              CharacterScene(
+                buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+              ),
+              CharacterScene(
+                buildCatInSuitRig(palette: CatInSuitPalette.darkBrown),
+              ),
+            ],
+            ensembleClips: [
+              CatClips.dance,
+              CatClips.danceBackupLeft,
+              CatClips.danceBackupRight,
+            ],
+            synchronousEnsemble: true,
+            clip: CatClips.dance,
+            timeSeconds: CatClips.dance.duration * p,
+            walkingPair: true,
+            danceCameraStrength: strength,
+            scale: size.height * 0.78 / 300.0,
+            shadowColor: const Color(0x00000000),
+            renderer: renderer,
+          ).paint(canvas, size);
+          final picture = recorder.endRecording();
+          try {
+            final image = await picture.toImage(
+              size.width.toInt(),
+              size.height.toInt(),
+            );
+            try {
+              final data = await image.toByteData();
+              final pixels = data!.buffer.asUint8List();
+              // Silver-tabby fur: light grey (channels close, mid-bright) — the
+              // navy suit is blue-dominant and white eyes are >205, both excluded.
+              final silver = _boundsForPixels(
+                pixels,
+                size.width.toInt(),
+                size.height.toInt(),
+                (red, green, blue, alpha, x, y) =>
+                    alpha > 180 &&
+                    red > 120 &&
+                    red < 205 &&
+                    (red - green).abs() < 24 &&
+                    (green - blue).abs() < 24,
+              );
+              return (
+                count: silver.count,
+                centerX: silver.centerX,
+                minX: silver.minX,
+              );
+            } finally {
+              image.dispose();
+            }
+          } finally {
+            picture.dispose();
+          }
+        }
+
+        // Worst push-in phase (p=7/16: rising zoom into the right-feature hold).
+        const worstPhase = 7 / 16;
+        final full = await silverAt(worstPhase, 1);
+        final capped = await silverAt(worstPhase, 0.5);
+
+        // Full strength clips the left backup hard against the left edge...
+        expect(
+          full.minX,
+          lessThan(8),
+          reason:
+              'at full strength the push-in should reach the stage edge (this is '
+              'the bug the demo cap exists to prevent)',
+        );
+        // ...the capped strength pulls it clear, fully on the stage.
+        expect(
+          capped.minX,
+          greaterThan(40),
+          reason:
+              'the capped energetic strength must hold the left backup clear of '
+              'the stage edge so it is not cut off',
+        );
+        expect(
+          capped.centerX,
+          lessThan(1333 / 2),
+          reason:
+              'it must still read as the LEFT dancer (centre left of stage)',
+        );
+      });
+    },
+  );
+
   group('danceParallaxTransform', () {
     const size = Size(800, 450);
 

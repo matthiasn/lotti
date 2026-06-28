@@ -93,6 +93,15 @@ const double kMinCalmSeconds = 4;
 /// changes — bigger = slower, more cinematic zoom (~63% of the way in this long).
 const double kCameraRampSeconds = 1.4;
 
+/// Peak dance-camera strength during energetic sections. The painter's full
+/// (strength 1) choreography pushes in hard enough (zoom ~2.08) to shove the
+/// side dancers off the 16:9 stage box — the "left cat cut off well within the
+/// window" bug. Capping the ramp here keeps the push-in/truck energy while
+/// holding the whole trio on the locked stage at any window size (at this value
+/// the left backup keeps a comfortable margin from the stage edge). The painter
+/// keeps its full-strength choreography for other callers/tests.
+const double kEnergeticCameraStrength = 0.5;
+
 /// Lip-sync mouth easing: each Rhubarb cue snaps the jaw open fast (attack) and
 /// relaxes it shut more slowly (release), so a syllable punches then settles
 /// instead of fluttering. The cue carries the target opening; these are just the
@@ -240,7 +249,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     // freeze with the dancers when the track is paused.
     if (_player.state.playing) _wallSeconds += dt;
     final pos = _player.state.position.inMicroseconds / 1e6;
-    final target = (_sectionAt(pos)?.energetic ?? true) ? 1.0 : 0.0;
+    final target = (_sectionAt(pos)?.energetic ?? true)
+        ? kEnergeticCameraStrength
+        : 0.0;
     var k = dt / kCameraRampSeconds;
     if (k > 1) k = 1;
     // Mouth shape comes from the Rhubarb cue track (the actual vocal phonemes);
