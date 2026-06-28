@@ -259,7 +259,7 @@ const BackdropPalette kBlueHourPalette = BackdropPalette(
   bridgeStruct: Color(0xFF14233B),
   bridgeCable: Color(0xFF43536D),
   yachtHull: Color(0xFF16283C),
-  yachtCabinGlow: Color(0xFFFFCE86),
+  yachtCabinGlow: Color(0xFFFFB266),
   oceanHorizon: Color(0xFF123847),
   oceanNear: Color(0xFF08202D),
   foam: Color(0xFFD7E6EA),

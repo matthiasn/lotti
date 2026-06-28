@@ -451,15 +451,23 @@ void main() {
   // not blown LED-white. ---
   float cabin = yachtWindow(muv);
   if (cabin > 0.003) {
-    // Wider room-to-room spread so the windows read as discrete lit interiors
-    // rather than one even gold strip.
-    float room = 0.55 + 0.45 * noise(muv * vec2(55.0, 80.0));
+    // Wide room-to-room spread (dimmest rooms ~30%, a couple bright) so the band
+    // reads as discrete lit interiors — some occupied, some dim — rather than one
+    // even gold strip. Two frequencies break the regularity so no two adjacent
+    // windows match.
+    float room = 0.30 + 0.70 * noise(muv * vec2(46.0, 80.0)) *
+        (0.6 + 0.4 * noise(muv * vec2(17.0, 30.0)));
     float breath = 0.92 + 0.08 * sin(uTime * 0.7);
     float yachtRaw = cabin * room * breath * (0.66 + 0.4 * uWindowAmount) * beat;
     // Firmer knee so the brightest panes asymptote to a warm amber, not a blown
     // near-white core where bright rooms overlap.
     float yachtLit = yachtRaw / (1.0 + 1.25 * yachtRaw);
-    lights += uYachtGlow.rgb * yachtLit;
+    // The hottest cores drift toward a warm WHITE (incandescent bulb), not a more
+    // saturated yellow — that de-neons the brightest pixels while the dim rooms
+    // keep their full amber, the warm-core / cool-edge falloff the colorist asked.
+    vec3 cabinCol = mix(uYachtGlow.rgb, vec3(1.0, 0.94, 0.86),
+        smoothstep(0.45, 0.95, yachtLit) * 0.22);
+    lights += cabinCol * yachtLit;
     intensity += yachtLit;
   }
 
@@ -492,20 +500,17 @@ void main() {
   lights += uYachtGlow.rgb * yhaloLit;
   intensity += yhaloLit;
 
-  // --- Yacht reflection: the warm cabins spill and reflect onto the lagoon right
-  // at the hull, so the vessel sits IN the water instead of floating on a flat
-  // dark band (the panel's #1 "pasted-in" tell). Geometry-free: for a water pixel
-  // under the yacht's x-span, scan a short way UP the column to find the
-  // per-column hull bottom (the waterline contact), then MIRROR the cabin glow
-  // downward as a short, ripple-broken warm smear that fades within a few percent
-  // below the contact. No guessed waterline — it only appears under columns that
-  // actually have a lit, hulled vessel above, and is naturally occluded by the
-  // foreground dock drawn on top. ---
-  // Only true WATER below the hull qualifies: hull must sit ABOVE this pixel but
-  // NOT below it. This rejects the low-alpha gaps WITHIN the superstructure
-  // (between deck levels, through railings) at y 0.52-0.62 — which sit above the
-  // yacht's real waterline (~0.63, far below kWaterline=0.515) and would otherwise
-  // smear a warm band across the mid-hull and saloon and off the bow.
+  // --- Warm light pooling on the water at the hull: the lit cabins throw warm
+  // onto the lagoon hugging the hull, brightest at the contact and broken by
+  // ripples, so the vessel's light does WORK in the environment — the panel's key
+  // "alive / lit-from-within" reciprocity. The cabins' true MIRROR image lands a
+  // full cabin-height below the waterline, i.e. under the foreground dock
+  // (occluded), so this is the near-field SPILL, not a mirror: scan up the column
+  // to the per-column hull bottom (the waterline contact), measure how warm-lit
+  // the vessel column ABOVE it is (cabin mask sampled at a few heights), and pool
+  // that warmth into the few percent of water just below the contact. So the water
+  // under the lit saloon glows amber while the water under the dark bow stays cool.
+  // No guessed waterline — only columns with a lit, hulled vessel above qualify. ---
   float hullBelow = texture(uYachtMask, vec2(muv.x, muv.y + 0.015)).a;
   if (muv.y > kWaterline && muv.x > 0.55 && yHere < 0.3 && hullBelow < 0.3) {
     float wl = -1.0;
@@ -518,13 +523,18 @@ void main() {
     if (wl > 0.0) {
       float depth = muv.y - wl; // distance below the waterline contact
       float jx = (fbm(vec2(muv.y * 30.0 - uTime * 0.4, muv.x * 8.0)) - 0.5) *
-          (0.004 + 0.03 * depth);
-      float srcY = wl - depth * 1.15; // mirror, slightly stretched (elongated)
-      float src = texture(uWindowField, vec2(muv.x + jx, srcY)).b;
-      float rip = 0.45 + 0.55 * smoothstep(0.35, 0.90,
-          fbm(vec2(muv.x * 26.0, muv.y * 34.0 - uTime * 0.5)));
-      float fade = 1.0 - smoothstep(0.0, 0.11, depth);
-      float spill = src * rip * fade * 1.0 * beat;
+          (0.004 + 0.05 * depth);
+      // How warm-lit is the vessel column rising above this water column?
+      float colWarm =
+          yachtWindow(vec2(muv.x + jx, wl - 0.04)) +
+          yachtWindow(vec2(muv.x + jx, wl - 0.09)) +
+          0.6 * yachtWindow(vec2(muv.x + jx, wl - 0.14));
+      float rip = 0.40 + 0.60 * smoothstep(0.30, 0.92,
+          fbm(vec2((muv.x + jx) * 26.0, muv.y * 34.0 - uTime * 0.5)));
+      // Tight contact pool: brightest right at the waterline, gone within ~6% so it
+      // reads as light ON the water, not a long mirror streak.
+      float fade = 1.0 - smoothstep(0.0, 0.06, depth);
+      float spill = colWarm * rip * fade * 1.1 * beat;
       spill = spill / (1.0 + 1.2 * spill);
       lights += uYachtGlow.rgb * spill;
       intensity += spill;
