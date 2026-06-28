@@ -14,16 +14,21 @@ const int kDroneShowDroneCount = 220;
 
 /// Length of one complete drone-show loop.
 ///
-/// Real drone shows read as coordinated aircraft rather than particles, but the
-/// middle transition still needs tempo so the stem does not feel sluggish.
-const double kDroneShowCycleSeconds = 96;
+/// This is intentionally song-scale rather than particle-scale: the aircraft
+/// spend tens of seconds climbing from the bridge before they hold readable sky
+/// text. That keeps the implied vertical and lateral speeds in the range of a
+/// real light-show drone instead of a firework.
+const double kDroneShowCycleSeconds = 144;
 
-const double _launchEnd = 0.18;
-const double _beamEnd = 0.27;
-const double _fanEnd = 0.54;
-const double _openingSettleEnd = 0.18;
-const double _textTransitionStart = 0.48;
-const double _textTransitionEnd = 0.72;
+const double _launchEnd = 0.22;
+const double _beamEnd = 0.38;
+const double _fanEnd = 0.58;
+const double _launchHoldProgress = 0.14;
+const double _openingSettleEnd = 0.16;
+const double _textTransitionStart = 0.44;
+const double _stagingHoldStart = 0.56;
+const double _stagingHoldEnd = 0.62;
+const double _textTransitionEnd = 0.74;
 const double _reducedMotionCycleProgress = 0.9;
 
 /// Coarse segment in the repeatable drone-show choreography.
@@ -64,9 +69,9 @@ class DroneShowSample {
 
 /// Additive drone-show layer for the blue-hour sky.
 ///
-/// Drones launch from evenly spaced bridge-road anchors, climb into an
-/// ascending beam, fan outward, hold [kDroneShowOpeningText], then morph into
-/// [kDroneShowFinalText].
+/// Drones launch from evenly spaced bridge-road anchors, rise vertically before
+/// converging into an ascending beam, fan outward, hold [kDroneShowOpeningText],
+/// then morph through a staging row into [kDroneShowFinalText].
 /// The layer is stateless and deterministic from [BackdropContext.timeSeconds].
 class DroneShowLayer implements BackdropLayer {
   const DroneShowLayer({
@@ -168,9 +173,10 @@ List<ui.Offset> droneShowFormationPoints({
   if (count <= 0) return const [];
   final cells = _textDotCells(text);
   return List<ui.Offset>.generate(count, (i) {
-    final cell = cells[(i * 73) % cells.length];
+    final cellIndex = (i * cells.length) ~/ count;
+    final cell = cells[math.min(cellIndex, cells.length - 1)];
     final angle = _unitForIndex(i + 211) * math.pi * 2;
-    final radius = math.sqrt(_unitForIndex(i + 307)) * 0.24;
+    final radius = math.sqrt(_unitForIndex(i + 307)) * 0.08;
     return cell.center.translate(
       math.cos(angle) * cell.width * radius,
       math.sin(angle) * cell.height * radius,
@@ -199,13 +205,20 @@ List<DroneShowSample> sampleDroneShow(
   return List<DroneShowSample>.generate(count, (i) {
     final t = _easeInOut(timeline.progress);
     final launch = _launchPoint(i, count);
-    final beam = _beamPoint(i);
+    final rise = _risePoint(i, count);
+    final beam = _beamPoint(i, count);
     final fan = _fanPoint(i, count);
     final position = switch (timeline.phase) {
-      DroneShowPhase.launch => ui.Offset.lerp(launch, beam, t)!,
-      DroneShowPhase.beam => ui.Offset.lerp(beam, _beamLiftPoint(i), t)!,
-      DroneShowPhase.fan => ui.Offset.lerp(_beamLiftPoint(i), fan, t)!,
+      DroneShowPhase.launch => _launchPhasePoint(
+        launch,
+        rise,
+        timeline.progress,
+      ),
+      DroneShowPhase.beam => ui.Offset.lerp(rise, beam, t)!,
+      DroneShowPhase.fan => ui.Offset.lerp(beam, fan, t)!,
       DroneShowPhase.formation => _formationPoint(
+        i,
+        count,
         fan,
         openingFormation[i],
         finalFormation[i],
@@ -216,10 +229,14 @@ List<DroneShowSample> sampleDroneShow(
         ? 0.0
         : 0.045 *
               math.sin(timeSeconds * 1.35 + i * 0.42 + _unitForIndex(i) * 2);
+    final coordinated = timeline.phase == DroneShowPhase.launch;
+    final formation = timeline.phase == DroneShowPhase.formation;
     return DroneShowSample(
       position: position,
-      opacity: (0.74 + twinkle).clamp(0.0, 1.0),
-      radius: 0.0020 + _unitForIndex(i + 17) * 0.0009,
+      opacity: (coordinated ? 0.8 : 0.74 + twinkle).clamp(0.0, 1.0),
+      radius: coordinated || formation
+          ? 0.00235
+          : 0.0020 + _unitForIndex(i + 17) * 0.0009,
       phase: timeline.phase,
     );
   }, growable: false);
@@ -227,34 +244,46 @@ List<DroneShowSample> sampleDroneShow(
 
 ui.Offset _launchPoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
-  final x = 0.455 + u * 0.30;
-  final y = 0.486 + (u - 0.5) * 0.006;
+  final x = 0.44 + u * 0.34;
+  final y = 0.476 + (u - 0.5) * 0.006;
   return ui.Offset(x, y);
 }
 
-ui.Offset _beamPoint(int index) {
-  final wobble = (_unitForIndex(index + 11) - 0.5) * 0.035;
-  final height = _unitForIndex(index + 29) * 0.22;
-  return ui.Offset(0.62 + wobble, 0.47 - height);
+ui.Offset _launchPhasePoint(ui.Offset launch, ui.Offset rise, double progress) {
+  if (progress < _launchHoldProgress) return launch;
+  final t = (progress - _launchHoldProgress) / (1 - _launchHoldProgress);
+  return ui.Offset.lerp(launch, rise, _easeInOut(t))!;
 }
 
-ui.Offset _beamLiftPoint(int index) {
-  final wobble = (_unitForIndex(index + 3) - 0.5) * 0.026;
-  final height = _unitForIndex(index + 47) * 0.24;
-  return ui.Offset(0.62 + wobble, 0.34 - height);
+ui.Offset _risePoint(int index, int count) {
+  final u = count <= 1 ? 0.5 : index / (count - 1);
+  return ui.Offset(
+    0.44 + u * 0.34,
+    0.392 - u * 0.018,
+  );
+}
+
+ui.Offset _beamPoint(int index, int count) {
+  final u = count <= 1 ? 0.5 : index / (count - 1);
+  return ui.Offset(
+    0.61 + (u - 0.5) * 0.04,
+    0.365 - u * 0.135,
+  );
 }
 
 ui.Offset _fanPoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
   final band = ((index * 7) % 11) / 10;
-  final crown = -0.035 * math.sin(u * math.pi);
+  final crown = -0.032 * math.sin(u * math.pi);
   return ui.Offset(
-    0.34 + u * 0.32,
-    0.21 + band * 0.09 + crown,
+    0.35 + u * 0.30,
+    0.205 + band * 0.085 + crown,
   );
 }
 
 ui.Offset _formationPoint(
+  int index,
+  int count,
   ui.Offset fan,
   ui.Offset opening,
   ui.Offset finalText,
@@ -268,13 +297,26 @@ ui.Offset _formationPoint(
     )!;
   }
   if (progress < _textTransitionStart) return opening;
-  if (progress < _textTransitionEnd) {
+  final staging = _transitionStagingPoint(index, count);
+  if (progress < _stagingHoldStart) {
     final t =
         (progress - _textTransitionStart) /
-        (_textTransitionEnd - _textTransitionStart);
-    return ui.Offset.lerp(opening, finalText, _easeInOut(t))!;
+        (_stagingHoldStart - _textTransitionStart);
+    return ui.Offset.lerp(opening, staging, _easeInOut(t))!;
+  }
+  if (progress < _stagingHoldEnd) return staging;
+  if (progress < _textTransitionEnd) {
+    final t =
+        (progress - _stagingHoldEnd) / (_textTransitionEnd - _stagingHoldEnd);
+    return ui.Offset.lerp(staging, finalText, _easeInOut(t))!;
   }
   return finalText;
+}
+
+ui.Offset _transitionStagingPoint(int index, int count) {
+  final u = count <= 1 ? 0.5 : index / (count - 1);
+  final row = ((index * 5) % 7 - 3) * 0.004;
+  return ui.Offset(0.37 + u * 0.26, 0.245 + row);
 }
 
 double _unitForIndex(int index) {
@@ -319,12 +361,17 @@ List<_DotCell> _textDotCells(String text) {
     return const [_DotCell(ui.Offset(0.5, 0.22), 0.01, 0.01)];
   }
 
+  rawCells.sort((a, b) {
+    final x = a.x.compareTo(b.x);
+    return x != 0 ? x : a.y.compareTo(b.y);
+  });
+
   final width = math.max(cursor - glyphGap, 1);
   const rows = 7;
   const targetWidth = 0.3;
   const targetHeight = 0.08;
   const left = 0.35;
-  const top = 0.24;
+  const top = 0.205;
   final cellWidth = targetWidth / width;
   const cellHeight = targetHeight / rows;
   return [

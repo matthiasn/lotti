@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -8,17 +9,17 @@ import 'package:lotti/features/scenery/model/backdrop_palette.dart';
 void main() {
   group('droneShowTimelineAt', () {
     test('uses a physically slow cycle for aircraft-scale motion', () {
-      expect(kDroneShowCycleSeconds, inInclusiveRange(90, 110));
+      expect(kDroneShowCycleSeconds, inInclusiveRange(130, 150));
     });
 
     test('resolves launch, beam, fan, and formation phases', () {
       expect(droneShowTimelineAt(0).phase, DroneShowPhase.launch);
       expect(
-        droneShowTimelineAt(kDroneShowCycleSeconds * 0.2).phase,
+        droneShowTimelineAt(kDroneShowCycleSeconds * 0.26).phase,
         DroneShowPhase.beam,
       );
       expect(
-        droneShowTimelineAt(kDroneShowCycleSeconds * 0.35).phase,
+        droneShowTimelineAt(kDroneShowCycleSeconds * 0.46).phase,
         DroneShowPhase.fan,
       );
       expect(
@@ -68,8 +69,8 @@ void main() {
 
       expect(minX, greaterThanOrEqualTo(0.34));
       expect(maxX, lessThanOrEqualTo(0.66));
-      expect(minY, greaterThanOrEqualTo(0.23));
-      expect(maxY, lessThanOrEqualTo(0.33));
+      expect(minY, greaterThanOrEqualTo(0.20));
+      expect(maxY, lessThanOrEqualTo(0.30));
       expect(maxX - minX, inInclusiveRange(0.25, 0.33));
     });
 
@@ -85,8 +86,8 @@ void main() {
       expect(points, hasLength(kDroneShowDroneCount));
       expect(minX, greaterThanOrEqualTo(0.34));
       expect(maxX, lessThanOrEqualTo(0.66));
-      expect(minY, greaterThanOrEqualTo(0.23));
-      expect(maxY, lessThanOrEqualTo(0.33));
+      expect(minY, greaterThanOrEqualTo(0.20));
+      expect(maxY, lessThanOrEqualTo(0.30));
     });
   });
 
@@ -121,15 +122,33 @@ void main() {
           .map((s) => s.position.dy)
           .reduce((a, b) => a > b ? a : b);
 
-      expect(minX, greaterThanOrEqualTo(0.455));
-      expect(maxX, lessThanOrEqualTo(0.76));
-      expect(maxX - minX, greaterThan(0.29));
+      expect(minX, greaterThanOrEqualTo(0.44));
+      expect(maxX, lessThanOrEqualTo(0.781));
+      expect(maxX - minX, greaterThan(0.33));
       final step = xs[1] - xs[0];
       for (var i = 2; i < xs.length; i++) {
         expect(xs[i] - xs[i - 1], closeTo(step, 1e-12));
       }
-      expect(minY, greaterThanOrEqualTo(0.482));
-      expect(maxY, lessThanOrEqualTo(0.49));
+      expect(minY, greaterThanOrEqualTo(0.472));
+      expect(maxY, lessThanOrEqualTo(0.48));
+      for (final sample in samples) {
+        expect(sample.opacity, closeTo(0.8, 1e-12));
+        expect(sample.radius, closeTo(0.00235, 1e-12));
+      }
+    });
+
+    test('rises vertically before converging into the beam', () {
+      final start = sampleDroneShow(0, count: 40);
+      final rising = sampleDroneShow(
+        kDroneShowCycleSeconds * 0.15,
+        count: 40,
+      );
+
+      for (var i = 0; i < start.length; i++) {
+        expect(rising[i].phase, DroneShowPhase.launch);
+        expect(rising[i].position.dx, closeTo(start[i].position.dx, 1e-12));
+        expect(rising[i].position.dy, lessThan(start[i].position.dy));
+      }
     });
 
     test('shows Omah Lay first, then Moving', () {
@@ -149,6 +168,45 @@ void main() {
         expect(opening[i].position.dy, closeTo(openingTarget[i].dy, 1e-12));
         expect(finalText[i].position.dx, closeTo(finalTarget[i].dx, 1e-12));
         expect(finalText[i].position.dy, closeTo(finalTarget[i].dy, 1e-12));
+      }
+    });
+
+    test('uses a coordinated staging line between text messages', () {
+      final midTransition = sampleDroneShow(
+        kDroneShowCycleSeconds * 0.83,
+        count: 80,
+      );
+      final minY = midTransition
+          .map((s) => s.position.dy)
+          .reduce((a, b) => a < b ? a : b);
+      final maxY = midTransition
+          .map((s) => s.position.dy)
+          .reduce((a, b) => a > b ? a : b);
+
+      expect(
+        midTransition.map((s) => s.phase),
+        everyElement(DroneShowPhase.formation),
+      );
+      expect(maxY - minY, lessThan(0.03));
+    });
+
+    test('limits one-second travel so drones do not read as particles', () {
+      const maxNormalizedStepPerSecond = 0.018;
+
+      for (var t = 0.0; t < kDroneShowCycleSeconds - 1; t += 1) {
+        final a = sampleDroneShow(t, count: 80);
+        final b = sampleDroneShow(t + 1, count: 80);
+
+        for (var i = 0; i < a.length; i++) {
+          final dx = b[i].position.dx - a[i].position.dx;
+          final dy = b[i].position.dy - a[i].position.dy;
+          final distance = math.sqrt(dx * dx + dy * dy);
+          expect(
+            distance,
+            lessThanOrEqualTo(maxNormalizedStepPerSecond),
+            reason: 'drone $i at t=$t',
+          );
+        }
       }
     });
 

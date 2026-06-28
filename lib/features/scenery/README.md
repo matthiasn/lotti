@@ -135,16 +135,17 @@ on desktop and phone aspect ratios.
 
 `layers/drone_show_layer.dart` is a deterministic background performance layer,
 not a bitmap asset. It samples normalized drone positions from the scene clock
-and paints additive glows in the sky. The current show is coordinated rather
-than sluggish: 220 drones launch evenly along the cable-stayed bridge road line
-over a 96-second cycle, climb into a controlled beam, move through a measured
-middle fan, hold compact dot-matrix `Omah Lay`, then morph into `Moving`.
+and paints additive glows in the sky. The current show is aircraft-paced rather
+than particle-paced: 220 drones hold an evenly spaced cable-stayed bridge-road
+launch line, rise mostly vertically, converge into a controlled beam, fan out,
+hold compact dot-matrix `Omah Lay`, collapse through a coordinated staging row,
+then form `Moving` over a 144-second cycle.
 
 ```mermaid
 stateDiagram-v2
   [*] --> Launch
-  Launch --> Beam: grouped ascent
-  Beam --> Fan: vertical beam opens
+  Launch --> Beam: road hold + vertical rise
+  Beam --> Fan: controlled convergence
   Fan --> Formation: spread into text points
   Formation --> Launch: loop wraps
 ```
@@ -158,7 +159,9 @@ The pure functions are the contract:
 - `sampleDroneShow(timeSeconds)` returns per-drone normalized positions,
   opacity, radius, and phase; reduced-motion samples a static formation frame.
   During formation, drones settle into `Omah Lay`, hold, transition into
-  `Moving`, then hold again so lettering remains readable.
+  `Moving` through a thin staging row, then hold again so lettering remains
+  readable. The tests also bound one-second normalized travel so retunes do not
+  accidentally make the aircraft move like fireworks.
 
 The layer belongs behind the city/yacht redraw. That lets the launch read as
 coming from the bridge area while solid painted structures still occlude the
