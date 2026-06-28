@@ -155,14 +155,45 @@ def main() -> int:
 
     wfield[yy > BAND_BOTTOM] = 0.0
 
+    # --- Yacht TV-window mask (GREEN channel) ---
+    # The large lower-deck window is a distinctive dark "swoop" pane. Detect its
+    # EXACT painted glass — the dark pixels in its tight footprint, right of the
+    # hull porthole — so the runtime TV glow fills the real window shape and
+    # position by construction, never a hand-placed box. The shader reads this
+    # from `.g`; the city window field stays in `.r`.
+    yt = Image.open(YACHT).convert("RGBA").resize((w, h), Image.Resampling.LANCZOS)
+    yt_arr = np.asarray(yt, dtype=np.float64)
+    yt_lum = (
+        0.299 * yt_arr[..., 0] + 0.587 * yt_arr[..., 1] + 0.114 * yt_arr[..., 2]
+    )
+    yt_a = yt_arr[..., 3] / 255.0
+    tv_region = (
+        (yy > 0.552) & (yy < 0.609) & (xx > 0.806) & (xx < 0.882)
+    )
+    tv_mask = (tv_region & (yt_lum < 65.0) & (yt_a > 0.05)).astype(np.float64)
+    # Soften so the screen reads as a glow filling the pane, not a hard cut-out.
+    tv_mask = (
+        np.asarray(
+            Image.fromarray((tv_mask * 255.0).astype(np.uint8)).filter(
+                ImageFilter.GaussianBlur(2.5),
+            ),
+            dtype=np.float64,
+        )
+        / 255.0
+    )
+
     v = (np.clip(wfield, 0.0, 1.0) * 255.0).astype(np.uint8)
+    tv = (np.clip(tv_mask, 0.0, 1.0) * 255.0).astype(np.uint8)
     rgba = np.zeros((h, w, 4), dtype=np.uint8)
-    rgba[..., 0] = v
-    rgba[..., 1] = v
-    rgba[..., 2] = v
+    rgba[..., 0] = v   # R: city window field
+    rgba[..., 1] = tv  # G: yacht TV-window mask
+    rgba[..., 2] = v   # B: unused (mirror of R)
     rgba[..., 3] = 255
     Image.fromarray(rgba, "RGBA").save(OUT)
-    print(f"wrote {OUT}  window px (>0.1): {int((wfield > 0.1).sum())}")
+    print(
+        f"wrote {OUT}  city px(>0.1)={int((wfield > 0.1).sum())}  "
+        f"tv px(>0.1)={int((tv_mask > 0.1).sum())}"
+    )
     return 0
 
 
