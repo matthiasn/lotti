@@ -269,8 +269,8 @@ void main() {
   // Cool LED panes (#DCEBFF, near-white) clip to white far sooner than warm
   // sodium, so the minority LED windows are dimmed a touch to keep them reading
   // as cool-white panes instead of blown highlights.
-  float cityRaw = win * (0.78 + 0.5 * uWindowAmount) * beat * farDim * darkGate *
-      (0.72 + 0.28 * warmSel);
+  float cityRaw = win * (0.70 + 0.46 * uWindowAmount) * beat * farDim *
+      darkGate * (0.72 + 0.28 * warmSel);
   // Soft highlight rolloff (Reinhard knee): dense window clusters glow but
   // asymptote well below white instead of stacking into a flat blown blob over
   // the plate, while dim windows stay ~linear. Many MODERATELY-lit windows read
@@ -307,8 +307,12 @@ void main() {
   // lives in the dimmer air AROUND the bright panes (a real bloom prefilter),
   // not on top of them.
   float knee = 1.0 - 0.6 * smoothstep(0.35, 0.85, win);
-  float bloomLit = bloom * 0.12 * (0.7 + 0.6 * uWindowAmount) * beat *
-      (0.5 + 1.15 * depthFar) * darkGate * knee;
+  // Tighter far-bloom (was 0.12 / 1.15*depthFar): the wide warm far-bloom was
+  // smearing the back skyline into a glowing band and bleeding past the building
+  // silhouettes; pulling it in keeps the glow ON the panes, not in the air past
+  // the rooflines, and kills the far-right "plus" sparkle the streak+bloom made.
+  float bloomLit = bloom * 0.10 * (0.7 + 0.6 * uWindowAmount) * beat *
+      (0.5 + 0.65 * depthFar) * darkGate * knee;
   vec3 bloomCol =
       mix(mix(uCool.rgb, uWarm.rgb, warmSel), uWarm.rgb, 0.30 * depthFar);
   lights += bloomCol * bloomLit;
@@ -331,8 +335,8 @@ void main() {
             texture(uWindowField, muv + vec2(-dx, 0.0)).r, uWindowAmount, uTime,
             uFlicker, sd);
   }
-  float streakLit = streak * 0.085 * (0.7 + 0.6 * uWindowAmount) * beat *
-      (0.8 + 0.5 * depthFar) * darkGate;
+  float streakLit = streak * 0.05 * (0.7 + 0.6 * uWindowAmount) * beat *
+      (0.8 + 0.3 * depthFar) * darkGate;
   lights += mix(uCool.rgb, uWarm.rgb, warmSel) * streakLit;
   intensity += streakLit;
 

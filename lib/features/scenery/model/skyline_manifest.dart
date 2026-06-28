@@ -84,5 +84,10 @@ const SkylineManifest kPlaceholderSkylineManifest = SkylineManifest(
     Offset(0.625, 0.675),
     Offset(0.58, 0.645),
   ],
-  waterline: 0.62,
+  // The painted lagoon meets the far shore here (matches the city-lights
+  // shader's kWaterline and the window-bake BAND_BOTTOM). The animated ocean
+  // band runs from this line down to the art bottom, so foam covers the whole
+  // VISIBLE lagoon between the far shore and the deck — not just a thin strip
+  // near the deck that the foreground planks then hide.
+  waterline: 0.515,
 );

@@ -107,12 +107,12 @@ void main() {
     float crest = sin(phase);
     // Break each crest into drifting dashes so foam reads as scattered
     // whitecaps, not continuous lines spanning the whole width.
-    float dash = smoothstep(0.32, 0.72,
+    float dash = smoothstep(0.24, 0.64,
         fbm(vec2(x * 5.0 + fi * 9.0, depth * 9.0 - uTime * (speed + 0.1))));
-    // Keep the upper part of each ridge → broader, clearly visible whitecaps
-    // (a wider band than a hairline tip so the water reads as moving at normal
-    // viewing size, not just under magnification).
-    foamAmt += smoothstep(0.82, 0.97, crest) * dash * (0.45 + 0.55 * wob);
+    // Keep a BROAD upper band of each ridge so the whitecaps are big and clearly
+    // visible (and their drift reads as moving water) at normal viewing size, not
+    // just a hairline tip you only catch under magnification.
+    foamAmt += smoothstep(0.58, 0.86, crest) * dash * (0.62 + 0.6 * wob);
   }
   // Ease foam in just under the waterline and off at the very bottom, and bias
   // its brightness toward the viewer so the surface reads as receding water
@@ -120,10 +120,10 @@ void main() {
   float foamBand = smoothstep(0.0, 0.12, depth) *
       (1.0 - smoothstep(0.8, 1.0, depth)) * (0.4 + 0.6 * depth);
   float foamA = clamp(
-      clamp(foamAmt, 0.0, 1.0) * foamBand *
-          clamp(uFoamDensity * (1.0 + 0.6 * beat), 0.0, 1.4),
+      clamp(foamAmt, 0.0, 1.2) * foamBand *
+          clamp(uFoamDensity * (1.0 + 0.6 * beat), 0.0, 1.7),
       0.0,
-      0.9);
+      1.0);
 
   // --- Moon glint: a soft, broken vertical shimmer under uMoonX. Kept gentle
   // (the plate already paints the city's reflections); ripples horizontally so
@@ -133,9 +133,9 @@ void main() {
   float ripple = smoothstep(0.55, 1.0,
       fbm(vec2(x * 18.0, depth * 14.0 - uTime * 0.4)));
   float glintA = clamp(
-      column * ripple * clamp(uReflection, 0.0, 2.0) * (0.2 + 0.5 * depth),
+      column * ripple * clamp(uReflection, 0.0, 2.0) * (0.28 + 0.6 * depth),
       0.0,
-      0.5);
+      0.6);
 
   // --- Fresnel horizon sheen: at the grazing angle near the far shore the
   // lagoon mirrors the bright twilight sky, so the band just under the waterline
