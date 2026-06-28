@@ -53,9 +53,9 @@ _kBacklightPasses = [
   // soft outer bloom: only lightly biased toward the source so it still WRAPS a
   // good arc of the silhouette (a real, readable air-glow), brighter side toward
   // the light — not a thin sliver that reads as "no glow".
-  (sigmaFrac: 0.026, alphaScale: 0.58, offsetScale: 0.7),
+  (sigmaFrac: 0.024, alphaScale: 0.46, offsetScale: 0.7),
   // tight bright rim: a thin hot kicker hard on the source-facing contour.
-  (sigmaFrac: 0.010, alphaScale: 1.0, offsetScale: 2.0),
+  (sigmaFrac: 0.010, alphaScale: 0.92, offsetScale: 2.0),
 ];
 
 /// Unit direction (screen space, +x right / +y down) from each dance lane toward

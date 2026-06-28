@@ -201,6 +201,8 @@ its floor pool always share a gel:
   (`60 / bpm`), offset per lane so the row rotates rather than flashing in unison;
   brightness is `baseIntensity + beatBoost * beat` (a lifted base so the calm intro
   is never underlit, a tempered boost so the beat punches without blowing out).
+  `leadGoldIndex` pins one lane (the centre/lead) to the hero gold every frame
+  while the flankers keep cycling, so the lead reads as a consistent star colour.
 - **The directional rim/halo + body grade are drawn by `CharacterPainter`**
   (`memberBacklights` + `bodyGrade` + `heroStaging`, not in this module): each cat
   is rendered as a blurred, solid-gel silhouette behind itself (a soft bloom + a

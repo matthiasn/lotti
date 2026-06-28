@@ -12,6 +12,7 @@ class RigSpec {
     List<LimbRibbonSpec> ribbons = const [],
     List<SkinnedMeshSpec> meshes = const [],
     this.face,
+    this.celShade,
   }) : bones = List<Bone>.unmodifiable(bones),
        ribbons = List<LimbRibbonSpec>.unmodifiable(ribbons),
        meshes = List<SkinnedMeshSpec>.unmodifiable(meshes),
@@ -61,6 +62,11 @@ class RigSpec {
   final List<SkinnedMeshSpec> meshes;
 
   final FaceRig? face;
+
+  /// Optional baked cel-shading. When set, the renderer paints a per-shape form
+  /// shadow clipped to each volume so flat fills read as dimensional cartoon
+  /// forms. Null leaves the rig flat-filled (the legacy look).
+  final CelShadeSpec? celShade;
 
   final Map<String, Bone> _byId;
   final List<Bone> _drawOrder;
@@ -250,6 +256,63 @@ class RigSpec {
       }
     }
   }
+}
+
+/// Baked cel-shading for a rig: a per-shape **form shadow** the renderer paints
+/// clipped to each volume, so every limb / torso / head models as its own lit
+/// form (a hard-ish terminator splitting a lit side from a cool shade side)
+/// instead of reading as a flat sticker. One spec art-directs the whole rig; the
+/// shade colour is derived from each shape's own fill (darkened toward
+/// [coolTint]) so no per-bone shadow needs hand-authoring. Flutter-free (ints +
+/// doubles) like the rest of the model — the renderer converts to `Color`s.
+class CelShadeSpec {
+  const CelShadeSpec({
+    this.shadowFactor = 0.68,
+    this.coolTint = 0xFF243349,
+    this.coolAmount = 0.16,
+    this.coverage = 0.42,
+    this.softness = 0.13,
+    this.highlightTint = 0xFFF3E7CD,
+    this.highlightAmount = 0.34,
+    this.highlightCoverage = 0.3,
+    this.lightDx = -0.5,
+    this.lightDy = -1,
+  });
+
+  /// The shade is the shape's own fill RGB multiplied by this (0..1 → darker).
+  final double shadowFactor;
+
+  /// ARGB the shade additionally leans toward, so shadows read cool (blue-hour
+  /// fill light) rather than just a darker tint of the base.
+  final int coolTint;
+
+  /// 0..1 blend of the darkened fill toward [coolTint].
+  final double coolAmount;
+
+  /// Fraction of each shape (measured along the light axis, from the shadow
+  /// side) that sits in full shade before the terminator.
+  final double coverage;
+
+  /// Terminator transition width as a fraction of the shape — small = a hard
+  /// cel edge, larger = a softer wrap.
+  final double softness;
+
+  /// ARGB the LIT side leans toward — a key highlight on the side facing the
+  /// light. This is what makes a cel ramp READ on dark fills (a near-black navy
+  /// suit shows no darker shade, but a lifted desaturated highlight gives it
+  /// form). A warm light reads as the stage/city key catching the form.
+  final int highlightTint;
+
+  /// 0..1 blend of the lit side toward [highlightTint].
+  final double highlightAmount;
+
+  /// Fraction of each shape (from the lit side) that carries the highlight.
+  final double highlightCoverage;
+
+  /// Light-source direction in screen space (the lit side faces toward it; the
+  /// shade falls on the opposite side). Normalised by the renderer.
+  final double lightDx;
+  final double lightDy;
 }
 
 /// A continuous tapered limb surface drawn through a solved joint chain.

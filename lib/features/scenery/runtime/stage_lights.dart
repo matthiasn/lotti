@@ -51,6 +51,7 @@ class StageLightRig {
     this.colorPeriod = 0.5,
     this.baseIntensity = 0.38,
     this.beatBoost = 0.4,
+    this.leadGoldIndex,
   }) : assert(count > 0, 'need at least one light'),
        assert(colorPeriod > 0, 'colorPeriod must be > 0');
 
@@ -79,10 +80,17 @@ class StageLightRig {
   /// Extra brightness added at full beat.
   final double beatBoost;
 
+  /// When set, this lane (the hero/lead) holds [colors]`[0]` every frame instead
+  /// of rotating, so the lead reads as a consistent hero colour (gold) while the
+  /// flankers still cycle. Null rotates every lane.
+  final int? leadGoldIndex;
+
   /// The colour index light [i] shows at [time]: discrete (it snaps, never
   /// lerps) and offset per light so the row reads as R/G/B rotating rather than
-  /// every beam flashing the same colour at once.
+  /// every beam flashing the same colour at once. The [leadGoldIndex] lane is
+  /// pinned to index 0 (the hero gold).
   int colorIndexAt(int i, double time) {
+    if (i == leadGoldIndex) return 0;
     final step = (time / colorPeriod).floor();
     final n = colors.length;
     return ((step + i) % n + n) % n;

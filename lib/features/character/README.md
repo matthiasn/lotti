@@ -151,6 +151,17 @@ itself is a control bone; the suit jacket covers the pelvis and thigh roots so
 the legs read as emerging from the body rather than hanging below a separate
 block.
 
+**Cel-shading.** A rig may carry a `CelShadeSpec` (`RigSpec.celShade`; the cat
+sets one). After each fill the renderer paints a per-shape **three-tone form
+shadow** clipped to that volume: a lifted highlight on the side facing the light
+(upper-left), the untouched base in the middle, and a cool blue-hour shade on the
+far side — derived from the shape's own fill, so no per-bone shadow is authored.
+Clipping per shape is what makes each limb/torso/head model as its own form
+(unlike a single gradient over the whole figure, which reads flat). The highlight
+tone is essential on dark fills: a near-black navy suit shows no darker shade, but
+a lifted lit side gives it dimensional form. The face features draw after, so they
+stay crisp and bright over the shaded head.
+
 The hot path is intentionally cheap: evaluate a handful of sinusoids/keyframes,
 walk the bone hierarchy composing `Affine2D`s (~30 bones), resolve the face. No
 SVG parsing, no allocation-heavy work.

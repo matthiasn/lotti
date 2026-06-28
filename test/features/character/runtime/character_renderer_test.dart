@@ -17,6 +17,7 @@ Future<Uint8List> _renderOne(
   BoneDrawable drawable, {
   int w = 120,
   int h = 160,
+  CelShadeSpec? celShade,
 }) async {
   final rig = RigSpec(
     name: 't',
@@ -30,6 +31,7 @@ Future<Uint8List> _renderOne(
         drawable: drawable,
       ),
     ],
+    celShade: celShade,
   );
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
@@ -116,6 +118,43 @@ const int _nosePink = 0xFFC8696B;
 void main() {
   const w = 120;
   const h = 160;
+
+  testWidgets('celShade lifts the lit side and darkens the shade side', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      // A neutral-grey panel so both the lifted highlight and the darkened shade
+      // are visible against the flat fill (a near-black fill would hide the
+      // shade — exactly the body-crush the highlight tone solves).
+      const panel = BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 70,
+        height: 110,
+        cornerRadius: 16,
+        dy: 50,
+        color: 0xFF808080,
+      );
+      final flat = await _renderOne(panel);
+      final shaded = await _renderOne(panel, celShade: const CelShadeSpec());
+      // Shape centre ≈ (60, 0.2*160 + 50 = 82). Light comes from the upper-left,
+      // so the upper-left reads lighter and the lower-right darker than flat.
+      int lum(Uint8List px, int x, int y) {
+        final o = (y * w + x) * 4;
+        return px[o] + px[o + 1] + px[o + 2];
+      }
+
+      expect(
+        lum(shaded, 42, 56),
+        greaterThan(lum(flat, 42, 56) + 24),
+        reason: 'lit upper-left is lifted toward the highlight',
+      );
+      expect(
+        lum(shaded, 80, 110),
+        lessThan(lum(flat, 80, 110) - 24),
+        reason: 'shade lower-right is darkened toward the cool shade',
+      );
+    });
+  });
 
   testWidgets('taperedCapsule is wide at the top and narrows to the tip', (
     tester,

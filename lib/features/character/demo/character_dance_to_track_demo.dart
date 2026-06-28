@@ -766,7 +766,11 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     // cat (CharacterPainter.memberBacklights) and the floor pools
     // (StageLightsOverlay), so the body glow and its pool always share a colour.
     // Gels rotate on the tempo; the beat pulses brightness. New scene only.
-    final stageRig = StageLightRig(colorPeriod: _bpm > 0 ? 60 / _bpm : 0.5);
+    final stageRig = StageLightRig(
+      colorPeriod: _bpm > 0 ? 60 / _bpm : 0.5,
+      // Lock the centre (lead) lane to the hero gold every frame; flankers cycle.
+      leadGoldIndex: 1,
+    );
     final stageSamples = _useNewBackdrop
         ? stageRig.sample(time: _wallSeconds, beat: beat)
         : const <StageLightSample>[];

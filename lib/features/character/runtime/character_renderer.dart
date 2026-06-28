@@ -101,15 +101,22 @@ class CharacterRenderer {
   ) {
     final ribbons = rig.ribbonDrawOrder;
     final meshes = rig.meshDrawOrder;
+    final celShade = rig.celShade;
     var ribbonIndex = 0;
     var meshIndex = 0;
     for (final bone in rig.drawOrder) {
       while (ribbonIndex < ribbons.length && ribbons[ribbonIndex].z <= bone.z) {
         _drawRibbonFill(canvas, ribbons[ribbonIndex], world);
+        if (celShade != null) {
+          _celShadeRibbon(canvas, ribbons[ribbonIndex], world, celShade);
+        }
         ribbonIndex++;
       }
       while (meshIndex < meshes.length && meshes[meshIndex].z <= bone.z) {
         _drawMeshFill(canvas, meshes[meshIndex], world);
+        if (celShade != null) {
+          _celShadeMesh(canvas, meshes[meshIndex], world, celShade);
+        }
         meshIndex++;
       }
       if (hiddenBones.contains(bone.id)) continue;
@@ -121,16 +128,147 @@ class CharacterRenderer {
         ..save()
         ..transform(transform.toMatrix4Storage(_matrix));
       _drawFill(canvas, drawable);
+      if (celShade != null) _celShadeKind(canvas, drawable, celShade);
       canvas.restore();
     }
     while (ribbonIndex < ribbons.length) {
       _drawRibbonFill(canvas, ribbons[ribbonIndex], world);
+      if (celShade != null) {
+        _celShadeRibbon(canvas, ribbons[ribbonIndex], world, celShade);
+      }
       ribbonIndex++;
     }
     while (meshIndex < meshes.length) {
       _drawMeshFill(canvas, meshes[meshIndex], world);
+      if (celShade != null) {
+        _celShadeMesh(canvas, meshes[meshIndex], world, celShade);
+      }
       meshIndex++;
     }
+  }
+
+  // ---- Cel-shading: a per-shape form shadow clipped to each volume ----------
+
+  /// Blends [baseArgb]'s RGB toward [tint] by [amount], after first scaling the
+  /// base by [scale] (used to darken for the shade side; 1 for the highlight).
+  Color _celTint(int baseArgb, int tint, double amount, double scale) {
+    final a = (baseArgb >> 24) & 0xFF;
+    double chan(int shift) {
+      final base = (((baseArgb >> shift) & 0xFF) * scale).clamp(0.0, 255.0);
+      final t = (tint >> shift) & 0xFF;
+      return base + (t - base) * amount;
+    }
+
+    return Color.fromARGB(
+      a,
+      chan(16).round().clamp(0, 255),
+      chan(8).round().clamp(0, 255),
+      chan(0).round().clamp(0, 255),
+    );
+  }
+
+  /// A paint whose shader runs, across [rect] along the light axis, from full
+  /// **shade** on the side away from the light, through the untouched base in the
+  /// middle, to a lifted **highlight** on the lit side — a three-tone cel ramp.
+  /// The highlight is what makes the ramp READ on near-black fills (a navy suit
+  /// shows no darker shade, but a lifted lit side gives it form). Drawn clipped
+  /// to the shape so it models that volume alone.
+  Paint _celShadePaint(Rect rect, int baseArgb, CelShadeSpec s) {
+    final len = math.sqrt(s.lightDx * s.lightDx + s.lightDy * s.lightDy);
+    final dx = len == 0 ? 0.0 : s.lightDx / len;
+    final dy = len == 0 ? -1.0 : s.lightDy / len;
+    final shade = _celTint(baseArgb, s.coolTint, s.coolAmount, s.shadowFactor);
+    final mid = shade.withValues(alpha: 0); // base shows through
+    final highlight = _celTint(baseArgb, s.highlightTint, s.highlightAmount, 1);
+    final soft = s.softness.clamp(0.0, 0.2);
+    // Ascending stops from the shade corner (0) to the lit corner (1).
+    final s1 = (s.coverage - soft).clamp(0.0, 1.0);
+    final s2 = (s.coverage + soft).clamp(s1, 1.0);
+    final hi = (1 - s.highlightCoverage).clamp(0.0, 1.0);
+    final s3 = (hi - soft).clamp(s2, 1.0);
+    final s4 = (hi + soft).clamp(s3, 1.0);
+    return Paint()
+      ..isAntiAlias = antiAlias
+      ..shader = LinearGradient(
+        begin: Alignment(-dx, -dy), // shade side (away from the light)
+        end: Alignment(dx, dy), // lit side (toward the light)
+        colors: [shade, shade, mid, mid, highlight, highlight],
+        stops: [0, s1, s2, s3, s4, 1],
+      ).createShader(rect);
+  }
+
+  void _celShadeKind(Canvas canvas, BoneDrawable d, CelShadeSpec s) {
+    final rect = Rect.fromCenter(
+      center: Offset(d.dx, d.dy),
+      width: d.width,
+      height: d.height,
+    );
+    canvas.save();
+    _clipKind(canvas, d);
+    canvas
+      ..drawRect(rect, _celShadePaint(rect, d.color, s))
+      ..restore();
+  }
+
+  /// Clips the canvas to the shape geometry of [d] (so a cel-shade fill stays
+  /// inside that volume).
+  void _clipKind(Canvas canvas, BoneDrawable d) {
+    final rect = Rect.fromCenter(
+      center: Offset(d.dx, d.dy),
+      width: d.width,
+      height: d.height,
+    );
+    switch (d.kind) {
+      case BoneShapeKind.capsule:
+        final r = Radius.circular(
+          (d.width < d.height ? d.width : d.height) / 2,
+        );
+        canvas.clipRRect(RRect.fromRectAndRadius(rect, r));
+      case BoneShapeKind.ellipse:
+        canvas.clipPath(Path()..addOval(rect));
+      case BoneShapeKind.roundedRect:
+        canvas.clipRRect(
+          RRect.fromRectAndRadius(rect, Radius.circular(d.cornerRadius)),
+        );
+      case BoneShapeKind.triangle:
+        canvas.clipPath(_trianglePath(rect));
+      case BoneShapeKind.taperedCapsule:
+        canvas.clipPath(_taperedCapsulePath(d));
+    }
+  }
+
+  void _celShadeRibbon(
+    Canvas canvas,
+    LimbRibbonSpec ribbon,
+    Map<String, Affine2D> world,
+    CelShadeSpec s,
+  ) {
+    final path = _ribbonPath(ribbon, world);
+    if (path == null) return;
+    _celShadePath(canvas, path, ribbon.color, s);
+  }
+
+  void _celShadeMesh(
+    Canvas canvas,
+    SkinnedMeshSpec mesh,
+    Map<String, Affine2D> world,
+    CelShadeSpec s,
+  ) {
+    final path = _meshPath(mesh, world);
+    if (path == null) return;
+    _celShadePath(canvas, path, mesh.color, s);
+  }
+
+  /// Cel-shades an arbitrary world-space [path] (ribbon/mesh): clip to it and
+  /// paint the form-shadow gradient across its bounds.
+  void _celShadePath(Canvas canvas, Path path, int baseArgb, CelShadeSpec s) {
+    final bounds = path.getBounds();
+    if (bounds.isEmpty) return;
+    canvas
+      ..save()
+      ..clipPath(path)
+      ..drawRect(bounds, _celShadePaint(bounds, baseArgb, s))
+      ..restore();
   }
 
   /// Paints the fill of [d] in its own colour (no per-bone outline — the
@@ -207,19 +345,25 @@ class CharacterRenderer {
     Map<String, Affine2D> world,
     Paint paint,
   ) {
+    final path = _ribbonPath(ribbon, world);
+    if (path == null) return;
+    canvas.drawPath(path, paint);
+  }
+
+  /// The world-space outline of [ribbon], or null if a joint bone is missing.
+  Path? _ribbonPath(LimbRibbonSpec ribbon, Map<String, Affine2D> world) {
     final spine = <Offset>[];
     for (final boneId in ribbon.jointBoneIds) {
       final transform = world[boneId];
-      if (transform == null) return;
+      if (transform == null) return null;
       final origin = transform.origin;
       spine.add(Offset(origin.x, origin.y));
     }
-    final path = limbRibbonPath(
+    return limbRibbonPath(
       spine,
       ribbon.halfWidths,
       samplesPerSegment: ribbon.samplesPerSegment,
     );
-    canvas.drawPath(path, paint);
   }
 
   void _drawMeshFill(
@@ -263,20 +407,27 @@ class CharacterRenderer {
     Map<String, Affine2D> world,
     Paint paint,
   ) {
+    final path = _meshPath(mesh, world);
+    if (path == null) return;
+    canvas.drawPath(path, paint);
+  }
+
+  /// The world-space contour of [mesh], or null if an influence bone is missing.
+  Path? _meshPath(SkinnedMeshSpec mesh, Map<String, Affine2D> world) {
     final points = <Offset>[];
     for (final vertex in mesh.vertices) {
       var x = 0.0;
       var y = 0.0;
       for (final influence in vertex.influences) {
         final transform = world[influence.boneId];
-        if (transform == null) return;
+        if (transform == null) return null;
         final p = transform.transformPoint(influence.x, influence.y);
         x += p.x * influence.weight;
         y += p.y * influence.weight;
       }
       points.add(Offset(x, y));
     }
-    canvas.drawPath(_smoothClosedPath(points, mesh.boundary), paint);
+    return _smoothClosedPath(points, mesh.boundary);
   }
 
   /// Builds a soft closed contour through a mesh boundary.

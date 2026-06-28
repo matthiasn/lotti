@@ -989,6 +989,10 @@ RigSpec buildCatInSuitRig({
     ribbons: ribbons,
     meshes: meshes,
     face: face,
+    // Cel-shade the cat: a baked per-shape form shadow so the flat fills read as
+    // dimensional cartoon volumes (each limb/torso/head lit from upper-left into
+    // a cool blue-hour shade), not stickers on the painted plate.
+    celShade: const CelShadeSpec(),
   );
 }
 

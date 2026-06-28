@@ -21,6 +21,22 @@ void main() {
       expect(rig.colorIndexAt(2, rig.colorPeriod * 1.01), 0);
     });
 
+    test('leadGoldIndex pins the hero lane to gold while flankers rotate', () {
+      const lead = StageLightRig(leadGoldIndex: 1);
+      // The locked lane holds colours[0] (gold) at every time...
+      for (final t in [0.0, 0.3, 0.6, 1.7, 3.4]) {
+        expect(
+          lead.colorIndexAt(1, t),
+          0,
+          reason: 'lead lane stays gold at t=$t',
+        );
+      }
+      // ...while the flanking lanes still cycle off the clock.
+      expect(lead.colorIndexAt(0, 0), 0);
+      expect(lead.colorIndexAt(0, rig.colorPeriod * 1.01), 1);
+      expect(lead.colorIndexAt(2, rig.colorPeriod * 1.01), 0);
+    });
+
     test('the row never shows every beam the same colour at once', () {
       for (final t in [0.0, 0.2, 0.7, 1.3, 2.6]) {
         final idx = {
