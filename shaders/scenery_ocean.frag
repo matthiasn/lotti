@@ -166,5 +166,11 @@ void main() {
   float g = (hash(frag) - 0.5) * min(uGrain, 0.03);
   added *= 1.0 + g;
 
-  fragColor = vec4(added, coverage);
+  // Suppress the ocean behind the moored yacht (lower-right). Its lower-window
+  // glass is partly transparent, so foam/glint would otherwise show THROUGH it.
+  // The yacht is a fixed element of this scene, so a fixed footprint does the job
+  // without a per-frame mask sampler (which crashed on hot-reload).
+  float yachtFoot =
+      smoothstep(0.60, 0.66, art.x) * smoothstep(0.52, 0.56, art.y);
+  fragColor = vec4(added, coverage) * (1.0 - clamp(yachtFoot, 0.0, 1.0));
 }
