@@ -5100,48 +5100,65 @@ class CatClips {
   // frame-12 hit, LEFT arm on the frame-28 hit.
   // ─────────────────────────────────────────────────────────────────────────
   static const _bugaBodyKeys = [
-    // Progressively deeper prep dips, deepest load held on count 3, then a hard
-    // RISE above standing height with a chest pop on the hit (the biggest
-    // vertical delta in the loop), settling just after.
-    DanceBodyKey(0, rootDy: 8, chestScaleY: 0.97),
-    DanceBodyKey(4, rootDy: 16, chestScaleY: 0.94),
-    DanceBodyKey(8, rootDy: 26, chestScaleY: 0.89), // count 3 DEEP load
-    DanceBodyKey(11, rootDy: 27, chestScaleY: 0.88), // hold the load
-    DanceBodyKey(12, rootDy: -6, chestScaleY: 1.11, chestScaleX: 0.95), // HIT
+    // "lo-lo-lo-BUGA": three DISTINCT dip pulses (down on each count, partial
+    // rise between) that deepen toward count 3, a held re-load just before the
+    // hit (anticipation), then a hard RISE above standing height with a chest
+    // pop on count 4 (the biggest vertical delta in the loop).
+    DanceBodyKey(0, rootDy: 18, chestScaleY: 0.93), // lo1 dip (count 1)
+    DanceBodyKey(2, rootDy: 10, chestScaleY: 0.97), // rise between
+    DanceBodyKey(4, rootDy: 21, chestScaleY: 0.92), // lo2 dip (count 2)
+    DanceBodyKey(6, rootDy: 11, chestScaleY: 0.97), // rise between
+    DanceBodyKey(8, rootDy: 29, chestScaleY: 0.88), // lo3 DEEP load (count 3)
+    DanceBodyKey(11, rootDy: 30, chestScaleY: 0.87), // hold/re-load (anticip.)
+    DanceBodyKey(12, rootDy: -8, chestScaleY: 1.12, chestScaleX: 0.95), // HIT
     DanceBodyKey(14, rootDy: -3, chestScaleY: 1.08), // hold the present
-    DanceBodyKey(16, rootDy: 8, chestScaleY: 0.97),
-    DanceBodyKey(20, rootDy: 16, chestScaleY: 0.94),
-    DanceBodyKey(24, rootDy: 26, chestScaleY: 0.89),
-    DanceBodyKey(27, rootDy: 27, chestScaleY: 0.88),
-    DanceBodyKey(28, rootDy: -6, chestScaleY: 1.11, chestScaleX: 0.95), // HIT
+    DanceBodyKey(16, rootDy: 18, chestScaleY: 0.93), // cell 2: lo1
+    DanceBodyKey(18, rootDy: 10, chestScaleY: 0.97),
+    DanceBodyKey(20, rootDy: 21, chestScaleY: 0.92),
+    DanceBodyKey(22, rootDy: 11, chestScaleY: 0.97),
+    DanceBodyKey(24, rootDy: 29, chestScaleY: 0.88),
+    DanceBodyKey(27, rootDy: 30, chestScaleY: 0.87),
+    DanceBodyKey(28, rootDy: -8, chestScaleY: 1.12, chestScaleX: 0.95), // HIT
     DanceBodyKey(30, rootDy: -3, chestScaleY: 1.08),
-    DanceBodyKey(32, rootDy: 8, chestScaleY: 0.97),
+    DanceBodyKey(32, rootDy: 18, chestScaleY: 0.93),
   ];
+  // The present is a HIGH diagonal "show-off" thrust (up AND out, above the
+  // shoulder at y -56), not a horizontal side-poke at chest height. The non-
+  // presenting hand drops low/back on the hit so the silhouette opens into a
+  // wide asymmetric V.
   static const _bugaHandRTargetKeys = [
     DanceIkTargetKey(0, x: 15, y: -16), // tucked/loaded at the chest
     DanceIkTargetKey(4, x: 14, y: -18),
     DanceIkTargetKey(8, x: 12, y: -20),
     DanceIkTargetKey(11, x: 10, y: -20),
-    DanceIkTargetKey(12, x: 88, y: -12), // THRUST OUT — present (the hit)
-    DanceIkTargetKey(14, x: 85, y: -13),
+    DanceIkTargetKey(12, x: 82, y: -74), // THRUST UP+OUT — present (the hit)
+    DanceIkTargetKey(14, x: 78, y: -68),
     DanceIkTargetKey(16, x: 15, y: -16),
     DanceIkTargetKey(20, x: 14, y: -18),
     DanceIkTargetKey(24, x: 13, y: -19),
-    DanceIkTargetKey(28, x: 14, y: -17), // tucked while the left arm presents
-    DanceIkTargetKey(30, x: 14, y: -18),
+    DanceIkTargetKey(28, x: 17, y: 4), // drops low/back while the left presents
+    DanceIkTargetKey(30, x: 16, y: 2),
     DanceIkTargetKey(32, x: 15, y: -16),
   ];
   static const _bugaHandLTargetKeys = [
     DanceIkTargetKey(0, x: -15, y: -16),
     DanceIkTargetKey(4, x: -14, y: -18),
     DanceIkTargetKey(8, x: -13, y: -19),
-    DanceIkTargetKey(12, x: -14, y: -17), // tucked while the right arm presents
+    DanceIkTargetKey(
+      12,
+      x: -17,
+      y: 4,
+    ), // drops low/back while the right presents
     DanceIkTargetKey(16, x: -15, y: -16),
     DanceIkTargetKey(20, x: -14, y: -18),
     DanceIkTargetKey(24, x: -12, y: -20),
     DanceIkTargetKey(27, x: -10, y: -20),
-    DanceIkTargetKey(28, x: -88, y: -12), // THRUST OUT — present (mirrored hit)
-    DanceIkTargetKey(30, x: -85, y: -13),
+    DanceIkTargetKey(
+      28,
+      x: -82,
+      y: -74,
+    ), // THRUST UP+OUT — present (mirror hit)
+    DanceIkTargetKey(30, x: -78, y: -68),
     DanceIkTargetKey(32, x: -15, y: -16),
   ];
   static final KeyframeIkTargetChannel _bugaHandLTarget = _dancePhrase
