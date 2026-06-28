@@ -1006,6 +1006,12 @@ RigSpec buildCatInSuitRig({
       softness: 0.18,
       highlightAmount: 0.26,
       highlightCoverage: 0.26,
+      // Painterly form-rounding: darken each volume toward its contour so the
+      // limbs/torso/head read as rounded tubes (light bulging centre → occluded
+      // edges) instead of a flat cel terminator, closing the "flat sticker vs
+      // painterly plate" gap the cinematography panel kept flagging.
+      roundAmount: 0.45,
+      roundCoverage: 0.6,
     ),
   );
 }

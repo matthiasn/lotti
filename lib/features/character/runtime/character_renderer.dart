@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 import 'package:lotti/features/character/model/affine2d.dart';
@@ -205,9 +206,55 @@ class CharacterRenderer {
     );
     canvas.save();
     _clipKind(canvas, d);
-    canvas
-      ..drawRect(rect, _celShadePaint(rect, d.color, s))
-      ..restore();
+    canvas.drawRect(rect, _celShadePaint(rect, d.color, s));
+    final round = _formRoundPaint(rect, d.color, s);
+    if (round != null) canvas.drawRect(rect, round);
+    canvas.restore();
+  }
+
+  /// The painterly **form-rounding** pass (null when [CelShadeSpec.roundAmount]
+  /// is 0): a squashed radial — transparent at the shape's centre, deepening to a
+  /// cool occlusion at its contour — drawn (clipped to the shape, on top of the
+  /// directional cel ramp) so the volume bulges in the middle and falls into
+  /// shadow at its edges. The radial is fitted to the shape's bounding ellipse via
+  /// a column-major scale-about-centre matrix, so an elongated limb darkens along
+  /// its long edges (rounding the tube) instead of getting a centred circle.
+  Paint? _formRoundPaint(Rect rect, int baseArgb, CelShadeSpec s) {
+    if (s.roundAmount <= 0 || rect.isEmpty) return null;
+    final halfW = rect.width / 2;
+    final halfH = rect.height / 2;
+    final radius = math.max(halfW, halfH);
+    if (radius <= 0) return null;
+    final sx = halfW >= halfH ? 1.0 : halfW / halfH;
+    final sy = halfH >= halfW ? 1.0 : halfH / halfW;
+    final c = rect.center;
+    final squash = Float64List(16)
+      ..[0] = sx
+      ..[5] = sy
+      ..[10] = 1
+      ..[15] = 1
+      ..[12] = c.dx * (1 - sx)
+      ..[13] = c.dy * (1 - sy);
+    // A deeper, cooler occlusion than the terminator shade: the base darkened
+    // further and pulled harder toward the cool fill, faded by [roundAmount].
+    final edge = _celTint(
+      baseArgb,
+      s.coolTint,
+      (s.coolAmount + 0.45).clamp(0.0, 1.0),
+      s.shadowFactor * 0.7,
+    ).withValues(alpha: s.roundAmount.clamp(0.0, 1.0));
+    final inner = edge.withValues(alpha: 0);
+    final start = (1 - s.roundCoverage).clamp(0.0, 1.0);
+    return Paint()
+      ..isAntiAlias = antiAlias
+      ..shader = ui.Gradient.radial(
+        c,
+        radius,
+        [inner, inner, edge],
+        [0.0, start, 1.0],
+        TileMode.clamp,
+        squash,
+      );
   }
 
   /// Clips the canvas to the shape geometry of [d] (so a cel-shade fill stays
@@ -267,8 +314,10 @@ class CharacterRenderer {
     canvas
       ..save()
       ..clipPath(path)
-      ..drawRect(bounds, _celShadePaint(bounds, baseArgb, s))
-      ..restore();
+      ..drawRect(bounds, _celShadePaint(bounds, baseArgb, s));
+    final round = _formRoundPaint(bounds, baseArgb, s);
+    if (round != null) canvas.drawRect(bounds, round);
+    canvas.restore();
   }
 
   /// Paints the fill of [d] in its own colour (no per-bone outline — the

@@ -636,22 +636,16 @@ class CharacterPainter extends CustomPainter {
               horizontalScale: memberHorizontalScale,
             );
             canvas.restore();
-            // ONE-SIDED MASK. Offsetting the blurred silhouette alone is not
-            // enough: where the blur radius exceeds the offset, the halo still
-            // pokes out on EVERY edge, reading as a full-perimeter outer-glow
-            // sticker (a film panel's repeated complaint). So punch the shadow
-            // half away with a `dstIn` linear gradient — opaque on the
-            // source-facing side, clear on the retreating side — leaving only the
-            // lit-contour crescent. The layer's blur (applied on restore) then
-            // softens that hard cut into a real directional kicker.
-            //
-            // The split must be LEFT/RIGHT, not along the raw light vector:
-            // [_kRimDirections] are mostly VERTICAL (the lamps rake down from
-            // above), so masking along rimDir keeps the whole UPPER body — both
-            // ears, the full crown — which still reads as a head-ringing aura.
-            // Flatten the vertical component so the kept side is a true lamp-side
-            // EDGE: gold only on the lead's left head/shoulder, gel only on each
-            // flanker's outboard edge, opposite edge falling fully dark.
+            // DIRECTIONAL BIAS (not erasure). The halo should wrap the whole cat
+            // — that approved concert-backlight look — but read a touch HOTTER on
+            // the lamp-facing side so it still has a sense of direction. A `dstIn`
+            // linear gradient keeps the halo at full strength on the source side
+            // and dims (but does NOT erase) it on the retreating side. (An earlier
+            // pass zeroed the shadow side outright to satisfy a film panel's
+            // "symmetric aura" note, but that stripped the glow the look depends
+            // on.) The split is biased toward the HORIZONTAL — [_kRimDirections]
+            // are mostly vertical (lamps rake down from above), so masking along
+            // rimDir would dim the whole lower body instead of one side.
             final maskVec = Offset(rimDir.dx, rimDir.dy * 0.28);
             final maskLen = maskVec.distance;
             final maskUnit = maskLen > 0
@@ -668,9 +662,10 @@ class CharacterPainter extends CustomPainter {
                 Paint()
                   ..blendMode = BlendMode.dstIn
                   ..shader = ui.Gradient.linear(
-                    rimMid + rimReach, // lit side — keep the halo
-                    rimMid - rimReach, // shadow side — erase the halo
-                    const [Color(0xFFFFFFFF), Color(0x00FFFFFF)],
+                    rimMid + rimReach, // lamp side — full-strength halo
+                    rimMid -
+                        rimReach, // shadow side — dimmed, but still glowing
+                    const [Color(0xFFFFFFFF), Color(0xB0FFFFFF)],
                     const [0.0, 1.0],
                   ),
               )

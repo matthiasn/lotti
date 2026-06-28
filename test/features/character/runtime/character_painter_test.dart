@@ -753,25 +753,34 @@ void main() {
               pixels,
               760,
               420,
+              // The orange-tabby lead's warm fur, widened to follow the baked
+              // form-rounding which deepens and cools the face/fur edges (lower
+              // red, more blue) out of the original tight bright-orange band —
+              // still warm, red-dominant, and distinct from the grey/navy backups.
               (red, green, blue, alpha, x, y) =>
                   alpha > 180 &&
-                  red > 200 &&
-                  green > 120 &&
-                  green < 190 &&
-                  blue < 120,
+                  red > 150 &&
+                  green > 90 &&
+                  green < 200 &&
+                  blue < 130,
             );
             final dark = _boundsForPixels(
               pixels,
               760,
               420,
+              // The dark-brown backup's low-value range, widened to follow the
+              // baked form-rounding occlusion which deepens and COOLS the edge
+              // pixels (more blue, less red) so they no longer sit in the original
+              // tight warm-brown band — still a dark, distinct-from-the-bright-cats
+              // range, and still gated to the right of the lead.
               (red, green, blue, alpha, x, y) =>
                   x > lead.centerX + 20 &&
                   alpha > 180 &&
-                  red >= 28 &&
-                  red <= 78 &&
-                  green >= 20 &&
-                  green <= 64 &&
-                  blue <= 52,
+                  red >= 16 &&
+                  red <= 90 &&
+                  green >= 16 &&
+                  green <= 74 &&
+                  blue <= 82,
             );
 
             expect(dark.count, greaterThan(250));

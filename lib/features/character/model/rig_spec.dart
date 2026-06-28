@@ -277,6 +277,8 @@ class CelShadeSpec {
     this.highlightCoverage = 0.3,
     this.lightDx = -0.5,
     this.lightDy = -1,
+    this.roundAmount = 0,
+    this.roundCoverage = 0.55,
   });
 
   /// The shade is the shape's own fill RGB multiplied by this (0..1 → darker).
@@ -313,6 +315,20 @@ class CelShadeSpec {
   /// shade falls on the opposite side). Normalised by the renderer.
   final double lightDx;
   final double lightDy;
+
+  /// Form-rounding occlusion (0 = off). On top of the directional terminator the
+  /// renderer paints a per-shape inner-edge darkening — a squashed radial cooled
+  /// toward [coolTint], transparent at the centre and reaching [roundAmount]
+  /// opacity at the contour — so each volume rounds like a tube (light bulging
+  /// centre, edges falling into occlusion) instead of reading as a flat cel
+  /// terminator across a sticker. This is the "painterly" form pass; the
+  /// directional ramp still places the lit vs shadow side.
+  final double roundAmount;
+
+  /// How far in from each shape's contour the form-rounding occlusion reaches, as
+  /// a fraction of the shape's radius (0..1). Larger = the dark band creeps deeper
+  /// toward the centre; smaller = a thin edge-only vignette.
+  final double roundCoverage;
 }
 
 /// A continuous tapered limb surface drawn through a solved joint chain.

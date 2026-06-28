@@ -161,9 +161,15 @@ Clipping per shape is what makes each limb/torso/head model as its own form
 tone is essential on dark fills: a near-black navy suit shows no darker shade, but
 a lifted lit side gives it dimensional form — kept **gentle and narrow**, though,
 so thin round shapes (arms, hands, tail) read as soft volumes rather than chroming
-out into metallic streaks. This baked cel-shade is the cats' **primary** form
-modelling; the concert `bodyGrade` below is tuned NOT to flatten it. The face
-features draw after, so they stay crisp and bright over the shaded head.
+out into metallic streaks. On top of the directional ramp an optional
+**form-rounding** pass (`CelShadeSpec.roundAmount`/`roundCoverage`) paints a
+per-shape inner-edge occlusion — a squashed radial, transparent at the shape's
+centre and deepening to a cool shade at its contour — so each volume *bulges* in
+the middle and falls into shadow at its edges, reading as a rounded tube instead of
+a flat cel terminator across a sticker. This baked cel-shade is the cats'
+**primary** form modelling; the concert `bodyGrade` below is tuned NOT to flatten
+it. The face features draw after, so they stay crisp and bright over the shaded
+head.
 
 The hot path is intentionally cheap: evaluate a handful of sinusoids/keyframes,
 walk the bone hierarchy composing `Affine2D`s (~30 bones), resolve the face. No
@@ -432,15 +438,16 @@ its floor pool always match:
   that lane's light source** before blurring (`_kRimDirections`: a fanned
   overhead back-key array — flankers keyed from their outboard-upper corner, the
   hero leaning camera-left). But the offset alone is not enough: where the blur
-  radius exceeds the offset the halo still pokes out on *every* edge and reads as a
-  full-perimeter outer-glow sticker. So each pass is then **clipped to one side by
-  a `dstIn` gradient mask** — opaque on the lamp-facing side, clear on the
-  retreating side — that erases the shadow half outright. The mask split is biased
-  toward the **horizontal** (left/right), because the rim directions are mostly
-  vertical (lamps rake down from above) and masking straight along them would keep
-  the whole *upper* body — both ears, the full crown — still reading as a
-  head-ringing aura. The layer blur softens that hard cut into a real one-sided
-  kicker with a dead shadow side. Both passes reuse the member's exact transform,
+  radius exceeds the offset the halo wraps the contour fairly evenly. So each pass
+  is given a **directional bias** by a `dstIn` gradient mask — full strength on the
+  lamp-facing side, dimmed (to ~69%, **not** erased) on the retreating side — so
+  the halo still wraps the whole cat (the approved concert-backlight look) but
+  reads hotter toward the lamp. The mask split is biased toward the **horizontal**
+  (left/right), because the rim directions are mostly vertical (lamps rake down
+  from above) and masking straight along them would dim the whole *lower* body
+  instead of one side. (An earlier pass zeroed the shadow side outright to satisfy
+  a film panel's "symmetric aura" note, but that stripped the glow the look depends
+  on, so the bias is now gentle.) Both passes reuse the member's exact transform,
   so the halo tracks the dancer through any camera move or formation for free.
 - **`bodyGrade` seats the cat INTO the plate** (mostly static — see below). The
   cat's actual modelled *volume* comes from the rig's baked cel-shade (above);

@@ -181,6 +181,48 @@ void main() {
     });
   });
 
+  testWidgets('celShade form-rounding darkens the contour, not the centre', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      const panel = BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 70,
+        height: 110,
+        cornerRadius: 16,
+        dy: 50,
+        color: 0xFF808080,
+      );
+      // Identical directional cel-shade both times; only the form-rounding
+      // occlusion differs, so the diff isolates the rounding (a per-shape
+      // inner-edge darkening that makes the volume bulge in the middle).
+      final noRound = await _renderOne(panel, celShade: const CelShadeSpec());
+      final rounded = await _renderOne(
+        panel,
+        celShade: const CelShadeSpec(roundAmount: 0.6),
+      );
+      int lum(Uint8List px, int x, int y) {
+        final o = (y * w + x) * 4;
+        return px[o] + px[o + 1] + px[o + 2];
+      }
+
+      // Shape centre ≈ (60, 82); the left contour sits at ≈ x=25 at that height.
+      final dropEdge = lum(noRound, 28, 82) - lum(rounded, 28, 82);
+      final dropCentre = lum(noRound, 60, 82) - lum(rounded, 60, 82);
+      expect(
+        dropEdge,
+        greaterThan(24),
+        reason: 'form-rounding darkens the volume toward its contour',
+      );
+      expect(
+        dropEdge,
+        greaterThan(dropCentre + 20),
+        reason:
+            'the centre stays lit (bulges) while the edge falls to occlusion',
+      );
+    });
+  });
+
   testWidgets('taperedCapsule is wide at the top and narrows to the tip', (
     tester,
   ) async {
