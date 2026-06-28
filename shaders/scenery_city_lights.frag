@@ -406,7 +406,9 @@ void main() {
       // dashes as they approach the viewer; ripple frequency compresses with
       // distance too, so the surface foreshortens instead of banding evenly.
       float rfreq = mix(34.0, 82.0, bf);
-      float breakAmt = mix(0.22, 0.6, bf);
+      // Gentler break-up so the columns stay soft, continuous smears instead of
+      // hard chopped segments (which strobe as they ripple).
+      float breakAmt = mix(0.12, 0.38, bf);
       // Per-column phase jitter so adjacent columns break at DIFFERENT heights —
       // otherwise the ripple dashes line up into a regular horizontal scanline
       // cadence across the basin.
@@ -419,11 +421,13 @@ void main() {
       float dith = (hash(frag) - 0.5) * 0.16;
       float dash = (1.0 - breakAmt) +
           breakAmt *
-              smoothstep(0.30, 0.80,
-                  fbm(vec2(muv.x * 7.0, muv.y * rfJit + colJit - uTime * 0.5)) +
+              smoothstep(0.22, 0.85,
+                  fbm(vec2(muv.x * 7.0, muv.y * rfJit + colJit - uTime * 0.32)) +
                       dith);
       float fade = 1.0 - smoothstep(kWaterline, 0.72, muv.y);
-      float refl = rwin * dash * fade * 0.95 * beat;
+      // Softer, dimmer columns (was 0.95): the bright hard-edged smears read as
+      // chopped bars; pulling them down lets them sit as gentle shimmer.
+      float refl = rwin * dash * fade * 0.72 * beat;
       // City reflections read warmer than their sources (sodium dominates and
       // water absorbs the cool end), so bias the tint toward amber.
       vec3 rcol = mix(mix(uCool.rgb, uWarm.rgb, rWarm), uWarm.rgb, 0.35);

@@ -21,20 +21,27 @@ class BackdropScene {
   });
 
   /// The painted Lagos-lagoon blue-hour scene, back to front: the full master
-  /// plate as the base, the additive city/yacht night lights on its painted
-  /// windows, the animated ocean over its painted water, the foreground
-  /// deck/palms drawn over the ocean so foam never streaks the planks, and the
-  /// warm lantern glow pooling on the now-lit deck. All sit behind the dancers
-  /// (they are background layers).
+  /// plate as the base, the animated ocean over its painted water, the moored
+  /// yacht re-drawn OVER the ocean so its solid hull occludes the foam (a boat
+  /// sits on the water, not under the waves), the additive city/yacht night
+  /// lights (so the lit cabin windows land on top of the re-drawn yacht), the
+  /// foreground deck/palms over the ocean so foam never streaks the planks, and
+  /// the warm lantern glow pooling on the now-lit deck. All sit behind the
+  /// dancers (they are background layers).
   factory BackdropScene.blueHourWaterfront() {
     return const BackdropScene(
       layers: [
         ImageLayer(SceneryAssets.masterPlate),
-        // More windows lit (brighter highrises) than the 0.6 default, and a
-        // livelier ocean (more foam + a stronger glint) so the water reads as
-        // moving at normal viewing size, not just under a pixel loupe.
-        CityLightsLayer(windowAmount: 0.8),
+        // Animated water first; the additive ocean and additive city lights
+        // commute, so the only thing the order buys us is letting the opaque
+        // yacht sit BETWEEN them.
         OceanLayer(foamDensity: 0.72, reflection: 0.3),
+        // The moored yacht silhouette, re-drawn over the ocean so its hull
+        // covers the foam that would otherwise wash up its side.
+        ImageLayer(SceneryAssets.yacht),
+        // More windows lit (brighter highrises) than the 0.6 default; drawn
+        // after the yacht so the warm cabin glow reads on top of the hull.
+        CityLightsLayer(windowAmount: 0.8),
         ImageLayer(SceneryAssets.foreground),
         DeckGlowLayer(),
       ],

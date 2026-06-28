@@ -115,7 +115,7 @@ void main() {
     // A WIDE, soft crest band: broad whitecaps with feathered edges read clearly
     // at normal size and anti-alias as they move (a razor edge on a moving crest
     // is what aliases/flickers).
-    foamAmt += smoothstep(0.46, 0.82, crest) * dash * (0.4 + 0.36 * wob);
+    foamAmt += smoothstep(0.46, 0.82, crest) * dash * (0.54 + 0.46 * wob);
   }
   // Ease foam in just under the waterline and off at the very bottom, and bias
   // its brightness toward the viewer so the surface reads as receding water

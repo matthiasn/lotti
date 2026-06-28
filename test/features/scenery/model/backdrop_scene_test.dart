@@ -33,20 +33,27 @@ void main() {
       );
     });
 
-    test('composites plate -> city lights -> ocean -> deck -> deck glow', () {
+    test('composites plate -> ocean -> yacht -> city lights -> deck -> glow', () {
       final layers = BackdropScene.blueHourWaterfront().layers;
       // The master plate is the base; its foreground deck is the LAST bitmap.
       final plate = layers.indexWhere((l) => l is ImageLayer);
       final deck = layers.lastIndexWhere((l) => l is ImageLayer);
+      final yacht = layers.indexWhere(
+        (l) => l is ImageLayer && l.assetKey == SceneryAssets.yacht,
+      );
       final lights = layers.indexWhere((l) => l is CityLightsLayer);
       final ocean = layers.indexWhere((l) => l is OceanLayer);
       final glow = layers.indexWhere((l) => l is DeckGlowLayer);
       expect(plate, 0);
-      // City lights and animated water both sit over the painted plate.
-      expect(lights, greaterThan(plate));
+      // Animated water sits over the painted plate.
       expect(ocean, greaterThan(plate));
-      // The foreground deck is drawn OVER the ocean so foam never streaks the
-      // planks, and the warm lantern glow pools on top of the now-lit deck.
+      // The moored yacht is re-drawn OVER the ocean so its solid hull occludes
+      // the foam, and the city lights (incl. the lit cabin windows) draw on top
+      // of the yacht so the warm cabin glow is not hidden behind the hull.
+      expect(yacht, greaterThan(ocean));
+      expect(lights, greaterThan(yacht));
+      // The foreground deck is the LAST bitmap, drawn over the ocean so foam
+      // never streaks the planks; the lantern glow pools on the now-lit deck.
       expect(deck, greaterThan(ocean));
       expect(glow, greaterThan(deck));
     });
