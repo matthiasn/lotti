@@ -4453,54 +4453,74 @@ class CatClips {
   // forearms scissor across the centreline. The TOP hand alternates every count
   // (the "shaku shaku" swap): L rides high on 0/8/16/24, R rides high on
   // 4/12/20/28; the whole X bobs down a touch on the dip between.
+  // Raised to chest/collarbone height and VERTICALLY OFFSET so the forearms read
+  // as crossing DIAGONALS (an X), not two paws resting on the belly. On each
+  // count one hand rides HIGH (top of the X) and the other LOW; they swap every
+  // count — L high on 0/8/16/24, R high on 4/12/20/28. x stays crossed (L on the
+  // right of centre, R on the left) so the diagonals overlap.
   static const _shakuHandLTargetKeys = [
-    DanceIkTargetKey(0, x: 13, y: -14),
-    DanceIkTargetKey(2, x: 12, y: -9),
-    DanceIkTargetKey(4, x: 11, y: -6),
-    DanceIkTargetKey(6, x: 12, y: -9),
-    DanceIkTargetKey(8, x: 13, y: -14),
-    DanceIkTargetKey(10, x: 12, y: -9),
-    DanceIkTargetKey(12, x: 11, y: -6),
-    DanceIkTargetKey(14, x: 12, y: -9),
-    DanceIkTargetKey(16, x: 13, y: -14),
-    DanceIkTargetKey(18, x: 12, y: -9),
-    DanceIkTargetKey(20, x: 11, y: -6),
-    DanceIkTargetKey(22, x: 12, y: -9),
-    DanceIkTargetKey(24, x: 13, y: -14),
-    DanceIkTargetKey(26, x: 12, y: -9),
-    DanceIkTargetKey(28, x: 11, y: -6),
-    DanceIkTargetKey(30, x: 12, y: -9),
-    DanceIkTargetKey(32, x: 13, y: -14),
+    DanceIkTargetKey(0, x: 15, y: -27),
+    DanceIkTargetKey(2, x: 14, y: -22),
+    DanceIkTargetKey(4, x: 11, y: -11),
+    DanceIkTargetKey(6, x: 13, y: -20),
+    DanceIkTargetKey(8, x: 15, y: -27),
+    DanceIkTargetKey(10, x: 14, y: -22),
+    DanceIkTargetKey(12, x: 11, y: -11),
+    DanceIkTargetKey(14, x: 13, y: -20),
+    DanceIkTargetKey(16, x: 15, y: -27),
+    DanceIkTargetKey(18, x: 14, y: -22),
+    DanceIkTargetKey(20, x: 11, y: -11),
+    DanceIkTargetKey(22, x: 13, y: -20),
+    DanceIkTargetKey(24, x: 15, y: -27),
+    DanceIkTargetKey(26, x: 14, y: -22),
+    DanceIkTargetKey(28, x: 11, y: -11),
+    DanceIkTargetKey(30, x: 13, y: -20),
+    DanceIkTargetKey(32, x: 15, y: -27),
   ];
   static const _shakuHandRTargetKeys = [
-    DanceIkTargetKey(0, x: -11, y: -6),
-    DanceIkTargetKey(2, x: -12, y: -9),
-    DanceIkTargetKey(4, x: -13, y: -14),
-    DanceIkTargetKey(6, x: -12, y: -9),
-    DanceIkTargetKey(8, x: -11, y: -6),
-    DanceIkTargetKey(10, x: -12, y: -9),
-    DanceIkTargetKey(12, x: -13, y: -14),
-    DanceIkTargetKey(14, x: -12, y: -9),
-    DanceIkTargetKey(16, x: -11, y: -6),
-    DanceIkTargetKey(18, x: -12, y: -9),
-    DanceIkTargetKey(20, x: -13, y: -14),
-    DanceIkTargetKey(22, x: -12, y: -9),
-    DanceIkTargetKey(24, x: -11, y: -6),
-    DanceIkTargetKey(26, x: -12, y: -9),
-    DanceIkTargetKey(28, x: -13, y: -14),
-    DanceIkTargetKey(30, x: -12, y: -9),
-    DanceIkTargetKey(32, x: -11, y: -6),
+    DanceIkTargetKey(0, x: -11, y: -11),
+    DanceIkTargetKey(2, x: -13, y: -20),
+    DanceIkTargetKey(4, x: -15, y: -27),
+    DanceIkTargetKey(6, x: -14, y: -22),
+    DanceIkTargetKey(8, x: -11, y: -11),
+    DanceIkTargetKey(10, x: -13, y: -20),
+    DanceIkTargetKey(12, x: -15, y: -27),
+    DanceIkTargetKey(14, x: -14, y: -22),
+    DanceIkTargetKey(16, x: -11, y: -11),
+    DanceIkTargetKey(18, x: -13, y: -20),
+    DanceIkTargetKey(20, x: -15, y: -27),
+    DanceIkTargetKey(22, x: -14, y: -22),
+    DanceIkTargetKey(24, x: -11, y: -11),
+    DanceIkTargetKey(26, x: -13, y: -20),
+    DanceIkTargetKey(28, x: -15, y: -27),
+    DanceIkTargetKey(30, x: -14, y: -22),
+    DanceIkTargetKey(32, x: -11, y: -11),
   ];
   static final KeyframeIkTargetChannel _shakuHandLTarget = _dancePhrase
       .ikTargetChannel(_shakuHandLTargetKeys, smooth: true);
   static final KeyframeIkTargetChannel _shakuHandRTarget = _dancePhrase
       .ikTargetChannel(_shakuHandRTargetKeys, smooth: true);
 
-  // Reuse the dance limb-target rig (bone ids, bend directions, foot channels);
-  // swap only the two HAND channels for the crossed-X paths above.
+  // Reuse the dance foot targets; give the HANDS the crossed-X channels with the
+  // elbow bend FLIPPED so the elbows break OUTWARD (the bent forearm clears the
+  // torso silhouette and reads as a diagonal, instead of the arm hiding inside
+  // the navy body) — the rig note that makes the X legible.
   static final List<LimbIkTarget> _shakuLimbTargets = [
-    _danceLimbTargets[0].withChannel(_shakuHandLTarget),
-    _danceLimbTargets[1].withChannel(_shakuHandRTarget),
+    LimbIkTarget(
+      upperBoneId: CatBones.armUpperL,
+      lowerBoneId: CatBones.armLowerL,
+      endBoneId: CatBones.handL,
+      anchorBoneId: CatBones.torso,
+      channel: _shakuHandLTarget,
+    ),
+    LimbIkTarget(
+      upperBoneId: CatBones.armUpperR,
+      lowerBoneId: CatBones.armLowerR,
+      endBoneId: CatBones.handR,
+      anchorBoneId: CatBones.torso,
+      channel: _shakuHandRTarget,
+      bendDirection: -1,
+    ),
     _danceLimbTargets[2],
     _danceLimbTargets[3],
   ];
