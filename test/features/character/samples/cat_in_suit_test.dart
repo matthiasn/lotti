@@ -132,6 +132,7 @@ void main() {
           'dance',
           'shaku',
           'zanku',
+          'azonto',
           'sit',
           'jump',
           'idle',

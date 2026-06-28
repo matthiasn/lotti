@@ -4925,6 +4925,137 @@ class CatClips {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Azonto (Ghana, ~2011) — a bent-knee, hip-swivel groove whose signature is
+  // the expressive miming HAND gestures. Reuses the shaku bent-knee groove for
+  // the lower body; the Azonto character lives in the hip swivel (with a chest
+  // counter-rotation) and an alternating point-out arm mime. First pass.
+  // ─────────────────────────────────────────────────────────────────────────
+  // The signature mime: a near-FULLY-EXTENDED point-out so the sleeved arm shoots
+  // clear of the torso (a bent hand at the waist just reads as a parked paw, or
+  // worse, the tail). Arm length from the shoulder is ~89; the points sit at ~84
+  // so the elbow snaps nearly straight. LEFT arm points out-down-left on beats
+  // 1/3/5/7, retracts to the chest between; opposite phase to the right arm, so
+  // one arm is always thrown out — the gesture swings side to side on the beat.
+  // A 2-gesture phrase for variety: BAR 1 (frames 0-16) ALTERNATES single-arm
+  // points (L out, R out, L out, R out); BAR 2 (16-32) the arms SYNC into a
+  // double point-out punch on every beat. Reach pulled back to ~80 (of ~89) so
+  // the elbow keeps a soft bend instead of locking dead-straight at the limit.
+  static const _azontoHandLTargetKeys = [
+    DanceIkTargetKey(0, x: -80, y: 6), // bar 1: POINT OUT (down-left)
+    DanceIkTargetKey(2, x: -45, y: -6), // retracting
+    DanceIkTargetKey(4, x: -12, y: -14), // tucked (right arm points)
+    DanceIkTargetKey(6, x: -45, y: -6),
+    DanceIkTargetKey(8, x: -80, y: 6), // POINT OUT
+    DanceIkTargetKey(10, x: -45, y: -6),
+    DanceIkTargetKey(12, x: -12, y: -14),
+    DanceIkTargetKey(14, x: -45, y: -6),
+    DanceIkTargetKey(16, x: -80, y: 6), // bar 2: SYNC double-punch out
+    DanceIkTargetKey(18, x: -14, y: -14), // tuck
+    DanceIkTargetKey(20, x: -80, y: 6),
+    DanceIkTargetKey(22, x: -14, y: -14),
+    DanceIkTargetKey(24, x: -80, y: 6),
+    DanceIkTargetKey(26, x: -14, y: -14),
+    DanceIkTargetKey(28, x: -80, y: 6),
+    DanceIkTargetKey(30, x: -45, y: -6),
+    DanceIkTargetKey(32, x: -80, y: 6),
+  ];
+  static const _azontoHandRTargetKeys = [
+    DanceIkTargetKey(0, x: 12, y: -14), // bar 1: tucked (left arm points)
+    DanceIkTargetKey(2, x: 45, y: -6),
+    DanceIkTargetKey(4, x: 80, y: 6), // POINT OUT (down-right)
+    DanceIkTargetKey(6, x: 45, y: -6),
+    DanceIkTargetKey(8, x: 12, y: -14),
+    DanceIkTargetKey(10, x: 45, y: -6),
+    DanceIkTargetKey(12, x: 80, y: 6),
+    DanceIkTargetKey(14, x: 45, y: -6),
+    DanceIkTargetKey(16, x: 80, y: 6), // bar 2: SYNC double-punch out
+    DanceIkTargetKey(18, x: 14, y: -14), // tuck
+    DanceIkTargetKey(20, x: 80, y: 6),
+    DanceIkTargetKey(22, x: 14, y: -14),
+    DanceIkTargetKey(24, x: 80, y: 6),
+    DanceIkTargetKey(26, x: 14, y: -14),
+    DanceIkTargetKey(28, x: 80, y: 6),
+    DanceIkTargetKey(30, x: 45, y: -6),
+    DanceIkTargetKey(32, x: 12, y: -14),
+  ];
+  static final KeyframeIkTargetChannel _azontoHandLTarget = _dancePhrase
+      .ikTargetChannel(_azontoHandLTargetKeys, smooth: true);
+  static final KeyframeIkTargetChannel _azontoHandRTarget = _dancePhrase
+      .ikTargetChannel(_azontoHandRTargetKeys, smooth: true);
+  static final List<LimbIkTarget> _azontoLimbTargets = [
+    _danceLimbTargets[0].withChannel(_azontoHandLTarget),
+    _danceLimbTargets[1].withChannel(_azontoHandRTarget),
+    _danceLimbTargets[2],
+    _danceLimbTargets[3],
+  ];
+
+  /// Standalone "Azonto" lead clip — a bent-knee, hip-swivel groove with the
+  /// signature miming HAND gestures (here: alternating point-out). Reuses the
+  /// shaku bent-knee groove for the lower body; the Azonto character is the hip
+  /// swivel + chest counter-rotation + the arm mime. First pass, iterated via
+  /// the panel like shaku/zanku.
+  static Clip get azonto {
+    final base = dance;
+    return Clip(
+      name: 'azonto',
+      duration: base.duration,
+      contactSpans: base.contactSpans,
+      contactPinning: base.contactPinning,
+      limbTargets: _azontoLimbTargets,
+      supportFootWorldAnchor: true,
+      root: LayeredRootChannel([
+        _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
+        _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
+        const SineRootChannel(
+          bobAmplitude: -0.04,
+          bobPhase: 0.125,
+          bobHarmonic: 8,
+        ),
+        // Weight transfer in step with the waist swivel (harmonic 2): the COM
+        // rides foot-to-foot so the swivel commits weight instead of twisting
+        // in place over a world-anchored foot.
+        const SineRootChannel(swayAmplitude: -16, swayHarmonic: 2),
+      ]),
+      channels: {
+        ...base.channels,
+        CatBones.hips: LayeredJointChannel([
+          _dancePhrase.bodyPelvisChannel(_shakuBodyGrooveKeys),
+          _dancePhrase.bodyPelvisChannel(_danceBodyAccentKeys, smooth: true),
+          // Azonto waist swivel — the hips roll side to side, twice per phrase
+          // (harmonicMultiplier defaults to 2).
+          const SineChannel(harmonicAmplitude: 0.13),
+        ]),
+        CatBones.torso: LayeredJointChannel([
+          _dancePhrase.bodyChestChannel(_shakuBodyGrooveKeys),
+          _dancePhrase.bodyChestChannel(_danceBodyAccentKeys, smooth: true),
+          // Chest counters the hip swivel — the Azonto torso/hip opposition.
+          const SineChannel(harmonicAmplitude: -0.08),
+        ]),
+        CatBones.earL: const SineChannel(amplitude: 0.008),
+        CatBones.earR: const SineChannel(amplitude: 0.008, phase: 0.5),
+        // Tail damped ~70% and tucked: the bright tail arc was reading as the
+        // gesturing arm at small scale. Keep it close so the mime arms own the
+        // silhouette.
+        CatBones.tail0: const SineChannel(amplitude: 0.018, bias: -0.34),
+        CatBones.tail1: const SineChannel(
+          amplitude: 0.03,
+          phase: 0.08,
+          bias: -0.06,
+        ),
+        CatBones.tail2: const SineChannel(
+          amplitude: 0.04,
+          phase: 0.16,
+          bias: -0.04,
+        ),
+        CatBones.tail3: const SineChannel(amplitude: 0.05, phase: 0.24),
+        CatBones.tail4: const SineChannel(amplitude: 0.06, phase: 0.32),
+        CatBones.tail5: const SineChannel(amplitude: 0.045, phase: 0.4),
+        CatBones.tail6: const SineChannel(amplitude: 0.06, phase: 0.48),
+      },
+    );
+  }
+
   static Clip get danceBackupLeft => _danceStyledRole(
     name: 'danceBackupLeft',
     style: _danceBackupLeftStyle,
@@ -5221,6 +5352,7 @@ class CatClips {
     dance,
     shaku,
     zanku,
+    azonto,
     sit,
     jump,
     idle,
