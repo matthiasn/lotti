@@ -16,3 +16,7 @@ htmlcov/
 *.m4a
 *.ogg
 out/
+
+# Vendored Rhubarb Lip Sync build (large third-party source + native binary).
+# Rebuild per the dance-lipsync skill; never commit.
+vendor/
