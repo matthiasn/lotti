@@ -93,9 +93,11 @@ void main() {
   float foamAmt = 0.0;
   for (int i = 0; i < 3; i++) {
     float fi = float(i);
-    // Crest pitch in y: many thin rows near the horizon, broader near the
-    // bottom. The row count is the perspective compression.
-    float rows = mix(80.0, 18.0, depth) * (1.0 + fi * 0.5);
+    // Crest pitch in y: a MODERATE row count so crests are broad. High-frequency
+    // thin crests (the old 80-160 rows) scintillate as they advect — sub-pixel
+    // detail moving frame to frame reads as flicker — so the pitch is kept low
+    // enough that each crest spans several pixels and drifts smoothly.
+    float rows = mix(42.0, 14.0, depth) * (1.0 + fi * 0.4);
     float speed = 0.05 + fi * 0.035;
     float wob = fbm(vec2(x * uWaveScale * (0.12 + 0.06 * fi), depth * 3.0) -
         vec2(uTime * speed, 0.0));
@@ -105,25 +107,29 @@ void main() {
     float phase = depth * rows + wob * 3.5 +
         fbm(vec2(x * 1.7, depth * 6.0)) * 5.0 - uTime * (0.25 + speed);
     float crest = sin(phase);
-    // Break each crest into drifting dashes so foam reads as scattered
-    // whitecaps, not continuous lines spanning the whole width.
-    float dash = smoothstep(0.24, 0.64,
-        fbm(vec2(x * 5.0 + fi * 9.0, depth * 9.0 - uTime * (speed + 0.1))));
-    // Keep a BROAD upper band of each ridge so the whitecaps are big and clearly
-    // visible (and their drift reads as moving water) at normal viewing size, not
-    // just a hairline tip you only catch under magnification.
-    foamAmt += smoothstep(0.58, 0.86, crest) * dash * (0.62 + 0.6 * wob);
+    // Soft, mostly-continuous break-up (FLOORED so it never drops fully to zero):
+    // whitecaps fade in and out and wander rather than popping hard on/off frame
+    // to frame, which is what read as flicker on the bright moving foam.
+    float dash = mix(0.4, 1.0, smoothstep(0.22, 0.74,
+        fbm(vec2(x * 4.0 + fi * 9.0, depth * 7.0 - uTime * (speed + 0.1)))));
+    // A WIDE, soft crest band: broad whitecaps with feathered edges read clearly
+    // at normal size and anti-alias as they move (a razor edge on a moving crest
+    // is what aliases/flickers).
+    foamAmt += smoothstep(0.46, 0.82, crest) * dash * (0.4 + 0.36 * wob);
   }
   // Ease foam in just under the waterline and off at the very bottom, and bias
   // its brightness toward the viewer so the surface reads as receding water
   // (busier near the deck, calmer toward the far shore) instead of a flat sheet.
   float foamBand = smoothstep(0.0, 0.12, depth) *
       (1.0 - smoothstep(0.8, 1.0, depth)) * (0.4 + 0.6 * depth);
+  // Only a whisper of beat reactivity (was 0.6): a big beat-swell made the whole
+  // foam field brighten and dim on every beat, which read as a weird pulsing of
+  // the water. Keep it nearly steady.
   float foamA = clamp(
       clamp(foamAmt, 0.0, 1.2) * foamBand *
-          clamp(uFoamDensity * (1.0 + 0.6 * beat), 0.0, 1.7),
+          clamp(uFoamDensity * (1.0 + 0.1 * beat), 0.0, 1.7),
       0.0,
-      1.0);
+      0.62);
 
   // --- Moon glint: a soft, broken vertical shimmer under uMoonX. Kept gentle
   // (the plate already paints the city's reflections); ripples horizontally so
@@ -153,8 +159,11 @@ void main() {
       uMoonGlint.rgb * glintA;
   float coverage = clamp(tintA + sheenA + foamA + glintA, 0.0, 1.0);
 
-  // Film grain modulates the additive energy (never lifts calm water alone).
-  float g = (hash(frag + fract(uTime) * vec2(9.3, 5.1)) - 0.5) * uGrain;
+  // Static (UV-locked) grain. The old per-frame reseed (fract(uTime) in the hash)
+  // re-randomised every pixel every frame, which BOILED the bright foam/water —
+  // the #1 cause of the "flicker". A fixed-pattern dither textures the surface
+  // without any temporal twinkle.
+  float g = (hash(frag) - 0.5) * min(uGrain, 0.03);
   added *= 1.0 + g;
 
   fragColor = vec4(added, coverage);
