@@ -5013,15 +5013,18 @@ class CatClips {
     DanceIkTargetKey(10, x: -48, y: -16),
     DanceIkTargetKey(12, x: -14, y: -18),
     DanceIkTargetKey(14, x: -48, y: -16),
-    DanceIkTargetKey(16, x: -88, y: -10), // bar 2: SYNC double-punch out
+    // bar 2: double point-out, but DE-SYMMETRIZED — the two arms alternate a
+    // high/low asymmetric V each beat (left high, right low; then flip) so it
+    // never reads as a flat T-pose.
+    DanceIkTargetKey(16, x: -92, y: -18), // high
     DanceIkTargetKey(18, x: -16, y: -18), // tuck
-    DanceIkTargetKey(20, x: -88, y: -10),
+    DanceIkTargetKey(20, x: -84, y: -2), // low
     DanceIkTargetKey(22, x: -16, y: -18),
-    DanceIkTargetKey(24, x: -88, y: -10),
+    DanceIkTargetKey(24, x: -92, y: -18), // high
     DanceIkTargetKey(26, x: -16, y: -18),
-    DanceIkTargetKey(28, x: -88, y: -10),
+    DanceIkTargetKey(28, x: -84, y: -2), // low
     DanceIkTargetKey(30, x: -48, y: -16),
-    DanceIkTargetKey(32, x: -88, y: -10),
+    DanceIkTargetKey(32, x: -88, y: -10), // == frame 0 (loop)
   ];
   static const _azontoHandRTargetKeys = [
     DanceIkTargetKey(0, x: 14, y: -18), // bar 1: tucked at chest (left points)
@@ -5032,13 +5035,15 @@ class CatClips {
     DanceIkTargetKey(10, x: 48, y: -16),
     DanceIkTargetKey(12, x: 88, y: -10),
     DanceIkTargetKey(14, x: 48, y: -16),
-    DanceIkTargetKey(16, x: 88, y: -10), // bar 2: SYNC double-punch out
+    // bar 2: opposite phase to the left — RIGHT low while left is high, then
+    // flip, so the double point is an alternating asymmetric V, not a T-pose.
+    DanceIkTargetKey(16, x: 84, y: -2), // low
     DanceIkTargetKey(18, x: 16, y: -18), // tuck
-    DanceIkTargetKey(20, x: 88, y: -10),
+    DanceIkTargetKey(20, x: 92, y: -18), // high
     DanceIkTargetKey(22, x: 16, y: -18),
-    DanceIkTargetKey(24, x: 88, y: -10),
+    DanceIkTargetKey(24, x: 84, y: -2), // low
     DanceIkTargetKey(26, x: 16, y: -18),
-    DanceIkTargetKey(28, x: 88, y: -10),
+    DanceIkTargetKey(28, x: 92, y: -18), // high
     DanceIkTargetKey(30, x: 48, y: -16),
     DanceIkTargetKey(32, x: 14, y: -18),
   ];
