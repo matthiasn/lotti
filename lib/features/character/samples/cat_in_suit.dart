@@ -4514,43 +4514,53 @@ class CatClips {
   // The near (left) arm draws on top in the lighter _sleeveNear, separating it
   // from the far arm at the crossover. Left hand sits on the RIGHT (crossed),
   // right hand on the LEFT.
+  // The whole X lives in the CHEST/COLLARBONE zone (shoulder sits at torso-local
+  // y -56): the HIGH paw rides up to ~ -57 (collarbone) and the LOW paw only
+  // drops to ~ -29 (mid-chest), so the scissor never sinks to the belt. Arm
+  // reach (~89) easily clears these (target ~64 from the shoulder), so the IK
+  // hits them crisply instead of clamping short.
+  // Both crossings stay pushed OUT from the centerline (x ~ +-30..34) so each
+  // forearm holds a clear shoulder-to-opposite-side DIAGONAL and pistons mostly
+  // up/down — the low paw no longer sinks onto the tie and tucks against the
+  // torso. One paw is high (collarbone -57) while the other is low (mid-chest
+  // -30), so the two diagonals cross with vertical daylight = an open scissor X.
   static const _shakuHandLTargetKeys = [
-    DanceIkTargetKey(0, x: 27, y: -38), // high + out
-    DanceIkTargetKey(2, x: 25, y: -26),
-    DanceIkTargetKey(4, x: 19, y: -2), // low + in
-    DanceIkTargetKey(6, x: 24, y: -22),
-    DanceIkTargetKey(8, x: 27, y: -38),
-    DanceIkTargetKey(10, x: 25, y: -26),
-    DanceIkTargetKey(12, x: 19, y: -2),
-    DanceIkTargetKey(14, x: 24, y: -22),
-    DanceIkTargetKey(16, x: 27, y: -38),
-    DanceIkTargetKey(18, x: 25, y: -26),
-    DanceIkTargetKey(20, x: 19, y: -2),
-    DanceIkTargetKey(22, x: 24, y: -22),
-    DanceIkTargetKey(24, x: 27, y: -38),
-    DanceIkTargetKey(26, x: 25, y: -26),
-    DanceIkTargetKey(28, x: 19, y: -2),
-    DanceIkTargetKey(30, x: 24, y: -22),
-    DanceIkTargetKey(32, x: 27, y: -38),
+    DanceIkTargetKey(0, x: 34, y: -57), // high + out (collarbone)
+    DanceIkTargetKey(2, x: 32, y: -45),
+    DanceIkTargetKey(4, x: 30, y: -30), // low, still out (open diagonal)
+    DanceIkTargetKey(6, x: 32, y: -45),
+    DanceIkTargetKey(8, x: 34, y: -57),
+    DanceIkTargetKey(10, x: 32, y: -45),
+    DanceIkTargetKey(12, x: 30, y: -30),
+    DanceIkTargetKey(14, x: 32, y: -45),
+    DanceIkTargetKey(16, x: 34, y: -57),
+    DanceIkTargetKey(18, x: 32, y: -45),
+    DanceIkTargetKey(20, x: 30, y: -30),
+    DanceIkTargetKey(22, x: 32, y: -45),
+    DanceIkTargetKey(24, x: 34, y: -57),
+    DanceIkTargetKey(26, x: 32, y: -45),
+    DanceIkTargetKey(28, x: 30, y: -30),
+    DanceIkTargetKey(30, x: 32, y: -45),
+    DanceIkTargetKey(32, x: 34, y: -57),
   ];
   static const _shakuHandRTargetKeys = [
-    DanceIkTargetKey(0, x: -19, y: -2), // low + in (opposite phase to left)
-    DanceIkTargetKey(2, x: -24, y: -22),
-    DanceIkTargetKey(4, x: -27, y: -38), // high + out
-    DanceIkTargetKey(6, x: -25, y: -26),
-    DanceIkTargetKey(8, x: -19, y: -2),
-    DanceIkTargetKey(10, x: -24, y: -22),
-    DanceIkTargetKey(12, x: -27, y: -38),
-    DanceIkTargetKey(14, x: -25, y: -26),
-    DanceIkTargetKey(16, x: -19, y: -2),
-    DanceIkTargetKey(18, x: -24, y: -22),
-    DanceIkTargetKey(20, x: -27, y: -38),
-    DanceIkTargetKey(22, x: -25, y: -26),
-    DanceIkTargetKey(24, x: -19, y: -2),
-    DanceIkTargetKey(26, x: -24, y: -22),
-    DanceIkTargetKey(28, x: -27, y: -38),
-    DanceIkTargetKey(30, x: -25, y: -26),
-    DanceIkTargetKey(32, x: -19, y: -2),
+    DanceIkTargetKey(0, x: -30, y: -30), // low, still out (opposite phase)
+    DanceIkTargetKey(2, x: -32, y: -45),
+    DanceIkTargetKey(4, x: -34, y: -57), // high + out (collarbone)
+    DanceIkTargetKey(6, x: -32, y: -45),
+    DanceIkTargetKey(8, x: -30, y: -30),
+    DanceIkTargetKey(10, x: -32, y: -45),
+    DanceIkTargetKey(12, x: -34, y: -57),
+    DanceIkTargetKey(14, x: -32, y: -45),
+    DanceIkTargetKey(16, x: -30, y: -30),
+    DanceIkTargetKey(18, x: -32, y: -45),
+    DanceIkTargetKey(20, x: -34, y: -57),
+    DanceIkTargetKey(22, x: -32, y: -45),
+    DanceIkTargetKey(24, x: -30, y: -30),
+    DanceIkTargetKey(26, x: -32, y: -45),
+    DanceIkTargetKey(28, x: -34, y: -57),
+    DanceIkTargetKey(30, x: -32, y: -45),
+    DanceIkTargetKey(32, x: -30, y: -30),
   ];
   static final KeyframeIkTargetChannel _shakuHandLTarget = _dancePhrase
       .ikTargetChannel(_shakuHandLTargetKeys, smooth: true);
@@ -4585,18 +4595,18 @@ class CatClips {
   // per-count flick, so the head region stops dominating the silhouette and the
   // beat reads in the body, not the skull (the motion panel's "biggest lever").
   static const _shakuEarLKeys = [
-    Keyframe(p: 0, rotation: 0.02),
-    Keyframe(p: 0.25, rotation: -0.05),
-    Keyframe(p: 0.5, rotation: 0.02),
-    Keyframe(p: 0.75, rotation: -0.05),
-    Keyframe(p: 1, rotation: 0.02),
+    Keyframe(p: 0, rotation: 0.008),
+    Keyframe(p: 0.25, rotation: -0.02),
+    Keyframe(p: 0.5, rotation: 0.008),
+    Keyframe(p: 0.75, rotation: -0.02),
+    Keyframe(p: 1, rotation: 0.008),
   ];
   static const _shakuEarRKeys = [
-    Keyframe(p: 0, rotation: -0.02),
-    Keyframe(p: 0.25, rotation: 0.05),
-    Keyframe(p: 0.5, rotation: -0.02),
-    Keyframe(p: 0.75, rotation: 0.05),
-    Keyframe(p: 1, rotation: -0.02),
+    Keyframe(p: 0, rotation: -0.008),
+    Keyframe(p: 0.25, rotation: 0.02),
+    Keyframe(p: 0.5, rotation: -0.008),
+    Keyframe(p: 0.75, rotation: 0.02),
+    Keyframe(p: 1, rotation: -0.008),
   ];
 
   /// Standalone "Shaku Shaku" lead clip — the redesign in progress. Reuses the
@@ -4614,6 +4624,9 @@ class CatClips {
       contactPinning: base.contactPinning,
       limbTargets: _shakuLimbTargets,
       supportFootWorldAnchor: true,
+      // Calm the skull so the beat reads in the body, not the ear-fan that
+      // dominated the onion — the motion panel's biggest readability lever.
+      danceHeadBobScale: 0.6,
       root: LayeredRootChannel([
         _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),

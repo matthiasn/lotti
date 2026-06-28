@@ -427,7 +427,8 @@ class CharacterScene {
     final headWorld = world[headId]!;
     final headRotation = _worldRotation(headWorld);
     final danceAttitude = _isDanceFamily(clip)
-        ? _danceHeadAttitude(_clipPhase(clip, timeSeconds))
+        ? _danceHeadAttitude(_clipPhase(clip, timeSeconds)) *
+              clip.danceHeadBobScale
         : 0.0;
     final rotationCorrection = _isDanceFamily(clip)
         ? -headRotation * 0.92 + danceAttitude
@@ -448,7 +449,8 @@ class CharacterScene {
     final headCounterTranslate = _isDanceFamily(clip)
         ? Affine2D.translation(
             _danceHeadHorizontalCounter(rootDx) * baseScale,
-            _danceHeadVerticalCounter(rootDy) * baseScale,
+            _danceHeadVerticalCounter(rootDy, clip.danceHeadBobScale) *
+                baseScale,
           )
         : Affine2D.identity;
     final headTransform = headCounterTranslate.multiply(stabilizeHead);
@@ -461,12 +463,16 @@ class CharacterScene {
     return shifted;
   }
 
-  double _danceHeadVerticalCounter(double rootDy) {
+  double _danceHeadVerticalCounter(double rootDy, double headBobScale) {
     // The dance phrase now gets its level change from knees/hips/torso.
     // Counter only part of the root bob so the skull reads rigid without
-    // visually detaching from the neck.
+    // visually detaching from the neck. A clip can ask for a stiller head
+    // (lower [headBobScale]) to absorb more of the bob — 0.4 of it at scale 1.0
+    // (the shipped dance), rising toward ~0.92 as the scale approaches 0 (a
+    // near-level head for the Pouncing glide).
     const neutralDanceRootDy = 17.4;
-    return -(rootDy - neutralDanceRootDy) * 0.4;
+    final fraction = 0.4 + (1 - headBobScale) * 0.52;
+    return -(rootDy - neutralDanceRootDy) * fraction;
   }
 
   double _danceHeadHorizontalCounter(double rootDx) {

@@ -660,10 +660,21 @@ class Clip {
     this.contactPinning = ContactPinning.activeSpan,
     this.limbTargets = const [],
     this.supportFootWorldAnchor = false,
+    this.danceHeadBobScale = 1.0,
   });
 
   /// Display/lookup name.
   final String name;
+
+  /// Scales the shared dance head treatment for this clip in [0, 1]: it both
+  /// damps the engine's rotational head-nod accents (which sweep the long ears
+  /// into the dominant onion "fan") and increases how much of the body bob the
+  /// head counters vertically. `1.0` is the original behavior (shipped `dance`
+  /// untouched); lower values calm the skull so the beat reads in the body, and
+  /// near-`0` holds the head almost level (e.g. the Pouncing Cat glide).
+  /// Opt-in per clip — the deferred per-clip head-nod scale the dance-family
+  /// head path always needed.
+  final double danceHeadBobScale;
 
   /// When true, the active SUPPORT foot (per [contactSpans]) is held toward its
   /// world position via leg IK during its stance, so an in-place performance
