@@ -50,16 +50,17 @@ flowchart BT
   glow[DeckGlowLayer]
   fg[foreground.png]
   lights[CityLightsLayer]
+  launchDrones[DroneShowLayer launch-road pass]
   yacht[yacht.png]
   city[city_bridge.png]
   ocean[OceanLayer shader/fallback]
-  drones[DroneShowLayer]
+  skyDrones[DroneShowLayer sky pass]
   near[clouds_near.png parallax]
   mid[clouds_mid.png parallax]
   far[clouds_far.png parallax]
   base[blue_hour_cloudless.png]
 
-  base --> far --> mid --> near --> drones --> ocean --> city --> yacht --> lights --> fg --> glow --> child --> vignette
+  base --> far --> mid --> near --> skyDrones --> ocean --> city --> yacht --> lights --> launchDrones --> fg --> glow --> child --> vignette
 ```
 
 The ordering is the important contract:
@@ -67,15 +68,18 @@ The ordering is the important contract:
 - The base is `blue_hour_cloudless.png`, not the original master plate.
 - Clouds are reintroduced as transparent full-frame PNGs and drift with
   `CloudParallaxLayer`.
-- `DroneShowLayer` paints additive sky lights after clouds but before the
+- `DroneShowLayer.sky()` paints additive sky lights after clouds but before the
   animated water and fixed structure redraw. Its show holds `Omah Lay` first,
   then morphs into `Moving`.
 - `OceanLayer` adds animated foam/glint over the painted lagoon.
-- `city_bridge.png` and `yacht.png` are redrawn after the moving
-  clouds/drones/ocean so clouds, drones, and foam never slide across solid
+- `city_bridge.png` and `yacht.png` are redrawn after the moving clouds, sky
+  drones, and ocean so clouds, text drones, and foam never slide across solid
   structure.
 - `CityLightsLayer` draws additive windows, yacht lamps, and beacon glows on top
   of the structure layers.
+- `DroneShowLayer.launchRoad()` draws only the takeoff phase after the fixed
+  bridge redraw so the painted bridge cables do not cut artificial gaps through
+  the dense road-line launch.
 - `foreground.png` and `DeckGlowLayer` sit over the animated water/deck area.
 - Foreground layers, currently the vignette, paint over the caller child.
 
@@ -136,10 +140,10 @@ on desktop and phone aspect ratios.
 `layers/drone_show_layer.dart` is a deterministic background performance layer,
 not a bitmap asset. It samples normalized drone positions from the scene clock
 and paints additive glows in the sky. The current show is aircraft-paced rather
-than particle-paced: 220 drones hold an evenly spaced cable-stayed bridge-road
-launch line, rise mostly vertically, converge into a controlled beam, fan out,
-hold compact dot-matrix `Omah Lay`, collapse through a coordinated staging row,
-then form `Moving` over a 144-second cycle.
+than particle-paced: 280 drones hold a dense, evenly spaced cable-stayed
+bridge-road launch line, rise mostly vertically, converge into a controlled
+beam, fan out, hold compact dot-matrix `Omah Lay`, collapse through a
+coordinated staging row, then form `Moving` over a 144-second cycle.
 
 ```mermaid
 stateDiagram-v2
@@ -165,7 +169,11 @@ The pure functions are the contract:
 
 The layer belongs behind the city/yacht redraw. That lets the launch read as
 coming from the bridge area while solid painted structures still occlude the
-lights naturally.
+sky phases naturally. The runtime scene uses two configured layer instances:
+`DroneShowLayer.sky()` behind the structure redraw for beam/fan/text phases, and
+`DroneShowLayer.launchRoad()` after the structure redraw for launch only. That
+keeps the takeoff row continuous instead of letting the bridge-cable alpha mask
+slice holes through it.
 
 ## Stage Lighting
 

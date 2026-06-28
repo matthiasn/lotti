@@ -41,7 +41,7 @@ void main() {
     });
 
     test(
-      'composites plate -> clouds -> drones -> ocean -> city/yacht -> lights -> deck',
+      'composites plate -> clouds -> sky drones -> ocean -> city/yacht -> launch drones -> deck',
       () {
         final layers = BackdropScene.blueHourWaterfront().layers;
         final plate = layers.indexWhere(
@@ -57,15 +57,24 @@ void main() {
         );
         final lights = layers.indexWhere((l) => l is CityLightsLayer);
         final ocean = layers.indexWhere((l) => l is OceanLayer);
-        final drones = layers.indexWhere((l) => l is DroneShowLayer);
+        final skyDrones = layers.indexWhere(
+          (l) =>
+              l is DroneShowLayer &&
+              l.visiblePhases.contains(DroneShowPhase.beam),
+        );
+        final launchDrones = layers.indexWhere(
+          (l) =>
+              l is DroneShowLayer &&
+              l.visiblePhases.contains(DroneShowPhase.launch),
+        );
         final glow = layers.indexWhere((l) => l is DeckGlowLayer);
         expect(plate, 0);
         expect(cloud, greaterThan(plate));
-        expect(drones, greaterThan(cloud));
+        expect(skyDrones, greaterThan(cloud));
         // Animated water sits over the painted plate.
         expect(ocean, greaterThan(plate));
         expect(ocean, greaterThan(cloud));
-        expect(ocean, greaterThan(drones));
+        expect(ocean, greaterThan(skyDrones));
         // The fixed skyline/bridge is re-drawn over drifting clouds so the clouds
         // stay behind the city instead of sliding across tower silhouettes.
         expect(city, greaterThan(ocean));
@@ -74,9 +83,14 @@ void main() {
         // of the yacht so the warm cabin glow is not hidden behind the hull.
         expect(yacht, greaterThan(ocean));
         expect(lights, greaterThan(yacht));
+        // The bridge-road launch pass draws after the fixed bridge/yacht layer
+        // so cable stays do not slice visible holes through the takeoff row.
+        expect(launchDrones, greaterThan(city));
+        expect(launchDrones, greaterThan(yacht));
+        expect(launchDrones, greaterThan(lights));
         // The foreground deck is the LAST bitmap, drawn over the ocean so foam
         // never streaks the planks; the lantern glow pools on the now-lit deck.
-        expect(deck, greaterThan(ocean));
+        expect(deck, greaterThan(launchDrones));
         expect(glow, greaterThan(deck));
       },
     );

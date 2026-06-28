@@ -10,7 +10,7 @@ const String kDroneShowOpeningText = 'Omah Lay';
 const String kDroneShowFinalText = 'Moving';
 
 /// Number of light points in the deterministic show.
-const int kDroneShowDroneCount = 220;
+const int kDroneShowDroneCount = 280;
 
 /// Length of one complete drone-show loop.
 ///
@@ -69,18 +69,40 @@ class DroneShowSample {
 
 /// Additive drone-show layer for the blue-hour sky.
 ///
-/// Drones launch from evenly spaced bridge-road anchors, rise vertically before
-/// converging into an ascending beam, fan outward, hold [kDroneShowOpeningText],
-/// then morph through a staging row into [kDroneShowFinalText].
+/// Drones launch from a tight, evenly spaced bridge-road line, rise vertically
+/// before converging into an ascending beam, fan outward, hold
+/// [kDroneShowOpeningText], then morph through a staging row into
+/// [kDroneShowFinalText].
 /// The layer is stateless and deterministic from [BackdropContext.timeSeconds].
 class DroneShowLayer implements BackdropLayer {
   const DroneShowLayer({
     this.droneCount = kDroneShowDroneCount,
     this.cycleSeconds = kDroneShowCycleSeconds,
+    this.visiblePhases = const {
+      DroneShowPhase.launch,
+      DroneShowPhase.beam,
+      DroneShowPhase.fan,
+      DroneShowPhase.formation,
+    },
   });
+
+  const DroneShowLayer.sky({
+    this.droneCount = kDroneShowDroneCount,
+    this.cycleSeconds = kDroneShowCycleSeconds,
+  }) : visiblePhases = const {
+         DroneShowPhase.beam,
+         DroneShowPhase.fan,
+         DroneShowPhase.formation,
+       };
+
+  const DroneShowLayer.launchRoad({
+    this.droneCount = kDroneShowDroneCount,
+    this.cycleSeconds = kDroneShowCycleSeconds,
+  }) : visiblePhases = const {DroneShowPhase.launch};
 
   final int droneCount;
   final double cycleSeconds;
+  final Set<DroneShowPhase> visiblePhases;
 
   @override
   void paint(ui.Canvas canvas, BackdropContext ctx) {
@@ -92,7 +114,9 @@ class DroneShowLayer implements BackdropLayer {
       count: droneCount,
       cycleSeconds: cycleSeconds,
     );
-    if (samples.isEmpty) return;
+    if (samples.isEmpty || !visiblePhases.contains(samples.first.phase)) {
+      return;
+    }
 
     final shortestSide = math.min(ctx.size.width, ctx.size.height);
     final haloPaint = ui.Paint()..blendMode = ui.BlendMode.plus;
@@ -233,9 +257,9 @@ List<DroneShowSample> sampleDroneShow(
     final formation = timeline.phase == DroneShowPhase.formation;
     return DroneShowSample(
       position: position,
-      opacity: (coordinated ? 0.8 : 0.74 + twinkle).clamp(0.0, 1.0),
+      opacity: (coordinated ? 0.86 : 0.74 + twinkle).clamp(0.0, 1.0),
       radius: coordinated || formation
-          ? 0.00235
+          ? 0.00255
           : 0.0020 + _unitForIndex(i + 17) * 0.0009,
       phase: timeline.phase,
     );
@@ -244,8 +268,8 @@ List<DroneShowSample> sampleDroneShow(
 
 ui.Offset _launchPoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
-  final x = 0.44 + u * 0.34;
-  final y = 0.476 + (u - 0.5) * 0.006;
+  final x = 0.47 + u * 0.22;
+  final y = 0.475 + (u - 0.5) * 0.005;
   return ui.Offset(x, y);
 }
 
@@ -258,7 +282,7 @@ ui.Offset _launchPhasePoint(ui.Offset launch, ui.Offset rise, double progress) {
 ui.Offset _risePoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
   return ui.Offset(
-    0.44 + u * 0.34,
+    0.47 + u * 0.22,
     0.392 - u * 0.018,
   );
 }

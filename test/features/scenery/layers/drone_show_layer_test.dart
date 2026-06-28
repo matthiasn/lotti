@@ -47,7 +47,7 @@ void main() {
     test('uses the exact final label', () {
       expect(kDroneShowOpeningText, 'Omah Lay');
       expect(kDroneShowFinalText, 'Moving');
-      expect(kDroneShowDroneCount, greaterThanOrEqualTo(200));
+      expect(kDroneShowDroneCount, greaterThanOrEqualTo(260));
     });
 
     test('generates the requested number of normalized text points', () {
@@ -123,8 +123,8 @@ void main() {
           .reduce((a, b) => a > b ? a : b);
 
       expect(minX, greaterThanOrEqualTo(0.44));
-      expect(maxX, lessThanOrEqualTo(0.781));
-      expect(maxX - minX, greaterThan(0.33));
+      expect(maxX, lessThanOrEqualTo(0.691));
+      expect(maxX - minX, inInclusiveRange(0.21, 0.23));
       final step = xs[1] - xs[0];
       for (var i = 2; i < xs.length; i++) {
         expect(xs[i] - xs[i - 1], closeTo(step, 1e-12));
@@ -132,8 +132,19 @@ void main() {
       expect(minY, greaterThanOrEqualTo(0.472));
       expect(maxY, lessThanOrEqualTo(0.48));
       for (final sample in samples) {
-        expect(sample.opacity, closeTo(0.8, 1e-12));
-        expect(sample.radius, closeTo(0.00235, 1e-12));
+        expect(sample.opacity, closeTo(0.86, 1e-12));
+        expect(sample.radius, closeTo(0.00255, 1e-12));
+      }
+    });
+
+    test('uses a dense default launch row without visible spacing gaps', () {
+      final samples = sampleDroneShow(0);
+      final xs = samples.map((s) => s.position.dx).toList();
+
+      final step = xs[1] - xs[0];
+      expect(step, lessThan(0.001));
+      for (var i = 2; i < xs.length; i++) {
+        expect(xs[i] - xs[i - 1], closeTo(step, 1e-12));
       }
     });
 
@@ -271,6 +282,17 @@ void main() {
   });
 
   group('DroneShowLayer.paint', () {
+    test('can split launch-road and sky phases for scene compositing', () {
+      const launchLayer = DroneShowLayer.launchRoad();
+      const skyLayer = DroneShowLayer.sky();
+
+      expect(launchLayer.visiblePhases, {DroneShowPhase.launch});
+      expect(skyLayer.visiblePhases, isNot(contains(DroneShowPhase.launch)));
+      expect(skyLayer.visiblePhases, contains(DroneShowPhase.beam));
+      expect(skyLayer.visiblePhases, contains(DroneShowPhase.fan));
+      expect(skyLayer.visiblePhases, contains(DroneShowPhase.formation));
+    });
+
     test('does not throw and uses the BackdropLayer contract', () {
       const layer = DroneShowLayer(droneCount: 16);
       const asLayer = layer as BackdropLayer;
