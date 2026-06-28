@@ -175,22 +175,33 @@ its floor pool always share a gel:
 - **`runtime/stage_lights.dart` — `StageLightRig` (pure).** A deterministic,
   canvas-free scheduler: feed it the scene time + the 0..1 beat envelope and it
   returns each light's gel `color`, pool `targetX` and `intensity`. The gel cycle
-  (warm gold / hot fuchsia / UV violet) **snaps** (never lerps) on a `colorPeriod`
-  wired to the track tempo (`60 / bpm`), offset per lane so the row rotates R/G/B
-  rather than flashing in unison; brightness is `baseIntensity + beatBoost * beat`.
-- **The rim/halo is drawn by `CharacterPainter`** (`memberBacklights`, not in this
-  module): each cat is rendered as a blurred, solid-gel silhouette behind itself
-  (a soft bloom + a tight rim pass) so it ends up ringed in a crisp gel edge, with
-  `bodyDim` dropping the front body into shadow so the rim wins. It reuses the
-  member transform, so the halo tracks the dancer through any camera move.
+  (`kStageGelCycle`: warm gold / dusk fuchsia / electric violet, desaturated ~20%
+  toward the plate's lantern-amber / dusk-magenta so the gels read as light in the
+  blue-hour world rather than arcade decals) **snaps** (never lerps) on a
+  `colorPeriod` wired to the track tempo (`60 / bpm`), offset per lane so the row
+  rotates rather than flashing in unison; brightness is
+  `baseIntensity + beatBoost * beat`.
+- **The directional rim/halo + body grade are drawn by `CharacterPainter`**
+  (`memberBacklights` + `bodyGrade`, not in this module): each cat is rendered as
+  a blurred, solid-gel silhouette behind itself (a soft bloom + a tight rim pass),
+  each pass **offset toward that lane's light source** so the rim is directional
+  with a real shadow side. `bodyGrade` then grades the body into the twilight
+  plate (a cool→warm ambient wrap + a directional gel terminator), clipped below
+  the neckline so the face stays natural. It reuses the member transform, so the
+  rim tracks the dancer through any camera move.
 - **`stage_lights_overlay.dart` — `StageLightsOverlay` / `StageLightsPainter`.**
   The grounding half: an additive (`BlendMode.plus`) screen-space pass over the
-  dancers drawing a soft elliptical gel pool + hot core under each foot. It eases
-  its pool toward the live dancer foot (lazy on small moves, fast catch-up on a
-  camera cut), tracking the anchors the painter publishes via `onDancerAnchors`.
+  dancers drawing a gel pool that is anchored at the foot and **rakes forward**
+  (downstage) with a horizontal shear (`_kPoolLean`) so off-centre pools lie along
+  the deck's plank perspective, plus a hot core at the foot contact. It eases its
+  pool toward the live dancer foot (lazy on small moves, fast catch-up on a camera
+  cut), tracking the anchors the painter publishes via `onDancerAnchors`.
 
 The demo samples the rig once per frame and feeds the gels to both halves, so the
-whole rig pulses with the music. Reduce-motion freezes it to a calm static frame.
+whole rig pulses with the music. The cat **bodies never pulse with the beat** (a
+full-figure flash would be a photosensitivity risk): only the rim halo and floor
+pools animate, while `bodyGrade` stays a static grade. Reduce-motion freezes the
+rig to a calm static frame.
 
 ## Asset Preparation
 

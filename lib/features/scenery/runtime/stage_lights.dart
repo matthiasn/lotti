@@ -3,12 +3,14 @@ import 'dart:ui' show Color;
 
 /// The default cinematic gel cycle each light snaps through on the beat: a hot
 /// Afrobeats-luxe triad — warm **gold** (the hero, tying to the city windows +
-/// deck lanterns), hot fuchsia, and UV-electric violet. All-warm/jewel, no
-/// festival-cyan; saturated and glowing, not milky pastels.
+/// deck lanterns), a dusk fuchsia, and an electric violet. All-warm/jewel, no
+/// festival-cyan. Pulled back from pure-neon saturation (~20%) so the gels read
+/// as light that belongs in the blue-hour world — biased toward the lantern
+/// amber / dusk-magenta of the plate — rather than arcade decals over it.
 const List<Color> kStageGelCycle = [
-  Color(0xFFFFA01E), // warm gold (hero)
-  Color(0xFFFF2E8C), // hot fuchsia
-  Color(0xFFB026FF), // UV electric violet
+  Color(0xFFF2AC44), // warm gold (hero), toward the lantern amber
+  Color(0xFFE85F97), // dusk fuchsia / rose-magenta
+  Color(0xFFB163E0), // muted electric violet
 ];
 
 /// One concert light resolved for a single frame. [targetX] is normalized 0..1

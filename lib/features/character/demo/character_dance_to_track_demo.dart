@@ -769,6 +769,11 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     final catBacklights = [
       for (final s in stageSamples) s.color.withValues(alpha: s.intensity),
     ];
+    // The cat bodies are NEVER pulsed with the beat — a full-figure luminance
+    // flash on every beat is a photosensitive-epilepsy risk (large area, high
+    // contrast, near the 3 Hz threshold at fast tempos). Only the stage lighting
+    // around the cats animates: the rim halo and the floor pools. The performers
+    // stay lit; the rig pulses around them, exactly like real concert footage.
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
@@ -887,11 +892,18 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                             backdropWavesImage: _useNewBackdrop ? null : _waves,
                             // Each cat ringed in its gel (rim/halo hugging the
                             // silhouette), tracked through the camera for free.
+                            // The body itself is never dimmed/pulsed — only this
+                            // edge halo and the floor pools animate (see above).
                             memberBacklights: catBacklights,
-                            // Backlit: drop the front body into shadow so the rim
-                            // wins (true backlight read). New scene only.
-                            bodyDim: _useNewBackdrop
-                                ? const Color(0xFF6E6E6E)
+                            // Grade the cats INTO the twilight plate (static, not
+                            // beat-driven): a cool sky wrap up top fading to a
+                            // warm deck/city bounce down low, plus stronger deck
+                            // shadows so the trio is planted, not floating.
+                            bodyGrade: _useNewBackdrop
+                                ? const (
+                                    skyWrap: Color(0x2E1F3354),
+                                    deckWrap: Color(0x2E3A2616),
+                                  )
                                 : null,
                             renderer: _renderer,
                           ),

@@ -43,10 +43,29 @@ Affine2D groundedBase(
 /// Backlight (rim/halo) passes, drawn back-to-front behind each lit member: a
 /// soft outer bloom then a tight bright rim. `sigmaFrac` is the blur sigma as a
 /// fraction of the canvas short side; `alphaScale` scales the member's gel alpha
-/// for that pass. See [CharacterPainter.memberBacklights].
-const List<({double sigmaFrac, double alphaScale})> _kBacklightPasses = [
-  (sigmaFrac: 0.024, alphaScale: 0.55), // soft outer bloom (atmosphere)
-  (sigmaFrac: 0.010, alphaScale: 1.0), // tight bright rim (edge separation)
+/// for that pass; `offsetScale` displaces the blurred silhouette toward the
+/// member's light source ([_kRimDirections]) as a multiple of that pass' sigma —
+/// this is what makes the rim DIRECTIONAL (hot on the source-facing edge, gone
+/// on the shadow side where the body occludes the retreating halo) instead of a
+/// uniform outline glow. See [CharacterPainter.memberBacklights].
+const List<({double sigmaFrac, double alphaScale, double offsetScale})>
+_kBacklightPasses = [
+  // soft outer bloom: biased to the source side so little atmosphere wraps the
+  // shadow edge, but not fully one-sided (keeps a hint of ambient bloom).
+  (sigmaFrac: 0.024, alphaScale: 0.55, offsetScale: 0.85),
+  // tight bright rim: strongly biased to one edge → a crisp directional kicker.
+  (sigmaFrac: 0.010, alphaScale: 1.0, offsetScale: 1.6),
+];
+
+/// Unit direction (screen space, +x right / +y down) from each dance lane toward
+/// its rim-light source, i.e. the direction the gel halo is offset so the rim
+/// lands on the source-facing edge. A fanned overhead back-key array: the
+/// flankers are keyed from their outboard-upper corner, the hero from straight
+/// above. Indexed by screen lane (0 = left, 1 = centre, 2 = right).
+const List<Offset> _kRimDirections = [
+  Offset(-0.80, -0.60), // left lane  → back-key from upper-left
+  Offset(0, -1), // centre lane → hero back-key from straight above
+  Offset(0.80, -0.60), // right lane → back-key from upper-right
 ];
 
 /// A [CustomPainter] that resolves and draws one frame of a [CharacterScene].
@@ -82,7 +101,7 @@ class CharacterPainter extends CustomPainter {
     this.cameraOverride,
     this.onDancerAnchors,
     this.memberBacklights = const [],
-    this.bodyDim,
+    this.bodyGrade,
     CharacterRenderer? renderer,
   }) : _renderer = renderer ?? CharacterRenderer();
 
@@ -140,12 +159,16 @@ class CharacterPainter extends CustomPainter {
   /// the lane order is stable); empty disables it and the painter is untouched.
   final List<Color> memberBacklights;
 
-  /// Optional modulate colour darkening only the FRONT body draw of each backlit
-  /// member (not its rim/halo), so a backlit cat falls into shadow and the
-  /// saturated rim wins — the front-in-shadow read a real backlight needs.
-  /// `0xFF707070` ≈ 1.5 stops down. Null leaves the bodies at full colour. Only
-  /// applied alongside [memberBacklights] (three-member dance mode).
-  final Color? bodyDim;
+  /// Static "grade into the plate" for the concert dance trio, so the flat
+  /// cartoon fills share the backdrop's twilight exposure instead of reading as
+  /// stickers pasted on the painting. A vertical ambient wrap is composited
+  /// (`srcATop`) onto each cat's own silhouette: `skyWrap` (cool sky light) up
+  /// high, fading through clear, to `deckWrap` (warm deck/city bounce) down low.
+  /// Its presence also strengthens the deck contact shadows so the trio is
+  /// planted on the painted deck. STATIC by design — never beat-driven: a
+  /// full-figure luminance pulse on every beat is a photosensitivity risk. Only
+  /// honored in three-member dance mode; null leaves the cats ungraded.
+  final ({Color skyWrap, Color deckWrap})? bodyGrade;
 
   final Clip clip;
   final double timeSeconds;
@@ -351,8 +374,14 @@ class CharacterPainter extends CustomPainter {
       final baseClips = [
         for (final i in Iterable<int>.generate(baseMembers.length)) _clipAt(i),
       ];
-      final leadCentreOrder = clip.name == 'dance' && baseMembers.length == 3;
-      final order = leadCentreOrder ? const [1, 0, 2] : null;
+      // Keep the lead cat in the CENTRE of the trio for EVERY clip, not just the
+      // dance — so the front/centre cat never swaps between the calm intro (idle
+      // clip) and the dance (continuity). Only the dance-specific behaviours
+      // (formation, rim/pool lighting, foot anchors) stay gated on the dance clip
+      // via [leadCentreOrder].
+      final trioCentre = baseMembers.length == 3;
+      final leadCentreOrder = clip.name == 'dance' && trioCentre;
+      final order = trioCentre ? const [1, 0, 2] : null;
       final members = order == null
           ? baseMembers
           : [for (final i in order) baseMembers[i]];
@@ -427,16 +456,25 @@ class CharacterPainter extends CustomPainter {
         final glow = leadCentreOrder && i < memberBacklights.length
             ? memberBacklights[i]
             : null;
+        // This lane's light-source direction, shared by the rim halo (below) and
+        // the gel torso-modelling in the front-body grade (further down).
+        final rimDir = i < _kRimDirections.length
+            ? _kRimDirections[i]
+            : Offset.zero;
         if (glow != null && glow.a > 0) {
           // Two passes so the gel reads as real backlight, not a sticker glow:
           // a soft outer BLOOM for atmosphere, then a tight bright RIM that hugs
-          // the contour and stays crisp all the way down the arms/legs to the
-          // feet. Both flatten the member to a solid gel silhouette and blur it
-          // behind the real draw, so only the part protruding past the outline
-          // shows. Aligned for free — they reuse the member's exact transform.
+          // the contour. Both flatten the member to a solid gel silhouette and
+          // blur it behind the real draw, so only the part protruding past the
+          // outline shows. The silhouette is OFFSET toward this lane's light
+          // source ([_kRimDirections]) before blurring, so the halo pokes out on
+          // the source-facing edge and the body occludes its retreating shadow
+          // side — a directional kicker with a real shadow side, not an even
+          // outline. Aligned for free — they reuse the member's exact transform.
           for (final pass in _kBacklightPasses) {
             final sigma = size.shortestSide * pass.sigmaFrac;
-            final pad = sigma * 4;
+            final off = rimDir * (sigma * pass.offsetScale);
+            final pad = sigma * 4 + off.distance;
             final haloBounds = Rect.fromLTRB(
               memberCentreX - spacing - pad,
               -pad,
@@ -444,18 +482,20 @@ class CharacterPainter extends CustomPainter {
               size.height + pad,
             );
             final a = (glow.a * pass.alphaScale).clamp(0.0, 1.0);
-            canvas.saveLayer(
-              haloBounds,
-              Paint()
-                ..colorFilter = ColorFilter.mode(
-                  glow.withValues(alpha: a),
-                  BlendMode.srcIn,
-                )
-                ..imageFilter = ui.ImageFilter.blur(
-                  sigmaX: sigma,
-                  sigmaY: sigma,
-                ),
-            );
+            canvas
+              ..saveLayer(
+                haloBounds,
+                Paint()
+                  ..colorFilter = ColorFilter.mode(
+                    glow.withValues(alpha: a),
+                    BlendMode.srcIn,
+                  )
+                  ..imageFilter = ui.ImageFilter.blur(
+                    sigmaX: sigma,
+                    sigmaY: sigma,
+                  ),
+              )
+              ..translate(off.dx, off.dy);
             _paintCharacterAt(
               memberScene,
               canvas,
@@ -473,22 +513,22 @@ class CharacterPainter extends CustomPainter {
             canvas.restore();
           }
         }
-        // Front body draw. When this member is backlit, drop it into shadow with
-        // [bodyDim] (modulate) so the bright rim reads as a real backlight — the
-        // front falls dark and only the gel edge separates it. The rim passes
-        // above are unaffected (drawn full-strength behind).
-        final dim = glow != null && bodyDim != null ? bodyDim : null;
-        if (dim != null) {
-          canvas.saveLayer(
-            Rect.fromLTRB(
-              memberCentreX - spacing,
-              0,
-              memberCentreX + spacing,
-              size.height,
-            ),
-            Paint()..colorFilter = ColorFilter.mode(dim, BlendMode.modulate),
-          );
-        }
+        // Front body draw. In concert mode, grade the cat INTO the plate: render
+        // it into an isolation layer, then composite a vertical ambient wrap onto
+        // its own silhouette (`srcATop`) — cool sky light up high fading through
+        // clear to warm deck/city bounce down low — so the flat fill carries the
+        // scene's twilight exposure and a touch of internal value variation
+        // instead of reading as a sticker. STATIC (no beat term): a full-figure
+        // luminance pulse would be a seizure risk. The rim passes above are
+        // outside this layer, so the gel edge stays pure.
+        final grade = leadCentreOrder ? bodyGrade : null;
+        final gradeBounds = Rect.fromLTRB(
+          memberCentreX - spacing,
+          0,
+          memberCentreX + spacing,
+          size.height,
+        );
+        if (grade != null) canvas.saveLayer(gradeBounds, Paint());
         _paintCharacterAt(
           memberScene,
           canvas,
@@ -503,7 +543,66 @@ class CharacterPainter extends CustomPainter {
           feetFraction: feetFraction,
           horizontalScale: memberHorizontalScale,
         );
-        if (dim != null) canvas.restore();
+        if (grade != null) {
+          // Grade the BODY, not the face: the cool ambient wrap + cool-blue
+          // terminator dull the head, so clip those passes to BELOW the neckline
+          // and leave the head/face at its natural, brighter cartoon tone.
+          canvas
+            ..save()
+            ..clipRect(
+              Rect.fromLTRB(
+                memberCentreX - spacing,
+                memberFloorY - size.height * 0.20, // just under the chin/collar
+                memberCentreX + spacing,
+                size.height,
+              ),
+            )
+            // Vertical ambient wrap (≈ half the frame tall, feet at
+            // memberFloorY), masked to the figure it was just drawn over.
+            ..drawRect(
+              gradeBounds,
+              Paint()
+                ..blendMode = BlendMode.srcATop
+                ..shader = ui.Gradient.linear(
+                  Offset(memberCentreX, memberFloorY - size.height * 0.52),
+                  Offset(memberCentreX, memberFloorY),
+                  [grade.skyWrap, const Color(0x00000000), grade.deckWrap],
+                  const [0.0, 0.55, 1.0],
+                ),
+            );
+          // Model the torso with the gel: a directional band aligned to this
+          // lane's light source ([rimDir]) — gel on the lit edge, through clear,
+          // to a COOL BLUE FILL on the shadow side (a moderate terminator that
+          // lifts the off-side toward blue-hour skylight rather than crushing it
+          // to black) — so the colour WRAPS the form instead of only ringing it.
+          // This is what makes the backlight read as light on the body, not a
+          // sticker outline.
+          if (glow != null && glow.a > 0) {
+            final mid = Offset(
+              memberCentreX,
+              memberFloorY - size.height * 0.26,
+            );
+            final reach = rimDir * (size.height * 0.30);
+            canvas.drawRect(
+              gradeBounds,
+              Paint()
+                ..blendMode = BlendMode.srcATop
+                ..shader = ui.Gradient.linear(
+                  mid + reach, // lit, source-facing edge
+                  mid - reach, // shadow side
+                  [
+                    glow.withValues(alpha: 0.42),
+                    const Color(0x00000000),
+                    const Color(0x4A26486E),
+                  ],
+                  const [0.0, 0.52, 1.0],
+                ),
+            );
+          }
+          canvas
+            ..restore() // pop the body clip (face is left ungraded)
+            ..restore(); // pop the isolation layer
+        }
       }
       if (anchors != null) onDancerAnchors!(anchors);
       canvas.restore();
@@ -1286,6 +1385,14 @@ class CharacterPainter extends CustomPainter {
     );
   }
 
+  /// Whether the figure stands on a real painted deck and so needs the strong,
+  /// planted contact shadows (rather than the faint default for a bare/no
+  /// backdrop). True for the legacy waterfront plate AND the new layered scene
+  /// (whose deck is painted by `LayeredBackdrop` below, with the painter drawing
+  /// over `CharacterBackdrop.none`, so [bodyGrade] is the signal it is present).
+  bool get _strongDeckShadows =>
+      backdrop == CharacterBackdrop.waterfront || bodyGrade != null;
+
   void _paintContactShadows(
     Canvas canvas,
     double floorY,
@@ -1316,7 +1423,7 @@ class CharacterPainter extends CustomPainter {
       final active = boneId == contactBone;
       final shadowW = (active ? 84 : 52) * scale * (1 - 0.35 * lift);
       final baseAlpha = (shadowColor.a * 255.0).round();
-      final activeBoost = backdrop == CharacterBackdrop.waterfront ? 4.4 : 2.1;
+      final activeBoost = _strongDeckShadows ? 4.4 : 2.1;
       final shadowAlpha =
           (baseAlpha * (active ? activeBoost : 0.45) * (1 - 0.82 * lift))
               .round()
@@ -1331,9 +1438,7 @@ class CharacterPainter extends CustomPainter {
       );
       if (active) {
         final contactAlpha =
-            (baseAlpha *
-                    (backdrop == CharacterBackdrop.waterfront ? 5.6 : 2.6) *
-                    (1 - 0.7 * lift))
+            (baseAlpha * (_strongDeckShadows ? 5.6 : 2.6) * (1 - 0.7 * lift))
                 .round()
                 .clamp(0, 255);
         _drawDeckShadowOval(
@@ -1469,6 +1574,6 @@ class CharacterPainter extends CustomPainter {
       old.singingHeadMotion != singingHeadMotion ||
       old.cameraOverride != cameraOverride ||
       !listEquals(old.memberBacklights, memberBacklights) ||
-      old.bodyDim != bodyDim ||
+      old.bodyGrade != bodyGrade ||
       old._renderer != _renderer;
 }

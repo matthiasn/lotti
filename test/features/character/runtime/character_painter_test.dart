@@ -504,7 +504,7 @@ void main() {
     });
   });
 
-  group('CharacterPainter.memberBacklights / bodyDim', () {
+  group('CharacterPainter.memberBacklights / bodyGrade', () {
     // Distinct pure-colour gels per lane so rim pixels are unambiguous.
     const gels = [Color(0xFFFF0000), Color(0xFF00FF00), Color(0xFF0000FF)];
     const w = 760;
@@ -515,7 +515,7 @@ void main() {
 
     CharacterPainter trio({
       List<Color> backlights = const [],
-      Color? bodyDim,
+      ({Color skyWrap, Color deckWrap})? bodyGrade,
     }) => CharacterPainter(
       scene: scene,
       partnerScene: CharacterScene(
@@ -538,7 +538,7 @@ void main() {
       timeSeconds: 0.25,
       shadowColor: const Color(0x00000000),
       memberBacklights: backlights,
-      bodyDim: bodyDim,
+      bodyGrade: bodyGrade,
       renderer: renderer,
     );
 
@@ -603,38 +603,62 @@ void main() {
       });
     });
 
-    testWidgets('bodyDim drops the front body into shadow, rim survives', (
+    testWidgets('bodyGrade tints the body but leaves the face ungraded', (
       tester,
     ) async {
       await tester.runAsync(() async {
-        final bright = await pixels(trio(backlights: gels));
-        final dimmed = await pixels(
-          trio(backlights: gels, bodyDim: const Color(0xFF6E6E6E)),
+        final plain = await pixels(trio(backlights: gels));
+        // Strong, opaque-ish wrap so the body tint is unambiguous in the diff.
+        final graded = await pixels(
+          trio(
+            backlights: gels,
+            bodyGrade: const (
+              skyWrap: Color(0xAA1F3354),
+              deckWrap: Color(0xAA3A2616),
+            ),
+          ),
         );
-        var brightLum = 0;
-        var dimLum = 0;
-        var rimDim = 0; // gel-hued coverage must remain under the dim
+        // The figure's vertical extent, from the (ungraded) silhouette.
+        var minY = h;
+        var maxY = 0;
         for (var y = 0; y < h; y++) {
           for (var x = 0; x < w; x++) {
-            final o = (y * w + x) * 4;
-            if (bright[o + 3] != 0) {
-              brightLum += bright[o] + bright[o + 1] + bright[o + 2];
-            }
-            if (dimmed[o + 3] != 0) {
-              dimLum += dimmed[o] + dimmed[o + 1] + dimmed[o + 2];
-              final r = dimmed[o];
-              final g = dimmed[o + 1];
-              final b = dimmed[o + 2];
-              if (r > 120 || g > 120 || b > 120) rimDim++;
+            if (plain[(y * w + x) * 4 + 3] != 0) {
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+              break;
             }
           }
         }
+        final span = maxY - minY;
+        final headCut = minY + (span * 0.32).round(); // head ≈ the top third
+        final bodyCut = minY + (span * 0.55).round(); // torso/legs below
+        var headChange = 0;
+        var bodyChange = 0;
+        for (var y = 0; y < h; y++) {
+          for (var x = 0; x < w; x++) {
+            final o = (y * w + x) * 4;
+            if (plain[o + 3] == 0 && graded[o + 3] == 0) continue;
+            final d =
+                (graded[o] - plain[o]).abs() +
+                (graded[o + 1] - plain[o + 1]).abs() +
+                (graded[o + 2] - plain[o + 2]).abs();
+            if (y < headCut) headChange += d;
+            if (y >= bodyCut) bodyChange += d;
+          }
+        }
+        // The grade visibly re-tints the body…
         expect(
-          dimLum,
-          lessThan(brightLum),
-          reason: 'bodyDim darkens the bodies',
+          bodyChange,
+          greaterThan(5000),
+          reason: 'bodyGrade re-tints the torso/legs',
         );
-        expect(rimDim, greaterThan(100), reason: 'the bright rim is preserved');
+        // …but the head/face is clipped out of the grade, so it barely moves.
+        expect(
+          headChange,
+          lessThan(bodyChange ~/ 8),
+          reason: 'the face/head is left at its natural tone',
+        );
       });
     });
   });

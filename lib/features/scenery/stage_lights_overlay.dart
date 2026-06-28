@@ -2,6 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/scenery/runtime/stage_lights.dart';
 
+/// Horizontal shear applied to each floor pool per unit of normalized distance
+/// from frame centre, so off-centre pools splay outward with depth and lie along
+/// the deck's plank perspective (vanishing point up-centre) instead of facing
+/// the lens as flat discs.
+const double _kPoolLean = 0.34;
+
 /// The floor-pool pass for the dancing-cats concert lighting, drawn OVER the
 /// dancers: a small hot pool of each dancer's gel colour on the deck under their
 /// feet, so the light reads as landing on the boards. Painted additively
@@ -185,22 +191,35 @@ class StageLightsPainter extends CustomPainter {
   ) {
     final i = l.intensity;
     final rx = poolRadius * w;
-    final ry = rx * 0.32; // flattened: light raking across the floor
-    // Sit the puddle just below the feet so it spreads onto the deck planks in
-    // front of the dancer, grounding the glow where it lands.
-    final cy = fy + ry * 0.5;
-    // Wide soft spread: the diffuse elliptical wash (≈ a body-width pool, not a
-    // pinpoint) that grounds the rim on the boards.
+    final ry =
+        rx * 0.42; // foreshortened, but with real forward (downstage) run
+    // Lay the pool along the deck's perspective instead of stamping a flat disc:
+    // anchor it at the foot (local origin) and let it RAKE FORWARD toward the
+    // camera (down-frame), with a horizontal shear so off-centre pools splay
+    // outward with depth — i.e. lie along the plank vanishing lines rather than
+    // facing the lens. Drawn in this foot-local, sheared frame.
+    final lean = ((aim / w) - 0.5) * _kPoolLean;
+    final frame = Matrix4.identity()
+      ..setEntry(0, 3, aim)
+      ..setEntry(1, 3, fy)
+      ..setEntry(0, 1, lean);
+    canvas
+      ..save()
+      ..transform(frame.storage);
+    // Hot at the foot contact, fading downstage: the gradient centre rides up
+    // near the foot (Alignment y < 0) while the ellipse body extends forward.
+    final cy = ry * 1.15;
     final spread = Rect.fromCenter(
-      center: Offset(aim, cy),
+      center: Offset(0, cy),
       width: rx * 2,
-      height: ry * 2,
+      height: ry * 2.4,
     );
     canvas.drawOval(
       spread,
       Paint()
         ..blendMode = BlendMode.plus
         ..shader = RadialGradient(
+          center: const Alignment(0, -0.45),
           colors: [
             l.color.withValues(alpha: 0.46 * i),
             l.color.withValues(alpha: 0.16 * i),
@@ -209,27 +228,30 @@ class StageLightsPainter extends CustomPainter {
           stops: const [0.0, 0.5, 1.0],
         ).createShader(spread),
     );
-    // Hot core: a tight bright hotspot where the beam strikes the deck — fast
-    // falloff, lightly white-clipped — so the pool reads as light landing.
+    // Hot core: a tight bright hotspot at the foot/deck contact — fast falloff,
+    // lightly white-clipped — so the pool reads as light landing, not a sticker.
     final hot = Color.lerp(l.color, const Color(0xFFFFFFFF), 0.16)!;
     final core = Rect.fromCenter(
-      center: Offset(aim, cy),
+      center: Offset(0, ry * 0.45),
       width: rx,
-      height: ry,
+      height: ry * 1.1,
     );
-    canvas.drawOval(
-      core,
-      Paint()
-        ..blendMode = BlendMode.plus
-        ..shader = RadialGradient(
-          colors: [
-            hot.withValues(alpha: 0.75 * i),
-            l.color.withValues(alpha: 0.24 * i),
-            l.color.withValues(alpha: 0),
-          ],
-          stops: const [0.0, 0.55, 1.0],
-        ).createShader(core),
-    );
+    canvas
+      ..drawOval(
+        core,
+        Paint()
+          ..blendMode = BlendMode.plus
+          ..shader = RadialGradient(
+            center: const Alignment(0, -0.3),
+            colors: [
+              hot.withValues(alpha: 0.75 * i),
+              l.color.withValues(alpha: 0.24 * i),
+              l.color.withValues(alpha: 0),
+            ],
+            stops: const [0.0, 0.55, 1.0],
+          ).createShader(core),
+      )
+      ..restore();
   }
 
   @override
