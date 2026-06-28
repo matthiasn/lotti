@@ -4760,39 +4760,45 @@ class CatClips {
   // LEFT foot: SUPPORT/planted over frames 0-16 (load f4), then the FREE leg
   // doing the legwork over 16-30 (big air-kick at f26), re-planting for the loop
   // pickup at f30.
+  // Kicks land ON the on-counts (peak extension on the beat), tucks on the
+  // off-frames, so every downbeat is an open extended-leg stride, not a closed
+  // crouch.
+  //
+  // LEFT foot: planted SUPPORT over 0-16 (load f4); FREE leg kicking ON counts
+  // 20/24/28 over 16-30; snaps back to plant for the loop pickup at f30.
   static const _zankuFootLTargetKeys = [
     DanceIkTargetKey(0, x: 6, y: 97), // plant (left support)
     DanceIkTargetKey(4, x: 6, y: 97), // plant — load/anchor frame, held
     DanceIkTargetKey(8, x: 5, y: 98), // plant
     DanceIkTargetKey(12, x: 4, y: 97), // plant
-    DanceIkTargetKey(14, x: -4, y: 93), // unweight, about to lift
-    DanceIkTargetKey(16, x: -16, y: 86), // lift off (left becomes free)
-    DanceIkTargetKey(18, x: -89, y: 80), // KICK OUT (extended ~45°)
-    DanceIkTargetKey(20, x: -40, y: 70), // tuck in + knee up
-    DanceIkTargetKey(22, x: -90, y: 78), // KICK OUT
-    DanceIkTargetKey(24, x: -40, y: 72), // tuck
-    DanceIkTargetKey(26, x: -95, y: 72), // BIG air-kick — bar-2 climax (widest)
-    DanceIkTargetKey(28, x: -54, y: 80), // recover, descending
-    DanceIkTargetKey(30, x: 4, y: 97), // plant back down (loop pickup)
-    DanceIkTargetKey(32, x: 6, y: 97), // == frame 0
+    DanceIkTargetKey(14, x: -6, y: 92), // unweight
+    DanceIkTargetKey(16, x: -20, y: 84), // lift off (left becomes free)
+    DanceIkTargetKey(18, x: -40, y: 76), // rising toward the kick
+    DanceIkTargetKey(20, x: -89, y: 80), // KICK OUT — on count (extended ~45°)
+    DanceIkTargetKey(22, x: -38, y: 78), // tuck (off-beat)
+    DanceIkTargetKey(24, x: -95, y: 72), // BIG KICK — on count (widest)
+    DanceIkTargetKey(26, x: -38, y: 80), // tuck
+    DanceIkTargetKey(28, x: -88, y: 82), // KICK OUT — on count
+    DanceIkTargetKey(30, x: -12, y: 94), // snap back toward plant
+    DanceIkTargetKey(32, x: 6, y: 97), // == frame 0 (planted)
   ];
-  // RIGHT foot: the FREE leg doing the legwork over frames 0-16 (big air-kick at
-  // f10), then SUPPORT/planted over 16-30 (load f20), lifting for the loop at f30.
+  // RIGHT foot: FREE leg kicking ON counts 0/4/8/12 over frames 0-16, then
+  // SUPPORT/planted over 16-30 (load f20), lifting for the loop at f30.
   static const _zankuFootRTargetKeys = [
-    DanceIkTargetKey(0, x: 52, y: 80), // mid (just kicked, returning)
-    DanceIkTargetKey(2, x: 89, y: 82), // KICK OUT (extended ~45°)
-    DanceIkTargetKey(4, x: 40, y: 70), // tuck in + knee up
-    DanceIkTargetKey(6, x: 90, y: 80), // KICK OUT
-    DanceIkTargetKey(8, x: 40, y: 72), // tuck
-    DanceIkTargetKey(10, x: 95, y: 74), // BIG air-kick — bar-1 climax (widest)
-    DanceIkTargetKey(12, x: 56, y: 78), // recover
-    DanceIkTargetKey(14, x: 44, y: 92), // descend toward plant
+    DanceIkTargetKey(0, x: 89, y: 82), // KICK OUT — downbeat (extended ~45°)
+    DanceIkTargetKey(2, x: 36, y: 76), // tuck in + knee up (off-beat)
+    DanceIkTargetKey(4, x: 90, y: 80), // KICK OUT — on count
+    DanceIkTargetKey(6, x: 36, y: 78), // tuck
+    DanceIkTargetKey(8, x: 95, y: 74), // BIG KICK — on count (widest)
+    DanceIkTargetKey(10, x: 38, y: 80), // tuck
+    DanceIkTargetKey(12, x: 88, y: 82), // KICK OUT — on count
+    DanceIkTargetKey(14, x: 50, y: 92), // descend toward plant
     DanceIkTargetKey(16, x: 34, y: 98), // plant (right becomes support)
     DanceIkTargetKey(20, x: 34, y: 98), // plant — load/anchor frame, held
     DanceIkTargetKey(24, x: 34, y: 98), // plant
-    DanceIkTargetKey(28, x: 40, y: 94), // plant, easing up
-    DanceIkTargetKey(30, x: 48, y: 86), // begin lift for next loop
-    DanceIkTargetKey(32, x: 52, y: 80), // == frame 0
+    DanceIkTargetKey(28, x: 42, y: 94), // plant, easing up
+    DanceIkTargetKey(30, x: 60, y: 84), // lifting toward the downbeat kick
+    DanceIkTargetKey(32, x: 89, y: 82), // == frame 0
   ];
   static final KeyframeIkTargetChannel _zankuFootLTarget = _dancePhrase
       .ikTargetChannel(_zankuFootLTargetKeys, smooth: true);
@@ -4823,8 +4829,18 @@ class CatClips {
       root: LayeredRootChannel([
         _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
+        // Per-BAR weight transfer: the COM travels far enough to park OVER the
+        // planted support foot (left bar 1, right bar 2). Pushed wide (-22) to
+        // match the wide kicks — a small shift reads as "centered" next to a
+        // free foot fanning to ~±90. Safe because the support foot is
+        // world-anchored: it holds while the body slides over it.
+        const SineRootChannel(swayAmplitude: -30),
         const SineRootChannel(
-          bobAmplitude: -0.055,
+          // A vertical HOP synced to the legwork — Zanku rides a spring, not a
+          // flat side sway. Most of the bounce restored; the head no longer fans
+          // because the ears are clamped (below) and the head-counter holds the
+          // skull's rotation while it rides the bob.
+          bobAmplitude: -0.045,
           bobPhase: 0.125,
           bobHarmonic: 8,
         ),
@@ -4840,11 +4856,36 @@ class CatClips {
           _dancePhrase.bodyChestChannel(_danceBodyAccentKeys, smooth: true),
           // Leaned-back confident carriage — the Zanku posture (constant bias).
           const SineChannel(bias: -0.14),
+          // Per-BAR counter-tilt toward the support side (in step with the COM
+          // sway) so the upper mass offsets the extended kicking leg — the
+          // figure commits over the planted foot instead of toppling to the kick.
+          const SineChannel(amplitude: 0.1),
         ]),
         // The feet are driven by the Zanku foot IK targets (legwork), which
         // override the FK leg-lower channels — so no leg-lower override here.
-        CatBones.earL: const KeyframeChannel(_shakuEarLKeys, smooth: true),
-        CatBones.earR: const KeyframeChannel(_shakuEarRKeys, smooth: true),
+        //
+        // Ears clamped near-rigid to the skull: the independent ear swing was
+        // the brightest fan in the onion and out-read the legs. A whisper of
+        // life only, so the legwork owns the dominant motion trail.
+        CatBones.earL: const SineChannel(amplitude: 0.008),
+        CatBones.earR: const SineChannel(amplitude: 0.008, phase: 0.5),
+        // Tail damped ~70%: the bright tail arc was the loudest mover after the
+        // head. Lock it close to the body so the FEET carry the biggest trail.
+        CatBones.tail0: const SineChannel(amplitude: 0.018, bias: -0.34),
+        CatBones.tail1: const SineChannel(
+          amplitude: 0.03,
+          phase: 0.08,
+          bias: -0.06,
+        ),
+        CatBones.tail2: const SineChannel(
+          amplitude: 0.04,
+          phase: 0.16,
+          bias: -0.04,
+        ),
+        CatBones.tail3: const SineChannel(amplitude: 0.05, phase: 0.24),
+        CatBones.tail4: const SineChannel(amplitude: 0.06, phase: 0.32),
+        CatBones.tail5: const SineChannel(amplitude: 0.045, phase: 0.4),
+        CatBones.tail6: const SineChannel(amplitude: 0.06, phase: 0.48),
       },
     );
   }
