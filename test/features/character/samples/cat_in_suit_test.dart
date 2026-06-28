@@ -125,7 +125,7 @@ void main() {
     test('exposes the Phase-1 motion set', () {
       expect(
         CatClips.all.map((c) => c.name).toSet(),
-        {'walk', 'run', 'kick', 'dance', 'sit', 'jump', 'idle'},
+        {'walk', 'run', 'kick', 'dance', 'shaku', 'sit', 'jump', 'idle'},
       );
     });
 
