@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/features/character/demo/dance_camera_director.dart';
+import 'package:lotti/features/character/demo/dance_camera_rig.dart';
 import 'package:lotti/features/character/demo/dance_lip_sync.dart';
 import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
@@ -208,6 +209,12 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   MouthShape _leadShape = MouthShape.singAh; // viseme for the active lead word
   MouthShape _bgShape = MouthShape.singAh; // viseme for the active backup word
   Duration _lastTick = Duration.zero;
+  // The dolly operator: the director emits a per-frame target framing and this
+  // rig eases the live camera toward it, so section/home changes read as motivated
+  // dolly moves rather than snaps. The one exception is the reserved hero (see
+  // [isHardCut]), where it snaps — the single hard cut in the piece.
+  final DanceCameraRig _cameraRig = DanceCameraRig();
+  Shot _liveShot = (zoom: 1, dx: 0, dy: 0);
   String? _error;
 
   AutonomicLayer _danceAutonomic(int seed) => AutonomicLayer(
@@ -228,7 +235,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   }
 
   // Per-frame: repaint and ease the singing mouths. The dance camera is no longer
-  // a single eased strength — the virtual director ([_directorShot]) computes the
+  // a single eased strength — the virtual director ([_directorContext]) computes the
   // whole shot (zoom/pan, with cuts) from the audio position in [build]. Frame-
   // rate independent: uses the real frame dt and a time constant for the mouths.
   void _onTick(Duration elapsed) {
@@ -256,6 +263,15 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     );
     if (leadOn) _leadShape = cue.shape;
     if (bgOn) _bgShape = cue.shape;
+    // Advance the camera rig toward the director's target for this frame. Every
+    // framing change eases into a dolly; only the reserved hero snaps (a cut).
+    final ctx = _directorContext(pos, energetic: _stageNow().energetic);
+    final target = ctx == null ? _liveShot : cameraShot(ctx);
+    _liveShot = _cameraRig.update(
+      target: target,
+      cut: ctx != null && isHardCut(ctx),
+      dt: dt,
+    );
     setState(() {
       _leadMouth = _easeMouth(_leadMouth, leadOn ? cue.open : 0.0, dt);
       _bgMouth = _easeMouth(_bgMouth, bgOn ? cue.open : 0.0, dt);
@@ -415,57 +431,40 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     return spans;
   }
 
-  /// Monotonic bar index at [sec] from the loop anchor (0 = the anchor downbeat).
-  int _barAt(double sec) {
-    final map = _map;
-    final binding = _binding;
-    if (map == null || binding == null) return 0;
-    return ((map.beatAt(sec) - binding.anchorBeatIndex) /
-            map.timeSignatureNumerator)
-        .floor();
-  }
-
-  /// Where [pos] sits inside the current semantic section: its label, progress
-  /// 0..1, and the bar count from the section's downbeat. Defaults to the empty
-  /// section (→ the director's grounded medium) when no span covers [pos].
-  ({String section, double phase, int sectionBar}) _sectionInfoAt(double pos) {
+  /// Where [pos] sits inside the current semantic section: its label and progress
+  /// 0..1. Defaults to the empty section (→ the director's grounded medium) when
+  /// no span covers [pos].
+  ({String section, double phase}) _sectionInfoAt(double pos) {
     for (final s in _sectionSpans) {
       if (pos >= s.start && pos < s.end) {
         final span = (s.end - s.start) <= 0 ? 1.0 : s.end - s.start;
         return (
           section: s.section,
           phase: ((pos - s.start) / span).clamp(0.0, 1.0),
-          sectionBar: (_barAt(pos) - _barAt(s.start)).clamp(0, 1 << 20),
         );
       }
     }
-    return (section: '', phase: 0, sectionBar: 0);
+    return (section: '', phase: 0);
   }
 
-  /// The virtual director's framing for the current frame — fed to the painter as
-  /// [CharacterPainter.cameraOverride] and (reduced) to the backdrop parallax.
-  /// Neutral until the beat map loads. [energetic] mirrors [_stageNow]'s acoustic
-  /// dance gate so the camera rests on a wide establish exactly when the dancers
-  /// ease to idle, and performs when they dance.
-  Shot _directorShot(double pos, {required bool energetic}) {
+  /// The virtual director's CONTEXT for the current frame, from which the target
+  /// framing ([cameraShot]) and the one hard-cut flag ([isHardCut]) are derived.
+  /// Null until the beat map loads (the rig then rests neutral). [energetic]
+  /// mirrors [_stageNow]'s acoustic dance gate so the camera rests on a wide
+  /// establish exactly when the dancers ease to idle, and performs when they dance.
+  DanceCameraContext? _directorContext(double pos, {required bool energetic}) {
     final map = _map;
     final binding = _binding;
-    if (map == null || binding == null) {
-      return (zoom: 1, dx: 0, dy: 0);
-    }
+    if (map == null || binding == null) return null;
     final info = _sectionInfoAt(pos);
-    return cameraShot(
-      cameraContext(
-        beat: map.beatAt(pos),
-        anchorBeat: binding.anchorBeatIndex.toDouble(),
-        loopLengthBeats: binding.loopLengthBeats.toDouble(),
-        beatsPerBar: map.timeSignatureNumerator,
-        section: info.section,
-        energetic: energetic,
-        build: _trackDurationSec > 0 ? pos / _trackDurationSec : 0,
-        sectionPhase: info.phase,
-        sectionBar: info.sectionBar,
-      ),
+    return cameraContext(
+      beat: map.beatAt(pos),
+      anchorBeat: binding.anchorBeatIndex.toDouble(),
+      loopLengthBeats: binding.loopLengthBeats.toDouble(),
+      section: info.section,
+      energetic: energetic,
+      build: _trackDurationSec > 0 ? pos / _trackDurationSec : 0,
+      sectionPhase: info.phase,
     );
   }
 
@@ -630,7 +629,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   /// dance in loud sections, an eased idle (driven by raw playback time) in calm
   /// ones — so the quiet intro stays calm until the beat kicks in. The phrase
   /// loops via clipSecondsAt's own modulo across the track. The same `energetic`
-  /// flag gates the virtual director ([_directorShot]): it performs on the dance
+  /// flag gates the virtual director ([_directorContext]): it performs on the dance
   /// and rests on a wide establish in the calm pockets.
   _Stage _stageNow() {
     final pos = _player.state.position.inMicroseconds / 1e6;
@@ -743,10 +742,11 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     final stage = _stageNow();
     final posSec = _player.state.position.inMicroseconds / 1e6;
     final beat = _beatPulse(posSec);
-    // The virtual director owns the camera: one shot (zoom/pan, with cuts) per
-    // frame, applied verbatim by the painter and lagged behind the dancers by the
-    // backdrop parallax. Gated on the same acoustic dance flag as the choreography.
-    final shot = _directorShot(posSec, energetic: stage.energetic);
+    // The virtual director owns the camera, but the rig OWNS the move: the live
+    // shot is the rig's eased framing (advanced each tick toward the director's
+    // target), so refrains dolly between homes and only the hero cuts. Applied by
+    // the painter and lagged behind the dancers by the backdrop parallax.
+    final shot = _liveShot;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
