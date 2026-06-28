@@ -51,11 +51,11 @@ const SkylineManifest kPlaceholderSkylineManifest = SkylineManifest(
   // tops, left→right: left tower, spired tower (on the spire), peaked-roof
   // tower, dark flat-top tower, slim tall tower.
   buildingTops: [
-    Offset(0.150, 0.323),
-    Offset(0.209, 0.245),
-    Offset(0.250, 0.357),
-    Offset(0.342, 0.335),
-    Offset(0.430, 0.369),
+    Offset(0.145, 0.318),
+    Offset(0.207, 0.235),
+    Offset(0.250, 0.352),
+    Offset(0.342, 0.338),
+    Offset(0.430, 0.360),
   ],
   windowCells: [
     Rect.fromLTWH(0.10, 0.47, 0.05, 0.13),

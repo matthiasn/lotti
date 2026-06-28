@@ -69,7 +69,7 @@ class CityLightsLayer implements BackdropLayer {
     final anchors = [...manifest.buildingTops, ...manifest.bridgeTowerTops];
     if (anchors.isEmpty) return;
     final time = ctx.reducedMotion ? 0.0 : ctx.timeSeconds;
-    final r = cover.width * 0.0035;
+    final r = cover.width * 0.0018;
     final red = ctx.palette.beaconRed;
     for (var i = 0; i < anchors.length; i++) {
       final intensity = beaconIntensity(i, time);
@@ -81,11 +81,11 @@ class CityLightsLayer implements BackdropLayer {
       canvas
         ..drawCircle(
           c,
-          r * 4,
+          r * 3,
           Paint()
             ..blendMode = BlendMode.plus
-            ..shader = ui.Gradient.radial(c, r * 4, [
-              red.withValues(alpha: 0.85 * intensity),
+            ..shader = ui.Gradient.radial(c, r * 3, [
+              red.withValues(alpha: 0.6 * intensity),
               red.withValues(alpha: 0),
             ]),
         )
@@ -120,14 +120,15 @@ Rect coverFit(Size viewport) {
   );
 }
 
-/// Blink schedule for aircraft beacon [index] at [time] seconds: a short red
-/// flash with a smooth rise/fall, staggered per beacon so they don't pulse in
-/// lockstep. Returns 0 between flashes. Pure for unit testing.
+/// Blink schedule for aircraft beacon [index] at [time] seconds: a slow, gentle
+/// red flash with a smooth rise/fall, staggered per beacon so they don't pulse
+/// in lockstep. A long ~4-5.5s period with a brief duty keeps the skyline calm
+/// rather than hectic. Returns 0 between flashes. Pure for unit testing.
 double beaconIntensity(int index, double time) {
-  final period = 2.4 + 0.9 * _frac(index * 0.37 + 0.11);
+  final period = 3.8 + 1.7 * _frac(index * 0.37 + 0.11);
   final phase = _frac(index * 0.613);
   final pos = _frac(time / period + phase);
-  const flash = 0.09;
+  const flash = 0.08;
   if (pos > flash) return 0;
   return math.sin(pos / flash * math.pi).clamp(0.0, 1.0);
 }
