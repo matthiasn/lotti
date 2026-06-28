@@ -291,6 +291,7 @@ class _BackdropPainter extends CustomPainter {
         old.reducedMotion != reducedMotion ||
         old.skyProgram != skyProgram ||
         old.oceanProgram != oceanProgram ||
+        old.cityLightsProgram != cityLightsProgram ||
         old.imagesVersion != imagesVersion;
   }
 }

@@ -203,7 +203,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   ui.Image? _backdrop;
   ui.Image? _clouds;
   ui.Image? _waves;
-  double _wallSeconds = 0; // steady clock for ambient backdrop animation
   double _leadMouth = 0; // eased frontman mouth (lead lyric words)
   double _bgMouth = 0; // eased backup-dancers' mouth (background ad-libs)
   MouthShape _leadShape = MouthShape.singAh; // viseme for the active lead word
@@ -243,9 +242,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     _lastTick = elapsed;
     if (dt < 0) dt = 0;
     if (dt > 0.1) dt = 0.1; // ignore long stalls (tab switch, etc.)
-    // Advance the ambient backdrop clock only while playing, so the lights
-    // freeze with the dancers when the track is paused.
-    if (_player.state.playing) _wallSeconds += dt;
     final pos = _player.state.position.inMicroseconds / 1e6;
     // Mouth shape comes from the Rhubarb cue track (the actual vocal phonemes);
     // the lyric voice tags only gate *which* cat shows it. The frontman is gated
@@ -793,10 +789,10 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                             filterQuality: FilterQuality.low,
                             child: LayeredBackdrop(
                               scene: BackdropScene.blueHourWaterfront(),
-                              // Steady wall clock for blink/flicker timing (not the
-                              // looping dance clock); beatPulse makes the windows
-                              // shimmer on the beat.
-                              timeSeconds: _wallSeconds,
+                              // Use raw audio position, not wall time: scenery
+                              // pauses/seeks with the track, while the dance can
+                              // still run on the beat-locked phrase clock.
+                              timeSeconds: posSec,
                               beatPulse: beat,
                             ),
                           ),

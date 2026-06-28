@@ -2,6 +2,7 @@ import 'dart:ui' show Size;
 
 import 'package:lotti/features/scenery/layers/backdrop_layer.dart';
 import 'package:lotti/features/scenery/layers/city_lights_layer.dart';
+import 'package:lotti/features/scenery/layers/cloud_parallax_layer.dart';
 import 'package:lotti/features/scenery/layers/deck_glow_layer.dart';
 import 'package:lotti/features/scenery/layers/image_layer.dart';
 import 'package:lotti/features/scenery/layers/ocean_layer.dart';
@@ -20,22 +21,47 @@ class BackdropScene {
     this.sceneSize = kSceneryCanvasSize,
   });
 
-  /// The painted Lagos-lagoon blue-hour scene, back to front: the full master
-  /// plate as the base, the animated ocean over its painted water, the moored
-  /// yacht re-drawn OVER the ocean so its solid hull occludes the foam (a boat
-  /// sits on the water, not under the waves), the additive city/yacht night
-  /// lights (so the lit cabin windows land on top of the re-drawn yacht), the
-  /// foreground deck/palms over the ocean so foam never streaks the planks, and
-  /// the warm lantern glow pooling on the now-lit deck. All sit behind the
-  /// dancers (they are background layers).
+  /// The painted Lagos-lagoon blue-hour scene, back to front: the cloudless
+  /// master-derived base plate, three exact-pixel cloud layers drifting at
+  /// different depths, the animated ocean, solid skyline/bridge/yacht structure
+  /// re-drawn OVER atmosphere/water so clouds/foam never slide across them, the
+  /// additive city/yacht night lights, the foreground deck/palms, and the warm
+  /// lantern glow pooling on the now-lit deck. All sit behind the dancers (they
+  /// are background layers).
   factory BackdropScene.blueHourWaterfront() {
     return const BackdropScene(
       layers: [
-        ImageLayer(SceneryAssets.masterPlate),
+        ImageLayer(SceneryAssets.cloudlessPlate),
+        CloudParallaxLayer(
+          SceneryAssets.cloudsFar,
+          opacity: 0.84,
+          dxPerSecond: 0.00165,
+          dyAmplitude: 0.001,
+          dyCycleSeconds: 72,
+          phase: 0.17,
+        ),
+        CloudParallaxLayer(
+          SceneryAssets.cloudsMid,
+          opacity: 0.84,
+          dxPerSecond: 0.0021,
+          dyAmplitude: 0.0015,
+          dyCycleSeconds: 58,
+          phase: 0.43,
+        ),
+        CloudParallaxLayer(
+          SceneryAssets.cloudsNear,
+          opacity: 0.9,
+          dxPerSecond: 0.002775,
+          dyCycleSeconds: 46,
+          phase: 0.71,
+        ),
         // Animated water first; the additive ocean and additive city lights
         // commute, so the only thing the order buys us is letting the opaque
         // yacht sit BETWEEN them.
         OceanLayer(foamDensity: 0.72, reflection: 0.3),
+        // Re-draw fixed skyline + bridge over the drifting cloud layers and
+        // ocean shimmer, preserving the original depth ordering.
+        ImageLayer(SceneryAssets.cityBridge),
         // The moored yacht silhouette, re-drawn over the ocean so its hull
         // covers the foam that would otherwise wash up its side.
         ImageLayer(SceneryAssets.yacht),
@@ -47,7 +73,12 @@ class BackdropScene {
       ],
       foregroundLayers: [VignetteLayer(dim: 0.12)],
       imageAssets: [
+        SceneryAssets.cloudlessPlate,
         SceneryAssets.masterPlate,
+        SceneryAssets.cloudsFar,
+        SceneryAssets.cloudsMid,
+        SceneryAssets.cloudsNear,
+        SceneryAssets.cityBridge,
         SceneryAssets.cityWindows,
         SceneryAssets.yacht,
         SceneryAssets.foreground,

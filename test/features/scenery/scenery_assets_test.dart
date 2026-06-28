@@ -8,6 +8,9 @@ void main() {
   group('blue-hour scenery assets', () {
     const layerNames = [
       'city_bridge',
+      'clouds_far',
+      'clouds_mid',
+      'clouds_near',
       'yacht',
       'foreground',
     ];
@@ -16,8 +19,14 @@ void main() {
       'base plate and derived layers share one full-frame coordinate space',
       () async {
         final master = await _readPng('assets/scenery/blue_hour_master.png');
+        final cloudless = await _readPng(
+          'assets/scenery/blue_hour_cloudless.png',
+        );
         expect(master.width, 2560);
         expect(master.height, 1440);
+        expect(cloudless.width, master.width);
+        expect(cloudless.height, master.height);
+        expect(_alphaStats(cloudless).transparent, 0);
 
         for (final name in layerNames) {
           final layer = await _readPng('assets/scenery/$name.png');

@@ -31,7 +31,7 @@ uniform vec4 uCool;          // LED window
 uniform vec4 uYachtGlow;     // warm cabin
 uniform sampler2D uWindowField; // baked registered window field (master-derived)
 uniform sampler2D uYachtMask;
-uniform sampler2D uMaster; // the painted plate itself (for cloud-belly relight)
+uniform sampler2D uMaster; // source plate used for window/glass darkness gates
 
 out vec4 fragColor;
 
@@ -161,65 +161,15 @@ void main() {
   lights += hazeCol * haze;
   intensity += haze * 0.6;
 
-  // --- High cirrus: faint, slowly drifting wisps across the empty mid-sky,
-  // breaking the flat gradient and giving the sky gentle motion. Cool (lit by
-  // sky + moon) and very low alpha; domain-warped fbm for soft cloud edges. The
-  // painted cumulus stay the hero; this is just atmosphere/parallax. ---
-  float skyMask = (1.0 - smoothstep(0.22, 0.38, muv.y)) *
-      smoothstep(0.02, 0.10, muv.y);
-  if (skyMask > 0.0) {
-    vec2 cuv = vec2(muv.x * 2.3 + uTime * 0.004, muv.y * 3.2 + 4.0);
-    float wisp = fbm(cuv + fbm(cuv * 0.5));
-    wisp = smoothstep(0.50, 0.86, wisp);
-    float cir = wisp * skyMask * 0.06;
-    // Silver lining: the cirrus catches the warm sunset key on the right and
-    // stays cool moon-lit on the left, giving the whole sky one coherent light
-    // direction instead of flat, evenly-cool wisps.
-    vec3 cirCol = mix(vec3(0.55, 0.64, 0.84), vec3(0.86, 0.73, 0.60),
-        smoothstep(0.45, 0.96, muv.x));
-    lights += cirCol * cir;
-    intensity += cir * 0.5;
-  }
-
   // --- Warm sunset afterglow on the right horizon, bleeding up and inward to
-  // warm the low cloud bellies above the city and unify the sky's light
-  // direction (the painted plate already warms the right; this lifts that key
-  // into the cloud band so the sky reads lit from one source). ---
+  // unify the sky's light direction without painting fixed cloud highlights.
+  // The actual clouds now live in separate image layers and drift independently.
   float glowX = smoothstep(0.34, 1.0, muv.x);
   float glowY =
       smoothstep(0.04, 0.20, muv.y) * (1.0 - smoothstep(0.20, 0.40, muv.y));
   float after = glowX * glowY * 0.05;
   lights += vec3(0.82, 0.56, 0.40) * after; // warm residual ember
   intensity += after * 0.5;
-
-  // --- Cloud-belly underlight: the lit city and the warm horizon throw light UP
-  // onto the undersides of the painted clouds. We detect cloud BOTTOMS in the
-  // master (a locally bright pixel sitting above a darker one = an underside
-  // facing the city) and tint them warm — strongest low in the sky and toward
-  // the warm right horizon — so the clouds sit in the same light as the skyline
-  // instead of floating as flat, separately-lit shapes. ---
-  if (muv.y < 0.42) {
-    float lHere = lum(texture(uMaster, muv).rgb);
-    float lBelow = lum(texture(uMaster, muv + vec2(0.0, 0.013)).rgb);
-    float lAbove = lum(texture(uMaster, muv - vec2(0.0, 0.013)).rgb);
-    // Cloud BOTTOM edge (bright over darker) catches a warm bounce from the lit
-    // city + horizon; whole cloud band, biased toward the right afterglow.
-    float belly =
-        smoothstep(0.15, 0.34, lHere) * smoothstep(0.0, 0.06, lHere - lBelow);
-    float key = (1.0 - smoothstep(0.05, 0.40, muv.y)) *
-        (0.60 + 0.40 * smoothstep(0.25, 0.95, muv.x));
-    float glow = belly * key * 0.18;
-    lights += vec3(0.95, 0.63, 0.42) * glow; // warm city/horizon bounce
-    intensity += glow * 0.6;
-    // Cloud TOP edge (bright over darker above) catches a cool silver lining
-    // from the moon/sky, so the otherwise-flat painted clouds gain a lit rim and
-    // a shadowed core — warm belly + cool crown = volume.
-    float topEdge =
-        smoothstep(0.15, 0.34, lHere) * smoothstep(0.0, 0.06, lHere - lAbove);
-    float rim = topEdge * (1.0 - smoothstep(0.02, 0.36, muv.y)) * 0.11;
-    lights += vec3(0.66, 0.76, 0.92) * rim; // cool moon/sky silver lining
-    intensity += rim * 0.5;
-  }
 
   // --- City: light whole floors of the master's own painted windows ---
   float field = texture(uWindowField, muv).r;
