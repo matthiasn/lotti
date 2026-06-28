@@ -5064,19 +5064,22 @@ class CatClips {
   // frame-12 hit, LEFT arm on the frame-28 hit.
   // ─────────────────────────────────────────────────────────────────────────
   static const _bugaBodyKeys = [
-    DanceBodyKey(0, rootDy: 7, chestScaleY: 0.97),
-    DanceBodyKey(4, rootDy: 13, chestScaleY: 0.95),
-    DanceBodyKey(8, rootDy: 20, chestScaleY: 0.91), // count 3 deep load
-    DanceBodyKey(11, rootDy: 21, chestScaleY: 0.9), // hold the load
-    DanceBodyKey(12, rootDy: 0, chestScaleY: 1.07, chestScaleX: 0.97), // HIT
-    DanceBodyKey(14, rootDy: 2, chestScaleY: 1.05),
-    DanceBodyKey(16, rootDy: 7, chestScaleY: 0.97),
-    DanceBodyKey(20, rootDy: 13, chestScaleY: 0.95),
-    DanceBodyKey(24, rootDy: 20, chestScaleY: 0.91),
-    DanceBodyKey(27, rootDy: 21, chestScaleY: 0.9),
-    DanceBodyKey(28, rootDy: 0, chestScaleY: 1.07, chestScaleX: 0.97), // HIT
-    DanceBodyKey(30, rootDy: 2, chestScaleY: 1.05),
-    DanceBodyKey(32, rootDy: 7, chestScaleY: 0.97),
+    // Progressively deeper prep dips, deepest load held on count 3, then a hard
+    // RISE above standing height with a chest pop on the hit (the biggest
+    // vertical delta in the loop), settling just after.
+    DanceBodyKey(0, rootDy: 8, chestScaleY: 0.97),
+    DanceBodyKey(4, rootDy: 16, chestScaleY: 0.94),
+    DanceBodyKey(8, rootDy: 26, chestScaleY: 0.89), // count 3 DEEP load
+    DanceBodyKey(11, rootDy: 27, chestScaleY: 0.88), // hold the load
+    DanceBodyKey(12, rootDy: -6, chestScaleY: 1.11, chestScaleX: 0.95), // HIT
+    DanceBodyKey(14, rootDy: -3, chestScaleY: 1.08), // hold the present
+    DanceBodyKey(16, rootDy: 8, chestScaleY: 0.97),
+    DanceBodyKey(20, rootDy: 16, chestScaleY: 0.94),
+    DanceBodyKey(24, rootDy: 26, chestScaleY: 0.89),
+    DanceBodyKey(27, rootDy: 27, chestScaleY: 0.88),
+    DanceBodyKey(28, rootDy: -6, chestScaleY: 1.11, chestScaleX: 0.95), // HIT
+    DanceBodyKey(30, rootDy: -3, chestScaleY: 1.08),
+    DanceBodyKey(32, rootDy: 8, chestScaleY: 0.97),
   ];
   static const _bugaHandRTargetKeys = [
     DanceIkTargetKey(0, x: 15, y: -16), // tucked/loaded at the chest
@@ -5241,14 +5244,17 @@ class CatClips {
     return Clip(
       name: 'pouncingCat',
       duration: base.duration,
-      contactSpans: base.contactSpans,
-      contactPinning: base.contactPinning,
+      // NO contact spans (the default): the support-foot contact lock pulls the
+      // root back to the planted foot's X, which cancels the lateral glide. The
+      // glide IS the move, so the feet skim freely (driven only by their low IK
+      // targets).
       limbTargets: _pounceLimbTargets,
       root: LayeredRootChannel([
         _dancePhrase.bodyRootChannel(_pounceBodyKeys, smooth: true),
-        // Slow lateral glide — the signature. Harmonic 2 = a half-time shift
-        // (left half, right half); no bob keeps the head level.
-        const SineRootChannel(swayAmplitude: 28, swayHarmonic: 2),
+        // Slow lateral GLIDE — the signature. Harmonic 2 = a half-time shift
+        // (left half, right half); no bob keeps the head level. Pushed wide so
+        // the whole body (head included) visibly travels sideways.
+        const SineRootChannel(swayAmplitude: 40, swayHarmonic: 2),
       ]),
       channels: {
         ...base.channels,
@@ -5286,18 +5292,26 @@ class CatClips {
     GroundSpan(CatBones.footR, 0.875, 1),
   ];
   static const _sekemBodyKeys = [
-    // A per-beat squash: the loaded side drops on each hard plant.
-    DanceBodyKey(0, rootDy: 16, chestScaleY: 0.95),
-    DanceBodyKey(2, rootDy: 11, chestScaleY: 0.98),
-    DanceBodyKey(4, rootDy: 16, chestScaleY: 0.95),
-    DanceBodyKey(6, rootDy: 11, chestScaleY: 0.98),
-    DanceBodyKey(8, rootDy: 16, chestScaleY: 0.95),
-    DanceBodyKey(12, rootDy: 16, chestScaleY: 0.95),
-    DanceBodyKey(16, rootDy: 16, chestScaleY: 0.95),
-    DanceBodyKey(20, rootDy: 16, chestScaleY: 0.95),
-    DanceBodyKey(24, rootDy: 16, chestScaleY: 0.95),
-    DanceBodyKey(28, rootDy: 16, chestScaleY: 0.95),
-    DanceBodyKey(32, rootDy: 16, chestScaleY: 0.95),
+    // A hard per-beat squash: the body drops DEEP and the chest compresses on
+    // each plant (on-counts), then lifts on the off-frame — a clear heavy stomp
+    // accent, not a flat sway.
+    DanceBodyKey(0, rootDy: 25, chestScaleY: 0.92), // PLANT (deep squash)
+    DanceBodyKey(2, rootDy: 12, chestScaleY: 0.98), // lift (off-beat)
+    DanceBodyKey(4, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(6, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(8, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(10, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(12, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(14, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(16, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(18, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(20, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(22, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(24, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(26, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(28, rootDy: 25, chestScaleY: 0.92),
+    DanceBodyKey(30, rootDy: 12, chestScaleY: 0.98),
+    DanceBodyKey(32, rootDy: 25, chestScaleY: 0.92),
   ];
   // Feet STOMP in place (no lateral travel): each foot plants hard low on its
   // beats and lifts only shin-low on the off-frame, with a small twist (x nudge)
@@ -5386,14 +5400,14 @@ class CatClips {
       supportFootWorldAnchor: true,
       root: LayeredRootChannel([
         _dancePhrase.bodyRootChannel(_sekemBodyKeys, smooth: true),
-        // Full lateral shift over the planting foot, one plant per beat.
+        // Full lateral shift over the planting foot, one plant per beat — pushed
+        // wide so the COM visibly parks over the support foot (two onion
+        // clusters), not a centered sway.
         const SineRootChannel(
-          swayAmplitude: -24,
+          swayAmplitude: -34,
           swayHarmonic: 4,
           swayPhase: 0.0625,
         ),
-        // Hard per-beat squash on the plant.
-        const SineRootChannel(bobAmplitude: -0.05, bobHarmonic: 8),
       ]),
       channels: {
         ...base.channels,
