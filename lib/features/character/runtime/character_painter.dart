@@ -69,6 +69,7 @@ class CharacterPainter extends CustomPainter {
     this.ensembleClips = const [],
     this.synchronousEnsemble = false,
     this.singingHeadMotion = false,
+    this.cameraOverride,
     CharacterRenderer? renderer,
   }) : _renderer = renderer ?? CharacterRenderer();
 
@@ -101,6 +102,14 @@ class CharacterPainter extends CustomPainter {
   /// instead of floating rigidly over a grooving body. Opt-in so non-singing
   /// uses of the painter are untouched.
   final bool singingHeadMotion;
+
+  /// When set, replaces the built-in [_danceCamera] move with a caller-supplied
+  /// shot `(zoom, dx, dy)` — applied verbatim (it owns the intensity, so
+  /// [danceCameraStrength] is ignored). The dance-to-track demo's "virtual
+  /// director" uses this to cut between section-aware, per-phrase-varied shots
+  /// instead of looping one move. A jump in the value between frames reads as a
+  /// hard cut; a smoothly-moving value reads as a continuous move.
+  final ({double zoom, double dx, double dy})? cameraOverride;
 
   final Clip clip;
   final double timeSeconds;
@@ -171,34 +180,64 @@ class CharacterPainter extends CustomPainter {
   // the push-in and is pinned by tests at the reference composition.
   static const double _danceCameraRefWidth = 2560;
 
+  /// Vertical position (fraction of stage height) of the zoom pivot — the point
+  /// that stays put as the camera pushes in — for the **virtual director**'s
+  /// shots ([cameraOverride]). Pinned right at the dancers' FEET/floor line so a
+  /// push-in keeps the feet planted on the deck and grows the cast UPWARD into
+  /// the open sky, instead of shoving the feet off the bottom edge and leaving
+  /// dead sky above the cast. Height-relative, so the composition holds at any
+  /// stage size.
+  static const double _directorPivotFraction = 0.88;
+
+  /// Zoom-pivot fraction for the **built-in** [_danceCamera] push-in (the legacy
+  /// per-phrase move used by `character_demo.dart` when no [cameraOverride] is
+  /// supplied). Its keyframes were authored around a head/torso-height pivot, so
+  /// it keeps that pivot — the director's feet-planted pivot above is a property
+  /// of the director's framing, not of this older move.
+  static const double _builtInDancePivotFraction = 0.56;
+
   @override
   void paint(Canvas canvas, Size size) {
     final floorY = size.height * feetFraction;
     final memberCount = walkingPair
         ? (ensembleScenes.isEmpty ? 2 : ensembleScenes.length + 1)
         : 1;
-    final rawCamera =
-        enableDanceCamera &&
-            walkingPair &&
-            clip.name == 'dance' &&
-            memberCount == 3
-        ? _danceCamera(timeSeconds, clip.duration)
-        : (zoom: 1.0, dx: 0.0, dy: 0.0);
-    // Scale toward neutral so a caller can ramp the camera in/out smoothly.
-    // Identity at strength 1 (the default) keeps existing renders bit-identical.
-    final sceneCamera = danceCameraStrength == 1
-        ? rawCamera
-        : (
-            zoom: 1 + (rawCamera.zoom - 1) * danceCameraStrength,
-            dx: rawCamera.dx * danceCameraStrength,
-            dy: rawCamera.dy * danceCameraStrength,
-          );
+    final ({double zoom, double dx, double dy}) sceneCamera;
+    // The two camera sources are authored around different zoom pivots: the
+    // director's shots plant the feet (feet-line pivot), the built-in push-in
+    // frames the torso (head-height pivot). Pick the matching pivot per source.
+    final double pivotFraction;
+    if (cameraOverride != null) {
+      // A caller (the dance-to-track "virtual director") supplies the whole shot
+      // — varied per section/phrase, with cuts — so we apply it verbatim and let
+      // it own the cinematography.
+      sceneCamera = cameraOverride!;
+      pivotFraction = _directorPivotFraction;
+    } else {
+      final rawCamera =
+          enableDanceCamera &&
+              walkingPair &&
+              clip.name == 'dance' &&
+              memberCount == 3
+          ? _danceCamera(timeSeconds, clip.duration)
+          : (zoom: 1.0, dx: 0.0, dy: 0.0);
+      // Scale toward neutral so a caller can ramp the camera in/out smoothly.
+      // Identity at strength 1 (the default) keeps existing renders bit-identical.
+      sceneCamera = danceCameraStrength == 1
+          ? rawCamera
+          : (
+              zoom: 1 + (rawCamera.zoom - 1) * danceCameraStrength,
+              dx: rawCamera.dx * danceCameraStrength,
+              dy: rawCamera.dy * danceCameraStrength,
+            );
+      pivotFraction = _builtInDancePivotFraction;
+    }
 
     if (backdrop == CharacterBackdrop.waterfront) {
       canvas
         ..save()
         ..clipRect(Offset.zero & size);
-      _applyParallaxCamera(canvas, size, sceneCamera);
+      _applyParallaxCamera(canvas, size, sceneCamera, pivotFraction);
       _paintWaterfrontBackdrop(
         canvas,
         size,
@@ -214,7 +253,7 @@ class CharacterPainter extends CustomPainter {
     canvas
       ..save()
       ..clipRect(Offset.zero & size);
-    _applySceneCamera(canvas, size, sceneCamera);
+    _applySceneCamera(canvas, size, sceneCamera, pivotFraction);
 
     if (backdrop != CharacterBackdrop.waterfront && groundColor != null) {
       canvas.drawRect(
@@ -340,9 +379,10 @@ class CharacterPainter extends CustomPainter {
     Canvas canvas,
     Size size,
     ({double zoom, double dx, double dy}) camera,
+    double pivotFraction,
   ) {
     if (camera.zoom == 1 && camera.dx == 0 && camera.dy == 0) return;
-    final pivot = Offset(size.width / 2, size.height * 0.56);
+    final pivot = Offset(size.width / 2, size.height * pivotFraction);
     final maxDx = size.width * (camera.zoom - 1) / 2;
     final maxDy = size.height * (camera.zoom - 1) / 2;
     final dx = (camera.dx * size.width / _danceCameraRefWidth).clamp(
@@ -360,8 +400,9 @@ class CharacterPainter extends CustomPainter {
     Canvas canvas,
     Size size,
     ({double zoom, double dx, double dy}) camera,
+    double pivotFraction,
   ) {
-    _applySceneCamera(canvas, size, _parallaxCamera(camera));
+    _applySceneCamera(canvas, size, _parallaxCamera(camera), pivotFraction);
   }
 
   /// Reduces a scene camera to the gentler backdrop parallax (it lags the
@@ -398,11 +439,43 @@ class CharacterPainter extends CustomPainter {
       dx: raw.dx * danceCameraStrength,
       dy: raw.dy * danceCameraStrength,
     );
-    final parallax = _parallaxCamera(scene);
+    return _parallaxMatrix(
+      _parallaxCamera(scene),
+      size,
+      _builtInDancePivotFraction,
+    );
+  }
+
+  /// The reduced parallax transform a *separate* backdrop widget should apply
+  /// for an explicit virtual-director [shot]. The dance-to-track demo drives the
+  /// dance camera from `dance_camera_director.dart` (per-section framings with
+  /// cuts) rather than the built-in [_danceCamera] keyframes, and feeds the same
+  /// shot here so the scenery lags the dancers exactly as it does under the
+  /// in-painter parallax. Mirrors [_applySceneCamera] reduced by
+  /// [_parallaxCamera]. Returns identity when [active] is false, the stage is
+  /// empty, or the parallax is neutral.
+  static Matrix4 danceParallaxTransformForShot({
+    required ({double zoom, double dx, double dy}) shot,
+    required Size size,
+    bool active = true,
+  }) {
+    if (!active || size.isEmpty) return Matrix4.identity();
+    return _parallaxMatrix(_parallaxCamera(shot), size, _directorPivotFraction);
+  }
+
+  /// Builds the column-major backdrop matrix for an already-reduced [parallax]
+  /// camera: a uniform scale about the [pivotFraction]-height pivot then a
+  /// clamped pan, with `dx` rescaled from the 2560-ref width exactly like
+  /// [_applySceneCamera]. Identity when the parallax is neutral.
+  static Matrix4 _parallaxMatrix(
+    ({double zoom, double dx, double dy}) parallax,
+    Size size,
+    double pivotFraction,
+  ) {
     if (parallax.zoom == 1 && parallax.dx == 0 && parallax.dy == 0) {
       return Matrix4.identity();
     }
-    final pivot = Offset(size.width / 2, size.height * 0.56);
+    final pivot = Offset(size.width / 2, size.height * pivotFraction);
     final maxDx = size.width * (parallax.zoom - 1) / 2;
     final maxDy = size.height * (parallax.zoom - 1) / 2;
     final dx = (parallax.dx * size.width / _danceCameraRefWidth).clamp(
@@ -1220,5 +1293,6 @@ class CharacterPainter extends CustomPainter {
       old.ensembleClips != ensembleClips ||
       old.synchronousEnsemble != synchronousEnsemble ||
       old.singingHeadMotion != singingHeadMotion ||
+      old.cameraOverride != cameraOverride ||
       old._renderer != _renderer;
 }

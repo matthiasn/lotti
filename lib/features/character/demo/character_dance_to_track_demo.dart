@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:lotti/features/character/demo/dance_camera_director.dart';
 import 'package:lotti/features/character/demo/dance_lip_sync.dart';
 import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
@@ -88,19 +89,6 @@ const double kSectionEnergyThreshold = 0.5;
 /// Calm sections shorter than this stay energetic, to avoid flicker on the short
 /// transition sections between routines.
 const double kMinCalmSeconds = 4;
-
-/// Time constant (seconds) for easing the dance camera in/out across section
-/// changes — bigger = slower, more cinematic zoom (~63% of the way in this long).
-const double kCameraRampSeconds = 1.4;
-
-/// Peak dance-camera strength during energetic sections. The painter's full
-/// (strength 1) choreography pushes in hard enough (zoom ~2.08) to shove the
-/// side dancers off the 16:9 stage box — the "left cat cut off well within the
-/// window" bug. Capping the ramp here keeps the push-in/truck energy while
-/// holding the whole trio on the locked stage at any window size (at this value
-/// the left backup keeps a comfortable margin from the stage edge). The painter
-/// keeps its full-strength choreography for other callers/tests.
-const double kEnergeticCameraStrength = 0.5;
 
 /// Lip-sync mouth easing: each Rhubarb cue snaps the jaw open fast (attack) and
 /// relaxes it shut more slowly (release), so a syllable punches then settles
@@ -199,6 +187,10 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   List<double>? _amplitudes; // full-track waveform, normalized 0..1
   List<_Section> _sections = const [];
   List<_Word> _words = const []; // synced lyrics (optional)
+  // Contiguous semantic-section spans (chorus/verse/bridge/...) collapsed from the
+  // per-word section tags; the virtual director reads the section label, progress
+  // within it, and bar-from-its-downbeat here. Empty without a lyrics file.
+  List<({double start, double end, String section})> _sectionSpans = const [];
   List<_Cue> _cues = const []; // Rhubarb lip-sync cues (optional)
   double _trackDurationSec = 0;
   double _bpm = 0;
@@ -210,7 +202,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   ui.Image? _backdrop;
   ui.Image? _clouds;
   ui.Image? _waves;
-  double _cameraStrength = 0; // eased dance-camera ramp (0 = neutral, 1 = full)
   double _wallSeconds = 0; // steady clock for ambient backdrop animation
   double _leadMouth = 0; // eased frontman mouth (lead lyric words)
   double _bgMouth = 0; // eased backup-dancers' mouth (background ad-libs)
@@ -236,10 +227,10 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     unawaited(_loadBackdrop());
   }
 
-  // Per-frame: repaint, and ease the dance-camera strength toward the current
-  // section's target (1 = energetic, 0 = calm) so the camera zoom ramps in and
-  // out smoothly. Frame-rate independent: uses the real frame dt and a time
-  // constant, so the ramp speed is the same regardless of refresh rate.
+  // Per-frame: repaint and ease the singing mouths. The dance camera is no longer
+  // a single eased strength — the virtual director ([_directorShot]) computes the
+  // whole shot (zoom/pan, with cuts) from the audio position in [build]. Frame-
+  // rate independent: uses the real frame dt and a time constant for the mouths.
   void _onTick(Duration elapsed) {
     var dt = (elapsed - _lastTick).inMicroseconds / 1e6;
     _lastTick = elapsed;
@@ -249,11 +240,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     // freeze with the dancers when the track is paused.
     if (_player.state.playing) _wallSeconds += dt;
     final pos = _player.state.position.inMicroseconds / 1e6;
-    final target = (_sectionAt(pos)?.energetic ?? true)
-        ? kEnergeticCameraStrength
-        : 0.0;
-    var k = dt / kCameraRampSeconds;
-    if (k > 1) k = 1;
     // Mouth shape comes from the Rhubarb cue track (the actual vocal phonemes);
     // the lyric voice tags only gate *which* cat shows it. The frontman is gated
     // on lead words; the backups on the `(...)` ad-libs and the group-hook
@@ -271,7 +257,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     if (leadOn) _leadShape = cue.shape;
     if (bgOn) _bgShape = cue.shape;
     setState(() {
-      _cameraStrength += (target - _cameraStrength) * k;
       _leadMouth = _easeMouth(_leadMouth, leadOn ? cue.open : 0.0, dt);
       _bgMouth = _easeMouth(_bgMouth, bgOn ? cue.open : 0.0, dt);
     });
@@ -326,6 +311,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       final sections = _classifySections(rawSections, amplitudes, duration);
       final words = await _loadWords();
       final cues = await _loadCues();
+      final spans = _buildSectionSpans(words, duration);
 
       if (!mounted) return;
       setState(() {
@@ -338,6 +324,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         _amplitudes = amplitudes;
         _sections = sections;
         _words = words;
+        _sectionSpans = spans;
         _cues = cues;
       });
     } catch (e) {
@@ -400,6 +387,86 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       if (pos >= s.start && pos < s.end) return s;
     }
     return _sections.isEmpty ? null : _sections.last;
+  }
+
+  /// Collapses the per-word `_Word.section` tags into contiguous spans — each
+  /// chorus / verse / bridge occurrence becomes its own span — so the director
+  /// can report progress WITHIN the current section and the bar from its
+  /// downbeat. The last span runs to [duration]; earlier ones are trimmed to the
+  /// next span's start. Empty when there are no tagged words.
+  static List<({double start, double end, String section})> _buildSectionSpans(
+    List<_Word> words,
+    double duration,
+  ) {
+    final spans = <({double start, double end, String section})>[];
+    for (final w in words) {
+      final section = w.section.toLowerCase();
+      if (spans.isEmpty || spans.last.section != section) {
+        spans.add((start: w.start, end: duration, section: section));
+      }
+    }
+    for (var i = 0; i < spans.length - 1; i++) {
+      spans[i] = (
+        start: spans[i].start,
+        end: spans[i + 1].start,
+        section: spans[i].section,
+      );
+    }
+    return spans;
+  }
+
+  /// Monotonic bar index at [sec] from the loop anchor (0 = the anchor downbeat).
+  int _barAt(double sec) {
+    final map = _map;
+    final binding = _binding;
+    if (map == null || binding == null) return 0;
+    return ((map.beatAt(sec) - binding.anchorBeatIndex) /
+            map.timeSignatureNumerator)
+        .floor();
+  }
+
+  /// Where [pos] sits inside the current semantic section: its label, progress
+  /// 0..1, and the bar count from the section's downbeat. Defaults to the empty
+  /// section (→ the director's grounded medium) when no span covers [pos].
+  ({String section, double phase, int sectionBar}) _sectionInfoAt(double pos) {
+    for (final s in _sectionSpans) {
+      if (pos >= s.start && pos < s.end) {
+        final span = (s.end - s.start) <= 0 ? 1.0 : s.end - s.start;
+        return (
+          section: s.section,
+          phase: ((pos - s.start) / span).clamp(0.0, 1.0),
+          sectionBar: (_barAt(pos) - _barAt(s.start)).clamp(0, 1 << 20),
+        );
+      }
+    }
+    return (section: '', phase: 0, sectionBar: 0);
+  }
+
+  /// The virtual director's framing for the current frame — fed to the painter as
+  /// [CharacterPainter.cameraOverride] and (reduced) to the backdrop parallax.
+  /// Neutral until the beat map loads. [energetic] mirrors [_stageNow]'s acoustic
+  /// dance gate so the camera rests on a wide establish exactly when the dancers
+  /// ease to idle, and performs when they dance.
+  Shot _directorShot(double pos, {required bool energetic}) {
+    final map = _map;
+    final binding = _binding;
+    if (map == null || binding == null) {
+      return (zoom: 1, dx: 0, dy: 0);
+    }
+    final info = _sectionInfoAt(pos);
+    return cameraShot(
+      cameraContext(
+        beat: map.beatAt(pos),
+        anchorBeat: binding.anchorBeatIndex.toDouble(),
+        loopLengthBeats: binding.loopLengthBeats.toDouble(),
+        beatsPerBar: map.timeSignatureNumerator,
+        section: info.section,
+        energetic: energetic,
+        build: _trackDurationSec > 0 ? pos / _trackDurationSec : 0,
+        sectionPhase: info.phase,
+        sectionBar: info.sectionBar,
+      ),
+    );
   }
 
   /// Loads the optional word-level lyrics file (absent → no captions).
@@ -562,8 +629,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   /// Picks the clip + clock for the current section: the beat-locked energetic
   /// dance in loud sections, an eased idle (driven by raw playback time) in calm
   /// ones — so the quiet intro stays calm until the beat kicks in. The phrase
-  /// loops via clipSecondsAt's own modulo across the track; the camera ramp
-  /// ([_onTick] / [CharacterPainter.danceCameraStrength]) glides in on the dance.
+  /// loops via clipSecondsAt's own modulo across the track. The same `energetic`
+  /// flag gates the virtual director ([_directorShot]): it performs on the dance
+  /// and rests on a wide establish in the calm pockets.
   _Stage _stageNow() {
     final pos = _player.state.position.inMicroseconds / 1e6;
     final section = _sectionAt(pos);
@@ -675,6 +743,10 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     final stage = _stageNow();
     final posSec = _player.state.position.inMicroseconds / 1e6;
     final beat = _beatPulse(posSec);
+    // The virtual director owns the camera: one shot (zoom/pan, with cuts) per
+    // frame, applied verbatim by the painter and lagged behind the dancers by the
+    // backdrop parallax. Gated on the same acoustic dance flag as the choreography.
+    final shot = _directorShot(posSec, energetic: stage.energetic);
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
@@ -694,18 +766,16 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                     // (the painter scales uniformly, so this is what keeps the cats
                     // correctly proportioned instead of squat at the default scale 1).
                     final scale = constraints.maxHeight * 0.78 / 300.0;
-                    // Parallax the layered scene with the dance camera so it drifts
-                    // behind the dancers instead of sitting dead still.
+                    // Parallax the layered scene with the director's shot so it
+                    // drifts behind the dancers (lagged) instead of sitting dead
+                    // still, matching the foreground camera the painter applies.
                     final backdropTransform =
-                        CharacterPainter.danceParallaxTransform(
-                          timeSeconds: stage.seconds,
-                          clipDuration: stage.lead.duration,
+                        CharacterPainter.danceParallaxTransformForShot(
+                          shot: shot,
                           size: Size(
                             constraints.maxWidth,
                             constraints.maxHeight,
                           ),
-                          danceCameraStrength: _cameraStrength,
-                          active: stage.lead.name == 'dance',
                         );
                     return Stack(
                       fit: StackFit.expand,
@@ -762,7 +832,10 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                             walkingPair: true,
                             clip: stage.lead,
                             timeSeconds: stage.seconds,
-                            danceCameraStrength: _cameraStrength,
+                            // The virtual director supplies the whole shot; the
+                            // painter applies it verbatim (cuts and all) instead of
+                            // the built-in eased push-in.
+                            cameraOverride: shot,
                             scale: scale,
                             // New painted scene already has the deck, so drop the
                             // flat grey floor band (it would sit over the painting);
@@ -789,7 +862,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                           Positioned(
                             left: 24,
                             right: 24,
-                            bottom: 20,
+                            top: 20,
                             child: Center(child: _caption(posSec)),
                           ),
                       ],

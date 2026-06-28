@@ -1147,6 +1147,126 @@ void main() {
       expect(half.entry(0, 0), greaterThan(1.0));
     });
   });
+
+  group('danceParallaxTransformForShot', () {
+    const size = Size(800, 450);
+    // The director plants its pivot at the dancers' feet (0.88 of the height)
+    // so a zoom grows the cast upward; the backdrop must scale about the SAME
+    // pivot or the scenery would slide off the planted feet.
+    const directorPivot = Offset(400, 450 * 0.88); // (400, 396)
+
+    test('is the identity matrix when inactive or the stage is empty', () {
+      const shot = (zoom: 2.10, dx: 120.0, dy: 0.0);
+      expect(
+        CharacterPainter.danceParallaxTransformForShot(
+          shot: shot,
+          size: size,
+          active: false,
+        ),
+        Matrix4.identity(),
+      );
+      expect(
+        CharacterPainter.danceParallaxTransformForShot(
+          shot: shot,
+          size: Size.zero,
+        ),
+        Matrix4.identity(),
+      );
+    });
+
+    test('a neutral shot leaves the backdrop untouched', () {
+      expect(
+        CharacterPainter.danceParallaxTransformForShot(
+          shot: (zoom: 1.0, dx: 0.0, dy: 0.0),
+          size: size,
+        ),
+        Matrix4.identity(),
+      );
+    });
+
+    test('parallaxes the backdrop far less than the foreground push-in', () {
+      // The reserved hero punches to 2.10x; the backdrop only scales to
+      // 1 + (2.10 - 1) * 0.34 ≈ 1.374 so the scenery reads as deeper than the
+      // dancers and the cut never feels like a flat crop.
+      final m = CharacterPainter.danceParallaxTransformForShot(
+        shot: (zoom: 2.10, dx: 0.0, dy: 0.0),
+        size: size,
+      );
+      expect(m.entry(0, 0), moreOrLessEquals(1.374, epsilon: 1e-9));
+      expect(m.entry(0, 0), greaterThan(1.0));
+      expect(m.entry(0, 0), lessThan(2.10));
+    });
+
+    test('scales about the feet-planted director pivot, not the head pivot', () {
+      // Under a pure zoom the pivot is the one point that maps to itself.
+      // Proving the feet pivot (0.88h) is fixed — while the head pivot (0.56h)
+      // is pulled up — is what distinguishes this from the built-in
+      // head-height parallax (danceParallaxTransform).
+      final m = CharacterPainter.danceParallaxTransformForShot(
+        shot: (zoom: 2.10, dx: 0.0, dy: 0.0),
+        size: size,
+      );
+      final fixed = MatrixUtils.transformPoint(m, directorPivot);
+      expect(fixed.dx, moreOrLessEquals(directorPivot.dx, epsilon: 1e-6));
+      expect(fixed.dy, moreOrLessEquals(directorPivot.dy, epsilon: 1e-6));
+
+      const headPivot = Offset(400, 450 * 0.56); // (400, 252)
+      final movedHead = MatrixUtils.transformPoint(m, headPivot);
+      expect(
+        movedHead.dy,
+        lessThan(headPivot.dy - 40),
+        reason: 'the head-height point is pulled up, so it is not the pivot',
+      );
+    });
+
+    test('pans the backdrop by the reduced, 2560-ref-rescaled dx', () {
+      // dx is authored in 2560-ref px; the backdrop drifts by dx * 0.28 (lag)
+      // rescaled to the stage width. A positive dx slides content right.
+      const shot = (zoom: 1.5, dx: 514.0, dy: 0.0);
+      final m = CharacterPainter.danceParallaxTransformForShot(
+        shot: shot,
+        size: size,
+      );
+      final panned = MatrixUtils.transformPoint(m, directorPivot);
+      const expectedDx = 514.0 * 0.28 * 800 / 2560; // ≈ 44.98, within the clamp
+      expect(
+        panned.dx - directorPivot.dx,
+        moreOrLessEquals(expectedDx, epsilon: 1e-6),
+      );
+      expect(
+        panned.dx,
+        greaterThan(directorPivot.dx),
+        reason: 'a positive dx slides the scenery right',
+      );
+    });
+
+    test('a flat-zoom vertical nudge is clamped away (dy needs headroom)', () {
+      // With no zoom there is no off-screen margin to pan into, so dy clamps to
+      // zero and the backdrop stays put — matching _applySceneCamera.
+      expect(
+        CharacterPainter.danceParallaxTransformForShot(
+          shot: (zoom: 1.0, dx: 0.0, dy: 30.0),
+          size: size,
+        ),
+        Matrix4.identity(),
+      );
+    });
+
+    test('a positive dy lowers the backdrop (more sky on top) once zoomed', () {
+      // Reduced dy = 40 * 0.18 = 7.2; positive pushes content DOWN, opening
+      // sky above — the establish padding the director only applies at rest.
+      final m = CharacterPainter.danceParallaxTransformForShot(
+        shot: (zoom: 2.10, dx: 0.0, dy: 40.0),
+        size: size,
+      );
+      final nudged = MatrixUtils.transformPoint(m, directorPivot);
+      expect(
+        nudged.dy - directorPivot.dy,
+        moreOrLessEquals(7.2, epsilon: 1e-6),
+      );
+      expect(nudged.dy, greaterThan(directorPivot.dy));
+    });
+  });
 }
 
 int _opaquePixelsInBox(
