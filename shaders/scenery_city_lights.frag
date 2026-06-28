@@ -425,9 +425,15 @@ void main() {
                   fbm(vec2(muv.x * 7.0, muv.y * rfJit + colJit - uTime * 0.32)) +
                       dith);
       float fade = 1.0 - smoothstep(kWaterline, 0.72, muv.y);
+      // Don't shimmer the city reflection onto the moored yacht: it sits ON the
+      // water, so its hull/glass occludes the reflected city the same way it
+      // occludes the foam — otherwise the columns wash up through its lower
+      // windows ("waves through the window"). The yacht mask is already bound.
+      float reflNotYacht =
+          1.0 - smoothstep(0.25, 0.6, texture(uYachtMask, muv).a);
       // Softer, dimmer columns (was 0.95): the bright hard-edged smears read as
       // chopped bars; pulling them down lets them sit as gentle shimmer.
-      float refl = rwin * dash * fade * 0.72 * beat;
+      float refl = rwin * dash * fade * 0.72 * beat * reflNotYacht;
       // City reflections read warmer than their sources (sodium dominates and
       // water absorbs the cool end), so bias the tint toward amber.
       vec3 rcol = mix(mix(uCool.rgb, uWarm.rgb, rWarm), uWarm.rgb, 0.35);
