@@ -16,7 +16,11 @@ import 'package:lotti/features/character/model/rig_spec.dart';
 
 // Palette (ARGB). Kept local to the sample; real characters carry their own
 // colours in the rig art (plan decision D6 — no design-system colour tokens).
-const int _suit = 0xFF2E3A59; // navy jacket
+const int _suit = 0xFF2E3A59; // navy jacket (torso)
+const int _sleeve =
+    0xFF3A4A6E; // jacket sleeve — a lighter navy so the arm reads as a
+// distinct limb when it crosses over the same-navy torso (e.g. the Shaku
+// crossed-X), instead of melting in and leaving the paws floating.
 const int _cuff = 0xFFB9C0D4; // light dress-shirt cuff at the wrist
 const int _trouser = 0xFF26304A; // darker navy
 const int _trouserRear = 0xFF202941; // slightly darker rear leg
@@ -454,7 +458,7 @@ RigSpec buildCatInSuitRig({
       // the broad shoulder line, while the arm reads as a sleeve hanging from it.
       z: 15,
       restRotation: -0.06,
-      drawable: _tapered(22, 17, 56, _suit, dy: 23),
+      drawable: _tapered(22, 17, 56, _sleeve, dy: 23),
     ),
     const Bone(
       id: CatBones.armBicepR,
@@ -469,7 +473,7 @@ RigSpec buildCatInSuitRig({
       pivotX: 0,
       pivotY: 48,
       z: 16,
-      drawable: _tapered(18, 13, 50, _suit, dy: 20),
+      drawable: _tapered(18, 13, 50, _sleeve, dy: 20),
     ),
     Bone(
       id: CatBones.handR,
@@ -574,7 +578,7 @@ RigSpec buildCatInSuitRig({
       pivotY: -56,
       z: 16,
       restRotation: 0.06,
-      drawable: _tapered(22, 17, 56, _suit, dy: 23),
+      drawable: _tapered(22, 17, 56, _sleeve, dy: 23),
     ),
     const Bone(
       id: CatBones.armBicepL,
@@ -589,7 +593,7 @@ RigSpec buildCatInSuitRig({
       pivotX: 0,
       pivotY: 48,
       z: 17,
-      drawable: _tapered(18, 13, 50, _suit, dy: 20),
+      drawable: _tapered(18, 13, 50, _sleeve, dy: 20),
     ),
     Bone(
       id: CatBones.handL,
@@ -4676,64 +4680,120 @@ class CatClips {
 
   // ─────────────────────────────────────────────────────────────────────────
   // Zanku / Legwork (Zlatan, NG 2018) — the lead's LEG-dominant hero move, a
-  // separate clip reusing the proven recipe + infra (on-beat dip, support-knee
-  // pump, world-anchored foot, head-counter, calm ears, wrist cuffs). Zanku
-  // signatures added here: fists held UP at the chest pistoning in OPPOSITION
-  // (elbows bent, not the Shaku cross) and a leaned-back torso. First pass — the
-  // full alternating legwork + air-kick flourish is the next grind target.
+  // separate clip reusing the proven recipe + infra (on-beat dip, world-anchored
+  // support foot, head-counter, calm ears, wrist cuffs). The signature is the
+  // LEGWORK: the FREE foot fires a rapid in→out shuffle (every off-frame) with a
+  // big air-kick at each bar climax, while the SUPPORT foot stays planted and is
+  // world-anchored. The phrase's support map drives which leg works: RIGHT foot
+  // is free (works) over frames 0-16, LEFT foot is free over frames 16-30, so the
+  // legwork ALTERNATES legs bar to bar over a single planted support. Arms stay
+  // as fists pistoning at the chest in opposition (demoted under the legs);
+  // torso leans back.
   // ─────────────────────────────────────────────────────────────────────────
+  // Fists held UP at the chest, pistoning in OPPOSITION, pushed off the
+  // belly-centerline (x ±14) so they read as two paws, not one blob.
   static const _zankuHandLTargetKeys = [
-    DanceIkTargetKey(0, x: -8, y: -15),
-    DanceIkTargetKey(2, x: -8, y: -8),
-    DanceIkTargetKey(4, x: -8, y: -15),
-    DanceIkTargetKey(6, x: -8, y: -8),
-    DanceIkTargetKey(8, x: -8, y: -15),
-    DanceIkTargetKey(10, x: -8, y: -8),
-    DanceIkTargetKey(12, x: -8, y: -15),
-    DanceIkTargetKey(14, x: -8, y: -8),
-    DanceIkTargetKey(16, x: -8, y: -15),
-    DanceIkTargetKey(18, x: -8, y: -8),
-    DanceIkTargetKey(20, x: -8, y: -15),
-    DanceIkTargetKey(22, x: -8, y: -8),
-    DanceIkTargetKey(24, x: -8, y: -15),
-    DanceIkTargetKey(26, x: -8, y: -8),
-    DanceIkTargetKey(28, x: -8, y: -15),
-    DanceIkTargetKey(30, x: -8, y: -8),
-    DanceIkTargetKey(32, x: -8, y: -15),
+    DanceIkTargetKey(0, x: -14, y: -15),
+    DanceIkTargetKey(2, x: -14, y: -8),
+    DanceIkTargetKey(4, x: -14, y: -15),
+    DanceIkTargetKey(6, x: -14, y: -8),
+    DanceIkTargetKey(8, x: -14, y: -15),
+    DanceIkTargetKey(10, x: -14, y: -8),
+    DanceIkTargetKey(12, x: -14, y: -15),
+    DanceIkTargetKey(14, x: -14, y: -8),
+    DanceIkTargetKey(16, x: -14, y: -15),
+    DanceIkTargetKey(18, x: -14, y: -8),
+    DanceIkTargetKey(20, x: -14, y: -15),
+    DanceIkTargetKey(22, x: -14, y: -8),
+    DanceIkTargetKey(24, x: -14, y: -15),
+    DanceIkTargetKey(26, x: -14, y: -8),
+    DanceIkTargetKey(28, x: -14, y: -15),
+    DanceIkTargetKey(30, x: -14, y: -8),
+    DanceIkTargetKey(32, x: -14, y: -15),
   ];
   static const _zankuHandRTargetKeys = [
-    DanceIkTargetKey(0, x: 8, y: -8),
-    DanceIkTargetKey(2, x: 8, y: -15),
-    DanceIkTargetKey(4, x: 8, y: -8),
-    DanceIkTargetKey(6, x: 8, y: -15),
-    DanceIkTargetKey(8, x: 8, y: -8),
-    DanceIkTargetKey(10, x: 8, y: -15),
-    DanceIkTargetKey(12, x: 8, y: -8),
-    DanceIkTargetKey(14, x: 8, y: -15),
-    DanceIkTargetKey(16, x: 8, y: -8),
-    DanceIkTargetKey(18, x: 8, y: -15),
-    DanceIkTargetKey(20, x: 8, y: -8),
-    DanceIkTargetKey(22, x: 8, y: -15),
-    DanceIkTargetKey(24, x: 8, y: -8),
-    DanceIkTargetKey(26, x: 8, y: -15),
-    DanceIkTargetKey(28, x: 8, y: -8),
-    DanceIkTargetKey(30, x: 8, y: -15),
-    DanceIkTargetKey(32, x: 8, y: -8),
+    DanceIkTargetKey(0, x: 14, y: -8),
+    DanceIkTargetKey(2, x: 14, y: -15),
+    DanceIkTargetKey(4, x: 14, y: -8),
+    DanceIkTargetKey(6, x: 14, y: -15),
+    DanceIkTargetKey(8, x: 14, y: -8),
+    DanceIkTargetKey(10, x: 14, y: -15),
+    DanceIkTargetKey(12, x: 14, y: -8),
+    DanceIkTargetKey(14, x: 14, y: -15),
+    DanceIkTargetKey(16, x: 14, y: -8),
+    DanceIkTargetKey(18, x: 14, y: -15),
+    DanceIkTargetKey(20, x: 14, y: -8),
+    DanceIkTargetKey(22, x: 14, y: -15),
+    DanceIkTargetKey(24, x: 14, y: -8),
+    DanceIkTargetKey(26, x: 14, y: -15),
+    DanceIkTargetKey(28, x: 14, y: -8),
+    DanceIkTargetKey(30, x: 14, y: -15),
+    DanceIkTargetKey(32, x: 14, y: -8),
   ];
   static final KeyframeIkTargetChannel _zankuHandLTarget = _dancePhrase
       .ikTargetChannel(_zankuHandLTargetKeys, smooth: true);
   static final KeyframeIkTargetChannel _zankuHandRTarget = _dancePhrase
       .ikTargetChannel(_zankuHandRTargetKeys, smooth: true);
+
+  // Foot IK targets relative to the hips (x: bigger = stage-right; y: bigger =
+  // lower/floor ~98, smaller = lifted). The free foot shuffles in↔out every two
+  // frames; the planted support foot holds near its load frame so the world
+  // anchor reinforces (not fights) it.
+  //
+  // LEFT foot: SUPPORT/planted over frames 0-16 (load f4), then the FREE leg
+  // doing the legwork over 16-30 (big air-kick at f26), re-planting for the loop
+  // pickup at f30.
+  static const _zankuFootLTargetKeys = [
+    DanceIkTargetKey(0, x: 6, y: 97), // plant (left support)
+    DanceIkTargetKey(4, x: 6, y: 97), // plant — load/anchor frame, held
+    DanceIkTargetKey(8, x: 5, y: 98), // plant
+    DanceIkTargetKey(12, x: 4, y: 97), // plant
+    DanceIkTargetKey(14, x: 1, y: 95), // unweight, about to lift
+    DanceIkTargetKey(16, x: -14, y: 88), // lift off (left becomes free)
+    DanceIkTargetKey(18, x: -42, y: 80), // kick OUT
+    DanceIkTargetKey(20, x: -18, y: 90), // snap in (low)
+    DanceIkTargetKey(22, x: -44, y: 78), // kick OUT
+    DanceIkTargetKey(24, x: -20, y: 89), // in
+    DanceIkTargetKey(26, x: -48, y: 74), // BIG air-kick — bar-2 climax
+    DanceIkTargetKey(28, x: -24, y: 86), // recover, descending
+    DanceIkTargetKey(30, x: 4, y: 97), // plant back down (loop pickup)
+    DanceIkTargetKey(32, x: 6, y: 97), // == frame 0
+  ];
+  // RIGHT foot: the FREE leg doing the legwork over frames 0-16 (big air-kick at
+  // f10), then SUPPORT/planted over 16-30 (load f20), lifting for the loop at f30.
+  static const _zankuFootRTargetKeys = [
+    DanceIkTargetKey(0, x: 46, y: 88), // lifted/mid (right free)
+    DanceIkTargetKey(2, x: 70, y: 80), // kick OUT
+    DanceIkTargetKey(4, x: 48, y: 90), // snap in
+    DanceIkTargetKey(6, x: 71, y: 78), // kick OUT
+    DanceIkTargetKey(8, x: 50, y: 89), // in
+    DanceIkTargetKey(10, x: 72, y: 74), // BIG air-kick — bar-1 climax
+    DanceIkTargetKey(12, x: 54, y: 85), // recover
+    DanceIkTargetKey(14, x: 44, y: 93), // descend toward plant
+    DanceIkTargetKey(16, x: 34, y: 98), // plant (right becomes support)
+    DanceIkTargetKey(20, x: 34, y: 98), // plant — load/anchor frame, held
+    DanceIkTargetKey(24, x: 34, y: 98), // plant
+    DanceIkTargetKey(28, x: 38, y: 96), // plant, easing up
+    DanceIkTargetKey(30, x: 42, y: 92), // begin lift for next loop
+    DanceIkTargetKey(32, x: 46, y: 88), // == frame 0
+  ];
+  static final KeyframeIkTargetChannel _zankuFootLTarget = _dancePhrase
+      .ikTargetChannel(_zankuFootLTargetKeys, smooth: true);
+  static final KeyframeIkTargetChannel _zankuFootRTarget = _dancePhrase
+      .ikTargetChannel(_zankuFootRTargetKeys, smooth: true);
+
   static final List<LimbIkTarget> _zankuLimbTargets = [
     _danceLimbTargets[0].withChannel(_zankuHandLTarget),
     _danceLimbTargets[1].withChannel(_zankuHandRTarget),
-    _danceLimbTargets[2],
-    _danceLimbTargets[3],
+    _danceLimbTargets[2].withChannel(_zankuFootLTarget),
+    _danceLimbTargets[3].withChannel(_zankuFootRTarget),
   ];
 
-  /// Standalone "Zanku / Legwork" lead clip — first pass; iterated to ~8.5 like
-  /// shaku. Reuses the dance channels + the proven shaku groove/knee/foot-anchor,
-  /// and overrides the arms (fists pistoning at the chest) and torso (leaned back).
+  /// Standalone "Zanku / Legwork" lead clip — iterated toward ~8.5 like shaku.
+  /// Reuses the dance channels + the proven shaku groove + world-anchored support
+  /// foot, and adds the Zanku signatures: alternating LEGWORK via the foot IK
+  /// targets (free leg shuffles in↔out with a per-bar air-kick over a planted
+  /// support), fists pistoning at the chest, and a leaned-back torso.
   static Clip get zanku {
     final base = dance;
     return Clip(
@@ -4764,14 +4824,8 @@ class CatClips {
           // Leaned-back confident carriage — the Zanku posture (constant bias).
           const SineChannel(bias: -0.14),
         ]),
-        CatBones.legLowerL: _dancePhrase.jointChannel(
-          _shakuLegLowerLKeys,
-          smooth: true,
-        ),
-        CatBones.legLowerR: _dancePhrase.jointChannel(
-          _shakuLegLowerRKeys,
-          smooth: true,
-        ),
+        // The feet are driven by the Zanku foot IK targets (legwork), which
+        // override the FK leg-lower channels — so no leg-lower override here.
         CatBones.earL: const KeyframeChannel(_shakuEarLKeys, smooth: true),
         CatBones.earR: const KeyframeChannel(_shakuEarRKeys, smooth: true),
       },
