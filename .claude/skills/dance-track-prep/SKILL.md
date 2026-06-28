@@ -103,19 +103,33 @@ mishear). Use the largest model for coverage:
 python transcribe.py out/sep/htdemucs/song/vocals.wav --model large-v3 -o out/song.words.json
 ```
 
-### 4. Run the demo on the new song
+### 4. Lip-sync cues (recommended — real mouth shapes)
+
+For believable mouths, generate a Rhubarb cue track from the vocal stem (see the
+`dance-lipsync` skill for the one-time Rhubarb build + details):
+
+```bash
+. .venv-asr/bin/activate
+python lipsync.py out/sep/htdemucs/song/vocals.wav -o out/song.cues.json
+```
+
+The demo maps each cue to a singing viseme; the word tags (step 3) gate *which*
+cat shows them. Without a cue file the mouths simply stay closed.
+
+### 5. Run the demo on the new song
 
 ```bash
 fvm flutter run -d <device> -t lib/features/character/demo/character_dance_to_track_demo.dart \
   --dart-define=DANCE_AUDIO=/abs/song.mp3 \
   --dart-define=DANCE_BEATMAP=/abs/tools/dance_audio/out/song.json \
-  --dart-define=DANCE_WORDS=/abs/tools/dance_audio/out/song.words.json
+  --dart-define=DANCE_WORDS=/abs/tools/dance_audio/out/song.words.json \
+  --dart-define=DANCE_CUES=/abs/tools/dance_audio/out/song.cues.json
 ```
 
-The beat map is required; the words file is optional (no captions / mouth-sync
-without it). The demo loops the phrase beat-locked, switches dance/idle by section
-energy, shows karaoke captions, and lip-syncs the lead (and the backups on
-`background` words).
+The beat map is required; words (captions + lead/background routing) and cues
+(mouth shapes) are optional. The demo loops the phrase beat-locked, switches
+dance/idle by section energy, shows karaoke captions, and lip-syncs the trio from
+the cues — frontman on lead words, backups on `(...)` ad-libs and group hooks.
 
 ## Data contracts (what the demo reads)
 
@@ -124,6 +138,8 @@ energy, shows karaoke captions, and lip-syncs the lead (and the backups on
   `sections[]{start_sec,end_sec,label}`. Full schema in `README.md`.
 - Words (`transcribe.py`): `words[]{word,start_sec,end_sec,score}`, plus
   `voice: lead|background` and `section` when produced via `--lyrics`.
+- Cues (`lipsync.py`): `cues[]{start_sec,end_sec,shape}` where `shape` is a
+  Rhubarb mouth letter (A–F, G, H, X). See the `dance-lipsync` skill.
 
 ## IP / determinism rules
 
@@ -141,4 +157,5 @@ energy, shows karaoke captions, and lip-syncs the lead (and the backups on
 2. `demucs --two-stems vocals` → `vocals.wav` (if vocals matter).
 3. lyrics on hand → `transcribe.py vocals.wav --lyrics song.lyrics.txt`; else
    `--model large-v3`.
-4. run the demo with the three `--dart-define` paths.
+4. `lipsync.py vocals.wav -o out/song.cues.json` (mouth shapes; see `dance-lipsync`).
+5. run the demo with the four `--dart-define` paths (audio/beatmap/words/cues).
