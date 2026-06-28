@@ -59,8 +59,8 @@ class CityLightsLayer implements BackdropLayer {
               c,
               r * 4.2 * scale,
               [
-                color.withValues(alpha: 0.30 * amp),
-                color.withValues(alpha: 0.07 * amp),
+                color.withValues(alpha: 0.42 * amp),
+                color.withValues(alpha: 0.10 * amp),
                 color.withValues(alpha: 0),
               ],
               [0.0, 0.42, 1.0],
@@ -68,23 +68,23 @@ class CityLightsLayer implements BackdropLayer {
         )
         ..drawCircle(
           c,
-          r * 0.85 * scale,
+          r * 0.95 * scale,
           Paint()
             ..blendMode = BlendMode.plus
             ..color = Color.lerp(
               color,
               const Color(0xFFFFFFFF),
-              0.45,
-            )!.withValues(alpha: 0.72 * amp),
+              0.5,
+            )!.withValues(alpha: 0.9 * amp),
         );
     }
 
     // Navigation / anchor lights: white masthead anchor light (top of the mast),
     // red port sidelight at the bow (the port side faces the viewer), white stern
     // light at the transom.
-    lamp(at(0.871, 0.350), p.shipMast, breath, 1);
-    lamp(at(0.667, 0.578), p.shipPort, 1, 0.8);
-    lamp(at(0.965, 0.586), p.shipMast, 1, 0.8);
+    lamp(at(0.871, 0.350), p.shipMast, breath, 1.1);
+    lamp(at(0.667, 0.578), p.shipPort, 1, 1);
+    lamp(at(0.965, 0.586), p.shipMast, 1, 0.95);
 
     // Warm deck courtesy lamps along the main-deck rail.
     const deckLamps = [

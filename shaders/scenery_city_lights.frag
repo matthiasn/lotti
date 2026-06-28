@@ -122,40 +122,16 @@ float cityWindows(vec2 uv, float field, float amount, float time, float flicker,
   return pane * lit * bright * flick;
 }
 
-// Yacht: warm glow that follows the SHAPE of the painted glass, derived from the
-// yacht art itself (uYachtMask) instead of hand-placed boxes — boxes paint amber
-// rectangles that ignore the yacht's angled sheer and curved windows. The tinted
-// saloon/deck windows and hull portholes are recessed DARK panes set into the
-// bright white superstructure, so a high-pass (this pixel vs. its local
-// neighbourhood) isolates exactly those panes, and the glow lands on their real
-// outlines. Confined to the yacht alpha and the window decks so the white roof,
-// mast and the dark waterline shadow never light.
+// Yacht cabins: the warm interior glow is filled from a REGISTERED cabin-window
+// mask baked into the BLUE channel of the window field
+// (tools/scenery_art/bake_city_windows.py). The bake detects the real painted
+// saloon / sky-lounge / flybridge glass + the hull portholes by a band-pass that
+// FILLS the dark recessed panes but rejects the dark hull, so the glow lands on
+// the actual window SHAPES by construction — no hand-placed boxes, and no
+// in-shader high-pass (which only edge-traced the panes and speckled the rails).
+// The TV swoop (`.g`) is excluded from this mask so it is not double-lit.
 float yachtWindow(vec2 uv) {
-  vec4 t = texture(uYachtMask, uv);
-  if (t.a < 0.3) {
-    return 0.0;
-  }
-  float l = lum(t.rgb);
-  // High-pass vs. a small neighbourhood: a recessed pane reads darker than the
-  // bright frame/hull around it. The threshold is high so only STRONG contrast
-  // (the saloon / sky-lounge window edges, set under the white deck eyebrows, and
-  // the portholes punched in the bright hull) lights — the weaker, finer dark
-  // gaps between rail balusters and panel lines fall below it and stay dark, so
-  // the superstructure does not speckle warm.
-  float o = 0.006;
-  float avg = 0.25 * (lum(texture(uYachtMask, uv + vec2(o, 0.0)).rgb) +
-      lum(texture(uYachtMask, uv + vec2(-o, 0.0)).rgb) +
-      lum(texture(uYachtMask, uv + vec2(0.0, o)).rgb) +
-      lum(texture(uYachtMask, uv + vec2(0.0, -o)).rgb));
-  float recess = smoothstep(0.09, 0.22, avg - l);
-  // Glass is mid-dark: drop the near-black hull-bottom shadow and the bright
-  // white superstructure / sky-reflective panels.
-  float glass = smoothstep(0.05, 0.12, l) * (1.0 - smoothstep(0.30, 0.48, l));
-  // Window decks only (saloon + sky-lounge + porthole row); excludes the roof /
-  // mast above and the lower hull / waterline below.
-  float deck =
-      smoothstep(0.43, 0.45, uv.y) * (1.0 - smoothstep(0.59, 0.62, uv.y));
-  return recess * glass * deck * t.a;
+  return texture(uWindowField, uv).b;
 }
 
 void main() {
@@ -442,20 +418,35 @@ void main() {
     }
   }
 
-  // --- Yacht: warm cabin / porthole glow from the explicit anchors. The moored
-  // luxury yacht reads as occupied and lit at night, so this is pushed bright
-  // (it was barely visible at normal viewing size). ---
-  float yachtLit = yachtWindow(muv) * (0.85 + 0.5 * uWindowAmount) * beat;
-  lights += uYachtGlow.rgb * yachtLit;
-  intensity += yachtLit;
+  // --- Yacht cabins: warm interior glow FILLING the real window panes (from the
+  // baked cabin mask). The moored luxury yacht reads as occupied and lit from
+  // inside. A static low-frequency room-to-room brightness variation + a slow
+  // unified breath give it life (lamps in different rooms, gentle haze
+  // scintillation) WITHOUT the per-pixel speckle/flicker the old edge-trace had. ---
+  float cabin = yachtWindow(muv);
+  if (cabin > 0.003) {
+    // Different rooms sit at different brightness (static, so it never twinkles).
+    float room = 0.72 + 0.28 * noise(muv * vec2(55.0, 80.0));
+    // One calm interior breath for the whole vessel (haze + the beat, gentle).
+    float breath = 0.92 + 0.08 * sin(uTime * 0.7);
+    float yachtRaw = cabin * room * breath * (0.95 + 0.5 * uWindowAmount) * beat;
+    // Soft knee so the filled panes glow warm rather than clip to flat white.
+    float yachtLit = yachtRaw / (1.0 + 0.8 * yachtRaw);
+    lights += uYachtGlow.rgb * yachtLit;
+    intensity += yachtLit;
+  }
   // Halation: a soft warm halo bleeding out from the cabin glass onto the dark
-  // hull (4 offset taps of the same glow, dimmed) so the windows read as glowing
-  // SOURCES radiating into the dusk, not flat painted panes.
-  const float yb = 0.012;
+  // hull (4 offset taps of the blurred mask, dimmed) so the windows read as
+  // glowing SOURCES radiating into the dusk, not flat painted panes. CONFINED to
+  // the yacht silhouette (current-pixel alpha) and kept tight (small offset) so
+  // the halo deposits on the hull, never leaking up off the superstructure into
+  // the sky or down into the water (which read as a warm ghost double-image).
+  const float yb = 0.006;
   float yhalo = yachtWindow(muv + vec2(yb, yb)) +
       yachtWindow(muv + vec2(-yb, yb)) + yachtWindow(muv + vec2(yb, -yb)) +
       yachtWindow(muv + vec2(-yb, -yb));
-  float yhaloLit = yhalo * 0.22 * (0.5 + 0.4 * uWindowAmount) * beat;
+  float yOnHull = smoothstep(0.25, 0.55, texture(uYachtMask, muv).a);
+  float yhaloLit = yhalo * 0.22 * (0.5 + 0.4 * uWindowAmount) * beat * yOnHull;
   lights += uYachtGlow.rgb * yhaloLit;
   intensity += yhaloLit;
 

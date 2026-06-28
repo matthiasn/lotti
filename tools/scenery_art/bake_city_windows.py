@@ -31,11 +31,15 @@ Pipeline (all in the master's own pixel space, so output is pixel-registered):
             faces with sky-bright (reflective) windows still light whole floors.
         wfield = clip(0.40*face + 0.85*panes, 0, 1), hard-stopped at the waterline.
 
-Output `assets/scenery/city_windows.png` (RGBA, value replicated into R/G/B, alpha
-opaque). The city-lights shader samples `.r` as "is this a lit-able window face,
-how strong" and paints its own per-floor lit/dark selection + tint + flicker on
-top. The field carries SOLID faces + registered pane fills, never edges, so lit
-windows read as filled panes/floors instead of a glowing wireframe.
+Output `assets/scenery/city_windows.png` (RGBA, opaque). Channel packing:
+  * R: city window field — "is this a lit-able window face, how strong". The
+    city-lights shader paints its own per-floor lit/dark selection + tint +
+    flicker on top. SOLID faces + registered pane fills, never edges, so lit
+    windows read as filled panes/floors instead of a glowing wireframe.
+  * G: yacht TV-window mask — the large lower-deck swoop pane (shader fills a
+    flickering screen glow here).
+  * B: yacht cabin-window mask — the saloon / sky-lounge / flybridge windows +
+    hull portholes (shader fills the warm interior cabin glow here).
 
 Run:  python3 tools/scenery_art/bake_city_windows.py
 (needs Pillow + numpy)
@@ -182,17 +186,64 @@ def main() -> int:
         / 255.0
     )
 
+    # --- Yacht cabin-window mask (BLUE channel) ---
+    # The saloon / sky-lounge / flybridge windows and the hull portholes are
+    # recessed DARK panes set into the bright white superstructure. Detect them by
+    # a band-pass that FILLS panes but REJECTS the dark hull: a window pane is dark
+    # AND sits inside brighter structure, so a large-radius blur of the luminance
+    # is much brighter than the pane (recessBig high across the WHOLE pane); the
+    # dark bow hull is dark with dark neighbours, so recessBig stays low in its
+    # interior and it drops out. A light erosion first removes the 1-2px boot-stripe
+    # / sheer hairlines while the broader panes and round portholes survive. The
+    # shader fills the warm cabin glow from `.b`; the TV window (`.g`) is excluded
+    # so it is not double-lit. No hand-placed boxes — the glow lands on the real
+    # window shapes by construction.
+    blur_big = np.asarray(
+        Image.fromarray(np.clip(yt_lum, 0, 255).astype(np.uint8)).filter(
+            ImageFilter.GaussianBlur(14),
+        ),
+        dtype=np.float64,
+    )
+    recess_big = blur_big - yt_lum
+    dark = ((yt_lum < 32.0) & (yt_a > 0.10)).astype(np.uint8) * 255
+    dark_core = (
+        np.asarray(
+            Image.fromarray(dark).filter(ImageFilter.MinFilter(3)),
+            dtype=np.float64,
+        )
+        > 127
+    )
+    cabin_band = (yy > 0.40) & (yy < 0.60) & (xx > 0.30) & (xx < 0.99)
+    cabin_mask = (
+        cabin_band
+        & dark_core
+        & (recess_big > 9.0)
+        & (yt_a > 0.10)
+        & (~tv_region)
+    ).astype(np.float64)
+    cabin_mask = (
+        np.asarray(
+            Image.fromarray((cabin_mask * 255.0).astype(np.uint8)).filter(
+                ImageFilter.GaussianBlur(2.0),
+            ),
+            dtype=np.float64,
+        )
+        / 255.0
+    )
+
     v = (np.clip(wfield, 0.0, 1.0) * 255.0).astype(np.uint8)
     tv = (np.clip(tv_mask, 0.0, 1.0) * 255.0).astype(np.uint8)
+    cabin = (np.clip(cabin_mask, 0.0, 1.0) * 255.0).astype(np.uint8)
     rgba = np.zeros((h, w, 4), dtype=np.uint8)
-    rgba[..., 0] = v   # R: city window field
-    rgba[..., 1] = tv  # G: yacht TV-window mask
-    rgba[..., 2] = v   # B: unused (mirror of R)
+    rgba[..., 0] = v      # R: city window field
+    rgba[..., 1] = tv     # G: yacht TV-window mask
+    rgba[..., 2] = cabin  # B: yacht cabin-window mask (warm interior glow)
     rgba[..., 3] = 255
     Image.fromarray(rgba, "RGBA").save(OUT)
     print(
         f"wrote {OUT}  city px(>0.1)={int((wfield > 0.1).sum())}  "
-        f"tv px(>0.1)={int((tv_mask > 0.1).sum())}"
+        f"tv px(>0.1)={int((tv_mask > 0.1).sum())}  "
+        f"cabin px(>0.1)={int((cabin_mask > 0.1).sum())}"
     )
     return 0
 
