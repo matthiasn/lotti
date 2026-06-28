@@ -369,23 +369,44 @@ class CharacterRenderer {
     ..close();
 
   void _drawFace(Canvas canvas, FaceRig f, FaceState s) {
-    _drawMuzzle(canvas, f);
+    // A singing mouth drops the jaw: the lower snout (muzzle, nose, whiskers,
+    // mouth) translates down with the opening so the face articulates instead of
+    // punching a hole in a rigid mask. Zero for the static expressions.
+    final jaw = _jawDrop(f, s);
+    _drawMuzzle(canvas, f, jaw);
     _drawEye(canvas, f, s, isLeft: true);
     _drawEye(canvas, f, s, isLeft: false);
     _drawBrow(canvas, f, s, isLeft: true);
     _drawBrow(canvas, f, s, isLeft: false);
-    _drawWhiskers(canvas, f);
-    _drawMouth(canvas, f, s);
-    _drawNose(canvas, f);
+    _drawWhiskers(canvas, f, jaw);
+    _drawMouth(canvas, f, s, jaw);
+    _drawNose(canvas, f, jaw);
   }
 
-  void _drawMuzzle(Canvas canvas, FaceRig f) {
+  /// How far the lower face drops for a singing viseme (0 for static shapes).
+  double _jawDrop(FaceRig f, FaceState s) {
+    if (!_singingShapes.contains(s.mouthShape)) return 0;
+    var o = s.mouthOpen;
+    if (o < 0) o = 0;
+    if (o > 1) o = 1;
+    return f.mouthHeight * 0.55 * o;
+  }
+
+  static const Set<MouthShape> _singingShapes = {
+    MouthShape.singAh,
+    MouthShape.singOh,
+    MouthShape.singEe,
+    MouthShape.teethOnLip,
+  };
+
+  void _drawMuzzle(Canvas canvas, FaceRig f, double jaw) {
     if (f.muzzleWidth <= 0 || f.muzzleHeight <= 0) return;
+    // Lengthen the snout downward as the jaw drops (centre shifts half as far).
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(0, f.mouthOffsetY - 1),
+        center: Offset(0, f.mouthOffsetY - 1 + jaw * 0.5),
         width: f.muzzleWidth,
-        height: f.muzzleHeight,
+        height: f.muzzleHeight + jaw,
       ),
       Paint()
         ..color = Color(f.muzzleColor)
@@ -393,9 +414,9 @@ class CharacterRenderer {
     );
   }
 
-  void _drawNose(Canvas canvas, FaceRig f) {
+  void _drawNose(Canvas canvas, FaceRig f, double jaw) {
     if (f.noseWidth <= 0 || f.noseHeight <= 0) return;
-    final cy = f.mouthOffsetY - f.muzzleHeight * 0.32;
+    final cy = f.mouthOffsetY - f.muzzleHeight * 0.32 + jaw * 0.3;
     final hw = f.noseWidth / 2;
     // Downward-pointing nose triangle with a softly rounded join.
     final path = Path()
@@ -422,7 +443,7 @@ class CharacterRenderer {
       );
   }
 
-  void _drawWhiskers(Canvas canvas, FaceRig f) {
+  void _drawWhiskers(Canvas canvas, FaceRig f, double jaw) {
     if (f.whiskerLength <= 0) return;
     final paint = Paint()
       ..color = Color(f.whiskerColor)
@@ -431,7 +452,7 @@ class CharacterRenderer {
       ..strokeCap = StrokeCap.round
       ..isAntiAlias = antiAlias;
     final rootX = f.muzzleWidth * 0.22;
-    final rootY = f.mouthOffsetY - 2;
+    final rootY = f.mouthOffsetY - 2 + jaw * 0.5;
     final len = f.whiskerLength;
     for (final sign in const [-1.0, 1.0]) {
       for (final tilt in const [-0.32, 0.0, 0.32]) {
@@ -535,7 +556,7 @@ class CharacterRenderer {
       ..restore();
   }
 
-  void _drawMouth(Canvas canvas, FaceRig f, FaceState s) {
+  void _drawMouth(Canvas canvas, FaceRig f, FaceState s, double jaw) {
     final cy = f.mouthOffsetY;
     final hw = f.mouthWidth / 2;
     final hh = f.mouthHeight / 2 * (1 + s.mouthOpen);
@@ -590,27 +611,31 @@ class CharacterRenderer {
           ..lineTo(hw, cy + hh * 0.5);
         canvas.drawPath(path, stroke);
       case MouthShape.singAh:
-        _drawSingingMouth(canvas, f, s, widthFactor: 1, heightFactor: 1);
+        _drawSingingMouth(canvas, f, s, jaw, widthFactor: 1, heightFactor: 1);
       case MouthShape.singOh:
+        // Narrow + tall = a round "oh" ring.
         _drawSingingMouth(
           canvas,
           f,
           s,
-          widthFactor: 0.64,
-          heightFactor: 1.05,
+          jaw,
+          widthFactor: 0.5,
+          heightFactor: 1.2,
           topBow: -1,
         );
       case MouthShape.singEe:
+        // Wide + flat = a stretched "ee".
         _drawSingingMouth(
           canvas,
           f,
           s,
-          widthFactor: 1.34,
-          heightFactor: 0.62,
+          jaw,
+          widthFactor: 1.4,
+          heightFactor: 0.5,
           topBow: 0.4,
         );
       case MouthShape.teethOnLip:
-        _drawTeethOnLip(canvas, f);
+        _drawTeethOnLip(canvas, f, jaw);
     }
   }
 
@@ -618,10 +643,10 @@ class CharacterRenderer {
   /// lower lip — a shallow dark slot with a *slim* light teeth line along its top
   /// and a navy rim. Deliberately restrained so it reads as a consonant, not a
   /// white plaque, at the small scale the trio is drawn.
-  void _drawTeethOnLip(Canvas canvas, FaceRig f) {
-    final cy = f.mouthOffsetY;
-    final hw = f.mouthWidth / 2 * 0.6;
-    final hh = f.mouthHeight * 0.28; // shallow
+  void _drawTeethOnLip(Canvas canvas, FaceRig f, double jaw) {
+    final cy = f.mouthOffsetY + jaw * 0.45;
+    final hw = f.mouthWidth / 2 * 0.55;
+    final hh = f.mouthHeight * 0.17; // very shallow — a near-closed consonant
     final lip = Paint()
       ..color = Color(f.mouthColor)
       ..style = PaintingStyle.stroke
@@ -671,12 +696,13 @@ class CharacterRenderer {
   void _drawSingingMouth(
     Canvas canvas,
     FaceRig f,
-    FaceState s, {
+    FaceState s,
+    double jaw, {
     required double widthFactor,
     required double heightFactor,
     double topBow = 0.8,
   }) {
-    final cy = f.mouthOffsetY;
+    final cy = f.mouthOffsetY + jaw * 0.45;
     final hw = f.mouthWidth / 2 * widthFactor;
     var open = s.mouthOpen;
     if (open < 0) open = 0;
@@ -708,9 +734,10 @@ class CharacterRenderer {
         .toDouble();
     final topY = cy - f.mouthHeight * 0.15; // top lip ~fixed, slightly raised
     // A small dark cavity the instant the mouth cracks open (so quiet syllables
-    // read as a gap, not a smile), then a measured jaw drop with the aperture —
-    // kept modest so a normal word cracks open rather than gaping wide.
-    final botY = topY + f.mouthHeight * heightFactor * (0.3 + 1.05 * a);
+    // read as a gap), then a generous jaw drop with the aperture — a sung vowel
+    // needs a real drop to read at the composition's small scale. The muzzle (24
+    // tall) gives the bottom room to travel.
+    final botY = topY + f.mouthHeight * heightFactor * (0.34 + 1.8 * a);
 
     // "D" cavity: a near-flat (gently bowed) top lip, rounded walls, and a wide
     // flat floor (rather than a single bottom point) so the tongue has somewhere

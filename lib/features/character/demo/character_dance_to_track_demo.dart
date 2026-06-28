@@ -286,24 +286,26 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
 
   /// Maps a Rhubarb shape letter to a drawn viseme + how far the mouth opens.
   /// A/X rest closed; B-F are vowels of growing/rounding aperture; G is the F/V
-  /// teeth-on-lip; H ("L") reuses the open "ah" (its tongue reads). Openings stay
-  /// modest so the trio sings rather than over-acts.
+  /// consonant (kept *tight* — near-closed — so it reads as a consonant, not a
+  /// gape); H ("L") reuses the open "ah". Open vowels reach high so sung syllables
+  /// punch — paired with crisp closures (A/X) the phrase gets a wide dynamic
+  /// range rather than a constant flap.
   ({MouthShape shape, double open}) _mouthForCue(String letter) {
     switch (letter) {
       case 'B': // slightly open, teeth near-closed
-        return (shape: MouthShape.singEe, open: 0.3);
+        return (shape: MouthShape.singEe, open: 0.46);
       case 'C': // open (EH, AE)
-        return (shape: MouthShape.singAh, open: 0.46);
-      case 'D': // wide open (AA)
-        return (shape: MouthShape.singAh, open: 0.62);
+        return (shape: MouthShape.singAh, open: 0.74);
+      case 'D': // wide open (AA) — the big belt
+        return (shape: MouthShape.singAh, open: 0.95);
       case 'E': // slightly rounded (AO, ER)
-        return (shape: MouthShape.singOh, open: 0.42);
+        return (shape: MouthShape.singOh, open: 0.6);
       case 'F': // puckered (UW, OW, W)
-        return (shape: MouthShape.singOh, open: 0.26);
-      case 'G': // F, V — upper teeth on lower lip
-        return (shape: MouthShape.teethOnLip, open: 0.5);
+        return (shape: MouthShape.singOh, open: 0.4);
+      case 'G': // F, V — tight near-closed consonant
+        return (shape: MouthShape.teethOnLip, open: 0.12);
       case 'H': // "L" — tongue up
-        return (shape: MouthShape.singAh, open: 0.4);
+        return (shape: MouthShape.singAh, open: 0.55);
       default: // 'A' closed, 'X' idle
         return (shape: MouthShape.singAh, open: 0);
     }
@@ -504,11 +506,25 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   static const double _voiceSlack = 0.3;
 
   /// A face whose mouth is driven open by [mouth] (lyric-synced) on the [shape]
-  /// viseme, falling back to [base] when essentially closed. Drives the frontman
+  /// viseme, falling back to [base] when essentially closed. The upper face sings
+  /// too: brows lift and the eyes squint a touch as the mouth opens, so the
+  /// performance isn't a dead-eyed mask over a moving mouth. Drives the frontman
   /// on lead words and the backups on background ad-libs / group hooks.
   Expression _singExpression(double mouth, Expression base, MouthShape shape) {
     if (mouth < 0.04) return base;
-    return Expression('sing', FaceState(mouthShape: shape, mouthOpen: mouth));
+    final brow = 0.3 + mouth * 0.7; // engage, more on the open accents
+    final eye = 1 - mouth * 0.28; // squint into the big notes
+    return Expression(
+      'sing',
+      FaceState(
+        mouthShape: shape,
+        mouthOpen: mouth,
+        browRaiseLeft: brow,
+        browRaiseRight: brow,
+        eyeOpenLeft: eye,
+        eyeOpenRight: eye,
+      ),
+    );
   }
 
   /// A karaoke caption: a short window of lyric words centred on the current one,
