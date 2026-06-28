@@ -128,13 +128,31 @@ largely a *formalization* of types that already exist: `DanceMoveCue` (named bea
 window + featured dancer), `DanceMoveSignature` (per-move accents/keys/IK arcs),
 and `DanceRoleStyle` (per-cat style derivation).
 
-The promoted unit is `AfrobeatsMove`: a named, self-contained cell carrying its
-natural count length, a default `DanceDynamics` (its Effort character), the
-per-bone accents / body accents / hand IK arcs it drives, its support /
-weight-shift pattern, and a `featuredRegion` tag (legs / arms / chest / feet).
+The promoted unit is `AfrobeatsMove` (`model/afrobeats_move.dart`): a named cell
+carrying an explicit **`feel`** (`DanceFeel` — its relationship to the downbeat:
+`onBeat` / `offBeat` / `halfTime`), a **`featuredRegion`** tag (legs / arms /
+chest / feet / full), a default `DanceDynamics` (its Effort character), and a
+default sub-frame **`swingFrames`** pocket — plus the per-bone accents it drives.
+`styleJointAccents(...)` stamps a move's effort and pocket onto bare accents in
+one place, so the feel / effort / timing are not repeated per accent.
+
 The `featuredRegion` closes the loop with the shipped camera director — a
 legs-featured move requests the legwork-hero framing; an arm-mime move requests a
 medium where hands read.
+
+**Explicit, reviewable timing.** A move's downbeat relationship is first-class,
+not implicit in where accents happen to land — this is exactly what an Afrobeats
+coach judges. Two levers realise it:
+
+- **Accent-frame placement** — a `DanceJointAccent` peaks on its integer `frame`,
+  with the anticipation wind-up over `[frame − radius, frame]`. "Hit on the
+  downbeat" = peak frame on the beat (0/4/8/…); a `halfTime` move pulses every
+  two beats; an `offBeat` accent peaks on an "and".
+- **Sub-frame swing** — `DanceJointAccent.microFrames` (and the move's
+  `swingFrames`) nudge the whole accent a *fraction* of a frame off the integer
+  grid: positive = laid-back pocket (behind the beat), negative = pushed (ahead).
+  This is what turns a metronomic, on-grid groove into one that sits in the
+  pocket. Routed through `phaseOf` so the integer frame is still range-checked.
 
 Authoring a new dance becomes **adding one data entry**, no engine change.
 
@@ -213,17 +231,39 @@ values to be confirmed by eye on rendered output, not derived constants.
 
 ### D7 — Increment roadmap
 
-1. **Effort dynamics on accents** — `DanceDynamics` + `dynamicsCurve` (✅ landed),
-   then the `EaseFn` wiring through `Keyframe`/the accent compiler (non-smooth
-   dynamics channels), proved on a few lead accents with `TemporalMotionAnalyzer`
-   kinematic tests.
-2. **Promote `DanceMoveSignature` → `AfrobeatsMove`** and extract the current
-   Shaku/Gbese/komole routine into the first catalog entries (behavior-preserving
-   refactor).
+1. **Effort dynamics on accents** — `DanceDynamics` + `dynamicsCurve` + the
+   `EaseFn` wiring through `Keyframe`/the accent compiler (non-smooth dynamics
+   channels), proved with kinematic tests (✅ landed).
+2. **`AfrobeatsMove` + explicit timing** — the move descriptor (`feel`,
+   `featuredRegion`, `dynamics`, `swingFrames`, `styleJointAccents`) and
+   **sub-frame swing** (`DanceJointAccent.microFrames`) (✅ landed). Still to do:
+   extract the current Shaku/Gbese/komole routine into the first catalog entries
+   (behavior-preserving).
 3. **Author the catalog moves** (all six) as data entries, each with a render
-   check and kinematic tests.
+   check, kinematic tests, and a 3-expert panel pass (afrobeats coach +
+   rigging/mocap + physics) to **9/10** on rendered frames.
 4. **Slot timeline + per-cat assignment** — call-response + polyrhythm +
    personality.
+
+### D8 — Audio time-warp alignment is deferred (explicit TODO)
+
+**TODO (deferred, not yet built):** precise alignment of the authored loop to the
+song's *actual* detected downbeats — Beat-This!-style beat detection feeding a
+`BeatMap` time-warp so every loop iteration lands on the real "one". This is
+intentionally the **last mile**:
+
+- the loop is already bar-aligned (`BeatLoopBinding.barAligned`,
+  `clipSecondsAt`), so within-loop timing (the accent-frame grid + sub-frame
+  swing of D2) is what is visible and reviewable now;
+- the loop→song warp is a *fixed transform* applied to whatever the loop is — it
+  does not change as moves are re-authored, so building it before the moves are
+  good would mean re-aligning every iteration for no per-iteration benefit;
+- it is a separate, sizable tooling effort (offline beat detection + warp
+  integration; see the project's dance-audio analysis plan and the feature
+  README's "Audio beat-sync — not yet wired" section).
+
+Sequence: finish the six moves (D3) to 9/10 on the bare loop, **then** wire the
+audio time-warp as the final integration step.
 
 ## Consequences
 

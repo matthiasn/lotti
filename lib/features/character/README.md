@@ -425,6 +425,12 @@ fvm flutter test test/features/character/
 
 ## Audio beat-sync (offline tooling — not yet wired)
 
+> **TODO (deferred — explicit).** Precise loop→song time-warp alignment to the
+> track's detected downbeats is intentionally deferred to the *last mile*, after
+> the dance moves are authored and panel-rated. Rationale and sequence are
+> recorded in [`CHAR-0001` §D8](./docs/adr/CHAR-0001-dance-choreography-encoding-and-move-library.md).
+> Within-loop timing (accent-frame grid + sub-frame swing) is already in place.
+
 The dance is authored on a normalized beat grid (`DancePhrase` frames), but the
 mapping from those counts to wall-clock seconds is currently a single global
 tempo scalar (the demo's BPM slider: `seconds = elapsed × bpm/120`). That has no

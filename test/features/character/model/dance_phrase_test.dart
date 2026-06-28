@@ -832,4 +832,40 @@ void main() {
       }
     });
   });
+
+  group('DanceJointAccent sub-frame swing (microFrames)', () {
+    const phrase = DancePhrase(frameCount: 32, supports: []);
+
+    // Peak rotation +1 at frame 8; without swing it lands at phase 8/32.
+    KeyframeChannel channel(double micro) => phrase.dynamicsJointChannel([
+      DanceJointAccent(8, radiusFrames: 4, rotation: 1, microFrames: micro),
+    ]);
+
+    test('zero swing lands the peak exactly on the integer frame', () {
+      expect(channel(0).sample(8 / 32).rotation, closeTo(1, 1e-9));
+    });
+
+    test(
+      'a whole-frame positive swing slides the accent later (laid-back)',
+      () {
+        final laid = channel(1);
+        // The peak now lands at (8+1)/32, not 8/32.
+        expect(laid.sample(9 / 32).rotation, closeTo(1, 1e-9));
+        expect(laid.sample(8 / 32).rotation, lessThan(1));
+      },
+    );
+
+    test('a fractional offset shifts the peak by less than one frame', () {
+      final swung = channel(0.5);
+      expect(swung.sample(8.5 / 32).rotation, closeTo(1, 1e-9));
+      // It has not yet reached the peak at the integer frame.
+      expect(swung.sample(8 / 32).rotation, lessThan(1));
+    });
+
+    test('a negative swing pushes the accent earlier', () {
+      final pushed = channel(-1);
+      expect(pushed.sample(7 / 32).rotation, closeTo(1, 1e-9));
+      expect(pushed.sample(8 / 32).rotation, lessThan(1));
+    });
+  });
 }

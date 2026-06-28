@@ -2,6 +2,25 @@ import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/model/dance_dynamics.dart';
 import 'package:lotti/features/character/model/easing.dart';
 
+/// How a move's signature accent sits against the downbeat — the explicit,
+/// reviewable "feel" of a dance style (an Afrobeats coach judges this directly).
+/// It documents intent and pairs with the per-accent frame placement (and
+/// sub-frame swing via [DanceJointAccent.microFrames]) that actually realises it.
+enum DanceFeel {
+  /// Accent peaks land ON the quarter-note grid (frames 0, 4, 8, …) — grounded
+  /// hits: the Zanku stomp, the Shaku dip-bottom, the Sekem plant.
+  onBeat,
+
+  /// The signature accent lands on the "and", syncopated off the downbeat — the
+  /// Azonto hip-pop, the Zanku air-kick.
+  offBeat,
+
+  /// Half-time: the weight pulse lands every TWO beats and the move floats
+  /// across the grid rather than hitting each beat — the Amapiano / Pouncing-Cat
+  /// glide.
+  halfTime,
+}
+
 /// Frame-addressed choreography data that compiles into the lower-level clip
 /// primitives.
 ///
@@ -106,8 +125,13 @@ class DancePhrase {
     double scaleY = 1,
     Ease ease = Ease.easeInOut,
     EaseCurve? easeFn,
+    double microFrames = 0,
   }) => Keyframe(
-    p: phaseOf(frame),
+    // [microFrames] nudges the key OFF the integer grid (sub-frame swing): a
+    // positive value lands the gesture a fraction of a frame late ("laid-back"
+    // pocket), negative pushes it early. Routed through [phaseOf] so the integer
+    // frame is still range-checked, then the fractional offset is added.
+    p: phaseOf(frame) + microFrames / frameCount,
     rotation: rotation,
     scaleX: scaleX,
     scaleY: scaleY,
@@ -565,6 +589,7 @@ class DanceJointKey {
     this.scaleY = 1,
     this.ease = Ease.easeInOut,
     this.easeFn,
+    this.microFrames = 0,
   });
 
   final int frame;
@@ -577,6 +602,10 @@ class DanceJointKey {
   /// overrides [ease] on a non-smooth channel.
   final EaseCurve? easeFn;
 
+  /// Sub-frame timing offset (fractional frames) — the swing/pocket nudge that
+  /// places the key slightly off the integer grid. See [DancePhrase.jointKey].
+  final double microFrames;
+
   Keyframe toKeyframe(DancePhrase phrase) => phrase.jointKey(
     frame,
     rotation: rotation,
@@ -584,6 +613,7 @@ class DanceJointKey {
     scaleY: scaleY,
     ease: ease,
     easeFn: easeFn,
+    microFrames: microFrames,
   );
 }
 
@@ -596,6 +626,7 @@ class DanceJointAccent {
     this.scaleY = 1,
     this.ease = Ease.easeInOut,
     this.dynamics,
+    this.microFrames = 0,
   }) : assert(radiusFrames > 0, 'radiusFrames must be positive');
 
   final int frame;
@@ -612,9 +643,16 @@ class DanceJointAccent {
   /// compiled into a non-smooth channel (see [DancePhrase.dynamicsJointChannel]).
   final DanceDynamics? dynamics;
 
+  /// Sub-frame swing (fractional frames) applied to the WHOLE accent — both the
+  /// peak and its flanking neutrals slide together, so the gesture lands a hair
+  /// behind (positive) or ahead (negative) of the beat. This is how a move's
+  /// [DanceFeel] pocket is dialled in past the integer grid.
+  final double microFrames;
+
   DanceJointKey neutralKey(int frame) => DanceJointKey(
     frame,
     ease: ease,
+    microFrames: microFrames,
   );
 
   DanceJointKey peakKey() {
@@ -626,6 +664,7 @@ class DanceJointAccent {
       scaleY: scaleY,
       ease: ease,
       easeFn: d == null ? null : dynamicsCurve(d),
+      microFrames: microFrames,
     );
   }
 }
