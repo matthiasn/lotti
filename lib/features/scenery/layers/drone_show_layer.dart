@@ -30,7 +30,7 @@ const double _stagingHoldStart = 0.56;
 const double _stagingHoldEnd = 0.62;
 const double _textTransitionEnd = 0.74;
 const double _reducedMotionCycleProgress = 0.9;
-const double _droneLightOnY = 0.405;
+const double _bridgeClearY = 0.36;
 const int _ascentSpiralCount = 5;
 const double _launchStartX = 0.47;
 const double _launchSpanX = 0.22;
@@ -292,7 +292,7 @@ List<DroneShowSample> sampleDroneShow(
 
 bool _isDroneLit(int index, ui.Offset position, DroneShowPhase phase) {
   if (phase != DroneShowPhase.launch) return true;
-  final threshold = _droneLightOnY + (_unitForIndex(index + 131) - 0.5) * 0.018;
+  final threshold = _bridgeClearY + (_unitForIndex(index + 131) - 0.5) * 0.016;
   return position.dy <= threshold;
 }
 
@@ -347,7 +347,7 @@ ui.Offset _risePoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
   return ui.Offset(
     _launchStartX + u * _launchSpanX,
-    0.392 - u * 0.018,
+    0.355 - u * 0.016,
   );
 }
 
@@ -355,7 +355,7 @@ ui.Offset _beamPoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
   return ui.Offset(
     0.61 + (u - 0.5) * 0.04,
-    0.365 - u * 0.135,
+    0.335 - u * 0.12,
   );
 }
 

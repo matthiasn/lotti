@@ -153,25 +153,61 @@ void main() {
     test('switches lights on progressively after clearing the bridge', () {
       final dark = sampleDroneShow(0, count: 80);
       final partial = sampleDroneShow(
-        kDroneShowCycleSeconds * 0.145,
+        kDroneShowCycleSeconds * 0.18,
+        count: 80,
+      );
+      final lateLaunch = sampleDroneShow(
+        kDroneShowCycleSeconds * 0.219,
         count: 80,
       );
       final lit = sampleDroneShow(
-        kDroneShowCycleSeconds * 0.2,
+        kDroneShowCycleSeconds * 0.23,
         count: 80,
       );
       final partialLitCount = partial.where((s) => s.isLit).length;
+      final lateLitCount = lateLaunch.where((s) => s.isLit).length;
 
       expect(dark.map((s) => s.isLit), everyElement(isFalse));
       expect(partial.map((s) => s.phase), everyElement(DroneShowPhase.launch));
       expect(partialLitCount, greaterThan(0));
       expect(partialLitCount, lessThan(partial.length));
-      expect(lit.map((s) => s.phase), everyElement(DroneShowPhase.launch));
+      expect(
+        lateLaunch.map((s) => s.phase),
+        everyElement(DroneShowPhase.launch),
+      );
+      expect(lateLitCount, greaterThan(partialLitCount));
+      expect(lateLitCount, greaterThan((lateLaunch.length * 0.9).floor()));
+      expect(lit.map((s) => s.phase), everyElement(DroneShowPhase.beam));
       expect(lit.map((s) => s.isLit), everyElement(isTrue));
       for (final sample in lit) {
-        expect(sample.opacity, closeTo(0.86, 1e-12));
-        expect(sample.radius, closeTo(0.00255, 1e-12));
+        expect(sample.opacity, greaterThan(0.69));
+        expect(sample.radius, greaterThanOrEqualTo(0.002));
       }
+    });
+
+    test('unites above the cable-stayed bridge crown', () {
+      final topOfLaunch = sampleDroneShow(
+        kDroneShowCycleSeconds * 0.219,
+        count: 80,
+      );
+      final firstBeam = sampleDroneShow(
+        kDroneShowCycleSeconds * 0.23,
+        count: 80,
+      );
+
+      expect(
+        topOfLaunch.map((s) => s.phase),
+        everyElement(DroneShowPhase.launch),
+      );
+      expect(firstBeam.map((s) => s.phase), everyElement(DroneShowPhase.beam));
+      expect(
+        topOfLaunch.map((s) => s.position.dy),
+        everyElement(lessThanOrEqualTo(0.36)),
+      );
+      expect(
+        firstBeam.map((s) => s.position.dy),
+        everyElement(lessThanOrEqualTo(0.36)),
+      );
     });
 
     test('rises through five local spiral columns before the beam', () {
