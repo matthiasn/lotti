@@ -458,34 +458,17 @@ void main() {
     float room = 0.30 + 0.70 * noise(muv * vec2(46.0, 80.0)) *
         (0.6 + 0.4 * noise(muv * vec2(17.0, 30.0)));
     float breath = 0.92 + 0.08 * sin(uTime * 0.7);
-    float yachtRaw = cabin * room * breath * (0.66 + 0.4 * uWindowAmount) * beat;
+    float yachtRaw = cabin * room * breath * (0.44 + 0.3 * uWindowAmount) * beat;
     // Firmer knee so the brightest panes asymptote to a warm amber, not a blown
     // near-white core where bright rooms overlap.
     float yachtLit = yachtRaw / (1.0 + 1.25 * yachtRaw);
-    // The hottest cores drift toward a warm WHITE (incandescent bulb), not a more
-    // saturated yellow — that de-neons the brightest pixels while the dim rooms
-    // keep their full amber, the warm-core / cool-edge falloff the colorist asked.
+    // A whisper of warm white in the very hottest cores (an incandescent bulb's
+    // centre) — kept small so the panes stay amber, never a blown white smear.
     vec3 cabinCol = mix(uYachtGlow.rgb, vec3(1.0, 0.94, 0.86),
-        smoothstep(0.45, 0.95, yachtLit) * 0.22);
+        smoothstep(0.55, 0.98, yachtLit) * 0.10);
     lights += cabinCol * yachtLit;
     intensity += yachtLit;
   }
-
-  // --- Interior spill / wall-wash: warm light from each lit window washes DOWN
-  // onto the white superstructure and the deck/freeboard lip just below the glass,
-  // so the cabins read as light pouring OUT and illuminating the boat rather than
-  // sealed panes. Sample the cabin mask a few steps ABOVE this pixel and fade with
-  // distance; gate to the vessel BODY so it lands on structure, never sky/water.
-  // This is the warm half of the freeboard's warm-top / cool-bottom gradient (the
-  // cool sky-bounce above is the cool half). ---
-  float wash = yachtWindow(muv - vec2(0.0, 0.010)) * 0.70 +
-      yachtWindow(muv - vec2(0.0, 0.018)) * 0.42 +
-      yachtWindow(muv - vec2(0.0, 0.028)) * 0.22;
-  float onBody = smoothstep(0.45, 0.75, yHere);
-  float washLit = wash * onBody * 0.17 * (0.6 + 0.4 * uWindowAmount) * beat;
-  washLit = washLit / (1.0 + 1.4 * washLit);
-  lights += uYachtGlow.rgb * washLit;
-  intensity += washLit;
 
   // Halation: a SMALL soft warm halo onto the hull around the glass (tight offset,
   // confined to the silhouette) so the windows read as glowing sources — kept LOW
@@ -496,7 +479,7 @@ void main() {
       yachtWindow(muv + vec2(-yb, yb)) + yachtWindow(muv + vec2(yb, -yb)) +
       yachtWindow(muv + vec2(-yb, -yb));
   float yOnHull = smoothstep(0.25, 0.55, yHere);
-  float yhaloLit = yhalo * 0.13 * (0.5 + 0.4 * uWindowAmount) * beat * yOnHull;
+  float yhaloLit = yhalo * 0.05 * (0.5 + 0.4 * uWindowAmount) * beat * yOnHull;
   lights += uYachtGlow.rgb * yhaloLit;
   intensity += yhaloLit;
 

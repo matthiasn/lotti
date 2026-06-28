@@ -213,7 +213,12 @@ def main() -> int:
     px = h / 100.0  # pixels per 1% of art height (vertical reaches in art fraction)
     reach = int(4.5 * px)
     near = int(0.6 * px)
-    dark = (yt_lum < 34.0) & (yt_a > 0.20)
+    # Only the DARKEST glass cores (lum < 22) — the deep panes of the sky-lounge and
+    # main saloon. This yacht's open side decks and under-overhang recesses are
+    # dark-set-in-bright-structure too, so the glow is deliberately confined to the
+    # darkest pixels and run at a SUBTLE level in the shader: a gentle warm interior
+    # rather than a bright smear bleeding across the whole superstructure.
+    dark = (yt_lum < 22.0) & (yt_a > 0.20)
     set_in_struct = _bright_within(yt_lum, -reach, -near, 70.0) & _bright_within(
         yt_lum, near, reach, 70.0
     )
@@ -229,7 +234,7 @@ def main() -> int:
     cabin_mask = (
         np.asarray(
             Image.fromarray(cabin_mask.astype(np.uint8)).filter(
-                ImageFilter.GaussianBlur(1.2),
+                ImageFilter.GaussianBlur(0.9),
             ),
             dtype=np.float64,
         )
