@@ -129,3 +129,10 @@ lead-vs-backing-vocal audio separation, which Demucs does not do.
 3. Pass the cue JSON to the demo (`--dart-define=DANCE_CUES=/abs/out/song.cues.json`).
 4. Routing still comes from the word tags — generate those with
    `transcribe.py --lyrics` if you want lead/background separation.
+
+## See Also
+
+- `choreo-phrase-authoring` for mapping the same song's beat/section structure
+  into the body choreography.
+- `character-motion-review-panel` for judging whether singing faces and body
+  motion read together in rendered frames.

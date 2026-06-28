@@ -1,0 +1,4 @@
+interface:
+  display_name: "Character Motion Review Panel"
+  short_description: "Score animated character motion"
+  default_prompt: "Use $character-motion-review-panel to rate this character animation from frame strips and propose fixes."

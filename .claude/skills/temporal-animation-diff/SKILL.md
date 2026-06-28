@@ -155,3 +155,10 @@ Never collapse this to "looks fixed" without the numbers and image inspection.
   the user explicitly asks to keep a maintained diagnostic.
 - Diff PNGs belong in ignored build output.
 - Commit only the production fix and focused regression tests.
+
+## See Also
+
+- `character-motion-review-panel` for expert scoring after the discontinuities
+  are measured and localized.
+- `choreo-phrase-authoring` when the fix should become labelled move data rather
+  than another anonymous key tweak.

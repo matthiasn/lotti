@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flutter Shader Validation"
+  short_description: "Validate Flutter runtime shaders"
+  default_prompt: "Use $flutter-shader-validation to diagnose and verify this Flutter runtime-effect shader change."

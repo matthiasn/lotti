@@ -1,0 +1,4 @@
+interface:
+  display_name: "Choreo Phrase Authoring"
+  short_description: "Build beat-structured dance phrases"
+  default_prompt: "Use $choreo-phrase-authoring to structure this dance phrase against beats and sections."

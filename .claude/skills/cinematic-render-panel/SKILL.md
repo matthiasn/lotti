@@ -150,3 +150,12 @@ One reviewer rationalizes; five independent lenses converge on the real blocker
 and rank it. The score is a deflation check against your own optimism, and the
 "highest-leverage change" line keeps each round targeting the one thing that
 moves the number — not a scatter of cosmetic tweaks.
+
+## See Also
+
+- `scenery-art-layer-prep` for preparing generated/backdrop art into aligned
+  full-frame layers before review.
+- `flutter-shader-validation` for proving runtime-effect shaders compile and
+  that the reviewed pixels came from the intended shader path.
+- `character-motion-review-panel` when the main question is body motion,
+  choreography, or animation performance rather than rendered art.

@@ -159,3 +159,10 @@ the cues — frontman on lead words, backups on `(...)` ad-libs and group hooks.
    `--model large-v3`.
 4. `lipsync.py vocals.wav -o out/song.cues.json` (mouth shapes; see `dance-lipsync`).
 5. run the demo with the four `--dart-define` paths (audio/beatmap/words/cues).
+
+## See Also
+
+- `choreo-phrase-authoring` for turning the beat/downbeat map into labelled
+  phrase slots, move choices, swing, and per-cat role variance.
+- `character-motion-review-panel` for dance-coach review once the song data is
+  driving rendered motion.

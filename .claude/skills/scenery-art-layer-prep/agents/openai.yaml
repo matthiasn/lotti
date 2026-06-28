@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scenery Art Layer Prep"
+  short_description: "Prepare layered scene art assets"
+  default_prompt: "Use $scenery-art-layer-prep to prepare a generated backdrop into stackable full-frame layers."
