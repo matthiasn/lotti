@@ -458,7 +458,7 @@ void main() {
     float room = 0.30 + 0.70 * noise(muv * vec2(46.0, 80.0)) *
         (0.6 + 0.4 * noise(muv * vec2(17.0, 30.0)));
     float breath = 0.92 + 0.08 * sin(uTime * 0.7);
-    float yachtRaw = cabin * room * breath * (0.44 + 0.3 * uWindowAmount) * beat;
+    float yachtRaw = cabin * room * breath * (0.60 + 0.34 * uWindowAmount) * beat;
     // Firmer knee so the brightest panes asymptote to a warm amber, not a blown
     // near-white core where bright rooms overlap.
     float yachtLit = yachtRaw / (1.0 + 1.25 * yachtRaw);
