@@ -4563,6 +4563,24 @@ class CatClips {
     _danceLimbTargets[3],
   ];
 
+  // Calmer ears for shaku: a gentle per-bar sway instead of the dance's busy
+  // per-count flick, so the head region stops dominating the silhouette and the
+  // beat reads in the body, not the skull (the motion panel's "biggest lever").
+  static const _shakuEarLKeys = [
+    Keyframe(p: 0, rotation: 0.02),
+    Keyframe(p: 0.25, rotation: -0.05),
+    Keyframe(p: 0.5, rotation: 0.02),
+    Keyframe(p: 0.75, rotation: -0.05),
+    Keyframe(p: 1, rotation: 0.02),
+  ];
+  static const _shakuEarRKeys = [
+    Keyframe(p: 0, rotation: -0.02),
+    Keyframe(p: 0.25, rotation: 0.05),
+    Keyframe(p: 0.5, rotation: -0.02),
+    Keyframe(p: 0.75, rotation: 0.05),
+    Keyframe(p: 1, rotation: -0.02),
+  ];
+
   /// Standalone "Shaku Shaku" lead clip — the redesign in progress. Reuses the
   /// dance channels and overrides the groove (on-beat dip), the support-knee
   /// pump, and adds a per-bar upper-body LEAN (chest over the support foot — the
@@ -4650,6 +4668,8 @@ class CatClips {
           _shakuLegLowerRKeys,
           smooth: true,
         ),
+        CatBones.earL: const KeyframeChannel(_shakuEarLKeys, smooth: true),
+        CatBones.earR: const KeyframeChannel(_shakuEarRKeys, smooth: true),
       },
     );
   }

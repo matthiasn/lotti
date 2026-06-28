@@ -736,7 +736,9 @@ class CharacterScene {
   }
 
   bool _isDanceFamily(Clip clip) =>
-      clip.name == 'dance' || clip.name.startsWith('danceBackup');
+      clip.name == 'dance' ||
+      clip.name == 'shaku' ||
+      clip.name.startsWith('danceBackup');
 
   ({double x, double y})? _contactPoint(
     Map<String, Affine2D> world,
