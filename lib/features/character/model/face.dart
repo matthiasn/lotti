@@ -20,6 +20,11 @@ enum MouthShape {
   singAh,
   singOh,
   singEe,
+
+  /// The "F/V" viseme: the lower lip tucked under the upper teeth (a light teeth
+  /// strip resting on a near-closed mouth). The one non-vowel singing shape; it
+  /// is what makes audio-driven lip-sync read as real consonants.
+  teethOnLip,
 }
 
 /// Static geometry of a face, anchored to a bone (the head).

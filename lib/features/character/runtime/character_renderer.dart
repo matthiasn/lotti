@@ -609,7 +609,52 @@ class CharacterRenderer {
           heightFactor: 0.62,
           topBow: 0.4,
         );
+      case MouthShape.teethOnLip:
+        _drawTeethOnLip(canvas, f);
     }
+  }
+
+  /// The "F/V" viseme: lips barely parted with the upper teeth resting on the
+  /// lower lip — a shallow dark slot with a *slim* light teeth line along its top
+  /// and a navy rim. Deliberately restrained so it reads as a consonant, not a
+  /// white plaque, at the small scale the trio is drawn.
+  void _drawTeethOnLip(Canvas canvas, FaceRig f) {
+    final cy = f.mouthOffsetY;
+    final hw = f.mouthWidth / 2 * 0.6;
+    final hh = f.mouthHeight * 0.28; // shallow
+    final lip = Paint()
+      ..color = Color(f.mouthColor)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..isAntiAlias = antiAlias;
+    // Shallow dark slot: a near-flat top lip over a softly rounded lower lip.
+    final slot = Path()
+      ..moveTo(-hw, cy)
+      ..quadraticBezierTo(0, cy - hh * 0.25, hw, cy)
+      ..quadraticBezierTo(0, cy + hh, -hw, cy)
+      ..close();
+    canvas
+      ..drawPath(
+        slot,
+        Paint()
+          ..color = const Color(_cavityColor)
+          ..isAntiAlias = antiAlias,
+      )
+      // Slim upper-teeth edge resting along the top of the slot.
+      ..drawPath(
+        Path()
+          ..moveTo(-hw * 0.78, cy - hh * 0.02)
+          ..lineTo(hw * 0.78, cy - hh * 0.02),
+        Paint()
+          ..color = const Color(_teethColor)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.8
+          ..strokeCap = StrokeCap.round
+          ..isAntiAlias = antiAlias,
+      )
+      ..drawPath(slot, lip);
   }
 
   /// A crafted singing mouth: a "D"-shaped cavity that opens by dropping its jaw
@@ -722,4 +767,7 @@ class CharacterRenderer {
   /// Warm near-black for the open-mouth interior — harmonizes with the navy
   /// outline ([_outlineColor]) instead of a cold pure black.
   static const int _cavityColor = 0xFF241F2E;
+
+  /// Off-white upper teeth for the [MouthShape.teethOnLip] (F/V) viseme.
+  static const int _teethColor = 0xFFF3EFE6;
 }

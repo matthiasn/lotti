@@ -66,6 +66,15 @@ const String kDanceWordsPath = String.fromEnvironment(
       '/home/parallels/github/lotti/tools/dance_audio/out/moving.words.json',
 );
 
+/// Optional lip-sync cue track (from `tools/dance_audio/lipsync.py` — Rhubarb).
+/// Absent → no mouth movement. Drives the singers' mouths from the actual vocal
+/// phonemes; the lyric voice tags only gate *which* cat shows the cues.
+const String kDanceCuesPath = String.fromEnvironment(
+  'DANCE_CUES',
+  defaultValue:
+      '/home/parallels/github/lotti/tools/dance_audio/out/moving.cues.json',
+);
+
 /// Bars the 32-frame [CatClips.dance] phrase spans: `duration 6 s` at
 /// `kAuthoredDanceBpm 120` = 12 beats = 3 bars of 4/4.
 const int kDancePhraseBars = 3;
@@ -83,12 +92,10 @@ const double kMinCalmSeconds = 4;
 /// changes — bigger = slower, more cinematic zoom (~63% of the way in this long).
 const double kCameraRampSeconds = 1.4;
 
-/// Lyric-driven mouth: how wide a singer's mouth opens on an active word. The
-/// jaw snaps open fast (attack) and relaxes shut more slowly (release) so each
-/// syllable punches and then settles — a single symmetric ramp just flutters.
-/// Kept deliberately modest: a full gape on every word reads as cartoonish
-/// over-acting, so a typical word only cracks the jaw partway.
-const double kMouthOpenMax = 0.58;
+/// Lip-sync mouth easing: each Rhubarb cue snaps the jaw open fast (attack) and
+/// relaxes it shut more slowly (release), so a syllable punches then settles
+/// instead of fluttering. The cue carries the target opening; these are just the
+/// time constants for following it.
 const double kMouthAttackSeconds = 0.045;
 const double kMouthReleaseSeconds = 0.12;
 
@@ -100,6 +107,9 @@ typedef _Word = ({
   String voice,
   String section,
 });
+
+/// A Rhubarb mouth-shape cue: shape letter (A-F, G, H, X) active over a span.
+typedef _Cue = ({double start, double end, String shape});
 
 /// Sections the whole trio sings (a group hook): the backups' mouths join the
 /// frontman on the *lead* words here, not just on the `(...)` ad-libs.
@@ -179,6 +189,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   List<double>? _amplitudes; // full-track waveform, normalized 0..1
   List<_Section> _sections = const [];
   List<_Word> _words = const []; // synced lyrics (optional)
+  List<_Cue> _cues = const []; // Rhubarb lip-sync cues (optional)
   double _trackDurationSec = 0;
   double _bpm = 0;
   bool _loop = true;
@@ -231,26 +242,26 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     final target = (_sectionAt(pos)?.energetic ?? true) ? 1.0 : 0.0;
     var k = dt / kCameraRampSeconds;
     if (k > 1) k = 1;
-    // The frontman sings every lead word. The backups sing the `(...)` ad-libs
-    // *and* join the lead on the group-hook sections (chorus / post-chorus /
-    // outro), so the chorus reads as the whole trio — not just the frontman.
-    final leadWord = _activeWordAt(pos, (w) => w.voice == 'lead');
-    final bgWord = _activeWordAt(
+    // Mouth shape comes from the Rhubarb cue track (the actual vocal phonemes);
+    // the lyric voice tags only gate *which* cat shows it. The frontman is gated
+    // on lead words; the backups on the `(...)` ad-libs and the group-hook
+    // sections (chorus / post-chorus / outro), so the chorus reads as the whole
+    // trio. With no lyrics file, the frontman lip-syncs everything.
+    final cue = _mouthForCue(_cueShapeAt(pos));
+    final leadOn =
+        _words.isEmpty || _voiceActive(pos, (w) => w.voice == 'lead');
+    final bgOn = _voiceActive(
       pos,
       (w) =>
           w.voice == 'background' ||
           (w.voice == 'lead' && kGroupSections.contains(w.section)),
     );
-    if (leadWord != null) _leadShape = _visemeFor(leadWord.word);
-    if (bgWord != null) _bgShape = _visemeFor(bgWord.word);
+    if (leadOn) _leadShape = cue.shape;
+    if (bgOn) _bgShape = cue.shape;
     setState(() {
       _cameraStrength += (target - _cameraStrength) * k;
-      _leadMouth = _easeMouth(
-        _leadMouth,
-        leadWord != null ? kMouthOpenMax : 0.0,
-        dt,
-      );
-      _bgMouth = _easeMouth(_bgMouth, bgWord != null ? kMouthOpenMax : 0.0, dt);
+      _leadMouth = _easeMouth(_leadMouth, leadOn ? cue.open : 0.0, dt);
+      _bgMouth = _easeMouth(_bgMouth, bgOn ? cue.open : 0.0, dt);
     });
   }
 
@@ -264,21 +275,38 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     return current + (target - current) * k;
   }
 
-  /// Picks a singing viseme from a word's first strong vowel: round o/u → "oh",
-  /// front e/i/y → "ee", everything else → the wide "ah" workhorse. Cheap and
-  /// stable (per word), giving mouth-shape variety without per-phoneme timing.
-  MouthShape _visemeFor(String word) {
-    for (final code in word.toLowerCase().codeUnits) {
-      switch (code) {
-        case 0x6F || 0x75: // o, u
-          return MouthShape.singOh;
-        case 0x65 || 0x69 || 0x79: // e, i, y
-          return MouthShape.singEe;
-        case 0x61: // a
-          return MouthShape.singAh;
-      }
+  /// The Rhubarb mouth-shape letter active at [pos] (`X` = rest when none).
+  String _cueShapeAt(double pos) {
+    for (final c in _cues) {
+      if (pos >= c.start && pos < c.end) return c.shape;
+      if (c.start > pos) break;
     }
-    return MouthShape.singAh;
+    return 'X';
+  }
+
+  /// Maps a Rhubarb shape letter to a drawn viseme + how far the mouth opens.
+  /// A/X rest closed; B-F are vowels of growing/rounding aperture; G is the F/V
+  /// teeth-on-lip; H ("L") reuses the open "ah" (its tongue reads). Openings stay
+  /// modest so the trio sings rather than over-acts.
+  ({MouthShape shape, double open}) _mouthForCue(String letter) {
+    switch (letter) {
+      case 'B': // slightly open, teeth near-closed
+        return (shape: MouthShape.singEe, open: 0.3);
+      case 'C': // open (EH, AE)
+        return (shape: MouthShape.singAh, open: 0.46);
+      case 'D': // wide open (AA)
+        return (shape: MouthShape.singAh, open: 0.62);
+      case 'E': // slightly rounded (AO, ER)
+        return (shape: MouthShape.singOh, open: 0.42);
+      case 'F': // puckered (UW, OW, W)
+        return (shape: MouthShape.singOh, open: 0.26);
+      case 'G': // F, V — upper teeth on lower lip
+        return (shape: MouthShape.teethOnLip, open: 0.5);
+      case 'H': // "L" — tongue up
+        return (shape: MouthShape.singAh, open: 0.4);
+      default: // 'A' closed, 'X' idle
+        return (shape: MouthShape.singAh, open: 0);
+    }
   }
 
   Future<void> _load() async {
@@ -319,6 +347,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
           .toList();
       final sections = _classifySections(rawSections, amplitudes, duration);
       final words = await _loadWords();
+      final cues = await _loadCues();
 
       if (!mounted) return;
       setState(() {
@@ -331,6 +360,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         _amplitudes = amplitudes;
         _sections = sections;
         _words = words;
+        _cues = cues;
       });
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
@@ -419,6 +449,27 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     }
   }
 
+  /// Loads the optional Rhubarb lip-sync cue track (absent → no mouth movement).
+  Future<List<_Cue>> _loadCues() async {
+    final file = File(kDanceCuesPath);
+    if (!file.existsSync()) return const [];
+    try {
+      final cj = jsonDecode(await file.readAsString()) as Map<String, Object?>;
+      return ((cj['cues'] as List?) ?? const [])
+          .cast<Map<String, Object?>>()
+          .map(
+            (c) => (
+              start: (c['start_sec']! as num).toDouble(),
+              end: (c['end_sec']! as num).toDouble(),
+              shape: (c['shape'] as String?) ?? 'X',
+            ),
+          )
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
   /// Index of the lyric word to caption at [pos]: the most recent word that has
   /// started, hidden during instrumental gaps (>2 s after the last word ended).
   int? _captionWordIndex(double pos) {
@@ -435,15 +486,22 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     return recent;
   }
 
-  /// The first word matching [test] that is active at [pos], or null. Words are
-  /// time-ordered, so we can stop once a word starts after [pos].
-  _Word? _activeWordAt(double pos, bool Function(_Word w) test) {
+  /// Whether a voice (selected by [test]) is singing at [pos], dilated by
+  /// [_voiceSlack] so short gaps between a phrase's words don't make the mouth
+  /// flicker shut — it only rests between phrases / when that voice is silent.
+  bool _voiceActive(double pos, bool Function(_Word w) test) {
     for (final w in _words) {
-      if (pos >= w.start && pos < w.end && test(w)) return w;
-      if (w.start > pos) break;
+      if (test(w) &&
+          pos >= w.start - _voiceSlack &&
+          pos < w.end + _voiceSlack) {
+        return true;
+      }
+      if (w.start - _voiceSlack > pos) break;
     }
-    return null;
+    return false;
   }
+
+  static const double _voiceSlack = 0.3;
 
   /// A face whose mouth is driven open by [mouth] (lyric-synced) on the [shape]
   /// viseme, falling back to [base] when essentially closed. Drives the frontman

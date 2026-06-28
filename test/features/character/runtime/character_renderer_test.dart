@@ -297,4 +297,34 @@ void main() {
       );
     });
   });
+
+  testWidgets('teethOnLip (F/V) renders a distinct parted mouth', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      // The only difference between the two renders is the mouth, so the count
+      // of differing pixels is exactly the F/V mouth — proving the cue draws a
+      // distinct shape and never silently falls through to the shut mouth.
+      final fv = await _renderFace(
+        const FaceState(mouthShape: MouthShape.teethOnLip),
+      );
+      final closed = await _renderFace(
+        const FaceState(mouthShape: MouthShape.singAh),
+      );
+      var diff = 0;
+      for (var i = 0; i + 3 < fv.length; i += 4) {
+        if (fv[i] != closed[i] ||
+            fv[i + 1] != closed[i + 1] ||
+            fv[i + 2] != closed[i + 2] ||
+            fv[i + 3] != closed[i + 3]) {
+          diff++;
+        }
+      }
+      expect(
+        diff,
+        greaterThan(40),
+        reason: 'F/V is a distinct mouth, not a shut one (diff=$diff)',
+      );
+    });
+  });
 }
