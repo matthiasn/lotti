@@ -4674,6 +4674,110 @@ class CatClips {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Zanku / Legwork (Zlatan, NG 2018) — the lead's LEG-dominant hero move, a
+  // separate clip reusing the proven recipe + infra (on-beat dip, support-knee
+  // pump, world-anchored foot, head-counter, calm ears, wrist cuffs). Zanku
+  // signatures added here: fists held UP at the chest pistoning in OPPOSITION
+  // (elbows bent, not the Shaku cross) and a leaned-back torso. First pass — the
+  // full alternating legwork + air-kick flourish is the next grind target.
+  // ─────────────────────────────────────────────────────────────────────────
+  static const _zankuHandLTargetKeys = [
+    DanceIkTargetKey(0, x: -8, y: -15),
+    DanceIkTargetKey(2, x: -8, y: -8),
+    DanceIkTargetKey(4, x: -8, y: -15),
+    DanceIkTargetKey(6, x: -8, y: -8),
+    DanceIkTargetKey(8, x: -8, y: -15),
+    DanceIkTargetKey(10, x: -8, y: -8),
+    DanceIkTargetKey(12, x: -8, y: -15),
+    DanceIkTargetKey(14, x: -8, y: -8),
+    DanceIkTargetKey(16, x: -8, y: -15),
+    DanceIkTargetKey(18, x: -8, y: -8),
+    DanceIkTargetKey(20, x: -8, y: -15),
+    DanceIkTargetKey(22, x: -8, y: -8),
+    DanceIkTargetKey(24, x: -8, y: -15),
+    DanceIkTargetKey(26, x: -8, y: -8),
+    DanceIkTargetKey(28, x: -8, y: -15),
+    DanceIkTargetKey(30, x: -8, y: -8),
+    DanceIkTargetKey(32, x: -8, y: -15),
+  ];
+  static const _zankuHandRTargetKeys = [
+    DanceIkTargetKey(0, x: 8, y: -8),
+    DanceIkTargetKey(2, x: 8, y: -15),
+    DanceIkTargetKey(4, x: 8, y: -8),
+    DanceIkTargetKey(6, x: 8, y: -15),
+    DanceIkTargetKey(8, x: 8, y: -8),
+    DanceIkTargetKey(10, x: 8, y: -15),
+    DanceIkTargetKey(12, x: 8, y: -8),
+    DanceIkTargetKey(14, x: 8, y: -15),
+    DanceIkTargetKey(16, x: 8, y: -8),
+    DanceIkTargetKey(18, x: 8, y: -15),
+    DanceIkTargetKey(20, x: 8, y: -8),
+    DanceIkTargetKey(22, x: 8, y: -15),
+    DanceIkTargetKey(24, x: 8, y: -8),
+    DanceIkTargetKey(26, x: 8, y: -15),
+    DanceIkTargetKey(28, x: 8, y: -8),
+    DanceIkTargetKey(30, x: 8, y: -15),
+    DanceIkTargetKey(32, x: 8, y: -8),
+  ];
+  static final KeyframeIkTargetChannel _zankuHandLTarget = _dancePhrase
+      .ikTargetChannel(_zankuHandLTargetKeys, smooth: true);
+  static final KeyframeIkTargetChannel _zankuHandRTarget = _dancePhrase
+      .ikTargetChannel(_zankuHandRTargetKeys, smooth: true);
+  static final List<LimbIkTarget> _zankuLimbTargets = [
+    _danceLimbTargets[0].withChannel(_zankuHandLTarget),
+    _danceLimbTargets[1].withChannel(_zankuHandRTarget),
+    _danceLimbTargets[2],
+    _danceLimbTargets[3],
+  ];
+
+  /// Standalone "Zanku / Legwork" lead clip — first pass; iterated to ~8.5 like
+  /// shaku. Reuses the dance channels + the proven shaku groove/knee/foot-anchor,
+  /// and overrides the arms (fists pistoning at the chest) and torso (leaned back).
+  static Clip get zanku {
+    final base = dance;
+    return Clip(
+      name: 'zanku',
+      duration: base.duration,
+      contactSpans: base.contactSpans,
+      contactPinning: base.contactPinning,
+      limbTargets: _zankuLimbTargets,
+      supportFootWorldAnchor: true,
+      root: LayeredRootChannel([
+        _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
+        _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
+        const SineRootChannel(
+          bobAmplitude: -0.055,
+          bobPhase: 0.125,
+          bobHarmonic: 8,
+        ),
+      ]),
+      channels: {
+        ...base.channels,
+        CatBones.hips: LayeredJointChannel([
+          _dancePhrase.bodyPelvisChannel(_shakuBodyGrooveKeys),
+          _dancePhrase.bodyPelvisChannel(_danceBodyAccentKeys, smooth: true),
+        ]),
+        CatBones.torso: LayeredJointChannel([
+          _dancePhrase.bodyChestChannel(_shakuBodyGrooveKeys),
+          _dancePhrase.bodyChestChannel(_danceBodyAccentKeys, smooth: true),
+          // Leaned-back confident carriage — the Zanku posture (constant bias).
+          const SineChannel(bias: -0.14),
+        ]),
+        CatBones.legLowerL: _dancePhrase.jointChannel(
+          _shakuLegLowerLKeys,
+          smooth: true,
+        ),
+        CatBones.legLowerR: _dancePhrase.jointChannel(
+          _shakuLegLowerRKeys,
+          smooth: true,
+        ),
+        CatBones.earL: const KeyframeChannel(_shakuEarLKeys, smooth: true),
+        CatBones.earR: const KeyframeChannel(_shakuEarRKeys, smooth: true),
+      },
+    );
+  }
+
   static Clip get danceBackupLeft => _danceStyledRole(
     name: 'danceBackupLeft',
     style: _danceBackupLeftStyle,
@@ -4963,5 +5067,15 @@ class CatClips {
     },
   );
 
-  static List<Clip> get all => [walk, run, kick, dance, shaku, sit, jump, idle];
+  static List<Clip> get all => [
+    walk,
+    run,
+    kick,
+    dance,
+    shaku,
+    zanku,
+    sit,
+    jump,
+    idle,
+  ];
 }

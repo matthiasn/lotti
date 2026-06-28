@@ -738,6 +738,7 @@ class CharacterScene {
   bool _isDanceFamily(Clip clip) =>
       clip.name == 'dance' ||
       clip.name == 'shaku' ||
+      clip.name == 'zanku' ||
       clip.name.startsWith('danceBackup');
 
   ({double x, double y})? _contactPoint(
