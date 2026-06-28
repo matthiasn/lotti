@@ -40,9 +40,8 @@ const double kDanceCameraSmoothTime = 0.7;
 
 /// The dolly operator: holds the live camera [current] and eases it toward the
 /// director's per-frame [Shot] target so every framing change becomes a smooth,
-/// motivated move. The ONE exception is a flagged hard cut (the reserved hero
-/// arrival), which snaps instantly — the single cut in an otherwise all-dolly
-/// piece. Stateful by design (a dolly has momentum); the director that produces
+/// motivated move. A flagged cut snaps instantly for section-level music-video
+/// edits. Stateful by design (a dolly has momentum); the director that produces
 /// the targets stays pure.
 class DanceCameraRig {
   DanceCameraRig({this.smoothTime = kDanceCameraSmoothTime});

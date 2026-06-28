@@ -219,8 +219,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   Duration _lastTick = Duration.zero;
   // The dolly operator: the director emits a per-frame target framing and this
   // rig eases the live camera toward it, so section/home changes read as motivated
-  // dolly moves rather than snaps. The one exception is the reserved hero (see
-  // [isHardCut]), where it snaps — the single hard cut in the piece.
+  // dolly moves rather than snaps. Section predicates can request genre cuts;
+  // currently the chorus downbeat and bridge singer-feature cuts use that path.
   final DanceCameraRig _cameraRig = DanceCameraRig();
   Shot _liveShot = (zoom: 1, dx: 0, dy: 0);
   String? _error;
@@ -273,8 +273,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     if (bgOn) _bgShape = cue.shape;
     // Advance the camera rig toward the director's target for this frame. Most
     // framing changes ease into a dolly; the genre cuts snap — the downbeat into
-    // each chorus ([isChorusDrop]), the bridge singer-features ([isBridgeCut]),
-    // and the reserved climax hero ([isHardCut]).
+    // each chorus ([isChorusDrop]) and the bridge singer-features
+    // ([isBridgeCut]). [isHardCut] is kept as a reserved future hook.
     final ctx = _directorContext(pos, energetic: _stageNow().energetic);
     final target = ctx == null ? _liveShot : cameraShot(ctx);
     _liveShot = _cameraRig.update(
@@ -460,7 +460,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   }
 
   /// The virtual director's CONTEXT for the current frame, from which the target
-  /// framing ([cameraShot]) and the one hard-cut flag ([isHardCut]) are derived.
+  /// framing ([cameraShot]) and cut predicates are derived.
   /// Null until the beat map loads (the rig then rests neutral). [energetic]
   /// mirrors [_stageNow]'s acoustic dance gate so the camera rests on a wide
   /// establish exactly when the dancers ease to idle, and performs when they dance.
@@ -756,8 +756,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     final beat = _beatPulse(posSec);
     // The virtual director owns the camera, but the rig OWNS the move: the live
     // shot is the rig's eased framing (advanced each tick toward the director's
-    // target), so refrains dolly between homes and only the hero cuts. Applied by
-    // the painter and lagged behind the dancers by the backdrop parallax.
+    // target), so refrains/feature shots can cut onto committed homes while the
+    // rest rides as a dolly. Applied by the painter and lagged behind the
+    // dancers by the backdrop parallax.
     final shot = _liveShot;
     // Concert lighting gels: one rig drives BOTH the coloured rim/halo on each
     // cat (CharacterPainter.memberBacklights) and the floor pools
@@ -858,6 +859,17 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                             ),
                             child: SizedBox.expand(),
                           ),
+                        // Floor pools UNDER the dancers' feet, grounding each
+                        // cat in its gel without ever masking limbs or creating
+                        // foreground occluder strips. The matching rim/halo is
+                        // painted by CharacterPainter on the cat silhouettes.
+                        if (_useNewBackdrop)
+                          StageLightsOverlay(
+                            timeSeconds: _wallSeconds,
+                            beat: beat,
+                            dancerAnchors: _dancerAnchors,
+                            rig: stageRig,
+                          ),
                         // Full-colour cats are the stars; the concert rig rings
                         // each one in its gel via memberBacklights (rim/halo) and
                         // grounds it with a floor pool below — no dimming, so the
@@ -947,16 +959,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                           ),
                           child: const SizedBox.expand(),
                         ),
-                        // Floor pools UNDER the dancers' feet, grounding each cat
-                        // in its gel — the matching half of the rim/halo. Tracks
-                        // the dancers; cadence locks to the tempo. New scene only.
-                        if (_useNewBackdrop)
-                          StageLightsOverlay(
-                            timeSeconds: _wallSeconds,
-                            beat: beat,
-                            dancerAnchors: _dancerAnchors,
-                            rig: stageRig,
-                          ),
                         if (_showCaptions && _words.isNotEmpty)
                           Positioned(
                             left: 24,

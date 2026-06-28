@@ -1378,9 +1378,9 @@ void main() {
     });
 
     test('parallaxes the backdrop far less than the foreground push-in', () {
-      // The reserved hero punches to 2.10x; the backdrop only scales to
+      // A strong foreground push to 2.10x only scales the backdrop to
       // 1 + (2.10 - 1) * 0.34 ≈ 1.374 so the scenery reads as deeper than the
-      // dancers and the cut never feels like a flat crop.
+      // dancers and the move never feels like a flat crop.
       final m = CharacterPainter.danceParallaxTransformForShot(
         shot: (zoom: 2.10, dx: 0.0, dy: 0.0),
         size: size,

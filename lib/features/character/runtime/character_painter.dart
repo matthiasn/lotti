@@ -506,12 +506,12 @@ class CharacterPainter extends CustomPainter {
             final sigma = size.shortestSide * pass.sigmaFrac;
             final off = rimDir * (sigma * pass.offsetScale);
             final pad = sigma * 4 + off.distance;
-            final haloBounds = Rect.fromLTRB(
-              memberCentreX - spacing - pad,
-              -pad,
-              memberCentreX + spacing + pad,
-              size.height + pad,
-            );
+            // Isolate over the whole stage, not a tight member rectangle. At
+            // deep camera zooms the flank dancers sit near the frame edges; a
+            // tight saveLayer clips the blur into a visible vertical colour
+            // wall over the backdrop and can appear to slice the cat. The
+            // stage clip already limits the result to the viewport.
+            final haloBounds = (Offset.zero & size).inflate(pad);
             final a = (glow.a * pass.alphaScale).clamp(0.0, 1.0);
             canvas
               ..saveLayer(
@@ -550,12 +550,9 @@ class CharacterPainter extends CustomPainter {
         // and twilight wrap. The rim passes above stay outside this layer, so the
         // gel edge stays pure.
         final grade = leadCentreOrder ? bodyGrade : null;
-        final gradeBounds = Rect.fromLTRB(
-          memberCentreX - spacing,
-          0,
-          memberCentreX + spacing,
-          size.height,
-        );
+        // Full-stage isolation avoids internal crop edges in tight side shots.
+        // The grade is still masked by srcATop to the just-drawn cat silhouette.
+        final gradeBounds = Offset.zero & size;
         if (grade != null) canvas.saveLayer(gradeBounds, Paint());
         _paintCharacterAt(
           memberScene,
@@ -586,10 +583,10 @@ class CharacterPainter extends CustomPainter {
             ..save()
             ..clipRect(
               Rect.fromLTRB(
-                memberCentreX - spacing,
+                gradeBounds.left,
                 memberFloorY - size.height * 0.20, // just under the chin/collar
-                memberCentreX + spacing,
-                size.height,
+                gradeBounds.right,
+                gradeBounds.bottom,
               ),
             )
             ..drawRect(

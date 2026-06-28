@@ -16,11 +16,9 @@
 ///   vocal, so the camera follows the VOICE — it CUTS onto the silver singer for
 ///   the first half, then CUTS to the brown singer for the second, two committed
 ///   singer-feature two-shots rather than one wide sweep that spotlights neither;
-/// - post-chorus (closing hook): the climax — a centred COIL that visibly LOADS
-///   off-centre (with one motivated mid-coil push so the long load breathes), then
-///   the reserved climax CUT onto the money LEGWORK-hero: a low push that lifts the
-///   lead's legwork to frame centre (Afrobeats peaks on the legs), the single
-///   tightest framing in the whole piece, backups flung to edge-slivers;
+/// - post-chorus (closing hook): the climax — a grounded centred COIL that
+///   visibly LOADS off-centre, with one motivated mid-coil push so the long load
+///   breathes while keeping the full trio planted and readable;
 /// - outro: a de-escalation that settles down into the establish.
 ///
 /// The painter pins the dance camera's zoom pivot at the dancers' feet, so a
@@ -32,11 +30,9 @@
 /// zoom (the lead clips the stage edge first), so feature shots are *leaning
 /// two-shots* that weight the frame toward a backup while the lead — always
 /// centred by the painter — stays the readable star. Most dance shots ride
-/// `dy: 0`; the calm idle/outro wides carry a small positive `dy` trim, and the
-/// climax legwork-hero carries a shallow NEGATIVE `dy` ([kHeroLegworkLiftRef])
-/// that lifts the lead just enough to fill the frame head-to-toe with the legwork
-/// while keeping the cast shadow under the feet (the painter rescales `dy` against
-/// the stage height, so it frames the same fraction at any size).
+/// `dy: 0`; the calm idle/outro wides carry a small positive `dy` trim. The
+/// tight 2.30 legwork hero was removed because it forced the backups into edge
+/// slivers and made their feet read as floating in the close shot.
 ///
 /// Pure and deterministic so it is unit-testable and renders identically offline
 /// and live. The output `(zoom, dx, dy)` is the camera's TARGET for the frame.
@@ -44,10 +40,9 @@
 /// camera toward this target every tick, so a change of section/home reads as a
 /// motivated DOLLY rather than a snap (a sustained dolly reads as higher
 /// production value than a cut). The exceptions are the genre CUTS: the rig snaps
-/// on the downbeat into each chorus ([isChorusDrop]), onto each bridge
-/// singer-feature ([isBridgeCut]), and onto the reserved climax hero
-/// ([isHardCut]); verses stay dollies. The eased shot is what reaches
-/// `CharacterPainter.cameraOverride`.
+/// on the downbeat into each chorus ([isChorusDrop]) and onto each bridge
+/// singer-feature ([isBridgeCut]); verses and the closing hook stay dollies. The
+/// eased shot is what reaches `CharacterPainter.cameraOverride`.
 library;
 
 import 'dart:math' as math;
@@ -75,17 +70,6 @@ const double kSideCatCentreRef = 428;
 /// frame — the dance shots ride `dy: 0`. This positive nudge just drops the
 /// idle/outro wide a touch so the heads clear the waterline seam at z~1.06.
 const double kHorizonDropPx = 8;
-
-/// The climax legwork-hero's vertical lift, in 1440-ref px. NEGATIVE lifts the
-/// content UP a touch so the lead fills the frame head-to-toe — the bent-knee
-/// legwork (planted feet, the groove squat) dominates the lower-centre while the
-/// head tops the frame, ears at the upper edge and the eyes still engaging the
-/// lens. A shallow lift (paired with the deep ~2.30 zoom) keeps the cast SHADOW
-/// and a deck sliver under the feet for ground contact instead of floating the
-/// legs in dead foreground deck — the panel found a deeper lift over-raised the
-/// cast and lost the floor. The painter rescales this against the live height, so
-/// it frames the same fraction (~0.15 of the height) at any window size.
-const double kHeroLegworkLiftRef = -220;
 
 class DanceCameraContext {
   const DanceCameraContext({
@@ -177,16 +161,10 @@ Shot cameraShot(DanceCameraContext c) {
   }
 }
 
-/// The reserved climax cut: the money legwork-hero's arrival. The demo's
-/// `DanceCameraRig` snaps to the shot on the frame this is true and dollies
-/// toward it otherwise, so the climax lands as a cut. Mirrors the
-/// `sectionPhase > 0.93` hero gate in [_chorusShot]'s closing hook (and only
-/// fires while energetic, so the calm establish is never cut to).
-bool isHardCut(DanceCameraContext c) =>
-    c.energetic &&
-    c.section == 'post-chorus' &&
-    c.build > 0.74 &&
-    c.sectionPhase > 0.93;
+/// Reserved for future true cuts. The current camera language keeps the closing
+/// hook on a grounded dolly; the old tight legwork cut was dropped because it
+/// cropped the side dancers and weakened floor contact.
+bool isHardCut(DanceCameraContext c) => false;
 
 /// The Afrobeats downbeat cut INTO a chorus: a hard cut on the "1" of each
 /// refrain. The rig SNAPS to the chorus home instead of dollying into it, giving
@@ -218,41 +196,18 @@ bool isBridgeCut(DanceCameraContext c) =>
 ///   - chorus 2 (0.30..0.62): a committed LEFT two-shot (silver backup);
 ///   - chorus 3 (build > 0.62): a committed RIGHT two-shot (dark backup);
 ///   - closing post-chorus (build > 0.74): a centred COIL that loads off-centre
-///     (with one motivated mid-coil push so the long load breathes), then the
-///     reserved climax CUT onto the money legwork-hero — the single tightest
-///     framing in the piece, a low push that lifts the lead's legwork to centre.
-/// The mid choruses are capped well under the climax, and the closing hook spends
-/// NO 1.6+ register before the hero, so the cut to ~2.30 is a whole new framing
-/// rather than the tallest point on a plateau. Side cats are favoured by a
-/// committed PAN with the lead on a third-line.
+///     with one motivated mid-coil push, then resolves in the same grounded band
+///     instead of jumping into the removed 2.30 crop.
+/// The hooks are capped near 1.6 so side cats, feet, and shadows remain readable.
+/// Side cats are favoured by a committed PAN with the lead on a third-line.
 Shot _chorusShot(DanceCameraContext c) {
-  // CLOSING HOOK (final post-chorus): the single climax of the piece. A centred
-  // coil (capped ~1.56) COILS tension, then a slow push ARRIVES on the money hero
-  // — the ONE reserved framing (tightest sustained CENTRED hold). Every earlier
-  // chorus and the coil sit lower, so this lands as the peak by contrast.
+  // CLOSING HOOK (final post-chorus): a grounded centred coil. It keeps the
+  // trio readable instead of punching into the removed tight hero crop.
   if (c.section == 'post-chorus' && c.build > 0.74) {
-    // MONEY LEGWORK-HERO: a hard CUT-IN — the ONE place the camera abandons the
-    // wide groove for an intimate hero shot. Afrobeats peaks on the LEGS, so the
-    // hero is a low push that fills the frame with the lead head-to-toe: the
-    // bent-knee legwork (planted feet, the squat, the swinging low hands)
-    // DOMINATES the lower-centre while the head tops the frame, ears at the upper
-    // edge and the eyes still engaging — the footwork is the subject but the face
-    // (this chibi cast's whole charm) is kept, and the cast shadow stays under the
-    // feet for ground contact (a shallow [kHeroLegworkLiftRef] lift, not a deep
-    // one). The coil holds flat at 1.56; then the zoom JUMPS straight to the
-    // reserved ~2.30 register with NO intermediate value surviving on screen, so
-    // it lands as a cut, not a push. Every earlier hook is capped ~1.61, so this
-    // is a whole register the eye has not seen, and it flings the backups to
-    // edge-SLIVERS so the lead DOMINATES.
-    if (c.sectionPhase > 0.93) {
-      return (zoom: 2.30, dx: 0, dy: kHeroLegworkLiftRef); // legwork money-shot
-    }
-    // COIL: the run-up. The zoom settles to the ~1.56 ceiling, with ONE motivated
-    // mid-coil push (peaks ~1.61 around the middle, back to 1.56 by the cut) so
-    // the long held-wide load breathes instead of flatlining for 14s. A WIDE
-    // lateral sway visibly LOADS the frame off-centre; it is phrased to the beat
-    // grid (phrasePhase) so it grooves WITH the bars, not on a section-length
-    // clock. Spends no 1.6+ register before the cut, reserving the hero.
+    // The zoom settles to the ~1.56 ceiling, with ONE motivated mid-coil push
+    // (peaks ~1.61 around the middle, back to 1.56 by the finish) so the long
+    // held-wide load breathes instead of flatlining. A WIDE lateral sway visibly
+    // LOADS the frame off-centre and is phrased to the beat grid.
     final rise = (c.sectionPhase / 0.45).clamp(
       0.0,
       1.0,
@@ -279,7 +234,7 @@ Shot _chorusShot(DanceCameraContext c) {
   // two-shot favouring the dark backup — a different anchor from chorus 2. The rig
   // DOLLIES into it from the bridge/verse, so the commit reads as a deliberate
   // truck onto the dark singer, not a cut. One continuous home, gently pushing and
-  // breathing, capped well under the hero.
+  // breathing, capped under the same grounded ceiling.
   if (c.build > 0.62) {
     // Held wider than before (vista + legwork breathe); the right lean is a touch
     // shallower (0.38) so the bright yacht hull on this side doesn't pull focus
@@ -304,9 +259,9 @@ Shot _chorusShot(DanceCameraContext c) {
 /// the lead anchoring centre. Held to a deep-but-not-total lean (0.60) so the OFF
 /// singer keeps a thin sliver rather than vanishing (the user flagged a cat fully
 /// leaving frame as reading like a glitch), and a steady tight-ish zoom so each
-/// feature actually fills. Peak under the 2.30 hero. Within each half the home is
-/// constant — the rig holds it after the cut, so there is no per-bar pendulum,
-/// just two clean held features.
+/// feature actually fills. Peak stays inside the same grounded ceiling. Within
+/// each half the home is constant — the rig holds it after the cut, so there is
+/// no per-bar pendulum, just two clean held features.
 Shot _bridgeShot(DanceCameraContext c) {
   final featuringLeft = c.sectionPhase < 0.5;
   const z = 1.60;

@@ -90,51 +90,18 @@ void main() {
     });
   });
 
-  group('isHardCut — the reserved climax cut', () {
-    test('fires only on the reserved hero arrival', () {
-      expect(
-        isHardCut(_ctx(section: 'post-chorus', build: 0.9, sectionPhase: 0.95)),
-        isTrue,
-      );
-    });
-
-    test('does not fire on the coil, earlier sections, or when calm', () {
-      // Still on the coil (≤ 0.93) — the rig is still dollying here.
-      expect(
-        isHardCut(_ctx(section: 'post-chorus', build: 0.9, sectionPhase: 0.90)),
-        isFalse,
-      );
-      // An early post-chorus (build 0.5 < 0.74, so not the closing hook).
-      expect(
-        isHardCut(_ctx(section: 'post-chorus', sectionPhase: 0.99)),
-        isFalse,
-      );
-      // A chorus, however late, is never the hero.
-      expect(
-        isHardCut(_ctx(build: 0.9, sectionPhase: 0.99)),
-        isFalse,
-      );
-      // Calm sections are never cut to.
-      expect(
-        isHardCut(
-          _ctx(
-            section: 'post-chorus',
-            energetic: false,
-            build: 0.9,
-            sectionPhase: 0.99,
-          ),
-        ),
-        isFalse,
-      );
-    });
-
-    test('agrees frame-for-frame with the 2.30 hero shot', () {
-      // The predicate drives the rig's snap; it must fire on exactly the frames
-      // where the shot is the 2.30 hero, or the cut lands on the wrong frame.
-      for (final sp in [0.90, 0.92, 0.94, 0.96, 1.0]) {
-        final c = _ctx(section: 'post-chorus', build: 0.9, sectionPhase: sp);
-        final shotIsHero = (cameraShot(c).zoom - 2.30).abs() < 1e-9;
-        expect(isHardCut(c), shotIsHero, reason: 'sp=$sp');
+  group('isHardCut', () {
+    test('stays disabled now that the tight climax crop is removed', () {
+      for (final section in _sections) {
+        for (final sp in [0.0, 0.5, 0.95, 1.0]) {
+          expect(
+            isHardCut(
+              _ctx(section: section, build: 0.9, sectionPhase: sp),
+            ),
+            isFalse,
+            reason: '$section sp=$sp',
+          );
+        }
       }
     });
   });
@@ -157,7 +124,7 @@ void main() {
           reason: section,
         );
       }
-      // post-chorus (the coil) is reached by a dolly too; only its hero cuts.
+      // post-chorus is reached by a dolly too.
       expect(isChorusDrop(_ctx(section: 'post-chorus', build: 0.9)), isFalse);
     });
 
@@ -289,7 +256,7 @@ void main() {
       // The hand-off is a hard CUT: dx flips by a big jump across 0.5 (~+411 ->
       // ~-411), not a continuous sweep through centre.
       expect(earlyB.dx - lateA.dx, greaterThan(600));
-      // Both features hold the same committed two-shot zoom, under the hero.
+      // Both features hold the same committed two-shot zoom, under the ceiling.
       expect(earlyA.zoom, closeTo(1.60, 1e-9));
       expect(lateA.zoom, closeTo(1.60, 1e-9));
     });
@@ -325,8 +292,8 @@ void main() {
 
   group('cameraShot — continuous (dolly) within every dollied section', () {
     // The director's TARGET moves continuously within every DOLLIED section — the
-    // genre cuts (chorus drops, the bridge singer hand-off, the hero) live in the
-    // rig, not here. So sweeping sectionPhase finely (phrasePhase fixed so the
+    // genre cuts (chorus drops and the bridge singer hand-off) live in the rig,
+    // not here. So sweeping sectionPhase finely (phrasePhase fixed so the
     // breathe term is constant), the target never jumps: a real per-bar cut (the
     // old homes jumped dx by ~300 / zoom by ~0.15) would blow these bounds; the
     // smooth coil sweep stays well inside them. The bridge is EXCLUDED — it is now
@@ -339,15 +306,14 @@ void main() {
       (section: 'verse', build: 0.50),
       (section: 'pre-chorus', build: 0.20),
       (section: 'outro', build: 0.95),
-      (section: 'post-chorus', build: 0.90), // the coil, BEFORE the hero cut
+      (section: 'post-chorus', build: 0.90),
     ];
     for (final cse in cases) {
       test('${cse.section} (build ${cse.build}) never jumps mid-section', () {
-        // Stop at 0.90 so the post-chorus sweep stays on the coil, not the hero.
         var prev = cameraShot(
           _ctx(section: cse.section, build: cse.build),
         );
-        for (var sp = 0.005; sp <= 0.90 + 1e-9; sp += 0.005) {
+        for (var sp = 0.005; sp <= 1.0 + 1e-9; sp += 0.005) {
           final s = cameraShot(
             _ctx(section: cse.section, build: cse.build, sectionPhase: sp),
           );
@@ -367,18 +333,20 @@ void main() {
     }
   });
 
-  group('cameraShot — the reserved hero climax', () {
-    test('the coil holds a wide band, loads off-centre, then cuts', () {
-      // The coil stays in a ~1.56 band with ONE motivated mid-coil push (never
-      // approaching the hero register), and returns to ~1.56 LOADED before the cut.
-      for (final sp in [0.5, 0.62, 0.74, 0.86, 0.90]) {
+  group('cameraShot — final post-chorus hook', () {
+    test('holds a grounded band, loads off-centre, and resolves continuously', () {
+      // The final hook stays in a ~1.56 band with ONE motivated mid-coil push
+      // and no late 2.30 close-crop jump.
+      for (final sp in [0.5, 0.62, 0.74, 0.86, 0.90, 0.96, 1.0]) {
+        final s = cameraShot(
+          _ctx(section: 'post-chorus', build: 0.9, sectionPhase: sp),
+        );
         expect(
-          cameraShot(
-            _ctx(section: 'post-chorus', build: 0.9, sectionPhase: sp),
-          ).zoom,
+          s.zoom,
           inInclusiveRange(1.54, 1.62),
           reason: 'sp=$sp',
         );
+        expect(s.dy, 0, reason: 'sp=$sp');
       }
       // The lateral sway is beat-phrased (phrasePhase): at a quarter phrase it
       // loads the frame well off-centre.
@@ -393,43 +361,37 @@ void main() {
         ).dx.abs(),
         greaterThan(50),
       );
-      // The cut: a single big step off the loaded coil onto the hero.
-      final preCut = cameraShot(
+      // The finish resolves from the same grounded band instead of jumping into
+      // a separate crop register.
+      final preFinish = cameraShot(
         _ctx(section: 'post-chorus', build: 0.9, sectionPhase: 0.90),
       );
-      final hero = cameraShot(
+      final finish = cameraShot(
         _ctx(section: 'post-chorus', build: 0.9, sectionPhase: 1),
       );
-      expect(preCut.zoom, closeTo(1.56, 0.01)); // back to the load level
-      expect(hero.zoom - preCut.zoom, greaterThan(0.4)); // arrives, not creeps
+      expect(preFinish.zoom, closeTo(1.56, 0.01));
+      expect((finish.zoom - preFinish.zoom).abs(), lessThan(0.03));
+      expect(finish.dy, 0);
     });
 
-    test('the hero is a hard cut: no zoom ever lands between coil and hero', () {
-      // The hero is a discontinuous STEP, so every post-chorus zoom is either in
-      // the coil band (<=1.62) or exactly at the hero (2.30) — nothing between.
+    test('the whole final hook stays continuous and capped', () {
+      var prev = cameraShot(_ctx(section: 'post-chorus', build: 0.9));
       for (var i = 0; i <= 400; i++) {
-        final z = cameraShot(
+        final s = cameraShot(
           _ctx(section: 'post-chorus', build: 0.9, sectionPhase: i / 400),
-        ).zoom;
-        final onCoil = z <= 1.62 + 1e-9;
-        final atHero = (z - 2.30).abs() < 1e-9;
-        expect(onCoil || atHero, isTrue, reason: 'sp=${i / 400} z=$z');
+        );
+        expect(s.zoom, lessThanOrEqualTo(1.62), reason: 'sp=${i / 400}');
+        expect(
+          (s.zoom - prev.zoom).abs(),
+          lessThan(0.01),
+          reason: 'sp=${i / 400}',
+        );
+        prev = s;
       }
     });
 
-    test('the hero is the single tightest framing and lifts the legwork', () {
-      final hero = cameraShot(
-        _ctx(section: 'post-chorus', build: 0.95, sectionPhase: 1),
-      );
-      expect(hero.zoom, closeTo(2.30, 1e-9));
-      expect(hero.dx, 0);
-      // A shallow negative dy fills the frame head-to-toe with the legwork while
-      // keeping the cast shadow under the feet — the climax features the footwork.
-      expect(hero.dy, kHeroLegworkLiftRef);
-      expect(hero.dy, lessThan(0));
-
-      // No other section, at any phase/build, reaches anywhere near its zoom.
-      var maxOther = 0.0;
+    test('no section exceeds the grounded dance ceiling', () {
+      var maxShot = 0.0;
       for (final section in _sections) {
         for (var b = 0; b <= 10; b++) {
           for (var ph = 0; ph <= 4; ph++) {
@@ -440,24 +402,22 @@ void main() {
                 phrasePhase: ph / 4,
                 sectionPhase: sp / 10,
               );
-              if (isHardCut(c)) continue;
               final z = cameraShot(c).zoom;
-              if (z > maxOther) maxOther = z;
+              if (z > maxShot) maxShot = z;
             }
           }
         }
       }
-      expect(maxOther, lessThanOrEqualTo(1.62));
-      expect(hero.zoom, greaterThan(maxOther + 0.4));
+      expect(maxShot, lessThanOrEqualTo(1.62));
     });
   });
 
   group('cameraShot — invariants (glados)', () {
     glados.Glados(glados.any.danceCtx, glados.ExploreConfig(numRuns: 300)).test(
-      'no shot ever exceeds the reserved hero zoom, and all output is finite',
+      'no shot ever exceeds the grounded dance ceiling, and all output is finite',
       (c) {
         final s = cameraShot(c);
-        expect(s.zoom, lessThanOrEqualTo(2.3000001), reason: '$c');
+        expect(s.zoom, lessThanOrEqualTo(1.6200001), reason: '$c');
         expect(s.zoom, greaterThan(1.0), reason: '$c');
         expect(s.zoom.isFinite, isTrue, reason: '$c');
         expect(s.dx.isFinite, isTrue, reason: '$c');
@@ -467,10 +427,9 @@ void main() {
     );
 
     glados.Glados(glados.any.danceCtx, glados.ExploreConfig(numRuns: 300)).test(
-      'every shot but the reserved hero arrival stays capped near 1.6',
+      'hard cuts stay disabled while the close-crop hero is removed',
       (c) {
-        if (isHardCut(c)) return; // its own register, the 2.30 legwork hero
-        expect(cameraShot(c).zoom, lessThanOrEqualTo(1.62), reason: '$c');
+        expect(isHardCut(c), isFalse, reason: '$c');
       },
       tags: 'glados',
     );
@@ -489,13 +448,10 @@ void main() {
     );
 
     glados.Glados(glados.any.danceCtx, glados.ExploreConfig(numRuns: 300)).test(
-      'dy contract: hero lifts the legwork, calm trims, dance flat, outro eases',
+      'dy contract: calm trims, dance flat, outro eases',
       (c) {
         final dy = cameraShot(c).dy;
-        if (isHardCut(c)) {
-          // The climax legwork-hero is the one shot that lifts (negative dy).
-          expect(dy, kHeroLegworkLiftRef, reason: '$c');
-        } else if (!c.energetic) {
+        if (!c.energetic) {
           expect(dy, kHorizonDropPx, reason: '$c');
         } else if (c.section == 'outro') {
           expect(dy, inInclusiveRange(0, kHorizonDropPx), reason: '$c');
