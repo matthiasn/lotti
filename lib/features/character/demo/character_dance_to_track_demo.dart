@@ -768,9 +768,18 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         ? stageRig.sample(time: _wallSeconds, beat: beat)
         : const <StageLightSample>[];
     // Screen order (left→center→right). Alpha scales the halo with the beat;
-    // the painter splits this across a soft bloom + a tight rim pass.
+    // the painter splits this across a soft bloom + a tight rim pass. The centre
+    // (lead) rim runs a touch hotter and the flankers near full, so the hero
+    // owns the frame by light without starving the backups of glow.
+    const heroWeight = [0.9, 1.1, 0.9];
     final catBacklights = [
-      for (final s in stageSamples) s.color.withValues(alpha: s.intensity),
+      for (final (i, s) in stageSamples.indexed)
+        s.color.withValues(
+          alpha: (s.intensity * heroWeight[i % heroWeight.length]).clamp(
+            0.0,
+            1.0,
+          ),
+        ),
     ];
     // The cat bodies are NEVER pulsed with the beat — a full-figure luminance
     // flash on every beat is a photosensitive-epilepsy risk (large area, high
@@ -825,6 +834,29 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                               timeSeconds: posSec,
                               beatPulse: beat,
                             ),
+                          ),
+                        // Aerial-perspective haze band at the waterline: a soft
+                        // cool veil that lifts the distant city/water and
+                        // separates the foreground cat plane (fades out above the
+                        // dancers' feet so they stay crisp). Cheap atmospheric DoF
+                        // stand-in. Frame-fixed (not parallaxed with the plate).
+                        if (_useNewBackdrop)
+                          const DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Color(0x005E7088),
+                                  Color(0x005E7088),
+                                  Color(0x2C5E7088),
+                                  Color(0x185E7088),
+                                  Color(0x005E7088),
+                                ],
+                                stops: [0.0, 0.40, 0.52, 0.64, 0.76],
+                              ),
+                            ),
+                            child: SizedBox.expand(),
                           ),
                         // Full-colour cats are the stars; the concert rig rings
                         // each one in its gel via memberBacklights (rim/halo) and
@@ -908,6 +940,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                                     deckWrap: Color(0x2E3A2616),
                                   )
                                 : null,
+                            // Hero-stage the trio (lead bigger/downstage) so the
+                            // frontman owns the frame — new scene only.
+                            heroStaging: _useNewBackdrop,
                             renderer: _renderer,
                           ),
                           child: const SizedBox.expand(),

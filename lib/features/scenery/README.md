@@ -185,20 +185,24 @@ its floor pool always share a gel:
 - **`runtime/stage_lights.dart` — `StageLightRig` (pure).** A deterministic,
   canvas-free scheduler: feed it the scene time + the 0..1 beat envelope and it
   returns each light's gel `color`, pool `targetX` and `intensity`. The gel cycle
-  (`kStageGelCycle`: warm gold / dusk fuchsia / electric violet, desaturated ~20%
-  toward the plate's lantern-amber / dusk-magenta so the gels read as light in the
-  blue-hour world rather than arcade decals) **snaps** (never lerps) on a
-  `colorPeriod` wired to the track tempo (`60 / bpm`), offset per lane so the row
-  rotates rather than flashing in unison; brightness is
-  `baseIntensity + beatBoost * beat`.
+  (`kStageGelCycle`: warm gold / dusk fuchsia / electric violet, pulled back from
+  neon toward the plate's lantern-amber / dusk-magenta so the gels read as light in
+  the blue-hour world rather than arcade decals; the gold is deepened toward amber
+  so the additive rim/pool stays gold when hot instead of blowing to white on the
+  beat) **snaps** (never lerps) on a `colorPeriod` wired to the track tempo
+  (`60 / bpm`), offset per lane so the row rotates rather than flashing in unison;
+  brightness is `baseIntensity + beatBoost * beat` (a lifted base so the calm intro
+  is never underlit, a tempered boost so the beat punches without blowing out).
 - **The directional rim/halo + body grade are drawn by `CharacterPainter`**
-  (`memberBacklights` + `bodyGrade`, not in this module): each cat is rendered as
-  a blurred, solid-gel silhouette behind itself (a soft bloom + a tight rim pass),
-  each pass **offset toward that lane's light source** so the rim is directional
-  with a real shadow side. `bodyGrade` then grades the body into the twilight
-  plate (a cool→warm ambient wrap + a directional gel terminator), clipped below
-  the neckline so the face stays natural. It reuses the member transform, so the
-  rim tracks the dancer through any camera move.
+  (`memberBacklights` + `bodyGrade` + `heroStaging`, not in this module): each cat
+  is rendered as a blurred, solid-gel silhouette behind itself (a soft bloom + a
+  tight rim pass), each pass **offset toward that lane's light source** so the rim
+  is directional with a real shadow side. `bodyGrade` then grades the body into the
+  twilight plate (a cool→warm ambient wrap + a directional gel terminator), clipped
+  below the neckline so the face stays natural, and `heroStaging` pushes the lead
+  bigger/downstage. It reuses the member transform, so the rim tracks the dancer
+  through any camera move. The whole act activates for the centred-trio concert
+  dance phrase — both `dance` and the shipping `shaku` (what the player dances).
 - **`stage_lights_overlay.dart` — `StageLightsOverlay` / `StageLightsPainter`.**
   The grounding half: an additive (`BlendMode.plus`) screen-space pass over the
   dancers drawing a gel pool that is anchored at the foot and **rakes forward**

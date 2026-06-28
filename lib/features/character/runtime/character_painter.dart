@@ -50,11 +50,12 @@ Affine2D groundedBase(
 /// uniform outline glow. See [CharacterPainter.memberBacklights].
 const List<({double sigmaFrac, double alphaScale, double offsetScale})>
 _kBacklightPasses = [
-  // soft outer bloom: biased to the source side so little atmosphere wraps the
-  // shadow edge, but not fully one-sided (keeps a hint of ambient bloom).
-  (sigmaFrac: 0.024, alphaScale: 0.55, offsetScale: 0.85),
-  // tight bright rim: strongly biased to one edge → a crisp directional kicker.
-  (sigmaFrac: 0.010, alphaScale: 1.0, offsetScale: 1.6),
+  // soft outer bloom: only lightly biased toward the source so it still WRAPS a
+  // good arc of the silhouette (a real, readable air-glow), brighter side toward
+  // the light — not a thin sliver that reads as "no glow".
+  (sigmaFrac: 0.026, alphaScale: 0.58, offsetScale: 0.7),
+  // tight bright rim: a thin hot kicker hard on the source-facing contour.
+  (sigmaFrac: 0.010, alphaScale: 1.0, offsetScale: 2.0),
 ];
 
 /// Unit direction (screen space, +x right / +y down) from each dance lane toward
@@ -67,6 +68,16 @@ const List<Offset> _kRimDirections = [
   Offset(0, -1), // centre lane → hero back-key from straight above
   Offset(0.80, -0.60), // right lane → back-key from upper-right
 ];
+
+/// Whether [clip] is a centred-trio **concert dance** phrase — the lead clip
+/// that turns on the whole stage act: the [_kRimDirections] rim/halo, the body
+/// grade, hero staging, the dance formation, foot-anchor publishing, the dance
+/// camera and the music head-bob. Both the original `dance` phrase and the
+/// shipping `shaku` phrase (what the audio player actually dances) qualify —
+/// gating on `'dance'` alone left every one of those dark/inert in the running
+/// player, because it dances `shaku`.
+bool _isTrioDanceClip(Clip clip) =>
+    clip.name == 'dance' || clip.name == 'shaku';
 
 /// A [CustomPainter] that resolves and draws one frame of a [CharacterScene].
 ///
@@ -102,6 +113,7 @@ class CharacterPainter extends CustomPainter {
     this.onDancerAnchors,
     this.memberBacklights = const [],
     this.bodyGrade,
+    this.heroStaging = false,
     CharacterRenderer? renderer,
   }) : _renderer = renderer ?? CharacterRenderer();
 
@@ -169,6 +181,13 @@ class CharacterPainter extends CustomPainter {
   /// full-figure luminance pulse on every beat is a photosensitivity risk. Only
   /// honored in three-member dance mode; null leaves the cats ungraded.
   final ({Color skyWrap, Color deckWrap})? bodyGrade;
+
+  /// When true (concert dance only), stage the trio as a hero + backups: the
+  /// lead renders a touch bigger and downstage, the flankers smaller and
+  /// upstage, so the lead owns the frame with real depth. Opt-in and decoupled
+  /// from [bodyGrade] so it only changes geometry where requested (the audio
+  /// player); every other surface keeps its even trio.
+  final bool heroStaging;
 
   final Clip clip;
   final double timeSeconds;
@@ -279,7 +298,7 @@ class CharacterPainter extends CustomPainter {
       final rawCamera =
           enableDanceCamera &&
               walkingPair &&
-              clip.name == 'dance' &&
+              _isTrioDanceClip(clip) &&
               memberCount == 3
           ? _danceCamera(timeSeconds, clip.duration)
           : (zoom: 1.0, dx: 0.0, dy: 0.0);
@@ -380,7 +399,7 @@ class CharacterPainter extends CustomPainter {
       // (formation, rim/pool lighting, foot anchors) stay gated on the dance clip
       // via [leadCentreOrder].
       final trioCentre = baseMembers.length == 3;
-      final leadCentreOrder = clip.name == 'dance' && trioCentre;
+      final leadCentreOrder = _isTrioDanceClip(clip) && trioCentre;
       final order = trioCentre ? const [1, 0, 2] : null;
       final members = order == null
           ? baseMembers
@@ -427,12 +446,24 @@ class CharacterPainter extends CustomPainter {
                 memberClip.duration,
               )
             : (dx: 0.0, dy: 0.0, scale: 1.0);
+        // Opt-in hero staging (lead bigger/downstage, flankers smaller/upstage);
+        // identity for every surface that doesn't request it. Decoupled from
+        // [bodyGrade] (colour) so it only moves geometry when asked.
+        final heroStage = (leadCentreOrder && heroStaging)
+            ? _heroStaging(i, members.length)
+            : (scale: 1.0, dy: 0.0);
         final memberScale =
-            drawScale * _roleScale(i, members.length) * formation.scale;
+            drawScale *
+            _roleScale(i, members.length) *
+            formation.scale *
+            heroStage.scale;
         final memberHorizontalScale = _roleHorizontalScale(i, members.length);
         final memberFloorY =
             groupFloorY +
-            (_roleFloorOffset(i, members.length) + formation.dy) * drawScale;
+            (_roleFloorOffset(i, members.length) +
+                    formation.dy +
+                    heroStage.dy) *
+                drawScale;
         final memberCentreX = startX + spacing * i + formation.dx * drawScale;
         if (anchors != null && cameraMatrix != null) {
           // Map the local foot point through the camera transform to screen,
@@ -513,14 +544,11 @@ class CharacterPainter extends CustomPainter {
             canvas.restore();
           }
         }
-        // Front body draw. In concert mode, grade the cat INTO the plate: render
-        // it into an isolation layer, then composite a vertical ambient wrap onto
-        // its own silhouette (`srcATop`) — cool sky light up high fading through
-        // clear to warm deck/city bounce down low — so the flat fill carries the
-        // scene's twilight exposure and a touch of internal value variation
-        // instead of reading as a sticker. STATIC (no beat term): a full-figure
-        // luminance pulse would be a seizure risk. The rim passes above are
-        // outside this layer, so the gel edge stays pure.
+        // Front body draw. In concert mode, render it into an isolation layer so
+        // the cel-shade grade below can be masked to the cat's own silhouette
+        // (`srcATop`) — see the cel-shade block for the form-shadow terminator
+        // and twilight wrap. The rim passes above stay outside this layer, so the
+        // gel edge stays pure.
         final grade = leadCentreOrder ? bodyGrade : null;
         final gradeBounds = Rect.fromLTRB(
           memberCentreX - spacing,
@@ -544,9 +572,16 @@ class CharacterPainter extends CustomPainter {
           horizontalScale: memberHorizontalScale,
         );
         if (grade != null) {
-          // Grade the BODY, not the face: the cool ambient wrap + cool-blue
-          // terminator dull the head, so clip those passes to BELOW the neckline
-          // and leave the head/face at its natural, brighter cartoon tone.
+          // CEL-SHADE the BODY (not the face): model the figure as a 3-D form lit
+          // from this lane's source ([rimDir]). A vertical twilight wrap seats it
+          // in the plate's exposure (cool sky light up high → warm deck/city
+          // bounce down low), then a directional TERMINATOR splits a gel-keyed lit
+          // side from a cool shadow side so the flat fill reads as a lit volume,
+          // not a sticker. Both passes are clipped to BELOW the neckline: the cool
+          // wrap + shadow dull the head, and bright, natural faces are the look we
+          // want, so the face is left at its own tone. Static — no beat term (a
+          // full-figure pulse would be a seizure risk); masked to the silhouette
+          // (`srcATop`); the rim passes above stay outside this layer.
           canvas
             ..save()
             ..clipRect(
@@ -557,8 +592,6 @@ class CharacterPainter extends CustomPainter {
                 size.height,
               ),
             )
-            // Vertical ambient wrap (≈ half the frame tall, feet at
-            // memberFloorY), masked to the figure it was just drawn over.
             ..drawRect(
               gradeBounds,
               Paint()
@@ -567,40 +600,36 @@ class CharacterPainter extends CustomPainter {
                   Offset(memberCentreX, memberFloorY - size.height * 0.52),
                   Offset(memberCentreX, memberFloorY),
                   [grade.skyWrap, const Color(0x00000000), grade.deckWrap],
-                  const [0.0, 0.55, 1.0],
+                  const [0.0, 0.52, 1.0],
                 ),
             );
-          // Model the torso with the gel: a directional band aligned to this
-          // lane's light source ([rimDir]) — gel on the lit edge, through clear,
-          // to a COOL BLUE FILL on the shadow side (a moderate terminator that
-          // lifts the off-side toward blue-hour skylight rather than crushing it
-          // to black) — so the colour WRAPS the form instead of only ringing it.
-          // This is what makes the backlight read as light on the body, not a
-          // sticker outline.
           if (glow != null && glow.a > 0) {
             final mid = Offset(
               memberCentreX,
-              memberFloorY - size.height * 0.26,
+              memberFloorY - size.height * 0.28,
             );
-            final reach = rimDir * (size.height * 0.30);
+            final reach = rimDir * (size.height * 0.32);
             canvas.drawRect(
               gradeBounds,
               Paint()
                 ..blendMode = BlendMode.srcATop
                 ..shader = ui.Gradient.linear(
-                  mid + reach, // lit, source-facing edge
+                  mid + reach, // lit, source-facing side
                   mid - reach, // shadow side
                   [
-                    glow.withValues(alpha: 0.42),
+                    glow.withValues(alpha: 0.34), // gel key on the lit plane
                     const Color(0x00000000),
-                    const Color(0x4A26486E),
+                    const Color(0x780B1626), // cool cel form-shadow (wraps)
                   ],
-                  const [0.0, 0.52, 1.0],
+                  // gradual terminator: the shadow side ramps in across the body
+                  // so it MODELS the volume instead of slamming the suit to a flat
+                  // black mass before it can read as form.
+                  const [0.0, 0.52, 0.92],
                 ),
             );
           }
           canvas
-            ..restore() // pop the body clip (face is left ungraded)
+            ..restore() // pop the body clip (face left ungraded)
             ..restore(); // pop the isolation layer
         }
       }
@@ -800,6 +829,19 @@ class CharacterPainter extends CustomPainter {
   static double _roleFloorOffset(int index, int memberCount) {
     if (memberCount < 3) return 0;
     return index == 1 ? 28 : -44;
+  }
+
+  /// Extra HERO STAGING applied only to the layered-scene concert player (keyed
+  /// off [bodyGrade] being present, not the shared trio). It pushes the lead a
+  /// touch bigger and downstage and the flankers smaller and upstage, so the row
+  /// reads with real depth and the lead owns the frame — a music-video hero
+  /// composition. Kept out of [_roleScale] / [_danceFormation] so the main dance
+  /// and the formation-depth tests (scale locked to 1, backup rows locked) are
+  /// untouched. Constant per role (no time term) — depth must not animate without
+  /// matching footwork.
+  static ({double scale, double dy}) _heroStaging(int index, int memberCount) {
+    if (memberCount < 3) return (scale: 1, dy: 0);
+    return index == 1 ? (scale: 1.12, dy: 12) : (scale: 0.9, dy: -16);
   }
 
   static ({double zoom, double dx, double dy}) _danceCamera(
@@ -1181,7 +1223,7 @@ class CharacterPainter extends CustomPainter {
       base,
       floorY,
     );
-    final groundedFrame = singingHeadMotion && clip.name == 'dance'
+    final groundedFrame = singingHeadMotion && _isTrioDanceClip(clip)
         ? _danceHeadMotion(
             pinnedFrame,
             drawScene.rig,
@@ -1423,7 +1465,7 @@ class CharacterPainter extends CustomPainter {
       final active = boneId == contactBone;
       final shadowW = (active ? 84 : 52) * scale * (1 - 0.35 * lift);
       final baseAlpha = (shadowColor.a * 255.0).round();
-      final activeBoost = _strongDeckShadows ? 4.4 : 2.1;
+      final activeBoost = _strongDeckShadows ? 5.0 : 2.1;
       final shadowAlpha =
           (baseAlpha * (active ? activeBoost : 0.45) * (1 - 0.82 * lift))
               .round()
@@ -1438,7 +1480,7 @@ class CharacterPainter extends CustomPainter {
       );
       if (active) {
         final contactAlpha =
-            (baseAlpha * (_strongDeckShadows ? 5.6 : 2.6) * (1 - 0.7 * lift))
+            (baseAlpha * (_strongDeckShadows ? 6.4 : 2.6) * (1 - 0.7 * lift))
                 .round()
                 .clamp(0, 255);
         _drawDeckShadowOval(
@@ -1575,5 +1617,6 @@ class CharacterPainter extends CustomPainter {
       old.cameraOverride != cameraOverride ||
       !listEquals(old.memberBacklights, memberBacklights) ||
       old.bodyGrade != bodyGrade ||
+      old.heroStaging != heroStaging ||
       old._renderer != _renderer;
 }

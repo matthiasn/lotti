@@ -8,7 +8,8 @@ import 'dart:ui' show Color;
 /// as light that belongs in the blue-hour world — biased toward the lantern
 /// amber / dusk-magenta of the plate — rather than arcade decals over it.
 const List<Color> kStageGelCycle = [
-  Color(0xFFF2AC44), // warm gold (hero), toward the lantern amber
+  Color(0xFFE7A030), // warm gold (hero) — deepened amber so additive pools/rims
+  // stay GOLD when hot instead of blowing to white at the beat.
   Color(0xFFE85F97), // dusk fuchsia / rose-magenta
   Color(0xFFB163E0), // muted electric violet
 ];
@@ -48,8 +49,8 @@ class StageLightRig {
     this.sweep = 0.06,
     this.sweepHz = 0.12,
     this.colorPeriod = 0.5,
-    this.baseIntensity = 0.3,
-    this.beatBoost = 0.46,
+    this.baseIntensity = 0.38,
+    this.beatBoost = 0.4,
   }) : assert(count > 0, 'need at least one light'),
        assert(colorPeriod > 0, 'colorPeriod must be > 0');
 

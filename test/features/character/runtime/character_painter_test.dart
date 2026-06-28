@@ -516,6 +516,7 @@ void main() {
     CharacterPainter trio({
       List<Color> backlights = const [],
       ({Color skyWrap, Color deckWrap})? bodyGrade,
+      Clip? lead,
     }) => CharacterPainter(
       scene: scene,
       partnerScene: CharacterScene(
@@ -528,13 +529,13 @@ void main() {
         CharacterScene(buildCatInSuitRig(palette: CatInSuitPalette.darkBrown)),
       ],
       ensembleClips: [
-        CatClips.dance,
+        lead ?? CatClips.dance,
         CatClips.danceBackupLeft,
         CatClips.danceBackupRight,
       ],
       synchronousEnsemble: true,
       walkingPair: true,
-      clip: CatClips.dance,
+      clip: lead ?? CatClips.dance,
       timeSeconds: 0.25,
       shadowColor: const Color(0x00000000),
       memberBacklights: backlights,
@@ -602,6 +603,39 @@ void main() {
         }
       });
     });
+
+    // Regression guard: the concert stage act (rim/halo, grade, formation, foot
+    // anchors) must light up for the SHIPPING `shaku` phrase, not only `dance`.
+    // The audio player dances `shaku`; gating the whole system on `clip.name ==
+    // 'dance'` once left the running player completely dark — invisible to tests
+    // because they only ever rendered `dance`. Assert the rim draws for `shaku`.
+    testWidgets(
+      'rings the trio for the shipping shaku phrase, not just dance',
+      (
+        tester,
+      ) async {
+        await tester.runAsync(() async {
+          final plain = await pixels(trio(lead: CatClips.shaku));
+          final lit = await pixels(
+            trio(lead: CatClips.shaku, backlights: gels),
+          );
+          var newRimPixels = 0;
+          for (var y = 0; y < h; y++) {
+            for (var x = 0; x < w; x++) {
+              final o = (y * w + x) * 4;
+              if (lit[o + 3] != 0 && plain[o + 3] == 0) newRimPixels++;
+            }
+          }
+          expect(
+            newRimPixels,
+            greaterThan(300),
+            reason:
+                'memberBacklights must ring the cats for the shaku phrase the '
+                'audio player actually dances, not only the dance phrase',
+          );
+        });
+      },
+    );
 
     testWidgets('bodyGrade tints the body but leaves the face ungraded', (
       tester,
