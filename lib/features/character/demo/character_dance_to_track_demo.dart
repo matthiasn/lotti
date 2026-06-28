@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:lotti/features/character/demo/dance_lip_sync.dart';
 import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
 import 'package:lotti/features/character/model/clip.dart';
@@ -247,7 +248,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     // on lead words; the backups on the `(...)` ad-libs and the group-hook
     // sections (chorus / post-chorus / outro), so the chorus reads as the whole
     // trio. With no lyrics file, the frontman lip-syncs everything.
-    final cue = _mouthForCue(_cueShapeAt(pos));
+    final cue = mouthForCue(cueShapeAt(_cues, pos));
     final leadOn =
         _words.isEmpty || _voiceActive(pos, (w) => w.voice == 'lead');
     final bgOn = _voiceActive(
@@ -273,42 +274,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     var k = dt / tc;
     if (k > 1) k = 1;
     return current + (target - current) * k;
-  }
-
-  /// The Rhubarb mouth-shape letter active at [pos] (`X` = rest when none).
-  String _cueShapeAt(double pos) {
-    for (final c in _cues) {
-      if (pos >= c.start && pos < c.end) return c.shape;
-      if (c.start > pos) break;
-    }
-    return 'X';
-  }
-
-  /// Maps a Rhubarb shape letter to a drawn viseme + how far the mouth opens.
-  /// A/X rest closed; B-F are vowels of growing/rounding aperture; G is the F/V
-  /// consonant (kept *tight* — near-closed — so it reads as a consonant, not a
-  /// gape); H ("L") reuses the open "ah". Open vowels reach high so sung syllables
-  /// punch — paired with crisp closures (A/X) the phrase gets a wide dynamic
-  /// range rather than a constant flap.
-  ({MouthShape shape, double open}) _mouthForCue(String letter) {
-    switch (letter) {
-      case 'B': // slightly open, teeth near-closed
-        return (shape: MouthShape.singEe, open: 0.3);
-      case 'C': // open (EH, AE)
-        return (shape: MouthShape.singAh, open: 0.46);
-      case 'D': // wide open (AA) — the biggest, still tasteful
-        return (shape: MouthShape.singAh, open: 0.6);
-      case 'E': // slightly rounded (AO, ER)
-        return (shape: MouthShape.singOh, open: 0.4);
-      case 'F': // puckered (UW, OW, W)
-        return (shape: MouthShape.singOh, open: 0.26);
-      case 'G': // F, V — tight near-closed consonant
-        return (shape: MouthShape.teethOnLip, open: 0.1);
-      case 'H': // "L" — tongue up
-        return (shape: MouthShape.singAh, open: 0.4);
-      default: // 'A' closed, 'X' idle
-        return (shape: MouthShape.singAh, open: 0);
-    }
   }
 
   Future<void> _load() async {
@@ -493,9 +458,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   /// flicker shut — it only rests between phrases / when that voice is silent.
   bool _voiceActive(double pos, bool Function(_Word w) test) {
     for (final w in _words) {
-      if (test(w) &&
-          pos >= w.start - _voiceSlack &&
-          pos < w.end + _voiceSlack) {
+      if (test(w) && windowActiveAt(w.start, w.end, pos, _voiceSlack)) {
         return true;
       }
       if (w.start - _voiceSlack > pos) break;

@@ -614,14 +614,14 @@ class CharacterRenderer {
         // Tall open cavity with a tongue — the open vowel.
         _drawSingingMouth(canvas, f, s, jaw, widthFactor: 1, heightFactor: 1);
       case MouthShape.singOh:
-        // Narrow + tall, no tongue = a round "oh" ring.
+        // A rounder "oh" ring — width nearer height (not a tall slot), no tongue.
         _drawSingingMouth(
           canvas,
           f,
           s,
           jaw,
-          widthFactor: 0.45,
-          heightFactor: 1.25,
+          widthFactor: 0.58,
+          heightFactor: 1,
           topBow: -1,
           tongue: false,
         );
