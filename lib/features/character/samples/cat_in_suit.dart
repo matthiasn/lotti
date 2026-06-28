@@ -4539,42 +4539,42 @@ class CatClips {
   // torso. One paw is high (collarbone -57) while the other is low (mid-chest
   // -30), so the two diagonals cross with vertical daylight = an open scissor X.
   static const _shakuHandLTargetKeys = [
-    DanceIkTargetKey(0, x: 34, y: -57), // high + out (collarbone)
+    DanceIkTargetKey(0, x: 34, y: -66), // high + out (collarbone)
     DanceIkTargetKey(2, x: 32, y: -45),
-    DanceIkTargetKey(4, x: 30, y: -30), // low, still out (open diagonal)
+    DanceIkTargetKey(4, x: 30, y: -22), // low, still out (open diagonal)
     DanceIkTargetKey(6, x: 32, y: -45),
-    DanceIkTargetKey(8, x: 34, y: -57),
+    DanceIkTargetKey(8, x: 34, y: -66),
     DanceIkTargetKey(10, x: 32, y: -45),
-    DanceIkTargetKey(12, x: 30, y: -30),
+    DanceIkTargetKey(12, x: 30, y: -22),
     DanceIkTargetKey(14, x: 32, y: -45),
-    DanceIkTargetKey(16, x: 34, y: -57),
+    DanceIkTargetKey(16, x: 34, y: -66),
     DanceIkTargetKey(18, x: 32, y: -45),
-    DanceIkTargetKey(20, x: 30, y: -30),
+    DanceIkTargetKey(20, x: 30, y: -22),
     DanceIkTargetKey(22, x: 32, y: -45),
-    DanceIkTargetKey(24, x: 34, y: -57),
+    DanceIkTargetKey(24, x: 34, y: -66),
     DanceIkTargetKey(26, x: 32, y: -45),
-    DanceIkTargetKey(28, x: 30, y: -30),
+    DanceIkTargetKey(28, x: 30, y: -22),
     DanceIkTargetKey(30, x: 32, y: -45),
-    DanceIkTargetKey(32, x: 34, y: -57),
+    DanceIkTargetKey(32, x: 34, y: -66),
   ];
   static const _shakuHandRTargetKeys = [
-    DanceIkTargetKey(0, x: -30, y: -30), // low, still out (opposite phase)
+    DanceIkTargetKey(0, x: -30, y: -22), // low, still out (opposite phase)
     DanceIkTargetKey(2, x: -32, y: -45),
-    DanceIkTargetKey(4, x: -34, y: -57), // high + out (collarbone)
+    DanceIkTargetKey(4, x: -34, y: -66), // high + out (collarbone)
     DanceIkTargetKey(6, x: -32, y: -45),
-    DanceIkTargetKey(8, x: -30, y: -30),
+    DanceIkTargetKey(8, x: -30, y: -22),
     DanceIkTargetKey(10, x: -32, y: -45),
-    DanceIkTargetKey(12, x: -34, y: -57),
+    DanceIkTargetKey(12, x: -34, y: -66),
     DanceIkTargetKey(14, x: -32, y: -45),
-    DanceIkTargetKey(16, x: -30, y: -30),
+    DanceIkTargetKey(16, x: -30, y: -22),
     DanceIkTargetKey(18, x: -32, y: -45),
-    DanceIkTargetKey(20, x: -34, y: -57),
+    DanceIkTargetKey(20, x: -34, y: -66),
     DanceIkTargetKey(22, x: -32, y: -45),
-    DanceIkTargetKey(24, x: -30, y: -30),
+    DanceIkTargetKey(24, x: -30, y: -22),
     DanceIkTargetKey(26, x: -32, y: -45),
-    DanceIkTargetKey(28, x: -34, y: -57),
+    DanceIkTargetKey(28, x: -34, y: -66),
     DanceIkTargetKey(30, x: -32, y: -45),
-    DanceIkTargetKey(32, x: -30, y: -30),
+    DanceIkTargetKey(32, x: -30, y: -22),
   ];
   static final KeyframeIkTargetChannel _shakuHandLTarget = _dancePhrase
       .ikTargetChannel(_shakuHandLTargetKeys, smooth: true);
@@ -4639,8 +4639,9 @@ class CatClips {
       limbTargets: _shakuLimbTargets,
       supportFootWorldAnchor: true,
       // Calm the skull so the beat reads in the body, not the ear-fan that
-      // dominated the onion — the motion panel's biggest readability lever.
-      danceHeadBobScale: 0.6,
+      // dominated the onion — at 0.3 the head also lags more of the lateral
+      // sway, so the tall ears stop sweeping side to side.
+      danceHeadBobScale: 0.3,
       root: LayeredRootChannel([
         _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
@@ -4649,8 +4650,9 @@ class CatClips {
         // now the support foot is world-anchored: it holds while the body slides
         // over it (only the lifting swing foot follows), so this reads as a
         // committed weight transfer rather than the whole trio sliding.
+        // Deepened so the COM clearly commits over the planted foot each bar.
         const SineRootChannel(
-          swayAmplitude: -12,
+          swayAmplitude: -20,
         ),
         const SineRootChannel(
           bobAmplitude: -0.055,
@@ -5073,6 +5075,9 @@ class CatClips {
       contactPinning: base.contactPinning,
       limbTargets: _azontoLimbTargets,
       supportFootWorldAnchor: true,
+      // Calm the vertical head bob so the skull lags the pelvis sway laterally
+      // rather than bouncing — the groove dip is in rootDy, which this counters.
+      danceHeadBobScale: 0.3,
       root: LayeredRootChannel([
         _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),

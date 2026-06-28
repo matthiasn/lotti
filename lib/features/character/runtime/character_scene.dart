@@ -448,7 +448,8 @@ class CharacterScene {
     ).multiply(correction).multiply(Affine2D.translation(-anchor.x, -anchor.y));
     final headCounterTranslate = _isDanceFamily(clip)
         ? Affine2D.translation(
-            _danceHeadHorizontalCounter(rootDx) * baseScale,
+            _danceHeadHorizontalCounter(rootDx, clip.danceHeadBobScale) *
+                baseScale,
             _danceHeadVerticalCounter(rootDy, clip.danceHeadBobScale) *
                 baseScale,
           )
@@ -475,12 +476,16 @@ class CharacterScene {
     return -(rootDy - neutralDanceRootDy) * fraction;
   }
 
-  double _danceHeadHorizontalCounter(double rootDx) {
+  double _danceHeadHorizontalCounter(double rootDx, double headBobScale) {
     // The deck/contact solver shifts the whole body to keep support feet
-    // planted. Let the torso take that groove, but give the skull a small
-    // inertial counter so it reads as a rigid head riding a neck, not rubber.
+    // planted. Let the torso take that groove, but give the skull an inertial
+    // counter so it reads as a rigid head riding a neck, not rubber. A clip can
+    // ask for a stiller head (lower [headBobScale]) to lag MORE of the lateral
+    // sway — so the tall ears stop sweeping side to side (the dominant onion
+    // "fan" on the big-sway clips) and the head trails the pelvis instead.
     const neutralDanceRootDx = 0.0;
-    return -(rootDx - neutralDanceRootDx) * 0.16;
+    final fraction = 0.16 + (1 - headBobScale) * 0.45;
+    return -(rootDx - neutralDanceRootDx) * fraction;
   }
 
   double _danceHeadAttitude(double p) {
