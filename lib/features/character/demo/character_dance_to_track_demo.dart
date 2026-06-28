@@ -175,14 +175,13 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
 
   // Cached clips: rebuilding the clip compiles the whole DancePhrase, so build
   // the trio once instead of every frame.
-  // The showcase now runs the in-progress redesigns alongside the original:
-  // the LEAD does Shaku and the RIGHT background dancer does Zanku/Legwork,
-  // while the left backup keeps the original routine. All three share the same
-  // 6s/32-frame phrase, so they stay beat-synced.
+  // The showcase now runs the redesigns as a full trio: the LEAD does Shaku,
+  // the LEFT background dancer does Azonto, and the RIGHT does Zanku/Legwork.
+  // All three share the same 6s/32-frame phrase, so they stay beat-synced.
   late final Clip _danceLead = CatClips.shaku;
   late final List<Clip> _danceEnsemble = [
     CatClips.shaku,
-    CatClips.danceBackupLeft,
+    CatClips.azonto,
     CatClips.zanku,
   ];
   late final Clip _idle = CatClips.idle;
