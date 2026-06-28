@@ -5007,53 +5007,56 @@ class CatClips {
   // arm fired OUT to the side (x +-88, ~79% of reach) so it reads as a deliberate
   // horizontal "point" clear of both torso and legs. Retracts to the chest (not
   // the waist) between beats.
+  // The OUT-point keys use Ease.easeOutBack so the arm whips PAST the apex and
+  // settles back onto the point (anticipation→overshoot→settle), instead of
+  // reaching the extension and freezing — needs the non-smooth channel below.
   static const _azontoHandLTargetKeys = [
     DanceIkTargetKey(0, x: -88, y: -10), // bar 1: POINT OUT (left)
     DanceIkTargetKey(2, x: -48, y: -16), // retracting
     DanceIkTargetKey(4, x: -14, y: -18), // tucked at chest (right arm points)
     DanceIkTargetKey(6, x: -48, y: -16),
-    DanceIkTargetKey(8, x: -88, y: -10), // POINT OUT
+    DanceIkTargetKey(8, x: -88, y: -10, ease: Ease.easeOutBack), // POINT OUT
     DanceIkTargetKey(10, x: -48, y: -16),
     DanceIkTargetKey(12, x: -14, y: -18),
     DanceIkTargetKey(14, x: -48, y: -16),
     // bar 2: double point-out, but DE-SYMMETRIZED — the two arms alternate a
     // high/low asymmetric V each beat (left high, right low; then flip) so it
     // never reads as a flat T-pose.
-    DanceIkTargetKey(16, x: -92, y: -18), // high
+    DanceIkTargetKey(16, x: -92, y: -18, ease: Ease.easeOutBack), // high
     DanceIkTargetKey(18, x: -16, y: -18), // tuck
-    DanceIkTargetKey(20, x: -84, y: -2), // low
+    DanceIkTargetKey(20, x: -84, y: -2, ease: Ease.easeOutBack), // low
     DanceIkTargetKey(22, x: -16, y: -18),
-    DanceIkTargetKey(24, x: -92, y: -18), // high
+    DanceIkTargetKey(24, x: -92, y: -18, ease: Ease.easeOutBack), // high
     DanceIkTargetKey(26, x: -16, y: -18),
-    DanceIkTargetKey(28, x: -84, y: -2), // low
+    DanceIkTargetKey(28, x: -84, y: -2, ease: Ease.easeOutBack), // low
     DanceIkTargetKey(30, x: -48, y: -16),
-    DanceIkTargetKey(32, x: -88, y: -10), // == frame 0 (loop)
+    DanceIkTargetKey(32, x: -88, y: -10, ease: Ease.easeOutBack), // == frame 0
   ];
   static const _azontoHandRTargetKeys = [
     DanceIkTargetKey(0, x: 14, y: -18), // bar 1: tucked at chest (left points)
     DanceIkTargetKey(2, x: 48, y: -16),
-    DanceIkTargetKey(4, x: 88, y: -10), // POINT OUT (right)
+    DanceIkTargetKey(4, x: 88, y: -10, ease: Ease.easeOutBack), // POINT OUT
     DanceIkTargetKey(6, x: 48, y: -16),
     DanceIkTargetKey(8, x: 14, y: -18),
     DanceIkTargetKey(10, x: 48, y: -16),
-    DanceIkTargetKey(12, x: 88, y: -10),
+    DanceIkTargetKey(12, x: 88, y: -10, ease: Ease.easeOutBack),
     DanceIkTargetKey(14, x: 48, y: -16),
     // bar 2: opposite phase to the left — RIGHT low while left is high, then
     // flip, so the double point is an alternating asymmetric V, not a T-pose.
-    DanceIkTargetKey(16, x: 84, y: -2), // low
+    DanceIkTargetKey(16, x: 84, y: -2, ease: Ease.easeOutBack), // low
     DanceIkTargetKey(18, x: 16, y: -18), // tuck
-    DanceIkTargetKey(20, x: 92, y: -18), // high
+    DanceIkTargetKey(20, x: 92, y: -18, ease: Ease.easeOutBack), // high
     DanceIkTargetKey(22, x: 16, y: -18),
-    DanceIkTargetKey(24, x: 84, y: -2), // low
+    DanceIkTargetKey(24, x: 84, y: -2, ease: Ease.easeOutBack), // low
     DanceIkTargetKey(26, x: 16, y: -18),
-    DanceIkTargetKey(28, x: 92, y: -18), // high
+    DanceIkTargetKey(28, x: 92, y: -18, ease: Ease.easeOutBack), // high
     DanceIkTargetKey(30, x: 48, y: -16),
     DanceIkTargetKey(32, x: 14, y: -18),
   ];
   static final KeyframeIkTargetChannel _azontoHandLTarget = _dancePhrase
-      .ikTargetChannel(_azontoHandLTargetKeys, smooth: true);
+      .ikTargetChannel(_azontoHandLTargetKeys);
   static final KeyframeIkTargetChannel _azontoHandRTarget = _dancePhrase
-      .ikTargetChannel(_azontoHandRTargetKeys, smooth: true);
+      .ikTargetChannel(_azontoHandRTargetKeys);
   static final List<LimbIkTarget> _azontoLimbTargets = [
     _danceLimbTargets[0].withChannel(_azontoHandLTarget),
     _danceLimbTargets[1].withChannel(_azontoHandRTarget),
