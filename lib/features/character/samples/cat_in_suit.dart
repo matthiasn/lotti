@@ -4760,45 +4760,64 @@ class CatClips {
   // LEFT foot: SUPPORT/planted over frames 0-16 (load f4), then the FREE leg
   // doing the legwork over 16-30 (big air-kick at f26), re-planting for the loop
   // pickup at f30.
-  // Kicks land ON the on-counts (peak extension on the beat), tucks on the
-  // off-frames, so every downbeat is an open extended-leg stride, not a closed
-  // crouch.
+  // Per-BEAT support ricochet (the real Legwork signature): the planted foot
+  // alternates every 4 frames (every beat). On each beat ONE foot stamps low
+  // and the OTHER whips out to a near-straight ~45° kick, then they swap — so
+  // the support foot ping-pongs L,R,L,R… instead of one leg working a whole
+  // bar. The 8-span _zankuContactSpans below assigns the stamping foot per beat
+  // and the world anchor pins it; brief double-support sits on the swap frames
+  // (4,8,12…). Kicks peak on the off-frames (2,6,10…) — the 8th-note shuffle.
   //
-  // LEFT foot: planted SUPPORT over 0-16 (load f4); FREE leg kicking ON counts
-  // 20/24/28 over 16-30; snaps back to plant for the loop pickup at f30.
+  // LEFT foot: STAMPS (support) on beats 0/8/16/24, KICKS out on 6/14/22/30.
   static const _zankuFootLTargetKeys = [
-    DanceIkTargetKey(0, x: 6, y: 97), // plant (left support)
-    DanceIkTargetKey(4, x: 6, y: 97), // plant — load/anchor frame, held
-    DanceIkTargetKey(8, x: 5, y: 98), // plant
-    DanceIkTargetKey(12, x: 4, y: 97), // plant
-    DanceIkTargetKey(14, x: -6, y: 92), // unweight
-    DanceIkTargetKey(16, x: -20, y: 84), // lift off (left becomes free)
-    DanceIkTargetKey(18, x: -40, y: 76), // rising toward the kick
-    DanceIkTargetKey(20, x: -89, y: 80), // KICK OUT — on count (extended ~45°)
-    DanceIkTargetKey(22, x: -38, y: 78), // tuck (off-beat)
-    DanceIkTargetKey(24, x: -95, y: 72), // BIG KICK — on count (widest)
-    DanceIkTargetKey(26, x: -38, y: 80), // tuck
-    DanceIkTargetKey(28, x: -88, y: 82), // KICK OUT — on count
-    DanceIkTargetKey(30, x: -12, y: 94), // snap back toward plant
-    DanceIkTargetKey(32, x: 6, y: 97), // == frame 0 (planted)
+    DanceIkTargetKey(0, x: 6, y: 97), // stamp (support [0-4])
+    DanceIkTargetKey(2, x: 7, y: 96), // planted, held
+    DanceIkTargetKey(4, x: 6, y: 97), // plant end — swap (double support)
+    DanceIkTargetKey(6, x: -89, y: 80), // KICK OUT (left free, ~45° extended)
+    DanceIkTargetKey(8, x: 6, y: 97), // stamp (support [8-12])
+    DanceIkTargetKey(10, x: 7, y: 96),
+    DanceIkTargetKey(12, x: 6, y: 97), // plant end — swap
+    DanceIkTargetKey(14, x: -92, y: 76), // KICK OUT (widest)
+    DanceIkTargetKey(16, x: 6, y: 97), // stamp (support [16-20])
+    DanceIkTargetKey(18, x: 7, y: 96),
+    DanceIkTargetKey(20, x: 6, y: 97), // plant end — swap
+    DanceIkTargetKey(22, x: -89, y: 80), // KICK OUT
+    DanceIkTargetKey(24, x: 6, y: 97), // stamp (support [24-28])
+    DanceIkTargetKey(26, x: 7, y: 96),
+    DanceIkTargetKey(28, x: 6, y: 97), // plant end — swap
+    DanceIkTargetKey(30, x: -92, y: 76), // KICK OUT
+    DanceIkTargetKey(32, x: 6, y: 97), // == frame 0 (stamp)
   ];
-  // RIGHT foot: FREE leg kicking ON counts 0/4/8/12 over frames 0-16, then
-  // SUPPORT/planted over 16-30 (load f20), lifting for the loop at f30.
+  // RIGHT foot: opposite phase — KICKS out on 2/10/18/26, STAMPS on 4/12/20/28.
   static const _zankuFootRTargetKeys = [
-    DanceIkTargetKey(0, x: 89, y: 82), // KICK OUT — downbeat (extended ~45°)
-    DanceIkTargetKey(2, x: 36, y: 76), // tuck in + knee up (off-beat)
-    DanceIkTargetKey(4, x: 90, y: 80), // KICK OUT — on count
-    DanceIkTargetKey(6, x: 36, y: 78), // tuck
-    DanceIkTargetKey(8, x: 95, y: 74), // BIG KICK — on count (widest)
-    DanceIkTargetKey(10, x: 38, y: 80), // tuck
-    DanceIkTargetKey(12, x: 88, y: 82), // KICK OUT — on count
-    DanceIkTargetKey(14, x: 50, y: 92), // descend toward plant
-    DanceIkTargetKey(16, x: 34, y: 98), // plant (right becomes support)
-    DanceIkTargetKey(20, x: 34, y: 98), // plant — load/anchor frame, held
-    DanceIkTargetKey(24, x: 34, y: 98), // plant
-    DanceIkTargetKey(28, x: 42, y: 94), // plant, easing up
-    DanceIkTargetKey(30, x: 60, y: 84), // lifting toward the downbeat kick
-    DanceIkTargetKey(32, x: 89, y: 82), // == frame 0
+    DanceIkTargetKey(0, x: 60, y: 86), // lifting toward the kick
+    DanceIkTargetKey(2, x: 89, y: 82), // KICK OUT (right free, ~45° extended)
+    DanceIkTargetKey(4, x: 34, y: 97), // stamp (support [4-8])
+    DanceIkTargetKey(6, x: 35, y: 96), // planted, held
+    DanceIkTargetKey(8, x: 34, y: 97), // plant end — swap
+    DanceIkTargetKey(10, x: 89, y: 82), // KICK OUT
+    DanceIkTargetKey(12, x: 34, y: 97), // stamp (support [12-16])
+    DanceIkTargetKey(14, x: 35, y: 96),
+    DanceIkTargetKey(16, x: 34, y: 97), // plant end — swap
+    DanceIkTargetKey(18, x: 89, y: 82), // KICK OUT
+    DanceIkTargetKey(20, x: 34, y: 97), // stamp (support [20-24])
+    DanceIkTargetKey(22, x: 35, y: 96),
+    DanceIkTargetKey(24, x: 34, y: 97), // plant end — swap
+    DanceIkTargetKey(26, x: 89, y: 82), // KICK OUT
+    DanceIkTargetKey(28, x: 34, y: 97), // stamp (support [28-32])
+    DanceIkTargetKey(30, x: 48, y: 90), // starting to lift
+    DanceIkTargetKey(32, x: 60, y: 86), // == frame 0
+  ];
+  // Per-beat support map: which foot stamps (and is world-anchored) each beat.
+  static const _zankuContactSpans = [
+    GroundSpan(CatBones.footL, 0, 0.125), // beat 1 — left stamps
+    GroundSpan(CatBones.footR, 0.125, 0.25), // beat 2 — right stamps
+    GroundSpan(CatBones.footL, 0.25, 0.375), // beat 3
+    GroundSpan(CatBones.footR, 0.375, 0.5), // beat 4
+    GroundSpan(CatBones.footL, 0.5, 0.625), // beat 5
+    GroundSpan(CatBones.footR, 0.625, 0.75), // beat 6
+    GroundSpan(CatBones.footL, 0.75, 0.875), // beat 7
+    GroundSpan(CatBones.footR, 0.875, 1), // beat 8
   ];
   static final KeyframeIkTargetChannel _zankuFootLTarget = _dancePhrase
       .ikTargetChannel(_zankuFootLTargetKeys, smooth: true);
@@ -4812,29 +4831,32 @@ class CatClips {
     _danceLimbTargets[3].withChannel(_zankuFootRTarget),
   ];
 
-  /// Standalone "Zanku / Legwork" lead clip — iterated toward ~8.5 like shaku.
-  /// Reuses the dance channels + the proven shaku groove + world-anchored support
-  /// foot, and adds the Zanku signatures: alternating LEGWORK via the foot IK
-  /// targets (free leg shuffles in↔out with a per-bar air-kick over a planted
-  /// support), fists pistoning at the chest, and a leaned-back torso.
+  /// Standalone "Zanku / Legwork" lead clip. Reuses the dance channels + the
+  /// proven shaku groove, and adds the Zanku signatures: per-BEAT LEGWORK via
+  /// the foot IK targets (the support foot ricochets L,R,L,R every beat while
+  /// the free leg whips out to a ~45° kick — see [_zankuContactSpans]), fists
+  /// pistoning at the chest, a vertical hop, and a leaned-back torso.
   static Clip get zanku {
     final base = dance;
     return Clip(
       name: 'zanku',
       duration: base.duration,
-      contactSpans: base.contactSpans,
+      contactSpans: _zankuContactSpans,
       contactPinning: base.contactPinning,
       limbTargets: _zankuLimbTargets,
       supportFootWorldAnchor: true,
       root: LayeredRootChannel([
         _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
-        // Per-BAR weight transfer: the COM travels far enough to park OVER the
-        // planted support foot (left bar 1, right bar 2). Pushed wide (-22) to
-        // match the wide kicks — a small shift reads as "centered" next to a
-        // free foot fanning to ~±90. Safe because the support foot is
-        // world-anchored: it holds while the body slides over it.
-        const SineRootChannel(swayAmplitude: -30),
+        // Per-BEAT weight transfer (harmonic 4): the COM ping-pongs over the
+        // stamping foot every beat (left on 0/8/16/24, right on 4/12/20/28) to
+        // match the support ricochet. The world-anchored stamp holds while the
+        // body shifts over it.
+        const SineRootChannel(
+          swayAmplitude: -16,
+          swayHarmonic: 4,
+          swayPhase: 0.0625,
+        ),
         const SineRootChannel(
           // A vertical HOP synced to the legwork — Zanku rides a spring, not a
           // flat side sway. Most of the bounce restored; the head no longer fans
@@ -4856,17 +4878,26 @@ class CatClips {
           _dancePhrase.bodyChestChannel(_danceBodyAccentKeys, smooth: true),
           // Leaned-back confident carriage — the Zanku posture (constant bias).
           const SineChannel(bias: -0.14),
-          // Per-BAR counter-tilt toward the support side (in step with the COM
-          // sway) so the upper mass offsets the extended kicking leg — the
-          // figure commits over the planted foot instead of toppling to the kick.
-          const SineChannel(amplitude: 0.1),
+          // Per-BEAT counter-tilt (harmonic 4) toward the stamping foot, in step
+          // with the COM sway, so the upper mass offsets the kicking leg each
+          // beat instead of toppling toward the kick.
+          const SineChannel(
+            harmonicAmplitude: 0.07,
+            harmonicMultiplier: 4,
+            harmonicPhase: 0.0625,
+          ),
         ]),
         // The feet are driven by the Zanku foot IK targets (legwork), which
         // override the FK leg-lower channels — so no leg-lower override here.
         //
-        // Ears clamped near-rigid to the skull: the independent ear swing was
-        // the brightest fan in the onion and out-read the legs. A whisper of
-        // life only, so the legwork owns the dominant motion trail.
+        // Ears clamped near-rigid to the skull (their own swing was the
+        // brightest fan in the onion and out-read the legs).
+        // TODO(zanku-ears): a residual ear "fan" remains because the engine's
+        // shared dance head-attitude nod (_danceHeadAttitude / head-counter in
+        // character_scene.dart, gated on _isDanceFamily) rotates the skull and
+        // sweeps the rigid ears. Killing it cleanly needs a per-clip head-nod
+        // scale on that shared engine path; deferred so it doesn't disturb the
+        // shipped dance/Shaku head treatment.
         CatBones.earL: const SineChannel(amplitude: 0.008),
         CatBones.earR: const SineChannel(amplitude: 0.008, phase: 0.5),
         // Tail damped ~70%: the bright tail arc was the loudest mover after the
