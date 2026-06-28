@@ -5235,7 +5235,7 @@ class CatClips {
     // on it in the bridge.
     DanceBodyKey(0, rootDx: -18, rootDy: 22, chestScaleY: 0.97),
     DanceBodyKey(12, rootDx: -18, rootDy: 22, chestScaleY: 0.97), // settle left
-    DanceBodyKey(16, rootDx: 18, rootDy: 23, chestScaleY: 0.97), // ease across
+    DanceBodyKey(16, rootDx: 18, rootDy: 22, chestScaleY: 0.97), // ease across
     DanceBodyKey(28, rootDx: 18, rootDy: 22, chestScaleY: 0.97), // settle right
     DanceBodyKey(32, rootDx: -18, rootDy: 22, chestScaleY: 0.97), // ease back
   ];
@@ -5323,6 +5323,12 @@ class CatClips {
       // glide IS the move, so the feet skim freely (driven only by their low IK
       // targets).
       limbTargets: _pounceLimbTargets,
+      // The head must stay DEAD-LEVEL over the gliding base (the signature
+      // Amapiano contrast). Kill the engine's dance head-nod attitude (scale 0)
+      // and the inherited dance neck/head nod channels below — the body's rootDy
+      // is already flat, so with the nod gone the skull rides level while the
+      // base glides laterally.
+      danceHeadBobScale: 0,
       // The dwelling lateral creep now lives in _pounceBodyKeys' rootDx (no sine
       // sway — that read as a side-to-side pendulum, worse in unison).
       root: _dancePhrase.bodyRootChannel(_pounceBodyKeys, smooth: true),
@@ -5336,6 +5342,9 @@ class CatClips {
           // Slight counter-lean against the slide (harmonic 2, opposed).
           const SineChannel(harmonicAmplitude: -0.05),
         ]),
+        // Neck/head held flat (no inherited dance nod) so the head stays level.
+        CatBones.neck: const SineChannel(),
+        CatBones.head: const SineChannel(),
         CatBones.earL: const SineChannel(amplitude: 0.01),
         CatBones.earR: const SineChannel(amplitude: 0.01, phase: 0.5),
         CatBones.tail0: const SineChannel(amplitude: 0.03, bias: -0.34),
