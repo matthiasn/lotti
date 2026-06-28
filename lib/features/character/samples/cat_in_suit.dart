@@ -4581,6 +4581,14 @@ class CatClips {
       root: LayeredRootChannel([
         _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
+        // Per-BAR pelvis/COM travel — a small lateral shift (harmonic 1) that
+        // stacks the body OVER the support foot (left bar 1, right bar 2). Safe
+        // now the support foot is world-anchored: it holds while the body slides
+        // over it (only the lifting swing foot follows), so this reads as a
+        // committed weight transfer rather than the whole trio sliding.
+        const SineRootChannel(
+          swayAmplitude: -12,
+        ),
         const SineRootChannel(
           bobAmplitude: -0.055,
           bobPhase: 0.125,
