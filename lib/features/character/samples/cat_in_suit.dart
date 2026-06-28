@@ -4717,45 +4717,49 @@ class CatClips {
   // as fists pistoning at the chest in opposition (demoted under the legs);
   // torso leans back.
   // ─────────────────────────────────────────────────────────────────────────
-  // Fists held UP at the chest, pistoning in OPPOSITION, pushed off the
-  // belly-centerline (x ±14) so they read as two paws, not one blob.
+  // Fists pistoning UP at CHEST height (was parked at the belly y -8..-15, which
+  // read as clasped): they now pump between collarbone (-46) and mid-chest (-26)
+  // in clean OPPOSITION (L up on the off-beats, R up on the beats), pushed wider
+  // off the centerline (x ±20) so they read as two distinct boxing fists, not
+  // one blob. The legs still carry the move; this just stops the upper body
+  // reading "shy".
   static const _zankuHandLTargetKeys = [
-    DanceIkTargetKey(0, x: -14, y: -15),
-    DanceIkTargetKey(2, x: -14, y: -8),
-    DanceIkTargetKey(4, x: -14, y: -15),
-    DanceIkTargetKey(6, x: -14, y: -8),
-    DanceIkTargetKey(8, x: -14, y: -15),
-    DanceIkTargetKey(10, x: -14, y: -8),
-    DanceIkTargetKey(12, x: -14, y: -15),
-    DanceIkTargetKey(14, x: -14, y: -8),
-    DanceIkTargetKey(16, x: -14, y: -15),
-    DanceIkTargetKey(18, x: -14, y: -8),
-    DanceIkTargetKey(20, x: -14, y: -15),
-    DanceIkTargetKey(22, x: -14, y: -8),
-    DanceIkTargetKey(24, x: -14, y: -15),
-    DanceIkTargetKey(26, x: -14, y: -8),
-    DanceIkTargetKey(28, x: -14, y: -15),
-    DanceIkTargetKey(30, x: -14, y: -8),
-    DanceIkTargetKey(32, x: -14, y: -15),
+    DanceIkTargetKey(0, x: -20, y: -26),
+    DanceIkTargetKey(2, x: -20, y: -46),
+    DanceIkTargetKey(4, x: -20, y: -26),
+    DanceIkTargetKey(6, x: -20, y: -46),
+    DanceIkTargetKey(8, x: -20, y: -26),
+    DanceIkTargetKey(10, x: -20, y: -46),
+    DanceIkTargetKey(12, x: -20, y: -26),
+    DanceIkTargetKey(14, x: -20, y: -46),
+    DanceIkTargetKey(16, x: -20, y: -26),
+    DanceIkTargetKey(18, x: -20, y: -46),
+    DanceIkTargetKey(20, x: -20, y: -26),
+    DanceIkTargetKey(22, x: -20, y: -46),
+    DanceIkTargetKey(24, x: -20, y: -26),
+    DanceIkTargetKey(26, x: -20, y: -46),
+    DanceIkTargetKey(28, x: -20, y: -26),
+    DanceIkTargetKey(30, x: -20, y: -46),
+    DanceIkTargetKey(32, x: -20, y: -26),
   ];
   static const _zankuHandRTargetKeys = [
-    DanceIkTargetKey(0, x: 14, y: -8),
-    DanceIkTargetKey(2, x: 14, y: -15),
-    DanceIkTargetKey(4, x: 14, y: -8),
-    DanceIkTargetKey(6, x: 14, y: -15),
-    DanceIkTargetKey(8, x: 14, y: -8),
-    DanceIkTargetKey(10, x: 14, y: -15),
-    DanceIkTargetKey(12, x: 14, y: -8),
-    DanceIkTargetKey(14, x: 14, y: -15),
-    DanceIkTargetKey(16, x: 14, y: -8),
-    DanceIkTargetKey(18, x: 14, y: -15),
-    DanceIkTargetKey(20, x: 14, y: -8),
-    DanceIkTargetKey(22, x: 14, y: -15),
-    DanceIkTargetKey(24, x: 14, y: -8),
-    DanceIkTargetKey(26, x: 14, y: -15),
-    DanceIkTargetKey(28, x: 14, y: -8),
-    DanceIkTargetKey(30, x: 14, y: -15),
-    DanceIkTargetKey(32, x: 14, y: -8),
+    DanceIkTargetKey(0, x: 20, y: -46),
+    DanceIkTargetKey(2, x: 20, y: -26),
+    DanceIkTargetKey(4, x: 20, y: -46),
+    DanceIkTargetKey(6, x: 20, y: -26),
+    DanceIkTargetKey(8, x: 20, y: -46),
+    DanceIkTargetKey(10, x: 20, y: -26),
+    DanceIkTargetKey(12, x: 20, y: -46),
+    DanceIkTargetKey(14, x: 20, y: -26),
+    DanceIkTargetKey(16, x: 20, y: -46),
+    DanceIkTargetKey(18, x: 20, y: -26),
+    DanceIkTargetKey(20, x: 20, y: -46),
+    DanceIkTargetKey(22, x: 20, y: -26),
+    DanceIkTargetKey(24, x: 20, y: -46),
+    DanceIkTargetKey(26, x: 20, y: -26),
+    DanceIkTargetKey(28, x: 20, y: -46),
+    DanceIkTargetKey(30, x: 20, y: -26),
+    DanceIkTargetKey(32, x: 20, y: -46),
   ];
   static final KeyframeIkTargetChannel _zankuHandLTarget = _dancePhrase
       .ikTargetChannel(_zankuHandLTargetKeys, smooth: true);
