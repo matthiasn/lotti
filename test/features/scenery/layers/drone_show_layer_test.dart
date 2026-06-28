@@ -14,11 +14,11 @@ void main() {
     test('resolves launch, beam, fan, and formation phases', () {
       expect(droneShowTimelineAt(0).phase, DroneShowPhase.launch);
       expect(
-        droneShowTimelineAt(kDroneShowCycleSeconds * 0.50).phase,
+        droneShowTimelineAt(kDroneShowCycleSeconds * 0.25).phase,
         DroneShowPhase.beam,
       );
       expect(
-        droneShowTimelineAt(kDroneShowCycleSeconds * 0.65).phase,
+        droneShowTimelineAt(kDroneShowCycleSeconds * 0.45).phase,
         DroneShowPhase.fan,
       );
       expect(
@@ -65,11 +65,11 @@ void main() {
       final minY = points.map((p) => p.dy).reduce((a, b) => a < b ? a : b);
       final maxY = points.map((p) => p.dy).reduce((a, b) => a > b ? a : b);
 
-      expect(minX, greaterThanOrEqualTo(0.15));
-      expect(maxX, lessThanOrEqualTo(0.85));
-      expect(minY, greaterThanOrEqualTo(0.14));
-      expect(maxY, lessThanOrEqualTo(0.34));
-      expect(maxX - minX, greaterThan(0.58));
+      expect(minX, greaterThanOrEqualTo(0.34));
+      expect(maxX, lessThanOrEqualTo(0.66));
+      expect(minY, greaterThanOrEqualTo(0.16));
+      expect(maxY, lessThanOrEqualTo(0.26));
+      expect(maxX - minX, inInclusiveRange(0.25, 0.33));
     });
   });
 
@@ -106,12 +106,12 @@ void main() {
       expect(minX, greaterThanOrEqualTo(0.47));
       expect(maxX, lessThanOrEqualTo(0.76));
       expect(maxX - minX, greaterThan(0.24));
-      expect(minY, greaterThanOrEqualTo(0.49));
-      expect(maxY, lessThanOrEqualTo(0.52));
+      expect(minY, greaterThanOrEqualTo(0.485));
+      expect(maxY, lessThanOrEqualTo(0.499));
     });
 
     test('settles into text early and holds the formation', () {
-      final settled = sampleDroneShow(kDroneShowCycleSeconds * 0.78, count: 80);
+      final settled = sampleDroneShow(kDroneShowCycleSeconds * 0.82, count: 80);
       final held = sampleDroneShow(kDroneShowCycleSeconds * 0.95, count: 80);
 
       expect(

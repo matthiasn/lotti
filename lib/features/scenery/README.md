@@ -136,9 +136,9 @@ on desktop and phone aspect ratios.
 `layers/drone_show_layer.dart` is a deterministic background performance layer,
 not a bitmap asset. It samples normalized drone positions from the scene clock
 and paints additive glows in the sky. The current show is intentionally slow:
-220 drones launch along the cable-stayed bridge deck over a 144-second cycle,
-climb into a controlled beam, fan into the sky, then settle into a held
-dot-matrix `Omah Lay` formation.
+220 drones launch along the cable-stayed bridge road line over a 144-second
+cycle, climb into a controlled beam, move through a measured middle fan, then
+settle into a held compact dot-matrix `Omah Lay` formation.
 
 ```mermaid
 stateDiagram-v2
@@ -164,7 +164,7 @@ The layer belongs behind the city/yacht redraw. That lets the launch read as
 coming from the bridge area while solid painted structures still occlude the
 lights naturally.
 
-## Stage Lighting And Effects
+## Stage Lighting
 
 The dance-to-track demo lights the trio like a stage act with a **graphic
 rim/backlight** look (chosen because the cats are flat cartoon shapes — front-lit
@@ -191,23 +191,6 @@ its floor pool always share a gel:
 
 The demo samples the rig once per frame and feeds the gels to both halves, so the
 whole rig pulses with the music. Reduce-motion freezes it to a calm static frame.
-
-`runtime/stage_effects.dart` adds the event score for concert particles. It is
-also pure and audio-clock-driven: `StageEffectCueBuilder` derives cues from beat
-times, downbeats, and classified track sections, then `StageEffectScheduler`
-samples only the active cues for the current playback position. The visual
-language is deliberately stage-local:
-
-- rear cold-spark fountains on energetic downbeats;
-- side confetti cannons on hero section hits;
-- bubble drift in calmer/bridge spans;
-- warm ember fallout after sparks.
-
-`stage_effects_overlay.dart` paints those samples over the dancers with
-deterministic index-seeded motion. It does not import the design-system
-celebration particles; the math is adapted locally so the character/scenery
-showcase can be extracted without pulling the app celebration package with it.
-Reduce-motion suppresses transient particles.
 
 ## Asset Preparation
 
@@ -249,7 +232,7 @@ Focused checks for this feature:
 
 ```bash
 fvm flutter analyze lib/features/scenery lib/features/character/demo/character_dance_to_track_demo.dart test/features/scenery/layers/cloud_parallax_layer_test.dart test/features/scenery/model/backdrop_scene_test.dart test/features/scenery/scenery_assets_test.dart
-fvm flutter test test/features/scenery/runtime/scenery_shaders_test.dart test/features/scenery/runtime/stage_effects_test.dart test/features/scenery/stage_effects_overlay_test.dart test/features/scenery/layers/cloud_parallax_layer_test.dart test/features/scenery/layers/drone_show_layer_test.dart test/features/scenery/model/backdrop_scene_test.dart test/features/scenery/scenery_assets_test.dart
+fvm flutter test test/features/scenery/runtime/scenery_shaders_test.dart test/features/scenery/layers/cloud_parallax_layer_test.dart test/features/scenery/layers/drone_show_layer_test.dart test/features/scenery/model/backdrop_scene_test.dart test/features/scenery/scenery_assets_test.dart
 ```
 
 Coverage responsibilities:
@@ -263,9 +246,5 @@ Coverage responsibilities:
   beat-intensity maths.
 - `stage_lights_overlay_test.dart`: the floor pools land their gel, track the
   dancer foot (lazy follow) and pulse on the beat.
-- `runtime/stage_effects_test.dart`: cue derivation and deterministic active
-  sample scheduling.
-- `stage_effects_overlay_test.dart`: particle painters light expected pixels and
-  honor reduce-motion.
 - `drone_show_layer_test.dart`: drone timeline phases, final `Omah Lay`
   formation bounds, deterministic sampling, and paint contract.

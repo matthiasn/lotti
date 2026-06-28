@@ -15,10 +15,10 @@ const int kDroneShowDroneCount = 220;
 /// a long launch, a deliberate grouped climb, then a held formation.
 const double kDroneShowCycleSeconds = 144;
 
-const double _launchEnd = 0.44;
-const double _beamEnd = 0.62;
-const double _fanEnd = 0.70;
-const double _formationSettleFraction = 0.24;
+const double _launchEnd = 0.22;
+const double _beamEnd = 0.32;
+const double _fanEnd = 0.62;
+const double _formationSettleFraction = 0.42;
 
 /// Coarse segment in the repeatable drone-show choreography.
 enum DroneShowPhase { launch, beam, fan, formation }
@@ -212,9 +212,7 @@ ui.Offset _launchPoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
   final x = 0.48 + u * 0.27 + (_unitForIndex(index + 101) - 0.5) * 0.006;
   final y =
-      0.515 -
-      0.018 * math.sin(u * math.pi) +
-      (_unitForIndex(index + 127) - 0.5) * 0.007;
+      0.491 + (u - 0.5) * 0.006 + (_unitForIndex(index + 127) - 0.5) * 0.003;
   return ui.Offset(x, y);
 }
 
@@ -234,8 +232,8 @@ ui.Offset _fanPoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
   final wave = math.sin(u * math.pi * 2.0);
   return ui.Offset(
-    0.15 + u * 0.70,
-    0.15 + 0.18 * _unitForIndex(index + 5) + wave * 0.034,
+    0.28 + u * 0.44,
+    0.15 + 0.11 * _unitForIndex(index + 5) + wave * 0.022,
   );
 }
 
@@ -290,10 +288,10 @@ List<_DotCell> _textDotCells(String text) {
 
   final width = math.max(cursor - glyphGap, 1);
   const rows = 7;
-  const targetWidth = 0.68;
-  const targetHeight = 0.18;
-  const left = 0.16;
-  const top = 0.15;
+  const targetWidth = 0.3;
+  const targetHeight = 0.08;
+  const left = 0.35;
+  const top = 0.17;
   final cellWidth = targetWidth / width;
   const cellHeight = targetHeight / rows;
   return [

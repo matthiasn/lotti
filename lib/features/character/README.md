@@ -31,7 +31,7 @@ with per-move keying notes under [`docs/research/`](./docs/research/).
 | Tapered tie (`taperedCapsule` shape) | ✅ 2-link draping tie |
 | Locomotion — the cat walks/runs across & turns at edges | ✅ `runtime/character_painter.dart` |
 | Ground floor + per-foot contact shadows | ✅ `runtime/character_painter.dart` |
-| Dance waterfront backdrop, stage lights/effects, and drone-show scenery | ✅ `runtime/character_painter.dart`, `demo/character_dance_to_track_demo.dart`, `features/scenery/` |
+| Dance waterfront backdrop, stage lights, and drone-show scenery | ✅ `runtime/character_painter.dart`, `demo/character_dance_to_track_demo.dart`, `features/scenery/` |
 | Film-strip + frame-grid + onion + travel + live harness | ✅ `test/.../{film_strip,frame_grid}_test.dart` |
 | Interactive demo (clip/expression/blink/wander/BPM keys) | ✅ `demo/character_demo.dart` |
 | Offline audio beat-sync (beat map → on-beat dance) | ✅ `tools/dance_audio/`, `BeatMap`, `CharacterDanceToTrackDemo` |
@@ -72,11 +72,10 @@ plate with alpha-mask cloud/wave motion. The audio-synced dance player now uses
 `LayeredBackdrop` from `features/scenery/` instead: the scenery is driven by the
 same audio position as the choreography, with a cloudless master-derived base,
 independent parallax cloud PNGs, animated ocean/lights, and fixed structure
-layers redrawn over those moving effects. That same scenery pass now includes
-audio-positioned concert particles (cold sparks, confetti, bubbles, ember
-fallout) and a deterministic sky drone show whose final formation spells
-`Omah Lay`. The tail is a single ribbon driven by a 7-link drag chain; the tie
-is a keyed 2-link cloth shape; ears flick a beat behind the head bob.
+layers redrawn over those moving effects. That same scenery pass now centers a
+deterministic sky drone show whose compact final formation spells `Omah Lay`.
+The tail is a single ribbon driven by a 7-link drag chain; the tie is a keyed
+2-link cloth shape; ears flick a beat behind the head bob.
 
 ## Architecture
 
@@ -387,7 +386,7 @@ plus Glados invariants: the ceiling never exceeds the hero zoom, non-hero frames
 stay capped, the pan stays inside its clamp), and the parallax transform
 (`character_painter_test.dart`).
 
-### Concert stage lighting and effects
+### Concert stage lighting and drone show
 
 The dance-to-track demo lights the trio like a stage act, with a **graphic
 rim/backlight** look chosen because the cats are flat cartoon shapes — front-lit
@@ -426,22 +425,10 @@ calm static frame. Tested in `stage_lights_test.dart` (the scheduler maths),
 `character_painter_test.dart` (the rim rings each lane in its gel; `bodyDim`
 darkens the body while the rim survives).
 
-The same demo derives stage-effect cues from the loaded beat map and classified
-track sections (`StageEffectCueBuilder` in `features/scenery/runtime/`). The
-effect scheduler is pure and sampled by audio position, so particles pause and
-seek with the track:
-
-- rear cold sparks and ember fallout on energetic downbeats;
-- side confetti cannons on hero-section hits;
-- side bubble drift through calmer or bridge-like spans.
-
-`StageEffectsOverlay` paints those samples over the dancers as deterministic
-index-seeded particles. It is deliberately local to scenery/character rather
-than importing the design-system celebration effects, so the showcase remains
-extractable. The background drone show is another scenery layer: drones launch
-slowly along the cable-stayed bridge, compress into a vertical beam, fan out,
-and settle into a held dot-matrix `Omah Lay` in the sky behind the city/yacht
-redraw.
+The background drone show is the spectacle layer: drones launch from the
+cable-stayed bridge road line, build a stem, spread through a measured middle
+transition, and settle into a held compact dot-matrix `Omah Lay` in the sky
+behind the city/yacht redraw.
 
 ## Reviewing motion — film strips, grids, onions, travel
 
