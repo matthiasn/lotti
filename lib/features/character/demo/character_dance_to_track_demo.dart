@@ -669,104 +669,123 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       body: Column(
         children: [
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // Match character_demo: size the cast to the available height
-                // (the painter scales uniformly, so this is what keeps the cats
-                // correctly proportioned instead of squat at the default scale 1).
-                final scale = constraints.maxHeight * 0.78 / 300.0;
-                // Parallax the layered scene with the dance camera so it drifts
-                // behind the dancers instead of sitting dead still.
-                final backdropTransform =
-                    CharacterPainter.danceParallaxTransform(
-                      timeSeconds: stage.seconds,
-                      clipDuration: stage.lead.duration,
-                      size: Size(constraints.maxWidth, constraints.maxHeight),
-                      danceCameraStrength: _cameraStrength,
-                      active: stage.lead.name == 'dance',
-                    );
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Layered blue-hour scene behind the dancers, driven by the
-                    // same audio/dance clock so it moves with the music. Toggle
-                    // to the old single-plate waterfront via the panel button.
-                    if (_useNewBackdrop)
-                      Transform(
-                        transform: backdropTransform,
-                        filterQuality: FilterQuality.low,
-                        child: LayeredBackdrop(
-                          scene: BackdropScene.blueHourWaterfront(),
-                          // Steady wall clock for blink/flicker timing (not the
-                          // looping dance clock); beatPulse makes the windows
-                          // shimmer on the beat.
-                          timeSeconds: _wallSeconds,
-                          beatPulse: beat,
+            // Lock the stage to 16:9 so the painted 2560x1440 art maps 1:1
+            // (cover == exact fit) and never crops or distorts; the resizable
+            // window letterboxes around it. Backdrop, dancers and captions are
+            // letterboxed together so the cats stay planted on the painted deck
+            // at any window size.
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Match character_demo: size the cast to the available height
+                    // (the painter scales uniformly, so this is what keeps the cats
+                    // correctly proportioned instead of squat at the default scale 1).
+                    final scale = constraints.maxHeight * 0.78 / 300.0;
+                    // Parallax the layered scene with the dance camera so it drifts
+                    // behind the dancers instead of sitting dead still.
+                    final backdropTransform =
+                        CharacterPainter.danceParallaxTransform(
+                          timeSeconds: stage.seconds,
+                          clipDuration: stage.lead.duration,
+                          size: Size(
+                            constraints.maxWidth,
+                            constraints.maxHeight,
+                          ),
+                          danceCameraStrength: _cameraStrength,
+                          active: stage.lead.name == 'dance',
+                        );
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Layered blue-hour scene behind the dancers, driven by the
+                        // same audio/dance clock so it moves with the music. Toggle
+                        // to the old single-plate waterfront via the panel button.
+                        if (_useNewBackdrop)
+                          Transform(
+                            transform: backdropTransform,
+                            filterQuality: FilterQuality.low,
+                            child: LayeredBackdrop(
+                              scene: BackdropScene.blueHourWaterfront(),
+                              // Steady wall clock for blink/flicker timing (not the
+                              // looping dance clock); beatPulse makes the windows
+                              // shimmer on the beat.
+                              timeSeconds: _wallSeconds,
+                              beatPulse: beat,
+                            ),
+                          ),
+                        CustomPaint(
+                          painter: CharacterPainter(
+                            scene: _lead,
+                            partnerScene: _left,
+                            ensembleScenes: [_left, _right],
+                            // Lip-sync: the frontman moves on lead words, the two
+                            // backups on background ad-libs.
+                            ensembleExpressions: [
+                              _singExpression(
+                                _leadMouth,
+                                Expression.neutral,
+                                _leadShape,
+                              ),
+                              _singExpression(
+                                _bgMouth,
+                                Expression.content,
+                                _bgShape,
+                              ),
+                              _singExpression(
+                                _bgMouth,
+                                Expression.happy,
+                                _bgShape,
+                              ),
+                            ],
+                            // Section-aware: the energetic dance trio in loud
+                            // sections, an eased idle in calm ones.
+                            ensembleClips: stage.ensemble,
+                            synchronousEnsemble: true,
+                            // Heads bob with the music; the singer's head rides the
+                            // vocal opening.
+                            singingHeadMotion: true,
+                            // Enables the multi-member (trio) render path; without
+                            // it the painter draws only the lead scene.
+                            walkingPair: true,
+                            clip: stage.lead,
+                            timeSeconds: stage.seconds,
+                            danceCameraStrength: _cameraStrength,
+                            scale: scale,
+                            // New painted scene already has the deck, so drop the
+                            // flat grey floor band (it would sit over the painting);
+                            // the old plate keeps its band.
+                            groundColor: _useNewBackdrop
+                                ? null
+                                : const Color(0xFF374551),
+                            // New scene: LayeredBackdrop draws everything, so the
+                            // painter's own backdrop is off. Old scene: the painter
+                            // draws the single waterfront plate.
+                            backdrop: _useNewBackdrop
+                                ? CharacterBackdrop.none
+                                : CharacterBackdrop.waterfront,
+                            backdropImage: _useNewBackdrop ? null : _backdrop,
+                            backdropCloudsImage: _useNewBackdrop
+                                ? null
+                                : _clouds,
+                            backdropWavesImage: _useNewBackdrop ? null : _waves,
+                            renderer: _renderer,
+                          ),
+                          child: const SizedBox.expand(),
                         ),
-                      ),
-                    CustomPaint(
-                      painter: CharacterPainter(
-                        scene: _lead,
-                        partnerScene: _left,
-                        ensembleScenes: [_left, _right],
-                        // Lip-sync: the frontman moves on lead words, the two
-                        // backups on background ad-libs.
-                        ensembleExpressions: [
-                          _singExpression(
-                            _leadMouth,
-                            Expression.neutral,
-                            _leadShape,
+                        if (_showCaptions && _words.isNotEmpty)
+                          Positioned(
+                            left: 24,
+                            right: 24,
+                            bottom: 20,
+                            child: Center(child: _caption(posSec)),
                           ),
-                          _singExpression(
-                            _bgMouth,
-                            Expression.content,
-                            _bgShape,
-                          ),
-                          _singExpression(_bgMouth, Expression.happy, _bgShape),
-                        ],
-                        // Section-aware: the energetic dance trio in loud
-                        // sections, an eased idle in calm ones.
-                        ensembleClips: stage.ensemble,
-                        synchronousEnsemble: true,
-                        // Heads bob with the music; the singer's head rides the
-                        // vocal opening.
-                        singingHeadMotion: true,
-                        // Enables the multi-member (trio) render path; without
-                        // it the painter draws only the lead scene.
-                        walkingPair: true,
-                        clip: stage.lead,
-                        timeSeconds: stage.seconds,
-                        danceCameraStrength: _cameraStrength,
-                        scale: scale,
-                        // New painted scene already has the deck, so drop the
-                        // flat grey floor band (it would sit over the painting);
-                        // the old plate keeps its band.
-                        groundColor: _useNewBackdrop
-                            ? null
-                            : const Color(0xFF374551),
-                        // New scene: LayeredBackdrop draws everything, so the
-                        // painter's own backdrop is off. Old scene: the painter
-                        // draws the single waterfront plate.
-                        backdrop: _useNewBackdrop
-                            ? CharacterBackdrop.none
-                            : CharacterBackdrop.waterfront,
-                        backdropImage: _useNewBackdrop ? null : _backdrop,
-                        backdropCloudsImage: _useNewBackdrop ? null : _clouds,
-                        backdropWavesImage: _useNewBackdrop ? null : _waves,
-                        renderer: _renderer,
-                      ),
-                      child: const SizedBox.expand(),
-                    ),
-                    if (_showCaptions && _words.isNotEmpty)
-                      Positioned(
-                        left: 24,
-                        right: 24,
-                        bottom: 20,
-                        child: Center(child: _caption(posSec)),
-                      ),
-                  ],
-                );
-              },
+                      ],
+                    );
+                  },
+                ),
+              ),
             ),
           ),
           _waveformPanel(),

@@ -8,10 +8,10 @@ import 'package:lotti/features/scenery/model/backdrop_palette.dart';
 import 'package:lotti/features/scenery/model/scenery_assets.dart';
 import 'package:lotti/features/scenery/model/skyline_manifest.dart';
 
-// period(0) = 2.4 + 0.4 * frac(0*0.37 + 0.11) = 2.444s; duty = 0.25, so the
-// raised-cosine pulse peaks at pos = duty/2 = 0.125.
-const _period0 = 2.444;
-const _peakPos = 0.125;
+// Beacons flash in unison every 2.0s (30 fpm); duty = 0.22, so the raised-
+// cosine pulse peaks at pos = duty/2 = 0.11.
+const _period = 2.0;
+const _peakPos = 0.11;
 
 void main() {
   group('coverFit maps normalized art anchors onto BoxFit.cover', () {
@@ -58,44 +58,34 @@ void main() {
     });
   });
 
-  group('beaconIntensity schedules a slow, staggered blink', () {
+  group('beaconIntensity is a slow synchronized 2s pulse', () {
     test('is dark for the bulk of the period and pulses gently', () {
       var lit = 0;
       const samples = 600;
-      const window = 12.0; // a few full periods
+      const window = 12.0; // several full periods
       for (var i = 0; i < samples; i++) {
         final t = i / samples * window;
-        final v = beaconIntensity(0, t);
+        final v = beaconIntensity(t);
         expect(v, inInclusiveRange(0, 1));
         if (v > 0) lit++;
       }
-      // ~25% duty → dark the clear majority of the time, but it does pulse.
-      expect(lit / samples, lessThan(0.35));
+      // ~22% duty → dark the clear majority of the time, but it does pulse.
+      expect(lit / samples, lessThan(0.32));
       expect(lit, greaterThan(0));
     });
 
-    test('two beacons do not flash in lockstep', () {
-      // There must be a moment where beacon #0 is lit while #1 is dark.
-      var staggered = false;
-      for (var i = 0; i < 400; i++) {
-        final t = i / 400 * 12;
-        if (beaconIntensity(0, t) > 0 && beaconIntensity(1, t) == 0) {
-          staggered = true;
-          break;
-        }
-      }
-      expect(staggered, isTrue);
+    test('pulses smoothly from zero up to a single peak and back', () {
+      expect(beaconIntensity(0), closeTo(0, 1e-9)); // soft start
+      expect(beaconIntensity(_peakPos * _period), closeTo(1, 1e-6)); // peak
+      // Just past the duty window it is fully dark.
+      expect(beaconIntensity(0.3 * _period), 0);
     });
 
     test('repeats one period later and is deterministic', () {
-      const t = 0.11; // inside beacon #0's first flash
-      expect(beaconIntensity(0, t), greaterThan(0));
-      expect(
-        beaconIntensity(0, t + _period0),
-        closeTo(beaconIntensity(0, t), 1e-3),
-      );
-      // Pure: identical inputs → identical output.
-      expect(beaconIntensity(3, 1.234), beaconIntensity(3, 1.234));
+      const t = 0.1; // inside the pulse
+      expect(beaconIntensity(t), greaterThan(0));
+      expect(beaconIntensity(t + _period), closeTo(beaconIntensity(t), 1e-3));
+      expect(beaconIntensity(1.234), beaconIntensity(1.234));
     });
   });
 
@@ -109,11 +99,11 @@ void main() {
     );
 
     test(
-      'a flashing beacon paints red at its mapped screen position',
+      'all beacons paint red together on their mapped anchors',
       () async {
-        // t chosen so beacon #0 sits at its pulse peak (pos = 0.125 of period).
-        const t = _peakPos * _period0;
-        expect(beaconIntensity(0, t), closeTo(1, 0.02));
+        // t at the unison pulse peak (pos = 0.11 of the 2s period).
+        const t = _peakPos * _period;
+        expect(beaconIntensity(t), closeTo(1, 0.02));
 
         const size = Size(1280, 720); // 16:9 → anchor maps directly to fraction
         final recorder = ui.PictureRecorder();
@@ -130,10 +120,23 @@ void main() {
           return data!.getUint8(i); // R channel
         }
 
-        final anchor = kPlaceholderSkylineManifest.buildingTops.first;
-        final at = Offset(anchor.dx * size.width, anchor.dy * size.height);
-        // Bright red core at the beacon; near-zero far away in empty sky.
-        expect(red(at), greaterThan(180), reason: 'beacon core should be red');
+        Offset screen(Offset anchor) =>
+            Offset(anchor.dx * size.width, anchor.dy * size.height);
+
+        // A building top and a bridge pylon tip are both lit at the same t,
+        // proving the synchronized (unison) flash.
+        const m = kPlaceholderSkylineManifest;
+        expect(
+          red(screen(m.buildingTops.first)),
+          greaterThan(180),
+          reason: 'building beacon should be red',
+        );
+        expect(
+          red(screen(m.bridgeTowerTops.first)),
+          greaterThan(180),
+          reason: 'bridge-pylon beacon should be red at the same instant',
+        );
+        // Empty sky far from any tower stays dark.
         expect(
           red(const Offset(20, 700)),
           lessThan(40),

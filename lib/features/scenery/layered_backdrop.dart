@@ -274,6 +274,7 @@ class _BackdropPainter extends CustomPainter {
       beatPulse: beatPulse,
       skyProgram: skyProgram,
       oceanProgram: oceanProgram,
+      cityLightsProgram: cityLightsProgram,
       images: images,
     );
     for (final layer in layers) {
