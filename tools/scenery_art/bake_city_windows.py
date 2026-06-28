@@ -144,6 +144,15 @@ def main() -> int:
         1.0 - _smoothstep(BRIDGE_X1 - 0.02, BRIDGE_X1, xx)
     )
     wfield *= 1.0 - bridge_band
+
+    # Distant buildings behind the foreground palm on the FAR RIGHT show through
+    # its sparse fronds as ugly bright window squares (the palm alpha is too thin
+    # to mask them). They are deep background beside the yacht, so drop the
+    # dynamic field there and let them sit as dim painted silhouettes under the
+    # sunset instead of a lit "house" behind the palm.
+    far_right = _smoothstep(0.86, 0.90, xx)
+    wfield *= 1.0 - far_right
+
     wfield[yy > BAND_BOTTOM] = 0.0
 
     v = (np.clip(wfield, 0.0, 1.0) * 255.0).astype(np.uint8)

@@ -459,5 +459,29 @@ void main() {
   lights += uYachtGlow.rgb * yhaloLit;
   intensity += yhaloLit;
 
+  // --- Running TV in the large lower-deck window. Register the glow to the
+  // ACTUAL painted glass — the dark, gently-swooped pane — by gating its bounding
+  // box with the yacht's glass darkness, so it fills the real window SHAPE and
+  // POSITION rather than a guessed rectangle. The light flickers like a screen:
+  // a rapid shimmer, slower scene cuts, and occasional brighter flashes, shifting
+  // cool↔white↔warm with the "content", so the yacht reads as occupied/alive. ---
+  vec2 tvD = abs(muv - vec2(0.833, 0.579));
+  float tvBox = (1.0 - smoothstep(0.044, 0.053, tvD.x)) *
+      (1.0 - smoothstep(0.027, 0.035, tvD.y));
+  if (tvBox > 0.0) {
+    float tvGlass =
+        1.0 - smoothstep(0.08, 0.26, lum(texture(uYachtMask, muv).rgb));
+    float fast = hash(vec2(floor(uTime * 7.0), 3.0)); // rapid screen shimmer
+    float cut = hash(vec2(floor(uTime * 1.3), 9.0)); // scene cuts
+    float flash = smoothstep(0.86, 1.0, hash(vec2(floor(uTime * 2.3), 5.0)));
+    float tvFlick = clamp(0.35 + 0.3 * cut + 0.22 * fast + 0.5 * flash, 0.0, 1.2);
+    vec3 tvCol = mix(mix(vec3(0.34, 0.50, 1.0), vec3(0.86, 0.90, 1.0), fast),
+        vec3(1.0, 0.72, 0.42), flash * 0.6);
+    float tvRaw = tvBox * tvGlass * tvFlick * 0.5;
+    float tvLit = tvRaw / (1.0 + 1.3 * tvRaw);
+    lights += tvCol * tvLit;
+    intensity += tvLit;
+  }
+
   fragColor = vec4(lights, clamp(intensity, 0.0, 1.0));
 }

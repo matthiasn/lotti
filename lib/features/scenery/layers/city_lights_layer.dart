@@ -32,6 +32,69 @@ class CityLightsLayer implements BackdropLayer {
     final cover = coverFit(ctx.size);
     _paintWindows(canvas, ctx, cover);
     _paintBeacons(canvas, ctx, cover);
+    _paintYachtLights(canvas, ctx, cover);
+  }
+
+  /// Steady navigation / anchor lights and warm deck courtesy lamps on the moored
+  /// yacht, placed from the painted art (mast tip, bow, stern, main-deck rail) so
+  /// it reads as a lit, occupied vessel. Drawn after the yacht bitmap so the
+  /// lamps sit on top of the hull, not behind it.
+  void _paintYachtLights(Canvas canvas, BackdropContext ctx, Rect cover) {
+    final p = ctx.palette;
+    final time = ctx.reducedMotion ? 0.0 : ctx.timeSeconds;
+    // A gentle breath on the masthead anchor light so it twinkles through haze.
+    final breath = 0.82 + 0.18 * math.sin(time * 1.3);
+    final r = cover.width * 0.0016;
+    Offset at(double x, double y) =>
+        Offset(cover.left + x * cover.width, cover.top + y * cover.height);
+
+    void lamp(Offset c, Color color, double amp, double scale) {
+      canvas
+        ..drawCircle(
+          c,
+          r * 4.2 * scale,
+          Paint()
+            ..blendMode = BlendMode.plus
+            ..shader = ui.Gradient.radial(
+              c,
+              r * 4.2 * scale,
+              [
+                color.withValues(alpha: 0.30 * amp),
+                color.withValues(alpha: 0.07 * amp),
+                color.withValues(alpha: 0),
+              ],
+              [0.0, 0.42, 1.0],
+            ),
+        )
+        ..drawCircle(
+          c,
+          r * 0.85 * scale,
+          Paint()
+            ..blendMode = BlendMode.plus
+            ..color = Color.lerp(
+              color,
+              const Color(0xFFFFFFFF),
+              0.45,
+            )!.withValues(alpha: 0.72 * amp),
+        );
+    }
+
+    // Navigation / anchor lights: white masthead anchor light (top of the mast),
+    // red port sidelight at the bow (the port side faces the viewer), white stern
+    // light at the transom.
+    lamp(at(0.871, 0.350), p.shipMast, breath, 1);
+    lamp(at(0.667, 0.578), p.shipPort, 1, 0.8);
+    lamp(at(0.965, 0.586), p.shipMast, 1, 0.8);
+
+    // Warm deck courtesy lamps along the main-deck rail.
+    const deckLamps = [
+      Offset(0.74, 0.55),
+      Offset(0.80, 0.545),
+      Offset(0.86, 0.55),
+    ];
+    for (final d in deckLamps) {
+      lamp(at(d.dx, d.dy), p.yachtCabinGlow, 0.7, 0.55);
+    }
   }
 
   void _paintWindows(Canvas canvas, BackdropContext ctx, Rect cover) {
