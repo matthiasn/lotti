@@ -611,28 +611,32 @@ class CharacterRenderer {
           ..lineTo(hw, cy + hh * 0.5);
         canvas.drawPath(path, stroke);
       case MouthShape.singAh:
+        // Tall open cavity with a tongue — the open vowel.
         _drawSingingMouth(canvas, f, s, jaw, widthFactor: 1, heightFactor: 1);
       case MouthShape.singOh:
-        // Narrow + tall = a round "oh" ring.
+        // Narrow + tall, no tongue = a round "oh" ring.
         _drawSingingMouth(
           canvas,
           f,
           s,
           jaw,
-          widthFactor: 0.5,
-          heightFactor: 1.2,
+          widthFactor: 0.45,
+          heightFactor: 1.25,
           topBow: -1,
+          tongue: false,
         );
       case MouthShape.singEe:
-        // Wide + flat = a stretched "ee".
+        // Wide + flat with a bared-teeth band = a stretched "ee".
         _drawSingingMouth(
           canvas,
           f,
           s,
           jaw,
-          widthFactor: 1.4,
-          heightFactor: 0.5,
+          widthFactor: 1.5,
+          heightFactor: 0.46,
           topBow: 0.4,
+          tongue: false,
+          teethBand: true,
         );
       case MouthShape.teethOnLip:
         _drawTeethOnLip(canvas, f, jaw);
@@ -701,6 +705,8 @@ class CharacterRenderer {
     required double widthFactor,
     required double heightFactor,
     double topBow = 0.8,
+    bool tongue = true,
+    bool teethBand = false,
   }) {
     final cy = f.mouthOffsetY + jaw * 0.45;
     final hw = f.mouthWidth / 2 * widthFactor;
@@ -757,10 +763,30 @@ class CharacterRenderer {
         ..isAntiAlias = antiAlias,
     );
 
-    // Tongue: a pink mound filling the lower cavity (clipped to it, so a sliver
-    // of dark cavity is left around the rim and it reads as the mouth floor, not
-    // a lower lip). It rises a little as the mouth opens wider.
-    if (open > _singTongue) {
+    // Upper-teeth band (the "ee" tell): a slim off-white line across the top of
+    // the cavity so a wide flat mouth reads as bared teeth, not a small "ah".
+    if (teethBand) {
+      canvas
+        ..save()
+        ..clipPath(cavity)
+        ..drawPath(
+          Path()
+            ..moveTo(-hw * 0.82, topY + 1.6)
+            ..lineTo(hw * 0.82, topY + 1.6),
+          Paint()
+            ..color = const Color(_teethColor)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.4
+            ..strokeCap = StrokeCap.round
+            ..isAntiAlias = antiAlias,
+        )
+        ..restore();
+    }
+
+    // Tongue (the "ah" tell, exclusive to it): a pink mound filling the lower
+    // cavity, clipped to it so a sliver of dark rim is left and it reads as the
+    // mouth floor. It rises a little as the mouth opens wider.
+    if (tongue && open > _singTongue) {
       final t = (open - _singTongue) / (1 - _singTongue);
       final span = botY - topY;
       final centerY = topY + span * (0.82 - 0.1 * t);

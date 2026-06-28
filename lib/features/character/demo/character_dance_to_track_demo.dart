@@ -512,8 +512,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   /// on lead words and the backups on background ad-libs / group hooks.
   Expression _singExpression(double mouth, Expression base, MouthShape shape) {
     if (mouth < 0.04) return base;
-    final brow = 0.3 + mouth * 0.7; // engage, more on the open accents
-    final eye = 1 - mouth * 0.28; // squint into the big notes
+    final brow = 0.4 + mouth * 0.95; // engage hard, more on the open accents
+    final eye = 1 - mouth * 0.32; // squint into the big notes
     return Expression(
       'sing',
       FaceState(
