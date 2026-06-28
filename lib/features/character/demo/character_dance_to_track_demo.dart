@@ -765,6 +765,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                         // sections, an eased idle in calm ones.
                         ensembleClips: stage.ensemble,
                         synchronousEnsemble: true,
+                        // Heads bob with the music; the singer's head rides the
+                        // vocal opening.
+                        singingHeadMotion: true,
                         // Enables the multi-member (trio) render path; without
                         // it the painter draws only the lead scene.
                         walkingPair: true,

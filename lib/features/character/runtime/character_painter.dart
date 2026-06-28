@@ -6,6 +6,7 @@ import 'package:lotti/features/character/model/affine2d.dart';
 import 'package:lotti/features/character/model/bone.dart';
 import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/model/face.dart';
+import 'package:lotti/features/character/model/rig_spec.dart';
 import 'package:lotti/features/character/runtime/character_renderer.dart';
 import 'package:lotti/features/character/runtime/character_scene.dart';
 import 'package:meta/meta.dart';
@@ -67,6 +68,7 @@ class CharacterPainter extends CustomPainter {
     this.ensembleExpressions = const [],
     this.ensembleClips = const [],
     this.synchronousEnsemble = false,
+    this.singingHeadMotion = false,
     CharacterRenderer? renderer,
   }) : _renderer = renderer ?? CharacterRenderer();
 
@@ -92,6 +94,13 @@ class CharacterPainter extends CustomPainter {
   /// When true, every ensemble member samples the clip at [timeSeconds]. When
   /// false, members get staggered phase offsets for a looser walk-showcase feel.
   final bool synchronousEnsemble;
+
+  /// When true (dance clip only), the head bobs with the music: it sways on the
+  /// dance phase and — for a member whose [Expression] is a singing one — dips
+  /// forward/down with the vocal opening, so the singer's head rides the vocal
+  /// instead of floating rigidly over a grooving body. Opt-in so non-singing
+  /// uses of the painter are untouched.
+  final bool singingHeadMotion;
 
   final Clip clip;
   final double timeSeconds;
@@ -800,7 +809,7 @@ class CharacterPainter extends CustomPainter {
       base: base,
       eyeOpenScale: eyeOpenScale,
     );
-    final groundedFrame = _floorPinnedPerformanceFrame(
+    final pinnedFrame = _floorPinnedPerformanceFrame(
       frame,
       drawScene,
       clip,
@@ -809,6 +818,18 @@ class CharacterPainter extends CustomPainter {
       base,
       floorY,
     );
+    final groundedFrame = singingHeadMotion && clip.name == 'dance'
+        ? _danceHeadMotion(
+            pinnedFrame,
+            drawScene.rig,
+            open: expression.name == 'sing'
+                ? expression.state.mouthOpen.clamp(0.0, 1.0)
+                : 0.0,
+            timeSeconds: timeSeconds,
+            clipDuration: clip.duration,
+            scale: scale,
+          )
+        : pinnedFrame;
 
     _paintContactShadows(
       canvas,
@@ -827,6 +848,66 @@ class CharacterPainter extends CustomPainter {
       groundedFrame.world,
       groundedFrame.face,
     );
+  }
+
+  /// Rotates/translates the head subtree (head + its descendants; the face is
+  /// anchored to the head, so it follows) to bob with the music. A continuous
+  /// sway on the dance phase grooves every dancer; [open] adds a forward/down
+  /// dip + lean for a singing member so the head rides the loud syllables. The
+  /// rotation pivots at the neck joint (the head bone's origin) so nothing
+  /// detaches; the dip is downward so the head overlaps (not gaps) the neck.
+  CharacterFrame _danceHeadMotion(
+    CharacterFrame frame,
+    RigSpec rig, {
+    required double open,
+    required double timeSeconds,
+    required double clipDuration,
+    required double scale,
+  }) {
+    final headId = rig.face?.anchorBoneId;
+    if (headId == null) return frame;
+    final headWorld = frame.world[headId];
+    if (headWorld == null) return frame;
+
+    final phase = clipDuration > 0
+        ? timeSeconds / clipDuration * 2 * math.pi * 3
+        : 0.0;
+    final tilt = math.sin(phase) * 0.045 + open * 0.05; // sway + lean
+    final dip = open * 12 * scale; // forward/down thrust on loud syllables
+    if (tilt == 0 && dip == 0) return frame;
+
+    final px = headWorld.tx;
+    final py = headWorld.ty;
+    final nod = Affine2D.translation(0, dip)
+        .multiply(Affine2D.translation(px, py))
+        .multiply(Affine2D.rotation(tilt))
+        .multiply(Affine2D.translation(-px, -py));
+    final subtree = _headSubtree(rig, headId);
+    return CharacterFrame(
+      world: {
+        for (final e in frame.world.entries)
+          e.key: subtree.contains(e.key) ? nod.multiply(e.value) : e.value,
+      },
+      face: frame.face,
+      locomotionX: frame.locomotionX,
+    );
+  }
+
+  /// The head bone plus every bone descended from it (so the whole head moves as
+  /// a unit when the head nods).
+  static Set<String> _headSubtree(RigSpec rig, String headId) {
+    final out = {headId};
+    var grew = true;
+    while (grew) {
+      grew = false;
+      for (final b in rig.bones) {
+        final parent = b.parent;
+        if (parent != null && out.contains(parent) && out.add(b.id)) {
+          grew = true;
+        }
+      }
+    }
+    return out;
   }
 
   CharacterFrame _floorPinnedPerformanceFrame(
@@ -1121,5 +1202,6 @@ class CharacterPainter extends CustomPainter {
       old.ensembleExpressions != ensembleExpressions ||
       old.ensembleClips != ensembleClips ||
       old.synchronousEnsemble != synchronousEnsemble ||
+      old.singingHeadMotion != singingHeadMotion ||
       old._renderer != _renderer;
 }
