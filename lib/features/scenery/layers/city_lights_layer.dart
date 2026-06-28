@@ -120,17 +120,19 @@ Rect coverFit(Size viewport) {
   );
 }
 
-/// Blink schedule for aircraft beacon [index] at [time] seconds: a slow, gentle
-/// red flash with a smooth rise/fall, staggered per beacon so they don't pulse
-/// in lockstep. A long ~4-5.5s period with a brief duty keeps the skyline calm
-/// rather than hectic. Returns 0 between flashes. Pure for unit testing.
+/// Blink schedule for aircraft beacon [index] at [time] seconds, modelling a
+/// real FAA L-864 red obstruction beacon: a single slow pulse per cycle at
+/// ~20-40 flashes/min (here ~2.5s, i.e. ~24 fpm) with a soft raised-cosine
+/// rise/hold/fall — a gentle breath, NOT a strobe. Each tower is lightly phase-
+/// staggered so they don't pulse in lockstep. Returns 0 between flashes (the
+/// lamp is dark ~75% of the cycle). Pure for unit testing.
 double beaconIntensity(int index, double time) {
-  final period = 3.8 + 1.7 * _frac(index * 0.37 + 0.11);
+  final period = 2.4 + 0.4 * _frac(index * 0.37 + 0.11);
   final phase = _frac(index * 0.613);
   final pos = _frac(time / period + phase);
-  const flash = 0.08;
-  if (pos > flash) return 0;
-  return math.sin(pos / flash * math.pi).clamp(0.0, 1.0);
+  const duty = 0.25; // fraction of the cycle the lamp is pulsing
+  if (pos > duty) return 0;
+  return 0.5 - 0.5 * math.cos(pos / duty * 2 * math.pi);
 }
 
 double _frac(double x) => x - x.floorToDouble();

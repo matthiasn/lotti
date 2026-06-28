@@ -8,9 +8,10 @@ import 'package:lotti/features/scenery/model/backdrop_palette.dart';
 import 'package:lotti/features/scenery/model/scenery_assets.dart';
 import 'package:lotti/features/scenery/model/skyline_manifest.dart';
 
-// period(0) = 3.8 + 1.7 * frac(0*0.37 + 0.11) = 3.987s; flash duty = 0.08,
-// so the per-flash peak is at pos = 0.04 (a quarter sine).
-const _period0 = 3.987;
+// period(0) = 2.4 + 0.4 * frac(0*0.37 + 0.11) = 2.444s; duty = 0.25, so the
+// raised-cosine pulse peaks at pos = duty/2 = 0.125.
+const _period0 = 2.444;
+const _peakPos = 0.125;
 
 void main() {
   group('coverFit maps normalized art anchors onto BoxFit.cover', () {
@@ -58,19 +59,19 @@ void main() {
   });
 
   group('beaconIntensity schedules a slow, staggered blink', () {
-    test('is dark for the bulk of the period and flashes only briefly', () {
+    test('is dark for the bulk of the period and pulses gently', () {
       var lit = 0;
       const samples = 600;
-      const window = 12.0; // a few long periods
+      const window = 12.0; // a few full periods
       for (var i = 0; i < samples; i++) {
         final t = i / samples * window;
         final v = beaconIntensity(0, t);
         expect(v, inInclusiveRange(0, 1));
         if (v > 0) lit++;
       }
-      // ~8% duty of each ~4s period → well under a sixth of the time lit.
-      expect(lit / samples, lessThan(0.16));
-      expect(lit, greaterThan(0)); // but it does flash
+      // ~25% duty → dark the clear majority of the time, but it does pulse.
+      expect(lit / samples, lessThan(0.35));
+      expect(lit, greaterThan(0));
     });
 
     test('two beacons do not flash in lockstep', () {
@@ -110,8 +111,8 @@ void main() {
     test(
       'a flashing beacon paints red at its mapped screen position',
       () async {
-        // t chosen so beacon #0 sits at its flash peak (pos = 0.04 of period).
-        const t = 0.04 * _period0;
+        // t chosen so beacon #0 sits at its pulse peak (pos = 0.125 of period).
+        const t = _peakPos * _period0;
         expect(beaconIntensity(0, t), closeTo(1, 0.02));
 
         const size = Size(1280, 720); // 16:9 → anchor maps directly to fraction
