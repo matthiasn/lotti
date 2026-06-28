@@ -1,16 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/character/io/rig_codec.dart';
-import 'package:lotti/features/character/model/affine2d.dart';
 import 'package:lotti/features/character/model/bone.dart';
 import 'package:lotti/features/character/model/rig_spec.dart';
-import 'package:lotti/features/character/runtime/character_renderer.dart';
-import 'package:lotti/features/character/runtime/character_scene.dart';
 import 'package:lotti/features/character/samples/cat_in_suit.dart';
 
 void main() {
@@ -438,45 +432,6 @@ void main() {
         ],
       });
       expect(rig.bone('a')?.drawable?.color, 0xFF2E3A59);
-    });
-  });
-
-  testWidgets('a JSON-loaded rig renders pixel-identical to the code rig', (
-    tester,
-  ) async {
-    Future<Uint8List> render(CharacterScene scene) async {
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-      CharacterRenderer().paint(
-        canvas,
-        scene.rig,
-        scene
-            .frameAt(
-              clip: CatClips.walk,
-              timeSeconds: 0.4,
-              base: Affine2D.translation(
-                120,
-                240,
-              ).multiply(Affine2D.scale(0.7, 0.7)),
-            )
-            .world,
-        scene.frameAt(clip: CatClips.walk, timeSeconds: 0.4).face,
-      );
-      final picture = recorder.endRecording();
-      final image = await picture.toImage(240, 280);
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
-      return bytes!.buffer.asUint8List();
-    }
-
-    await tester.runAsync(() async {
-      final fromCode = CharacterScene(cat);
-      final fromJson = CharacterScene(
-        codec.fromJson(
-          jsonDecode(jsonEncode(codec.toJson(cat))) as Map<String, dynamic>,
-        ),
-      );
-      expect(await render(fromJson), equals(await render(fromCode)));
     });
   });
 

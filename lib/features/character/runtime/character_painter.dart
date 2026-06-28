@@ -50,13 +50,21 @@ Affine2D groundedBase(
 /// uniform outline glow. See [CharacterPainter.memberBacklights].
 const List<({double sigmaFrac, double alphaScale, double offsetScale})>
 _kBacklightPasses = [
-  // soft outer bloom: only lightly biased toward the source so it still WRAPS a
-  // good arc of the silhouette (a real, readable air-glow), brighter side toward
-  // the light — not a thin sliver that reads as "no glow".
-  (sigmaFrac: 0.024, alphaScale: 0.46, offsetScale: 0.7),
+  // soft outer bloom: biased well toward the source so the air-glow sits on the
+  // source-facing arc and the body occludes the retreating side, instead of an
+  // even ring around the whole contour (the "sticker outline" read).
+  (sigmaFrac: 0.024, alphaScale: 0.40, offsetScale: 1.05),
   // tight bright rim: a thin hot kicker hard on the source-facing contour.
-  (sigmaFrac: 0.010, alphaScale: 0.92, offsetScale: 2.0),
+  (sigmaFrac: 0.010, alphaScale: 0.95, offsetScale: 2.3),
 ];
+
+/// A flat cool blue-hour ambient that lifts the near-black navy suit/trousers
+/// out of crush (the legs sit at ~46/255 and otherwise sink into the dark deck).
+/// Painted `srcATop` onto the cat's own silhouette as a low-alpha FILL before the
+/// directional gel key models it — fill light raising the shadows so the figure
+/// reads as a lit volume, not a flat silhouette with an outline. Artistic value
+/// (not a design-system token): this is rendered scene light, like the gels.
+const Color _kBodyFill = Color(0x26AEC4DE);
 
 /// Unit direction (screen space, +x right / +y down) from each dance lane toward
 /// its rim-light source, i.e. the direction the gel halo is offset so the rim
@@ -589,6 +597,15 @@ class CharacterPainter extends CustomPainter {
                 gradeBounds.bottom,
               ),
             )
+            // Flat cool ambient FILL first: lift the crushed navy fronts/legs off
+            // the dark deck so the figure has a readable base value for the wrap
+            // and gel key to model on top of, instead of a black silhouette.
+            ..drawRect(
+              gradeBounds,
+              Paint()
+                ..blendMode = BlendMode.srcATop
+                ..color = _kBodyFill,
+            )
             ..drawRect(
               gradeBounds,
               Paint()
@@ -614,14 +631,17 @@ class CharacterPainter extends CustomPainter {
                   mid + reach, // lit, source-facing side
                   mid - reach, // shadow side
                   [
-                    glow.withValues(alpha: 0.34), // gel key on the lit plane
+                    glow.withValues(
+                      alpha: 0.5,
+                    ), // gel key kicks onto the fabric
                     const Color(0x00000000),
-                    const Color(0x780B1626), // cool cel form-shadow (wraps)
+                    const Color(0x5E0B1626), // cool cel form-shadow (wraps)
                   ],
-                  // gradual terminator: the shadow side ramps in across the body
-                  // so it MODELS the volume instead of slamming the suit to a flat
-                  // black mass before it can read as form.
-                  const [0.0, 0.52, 0.92],
+                  // gradual terminator: the gel side carries further across the
+                  // body (clear point pushed past centre) so more of the suit
+                  // reads as lit fabric, and the shadow side ramps in gently
+                  // instead of slamming the suit to a flat black mass.
+                  const [0.0, 0.58, 0.95],
                 ),
             );
           }

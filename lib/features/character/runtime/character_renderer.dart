@@ -643,6 +643,16 @@ class CharacterRenderer {
       width: f.eyeRadiusX * 2,
       height: halfH * 2,
     );
+    // A large iris that fills most of the eye (set by [FaceRig.pupilRadius]),
+    // tracking gaze, with a specular catchlight up toward the key light. The big
+    // iris + the catchlight read as a designed, alive eye instead of a small
+    // pupil floating in a blank white "googly" sclera. Both are clipped to the
+    // open eye so the lid crops them when blinking.
+    final iris = Offset(
+      cx + s.eyeLookX * f.eyeRadiusX * 0.5,
+      f.eyeOffsetY + s.eyeLookY * f.eyeRadiusY * 0.5,
+    );
+    final catchR = (f.pupilRadius * 0.34).clamp(1.3, 3.2);
     canvas
       ..drawOval(
         whiteRect,
@@ -653,13 +663,17 @@ class CharacterRenderer {
       ..save()
       ..clipRect(whiteRect)
       ..drawCircle(
-        Offset(
-          cx + s.eyeLookX * f.eyeRadiusX * 0.5,
-          f.eyeOffsetY + s.eyeLookY * f.eyeRadiusY * 0.5,
-        ),
+        iris,
         f.pupilRadius,
         Paint()
           ..color = Color(f.pupilColor)
+          ..isAntiAlias = antiAlias,
+      )
+      ..drawCircle(
+        iris + Offset(-f.pupilRadius * 0.38, -f.pupilRadius * 0.44),
+        catchR,
+        Paint()
+          ..color = const Color(0xFFF6F8FF)
           ..isAntiAlias = antiAlias,
       )
       ..restore()

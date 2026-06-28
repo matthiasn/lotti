@@ -91,6 +91,31 @@ int _countColor(Uint8List px, int argb) {
   return n;
 }
 
+/// Counts exact-[argb] pixels inside the `[x0,x1) × [y0,y1)` window of the
+/// [_faceW]-wide face buffer — used to assert a feature lands in a region.
+int _countColorInRect(
+  Uint8List px,
+  int argb,
+  int x0,
+  int x1,
+  int y0,
+  int y1,
+) {
+  final r = (argb >> 16) & 0xFF;
+  final g = (argb >> 8) & 0xFF;
+  final b = argb & 0xFF;
+  var n = 0;
+  for (var y = y0; y < y1; y++) {
+    for (var x = x0; x < x1; x++) {
+      final i = (y * _faceW + x) * 4;
+      if (px[i] == r && px[i + 1] == g && px[i + 2] == b && px[i + 3] == 255) {
+        n++;
+      }
+    }
+  }
+  return n;
+}
+
 /// The widest single row (in pixels) of an exact-[argb] fill — a cheap proxy for
 /// a shape's maximum width.
 int _maxRowOfColor(Uint8List px, int argb) {
@@ -363,6 +388,32 @@ void main() {
         diff,
         greaterThan(40),
         reason: 'F/V is a distinct mouth, not a shut one (diff=$diff)',
+      );
+    });
+  });
+
+  testWidgets('each open eye carries a specular catchlight', (tester) async {
+    await tester.runAsync(() async {
+      // The face anchors at (80, 80); eyes sit at x≈65 / x≈95, y≈46. The
+      // catchlight is a unique near-white (0xFFF6F8FF, distinct from the cream
+      // sclera) drawn up toward the key light on each iris — the spec highlight
+      // that turns a flat button eye into a wet, alive one.
+      final open = await _renderFace(const FaceState());
+      const catchlight = 0xFFF6F8FF;
+      final left = _countColorInRect(open, catchlight, 50, 80, 30, 60);
+      final right = _countColorInRect(open, catchlight, 80, 110, 30, 60);
+      expect(left, greaterThan(0), reason: 'left eye has a catchlight');
+      expect(right, greaterThan(0), reason: 'right eye has a catchlight');
+
+      // Shutting the lids crops the iris and its catchlight away entirely, so a
+      // blink loses the highlight rather than leaving it floating on a lid line.
+      final shut = await _renderFace(
+        const FaceState(eyeOpenLeft: 0, eyeOpenRight: 0),
+      );
+      expect(
+        _countColor(shut, catchlight),
+        0,
+        reason: 'closed eyes paint no catchlight',
       );
     });
   });

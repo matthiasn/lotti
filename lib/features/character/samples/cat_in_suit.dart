@@ -744,7 +744,7 @@ RigSpec buildCatInSuitRig({
     eyeOffsetY: -34,
     eyeRadiusX: 9,
     eyeRadiusY: 11,
-    pupilRadius: 4,
+    pupilRadius: 7,
     browOffsetY: -48,
     browWidth: 16,
     mouthOffsetY: -12,

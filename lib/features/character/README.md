@@ -267,6 +267,12 @@ stateDiagram-v2
 - **`FaceState` / `Expression`** — ~8 continuous "knobs" (mouth shape + open,
   brow raise/angle, eyelid open, gaze). Six emotion presets (neutral, content,
   happy, surprised, sad, angry). Mouths are **shape-swapped**, not deformed.
+- **Eyes** — each open eye is a sclera oval, a large gaze-tracking **iris**
+  (`FaceRig.pupilRadius`, sized to fill most of the eye), and a small specular
+  **catchlight** offset up toward the key light. The big iris + catchlight read
+  as a designed, alive eye rather than a small pupil floating in a blank white
+  "googly" sclera; both are clipped to the open eye, so a blink crops the
+  catchlight away instead of leaving it on the closed lid line.
 - **Singing visemes** — four extra `MouthShape`s for lip-sync: `singAh` (a tall
   open jaw cavity with a dark interior + pink tongue), `singOh` (a narrow round
   ring), `singEe` (a wide flat mouth with a bared upper-teeth band), and
@@ -428,14 +434,18 @@ its floor pool always match:
   member's exact transform, so the halo tracks the dancer through any camera move
   or formation for free.
 - **`bodyGrade` grades the cat INTO the plate** (static — see below). Inside an
-  isolation layer it composites, masked to the cat's own silhouette (`srcATop`):
-  a vertical **ambient wrap** (cool sky light up high → warm deck/city bounce
-  down low) and a directional **gel terminator** aligned to `_kRimDirections`
-  (gel on the lit edge → a cool-blue fill on the shadow side) so the gel models
-  the torso instead of only ringing it. Both passes are **clipped to below the
-  neckline**, leaving the head/face at its natural, brighter cartoon tone. Its
-  presence also strengthens the deck contact shadows (`_strongDeckShadows`) so
-  the trio is planted on the painted deck rather than floating.
+  isolation layer it composites, masked to the cat's own silhouette (`srcATop`),
+  three passes: a flat cool **ambient fill** (`_kBodyFill`) that lifts the
+  near-black navy fronts/legs (~46/255) out of crush so the figure has a readable
+  base value; a vertical **ambient wrap** (cool sky light up high → warm deck/city
+  bounce down low); and a directional **gel terminator** aligned to
+  `_kRimDirections` — a gel key that **kicks onto the lit fabric** and carries
+  past centre, ramping to a cool-blue cel form-shadow on the far side, so the gel
+  models the torso as a lit volume instead of only ringing it. All are **clipped
+  to below the neckline**, leaving the head/face at its natural, brighter cartoon
+  tone. Its presence also strengthens the deck contact shadows
+  (`_strongDeckShadows`) so the trio is planted on the painted deck rather than
+  floating.
 - **The floor pools live in `scenery/stage_lights_overlay.dart`** (`StageLightsOverlay`
   → `StageLightsPainter`), an additive (`BlendMode.plus`) screen-space pass over
   the dancers: a gel pool that is **anchored at the foot and rakes forward**
