@@ -31,10 +31,10 @@ with per-move keying notes under [`docs/research/`](./docs/research/).
 | Tapered tie (`taperedCapsule` shape) | ✅ 2-link draping tie |
 | Locomotion — the cat walks/runs across & turns at edges | ✅ `runtime/character_painter.dart` |
 | Ground floor + per-foot contact shadows | ✅ `runtime/character_painter.dart` |
-| Dance waterfront backdrop — legacy painter plate plus layered audio-player scenery | ✅ `runtime/character_painter.dart`, `demo/character_dance_to_track_demo.dart`, `features/scenery/` |
+| Dance waterfront backdrop, stage lights/effects, and drone-show scenery | ✅ `runtime/character_painter.dart`, `demo/character_dance_to_track_demo.dart`, `features/scenery/` |
 | Film-strip + frame-grid + onion + travel + live harness | ✅ `test/.../{film_strip,frame_grid}_test.dart` |
 | Interactive demo (clip/expression/blink/wander/BPM keys) | ✅ `demo/character_demo.dart` |
-| Offline audio beat-sync (beat map → on-beat dance) | 🚧 tool + `BeatMap` built & tested; **not wired into the runtime yet** |
+| Offline audio beat-sync (beat map → on-beat dance) | ✅ `tools/dance_audio/`, `BeatMap`, `CharacterDanceToTrackDemo` |
 | Offline AI rigging (SVG → rig) | ⛔ not started (Phase 2) |
 | Batched `drawAtlas` runtime + degradation ladder | ⛔ Phase 2 |
 | Quadruped (4-leg) stance + rear-up transition | ⛔ Phase 2 |
@@ -72,9 +72,11 @@ plate with alpha-mask cloud/wave motion. The audio-synced dance player now uses
 `LayeredBackdrop` from `features/scenery/` instead: the scenery is driven by the
 same audio position as the choreography, with a cloudless master-derived base,
 independent parallax cloud PNGs, animated ocean/lights, and fixed structure
-layers redrawn over those moving effects. The tail is a single ribbon driven by
-a 7-link drag chain; the tie is a keyed 2-link cloth shape; ears flick a beat
-behind the head bob.
+layers redrawn over those moving effects. That same scenery pass now includes
+audio-positioned concert particles (cold sparks, confetti, bubbles, ember
+fallout) and a deterministic sky drone show whose final formation spells
+`Omah Lay`. The tail is a single ribbon driven by a 7-link drag chain; the tie
+is a keyed 2-link cloth shape; ears flick a beat behind the head bob.
 
 ## Architecture
 
@@ -243,8 +245,10 @@ stateDiagram-v2
   looped clip lands on the detected beats — absorbing tempo drift for free.
   `BeatLoopBinding.barAligned` anchors a loop on a real downbeat over whole bars
   (bar-correct); `beatAligned` is the beat-level fallback. It warps only the
-  *input time*, leaving `frameAt` untouched, and is **not wired into the runtime
-  yet** (see [Audio beat-sync](#audio-beat-sync-offline-tooling--not-yet-wired)).
+  *input time*, leaving `frameAt` untouched. The audio playback demo wires it
+  through `BeatLoopBinding.barAligned`; the standalone clip demo still uses the
+  manual BPM slider (see
+  [Audio beat-sync](#audio-beat-sync-offline-tooling--runtime-player)).
 - **`TemporalMotionAnalyzer`** — a resolved-frame diagnostic over
   `CharacterScene`. It records per-bone frame-to-frame displacement and
   acceleration after clip evaluation, contact pinning, head stabilization, and
@@ -383,7 +387,7 @@ plus Glados invariants: the ceiling never exceeds the hero zoom, non-hero frames
 stay capped, the pan stays inside its clamp), and the parallax transform
 (`character_painter_test.dart`).
 
-### Concert stage lighting — rim/backlight + floor pools
+### Concert stage lighting and effects
 
 The dance-to-track demo lights the trio like a stage act, with a **graphic
 rim/backlight** look chosen because the cats are flat cartoon shapes — front-lit
@@ -421,6 +425,22 @@ calm static frame. Tested in `stage_lights_test.dart` (the scheduler maths),
 `stage_lights_overlay_test.dart` (pools land/track/pulse) and
 `character_painter_test.dart` (the rim rings each lane in its gel; `bodyDim`
 darkens the body while the rim survives).
+
+The same demo derives stage-effect cues from the loaded beat map and classified
+track sections (`StageEffectCueBuilder` in `features/scenery/runtime/`). The
+effect scheduler is pure and sampled by audio position, so particles pause and
+seek with the track:
+
+- rear cold sparks and ember fallout on energetic downbeats;
+- side confetti cannons on hero-section hits;
+- side bubble drift through calmer or bridge-like spans.
+
+`StageEffectsOverlay` paints those samples over the dancers as deterministic
+index-seeded particles. It is deliberately local to scenery/character rather
+than importing the design-system celebration effects, so the showcase remains
+extractable. The background drone show is another scenery layer: drones launch
+from bridge-height anchors, compress into a vertical beam, fan out, and settle
+into `Omah Lay` in the sky behind the city/yacht redraw.
 
 ## Reviewing motion — film strips, grids, onions, travel
 
@@ -463,21 +483,20 @@ the film-strip harness. No `Future.delayed`, no `pumpAndSettle`, no
 fvm flutter test test/features/character/
 ```
 
-## Audio beat-sync (offline tooling — not yet wired)
-
-> **TODO (deferred — explicit).** Precise loop→song time-warp alignment to the
-> track's detected downbeats is intentionally deferred to the *last mile*, after
-> the dance moves are authored and panel-rated. Rationale and sequence are
-> recorded in [`CHAR-0001` §D8](./docs/adr/CHAR-0001-dance-choreography-encoding-and-move-library.md).
-> Within-loop timing (accent-frame grid + sub-frame swing) is already in place.
+## Audio beat-sync (offline tooling + runtime player)
 
 The dance is authored on a normalized beat grid (`DancePhrase` frames), but the
-mapping from those counts to wall-clock seconds is currently a single global
-tempo scalar (the demo's BPM slider: `seconds = elapsed × bpm/120`). That has no
-phase anchor and assumes constant tempo, so aligning the dance to a real track is
-manual and drifts. The path to true on-beat playback is a **beat map**: an
-offline analysis of an audio file (beats + downbeats) that the runtime warps the
-dance onto.
+mapping from those counts to wall-clock seconds differs by surface:
+
+- `demo/character_demo.dart` is clip-first and keeps the manual BPM slider
+  (`seconds = elapsed × bpm/120`) for quick isolated motion review.
+- `demo/character_dance_to_track_demo.dart` is song-first. It loads the offline
+  beat-map JSON, opens the audio file, and maps audio playback position through
+  `BeatLoopBinding.barAligned`, so the loop stays downbeat-anchored to the real
+  track.
+
+The beat map is an offline analysis of an audio file (beats + downbeats) that
+the runtime warps the dance onto.
 
 ```mermaid
 flowchart LR
@@ -490,21 +509,20 @@ flowchart LR
   warp + `clipSecondsAt`, parsed via `fromJson`) and `BeatLoopBinding`
   (`barAligned` = downbeat-anchored whole bars; `beatAligned` = beat-level
   fallback). Pure, deterministic, fully unit-tested (incl. a Glados round-trip
-  property). It warps only the *input time*, so when wired it leaves `frameAt`
-  and the film-strip byte-identical invariant untouched. **Not imported by the
-  runtime yet** — wiring it into `CharacterView` is a later, deliberate step.
+  property). It warps only the *input time*, leaving `frameAt` and the
+  film-strip byte-identical invariant untouched.
 - `tools/dance_audio/` — the offline Python tool (Beat This! + librosa) that
   produces the beat-map JSON `BeatMap` consumes; see its README for the schema.
 
-When wired (the deliberate later step), the ticker swaps its constant scalar for
+In the audio player, the ticker swaps the standalone demo's constant scalar for
 the beat-map warp — everything downstream of `frameAt` is unchanged:
 
 ```dart
-// today (constant tempo, no phase anchor):
+// standalone demo (constant tempo, no phase anchor):
 final seconds = elapsed * (danceBpm / kAuthoredDanceBpm);
 
-// with a beat map (on-beat, drift-following, bar-anchored):
-final binding = BeatLoopBinding.barAligned(beatMap, bars: 2);
+// audio demo (on-beat, drift-following, bar-anchored):
+final binding = BeatLoopBinding.barAligned(beatMap, bars: kDancePhraseBars);
 final seconds = beatMap.clipSecondsAt(
   elapsed,
   clipDuration: clip.duration,

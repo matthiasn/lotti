@@ -53,12 +53,13 @@ flowchart BT
   yacht[yacht.png]
   city[city_bridge.png]
   ocean[OceanLayer shader/fallback]
+  drones[DroneShowLayer]
   near[clouds_near.png parallax]
   mid[clouds_mid.png parallax]
   far[clouds_far.png parallax]
   base[blue_hour_cloudless.png]
 
-  base --> far --> mid --> near --> ocean --> city --> yacht --> lights --> fg --> glow --> child --> vignette
+  base --> far --> mid --> near --> drones --> ocean --> city --> yacht --> lights --> fg --> glow --> child --> vignette
 ```
 
 The ordering is the important contract:
@@ -66,9 +67,13 @@ The ordering is the important contract:
 - The base is `blue_hour_cloudless.png`, not the original master plate.
 - Clouds are reintroduced as transparent full-frame PNGs and drift with
   `CloudParallaxLayer`.
+- `DroneShowLayer` paints additive sky lights after clouds but before the
+  animated water and fixed structure redraw. Its final formation spells
+  `Omah Lay`.
 - `OceanLayer` adds animated foam/glint over the painted lagoon.
-- `city_bridge.png` and `yacht.png` are redrawn after the moving clouds/ocean so
-  clouds and foam never slide across solid structure.
+- `city_bridge.png` and `yacht.png` are redrawn after the moving
+  clouds/drones/ocean so clouds, drones, and foam never slide across solid
+  structure.
 - `CityLightsLayer` draws additive windows, yacht lamps, and beacon glows on top
   of the structure layers.
 - `foreground.png` and `DeckGlowLayer` sit over the animated water/deck area.
@@ -126,7 +131,35 @@ no-op until their programs/assets load.
 art anchors through `coverFit`, so lights stay attached to the painted structures
 on desktop and phone aspect ratios.
 
-## Stage Lighting
+## Drone Show
+
+`layers/drone_show_layer.dart` is a deterministic background performance layer,
+not a bitmap asset. It samples normalized drone positions from the scene clock
+and paints additive glows in the sky:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Launch
+  Launch --> Beam: grouped ascent
+  Beam --> Fan: vertical beam opens
+  Fan --> Formation: spread into text points
+  Formation --> Launch: loop wraps
+```
+
+The pure functions are the contract:
+
+- `droneShowTimelineAt(timeSeconds)` resolves the current phase and local
+  progress inside the repeatable loop.
+- `droneShowFormationPoints()` generates the final text destination points for
+  `Omah Lay`.
+- `sampleDroneShow(timeSeconds)` returns per-drone normalized positions,
+  opacity, radius, and phase; reduced-motion samples a static formation frame.
+
+The layer belongs behind the city/yacht redraw. That lets the launch read as
+coming from the bridge area while solid painted structures still occlude the
+lights naturally.
+
+## Stage Lighting And Effects
 
 The dance-to-track demo lights the trio like a stage act with a **graphic
 rim/backlight** look (chosen because the cats are flat cartoon shapes — front-lit
@@ -153,6 +186,23 @@ its floor pool always share a gel:
 
 The demo samples the rig once per frame and feeds the gels to both halves, so the
 whole rig pulses with the music. Reduce-motion freezes it to a calm static frame.
+
+`runtime/stage_effects.dart` adds the event score for concert particles. It is
+also pure and audio-clock-driven: `StageEffectCueBuilder` derives cues from beat
+times, downbeats, and classified track sections, then `StageEffectScheduler`
+samples only the active cues for the current playback position. The visual
+language is deliberately stage-local:
+
+- rear cold-spark fountains on energetic downbeats;
+- side confetti cannons on hero section hits;
+- bubble drift in calmer/bridge spans;
+- warm ember fallout after sparks.
+
+`stage_effects_overlay.dart` paints those samples over the dancers with
+deterministic index-seeded motion. It does not import the design-system
+celebration particles; the math is adapted locally so the character/scenery
+showcase can be extracted without pulling the app celebration package with it.
+Reduce-motion suppresses transient particles.
 
 ## Asset Preparation
 
@@ -194,7 +244,7 @@ Focused checks for this feature:
 
 ```bash
 fvm flutter analyze lib/features/scenery lib/features/character/demo/character_dance_to_track_demo.dart test/features/scenery/layers/cloud_parallax_layer_test.dart test/features/scenery/model/backdrop_scene_test.dart test/features/scenery/scenery_assets_test.dart
-fvm flutter test test/features/scenery/runtime/scenery_shaders_test.dart test/features/scenery/layers/cloud_parallax_layer_test.dart test/features/scenery/model/backdrop_scene_test.dart test/features/scenery/scenery_assets_test.dart
+fvm flutter test test/features/scenery/runtime/scenery_shaders_test.dart test/features/scenery/runtime/stage_effects_test.dart test/features/scenery/stage_effects_overlay_test.dart test/features/scenery/layers/cloud_parallax_layer_test.dart test/features/scenery/layers/drone_show_layer_test.dart test/features/scenery/model/backdrop_scene_test.dart test/features/scenery/scenery_assets_test.dart
 ```
 
 Coverage responsibilities:
@@ -208,4 +258,9 @@ Coverage responsibilities:
   beat-intensity maths.
 - `stage_lights_overlay_test.dart`: the floor pools land their gel, track the
   dancer foot (lazy follow) and pulse on the beat.
-
+- `runtime/stage_effects_test.dart`: cue derivation and deterministic active
+  sample scheduling.
+- `stage_effects_overlay_test.dart`: particle painters light expected pixels and
+  honor reduce-motion.
+- `drone_show_layer_test.dart`: drone timeline phases, final `Omah Lay`
+  formation bounds, deterministic sampling, and paint contract.

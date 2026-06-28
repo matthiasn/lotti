@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/scenery/layers/city_lights_layer.dart';
 import 'package:lotti/features/scenery/layers/cloud_parallax_layer.dart';
 import 'package:lotti/features/scenery/layers/deck_glow_layer.dart';
+import 'package:lotti/features/scenery/layers/drone_show_layer.dart';
 import 'package:lotti/features/scenery/layers/image_layer.dart';
 import 'package:lotti/features/scenery/layers/ocean_layer.dart';
 import 'package:lotti/features/scenery/layers/sky_layer.dart';
@@ -40,7 +41,7 @@ void main() {
     });
 
     test(
-      'composites plate -> clouds -> ocean -> city/yacht -> lights -> deck',
+      'composites plate -> clouds -> drones -> ocean -> city/yacht -> lights -> deck',
       () {
         final layers = BackdropScene.blueHourWaterfront().layers;
         final plate = layers.indexWhere(
@@ -56,12 +57,15 @@ void main() {
         );
         final lights = layers.indexWhere((l) => l is CityLightsLayer);
         final ocean = layers.indexWhere((l) => l is OceanLayer);
+        final drones = layers.indexWhere((l) => l is DroneShowLayer);
         final glow = layers.indexWhere((l) => l is DeckGlowLayer);
         expect(plate, 0);
         expect(cloud, greaterThan(plate));
+        expect(drones, greaterThan(cloud));
         // Animated water sits over the painted plate.
         expect(ocean, greaterThan(plate));
         expect(ocean, greaterThan(cloud));
+        expect(ocean, greaterThan(drones));
         // The fixed skyline/bridge is re-drawn over drifting clouds so the clouds
         // stay behind the city instead of sliding across tower silhouettes.
         expect(city, greaterThan(ocean));

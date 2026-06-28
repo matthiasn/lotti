@@ -19,7 +19,9 @@ import 'package:lotti/features/character/runtime/character_scene.dart';
 import 'package:lotti/features/character/samples/cat_in_suit.dart';
 import 'package:lotti/features/scenery/layered_backdrop.dart';
 import 'package:lotti/features/scenery/model/backdrop_scene.dart';
+import 'package:lotti/features/scenery/runtime/stage_effects.dart';
 import 'package:lotti/features/scenery/runtime/stage_lights.dart';
+import 'package:lotti/features/scenery/stage_effects_overlay.dart';
 import 'package:lotti/features/scenery/stage_lights_overlay.dart';
 import 'package:media_kit/media_kit.dart';
 
@@ -189,6 +191,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   BeatLoopBinding? _binding;
   List<double>? _amplitudes; // full-track waveform, normalized 0..1
   List<_Section> _sections = const [];
+  List<StageEffectCue> _stageEffectCues = const [];
   List<_Word> _words = const []; // synced lyrics (optional)
   // Contiguous semantic-section spans (chorus/verse/bridge/...) collapsed from the
   // per-word section tags; the virtual director reads the section label, progress
@@ -334,6 +337,20 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
           )
           .toList();
       final sections = _classifySections(rawSections, amplitudes, duration);
+      final stageEffectCues = const StageEffectCueBuilder().build(
+        beatTimesSec: map.beatTimesSec,
+        downbeatIndices: map.downbeatIndices,
+        sections: [
+          for (final s in sections)
+            StageEffectSection(
+              startSeconds: s.start,
+              endSeconds: s.end,
+              label: s.label,
+              energetic: s.energetic,
+            ),
+        ],
+        trackDurationSeconds: duration,
+      );
       final words = await _loadWords();
       final cues = await _loadCues();
       final spans = _buildSectionSpans(words, duration);
@@ -348,6 +365,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         _binding = BeatLoopBinding.barAligned(map, bars: kDancePhraseBars);
         _amplitudes = amplitudes;
         _sections = sections;
+        _stageEffectCues = stageEffectCues;
         _words = words;
         _sectionSpans = spans;
         _cues = cues;
@@ -906,6 +924,17 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                             beat: beat,
                             dancerAnchors: _dancerAnchors,
                             rig: stageRig,
+                          ),
+                        // Audio-seekable concert effects: rear cold sparks,
+                        // side confetti cannons and softer bubble drift. The
+                        // cue list is derived once from the beat map/sections;
+                        // this painter only samples active particles at posSec.
+                        if (_useNewBackdrop)
+                          StageEffectsOverlay(
+                            timeSeconds: posSec,
+                            beat: beat,
+                            cues: _stageEffectCues,
+                            lights: stageSamples,
                           ),
                         if (_showCaptions && _words.isNotEmpty)
                           Positioned(

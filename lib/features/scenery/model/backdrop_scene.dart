@@ -4,6 +4,7 @@ import 'package:lotti/features/scenery/layers/backdrop_layer.dart';
 import 'package:lotti/features/scenery/layers/city_lights_layer.dart';
 import 'package:lotti/features/scenery/layers/cloud_parallax_layer.dart';
 import 'package:lotti/features/scenery/layers/deck_glow_layer.dart';
+import 'package:lotti/features/scenery/layers/drone_show_layer.dart';
 import 'package:lotti/features/scenery/layers/image_layer.dart';
 import 'package:lotti/features/scenery/layers/ocean_layer.dart';
 import 'package:lotti/features/scenery/layers/sky_layer.dart';
@@ -23,11 +24,11 @@ class BackdropScene {
 
   /// The painted Lagos-lagoon blue-hour scene, back to front: the cloudless
   /// master-derived base plate, three exact-pixel cloud layers drifting at
-  /// different depths, the animated ocean, solid skyline/bridge/yacht structure
-  /// re-drawn OVER atmosphere/water so clouds/foam never slide across them, the
-  /// additive city/yacht night lights, the foreground deck/palms, and the warm
-  /// lantern glow pooling on the now-lit deck. All sit behind the dancers (they
-  /// are background layers).
+  /// different depths, the drone show in the sky, the animated ocean, solid
+  /// skyline/bridge/yacht structure re-drawn OVER atmosphere/water so
+  /// clouds/drones/foam never slide across them, the additive city/yacht night
+  /// lights, the foreground deck/palms, and the warm lantern glow pooling on the
+  /// now-lit deck. All sit behind the dancers (they are background layers).
   factory BackdropScene.blueHourWaterfront() {
     return const BackdropScene(
       layers: [
@@ -55,6 +56,7 @@ class BackdropScene {
           dyCycleSeconds: 46,
           phase: 0.71,
         ),
+        DroneShowLayer(),
         // Animated water first; the additive ocean and additive city lights
         // commute, so the only thing the order buys us is letting the opaque
         // yacht sit BETWEEN them.
