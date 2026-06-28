@@ -36,10 +36,11 @@ Output `assets/scenery/city_windows.png` (RGBA, opaque). Channel packing:
     city-lights shader paints its own per-floor lit/dark selection + tint +
     flicker on top. SOLID faces + registered pane fills, never edges, so lit
     windows read as filled panes/floors instead of a glowing wireframe.
-  * G: yacht TV-window mask — the large lower-deck swoop pane (shader fills a
-    flickering screen glow here).
-  * B: yacht cabin-window mask — the sky-lounge and main-saloon windows in the
-    bright superstructure (shader fills the warm interior cabin glow here).
+  * G: unused (0). Formerly an offset hand-placed "TV window" box; removed — every
+    lit yacht window now lives in the cabin mask (B).
+  * B: yacht cabin-window mask — every window lit warm from inside. Authoritative
+    source is the hand-painted `yacht_cabin_mask.png` (white = lit) when present;
+    a luminance detector is the fallback. The shader fills the warm cabin glow here.
 
 Run:  python3 tools/scenery_art/bake_city_windows.py
 (needs Pillow + numpy)
@@ -56,6 +57,10 @@ REPO = Path(__file__).resolve().parents[2]
 MASTER = REPO / "assets/scenery/blue_hour_master.png"
 FOREGROUND = REPO / "assets/scenery/foreground.png"
 YACHT = REPO / "assets/scenery/yacht.png"
+# Optional HAND-PAINTED cabin-window mask (white = lit warm window), aligned to
+# yacht.png. When present it is authoritative for the B channel; otherwise the
+# luminance detector is used as a fallback.
+YACHT_CABIN_MASK = REPO / "assets/scenery/yacht_cabin_mask.png"
 OUT = REPO / "assets/scenery/city_windows.png"
 
 # Skyline band in normalized art-y: above the tallest tower top, down to the far
@@ -170,91 +175,75 @@ def main() -> int:
 
     wfield[yy > BAND_BOTTOM] = 0.0
 
-    # --- Yacht TV-window mask (GREEN channel) ---
-    # The large lower-deck window is a distinctive dark "swoop" pane. Detect its
-    # EXACT painted glass — the dark pixels in its tight footprint, right of the
-    # hull porthole — so the runtime TV glow fills the real window shape and
-    # position by construction, never a hand-placed box. The shader reads this
-    # from `.g`; the city window field stays in `.r`.
     yt = Image.open(YACHT).convert("RGBA").resize((w, h), Image.Resampling.LANCZOS)
     yt_arr = np.asarray(yt, dtype=np.float64)
     yt_lum = (
         0.299 * yt_arr[..., 0] + 0.587 * yt_arr[..., 1] + 0.114 * yt_arr[..., 2]
     )
     yt_a = yt_arr[..., 3] / 255.0
-    tv_region = (
-        (yy > 0.552) & (yy < 0.609) & (xx > 0.806) & (xx < 0.882)
-    )
-    tv_mask = (tv_region & (yt_lum < 65.0) & (yt_a > 0.05)).astype(np.float64)
-    # Soften so the screen reads as a glow filling the pane, not a hard cut-out.
-    tv_mask = (
-        np.asarray(
-            Image.fromarray((tv_mask * 255.0).astype(np.uint8)).filter(
-                ImageFilter.GaussianBlur(2.5),
-            ),
-            dtype=np.float64,
-        )
-        / 255.0
-    )
 
     # --- Yacht cabin-window mask (BLUE channel) ---
-    # Light ALL the cabin glass — the sky-lounge band, the forward helm, AND the
-    # big main-deck SALOON window (the most prominent dark glazing) — while still
-    # rejecting the dark navy hull. The discriminator is structural, not a y-clip:
-    # a WINDOW is a dark pane set into the bright white superstructure, so it has
-    # bright structure BOTH above AND below it within a short vertical reach. The
-    # dark hull is bright above (the rubrail) but DARK below (more hull), so
-    # requiring brightness on both sides keeps every saloon / sky-lounge / helm pane
-    # and drops the hull. (The earlier y<0.55 clip amputated the whole main saloon —
-    # that is what left the boat's most obvious windows dark.) The glow is kept
-    # CRISP (light erosion + a 1.2px blur) so the panes read as lit windows, not a
-    # smeared wash. The TV window (`.g`) is excluded so it is not double-lit. No
-    # hand-placed boxes — the glow lands on the real window shapes by construction.
-    px = h / 100.0  # pixels per 1% of art height (vertical reaches in art fraction)
-    reach = int(4.5 * px)
-    near = int(0.6 * px)
-    # The glass panes of the sky-lounge and main saloon (lum < 26). The main-saloon
-    # glass sits a touch brighter than the sky-lounge, so a lum<22 cut under-filled
-    # it and left the main saloon reading near-dead while the upper deck glowed —
-    # 26 evens the two tiers. This yacht's open side decks and under-overhang
-    # recesses are dark-set-in-structure too, so the smear risk is controlled in the
-    # shader by a moderate level (no wall-wash, tiny halo), not by starving the mask.
-    dark = (yt_lum < 26.0) & (yt_a > 0.20)
-    set_in_struct = _bright_within(yt_lum, -reach, -near, 70.0) & _bright_within(
-        yt_lum, near, reach, 70.0
-    )
-    cabin_band = (yy > 0.40) & (yy < 0.585) & (xx > 0.70) & (xx < 0.99)
-    cabin_bool = dark & set_in_struct & cabin_band & (yt_a > 0.20) & (~tv_region)
-    # Light erosion sheds 1px speckle; a SMALL blur keeps the panes crisp.
-    cabin_mask = np.asarray(
-        Image.fromarray((cabin_bool.astype(np.uint8) * 255)).filter(
-            ImageFilter.MinFilter(3),
-        ),
-        dtype=np.float64,
-    )
-    cabin_mask = (
-        np.asarray(
-            Image.fromarray(cabin_mask.astype(np.uint8)).filter(
-                ImageFilter.GaussianBlur(0.7),
-            ),
-            dtype=np.float64,
+    # A HAND-PAINTED mask is AUTHORITATIVE when present: paint white over every
+    # window you want lit warm, on a canvas aligned to yacht.png (any size — it is
+    # resized to the bake canvas). The shader fills the warm interior glow exactly
+    # there, so the lit windows match the painted glass by construction.
+    #
+    # Luminance auto-detection can NOT cleanly isolate this yacht's glass — the
+    # panes are mid-tone, the open side decks and under-overhang recesses sit at the
+    # same luminance, and thresholds leave speckle — so the painted mask is the
+    # reliable source. The detector below is only a fallback when no mask is present.
+    if YACHT_CABIN_MASK.exists():
+        cm = Image.open(YACHT_CABIN_MASK).convert("L").resize(
+            (w, h), Image.Resampling.LANCZOS
         )
-        / 255.0
-    )
+        cabin_mask = np.asarray(cm, dtype=np.float64) / 255.0
+        # Feather the painted edges so the glow has no hard cut line.
+        cabin_mask = (
+            np.asarray(
+                Image.fromarray((cabin_mask * 255.0).astype(np.uint8)).filter(
+                    ImageFilter.GaussianBlur(1.5),
+                ),
+                dtype=np.float64,
+            )
+            / 255.0
+        )
+    else:
+        # Fallback: a dark pane set into bright structure (bright above AND below),
+        # cleaned with a close+open to fill mullions and drop speckle.
+        px = h / 100.0
+        reach = int(4.5 * px)
+        near = int(0.6 * px)
+        dark = (yt_lum < 26.0) & (yt_a > 0.20)
+        set_in_struct = _bright_within(
+            yt_lum, -reach, -near, 70.0
+        ) & _bright_within(yt_lum, near, reach, 70.0)
+        cabin_band = (yy > 0.40) & (yy < 0.605) & (xx > 0.70) & (xx < 0.99)
+        cabin_bool = dark & set_in_struct & cabin_band & (yt_a > 0.20)
+        cabin_mask = (
+            np.asarray(
+                Image.fromarray((cabin_bool.astype(np.uint8) * 255))
+                .filter(ImageFilter.MaxFilter(7))
+                .filter(ImageFilter.MinFilter(7))   # close: fill mullions
+                .filter(ImageFilter.MinFilter(5))
+                .filter(ImageFilter.MaxFilter(5))   # open: drop speckle
+                .filter(ImageFilter.GaussianBlur(1.0)),
+                dtype=np.float64,
+            )
+            / 255.0
+        )
 
     v = (np.clip(wfield, 0.0, 1.0) * 255.0).astype(np.uint8)
-    tv = (np.clip(tv_mask, 0.0, 1.0) * 255.0).astype(np.uint8)
     cabin = (np.clip(cabin_mask, 0.0, 1.0) * 255.0).astype(np.uint8)
     rgba = np.zeros((h, w, 4), dtype=np.uint8)
-    rgba[..., 0] = v      # R: city window field
-    rgba[..., 1] = tv     # G: yacht TV-window mask
-    rgba[..., 2] = cabin  # B: yacht cabin-window mask (warm interior glow)
+    rgba[..., 0] = v       # R: city window field
+    rgba[..., 1] = 0       # G: unused (the former offset TV box is removed)
+    rgba[..., 2] = cabin   # B: yacht cabin-window mask (warm interior glow)
     rgba[..., 3] = 255
     Image.fromarray(rgba, "RGBA").save(OUT)
     print(
         f"wrote {OUT}  city px(>0.1)={int((wfield > 0.1).sum())}  "
-        f"tv px(>0.1)={int((tv_mask > 0.1).sum())}  "
-        f"cabin px(>0.1)={int((cabin_mask > 0.1).sum())}"
+        f"cabin px(>0.1)={int((cabin_mask > 0.1).sum())}  "
+        f"mask={'hand-painted' if YACHT_CABIN_MASK.exists() else 'detector fallback'}"
     )
     return 0
 

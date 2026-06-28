@@ -124,12 +124,9 @@ float cityWindows(vec2 uv, float field, float amount, float time, float flicker,
 
 // Yacht cabins: the warm interior glow is filled from a REGISTERED cabin-window
 // mask baked into the BLUE channel of the window field
-// (tools/scenery_art/bake_city_windows.py). The bake detects the real painted
-// saloon / sky-lounge / flybridge glass + the hull portholes by a band-pass that
-// FILLS the dark recessed panes but rejects the dark hull, so the glow lands on
-// the actual window SHAPES by construction — no hand-placed boxes, and no
-// in-shader high-pass (which only edge-traced the panes and speckled the rails).
-// The TV swoop (`.g`) is excluded from this mask so it is not double-lit.
+// (tools/scenery_art/bake_city_windows.py). The mask is authored from a
+// HAND-PAINTED `yacht_cabin_mask.png` (white = lit window) when present, so the
+// glow lands exactly on the painted glass; a luminance detector is the fallback.
 float yachtWindow(vec2 uv) {
   return texture(uWindowField, uv).b;
 }
@@ -522,26 +519,6 @@ void main() {
       lights += uYachtGlow.rgb * spill;
       intensity += spill;
     }
-  }
-
-  // --- Running TV in the large lower-deck window, REGISTERED to the painted
-  // glass: the bake marks that exact window (the dark swoop pane) in the GREEN
-  // channel of the window field, so the glow fills the real window SHAPE and
-  // POSITION by construction — no hand-placed box. It flickers like a screen — a
-  // rapid shimmer, slower scene cuts, and occasional brighter flashes — shifting
-  // cool↔white↔warm with the "content", so the yacht reads as occupied/alive. ---
-  float tvMask = texture(uWindowField, muv).g;
-  if (tvMask > 0.003) {
-    float fast = hash(vec2(floor(uTime * 7.0), 3.0)); // rapid screen shimmer
-    float cut = hash(vec2(floor(uTime * 1.3), 9.0)); // scene cuts
-    float flash = smoothstep(0.86, 1.0, hash(vec2(floor(uTime * 2.3), 5.0)));
-    float tvFlick = clamp(0.35 + 0.3 * cut + 0.22 * fast + 0.5 * flash, 0.0, 1.2);
-    vec3 tvCol = mix(mix(vec3(0.34, 0.50, 1.0), vec3(0.86, 0.90, 1.0), fast),
-        vec3(1.0, 0.72, 0.42), flash * 0.6);
-    float tvRaw = tvMask * tvFlick * 0.7;
-    float tvLit = tvRaw / (1.0 + 1.3 * tvRaw);
-    lights += tvCol * tvLit;
-    intensity += tvLit;
   }
 
   fragColor = vec4(lights, clamp(intensity, 0.0, 1.0));
