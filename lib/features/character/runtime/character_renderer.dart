@@ -589,8 +589,137 @@ class CharacterRenderer {
           ..lineTo(0, cy - hh * 0.3)
           ..lineTo(hw, cy + hh * 0.5);
         canvas.drawPath(path, stroke);
+      case MouthShape.singAh:
+        _drawSingingMouth(canvas, f, s, widthFactor: 1, heightFactor: 1);
+      case MouthShape.singOh:
+        _drawSingingMouth(
+          canvas,
+          f,
+          s,
+          widthFactor: 0.64,
+          heightFactor: 1.05,
+          topBow: -1,
+        );
+      case MouthShape.singEe:
+        _drawSingingMouth(
+          canvas,
+          f,
+          s,
+          widthFactor: 1.34,
+          heightFactor: 0.62,
+          topBow: 0.4,
+        );
     }
   }
 
+  /// A crafted singing mouth: a "D"-shaped cavity that opens by dropping its jaw
+  /// (the top lip stays put, the bottom descends) so it reads as a real jaw drop
+  /// rather than a ballooning smile. [FaceState.mouthOpen] drives the drop with a
+  /// gentle gamma so quiet syllables still register; below [_singClosed] it
+  /// collapses to a thin lip line so consecutive words read as separate
+  /// movements. Depth comes from a dark cavity, a pink tongue that rises in past
+  /// [_singTongue], and a crisp lip outline on top.
+  ///
+  /// [widthFactor] / [heightFactor] scale the aperture for vowel variety (wide
+  /// "ah", round "oh", flat "ee"); [topBow] bows the top lip (+ down = a faint
+  /// smile, − up = a rounder "oh").
+  void _drawSingingMouth(
+    Canvas canvas,
+    FaceRig f,
+    FaceState s, {
+    required double widthFactor,
+    required double heightFactor,
+    double topBow = 0.8,
+  }) {
+    final cy = f.mouthOffsetY;
+    final hw = f.mouthWidth / 2 * widthFactor;
+    var open = s.mouthOpen;
+    if (open < 0) open = 0;
+    if (open > 1) open = 1;
+
+    final lip = Paint()
+      ..color = Color(f.mouthColor)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..isAntiAlias = antiAlias;
+
+    // Near-closed: a thin resting smile line, so each word starts/ends visibly shut.
+    if (open < _singClosed) {
+      final closedW = f.mouthWidth / 2;
+      canvas.drawPath(
+        Path()
+          ..moveTo(-closedW, cy)
+          ..quadraticBezierTo(0, cy + f.mouthHeight * 0.35, closedW, cy),
+        lip,
+      );
+      return;
+    }
+
+    // Aperture above the closed threshold, eased so low openings still show.
+    final a = math
+        .pow((open - _singClosed) / (1 - _singClosed), 0.85)
+        .toDouble();
+    final topY = cy - f.mouthHeight * 0.15; // top lip ~fixed, slightly raised
+    // A small dark cavity the instant the mouth cracks open (so quiet syllables
+    // read as a gap, not a smile), then a measured jaw drop with the aperture —
+    // kept modest so a normal word cracks open rather than gaping wide.
+    final botY = topY + f.mouthHeight * heightFactor * (0.3 + 1.05 * a);
+
+    // "D" cavity: a near-flat (gently bowed) top lip, rounded walls, and a wide
+    // flat floor (rather than a single bottom point) so the tongue has somewhere
+    // to sit and the open mouth reads as a chamber, not a wedge.
+    final bw = hw * 0.62; // floor half-width
+    final cavity = Path()
+      ..moveTo(-hw, topY)
+      ..quadraticBezierTo(0, topY + topBow, hw, topY)
+      ..quadraticBezierTo(hw, botY, bw, botY)
+      ..lineTo(-bw, botY)
+      ..quadraticBezierTo(-hw, botY, -hw, topY)
+      ..close();
+    canvas.drawPath(
+      cavity,
+      Paint()
+        ..color = const Color(_cavityColor)
+        ..isAntiAlias = antiAlias,
+    );
+
+    // Tongue: a pink mound filling the lower cavity (clipped to it, so a sliver
+    // of dark cavity is left around the rim and it reads as the mouth floor, not
+    // a lower lip). It rises a little as the mouth opens wider.
+    if (open > _singTongue) {
+      final t = (open - _singTongue) / (1 - _singTongue);
+      final span = botY - topY;
+      final centerY = topY + span * (0.82 - 0.1 * t);
+      canvas
+        ..save()
+        ..clipPath(cavity)
+        ..drawOval(
+          Rect.fromCenter(
+            center: Offset(0, centerY),
+            width: bw * 2.1,
+            height: span * 0.55,
+          ),
+          Paint()
+            ..color = Color(f.noseColor)
+            ..isAntiAlias = antiAlias,
+        )
+        ..restore();
+    }
+
+    canvas.drawPath(cavity, lip); // crisp lip rim over cavity + tongue
+  }
+
   static const int _outlineColor = 0xFF1B1B2A;
+
+  /// Below this [FaceState.mouthOpen] the singing mouth is drawn shut (lip line).
+  static const double _singClosed = 0.12;
+
+  /// Above this opening the tongue rises into the singing cavity.
+  static const double _singTongue = 0.4;
+
+  /// Warm near-black for the open-mouth interior — harmonizes with the navy
+  /// outline ([_outlineColor]) instead of a cold pure black.
+  static const int _cavityColor = 0xFF241F2E;
 }

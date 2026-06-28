@@ -10,6 +10,16 @@ enum MouthShape {
   sad,
   surprised,
   angry,
+
+  /// Singing visemes: a crafted open-mouth cavity (dark interior + pink tongue)
+  /// whose jaw drops with [FaceState.mouthOpen], anchored at the top lip so it
+  /// opens downward like a real jaw. Below a small opening they collapse to a
+  /// thin closed lip line, so word-to-word motion reads as discrete syllables.
+  /// The three differ only in width/proportion for vowel variety:
+  /// [singAh] wide (the workhorse), [singOh] narrow/round, [singEe] widest/flat.
+  singAh,
+  singOh,
+  singEe,
 }
 
 /// Static geometry of a face, anchored to a bone (the head).
