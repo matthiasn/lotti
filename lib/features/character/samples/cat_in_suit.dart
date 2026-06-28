@@ -4447,6 +4447,64 @@ class CatClips {
     DanceJointKey(32, rotation: -0.96),
   ];
 
+  // The Shaku signature: BOTH forearms crossed into an X in front of the chest.
+  // The LEFT hand reaches across to the RIGHT of torso-centre (+x) and the RIGHT
+  // hand across to the LEFT (-x), at chest height (negative y = up), so the
+  // forearms scissor across the centreline. The TOP hand alternates every count
+  // (the "shaku shaku" swap): L rides high on 0/8/16/24, R rides high on
+  // 4/12/20/28; the whole X bobs down a touch on the dip between.
+  static const _shakuHandLTargetKeys = [
+    DanceIkTargetKey(0, x: 13, y: -14),
+    DanceIkTargetKey(2, x: 12, y: -9),
+    DanceIkTargetKey(4, x: 11, y: -6),
+    DanceIkTargetKey(6, x: 12, y: -9),
+    DanceIkTargetKey(8, x: 13, y: -14),
+    DanceIkTargetKey(10, x: 12, y: -9),
+    DanceIkTargetKey(12, x: 11, y: -6),
+    DanceIkTargetKey(14, x: 12, y: -9),
+    DanceIkTargetKey(16, x: 13, y: -14),
+    DanceIkTargetKey(18, x: 12, y: -9),
+    DanceIkTargetKey(20, x: 11, y: -6),
+    DanceIkTargetKey(22, x: 12, y: -9),
+    DanceIkTargetKey(24, x: 13, y: -14),
+    DanceIkTargetKey(26, x: 12, y: -9),
+    DanceIkTargetKey(28, x: 11, y: -6),
+    DanceIkTargetKey(30, x: 12, y: -9),
+    DanceIkTargetKey(32, x: 13, y: -14),
+  ];
+  static const _shakuHandRTargetKeys = [
+    DanceIkTargetKey(0, x: -11, y: -6),
+    DanceIkTargetKey(2, x: -12, y: -9),
+    DanceIkTargetKey(4, x: -13, y: -14),
+    DanceIkTargetKey(6, x: -12, y: -9),
+    DanceIkTargetKey(8, x: -11, y: -6),
+    DanceIkTargetKey(10, x: -12, y: -9),
+    DanceIkTargetKey(12, x: -13, y: -14),
+    DanceIkTargetKey(14, x: -12, y: -9),
+    DanceIkTargetKey(16, x: -11, y: -6),
+    DanceIkTargetKey(18, x: -12, y: -9),
+    DanceIkTargetKey(20, x: -13, y: -14),
+    DanceIkTargetKey(22, x: -12, y: -9),
+    DanceIkTargetKey(24, x: -11, y: -6),
+    DanceIkTargetKey(26, x: -12, y: -9),
+    DanceIkTargetKey(28, x: -13, y: -14),
+    DanceIkTargetKey(30, x: -12, y: -9),
+    DanceIkTargetKey(32, x: -11, y: -6),
+  ];
+  static final KeyframeIkTargetChannel _shakuHandLTarget = _dancePhrase
+      .ikTargetChannel(_shakuHandLTargetKeys, smooth: true);
+  static final KeyframeIkTargetChannel _shakuHandRTarget = _dancePhrase
+      .ikTargetChannel(_shakuHandRTargetKeys, smooth: true);
+
+  // Reuse the dance limb-target rig (bone ids, bend directions, foot channels);
+  // swap only the two HAND channels for the crossed-X paths above.
+  static final List<LimbIkTarget> _shakuLimbTargets = [
+    _danceLimbTargets[0].withChannel(_shakuHandLTarget),
+    _danceLimbTargets[1].withChannel(_shakuHandRTarget),
+    _danceLimbTargets[2],
+    _danceLimbTargets[3],
+  ];
+
   /// Standalone "Shaku Shaku" lead clip — the redesign in progress. Reuses the
   /// dance channels and overrides the groove (on-beat dip), the support-knee
   /// pump, and adds a per-bar upper-body LEAN (chest over the support foot — the
@@ -4460,7 +4518,7 @@ class CatClips {
       duration: base.duration,
       contactSpans: base.contactSpans,
       contactPinning: base.contactPinning,
-      limbTargets: base.limbTargets,
+      limbTargets: _shakuLimbTargets,
       root: LayeredRootChannel([
         _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
@@ -4514,7 +4572,8 @@ class CatClips {
           // Per-BAR weight-commit LEAN (harmonic 1): the chest tips toward the
           // support foot — one way through bar 1, the other through bar 2 — so
           // the upper body commits over the planted leg WITHOUT moving the feet.
-          const SineChannel(amplitude: 0.11),
+          // Kept gentle so it reads as an in-plane tilt, not a turn-to-camera.
+          const SineChannel(amplitude: 0.06),
         ]),
         CatBones.legLowerL: _dancePhrase.jointChannel(
           _shakuLegLowerLKeys,
