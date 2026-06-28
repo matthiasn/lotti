@@ -68,8 +68,8 @@ The ordering is the important contract:
 - Clouds are reintroduced as transparent full-frame PNGs and drift with
   `CloudParallaxLayer`.
 - `DroneShowLayer` paints additive sky lights after clouds but before the
-  animated water and fixed structure redraw. Its final formation spells
-  `Omah Lay`.
+  animated water and fixed structure redraw. Its show holds `Omah Lay` first,
+  then morphs into `Moving`.
 - `OceanLayer` adds animated foam/glint over the painted lagoon.
 - `city_bridge.png` and `yacht.png` are redrawn after the moving
   clouds/drones/ocean so clouds, drones, and foam never slide across solid
@@ -135,10 +135,10 @@ on desktop and phone aspect ratios.
 
 `layers/drone_show_layer.dart` is a deterministic background performance layer,
 not a bitmap asset. It samples normalized drone positions from the scene clock
-and paints additive glows in the sky. The current show is intentionally slow:
-220 drones launch along the cable-stayed bridge road line over a 144-second
-cycle, climb into a controlled beam, move through a measured middle fan, then
-settle into a held compact dot-matrix `Omah Lay` formation.
+and paints additive glows in the sky. The current show is coordinated rather
+than sluggish: 220 drones launch evenly along the cable-stayed bridge road line
+over a 96-second cycle, climb into a controlled beam, move through a measured
+middle fan, hold compact dot-matrix `Omah Lay`, then morph into `Moving`.
 
 ```mermaid
 stateDiagram-v2
@@ -153,12 +153,12 @@ The pure functions are the contract:
 
 - `droneShowTimelineAt(timeSeconds)` resolves the current phase and local
   progress inside the repeatable loop.
-- `droneShowFormationPoints()` generates the final text destination points for
-  the denser dot-matrix `Omah Lay` formation.
+- `droneShowFormationPoints()` generates destination points for either
+  dot-matrix message (`Omah Lay` by default, or `Moving` for the final hold).
 - `sampleDroneShow(timeSeconds)` returns per-drone normalized positions,
   opacity, radius, and phase; reduced-motion samples a static formation frame.
-  During formation, drones settle into the text early and then hold, so the
-  lettering stays readable instead of morphing until the loop wraps.
+  During formation, drones settle into `Omah Lay`, hold, transition into
+  `Moving`, then hold again so lettering remains readable.
 
 The layer belongs behind the city/yacht redraw. That lets the launch read as
 coming from the bridge area while solid painted structures still occlude the
@@ -246,5 +246,5 @@ Coverage responsibilities:
   beat-intensity maths.
 - `stage_lights_overlay_test.dart`: the floor pools land their gel, track the
   dancer foot (lazy follow) and pulse on the beat.
-- `drone_show_layer_test.dart`: drone timeline phases, final `Omah Lay`
+- `drone_show_layer_test.dart`: drone timeline phases, `Omah Lay` → `Moving`
   formation bounds, deterministic sampling, and paint contract.

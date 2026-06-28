@@ -73,9 +73,9 @@ plate with alpha-mask cloud/wave motion. The audio-synced dance player now uses
 same audio position as the choreography, with a cloudless master-derived base,
 independent parallax cloud PNGs, animated ocean/lights, and fixed structure
 layers redrawn over those moving effects. That same scenery pass now centers a
-deterministic sky drone show whose compact final formation spells `Omah Lay`.
-The tail is a single ribbon driven by a 7-link drag chain; the tie is a keyed
-2-link cloth shape; ears flick a beat behind the head bob.
+deterministic sky drone show that holds `Omah Lay` first, then morphs into
+`Moving`. The tail is a single ribbon driven by a 7-link drag chain; the tie is
+a keyed 2-link cloth shape; ears flick a beat behind the head bob.
 
 ## Architecture
 
@@ -427,8 +427,8 @@ darkens the body while the rim survives).
 
 The background drone show is the spectacle layer: drones launch from the
 cable-stayed bridge road line, build a stem, spread through a measured middle
-transition, and settle into a held compact dot-matrix `Omah Lay` in the sky
-behind the city/yacht redraw.
+transition, hold compact dot-matrix `Omah Lay`, then morph into `Moving` behind
+the city/yacht redraw.
 
 ## Reviewing motion — film strips, grids, onions, travel
 

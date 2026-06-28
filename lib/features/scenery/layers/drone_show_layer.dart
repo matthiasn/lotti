@@ -3,22 +3,28 @@ import 'dart:ui' as ui;
 
 import 'package:lotti/features/scenery/layers/backdrop_layer.dart';
 
+/// First text held by the drone formation.
+const String kDroneShowOpeningText = 'Omah Lay';
+
 /// Final text shown by the drone formation.
-const String kDroneShowFinalText = 'Omah Lay';
+const String kDroneShowFinalText = 'Moving';
 
 /// Number of light points in the deterministic show.
 const int kDroneShowDroneCount = 220;
 
 /// Length of one complete drone-show loop.
 ///
-/// Real drone shows read as slow, coordinated aircraft rather than particles:
-/// a long launch, a deliberate grouped climb, then a held formation.
-const double kDroneShowCycleSeconds = 144;
+/// Real drone shows read as coordinated aircraft rather than particles, but the
+/// middle transition still needs tempo so the stem does not feel sluggish.
+const double kDroneShowCycleSeconds = 96;
 
-const double _launchEnd = 0.22;
-const double _beamEnd = 0.32;
-const double _fanEnd = 0.62;
-const double _formationSettleFraction = 0.42;
+const double _launchEnd = 0.18;
+const double _beamEnd = 0.27;
+const double _fanEnd = 0.54;
+const double _openingSettleEnd = 0.18;
+const double _textTransitionStart = 0.48;
+const double _textTransitionEnd = 0.72;
+const double _reducedMotionCycleProgress = 0.9;
 
 /// Coarse segment in the repeatable drone-show choreography.
 enum DroneShowPhase { launch, beam, fan, formation }
@@ -58,8 +64,9 @@ class DroneShowSample {
 
 /// Additive drone-show layer for the blue-hour sky.
 ///
-/// Drones launch from bridge-ish normalized anchors, climb into an ascending
-/// beam, fan outward, then hold a point formation spelling [kDroneShowFinalText].
+/// Drones launch from evenly spaced bridge-road anchors, climb into an
+/// ascending beam, fan outward, hold [kDroneShowOpeningText], then morph into
+/// [kDroneShowFinalText].
 /// The layer is stateless and deterministic from [BackdropContext.timeSeconds].
 class DroneShowLayer implements BackdropLayer {
   const DroneShowLayer({
@@ -73,7 +80,9 @@ class DroneShowLayer implements BackdropLayer {
   @override
   void paint(ui.Canvas canvas, BackdropContext ctx) {
     final samples = sampleDroneShow(
-      ctx.reducedMotion ? cycleSeconds * 0.86 : ctx.timeSeconds,
+      ctx.reducedMotion
+          ? cycleSeconds * _reducedMotionCycleProgress
+          : ctx.timeSeconds,
       reducedMotion: ctx.reducedMotion,
       count: droneCount,
       cycleSeconds: cycleSeconds,
@@ -151,10 +160,13 @@ DroneShowTimeline droneShowTimelineAt(
   );
 }
 
-/// Generates normalized destination points for [kDroneShowFinalText].
-List<ui.Offset> droneShowFormationPoints({int count = kDroneShowDroneCount}) {
+/// Generates normalized destination points for a drone-show text label.
+List<ui.Offset> droneShowFormationPoints({
+  int count = kDroneShowDroneCount,
+  String text = kDroneShowOpeningText,
+}) {
   if (count <= 0) return const [];
-  final cells = _textDotCells(kDroneShowFinalText);
+  final cells = _textDotCells(text);
   return List<ui.Offset>.generate(count, (i) {
     final cell = cells[(i * 73) % cells.length];
     final angle = _unitForIndex(i + 211) * math.pi * 2;
@@ -176,29 +188,34 @@ List<DroneShowSample> sampleDroneShow(
   if (count <= 0) return const [];
   final safeCycle = cycleSeconds <= 0 ? kDroneShowCycleSeconds : cycleSeconds;
   final timeline = droneShowTimelineAt(
-    reducedMotion ? safeCycle * 0.86 : timeSeconds,
+    reducedMotion ? safeCycle * _reducedMotionCycleProgress : timeSeconds,
     cycleSeconds: safeCycle,
   );
-  final formation = droneShowFormationPoints(count: count);
+  final openingFormation = droneShowFormationPoints(count: count);
+  final finalFormation = droneShowFormationPoints(
+    count: count,
+    text: kDroneShowFinalText,
+  );
   return List<DroneShowSample>.generate(count, (i) {
     final t = _easeInOut(timeline.progress);
     final launch = _launchPoint(i, count);
     final beam = _beamPoint(i);
     final fan = _fanPoint(i, count);
-    final dest = formation[i];
     final position = switch (timeline.phase) {
       DroneShowPhase.launch => ui.Offset.lerp(launch, beam, t)!,
       DroneShowPhase.beam => ui.Offset.lerp(beam, _beamLiftPoint(i), t)!,
       DroneShowPhase.fan => ui.Offset.lerp(_beamLiftPoint(i), fan, t)!,
       DroneShowPhase.formation => _formationPoint(
         fan,
-        dest,
+        openingFormation[i],
+        finalFormation[i],
         timeline.progress,
       ),
     };
     final twinkle = reducedMotion
         ? 0.0
-        : 0.10 * math.sin(timeSeconds * 2.4 + i * 1.618 + _unitForIndex(i) * 2);
+        : 0.045 *
+              math.sin(timeSeconds * 1.35 + i * 0.42 + _unitForIndex(i) * 2);
     return DroneShowSample(
       position: position,
       opacity: (0.74 + twinkle).clamp(0.0, 1.0),
@@ -210,9 +227,8 @@ List<DroneShowSample> sampleDroneShow(
 
 ui.Offset _launchPoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
-  final x = 0.48 + u * 0.27 + (_unitForIndex(index + 101) - 0.5) * 0.006;
-  final y =
-      0.491 + (u - 0.5) * 0.006 + (_unitForIndex(index + 127) - 0.5) * 0.003;
+  final x = 0.455 + u * 0.30;
+  final y = 0.486 + (u - 0.5) * 0.006;
   return ui.Offset(x, y);
 }
 
@@ -230,18 +246,35 @@ ui.Offset _beamLiftPoint(int index) {
 
 ui.Offset _fanPoint(int index, int count) {
   final u = count <= 1 ? 0.5 : index / (count - 1);
-  final wave = math.sin(u * math.pi * 2.0);
+  final band = ((index * 7) % 11) / 10;
+  final crown = -0.035 * math.sin(u * math.pi);
   return ui.Offset(
-    0.28 + u * 0.44,
-    0.15 + 0.11 * _unitForIndex(index + 5) + wave * 0.022,
+    0.34 + u * 0.32,
+    0.21 + band * 0.09 + crown,
   );
 }
 
-ui.Offset _formationPoint(ui.Offset fan, ui.Offset dest, double progress) {
-  final settle = _easeInOut(
-    (progress / _formationSettleFraction).clamp(0.0, 1.0),
-  );
-  return ui.Offset.lerp(fan, dest, settle)!;
+ui.Offset _formationPoint(
+  ui.Offset fan,
+  ui.Offset opening,
+  ui.Offset finalText,
+  double progress,
+) {
+  if (progress < _openingSettleEnd) {
+    return ui.Offset.lerp(
+      fan,
+      opening,
+      _easeInOut(progress / _openingSettleEnd),
+    )!;
+  }
+  if (progress < _textTransitionStart) return opening;
+  if (progress < _textTransitionEnd) {
+    final t =
+        (progress - _textTransitionStart) /
+        (_textTransitionEnd - _textTransitionStart);
+    return ui.Offset.lerp(opening, finalText, _easeInOut(t))!;
+  }
+  return finalText;
 }
 
 double _unitForIndex(int index) {
@@ -291,7 +324,7 @@ List<_DotCell> _textDotCells(String text) {
   const targetWidth = 0.3;
   const targetHeight = 0.08;
   const left = 0.35;
-  const top = 0.17;
+  const top = 0.24;
   final cellWidth = targetWidth / width;
   const cellHeight = targetHeight / rows;
   return [
@@ -326,6 +359,42 @@ _DotGlyph _dotGlyphFor(String char) {
       '10001',
       '10001',
       '10001',
+    ]),
+    'V' => const _DotGlyph([
+      '10001',
+      '10001',
+      '10001',
+      '10001',
+      '01010',
+      '01010',
+      '00100',
+    ]),
+    'I' => const _DotGlyph([
+      '111',
+      '010',
+      '010',
+      '010',
+      '010',
+      '010',
+      '111',
+    ]),
+    'N' => const _DotGlyph([
+      '10001',
+      '11001',
+      '10101',
+      '10011',
+      '10001',
+      '10001',
+      '10001',
+    ]),
+    'G' => const _DotGlyph([
+      '01110',
+      '10001',
+      '10000',
+      '10111',
+      '10001',
+      '10001',
+      '01110',
     ]),
     'A' => const _DotGlyph([
       '01110',
