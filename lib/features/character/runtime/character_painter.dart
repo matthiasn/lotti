@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/rendering.dart';
 import 'package:lotti/features/character/model/affine2d.dart';
 import 'package:lotti/features/character/model/bone.dart';
@@ -39,6 +40,15 @@ Affine2D groundedBase(
   (floorY ?? size.height * feetFraction) - feetOffset * scale,
 ).multiply(Affine2D.scale(flip ? -scale : scale, scale));
 
+/// Backlight (rim/halo) passes, drawn back-to-front behind each lit member: a
+/// soft outer bloom then a tight bright rim. `sigmaFrac` is the blur sigma as a
+/// fraction of the canvas short side; `alphaScale` scales the member's gel alpha
+/// for that pass. See [CharacterPainter.memberBacklights].
+const List<({double sigmaFrac, double alphaScale})> _kBacklightPasses = [
+  (sigmaFrac: 0.024, alphaScale: 0.55), // soft outer bloom (atmosphere)
+  (sigmaFrac: 0.010, alphaScale: 1.0), // tight bright rim (edge separation)
+];
+
 /// A [CustomPainter] that resolves and draws one frame of a [CharacterScene].
 ///
 /// Per the plan's perf guidance the live ticker lives in the widget `State`,
@@ -70,6 +80,9 @@ class CharacterPainter extends CustomPainter {
     this.synchronousEnsemble = false,
     this.singingHeadMotion = false,
     this.cameraOverride,
+    this.onDancerAnchors,
+    this.memberBacklights = const [],
+    this.bodyDim,
     CharacterRenderer? renderer,
   }) : _renderer = renderer ?? CharacterRenderer();
 
@@ -110,6 +123,29 @@ class CharacterPainter extends CustomPainter {
   /// instead of looping one move. A jump in the value between frames reads as a
   /// hard cut; a smoothly-moving value reads as a continuous move.
   final ({double zoom, double dx, double dy})? cameraOverride;
+
+  /// Optional per-frame report of each ensemble member's resolved on-screen
+  /// anchor (foot point), normalized 0..1 to the canvas and ordered left→right
+  /// by lane. Lets an overlay (e.g. stage lights) track the dancers without
+  /// re-deriving the camera + formation maths. Only fired in three-member dance
+  /// mode; never affects what is painted.
+  final void Function(List<Offset> anchors)? onDancerAnchors;
+
+  /// Optional per-member backlight (rim/halo) colours, ordered left→right to
+  /// match the painted lane order. When an entry is non-transparent that member
+  /// is drawn TWICE: first as a blurred, solid-colour silhouette behind itself
+  /// (the gel halo hugging its outline), then normally on top — so the figure
+  /// reads as a crisp shape ringed in coloured light. The alpha of each colour
+  /// scales the halo strength. Only honored in three-member dance mode (where
+  /// the lane order is stable); empty disables it and the painter is untouched.
+  final List<Color> memberBacklights;
+
+  /// Optional modulate colour darkening only the FRONT body draw of each backlit
+  /// member (not its rim/halo), so a backlit cat falls into shadow and the
+  /// saturated rim wins — the front-in-shadow read a real backlight needs.
+  /// `0xFF707070` ≈ 1.5 stops down. Null leaves the bodies at full colour. Only
+  /// applied alongside [memberBacklights] (three-member dance mode).
+  final Color? bodyDim;
 
   final Clip clip;
   final double timeSeconds;
@@ -334,6 +370,15 @@ class CharacterPainter extends CustomPainter {
       final paintOrder = members.length >= 3
           ? const [0, 2, 1]
           : [for (final i in Iterable<int>.generate(members.length)) i];
+      // Optionally report each member's resolved on-screen foot anchor so an
+      // overlay (stage lights) can track the dancers. Capture the live camera
+      // transform once — the per-member transforms are pushed/popped inside
+      // _paintCharacterAt, so this stays the scene-camera matrix.
+      final reportAnchors = leadCentreOrder && onDancerAnchors != null;
+      final cameraMatrix = reportAnchors ? canvas.getTransform() : null;
+      final anchors = reportAnchors
+          ? List<Offset>.filled(members.length, Offset.zero)
+          : null;
       for (final i in paintOrder) {
         final memberScene = members[i];
         final memberClip = clips[i];
@@ -356,15 +401,101 @@ class CharacterPainter extends CustomPainter {
         final memberScale =
             drawScale * _roleScale(i, members.length) * formation.scale;
         final memberHorizontalScale = _roleHorizontalScale(i, members.length);
+        final memberFloorY =
+            groupFloorY +
+            (_roleFloorOffset(i, members.length) + formation.dy) * drawScale;
+        final memberCentreX = startX + spacing * i + formation.dx * drawScale;
+        if (anchors != null && cameraMatrix != null) {
+          // Map the local foot point through the camera transform to screen,
+          // normalized to the canvas (affine — ignore the perspective row).
+          final sx =
+              cameraMatrix[0] * memberCentreX +
+              cameraMatrix[4] * memberFloorY +
+              cameraMatrix[12];
+          final sy =
+              cameraMatrix[1] * memberCentreX +
+              cameraMatrix[5] * memberFloorY +
+              cameraMatrix[13];
+          anchors[i] = Offset(sx / size.width, sy / size.height);
+        }
+        // Backlight (rim/halo): draw this member as a blurred, solid-gel
+        // silhouette BEHIND itself first, so the real draw on top leaves a
+        // coloured glow hugging the outline. Only when a colour is supplied for
+        // this lane (the lead-centre dance order keeps lane index == screen
+        // position left→right). Aligned for free — it reuses the member's exact
+        // transform, so the halo tracks the dancer through any camera/formation.
+        final glow = leadCentreOrder && i < memberBacklights.length
+            ? memberBacklights[i]
+            : null;
+        if (glow != null && glow.a > 0) {
+          // Two passes so the gel reads as real backlight, not a sticker glow:
+          // a soft outer BLOOM for atmosphere, then a tight bright RIM that hugs
+          // the contour and stays crisp all the way down the arms/legs to the
+          // feet. Both flatten the member to a solid gel silhouette and blur it
+          // behind the real draw, so only the part protruding past the outline
+          // shows. Aligned for free — they reuse the member's exact transform.
+          for (final pass in _kBacklightPasses) {
+            final sigma = size.shortestSide * pass.sigmaFrac;
+            final pad = sigma * 4;
+            final haloBounds = Rect.fromLTRB(
+              memberCentreX - spacing - pad,
+              -pad,
+              memberCentreX + spacing + pad,
+              size.height + pad,
+            );
+            final a = (glow.a * pass.alphaScale).clamp(0.0, 1.0);
+            canvas.saveLayer(
+              haloBounds,
+              Paint()
+                ..colorFilter = ColorFilter.mode(
+                  glow.withValues(alpha: a),
+                  BlendMode.srcIn,
+                )
+                ..imageFilter = ui.ImageFilter.blur(
+                  sigmaX: sigma,
+                  sigmaY: sigma,
+                ),
+            );
+            _paintCharacterAt(
+              memberScene,
+              canvas,
+              size,
+              clip: memberClip,
+              floorY: memberFloorY,
+              centreX: memberCentreX,
+              flip: flip,
+              timeSeconds: timeSeconds + phaseOffset,
+              expression: expressions[i],
+              scale: memberScale,
+              feetFraction: feetFraction,
+              horizontalScale: memberHorizontalScale,
+            );
+            canvas.restore();
+          }
+        }
+        // Front body draw. When this member is backlit, drop it into shadow with
+        // [bodyDim] (modulate) so the bright rim reads as a real backlight — the
+        // front falls dark and only the gel edge separates it. The rim passes
+        // above are unaffected (drawn full-strength behind).
+        final dim = glow != null && bodyDim != null ? bodyDim : null;
+        if (dim != null) {
+          canvas.saveLayer(
+            Rect.fromLTRB(
+              memberCentreX - spacing,
+              0,
+              memberCentreX + spacing,
+              size.height,
+            ),
+            Paint()..colorFilter = ColorFilter.mode(dim, BlendMode.modulate),
+          );
+        }
         _paintCharacterAt(
           memberScene,
           canvas,
           size,
           clip: memberClip,
-          floorY:
-              groupFloorY +
-              (_roleFloorOffset(i, members.length) + formation.dy) * drawScale,
-          centreX: startX + spacing * i + formation.dx * drawScale,
+          floorY: memberFloorY,
+          centreX: memberCentreX,
           flip: flip,
           timeSeconds: timeSeconds + phaseOffset,
           expression: expressions[i],
@@ -372,7 +503,9 @@ class CharacterPainter extends CustomPainter {
           feetFraction: feetFraction,
           horizontalScale: memberHorizontalScale,
         );
+        if (dim != null) canvas.restore();
       }
+      if (anchors != null) onDancerAnchors!(anchors);
       canvas.restore();
       return;
     }
@@ -1335,5 +1468,7 @@ class CharacterPainter extends CustomPainter {
       old.synchronousEnsemble != synchronousEnsemble ||
       old.singingHeadMotion != singingHeadMotion ||
       old.cameraOverride != cameraOverride ||
+      !listEquals(old.memberBacklights, memberBacklights) ||
+      old.bodyDim != bodyDim ||
       old._renderer != _renderer;
 }

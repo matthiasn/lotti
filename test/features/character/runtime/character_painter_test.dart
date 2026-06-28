@@ -504,6 +504,141 @@ void main() {
     });
   });
 
+  group('CharacterPainter.memberBacklights / bodyDim', () {
+    // Distinct pure-colour gels per lane so rim pixels are unambiguous.
+    const gels = [Color(0xFFFF0000), Color(0xFF00FF00), Color(0xFF0000FF)];
+    const w = 760;
+    const h = 420;
+    // Cat lane centres (≈ 0.3/0.5/0.7 of width); assign a pixel to its nearest.
+    int laneOf(int x) =>
+        (x - 228).abs() <= (x - 380).abs() && x < 304 ? 0 : (x < 456 ? 1 : 2);
+
+    CharacterPainter trio({
+      List<Color> backlights = const [],
+      Color? bodyDim,
+    }) => CharacterPainter(
+      scene: scene,
+      partnerScene: CharacterScene(
+        buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+      ),
+      ensembleScenes: [
+        CharacterScene(
+          buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+        ),
+        CharacterScene(buildCatInSuitRig(palette: CatInSuitPalette.darkBrown)),
+      ],
+      ensembleClips: [
+        CatClips.dance,
+        CatClips.danceBackupLeft,
+        CatClips.danceBackupRight,
+      ],
+      synchronousEnsemble: true,
+      walkingPair: true,
+      clip: CatClips.dance,
+      timeSeconds: 0.25,
+      shadowColor: const Color(0x00000000),
+      memberBacklights: backlights,
+      bodyDim: bodyDim,
+      renderer: renderer,
+    );
+
+    Future<Uint8List> pixels(CharacterPainter p) async {
+      final recorder = ui.PictureRecorder();
+      p.paint(Canvas(recorder), const Size(760, 420));
+      final pic = recorder.endRecording();
+      final img = await pic.toImage(w, h);
+      final data = (await img.toByteData())!.buffer.asUint8List();
+      img.dispose();
+      pic.dispose();
+      return data;
+    }
+
+    testWidgets('rings each member in its own gel beyond the silhouette', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        final plain = await pixels(trio());
+        final lit = await pixels(trio(backlights: gels));
+        var litTotal = 0;
+        var plainTotal = 0;
+        final hits = [0, 0, 0]; // NEW rim pixels matching this lane's gel
+        final wrong = [0, 0, 0];
+        for (var y = 0; y < h; y++) {
+          for (var x = 0; x < w; x++) {
+            final o = (y * w + x) * 4;
+            if (plain[o + 3] != 0) plainTotal++;
+            if (lit[o + 3] == 0) continue;
+            litTotal++;
+            if (plain[o + 3] != 0) continue; // only NEW (rim) pixels
+            final r = lit[o];
+            final g = lit[o + 1];
+            final b = lit[o + 2];
+            final dom = r > g && r > b ? 0 : (g > r && g > b ? 1 : 2);
+            if (dom == laneOf(x)) {
+              hits[laneOf(x)]++;
+            } else {
+              wrong[laneOf(x)]++;
+            }
+          }
+        }
+        // The rim adds coloured coverage OUTSIDE the bodies, and each lane's new
+        // pixels are dominated by THAT lane's gel.
+        expect(
+          litTotal,
+          greaterThan(plainTotal),
+          reason: 'rim adds coverage beyond the bodies',
+        );
+        for (var i = 0; i < 3; i++) {
+          expect(
+            hits[i],
+            greaterThan(100),
+            reason: 'lane $i ringed in its gel',
+          );
+          expect(
+            hits[i],
+            greaterThan(wrong[i]),
+            reason: 'lane $i rim is mostly its own gel',
+          );
+        }
+      });
+    });
+
+    testWidgets('bodyDim drops the front body into shadow, rim survives', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        final bright = await pixels(trio(backlights: gels));
+        final dimmed = await pixels(
+          trio(backlights: gels, bodyDim: const Color(0xFF6E6E6E)),
+        );
+        var brightLum = 0;
+        var dimLum = 0;
+        var rimDim = 0; // gel-hued coverage must remain under the dim
+        for (var y = 0; y < h; y++) {
+          for (var x = 0; x < w; x++) {
+            final o = (y * w + x) * 4;
+            if (bright[o + 3] != 0) {
+              brightLum += bright[o] + bright[o + 1] + bright[o + 2];
+            }
+            if (dimmed[o + 3] != 0) {
+              dimLum += dimmed[o] + dimmed[o + 1] + dimmed[o + 2];
+              final r = dimmed[o];
+              final g = dimmed[o + 1];
+              final b = dimmed[o + 2];
+              if (r > 120 || g > 120 || b > 120) rimDim++;
+            }
+          }
+        }
+        expect(
+          dimLum,
+          lessThan(brightLum),
+          reason: 'bodyDim darkens the bodies',
+        );
+        expect(rimDim, greaterThan(100), reason: 'the bright rim is preserved');
+      });
+    });
+  });
+
   testWidgets('dance trio clears the dark backup during the finish', (
     tester,
   ) async {

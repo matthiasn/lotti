@@ -126,6 +126,34 @@ no-op until their programs/assets load.
 art anchors through `coverFit`, so lights stay attached to the painted structures
 on desktop and phone aspect ratios.
 
+## Stage Lighting
+
+The dance-to-track demo lights the trio like a stage act with a **graphic
+rim/backlight** look (chosen because the cats are flat cartoon shapes — front-lit
+colored cones read as glowing capsules, but a colored edge hugging the silhouette
+reads as real backlight). One scheduler drives two halves so the body glow and
+its floor pool always share a gel:
+
+- **`runtime/stage_lights.dart` — `StageLightRig` (pure).** A deterministic,
+  canvas-free scheduler: feed it the scene time + the 0..1 beat envelope and it
+  returns each light's gel `color`, pool `targetX` and `intensity`. The gel cycle
+  (warm gold / hot fuchsia / UV violet) **snaps** (never lerps) on a `colorPeriod`
+  wired to the track tempo (`60 / bpm`), offset per lane so the row rotates R/G/B
+  rather than flashing in unison; brightness is `baseIntensity + beatBoost * beat`.
+- **The rim/halo is drawn by `CharacterPainter`** (`memberBacklights`, not in this
+  module): each cat is rendered as a blurred, solid-gel silhouette behind itself
+  (a soft bloom + a tight rim pass) so it ends up ringed in a crisp gel edge, with
+  `bodyDim` dropping the front body into shadow so the rim wins. It reuses the
+  member transform, so the halo tracks the dancer through any camera move.
+- **`stage_lights_overlay.dart` — `StageLightsOverlay` / `StageLightsPainter`.**
+  The grounding half: an additive (`BlendMode.plus`) screen-space pass over the
+  dancers drawing a soft elliptical gel pool + hot core under each foot. It eases
+  its pool toward the live dancer foot (lazy on small moves, fast catch-up on a
+  camera cut), tracking the anchors the painter publishes via `onDancerAnchors`.
+
+The demo samples the rig once per frame and feeds the gels to both halves, so the
+whole rig pulses with the music. Reduce-motion freezes it to a calm static frame.
+
 ## Asset Preparation
 
 The generated PNG stack lives under `assets/scenery/`; the tooling lives under
@@ -176,4 +204,8 @@ Coverage responsibilities:
 - `cloud_parallax_layer_test.dart`: deterministic offset/wrap math.
 - `scenery_shaders_test.dart`: registered shader assets compile through Flutter's
   runtime-effect compiler.
+- `runtime/stage_lights_test.dart`: the `StageLightRig` gel-cycle / sweep /
+  beat-intensity maths.
+- `stage_lights_overlay_test.dart`: the floor pools land their gel, track the
+  dancer foot (lazy follow) and pulse on the beat.
 

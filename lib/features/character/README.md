@@ -383,6 +383,45 @@ plus Glados invariants: the ceiling never exceeds the hero zoom, non-hero frames
 stay capped, the pan stays inside its clamp), and the parallax transform
 (`character_painter_test.dart`).
 
+### Concert stage lighting — rim/backlight + floor pools
+
+The dance-to-track demo lights the trio like a stage act, with a **graphic
+rim/backlight** look chosen because the cats are flat cartoon shapes — front-lit
+colored *cones* read as glowing capsules on a flat fill, but a colored edge
+hugging the silhouette reads as real backlight. Two halves, sharing one gel
+source so the body glow and its floor pool always match:
+
+- **The rim/halo lives in `CharacterPainter`** (`memberBacklights`, one gel
+  `Color` per lane left→right). For each backlit member the painter draws it
+  **twice behind itself** before the real draw — a `saveLayer` that flattens the
+  member to a solid gel silhouette (`ColorFilter.mode(gel, srcIn)`) and blurs it
+  (`ImageFilter.blur`), in two passes (`_kBacklightPasses`): a soft outer
+  **bloom** then a tight bright **rim**. Only the part protruding past the real
+  silhouette shows, so the cat ends up ringed in a crisp gel edge that runs the
+  full body to the feet. Because both passes reuse the member's exact transform,
+  the halo tracks the dancer through any camera move or formation for free — no
+  re-deriving positions. `bodyDim` then modulates **only the front body draw**
+  (not the rim) into shadow (`0xFF6E6E6E` ≈ 1.5 stops) so the lit edge wins and
+  the figure reads as genuinely backlit rather than a sticker outline.
+- **The floor pools live in `scenery/stage_lights_overlay.dart`** (`StageLightsOverlay`
+  → `StageLightsPainter`), an additive (`BlendMode.plus`) screen-space pass over
+  the dancers: a soft elliptical gel wash + a hot core under each foot, grounding
+  the cat where the light lands. It eases its pool toward the live dancer foot
+  (lazy on small moves, fast catch-up on a camera cut), tracking the same anchors
+  the painter publishes via `onDancerAnchors`.
+
+Both read their gel + beat-pulsed intensity from one pure scheduler,
+`scenery/runtime/stage_lights.dart` (`StageLightRig` → `StageLightSample`): a
+discrete gel cycle (warm gold / hot fuchsia / UV violet) that **snaps** (never
+lerps) on a `colorPeriod` wired to the track tempo (`60 / bpm`), offset per lane
+so the row rotates R/G/B rather than flashing in unison, plus a base + beat
+brightness. The demo samples the rig once per frame and feeds the colors to both
+halves, so the whole rig pulses with the music. Reduce-motion freezes it to a
+calm static frame. Tested in `stage_lights_test.dart` (the scheduler maths),
+`stage_lights_overlay_test.dart` (pools land/track/pulse) and
+`character_painter_test.dart` (the rim rings each lane in its gel; `bodyDim`
+darkens the body while the rim survives).
+
 ## Reviewing motion — film strips, grids, onions, travel
 
 Two harnesses render to PNGs under `build/character_film_strips/` (override with

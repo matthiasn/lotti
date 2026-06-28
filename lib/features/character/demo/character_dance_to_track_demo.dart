@@ -19,6 +19,8 @@ import 'package:lotti/features/character/runtime/character_scene.dart';
 import 'package:lotti/features/character/samples/cat_in_suit.dart';
 import 'package:lotti/features/scenery/layered_backdrop.dart';
 import 'package:lotti/features/scenery/model/backdrop_scene.dart';
+import 'package:lotti/features/scenery/runtime/stage_lights.dart';
+import 'package:lotti/features/scenery/stage_lights_overlay.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// Beat-synced dance demo — the first wiring of the offline beat map into live
@@ -203,6 +205,10 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   ui.Image? _backdrop;
   ui.Image? _clouds;
   ui.Image? _waves;
+  double _wallSeconds = 0; // steady clock for ambient backdrop animation
+  // Live dancer screen anchors (normalized, left→right), published by the
+  // CharacterPainter each frame so the stage lights can follow the cats.
+  List<Offset> _dancerAnchors = const [];
   double _leadMouth = 0; // eased frontman mouth (lead lyric words)
   double _bgMouth = 0; // eased backup-dancers' mouth (background ad-libs)
   MouthShape _leadShape = MouthShape.singAh; // viseme for the active lead word
@@ -242,6 +248,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     _lastTick = elapsed;
     if (dt < 0) dt = 0;
     if (dt > 0.1) dt = 0.1; // ignore long stalls (tab switch, etc.)
+    // Steady wall clock for ambient backdrop animation + the stage-light gel
+    // cycle/sweep (independent of the looping dance clock).
+    _wallSeconds += dt;
     final pos = _player.state.position.inMicroseconds / 1e6;
     // Mouth shape comes from the Rhubarb cue track (the actual vocal phonemes);
     // the lyric voice tags only gate *which* cat shows it. The frontman is gated
@@ -747,6 +756,19 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     // target), so refrains dolly between homes and only the hero cuts. Applied by
     // the painter and lagged behind the dancers by the backdrop parallax.
     final shot = _liveShot;
+    // Concert lighting gels: one rig drives BOTH the coloured rim/halo on each
+    // cat (CharacterPainter.memberBacklights) and the floor pools
+    // (StageLightsOverlay), so the body glow and its pool always share a colour.
+    // Gels rotate on the tempo; the beat pulses brightness. New scene only.
+    final stageRig = StageLightRig(colorPeriod: _bpm > 0 ? 60 / _bpm : 0.5);
+    final stageSamples = _useNewBackdrop
+        ? stageRig.sample(time: _wallSeconds, beat: beat)
+        : const <StageLightSample>[];
+    // Screen order (left→center→right). Alpha scales the halo with the beat;
+    // the painter splits this across a soft bloom + a tight rim pass.
+    final catBacklights = [
+      for (final s in stageSamples) s.color.withValues(alpha: s.intensity),
+    ];
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
@@ -796,6 +818,10 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                               beatPulse: beat,
                             ),
                           ),
+                        // Full-colour cats are the stars; the concert rig rings
+                        // each one in its gel via memberBacklights (rim/halo) and
+                        // grounds it with a floor pool below — no dimming, so the
+                        // performers pop off the blue-hour deck.
                         CustomPaint(
                           painter: CharacterPainter(
                             scene: _lead,
@@ -836,6 +862,11 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                             // painter applies it verbatim (cuts and all) instead of
                             // the built-in eased push-in.
                             cameraOverride: shot,
+                            // Publish live dancer positions so the stage lights
+                            // can track them (new scene only).
+                            onDancerAnchors: _useNewBackdrop
+                                ? (a) => _dancerAnchors = a
+                                : null,
                             scale: scale,
                             // New painted scene already has the deck, so drop the
                             // flat grey floor band (it would sit over the painting);
@@ -854,10 +885,28 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                                 ? null
                                 : _clouds,
                             backdropWavesImage: _useNewBackdrop ? null : _waves,
+                            // Each cat ringed in its gel (rim/halo hugging the
+                            // silhouette), tracked through the camera for free.
+                            memberBacklights: catBacklights,
+                            // Backlit: drop the front body into shadow so the rim
+                            // wins (true backlight read). New scene only.
+                            bodyDim: _useNewBackdrop
+                                ? const Color(0xFF6E6E6E)
+                                : null,
                             renderer: _renderer,
                           ),
                           child: const SizedBox.expand(),
                         ),
+                        // Floor pools UNDER the dancers' feet, grounding each cat
+                        // in its gel — the matching half of the rim/halo. Tracks
+                        // the dancers; cadence locks to the tempo. New scene only.
+                        if (_useNewBackdrop)
+                          StageLightsOverlay(
+                            timeSeconds: _wallSeconds,
+                            beat: beat,
+                            dancerAnchors: _dancerAnchors,
+                            rig: stageRig,
+                          ),
                         if (_showCaptions && _words.isNotEmpty)
                           Positioned(
                             left: 24,
