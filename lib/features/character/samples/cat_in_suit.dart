@@ -5437,46 +5437,46 @@ class CatClips {
     DanceIkTargetKey(5, x: -25, y: 72),
     DanceIkTargetKey(6, x: -27, y: 63), // peak lift (free)
     DanceIkTargetKey(7, x: -26, y: 60), // coil, held high
-    DanceIkTargetKey(8, x: -22, y: 99), // SLAM back down
+    DanceIkTargetKey(8, x: -22, y: 99, ease: Ease.easeIn), // SLAM (hard stop)
     DanceIkTargetKey(10, x: -22, y: 99),
     DanceIkTargetKey(12, x: -23, y: 95),
     DanceIkTargetKey(13, x: -25, y: 72),
     DanceIkTargetKey(14, x: -27, y: 63),
     DanceIkTargetKey(15, x: -26, y: 60),
-    DanceIkTargetKey(16, x: -22, y: 99),
+    DanceIkTargetKey(16, x: -22, y: 99, ease: Ease.easeIn), // SLAM
     DanceIkTargetKey(18, x: -22, y: 99),
     DanceIkTargetKey(20, x: -23, y: 95),
     DanceIkTargetKey(21, x: -25, y: 72),
     DanceIkTargetKey(22, x: -27, y: 63),
     DanceIkTargetKey(23, x: -26, y: 60),
-    DanceIkTargetKey(24, x: -22, y: 99),
+    DanceIkTargetKey(24, x: -22, y: 99, ease: Ease.easeIn), // SLAM
     DanceIkTargetKey(26, x: -22, y: 99),
     DanceIkTargetKey(28, x: -23, y: 95),
     DanceIkTargetKey(29, x: -25, y: 72),
     DanceIkTargetKey(30, x: -27, y: 63),
     DanceIkTargetKey(31, x: -26, y: 60),
-    DanceIkTargetKey(32, x: -22, y: 99),
+    DanceIkTargetKey(32, x: -22, y: 99, ease: Ease.easeIn), // SLAM (loop)
   ];
   static const _sekemFootRTargetKeys = [
     DanceIkTargetKey(0, x: 24, y: 80), // peel begins (free [0-4])
     DanceIkTargetKey(2, x: 26, y: 63), // peak lift
     DanceIkTargetKey(3, x: 25, y: 60), // coil
-    DanceIkTargetKey(4, x: 22, y: 99), // SLAM / plant (support [4-8])
+    DanceIkTargetKey(4, x: 22, y: 99, ease: Ease.easeIn), // SLAM (hard stop)
     DanceIkTargetKey(6, x: 22, y: 99),
     DanceIkTargetKey(8, x: 23, y: 95), // support end, peel begins
     DanceIkTargetKey(10, x: 26, y: 63),
     DanceIkTargetKey(11, x: 25, y: 60),
-    DanceIkTargetKey(12, x: 22, y: 99), // SLAM
+    DanceIkTargetKey(12, x: 22, y: 99, ease: Ease.easeIn), // SLAM
     DanceIkTargetKey(14, x: 22, y: 99),
     DanceIkTargetKey(16, x: 23, y: 95),
     DanceIkTargetKey(18, x: 26, y: 63),
     DanceIkTargetKey(19, x: 25, y: 60),
-    DanceIkTargetKey(20, x: 22, y: 99),
+    DanceIkTargetKey(20, x: 22, y: 99, ease: Ease.easeIn), // SLAM
     DanceIkTargetKey(22, x: 22, y: 99),
     DanceIkTargetKey(24, x: 23, y: 95),
     DanceIkTargetKey(26, x: 26, y: 63),
     DanceIkTargetKey(27, x: 25, y: 60),
-    DanceIkTargetKey(28, x: 22, y: 99),
+    DanceIkTargetKey(28, x: 22, y: 99, ease: Ease.easeIn), // SLAM
     DanceIkTargetKey(30, x: 22, y: 99),
     DanceIkTargetKey(32, x: 24, y: 80),
   ];
@@ -5496,10 +5496,14 @@ class CatClips {
     DanceIkTargetKey(30, x: 14, y: -20),
     DanceIkTargetKey(32, x: 16, y: 16),
   ];
+  // Non-smooth (the default) so the per-key ease applies: the slam keys use
+  // Ease.easeIn (accelerate into the floor) for a hard-stop strike in the live
+  // 60fps app, instead of the smooth path's symmetric ease that glided the foot
+  // into contact between keys.
   static final KeyframeIkTargetChannel _sekemFootLTarget = _dancePhrase
-      .ikTargetChannel(_sekemFootLTargetKeys, smooth: true);
+      .ikTargetChannel(_sekemFootLTargetKeys);
   static final KeyframeIkTargetChannel _sekemFootRTarget = _dancePhrase
-      .ikTargetChannel(_sekemFootRTargetKeys, smooth: true);
+      .ikTargetChannel(_sekemFootRTargetKeys);
   static final KeyframeIkTargetChannel _sekemHandLTarget = _dancePhrase
       .ikTargetChannel(_sekemHandLTargetKeys, smooth: true);
   static final KeyframeIkTargetChannel _sekemHandRTarget = _dancePhrase
