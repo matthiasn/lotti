@@ -740,6 +740,9 @@ class CharacterScene {
       clip.name == 'shaku' ||
       clip.name == 'zanku' ||
       clip.name == 'azonto' ||
+      clip.name == 'buga' ||
+      clip.name == 'pouncingCat' ||
+      clip.name == 'sekem' ||
       clip.name.startsWith('danceBackup');
 
   ({double x, double y})? _contactPoint(

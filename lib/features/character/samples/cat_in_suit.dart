@@ -5056,6 +5056,362 @@ class CatClips {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Buga (Kizz Daniel ft. Tekno, NG 2022) — a UNISON HIT move: "lo-lo-lo-BUGA",
+  // three prep knee-dips loading at the chest, then on count 4 the body RISES to
+  // full height, the chest pops open and ONE lead arm thrusts out to present
+  // (Yoruba "buga" = to show off). Two mirrored cells — RIGHT arm thrusts on the
+  // frame-12 hit, LEFT arm on the frame-28 hit.
+  // ─────────────────────────────────────────────────────────────────────────
+  static const _bugaBodyKeys = [
+    DanceBodyKey(0, rootDy: 7, chestScaleY: 0.97),
+    DanceBodyKey(4, rootDy: 13, chestScaleY: 0.95),
+    DanceBodyKey(8, rootDy: 20, chestScaleY: 0.91), // count 3 deep load
+    DanceBodyKey(11, rootDy: 21, chestScaleY: 0.9), // hold the load
+    DanceBodyKey(12, rootDy: 0, chestScaleY: 1.07, chestScaleX: 0.97), // HIT
+    DanceBodyKey(14, rootDy: 2, chestScaleY: 1.05),
+    DanceBodyKey(16, rootDy: 7, chestScaleY: 0.97),
+    DanceBodyKey(20, rootDy: 13, chestScaleY: 0.95),
+    DanceBodyKey(24, rootDy: 20, chestScaleY: 0.91),
+    DanceBodyKey(27, rootDy: 21, chestScaleY: 0.9),
+    DanceBodyKey(28, rootDy: 0, chestScaleY: 1.07, chestScaleX: 0.97), // HIT
+    DanceBodyKey(30, rootDy: 2, chestScaleY: 1.05),
+    DanceBodyKey(32, rootDy: 7, chestScaleY: 0.97),
+  ];
+  static const _bugaHandRTargetKeys = [
+    DanceIkTargetKey(0, x: 15, y: -16), // tucked/loaded at the chest
+    DanceIkTargetKey(4, x: 14, y: -18),
+    DanceIkTargetKey(8, x: 12, y: -20),
+    DanceIkTargetKey(11, x: 10, y: -20),
+    DanceIkTargetKey(12, x: 88, y: -12), // THRUST OUT — present (the hit)
+    DanceIkTargetKey(14, x: 85, y: -13),
+    DanceIkTargetKey(16, x: 15, y: -16),
+    DanceIkTargetKey(20, x: 14, y: -18),
+    DanceIkTargetKey(24, x: 13, y: -19),
+    DanceIkTargetKey(28, x: 14, y: -17), // tucked while the left arm presents
+    DanceIkTargetKey(30, x: 14, y: -18),
+    DanceIkTargetKey(32, x: 15, y: -16),
+  ];
+  static const _bugaHandLTargetKeys = [
+    DanceIkTargetKey(0, x: -15, y: -16),
+    DanceIkTargetKey(4, x: -14, y: -18),
+    DanceIkTargetKey(8, x: -13, y: -19),
+    DanceIkTargetKey(12, x: -14, y: -17), // tucked while the right arm presents
+    DanceIkTargetKey(16, x: -15, y: -16),
+    DanceIkTargetKey(20, x: -14, y: -18),
+    DanceIkTargetKey(24, x: -12, y: -20),
+    DanceIkTargetKey(27, x: -10, y: -20),
+    DanceIkTargetKey(28, x: -88, y: -12), // THRUST OUT — present (mirrored hit)
+    DanceIkTargetKey(30, x: -85, y: -13),
+    DanceIkTargetKey(32, x: -15, y: -16),
+  ];
+  static final KeyframeIkTargetChannel _bugaHandLTarget = _dancePhrase
+      .ikTargetChannel(_bugaHandLTargetKeys, smooth: true);
+  static final KeyframeIkTargetChannel _bugaHandRTarget = _dancePhrase
+      .ikTargetChannel(_bugaHandRTargetKeys, smooth: true);
+  static final List<LimbIkTarget> _bugaLimbTargets = [
+    _danceLimbTargets[0].withChannel(_bugaHandLTarget),
+    _danceLimbTargets[1].withChannel(_bugaHandRTarget),
+    _danceLimbTargets[2],
+    _danceLimbTargets[3],
+  ];
+
+  /// Standalone "Buga" lead clip — the unison-hit show-off move: three prep
+  /// knee-dips loading at the chest, then a full-height RISE with a chest pop and
+  /// a single presenting arm thrust on each cell's hit (right on frame 12, left
+  /// on frame 28). First pass, iterated via the panel.
+  static Clip get buga {
+    final base = dance;
+    return Clip(
+      name: 'buga',
+      duration: base.duration,
+      contactSpans: base.contactSpans,
+      contactPinning: base.contactPinning,
+      limbTargets: _bugaLimbTargets,
+      supportFootWorldAnchor: true,
+      root: LayeredRootChannel([
+        _dancePhrase.bodyRootChannel(_bugaBodyKeys, smooth: true),
+      ]),
+      channels: {
+        ...base.channels,
+        CatBones.hips: LayeredJointChannel([
+          _dancePhrase.bodyPelvisChannel(_bugaBodyKeys),
+        ]),
+        CatBones.torso: LayeredJointChannel([
+          _dancePhrase.bodyChestChannel(_bugaBodyKeys),
+        ]),
+        CatBones.earL: const SineChannel(amplitude: 0.008),
+        CatBones.earR: const SineChannel(amplitude: 0.008, phase: 0.5),
+        CatBones.tail0: const SineChannel(amplitude: 0.02, bias: -0.34),
+        CatBones.tail3: const SineChannel(amplitude: 0.05, phase: 0.24),
+        CatBones.tail6: const SineChannel(amplitude: 0.06, phase: 0.48),
+      },
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Pouncing Cat (Amapiano, SA ~2020-23) — the GLIDING contrast: a deep crouch
+  // with a slow lateral CoM GLIDE (half-time, shift every ~8 frames) while fast
+  // feet shuffle underneath and the head stays dead-level. Sustained + Bound +
+  // Light; non-snappy (drag/follow-through, no anticipation pops). The cat's
+  // "pouncing creep".
+  // ─────────────────────────────────────────────────────────────────────────
+  static const _pounceBodyKeys = [
+    // Constant deep crouch, no bob — the head must stay level over the glide.
+    DanceBodyKey(0, rootDy: 22, chestScaleY: 0.97),
+    DanceBodyKey(16, rootDy: 23, chestScaleY: 0.97),
+    DanceBodyKey(32, rootDy: 22, chestScaleY: 0.97),
+  ];
+  // Fast low heel-toe shuffle taps (sole skims, never lifts past shin-low); the
+  // lateral travel comes from the root glide, not the feet.
+  static const _pounceFootLTargetKeys = [
+    DanceIkTargetKey(0, x: -22, y: 99),
+    DanceIkTargetKey(2, x: -22, y: 93),
+    DanceIkTargetKey(4, x: -22, y: 99),
+    DanceIkTargetKey(6, x: -22, y: 93),
+    DanceIkTargetKey(8, x: -22, y: 99),
+    DanceIkTargetKey(10, x: -22, y: 93),
+    DanceIkTargetKey(12, x: -22, y: 99),
+    DanceIkTargetKey(14, x: -22, y: 93),
+    DanceIkTargetKey(16, x: -22, y: 99),
+    DanceIkTargetKey(18, x: -22, y: 93),
+    DanceIkTargetKey(20, x: -22, y: 99),
+    DanceIkTargetKey(22, x: -22, y: 93),
+    DanceIkTargetKey(24, x: -22, y: 99),
+    DanceIkTargetKey(26, x: -22, y: 93),
+    DanceIkTargetKey(28, x: -22, y: 99),
+    DanceIkTargetKey(30, x: -22, y: 93),
+    DanceIkTargetKey(32, x: -22, y: 99),
+  ];
+  static const _pounceFootRTargetKeys = [
+    DanceIkTargetKey(0, x: 22, y: 93),
+    DanceIkTargetKey(2, x: 22, y: 99),
+    DanceIkTargetKey(4, x: 22, y: 93),
+    DanceIkTargetKey(6, x: 22, y: 99),
+    DanceIkTargetKey(8, x: 22, y: 93),
+    DanceIkTargetKey(10, x: 22, y: 99),
+    DanceIkTargetKey(12, x: 22, y: 93),
+    DanceIkTargetKey(14, x: 22, y: 99),
+    DanceIkTargetKey(16, x: 22, y: 93),
+    DanceIkTargetKey(18, x: 22, y: 99),
+    DanceIkTargetKey(20, x: 22, y: 93),
+    DanceIkTargetKey(22, x: 22, y: 99),
+    DanceIkTargetKey(24, x: 22, y: 93),
+    DanceIkTargetKey(26, x: 22, y: 99),
+    DanceIkTargetKey(28, x: 22, y: 93),
+    DanceIkTargetKey(30, x: 22, y: 99),
+    DanceIkTargetKey(32, x: 22, y: 93),
+  ];
+  // Arms hang loose and low, passively lagging the glide (no active gesture).
+  static const _pounceHandLTargetKeys = [
+    DanceIkTargetKey(0, x: -20, y: 26),
+    DanceIkTargetKey(8, x: -28, y: 24),
+    DanceIkTargetKey(16, x: -20, y: 26),
+    DanceIkTargetKey(24, x: -14, y: 24),
+    DanceIkTargetKey(32, x: -20, y: 26),
+  ];
+  static const _pounceHandRTargetKeys = [
+    DanceIkTargetKey(0, x: 20, y: 26),
+    DanceIkTargetKey(8, x: 14, y: 24),
+    DanceIkTargetKey(16, x: 20, y: 26),
+    DanceIkTargetKey(24, x: 28, y: 24),
+    DanceIkTargetKey(32, x: 20, y: 26),
+  ];
+  static final KeyframeIkTargetChannel _pounceFootLTarget = _dancePhrase
+      .ikTargetChannel(_pounceFootLTargetKeys, smooth: true);
+  static final KeyframeIkTargetChannel _pounceFootRTarget = _dancePhrase
+      .ikTargetChannel(_pounceFootRTargetKeys, smooth: true);
+  static final KeyframeIkTargetChannel _pounceHandLTarget = _dancePhrase
+      .ikTargetChannel(_pounceHandLTargetKeys, smooth: true);
+  static final KeyframeIkTargetChannel _pounceHandRTarget = _dancePhrase
+      .ikTargetChannel(_pounceHandRTargetKeys, smooth: true);
+  static final List<LimbIkTarget> _pounceLimbTargets = [
+    _danceLimbTargets[0].withChannel(_pounceHandLTarget),
+    _danceLimbTargets[1].withChannel(_pounceHandRTarget),
+    _danceLimbTargets[2].withChannel(_pounceFootLTarget),
+    _danceLimbTargets[3].withChannel(_pounceFootRTarget),
+  ];
+
+  /// Standalone "Pouncing Cat" lead clip — the Amapiano gliding contrast: a deep
+  /// crouch with a slow lateral CoM glide (half-time, harmonic 2) over fast low
+  /// foot-shuffle taps, head dead-level, arms passive. The deliberately
+  /// non-snappy foil to the rest of the catalog. First pass.
+  static Clip get pouncingCat {
+    final base = dance;
+    return Clip(
+      name: 'pouncingCat',
+      duration: base.duration,
+      contactSpans: base.contactSpans,
+      contactPinning: base.contactPinning,
+      limbTargets: _pounceLimbTargets,
+      root: LayeredRootChannel([
+        _dancePhrase.bodyRootChannel(_pounceBodyKeys, smooth: true),
+        // Slow lateral glide — the signature. Harmonic 2 = a half-time shift
+        // (left half, right half); no bob keeps the head level.
+        const SineRootChannel(swayAmplitude: 28, swayHarmonic: 2),
+      ]),
+      channels: {
+        ...base.channels,
+        CatBones.hips: LayeredJointChannel([
+          _dancePhrase.bodyPelvisChannel(_pounceBodyKeys),
+        ]),
+        CatBones.torso: LayeredJointChannel([
+          _dancePhrase.bodyChestChannel(_pounceBodyKeys),
+          // Slight counter-lean against the slide (harmonic 2, opposed).
+          const SineChannel(harmonicAmplitude: -0.05),
+        ]),
+        CatBones.earL: const SineChannel(amplitude: 0.01),
+        CatBones.earR: const SineChannel(amplitude: 0.01, phase: 0.5),
+        CatBones.tail0: const SineChannel(amplitude: 0.03, bias: -0.34),
+        CatBones.tail3: const SineChannel(amplitude: 0.06, phase: 0.24),
+        CatBones.tail6: const SineChannel(amplitude: 0.07, phase: 0.48),
+      },
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Sekem (MC Galaxy, NG 2014) — the GROUNDED STOMP contrast: an alternating
+  // lateral weight-shift, one hard low plant per beat (R,L,R,L) with the hip
+  // fully committed over the planting foot, knees bent and low, hands pinned
+  // (one at the chest, one at the waist; they swap each cell). Non-traveling.
+  // ─────────────────────────────────────────────────────────────────────────
+  static const _sekemContactSpans = [
+    GroundSpan(CatBones.footL, 0, 0.125), // beat 1 — left plants
+    GroundSpan(CatBones.footR, 0.125, 0.25), // beat 2 — right plants
+    GroundSpan(CatBones.footL, 0.25, 0.375),
+    GroundSpan(CatBones.footR, 0.375, 0.5),
+    GroundSpan(CatBones.footL, 0.5, 0.625),
+    GroundSpan(CatBones.footR, 0.625, 0.75),
+    GroundSpan(CatBones.footL, 0.75, 0.875),
+    GroundSpan(CatBones.footR, 0.875, 1),
+  ];
+  static const _sekemBodyKeys = [
+    // A per-beat squash: the loaded side drops on each hard plant.
+    DanceBodyKey(0, rootDy: 16, chestScaleY: 0.95),
+    DanceBodyKey(2, rootDy: 11, chestScaleY: 0.98),
+    DanceBodyKey(4, rootDy: 16, chestScaleY: 0.95),
+    DanceBodyKey(6, rootDy: 11, chestScaleY: 0.98),
+    DanceBodyKey(8, rootDy: 16, chestScaleY: 0.95),
+    DanceBodyKey(12, rootDy: 16, chestScaleY: 0.95),
+    DanceBodyKey(16, rootDy: 16, chestScaleY: 0.95),
+    DanceBodyKey(20, rootDy: 16, chestScaleY: 0.95),
+    DanceBodyKey(24, rootDy: 16, chestScaleY: 0.95),
+    DanceBodyKey(28, rootDy: 16, chestScaleY: 0.95),
+    DanceBodyKey(32, rootDy: 16, chestScaleY: 0.95),
+  ];
+  // Feet STOMP in place (no lateral travel): each foot plants hard low on its
+  // beats and lifts only shin-low on the off-frame, with a small twist (x nudge)
+  // on the plant. Mirrors the per-beat support map in _sekemContactSpans.
+  static const _sekemFootLTargetKeys = [
+    DanceIkTargetKey(0, x: -22, y: 99), // hard plant (support [0-4])
+    DanceIkTargetKey(2, x: -21, y: 98),
+    DanceIkTargetKey(4, x: -23, y: 99), // plant end (swap)
+    DanceIkTargetKey(6, x: -26, y: 85), // lift shin-low (free)
+    DanceIkTargetKey(8, x: -22, y: 99), // STOMP back down
+    DanceIkTargetKey(10, x: -21, y: 98),
+    DanceIkTargetKey(12, x: -23, y: 99),
+    DanceIkTargetKey(14, x: -26, y: 85),
+    DanceIkTargetKey(16, x: -22, y: 99),
+    DanceIkTargetKey(18, x: -21, y: 98),
+    DanceIkTargetKey(20, x: -23, y: 99),
+    DanceIkTargetKey(22, x: -26, y: 85),
+    DanceIkTargetKey(24, x: -22, y: 99),
+    DanceIkTargetKey(26, x: -21, y: 98),
+    DanceIkTargetKey(28, x: -23, y: 99),
+    DanceIkTargetKey(30, x: -26, y: 85),
+    DanceIkTargetKey(32, x: -22, y: 99),
+  ];
+  static const _sekemFootRTargetKeys = [
+    DanceIkTargetKey(0, x: 26, y: 85), // lift shin-low (free)
+    DanceIkTargetKey(2, x: 22, y: 96),
+    DanceIkTargetKey(4, x: 22, y: 99), // hard plant (support [4-8])
+    DanceIkTargetKey(6, x: 21, y: 98),
+    DanceIkTargetKey(8, x: 23, y: 99), // plant end (swap)
+    DanceIkTargetKey(10, x: 26, y: 85), // lift
+    DanceIkTargetKey(12, x: 22, y: 99), // STOMP
+    DanceIkTargetKey(14, x: 21, y: 98),
+    DanceIkTargetKey(16, x: 23, y: 99),
+    DanceIkTargetKey(18, x: 26, y: 85),
+    DanceIkTargetKey(20, x: 22, y: 99),
+    DanceIkTargetKey(22, x: 21, y: 98),
+    DanceIkTargetKey(24, x: 23, y: 99),
+    DanceIkTargetKey(26, x: 26, y: 85),
+    DanceIkTargetKey(28, x: 22, y: 99),
+    DanceIkTargetKey(30, x: 21, y: 98),
+    DanceIkTargetKey(32, x: 26, y: 85),
+  ];
+  // Hands pinned: cell 1 — left at the chest, right at the waist; they swap for
+  // cell 2 (anchored, not flung).
+  static const _sekemHandLTargetKeys = [
+    DanceIkTargetKey(0, x: -14, y: -20), // chest
+    DanceIkTargetKey(14, x: -14, y: -20),
+    DanceIkTargetKey(16, x: -16, y: 16), // swap to the waist
+    DanceIkTargetKey(30, x: -16, y: 16),
+    DanceIkTargetKey(32, x: -14, y: -20),
+  ];
+  static const _sekemHandRTargetKeys = [
+    DanceIkTargetKey(0, x: 16, y: 16), // waist
+    DanceIkTargetKey(14, x: 16, y: 16),
+    DanceIkTargetKey(16, x: 14, y: -20), // swap to the chest
+    DanceIkTargetKey(30, x: 14, y: -20),
+    DanceIkTargetKey(32, x: 16, y: 16),
+  ];
+  static final KeyframeIkTargetChannel _sekemFootLTarget = _dancePhrase
+      .ikTargetChannel(_sekemFootLTargetKeys, smooth: true);
+  static final KeyframeIkTargetChannel _sekemFootRTarget = _dancePhrase
+      .ikTargetChannel(_sekemFootRTargetKeys, smooth: true);
+  static final KeyframeIkTargetChannel _sekemHandLTarget = _dancePhrase
+      .ikTargetChannel(_sekemHandLTargetKeys, smooth: true);
+  static final KeyframeIkTargetChannel _sekemHandRTarget = _dancePhrase
+      .ikTargetChannel(_sekemHandRTargetKeys, smooth: true);
+  static final List<LimbIkTarget> _sekemLimbTargets = [
+    _danceLimbTargets[0].withChannel(_sekemHandLTarget),
+    _danceLimbTargets[1].withChannel(_sekemHandRTarget),
+    _danceLimbTargets[2].withChannel(_sekemFootLTarget),
+    _danceLimbTargets[3].withChannel(_sekemFootRTarget),
+  ];
+
+  /// Standalone "Sekem" lead clip — the grounded-stomp contrast: an alternating
+  /// per-beat lateral weight shift (one hard low plant per beat, R,L,R,L) with
+  /// the hip committed over the planting foot (harmonic-4 sway), knees bent and
+  /// low, and hands pinned (chest + waist, swapping each cell). First pass.
+  static Clip get sekem {
+    final base = dance;
+    return Clip(
+      name: 'sekem',
+      duration: base.duration,
+      contactSpans: _sekemContactSpans,
+      contactPinning: base.contactPinning,
+      limbTargets: _sekemLimbTargets,
+      supportFootWorldAnchor: true,
+      root: LayeredRootChannel([
+        _dancePhrase.bodyRootChannel(_sekemBodyKeys, smooth: true),
+        // Full lateral shift over the planting foot, one plant per beat.
+        const SineRootChannel(
+          swayAmplitude: -24,
+          swayHarmonic: 4,
+          swayPhase: 0.0625,
+        ),
+        // Hard per-beat squash on the plant.
+        const SineRootChannel(bobAmplitude: -0.05, bobHarmonic: 8),
+      ]),
+      channels: {
+        ...base.channels,
+        CatBones.hips: LayeredJointChannel([
+          _dancePhrase.bodyPelvisChannel(_sekemBodyKeys),
+        ]),
+        CatBones.torso: LayeredJointChannel([
+          _dancePhrase.bodyChestChannel(_sekemBodyKeys),
+        ]),
+        CatBones.earL: const SineChannel(amplitude: 0.02),
+        CatBones.earR: const SineChannel(amplitude: 0.02, phase: 0.5),
+        CatBones.tail0: const SineChannel(amplitude: 0.02, bias: -0.34),
+        CatBones.tail3: const SineChannel(amplitude: 0.05, phase: 0.24),
+        CatBones.tail6: const SineChannel(amplitude: 0.06, phase: 0.48),
+      },
+    );
+  }
+
   static Clip get danceBackupLeft => _danceStyledRole(
     name: 'danceBackupLeft',
     style: _danceBackupLeftStyle,
@@ -5353,6 +5709,9 @@ class CatClips {
     shaku,
     zanku,
     azonto,
+    buga,
+    pouncingCat,
+    sekem,
     sit,
     jump,
     idle,
