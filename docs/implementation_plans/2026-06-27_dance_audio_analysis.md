@@ -677,8 +677,10 @@ captions**, and **lip-syncs the trio**.
   jaw drop, gated by the lyric voice tags (frontman = lead, backups = ad-libs /
   group hooks), with the head bobbing on the beat and dipping into loud
   syllables (`CharacterPainter.singingHeadMotion`). A 3-expert panel (lip-sync /
-  vocal / animation), judging frames of the actual composition, rated it **9/10
-  across all three**. See the `dance-lipsync` skill and `lib/features/character`.
+  vocal / animation), judging frames of the actual composition, validated the
+  approach at **9/10 across all three**; the shipped amplitudes are then dialed
+  back from that panel-max for a calmer, less over-acted read. See the
+  `dance-lipsync` skill and `lib/features/character`.
 
 ## 16. Sources (verified this pass)
 

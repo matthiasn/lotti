@@ -872,8 +872,8 @@ class CharacterPainter extends CustomPainter {
     final phase = clipDuration > 0
         ? timeSeconds / clipDuration * 2 * math.pi * 3
         : 0.0;
-    final tilt = math.sin(phase) * 0.045 + open * 0.05; // sway + lean
-    final dip = open * 12 * scale; // forward/down thrust on loud syllables
+    final tilt = math.sin(phase) * 0.028 + open * 0.03; // gentle sway + lean
+    final dip = open * 6.5 * scale; // soft dip into the loud syllables
     if (tilt == 0 && dip == 0) return frame;
 
     final px = headWorld.tx;

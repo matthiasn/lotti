@@ -268,8 +268,10 @@ words, the backups on `(...)` ad-libs and the group-hook sections. The upper fac
 sings too (brows lift, eyes squint into the loud notes), and
 `CharacterPainter.singingHeadMotion` bobs the heads on the beat and dips the
 singer's head forward/down into the loud syllables (rotated about the neck joint,
-so nothing detaches). An expert panel (lip-sync / vocal / animation) rated the
-result 9/10 over composition frames.
+so nothing detaches). The approach was validated by an expert panel (lip-sync /
+vocal / animation, 9/10 over composition frames); the shipped opening / squint /
+head-bob amplitudes are then deliberately dialed back from that panel-max for a
+calmer, less over-acted read.
 
 ## Reviewing motion — film strips, grids, onions, travel
 

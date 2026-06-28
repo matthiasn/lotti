@@ -293,19 +293,19 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   ({MouthShape shape, double open}) _mouthForCue(String letter) {
     switch (letter) {
       case 'B': // slightly open, teeth near-closed
-        return (shape: MouthShape.singEe, open: 0.46);
+        return (shape: MouthShape.singEe, open: 0.3);
       case 'C': // open (EH, AE)
-        return (shape: MouthShape.singAh, open: 0.74);
-      case 'D': // wide open (AA) — the big belt
-        return (shape: MouthShape.singAh, open: 0.95);
+        return (shape: MouthShape.singAh, open: 0.46);
+      case 'D': // wide open (AA) — the biggest, still tasteful
+        return (shape: MouthShape.singAh, open: 0.6);
       case 'E': // slightly rounded (AO, ER)
-        return (shape: MouthShape.singOh, open: 0.6);
-      case 'F': // puckered (UW, OW, W)
         return (shape: MouthShape.singOh, open: 0.4);
+      case 'F': // puckered (UW, OW, W)
+        return (shape: MouthShape.singOh, open: 0.26);
       case 'G': // F, V — tight near-closed consonant
-        return (shape: MouthShape.teethOnLip, open: 0.12);
+        return (shape: MouthShape.teethOnLip, open: 0.1);
       case 'H': // "L" — tongue up
-        return (shape: MouthShape.singAh, open: 0.55);
+        return (shape: MouthShape.singAh, open: 0.4);
       default: // 'A' closed, 'X' idle
         return (shape: MouthShape.singAh, open: 0);
     }
@@ -512,10 +512,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   /// on lead words and the backups on background ad-libs / group hooks.
   Expression _singExpression(double mouth, Expression base, MouthShape shape) {
     if (mouth < 0.04) return base;
-    final brow = 0.4 + mouth * 0.95; // engage hard, more on the open accents
-    // Squint hard into the big notes (eyeOpen scales eye height linearly, so it
-    // needs to reach ~0.45 on a belt to read as effort, not wide-eyed surprise).
-    final eye = 1 - mouth * 0.72;
+    final brow = 0.18 + mouth * 0.4; // gentle engagement, not a hard arch
+    final eye = 1 - mouth * 0.18; // a whisper of a squint, not a grimace
     return Expression(
       'sing',
       FaceState(

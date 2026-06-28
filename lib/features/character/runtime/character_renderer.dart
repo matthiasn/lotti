@@ -389,7 +389,7 @@ class CharacterRenderer {
     var o = s.mouthOpen;
     if (o < 0) o = 0;
     if (o > 1) o = 1;
-    return f.mouthHeight * 0.55 * o;
+    return f.mouthHeight * 0.42 * o;
   }
 
   static const Set<MouthShape> _singingShapes = {
@@ -743,7 +743,7 @@ class CharacterRenderer {
     // read as a gap), then a generous jaw drop with the aperture — a sung vowel
     // needs a real drop to read at the composition's small scale. The muzzle (24
     // tall) gives the bottom room to travel.
-    final botY = topY + f.mouthHeight * heightFactor * (0.34 + 1.8 * a);
+    final botY = topY + f.mouthHeight * heightFactor * (0.32 + 1.3 * a);
 
     // "D" cavity: a near-flat (gently bowed) top lip, rounded walls, and a wide
     // flat floor (rather than a single bottom point) so the tongue has somewhere
