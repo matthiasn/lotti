@@ -4985,43 +4985,48 @@ class CatClips {
   // points (L out, R out, L out, R out); BAR 2 (16-32) the arms SYNC into a
   // double point-out punch on every beat. Reach pulled back to ~80 (of ~89) so
   // the elbow keeps a soft bend instead of locking dead-straight at the limit.
+  // The point-out rides at lower-chest height (y -10), not down at the thigh
+  // (y 6, where it read as a dangling arm overlapping the leg): a near-straight
+  // arm fired OUT to the side (x +-88, ~79% of reach) so it reads as a deliberate
+  // horizontal "point" clear of both torso and legs. Retracts to the chest (not
+  // the waist) between beats.
   static const _azontoHandLTargetKeys = [
-    DanceIkTargetKey(0, x: -80, y: 6), // bar 1: POINT OUT (down-left)
-    DanceIkTargetKey(2, x: -45, y: -6), // retracting
-    DanceIkTargetKey(4, x: -12, y: -14), // tucked (right arm points)
-    DanceIkTargetKey(6, x: -45, y: -6),
-    DanceIkTargetKey(8, x: -80, y: 6), // POINT OUT
-    DanceIkTargetKey(10, x: -45, y: -6),
-    DanceIkTargetKey(12, x: -12, y: -14),
-    DanceIkTargetKey(14, x: -45, y: -6),
-    DanceIkTargetKey(16, x: -80, y: 6), // bar 2: SYNC double-punch out
-    DanceIkTargetKey(18, x: -14, y: -14), // tuck
-    DanceIkTargetKey(20, x: -80, y: 6),
-    DanceIkTargetKey(22, x: -14, y: -14),
-    DanceIkTargetKey(24, x: -80, y: 6),
-    DanceIkTargetKey(26, x: -14, y: -14),
-    DanceIkTargetKey(28, x: -80, y: 6),
-    DanceIkTargetKey(30, x: -45, y: -6),
-    DanceIkTargetKey(32, x: -80, y: 6),
+    DanceIkTargetKey(0, x: -88, y: -10), // bar 1: POINT OUT (left)
+    DanceIkTargetKey(2, x: -48, y: -16), // retracting
+    DanceIkTargetKey(4, x: -14, y: -18), // tucked at chest (right arm points)
+    DanceIkTargetKey(6, x: -48, y: -16),
+    DanceIkTargetKey(8, x: -88, y: -10), // POINT OUT
+    DanceIkTargetKey(10, x: -48, y: -16),
+    DanceIkTargetKey(12, x: -14, y: -18),
+    DanceIkTargetKey(14, x: -48, y: -16),
+    DanceIkTargetKey(16, x: -88, y: -10), // bar 2: SYNC double-punch out
+    DanceIkTargetKey(18, x: -16, y: -18), // tuck
+    DanceIkTargetKey(20, x: -88, y: -10),
+    DanceIkTargetKey(22, x: -16, y: -18),
+    DanceIkTargetKey(24, x: -88, y: -10),
+    DanceIkTargetKey(26, x: -16, y: -18),
+    DanceIkTargetKey(28, x: -88, y: -10),
+    DanceIkTargetKey(30, x: -48, y: -16),
+    DanceIkTargetKey(32, x: -88, y: -10),
   ];
   static const _azontoHandRTargetKeys = [
-    DanceIkTargetKey(0, x: 12, y: -14), // bar 1: tucked (left arm points)
-    DanceIkTargetKey(2, x: 45, y: -6),
-    DanceIkTargetKey(4, x: 80, y: 6), // POINT OUT (down-right)
-    DanceIkTargetKey(6, x: 45, y: -6),
-    DanceIkTargetKey(8, x: 12, y: -14),
-    DanceIkTargetKey(10, x: 45, y: -6),
-    DanceIkTargetKey(12, x: 80, y: 6),
-    DanceIkTargetKey(14, x: 45, y: -6),
-    DanceIkTargetKey(16, x: 80, y: 6), // bar 2: SYNC double-punch out
-    DanceIkTargetKey(18, x: 14, y: -14), // tuck
-    DanceIkTargetKey(20, x: 80, y: 6),
-    DanceIkTargetKey(22, x: 14, y: -14),
-    DanceIkTargetKey(24, x: 80, y: 6),
-    DanceIkTargetKey(26, x: 14, y: -14),
-    DanceIkTargetKey(28, x: 80, y: 6),
-    DanceIkTargetKey(30, x: 45, y: -6),
-    DanceIkTargetKey(32, x: 12, y: -14),
+    DanceIkTargetKey(0, x: 14, y: -18), // bar 1: tucked at chest (left points)
+    DanceIkTargetKey(2, x: 48, y: -16),
+    DanceIkTargetKey(4, x: 88, y: -10), // POINT OUT (right)
+    DanceIkTargetKey(6, x: 48, y: -16),
+    DanceIkTargetKey(8, x: 14, y: -18),
+    DanceIkTargetKey(10, x: 48, y: -16),
+    DanceIkTargetKey(12, x: 88, y: -10),
+    DanceIkTargetKey(14, x: 48, y: -16),
+    DanceIkTargetKey(16, x: 88, y: -10), // bar 2: SYNC double-punch out
+    DanceIkTargetKey(18, x: 16, y: -18), // tuck
+    DanceIkTargetKey(20, x: 88, y: -10),
+    DanceIkTargetKey(22, x: 16, y: -18),
+    DanceIkTargetKey(24, x: 88, y: -10),
+    DanceIkTargetKey(26, x: 16, y: -18),
+    DanceIkTargetKey(28, x: 88, y: -10),
+    DanceIkTargetKey(30, x: 48, y: -16),
+    DanceIkTargetKey(32, x: 14, y: -18),
   ];
   static final KeyframeIkTargetChannel _azontoHandLTarget = _dancePhrase
       .ikTargetChannel(_azontoHandLTargetKeys, smooth: true);
