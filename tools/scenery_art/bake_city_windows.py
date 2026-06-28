@@ -39,8 +39,9 @@ Output `assets/scenery/city_windows.png` (RGBA, opaque). Channel packing:
   * G: unused (0). Formerly an offset hand-placed "TV window" box; removed — every
     lit yacht window now lives in the cabin mask (B).
   * B: yacht cabin-window mask — every window lit warm from inside. Authoritative
-    source is the hand-painted `yacht_cabin_mask.png` (white = lit) when present;
-    a luminance detector is the fallback. The shader fills the warm cabin glow here.
+    source is the hand-cut `yacht_windows.png` layer (opaque ONLY on the window
+    glass); its alpha is read straight in. A luminance detector is the fallback.
+    The shader fills the warm cabin glow exactly there.
 
 Run:  python3 tools/scenery_art/bake_city_windows.py
 (needs Pillow + numpy)
@@ -57,10 +58,11 @@ REPO = Path(__file__).resolve().parents[2]
 MASTER = REPO / "assets/scenery/blue_hour_master.png"
 FOREGROUND = REPO / "assets/scenery/foreground.png"
 YACHT = REPO / "assets/scenery/yacht.png"
-# Optional HAND-PAINTED cabin-window mask (white = lit warm window), aligned to
-# yacht.png. When present it is authoritative for the B channel; otherwise the
-# luminance detector is used as a fallback.
-YACHT_CABIN_MASK = REPO / "assets/scenery/yacht_cabin_mask.png"
+# HAND-CUT lit-window layer (the cut-out PNG: opaque ONLY on the window glass,
+# transparent everywhere else), aligned 1:1 to yacht.png. Its ALPHA is the
+# authoritative B-channel mask — the shader fills warm interior glow exactly on
+# the cut pixels. When absent, the luminance detector below is the fallback.
+YACHT_WINDOWS = REPO / "assets/scenery/yacht_windows.png"
 OUT = REPO / "assets/scenery/city_windows.png"
 
 # Skyline band in normalized art-y: above the tallest tower top, down to the far
@@ -183,19 +185,21 @@ def main() -> int:
     yt_a = yt_arr[..., 3] / 255.0
 
     # --- Yacht cabin-window mask (BLUE channel) ---
-    # A HAND-PAINTED mask is AUTHORITATIVE when present: paint white over every
-    # window you want lit warm, on a canvas aligned to yacht.png (any size — it is
-    # resized to the bake canvas). The shader fills the warm interior glow exactly
-    # there, so the lit windows match the painted glass by construction.
+    # The HAND-CUT `yacht_windows.png` layer is AUTHORITATIVE when present: a
+    # cut-out aligned 1:1 to yacht.png that is opaque ONLY over the window glass.
+    # Its alpha is read straight in (resized to the bake canvas), so the shader
+    # fills the warm interior glow exactly on the cut pixels — the lit windows
+    # match the painted glass by construction.
     #
     # Luminance auto-detection can NOT cleanly isolate this yacht's glass — the
     # panes are mid-tone, the open side decks and under-overhang recesses sit at the
-    # same luminance, and thresholds leave speckle — so the painted mask is the
-    # reliable source. The detector below is only a fallback when no mask is present.
-    if YACHT_CABIN_MASK.exists():
-        cm = Image.open(YACHT_CABIN_MASK).convert("L").resize(
+    # same luminance, and thresholds leave speckle — so the cut-out is the reliable
+    # source. The detector below is only a fallback when no cut-out is present.
+    if YACHT_WINDOWS.exists():
+        # The cut-out's ALPHA is the lit-window map (opaque = lit glass).
+        cm = Image.open(YACHT_WINDOWS).convert("RGBA").resize(
             (w, h), Image.Resampling.LANCZOS
-        )
+        ).split()[-1]
         cabin_mask = np.asarray(cm, dtype=np.float64) / 255.0
         # Feather the painted edges so the glow has no hard cut line.
         cabin_mask = (
@@ -243,7 +247,7 @@ def main() -> int:
     print(
         f"wrote {OUT}  city px(>0.1)={int((wfield > 0.1).sum())}  "
         f"cabin px(>0.1)={int((cabin_mask > 0.1).sum())}  "
-        f"mask={'hand-painted' if YACHT_CABIN_MASK.exists() else 'detector fallback'}"
+        f"mask={'hand-cut' if YACHT_WINDOWS.exists() else 'detector fallback'}"
     )
     return 0
 
