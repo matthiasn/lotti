@@ -2,14 +2,6 @@ import 'dart:math' as math;
 
 import 'package:lotti/features/character/model/easing.dart';
 
-/// A signed easing curve: maps normalized segment progress `t` in 0..1 to an
-/// eased output that MAY leave 0..1 on purpose — dipping below 0 for
-/// *anticipation* (a wind-up against the move) and rising above 1 for
-/// *overshoot* (a follow-through past the target before it settles). The
-/// endpoints are always exact (`f(0) == 0`, `f(1) == 1`), so the keyframe values
-/// the curve interpolates between are still hit precisely on the beat.
-typedef EaseCurve = double Function(double t);
-
 /// Laban-Effort *dynamics* for a dance accent: the "how" of a beat gesture,
 /// kept separate from the "what" (which bone moves where, authored as the
 /// keyframe values). Each factor is a signed dial in -1..1 whose extremes are

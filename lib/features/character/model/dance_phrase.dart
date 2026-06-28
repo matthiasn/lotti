@@ -1,4 +1,5 @@
 import 'package:lotti/features/character/model/clip.dart';
+import 'package:lotti/features/character/model/dance_dynamics.dart';
 import 'package:lotti/features/character/model/easing.dart';
 
 /// Frame-addressed choreography data that compiles into the lower-level clip
@@ -104,12 +105,14 @@ class DancePhrase {
     double scaleX = 1,
     double scaleY = 1,
     Ease ease = Ease.easeInOut,
+    EaseCurve? easeFn,
   }) => Keyframe(
     p: phaseOf(frame),
     rotation: rotation,
     scaleX: scaleX,
     scaleY: scaleY,
     ease: ease,
+    easeFn: easeFn,
   );
 
   KeyframeChannel jointChannel(
@@ -138,6 +141,17 @@ class DancePhrase {
     keys.sort((a, b) => a.frame.compareTo(b.frame));
     return List<DanceJointKey>.unmodifiable(keys);
   }
+
+  /// Builds a joint channel from dynamics-bearing accents on the **non-smooth**
+  /// (per-segment) path — [jointChannel] defaults to non-smooth — so each peak
+  /// key's [Keyframe.easeFn], the Laban-Effort drive-in curve carried by a
+  /// [DanceJointAccent.dynamics], is honoured. The Catmull-Rom `smooth` path
+  /// would ignore per-key easing, which is exactly why this stays non-smooth
+  /// (the dynamics kinematic tests guard that). Layer the result additively on
+  /// top of the continuous groove channels so the anticipation / overshoot ride
+  /// on the existing pocket without re-smoothing it away.
+  KeyframeChannel dynamicsJointChannel(List<DanceJointAccent> accents) =>
+      jointChannel(jointAccentKeys(accents));
 
   RootKeyframe rootKey(
     int frame, {
@@ -550,6 +564,7 @@ class DanceJointKey {
     this.scaleX = 1,
     this.scaleY = 1,
     this.ease = Ease.easeInOut,
+    this.easeFn,
   });
 
   final int frame;
@@ -558,12 +573,17 @@ class DanceJointKey {
   final double scaleY;
   final Ease ease;
 
+  /// Optional open-ended drive-in curve (see [Keyframe.easeFn]); when set it
+  /// overrides [ease] on a non-smooth channel.
+  final EaseCurve? easeFn;
+
   Keyframe toKeyframe(DancePhrase phrase) => phrase.jointKey(
     frame,
     rotation: rotation,
     scaleX: scaleX,
     scaleY: scaleY,
     ease: ease,
+    easeFn: easeFn,
   );
 }
 
@@ -575,6 +595,7 @@ class DanceJointAccent {
     this.scaleX = 1,
     this.scaleY = 1,
     this.ease = Ease.easeInOut,
+    this.dynamics,
   }) : assert(radiusFrames > 0, 'radiusFrames must be positive');
 
   final int frame;
@@ -584,18 +605,29 @@ class DanceJointAccent {
   final double scaleY;
   final Ease ease;
 
+  /// Optional Laban-Effort dynamics for the drive-in segment (neutral → peak).
+  /// When set, the [peakKey] carries the [dynamicsCurve] so the accent winds up
+  /// (anticipation), snaps or settles (inflection), and overshoots
+  /// (follow-through) instead of plain easing. Only honoured when the accent is
+  /// compiled into a non-smooth channel (see [DancePhrase.dynamicsJointChannel]).
+  final DanceDynamics? dynamics;
+
   DanceJointKey neutralKey(int frame) => DanceJointKey(
     frame,
     ease: ease,
   );
 
-  DanceJointKey peakKey() => DanceJointKey(
-    frame,
-    rotation: rotation,
-    scaleX: scaleX,
-    scaleY: scaleY,
-    ease: ease,
-  );
+  DanceJointKey peakKey() {
+    final d = dynamics;
+    return DanceJointKey(
+      frame,
+      rotation: rotation,
+      scaleX: scaleX,
+      scaleY: scaleY,
+      ease: ease,
+      easeFn: d == null ? null : dynamicsCurve(d),
+    );
+  }
 }
 
 class DanceMoveJointAccent {

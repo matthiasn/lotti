@@ -313,4 +313,38 @@ void main() {
       expect(clip.locomotes, isFalse);
     });
   });
+
+  group('Keyframe.easeFn', () {
+    test('a non-smooth channel uses easeFn over ease, allowing overshoot', () {
+      // easeFn drives 25% faster than linear, so it crosses 1 before the key.
+      double overdrive(double t) => t * 1.25;
+      const k0 = Keyframe(p: 0);
+      final k1 = Keyframe(p: 1, rotation: 1, easeFn: overdrive);
+      final ch = KeyframeChannel([k0, k1]);
+
+      // At local 0.5 easeInOut would give 0.5; easeFn gives 0.625.
+      expect(ch.sample(0.5).rotation, closeTo(0.625, 1e-9));
+      // At local 0.9 it overshoots past the peak value of 1.
+      expect(ch.sample(0.9).rotation, closeTo(1.125, 1e-9));
+      // Endpoints are still exact.
+      expect(ch.sample(0).rotation, closeTo(0, 1e-9));
+      expect(ch.sample(1).rotation, closeTo(1, 1e-9));
+    });
+
+    test('a smooth channel ignores easeFn (the spline path)', () {
+      var calls = 0;
+      double spy(double t) {
+        calls++;
+        return t;
+      }
+
+      final keys = [
+        Keyframe(p: 0, easeFn: spy),
+        Keyframe(p: 0.5, rotation: 1, easeFn: spy),
+        Keyframe(p: 1, easeFn: spy),
+      ];
+      KeyframeChannel(keys, smooth: true).sample(0.25);
+      expect(calls, 0, reason: 'the smooth path must not consult easeFn');
+    });
+  });
 }

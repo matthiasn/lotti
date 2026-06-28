@@ -115,6 +115,7 @@ class Keyframe {
     this.scaleX = 1,
     this.scaleY = 1,
     this.ease = Ease.easeInOut,
+    this.easeFn,
   });
 
   /// Phase position of the key, 0..1.
@@ -125,6 +126,15 @@ class Keyframe {
 
   /// Easing applied on the segment *leading into* this key.
   final Ease ease;
+
+  /// Optional open-ended easing for the segment leading into this key, used in
+  /// preference to [ease] when set (the fixed [ease] is the fallback). Unlike
+  /// [ease] it may leave 0..1 to inject anticipation/overshoot — this is how a
+  /// `DanceDynamics`-driven accent reshapes its drive-in. Honoured only on the
+  /// per-segment (non-`smooth`) interpolation path; the Catmull-Rom `smooth`
+  /// path ignores per-key easing entirely, so dynamics accents must be compiled
+  /// into a non-smooth channel.
+  final EaseCurve? easeFn;
 }
 
 /// One-shot joint motion as eased keyframes. Keys must be sorted by [Keyframe.p]
@@ -173,7 +183,7 @@ class KeyframeChannel extends JointChannel {
             scaleY: _spline(i, local, span, (k) => k.scaleY),
           );
         }
-        final t = k1.ease.apply(local);
+        final t = k1.easeFn?.call(local) ?? k1.ease.apply(local);
         return JointPose(
           rotation: k0.rotation + (k1.rotation - k0.rotation) * t,
           scaleX: k0.scaleX + (k1.scaleX - k0.scaleX) * t,

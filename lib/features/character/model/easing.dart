@@ -18,6 +18,14 @@ enum Ease {
   easeOutBack,
 }
 
+/// A signed easing curve: maps normalized segment progress `t` in 0..1 to an
+/// eased output that MAY leave 0..1 on purpose — dipping below 0 for
+/// *anticipation* and rising above 1 for *overshoot* — while keeping the
+/// endpoints exact (`f(0) == 0`, `f(1) == 1`). It is the open-ended counterpart
+/// of [Ease]; a `Keyframe` carrying one as `easeFn` uses it instead of its fixed
+/// [Ease] (see `dance_dynamics.dart` for the Laban-Effort curve builder).
+typedef EaseCurve = double Function(double t);
+
 extension EaseApply on Ease {
   /// Maps a normalized progress [t] in 0..1 through the curve. Only the input is
   /// clamped; the `*Back` curves deliberately return values slightly outside

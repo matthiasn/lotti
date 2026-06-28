@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/character/model/clip.dart';
+import 'package:lotti/features/character/model/dance_dynamics.dart';
 import 'package:lotti/features/character/model/dance_phrase.dart';
 
 void main() {
@@ -761,6 +763,73 @@ void main() {
         ).toGroundSpan(phrase),
         throwsRangeError,
       );
+    });
+  });
+
+  group('DanceJointAccent dynamics', () {
+    // A bare phrase is enough: the dynamics channel only needs phaseOf/frame
+    // bookkeeping, not support lookups. The accent drives in across frames
+    // 4 (neutral 0) -> 8 (peak +1) -> 12 (neutral 0).
+    const phrase = DancePhrase(frameCount: 32, supports: []);
+
+    KeyframeChannel channelFor(DanceDynamics? dynamics) =>
+        phrase.dynamicsJointChannel([
+          DanceJointAccent(8, radiusFrames: 4, rotation: 1, dynamics: dynamics),
+        ]);
+
+    // Dense samples of the neutral -> peak (frames 4..8) drive-in segment.
+    List<double> driveIn(KeyframeChannel ch) => [
+      for (var i = 0; i <= 40; i++) ch.sample((4 + i * 0.1) / 32).rotation,
+    ];
+
+    test(
+      'a Strong+Sudden+Free accent winds up, overshoots, and lands on peak',
+      () {
+        final ch = channelFor(
+          const DanceDynamics(weight: 0.8, time: 0.8, flow: 0.8),
+        );
+        final samples = driveIn(ch);
+        final lo = samples.reduce((a, b) => a < b ? a : b);
+        final hi = samples.reduce((a, b) => a > b ? a : b);
+
+        expect(
+          lo,
+          lessThan(0),
+          reason: 'anticipation: the joint pulls back opposite the peak first',
+        );
+        expect(
+          hi,
+          greaterThan(1),
+          reason: 'overshoot: the joint swings past the peak before settling',
+        );
+        expect(
+          ch.sample(8 / 32).rotation,
+          closeTo(1, 1e-9),
+          reason: 'the accent still lands exactly on its authored peak',
+        );
+      },
+    );
+
+    test('neutral dynamics neither winds up nor overshoots', () {
+      final samples = driveIn(channelFor(DanceDynamics.neutral));
+      expect(samples.reduce((a, b) => a < b ? a : b), greaterThan(-1e-9));
+      expect(samples.reduce((a, b) => a > b ? a : b), lessThan(1 + 1e-9));
+    });
+
+    test('a null-dynamics accent matches a plain easeInOut accent', () {
+      final dyn = channelFor(null);
+      final plain = phrase.jointChannel(
+        phrase.jointAccentKeys([
+          const DanceJointAccent(8, radiusFrames: 4, rotation: 1),
+        ]),
+      );
+      for (var f = 4; f <= 12; f++) {
+        expect(
+          dyn.sample(f / 32).rotation,
+          closeTo(plain.sample(f / 32).rotation, 1e-9),
+          reason: 'frame $f should be untouched when dynamics is null',
+        );
+      }
     });
   });
 }
