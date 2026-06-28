@@ -64,7 +64,7 @@ _kBacklightPasses = [
 /// directional gel key models it — fill light raising the shadows so the figure
 /// reads as a lit volume, not a flat silhouette with an outline. Artistic value
 /// (not a design-system token): this is rendered scene light, like the gels.
-const Color _kBodyFill = Color(0x26AEC4DE);
+const Color _kBodyFill = Color(0x32AEC4DE);
 
 /// Unit direction (screen space, +x right / +y down) from each dance lane toward
 /// its rim-light source, i.e. the direction the gel halo is offset so the rim
@@ -459,7 +459,7 @@ class CharacterPainter extends CustomPainter {
         // [bodyGrade] (colour) so it only moves geometry when asked.
         final heroStage = (leadCentreOrder && heroStaging)
             ? _heroStaging(i, members.length)
-            : (scale: 1.0, dy: 0.0);
+            : (scale: 1.0, dy: 0.0, dx: 0.0);
         final memberScale =
             drawScale *
             _roleScale(i, members.length) *
@@ -472,7 +472,8 @@ class CharacterPainter extends CustomPainter {
                     formation.dy +
                     heroStage.dy) *
                 drawScale;
-        final memberCentreX = startX + spacing * i + formation.dx * drawScale;
+        final memberCentreX =
+            startX + spacing * i + (formation.dx + heroStage.dx) * drawScale;
         if (anchors != null && cameraMatrix != null) {
           // Map the local foot point through the camera transform to screen,
           // normalized to the canvas (affine — ignore the perspective row).
@@ -856,9 +857,20 @@ class CharacterPainter extends CustomPainter {
   /// and the formation-depth tests (scale locked to 1, backup rows locked) are
   /// untouched. Constant per role (no time term) — depth must not animate without
   /// matching footwork.
-  static ({double scale, double dy}) _heroStaging(int index, int memberCount) {
-    if (memberCount < 3) return (scale: 1, dy: 0);
-    return index == 1 ? (scale: 1.12, dy: 12) : (scale: 0.9, dy: -16);
+  static ({double scale, double dy, double dx}) _heroStaging(
+    int index,
+    int memberCount,
+  ) {
+    if (memberCount < 3) return (scale: 1, dy: 0, dx: 0);
+    // Lead: clearly bigger, owning the frame by SIZE. Only a small downstage dy
+    // on top of the role's own floor offset — pushing it further down clipped the
+    // hero's feet off the bottom edge once the dance camera tightened.
+    if (index == 1) return (scale: 1.18, dy: 4, dx: 0);
+    // Flankers: smaller and upstage (higher = further back), and pulled INWARD
+    // toward the lead (left lane → right, right lane → left) so the three read
+    // as a tight V-wedge with the hero at its point instead of an even row.
+    final inward = index == 0 ? 1.0 : -1.0;
+    return (scale: 0.8, dy: -28, dx: inward * 30);
   }
 
   static ({double zoom, double dx, double dy}) _danceCamera(

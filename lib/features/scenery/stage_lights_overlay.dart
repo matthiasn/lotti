@@ -136,7 +136,7 @@ class StageLightsPainter extends CustomPainter {
     this.aimX,
     this.footY,
     this.floorY = 0.82,
-    this.poolRadius = 0.105,
+    this.poolRadius = 0.135,
   });
 
   /// Scene clock (seconds).
@@ -221,16 +221,17 @@ class StageLightsPainter extends CustomPainter {
         ..shader = RadialGradient(
           center: const Alignment(0, -0.45),
           colors: [
-            l.color.withValues(alpha: 0.4 * i),
-            l.color.withValues(alpha: 0.14 * i),
+            l.color.withValues(alpha: 0.54 * i),
+            l.color.withValues(alpha: 0.22 * i),
             l.color.withValues(alpha: 0),
           ],
           stops: const [0.0, 0.5, 1.0],
         ).createShader(spread),
     );
     // Hot core: a tight bright hotspot at the foot/deck contact — fast falloff,
-    // lightly white-clipped — so the pool reads as light landing, not a sticker.
-    final hot = Color.lerp(l.color, const Color(0xFFFFFFFF), 0.1)!;
+    // only faintly white-clipped so the gel stays its own hue (not a blown white
+    // puddle), reading as light landing rather than a sticker.
+    final hot = Color.lerp(l.color, const Color(0xFFFFFFFF), 0.07)!;
     final core = Rect.fromCenter(
       center: Offset(0, ry * 0.45),
       width: rx,
@@ -244,8 +245,8 @@ class StageLightsPainter extends CustomPainter {
           ..shader = RadialGradient(
             center: const Alignment(0, -0.3),
             colors: [
-              hot.withValues(alpha: 0.58 * i),
-              l.color.withValues(alpha: 0.22 * i),
+              hot.withValues(alpha: 0.64 * i),
+              l.color.withValues(alpha: 0.28 * i),
               l.color.withValues(alpha: 0),
             ],
             stops: const [0.0, 0.55, 1.0],

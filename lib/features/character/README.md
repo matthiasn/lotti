@@ -454,13 +454,16 @@ its floor pool always match:
   contact (kept warm, not white-clipped to a blown puddle). It eases its pool
   toward the live dancer foot (lazy on small moves, fast catch-up on a camera
   cut), tracking the same anchors the painter publishes via `onDancerAnchors`.
-- **Hero staging (`heroStaging`, opt-in)** renders the lead a touch bigger and
-  downstage and the flankers smaller and upstage, so the lead owns the frame with
-  real depth. It is decoupled from `bodyGrade` (it only moves geometry) and off by
-  default, so every other surface keeps its even trio. The player also drops a
-  soft **aerial-haze band** at the waterline (a frame-fixed gradient scrim between
-  the plate and the cats) that lifts the distant city/water and separates the
-  foreground cat plane — a cheap atmospheric-DoF stand-in.
+- **Hero staging (`heroStaging`, opt-in)** stages the trio as a **V-wedge**: the
+  lead is clearly bigger (owning the frame by size) with only a small downstage
+  nudge so its feet stay in frame, while the flankers are smaller, set upstage
+  (higher = further back) and pulled **inward** toward the lead, so the three read
+  as a hero-plus-crew wedge instead of an even row. It is decoupled from
+  `bodyGrade` (it only moves geometry) and off by default, so every other surface
+  keeps its even trio. The player also drops a soft **aerial-haze band** at the
+  waterline (a frame-fixed gradient scrim between the plate and the cats) that
+  lifts the distant city/water and separates the foreground cat plane — a cheap
+  atmospheric-DoF stand-in.
 
 **Seizure safety — the body never blinks.** The cat bodies are never pulsed with
 the beat: a full-figure luminance flash on every beat is a photosensitive-epilepsy
