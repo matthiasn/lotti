@@ -38,8 +38,8 @@ Output `assets/scenery/city_windows.png` (RGBA, opaque). Channel packing:
     windows read as filled panes/floors instead of a glowing wireframe.
   * G: yacht TV-window mask — the large lower-deck swoop pane (shader fills a
     flickering screen glow here).
-  * B: yacht cabin-window mask — the saloon / sky-lounge / flybridge windows +
-    hull portholes (shader fills the warm interior cabin glow here).
+  * B: yacht cabin-window mask — the sky-lounge and main-saloon windows in the
+    bright superstructure (shader fills the warm interior cabin glow here).
 
 Run:  python3 tools/scenery_art/bake_city_windows.py
 (needs Pillow + numpy)
@@ -79,6 +79,28 @@ def _smoothstep(a: float, b: float, x: np.ndarray) -> np.ndarray:
 def _alpha(path: Path, size: tuple[int, int]) -> np.ndarray:
     img = Image.open(path).convert("RGBA").resize(size, Image.Resampling.LANCZOS)
     return np.asarray(img, dtype=np.float64)[..., 3] / 255.0
+
+
+def _erode_y(mask: np.ndarray, k: int) -> np.ndarray:
+    """Binary erosion along Y only: a pixel survives iff all of its +-k vertical
+    neighbours are set. Erases horizontal lines up to 2k px tall while leaving
+    taller features (window panes) intact apart from a k-px trim top and bottom."""
+    out = mask.copy()
+    for dy in range(1, k + 1):
+        out &= np.roll(mask, dy, axis=0)
+        out &= np.roll(mask, -dy, axis=0)
+    return out
+
+
+def _dilate_y(mask: np.ndarray, k: int) -> np.ndarray:
+    """Binary dilation along Y only — inverse of `_erode_y`; together they form a
+    vertical opening that removes thin horizontal structures and restores the
+    surviving panes to their original height."""
+    out = mask.copy()
+    for dy in range(1, k + 1):
+        out |= np.roll(mask, dy, axis=0)
+        out |= np.roll(mask, -dy, axis=0)
+    return out
 
 
 def main() -> int:
@@ -187,17 +209,24 @@ def main() -> int:
     )
 
     # --- Yacht cabin-window mask (BLUE channel) ---
-    # The saloon / sky-lounge / flybridge windows and the hull portholes are
-    # recessed DARK panes set into the bright white superstructure. Detect them by
-    # a band-pass that FILLS panes but REJECTS the dark hull: a window pane is dark
-    # AND sits inside brighter structure, so a large-radius blur of the luminance
-    # is much brighter than the pane (recessBig high across the WHOLE pane); the
-    # dark bow hull is dark with dark neighbours, so recessBig stays low in its
-    # interior and it drops out. A light erosion first removes the 1-2px boot-stripe
-    # / sheer hairlines while the broader panes and round portholes survive. The
-    # shader fills the warm cabin glow from `.b`; the TV window (`.g`) is excluded
-    # so it is not double-lit. No hand-placed boxes — the glow lands on the real
-    # window shapes by construction.
+    # The sky-lounge and main-saloon windows are recessed DARK panes set into the
+    # bright white superstructure. Detect them by a band-pass that FILLS panes but
+    # REJECTS the dark hull: a window pane is dark AND sits inside brighter
+    # structure, so a large-radius blur of the luminance is much brighter than the
+    # pane (recessBig high across the WHOLE pane); the dark bow hull is dark with
+    # dark neighbours, so recessBig stays low in its interior and it drops out.
+    #
+    # The stubborn false-positive is the long, thin, near-horizontal sheer/rubrail
+    # hairline (2-4px tall) that runs the full hull length: a square MinFilter
+    # cannot kill a continuous line, and when blurred it smears a warm "gold piping"
+    # stripe across the topsides. A VERTICAL OPENING (erode-Y then dilate-Y, k=4)
+    # erases every horizontal structure <=8px tall while the >=9px window panes
+    # survive at full height. The band is then confined to the superstructure
+    # (x>0.72, y<0.55): the bow carries no glass (only hull, anchor and the hawse
+    # marking) and the lower bound stops above the porthole row and the waterline,
+    # dropping the boot-stripe / bow-wave specks. The shader fills the warm cabin
+    # glow from `.b`; the TV window (`.g`) is excluded so it is not double-lit. No
+    # hand-placed boxes — the glow lands on the real window shapes by construction.
     blur_big = np.asarray(
         Image.fromarray(np.clip(yt_lum, 0, 255).astype(np.uint8)).filter(
             ImageFilter.GaussianBlur(14),
@@ -205,15 +234,16 @@ def main() -> int:
         dtype=np.float64,
     )
     recess_big = blur_big - yt_lum
-    dark = ((yt_lum < 32.0) & (yt_a > 0.10)).astype(np.uint8) * 255
-    dark_core = (
-        np.asarray(
-            Image.fromarray(dark).filter(ImageFilter.MinFilter(3)),
-            dtype=np.float64,
-        )
-        > 127
-    )
-    cabin_band = (yy > 0.40) & (yy < 0.60) & (xx > 0.30) & (xx < 0.99)
+    # Threshold BELOW the dark-navy hull topsides (lum ~30) so the long hull sheer
+    # band is NOT mistaken for a window: real glass is lum ~6-21 (saloon 6,
+    # upper-deck 17), the hull/superstructure is 23-93. lum<22 keeps every window
+    # and rejects the hull, killing the warm stripe an over-loose threshold smeared
+    # across the topsides.
+    dark = (yt_lum < 22.0) & (yt_a > 0.10)
+    # Vertical opening: erase thin horizontal hairlines (sheer / rubrail / boot
+    # stripe, <=8px tall) but keep the >=9px window panes at full height.
+    dark_core = _dilate_y(_erode_y(dark, 4), 4)
+    cabin_band = (yy > 0.40) & (yy < 0.55) & (xx > 0.72) & (xx < 0.99)
     cabin_mask = (
         cabin_band
         & dark_core

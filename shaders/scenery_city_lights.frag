@@ -418,37 +418,85 @@ void main() {
     }
   }
 
+  // --- Cool sky/moon rim on the yacht's upper edges: the twilight sky dome lights
+  // the top of the superstructure and rails, seating the dark hull's COOL side
+  // against the warm interior (the warm/cool split is what reads as form). Detect
+  // the silhouette TOP edge (hull here, sky just above) and add a thin cool rim. ---
+  float yHere = texture(uYachtMask, muv).a;
+  float yUp = texture(uYachtMask, muv - vec2(0.0, 0.006)).a;
+  float yRim = smoothstep(0.35, 0.70, yHere) * smoothstep(0.05, 0.45, yHere - yUp);
+  lights += vec3(0.42, 0.54, 0.74) * yRim * 0.10; // cool moon/sky silver rim
+  intensity += yRim * 0.05;
+
   // --- Yacht cabins: warm interior glow FILLING the real window panes (from the
-  // baked cabin mask). The moored luxury yacht reads as occupied and lit from
-  // inside. A static low-frequency room-to-room brightness variation + a slow
-  // unified breath give it life (lamps in different rooms, gentle haze
-  // scintillation) WITHOUT the per-pixel speckle/flicker the old edge-trace had. ---
+  // baked cabin mask). A static low-frequency room-to-room brightness variation
+  // (some rooms bright, some dim — inhabited, not a uniform lit panel) + a slow
+  // unified breath give it life WITHOUT per-pixel speckle. The level is held to a
+  // controlled amber (knee well under white) so it reads incandescent / tungsten,
+  // not blown LED-white. ---
   float cabin = yachtWindow(muv);
   if (cabin > 0.003) {
-    // Different rooms sit at different brightness (static, so it never twinkles).
-    float room = 0.72 + 0.28 * noise(muv * vec2(55.0, 80.0));
-    // One calm interior breath for the whole vessel (haze + the beat, gentle).
+    // Wider room-to-room spread so the windows read as discrete lit interiors
+    // rather than one even gold strip.
+    float room = 0.55 + 0.45 * noise(muv * vec2(55.0, 80.0));
     float breath = 0.92 + 0.08 * sin(uTime * 0.7);
-    float yachtRaw = cabin * room * breath * (0.95 + 0.5 * uWindowAmount) * beat;
-    // Soft knee so the filled panes glow warm rather than clip to flat white.
-    float yachtLit = yachtRaw / (1.0 + 0.8 * yachtRaw);
+    float yachtRaw = cabin * room * breath * (0.66 + 0.4 * uWindowAmount) * beat;
+    // Firmer knee so the brightest panes asymptote to a warm amber, not white.
+    float yachtLit = yachtRaw / (1.0 + 1.1 * yachtRaw);
     lights += uYachtGlow.rgb * yachtLit;
     intensity += yachtLit;
   }
-  // Halation: a soft warm halo bleeding out from the cabin glass onto the dark
-  // hull (4 offset taps of the blurred mask, dimmed) so the windows read as
-  // glowing SOURCES radiating into the dusk, not flat painted panes. CONFINED to
-  // the yacht silhouette (current-pixel alpha) and kept tight (small offset) so
-  // the halo deposits on the hull, never leaking up off the superstructure into
-  // the sky or down into the water (which read as a warm ghost double-image).
+  // Halation: a SMALL soft warm halo onto the hull around the glass (tight offset,
+  // confined to the silhouette) so the windows read as glowing sources — kept LOW
+  // so it does not fuse the thin ribbon windows into a continuous gold OUTLINE /
+  // piping (the windows should read as interior pools, not neon trim).
   const float yb = 0.006;
   float yhalo = yachtWindow(muv + vec2(yb, yb)) +
       yachtWindow(muv + vec2(-yb, yb)) + yachtWindow(muv + vec2(yb, -yb)) +
       yachtWindow(muv + vec2(-yb, -yb));
-  float yOnHull = smoothstep(0.25, 0.55, texture(uYachtMask, muv).a);
-  float yhaloLit = yhalo * 0.22 * (0.5 + 0.4 * uWindowAmount) * beat * yOnHull;
+  float yOnHull = smoothstep(0.25, 0.55, yHere);
+  float yhaloLit = yhalo * 0.13 * (0.5 + 0.4 * uWindowAmount) * beat * yOnHull;
   lights += uYachtGlow.rgb * yhaloLit;
   intensity += yhaloLit;
+
+  // --- Yacht reflection: the warm cabins spill and reflect onto the lagoon right
+  // at the hull, so the vessel sits IN the water instead of floating on a flat
+  // dark band (the panel's #1 "pasted-in" tell). Geometry-free: for a water pixel
+  // under the yacht's x-span, scan a short way UP the column to find the
+  // per-column hull bottom (the waterline contact), then MIRROR the cabin glow
+  // downward as a short, ripple-broken warm smear that fades within a few percent
+  // below the contact. No guessed waterline — it only appears under columns that
+  // actually have a lit, hulled vessel above, and is naturally occluded by the
+  // foreground dock drawn on top. ---
+  // Only true WATER below the hull qualifies: hull must sit ABOVE this pixel but
+  // NOT below it. This rejects the low-alpha gaps WITHIN the superstructure
+  // (between deck levels, through railings) at y 0.52-0.62 — which sit above the
+  // yacht's real waterline (~0.63, far below kWaterline=0.515) and would otherwise
+  // smear a warm band across the mid-hull and saloon and off the bow.
+  float hullBelow = texture(uYachtMask, vec2(muv.x, muv.y + 0.015)).a;
+  if (muv.y > kWaterline && muv.x > 0.55 && yHere < 0.3 && hullBelow < 0.3) {
+    float wl = -1.0;
+    for (int k = 1; k <= 8; k++) {
+      float sy = muv.y - float(k) * 0.009;
+      if (wl < 0.0 && texture(uYachtMask, vec2(muv.x, sy)).a > 0.5) {
+        wl = sy; // first hull hit scanning up = the hull bottom in this column
+      }
+    }
+    if (wl > 0.0) {
+      float depth = muv.y - wl; // distance below the waterline contact
+      float jx = (fbm(vec2(muv.y * 30.0 - uTime * 0.4, muv.x * 8.0)) - 0.5) *
+          (0.004 + 0.03 * depth);
+      float srcY = wl - depth * 1.15; // mirror, slightly stretched (elongated)
+      float src = texture(uWindowField, vec2(muv.x + jx, srcY)).b;
+      float rip = 0.45 + 0.55 * smoothstep(0.35, 0.90,
+          fbm(vec2(muv.x * 26.0, muv.y * 34.0 - uTime * 0.5)));
+      float fade = 1.0 - smoothstep(0.0, 0.085, depth);
+      float spill = src * rip * fade * 0.7 * beat;
+      spill = spill / (1.0 + 1.5 * spill);
+      lights += uYachtGlow.rgb * spill;
+      intensity += spill;
+    }
+  }
 
   // --- Running TV in the large lower-deck window, REGISTERED to the painted
   // glass: the bake marks that exact window (the dark swoop pane) in the GREEN
