@@ -15,7 +15,7 @@
 /// - bridge (background-only): the lead is silent and the backups trade the
 ///   vocal, so the camera follows the VOICE — it CUTS onto the silver singer for
 ///   the first half, then CUTS to the brown singer for the second, two committed
-///   singer-feature two-shots rather than one wide sweep that spotlights neither;
+///   favoured three-shots rather than one wide sweep that spotlights neither;
 /// - post-chorus (closing hook): the climax — a grounded centred COIL that
 ///   visibly LOADS off-centre, with one motivated mid-coil push so the long load
 ///   breathes while keeping the full trio planted and readable;
@@ -215,7 +215,10 @@ Shot _chorusShot(DanceCameraContext c) {
     final midPush =
         0.05 * math.sin((math.min(c.sectionPhase, 0.9) / 0.9) * math.pi);
     final z = 1.50 + 0.06 * rise + midPush; // ~1.50 -> 1.56, bulging ~1.61 mid
-    final sway = math.sin(c.phrasePhase * 2 * math.pi) * 0.34; // beat-phrased
+    // Keep the sway readable but inside the cast-safe band: with hero staging
+    // enabled, the old 0.34 amplitude pushed a background dancer into a sliced
+    // side crop during close post-chorus frames.
+    final sway = math.sin(c.phrasePhase * 2 * math.pi) * 0.2; // beat-phrased
     return (zoom: z, dx: sway * z * kSideCatCentreRef, dy: 0);
   }
 
@@ -251,21 +254,17 @@ Shot _chorusShot(DanceCameraContext c) {
   return (zoom: z + breathe, dx: _lean(z, 0.42, left: true), dy: 0);
 }
 
-/// Bridge (background-only): TWO committed singer-feature two-shots with a hard
+/// Bridge (background-only): TWO committed singer-feature framings with a hard
 /// CUT between them (see [isBridgeCut]). The lead is silent and the backups trade
-/// the vocal, so the camera follows the VOICE — it spotlights the silver (left)
+/// the vocal, so the camera follows the VOICE — it favours the silver (left)
 /// backup for the first half, then CUTS to the brown (right) backup for the
-/// second, each a committed lean that weights the frame onto the singing cat with
-/// the lead anchoring centre. Held to a deep-but-not-total lean (0.60) so the OFF
-/// singer keeps a thin sliver rather than vanishing (the user flagged a cat fully
-/// leaving frame as reading like a glitch), and a steady tight-ish zoom so each
-/// feature actually fills. Peak stays inside the same grounded ceiling. Within
-/// each half the home is constant — the rig holds it after the cut, so there is
-/// no per-bar pendulum, just two clean held features.
+/// second. The old version intentionally left the off-side dancer as a thin edge
+/// sliver; with hero staging that read as accidental clipping. This version keeps
+/// a committed lean but holds the whole trio readable.
 Shot _bridgeShot(DanceCameraContext c) {
   final featuringLeft = c.sectionPhase < 0.5;
-  const z = 1.60;
-  return (zoom: z, dx: _lean(z, 0.60, left: featuringLeft), dy: 0);
+  const z = 1.50;
+  return (zoom: z, dx: _lean(z, 0.36, left: featuringLeft), dy: 0);
 }
 
 /// Pre-chorus: a strictly monotonic crane-push, crest capped (~1.52) just under

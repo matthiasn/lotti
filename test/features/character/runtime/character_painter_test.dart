@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/character/demo/dance_camera_director.dart';
 import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/runtime/character_painter.dart';
@@ -1278,6 +1279,181 @@ void main() {
           reason:
               'it must still read as the LEFT dancer (centre left of stage)',
         );
+      });
+    },
+  );
+
+  testWidgets(
+    'director close shots keep hero-staged backup cats clear of the side edges',
+    (tester) async {
+      await tester.runAsync(() async {
+        const size = Size(1333, 750); // demo-representative locked 16:9 stage
+        const width = 1333;
+        const height = 750;
+        const edgeMargin = 12;
+        const grade = (
+          skyWrap: Color(0x2E1F3354),
+          deckWrap: Color(0x2E3A2616),
+        );
+
+        Future<
+          ({
+            ({int minX, int maxX, int count}) silver,
+            ({int minX, int maxX, int count}) dark,
+          })
+        >
+        backupBounds(Shot shot, double phase) async {
+          final recorder = ui.PictureRecorder();
+          final canvas = Canvas(recorder);
+          CharacterPainter(
+            scene: scene,
+            ensembleScenes: [
+              CharacterScene(
+                buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
+              ),
+              CharacterScene(
+                buildCatInSuitRig(palette: CatInSuitPalette.darkBrown),
+              ),
+            ],
+            ensembleClips: [
+              CatClips.shaku,
+              CatClips.danceBackupLeft,
+              CatClips.danceBackupRight,
+            ],
+            synchronousEnsemble: true,
+            walkingPair: true,
+            clip: CatClips.shaku,
+            timeSeconds: CatClips.shaku.duration * phase,
+            cameraOverride: shot,
+            heroStaging: true,
+            bodyGrade: grade,
+            scale: size.height * 0.78 / 300.0,
+            shadowColor: const Color(0x00000000),
+            renderer: renderer,
+          ).paint(canvas, size);
+          final picture = recorder.endRecording();
+          try {
+            final image = await picture.toImage(width, height);
+            try {
+              final data = await image.toByteData();
+              final pixels = data!.buffer.asUint8List();
+              final silver = _boundsForPixels(
+                pixels,
+                width,
+                height,
+                (red, green, blue, alpha, x, y) =>
+                    x < width ~/ 2 &&
+                    alpha > 150 &&
+                    red > 110 &&
+                    red < 220 &&
+                    (red - green).abs() < 30 &&
+                    (green - blue).abs() < 30,
+              );
+              final dark = _boundsForPixels(
+                pixels,
+                width,
+                height,
+                (red, green, blue, alpha, x, y) =>
+                    x > width ~/ 2 &&
+                    alpha > 150 &&
+                    red < 95 &&
+                    green < 90 &&
+                    blue < 90,
+              );
+              return (
+                silver: (
+                  minX: silver.minX,
+                  maxX: silver.maxX,
+                  count: silver.count,
+                ),
+                dark: (minX: dark.minX, maxX: dark.maxX, count: dark.count),
+              );
+            } finally {
+              image.dispose();
+            }
+          } finally {
+            picture.dispose();
+          }
+        }
+
+        final cases = [
+          (
+            label: 'post-chorus sway left',
+            shot: cameraShot(
+              const DanceCameraContext(
+                section: 'post-chorus',
+                energetic: true,
+                build: 0.9,
+                phrasePhase: 0.75,
+                sectionPhase: 0.45,
+              ),
+            ),
+          ),
+          (
+            label: 'post-chorus sway right',
+            shot: cameraShot(
+              const DanceCameraContext(
+                section: 'post-chorus',
+                energetic: true,
+                build: 0.9,
+                phrasePhase: 0.25,
+                sectionPhase: 0.45,
+              ),
+            ),
+          ),
+          (
+            label: 'bridge favours silver',
+            shot: cameraShot(
+              const DanceCameraContext(
+                section: 'bridge',
+                energetic: true,
+                build: 0.9,
+                phrasePhase: 0,
+                sectionPhase: 0.25,
+              ),
+            ),
+          ),
+          (
+            label: 'bridge favours dark',
+            shot: cameraShot(
+              const DanceCameraContext(
+                section: 'bridge',
+                energetic: true,
+                build: 0.9,
+                phrasePhase: 0,
+                sectionPhase: 0.75,
+              ),
+            ),
+          ),
+        ];
+
+        for (final phase in const [0.0, 0.25, 0.5, 0.75, 31 / 32]) {
+          for (final c in cases) {
+            final b = await backupBounds(c.shot, phase);
+            expect(
+              b.silver.count,
+              greaterThan(250),
+              reason: '${c.label} phase=$phase should find the silver backup',
+            );
+            expect(
+              b.dark.count,
+              greaterThan(250),
+              reason: '${c.label} phase=$phase should find the dark backup',
+            );
+            expect(
+              b.silver.minX,
+              greaterThan(edgeMargin),
+              reason:
+                  '${c.label} phase=$phase clipped silver at x=${b.silver.minX}',
+            );
+            expect(
+              b.dark.maxX,
+              lessThan(width - edgeMargin),
+              reason:
+                  '${c.label} phase=$phase clipped dark at x=${b.dark.maxX}',
+            );
+          }
+        }
       });
     },
   );

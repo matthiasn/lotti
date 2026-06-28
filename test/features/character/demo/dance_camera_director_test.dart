@@ -239,9 +239,10 @@ void main() {
 
     test('bridge is two committed singer-features with a cut between', () {
       // The bridge follows the VOICE: first half spotlights the silver (left)
-      // backup (+dx), second half the brown (right) backup (-dx). Each home is
-      // CONSTANT across its half (the rig holds it after the cut), and dx flips
-      // sign at the mid-bridge hand-off — the cut (see [isBridgeCut]).
+      // backup (+dx), second half the brown (right) backup (-dx), while keeping
+      // the full trio readable. Each home is CONSTANT across its half (the rig
+      // holds it after the cut), and dx flips sign at the mid-bridge hand-off —
+      // the cut (see [isBridgeCut]).
       final earlyA = cameraShot(_ctx(section: 'bridge', sectionPhase: 0.1));
       final earlyB = cameraShot(_ctx(section: 'bridge', sectionPhase: 0.4));
       final lateA = cameraShot(_ctx(section: 'bridge', sectionPhase: 0.6));
@@ -253,12 +254,12 @@ void main() {
       // Brown feature: leans RIGHT (-dx), held flat across the second half.
       expect(lateA.dx, lessThan(0));
       expect(lateA.dx, closeTo(lateB.dx, 1e-9));
-      // The hand-off is a hard CUT: dx flips by a big jump across 0.5 (~+411 ->
-      // ~-411), not a continuous sweep through centre.
-      expect(earlyB.dx - lateA.dx, greaterThan(600));
-      // Both features hold the same committed two-shot zoom, under the ceiling.
-      expect(earlyA.zoom, closeTo(1.60, 1e-9));
-      expect(lateA.zoom, closeTo(1.60, 1e-9));
+      // The hand-off is a hard CUT: dx flips by a big jump across 0.5, not a
+      // continuous sweep through centre.
+      expect(earlyB.dx - lateA.dx, greaterThan(380));
+      // Both features hold the same favoured-trio zoom, under the ceiling.
+      expect(earlyA.zoom, closeTo(1.50, 1e-9));
+      expect(lateA.zoom, closeTo(1.50, 1e-9));
     });
 
     test('verse is a living medium: slow push plus a two-way drift', () {
@@ -360,6 +361,17 @@ void main() {
           ),
         ).dx.abs(),
         greaterThan(50),
+      );
+      expect(
+        cameraShot(
+          _ctx(
+            section: 'post-chorus',
+            build: 0.9,
+            sectionPhase: 0.45,
+            phrasePhase: 0.25,
+          ),
+        ).dx.abs(),
+        lessThan(150),
       );
       // The finish resolves from the same grounded band instead of jumping into
       // a separate crop register.
