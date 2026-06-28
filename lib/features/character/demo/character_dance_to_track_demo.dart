@@ -20,6 +20,7 @@ import 'package:lotti/features/character/samples/cat_in_suit.dart';
 import 'package:lotti/features/scenery/layered_backdrop.dart';
 import 'package:lotti/features/scenery/model/backdrop_scene.dart';
 import 'package:lotti/features/scenery/runtime/stage_lights.dart';
+import 'package:lotti/features/scenery/scene_texture_overlay.dart';
 import 'package:lotti/features/scenery/stage_lights_overlay.dart';
 import 'package:media_kit/media_kit.dart';
 
@@ -870,6 +871,11 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                             dancerAnchors: _dancerAnchors,
                             rig: stageRig,
                           ),
+                        // Screen-fixed finishing grain over the full frame.
+                        // The backdrop itself parallax-transforms with the
+                        // camera; this pass stays in viewport space so the
+                        // side bands get the same texture as the middle.
+                        if (_useNewBackdrop) const SceneTextureOverlay(),
                         // Full-colour cats are the stars; the concert rig rings
                         // each one in its gel via memberBacklights (rim/halo) and
                         // grounds it with a floor pool below — no dimming, so the

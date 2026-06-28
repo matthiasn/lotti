@@ -14,6 +14,7 @@ loading, reduced-motion handling, and layer composition.
 ```mermaid
 flowchart TD
   demo[CharacterDanceToTrackDemo] -->|audio position seconds| lb[LayeredBackdrop]
+  demo -->|screen-fixed final pass| texture[SceneTextureOverlay]
   self[Standalone use] -->|null timeSeconds| lb
   lb --> loader[async loaders]
   loader --> imgs[decoded ui.Image assets]
@@ -24,6 +25,7 @@ flowchart TD
   imgs --> ctx
   shaders --> ctx
   layers --> canvas[Canvas]
+  texture --> canvas
 ```
 
 `LayeredBackdrop` has two clock modes:
@@ -80,6 +82,12 @@ The ordering is the important contract:
   bridge cables, palms, and deck masks from cutting artificial gaps through the
   show.
 - Foreground layers, currently the vignette, paint over the caller child.
+
+`CharacterDanceToTrackDemo` additionally paints `SceneTextureOverlay` in screen
+space, outside the backdrop camera transform and below the dancers. That pass is
+not an authored art layer: it is a final tiny grain/edge-sink treatment that
+keeps the whole viewport, including parallax side bands, from reading cleaner
+than the centre.
 
 ## Bitmap Assets
 
@@ -273,3 +281,5 @@ Coverage responsibilities:
   dancer foot (lazy follow) and pulse on the beat.
 - `drone_show_layer_test.dart`: drone timeline phases, `Omah Lay` → `Moving`
   formation bounds, deterministic sampling, and paint contract.
+- `scene_texture_overlay_test.dart`: screen-fixed finishing grain covers both
+  vertical side strips and preserves a gentle edge sink.
