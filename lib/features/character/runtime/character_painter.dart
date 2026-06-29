@@ -54,13 +54,13 @@ const List<({double sigmaFrac, double alphaScale, double offsetScale})>
 _kBacklightPasses = [
   // soft outer bloom: thinned and pushed HARD toward the source so the air-glow
   // sits on the source-facing arc only and the body occludes the retreating
-  // side. A film panel kept reading the old wider/even bloom as a "Photoshop
-  // outer-glow outline" tracing the whole contour, so it is now fainter and more
-  // one-sided — atmosphere on the key edge, not a ring around the silhouette.
-  (sigmaFrac: 0.022, alphaScale: 0.26, offsetScale: 1.7),
-  // tight bright rim: a thin hot kicker hard on the source-facing contour, now
-  // displaced further so it rakes one edge and dies on the shadow side.
-  (sigmaFrac: 0.010, alphaScale: 0.95, offsetScale: 3.0),
+  // side. The wrap-around halo is the look the user wants — present but not
+  // overpowering and HUGGING the silhouette, not spreading far into the air — so
+  // its blur radius is kept tight (the on-body inner rim in the grade carries the
+  // colour presence so the outer halo needn't bloom wide).
+  (sigmaFrac: 0.015, alphaScale: 0.2, offsetScale: 1.7),
+  // tight bright rim: a thin hot kicker on the source-facing contour.
+  (sigmaFrac: 0.010, alphaScale: 0.8, offsetScale: 3.0),
 ];
 
 /// Cool, dark plate-blue the concert BODIES are lerped toward (`srcATop`) so the
@@ -797,28 +797,50 @@ class CharacterPainter extends CustomPainter {
             // not a strobe: only this small, terminator-edge gel term moves — the
             // seats + wrap stay STATIC — so the full-figure luminance never pulses
             // anywhere near the photosensitivity threshold.
-            final gelKey = (0.44 + 0.20 * glow.a).clamp(0.44, 0.62);
-            canvas.drawRect(
-              gradeBounds,
-              Paint()
-                ..blendMode = BlendMode.srcATop
-                ..shader = ui.Gradient.linear(
-                  mid + reach, // lit, source-facing side
-                  mid - reach, // shadow side
-                  [
-                    glow.withValues(
-                      alpha: gelKey,
-                    ), // gel key kicks onto the fabric (gentle beat breath)
-                    const Color(0x00000000),
-                    _kBodyShadowFloor, // cool ambient bounce, NOT a black crush
-                  ],
-                  // gradual terminator: the gel side carries well past centre so
-                  // more of the now-seated suit reads as lit fabric, and the
-                  // shadow side settles onto the cool ambient floor (dark navy
-                  // material) instead of slamming to a flat black void.
-                  const [0.0, 0.66, 0.96],
-                ),
-            );
+            final gelKey = (0.54 + 0.20 * glow.a).clamp(0.54, 0.74);
+            canvas
+              ..drawRect(
+                gradeBounds,
+                Paint()
+                  ..blendMode = BlendMode.srcATop
+                  ..shader = ui.Gradient.linear(
+                    mid + reach, // lit, source-facing side
+                    mid - reach, // shadow side
+                    [
+                      glow.withValues(
+                        alpha: gelKey,
+                      ), // gel key kicks onto the fabric (gentle beat breath)
+                      const Color(0x00000000),
+                      _kBodyShadowFloor, // cool ambient bounce, NOT a black crush
+                    ],
+                    // gradual terminator: the gel side carries well past centre so
+                    // more of the now-seated suit reads as lit fabric, and the
+                    // shadow side settles onto the cool ambient floor (dark navy
+                    // material) instead of slamming to a flat black void.
+                    const [0.0, 0.66, 0.96],
+                  ),
+              )
+              // INNER RIM. A tight, hot gel band hugging the lamp-facing edge
+              // INSIDE the silhouette (`srcATop`), so the stage gel reads as light
+              // landing ON the cloth — the panel's "make the gel wrap into the
+              // material, not float around it". This on-body illumination is what
+              // lets the outer halo come down without the cat going dark.
+              ..drawRect(
+                gradeBounds,
+                Paint()
+                  ..blendMode = BlendMode.srcATop
+                  ..shader = ui.Gradient.linear(
+                    mid + reach, // lit edge — hot
+                    mid - reach, // shadow side — gone
+                    [
+                      glow.withValues(
+                        alpha: (0.72 + 0.22 * glow.a).clamp(0.72, 0.94),
+                      ),
+                      const Color(0x00000000),
+                    ],
+                    const [0.0, 0.22], // concentrated on the lamp-facing edge
+                  ),
+              );
             // FLOOR-POOL BOUNCE: the saturated colour pool on the deck kicks back
             // UP onto the shins/feet, tying the figure to its own pool instead of
             // letting the pool read as a separate decorative disc below floating

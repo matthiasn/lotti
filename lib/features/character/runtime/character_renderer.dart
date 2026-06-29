@@ -235,13 +235,16 @@ class CharacterRenderer {
       ..[15] = 1
       ..[12] = c.dx * (1 - sx)
       ..[13] = c.dy * (1 - sy);
-    // A deeper, cooler occlusion than the terminator shade: the base darkened
-    // further and pulled harder toward the cool fill, faded by [roundAmount].
+    // The occlusion edge is a readable COOL blue-hour fill, NOT a crush to black:
+    // the base pulled hard (0.6) toward the cool tint at a moderate (0.62) value
+    // floor, so the shadow side of each volume carries plate colour and turns
+    // gradually (a film panel's "lift the core shadow off black, wrap the cool
+    // ambient in" note) rather than reading as a flat dark hole.
     final edge = _celTint(
       baseArgb,
       s.coolTint,
-      (s.coolAmount + 0.45).clamp(0.0, 1.0),
-      s.shadowFactor * 0.7,
+      0.6,
+      0.62,
     ).withValues(alpha: s.roundAmount.clamp(0.0, 1.0));
     final inner = edge.withValues(alpha: 0);
     final start = (1 - s.roundCoverage).clamp(0.0, 1.0);

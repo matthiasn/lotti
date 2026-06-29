@@ -1001,17 +1001,20 @@ RigSpec buildCatInSuitRig({
     // fake with screen-space gradients; baking it per-shape means it tracks the
     // geometry through every pose instead of sliding over it.
     celShade: const CelShadeSpec(
-      shadowFactor: 0.50,
+      shadowFactor: 0.5,
       coolAmount: 0.26,
       coverage: 0.52,
-      softness: 0.18,
-      highlightAmount: 0.26,
-      highlightCoverage: 0.26,
-      // Painterly form-rounding: darken each volume toward its contour so the
-      // limbs/torso/head read as rounded tubes (light bulging centre → occluded
-      // edges) instead of a flat cel terminator, closing the "flat sticker vs
-      // painterly plate" gap the cinematography panel kept flagging.
-      roundAmount: 0.45,
+      softness: 0.16,
+      // A slightly tighter lit-side SHEEN so the fabric/fur reads as catching the
+      // key, without going so bright/deep that thin limbs chrome out.
+      highlightAmount: 0.3,
+      highlightCoverage: 0.24,
+      // Painterly form-rounding: darken each volume toward its contour into a cool
+      // blue-hour fill so limbs/torso read as rounded tubes. Kept MODERATE: pushed
+      // deeper, the head-ellipse and torso-top both darken at the neck and the
+      // head reads as a separate blob "about to fall off", so the rounding stays
+      // gentle enough to keep the head visually attached to the body.
+      roundAmount: 0.42,
       roundCoverage: 0.6,
     ),
   );
