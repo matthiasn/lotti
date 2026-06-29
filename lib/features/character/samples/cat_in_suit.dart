@@ -495,20 +495,21 @@ RigSpec buildCatInSuitRig({
         outlineWidth: 2.5,
       ),
     ),
-    // Light shirt-cuff band at the wrist, drawn on top of the suit ribbon so the
-    // forearm reads (the navy-on-navy sleeve was invisible) — what lets the
-    // crossed-arm dance poses read as two distinct forearms.
+    // Light shirt-SLEEVE band running up the forearm (a rolled-up sleeve),
+    // drawn on top of the suit ribbon so the navy-on-navy forearm reads — what
+    // lets the crossed-arm dance poses (esp. the Shaku X over the navy torso)
+    // read as two distinct forearms instead of detached paws.
     const Bone(
       id: CatBones.cuffR,
       parent: CatBones.armLowerR,
       pivotX: 0,
-      pivotY: 33,
+      pivotY: 25,
       z: 17,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 20,
-        height: 11,
-        cornerRadius: 4,
+        width: 16,
+        height: 32,
+        cornerRadius: 7,
         color: _cuff,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -619,13 +620,13 @@ RigSpec buildCatInSuitRig({
       id: CatBones.cuffL,
       parent: CatBones.armLowerL,
       pivotX: 0,
-      pivotY: 33,
+      pivotY: 25,
       z: 18,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 20,
-        height: 11,
-        cornerRadius: 4,
+        width: 16,
+        height: 32,
+        cornerRadius: 7,
         color: _cuff,
         outlineColor: _outline,
         outlineWidth: 2,
