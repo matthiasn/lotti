@@ -217,7 +217,7 @@ void main() {
   // (below), so the footprint that hides ocean THROUGH the hull doesn't also
   // erase the reflection on the open water just in front of it.
   float reflYacht = 0.0;
-  float yDepth = depth - 0.10;
+  float yDepth = depth - 0.08;
   for (int yc = 0; yc < 3; yc++) {
     float cx = yc == 0 ? 0.80 : (yc == 1 ? 0.85 : 0.90);
     float str = yc == 0 ? 0.9 : (yc == 1 ? 1.0 : 0.72);
@@ -245,7 +245,7 @@ void main() {
   float reflCityA =
       clamp(reflCity * clamp(uReflection, 0.0, 2.0) * 6.0, 0.0, 0.9);
   float reflYachtA =
-      clamp(reflYacht * clamp(uReflection, 0.0, 2.0) * 5.1, 0.0, 0.85);
+      clamp(reflYacht * clamp(uReflection, 0.0, 2.0) * 5.7, 0.0, 0.88);
   vec3 cityWarm = vec3(1.0, 0.62, 0.32);
   vec3 yachtWarm = vec3(1.0, 0.66, 0.38);
 
