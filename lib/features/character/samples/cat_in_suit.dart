@@ -1058,9 +1058,14 @@ RigSpec buildCatInSuitRig({
         CatBones.footR,
       ],
       hiddenBoneIds: const [CatBones.legUpperR, CatBones.legLowerR],
-      // Athletic leg profile: strong thigh under the hip, a knee pinch, then a
-      // muscular calf bulge tapering to the ankle.
-      halfWidths: scaledLegWidths(const [13, 12.4, 7.0, 10.2, 7.4]),
+      // Tailored TROUSER profile, not a bare leg: a full thigh under the jacket
+      // hem flowing into a loosely-tapered trouser tube that stays wide all the
+      // way down to a broad hem. The old [13,12.4,7,10.2,7.4] pinched hard at the
+      // knee (7) and tapered to a thin ankle (7.4), so the part of the leg the
+      // jacket DOESN'T cover deflated into a rubber-hose noodle. Keeping the
+      // knee-down full (≥11) and the hem broad makes the visible suit read as
+      // trousers that break over the shoe instead of skinny calves.
+      halfWidths: scaledLegWidths(const [13, 12.5, 11, 11.5, 11]),
       z: 3,
       color: _trouserRear,
       outlineColor: _outline,
@@ -1077,7 +1082,7 @@ RigSpec buildCatInSuitRig({
         CatBones.footL,
       ],
       hiddenBoneIds: const [CatBones.legUpperL, CatBones.legLowerL],
-      halfWidths: scaledLegWidths(const [13, 12.4, 7.0, 10.2, 7.4]),
+      halfWidths: scaledLegWidths(const [13, 12.5, 11, 11.5, 11]),
       z: 6,
       color: _trouser,
       outlineColor: _outline,

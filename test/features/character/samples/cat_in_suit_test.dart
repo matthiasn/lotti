@@ -103,14 +103,16 @@ void main() {
       final baseTail = base.ribbons.singleWhere((r) => r.id == 'tail.ribbon');
       final leadTail = lead.ribbons.singleWhere((r) => r.id == 'tail.ribbon');
 
-      expect(baseLeg.halfWidths, const [13, 12.4, 7.0, 10.2, 7.4]);
+      // Tailored trouser profile: full thigh, loose knee-down, broad hem — no
+      // rubber-hose pinch below the jacket.
+      expect(baseLeg.halfWidths, const [13, 12.5, 11, 11.5, 11]);
       expect(
         leadLeg.halfWidths.first,
         closeTo(13 * kDanceLeadLegWidthScale, 0.001),
       );
       expect(
         leadLeg.halfWidths[3],
-        closeTo(10.2 * kDanceLeadLegWidthScale, 0.001),
+        closeTo(11.5 * kDanceLeadLegWidthScale, 0.001),
       );
       expect(baseArm.halfWidths, const [11.0, 12.6, 7.6, 4.6]);
       expect(
