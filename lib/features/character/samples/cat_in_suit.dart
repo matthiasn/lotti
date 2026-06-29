@@ -30,8 +30,10 @@ const int _sleeveNear =
 // toned down into the navy suit's cool family — still a distinct shirt cuff
 // against the sleeve, but dark enough that the cel gradient stays cloth.
 const int _cuff = 0xFF7E869C;
-const int _lapel = 0xFF3B4A6F; // jacket lapel — a step lighter than the suit so
-// the folded-back collar panels read as their own planes against the navy front.
+const int _lapel = 0xFF46588A; // jacket lapel — a CLEAR step lighter than the
+// suit so the folded-back collar panels read as their own planes against the
+// navy front even on the dimmed, cool-pooled backup dancers (a subtle step
+// vanished under their grade and left them reading as flat turtleneck blobs).
 const int _trouser = 0xFF26304A; // darker navy
 const int _trouserRear = 0xFF202941; // slightly darker rear leg
 const int _fur = 0xFFE8A55A; // orange tabby
@@ -128,12 +130,14 @@ class CatBones {
   static const armLowerL = 'arm_lower.L';
   static const handL = 'hand.L';
   static const thumbL = 'thumb.L';
+  static const knuckleL = 'knuckle.L';
   static const cuffL = 'cuff.L';
   static const armUpperR = 'arm_upper.R';
   static const armBicepR = 'arm_bicep.R';
   static const armLowerR = 'arm_lower.R';
   static const handR = 'hand.R';
   static const thumbR = 'thumb.R';
+  static const knuckleR = 'knuckle.R';
   static const cuffR = 'cuff.R';
   static const legUpperL = 'leg_upper.L';
   static const legQuadL = 'leg_quad.L';
@@ -528,6 +532,26 @@ RigSpec buildCatInSuitRig({
       restRotation: 0.6,
       drawable: _tapered(9, 5, 16, palette.fur, dy: 4, outlineWidth: 2.5),
     ),
+    // Knuckle ridge: a short light bar catching the key across the back of the
+    // fist, so the paw reads as a closed hand with knuckles instead of a plain
+    // ball. Light (muzzle tone) so it reads on dark fur where a shadow groove
+    // would vanish; drawn on top of the fist.
+    Bone(
+      id: CatBones.knuckleR,
+      parent: CatBones.handR,
+      pivotX: 0,
+      pivotY: 0,
+      z: 18,
+      restRotation: 0.12,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 14,
+        height: 3,
+        dy: 4,
+        cornerRadius: 1.5,
+        color: palette.muzzle,
+      ),
+    ),
     // Shirt CUFF: a short band at the WRIST where the jacket sleeve ends and the
     // hand begins (the hand pivot is at forearm-y 41), not a tall block up the
     // mid-forearm — the old 32-tall band sat in the middle of the forearm and
@@ -755,6 +779,22 @@ RigSpec buildCatInSuitRig({
       z: 17,
       restRotation: -0.6,
       drawable: _tapered(9, 5, 16, palette.fur, dy: 4, outlineWidth: 2.5),
+    ),
+    Bone(
+      id: CatBones.knuckleL,
+      parent: CatBones.handL,
+      pivotX: 0,
+      pivotY: 0,
+      z: 19,
+      restRotation: -0.12,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 14,
+        height: 3,
+        dy: 4,
+        cornerRadius: 1.5,
+        color: palette.muzzle,
+      ),
     ),
     const Bone(
       id: CatBones.cuffL,
