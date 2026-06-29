@@ -703,10 +703,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         _binding = BeatLoopBinding.barAligned(map, bars: kDancePhraseBars);
         _amplitudes = amplitudes;
         _sections = sections;
-        _waveformSections = [
-          for (final s in sections)
-            DanceWaveformSection(start: s.start, end: s.end, label: s.label),
-        ];
+        _waveformSections = _buildWaveformSections(spans, sections, duration);
         _words = words;
         _sectionSpans = spans;
         _cues = cues;
@@ -921,6 +918,62 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       );
     }
     return spans;
+  }
+
+  /// The transport timeline's section bands: the musical (lyric) sections when
+  /// available — labelled Verse/Chorus/Bridge/… with a leading Intro for any
+  /// pre-vocal gap — else the structural energy sections (A/B/C/D). Musical
+  /// names give the markers real information scent instead of recycled letters.
+  static List<DanceWaveformSection> _buildWaveformSections(
+    List<({double start, double end, String section})> spans,
+    List<_Section> structural,
+    double duration,
+  ) {
+    if (spans.isEmpty) {
+      return [
+        for (final s in structural)
+          DanceWaveformSection(start: s.start, end: s.end, label: s.label),
+      ];
+    }
+    final out = <DanceWaveformSection>[];
+    final first = spans.first.start;
+    if (first > 0.5) {
+      out.add(DanceWaveformSection(start: 0, end: first, label: 'Intro'));
+    }
+    for (final s in spans) {
+      out.add(
+        DanceWaveformSection(
+          start: s.start,
+          end: s.end,
+          label: _sectionDisplayName(s.section),
+        ),
+      );
+    }
+    return out;
+  }
+
+  /// A short, human display name for a lyric section tag.
+  static String _sectionDisplayName(String section) {
+    switch (section.toLowerCase()) {
+      case 'pre-chorus':
+        return 'Pre';
+      case 'post-chorus':
+        return 'Post';
+      case 'chorus':
+        return 'Chorus';
+      case 'verse':
+        return 'Verse';
+      case 'bridge':
+        return 'Bridge';
+      case 'intro':
+        return 'Intro';
+      case 'outro':
+        return 'Outro';
+      case '':
+        return '—';
+      default:
+        return section[0].toUpperCase() + section.substring(1);
+    }
   }
 
   /// Where [pos] sits inside the current semantic section: its label and progress
@@ -1494,6 +1547,11 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       ),
     );
     final section = _sectionAt(posSec);
+    // Prefer the musical section name (Verse/Chorus/…) for the now-playing chip
+    // when lyrics are loaded; fall back to the structural label otherwise.
+    final musicalLabel = _sectionSpans.isNotEmpty
+        ? _sectionDisplayName(_sectionInfoAt(posSec).section)
+        : section?.label;
     return Scaffold(
       backgroundColor: Colors.black,
       body: kDanceRenderOnly
@@ -1511,7 +1569,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                   bpm: _bpm,
                   positionSec: posSec,
                   durationSec: _trackDurationSec,
-                  currentSectionLabel: section?.label,
+                  currentSectionLabel: musicalLabel,
                   currentSectionEnergetic: section?.energetic ?? true,
                   amplitudes: _amplitudes,
                   sections: _waveformSections,

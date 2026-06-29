@@ -168,14 +168,10 @@ void main() {
       expect(rec.captions, 1);
     });
 
-    testWidgets('captions toggle is inert without lyrics', (tester) async {
-      final rec = await _pump(tester, captionsAvailable: false);
-      await tester.tap(
-        find.byIcon(Icons.closed_caption_off_rounded),
-        warnIfMissed: false,
-      );
-      await tester.pump();
-      expect(rec.captions, 0);
+    testWidgets('captions toggle is hidden without lyrics', (tester) async {
+      await _pump(tester, captionsAvailable: false);
+      expect(find.byIcon(Icons.closed_caption_off_rounded), findsNothing);
+      expect(find.byIcon(Icons.closed_caption_rounded), findsNothing);
     });
 
     testWidgets('tapping the timeline seeks proportionally', (tester) async {

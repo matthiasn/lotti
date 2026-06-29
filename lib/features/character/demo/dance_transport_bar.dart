@@ -1,4 +1,4 @@
-import 'dart:ui' as ui;
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -87,19 +87,24 @@ class DanceTransportBar extends StatelessWidget {
   }
 
   Widget _transportRow() {
+    // Program-monitor layout: time readout left, transport controls centred,
+    // metadata right — three anchored zones, so there is no hollow middle.
     return Row(
+      children: [
+        _timeGroup(),
+        Expanded(child: Center(child: _transportControls())),
+        _metaGroup(),
+      ],
+    );
+  }
+
+  Widget _transportControls() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         _playButton(),
         const SizedBox(width: 14),
         _toggleCluster(),
-        // Headline timecode, centred so the transport reads as one console
-        // instead of two islands across a dead gap.
-        Expanded(child: Center(child: _timecode())),
-        if (!loading) ...[
-          _bpmPill(),
-          const SizedBox(width: 8),
-          _sectionChip(),
-        ],
       ],
     );
   }
@@ -111,15 +116,18 @@ class DanceTransportBar extends StatelessWidget {
       child: Material(
         color: enabled ? _Chrome.accent : _Chrome.group,
         shape: const CircleBorder(),
+        // A little lift so the primary action clearly outranks the flat toggles.
+        elevation: enabled ? 3 : 0,
+        shadowColor: Colors.black,
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: enabled ? onPlayPause : null,
           child: SizedBox(
-            width: 46,
-            height: 46,
+            width: 40,
+            height: 40,
             child: Icon(
               playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              size: 28,
+              size: 24,
               color: enabled ? const Color(0xFF06231F) : _Chrome.textLow,
             ),
           ),
@@ -146,17 +154,21 @@ class DanceTransportBar extends StatelessWidget {
             tooltip: loop ? 'Looping track' : 'Play once',
             onTap: onToggleLoop,
           ),
-          const _VRule(height: 38, color: _Chrome.groupBorder),
-          _toggle(
-            icon: showCaptions
-                ? Icons.closed_caption_rounded
-                : Icons.closed_caption_off_rounded,
-            active: showCaptions && captionsAvailable,
-            enabled: captionsAvailable,
-            tooltip: showCaptions ? 'Hide lyrics' : 'Show lyrics',
-            onTap: onToggleCaptions,
-          ),
-          const _VRule(height: 38, color: _Chrome.groupBorder),
+          // Captions are hidden entirely when there are no lyrics, so an inert
+          // disabled control can never be mistaken for a live one (or vice versa).
+          if (captionsAvailable) ...[
+            const _VRule(height: 40, color: _Chrome.groupBorder),
+            _toggle(
+              icon: showCaptions
+                  ? Icons.closed_caption_rounded
+                  : Icons.closed_caption_off_rounded,
+              active: showCaptions,
+              enabled: true,
+              tooltip: showCaptions ? 'Hide lyrics' : 'Show lyrics',
+              onTap: onToggleCaptions,
+            ),
+          ],
+          const _VRule(height: 40, color: _Chrome.groupBorder),
           _toggle(
             // A backdrop-swap glyph, not a moon (which reads as dark-mode).
             icon: useNewBackdrop
@@ -189,23 +201,89 @@ class DanceTransportBar extends StatelessWidget {
       child: InkWell(
         onTap: enabled ? onTap : null,
         child: Container(
-          height: 38,
+          height: 40,
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(horizontal: 13),
-          color: active && enabled ? _Chrome.accentSoft : null,
+          // Active = a stronger teal wash AND a teal underline, so on/off reads
+          // by position too, not by icon tint alone.
+          decoration: active && enabled
+              ? const BoxDecoration(
+                  color: Color(0x334DD6C0),
+                  border: Border(
+                    bottom: BorderSide(color: _Chrome.accent, width: 2),
+                  ),
+                )
+              : null,
           child: Icon(icon, size: 19, color: color),
         ),
       ),
     );
   }
 
-  Widget _timecode() {
+  /// Left zone: the headline ms timecode + the musical bar.beat position.
+  Widget _timeGroup() {
     if (loading) {
       return const Text(
         'loading…',
         style: TextStyle(color: _Chrome.textMid, fontSize: 14),
       );
     }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [_timecode(), const SizedBox(width: 14), _barsBeats()],
+    );
+  }
+
+  /// Right zone: tempo/meter + the now-playing section, de-chipped (no
+  /// button-like boxes) so static readouts never look pressable.
+  Widget _metaGroup() {
+    if (loading) return const SizedBox.shrink();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _bpmMeter(),
+        const SizedBox(width: 18),
+        const _VRule(height: 28),
+        const SizedBox(width: 18),
+        _sectionReadout(),
+      ],
+    );
+  }
+
+  /// The musical position (bar.beat, 4/4) beside the ms timecode, so the tempo
+  /// grid and the headline time speak the same language instead of clashing.
+  Widget _barsBeats() {
+    final beatSec = bpm > 0 ? 60.0 / bpm : 0.5;
+    final totalBeats = positionSec / beatSec;
+    final bar = (totalBeats ~/ 4) + 1;
+    final beat = (totalBeats % 4).floor() + 1;
+    return Text.rich(
+      TextSpan(
+        children: [
+          const TextSpan(
+            text: 'BAR ',
+            style: TextStyle(
+              color: _Chrome.textLow,
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
+            ),
+          ),
+          TextSpan(
+            text: '$bar.$beat',
+            style: const TextStyle(
+              color: _Chrome.textMid,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _timecode() {
     return Text.rich(
       TextSpan(
         children: [
@@ -222,7 +300,7 @@ class DanceTransportBar extends StatelessWidget {
           TextSpan(
             text: '  / ${formatDancePlaybackTimestamp(durationSec)}',
             style: const TextStyle(
-              color: _Chrome.textLow,
+              color: _Chrome.textMid,
               fontSize: 14,
               fontFeatures: [FontFeature.tabularFigures()],
             ),
@@ -232,80 +310,76 @@ class DanceTransportBar extends StatelessWidget {
     );
   }
 
-  Widget _bpmPill() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: _Chrome.group,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _Chrome.groupBorder),
-      ),
-      child: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: bpm.toStringAsFixed(0),
-              style: const TextStyle(
-                color: _Chrome.textHi,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                fontFeatures: [FontFeature.tabularFigures()],
-              ),
-            ),
-            const TextSpan(
-              text: ' BPM',
-              style: TextStyle(
-                color: _Chrome.textLow,
-                fontSize: 9.5,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _sectionChip() {
-    final label = currentSectionLabel ?? '–';
-    final hue = _sectionHue(label);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(8, 6, 10, 6),
-      decoration: BoxDecoration(
-        color: _Chrome.group,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _Chrome.groupBorder),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+  /// Tempo + meter, as a plain readout (no button-like chrome).
+  Widget _bpmMeter() {
+    return Text.rich(
+      TextSpan(
         children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(color: hue, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 7),
-          Text(
-            label,
+          TextSpan(
+            text: bpm.toStringAsFixed(0),
             style: const TextStyle(
               color: _Chrome.textHi,
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
+              fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
-          const SizedBox(width: 7),
-          Text(
-            currentSectionEnergetic ? 'DANCE' : 'CALM',
+          const TextSpan(
+            text: ' BPM',
             style: TextStyle(
-              color: currentSectionEnergetic ? _Chrome.accent : _Chrome.textLow,
+              color: _Chrome.textLow,
               fontSize: 9.5,
               fontWeight: FontWeight.w800,
-              letterSpacing: 1.1,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const TextSpan(
+            text: '   4/4',
+            style: TextStyle(
+              color: _Chrome.textLow,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Now-playing section, as a plain readout: a hue dot + label + energy state.
+  /// "DANCE/CALM" is intentionally NOT teal — teal is reserved for interactive.
+  Widget _sectionReadout() {
+    final label = currentSectionLabel ?? '–';
+    final hue = _sectionHue(label);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(color: hue, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 7),
+        Text(
+          label,
+          style: const TextStyle(
+            color: _Chrome.textHi,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(width: 7),
+        Text(
+          currentSectionEnergetic ? 'DANCE' : 'CALM',
+          style: TextStyle(
+            color: currentSectionEnergetic ? _Chrome.textHi : _Chrome.textLow,
+            fontSize: 9.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.1,
+          ),
+        ),
+      ],
     );
   }
 
@@ -413,7 +487,6 @@ class _VRule extends StatelessWidget {
 abstract final class _Chrome {
   /// The single interactive accent (play, active toggles, playhead handle).
   static const Color accent = Color(0xFF4DD6C0);
-  static const Color accentSoft = Color(0x224DD6C0);
   static const Color panelTop = Color(0xFF1B2127);
   static const Color panelBottom = Color(0xFF0F1216);
   static const Color group = Color(0xFF222A33);
@@ -425,31 +498,46 @@ abstract final class _Chrome {
   static const Color textLow = Color(0xFF59626D);
   static const double radius = 10;
 
-  // Waveform = the neutral cool DATA layer, deliberately NOT the teal accent so
-  // "interactive" stays uniquely teal. Monotonic top→bottom shade (never
-  // centre-bright, which would fake amplitude).
-  static const Color wavePlayedTop = Color(0xFFB4CDDE);
-  static const Color wavePlayedBot = Color(0xFF6B8398);
-  static const Color waveCap = Color(0xFFD6E8F4);
-  static const Color waveAhead = Color(0xFF5A6772);
-  static const Color rulerText = Color(0xFF727E8A);
+  // Two-tone waveform (the neutral cool DATA layer, never the teal accent): a
+  // dim PEAK outline + a brighter RMS body, drawn symmetrically, so real
+  // dynamics read instead of a uniform sausage. Played is bright; ahead is
+  // clearly dimmer so progress reads from the waveform itself, not only the
+  // playhead.
+  static const Color wavePeakPlayed = Color(0xFF7E93A6);
+  static const Color waveBodyPlayed = Color(0xFFD3E7F4);
+  static const Color wavePeakAhead = Color(0xFF464F59);
+  static const Color waveBodyAhead = Color(0xFF727F8C);
+  static const Color rulerText = Color(0xFF7C8896);
   static const Color markerPill = Color(0xD90B0F14);
 }
 
 /// The structural hue for a section label. Recurring labels share a colour, so
 /// the timeline bands and the "now playing" chip read as the same clip.
 Color _sectionHue(String label) {
-  // Distinct per-section hues for the rehearsal marks — deliberately NO teal, so
-  // the structural colour-coding never collides with the interactive accent.
-  const palette = <String, Color>{
-    'A': Color(0xFFFF8A8A),
-    'B': Color(0xFF7AA2F0),
-    'C': Color(0xFFFFCE73),
-    'D': Color(0xFFBE9BF6),
-    'E': Color(0xFF86D98F),
-    'F': Color(0xFFF38AAE),
+  // A sober, low-chroma clip palette — colour-codes structure (recurring
+  // sections share a hue) WITHOUT a candy rainbow that fights the teal accent or
+  // the cool data waveform. Keyed by musical section name, with the structural
+  // A–F letters as a fallback.
+  final k = label.toLowerCase();
+  if (k.contains('chorus')) {
+    if (k.startsWith('pre')) return const Color(0xFFC7A86A); // pre → amber
+    if (k.startsWith('post')) return const Color(0xFFC089A0); // post → rose
+    return const Color(0xFFCB8B77); // chorus → terracotta (the hook)
+  }
+  if (k.contains('verse')) return const Color(0xFF7E97B2); // steel-blue
+  if (k.contains('bridge')) return const Color(0xFF9A86BE); // violet
+  if (k.contains('intro') || k.contains('outro')) {
+    return const Color(0xFF8893A0); // slate
+  }
+  const letters = <String, Color>{
+    'a': Color(0xFFCB8B77),
+    'b': Color(0xFF7E97B2),
+    'c': Color(0xFFC7A86A),
+    'd': Color(0xFF9A86BE),
+    'e': Color(0xFF7FB293),
+    'f': Color(0xFFC089A0),
   };
-  return palette[label] ?? const Color(0xFFB0BAC6);
+  return letters[k] ?? const Color(0xFF8893A0);
 }
 
 /// Paints the full-track timeline: faint section bands + markers, a filled
@@ -514,30 +602,32 @@ class _DanceTimelinePainter extends CustomPainter {
       final active = positionSec >= s.start && positionSec < s.end;
       final hue = _sectionHue(s.label);
       canvas
+        // Clip-region header: a saturated colored top-edge across the lane —
+        // reads as a clip's colour bar WITHOUT flooding/dirtying the waveform.
         ..drawRect(
-          Rect.fromLTRB(sx0, waveTop, sx1, size.height),
-          Paint()..color = hue.withValues(alpha: active ? 0.20 : 0.075),
+          Rect.fromLTRB(sx0, waveTop, sx1, waveTop + 4),
+          Paint()..color = hue.withValues(alpha: active ? 0.95 : 0.55),
         )
-        // Boundary line spanning the full height (ties marker → band → wave).
+        // Boundary line spanning the full height (ties marker → header → wave).
         ..drawRect(
           Rect.fromLTWH(sx0, 0, 1, size.height),
-          Paint()..color = const Color(0x22FFFFFF),
+          Paint()..color = const Color(0x1FFFFFFF),
         );
       if (active) {
-        // Frame the live band in its hue so structure reads from the band, not
-        // just the marker letter.
+        // The live region: a NEUTRAL cool wash + a hue frame — no hue flood over
+        // the data layer, so the waveform (and the whole ahead side) stays clean.
         canvas
           ..drawRect(
+            Rect.fromLTRB(sx0, waveTop + 4, sx1, size.height),
+            Paint()..color = const Color(0x0EFFFFFF),
+          )
+          ..drawRect(
             Rect.fromLTWH(sx0, waveTop, 1.5, h),
-            Paint()..color = hue.withValues(alpha: 0.7),
+            Paint()..color = hue.withValues(alpha: 0.8),
           )
           ..drawRect(
             Rect.fromLTWH(sx1 - 1.5, waveTop, 1.5, h),
-            Paint()..color = hue.withValues(alpha: 0.7),
-          )
-          ..drawRect(
-            Rect.fromLTRB(sx0, waveTop, sx1, waveTop + 2),
-            Paint()..color = hue.withValues(alpha: 0.9),
+            Paint()..color = hue.withValues(alpha: 0.8),
           );
       }
     }
@@ -550,16 +640,33 @@ class _DanceTimelinePainter extends CustomPainter {
     final barSec = 60.0 / bpm * 4;
     if (barSec <= 0) return;
     final h = size.height - waveTop;
-    var bar = 1;
+    // t = barSec is the start of bar 2; `bar` is the bar number at that line.
+    var bar = 2;
     for (var t = barSec; t < trackDurationSec; t += barSec, bar++) {
       final x = _x(t, size.width);
+      final phrase = (bar - 1) % 4 == 0; // downbeats of 4-bar phrases
       canvas.drawRect(
         Rect.fromLTWH(x, waveTop, 1, h),
         Paint()
-          ..color = bar % 4 == 0
-              ? const Color(0x12FFFFFF)
-              : const Color(0x07FFFFFF),
+          ..color = phrase ? const Color(0x26FFFFFF) : const Color(0x08FFFFFF),
       );
+      // Sparse bar numbers (every 8 bars) so the grid reads as bars, not just
+      // ticks — the musical reference a beat-sync tool needs.
+      if ((bar - 1) % 8 == 0) {
+        (TextPainter(
+          text: TextSpan(
+            text: '$bar',
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              color: Color(0x59FFFFFF),
+              fontSize: 8,
+              fontWeight: FontWeight.w600,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout()).paint(canvas, Offset(x + 3, waveTop + 3));
+      }
     }
   }
 
@@ -580,57 +687,42 @@ class _DanceTimelinePainter extends CustomPainter {
   }) {
     final n = amplitudes.length;
     final maxH = (waveBottom - waveTop) - 6;
-    final dx = size.width / n;
-    // A single mirrored envelope: across the tops, back along the bottoms.
-    final path = Path()..moveTo(0, mid);
-    for (var i = 0; i < n; i++) {
-      final x = i * dx + dx / 2;
-      final h = (amplitudes[i] * maxH).clamp(1.0, maxH);
-      path.lineTo(x, mid - h / 2);
+    // Symmetric two-tone sample bars: a dim PEAK outline with a brighter RMS
+    // body inside, expanded (pow > 1) so loud/quiet actually differ instead of
+    // reading as a uniform sausage. Played bright, ahead dim — so playback
+    // progress reads from the waveform itself, not only the playhead.
+    const pitch = 3.0;
+    const barW = 2.0;
+    final cols = math.max(1, size.width ~/ pitch);
+    for (var c = 0; c < cols; c++) {
+      final x = c * pitch;
+      final i0 = (c * n) ~/ cols;
+      final i1 = math.max(i0 + 1, ((c + 1) * n) ~/ cols);
+      var peak = 0.0;
+      var sum = 0.0;
+      var cnt = 0;
+      for (var i = i0; i < i1 && i < n; i++) {
+        final v = amplitudes[i];
+        if (v > peak) peak = v;
+        sum += v;
+        cnt++;
+      }
+      final rms = cnt > 0 ? sum / cnt : peak;
+      final peakH = (math.pow(peak, 1.35) * maxH).clamp(2, maxH).toDouble();
+      final bodyH = (math.pow(rms, 1.35) * maxH).clamp(1, peakH).toDouble();
+      final past = x + barW <= px;
+      canvas
+        ..drawRect(
+          Rect.fromLTWH(x, mid - peakH / 2, barW, peakH),
+          Paint()
+            ..color = past ? _Chrome.wavePeakPlayed : _Chrome.wavePeakAhead,
+        )
+        ..drawRect(
+          Rect.fromLTWH(x, mid - bodyH / 2, barW, bodyH),
+          Paint()
+            ..color = past ? _Chrome.waveBodyPlayed : _Chrome.waveBodyAhead,
+        );
     }
-    for (var i = n - 1; i >= 0; i--) {
-      final x = i * dx + dx / 2;
-      final h = (amplitudes[i] * maxH).clamp(1.0, maxH);
-      path.lineTo(x, mid + h / 2);
-    }
-    path
-      ..lineTo(0, mid)
-      ..close();
-
-    final played = Paint()
-      ..isAntiAlias = true
-      ..shader = ui.Gradient.linear(
-        Offset(0, waveTop),
-        Offset(0, waveBottom),
-        const [_Chrome.wavePlayedTop, _Chrome.wavePlayedBot],
-      );
-    final ahead = Paint()
-      ..isAntiAlias = true
-      ..color = _Chrome.waveAhead;
-    final capPlayed = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1
-      ..isAntiAlias = true
-      ..color = _Chrome.waveCap;
-    final capAhead = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1
-      ..isAntiAlias = true
-      ..color = const Color(0x66808E9B);
-
-    // Ahead fill on the right of the playhead, played on the left — one
-    // envelope split at the playhead, each with a crisp edge cap.
-    canvas
-      ..save()
-      ..clipRect(Rect.fromLTWH(px, 0, size.width - px, size.height))
-      ..drawPath(path, ahead)
-      ..drawPath(path, capAhead)
-      ..restore()
-      ..save()
-      ..clipRect(Rect.fromLTWH(0, 0, px, size.height))
-      ..drawPath(path, played)
-      ..drawPath(path, capPlayed)
-      ..restore();
   }
 
   /// The time ruler: ticks + `m:ss` labels at a tempo-independent nice interval.
@@ -687,25 +779,28 @@ class _DanceTimelinePainter extends CustomPainter {
       )..layout();
       final pillW = tp.width + 9;
       const pillH = _markerH - 1.0;
-      if (sx0 < lastRight + 4) continue;
+      if (sx0 < lastRight + 5) continue;
       final left = sx0 + 1;
       const top = _rulerH + 0.5;
       final rrect = RRect.fromRectAndRadius(
         Rect.fromLTWH(left, top, pillW, pillH),
         const Radius.circular(3),
       );
-      canvas.drawRRect(
-        rrect,
-        Paint()..color = active ? hue : _Chrome.markerPill,
-      );
-      if (!active) {
-        canvas.drawRRect(
-          rrect,
-          Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1
-            ..color = hue.withValues(alpha: 0.5),
-        );
+      if (active) {
+        canvas.drawRRect(rrect, Paint()..color = hue);
+      } else {
+        // A faint hue-tinted dark pill so the marks group by colour at a glance
+        // instead of reading as monochrome letter-soup.
+        canvas
+          ..drawRRect(rrect, Paint()..color = _Chrome.markerPill)
+          ..drawRRect(rrect, Paint()..color = hue.withValues(alpha: 0.20))
+          ..drawRRect(
+            rrect,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 1
+              ..color = hue.withValues(alpha: 0.55),
+          );
       }
       tp.paint(
         canvas,
@@ -717,28 +812,33 @@ class _DanceTimelinePainter extends CustomPainter {
 
   void _paintPlayhead(Canvas canvas, Size size, double px) {
     canvas
-      // Soft accent glow flanking the line, below the ruler.
+      // Soft teal glow flanking the line, below the ruler.
       ..drawRect(
-        Rect.fromLTWH(px - 1.5, _rulerH, 3, size.height - _rulerH),
-        Paint()..color = const Color(0x224DD6C0),
+        Rect.fromLTWH(px - 2, _rulerH, 4, size.height - _rulerH),
+        Paint()..color = const Color(0x2E4DD6C0),
       )
-      // The crisp full-height playhead line (brighter while playing).
+      // A dark casing so the teal line stays legible even over bright peaks…
+      ..drawRect(
+        Rect.fromLTWH(px - 1.5, 0, 3, size.height),
+        Paint()..color = const Color(0x59041C18),
+      )
+      // …then the crisp teal line — one accent for the whole playhead element.
       ..drawRect(
         Rect.fromLTWH(px - 0.75, 0, 1.5, size.height),
-        Paint()..color = playing ? Colors.white : Colors.white70,
+        Paint()..color = _Chrome.accent,
       );
-    // A rounded slider-thumb knob at the top with a soft shadow, so the
-    // playhead reads as draggable rather than a tick.
+    // A rounded slider-thumb knob at the top — soft shadow + grip lines — so the
+    // playhead reads unmistakably as a draggable scrub thumb, not a tick.
     final knob = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(px, 6), width: 13, height: 12),
+      Rect.fromCenter(center: Offset(px, 7), width: 16, height: 14),
       const Radius.circular(4),
     );
     canvas
       ..drawRRect(
         knob.shift(const Offset(0, 1)),
         Paint()
-          ..color = const Color(0x66000000)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
+          ..color = const Color(0x73000000)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
       )
       ..drawRRect(
         knob,
@@ -746,10 +846,13 @@ class _DanceTimelinePainter extends CustomPainter {
           ..isAntiAlias = true
           ..color = _Chrome.accent,
       )
-      // A thin grip notch in the knob centre.
       ..drawRect(
-        Rect.fromLTWH(px - 0.5, 3, 1, 6),
-        Paint()..color = const Color(0x66062521),
+        Rect.fromLTWH(px - 2.5, 4, 1, 6),
+        Paint()..color = const Color(0x80063029),
+      )
+      ..drawRect(
+        Rect.fromLTWH(px + 1.5, 4, 1, 6),
+        Paint()..color = const Color(0x80063029),
       );
   }
 
