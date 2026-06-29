@@ -200,7 +200,11 @@ class StageLightsPainter extends CustomPainter {
     // flagged the inverted focus — the backup pools were the most chromatic
     // objects in frame). With no designated lead, every pool renders at full gel.
     final demoted = hasLead && !isLead;
-    final i = l.intensity * (isLead ? 1.15 : (demoted ? 0.46 : 1.0));
+    // Lead pool core dropped from a 1.15 boost to 1.0 so the dark contact core
+    // stays the darkest value under him (it was reading as a bright spotlight
+    // decal that out-glowed its own AO). The lead still dominates via its larger
+    // radius + longer forward run + warm gel, not raw luminance.
+    final i = l.intensity * (isLead ? 1.0 : (demoted ? 0.46 : 1.0));
     // Backups: desaturate HARDER toward a cool blue-hour slate (was a neutral
     // grey) so the flanking pools stop advertising themselves as candy magenta/
     // violet and instead read as cool ambient spill supporting the warm lead.
@@ -225,11 +229,13 @@ class StageLightsPainter extends CustomPainter {
       ..transform(frame.storage);
     // Hot at the foot contact, fading downstage: the gradient centre rides up
     // near the foot (Alignment y < 0) while the ellipse body extends forward.
-    final cy = ry * 1.15;
+    // The lead's pool runs LONGER down the boards (a raking key streak rather
+    // than a circular spotlight decal) so it reads as light grazing the deck.
+    final cy = ry * (isLead ? 1.45 : 1.15);
     final spread = Rect.fromCenter(
       center: Offset(0, cy),
       width: rx * 2,
-      height: ry * 2.4,
+      height: ry * (isLead ? 3.0 : 2.4),
     );
     canvas.drawOval(
       spread,

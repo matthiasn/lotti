@@ -102,6 +102,58 @@ void main() {
     });
   });
 
+  testWidgets('blurSigma softens a hard edge into a gradient', (tester) async {
+    await tester.runAsync(() async {
+      const key = 'yacht';
+      // A vertical hard edge: left half black, right half white.
+      final recorder0 = ui.PictureRecorder();
+      Canvas(recorder0)
+        ..drawRect(
+          const Rect.fromLTWH(0, 0, 20, 16),
+          Paint()..color = const Color(0xFF000000),
+        )
+        ..drawRect(
+          const Rect.fromLTWH(20, 0, 20, 16),
+          Paint()..color = const Color(0xFFFFFFFF),
+        );
+      final source = await recorder0.endRecording().toImage(40, 16);
+      final ctx = BackdropContext(
+        size: const Size(40, 16),
+        timeSeconds: 0,
+        palette: kBlueHourPalette,
+        images: {key: source},
+      );
+
+      Future<List<int>> rowOf(ImageLayer layer) async {
+        final recorder = ui.PictureRecorder();
+        // Paint over a mid-grey so the blur has neutral surround.
+        final canvas = Canvas(recorder)
+          ..drawRect(
+            const Rect.fromLTWH(0, 0, 40, 16),
+            Paint()..color = const Color(0xFF808080),
+          );
+        layer.paint(canvas, ctx);
+        final out = await recorder.endRecording().toImage(40, 16);
+        final bytes = (await out.toByteData())!.buffer.asUint8List();
+        out.dispose();
+        return [for (var x = 0; x < 40; x++) bytes[(8 * 40 + x) * 4]];
+      }
+
+      final sharp = await rowOf(const ImageLayer(key));
+      final blurred = await rowOf(const ImageLayer(key, blurSigma: 3));
+
+      // Sharp: the edge column (x=19→20) jumps nearly black→white in one step.
+      expect(sharp[20] - sharp[19], greaterThan(150));
+      // Blurred: that same step is spread out, so the single-column jump is far
+      // smaller and the transition band carries intermediate greys.
+      expect(blurred[20] - blurred[19], lessThan(sharp[20] - sharp[19]));
+      expect(blurred[17], greaterThan(sharp[17])); // black side lifted by blur
+      expect(blurred[23], lessThan(sharp[23])); // white side pulled down
+
+      source.dispose();
+    });
+  });
+
   test('no-ops without throwing when the image has not decoded yet', () {
     const layer = ImageLayer('missing');
     const ctx = BackdropContext(

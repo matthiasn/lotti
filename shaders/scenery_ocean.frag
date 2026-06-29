@@ -180,14 +180,20 @@ void main() {
   // (vec3(1.0,0.62,0.32)), not the near-neutral glint tone the navy swamped.
   float reflCity = 0.0;
   for (int s = 0; s < 3; s++) {
-    float cx = s == 0 ? 0.15 : (s == 1 ? 0.20 : 0.27);
-    float str = s == 0 ? 1.0 : (s == 1 ? 0.9 : 0.6);
+    // Anchored on the MEASURED warm window centroids (0.15/0.22/0.33); the old
+    // 0.27 sat in a cool gap with no source above it.
+    float cx = s == 0 ? 0.15 : (s == 1 ? 0.22 : 0.33);
+    float str = s == 0 ? 1.0 : (s == 1 ? 0.9 : 0.85);
     float d = abs(art.x - cx) * aspect;
-    // Widen the column gently toward the viewer so the streak fans as it nears.
-    float colw = 0.02 + 0.035 * depth;
+    // ANISOTROPIC: keep sigma_x small (a tight vertical streak, not a wash blob)
+    // and let it fan only slightly toward the viewer.
+    float colw = 0.012 + 0.02 * depth;
     float col = exp(-pow(d / colw, 2.0));
-    float dash = smoothstep(0.35, 0.88,
-        fbm(vec2(art.x * 40.0, depth * 26.0 - uTime * 0.5 + float(s) * 7.0)));
+    // Break the streak into STACKED vertical dashes: the noise runs mostly along
+    // y (high depth frequency) so each column reads as ripple-broken segments
+    // rather than a horizontal smear.
+    float dash = smoothstep(0.3, 0.85,
+        fbm(vec2(art.x * 8.0, depth * 34.0 - uTime * 0.5 + float(s) * 7.0)));
     // Lip-weighted fall with a raised floor at the lip itself (so the column
     // doesn't go to dark navy right under the source) then a decay toward the
     // foreground — the brightest part sits under the source and it tapers to a
@@ -205,8 +211,11 @@ void main() {
   float colFallY = max(0.3, smoothstep(0.0, 0.04, depth)) * exp(-depth * 4.5);
   float reflYacht = colY * dashY * 0.9 * colFallY;
 
+  // Gain pushed to ~6x (measured: at 3.5x the warm peak never crossed neutral
+  // R-B — the cool plate still won). At this gain the column centre reads as a
+  // genuinely warm sodium reflection, not a faint less-blue patch.
   float reflCityA =
-      clamp(reflCity * clamp(uReflection, 0.0, 2.0) * 3.5, 0.0, 0.85);
+      clamp(reflCity * clamp(uReflection, 0.0, 2.0) * 6.0, 0.0, 0.9);
   float reflYachtA = clamp(reflYacht * clamp(uReflection, 0.0, 2.0), 0.0, 0.7);
   vec3 cityWarm = vec3(1.0, 0.62, 0.32);
   float reflA = reflCityA + reflYachtA; // combined coverage for the alpha sum

@@ -71,7 +71,11 @@ class BackdropScene {
         // reading as a sharp foreground hero competing with the lead — it now
         // recedes into the hazed midground. The warm cabin windows are added
         // after this (CityLightsLayer) so the interior glow still reads on top.
-        ImageLayer(SceneryAssets.yacht, modulate: Color(0xFF8696B0)),
+        ImageLayer(
+          SceneryAssets.yacht,
+          modulate: Color(0xFF8696B0),
+          blurSigma: 2.5,
+        ),
         // More windows lit (brighter highrises) than the 0.6 default; drawn
         // after the yacht so the warm cabin glow reads on top of the hull.
         CityLightsLayer(windowAmount: 0.8),
