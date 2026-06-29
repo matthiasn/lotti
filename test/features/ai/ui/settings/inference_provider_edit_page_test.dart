@@ -14,6 +14,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart'
     show MeliousInferenceException;
+import 'package:lotti/features/ai/repository/mistral_inference_repository.dart'
+    show MistralInferenceException;
 import 'package:lotti/features/ai/repository/omlx_inference_repository.dart'
     show OmlxInferenceException;
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
@@ -22,6 +24,7 @@ import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
     show
         AvailableModelsSection,
         meliousInferenceRepositoryProvider,
+        mistralInferenceRepositoryProvider,
         omlxInferenceRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
@@ -271,6 +274,24 @@ void main() {
         await expectLater(
           repository.listModels(baseUrl: '', apiKey: 'sk-mel-test'),
           throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
+
+    test(
+      'mistralInferenceRepositoryProvider wires the real reusable repository',
+      () async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final repository = container.read(mistralInferenceRepositoryProvider);
+        expect(
+          container.read(mistralInferenceRepositoryProvider),
+          same(repository),
+        );
+        await expectLater(
+          repository.listModels(baseUrl: '', apiKey: 'sk-mistral-test'),
+          throwsA(isA<MistralInferenceException>()),
         );
       },
     );
@@ -2223,7 +2244,7 @@ void main() {
       },
     );
 
-    testWidgets('shows modality chips for known models', (
+    testWidgets('shows capability chips for known models', (
       WidgetTester tester,
     ) async {
       await _setTestSurface(tester, height: 1600);
@@ -2253,9 +2274,20 @@ void main() {
       await tester.ensureVisible(availableModelsSection);
       await tester.pump();
 
-      // Should show modality chips (In: and Out: prefixes)
-      expect(find.textContaining('In:'), findsAtLeastNWidgets(1));
-      expect(find.textContaining('Out:'), findsAtLeastNWidgets(1));
+      // Catalog rows use the SAME capability vocabulary as installed model
+      // cards (Thinking / Image recognition / Transcription) rather than the
+      // old "In:/Out:" modality language — Gemini's multimodal reasoning
+      // models surface all three.
+      final strings = l10n(tester);
+      expect(
+        find.text(strings.aiCapabilityChipImageRecognition),
+        findsAtLeastNWidgets(1),
+      );
+      expect(
+        find.text(strings.aiCapabilityChipThinking),
+        findsAtLeastNWidgets(1),
+      );
+      expect(find.textContaining('In:'), findsNothing);
     });
 
     testWidgets(

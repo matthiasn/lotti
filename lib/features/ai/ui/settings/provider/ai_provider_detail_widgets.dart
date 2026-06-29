@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_connection_section.dart';
@@ -45,9 +46,9 @@ class DetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final showsDynamicModelCatalog =
-        provider.inferenceProviderType == InferenceProviderType.melious ||
-        provider.inferenceProviderType == InferenceProviderType.omlx;
+    final showsDynamicModelCatalog = ProviderConfig.supportsDynamicCatalog(
+      provider.inferenceProviderType,
+    );
     // Pad the bottom by the height the app's bottom nav bar occupies
     // (zero on desktop, ~88pt on mobile with the home indicator) plus
     // the page's normal step6 gap, so the danger-zone card always
@@ -67,13 +68,8 @@ class DetailBody extends StatelessWidget {
         SizedBox(height: tokens.spacing.step5),
         ConnectionSection(provider: provider, onEdit: onEdit),
         SizedBox(height: tokens.spacing.step6),
-        if (showsDynamicModelCatalog) ...[
-          AvailableModelsSection(
-            providerId: provider.id,
-            providerType: provider.inferenceProviderType,
-          ),
-          SizedBox(height: tokens.spacing.step6),
-        ],
+        // Installed models come first so users see what they already have
+        // before scrolling on to the searchable catalog below.
         ModelsSection(
           provider: provider,
           models: models,
@@ -81,6 +77,13 @@ class DetailBody extends StatelessWidget {
           onModelTap: onModelTap,
         ),
         SizedBox(height: tokens.spacing.step6),
+        if (showsDynamicModelCatalog) ...[
+          AvailableModelsSection(
+            providerId: provider.id,
+            providerType: provider.inferenceProviderType,
+          ),
+          SizedBox(height: tokens.spacing.step6),
+        ],
         if (activeProfile != null)
           ActiveProfileSection(
             profile: activeProfile!,

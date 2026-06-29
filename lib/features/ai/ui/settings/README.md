@@ -203,26 +203,29 @@ Persisted rows that predate the field deserialize with
 #### Dynamic Provider Catalogs
 
 The provider edit form normally renders the static `knownModelsByProvider`
-catalog for the selected provider type. Melious.ai and oMLX are the dynamic
-exceptions: for saved providers of either type, `AvailableModelsSection`
-fetches the live catalog from the provider's configured base URL. The same
-section is also embedded in the provider detail page before the installed
-`Models · N` list, so the endpoint-backed catalog is visible where users manage
-that provider. Melious uses the saved API key and `/models?include_meta=true`;
-oMLX calls the local OpenAI-compatible `/models` endpoint and only sends bearer
-auth when an API key is configured. The responses are translated into the same
-`KnownModel` shape used by static catalogs, so the UI can reuse the existing
-install tile and "Added" state. Live catalogs with more than eight rows render
-inside a bounded, searchable list so provider detail pages do not grow by the
-full endpoint result size.
+catalog for the selected provider type. Melious.ai, Mistral, and oMLX are the
+dynamic exceptions (`ProviderConfig.supportsDynamicCatalog`): for saved
+providers of these types, `AvailableModelsSection` fetches the live catalog from
+the provider's configured base URL. The same section is also embedded in the
+provider detail page **after** the installed `Models · N` list, so users see
+their configured models first and then scroll on to the searchable catalog.
+Melious uses the saved API key and `/models?include_meta=true`; Mistral uses the
+saved API key and `/v1/models`; oMLX calls the local OpenAI-compatible `/models`
+endpoint and only sends bearer auth when an API key is configured. The responses
+are translated into the same `KnownModel` shape used by static catalogs, so the
+UI can reuse the existing install tile and "Added" state. Live catalogs with
+more than eight rows render inside a bounded, searchable list so provider detail
+pages do not grow by the full endpoint result size.
 
 ```mermaid
 sequenceDiagram
   participant UI as Provider detail/edit UI
   participant Repo as AiConfigRepository
   participant Melious as MeliousInferenceRepository
+  participant Mistral as MistralInferenceRepository
   participant Omlx as OmlxInferenceRepository
   participant API as Melious /models
+  participant MistralAPI as Mistral /v1/models
   participant Local as oMLX /models
 
   UI->>Repo: load saved provider by ID
@@ -232,6 +235,11 @@ sequenceDiagram
   Melious->>API: GET /models?include_meta=true
   API-->>Melious: data[] with _meta capabilities
   Melious-->>UI: KnownModel[]
+  else Mistral
+  UI->>Mistral: listModels(baseUrl, apiKey)
+  Mistral->>MistralAPI: GET /v1/models
+  MistralAPI-->>Mistral: data[] with capabilities
+  Mistral-->>UI: KnownModel[]
   else oMLX
   UI->>Omlx: listModels(baseUrl, apiKey?)
   Omlx->>Local: GET /models

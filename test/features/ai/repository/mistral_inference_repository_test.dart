@@ -1,11 +1,15 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -33,6 +37,628 @@ void main() {
   });
 
   group('MistralInferenceRepository', () {
+    group('listModels', () {
+      const baseUrl = 'https://api.mistral.ai/v1';
+      const apiKey = 'mistral-key';
+
+      // Builds a repository whose `/models` GET is served by [handler].
+      MistralInferenceRepository repoWithHandler(
+        Future<http.Response> Function(http.Request request) handler,
+      ) {
+        final repo = MistralInferenceRepository(
+          httpClient: MockClient(handler),
+        );
+        addTearDown(repo.close);
+        return repo;
+      }
+
+      // Builds a repository that returns [body] with [status] for `/models`.
+      MistralInferenceRepository repoReturning(
+        Object? body, {
+        int status = 200,
+      }) {
+        return repoWithHandler(
+          (_) async => http.Response(
+            body is String ? body : jsonEncode(body),
+            status,
+          ),
+        );
+      }
+
+      // Fetches the single mapped model for a one-row catalog payload.
+      Future<KnownModel> mapSingle(Map<String, dynamic> row) async {
+        final models = await repoReturning({
+          'data': [row],
+        }).listModels(baseUrl: baseUrl, apiKey: apiKey);
+        return models.single;
+      }
+
+      group('argument validation', () {
+        test('rejects a blank base URL', () async {
+          await expectLater(
+            repoReturning(const {'data': <Map<String, dynamic>>[]}).listModels(
+              baseUrl: '   ',
+              apiKey: apiKey,
+            ),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                'Base URL cannot be empty',
+              ),
+            ),
+          );
+        });
+
+        test('rejects a blank API key', () async {
+          await expectLater(
+            repoReturning(const {'data': <Map<String, dynamic>>[]}).listModels(
+              baseUrl: baseUrl,
+              apiKey: '  ',
+            ),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                'API key cannot be empty',
+              ),
+            ),
+          );
+        });
+
+        test('rejects a malformed base URL before requesting', () async {
+          await expectLater(
+            repoReturning(const {'data': <Map<String, dynamic>>[]}).listModels(
+              baseUrl: 'http://[invalid',
+              apiKey: apiKey,
+            ),
+            throwsA(
+              isA<MistralInferenceException>()
+                  // The raw base URL must NOT be echoed back (it can carry
+                  // userinfo/query secrets).
+                  .having(
+                    (e) => e.message,
+                    'message',
+                    'Invalid Mistral base URL',
+                  )
+                  .having(
+                    (e) => e.message,
+                    'no url leak',
+                    isNot(contains('[')),
+                  ),
+            ),
+          );
+        });
+      });
+
+      group('request shape', () {
+        test('sends bearer auth to the /models endpoint', () async {
+          late http.Request captured;
+          final repo = repoWithHandler((request) async {
+            captured = request;
+            return http.Response(
+              jsonEncode(const {'data': <Map<String, dynamic>>[]}),
+              200,
+            );
+          });
+
+          final models = await repo.listModels(
+            baseUrl: '$baseUrl/',
+            apiKey: apiKey,
+          );
+
+          expect(models, isEmpty);
+          expect(captured.method, 'GET');
+          // Trailing slash on the base URL is normalised away.
+          expect(captured.url.toString(), '$baseUrl/models');
+          expect(captured.headers['authorization'], 'Bearer $apiKey');
+          expect(captured.headers['accept'], 'application/json');
+        });
+
+        test('accepts a bare JSON array catalog shape', () async {
+          final models = await repoReturning([
+            {'id': 'mistral-medium-latest'},
+          ]).listModels(baseUrl: baseUrl, apiKey: apiKey);
+
+          expect(models.single.providerModelId, 'mistral-medium-latest');
+        });
+      });
+
+      group('capability mapping', () {
+        test('maps a live chat+vision row with rich metadata', () async {
+          final model = await mapSingle({
+            'id': 'mistral-medium-2999',
+            'owned_by': 'mistralai',
+            'max_context_length': 131072,
+            'capabilities': {
+              'completion_chat': true,
+              'vision': true,
+              'function_calling': true,
+            },
+          });
+
+          expect(model.name, 'Mistral Medium 2999');
+          expect(model.inputModalities, [Modality.text, Modality.image]);
+          expect(model.outputModalities, [Modality.text]);
+          expect(model.supportsFunctionCalling, isTrue);
+          expect(model.isReasoningModel, isFalse);
+          expect(model.description, contains('Context: 131072 tokens'));
+          // Capabilities that render as chips (vision) are NOT duplicated in
+          // the description; only chip-less extras (tools) are listed.
+          expect(model.description, contains('Features: tools'));
+          expect(model.description, isNot(contains('vision')));
+          expect(model.description, isNot(contains('Owned by')));
+        });
+
+        test('treats Voxtral ids as audio transcription models', () async {
+          final model = await mapSingle({
+            'id': 'voxtral-small-2999',
+            'capabilities': {'completion_chat': true, 'vision': true},
+          });
+
+          // The transcription branch wins and short-circuits vision.
+          expect(model.inputModalities, [Modality.audio]);
+          expect(model.outputModalities, [Modality.text]);
+        });
+
+        test('honours an explicit audio capability flag', () async {
+          final model = await mapSingle({
+            'id': 'some-speech-model',
+            'capabilities': {'audio': true},
+          });
+
+          expect(model.inputModalities, [Modality.audio]);
+          expect(model.outputModalities, [Modality.text]);
+        });
+
+        test('honours an audio_transcription capability flag', () async {
+          final model = await mapSingle({
+            'id': 'another-speech-model',
+            'capabilities': {'audio_transcription': true},
+          });
+
+          expect(model.inputModalities, [Modality.audio]);
+        });
+
+        test('adds image input for OCR-capable models', () async {
+          final model = await mapSingle({
+            'id': 'pixtral-ocr-2999',
+            'capabilities': {'ocr': true},
+          });
+
+          expect(model.inputModalities, [Modality.text, Modality.image]);
+          expect(model.description, contains('OCR'));
+        });
+
+        test('adds image input from the document_ocr flag', () async {
+          final model = await mapSingle({
+            'id': 'doc-reader-2999',
+            'capabilities': {'document_ocr': true},
+          });
+
+          expect(model.inputModalities, contains(Modality.image));
+          expect(model.description, contains('OCR'));
+        });
+
+        test('infers OCR from the model id when no flag is present', () async {
+          final model = await mapSingle({
+            'id': 'mistral-ocr-latest',
+            'capabilities': {'completion_chat': true},
+          });
+
+          expect(model.name, 'Mistral OCR Latest');
+          expect(model.inputModalities, contains(Modality.image));
+        });
+
+        test('flags reasoning models by id heuristic', () async {
+          final model = await mapSingle({
+            'id': 'magistral-small-2999',
+            'capabilities': {'completion_chat': true},
+          });
+
+          expect(model.name, 'Magistral Small 2999');
+          expect(model.isReasoningModel, isTrue);
+        });
+
+        test('flags reasoning models from the capability flag', () async {
+          final model = await mapSingle({
+            'id': 'thinker-2999',
+            'capabilities': {'reasoning': true},
+          });
+
+          expect(model.isReasoningModel, isTrue);
+          // 'reasoning' is shown as the Thinking chip, not duplicated in prose.
+          expect(model.description, isNot(contains('reasoning')));
+        });
+
+        test(
+          'lists only chip-less features and parses string context',
+          () async {
+            final model = await mapSingle({
+              'id': 'kitchen-sink-2999',
+              'max_context_length': '256000',
+              'capabilities': {
+                'vision': true,
+                'ocr': true,
+                'audio_transcription': false,
+                'reasoning': true,
+                'function_calling': true,
+                'completion_fim': true,
+                'classification': true,
+                'fine_tuning': true,
+              },
+            });
+
+            expect(model.description, contains('Context: 256000 tokens'));
+            // vision + reasoning are chips and must NOT appear in the prose;
+            // only the chip-less extras remain.
+            expect(
+              model.description,
+              contains(
+                'Features: OCR, tools, fill-in-the-middle, '
+                'classification, fine-tuning',
+              ),
+            );
+            expect(model.description, isNot(contains('vision')));
+            expect(model.description, isNot(contains('reasoning')));
+          },
+        );
+
+        test(
+          'description is empty when only chip capabilities are present',
+          () async {
+            final model = await mapSingle({'id': 'plain-2999'});
+
+            expect(model.name, 'Plain 2999');
+            expect(model.inputModalities, [Modality.text]);
+            expect(model.outputModalities, [Modality.text]);
+            expect(model.supportsFunctionCalling, isFalse);
+            expect(model.description, isEmpty);
+          },
+        );
+      });
+
+      group('non-chat row filtering', () {
+        Future<List<String>> idsFor(List<Map<String, dynamic>> rows) async {
+          final models = await repoReturning({
+            'data': rows,
+          }).listModels(baseUrl: baseUrl, apiKey: apiKey);
+          return models.map((m) => m.providerModelId).toList();
+        }
+
+        test(
+          'drops chat-disabled rows with no other supported flow '
+          '(embeddings/classification/moderation)',
+          () async {
+            final ids = await idsFor([
+              {
+                'id': 'mistral-embed',
+                'capabilities': {'completion_chat': false},
+              },
+              {
+                'id': 'mistral-moderation-latest',
+                'capabilities': {
+                  'completion_chat': false,
+                  'classification': true,
+                },
+              },
+              {
+                'id': 'mistral-medium-2999',
+                'capabilities': {'completion_chat': true},
+              },
+            ]);
+
+            // Only the chat-capable row survives.
+            expect(ids, ['mistral-medium-2999']);
+          },
+        );
+
+        test(
+          'keeps a chat-disabled row that still offers vision/OCR',
+          () async {
+            final ids = await idsFor([
+              {
+                'id': 'pixtral-vision-only-2999',
+                'capabilities': {'completion_chat': false, 'vision': true},
+              },
+            ]);
+
+            expect(ids, ['pixtral-vision-only-2999']);
+          },
+        );
+
+        test('keeps rows that do not declare completion_chat at all', () async {
+          final ids = await idsFor([
+            {'id': 'legacy-model-2999'},
+          ]);
+
+          expect(ids, ['legacy-model-2999']);
+        });
+
+        test('never drops a curated model even if chat is disabled', () async {
+          final ids = await idsFor([
+            {
+              'id': 'mistral-small-2501',
+              'capabilities': {'completion_chat': false},
+            },
+          ]);
+
+          expect(ids, ['mistral-small-2501']);
+        });
+      });
+
+      group('truthy coercion', () {
+        test('treats numeric and string flags as booleans', () async {
+          // function_calling=1 (num), vision="true" (string) are both truthy;
+          // ocr=0 and reasoning="nope" are both falsey.
+          final model = await mapSingle({
+            'id': 'coercion-2999',
+            'capabilities': {
+              'function_calling': 1,
+              'vision': 'true',
+              'ocr': 0,
+              'reasoning': 'nope',
+            },
+          });
+
+          expect(model.supportsFunctionCalling, isTrue);
+          expect(model.inputModalities, contains(Modality.image));
+          expect(model.isReasoningModel, isFalse);
+        });
+      });
+
+      group('curated fallback', () {
+        test('returns a curated entry verbatim when no live caps', () async {
+          final curated = mistralModels.firstWhere(
+            (m) => m.providerModelId == 'voxtral-mini-latest',
+          );
+          final model = await mapSingle({'id': 'voxtral-mini-latest'});
+
+          expect(model.name, curated.name);
+          expect(model.inputModalities, curated.inputModalities);
+          expect(model.description, curated.description);
+        });
+
+        test('refines a curated entry when live caps are present', () async {
+          // mistral-small-2501 ships as [text, image]; a live reasoning flag
+          // upgrades it without dropping the curated modalities or the
+          // hand-tuned name/description carried downstream by toAiConfigModel.
+          final curated = mistralModels.firstWhere(
+            (m) => m.providerModelId == 'mistral-small-2501',
+          );
+          final model = await mapSingle({
+            'id': 'mistral-small-2501',
+            'capabilities': {'reasoning': true},
+          });
+
+          expect(model.name, curated.name);
+          expect(model.inputModalities, contains(Modality.image));
+          expect(model.isReasoningModel, isTrue);
+          // Curated metadata survives the live-capability refinement.
+          expect(model.description, curated.description);
+          expect(model.maxCompletionTokens, curated.maxCompletionTokens);
+        });
+      });
+
+      group('display name derivation', () {
+        test(
+          'title-cases ids, preserves acronyms and numeric tokens',
+          () async {
+            expect(
+              (await mapSingle({'id': 'ministral-3b-latest'})).name,
+              'Ministral 3B Latest',
+            );
+            expect(
+              (await mapSingle({'id': 'provider/codestral-vl'})).name,
+              'Codestral VL',
+            );
+          },
+        );
+
+        test('falls back to the raw id when no word survives', () async {
+          final model = await mapSingle({'id': '___'});
+          expect(model.name, '___');
+        });
+      });
+
+      group('error handling', () {
+        test('surfaces a structured error message with status', () async {
+          await expectLater(
+            repoReturning(
+              const {
+                'message': 'Unauthorized',
+              },
+              status: 401,
+            ).listModels(baseUrl: baseUrl, apiKey: apiKey),
+            throwsA(
+              isA<MistralInferenceException>()
+                  .having((e) => e.message, 'message', 'Unauthorized')
+                  .having((e) => e.statusCode, 'statusCode', 401),
+            ),
+          );
+        });
+
+        test('reads a nested error.message object', () async {
+          await expectLater(
+            repoReturning(
+              const {
+                'error': {'message': 'Rate limited'},
+              },
+              status: 429,
+            ).listModels(baseUrl: baseUrl, apiKey: apiKey),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                'Rate limited',
+              ),
+            ),
+          );
+        });
+
+        test('reads a string error field', () async {
+          await expectLater(
+            repoReturning(
+              const {'error': 'boom'},
+              status: 500,
+            ).listModels(baseUrl: baseUrl, apiKey: apiKey),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                'boom',
+              ),
+            ),
+          );
+        });
+
+        test('falls back to the HTTP status for an empty body', () async {
+          await expectLater(
+            repoReturning('', status: 503).listModels(
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            ),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                'Mistral API error (HTTP 503)',
+              ),
+            ),
+          );
+        });
+
+        test('clips an overlong non-JSON error body', () async {
+          final body = 'x' * 200;
+          await expectLater(
+            repoReturning(body, status: 500).listModels(
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            ),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                allOf(endsWith('…'), hasLength(161)),
+              ),
+            ),
+          );
+        });
+
+        test('returns a short JSON body without a usable message', () async {
+          await expectLater(
+            repoReturning(const {'foo': 'bar'}, status: 500).listModels(
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            ),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                '{"foo":"bar"}',
+              ),
+            ),
+          );
+        });
+
+        test('rejects a non-object, non-array payload', () async {
+          await expectLater(
+            repoReturning('"nope"').listModels(
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            ),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                contains('JSON object with data[]'),
+              ),
+            ),
+          );
+        });
+
+        test('rejects a non-object catalog row', () async {
+          await expectLater(
+            repoReturning(const {
+              'data': ['just-an-id'],
+            }).listModels(baseUrl: baseUrl, apiKey: apiKey),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                'Mistral model entry must be a JSON object',
+              ),
+            ),
+          );
+        });
+
+        test('rejects a row missing a string id', () async {
+          await expectLater(
+            repoReturning(const {
+              'data': [
+                {'id': 42},
+              ],
+            }).listModels(baseUrl: baseUrl, apiKey: apiKey),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                'Mistral model entry is missing a string id',
+              ),
+            ),
+          );
+        });
+
+        test('wraps invalid JSON responses', () async {
+          await expectLater(
+            repoReturning('not json {').listModels(
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            ),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                contains('was not valid JSON'),
+              ),
+            ),
+          );
+        });
+
+        test('wraps request timeouts', () async {
+          final repo = repoWithHandler(
+            (_) async => throw TimeoutException('slow'),
+          );
+          await expectLater(
+            repo.listModels(baseUrl: baseUrl, apiKey: apiKey),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                contains('timed out'),
+              ),
+            ),
+          );
+        });
+
+        test('wraps unexpected transport errors', () async {
+          final repo = repoWithHandler(
+            (_) async => throw const _TransportFailure(),
+          );
+          await expectLater(
+            repo.listModels(baseUrl: baseUrl, apiKey: apiKey),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                contains('Failed to fetch Mistral models'),
+              ),
+            ),
+          );
+        });
+      });
+    });
+
     group('generateText', () {
       const model = 'magistral-medium-2509';
       const baseUrl = 'https://api.mistral.ai/v1';
@@ -1916,4 +2542,13 @@ extension _AnyMistralMessagesScenario on glados.Any {
         (int count, int seed) =>
             _MistralMessagesScenario(count: count, seed: seed),
       );
+}
+
+/// A non-timeout, non-format transport error used to exercise the generic
+/// `Exception` branch of `listModels`.
+class _TransportFailure implements Exception {
+  const _TransportFailure();
+
+  @override
+  String toString() => 'transport failure';
 }

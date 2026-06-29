@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
@@ -34,6 +36,353 @@ class MistralInferenceRepository {
         subDomain: subDomain,
       );
     }
+  }
+
+  /// Default timeout for [listModels]. Exposed so test doubles can mirror the
+  /// production default instead of hardcoding a magic duration.
+  @visibleForTesting
+  static const modelListTimeout = Duration(seconds: 15);
+
+  /// Fetches the live Mistral model catalog and maps each row's capability
+  /// metadata into the app's [KnownModel] shape.
+  ///
+  /// Mistral's `/v1/models` listing carries a `capabilities` object
+  /// (`completion_chat`, `vision`, `function_calling`, `ocr`, …) plus
+  /// `name`, `description`, and `max_context_length`. Modalities are inferred
+  /// from those flags plus conservative id heuristics for the Voxtral (audio)
+  /// and OCR families, since Mistral's `type` field describes training lineage
+  /// (`base`, `fine-tuned`) rather than a modality.
+  Future<List<KnownModel>> listModels({
+    required String baseUrl,
+    required String apiKey,
+    Duration timeout = modelListTimeout,
+  }) async {
+    final normalizedBaseUrl = baseUrl.trim();
+    final normalizedApiKey = apiKey.trim();
+    if (normalizedBaseUrl.isEmpty) {
+      throw MistralInferenceException('Base URL cannot be empty');
+    }
+    if (normalizedApiKey.isEmpty) {
+      throw MistralInferenceException('API key cannot be empty');
+    }
+
+    final uri = _buildEndpointUri(normalizedBaseUrl, 'models');
+    // Log only host + path — never the full URI, which (from a user-configured
+    // base URL) can carry credentials in userinfo or tokens in the query.
+    developer.log(
+      'Fetching Mistral model catalog from ${_redactedEndpoint(uri)}',
+      name: 'MistralInferenceRepository',
+    );
+
+    try {
+      final response = await _httpClient
+          .get(
+            uri,
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': 'Bearer $normalizedApiKey',
+            },
+          )
+          .timeout(timeout);
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw MistralInferenceException(
+          _extractErrorMessage(response.body, response.statusCode),
+          statusCode: response.statusCode,
+        );
+      }
+
+      final decoded = jsonDecode(response.body);
+      final data = switch (decoded) {
+        {'data': final List<dynamic> data} => data,
+        final List<dynamic> data => data,
+        _ => throw MistralInferenceException(
+          'Mistral model list response must be a JSON object with data[] '
+          'or a JSON array',
+        ),
+      };
+
+      final models = <KnownModel>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) {
+          throw MistralInferenceException(
+            'Mistral model entry must be a JSON object',
+          );
+        }
+        final known = _knownModelFromPayload(item);
+        // Drop rows that map onto no app-supported flow (e.g. embeddings,
+        // classification, moderation) so they can't be installed as chat
+        // models and then fail at inference time.
+        if (_isInstallableRow(item, known)) {
+          models.add(known);
+        }
+      }
+      return models;
+    } on MistralInferenceException {
+      rethrow;
+    } on TimeoutException catch (e) {
+      throw MistralInferenceException(
+        'Mistral model list request timed out',
+        originalError: e,
+      );
+    } on FormatException catch (e) {
+      throw MistralInferenceException(
+        'Mistral model list response was not valid JSON',
+        originalError: e,
+      );
+    } on Exception catch (e) {
+      throw MistralInferenceException(
+        'Failed to fetch Mistral models: $e',
+        originalError: e,
+      );
+    }
+  }
+
+  KnownModel _knownModelFromPayload(Map<String, dynamic> model) {
+    final providerModelId = model['id'];
+    if (providerModelId is! String || providerModelId.trim().isEmpty) {
+      throw MistralInferenceException(
+        'Mistral model entry is missing a string id',
+      );
+    }
+
+    final knownModel = _knownMistralModels[providerModelId];
+    final capabilities =
+        _asMap(model['capabilities']) ?? const <String, dynamic>{};
+
+    // A curated entry with no live capability metadata to refine is returned
+    // verbatim so hand-tuned names and descriptions survive.
+    if (knownModel != null && capabilities.isEmpty) {
+      return knownModel;
+    }
+
+    final inputModalities = <Modality>[...?knownModel?.inputModalities];
+    final outputModalities = <Modality>[...?knownModel?.outputModalities];
+
+    _applyCapabilityModalities(
+      providerModelId: providerModelId,
+      capabilities: capabilities,
+      inputModalities: inputModalities,
+      outputModalities: outputModalities,
+    );
+
+    final supportsFunctionCalling =
+        knownModel?.supportsFunctionCalling == true ||
+        _truthy(capabilities['function_calling']);
+    final isReasoningModel =
+        knownModel?.isReasoningModel == true ||
+        _truthy(capabilities['reasoning']) ||
+        _looksLikeReasoningModel(providerModelId);
+
+    // Preserve curated display metadata (and the curated completion-token
+    // limit, which flows downstream via toAiConfigModel) when refining a known
+    // model with live capabilities. Purely live rows use a humanized id — for
+    // base models Mistral's own `name` just mirrors the id — and the concise
+    // derived description.
+    return KnownModel(
+      providerModelId: providerModelId,
+      name: knownModel?.name ?? _displayNameForModel(providerModelId),
+      inputModalities: inputModalities,
+      outputModalities: outputModalities,
+      isReasoningModel: isReasoningModel,
+      supportsFunctionCalling: supportsFunctionCalling,
+      maxCompletionTokens: knownModel?.maxCompletionTokens,
+      description:
+          knownModel?.description ??
+          _descriptionFor(model: model, capabilities: capabilities),
+    );
+  }
+
+  /// Whether a catalog row maps onto a flow the app can actually run. A row
+  /// that explicitly disables chat (`completion_chat: false`) and exposes no
+  /// other supported modality (vision/OCR image input, audio transcription, or
+  /// image output) is an embedding/classification/moderation model and is not
+  /// installable. Curated rows and rows that don't declare the flag are kept.
+  static bool _isInstallableRow(Map<String, dynamic> model, KnownModel known) {
+    if (_knownMistralModels.containsKey(known.providerModelId)) return true;
+    final capabilities = _asMap(model['capabilities']);
+    final chatExplicitlyDisabled =
+        capabilities != null &&
+        capabilities.containsKey('completion_chat') &&
+        !_truthy(capabilities['completion_chat']);
+    if (!chatExplicitlyDisabled) return true;
+    return known.inputModalities.contains(Modality.image) ||
+        known.inputModalities.contains(Modality.audio) ||
+        known.outputModalities.contains(Modality.image);
+  }
+
+  void _applyCapabilityModalities({
+    required String providerModelId,
+    required Map<String, dynamic> capabilities,
+    required List<Modality> inputModalities,
+    required List<Modality> outputModalities,
+  }) {
+    // Voxtral / transcription models take audio in and emit text; they never
+    // behave like chat or vision models.
+    if (_looksLikeTranscriptionModel(providerModelId) ||
+        _truthy(capabilities['audio']) ||
+        _truthy(capabilities['audio_transcription'])) {
+      _addUnique(inputModalities, Modality.audio);
+      _addUnique(outputModalities, Modality.text);
+      return;
+    }
+
+    // Everything else is a text chat surface by default.
+    _addUnique(inputModalities, Modality.text);
+    _addUnique(outputModalities, Modality.text);
+
+    // Vision and OCR models additionally accept image input.
+    if (_truthy(capabilities['vision']) ||
+        _truthy(capabilities['ocr']) ||
+        _truthy(capabilities['document_ocr']) ||
+        _looksLikeOcrModel(providerModelId)) {
+      _addUnique(inputModalities, Modality.image);
+    }
+  }
+
+  static void _addUnique(List<Modality> modalities, Modality modality) {
+    if (!modalities.contains(modality)) {
+      modalities.add(modality);
+    }
+  }
+
+  static Map<String, dynamic>? _asMap(Object? value) {
+    if (value is Map<String, dynamic>) return value;
+    return null;
+  }
+
+  String _descriptionFor({
+    required Map<String, dynamic> model,
+    required Map<String, dynamic> capabilities,
+  }) {
+    final parts = <String>[];
+
+    final contextLength = _integerValue(model['max_context_length']);
+    if (contextLength != null) {
+      parts.add('Context: $contextLength tokens.');
+    }
+
+    // Capabilities that already render as capability chips (vision -> Image
+    // recognition, audio -> Transcription, reasoning -> Thinking, image
+    // generation) are intentionally omitted so a row never describes the same
+    // capability twice. Only chip-less extras are listed here.
+    final featureLabels = <String>[
+      if (_truthy(capabilities['ocr']) || _truthy(capabilities['document_ocr']))
+        'OCR',
+      if (_truthy(capabilities['function_calling'])) 'tools',
+      if (_truthy(capabilities['completion_fim'])) 'fill-in-the-middle',
+      if (_truthy(capabilities['classification'])) 'classification',
+      if (_truthy(capabilities['fine_tuning'])) 'fine-tuning',
+    ];
+    if (featureLabels.isNotEmpty) {
+      parts.add('Features: ${featureLabels.join(', ')}.');
+    }
+
+    return parts.join(' ');
+  }
+
+  static int? _integerValue(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  static bool _truthy(Object? value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) return value.toLowerCase() == 'true';
+    return false;
+  }
+
+  static bool _looksLikeReasoningModel(String modelId) {
+    final normalized = modelId.toLowerCase();
+    return normalized.contains('magistral') ||
+        normalized.contains('reasoning') ||
+        normalized.contains('thinking');
+  }
+
+  static bool _looksLikeTranscriptionModel(String modelId) {
+    final normalized = modelId.toLowerCase();
+    return normalized.contains('voxtral') ||
+        normalized.contains('whisper') ||
+        normalized.contains('transcribe') ||
+        normalized.contains('transcription');
+  }
+
+  static bool _looksLikeOcrModel(String modelId) {
+    return modelId.toLowerCase().contains('ocr');
+  }
+
+  static String _displayNameForModel(String modelId) {
+    final leaf = modelId.split('/').last;
+    final words = leaf
+        .replaceAll(RegExp(r'[_\-.]+'), ' ')
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .map(_titleCaseModelWord);
+    final displayName = words.join(' ');
+    return displayName.isEmpty ? modelId : displayName;
+  }
+
+  static String _titleCaseModelWord(String word) {
+    final upper = word.toUpperCase();
+    const acronyms = {
+      'AI',
+      'API',
+      'FIM',
+      'OCR',
+      'VL',
+    };
+    if (acronyms.contains(upper)) return upper;
+    if (RegExp(r'^[a-z]?\d+[a-z]?$', caseSensitive: false).hasMatch(word)) {
+      return upper;
+    }
+    return '${word[0].toUpperCase()}${word.substring(1)}';
+  }
+
+  /// A safe-to-log representation of [uri]: host + path only, with any
+  /// userinfo (credentials) and query string (tokens) stripped.
+  static String _redactedEndpoint(Uri uri) {
+    final host = uri.host.isEmpty ? '<local>' : uri.host;
+    return '$host${uri.path}';
+  }
+
+  static Uri _buildEndpointUri(String baseUrl, String endpointPath) {
+    try {
+      final baseUri = Uri.parse(baseUrl.trim());
+      final basePath = baseUri.path.replaceAll(RegExp(r'/+$'), '');
+      final normalizedEndpoint = endpointPath.replaceAll(RegExp('^/+'), '');
+
+      return baseUri.replace(path: '$basePath/$normalizedEndpoint');
+    } on FormatException catch (e) {
+      // Never echo the raw base URL — it may carry userinfo/query secrets.
+      throw MistralInferenceException(
+        'Invalid Mistral base URL',
+        originalError: e,
+      );
+    }
+  }
+
+  static String _extractErrorMessage(String body, int statusCode) {
+    final fallback = 'Mistral API error (HTTP $statusCode)';
+    if (body.isEmpty) return fallback;
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        final error = decoded['error'];
+        if (error is Map<String, dynamic>) {
+          final message = error['message'];
+          if (message is String && message.isNotEmpty) return message;
+        }
+        if (error is String && error.isNotEmpty) return error;
+        final message = decoded['message'];
+        if (message is String && message.isNotEmpty) return message;
+      }
+    } catch (_) {
+      // Fall through to a clipped raw body.
+    }
+    return body.length > 160 ? '${body.substring(0, 160)}…' : body;
   }
 
   /// Generate text using the Mistral API with streaming support.
@@ -253,12 +602,9 @@ class MistralInferenceRepository {
     );
 
     try {
-      // Ensure proper URL construction - append path to baseUrl
-      final baseUri = Uri.parse(baseUrl);
-      final uri = baseUri.replace(
-        path:
-            '${baseUri.path}${baseUri.path.endsWith('/') ? '' : '/'}chat/completions',
-      );
+      // Single source of truth for endpoint URL construction (shared with
+      // listModels) so base-URL normalization can't drift between the two.
+      final uri = _buildEndpointUri(baseUrl, 'chat/completions');
       final request = http.Request('POST', uri);
       request.headers['Content-Type'] = 'application/json';
       request.headers['Accept'] = 'text/event-stream';
@@ -552,6 +898,10 @@ class MistralInferenceRepository {
   /// Closes the underlying HTTP client and any keep-alive connections.
   void close() => _httpClient.close();
 }
+
+final Map<String, KnownModel> _knownMistralModels = {
+  for (final model in mistralModels) model.providerModelId: model,
+};
 
 /// Exception thrown when Mistral operations fail.
 class MistralInferenceException implements Exception {

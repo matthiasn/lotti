@@ -71,8 +71,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - oMLX provider settings now fetch the local `/models` endpoint in the
   Available Models section, so any model exposed by the running oMLX server can
   be installed directly from the provider edit page.
+- Mistral provider settings now fetch the live `/v1/models` catalog in the
+  Available Models section, mapping each model's capabilities (vision, OCR,
+  audio transcription, reasoning, function calling) so you can search and
+  install any Mistral model — not just the curated defaults — directly from the
+  provider page.
 
 ### Changed
+- Provider detail pages now list your installed models above the searchable
+  model catalog, so you see what you already have before scrolling on to add
+  more (Melious, Mistral, and oMLX).
 - On platforms with HEIC/HEIF conversion support, image import now accepts
   high-efficiency inputs from drag-and-drop, file picker, and clipboard paste.
   Lotti preserves existing JPEG and PNG inputs as-is, converts ordinary

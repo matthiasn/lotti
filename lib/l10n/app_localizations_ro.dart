@@ -1886,6 +1886,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSettingsAddModelButton => 'Adaugă model';
 
   @override
+  String get aiSettingsAddModelErrorDescription =>
+      'A apărut o eroare la adăugarea modelului. Încercați din nou.';
+
+  @override
+  String get aiSettingsAddModelErrorTitle => 'Modelul nu a putut fi adăugat';
+
+  @override
   String get aiSettingsAddModelTooltip =>
       'Adaugă acest model la furnizorul tău';
 
@@ -1965,6 +1972,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiSettingsReasoningLabel => 'Raționament';
+
+  @override
+  String get aiSettingsRemoveModelTooltip =>
+      'Eliminați acest model de la furnizorul dvs.';
 
   @override
   String get aiSettingsSearchHint => 'Caută furnizori, modele, profiluri...';
@@ -2159,6 +2170,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get apiKeyDisplayNameLabel => 'Nume afișat';
+
+  @override
+  String get apiKeyDynamicModelsDescription =>
+      'Căutați în catalogul live de modele al acestui furnizor și adăugați orice model';
 
   @override
   String get apiKeyEditGoBackButton => 'Înapoi';

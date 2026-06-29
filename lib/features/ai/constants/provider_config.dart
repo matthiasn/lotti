@@ -75,6 +75,17 @@ class ProviderConfig {
     InferenceProviderType.mlxAudio,
   };
 
+  /// Provider types that expose a live, searchable model catalog.
+  ///
+  /// These providers return rich `/models` metadata (capabilities, modalities)
+  /// that is mapped into installable model rows in the settings UI, instead of
+  /// relying solely on the small curated `knownModelsByProvider` fallback list.
+  static const Set<InferenceProviderType> dynamicCatalogProviders = {
+    InferenceProviderType.melious,
+    InferenceProviderType.mistral,
+    InferenceProviderType.omlx,
+  };
+
   /// Get the default base URL for a provider type
   ///
   /// Returns an empty string if the provider type is not configured.
@@ -99,6 +110,11 @@ class ProviderConfig {
   /// Check if a provider type should expose a base URL field.
   static bool usesBaseUrl(InferenceProviderType type) {
     return !noBaseUrlRequired.contains(type);
+  }
+
+  /// Whether a provider type exposes a live, searchable model catalog.
+  static bool supportsDynamicCatalog(InferenceProviderType type) {
+    return dynamicCatalogProviders.contains(type);
   }
 }
 

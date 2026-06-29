@@ -1874,6 +1874,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiSettingsAddModelButton => 'Přidat model';
 
   @override
+  String get aiSettingsAddModelErrorDescription =>
+      'Při přidávání modelu se něco pokazilo. Zkus to prosím znovu.';
+
+  @override
+  String get aiSettingsAddModelErrorTitle => 'Model se nepodařilo přidat';
+
+  @override
   String get aiSettingsAddModelTooltip =>
       'Přidat tento model ke svému poskytovateli';
 
@@ -1956,6 +1963,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiSettingsReasoningLabel => 'Uvažování';
+
+  @override
+  String get aiSettingsRemoveModelTooltip =>
+      'Odebrat tento model od svého poskytovatele';
 
   @override
   String get aiSettingsSearchHint => 'Hledat poskytovatele, modely, profily...';
@@ -2149,6 +2160,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get apiKeyDisplayNameLabel => 'Zobrazovaný název';
+
+  @override
+  String get apiKeyDynamicModelsDescription =>
+      'Prohledej živý katalog modelů tohoto poskytovatele a přidej jakýkoli model';
 
   @override
   String get apiKeyEditGoBackButton => 'Zpět';
