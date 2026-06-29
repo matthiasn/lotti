@@ -46,10 +46,24 @@ hardcoded stand-in.** A blob at the right position is not the cat; a fixed
 the production widget composition and feed it live data through the real seams.
 
 Write a throwaway `test/_scratch_<thing>_test.dart` (the `_scratch_` prefix marks
-it disposable — **it is NEVER committed**). Render the production `Stack` /
+it disposable — **it is NEVER committed**). Render the production widget /
 painters and capture via `RepaintBoundary.toImage` **inside `tester.runAsync`** so
 disk images, decoded assets and `FragmentProgram.fromAsset` shaders actually
-resolve before the grab:
+resolve before the grab.
+
+> **Dancing-cats scene: render the generalized live path, do NOT rebuild it.**
+> The production composite is the `DanceStageView` widget
+> (`lib/features/character/demo/dance_stage_view.dart`) — the same one the live
+> player renders. Your `tree(t)` must wrap a `DanceStageView`, driven by a real
+> `DancePerformance` (`DancePerformance.fromBeatMapJson`) and a
+> `DancePlaybackStepper` you `advance(perf, cues, t, dt)` per frame (preroll a
+> couple of seconds first so the camera settles). Do **not** hand-assemble a
+> `Stack` of `LayeredBackdrop` + `StageLightsOverlay` + `CharacterPainter` — that
+> is a reconstruction that drifts from the app. The gel rig, backlights, body
+> grade, haze and cast scale all live inside `DanceStageView`; passing your own
+> copies is exactly the bug this refactor removed. (The offline canvas
+> `DanceFrameComposer` is the fast batch path; for a faithful still, pump
+> `DanceStageView` as below.)
 
 ```dart
 await tester.runAsync(() async {
