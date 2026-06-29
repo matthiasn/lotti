@@ -160,6 +160,24 @@ void main() {
       0.0,
       0.6);
 
+  // --- Warm reflection columns under the FIXED bright sources: the lit city
+  // windows (left ~0.20/0.34) and the moored yacht's interior glow (right
+  // ~0.85). The scene's structures don't move, so their x is baked here. Each is
+  // a soft column broken into vertical dashes that widen + brighten toward the
+  // foreground — the "broken reflection" tell the plate's static water lacks. ---
+  float refl = 0.0;
+  for (int s = 0; s < 3; s++) {
+    float cx = s == 0 ? 0.20 : (s == 1 ? 0.34 : 0.85);
+    float str = s == 0 ? 0.8 : (s == 1 ? 0.55 : 0.9);
+    float d = abs(art.x - cx) * aspect;
+    float colw = 0.016 + 0.03 * depth;
+    float col = exp(-pow(d / colw, 2.0));
+    float dash = smoothstep(0.45, 0.95,
+        fbm(vec2(art.x * 40.0, depth * 26.0 - uTime * 0.5 + float(s) * 7.0)));
+    refl += col * dash * str * (0.12 + 0.7 * depth);
+  }
+  float reflA = clamp(refl * clamp(uReflection, 0.0, 2.0), 0.0, 0.55);
+
   // --- Fresnel horizon sheen: at the grazing angle near the far shore the
   // lagoon mirrors the bright twilight sky, so the band just under the waterline
   // lifts toward a cool desaturated sky tone while the surface darkens toward the
@@ -173,8 +191,8 @@ void main() {
 
   // Summed colored contribution + summed coverage (city-lights convention).
   vec3 added = water * tintA + sheenCol * sheenA + uFoam.rgb * foamA +
-      uMoonGlint.rgb * glintA;
-  float coverage = clamp(tintA + sheenA + foamA + glintA, 0.0, 1.0);
+      uMoonGlint.rgb * (glintA + reflA);
+  float coverage = clamp(tintA + sheenA + foamA + glintA + reflA, 0.0, 1.0);
 
   // Static (UV-locked) grain. The old per-frame reseed (fract(uTime) in the hash)
   // re-randomised every pixel every frame, which BOILED the bright foam/water —
