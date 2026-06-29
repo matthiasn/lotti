@@ -465,15 +465,22 @@ class CharacterScene {
   }
 
   double _danceHeadVerticalCounter(double rootDy, double headBobScale) {
-    // The dance phrase now gets its level change from knees/hips/torso.
-    // Counter only part of the root bob so the skull reads rigid without
-    // visually detaching from the neck. A clip can ask for a stiller head
-    // (lower [headBobScale]) to absorb more of the bob — 0.4 of it at scale 1.0
-    // (the shipped dance), rising toward ~0.92 as the scale approaches 0 (a
-    // near-level head for the Pouncing glide).
+    // The dance phrase gets its level change from knees/hips/torso. The head
+    // must RIDE that level change with the collar, not hold still above it: the
+    // old counter reached ~0.82 of the bob for a low-bob clip (shaku at scale
+    // 0.2) and ~0.92 near scale 0, so when the body dropped in a knee-bend the
+    // skull stayed put and a long orange throat opened under it — the head read
+    // as loose / detached / unhealthy. The rigid (non-rubbery) read comes from
+    // the uniform-scale + rotation correction, NOT this translate, so the
+    // counter is kept light (the head tracks the collar) and CLAMPED so no
+    // groove extreme can ever lift the skull off the neck.
     const neutralDanceRootDy = 17.4;
-    final fraction = 0.4 + (1 - headBobScale) * 0.52;
-    return -(rootDy - neutralDanceRootDy) * fraction;
+    final fraction = 0.14 + (1 - headBobScale) * 0.1;
+    final counter = -(rootDy - neutralDanceRootDy) * fraction;
+    // Negative = head rises (the float direction): bound it hard so the join
+    // can never gap. Downward (head settling INTO the collar) is harmless, so
+    // it is allowed a little more room.
+    return counter.clamp(-2.0, 4.0);
   }
 
   double _danceHeadHorizontalCounter(double rootDx, double headBobScale) {
