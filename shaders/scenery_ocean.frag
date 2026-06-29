@@ -93,11 +93,11 @@ void main() {
   float foamAmt = 0.0;
   for (int i = 0; i < 3; i++) {
     float fi = float(i);
-    // Crest pitch in y: a MODERATE row count so crests are broad. High-frequency
-    // thin crests (the old 80-160 rows) scintillate as they advect — sub-pixel
-    // detail moving frame to frame reads as flicker — so the pitch is kept low
-    // enough that each crest spans several pixels and drifts smoothly.
-    float rows = mix(42.0, 14.0, depth) * (1.0 + fi * 0.4);
+    // Crest pitch in y: a LOW row count so crests are broad horizontal FILAMENTS,
+    // not a fine speckle. Dense rows (the old 42 near the waterline) compress to
+    // sub-pixel dots that read as sensor noise rather than moving foam, so the
+    // pitch is kept low enough that each crest spans many pixels.
+    float rows = mix(26.0, 9.0, depth) * (1.0 + fi * 0.4);
     float speed = 0.05 + fi * 0.035;
     float wob = fbm(vec2(x * uWaveScale * (0.12 + 0.06 * fi), depth * 3.0) -
         vec2(uTime * speed, 0.0));
@@ -107,15 +107,14 @@ void main() {
     float phase = depth * rows + wob * 3.5 +
         fbm(vec2(x * 1.7, depth * 6.0)) * 5.0 - uTime * (0.25 + speed);
     float crest = sin(phase);
-    // Soft, mostly-continuous break-up (FLOORED so it never drops fully to zero):
-    // whitecaps fade in and out and wander rather than popping hard on/off frame
-    // to frame, which is what read as flicker on the bright moving foam.
-    float dash = mix(0.4, 1.0, smoothstep(0.22, 0.74,
-        fbm(vec2(x * 4.0 + fi * 9.0, depth * 7.0 - uTime * (speed + 0.1)))));
-    // A WIDE, soft crest band: broad whitecaps with feathered edges read clearly
-    // at normal size and anti-alias as they move (a razor edge on a moving crest
-    // is what aliases/flickers).
-    foamAmt += smoothstep(0.46, 0.82, crest) * dash * (0.54 + 0.46 * wob);
+    // Break-up stretched HORIZONTALLY (x freq 2.0, not 4.0) so each whitecap is a
+    // long elongated filament with dark gaps between, not a row of dots; floored
+    // and advected so segments fade/wander rather than popping frame to frame.
+    float dash = mix(0.32, 1.0, smoothstep(0.3, 0.78,
+        fbm(vec2(x * 2.0 + fi * 9.0, depth * 7.0 - uTime * (speed + 0.1)))));
+    // A harder crest threshold gives discrete bright filaments with dark water
+    // between (was a soft mush); still feathered enough to anti-alias as it moves.
+    foamAmt += smoothstep(0.54, 0.86, crest) * dash * (0.54 + 0.46 * wob);
   }
   // Ease foam in just under the waterline and off at the very bottom, and bias
   // its brightness toward the viewer so the surface reads as receding water
@@ -135,30 +134,59 @@ void main() {
   // Peaks just under the waterline (depth ~0.02) and falls off by ~0.10, with a
   // wobble so it scallops instead of forming a clean stripe.
   float lip = (1.0 - smoothstep(0.0, 0.10, depth)) * smoothstep(0.0, 0.015, depth);
+  // Hard-broken scallop (dark gaps between bright tongues) so the contact line
+  // reads as broken foam tonguing onto the shore, not a continuous smear.
   float lipWob =
-      0.55 + 0.45 * fbm(vec2(x * 5.0, depth * 30.0 - uTime * 0.18));
+      0.3 + 0.7 * smoothstep(0.32, 0.82,
+          fbm(vec2(x * 5.0, depth * 30.0 - uTime * 0.18)));
   foamA = clamp(
-      foamA + lip * lipWob * 0.55 * clamp(uFoamDensity, 0.0, 1.0), 0.0, 0.95);
+      foamA + lip * lipWob * 0.78 * clamp(uFoamDensity, 0.0, 1.0), 0.0, 0.97);
   // NEAR foam: a broader broken wash where the lagoon laps the foreground
   // seawall/deck. This band is big and close to camera, so it is the foam that
   // actually reads — the far waterline lip alone is too distant to register.
   float nearLip =
-      smoothstep(0.80, 0.93, depth) * (1.0 - smoothstep(0.93, 1.0, depth));
-  float nearWob = 0.5 + 0.5 * fbm(vec2(x * 6.5, depth * 22.0 - uTime * 0.14));
+      smoothstep(0.78, 0.92, depth) * (1.0 - smoothstep(0.93, 1.0, depth));
+  float nearWob = 0.32 + 0.68 * smoothstep(0.3, 0.82,
+      fbm(vec2(x * 6.5, depth * 22.0 - uTime * 0.14)));
   foamA = clamp(
-      foamA + nearLip * nearWob * 0.6 * clamp(uFoamDensity, 0.0, 1.0), 0.0, 0.95);
+      foamA + nearLip * nearWob * 0.82 * clamp(uFoamDensity, 0.0, 1.0), 0.0, 0.97);
 
   // --- Moon glint: a soft, broken vertical shimmer under uMoonX. Kept gentle
   // (the plate already paints the city's reflections); ripples horizontally so
   // it twinkles rather than sitting as a solid blob. ---
   float colX = abs(art.x - uMoonX) * aspect;
-  float column = exp(-pow(colX / 0.05, 2.0));
-  float ripple = smoothstep(0.55, 1.0,
+  float column = exp(-pow(colX / 0.06, 2.0));
+  float ripple = smoothstep(0.5, 1.0,
       fbm(vec2(x * 18.0, depth * 14.0 - uTime * 0.4)));
   float glintA = clamp(
-      column * ripple * clamp(uReflection, 0.0, 2.0) * (0.28 + 0.6 * depth),
+      column * ripple * clamp(uReflection, 0.0, 2.0) * (0.4 + 0.7 * depth),
       0.0,
-      0.6);
+      0.72);
+
+  // --- Surface glitter: broad, low-frequency broken HORIZONTAL specular dashes
+  // running across the WHOLE lagoon, NOT anchored to any source. The reflection
+  // columns only live under the city/yacht, leaving the centre-front water (in
+  // front of the lead) a dead near-black slab; this cool rippled sheet ties the
+  // bright left to the receded right so the whole surface reads as living water
+  // rather than a painted board between the columns. ---
+  float glit = 0.0;
+  for (int k = 0; k < 2; k++) {
+    float fk = float(k);
+    float gw = fbm(vec2(x * 1.1, depth * 3.5) -
+        vec2(uTime * (0.06 + fk * 0.04), 0.0));
+    float gridge = sin(depth * mix(24.0, 9.0, depth) * (1.0 + fk * 0.6) +
+        gw * 4.0 - uTime * (0.16 + fk * 0.05));
+    float gseg = smoothstep(0.45, 0.92,
+        fbm(vec2(x * 1.6 + fk * 5.0, depth * 5.0 - uTime * 0.1)));
+    glit += smoothstep(0.62, 0.95, gridge) * gseg;
+  }
+  // Strongest in the mid-water, easing off at the far waterline and the deck.
+  float glitBand =
+      smoothstep(0.06, 0.32, depth) * (1.0 - smoothstep(0.86, 1.0, depth));
+  float glitA = clamp(glit * glitBand * 0.26, 0.0, 0.4);
+  // Cool sky-reflection tone (the surface mirrors the twilight sky between
+  // crests), warming a touch toward the city columns on the left.
+  vec3 glitCol = mix(uOceanHorizon.rgb * 1.7, uFoam.rgb, 0.35);
 
   // --- Warm reflection columns under the FIXED bright sources: the lit city
   // window cluster (left third, ~0.13/0.22/0.33) and the moored yacht's interior
@@ -190,6 +218,9 @@ void main() {
     float str = s == 0
         ? 0.7
         : s == 1 ? 1.0 : s == 2 ? 0.95 : s == 3 ? 0.75 : 0.8;
+    // Per-row horizontal wobble so the columns aren't a rigid parallel "barcode":
+    // real reflections ripple + smear sideways as the surface moves.
+    cx += 0.008 * sin(depth * 11.0 + float(s) * 1.7 - uTime * 0.5);
     float d = abs(art.x - cx) * aspect;
     // ANISOTROPIC: keep sigma_x small (a tight vertical streak, not a wash blob)
     // and let it fan only slightly toward the viewer.
@@ -269,14 +300,15 @@ void main() {
   // the cooler glint tone. The yacht reflection is summed in LATER (after the
   // hull footprint mask) so the mask can't erase it.
   vec3 added = water * tintA + sheenCol * sheenA + uFoam.rgb * foamA +
-      uMoonGlint.rgb * glintA + cityWarm * reflCityA;
-  float coverage = clamp(tintA + sheenA + foamA + glintA + reflCityA, 0.0, 1.0);
+      uMoonGlint.rgb * glintA + cityWarm * reflCityA + glitCol * glitA;
+  float coverage =
+      clamp(tintA + sheenA + foamA + glintA + reflCityA + glitA, 0.0, 1.0);
 
   // Static (UV-locked) grain. The old per-frame reseed (fract(uTime) in the hash)
   // re-randomised every pixel every frame, which BOILED the bright foam/water —
   // the #1 cause of the "flicker". A fixed-pattern dither textures the surface
   // without any temporal twinkle.
-  float g = (hash(frag) - 0.5) * min(uGrain, 0.03);
+  float g = (hash(frag) - 0.5) * min(uGrain, 0.014);
   added *= 1.0 + g;
 
   // Suppress the ocean behind the moored yacht (lower-right). Its lower-window
