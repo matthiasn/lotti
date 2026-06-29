@@ -24,11 +24,12 @@ Options:
   --audio-kbps N            AAC bitrate in kbps (default: 320)
   --x264-preset NAME        x264 preset (default: slow)
   --keep-frames             Keep rendered PNG frames beside the MP4
-  --no-captions             Do not burn lyric captions into the video
+  --captions                Burn lyric captions into the video
+  --no-captions             Do not burn lyric captions into the video (default)
   -h, --help                Show this help
 
 Examples:
-  tools/character_video_export/export_dance_video.sh --preset 1080p
+  tools/character_video_export/export_dance_video.sh --preset 1080p --fps 60
   tools/character_video_export/export_dance_video.sh --preset 720p --duration 30
   tools/character_video_export/export_dance_video.sh --start 80 --duration 12 --out build/hook.mp4
 EOF
@@ -52,7 +53,7 @@ crf="18"
 audio_kbps="320"
 x264_preset="slow"
 keep_frames="0"
-captions="1"
+captions="0"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -114,6 +115,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --keep-frames)
       keep_frames="1"
+      shift
+      ;;
+    --captions)
+      captions="1"
       shift
       ;;
     --no-captions)

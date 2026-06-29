@@ -5,7 +5,27 @@ description: Export the beat-synced character dance showcase to a verified MP4 w
 
 # Character Video Export
 
-MP4 export for the character dance demo. Prefer the real-time capture wrapper:
+MP4 export for the character dance demo. There are two paths:
+
+- **Master path:** deterministic raw-frame rendering through
+  `export_dance_video.sh`. Use this for final exports, 60 fps deliverables, or
+  any request where duplicated/dropped frames must be avoided.
+- **Preview path:** real-time Xvfb capture through
+  `export_dance_video_capture.sh`. Use this only for quick review clips where
+  occasional capture cadence jitter is acceptable.
+
+Prefer the deterministic wrapper when the user asks for a finished video:
+
+```bash
+tools/character_video_export/export_dance_video.sh
+```
+
+It runs `test/features/character/dance_video_export_test.dart`, renders exact
+frame indices through the Flutter engine, streams raw RGBA frames to `ffmpeg`,
+and muxes the selected audio as AAC. Captions are off by default for clean
+music-video exports; pass `--captions` only when burned-in lyrics are wanted.
+
+Use the real-time capture wrapper only for fast preview:
 
 ```bash
 tools/character_video_export/export_dance_video_capture.sh
@@ -15,17 +35,8 @@ It builds/runs the release Linux demo in render-only mode, captures the X displa
 with `ffmpeg`, and muxes the selected audio segment as AAC. Captions are off by
 default for clean music-video exports; pass `--captions` only when burned-in
 lyrics are wanted.
-
-Use the deterministic fallback wrapper only when exact offscreen frames matter
-more than speed:
-
-```bash
-tools/character_video_export/export_dance_video.sh
-```
-
-That fallback runs `test/features/character/dance_video_export_test.dart`,
-renders Flutter frames through the software test engine, streams raw RGBA frames
-to `ffmpeg`, and muxes the selected audio as AAC. It is very slow at 1080p.
+Because it is wall-clock screen capture, it can report `dup=`/`drop=` in ffmpeg
+progress and is not cadence-safe. Do not use it for master exports.
 
 ## Contract
 
@@ -34,6 +45,8 @@ to `ffmpeg`, and muxes the selected audio as AAC. It is very slow at 1080p.
 - Use `fvm` for Flutter commands.
 - Do not say the export is done unless the MP4 file exists and `ffprobe`
   confirms video + audio properties.
+- If ffmpeg reports duplicated or dropped frames in a capture export, keep the
+  file only as a preview artifact. Do not call it a final/master render.
 - If only the exporter/tooling was created or changed, say that clearly; that is
   not the same as producing the requested video artifact.
 - Keep audio, lyrics, beat maps, cue JSON, and rendered videos out of git unless
@@ -93,6 +106,9 @@ This requires `Xvfb`. If `Xvfb` is missing, do not fall back silently to the
 visible desktop; either install `xvfb` or use the slow deterministic fallback and
 clearly report that the speed requirement is not met on this machine.
 
+If the ffmpeg progress line contains nonzero `dup=` or `drop=`, the file is still
+useful for visual review but is not suitable as a master.
+
 For a tiny codec smoke of the deterministic fallback:
 
 ```bash
@@ -139,11 +155,11 @@ tools/character_video_export/export_dance_video_capture.sh \
 Full 1080p track:
 
 ```bash
-tools/character_video_export/export_dance_video_capture.sh \
+tools/character_video_export/export_dance_video.sh \
   --preset 1080p \
-  --fps 30 \
+  --fps 60 \
   --duration 144 \
-  --out build/character_video_exports/dance_1920x1080_30fps.mp4
+  --out build/character_video_exports/dance_1920x1080_60fps_master.mp4
 ```
 
 Fast 720p review export:
@@ -164,7 +180,7 @@ Both exporters encode with H.264 High profile, `yuv420p`, BT.709 tags,
 For a final 1080p upload file, verify at least:
 
 ```bash
-out=build/character_video_exports/dance_1920x1080_30fps.mp4
+out=build/character_video_exports/dance_1920x1080_60fps_master.mp4
 
 test -s "$out"
 
@@ -217,6 +233,8 @@ for this skill unless the user asks or the code change has broad impact.
   the wrapper default for deliverables.
 - 60 fps doubles frame count versus 30 fps. Use it only when motion quality
   justifies the render time.
+- Full 1080p60 deterministic exports can take hours on the VM. This is expected:
+  the tradeoff is exact frame indexing with no wall-clock capture dup/drop.
 - If an export is cancelled, remove partial MP4s before reporting results.
 
 ## See Also

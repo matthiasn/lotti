@@ -52,7 +52,7 @@ void main() {
         ? false
         : 'Set DANCE_EXPORT=1 or use '
               'tools/character_video_export/export_dance_video.sh',
-    timeout: const Timeout(Duration(hours: 2)),
+    timeout: const Timeout(Duration(hours: 12)),
   );
 }
 
@@ -139,7 +139,7 @@ final class _ExportConfig {
       // <= 0 means "to the end of the track".
       durationSec: _doubleEnv(env, 'DANCE_EXPORT_DURATION', 0),
       keepFrames: _boolEnv(env, 'DANCE_EXPORT_KEEP_FRAMES'),
-      captions: _boolEnv(env, 'DANCE_EXPORT_CAPTIONS', defaultValue: true),
+      captions: _boolEnv(env, 'DANCE_EXPORT_CAPTIONS'),
       crf: _intEnv(env, 'DANCE_EXPORT_CRF', 18),
       audioBitrateKbps: _intEnv(env, 'DANCE_EXPORT_AUDIO_KBPS', 320),
       x264Preset: env['DANCE_EXPORT_X264_PRESET'] ?? 'slow',

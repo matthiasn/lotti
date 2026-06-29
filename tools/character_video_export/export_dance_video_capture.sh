@@ -5,9 +5,14 @@ usage() {
   cat <<'EOF'
 Export the beat-synced character showcase by capturing the release Linux demo.
 
-This is the fast path: the app renders normally into an X display, ffmpeg
-captures that display in real time, and the original song segment is muxed as
-AAC. It requires Xvfb for non-disruptive offscreen capture.
+This is the fast preview path: the app renders normally into an X display,
+ffmpeg captures that display in real time, and the original song segment is
+muxed as AAC. It requires Xvfb for non-disruptive offscreen capture.
+
+Do not use this wrapper for master exports when dropped/duplicated frames must
+be avoided. Real-time X capture is wall-clock scheduled and can report ffmpeg
+dup/drop cadence corrections. Use export_dance_video.sh for exact frame-indexed
+master renders.
 
 Usage:
   tools/character_video_export/export_dance_video_capture.sh [options]
