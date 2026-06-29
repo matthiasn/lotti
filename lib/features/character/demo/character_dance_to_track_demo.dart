@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/features/character/demo/dance_camera_director.dart';
@@ -110,6 +112,29 @@ String get kDanceRenderReadyFile =>
 String get kDanceRenderStartFile =>
     Platform.environment['DANCE_RENDER_START_FILE'] ?? '';
 
+/// Exact-frame export mode for the release desktop app. Unlike X11 capture, the
+/// app steps a fixed frame clock, captures the stage [RepaintBoundary], and
+/// pipes raw RGBA frames to one ffmpeg process. This keeps the live app's render
+/// path while avoiding wall-clock duplicated/dropped capture frames.
+bool get kDanceAppExport => Platform.environment['DANCE_APP_EXPORT'] == '1';
+int get kDanceAppExportFps =>
+    int.tryParse(Platform.environment['DANCE_APP_EXPORT_FPS'] ?? '') ?? 60;
+double get kDanceAppExportDurationSec =>
+    double.tryParse(Platform.environment['DANCE_APP_EXPORT_DURATION'] ?? '') ??
+    0;
+String get kDanceAppExportOut =>
+    Platform.environment['DANCE_APP_EXPORT_OUT'] ??
+    'build/character_video_exports/dance_app_export.mp4';
+int get kDanceAppExportCrf =>
+    int.tryParse(Platform.environment['DANCE_APP_EXPORT_CRF'] ?? '') ?? 18;
+int get kDanceAppExportAudioKbps =>
+    int.tryParse(Platform.environment['DANCE_APP_EXPORT_AUDIO_KBPS'] ?? '') ??
+    320;
+String get kDanceAppExportX264Preset =>
+    Platform.environment['DANCE_APP_EXPORT_X264_PRESET'] ?? 'veryfast';
+double get kDanceAppExportWarmupSec =>
+    double.tryParse(Platform.environment['DANCE_APP_EXPORT_WARMUP'] ?? '') ?? 2;
+
 /// Native review window for the audio demo. The content being judged is the
 /// stage image, so keep the desktop window itself 16:9 during choreography and
 /// scenery review. If the WM still letterboxes, those bars are intentionally
@@ -166,6 +191,127 @@ typedef _Stage = ({
   bool energetic,
   bool synchronous, // false = canon (stagger the trio's phase, e.g. Pouncing)
 });
+
+final class _AppFrameEncoder {
+  _AppFrameEncoder._(
+    this._process,
+    this._stdoutDone,
+    this._stderrDone,
+    this._stderrBuffer,
+  );
+
+  static Future<_AppFrameEncoder> start({
+    required int width,
+    required int height,
+    required int fps,
+    required double startSec,
+    required double durationSec,
+    required String outputPath,
+    required String audioPath,
+    required int crf,
+    required int audioKbps,
+    required String x264Preset,
+  }) async {
+    final outputFile = File(outputPath);
+    outputFile.parent.createSync(recursive: true);
+    final args = [
+      '-y',
+      '-f',
+      'rawvideo',
+      '-pix_fmt',
+      'rgba',
+      '-s:v',
+      '${width}x$height',
+      '-framerate',
+      '$fps',
+      '-i',
+      'pipe:0',
+      '-ss',
+      startSec.toStringAsFixed(6),
+      '-t',
+      durationSec.toStringAsFixed(6),
+      '-i',
+      audioPath,
+      '-map',
+      '0:v:0',
+      '-map',
+      '1:a:0',
+      '-c:v',
+      'libx264',
+      '-preset',
+      x264Preset,
+      '-crf',
+      '$crf',
+      '-pix_fmt',
+      'yuv420p',
+      '-profile:v',
+      'high',
+      '-level',
+      '4.2',
+      '-r',
+      '$fps',
+      '-g',
+      '${math.max(1, (fps / 2).round())}',
+      '-bf',
+      '2',
+      '-colorspace',
+      'bt709',
+      '-color_primaries',
+      'bt709',
+      '-color_trc',
+      'bt709',
+      '-c:a',
+      'aac',
+      '-b:a',
+      '${audioKbps}k',
+      '-ar',
+      '48000',
+      '-movflags',
+      '+faststart',
+      '-shortest',
+      outputFile.path,
+    ];
+    final process = await Process.start('ffmpeg', args);
+    final stderrBuffer = StringBuffer();
+    final stdoutDone = process.stdout.drain<void>();
+    final stderrDone = process.stderr
+        .transform(utf8.decoder)
+        .forEach(stderrBuffer.write);
+    return _AppFrameEncoder._(
+      process,
+      stdoutDone,
+      stderrDone,
+      stderrBuffer,
+    );
+  }
+
+  final Process _process;
+  final Future<void> _stdoutDone;
+  final Future<void> _stderrDone;
+  final StringBuffer _stderrBuffer;
+  bool _killed = false;
+
+  Future<void> writeFrame(Uint8List rgba) async {
+    _process.stdin.add(rgba);
+    await _process.stdin.flush();
+  }
+
+  Future<void> finish() async {
+    await _process.stdin.close();
+    final exitCode = await _process.exitCode;
+    await _stdoutDone;
+    await _stderrDone;
+    if (exitCode != 0) {
+      throw StateError('ffmpeg failed with exit $exitCode\n$_stderrBuffer');
+    }
+  }
+
+  void kill() {
+    if (_killed) return;
+    _killed = true;
+    _process.kill();
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -234,6 +380,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
 
   final CharacterRenderer _renderer = CharacterRenderer();
   final Player _player = Player();
+  final GlobalKey _stageBoundaryKey = GlobalKey();
 
   // Cached clips: rebuilding a clip compiles the whole DancePhrase, so build all
   // six dance moves once and reuse them across sections. They share the same
@@ -360,6 +507,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   bool _renderReadySignaled = false;
   bool _renderStarted = false;
   double _renderClockSeconds = 0;
+  bool _appExportStarted = false;
 
   double get _positionSec {
     if (!kDanceRenderOnly) {
@@ -380,7 +528,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker(_onTick)..start();
+    _ticker = createTicker(_onTick);
+    if (!kDanceAppExport) _ticker.start();
     unawaited(_load());
     // Old-backdrop plate, loaded so the A/B toggle can switch to it instantly.
     unawaited(_loadBackdrop());
@@ -431,11 +580,12 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     // cycle/sweep (independent of the looping dance clock).
     _wallSeconds += dt;
     final pos = _positionSec;
-    // Mouth shape comes from the Rhubarb cue track (the actual vocal phonemes);
-    // the lyric voice tags only gate *which* cat shows it. The frontman is gated
-    // on lead words; the backups on the `(...)` ad-libs and the group-hook
-    // sections (chorus / post-chorus / outro), so the chorus reads as the whole
-    // trio. With no lyrics file, the frontman lip-syncs everything.
+    setState(() {
+      _advancePerformance(pos: pos, dt: dt);
+    });
+  }
+
+  void _advancePerformance({required double pos, required double dt}) {
     final cue = mouthForCue(cueShapeAt(_cues, pos));
     final leadOn =
         _words.isEmpty || _voiceActive(pos, (w) => w.voice == 'lead');
@@ -447,11 +597,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     );
     if (leadOn) _leadShape = cue.shape;
     if (bgOn) _bgShape = cue.shape;
-    // Advance the camera rig toward the director's target for this frame. Most
-    // framing changes ease into a dolly; the genre cuts snap — the downbeat into
-    // each chorus ([isChorusDrop]) and the bridge singer-features
-    // ([isBridgeCut]). [isHardCut] is kept as a reserved future hook.
-    final ctx = _directorContext(pos, energetic: _stageNow().energetic);
+    final stage = _stageAt(pos);
+    final ctx = _directorContext(pos, energetic: stage.energetic);
     final target = ctx == null ? _liveShot : cameraShot(ctx);
     _liveShot = _cameraRig.update(
       target: target,
@@ -460,10 +607,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
           (isHardCut(ctx) || isChorusDrop(ctx) || isBridgeCut(ctx)),
       dt: dt,
     );
-    setState(() {
-      _leadMouth = _easeMouth(_leadMouth, leadOn ? cue.open : 0.0, dt);
-      _bgMouth = _easeMouth(_bgMouth, bgOn ? cue.open : 0.0, dt);
-    });
+    _leadMouth = _easeMouth(_leadMouth, leadOn ? cue.open : 0.0, dt);
+    _bgMouth = _easeMouth(_bgMouth, bgOn ? cue.open : 0.0, dt);
   }
 
   /// Eases a mouth-open value toward [target] with a fast attack and slower
@@ -533,8 +678,117 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         _sectionSpans = spans;
         _cues = cues;
       });
+      if (kDanceAppExport) unawaited(_exportFramesFromApp());
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
+    }
+  }
+
+  Future<void> _exportFramesFromApp() async {
+    if (_appExportStarted) return;
+    _appExportStarted = true;
+    try {
+      if (kDanceAppExportFps <= 0) {
+        throw StateError('DANCE_APP_EXPORT_FPS must be positive');
+      }
+      final start = kDanceRenderStartSec.clamp(0.0, _trackDurationSec);
+      final duration = kDanceAppExportDurationSec > 0
+          ? math.min(kDanceAppExportDurationSec, _trackDurationSec - start)
+          : _trackDurationSec - start;
+      if (duration <= 0) throw StateError('export duration is empty');
+
+      await _waitForExportReadiness();
+
+      final frameCount = math.max(1, (duration * kDanceAppExportFps).ceil());
+      final dt = 1 / kDanceAppExportFps;
+      final encoder = await _AppFrameEncoder.start(
+        width: kDanceRenderWidth,
+        height: kDanceRenderHeight,
+        fps: kDanceAppExportFps,
+        startSec: start,
+        durationSec: duration,
+        outputPath: kDanceAppExportOut,
+        audioPath: kDanceAudioPath,
+        crf: kDanceAppExportCrf,
+        audioKbps: kDanceAppExportAudioKbps,
+        x264Preset: kDanceAppExportX264Preset,
+      );
+      var encoderFinished = false;
+      try {
+        _prerollExportClock(start: start, dt: dt);
+        final progressEvery = math.max(1, kDanceAppExportFps);
+        for (var frame = 0; frame < frameCount; frame++) {
+          final pos = start + frame * dt;
+          await _renderExportFrame(pos: pos, dt: dt);
+          await encoder.writeFrame(await _captureStageRgba());
+          if (frame % progressEvery == 0 || frame == frameCount - 1) {
+            stdout.writeln('rendered ${frame + 1}/$frameCount frames');
+          }
+        }
+        await encoder.finish();
+        encoderFinished = true;
+      } finally {
+        if (!encoderFinished) encoder.kill();
+      }
+      stdout.writeln('wrote $kDanceAppExportOut');
+      exit(0);
+    } on Object catch (e, st) {
+      stderr
+        ..writeln('dance app export failed: $e')
+        ..writeln(st);
+      exit(1);
+    }
+  }
+
+  Future<void> _waitForExportReadiness() async {
+    // Let the first frame build, then give LayeredBackdrop's async image/shader
+    // loads time to settle. This avoids exporting the CPU fallback / empty image
+    // state that can exist immediately after the widget tree is mounted.
+    await SchedulerBinding.instance.endOfFrame;
+    await Future<void>.delayed(
+      Duration(milliseconds: (kDanceAppExportWarmupSec * 1000).round()),
+    );
+    await SchedulerBinding.instance.endOfFrame;
+  }
+
+  void _prerollExportClock({required double start, required double dt}) {
+    final prerollStart = start <= 2 ? 0.0 : start - 2.0;
+    for (var t = prerollStart; t < start; t += dt) {
+      _renderClockSeconds = t - kDanceRenderStartSec;
+      _wallSeconds = t;
+      _advancePerformance(pos: t, dt: dt);
+    }
+  }
+
+  Future<void> _renderExportFrame({
+    required double pos,
+    required double dt,
+  }) async {
+    if (!mounted) throw StateError('export widget unmounted');
+    setState(() {
+      _renderClockSeconds = pos - kDanceRenderStartSec;
+      _wallSeconds = pos;
+      _advancePerformance(pos: pos, dt: dt);
+    });
+    await SchedulerBinding.instance.endOfFrame;
+  }
+
+  Future<Uint8List> _captureStageRgba() async {
+    final context = _stageBoundaryKey.currentContext;
+    if (context == null) throw StateError('stage boundary is not mounted');
+    final boundary = context.findRenderObject();
+    if (boundary is! RenderRepaintBoundary) {
+      throw StateError('stage boundary is not a RenderRepaintBoundary');
+    }
+    final image = await boundary.toImage();
+    try {
+      final data = await image.toByteData();
+      if (data == null) throw StateError('failed to read raw RGBA frame');
+      return Uint8List.fromList(
+        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+      );
+    } finally {
+      image.dispose();
     }
   }
 
@@ -841,8 +1095,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   /// loops via clipSecondsAt's own modulo across the track. The same `energetic`
   /// flag gates the virtual director ([_directorContext]): it performs on the dance
   /// and rests on a wide establish in the calm pockets.
-  _Stage _stageNow() {
-    final pos = _positionSec;
+  _Stage _stageNow() => _stageAt(_positionSec);
+
+  _Stage _stageAt(double pos) {
     final section = _sectionAt(pos);
     final map = _map;
     final binding = _binding;
@@ -1008,186 +1263,189 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     // contrast, near the 3 Hz threshold at fast tempos). Only the stage lighting
     // around the cats animates: the rim halo and the floor pools. The performers
     // stay lit; the rig pulses around them, exactly like real concert footage.
-    final stageView = Center(
-      // Lock the stage to 16:9 so the painted 2560x1440 art maps 1:1
-      // (cover == exact fit) and never crops or distorts; the resizable
-      // window letterboxes around it. Backdrop, dancers and captions are
-      // letterboxed together so the cats stay planted on the painted deck
-      // at any window size.
-      child: AspectRatio(
-        aspectRatio: 16 / 9,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Match character_demo: size the cast to the available height
-            // (the painter scales uniformly, so this is what keeps the cats
-            // correctly proportioned instead of squat at the default scale 1).
-            final scale = constraints.maxHeight * 0.78 / 300.0;
-            // Parallax the layered scene with the director's shot so it
-            // drifts behind the dancers (lagged) instead of sitting dead
-            // still, matching the foreground camera the painter applies.
-            final backdropTransform =
-                CharacterPainter.danceParallaxTransformForShot(
-                  shot: shot,
-                  size: Size(
-                    constraints.maxWidth,
-                    constraints.maxHeight,
-                  ),
-                );
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                // Layered blue-hour scene behind the dancers, driven by the
-                // same audio/dance clock so it moves with the music. Toggle
-                // to the old single-plate waterfront via the panel button.
-                if (_useNewBackdrop)
-                  Transform(
-                    transform: backdropTransform,
-                    filterQuality: FilterQuality.low,
-                    child: LayeredBackdrop(
-                      scene: BackdropScene.blueHourWaterfront(),
-                      // Use raw audio position, not wall time: scenery
-                      // pauses/seeks with the track, while the dance can
-                      // still run on the beat-locked phrase clock.
-                      timeSeconds: posSec,
-                      beatPulse: beat,
+    final stageView = RepaintBoundary(
+      key: _stageBoundaryKey,
+      child: Center(
+        // Lock the stage to 16:9 so the painted 2560x1440 art maps 1:1
+        // (cover == exact fit) and never crops or distorts; the resizable
+        // window letterboxes around it. Backdrop, dancers and captions are
+        // letterboxed together so the cats stay planted on the painted deck
+        // at any window size.
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Match character_demo: size the cast to the available height
+              // (the painter scales uniformly, so this is what keeps the cats
+              // correctly proportioned instead of squat at the default scale 1).
+              final scale = constraints.maxHeight * 0.78 / 300.0;
+              // Parallax the layered scene with the director's shot so it
+              // drifts behind the dancers (lagged) instead of sitting dead
+              // still, matching the foreground camera the painter applies.
+              final backdropTransform =
+                  CharacterPainter.danceParallaxTransformForShot(
+                    shot: shot,
+                    size: Size(
+                      constraints.maxWidth,
+                      constraints.maxHeight,
                     ),
-                  ),
-                // Aerial-perspective haze band at the waterline: a soft
-                // cool veil that lifts the distant city/water and
-                // separates the foreground cat plane (fades out above the
-                // dancers' feet so they stay crisp). Cheap atmospheric DoF
-                // stand-in. Frame-fixed (not parallaxed with the plate).
-                if (_useNewBackdrop)
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0x005E7088),
-                          Color(0x005E7088),
-                          Color(0x2C5E7088),
-                          Color(0x185E7088),
-                          Color(0x005E7088),
-                        ],
-                        stops: [0.0, 0.40, 0.52, 0.64, 0.76],
+                  );
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Layered blue-hour scene behind the dancers, driven by the
+                  // same audio/dance clock so it moves with the music. Toggle
+                  // to the old single-plate waterfront via the panel button.
+                  if (_useNewBackdrop)
+                    Transform(
+                      transform: backdropTransform,
+                      filterQuality: FilterQuality.low,
+                      child: LayeredBackdrop(
+                        scene: BackdropScene.blueHourWaterfront(),
+                        // Use raw audio position, not wall time: scenery
+                        // pauses/seeks with the track, while the dance can
+                        // still run on the beat-locked phrase clock.
+                        timeSeconds: posSec,
+                        beatPulse: beat,
                       ),
                     ),
-                    child: SizedBox.expand(),
-                  ),
-                // Floor pools UNDER the dancers' feet, grounding each
-                // cat in its gel without ever masking limbs or creating
-                // foreground occluder strips. The matching rim/halo is
-                // painted by CharacterPainter on the cat silhouettes.
-                if (_useNewBackdrop)
-                  StageLightsOverlay(
-                    timeSeconds: _wallSeconds,
-                    beat: beat,
-                    dancerAnchors: _dancerAnchors,
-                    rig: stageRig,
-                  ),
-                // Screen-fixed finishing grain over the full frame.
-                // The backdrop itself parallax-transforms with the
-                // camera; this pass stays in viewport space so the
-                // side bands get the same texture as the middle.
-                if (_useNewBackdrop) const SceneTextureOverlay(),
-                // Full-colour cats are the stars; the concert rig rings
-                // each one in its gel via memberBacklights (rim/halo) and
-                // grounds it with a floor pool below — no dimming, so the
-                // performers pop off the blue-hour deck.
-                CustomPaint(
-                  painter: CharacterPainter(
-                    scene: _lead,
-                    partnerScene: _left,
-                    ensembleScenes: [_left, _right],
-                    // Lip-sync: the frontman moves on lead words, the two
-                    // backups on background ad-libs.
-                    ensembleExpressions: [
-                      _singExpression(
-                        _leadMouth,
-                        Expression.neutral,
-                        _leadShape,
+                  // Aerial-perspective haze band at the waterline: a soft
+                  // cool veil that lifts the distant city/water and
+                  // separates the foreground cat plane (fades out above the
+                  // dancers' feet so they stay crisp). Cheap atmospheric DoF
+                  // stand-in. Frame-fixed (not parallaxed with the plate).
+                  if (_useNewBackdrop)
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color(0x005E7088),
+                            Color(0x005E7088),
+                            Color(0x2C5E7088),
+                            Color(0x185E7088),
+                            Color(0x005E7088),
+                          ],
+                          stops: [0.0, 0.40, 0.52, 0.64, 0.76],
+                        ),
                       ),
-                      _singExpression(
-                        _bgMouth,
-                        Expression.content,
-                        _bgShape,
-                      ),
-                      _singExpression(
-                        _bgMouth,
-                        Expression.happy,
-                        _bgShape,
-                      ),
-                    ],
-                    // Section-aware: the energetic dance trio in loud
-                    // sections, an eased idle in calm ones.
-                    ensembleClips: stage.ensemble,
-                    synchronousEnsemble: stage.synchronous,
-                    // Heads bob with the music; the singer's head rides the
-                    // vocal opening.
-                    singingHeadMotion: true,
-                    // Enables the multi-member (trio) render path; without
-                    // it the painter draws only the lead scene.
-                    walkingPair: true,
-                    clip: stage.lead,
-                    timeSeconds: stage.seconds,
-                    // The virtual director supplies the whole shot; the
-                    // painter applies it verbatim (cuts and all) instead of
-                    // the built-in eased push-in.
-                    cameraOverride: shot,
-                    // Publish live dancer positions so the stage lights
-                    // can track them (new scene only).
-                    onDancerAnchors: _useNewBackdrop
-                        ? (a) => _dancerAnchors = a
-                        : null,
-                    scale: scale,
-                    // New painted scene already has the deck, so drop the
-                    // flat grey floor band (it would sit over the painting);
-                    // the old plate keeps its band.
-                    groundColor: _useNewBackdrop
-                        ? null
-                        : const Color(0xFF374551),
-                    // New scene: LayeredBackdrop draws everything, so the
-                    // painter's own backdrop is off. Old scene: the painter
-                    // draws the single waterfront plate.
-                    backdrop: _useNewBackdrop
-                        ? CharacterBackdrop.none
-                        : CharacterBackdrop.waterfront,
-                    backdropImage: _useNewBackdrop ? null : _backdrop,
-                    backdropCloudsImage: _useNewBackdrop ? null : _clouds,
-                    backdropWavesImage: _useNewBackdrop ? null : _waves,
-                    // Each cat ringed in its gel (rim/halo hugging the
-                    // silhouette), tracked through the camera for free.
-                    // The body itself is never dimmed/pulsed — only this
-                    // edge halo and the floor pools animate (see above).
-                    memberBacklights: catBacklights,
-                    // Grade the cats INTO the twilight plate (static, not
-                    // beat-driven): a cool sky wrap up top fading to a
-                    // warm deck/city bounce down low, plus stronger deck
-                    // shadows so the trio is planted, not floating.
-                    bodyGrade: _useNewBackdrop
-                        ? const (
-                            skyWrap: Color(0x2E1F3354),
-                            deckWrap: Color(0x2E3A2616),
-                          )
-                        : null,
-                    // Hero-stage the trio (lead bigger/downstage) so the
-                    // frontman owns the frame — new scene only.
-                    heroStaging: _useNewBackdrop,
-                    renderer: _renderer,
+                      child: SizedBox.expand(),
+                    ),
+                  // Floor pools UNDER the dancers' feet, grounding each
+                  // cat in its gel without ever masking limbs or creating
+                  // foreground occluder strips. The matching rim/halo is
+                  // painted by CharacterPainter on the cat silhouettes.
+                  if (_useNewBackdrop)
+                    StageLightsOverlay(
+                      timeSeconds: _wallSeconds,
+                      beat: beat,
+                      dancerAnchors: _dancerAnchors,
+                      rig: stageRig,
+                    ),
+                  // Screen-fixed finishing grain over the full frame.
+                  // The backdrop itself parallax-transforms with the
+                  // camera; this pass stays in viewport space so the
+                  // side bands get the same texture as the middle.
+                  if (_useNewBackdrop) const SceneTextureOverlay(),
+                  // Full-colour cats are the stars; the concert rig rings
+                  // each one in its gel via memberBacklights (rim/halo) and
+                  // grounds it with a floor pool below — no dimming, so the
+                  // performers pop off the blue-hour deck.
+                  CustomPaint(
+                    painter: CharacterPainter(
+                      scene: _lead,
+                      partnerScene: _left,
+                      ensembleScenes: [_left, _right],
+                      // Lip-sync: the frontman moves on lead words, the two
+                      // backups on background ad-libs.
+                      ensembleExpressions: [
+                        _singExpression(
+                          _leadMouth,
+                          Expression.neutral,
+                          _leadShape,
+                        ),
+                        _singExpression(
+                          _bgMouth,
+                          Expression.content,
+                          _bgShape,
+                        ),
+                        _singExpression(
+                          _bgMouth,
+                          Expression.happy,
+                          _bgShape,
+                        ),
+                      ],
+                      // Section-aware: the energetic dance trio in loud
+                      // sections, an eased idle in calm ones.
+                      ensembleClips: stage.ensemble,
+                      synchronousEnsemble: stage.synchronous,
+                      // Heads bob with the music; the singer's head rides the
+                      // vocal opening.
+                      singingHeadMotion: true,
+                      // Enables the multi-member (trio) render path; without
+                      // it the painter draws only the lead scene.
+                      walkingPair: true,
+                      clip: stage.lead,
+                      timeSeconds: stage.seconds,
+                      // The virtual director supplies the whole shot; the
+                      // painter applies it verbatim (cuts and all) instead of
+                      // the built-in eased push-in.
+                      cameraOverride: shot,
+                      // Publish live dancer positions so the stage lights
+                      // can track them (new scene only).
+                      onDancerAnchors: _useNewBackdrop
+                          ? (a) => _dancerAnchors = a
+                          : null,
+                      scale: scale,
+                      // New painted scene already has the deck, so drop the
+                      // flat grey floor band (it would sit over the painting);
+                      // the old plate keeps its band.
+                      groundColor: _useNewBackdrop
+                          ? null
+                          : const Color(0xFF374551),
+                      // New scene: LayeredBackdrop draws everything, so the
+                      // painter's own backdrop is off. Old scene: the painter
+                      // draws the single waterfront plate.
+                      backdrop: _useNewBackdrop
+                          ? CharacterBackdrop.none
+                          : CharacterBackdrop.waterfront,
+                      backdropImage: _useNewBackdrop ? null : _backdrop,
+                      backdropCloudsImage: _useNewBackdrop ? null : _clouds,
+                      backdropWavesImage: _useNewBackdrop ? null : _waves,
+                      // Each cat ringed in its gel (rim/halo hugging the
+                      // silhouette), tracked through the camera for free.
+                      // The body itself is never dimmed/pulsed — only this
+                      // edge halo and the floor pools animate (see above).
+                      memberBacklights: catBacklights,
+                      // Grade the cats INTO the twilight plate (static, not
+                      // beat-driven): a cool sky wrap up top fading to a
+                      // warm deck/city bounce down low, plus stronger deck
+                      // shadows so the trio is planted, not floating.
+                      bodyGrade: _useNewBackdrop
+                          ? const (
+                              skyWrap: Color(0x2E1F3354),
+                              deckWrap: Color(0x2E3A2616),
+                            )
+                          : null,
+                      // Hero-stage the trio (lead bigger/downstage) so the
+                      // frontman owns the frame — new scene only.
+                      heroStaging: _useNewBackdrop,
+                      renderer: _renderer,
+                    ),
+                    child: const SizedBox.expand(),
                   ),
-                  child: const SizedBox.expand(),
-                ),
-                if (_showCaptions && _words.isNotEmpty)
-                  Positioned(
-                    left: 24,
-                    right: 24,
-                    top: 20,
-                    child: Center(child: _caption(posSec)),
-                  ),
-              ],
-            );
-          },
+                  if (_showCaptions && _words.isNotEmpty)
+                    Positioned(
+                      left: 24,
+                      right: 24,
+                      top: 20,
+                      child: Center(child: _caption(posSec)),
+                    ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

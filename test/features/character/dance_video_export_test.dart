@@ -216,7 +216,7 @@ final class _DanceVideoExporter {
 
     final frameCount = math.max(1, (duration * config.fps).ceil());
     final dt = 1 / config.fps;
-    final progressEvery = math.max(1, config.fps * 5);
+    final progressEvery = math.max(1, config.fps);
     final prerollStart = start <= 2 ? 0.0 : start - 2.0;
     for (var t = prerollStart; t < start; t += dt) {
       composer.advance(t, dt);
