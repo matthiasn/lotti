@@ -356,8 +356,8 @@ RigSpec buildCatInSuitRig({
         height: 12,
         // Toe points -x (local), which — through the locomotion mirror — makes
         // the shoe LEAD the direction of travel instead of trailing it.
-        dx: -10,
-        dy: 6,
+        dx: -9,
+        dy: 3.5,
         cornerRadius: 5,
         color: _shoe,
         outlineColor: _outline,
@@ -375,7 +375,7 @@ RigSpec buildCatInSuitRig({
         width: 23,
         height: 4,
         dx: -9,
-        dy: 10,
+        dy: 7,
         cornerRadius: 2,
         color: _shoeHighlight,
       ),
@@ -425,8 +425,8 @@ RigSpec buildCatInSuitRig({
         width: 32,
         height: 12,
         // Toe points -x (local) so the shoe leads travel — see footR.
-        dx: -10,
-        dy: 6,
+        dx: -9,
+        dy: 3.5,
         cornerRadius: 5,
         color: _shoe,
         outlineColor: _outline,
@@ -444,7 +444,7 @@ RigSpec buildCatInSuitRig({
         width: 23,
         height: 4,
         dx: -9,
-        dy: 10,
+        dy: 7,
         cornerRadius: 2,
         color: _shoeHighlight,
       ),
@@ -526,11 +526,11 @@ RigSpec buildCatInSuitRig({
     Bone(
       id: CatBones.thumbR,
       parent: CatBones.handR,
-      pivotX: -8,
-      pivotY: 3,
-      z: 16,
-      restRotation: 0.6,
-      drawable: _tapered(9, 5, 16, palette.fur, dy: 4, outlineWidth: 2.5),
+      pivotX: -9,
+      pivotY: 2,
+      z: 18,
+      restRotation: 0.95,
+      drawable: _tapered(11, 6, 18, palette.fur, dy: 6, outlineWidth: 2.5),
     ),
     // Knuckle ridge: a short light bar catching the key across the back of the
     // fist, so the paw reads as a closed hand with knuckles instead of a plain
@@ -774,11 +774,11 @@ RigSpec buildCatInSuitRig({
     Bone(
       id: CatBones.thumbL,
       parent: CatBones.handL,
-      pivotX: 8,
-      pivotY: 3,
-      z: 17,
-      restRotation: -0.6,
-      drawable: _tapered(9, 5, 16, palette.fur, dy: 4, outlineWidth: 2.5),
+      pivotX: 9,
+      pivotY: 2,
+      z: 19,
+      restRotation: -0.95,
+      drawable: _tapered(11, 6, 18, palette.fur, dy: 6, outlineWidth: 2.5),
     ),
     Bone(
       id: CatBones.knuckleL,
@@ -993,7 +993,7 @@ RigSpec buildCatInSuitRig({
       hiddenBoneIds: const [CatBones.legUpperR, CatBones.legLowerR],
       // Athletic leg profile: strong thigh under the hip, a knee pinch, then a
       // muscular calf bulge tapering to the ankle.
-      halfWidths: scaledLegWidths(const [13, 12.4, 7.8, 9.6, 5.4]),
+      halfWidths: scaledLegWidths(const [13, 12.4, 7.0, 10.2, 7.4]),
       z: 3,
       color: _trouserRear,
       outlineColor: _outline,
@@ -1010,7 +1010,7 @@ RigSpec buildCatInSuitRig({
         CatBones.footL,
       ],
       hiddenBoneIds: const [CatBones.legUpperL, CatBones.legLowerL],
-      halfWidths: scaledLegWidths(const [13, 12.4, 7.8, 9.6, 5.4]),
+      halfWidths: scaledLegWidths(const [13, 12.4, 7.0, 10.2, 7.4]),
       z: 6,
       color: _trouser,
       outlineColor: _outline,
