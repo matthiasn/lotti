@@ -522,10 +522,12 @@ abstract final class _Chrome {
   // BRIGHT raw-peak outline ringing a DARKER RMS core (like a Logic/Live clip).
   // Played is bright; ahead stays clearly dimmer but legible end-to-end, so the
   // whole song's shape previews and progress reads from the brightness step.
-  static const Color wavePeakPlayed = Color(0xFFCBE0F0); // bright outline
-  static const Color waveBodyPlayed = Color(0xFF6E8CA6); // darker core
-  static const Color wavePeakAhead = Color(0xFF74838F); // legible outline
-  static const Color waveBodyAhead = Color(0xFF454F5B); // dim core
+  // Neutral cool STEEL (low chroma) so teal is the bar's only chromatic accent;
+  // the played/ahead read comes from the brightness step, not from blue.
+  static const Color wavePeakPlayed = Color(0xFFC6D2DA); // bright outline
+  static const Color waveBodyPlayed = Color(0xFF6C7A86); // darker core
+  static const Color wavePeakAhead = Color(0xFF6E767E); // legible outline
+  static const Color waveBodyAhead = Color(0xFF424850); // dim core
   static const Color rulerText = Color(0xFF96A2AE);
   static const Color markerPill = Color(0xD90B0F14);
 }
@@ -579,8 +581,8 @@ class _DanceTimelinePainter extends CustomPainter {
   final double bpm;
   final bool playing;
 
-  static const double _rulerH = 14; // time ruler: ticks + m:ss labels
-  static const double _markerH = 13; // section rehearsal-mark pills
+  static const double _rulerH = 15; // time ruler: ticks + m:ss labels
+  static const double _markerH = 14; // section rehearsal-mark pills
   static const double _headerH = _rulerH + _markerH;
 
   double _x(double t, double width) =>
@@ -645,11 +647,11 @@ class _DanceTimelinePainter extends CustomPainter {
         canvas
           ..drawRect(
             Rect.fromLTWH(x - 1, waveTop, 3, size.height - waveTop),
-            Paint()..color = const Color(0x55060B10),
+            Paint()..color = const Color(0x66060B10),
           )
           ..drawRect(
             Rect.fromLTWH(x, waveTop, 1, size.height - waveTop),
-            Paint()..color = const Color(0x73FFFFFF),
+            Paint()..color = const Color(0x8CFFFFFF),
           );
       } else {
         // Bar lines stay a faint texture inside the wave lane.
@@ -765,7 +767,7 @@ class _DanceTimelinePainter extends CustomPainter {
           ),
         ),
         textDirection: TextDirection.ltr,
-      )..layout()).paint(canvas, Offset(x + 3, 2.5));
+      )..layout()).paint(canvas, Offset(x + 4, 3));
     }
   }
 
@@ -800,7 +802,7 @@ class _DanceTimelinePainter extends CustomPainter {
       final pillW = tp.width + 9;
       const pillH = _markerH - 1.0;
       if (sx0 < lastRight + 5) continue;
-      final left = sx0 + 1;
+      final left = sx0 < 3 ? 3.0 : sx0 + 1;
       const top = _rulerH + 0.5;
       final rrect = RRect.fromRectAndRadius(
         Rect.fromLTWH(left, top, pillW, pillH),
@@ -856,11 +858,11 @@ class _DanceTimelinePainter extends CustomPainter {
     // classic editor playhead, unmistakably a position marker rather than the
     // pause-glyph the old twin grip-bars read as.
     final flag = Path()
-      ..moveTo(px - 7, 0)
-      ..lineTo(px + 7, 0)
-      ..lineTo(px + 7, 10)
-      ..lineTo(px, 15)
-      ..lineTo(px - 7, 10)
+      ..moveTo(px - 8, 0)
+      ..lineTo(px + 8, 0)
+      ..lineTo(px + 8, 11)
+      ..lineTo(px, 17)
+      ..lineTo(px - 8, 11)
       ..close();
     canvas
       ..drawPath(
