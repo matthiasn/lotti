@@ -27,7 +27,7 @@ const int _sleeveNear =
 // the two CROSSED forearms reading as two distinct arms, not one fused band.
 const int _button = 0xFFAE955C; // muted brass placket button — a dark horn
 // button vanished on the navy front; a metal tone reads as a button line.
-const int _lapel = 0xFF46588A; // jacket lapel — a CLEAR step lighter than the
+const int _lapel = 0xFF5A6FA8; // jacket lapel — a CLEAR step lighter than the
 // suit so the folded-back collar panels read as their own planes against the
 // navy front even on the dimmed, cool-pooled backup dancers (a subtle step
 // vanished under their grade and left them reading as flat turtleneck blobs).
@@ -730,20 +730,20 @@ RigSpec buildCatInSuitRig({
     Bone(
       id: CatBones.lapelL,
       parent: CatBones.torso,
-      pivotX: -15,
-      pivotY: -88,
+      pivotX: -16,
+      pivotY: -90,
       z: 13,
       restRotation: 0.6,
-      drawable: _tapered(15, 5, 36, _lapel, dy: 16),
+      drawable: _tapered(18, 5, 42, _lapel, dy: 17),
     ),
     Bone(
       id: CatBones.lapelR,
       parent: CatBones.torso,
-      pivotX: 15,
-      pivotY: -88,
+      pivotX: 16,
+      pivotY: -90,
       z: 13,
       restRotation: -0.6,
-      drawable: _tapered(15, 5, 36, _lapel, dy: 16),
+      drawable: _tapered(18, 5, 42, _lapel, dy: 17),
     ),
     // Shirt collar: two white points standing at the base of the neck, inside
     // the navy lapels, with the tie knot dropping between them — so the head
@@ -804,10 +804,12 @@ RigSpec buildCatInSuitRig({
         kind: BoneShapeKind.taperedCapsule,
         // Slimmer than the knot and tapering steadily to the point — a narrow
         // necktie descending the shirt, not a wide lozenge bulging mid-torso.
+        // Long enough to reach down toward the placket button, not a stub
+        // floating mid-chest.
         width: 11,
         widthTip: 3,
-        height: 42,
-        dy: 19,
+        height: 54,
+        dy: 25,
         color: _tie,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -1060,10 +1062,13 @@ RigSpec buildCatInSuitRig({
       z: 19,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 24,
-        height: 24,
-        dy: -4,
-        cornerRadius: 10,
+        // A taller, slightly narrower neck column so a real neck shows between
+        // the chin and the collar (the chin was nearly meeting the collar, so
+        // the head read as a balloon on the blob).
+        width: 22,
+        height: 31,
+        dy: -2,
+        cornerRadius: 9,
         color: palette.furDark,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -1074,7 +1079,7 @@ RigSpec buildCatInSuitRig({
       id: CatBones.head,
       parent: CatBones.neck,
       pivotX: 0,
-      pivotY: -6,
+      pivotY: -9, // lifted a few px so the neck reads below the chin
       z: 20,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
