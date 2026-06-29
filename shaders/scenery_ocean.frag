@@ -129,7 +129,16 @@ void main() {
       clamp(foamAmt, 0.0, 1.2) * foamBand *
           clamp(uFoamDensity * (1.0 + 0.1 * beat), 0.0, 1.7),
       0.0,
-      0.62);
+      0.85);
+  // Foam LIP at the waterline: a brighter, broken band right where the water
+  // meets the seawall / far shore — the single strongest "this is liquid" cue.
+  // Peaks just under the waterline (depth ~0.02) and falls off by ~0.10, with a
+  // wobble so it scallops instead of forming a clean stripe.
+  float lip = (1.0 - smoothstep(0.0, 0.10, depth)) * smoothstep(0.0, 0.015, depth);
+  float lipWob =
+      0.55 + 0.45 * fbm(vec2(x * 5.0, depth * 30.0 - uTime * 0.18));
+  foamA = clamp(
+      foamA + lip * lipWob * 0.55 * clamp(uFoamDensity, 0.0, 1.0), 0.0, 0.95);
 
   // --- Moon glint: a soft, broken vertical shimmer under uMoonX. Kept gentle
   // (the plate already paints the city's reflections); ripples horizontally so
@@ -152,7 +161,7 @@ void main() {
   float fres = 1.0 - smoothstep(0.0, 0.55, depth);
   float sheenRipple = 0.75 + 0.25 * fbm(vec2(x * 6.0, depth * 22.0 - uTime * 0.3));
   vec3 sheenCol = mix(uOceanHorizon.rgb * 1.9, uFoam.rgb, 0.28);
-  float sheenA = fres * fres * 0.12 * sheenRipple;
+  float sheenA = fres * fres * 0.2 * sheenRipple;
 
   // Summed colored contribution + summed coverage (city-lights convention).
   vec3 added = water * tintA + sheenCol * sheenA + uFoam.rgb * foamA +
