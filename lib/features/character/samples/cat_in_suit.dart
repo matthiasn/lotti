@@ -107,6 +107,7 @@ class CatInSuitPalette {
 /// Stable bone ids, also the keys clips animate.
 class CatBones {
   static const hips = 'hips';
+  static const crotchSeam = 'crotch_seam';
   static const torso = 'torso';
   static const shirtV = 'shirt_v';
   static const collarL = 'collar.L';
@@ -514,6 +515,29 @@ RigSpec buildCatInSuitRig({
         outlineWidth: 2,
       ),
     ),
+    // Crotch inseam: a short dark wedge down the centreline below the pelvis,
+    // splitting the lower body into a LEFT and RIGHT trouser leg. Without it the
+    // jacket-skirt-to-legs junction read as one dark blob that forked into two
+    // stovepipes; this seam separates the thighs at the top. Drawn over the leg
+    // ribbons (z8) and under the pelvis (z9) so the pelvis caps its top.
+    const Bone(
+      id: CatBones.crotchSeam,
+      parent: CatBones.hips,
+      pivotX: 0,
+      pivotY: 16,
+      z: 8,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.taperedCapsule,
+        width: 7,
+        widthTip: 2,
+        height: 30,
+        dy: 15,
+        color: _trouserRear,
+        outlineColor: _outline,
+        outlineWidth: 1.5,
+        formRound: false,
+      ),
+    ),
 
     // Far (right) arm controls. The ribbon renderer hides these rigid segments
     // and draws one bendy arm surface through shoulder→elbow→wrist.
@@ -638,8 +662,8 @@ RigSpec buildCatInSuitRig({
       z: 17,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 17,
-        height: 10,
+        width: 19,
+        height: 12,
         cornerRadius: 4,
         // White shirt cuff (matching the collar), not the old muted grey: it
         // reads as the dress-shirt cuff breaking the navy sleeve at the wrist, so
@@ -759,6 +783,9 @@ RigSpec buildCatInSuitRig({
         color: _tie,
         outlineColor: _outline,
         outlineWidth: 2,
+        // Flat tie: the form-rounding bulged the blade into a fat red tube
+        // ballooning over the jacket front; keep it a flat knotted tie.
+        formRound: false,
       ),
     ),
     const Bone(
@@ -776,6 +803,7 @@ RigSpec buildCatInSuitRig({
         color: _tie,
         outlineColor: _outline,
         outlineWidth: 2,
+        formRound: false, // flat blade — see the knot
       ),
     ),
 
@@ -934,8 +962,8 @@ RigSpec buildCatInSuitRig({
       z: 18,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 17,
-        height: 10,
+        width: 19,
+        height: 12,
         cornerRadius: 4,
         // White shirt cuff at the wrist — see cuffR.
         color: _shirt,

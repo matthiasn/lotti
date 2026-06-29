@@ -21,6 +21,18 @@ void main() {
       expect(rig.bone(CatBones.neck)?.drawable, isNotNull);
     });
 
+    test('a centred crotch seam separates the trouser legs', () {
+      final seam = rig.bone(CatBones.crotchSeam);
+      expect(seam?.parent, CatBones.hips);
+      expect(seam?.pivotX, 0); // on the centreline between the two legs
+      // The shadowed rear-trouser tone so it reads as a recessed inseam, not a
+      // lit ridge.
+      final rearTrouser = rig.ribbons
+          .singleWhere((r) => r.id == 'leg.R.ribbon')
+          .color;
+      expect(seam?.drawable?.color, rearTrouser);
+    });
+
     test('a white shirt collar frames the neck under the tie', () {
       final shirtColor = rig.bone(CatBones.shirtV)?.drawable?.color;
       for (final id in [CatBones.collarL, CatBones.collarR]) {
