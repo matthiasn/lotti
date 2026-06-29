@@ -114,6 +114,8 @@ class CatBones {
   static const hips = 'hips';
   static const torso = 'torso';
   static const shirtV = 'shirt_v';
+  static const collarL = 'collar.L';
+  static const collarR = 'collar.R';
   static const lapelL = 'lapel.L';
   static const lapelR = 'lapel.R';
   static const jacketHem = 'jacket_hem';
@@ -676,6 +678,29 @@ RigSpec buildCatInSuitRig({
       z: 13,
       restRotation: -0.6,
       drawable: _tapered(15, 5, 36, _lapel, dy: 16),
+    ),
+    // Shirt collar: two white points standing at the base of the neck, inside
+    // the navy lapels, with the tie knot dropping between them — so the head
+    // rises OUT of a collar instead of sitting straight on the jacket. Flat-shaded
+    // (celShade:false) like the other small bright shapes so the key can't streak
+    // them; drawn over the lapels (list order) and under the tie knot (z14).
+    Bone(
+      id: CatBones.collarL,
+      parent: CatBones.torso,
+      pivotX: -10,
+      pivotY: -93,
+      z: 13,
+      restRotation: 0.42,
+      drawable: _tapered(12, 3, 22, _shirt, dy: 10, celShade: false),
+    ),
+    Bone(
+      id: CatBones.collarR,
+      parent: CatBones.torso,
+      pivotX: 10,
+      pivotY: -93,
+      z: 13,
+      restRotation: -0.42,
+      drawable: _tapered(12, 3, 22, _shirt, dy: 10, celShade: false),
     ),
 
     // Tie: a 2-link cloth pendulum over the jacket. The knot is short and nearly

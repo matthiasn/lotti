@@ -21,6 +21,24 @@ void main() {
       expect(rig.bone(CatBones.neck)?.drawable, isNotNull);
     });
 
+    test('a white shirt collar frames the neck under the tie', () {
+      final shirtColor = rig.bone(CatBones.shirtV)?.drawable?.color;
+      for (final id in [CatBones.collarL, CatBones.collarR]) {
+        final collar = rig.bone(id);
+        expect(collar?.parent, CatBones.torso);
+        // Same off-white shirt fabric as the chest V, so the head reads as
+        // rising out of a collar rather than pasted onto the jacket.
+        expect(collar?.drawable?.color, shirtColor);
+        // Flat-shaded so the key can't streak the small bright shape.
+        expect(collar?.drawable?.celShade, isFalse);
+      }
+      // The two points mirror left/right about the centreline.
+      expect(
+        rig.bone(CatBones.collarL)!.pivotX,
+        -rig.bone(CatBones.collarR)!.pivotX,
+      );
+    });
+
     test('shoes carry small moving highlights for footwork readability', () {
       expect(rig.bone(CatBones.shoeHighlightL)?.parent, CatBones.footL);
       expect(rig.bone(CatBones.shoeHighlightR)?.parent, CatBones.footR);
