@@ -1,6 +1,47 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/character/demo/dance_performance.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
+
+/// Section tags fed to the generative choreo tests — the real routines plus an
+/// untagged/unknown one, so the energy-level fallback is exercised too.
+const _choreoSections = [
+  'chorus',
+  'post-chorus',
+  'pre-chorus',
+  'verse',
+  'bridge',
+  'outro',
+  'intro',
+  '',
+];
+
+extension _AnyDance on glados.Any {
+  glados.Generator<double> get dancePos =>
+      glados.DoubleAnys(this).doubleInRange(0, 8);
+
+  glados.Generator<({String section, double phase, double level, int variant})>
+  get choreoArgs => glados.CombinableAny(this).combine4(
+    glados.IntAnys(this).intInRange(0, _choreoSections.length - 1),
+    glados.DoubleAnys(this).doubleInRange(0, 1),
+    glados.DoubleAnys(this).doubleInRange(0, 1),
+    glados.IntAnys(this).intInRange(0, 7),
+    (s, phase, level, variant) => (
+      section: _choreoSections[s],
+      phase: phase,
+      level: level,
+      variant: variant,
+    ),
+  );
+
+  glados.Generator<({double current, double target, double dt})> get easeArgs =>
+      glados.CombinableAny(this).combine3(
+        glados.DoubleAnys(this).doubleInRange(0, 1),
+        glados.DoubleAnys(this).doubleInRange(0, 1),
+        glados.DoubleAnys(this).doubleInRange(0, 0.5),
+        (c, t, dt) => (current: c, target: t, dt: dt),
+      );
+}
 
 /// A synthetic 120 BPM grid: 13 beats 0.5 s apart (0..6 s), downbeats every 4.
 BeatMap _beatMap() => BeatMap(
@@ -275,5 +316,134 @@ void main() {
       expect(perf.voiceActive(3, (w) => w.voice == 'lead'), isFalse);
       expect(perf.voiceActive(1.2, (w) => w.voice == 'background'), isFalse);
     });
+  });
+
+  group('DancePerformance.directorContext', () {
+    test('wires the section, energetic flag, phase and normalized build', () {
+      final perf = _perf(
+        spans: const [(start: 0, end: 6, section: 'chorus')],
+        duration: 12,
+      );
+      final ctx = perf.directorContext(3, energetic: true);
+      expect(ctx.section, 'chorus');
+      expect(ctx.energetic, isTrue);
+      expect(ctx.sectionPhase, closeTo(0.5, 1e-9));
+      expect(ctx.build, closeTo(3 / 12, 1e-9));
+    });
+
+    test(
+      'a non-positive track duration yields build 0 (no divide by zero)',
+      () {
+        expect(
+          _perf(duration: 0).directorContext(2, energetic: false).build,
+          0,
+        );
+      },
+    );
+  });
+
+  group('DancePerformance.choreoTrioForSection — remaining routines', () {
+    final perf = _perf();
+    test('pre-chorus / outro / post-chorus pick their signature trios', () {
+      expect(
+        perf.choreoTrioForSection('pre-chorus', 0, 0.5, 0).lead.name,
+        'shaku',
+      );
+      expect(
+        perf
+            .choreoTrioForSection('outro', 0.5, 0.5, 0)
+            .ensemble
+            .map((c) => c.name)
+            .toList(),
+        ['pouncingCat', 'pouncingCat', 'shaku'],
+      );
+      expect(
+        perf.choreoTrioForSection('post-chorus', 0.6, 0.5, 0).lead.name,
+        'buga',
+      );
+    });
+
+    test('the chorus front rotates to the third variant', () {
+      expect(
+        perf
+            .choreoTrioForSection('chorus', 0.2, 0.5, 2)
+            .ensemble
+            .map((c) => c.name)
+            .toList(),
+        ['zanku', 'buga', 'sekem'],
+      );
+    });
+  });
+
+  group('DancePerformance.stageAt — the resting gate', () {
+    test('a calm section above the idle floor still dances', () {
+      final perf = _perf(
+        sections: const [
+          (start: 0, end: 6, label: 'A', energetic: false, level: 0.3),
+        ],
+      );
+      // resting requires level < 0.15, so level 0.3 dances (energy fallback).
+      expect(perf.stageAt(2).lead.name, isNot('idle'));
+    });
+
+    test('with no sections at all the trio dances at full energy', () {
+      final stage = _perf().stageAt(2);
+      expect(stage.lead.name, 'buga');
+      expect(stage.energetic, isTrue);
+    });
+  });
+
+  group('DancePerformance — property invariants (glados)', () {
+    final perf = _perf(
+      sections: const [
+        (start: 0, end: 6, label: 'A', energetic: true, level: 1),
+      ],
+    );
+
+    glados.Glados(
+      glados.any.choreoArgs,
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'every choreo trio is three cats led by ensemble[0]',
+      (a) {
+        final trio = perf.choreoTrioForSection(
+          a.section,
+          a.phase,
+          a.level,
+          a.variant,
+        );
+        expect(trio.ensemble.length, 3);
+        expect(trio.ensemble.first.name, trio.lead.name);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(glados.any.dancePos, glados.ExploreConfig(numRuns: 200)).test(
+      'beatPulse stays within 0..1 for any position',
+      (pos) => expect(perf.beatPulse(pos), inInclusiveRange(0, 1)),
+      tags: 'glados',
+    );
+
+    glados.Glados(glados.any.dancePos, glados.ExploreConfig(numRuns: 200)).test(
+      'stageAt yields a 3-cat trio on a finite, non-negative clock',
+      (pos) {
+        final stage = perf.stageAt(pos);
+        expect(stage.ensemble.length, 3);
+        expect(stage.seconds.isFinite, isTrue);
+        expect(stage.seconds, greaterThanOrEqualTo(0));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(glados.any.easeArgs, glados.ExploreConfig(numRuns: 200)).test(
+      'easeDanceMouth never overshoots its target',
+      (a) {
+        final r = easeDanceMouth(a.current, a.target, a.dt);
+        final lo = a.current < a.target ? a.current : a.target;
+        final hi = a.current < a.target ? a.target : a.current;
+        expect(r, inInclusiveRange(lo, hi));
+      },
+      tags: 'glados',
+    );
   });
 }

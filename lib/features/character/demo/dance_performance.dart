@@ -2,15 +2,18 @@
 ///
 /// Both the live audio player (`DanceToTrackPage`) and the offline frame
 /// composer (`DanceFrameComposer`, used by the MP4 exporter and the position-
-/// window debug harness) must turn an **audio position in seconds** into exactly
-/// the same on-screen content: which move the trio dances, the warped pose clock
-/// it samples, the musical beat pulse, and the virtual director's camera context.
+/// window debug harness) turn an **audio position in seconds** into the same
+/// on-screen content: which move the trio dances, the warped pose clock it
+/// samples, the musical beat pulse, and the virtual director's camera context.
 ///
-/// Keeping that derivation in one place is what lets an offline render *provably*
-/// match the running app — there is a single source of truth, so the two cannot
-/// drift. Everything here is a pure function of `pos` plus the loaded track data;
-/// the stateful parts (the camera rig's smoothing, mouth easing) live in the
-/// callers and consume these results.
+/// Keeping that derivation in one place means an offline render matches the
+/// running app's *move, pose clock, beat and camera* at a position — there is a
+/// single source of truth for those, so they cannot drift. (The paint constants
+/// and the stage-light rig are likewise single-sourced in `DanceStageView`; only
+/// the ambient stage-light *phase* differs offline, by design — see that file.)
+/// Everything here is a pure function of `pos` plus the loaded track data; the
+/// stateful parts (the camera rig's smoothing, mouth easing) live in the callers
+/// (`DancePlaybackStepper`) and consume these results.
 library;
 
 import 'package:lotti/features/character/demo/dance_camera_director.dart';

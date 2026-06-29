@@ -22,20 +22,31 @@ import 'package:lotti/features/scenery/scene_texture_overlay.dart';
 import 'package:lotti/features/scenery/stage_lights_overlay.dart';
 
 /// Renders the beat-synced dance showcase to an offscreen canvas, frame by
-/// frame, from an **audio position in seconds** — exactly as the live player
-/// composes it, but without a widget tree.
+/// frame, from an **audio position in seconds** — the fast offline path shared
+/// by the MP4 exporter (`dance_video_export_test.dart`) and the position-window
+/// debug harness (`dance_player_window_test.dart`).
 ///
-/// This is the faithful offline render path shared by:
-///  * the MP4 exporter (`dance_video_export_test.dart`), and
-///  * the position-window debug harness (`dance_player_window_test.dart`).
+/// It paints the same composite as the live player's `DanceStageView`, drawing
+/// straight to a canvas (no widget tree) so it stays fast for thousands of
+/// frames. Faithfulness comes from sharing the single sources of truth:
+///  * *what* to show — which move, the warped pose clock, the beat, the camera
+///    context — from an identical [DancePerformance] (the same derivation the
+///    live player builds);
+///  * the per-frame orchestration (eased mouths + smoothed camera) — the same
+///    [DancePlaybackStepper];
+///  * the cast, gel rig and paint constants — single-sourced from
+///    `DanceStageView`, so the gel cadence, backlights, body grade and haze
+///    cannot drift from the running app.
 ///
-/// Faithfulness comes from [DancePerformance]: the composer derives *what* to
-/// show (which move, the warped pose clock, the beat, the camera context) from
-/// the very same object the live player builds, so a render at position `p`
-/// matches the running app at `p`. The only stateful, history-dependent inputs
-/// are the camera rig's smoothing and the singing mouths; [advance] integrates
-/// them per frame, so callers must **preroll** ([advance] without rendering)
-/// from a lead-in up to the first frame they care about to settle the camera.
+/// The one deliberate difference: the live app runs the ambient stage-light
+/// sweep on a wall clock and eases the floor pools via the `StageLightsOverlay`
+/// widget, whereas this canvas path drives the lights from the audio position
+/// (deterministic) and paints the pools directly — a cosmetic gel-phase/easing
+/// difference, not pose/move/beat/camera.
+///
+/// The camera rig and mouths are history-dependent, so callers must **preroll**
+/// ([advance] without rendering) from a lead-in up to the first frame they care
+/// about to settle the framing.
 class DanceFrameComposer {
   DanceFrameComposer._({
     required this.perf,
