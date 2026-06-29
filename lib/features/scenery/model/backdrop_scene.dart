@@ -66,15 +66,16 @@ class BackdropScene {
         // ocean shimmer, preserving the original depth ordering.
         ImageLayer(SceneryAssets.cityBridge),
         // The moored yacht silhouette, re-drawn over the ocean so its hull
-        // covers the foam that would otherwise wash up its side. Pulled DOWN in
-        // exposure and cooled (modulate multiply) so its baked-bright hull stops
-        // reading as a sharp foreground hero competing with the lead — it now
-        // recedes into the hazed midground. The warm cabin windows are added
-        // after this (CityLightsLayer) so the interior glow still reads on top.
+        // covers the foam that would otherwise wash up its side. The yacht sits
+        // NEARER than the far skyline, so it must read at least as sharp and as
+        // clear as the city — a heavy defocus + cool dim made a mid-distance
+        // object foggier than the distant towers (a depth inversion). Keep only
+        // a light cool exposure pull so it doesn't blaze as a foreground hero,
+        // and NO blur, so the depth ladder stays monotonic. The warm cabin
+        // windows are added after this (CityLightsLayer) so the glow reads on top.
         ImageLayer(
           SceneryAssets.yacht,
-          modulate: Color(0xFF8696B0),
-          blurSigma: 2.5,
+          modulate: Color(0xFFD0D5DE),
         ),
         // More windows lit (brighter highrises) than the 0.6 default; drawn
         // after the yacht so the warm cabin glow reads on top of the hull.

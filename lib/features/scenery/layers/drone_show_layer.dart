@@ -132,8 +132,18 @@ class DroneShowLayer implements BackdropLayer {
     final shortestSide = math.min(ctx.size.width, ctx.size.height);
     final haloPaint = ui.Paint()..blendMode = ui.BlendMode.plus;
     final corePaint = ui.Paint()..blendMode = ui.BlendMode.plus;
+    // Unlit drones are distant dark bodies seen THROUGH the blue-hour haze, so
+    // they must not read as pure-black holes punched in the twilight sky —
+    // aerial perspective lifts and cools a far dark object toward the
+    // atmosphere. Lift the near-black body most of the way to the shadowed cloud
+    // tone and drop the alpha, so they read as faint hazed specks before their
+    // lights switch on.
     final offPaint = ui.Paint()
-      ..color = const ui.Color(0xFF03060A).withValues(alpha: 0.64);
+      ..color = ui.Color.lerp(
+        const ui.Color(0xFF0A1020),
+        ctx.palette.cloudBase,
+        0.6,
+      )!.withValues(alpha: 0.5);
     final cool = ctx.palette.moonHalo;
     final warm = ctx.palette.windowLed;
 
