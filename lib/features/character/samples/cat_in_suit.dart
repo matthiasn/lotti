@@ -583,9 +583,12 @@ RigSpec buildCatInSuitRig({
       z: 9,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
-        width: 54,
-        height: 30,
-        dy: 9,
+        // A fuller pelvis/seat so the thighs grow OUT of a hip mass instead of
+        // sprouting as sticks from the jacket hem (the last thing keeping the
+        // figure off a hero-grade read — a heavy torso on spindly legs).
+        width: 60,
+        height: 34,
+        dy: 10,
         color: _trouser,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -1253,7 +1256,7 @@ RigSpec buildCatInSuitRig({
       // jacket DOESN'T cover deflated into a rubber-hose noodle. Keeping the
       // knee-down full (≥11) and the hem broad makes the visible suit read as
       // trousers that break over the shoe instead of skinny calves.
-      halfWidths: scaledLegWidths(const [13.5, 13, 10, 12.5, 10]),
+      halfWidths: scaledLegWidths(const [15.5, 14.5, 10, 12.5, 10]),
       z: 3,
       color: _trouserRear,
       outlineColor: _outline,
@@ -1270,7 +1273,7 @@ RigSpec buildCatInSuitRig({
         CatBones.footL,
       ],
       hiddenBoneIds: const [CatBones.legUpperL, CatBones.legLowerL],
-      halfWidths: scaledLegWidths(const [13.5, 13, 10, 12.5, 10]),
+      halfWidths: scaledLegWidths(const [15.5, 14.5, 10, 12.5, 10]),
       z: 6,
       color: _trouser,
       outlineColor: _outline,

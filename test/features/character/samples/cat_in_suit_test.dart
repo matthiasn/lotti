@@ -177,12 +177,13 @@ void main() {
       final baseTail = base.ribbons.singleWhere((r) => r.id == 'tail.ribbon');
       final leadTail = lead.ribbons.singleWhere((r) => r.id == 'tail.ribbon');
 
-      // Anatomical trouser profile: full thigh (13.5/13), a knee dip (10), a
-      // fuller calf bulge (12.5), then the hem (10) — leg shape, not a stovepipe.
-      expect(baseLeg.halfWidths, const [13.5, 13, 10, 12.5, 10]);
+      // Anatomical trouser profile: full thigh (15.5/14.5) growing from the hip,
+      // a knee dip (10), a fuller calf bulge (12.5), then the hem (10) — leg
+      // shape, not a stovepipe.
+      expect(baseLeg.halfWidths, const [15.5, 14.5, 10, 12.5, 10]);
       expect(
         leadLeg.halfWidths.first,
-        closeTo(13.5 * kDanceLeadLegWidthScale, 0.001),
+        closeTo(15.5 * kDanceLeadLegWidthScale, 0.001),
       );
       // The calf control (index 3) is fuller than the knee (index 2) — the bulge.
       expect(
