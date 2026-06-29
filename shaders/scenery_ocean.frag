@@ -220,15 +220,21 @@ void main() {
   float yDepth = depth - 0.10;
   for (int yc = 0; yc < 3; yc++) {
     float cx = yc == 0 ? 0.80 : (yc == 1 ? 0.85 : 0.90);
-    float str = yc == 0 ? 0.85 : (yc == 1 ? 1.0 : 0.7);
+    float str = yc == 0 ? 0.9 : (yc == 1 ? 1.0 : 0.72);
+    // Per-row horizontal wobble so the three streaks shimmer as SEPARATE broken
+    // reflections (a rippled mirror) instead of fusing into one uniform band.
+    cx += 0.012 * sin(depth * 9.0 + float(yc) * 2.0 - uTime * 0.6);
     float d = abs(art.x - cx) * aspect;
     float colw = 0.012 + 0.02 * depth;
     float col = exp(-pow(d / colw, 2.0));
     float dash = smoothstep(0.3, 0.85,
         fbm(vec2(art.x * 8.0,
             depth * 34.0 - uTime * 0.5 + float(yc) * 11.0 + 30.0)));
+    // A MUCH longer reach than the city columns (decay 1.8 vs 4.5): the streaks
+    // run down past the hull lip into the mid-water band toward the near-foam
+    // line, instead of terminating as a thin bright lip right under the hull.
     float colFall =
-        smoothstep(0.0, 0.04, yDepth) * exp(-max(yDepth, 0.0) * 4.5);
+        smoothstep(0.0, 0.04, yDepth) * exp(-max(yDepth, 0.0) * 1.8);
     reflYacht += col * dash * str * colFall;
   }
 
@@ -239,7 +245,7 @@ void main() {
   float reflCityA =
       clamp(reflCity * clamp(uReflection, 0.0, 2.0) * 6.0, 0.0, 0.9);
   float reflYachtA =
-      clamp(reflYacht * clamp(uReflection, 0.0, 2.0) * 4.2, 0.0, 0.8);
+      clamp(reflYacht * clamp(uReflection, 0.0, 2.0) * 5.1, 0.0, 0.85);
   vec3 cityWarm = vec3(1.0, 0.62, 0.32);
   vec3 yachtWarm = vec3(1.0, 0.66, 0.38);
 
