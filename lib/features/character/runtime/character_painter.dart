@@ -55,11 +55,12 @@ _kBacklightPasses = [
   // A single thin directional RIM — no wrap. The soft outer bloom that used to
   // wrap the whole silhouette was removed: every craft lens read it as a
   // symmetric "outer-glow" sticker floating around the figure, and the user
-  // called to drop it. What remains is one tight, hot kicker displaced onto the
-  // source-facing contour and masked one-sided (below), so the gel reads as a
-  // backlight catching one edge — the colour presence now lives ON the fabric
-  // (the body key in the grade) and on the deck (the floor pools), not in the air.
-  (sigmaFrac: 0.009, alphaScale: 0.7, offsetScale: 3.2),
+  // called to drop it. What remains is one tight, hot kicker hugging the
+  // source-facing contour and masked one-sided (below) — a crisp lit EDGE, not a
+  // displaced haze column (a gaffer lens flagged the old wide offset as a "40px
+  // amber fog slab"). The colour presence lives ON the fabric (the body key in
+  // the grade) and on the deck (the floor pools), not in the air.
+  (sigmaFrac: 0.005, alphaScale: 0.85, offsetScale: 1.4),
 ];
 
 /// Cool, dark plate-blue the concert BODIES are lerped toward (`srcATop`) so the
@@ -788,7 +789,7 @@ class CharacterPainter extends CustomPainter {
             // not a strobe: only this small, terminator-edge gel term moves — the
             // seats + wrap stay STATIC — so the full-figure luminance never pulses
             // anywhere near the photosensitivity threshold.
-            final gelKey = (0.64 + 0.20 * glow.a).clamp(0.64, 0.84);
+            final gelKey = (0.72 + 0.20 * glow.a).clamp(0.72, 0.9);
             canvas
               ..drawRect(
                 gradeBounds,
