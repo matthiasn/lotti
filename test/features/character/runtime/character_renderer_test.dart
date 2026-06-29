@@ -181,6 +181,61 @@ void main() {
     });
   });
 
+  testWidgets('celShade:false skips the directional ramp (flat fill)', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      const shaded = BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 70,
+        height: 110,
+        cornerRadius: 16,
+        dy: 50,
+        color: 0xFF808080,
+      );
+      const optedOut = BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 70,
+        height: 110,
+        cornerRadius: 16,
+        dy: 50,
+        color: 0xFF808080,
+        celShade: false,
+      );
+      // Same directional cel-shade for the shaded shape; only the celShade
+      // opt-out differs, so the diff isolates the gate.
+      final withRamp = await _renderOne(shaded, celShade: const CelShadeSpec());
+      final withoutRamp = await _renderOne(
+        optedOut,
+        celShade: const CelShadeSpec(),
+      );
+      final flat = await _renderOne(optedOut); // no celShade supplied at all
+      int lum(Uint8List px, int x, int y) {
+        final o = (y * w + x) * 4;
+        return px[o] + px[o + 1] + px[o + 2];
+      }
+
+      // The shaded shape lifts the lit upper-left and darkens the shade
+      // lower-right; the opted-out shape does NEITHER — it stays the flat fill,
+      // so no sheen can streak the small paw volumes.
+      expect(
+        lum(withRamp, 42, 56),
+        greaterThan(lum(withoutRamp, 42, 56) + 20),
+        reason: 'only the shaded shape gets a lit-side sheen',
+      );
+      expect(
+        lum(withRamp, 80, 110),
+        lessThan(lum(withoutRamp, 80, 110) - 20),
+        reason: 'only the shaded shape gets a shade-side darkening',
+      );
+      expect(
+        lum(withoutRamp, 42, 56),
+        closeTo(lum(flat, 42, 56).toDouble(), 1),
+        reason: 'celShade:false renders identically to no cel-shade at all',
+      );
+    });
+  });
+
   testWidgets('celShade form-rounding darkens the contour, not the centre', (
     tester,
   ) async {
