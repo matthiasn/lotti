@@ -780,12 +780,13 @@ RigSpec buildCatInSuitRig({
       z: 14,
       drawable: BoneDrawable(
         kind: BoneShapeKind.taperedCapsule,
-        // A COMPACT knot at the collar that narrows downward (14→10), so the tie
-        // reads as a knotted necktie, not a uniform-width red slab.
-        width: 14, // knot top
-        widthTip: 10,
-        height: 16,
-        dy: 8,
+        // A distinct knot: clearly WIDER than the blade below it and short, so it
+        // reads as a four-in-hand knot the blade hangs from — not a uniform red
+        // stripe emerging straight from the throat.
+        width: 18, // knot top, wider than the 11-wide blade
+        widthTip: 8,
+        height: 13,
+        dy: 6,
         color: _tie,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -1062,13 +1063,14 @@ RigSpec buildCatInSuitRig({
       z: 19,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        // A taller, slightly narrower neck column so a real neck shows between
-        // the chin and the collar (the chin was nearly meeting the collar, so
-        // the head read as a balloon on the blob).
-        width: 22,
-        height: 31,
-        dy: -2,
-        cornerRadius: 9,
+        // A SHORT, narrow neck cylinder — just a glimpse of throat under the
+        // chin. Lengthening it earlier fanned the brown fur into a wide funnel
+        // that covered the white shirt; keep it a small nub so the white collar
+        // opening, not brown throat, fills the lapel V.
+        width: 17,
+        height: 19,
+        dy: -7,
+        cornerRadius: 8,
         color: palette.furDark,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -1079,7 +1081,7 @@ RigSpec buildCatInSuitRig({
       id: CatBones.head,
       parent: CatBones.neck,
       pivotX: 0,
-      pivotY: -9, // lifted a few px so the neck reads below the chin
+      pivotY: -7, // a touch of neck shows below the chin, no balloon-on-blob
       z: 20,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
