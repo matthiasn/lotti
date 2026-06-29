@@ -343,7 +343,8 @@ class DanceTransportBar extends StatelessWidget {
           TextSpan(
             text: bpm.toStringAsFixed(0),
             style: const TextStyle(
-              color: _Chrome.textHi,
+              // textMid (not textHi) so the timecode is the single brightest.
+              color: _Chrome.textMid,
               fontSize: 14,
               fontWeight: FontWeight.w700,
               fontFeatures: [FontFeature.tabularFigures()],
@@ -521,8 +522,8 @@ abstract final class _Chrome {
   // playhead.
   static const Color wavePeakPlayed = Color(0xFF7E93A6);
   static const Color waveBodyPlayed = Color(0xFFC9DEEE);
-  static const Color wavePeakAhead = Color(0xFF525C68);
-  static const Color waveBodyAhead = Color(0xFF808E9C);
+  static const Color wavePeakAhead = Color(0xFF3C4A5A);
+  static const Color waveBodyAhead = Color(0xFF6E8398);
   static const Color rulerText = Color(0xFF7C8896);
   static const Color markerPill = Color(0xD90B0F14);
 }
@@ -630,7 +631,8 @@ class _DanceTimelinePainter extends CustomPainter {
         canvas
           ..drawRect(
             Rect.fromLTRB(sx0, waveTop, sx1, waveTop + 4),
-            Paint()..color = hue.withValues(alpha: 0.95),
+            // A quiet clip-tint; the teal playhead stays the focal "you are here".
+            Paint()..color = hue.withValues(alpha: 0.7),
           )
           // An edge-faded wash reads as a highlight ("you are here"), not a
           // hard-walled selectable/loopable range.
@@ -705,17 +707,25 @@ class _DanceTimelinePainter extends CustomPainter {
     final norm = maxA > 0 ? 1.0 / maxA : 1.0;
     final width = size.width;
 
-    // A continuous filled mirrored envelope (a real DAW track, not gapped bars):
-    // a dim PEAK envelope behind a brighter RMS-ish BODY envelope, expanded so
-    // section dynamics read. Split played/ahead by clipping at the playhead.
-    Path envelope(double scale) {
-      double yAt(int i) {
-        final h = (math.pow(amplitudes[i] * norm, 1.4) * maxH * scale)
-            .clamp(1, maxH)
-            .toDouble();
-        return h;
+    // A continuous filled mirrored envelope (a real DAW track, not gapped bars).
+    // The PEAK envelope is the raw, spiky signal; the BODY is a smoothed RMS-ish
+    // bed beneath it — so transients visibly spike above the body and the two
+    // tones carry independent information, the way a Logic/Live clip does.
+    double smoothed(int i) {
+      var s = 0.0;
+      var c = 0;
+      for (var j = i - 3; j <= i + 3; j++) {
+        if (j >= 0 && j < n) {
+          s += amplitudes[j];
+          c++;
+        }
       }
+      return c > 0 ? s / c : amplitudes[i];
+    }
 
+    Path envelope(double Function(int) sample) {
+      double yAt(int i) =>
+          (math.pow(sample(i) * norm, 1.4) * maxH).clamp(1, maxH).toDouble();
       final p = Path()..moveTo(0, mid);
       for (var i = 0; i < n; i++) {
         p.lineTo(i / (n - 1) * width, mid - yAt(i) / 2);
@@ -726,8 +736,8 @@ class _DanceTimelinePainter extends CustomPainter {
       return p..close();
     }
 
-    final peakEnv = envelope(1);
-    final bodyEnv = envelope(0.62);
+    final peakEnv = envelope((i) => amplitudes[i]);
+    final bodyEnv = envelope(smoothed);
 
     void fill(double from, double to, Color peak, Color body) {
       canvas
@@ -856,11 +866,11 @@ class _DanceTimelinePainter extends CustomPainter {
     // classic editor playhead, unmistakably a position marker rather than the
     // pause-glyph the old twin grip-bars read as.
     final flag = Path()
-      ..moveTo(px - 6, 0)
-      ..lineTo(px + 6, 0)
-      ..lineTo(px + 6, 9)
-      ..lineTo(px, 14)
-      ..lineTo(px - 6, 9)
+      ..moveTo(px - 7, 0)
+      ..lineTo(px + 7, 0)
+      ..lineTo(px + 7, 10)
+      ..lineTo(px, 15)
+      ..lineTo(px - 7, 10)
       ..close();
     canvas
       ..drawPath(
