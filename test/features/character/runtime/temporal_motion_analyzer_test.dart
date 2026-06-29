@@ -37,10 +37,11 @@ void main() {
       expect(worst.toPhase, closeTo(worst.toFrame / 96, 1e-9));
       expect(
         worst.distance,
-        greaterThan(60),
+        lessThan(55),
         reason:
-            'the diagnostic should expose the current frame-addressed Shaku '
-            'snap so choreo cleanup can target the exact handoff',
+            'the Shaku dab recovery should stay below the old one-frame '
+            'handoff snap; if this grows, inspect the hand targets around the '
+            'loop pickup',
       );
     });
 

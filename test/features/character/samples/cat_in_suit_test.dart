@@ -39,6 +39,19 @@ void main() {
       );
     });
 
+    test('hand-parented cuffs expose the wrists during crossed-arm poses', () {
+      final shirtColor = rig.bone(CatBones.shirtV)?.drawable?.color;
+      final cuffL = rig.bone(CatBones.wristCuffL);
+      final cuffR = rig.bone(CatBones.wristCuffR);
+
+      expect(cuffL?.parent, CatBones.handL);
+      expect(cuffR?.parent, CatBones.handR);
+      expect(cuffL?.drawable?.color, shirtColor);
+      expect(cuffR?.drawable?.color, shirtColor);
+      expect(cuffL?.z, lessThan(rig.bone(CatBones.handL)!.z));
+      expect(cuffR?.z, lessThan(rig.bone(CatBones.handR)!.z));
+    });
+
     test('shoes carry a subtle sole edge for footwork readability', () {
       expect(rig.bone(CatBones.shoeHighlightL)?.parent, CatBones.footL);
       expect(rig.bone(CatBones.shoeHighlightR)?.parent, CatBones.footR);
@@ -485,6 +498,33 @@ void main() {
         expect(leftPresentOffHand.y, lessThan(-24));
       },
     );
+
+    test('buga raises the presenting arm before the hit and holds it', () {
+      final phrase = CatClips.dancePhrase;
+      final buga = CatClips.buga;
+      final handL = _targetFor(buga, CatBones.handL).channel;
+      final handR = _targetFor(buga, CatBones.handR).channel;
+
+      for (final frame in [10, 12, 15]) {
+        final right = handR.sample(frame / phrase.frameCount);
+        expect(
+          right.x,
+          greaterThan(68),
+          reason: 'right Buga present should be visible by frame $frame',
+        );
+        expect(right.y, lessThan(-64));
+      }
+
+      for (final frame in [26, 28, 31]) {
+        final left = handL.sample(frame / phrase.frameCount);
+        expect(
+          left.x,
+          lessThan(-68),
+          reason: 'left Buga present should be visible by frame $frame',
+        );
+        expect(left.y, lessThan(-64));
+      }
+    });
 
     test('show clips animate in place', () {
       expect(CatClips.kick.locomotes, isFalse);

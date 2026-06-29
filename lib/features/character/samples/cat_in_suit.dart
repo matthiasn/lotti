@@ -129,6 +129,7 @@ class CatBones {
   static const armBicepL = 'arm_bicep.L';
   static const armLowerL = 'arm_lower.L';
   static const handL = 'hand.L';
+  static const wristCuffL = 'wrist_cuff.L';
   static const thumbL = 'thumb.L';
   static const pawToeL1 = 'paw_toe1.L';
   static const pawToeL2 = 'paw_toe2.L';
@@ -136,6 +137,7 @@ class CatBones {
   static const armBicepR = 'arm_bicep.R';
   static const armLowerR = 'arm_lower.R';
   static const handR = 'hand.R';
+  static const wristCuffR = 'wrist_cuff.R';
   static const thumbR = 'thumb.R';
   static const pawToeR1 = 'paw_toe1.R';
   static const pawToeR2 = 'paw_toe2.R';
@@ -525,6 +527,27 @@ RigSpec buildCatInSuitRig({
         celShade: false,
       ),
     ),
+    // Hand-parented cuff: it rotates with the paw, so it stays on the wrist
+    // side instead of sliding out from the forearm as a white blob in the palm.
+    const Bone(
+      id: CatBones.wristCuffR,
+      parent: CatBones.handR,
+      pivotX: 0,
+      pivotY: -11,
+      z: 16,
+      restRotation: -0.08,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 22,
+        height: 8,
+        dy: -1,
+        cornerRadius: 3,
+        color: _shirt,
+        outlineColor: _outline,
+        outlineWidth: 1.5,
+        celShade: false,
+      ),
+    ),
     // Two toe beans drawn BEHIND the pad (z 16 < pad z 17): only the arcs peeking
     // past the pad's front edge show, so they scallop the silhouette into toes
     // with no internal outline seams.
@@ -583,10 +606,6 @@ RigSpec buildCatInSuitRig({
         celShade: false,
       ),
     ),
-    // (No wrist cuff: it was forearm-parented while the paw rotates with the
-    // hand IK, so it peeked out the side of the paw as a white blob in the palm.
-    // The white collar carries the dress-shirt read.)
-
     // Torso (suit jacket): a tapered wedge — wide at the shoulders (top),
     // narrowing to the waist (bottom) — so it reads as a tailored jacket with a
     // shoulder line, not a barrel/box. The pelvis flares back out below it.
@@ -814,6 +833,25 @@ RigSpec buildCatInSuitRig({
         celShade: false,
       ),
     ),
+    const Bone(
+      id: CatBones.wristCuffL,
+      parent: CatBones.handL,
+      pivotX: 0,
+      pivotY: -11,
+      z: 17,
+      restRotation: 0.08,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 22,
+        height: 8,
+        dy: -1,
+        cornerRadius: 3,
+        color: _shirt,
+        outlineColor: _outline,
+        outlineWidth: 1.5,
+        celShade: false,
+      ),
+    ),
     Bone(
       id: CatBones.pawToeL1,
       parent: CatBones.handL,
@@ -865,8 +903,6 @@ RigSpec buildCatInSuitRig({
         celShade: false,
       ),
     ),
-    // (No wrist cuff — see the right arm.)
-
     // Pointed ears (behind the head crown so only the tips show above it),
     // each with a smaller inner ear nested on top.
     Bone(
@@ -1090,7 +1126,7 @@ RigSpec buildCatInSuitRig({
       // slim wrist so the forearm reads as a tapering arm, not a constant tube.
       halfWidths: scaledArmWidths(const [11.0, 12.6, 7.6, 4.6]),
       z: 15,
-      color: _suit,
+      color: _sleeve,
       outlineColor: _outline,
       outlineWidth: 2,
       samplesPerSegment: 12,
@@ -1106,7 +1142,7 @@ RigSpec buildCatInSuitRig({
       hiddenBoneIds: const [CatBones.armUpperL, CatBones.armLowerL],
       halfWidths: scaledArmWidths(const [11.0, 12.6, 7.6, 4.6]),
       z: 16,
-      color: _suit,
+      color: _sleeveNear,
       outlineColor: _outline,
       outlineWidth: 2,
       samplesPerSegment: 12,
@@ -4494,8 +4530,8 @@ class CatClips {
     DanceIkTargetKey(27, x: -46, y: -100),
     DanceIkTargetKey(28, x: -62, y: -120, ease: Ease.easeOutBack),
     DanceIkTargetKey(29, x: -61, y: -118),
-    DanceIkTargetKey(30, x: -42, y: -68),
-    DanceIkTargetKey(31, x: -6, y: -36),
+    DanceIkTargetKey(30, x: -55, y: -92),
+    DanceIkTargetKey(31, x: -42, y: -58),
     DanceIkTargetKey(32, x: -30, y: -32, ease: Ease.easeOutBack),
   ];
   static const _shakuHandRTargetKeys = [
@@ -4528,9 +4564,9 @@ class CatClips {
     DanceIkTargetKey(26, x: -44, y: -60),
     DanceIkTargetKey(27, x: -36, y: -74),
     DanceIkTargetKey(28, x: -18, y: -82, ease: Ease.easeOutBack),
-    DanceIkTargetKey(29, x: -18, y: -80),
-    DanceIkTargetKey(30, x: -28, y: -58),
-    DanceIkTargetKey(31, x: -34, y: -34),
+    DanceIkTargetKey(29, x: -10, y: -74),
+    DanceIkTargetKey(30, x: 4, y: -54),
+    DanceIkTargetKey(31, x: 20, y: -38),
     DanceIkTargetKey(32, x: 30, y: -32, ease: Ease.easeOutBack),
   ];
   static final KeyframeIkTargetChannel _shakuHandLTarget = _dancePhrase
@@ -4757,42 +4793,42 @@ class CatClips {
   // one blob. The legs still carry the move; this just stops the upper body
   // reading "shy".
   static const _zankuHandLTargetKeys = [
-    DanceIkTargetKey(0, x: -20, y: -26),
-    DanceIkTargetKey(2, x: -20, y: -46),
-    DanceIkTargetKey(4, x: -20, y: -26),
-    DanceIkTargetKey(6, x: -20, y: -46),
-    DanceIkTargetKey(8, x: -20, y: -26),
-    DanceIkTargetKey(10, x: -20, y: -46),
-    DanceIkTargetKey(12, x: -20, y: -26),
-    DanceIkTargetKey(14, x: -20, y: -46),
-    DanceIkTargetKey(16, x: -20, y: -26),
-    DanceIkTargetKey(18, x: -20, y: -46),
-    DanceIkTargetKey(20, x: -20, y: -26),
-    DanceIkTargetKey(22, x: -20, y: -46),
-    DanceIkTargetKey(24, x: -20, y: -26),
-    DanceIkTargetKey(26, x: -20, y: -46),
-    DanceIkTargetKey(28, x: -20, y: -26),
-    DanceIkTargetKey(30, x: -20, y: -46),
-    DanceIkTargetKey(32, x: -20, y: -26),
+    DanceIkTargetKey(0, x: -34, y: -24),
+    DanceIkTargetKey(2, x: -38, y: -42),
+    DanceIkTargetKey(4, x: -34, y: -24),
+    DanceIkTargetKey(6, x: -38, y: -42),
+    DanceIkTargetKey(8, x: -34, y: -24),
+    DanceIkTargetKey(10, x: -38, y: -42),
+    DanceIkTargetKey(12, x: -34, y: -24),
+    DanceIkTargetKey(14, x: -38, y: -42),
+    DanceIkTargetKey(16, x: -34, y: -24),
+    DanceIkTargetKey(18, x: -38, y: -42),
+    DanceIkTargetKey(20, x: -34, y: -24),
+    DanceIkTargetKey(22, x: -38, y: -42),
+    DanceIkTargetKey(24, x: -34, y: -24),
+    DanceIkTargetKey(26, x: -38, y: -42),
+    DanceIkTargetKey(28, x: -34, y: -24),
+    DanceIkTargetKey(30, x: -38, y: -42),
+    DanceIkTargetKey(32, x: -34, y: -24),
   ];
   static const _zankuHandRTargetKeys = [
-    DanceIkTargetKey(0, x: 20, y: -46),
-    DanceIkTargetKey(2, x: 20, y: -26),
-    DanceIkTargetKey(4, x: 20, y: -46),
-    DanceIkTargetKey(6, x: 20, y: -26),
-    DanceIkTargetKey(8, x: 20, y: -46),
-    DanceIkTargetKey(10, x: 20, y: -26),
-    DanceIkTargetKey(12, x: 20, y: -46),
-    DanceIkTargetKey(14, x: 20, y: -26),
-    DanceIkTargetKey(16, x: 20, y: -46),
-    DanceIkTargetKey(18, x: 20, y: -26),
-    DanceIkTargetKey(20, x: 20, y: -46),
-    DanceIkTargetKey(22, x: 20, y: -26),
-    DanceIkTargetKey(24, x: 20, y: -46),
-    DanceIkTargetKey(26, x: 20, y: -26),
-    DanceIkTargetKey(28, x: 20, y: -46),
-    DanceIkTargetKey(30, x: 20, y: -26),
-    DanceIkTargetKey(32, x: 20, y: -46),
+    DanceIkTargetKey(0, x: 38, y: -42),
+    DanceIkTargetKey(2, x: 34, y: -24),
+    DanceIkTargetKey(4, x: 38, y: -42),
+    DanceIkTargetKey(6, x: 34, y: -24),
+    DanceIkTargetKey(8, x: 38, y: -42),
+    DanceIkTargetKey(10, x: 34, y: -24),
+    DanceIkTargetKey(12, x: 38, y: -42),
+    DanceIkTargetKey(14, x: 34, y: -24),
+    DanceIkTargetKey(16, x: 38, y: -42),
+    DanceIkTargetKey(18, x: 34, y: -24),
+    DanceIkTargetKey(20, x: 38, y: -42),
+    DanceIkTargetKey(22, x: 34, y: -24),
+    DanceIkTargetKey(24, x: 38, y: -42),
+    DanceIkTargetKey(26, x: 34, y: -24),
+    DanceIkTargetKey(28, x: 38, y: -42),
+    DanceIkTargetKey(30, x: 34, y: -24),
+    DanceIkTargetKey(32, x: 38, y: -42),
   ];
   static final KeyframeIkTargetChannel _zankuHandLTarget = _dancePhrase
       .ikTargetChannel(_zankuHandLTargetKeys, smooth: true);
@@ -5170,23 +5206,141 @@ class CatClips {
     // rise between) that deepen toward count 3, a held re-load just before the
     // hit (anticipation), then a hard RISE above standing height with a chest
     // pop on count 4 (the biggest vertical delta in the loop).
-    DanceBodyKey(0, rootDy: 18, chestScaleY: 0.93), // lo1 dip (count 1)
-    DanceBodyKey(2, rootDy: 10, chestScaleY: 0.97), // rise between
-    DanceBodyKey(4, rootDy: 21, chestScaleY: 0.92), // lo2 dip (count 2)
-    DanceBodyKey(6, rootDy: 11, chestScaleY: 0.97), // rise between
-    DanceBodyKey(8, rootDy: 29, chestScaleY: 0.88), // lo3 DEEP load (count 3)
-    DanceBodyKey(11, rootDy: 30, chestScaleY: 0.87), // hold/re-load (anticip.)
-    DanceBodyKey(12, rootDy: -8, chestScaleY: 1.12, chestScaleX: 0.95), // HIT
-    DanceBodyKey(14, rootDy: -3, chestScaleY: 1.08), // hold the present
-    DanceBodyKey(16, rootDy: 18, chestScaleY: 0.93), // cell 2: lo1
-    DanceBodyKey(18, rootDy: 10, chestScaleY: 0.97),
-    DanceBodyKey(20, rootDy: 21, chestScaleY: 0.92),
-    DanceBodyKey(22, rootDy: 11, chestScaleY: 0.97),
-    DanceBodyKey(24, rootDy: 29, chestScaleY: 0.88),
-    DanceBodyKey(27, rootDy: 30, chestScaleY: 0.87),
-    DanceBodyKey(28, rootDy: -8, chestScaleY: 1.12, chestScaleX: 0.95), // HIT
-    DanceBodyKey(30, rootDy: -3, chestScaleY: 1.08),
-    DanceBodyKey(32, rootDy: 18, chestScaleY: 0.93),
+    DanceBodyKey(
+      0,
+      rootDy: 18,
+      pelvisRotation: -0.04,
+      chestRotation: 0.04,
+      chestScaleY: 0.93,
+    ), // lo1 dip (count 1)
+    DanceBodyKey(2, rootDy: 10, chestRotation: 0.02, chestScaleY: 0.97),
+    DanceBodyKey(
+      4,
+      rootDy: 21,
+      pelvisRotation: 0.05,
+      chestRotation: -0.06,
+      chestScaleY: 0.92,
+    ), // lo2 dip (count 2)
+    DanceBodyKey(6, rootDy: 11, chestRotation: -0.02, chestScaleY: 0.97),
+    DanceBodyKey(
+      8,
+      rootDy: 29,
+      pelvisRotation: -0.08,
+      chestRotation: 0.1,
+      chestScaleY: 0.88,
+    ), // lo3 DEEP load (count 3)
+    DanceBodyKey(
+      10,
+      rootDy: 20,
+      rootRotation: 0.003,
+      pelvisRotation: 0.04,
+      chestRotation: -0.08,
+      chestScaleY: 0.95,
+      chestScaleX: 1.02,
+    ),
+    DanceBodyKey(
+      11,
+      rootDy: 30,
+      pelvisRotation: -0.1,
+      chestRotation: 0.14,
+      chestScaleY: 0.87,
+    ), // hold/re-load (anticip.)
+    DanceBodyKey(
+      12,
+      rootDy: -8,
+      rootRotation: 0.006,
+      pelvisRotation: 0.13,
+      chestRotation: -0.22,
+      chestScaleY: 1.12,
+      chestScaleX: 0.95,
+    ), // HIT
+    DanceBodyKey(
+      14,
+      rootDy: -3,
+      rootRotation: 0.004,
+      pelvisRotation: 0.09,
+      chestRotation: -0.16,
+      chestScaleY: 1.08,
+    ), // hold the present
+    DanceBodyKey(
+      15,
+      rootDy: 2,
+      rootRotation: 0.003,
+      pelvisRotation: 0.06,
+      chestRotation: -0.12,
+      chestScaleY: 1.04,
+    ),
+    DanceBodyKey(
+      16,
+      rootDy: 18,
+      pelvisRotation: 0.04,
+      chestRotation: -0.04,
+      chestScaleY: 0.93,
+    ), // cell 2: lo1
+    DanceBodyKey(18, rootDy: 10, chestRotation: -0.02, chestScaleY: 0.97),
+    DanceBodyKey(
+      20,
+      rootDy: 21,
+      pelvisRotation: -0.05,
+      chestRotation: 0.06,
+      chestScaleY: 0.92,
+    ),
+    DanceBodyKey(22, rootDy: 11, chestRotation: 0.02, chestScaleY: 0.97),
+    DanceBodyKey(
+      24,
+      rootDy: 29,
+      pelvisRotation: 0.08,
+      chestRotation: -0.1,
+      chestScaleY: 0.88,
+    ),
+    DanceBodyKey(
+      26,
+      rootDy: 20,
+      rootRotation: -0.003,
+      pelvisRotation: -0.04,
+      chestRotation: 0.08,
+      chestScaleY: 0.95,
+      chestScaleX: 1.02,
+    ),
+    DanceBodyKey(
+      27,
+      rootDy: 30,
+      pelvisRotation: 0.1,
+      chestRotation: -0.14,
+      chestScaleY: 0.87,
+    ),
+    DanceBodyKey(
+      28,
+      rootDy: -8,
+      rootRotation: -0.006,
+      pelvisRotation: -0.13,
+      chestRotation: 0.22,
+      chestScaleY: 1.12,
+      chestScaleX: 0.95,
+    ), // HIT
+    DanceBodyKey(
+      30,
+      rootDy: -3,
+      rootRotation: -0.004,
+      pelvisRotation: -0.09,
+      chestRotation: 0.16,
+      chestScaleY: 1.08,
+    ),
+    DanceBodyKey(
+      31,
+      rootDy: 2,
+      rootRotation: -0.003,
+      pelvisRotation: -0.06,
+      chestRotation: 0.12,
+      chestScaleY: 1.04,
+    ),
+    DanceBodyKey(
+      32,
+      rootDy: 18,
+      pelvisRotation: -0.04,
+      chestRotation: 0.04,
+      chestScaleY: 0.93,
+    ),
   ];
   // Shins drive the hit: knees flex DEEP through the three dips (loading), then
   // EXTEND hard on the BUGA frame so the rise is powered from the ground/legs,
@@ -5216,13 +5370,16 @@ class CatClips {
     DanceIkTargetKey(0, x: 30, y: -36), // separated rib guard
     DanceIkTargetKey(4, x: 32, y: -38),
     DanceIkTargetKey(8, x: 34, y: -40),
-    DanceIkTargetKey(11, x: 36, y: -42),
+    DanceIkTargetKey(10, x: 70, y: -66), // cue the buga silhouette early
+    DanceIkTargetKey(11, x: 90, y: -82),
     DanceIkTargetKey(12, x: 100, y: -88), // THRUST UP+OUT — present (the hit)
     DanceIkTargetKey(13, x: 110, y: -96), // overshoot well past the peak
     DanceIkTargetKey(14, x: 90, y: -78), // settle back
+    DanceIkTargetKey(15, x: 76, y: -68), // hold the proud pose one more count
     DanceIkTargetKey(16, x: 30, y: -36),
     DanceIkTargetKey(20, x: 32, y: -38),
     DanceIkTargetKey(24, x: 34, y: -40),
+    DanceIkTargetKey(26, x: 50, y: -30),
     DanceIkTargetKey(28, x: 46, y: -28), // stays outside while left presents
     DanceIkTargetKey(30, x: 38, y: -30),
     DanceIkTargetKey(32, x: 30, y: -36),
@@ -5239,7 +5396,8 @@ class CatClips {
     DanceIkTargetKey(16, x: -30, y: -36),
     DanceIkTargetKey(20, x: -32, y: -38),
     DanceIkTargetKey(24, x: -34, y: -40),
-    DanceIkTargetKey(27, x: -36, y: -42),
+    DanceIkTargetKey(26, x: -70, y: -66), // cue the mirror hit early
+    DanceIkTargetKey(27, x: -90, y: -82),
     DanceIkTargetKey(
       28,
       x: -100,
@@ -5247,6 +5405,7 @@ class CatClips {
     ), // THRUST UP+OUT — present (mirror hit)
     DanceIkTargetKey(29, x: -110, y: -96), // overshoot well past the peak
     DanceIkTargetKey(30, x: -90, y: -78), // settle back
+    DanceIkTargetKey(31, x: -76, y: -68),
     DanceIkTargetKey(32, x: -30, y: -36),
   ];
   static final KeyframeIkTargetChannel _bugaHandLTarget = _dancePhrase
@@ -5305,84 +5464,158 @@ class CatClips {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Pouncing Cat (Amapiano, SA ~2020-23) — the GLIDING contrast: a deep crouch
-  // with a slow lateral CoM GLIDE (half-time, shift every ~8 frames) while fast
-  // feet shuffle underneath and the head stays dead-level. Sustained + Bound +
-  // Light; non-snappy (drag/follow-through, no anticipation pops). The cat's
-  // "pouncing creep".
+  // Pouncing Cat — the character move. It is built as two mirrored cells:
+  // crouch -> coil -> push-off/reach -> landing. The old version was a low
+  // side-glide with crossed ankles and waist-level paw pendulums; it scored as
+  // static because no frame showed stored energy, flight, or a landing.
   // ─────────────────────────────────────────────────────────────────────────
   static const _pounceBodyKeys = [
-    // Deep crouch, no bob (head level). The lateral CREEP is keyframed to DWELL:
-    // float to one side and SETTLE there for most of the half, then ease across
-    // — a low gliding creep, not a continuous side-to-side pendulum. Modest
-    // amplitude so it reads as a calm float, especially when the whole trio is
-    // on it in the bridge.
-    DanceBodyKey(0, rootDx: -28, rootDy: 22, chestScaleY: 0.97),
-    DanceBodyKey(12, rootDx: -28, rootDy: 22, chestScaleY: 0.97), // settle left
-    DanceBodyKey(16, rootDx: 28, rootDy: 22, chestScaleY: 0.97), // ease across
-    DanceBodyKey(28, rootDx: 28, rootDy: 22, chestScaleY: 0.97), // settle right
-    DanceBodyKey(32, rootDx: -28, rootDy: 22, chestScaleY: 0.97), // ease back
+    DanceBodyKey(
+      0,
+      rootDx: -26,
+      rootDy: 32,
+      pelvisRotation: -0.18,
+      chestRotation: 0.12,
+      chestScaleY: 0.9,
+      chestScaleX: 1.07,
+    ),
+    DanceBodyKey(
+      4,
+      rootDx: -34,
+      rootDy: 44,
+      pelvisRotation: -0.32,
+      chestRotation: 0.22,
+      chestScaleY: 0.84,
+      chestScaleX: 1.12,
+    ),
+    DanceBodyKey(
+      8,
+      rootDx: 12,
+      rootDy: 12,
+      pelvisRotation: 0.08,
+      chestRotation: -0.26,
+      chestScaleY: 1.06,
+      chestScaleX: 0.96,
+    ),
+    DanceBodyKey(
+      12,
+      rootDx: 32,
+      rootDy: 30,
+      pelvisRotation: 0.22,
+      chestRotation: -0.16,
+      chestScaleY: 0.92,
+      chestScaleX: 1.05,
+    ),
+    DanceBodyKey(
+      16,
+      rootDx: 26,
+      rootDy: 32,
+      pelvisRotation: 0.18,
+      chestRotation: -0.12,
+      chestScaleY: 0.9,
+      chestScaleX: 1.07,
+    ),
+    DanceBodyKey(
+      20,
+      rootDx: 34,
+      rootDy: 44,
+      pelvisRotation: 0.32,
+      chestRotation: -0.22,
+      chestScaleY: 0.84,
+      chestScaleX: 1.12,
+    ),
+    DanceBodyKey(
+      24,
+      rootDx: -12,
+      rootDy: 12,
+      pelvisRotation: -0.08,
+      chestRotation: 0.26,
+      chestScaleY: 1.06,
+      chestScaleX: 0.96,
+    ),
+    DanceBodyKey(
+      28,
+      rootDx: -32,
+      rootDy: 30,
+      pelvisRotation: -0.22,
+      chestRotation: 0.16,
+      chestScaleY: 0.92,
+      chestScaleX: 1.05,
+    ),
+    DanceBodyKey(
+      32,
+      rootDx: -26,
+      rootDy: 32,
+      pelvisRotation: -0.18,
+      chestRotation: 0.12,
+      chestScaleY: 0.9,
+      chestScaleX: 1.07,
+    ),
   ];
-  // Fast low heel-toe shuffle taps (sole skims, never lifts past shin-low); the
-  // lateral travel comes from the root glide, not the feet.
+  static const _pounceContactSpans = [
+    GroundSpan(CatBones.footL, 0, 0.1875),
+    GroundSpan(CatBones.footR, 0.375, 0.5625),
+    GroundSpan(CatBones.footR, 0.5, 0.6875),
+    GroundSpan(CatBones.footL, 0.875, 1),
+  ];
+  // Feet now show actual push/land mechanics: the loaded rear foot stays under
+  // the body through the coil, the lead foot reaches for the landing, then the
+  // mirrored cell answers. Keep the feet wide enough that the legs never read as
+  // a crossed ankle bundle.
   static const _pounceFootLTargetKeys = [
-    DanceIkTargetKey(0, x: -22, y: 99),
-    DanceIkTargetKey(2, x: -22, y: 81),
-    DanceIkTargetKey(4, x: -22, y: 99),
-    DanceIkTargetKey(6, x: -22, y: 81),
-    DanceIkTargetKey(8, x: -22, y: 99),
-    DanceIkTargetKey(10, x: -22, y: 81),
-    DanceIkTargetKey(12, x: -22, y: 99),
-    DanceIkTargetKey(14, x: -22, y: 81),
-    DanceIkTargetKey(16, x: -22, y: 99),
-    DanceIkTargetKey(18, x: -22, y: 81),
-    DanceIkTargetKey(20, x: -22, y: 99),
-    DanceIkTargetKey(22, x: -22, y: 81),
-    DanceIkTargetKey(24, x: -22, y: 99),
-    DanceIkTargetKey(26, x: -22, y: 81),
-    DanceIkTargetKey(28, x: -22, y: 99),
-    DanceIkTargetKey(30, x: -22, y: 81),
-    DanceIkTargetKey(32, x: -22, y: 99),
+    DanceIkTargetKey(0, x: -34, y: 99),
+    DanceIkTargetKey(4, x: -42, y: 99),
+    DanceIkTargetKey(6, x: -54, y: 94),
+    DanceIkTargetKey(8, x: -18, y: 78),
+    DanceIkTargetKey(10, x: 30, y: 86),
+    DanceIkTargetKey(12, x: 54, y: 99, ease: Ease.easeIn),
+    DanceIkTargetKey(16, x: 34, y: 99),
+    DanceIkTargetKey(20, x: 42, y: 96),
+    DanceIkTargetKey(22, x: 28, y: 84),
+    DanceIkTargetKey(24, x: -62, y: 82),
+    DanceIkTargetKey(26, x: -76, y: 90),
+    DanceIkTargetKey(28, x: -54, y: 99, ease: Ease.easeIn),
+    DanceIkTargetKey(32, x: -34, y: 99),
   ];
   static const _pounceFootRTargetKeys = [
-    DanceIkTargetKey(0, x: 22, y: 81),
-    DanceIkTargetKey(2, x: 22, y: 99),
-    DanceIkTargetKey(4, x: 22, y: 81),
-    DanceIkTargetKey(6, x: 22, y: 99),
-    DanceIkTargetKey(8, x: 22, y: 81),
-    DanceIkTargetKey(10, x: 22, y: 99),
-    DanceIkTargetKey(12, x: 22, y: 81),
-    DanceIkTargetKey(14, x: 22, y: 99),
-    DanceIkTargetKey(16, x: 22, y: 81),
-    DanceIkTargetKey(18, x: 22, y: 99),
-    DanceIkTargetKey(20, x: 22, y: 81),
-    DanceIkTargetKey(22, x: 22, y: 99),
-    DanceIkTargetKey(24, x: 22, y: 81),
-    DanceIkTargetKey(26, x: 22, y: 99),
-    DanceIkTargetKey(28, x: 22, y: 81),
-    DanceIkTargetKey(30, x: 22, y: 99),
-    DanceIkTargetKey(32, x: 22, y: 81),
+    DanceIkTargetKey(0, x: 30, y: 96),
+    DanceIkTargetKey(2, x: 36, y: 86),
+    DanceIkTargetKey(4, x: 44, y: 88),
+    DanceIkTargetKey(8, x: 76, y: 82),
+    DanceIkTargetKey(10, x: 74, y: 92),
+    DanceIkTargetKey(12, x: 42, y: 99, ease: Ease.easeIn),
+    DanceIkTargetKey(16, x: 34, y: 99),
+    DanceIkTargetKey(20, x: 42, y: 99),
+    DanceIkTargetKey(22, x: 54, y: 94),
+    DanceIkTargetKey(24, x: 18, y: 78),
+    DanceIkTargetKey(26, x: -30, y: 86),
+    DanceIkTargetKey(28, x: -54, y: 99, ease: Ease.easeIn),
+    DanceIkTargetKey(32, x: 30, y: 96),
   ];
-  // Arms hang loose at the waist and swing as a damped pendulum CLUSTER that
-  // trails the lateral glide (both hands translate the same way, ~2 frames
-  // behind the COM — passive overlapping action, no active gesture). Wider
-  // lateral throw than before so they read loose, not welded at center.
-  // The swing extremes (frames 8/24) use easeOutBack so the passive paw
-  // pendulum continues PAST the reversal then settles back — overlapping
-  // follow-through that clearly lags the glide. Needs the non-smooth channel.
+  // Arms reach in the direction of travel on launch and land as separate paws.
+  // The rear arm stays lower to preserve elbows/wrists instead of making one
+  // fused sleeve mass across the chest.
   static const _pounceHandLTargetKeys = [
-    DanceIkTargetKey(0, x: -32, y: 14),
-    DanceIkTargetKey(8, x: -50, y: 16, ease: Ease.easeOutBack), // trail left
-    DanceIkTargetKey(16, x: -32, y: 14),
-    DanceIkTargetKey(24, x: -14, y: 16, ease: Ease.easeOutBack), // trail right
-    DanceIkTargetKey(32, x: -32, y: 14),
+    DanceIkTargetKey(0, x: -42, y: -4),
+    DanceIkTargetKey(4, x: -58, y: -18),
+    DanceIkTargetKey(8, x: 18, y: -42, ease: Ease.easeOutBack),
+    DanceIkTargetKey(12, x: 58, y: -20),
+    DanceIkTargetKey(16, x: 42, y: -4),
+    DanceIkTargetKey(20, x: 54, y: 6),
+    DanceIkTargetKey(24, x: -46, y: -14, ease: Ease.easeOutBack),
+    DanceIkTargetKey(28, x: -68, y: -26),
+    DanceIkTargetKey(32, x: -42, y: -4),
   ];
   static const _pounceHandRTargetKeys = [
-    DanceIkTargetKey(0, x: 32, y: 14),
-    DanceIkTargetKey(8, x: 14, y: 16, ease: Ease.easeOutBack), // trail left
-    DanceIkTargetKey(16, x: 32, y: 14),
-    DanceIkTargetKey(24, x: 50, y: 16, ease: Ease.easeOutBack), // trail right
-    DanceIkTargetKey(32, x: 32, y: 14),
+    DanceIkTargetKey(0, x: 36, y: 4),
+    DanceIkTargetKey(4, x: 48, y: 10),
+    DanceIkTargetKey(8, x: 80, y: -18, ease: Ease.easeOutBack),
+    DanceIkTargetKey(12, x: 54, y: -4),
+    DanceIkTargetKey(16, x: 36, y: 4),
+    DanceIkTargetKey(20, x: 58, y: -18),
+    DanceIkTargetKey(24, x: -18, y: -42, ease: Ease.easeOutBack),
+    DanceIkTargetKey(28, x: -58, y: -20),
+    DanceIkTargetKey(32, x: 36, y: 4),
   ];
   static final KeyframeIkTargetChannel _pounceFootLTarget = _dancePhrase
       .ikTargetChannel(_pounceFootLTargetKeys, smooth: true);
@@ -5410,11 +5643,10 @@ class CatClips {
     return Clip(
       name: 'pouncingCat',
       duration: base.duration,
-      // NO contact spans (the default): the support-foot contact lock pulls the
-      // root back to the planted foot's X, which cancels the lateral glide. The
-      // glide IS the move, so the feet skim freely (driven only by their low IK
-      // targets).
+      contactSpans: _pounceContactSpans,
+      contactPinning: base.contactPinning,
       limbTargets: _pounceLimbTargets,
+      supportFootWorldAnchor: true,
       // The head must stay DEAD-LEVEL over the gliding base (the signature
       // Amapiano contrast). Kill the engine's dance head-nod attitude (scale 0)
       // and the inherited dance neck/head nod channels below — the body's rootDy
