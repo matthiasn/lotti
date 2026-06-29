@@ -161,24 +161,33 @@ void main() {
       0.6);
 
   // --- Warm reflection columns under the FIXED bright sources: the lit city
-  // windows (left ~0.20/0.34) and the moored yacht's interior glow (right
-  // ~0.85). The scene's structures don't move, so their x is baked here. Each is
-  // a soft column broken into vertical dashes that widen + brighten toward the
-  // foreground — the "broken reflection" tell the plate's static water lacks. ---
+  // window cluster (left third, ~0.13/0.22/0.33) and the moored yacht's interior
+  // glow (right ~0.85). The scene's structures don't move, so their x is baked
+  // here. Each is a soft column broken into vertical dashes. A real reflection of
+  // a distant light is BRIGHTEST AT THE LIP (right under the source, on the
+  // waterline) and breaks up + dims as it runs toward the viewer — so the column
+  // weight is biased to the waterline and decays downward (the previous version
+  // brightened toward the foreground, which read backwards: the streaks looked
+  // detached from the windows above them). The city windows are the brightest
+  // sources in frame yet the left bay was reading flat navy, so the left columns
+  // carry the most weight. ---
   float refl = 0.0;
-  for (int s = 0; s < 3; s++) {
-    float cx = s == 0 ? 0.20 : (s == 1 ? 0.34 : 0.85);
-    float str = s == 0 ? 0.8 : (s == 1 ? 0.55 : 0.9);
+  for (int s = 0; s < 4; s++) {
+    float cx = s == 0 ? 0.13 : (s == 1 ? 0.22 : (s == 2 ? 0.33 : 0.85));
+    float str = s == 0 ? 0.95 : (s == 1 ? 0.85 : (s == 2 ? 0.7 : 0.9));
     float d = abs(art.x - cx) * aspect;
-    float colw = 0.016 + 0.03 * depth;
+    // Widen the column gently toward the viewer so the streak fans as it nears.
+    float colw = 0.02 + 0.035 * depth;
     float col = exp(-pow(d / colw, 2.0));
-    float dash = smoothstep(0.40, 0.92,
+    float dash = smoothstep(0.35, 0.88,
         fbm(vec2(art.x * 40.0, depth * 26.0 - uTime * 0.5 + float(s) * 7.0)));
-    // Brighter + longer than the first pass (the columns were too dim/short to
-    // separate from the water): reach further down (0.95) off a lifted floor.
-    refl += col * dash * str * (0.2 + 0.95 * depth);
+    // Lip-weighted fall: fade in right at the waterline, then decay toward the
+    // foreground so the brightest part sits under the source and the column
+    // tapers to a faint shimmer ~2/3 of the way down (never reaching the deck).
+    float colFall = smoothstep(0.0, 0.03, depth) * exp(-depth * 5.0);
+    refl += col * dash * str * colFall;
   }
-  float reflA = clamp(refl * clamp(uReflection, 0.0, 2.0), 0.0, 0.72);
+  float reflA = clamp(refl * clamp(uReflection, 0.0, 2.0), 0.0, 0.85);
 
   // --- Fresnel horizon sheen: at the grazing angle near the far shore the
   // lagoon mirrors the bright twilight sky, so the band just under the waterline

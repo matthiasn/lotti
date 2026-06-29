@@ -31,10 +31,11 @@ import 'package:lotti/features/scenery/model/skyline_manifest.dart';
 /// a grey smear.
 class AtmosphericHazeLayer implements BackdropLayer {
   const AtmosphericHazeLayer({
-    this.strength = 0.2,
+    this.strength = 0.3,
     this.coolMix = 0.55,
-    this.skyReach = 0.16,
-    this.waterReach = 0.26,
+    this.paleLift = 0.4,
+    this.skyReach = 0.18,
+    this.waterReach = 0.12,
   });
 
   /// Peak veil opacity at the waterline (0 = none).
@@ -45,13 +46,21 @@ class AtmosphericHazeLayer implements BackdropLayer {
   /// default leans past halfway.
   final double coolMix;
 
+  /// After the warm-grey→cool mix, how far the veil lifts toward the pale
+  /// cloud-top tone ([BackdropPalette.cloudLit]). A real aerial-haze band reads
+  /// as a *bright, pale* fog line dissolving the distant bases — not a dark
+  /// tint — so the lift raises both value and the "fog" read.
+  final double paleLift;
+
   /// How far the veil bleeds UP into the sky above the waterline, as a fraction
-  /// of the cover-fit art height (kept short — open sky is clear).
+  /// of the cover-fit art height — this is the side that matters: it dissolves
+  /// the BASES of the skyline / bridge / yacht sitting just above the waterline.
   final double skyReach;
 
   /// How far the veil bleeds DOWN into the near water below the waterline, as a
-  /// fraction of art height (longer than [skyReach]: the lagoon surface carries
-  /// the haze toward the viewer before the clear foreground takes over).
+  /// fraction of art height. Kept SHORT so the band hugs the structure bases and
+  /// does not wash over the broken reflection columns the ocean shader paints in
+  /// the water just below the waterline.
   final double waterReach;
 
   @override
@@ -69,7 +78,11 @@ class AtmosphericHazeLayer implements BackdropLayer {
     final topY = waterY - skyReach * cover.height;
     final botY = waterY + waterReach * cover.height;
 
-    final haze = Color.lerp(palette.hazeSmog, palette.skyHorizonCool, coolMix)!;
+    final cool = Color.lerp(palette.hazeSmog, palette.skyHorizonCool, coolMix)!;
+    // Lift the cool smog toward the pale cloud-top so the band reads as a
+    // bright fog line (aerial perspective dissolves the far bases), not a dark
+    // veil that just muddies the midground.
+    final haze = Color.lerp(cool, palette.cloudLit, paleLift.clamp(0.0, 1.0))!;
     final a = strength.clamp(0.0, 1.0);
     // Peak at the waterline; transparent at both reaches. Stops are placed by
     // where the waterline falls between top/bot so the peak stays pinned on the
