@@ -79,6 +79,12 @@ void main() {
   // Aspect-corrected horizontal art coordinate for isotropic wave spacing.
   float x = art.x * aspect;
   float beat = clamp(uBeat, 0.0, 1.0);
+  // Lateral aerial perspective: the bright left bay (under the lit city) sits
+  // closest to the strongest source and the surface recedes + hazes toward the
+  // moored yacht on the right, so the surface life (crest foam + glitter) dims
+  // toward the right rather than staying evenly bright edge to edge. The warm
+  // reflection columns are NOT subject to this (they track their own sources).
+  float lateralFall = mix(1.0, 0.5, smoothstep(0.4, 0.96, art.x));
 
   // --- Subtle vertical tint (very low alpha; the plate already paints water) ---
   vec3 water =
@@ -101,21 +107,26 @@ void main() {
     float speed = 0.05 + fi * 0.035;
     float wob = fbm(vec2(x * uWaveScale * (0.12 + 0.06 * fi), depth * 3.0) -
         vec2(uTime * speed, 0.0));
-    // Irregularly-spaced, wavy ridge phase: low-frequency noise on the phase
-    // keeps the crests from forming evenly-spaced horizontal scanlines (the
-    // #1 procedural-water tell) — real whitecaps wander in spacing and bend.
+    // Irregularly-spaced, wavy ridge phase. Keep the y-frequency of the phase
+    // noise LOW (depth*3.0, not 6.0): a high y-frequency made the crest line jump
+    // phase between adjacent rows, rounding each whitecap into an isotropic blob.
+    // A low y-frequency lets a single crest stay coherent over a long horizontal
+    // run (a filament) while still bending — the whole point of "whitecap", not
+    // "speckle".
     float phase = depth * rows + wob * 3.5 +
-        fbm(vec2(x * 1.7, depth * 6.0)) * 5.0 - uTime * (0.25 + speed);
+        fbm(vec2(x * 1.4, depth * 3.0)) * 4.0 - uTime * (0.25 + speed);
     float crest = sin(phase);
-    // Break-up stretched HORIZONTALLY (x freq 2.0, not 4.0) so each whitecap is a
-    // long elongated filament with dark gaps between, not a row of dots; floored
-    // and advected so segments fade/wander rather than popping frame to frame.
-    float dash = mix(0.32, 1.0, smoothstep(0.3, 0.78,
-        fbm(vec2(x * 2.0 + fi * 9.0, depth * 7.0 - uTime * (speed + 0.1)))));
-    // Discrete bright filaments with dark water between, but NOT thresholded so
-    // hard they fall below the perceptual floor over the dark plate — a moderate
-    // cut + a lifted amplitude so the elongated crests actually read mid-lagoon.
-    foamAmt += smoothstep(0.46, 0.80, crest) * dash * (0.7 + 0.5 * wob);
+    // Break-up stretched HARD horizontally: x freq 2.2 gives long runs, and the
+    // y-frequency is dropped to depth*2.0 so the bright/dark segmentation does NOT
+    // chop the filament vertically — segments stay long in x with dark gaps
+    // between, reading as elongated foam streaks rather than a dot-field.
+    float dash = mix(0.28, 1.0, smoothstep(0.3, 0.78,
+        fbm(vec2(x * 2.2 + fi * 9.0, depth * 2.0 - uTime * (speed + 0.1)))));
+    // Tighter threshold (0.5..0.74) carves thinner, harder-edged horizontal
+    // filaments; a lifted amplitude floor (0.85) so the crests in the visible
+    // upper strip out-punch the smooth reflection sheen below them, instead of
+    // the foam being the dim element and the sheen the bright one.
+    foamAmt += smoothstep(0.5, 0.74, crest) * dash * (0.85 + 0.45 * wob);
   }
   // Ease foam in FAST just under the waterline (the upper strip of water is the
   // most-visible band; a slow 0..0.12 ramp left it bald) and concentrate the
@@ -126,7 +137,7 @@ void main() {
   // waterline-to-deck strip, then hold (the rest is hidden anyway).
   float foamBand = smoothstep(0.0, 0.06, depth) *
       (1.0 - smoothstep(0.8, 1.0, depth)) *
-      (0.6 + 0.7 * smoothstep(0.04, 0.26, depth));
+      (0.6 + 0.7 * smoothstep(0.04, 0.26, depth)) * lateralFall;
   // Only a whisper of beat reactivity (was 0.6): a big beat-swell made the whole
   // foam field brighten and dim on every beat, which read as a weird pulsing of
   // the water. Keep it nearly steady.
@@ -137,22 +148,26 @@ void main() {
       0.85);
   // Foam LIP at the waterline: a brighter, broken band right where the water
   // meets the seawall / far shore — the single strongest "this is liquid" cue.
-  // Peaks just under the waterline (depth ~0.02) and tongues DOWN to ~0.16 so the
-  // foam licks into the clearly-visible water strip below the waterline (the far
-  // contact line right at depth 0 is mostly occluded by the redrawn seawall /
-  // bridge piers, so a lip that died by depth 0.10 sat almost entirely behind
-  // structures), with a wobble so it scallops instead of forming a clean stripe.
-  float lip = (1.0 - smoothstep(0.0, 0.16, depth)) * smoothstep(0.0, 0.012, depth);
-  // Hard-broken scallop (dark gaps between bright tongues) so the contact line
-  // reads as broken foam tonguing onto the shore, not a continuous smear. Driven
-  // HOT (~1.4) — this is the single strongest "moving water" cue and it has to
-  // punch through the pale haze band that sits on the same waterline, so it runs
-  // far brighter than the crest field and quantizes toward a near-1.0 white line.
+  // BROKEN TONGUES, not a continuous smear: an x-varying gate picks WHICH columns
+  // grow a bright foam tongue, and gates both how far each tongue reaches down and
+  // its brightness — so the lip reads as discrete bright tongues licking into the
+  // water with dark gaps between, exactly where the camera can see it (in the pier
+  // gaps), rather than a soft even glow stripe along the whole waterline.
+  float tongue = smoothstep(0.32, 0.7,
+      fbm(vec2(x * 4.5, 7.0 - uTime * 0.12)));
+  float lipReach = mix(0.06, 0.19, tongue);
+  float lip = (1.0 - smoothstep(0.0, lipReach, depth)) *
+      smoothstep(0.0, 0.012, depth);
+  // A finer scallop within each tongue keeps its inner edge ragged. Driven HOT
+  // (~1.7) and gated by `tongue` so the bright tongues quantize toward a near-1.0
+  // white line and punch through the pale haze band on the same waterline.
   float lipWob =
-      0.15 + 0.85 * smoothstep(0.34, 0.82,
-          fbm(vec2(x * 5.0, depth * 30.0 - uTime * 0.18)));
+      0.2 + 0.8 * smoothstep(0.3, 0.75,
+          fbm(vec2(x * 6.0, depth * 12.0 - uTime * 0.18)));
   foamA = clamp(
-      foamA + lip * lipWob * 1.4 * clamp(uFoamDensity, 0.0, 1.0), 0.0, 0.98);
+      foamA + lip * lipWob * tongue * 1.7 * clamp(uFoamDensity, 0.0, 1.0),
+      0.0,
+      0.99);
   // NEAR foam: a broader broken wash where the lagoon laps the foreground
   // seawall/deck. This band is big and close to camera, so it is the foam that
   // actually reads — the far waterline lip alone is too distant to register.
@@ -195,11 +210,14 @@ void main() {
   // Strongest in the mid-water, easing off at the far waterline and the deck.
   float glitBand =
       smoothstep(0.06, 0.32, depth) * (1.0 - smoothstep(0.86, 1.0, depth));
-  // Carry extra specular energy across the seam just right of the city columns
-  // (~x 0.40) with a soft exponential bump, so the bright reflected-city band
-  // doesn't drop in a hard vertical luminance step into the centre water.
-  float seamLift = 1.0 + 0.55 * exp(-pow((art.x - 0.40) / 0.13, 2.0));
-  float glitA = clamp(glit * glitBand * 0.34 * seamLift, 0.0, 0.5);
+  // Carry a LITTLE extra specular energy across the seam just right of the city
+  // columns (~x 0.42) so the reflected-city band doesn't drop in a hard vertical
+  // step — but kept small (0.3, wider sigma) because at 0.55 it built a smooth
+  // bright "milky slab" of glitter at centre-left that read as an airbrushed wash
+  // rather than broken specular dashes. The break-up now comes from `glit` itself.
+  float seamLift = 1.0 + 0.3 * exp(-pow((art.x - 0.42) / 0.17, 2.0));
+  float glitA =
+      clamp(glit * glitBand * 0.34 * seamLift * lateralFall, 0.0, 0.5);
   // Cool sky-reflection tone (the surface mirrors the twilight sky between
   // crests), warming a touch toward the city columns on the left.
   vec3 glitCol = mix(uOceanHorizon.rgb * 1.7, uFoam.rgb, 0.35);
@@ -303,7 +321,11 @@ void main() {
   // recedes instead of reading as one flat sheet; a faint ripple keeps the sheen
   // from being a clean horizontal stripe. ---
   float fres = 1.0 - smoothstep(0.0, 0.55, depth);
-  float sheenRipple = 0.75 + 0.25 * fbm(vec2(x * 6.0, depth * 22.0 - uTime * 0.3));
+  // Higher-contrast ripple (0.55..1.0, was 0.75..1.0) so the sheen carves visible
+  // darker troughs across the surface instead of laying down a flat, even,
+  // airbrushed milky band — the troughs are what make it read as a rippled mirror.
+  float sheenRipple =
+      0.55 + 0.45 * fbm(vec2(x * 6.5, depth * 24.0 - uTime * 0.3));
   // Desaturated toward a cool slate (not bright teal): oceanHorizon * 1.9 read
   // as a milky CYAN smear at the far waterline. Pull the multiplier down and mix
   // harder toward the neutral foam tone so the sheen lifts the horizon without a
