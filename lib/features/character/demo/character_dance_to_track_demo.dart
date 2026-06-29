@@ -1570,7 +1570,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                   positionSec: posSec,
                   durationSec: _trackDurationSec,
                   currentSectionLabel: musicalLabel,
-                  currentSectionEnergetic: section?.energetic ?? true,
                   amplitudes: _amplitudes,
                   sections: _waveformSections,
                   onPlayPause: () => unawaited(_togglePlay()),

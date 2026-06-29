@@ -31,7 +31,6 @@ Future<_Recorder> _pump(
   double positionSec = 93.433,
   double durationSec = 144.06,
   String? sectionLabel = 'B',
-  bool energetic = true,
   List<double>? amplitudes = _amplitudes,
   List<DanceWaveformSection> sections = _sections,
   Size size = const Size(1280, 800),
@@ -61,7 +60,6 @@ Future<_Recorder> _pump(
               positionSec: positionSec,
               durationSec: durationSec,
               currentSectionLabel: sectionLabel,
-              currentSectionEnergetic: energetic,
               amplitudes: amplitudes,
               sections: sections,
               onPlayPause: () => rec.play++,
@@ -117,16 +115,9 @@ void main() {
         find.textContaining('02:24.060', findRichText: true),
         findsOneWidget,
       );
-      // BPM pill and the now-playing section chip.
+      // BPM readout and the now-playing section name (uppercased).
       expect(find.textContaining('120', findRichText: true), findsOneWidget);
       expect(find.text('B'), findsOneWidget);
-      expect(find.text('DANCE'), findsOneWidget);
-    });
-
-    testWidgets('shows CALM for a non-energetic section', (tester) async {
-      await _pump(tester, energetic: false);
-      expect(find.text('CALM'), findsOneWidget);
-      expect(find.text('DANCE'), findsNothing);
     });
 
     testWidgets('loading hides metadata and disables play', (tester) async {

@@ -23,7 +23,6 @@ class DanceTransportBar extends StatelessWidget {
     required this.positionSec,
     required this.durationSec,
     required this.currentSectionLabel,
-    required this.currentSectionEnergetic,
     required this.amplitudes,
     required this.sections,
     required this.onPlayPause,
@@ -48,7 +47,6 @@ class DanceTransportBar extends StatelessWidget {
   final double positionSec;
   final double durationSec;
   final String? currentSectionLabel;
-  final bool currentSectionEnergetic;
 
   /// Full-track waveform, normalized 0..1. Null while loading; empty when the
   /// beat map carries no waveform.
@@ -174,7 +172,8 @@ class DanceTransportBar extends StatelessWidget {
           ),
           // Captions are hidden entirely when there are no lyrics, so an inert
           // disabled control can never be mistaken for a live one (or vice versa).
-          if (captionsAvailable)
+          if (captionsAvailable) ...[
+            const _VRule(height: 40),
             _toggle(
               icon: showCaptions
                   ? Icons.closed_caption_rounded
@@ -184,6 +183,8 @@ class DanceTransportBar extends StatelessWidget {
               tooltip: showCaptions ? 'Hide lyrics' : 'Show lyrics',
               onTap: onToggleCaptions,
             ),
+          ],
+          const _VRule(height: 40),
           _toggle(
             // A picture glyph (filled = layered scene, outline = flat plate) so
             // it reads as a backdrop swap, not fullscreen/fit.
@@ -224,9 +225,11 @@ class DanceTransportBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 13),
           decoration: active && enabled
               ? const BoxDecoration(
-                  color: Color(0x594DD6C0),
+                  // The thick underline + bright glyph carry the on-state; the
+                  // wash is just a hint, so the solid play disc keeps primacy.
+                  color: Color(0x294DD6C0),
                   border: Border(
-                    bottom: BorderSide(color: _Chrome.accent, width: 2.5),
+                    bottom: BorderSide(color: _Chrome.accent, width: 3),
                   ),
                 )
               : null,
@@ -364,8 +367,8 @@ class DanceTransportBar extends StatelessWidget {
     );
   }
 
-  /// Now-playing section, as a plain readout: a hue dot + label + energy state.
-  /// "DANCE/CALM" is intentionally NOT teal — teal is reserved for interactive.
+  /// Now-playing section, as a plain readout: a hue dot + the section name. The
+  /// energy state isn't labelled here — it's visible in the video stage itself.
   Widget _sectionReadout() {
     final label = currentSectionLabel ?? '–';
     final hue = _sectionHue(label);
@@ -386,16 +389,6 @@ class DanceTransportBar extends StatelessWidget {
             fontSize: 13,
             letterSpacing: 0.6,
             fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(width: 7),
-        Text(
-          currentSectionEnergetic ? 'DANCE' : 'CALM',
-          style: TextStyle(
-            color: currentSectionEnergetic ? _Chrome.textHi : _Chrome.textLow,
-            fontSize: 9.5,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.1,
           ),
         ),
       ],
@@ -613,7 +606,6 @@ class _DanceTimelinePainter extends CustomPainter {
   }
 
   void _paintSectionBands(Canvas canvas, Size size, double waveTop) {
-    final h = size.height - waveTop;
     for (final s in sections) {
       final sx0 = _x(s.start, size.width);
       final sx1 = _x(s.end, size.width);
@@ -625,9 +617,9 @@ class _DanceTimelinePainter extends CustomPainter {
         Paint()..color = const Color(0x1FFFFFFF),
       );
       if (active) {
-        // The live region gets the colored clip top-edge + a neutral cool wash +
-        // a hue frame; inactive sections rely on their marker pill alone, so the
-        // wave-lane top stays clean and the current clip clearly pops.
+        // The live region: a colored clip top-edge + a neutral cool wash. The
+        // filled marker pill finishes the "you are here" read — no heavy hue box
+        // (the old full side+top frame read like a loop region on the wrong cue).
         canvas
           ..drawRect(
             Rect.fromLTRB(sx0, waveTop, sx1, waveTop + 4),
@@ -635,15 +627,7 @@ class _DanceTimelinePainter extends CustomPainter {
           )
           ..drawRect(
             Rect.fromLTRB(sx0, waveTop + 4, sx1, size.height),
-            Paint()..color = const Color(0x0EFFFFFF),
-          )
-          ..drawRect(
-            Rect.fromLTWH(sx0, waveTop, 1.5, h),
-            Paint()..color = hue.withValues(alpha: 0.8),
-          )
-          ..drawRect(
-            Rect.fromLTWH(sx1 - 1.5, waveTop, 1.5, h),
-            Paint()..color = hue.withValues(alpha: 0.8),
+            Paint()..color = const Color(0x12FFFFFF),
           );
       }
     }
@@ -655,19 +639,24 @@ class _DanceTimelinePainter extends CustomPainter {
     if (bpm <= 0) return;
     final barSec = 60.0 / bpm * 4;
     if (barSec <= 0) return;
-    final h = size.height - waveTop;
     // t = barSec is the start of bar 2; `bar` is the bar number at that line.
     var bar = 2;
     for (var t = barSec; t < trackDurationSec; t += barSec, bar++) {
       final x = _x(t, size.width);
-      final phrase = (bar - 1) % 4 == 0; // downbeats of 4-bar phrases
-      // Drawn over the waveform: phrase downbeats read clearly, bar lines stay a
-      // faint texture so the grid is present without striping the lane.
-      canvas.drawRect(
-        Rect.fromLTWH(x, waveTop, 1, h),
-        Paint()
-          ..color = phrase ? const Color(0x47FFFFFF) : const Color(0x0AFFFFFF),
-      );
+      if ((bar - 1) % 4 == 0) {
+        // Phrase downbeats run the FULL height — clearly legible in the header
+        // (no waveform to hide them) — the beat-grid reference a sync tool needs.
+        canvas.drawRect(
+          Rect.fromLTWH(x, 0, 1, size.height),
+          Paint()..color = const Color(0x5CFFFFFF),
+        );
+      } else {
+        // Bar lines stay a faint texture inside the wave lane.
+        canvas.drawRect(
+          Rect.fromLTWH(x, waveTop, 1, size.height - waveTop),
+          Paint()..color = const Color(0x0AFFFFFF),
+        );
+      }
     }
   }
 
@@ -709,8 +698,8 @@ class _DanceTimelinePainter extends CustomPainter {
         cnt++;
       }
       final rms = cnt > 0 ? sum / cnt : peak;
-      final peakH = (math.pow(peak, 1.7) * maxH).clamp(3, maxH).toDouble();
-      final bodyH = (math.pow(rms, 1.7) * maxH).clamp(2, peakH).toDouble();
+      final peakH = (math.pow(peak, 1.95) * maxH).clamp(2, maxH).toDouble();
+      final bodyH = (math.pow(rms, 1.95) * maxH).clamp(1, peakH).toDouble();
       final past = x + barW <= px;
       canvas
         ..drawRect(
@@ -828,32 +817,28 @@ class _DanceTimelinePainter extends CustomPainter {
         Rect.fromLTWH(px - 0.75, 0, 1.5, size.height),
         Paint()..color = _Chrome.accent,
       );
-    // A rounded slider-thumb knob at the top — soft shadow + grip lines — so the
-    // playhead reads unmistakably as a draggable scrub thumb, not a tick.
-    final knob = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(px, 7), width: 16, height: 14),
-      const Radius.circular(4),
-    );
+    // A downward "flag" marker at the top (flat top, point at the bottom) — the
+    // classic editor playhead, unmistakably a position marker rather than the
+    // pause-glyph the old twin grip-bars read as.
+    final flag = Path()
+      ..moveTo(px - 6, 0)
+      ..lineTo(px + 6, 0)
+      ..lineTo(px + 6, 9)
+      ..lineTo(px, 14)
+      ..lineTo(px - 6, 9)
+      ..close();
     canvas
-      ..drawRRect(
-        knob.shift(const Offset(0, 1)),
+      ..drawPath(
+        flag.shift(const Offset(0, 1)),
         Paint()
-          ..color = const Color(0x73000000)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
+          ..color = const Color(0x66000000)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
       )
-      ..drawRRect(
-        knob,
+      ..drawPath(
+        flag,
         Paint()
           ..isAntiAlias = true
           ..color = _Chrome.accent,
-      )
-      ..drawRect(
-        Rect.fromLTWH(px - 2.5, 4, 1, 6),
-        Paint()..color = const Color(0x80063029),
-      )
-      ..drawRect(
-        Rect.fromLTWH(px + 1.5, 4, 1, 6),
-        Paint()..color = const Color(0x80063029),
       );
   }
 
