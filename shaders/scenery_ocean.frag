@@ -133,7 +133,7 @@ void main() {
     // filaments; a lifted amplitude floor (0.85) so the crests in the visible
     // upper strip out-punch the smooth reflection sheen below them, instead of
     // the foam being the dim element and the sheen the bright one.
-    foamAmt += smoothstep(0.5, 0.74, crest) * dash * (0.95 + 0.45 * wob);
+    foamAmt += smoothstep(0.5, 0.74, crest) * dash * (0.62 + 0.25 * wob);
   }
   // Ease foam in FAST just under the waterline (the upper strip of water is the
   // most-visible band; a slow 0..0.12 ramp left it bald) and concentrate the
@@ -144,7 +144,7 @@ void main() {
   // waterline-to-deck strip, then hold (the rest is hidden anyway).
   float foamBand = smoothstep(0.0, 0.06, depth) *
       (1.0 - smoothstep(0.8, 1.0, depth)) *
-      (0.6 + 0.7 * smoothstep(0.04, 0.26, depth)) * lateralFall;
+      (0.42 + 0.42 * smoothstep(0.04, 0.26, depth)) * lateralFall;
   // Only a whisper of beat reactivity (was 0.6): a big beat-swell made the whole
   // foam field brighten and dim on every beat, which read as a weird pulsing of
   // the water. Keep it nearly steady.
@@ -152,7 +152,7 @@ void main() {
       clamp(foamAmt, 0.0, 1.2) * foamBand *
           clamp(uFoamDensity * (1.0 + 0.1 * beat), 0.0, 1.7),
       0.0,
-      0.85);
+      0.22);
   // Foam LIP at the waterline: a brighter, broken band right where the water
   // meets the seawall / far shore — the single strongest "this is liquid" cue.
   // BROKEN TONGUES, not a continuous smear: an x-varying gate picks WHICH columns
@@ -172,9 +172,9 @@ void main() {
       0.2 + 0.8 * smoothstep(0.3, 0.75,
           fbm(vec2(x * 6.0, depth * 12.0 - uTime * 0.18)));
   foamA = clamp(
-      foamA + lip * lipWob * tongue * 2.3 * clamp(uFoamDensity, 0.0, 1.0),
+      foamA + lip * lipWob * tongue * 0.18 * clamp(uFoamDensity, 0.0, 1.0),
       0.0,
-      0.99);
+      0.24);
   // NEAR foam: a broader broken wash where the lagoon laps the foreground
   // seawall/deck. This band is big and close to camera, so it is the foam that
   // actually reads — the far waterline lip alone is too distant to register.
@@ -183,7 +183,7 @@ void main() {
   float nearWob = 0.32 + 0.68 * smoothstep(0.3, 0.82,
       fbm(vec2(x * 6.5, depth * 22.0 - uTime * 0.14)));
   foamA = clamp(
-      foamA + nearLip * nearWob * 0.82 * clamp(uFoamDensity, 0.0, 1.0), 0.0, 0.97);
+      foamA + nearLip * nearWob * 0.08 * clamp(uFoamDensity, 0.0, 1.0), 0.0, 0.28);
 
   // --- Moon glint: a soft, broken vertical shimmer under uMoonX. Kept gentle
   // (the plate already paints the city's reflections); ripples horizontally so
@@ -224,7 +224,7 @@ void main() {
   // rather than broken specular dashes. The break-up now comes from `glit` itself.
   float seamLift = 1.0 + 0.3 * exp(-pow((art.x - 0.42) / 0.17, 2.0));
   float glitA =
-      clamp(glit * glitBand * 0.34 * seamLift * lateralFall, 0.0, 0.5);
+      clamp(glit * glitBand * 0.14 * seamLift * lateralFall, 0.0, 0.22);
   // Cool sky-reflection tone (the surface mirrors the twilight sky between
   // crests), warming a touch toward the city columns on the left.
   vec3 glitCol = mix(uOceanHorizon.rgb * 1.7, uFoam.rgb, 0.35);
@@ -315,9 +315,9 @@ void main() {
   // genuinely warm sodium reflection, not a faint less-blue patch. The yacht
   // sits a touch under the city (~0.7x) and a warmer, softer 2700K amber.
   float reflCityA =
-      clamp(reflCity * clamp(uReflection, 0.0, 2.0) * 6.5, 0.0, 0.92);
+      clamp(reflCity * clamp(uReflection, 0.0, 2.0) * 2.2, 0.0, 0.36);
   float reflYachtA =
-      clamp(reflYacht * clamp(uReflection, 0.0, 2.0) * 5.7, 0.0, 0.88);
+      clamp(reflYacht * clamp(uReflection, 0.0, 2.0) * 2.0, 0.0, 0.34);
   vec3 cityWarm = vec3(1.0, 0.62, 0.32);
   vec3 yachtWarm = vec3(1.0, 0.66, 0.38);
 
@@ -338,7 +338,7 @@ void main() {
   // harder toward the neutral foam tone so the sheen lifts the horizon without a
   // saturated cyan blob.
   vec3 sheenCol = mix(uOceanHorizon.rgb * 1.35, uFoam.rgb, 0.5);
-  float sheenA = fres * fres * 0.2 * sheenRipple;
+  float sheenA = fres * fres * 0.035 * sheenRipple;
 
   // Summed colored contribution + summed coverage (city-lights convention). The
   // city reflections carry their own saturated sodium WARM; the moon glint keeps
@@ -378,11 +378,11 @@ void main() {
   // the cool city-blue left.
   vec3 rightCool = mix(
       mix(uOceanHorizon.rgb, uOceanNear.rgb, depth), vec3(0.5, 0.4, 0.32), 0.16);
-  outc.rgb += rightCool * rightLift * 0.17;
+  outc.rgb += rightCool * rightLift * 0.04;
   // Yacht reflection added AFTER the footprint suppression: it lives on the
   // open near-water in front of the hull, and the opaque yacht bitmap drawn over
   // this layer still occludes any part that falls behind the hull.
   outc.rgb += yachtWarm * reflYachtA;
-  outc.a = clamp(outc.a + rightLift * 0.16 + reflYachtA, 0.0, 1.0);
+  outc.a = clamp(outc.a + rightLift * 0.04 + reflYachtA, 0.0, 1.0);
   fragColor = outc;
 }
