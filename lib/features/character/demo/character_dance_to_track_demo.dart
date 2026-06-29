@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:lotti/features/character/demo/dance_ffmpeg_encoder.dart';
 import 'package:lotti/features/character/demo/dance_lip_sync.dart';
 import 'package:lotti/features/character/demo/dance_loaders.dart';
 import 'package:lotti/features/character/demo/dance_performance.dart';
@@ -139,127 +140,6 @@ const double kDanceDemoAspectRatio = 16 / 9;
 // camera context), its data types, the track-config constants and the side-file
 // loaders all live in the shared dance-core modules so the live player and the
 // offline frame composer derive identical content from one source of truth.
-
-final class _AppFrameEncoder {
-  _AppFrameEncoder._(
-    this._process,
-    this._stdoutDone,
-    this._stderrDone,
-    this._stderrBuffer,
-  );
-
-  static Future<_AppFrameEncoder> start({
-    required int width,
-    required int height,
-    required int fps,
-    required double startSec,
-    required double durationSec,
-    required String outputPath,
-    required String audioPath,
-    required int crf,
-    required int audioKbps,
-    required String x264Preset,
-  }) async {
-    final outputFile = File(outputPath);
-    outputFile.parent.createSync(recursive: true);
-    final args = [
-      '-y',
-      '-f',
-      'rawvideo',
-      '-pix_fmt',
-      'rgba',
-      '-s:v',
-      '${width}x$height',
-      '-framerate',
-      '$fps',
-      '-i',
-      'pipe:0',
-      '-ss',
-      startSec.toStringAsFixed(6),
-      '-t',
-      durationSec.toStringAsFixed(6),
-      '-i',
-      audioPath,
-      '-map',
-      '0:v:0',
-      '-map',
-      '1:a:0',
-      '-c:v',
-      'libx264',
-      '-preset',
-      x264Preset,
-      '-crf',
-      '$crf',
-      '-pix_fmt',
-      'yuv420p',
-      '-profile:v',
-      'high',
-      '-level',
-      '4.2',
-      '-r',
-      '$fps',
-      '-g',
-      '${math.max(1, (fps / 2).round())}',
-      '-bf',
-      '2',
-      '-colorspace',
-      'bt709',
-      '-color_primaries',
-      'bt709',
-      '-color_trc',
-      'bt709',
-      '-c:a',
-      'aac',
-      '-b:a',
-      '${audioKbps}k',
-      '-ar',
-      '48000',
-      '-movflags',
-      '+faststart',
-      '-shortest',
-      outputFile.path,
-    ];
-    final process = await Process.start('ffmpeg', args);
-    final stderrBuffer = StringBuffer();
-    final stdoutDone = process.stdout.drain<void>();
-    final stderrDone = process.stderr
-        .transform(utf8.decoder)
-        .forEach(stderrBuffer.write);
-    return _AppFrameEncoder._(
-      process,
-      stdoutDone,
-      stderrDone,
-      stderrBuffer,
-    );
-  }
-
-  final Process _process;
-  final Future<void> _stdoutDone;
-  final Future<void> _stderrDone;
-  final StringBuffer _stderrBuffer;
-  bool _killed = false;
-
-  Future<void> writeFrame(Uint8List rgba) async {
-    _process.stdin.add(rgba);
-    await _process.stdin.flush();
-  }
-
-  Future<void> finish() async {
-    await _process.stdin.close();
-    final exitCode = await _process.exitCode;
-    await _stdoutDone;
-    await _stderrDone;
-    if (exitCode != 0) {
-      throw StateError('ffmpeg failed with exit $exitCode\n$_stderrBuffer');
-    }
-  }
-
-  void kill() {
-    if (_killed) return;
-    _killed = true;
-    _process.kill();
-  }
-}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -535,7 +415,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
 
       final frameCount = math.max(1, (duration * kDanceAppExportFps).ceil());
       final dt = 1 / kDanceAppExportFps;
-      final encoder = await _AppFrameEncoder.start(
+      final encoder = await DanceFfmpegEncoder.start(
         width: kDanceRenderWidth,
         height: kDanceRenderHeight,
         fps: kDanceAppExportFps,

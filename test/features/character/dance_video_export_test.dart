@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/character/demo/dance_ffmpeg_encoder.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
 import 'package:path/path.dart' as p;
 
@@ -175,11 +175,17 @@ final class _DanceVideoExporter {
       composer.advance(t, dt);
     }
 
-    final encoder = await _RawVideoEncoder.start(
-      config: config,
-      outputFile: outputFile,
+    final encoder = await DanceFfmpegEncoder.start(
+      width: config.width,
+      height: config.height,
+      fps: config.fps,
       startSec: start,
       durationSec: duration,
+      outputPath: outputFile.path,
+      audioPath: config.audioPath,
+      crf: config.crf,
+      audioKbps: config.audioBitrateKbps,
+      x264Preset: config.x264Preset,
     );
     var encoderFinished = false;
     try {
@@ -213,122 +219,6 @@ final class _DanceVideoExporter {
 
     // ignore: avoid_print
     print('wrote ${outputFile.path}');
-  }
-}
-
-final class _RawVideoEncoder {
-  _RawVideoEncoder._(
-    this._process,
-    this._stdoutDone,
-    this._stderrDone,
-    this._stderrBuffer,
-  );
-
-  static Future<_RawVideoEncoder> start({
-    required _ExportConfig config,
-    required File outputFile,
-    required double startSec,
-    required double durationSec,
-  }) async {
-    final args = [
-      '-y',
-      '-f',
-      'rawvideo',
-      '-pix_fmt',
-      'rgba',
-      '-s:v',
-      '${config.width}x${config.height}',
-      '-framerate',
-      '${config.fps}',
-      '-i',
-      'pipe:0',
-      '-ss',
-      startSec.toStringAsFixed(6),
-      '-t',
-      durationSec.toStringAsFixed(6),
-      '-i',
-      config.audioPath,
-      '-map',
-      '0:v:0',
-      '-map',
-      '1:a:0',
-      '-c:v',
-      'libx264',
-      '-preset',
-      config.x264Preset,
-      '-crf',
-      '${config.crf}',
-      '-pix_fmt',
-      'yuv420p',
-      '-profile:v',
-      'high',
-      '-level',
-      '4.2',
-      '-r',
-      '${config.fps}',
-      '-g',
-      '${math.max(1, (config.fps / 2).round())}',
-      '-bf',
-      '2',
-      '-colorspace',
-      'bt709',
-      '-color_primaries',
-      'bt709',
-      '-color_trc',
-      'bt709',
-      '-c:a',
-      'aac',
-      '-b:a',
-      '${config.audioBitrateKbps}k',
-      '-ar',
-      '48000',
-      '-movflags',
-      '+faststart',
-      '-shortest',
-      outputFile.path,
-    ];
-    final process = await Process.start('ffmpeg', args);
-    final stderrBuffer = StringBuffer();
-    final stdoutDone = process.stdout.drain<void>();
-    final stderrDone = process.stderr
-        .transform(utf8.decoder)
-        .forEach(stderrBuffer.write);
-    return _RawVideoEncoder._(
-      process,
-      stdoutDone,
-      stderrDone,
-      stderrBuffer,
-    );
-  }
-
-  final Process _process;
-  final Future<void> _stdoutDone;
-  final Future<void> _stderrDone;
-  final StringBuffer _stderrBuffer;
-  bool _killed = false;
-
-  Future<void> writeFrame(Uint8List rgba) async {
-    _process.stdin.add(rgba);
-    await _process.stdin.flush();
-  }
-
-  Future<void> finish() async {
-    await _process.stdin.close();
-    final exitCode = await _process.exitCode;
-    await _stdoutDone;
-    await _stderrDone;
-    if (exitCode != 0) {
-      throw StateError(
-        'ffmpeg failed with exit $exitCode\n'
-        '$_stderrBuffer',
-      );
-    }
-  }
-
-  void kill() {
-    if (_killed) return;
-    _killed = true;
-    _process.kill();
   }
 }
 
