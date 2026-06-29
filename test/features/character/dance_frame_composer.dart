@@ -4,17 +4,15 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/features/character/demo/dance_camera_director.dart';
-import 'package:lotti/features/character/demo/dance_camera_rig.dart';
 import 'package:lotti/features/character/demo/dance_lip_sync.dart';
 import 'package:lotti/features/character/demo/dance_loaders.dart';
 import 'package:lotti/features/character/demo/dance_performance.dart';
-import 'package:lotti/features/character/engine/autonomic.dart';
+import 'package:lotti/features/character/demo/dance_playback_stepper.dart';
+import 'package:lotti/features/character/demo/dance_stage_view.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
 import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/runtime/character_painter.dart';
 import 'package:lotti/features/character/runtime/character_renderer.dart';
-import 'package:lotti/features/character/runtime/character_scene.dart';
-import 'package:lotti/features/character/samples/cat_in_suit.dart';
 import 'package:lotti/features/scenery/layers/backdrop_layer.dart';
 import 'package:lotti/features/scenery/model/backdrop_palette.dart';
 import 'package:lotti/features/scenery/model/backdrop_scene.dart';
@@ -42,6 +40,7 @@ class DanceFrameComposer {
   DanceFrameComposer._({
     required this.perf,
     required this.cues,
+    required this.bpm,
     required this.images,
     required this.skyProgram,
     required this.oceanProgram,
@@ -61,39 +60,20 @@ class DanceFrameComposer {
     required Size size,
     required bool captions,
   }) async {
-    final amplitudes =
-        (json['waveform'] as List?)
-            ?.map((e) => (e as num).toDouble())
-            .toList() ??
-        const <double>[];
-    final rawSections = ((json['sections'] as List?) ?? const [])
-        .cast<Map<String, Object?>>()
-        .map(
-          (s) => (
-            start: (s['start_sec']! as num).toDouble(),
-            end: (s['end_sec']! as num).toDouble(),
-            label: (s['label'] as String?) ?? '',
-          ),
-        )
-        .toList();
     final words = await loadDanceWords(wordsPath);
     final cues = await loadDanceCues(cuesPath);
-    final perf = DancePerformance(
+    final perf = DancePerformance.fromBeatMapJson(
+      json: json,
       map: beatMap,
-      binding: BeatLoopBinding.barAligned(beatMap, bars: kDancePhraseBars),
-      sections: classifyDanceSections(
-        rawSections,
-        amplitudes,
-        trackDurationSec,
-      ),
-      sectionSpans: buildDanceSectionSpans(words, trackDurationSec),
       trackDurationSec: trackDurationSec,
       words: words,
     );
+    final tempo = json['tempo'] as Map<String, Object?>?;
     final scene = BackdropScene.blueHourWaterfront();
     return DanceFrameComposer._(
       perf: perf,
       cues: cues,
+      bpm: (tempo?['global_bpm'] as num?)?.toDouble() ?? 0,
       images: await _loadImages(scene.imageAssets),
       skyProgram: await SceneryShaderProgramCache.loadSky(),
       oceanProgram: await SceneryShaderProgramCache.loadOcean(),
@@ -109,6 +89,9 @@ class DanceFrameComposer {
 
   /// Rhubarb lip-sync cues driving the singing mouths (empty → mouths rest).
   final List<DanceCue> cues;
+
+  /// Track tempo, which sets the gel-cycle period via [danceStageRig].
+  final double bpm;
   final Map<String, ui.Image> images;
   final ui.FragmentProgram skyProgram;
   final ui.FragmentProgram oceanProgram;
@@ -116,65 +99,25 @@ class DanceFrameComposer {
   final Size size;
   final bool captions;
 
-  final CharacterScene _lead = CharacterScene(
-    buildCatInSuitRig(
-      legWidthScale: kDanceLeadLegWidthScale,
-      armWidthScale: kDanceLeadArmWidthScale,
-    ),
-    autonomic: _danceAutonomic(11),
-  );
-  final CharacterScene _left = CharacterScene(
-    buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
-    autonomic: _danceAutonomic(29),
-  );
-  final CharacterScene _right = CharacterScene(
-    buildCatInSuitRig(palette: CatInSuitPalette.darkBrown),
-    autonomic: _danceAutonomic(47),
-  );
+  // Cast, gel rig and paint constants are single-sourced from the generalized
+  // live path ([DanceStageView]), so this offline canvas render references the
+  // exact same values the running app paints with (it cannot drift on them).
+  final DanceCast _cast = DanceCast.build();
   final CharacterRenderer _renderer = CharacterRenderer();
-  final StageLightRig _stageRig = const StageLightRig(leadGoldIndex: 1);
-  final DanceCameraRig _cameraRig = DanceCameraRig();
-
-  double _leadMouth = 0;
-  double _bgMouth = 0;
-  MouthShape _leadShape = MouthShape.singAh;
-  MouthShape _bgShape = MouthShape.singAh;
-  Shot _shot = (zoom: 1, dx: 0, dy: 0);
+  late final StageLightRig _stageRig = danceStageRig(bpm);
+  // The per-frame orchestration (eased mouths + smoothed camera) is the SAME
+  // stepper the live player drives, so the two cannot diverge.
+  final DancePlaybackStepper _stepper = DancePlaybackStepper();
   List<Offset> _dancerAnchors = const [];
-  DanceStage? _stage;
 
   /// The framing the last [advance] settled on (after preroll). Lets debug tools
   /// label a frame with its camera zoom/pan.
-  Shot get shot => _shot;
+  Shot get shot => _stepper.shot;
 
   /// Advances the stateful per-frame state (camera smoothing, singing mouths) by
   /// [dt] seconds at audio position [pos]. Call this WITHOUT rendering to preroll
   /// the camera before the first frame of interest.
-  void advance(double pos, double dt) {
-    final cue = mouthForCue(cueShapeAt(cues, pos));
-    final leadOn =
-        perf.words.isEmpty || perf.voiceActive(pos, (w) => w.voice == 'lead');
-    final bgOn = perf.voiceActive(
-      pos,
-      (w) =>
-          w.voice == 'background' ||
-          (w.voice == 'lead' && kGroupSections.contains(w.section)),
-    );
-    if (leadOn) _leadShape = cue.shape;
-    if (bgOn) _bgShape = cue.shape;
-    _leadMouth = easeDanceMouth(_leadMouth, leadOn ? cue.open : 0.0, dt);
-    _bgMouth = easeDanceMouth(_bgMouth, bgOn ? cue.open : 0.0, dt);
-
-    final stage = perf.stageAt(pos);
-    final ctx = perf.directorContext(pos, energetic: stage.energetic);
-    final target = cameraShot(ctx);
-    _shot = _cameraRig.update(
-      target: target,
-      cut: isHardCut(ctx) || isChorusDrop(ctx) || isBridgeCut(ctx),
-      dt: dt,
-    );
-    _stage = stage;
-  }
+  void advance(double pos, double dt) => _stepper.advance(perf, cues, pos, dt);
 
   /// Advances by [dt] then paints the frame at [pos] to a [ui.Image] (caller
   /// owns it and must `dispose()`). The raw image is what debug tools tile into
@@ -226,10 +169,10 @@ class DanceFrameComposer {
   }
 
   void _paintFrame(Canvas canvas, double pos) {
-    final stage = _stage ?? perf.stageAt(pos);
+    final stage = _stepper.stage ?? perf.stageAt(pos);
     final beat = perf.beatPulse(pos);
     final parallax = CharacterPainter.danceParallaxTransformForShot(
-      shot: _shot,
+      shot: _stepper.shot,
       size: size,
     );
 
@@ -267,25 +210,28 @@ class DanceFrameComposer {
     const SceneTexturePainter().paint(canvas, size);
 
     final samples = _stageRig.sample(time: pos, beat: beat);
-    const heroWeight = [0.9, 1.1, 0.9];
-    final catBacklights = [
-      for (final (i, s) in samples.indexed)
-        s.color.withValues(
-          alpha: (s.intensity * heroWeight[i % heroWeight.length]).clamp(
-            0.0,
-            1.0,
-          ),
-        ),
-    ];
+    final catBacklights = danceMemberBacklights(samples);
 
     CharacterPainter(
-      scene: _lead,
-      partnerScene: _left,
-      ensembleScenes: [_left, _right],
+      scene: _cast.lead,
+      partnerScene: _cast.left,
+      ensembleScenes: [_cast.left, _cast.right],
       ensembleExpressions: [
-        danceSingExpression(_leadMouth, Expression.neutral, _leadShape),
-        danceSingExpression(_bgMouth, Expression.content, _bgShape),
-        danceSingExpression(_bgMouth, Expression.happy, _bgShape),
+        danceSingExpression(
+          _stepper.leadMouth,
+          Expression.neutral,
+          _stepper.leadShape,
+        ),
+        danceSingExpression(
+          _stepper.bgMouth,
+          Expression.content,
+          _stepper.bgShape,
+        ),
+        danceSingExpression(
+          _stepper.bgMouth,
+          Expression.happy,
+          _stepper.bgShape,
+        ),
       ],
       ensembleClips: stage.ensemble,
       synchronousEnsemble: stage.synchronous,
@@ -293,14 +239,11 @@ class DanceFrameComposer {
       walkingPair: true,
       clip: stage.lead,
       timeSeconds: stage.seconds,
-      cameraOverride: _shot,
+      cameraOverride: _stepper.shot,
       onDancerAnchors: (anchors) => _dancerAnchors = anchors,
-      scale: size.height * 0.78 / 300,
+      scale: danceCastScale(size.height),
       memberBacklights: catBacklights,
-      bodyGrade: const (
-        skyWrap: Color(0x2E1F3354),
-        deckWrap: Color(0x1E3A2616),
-      ),
+      bodyGrade: kDanceBodyGrade,
       heroStaging: true,
       renderer: _renderer,
     ).paint(canvas, size);
@@ -330,20 +273,15 @@ class DanceFrameComposer {
   }
 
   void _paintHaze(Canvas canvas) {
+    // Same waterline haze the live DanceStageView paints as a DecoratedBox.
     canvas.drawRect(
       Offset.zero & size,
       Paint()
         ..shader = ui.Gradient.linear(
           Offset(size.width / 2, 0),
           Offset(size.width / 2, size.height),
-          const [
-            Color(0x005E7088),
-            Color(0x005E7088),
-            Color(0x2C5E7088),
-            Color(0x185E7088),
-            Color(0x005E7088),
-          ],
-          const [0.0, 0.40, 0.52, 0.64, 0.76],
+          kDanceHazeGradient.colors,
+          kDanceHazeGradient.stops,
         ),
     );
   }
@@ -399,14 +337,6 @@ class DanceFrameComposer {
     return recent;
   }
 }
-
-AutonomicLayer _danceAutonomic(int seed) => AutonomicLayer(
-  seed: seed,
-  blinkIntervalBase: 1.7,
-  blinkIntervalJitter: 1.1,
-  eyeDartInterval: 1.05,
-  eyeDartAmplitude: 0.75,
-);
 
 Future<Map<String, ui.Image>> _loadImages(List<String> assets) async {
   final images = <String, ui.Image>{};

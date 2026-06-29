@@ -8,24 +8,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:lotti/features/character/demo/dance_camera_director.dart';
-import 'package:lotti/features/character/demo/dance_camera_rig.dart';
 import 'package:lotti/features/character/demo/dance_lip_sync.dart';
 import 'package:lotti/features/character/demo/dance_loaders.dart';
 import 'package:lotti/features/character/demo/dance_performance.dart';
+import 'package:lotti/features/character/demo/dance_playback_stepper.dart';
+import 'package:lotti/features/character/demo/dance_stage_view.dart';
 import 'package:lotti/features/character/demo/dance_transport_bar.dart';
-import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
-import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/runtime/character_painter.dart';
 import 'package:lotti/features/character/runtime/character_renderer.dart';
-import 'package:lotti/features/character/runtime/character_scene.dart';
-import 'package:lotti/features/character/samples/cat_in_suit.dart';
-import 'package:lotti/features/scenery/layered_backdrop.dart';
-import 'package:lotti/features/scenery/model/backdrop_scene.dart';
-import 'package:lotti/features/scenery/runtime/stage_lights.dart';
-import 'package:lotti/features/scenery/scene_texture_overlay.dart';
-import 'package:lotti/features/scenery/stage_lights_overlay.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -323,23 +314,9 @@ class DanceToTrackPage extends StatefulWidget {
 
 class _DanceToTrackPageState extends State<DanceToTrackPage>
     with SingleTickerProviderStateMixin {
-  // The trio: lead plus two backing cats. The clock is the audio position warped
-  // through the beat map, not a free-running scalar.
-  late final CharacterScene _lead = CharacterScene(
-    buildCatInSuitRig(
-      legWidthScale: kDanceLeadLegWidthScale,
-      armWidthScale: kDanceLeadArmWidthScale,
-    ),
-    autonomic: _danceAutonomic(11),
-  );
-  late final CharacterScene _left = CharacterScene(
-    buildCatInSuitRig(palette: CatInSuitPalette.silverTabby),
-    autonomic: _danceAutonomic(29),
-  );
-  late final CharacterScene _right = CharacterScene(
-    buildCatInSuitRig(palette: CatInSuitPalette.darkBrown),
-    autonomic: _danceAutonomic(47),
-  );
+  // The trio: lead plus two backing cats, built once. The clock is the audio
+  // position warped through the beat map, not a free-running scalar.
+  late final DanceCast _cast = DanceCast.build();
 
   final CharacterRenderer _renderer = CharacterRenderer();
   final Player _player = Player();
@@ -377,17 +354,11 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   // Live dancer screen anchors (normalized, left→right), published by the
   // CharacterPainter each frame so the stage lights can follow the cats.
   List<Offset> _dancerAnchors = const [];
-  double _leadMouth = 0; // eased frontman mouth (lead lyric words)
-  double _bgMouth = 0; // eased backup-dancers' mouth (background ad-libs)
-  MouthShape _leadShape = MouthShape.singAh; // viseme for the active lead word
-  MouthShape _bgShape = MouthShape.singAh; // viseme for the active backup word
   Duration _lastTick = Duration.zero;
-  // The dolly operator: the director emits a per-frame target framing and this
-  // rig eases the live camera toward it, so section/home changes read as motivated
-  // dolly moves rather than snaps. Section predicates can request genre cuts;
-  // currently the chorus downbeat and bridge singer-feature cuts use that path.
-  final DanceCameraRig _cameraRig = DanceCameraRig();
-  Shot _liveShot = (zoom: 1, dx: 0, dy: 0);
+  // The stateful half of each frame: the eased singing mouths + the smoothed
+  // virtual camera (with cuts). One code path, shared with the offline renderers
+  // so the per-frame orchestration can't drift.
+  final DancePlaybackStepper _stepper = DancePlaybackStepper();
   String? _error;
   bool _renderReadySignaled = false;
   bool _renderStarted = false;
@@ -402,14 +373,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     final max = _trackDurationSec <= 0 ? double.infinity : _trackDurationSec;
     return (kDanceRenderStartSec + _renderClockSeconds).clamp(0.0, max);
   }
-
-  AutonomicLayer _danceAutonomic(int seed) => AutonomicLayer(
-    seed: seed,
-    blinkIntervalBase: 1.7,
-    blinkIntervalJitter: 1.1,
-    eyeDartInterval: 1.05,
-    eyeDartAmplitude: 0.75,
-  );
 
   @override
   void initState() {
@@ -490,33 +453,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   }
 
   void _advancePerformance({required double pos, required double dt}) {
-    final perf = _perf;
-    final cue = mouthForCue(cueShapeAt(_cues, pos));
-    final leadOn =
-        _words.isEmpty ||
-        (perf?.voiceActive(pos, (w) => w.voice == 'lead') ?? false);
-    final bgOn =
-        perf?.voiceActive(
-          pos,
-          (w) =>
-              w.voice == 'background' ||
-              (w.voice == 'lead' && kGroupSections.contains(w.section)),
-        ) ??
-        false;
-    if (leadOn) _leadShape = cue.shape;
-    if (bgOn) _bgShape = cue.shape;
-    final stage = perf?.stageAt(pos) ?? danceIdleStage(pos);
-    final ctx = perf?.directorContext(pos, energetic: stage.energetic);
-    final target = ctx == null ? _liveShot : cameraShot(ctx);
-    _liveShot = _cameraRig.update(
-      target: target,
-      cut:
-          ctx != null &&
-          (isHardCut(ctx) || isChorusDrop(ctx) || isBridgeCut(ctx)),
-      dt: dt,
-    );
-    _leadMouth = easeDanceMouth(_leadMouth, leadOn ? cue.open : 0.0, dt);
-    _bgMouth = easeDanceMouth(_bgMouth, bgOn ? cue.open : 0.0, dt);
+    _stepper.advance(_perf, _cues, pos, dt);
   }
 
   Future<void> _load() async {
@@ -740,56 +677,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     return out;
   }
 
-  /// Index of the lyric word to caption at [pos]: the most recent word that has
-  /// started, hidden during instrumental gaps (>2 s after the last word ended).
-  int? _captionWordIndex(double pos) {
-    int? recent;
-    for (var i = 0; i < _words.length; i++) {
-      if (_words[i].start <= pos) {
-        recent = i;
-      } else {
-        break;
-      }
-    }
-    if (recent == null) return null;
-    if (pos - _words[recent].end > 2.0) return null;
-    return recent;
-  }
-
-  /// A karaoke caption: a short window of lyric words centred on the current one,
-  /// which is highlighted. Empty when there is no active word.
-  Widget _caption(double pos) {
-    final i = _captionWordIndex(pos);
-    if (i == null) return const SizedBox.shrink();
-    final from = i - 3 < 0 ? 0 : i - 3;
-    final to = i + 4 > _words.length ? _words.length : i + 4;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: RichText(
-          text: TextSpan(
-            children: [
-              for (var j = from; j < to; j++)
-                TextSpan(
-                  text: '${_words[j].word} ',
-                  style: TextStyle(
-                    color: j == i ? Colors.white : Colors.white54,
-                    fontSize: j == i ? 26 : 21,
-                    fontWeight: j == i ? FontWeight.w700 : FontWeight.w400,
-                    height: 1.2,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _togglePlay() async {
     if (_player.state.playing) {
       await _player.pause();
@@ -875,234 +762,36 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     final posSec = _positionSec;
     final stage = _perf?.stageAt(posSec) ?? danceIdleStage(posSec);
     final beat = _perf?.beatPulse(posSec) ?? 0;
-    // The virtual director owns the camera, but the rig OWNS the move: the live
-    // shot is the rig's eased framing (advanced each tick toward the director's
-    // target), so refrains/feature shots can cut onto committed homes while the
-    // rest rides as a dolly. Applied by the painter and lagged behind the
-    // dancers by the backdrop parallax.
-    final shot = _liveShot;
-    // Concert lighting gels: one rig drives BOTH the coloured rim/halo on each
-    // cat (CharacterPainter.memberBacklights) and the floor pools
-    // (StageLightsOverlay), so the body glow and its pool always share a colour.
-    // Gels rotate on the tempo; the beat pulses brightness. New scene only.
-    final stageRig = StageLightRig(
-      colorPeriod: _bpm > 0 ? 60 / _bpm : 0.5,
-      // Lock the centre (lead) lane to the hero gold every frame; flankers cycle.
-      leadGoldIndex: 1,
-    );
-    final stageSamples = _useNewBackdrop
-        ? stageRig.sample(time: _wallSeconds, beat: beat)
-        : const <StageLightSample>[];
-    // Screen order (left→center→right). Alpha scales the halo with the beat;
-    // the painter splits this across a soft bloom + a tight rim pass. The centre
-    // (lead) rim runs a touch hotter and the flankers near full, so the hero
-    // owns the frame by light without starving the backups of glow.
-    const heroWeight = [0.9, 1.1, 0.9];
-    final catBacklights = [
-      for (final (i, s) in stageSamples.indexed)
-        s.color.withValues(
-          alpha: (s.intensity * heroWeight[i % heroWeight.length]).clamp(
-            0.0,
-            1.0,
-          ),
-        ),
-    ];
-    // The cat bodies are NEVER pulsed with the beat — a full-figure luminance
-    // flash on every beat is a photosensitive-epilepsy risk (large area, high
-    // contrast, near the 3 Hz threshold at fast tempos). Only the stage lighting
-    // around the cats animates: the rim halo and the floor pools. The performers
-    // stay lit; the rig pulses around them, exactly like real concert footage.
-    final stageView = RepaintBoundary(
-      key: _stageBoundaryKey,
-      child: Center(
-        // Lock the stage to 16:9 so the painted 2560x1440 art maps 1:1
-        // (cover == exact fit) and never crops or distorts; the resizable
-        // window letterboxes around it. Backdrop, dancers and captions are
-        // letterboxed together so the cats stay planted on the painted deck
-        // at any window size.
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // Size the cast to the available height (the painter scales
-              // uniformly, so this keeps the cats correctly proportioned instead
-              // of squat at the default scale 1).
-              final scale = constraints.maxHeight * 0.78 / 300.0;
-              // Parallax the layered scene with the director's shot so it
-              // drifts behind the dancers (lagged) instead of sitting dead
-              // still, matching the foreground camera the painter applies.
-              final backdropTransform =
-                  CharacterPainter.danceParallaxTransformForShot(
-                    shot: shot,
-                    size: Size(
-                      constraints.maxWidth,
-                      constraints.maxHeight,
-                    ),
-                  );
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Layered blue-hour scene behind the dancers, driven by the
-                  // same audio/dance clock so it moves with the music. Toggle
-                  // to the old single-plate waterfront via the panel button.
-                  if (_useNewBackdrop)
-                    Transform(
-                      transform: backdropTransform,
-                      filterQuality: FilterQuality.low,
-                      child: LayeredBackdrop(
-                        scene: BackdropScene.blueHourWaterfront(),
-                        // Use raw audio position, not wall time: scenery
-                        // pauses/seeks with the track, while the dance can
-                        // still run on the beat-locked phrase clock.
-                        timeSeconds: posSec,
-                        beatPulse: beat,
-                        onReady: kDanceRenderOnly
-                            ? _markBackdropReadyForExport
-                            : null,
-                      ),
-                    ),
-                  // Aerial-perspective haze band at the waterline: a soft
-                  // cool veil that lifts the distant city/water and
-                  // separates the foreground cat plane (fades out above the
-                  // dancers' feet so they stay crisp). Cheap atmospheric DoF
-                  // stand-in. Frame-fixed (not parallaxed with the plate).
-                  if (_useNewBackdrop)
-                    const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0x005E7088),
-                            Color(0x005E7088),
-                            Color(0x2C5E7088),
-                            Color(0x185E7088),
-                            Color(0x005E7088),
-                          ],
-                          stops: [0.0, 0.40, 0.52, 0.64, 0.76],
-                        ),
-                      ),
-                      child: SizedBox.expand(),
-                    ),
-                  // Floor pools UNDER the dancers' feet, grounding each
-                  // cat in its gel without ever masking limbs or creating
-                  // foreground occluder strips. The matching rim/halo is
-                  // painted by CharacterPainter on the cat silhouettes.
-                  if (_useNewBackdrop)
-                    StageLightsOverlay(
-                      timeSeconds: _wallSeconds,
-                      beat: beat,
-                      dancerAnchors: _dancerAnchors,
-                      rig: stageRig,
-                    ),
-                  // Screen-fixed finishing grain over the full frame.
-                  // The backdrop itself parallax-transforms with the
-                  // camera; this pass stays in viewport space so the
-                  // side bands get the same texture as the middle.
-                  if (_useNewBackdrop) const SceneTextureOverlay(),
-                  // Full-colour cats are the stars; the concert rig rings
-                  // each one in its gel via memberBacklights (rim/halo) and
-                  // grounds it with a floor pool below — no dimming, so the
-                  // performers pop off the blue-hour deck.
-                  CustomPaint(
-                    painter: CharacterPainter(
-                      scene: _lead,
-                      partnerScene: _left,
-                      ensembleScenes: [_left, _right],
-                      // Lip-sync: the frontman moves on lead words, the two
-                      // backups on background ad-libs.
-                      ensembleExpressions: [
-                        danceSingExpression(
-                          _leadMouth,
-                          Expression.neutral,
-                          _leadShape,
-                        ),
-                        danceSingExpression(
-                          _bgMouth,
-                          Expression.content,
-                          _bgShape,
-                        ),
-                        danceSingExpression(
-                          _bgMouth,
-                          Expression.happy,
-                          _bgShape,
-                        ),
-                      ],
-                      // Section-aware: the energetic dance trio in loud
-                      // sections, an eased idle in calm ones.
-                      ensembleClips: stage.ensemble,
-                      synchronousEnsemble: stage.synchronous,
-                      // Heads bob with the music; the singer's head rides the
-                      // vocal opening.
-                      singingHeadMotion: true,
-                      // Enables the multi-member (trio) render path; without
-                      // it the painter draws only the lead scene.
-                      walkingPair: true,
-                      clip: stage.lead,
-                      timeSeconds: stage.seconds,
-                      // The virtual director supplies the whole shot; the
-                      // painter applies it verbatim (cuts and all) instead of
-                      // the built-in eased push-in.
-                      cameraOverride: shot,
-                      // Publish live dancer positions so the stage lights
-                      // can track them (new scene only).
-                      onDancerAnchors: _useNewBackdrop
-                          ? (a) => _dancerAnchors = a
-                          : null,
-                      scale: scale,
-                      // New painted scene already has the deck, so drop the
-                      // flat grey floor band (it would sit over the painting);
-                      // the old plate keeps its band.
-                      groundColor: _useNewBackdrop
-                          ? null
-                          : const Color(0xFF374551),
-                      // New scene: LayeredBackdrop draws everything, so the
-                      // painter's own backdrop is off. Old scene: the painter
-                      // draws the single waterfront plate.
-                      backdrop: _useNewBackdrop
-                          ? CharacterBackdrop.none
-                          : CharacterBackdrop.waterfront,
-                      backdropImage: _useNewBackdrop ? null : _backdrop,
-                      backdropCloudsImage: _useNewBackdrop ? null : _clouds,
-                      backdropWavesImage: _useNewBackdrop ? null : _waves,
-                      // Each cat ringed in its gel (rim/halo hugging the
-                      // silhouette), tracked through the camera for free.
-                      // The body itself is never dimmed/pulsed — only this
-                      // edge halo and the floor pools animate (see above).
-                      memberBacklights: catBacklights,
-                      // Grade the cats INTO the twilight plate (static, not
-                      // beat-driven): a cool sky wrap up top fading to a
-                      // warm deck/city bounce down low, plus stronger deck
-                      // shadows so the trio is planted, not floating.
-                      bodyGrade: _useNewBackdrop
-                          ? const (
-                              skyWrap: Color(0x2E1F3354),
-                              // Lighter warm deck bounce: the old 0x2E washed the
-                              // shins/feet up into the warm-lit deck so they read
-                              // as translucent ghost-legs.
-                              deckWrap: Color(0x1E3A2616),
-                            )
-                          : null,
-                      // Hero-stage the trio (lead bigger/downstage) so the
-                      // frontman owns the frame — new scene only.
-                      heroStaging: _useNewBackdrop,
-                      renderer: _renderer,
-                    ),
-                    child: const SizedBox.expand(),
-                  ),
-                  if (_showCaptions && _words.isNotEmpty)
-                    Positioned(
-                      left: 24,
-                      right: 24,
-                      top: 20,
-                      child: Center(child: _caption(posSec)),
-                    ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
+    // The director owns the camera; the stepper holds the eased framing and the
+    // singing mouths. The whole composite is the generalized DanceStageView,
+    // rendered identically by the live app and every offline renderer — there is
+    // no second paint path to drift.
+    final stageView = DanceStageView(
+      boundaryKey: _stageBoundaryKey,
+      cast: _cast,
+      renderer: _renderer,
+      stage: stage,
+      shot: _stepper.shot,
+      beat: beat,
+      backdropTimeSeconds: posSec,
+      // Ambient stage lights run on a steady wall clock (decoupled from the
+      // looping dance); offline renderers pass the audio position instead so a
+      // render is deterministic at a position.
+      lightsTimeSeconds: _wallSeconds,
+      bpm: _bpm,
+      leadMouth: _stepper.leadMouth,
+      bgMouth: _stepper.bgMouth,
+      leadShape: _stepper.leadShape,
+      bgShape: _stepper.bgShape,
+      dancerAnchors: _dancerAnchors,
+      onDancerAnchors: (a) => _dancerAnchors = a,
+      useNewBackdrop: _useNewBackdrop,
+      showCaptions: _showCaptions,
+      words: _words,
+      onBackdropReady: kDanceRenderOnly ? _markBackdropReadyForExport : null,
+      backdropImage: _backdrop,
+      cloudsImage: _clouds,
+      wavesImage: _waves,
     );
     final section = _perf?.sectionAt(posSec);
     // Prefer the musical section name (Verse/Chorus/…) for the now-playing chip

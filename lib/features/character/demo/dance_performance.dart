@@ -226,6 +226,44 @@ class DancePerformance {
     this.words = const [],
   });
 
+  /// Builds a performance from a parsed beat-map [json] document (the embedded
+  /// waveform + structural sections) and the already-parsed [map] / [words], so
+  /// the live player and every offline renderer assemble it the same way.
+  factory DancePerformance.fromBeatMapJson({
+    required Map<String, Object?> json,
+    required BeatMap map,
+    required double trackDurationSec,
+    List<DanceWord> words = const [],
+  }) {
+    final amplitudes =
+        (json['waveform'] as List?)
+            ?.map((e) => (e as num).toDouble())
+            .toList() ??
+        const <double>[];
+    final rawSections = ((json['sections'] as List?) ?? const [])
+        .cast<Map<String, Object?>>()
+        .map(
+          (s) => (
+            start: (s['start_sec']! as num).toDouble(),
+            end: (s['end_sec']! as num).toDouble(),
+            label: (s['label'] as String?) ?? '',
+          ),
+        )
+        .toList();
+    return DancePerformance(
+      map: map,
+      binding: BeatLoopBinding.barAligned(map, bars: kDancePhraseBars),
+      sections: classifyDanceSections(
+        rawSections,
+        amplitudes,
+        trackDurationSec,
+      ),
+      sectionSpans: buildDanceSectionSpans(words, trackDurationSec),
+      trackDurationSec: trackDurationSec,
+      words: words,
+    );
+  }
+
   /// The beat/downbeat map driving the warped pose clock and the beat pulse.
   final BeatMap map;
 
