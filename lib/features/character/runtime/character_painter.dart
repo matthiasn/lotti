@@ -849,7 +849,10 @@ class CharacterPainter extends CustomPainter {
             // letting the pool read as a separate decorative disc below floating
             // legs. A short gel gradient rising from the soles, masked to the
             // figure (`srcATop`), riding the same beat as the pool via [glow.a].
-            final bounce = (0.16 + 0.16 * glow.a).clamp(0.16, 0.34);
+            // Kept LIGHT: a stronger bounce washed the shins/feet up toward the
+            // warm-lit deck colour until they blended into it and read as
+            // translucent ghost-legs — a subtle kiss grounds without dissolving.
+            final bounce = (0.07 + 0.08 * glow.a).clamp(0.07, 0.15);
             canvas.drawRect(
               gradeBounds,
               Paint()

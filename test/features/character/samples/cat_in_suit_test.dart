@@ -66,18 +66,11 @@ void main() {
 
     test('decorative shoe detail never lowers the contact point', () {
       // The contact/grounding solver keys off the lowest drawn point of the
-      // foot; the cap-toe, heel counter and toe gloss are all decorative and
-      // must stay above the sole so they can't shift grounding or the
-      // support-foot lock.
+      // foot; the cap-toe and toe gloss are decorative and must stay above the
+      // sole so they can't shift grounding or the support-foot lock.
       const groups = [
-        (
-          CatBones.footR,
-          [CatBones.toeCapR, CatBones.heelR, CatBones.toeShineR],
-        ),
-        (
-          CatBones.footL,
-          [CatBones.toeCapL, CatBones.heelL, CatBones.toeShineL],
-        ),
+        (CatBones.footR, [CatBones.toeCapR, CatBones.toeShineR]),
+        (CatBones.footL, [CatBones.toeCapL, CatBones.toeShineL]),
       ];
       for (final group in groups) {
         final shoe = rig.bone(group.$1)!.drawable!;
@@ -91,15 +84,6 @@ void main() {
           );
         }
       }
-    });
-
-    test('shoes carry a darker heel counter at the back', () {
-      // Heel is a distinctly darker tone than the shoe body, positioned at +x
-      // (the heel side, since the toe leads -x).
-      final shoeColor = rig.bone(CatBones.footR)?.drawable?.color;
-      final heel = rig.bone(CatBones.heelR)?.drawable;
-      expect(heel?.color, isNot(shoeColor));
-      expect(heel!.dx, greaterThan(0), reason: 'heel sits at the back (+x)');
     });
 
     test('hips are the single root', () {
@@ -178,9 +162,9 @@ void main() {
       final leadTail = lead.ribbons.singleWhere((r) => r.id == 'tail.ribbon');
 
       // Anatomical trouser profile: full thigh (15.5/14.5) growing from the hip,
-      // a knee dip (11.5), a fuller calf bulge (13), then a substantial hem
-      // (11.5) so the shin/ankle isn't underweight against the thigh and shoe.
-      expect(baseLeg.halfWidths, const [15.5, 14.5, 11.5, 13, 11.5]);
+      // a knee dip (11.5), a calf bulge (13), then a narrow ankle (8) tapering
+      // into the shoe so the trouser breaks over the foot, not past it.
+      expect(baseLeg.halfWidths, const [15.5, 14.5, 11.5, 13, 8]);
       expect(
         leadLeg.halfWidths.first,
         closeTo(15.5 * kDanceLeadLegWidthScale, 0.001),

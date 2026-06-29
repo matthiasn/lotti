@@ -41,7 +41,6 @@ const int _shoe = 0xFF24263A; // dark dress shoe — lifted off near-black so it
 // separates from the near-black deck instead of dissolving into the floor.
 const int _shoeHighlight = 0xFF565A74; // brighter sole/toe edge (the ground
 // contact + toe-box read that gives the foot weight at stage scale).
-const int _shoeHeel = 0xFF181A2A; // darker heel counter at the shoe's back.
 const int _outline = 0xFF1B1B2A;
 const int _innerEar = 0xFFE7A39B; // soft pink ear
 const int _muzzle = 0xFFF3DCB8; // lighter snout patch
@@ -149,7 +148,6 @@ class CatBones {
   static const footL = 'foot.L';
   static const shoeHighlightL = 'shoe_highlight.L';
   static const toeCapL = 'toe_cap.L';
-  static const heelL = 'heel.L';
   static const toeShineL = 'toe_shine.L';
   static const legUpperR = 'leg_upper.R';
   static const legQuadR = 'leg_quad.R';
@@ -158,7 +156,6 @@ class CatBones {
   static const footR = 'foot.R';
   static const shoeHighlightR = 'shoe_highlight.R';
   static const toeCapR = 'toe_cap.R';
-  static const heelR = 'heel.R';
   static const toeShineR = 'toe_shine.R';
   static const tail0 = 'tail_0';
   static const tail1 = 'tail_1';
@@ -413,28 +410,6 @@ RigSpec buildCatInSuitRig({
         color: _outline,
       ),
     ),
-    // Heel counter: a darker block standing at the BACK of the shoe (toe leads
-    // -x, so the heel is +x) that rises a touch above the vamp, giving the shoe
-    // a real heel instead of reading as a flat oval. Stays above the sole bottom
-    // (lowest point y≈8 < the shoe's 9.5) so contact is unperturbed.
-    const Bone(
-      id: CatBones.heelR,
-      parent: CatBones.footR,
-      pivotX: 0,
-      pivotY: 0,
-      z: 6,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.roundedRect,
-        width: 12,
-        height: 13,
-        dx: 3,
-        dy: 1.5,
-        cornerRadius: 4,
-        color: _shoeHeel,
-        outlineColor: _outline,
-        outlineWidth: 2,
-      ),
-    ),
     // Toe gloss: a small bright sliver on the toe-box so the leather reads as
     // polished, not matte rubber.
     const Bone(
@@ -537,25 +512,7 @@ RigSpec buildCatInSuitRig({
         color: _outline,
       ),
     ),
-    // Heel counter + toe gloss — see heelR / toeShineR. Above the sole bottom.
-    const Bone(
-      id: CatBones.heelL,
-      parent: CatBones.footL,
-      pivotX: 0,
-      pivotY: 0,
-      z: 9,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.roundedRect,
-        width: 12,
-        height: 13,
-        dx: 3,
-        dy: 1.5,
-        cornerRadius: 4,
-        color: _shoeHeel,
-        outlineColor: _outline,
-        outlineWidth: 2,
-      ),
-    ),
+    // Toe gloss — see toeShineR. Above the sole bottom.
     const Bone(
       id: CatBones.toeShineL,
       parent: CatBones.footL,
@@ -1249,14 +1206,11 @@ RigSpec buildCatInSuitRig({
         CatBones.footR,
       ],
       hiddenBoneIds: const [CatBones.legUpperR, CatBones.legLowerR],
-      // Tailored TROUSER profile, not a bare leg: a full thigh under the jacket
-      // hem flowing into a loosely-tapered trouser tube that stays wide all the
-      // way down to a broad hem. The old [13,12.4,7,10.2,7.4] pinched hard at the
-      // knee (7) and tapered to a thin ankle (7.4), so the part of the leg the
-      // jacket DOESN'T cover deflated into a rubber-hose noodle. Keeping the
-      // knee-down full (≥11) and the hem broad makes the visible suit read as
-      // trousers that break over the shoe instead of skinny calves.
-      halfWidths: scaledLegWidths(const [15.5, 14.5, 11.5, 13, 11.5]),
+      // Tailored TROUSER profile: a full thigh (15.5/14.5) growing from the hip,
+      // a knee dip (11.5), a calf bulge (13), then a NARROW ankle (8) that tapers
+      // INTO the shoe so the trouser breaks cleanly over the foot instead of
+      // flaring wider than the shoe and sticking out past the heel.
+      halfWidths: scaledLegWidths(const [15.5, 14.5, 11.5, 13, 8]),
       z: 3,
       color: _trouserRear,
       outlineColor: _outline,
@@ -1273,7 +1227,7 @@ RigSpec buildCatInSuitRig({
         CatBones.footL,
       ],
       hiddenBoneIds: const [CatBones.legUpperL, CatBones.legLowerL],
-      halfWidths: scaledLegWidths(const [15.5, 14.5, 11.5, 13, 11.5]),
+      halfWidths: scaledLegWidths(const [15.5, 14.5, 11.5, 13, 8]),
       z: 6,
       color: _trouser,
       outlineColor: _outline,

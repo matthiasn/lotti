@@ -1522,7 +1522,10 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                       bodyGrade: _useNewBackdrop
                           ? const (
                               skyWrap: Color(0x2E1F3354),
-                              deckWrap: Color(0x2E3A2616),
+                              // Lighter warm deck bounce: the old 0x2E washed the
+                              // shins/feet up into the warm-lit deck so they read
+                              // as translucent ghost-legs.
+                              deckWrap: Color(0x1E3A2616),
                             )
                           : null,
                       // Hero-stage the trio (lead bigger/downstage) so the
