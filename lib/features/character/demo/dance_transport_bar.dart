@@ -230,9 +230,9 @@ class DanceTransportBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 13),
           decoration: active && enabled
               ? const BoxDecoration(
-                  // The thick underline + bright glyph carry the on-state; the
-                  // wash is just a hint, so the solid play disc keeps primacy.
-                  color: Color(0x294DD6C0),
+                  // A clean tab-bar indicator: bright white glyph + a solid teal
+                  // underline carry the on-state. No background fill, so the
+                  // solid play disc stays the only filled-teal element.
                   border: Border(
                     bottom: BorderSide(color: _Chrome.accent, width: 3),
                   ),
@@ -522,8 +522,10 @@ abstract final class _Chrome {
   // playhead.
   static const Color wavePeakPlayed = Color(0xFF7E93A6);
   static const Color waveBodyPlayed = Color(0xFFC9DEEE);
-  static const Color wavePeakAhead = Color(0xFF3C4A5A);
-  static const Color waveBodyAhead = Color(0xFF6E8398);
+  // Ahead is a much dimmer (still cool) version so the consumed/played portion
+  // is obviously brighter — progress reads from the track, not just the head.
+  static const Color wavePeakAhead = Color(0xFF333E49);
+  static const Color waveBodyAhead = Color(0xFF4C5A6A);
   static const Color rulerText = Color(0xFF7C8896);
   static const Color markerPill = Color(0xD90B0F14);
 }
@@ -627,28 +629,13 @@ class _DanceTimelinePainter extends CustomPainter {
         // The live region: a colored clip top-edge + a neutral cool wash. The
         // filled marker pill finishes the "you are here" read — no heavy hue box
         // (the old full side+top frame read like a loop region on the wrong cue).
-        final washRect = Rect.fromLTRB(sx0, waveTop + 4, sx1, size.height);
-        canvas
-          ..drawRect(
-            Rect.fromLTRB(sx0, waveTop, sx1, waveTop + 4),
-            // A quiet clip-tint; the teal playhead stays the focal "you are here".
-            Paint()..color = hue.withValues(alpha: 0.7),
-          )
-          // An edge-faded wash reads as a highlight ("you are here"), not a
-          // hard-walled selectable/loopable range.
-          ..drawRect(
-            washRect,
-            Paint()
-              ..shader = const LinearGradient(
-                colors: [
-                  Color(0x00FFFFFF),
-                  Color(0x14FFFFFF),
-                  Color(0x14FFFFFF),
-                  Color(0x00FFFFFF),
-                ],
-                stops: [0.0, 0.14, 0.86, 1.0],
-              ).createShader(washRect),
-          );
+        // Just a colored clip top-edge — no body wash. The faded wash read as
+        // dead pixels AND as a loop/selection range; the teal playhead + the
+        // filled marker pill carry "you are here" instead.
+        canvas.drawRect(
+          Rect.fromLTRB(sx0, waveTop, sx1, waveTop + 4),
+          Paint()..color = hue.withValues(alpha: 0.7),
+        );
       }
     }
   }
@@ -666,15 +653,22 @@ class _DanceTimelinePainter extends CustomPainter {
       if ((bar - 1) % 4 == 0) {
         // Phrase downbeats run the FULL height — clearly legible in the header
         // (no waveform to hide them) — the beat-grid reference a sync tool needs.
-        canvas.drawRect(
-          Rect.fromLTWH(x, 0, 1, size.height),
-          Paint()..color = const Color(0x5CFFFFFF),
-        );
+        // A dark casing behind a bright line so the downbeat survives over the
+        // bright played waveform as well as the dark ahead side.
+        canvas
+          ..drawRect(
+            Rect.fromLTWH(x - 1, 0, 3, size.height),
+            Paint()..color = const Color(0x55060B10),
+          )
+          ..drawRect(
+            Rect.fromLTWH(x, 0, 1, size.height),
+            Paint()..color = const Color(0x73FFFFFF),
+          );
       } else {
         // Bar lines stay a faint texture inside the wave lane.
         canvas.drawRect(
           Rect.fromLTWH(x, waveTop, 1, size.height - waveTop),
-          Paint()..color = const Color(0x0AFFFFFF),
+          Paint()..color = const Color(0x0CFFFFFF),
         );
       }
     }
@@ -698,13 +692,12 @@ class _DanceTimelinePainter extends CustomPainter {
     final n = amplitudes.length;
     if (n < 2) return;
     final maxH = (waveBottom - waveTop) - 6;
-    // Peak-normalise so the loudest hit fills the lane (otherwise the envelope
-    // sits underfilled and dynamics flatten).
-    var maxA = 0.0;
-    for (final v in amplitudes) {
-      if (v > maxA) maxA = v;
-    }
-    final norm = maxA > 0 ? 1.0 / maxA : 1.0;
+    // Normalise to a high percentile (not the absolute max) so one loud
+    // transient can't squash the whole track into a flat sausage — loud
+    // sections then visibly tower over quiet ones.
+    final sorted = [...amplitudes]..sort();
+    final p95 = sorted[(0.95 * (n - 1)).floor()];
+    final norm = p95 > 0 ? 1.0 / p95 : 1.0;
     final width = size.width;
 
     // A continuous filled mirrored envelope (a real DAW track, not gapped bars).
@@ -714,18 +707,21 @@ class _DanceTimelinePainter extends CustomPainter {
     double smoothed(int i) {
       var s = 0.0;
       var c = 0;
-      for (var j = i - 3; j <= i + 3; j++) {
+      for (var j = i - 7; j <= i + 7; j++) {
         if (j >= 0 && j < n) {
           s += amplitudes[j];
           c++;
         }
       }
-      return c > 0 ? s / c : amplitudes[i];
+      return (c > 0 ? s / c : amplitudes[i]) * 0.85;
     }
 
     Path envelope(double Function(int) sample) {
-      double yAt(int i) =>
-          (math.pow(sample(i) * norm, 1.4) * maxH).clamp(1, maxH).toDouble();
+      double yAt(int i) {
+        final nv = (sample(i) * norm).clamp(0.0, 1.0);
+        return (math.pow(nv, 1.3) * maxH).clamp(1, maxH).toDouble();
+      }
+
       final p = Path()..moveTo(0, mid);
       for (var i = 0; i < n; i++) {
         p.lineTo(i / (n - 1) * width, mid - yAt(i) / 2);
