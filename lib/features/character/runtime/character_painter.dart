@@ -60,7 +60,7 @@ _kBacklightPasses = [
   // displaced haze column (a gaffer lens flagged the old wide offset as a "40px
   // amber fog slab"). The colour presence lives ON the fabric (the body key in
   // the grade) and on the deck (the floor pools), not in the air.
-  (sigmaFrac: 0.005, alphaScale: 0.85, offsetScale: 1.4),
+  (sigmaFrac: 0.005, alphaScale: 0.72, offsetScale: 1.4),
 ];
 
 /// Cool, dark plate-blue the concert BODIES are lerped toward (`srcATop`) so the
@@ -82,7 +82,7 @@ const Color _kBodySeat = Color(0x1C0A1626);
 /// navy MATERIAL with form, not a silhouette hole — the lit side still carries
 /// the warm gel. Pairs with [_kBodySeat]: seat the value down, then floor the
 /// shadow so the suit stays a volume.
-const Color _kBodyShadowFloor = Color(0x4226405E);
+const Color _kBodyShadowFloor = Color(0x5426405E);
 
 /// Companion to [_kBodySeat] for the FACE (above the collar). The bright, warm
 /// muzzle is the single worst cutout offender on a film panel, so it gets pulled
@@ -805,12 +805,15 @@ class CharacterPainter extends CustomPainter {
                       const Color(0x00000000),
                       _kBodyShadowFloor, // cool ambient bounce, NOT a black crush
                     ],
-                    // gradual terminator: with the outer halo gone, the gel KEY is
-                    // now what colours the figure, so it carries further across the
-                    // lit side (0.74) — most of the source-facing body reads as lit
-                    // fabric — while the shadow side still settles onto the cool
-                    // ambient floor (dark navy material), not a flat black void.
-                    const [0.0, 0.74, 0.98],
+                    // DIRECTIONAL terminator: the gel KEY commits to the
+                    // source-facing side only (~0.40 of the axis), then breaks to
+                    // a clear cool shadow core (down from a 0.74 wash that lit most
+                    // of the body and read as a symmetric "amber column" with no
+                    // lit-side/shadow-side modelling — a gaffer lens's blocker).
+                    // The lit side reads as warm-keyed fabric; the camera-right
+                    // side falls onto the deeper cool ambient floor, so the torso
+                    // models as a volume lit from one direction, not a flat cutout.
+                    const [0.0, 0.4, 0.82],
                   ),
               )
               // INNER RIM. A tight, hot gel band hugging the lamp-facing edge
