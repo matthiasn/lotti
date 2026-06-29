@@ -1,39 +1,11 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/scenery/layers/sky_layer.dart';
-import 'package:lotti/features/scenery/model/backdrop_palette.dart';
 
-Future<ui.Image> _renderFallback(
-  Size size,
-  double time, {
-  SkyLayer layer = const SkyLayer(),
-}) {
-  final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder);
-  paintSkyFallback(canvas, size, time, kBlueHourPalette, layer);
-  return recorder.endRecording().toImage(
-    size.width.toInt(),
-    size.height.toInt(),
-  );
-}
-
-Future<Color Function(int, int)> _pixelReader(ui.Image image) async {
-  final data = await image.toByteData();
-  final bytes = data!.buffer.asUint8List();
-  final w = image.width;
-  return (int x, int y) {
-    final i = (y * w + x) * 4;
-    return Color.fromARGB(
-      bytes[i + 3],
-      bytes[i],
-      bytes[i + 1],
-      bytes[i + 2],
-    );
-  };
-}
-
+// The sky is a GPU fragment shader with NO CPU fallback (hard rule: full shader
+// fidelity or nothing), so its rendered output can only be exercised on a real
+// device. The pure, deterministic testable seam is buildSkyUniforms — the
+// wiring that packs the layer knobs into the shader's scalar uniform vector.
 void main() {
   group('buildSkyUniforms', () {
     test('packs resolution, time and layer knobs in index order', () {
@@ -81,55 +53,6 @@ void main() {
         expect(u[1], h);
         expect(u[2], t);
       }
-    });
-  });
-
-  group('paintSkyFallback', () {
-    testWidgets('paints a blue sky with a brighter moon region', (
-      tester,
-    ) async {
-      // toImage()/toByteData() drive the engine raster path, which only runs
-      // outside the fake-async test zone — hence runAsync.
-      await tester.runAsync(() async {
-        const size = Size(240, 200);
-        const layer = SkyLayer(moonX: 0.74, moonY: 0.22, moonRadius: 0.09);
-        final image = await _renderFallback(size, 2, layer: layer);
-        final pixel = await _pixelReader(image);
-
-        // Top of the sky is opaque and blue-dominant.
-        final top = pixel(size.width ~/ 2, 3);
-        expect(top.a, 1.0);
-        expect(top.b, greaterThan(top.r));
-
-        // The moon disc is far brighter than the sky away from it.
-        final moon = pixel(
-          (0.74 * size.width).round(),
-          (0.22 * size.height).round(),
-        );
-        final awayFromMoon = pixel(
-          (0.2 * size.width).round(),
-          (0.22 * size.height).round(),
-        );
-        expect(
-          moon.computeLuminance(),
-          greaterThan(awayFromMoon.computeLuminance() + 0.2),
-        );
-        image.dispose();
-      });
-    });
-
-    testWidgets('is deterministic for a given time', (tester) async {
-      await tester.runAsync(() async {
-        const size = Size(160, 120);
-        final a = await _renderFallback(size, 3.25);
-        final b = await _renderFallback(size, 3.25);
-
-        final ba = (await a.toByteData())!.buffer.asUint8List();
-        final bb = (await b.toByteData())!.buffer.asUint8List();
-        expect(ba, equals(bb));
-        a.dispose();
-        b.dispose();
-      });
     });
   });
 }

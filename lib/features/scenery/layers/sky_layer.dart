@@ -1,16 +1,15 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 import 'package:lotti/features/scenery/layers/backdrop_layer.dart';
-import 'package:lotti/features/scenery/model/backdrop_palette.dart';
 import 'package:lotti/features/scenery/runtime/scenery_shaders.dart';
 
 /// Full-screen blue-hour sky: gradient + moon + stars + drifting clouds.
 ///
 /// Draws the `scenery_sky.frag` program when [BackdropContext.skyProgram] is
-/// loaded, and a calm CPU approximation ([paintSkyFallback]) until then so the
-/// scene never shows a blank frame.
+/// loaded. HARD RULE: there is no CPU fallback — until the GPU program compiles
+/// the sky is simply not drawn, so the on-screen artwork is always the real
+/// shader, never a divergent stand-in.
 class SkyLayer implements BackdropLayer {
   const SkyLayer({
     this.horizon = 0.62,
@@ -61,10 +60,10 @@ class SkyLayer implements BackdropLayer {
   void paint(Canvas canvas, BackdropContext ctx) {
     final time = ctx.timeSeconds * speed;
     final program = ctx.skyProgram;
-    if (program == null) {
-      paintSkyFallback(canvas, ctx.size, time, ctx.palette, this);
-      return;
-    }
+    // Hard rule: full shader fidelity or nothing — no CPU fallback. Until the
+    // GPU program finishes compiling (async) the sky is not drawn; there is no
+    // lower-fidelity stand-in that could diverge from the real artwork.
+    if (program == null) return;
     final shader = program.fragmentShader();
     final scalars = buildSkyUniforms(ctx.size, time, this);
     for (var i = 0; i < scalars.length; i++) {
@@ -105,101 +104,4 @@ List<double> buildSkyUniforms(ui.Size size, double time, SkyLayer layer) {
     layer.hazeStrength, // 12
     layer.grain, // 13
   ];
-}
-
-/// CPU approximation used when the sky program has not loaded. Deterministic
-/// for a given [time]: blue gradient, a bloomed moon, a capped twinkling star
-/// field, and a couple of soft clouds.
-void paintSkyFallback(
-  Canvas canvas,
-  ui.Size size,
-  double time,
-  BackdropPalette palette,
-  SkyLayer layer,
-) {
-  if (size.isEmpty) return;
-  final rect = Offset.zero & size;
-  final shortest = math.min(size.width, size.height);
-  final horizonY = layer.horizon.clamp(0.0, 1.0) * size.height;
-
-  canvas.drawRect(
-    rect,
-    Paint()
-      ..shader = ui.Gradient.linear(
-        Offset(size.width / 2, 0),
-        Offset(size.width / 2, horizonY),
-        [palette.skyZenith, palette.skyUpper, palette.skyHorizonCool],
-        const [0, 0.72, 1],
-      ),
-  );
-
-  // Stars (capped, deterministic positions + twinkle).
-  final starPaint = Paint();
-  for (var i = 0; i < 44; i++) {
-    final hx = _hash01(i * 2 + 1);
-    final hy = _hash01(i * 2 + 2);
-    final x = hx * size.width;
-    final y = hy * horizonY * 0.92;
-    final twinkle = 0.5 + 0.5 * math.sin(time * (1.4 + 2.6 * hx) + i * 1.7);
-    starPaint.color = palette.star.withValues(alpha: 0.25 + 0.55 * twinkle);
-    canvas.drawCircle(Offset(x, y), shortest * 0.0016, starPaint);
-  }
-
-  // Moon: halo bloom then warm disc.
-  final moonCenter = Offset(
-    layer.moonX * size.width,
-    layer.moonY * size.height,
-  );
-  final r = layer.moonRadius * shortest;
-  final haloPaint = Paint()
-    ..shader = ui.Gradient.radial(moonCenter, r * 3.2, [
-      palette.moonHalo.withValues(alpha: 0.42),
-      palette.moonHalo.withValues(alpha: 0),
-    ]);
-  final discPaint = Paint()..color = palette.moonDisk;
-  canvas
-    ..drawCircle(moonCenter, r * 3.2, haloPaint)
-    ..drawCircle(moonCenter, r, discPaint);
-
-  // A couple of soft drifting clouds + a haze band lifting the horizon.
-  final drift = (time * 6) % (size.width + 200) - 100;
-  final cloudPaint = Paint()
-    ..color = palette.cloudLit.withValues(alpha: 0.22)
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24);
-  final hazePaint = Paint()
-    ..shader = ui.Gradient.linear(
-      Offset(0, horizonY * 0.7),
-      Offset(0, horizonY),
-      [
-        palette.hazeSmog.withValues(alpha: 0),
-        palette.hazeSmog.withValues(alpha: 0.36),
-      ],
-    );
-  canvas
-    ..drawOval(
-      Rect.fromCenter(
-        center: Offset(size.width * 0.32 + drift, horizonY * 0.46),
-        width: size.width * 0.36,
-        height: shortest * 0.10,
-      ),
-      cloudPaint,
-    )
-    ..drawOval(
-      Rect.fromCenter(
-        center: Offset(size.width * 0.62 + drift * 0.6, horizonY * 0.62),
-        width: size.width * 0.30,
-        height: shortest * 0.08,
-      ),
-      cloudPaint,
-    )
-    ..drawRect(
-      Rect.fromLTRB(0, horizonY * 0.7, size.width, horizonY),
-      hazePaint,
-    );
-}
-
-/// Deterministic 0..1 hash for the fallback's star placement.
-double _hash01(int n) {
-  final x = math.sin(n * 12.9898) * 43758.5453;
-  return x - x.floorToDouble();
 }

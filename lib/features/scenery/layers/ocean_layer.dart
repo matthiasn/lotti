@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
@@ -13,14 +12,16 @@ import 'package:lotti/features/scenery/model/skyline_manifest.dart';
 /// The master plate already paints the lagoon; this layer ADDS animated life —
 /// drifting foam crests, a broken vertical moon-glint column, and a very subtle
 /// vertical tint — confined to the water band below the [SkylineManifest]
-/// waterline. Both the shader and the CPU fallback place that band through the
-/// SAME cover-fit mapping the master plate uses ([coverFit]), so the animated
-/// water lines up with the painted waterline at any viewport aspect.
+/// waterline. The band is placed through the SAME cover-fit mapping the master
+/// plate uses ([coverFit]), so the animated water lines up with the painted
+/// waterline at any viewport aspect.
 ///
 /// Draws the `scenery_ocean.frag` program additively ([BlendMode.plus]) when
-/// [BackdropContext.oceanProgram] is loaded, and a calm CPU band gradient
-/// ([paintOceanFallback]) until then so the scene never shows a blank frame.
-/// Honors [BackdropContext.reducedMotion] by freezing the clock and the beat.
+/// [BackdropContext.oceanProgram] is loaded. HARD RULE: there is no CPU
+/// fallback — until the GPU program compiles the band is simply not drawn (the
+/// painted plate shows through), so the on-screen artwork is always the real
+/// shader, never a divergent stand-in. Honors [BackdropContext.reducedMotion]
+/// by freezing the clock and the beat.
 class OceanLayer implements BackdropLayer {
   const OceanLayer({
     this.moonX = 0.5,
@@ -61,19 +62,11 @@ class OceanLayer implements BackdropLayer {
     final cover = coverFit(ctx.size);
 
     final program = ctx.oceanProgram;
-    if (program == null) {
-      paintOceanFallback(
-        canvas,
-        ctx.size,
-        time,
-        ctx.palette,
-        this,
-        cover: cover,
-        waterline: waterline,
-        beat: beat,
-      );
-      return;
-    }
+    // Hard rule: full shader fidelity or nothing — no CPU fallback. Until the
+    // GPU program finishes compiling (async), the band is simply not drawn and
+    // the painted plate shows through; there is no lower-fidelity stand-in that
+    // could diverge from the real artwork.
+    if (program == null) return;
 
     final shader = program.fragmentShader();
     final u = buildOceanUniforms(
@@ -132,105 +125,6 @@ List<double> buildOceanUniforms(
     ..._rgba(palette.foam), // 23..26
     ..._rgba(palette.moonGlint), // 27..30
   ];
-}
-
-/// CPU approximation used when the ocean program has not loaded: a teal water
-/// band (horizon→near gradient) under the cover-mapped waterline, with a few
-/// drifting foam crest lines and a broken moon-glint column. Deterministic for
-/// a given [time]; confined to the water band (nothing above the waterline).
-void paintOceanFallback(
-  Canvas canvas,
-  ui.Size size,
-  double time,
-  BackdropPalette palette,
-  OceanLayer layer, {
-  required Rect cover,
-  required double waterline,
-  required double beat,
-}) {
-  if (size.isEmpty) return;
-  final foamDensity = layer.foamDensity.clamp(0.0, 1.0);
-  final reflection = layer.reflection.clamp(0.0, 1.0);
-  final foamBoost = 1.0 + 0.6 * beat.clamp(0.0, 1.0);
-  final waterTop = (cover.top + waterline * cover.height).clamp(
-    0.0,
-    size.height,
-  );
-  if (waterTop >= size.height) return;
-  final bandHeight = size.height - waterTop;
-  final bandRect = Rect.fromLTRB(0, waterTop, size.width, size.height);
-
-  canvas
-    ..save()
-    ..clipRect(bandRect)
-    // Vertical water gradient: teal at the waterline → deep near the bottom.
-    ..drawRect(
-      bandRect,
-      Paint()
-        ..shader = ui.Gradient.linear(
-          Offset(size.width / 2, waterTop),
-          Offset(size.width / 2, size.height),
-          [palette.oceanHorizon, palette.oceanNear],
-        ),
-    );
-
-  // Foam crests: a few advected sine ridges, perspective-compressed (denser and
-  // thinner near the horizon, broader and brighter near the bottom).
-  for (var k = 0; k < 3; k++) {
-    final depth = 0.25 + k * 0.22; // band fraction of this crest row
-    final y = waterTop + depth * bandHeight;
-    final amp = bandHeight * (0.012 + 0.018 * depth);
-    final freq = math.pi * 2 * (3.0 - 1.6 * depth);
-    // Floor keeps the crest a visible line even on tiny renders; real
-    // full-resolution renders compute a wider stroke and ignore the floor.
-    final stroke = math.max(
-      1.5,
-      size.height * 0.004 * (0.5 + depth) * foamBoost,
-    );
-    final path = Path()..moveTo(0, y);
-    const steps = 64;
-    for (var s = 0; s <= steps; s++) {
-      final fx = s / steps;
-      final wob =
-          math.sin(fx * freq + time * (0.5 + 0.3 * k) + k * 1.7) +
-          0.4 * math.sin(fx * freq * 2.3 - time * 0.4);
-      path.lineTo(fx * size.width, y + wob * amp);
-    }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..color = palette.foam.withValues(
-          alpha: (0.45 + 0.4 * depth) * foamDensity,
-        ),
-    );
-  }
-
-  // Broken vertical moon-glint column near moonX (warm reflection blobs).
-  final glintX = cover.left + layer.moonX * cover.width;
-  final glintW = size.width * 0.05;
-  for (var b = 0; b < 9; b++) {
-    final f = (b + 0.5) / 9;
-    final y = waterTop + f * bandHeight;
-    // Flicker never fully extinguishes a blob, so the column stays a broken but
-    // continuous reflection rather than blinking out.
-    final flicker = 0.6 + 0.4 * math.sin(f * 22 + time * 1.3 + b);
-    final a = reflection * (0.3 + 0.6 * f) * flicker;
-    if (a <= 0.02) continue;
-    final r = glintW * (0.5 + 0.5 * f);
-    canvas.drawCircle(
-      Offset(glintX, y),
-      r,
-      Paint()
-        ..shader = ui.Gradient.radial(Offset(glintX, y), r, [
-          palette.moonGlint.withValues(alpha: a),
-          palette.moonGlint.withValues(alpha: 0),
-        ]),
-    );
-  }
-
-  canvas.restore();
 }
 
 List<double> _rgba(ui.Color c) => [c.r, c.g, c.b, c.a];

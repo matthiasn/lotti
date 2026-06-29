@@ -26,9 +26,12 @@ Widget _host(Widget child) => MaterialApp(
 void main() {
   tearDown(SceneryShaderProgramCache.reset);
 
-  testWidgets('renders the shader CPU fallback without error before load', (
+  testWidgets('renders without error before the shaders load (no fallback)', (
     tester,
   ) async {
+    // Hard rule: no CPU fallback. When the shader programs fail/aren't loaded,
+    // those layers draw nothing — the backdrop still composites without error
+    // (it does NOT substitute a lower-fidelity stand-in).
     await tester.pumpWidget(
       _host(
         LayeredBackdrop(
