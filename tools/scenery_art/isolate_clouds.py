@@ -10,7 +10,7 @@ cloud mask:
 * existing alpha layers exclude palms, skyline, bridge and yacht structure.
 
 OpenCV is only used at art-build time for masking/inpainting. Flutter consumes
-plain PNG assets and has no Python/OpenCV runtime dependency.
+plain WebP assets and has no Python/OpenCV runtime dependency.
 """
 
 from __future__ import annotations
@@ -34,6 +34,10 @@ except ModuleNotFoundError as error:  # pragma: no cover - developer setup path
     ) from error
 
 from PIL import Image, ImageDraw
+
+
+def _save_webp(image: Image.Image, path: Path) -> None:
+    image.save(path, "WEBP", lossless=True, quality=100, method=6)
 
 
 @dataclass(frozen=True)
@@ -72,7 +76,7 @@ def _structural_exclusion(paths: list[Path], size: tuple[int, int]) -> np.ndarra
     for path, kernel_size in zip(paths, (17, 15, 11), strict=True):
         alpha = _alpha(path, size)
         mask = (alpha > 0).astype(np.uint8)
-        if path.name == "city_bridge.png":
+        if path.name in {"city_bridge.png", "city_bridge.webp"}:
             upward = mask.copy()
             for shift in range(1, 121):
                 upward[:-shift, :] = np.maximum(upward[:-shift, :], mask[shift:, :])
@@ -428,7 +432,7 @@ def _write_cloud_layers(
         layer_mask = Image.fromarray(gated.astype(np.uint8), "L")
         layer = cloud_source.copy()
         layer.putalpha(layer_mask)
-        layer.save(out_dir / f"{spec.name}.png")
+        _save_webp(layer, out_dir / f"{spec.name}.webp")
         layer_mask.save(preview_dir / f"{spec.name}_mask.png")
 
     overlay = master.copy()
@@ -478,13 +482,13 @@ def _write_cloudless_plate(
 
     alpha = np.full((master.height, master.width), 255, np.uint8)
     cloudless_image = Image.fromarray(np.dstack((cloudless_rgb, alpha)), "RGBA")
-    cloudless_image.save(out_dir / "blue_hour_cloudless.png")
+    _save_webp(cloudless_image, out_dir / "blue_hour_cloudless.webp")
     cloudless_image.save(preview_dir / "blue_hour_cloudless.png")
     Image.fromarray(erase_mask, "L").save(preview_dir / "clouds_erase_mask.png")
 
     recomposed = cloudless_image.copy()
     for spec in _CLOUD_LAYERS:
-        recomposed.alpha_composite(_rgba(out_dir / f"{spec.name}.png"))
+        recomposed.alpha_composite(_rgba(out_dir / f"{spec.name}.webp"))
     recomposed.save(preview_dir / "clouds_recomposed.png")
 
 

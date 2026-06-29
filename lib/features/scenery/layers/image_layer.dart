@@ -3,7 +3,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:lotti/features/scenery/layers/backdrop_layer.dart';
 
-/// Draws one decoded bitmap layer (a painted PNG) scaled to fill the backdrop.
+/// Draws one decoded bitmap layer (painted WebP at runtime) scaled to fill the
+/// backdrop.
 ///
 /// The image is looked up in [BackdropContext.images] by [assetKey]; the layer
 /// no-ops until that image has been decoded, so the scene degrades gracefully
@@ -36,7 +37,7 @@ class ImageLayer implements BackdropLayer {
   /// — i.e. the drawn pixels are scaled by `modulate / 255` per channel. Use it
   /// to pull a baked-bright structure DOWN in exposure and shift its temperature
   /// so it recedes into the midground (e.g. the over-exposed yacht hull), since
-  /// the painted PNG can't be re-lit. Null leaves the bitmap untouched. The
+  /// the painted asset can't be re-lit. Null leaves the bitmap untouched. The
   /// alpha channel is preserved (pass an opaque colour) so transparency holds.
   final Color? modulate;
 

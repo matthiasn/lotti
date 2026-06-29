@@ -6,8 +6,8 @@ import 'dart:ui' show Offset, Rect;
 ///
 /// Coordinates are fractions of the artwork canvas (origin top-left, y down),
 /// so they scale to any render size. This is the **contract** between the
-/// Codex-authored artwork (`assets/scenery/*.png`) and the runtime: the
-/// generator that draws the PNGs emits a matching const so the two cannot
+/// Codex-authored artwork (`assets/scenery/*.webp`) and the runtime: the
+/// generator that draws the bitmap assets emits a matching const so the two cannot
 /// drift. The placeholder [kPlaceholderSkylineManifest] below lets the runtime
 /// compile and be exercised before the real art lands; Codex replaces it with
 /// art-derived values.
@@ -47,7 +47,7 @@ class SkylineManifest {
 /// A coarse stand-in until the Codex-generated, art-matched manifest replaces
 /// it. Values are plausible but not tied to any real artwork.
 const SkylineManifest kPlaceholderSkylineManifest = SkylineManifest(
-  // Measured against assets/scenery/blue_hour_master.png — the tallest hi-rise
+  // Measured against assets/scenery/blue_hour_master.webp — the tallest hi-rise
   // tops, left→right: left tower, spired tower (on the spire), peaked-roof
   // tower, dark flat-top tower, slim tall tower.
   buildingTops: [

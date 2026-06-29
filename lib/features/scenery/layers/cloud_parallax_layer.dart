@@ -7,7 +7,7 @@ import 'package:lotti/features/scenery/layers/city_lights_layer.dart'
 
 /// Drifts one full-frame transparent cloud plate over the cloudless backdrop.
 ///
-/// The source PNG stays in the same 2560x1440 coordinate space as the master
+/// The source WebP stays in the same 2560x1440 coordinate space as the master
 /// plate; this layer only shifts the cover-fitted draw rect by a small cyclic
 /// offset. The skyline/yacht/foreground structure layers are drawn above it, so
 /// clouds stay behind the city even while drifting.

@@ -18,9 +18,9 @@ void main() {
     test(
       'base plate and derived layers share one full-frame coordinate space',
       () async {
-        final master = await _readPng('assets/scenery/blue_hour_master.png');
-        final cloudless = await _readPng(
-          'assets/scenery/blue_hour_cloudless.png',
+        final master = await _readImage('assets/scenery/blue_hour_master.webp');
+        final cloudless = await _readImage(
+          'assets/scenery/blue_hour_cloudless.webp',
         );
         expect(master.width, 2560);
         expect(master.height, 1440);
@@ -29,7 +29,7 @@ void main() {
         expect(_alphaStats(cloudless).transparent, 0);
 
         for (final name in layerNames) {
-          final layer = await _readPng('assets/scenery/$name.png');
+          final layer = await _readImage('assets/scenery/$name.webp');
           expect(layer.width, master.width, reason: name);
           expect(layer.height, master.height, reason: name);
           expect(
@@ -46,11 +46,13 @@ void main() {
       'foreground can occlude dancers while yacht and city stay mid-ground',
       () async {
         final city = _alphaStats(
-          await _readPng('assets/scenery/city_bridge.png'),
+          await _readImage('assets/scenery/city_bridge.webp'),
         );
-        final yacht = _alphaStats(await _readPng('assets/scenery/yacht.png'));
+        final yacht = _alphaStats(
+          await _readImage('assets/scenery/yacht.webp'),
+        );
         final foreground = _alphaStats(
-          await _readPng('assets/scenery/foreground.png'),
+          await _readImage('assets/scenery/foreground.webp'),
         );
 
         expect(city.bounds.top, lessThan(360));
@@ -64,33 +66,33 @@ void main() {
   });
 }
 
-Future<_DecodedPng> _readPng(String path) async {
+Future<_DecodedImage> _readImage(String path) async {
   final bytes = File(path).readAsBytesSync();
   final codec = await ui.instantiateImageCodec(bytes);
   final frame = await codec.getNextFrame();
   final decoded = frame.image;
   final data = await decoded.toByteData();
-  final png = _DecodedPng(
+  final image = _DecodedImage(
     width: decoded.width,
     height: decoded.height,
     bytes: data!.buffer.asUint8List(),
   );
   codec.dispose();
   decoded.dispose();
-  return png;
+  return image;
 }
 
-_AlphaStats _alphaStats(_DecodedPng png) {
+_AlphaStats _alphaStats(_DecodedImage image) {
   var transparent = 0;
   var opaque = 0;
-  var left = png.width;
-  var top = png.height;
+  var left = image.width;
+  var top = image.height;
   var right = -1;
   var bottom = -1;
 
-  for (var y = 0; y < png.height; y++) {
-    for (var x = 0; x < png.width; x++) {
-      final alpha = png.bytes[(y * png.width + x) * 4 + 3];
+  for (var y = 0; y < image.height; y++) {
+    for (var x = 0; x < image.width; x++) {
+      final alpha = image.bytes[(y * image.width + x) * 4 + 3];
       if (alpha == 0) transparent++;
       if (alpha > 0) {
         if (alpha == 255) opaque++;
@@ -109,8 +111,8 @@ _AlphaStats _alphaStats(_DecodedPng png) {
   );
 }
 
-class _DecodedPng {
-  const _DecodedPng({
+class _DecodedImage {
+  const _DecodedImage({
     required this.width,
     required this.height,
     required this.bytes,

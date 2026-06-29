@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create same-size alpha PNG layers from one master plate and mask images."""
+"""Create same-size alpha WebP layers from one master plate and mask images."""
 
 from __future__ import annotations
 
@@ -8,6 +8,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from PIL import Image, ImageDraw
+
+
+def _save_webp(image: Image.Image, path: Path) -> None:
+    image.save(path, "WEBP", lossless=True, quality=100, method=6)
 
 
 @dataclass(frozen=True)
@@ -73,8 +77,8 @@ def _write_layer(
 
     layer = master.copy()
     layer.putalpha(mask)
-    layer_out = out_dir / f"{spec.name}.png"
-    layer.save(layer_out)
+    layer_out = out_dir / f"{spec.name}.webp"
+    _save_webp(layer, layer_out)
 
     preview = _gradient(master.size)
     preview.alpha_composite(layer)
@@ -91,7 +95,7 @@ def _write_layer(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="master plate + masks -> same-size alpha PNG layers",
+        description="master plate + masks -> same-size alpha WebP layers",
     )
     parser.add_argument("--master", required=True, type=Path)
     parser.add_argument("--out-dir", required=True, type=Path)
@@ -120,7 +124,7 @@ def main() -> int:
     stack = _gradient(master.size)
     for spec in args.layer:
         stack.alpha_composite(
-            Image.open(args.out_dir / f"{spec.name}.png").convert("RGBA"),
+            Image.open(args.out_dir / f"{spec.name}.webp").convert("RGBA"),
         )
     stack.save(args.preview_dir / "blue_hour_layers_preview.png")
 

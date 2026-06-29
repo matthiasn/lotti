@@ -16,11 +16,11 @@ import 'package:meta/meta.dart';
 enum CharacterBackdrop { none, waterfront }
 
 const kCharacterWaterfrontBackdropAsset =
-    'assets/images/character/lagos_waterfront.png';
+    'assets/images/character/lagos_waterfront.webp';
 const kCharacterWaterfrontCloudsAsset =
-    'assets/images/character/lagos_clouds_alpha.png';
+    'assets/images/character/lagos_clouds_alpha.webp';
 const kCharacterWaterfrontWavesAsset =
-    'assets/images/character/lagos_wave_glints_alpha.png';
+    'assets/images/character/lagos_wave_glints_alpha.webp';
 
 /// Stands the character on the ground of a [size] canvas with its **feet** at
 /// [feetFraction] of the height, horizontally at [centreX], facing right unless

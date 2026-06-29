@@ -6,7 +6,7 @@ import 'package:lotti/features/scenery/layers/city_lights_layer.dart'
     show coverFit;
 
 /// Warm lantern light pooling on the foreground deck. The painted deck lanterns
-/// (`foreground.png`) sit with dark glass; this additive pass lights each one
+/// (`foreground.webp`) sit with dark glass; this additive pass lights each one
 /// with a hot warm core inside the glass and a soft warm pool spilling down onto
 /// the planks, so the lower third reads as a lit foreground plane instead of a
 /// dead black void. It is drawn AFTER the deck bitmap (otherwise the planks
@@ -163,7 +163,7 @@ class DeckGlowLayer implements BackdropLayer {
   }
 }
 
-/// The two painted deck lanterns in `foreground.png`, normalized in cover-fit
+/// The two painted deck lanterns in `foreground.webp`, normalized in cover-fit
 /// art space (left rail post and right rail post). Measured from the rendered
 /// plate; they frame the foreground symmetrically.
 const List<Offset> kDeckLanterns = [

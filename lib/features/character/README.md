@@ -70,7 +70,7 @@ video-editor-style transport with waveform scrubbing and spacebar play/pause.
 The frame-grid/film-strip harness remains the isolated clip-review surface. The
 audio-synced dance player uses `LayeredBackdrop` from `features/scenery/`: the
 scenery is driven by the same audio position as the choreography, with a
-cloudless master-derived base, independent parallax cloud PNGs, animated
+cloudless master-derived base, independent parallax cloud WebPs, animated
 ocean/lights, and fixed structure layers redrawn over those moving effects. That
 same scenery pass now centers a deterministic sky drone show that holds
 `Omah Lay` first, then morphs into `Moving`. The tail is a single ribbon driven

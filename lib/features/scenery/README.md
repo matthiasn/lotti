@@ -2,7 +2,7 @@
 
 Reusable animated backdrops for character/demo surfaces. The current production
 scene is the Lagos-inspired blue-hour waterfront used by
-`CharacterDanceToTrackDemo`: a generated bitmap plate split into full-frame PNG
+`CharacterDanceToTrackDemo`: a generated bitmap plate split into full-frame WebP
 layers, with shader and canvas effects composited between those layers.
 
 The module is deliberately independent from `features/character`. Consumers pass
@@ -50,33 +50,33 @@ flowchart BT
   child[Dancers / caller child]
   vignette[VignetteLayer foreground]
   glow[DeckGlowLayer]
-  fg[foreground.png]
+  fg[foreground.webp]
   lights[CityLightsLayer]
   police[BridgePoliceLayer cordon]
   launchDrones[DroneShowLayer launch/ascent pass]
   skyDrones[DroneShowLayer sky pass]
-  yacht[yacht.png]
-  city[city_bridge.png]
+  yacht[yacht.webp]
+  city[city_bridge.webp]
   ocean[OceanLayer shader/fallback]
-  near[clouds_near.png parallax]
-  mid[clouds_mid.png parallax]
-  far[clouds_far.png parallax]
-  base[blue_hour_cloudless.png]
+  near[clouds_near.webp parallax]
+  mid[clouds_mid.webp parallax]
+  far[clouds_far.webp parallax]
+  base[blue_hour_cloudless.webp]
 
   base --> far --> mid --> near --> ocean --> city --> yacht --> lights --> fg --> glow --> police --> skyDrones --> launchDrones --> child --> vignette
 ```
 
 The ordering is the important contract:
 
-- The base is `blue_hour_cloudless.png`, not the original master plate.
-- Clouds are reintroduced as transparent full-frame PNGs and drift with
+- The base is `blue_hour_cloudless.webp`, not the original master plate.
+- Clouds are reintroduced as transparent full-frame WebPs and drift with
   `CloudParallaxLayer`.
 - `OceanLayer` adds animated foam/glint over the painted lagoon.
-- `city_bridge.png` and `yacht.png` are redrawn after the moving clouds and
+- `city_bridge.webp` and `yacht.webp` are redrawn after the moving clouds and
   ocean so clouds and foam never slide across solid structure.
 - `CityLightsLayer` draws additive windows, yacht lamps, and beacon glows on top
   of the structure layers.
-- `foreground.png` and `DeckGlowLayer` sit over the animated water/deck area.
+- `foreground.webp` and `DeckGlowLayer` sit over the animated water/deck area.
 - `BridgePoliceLayer` strobes a blue (plus sparse red) emergency cordon along the
   bridge roadway. It is timed to the drone-show loop: the lights roll in before
   launch, hold while the drones stage on the cleared road, then clear out as the
@@ -99,14 +99,14 @@ than the centre.
 
 `SceneryAssets` names the runtime assets:
 
-- `blue_hour_master.png`: immutable full-frame source plate.
-- `blue_hour_cloudless.png`: source plate with selected cloud pixels removed or
+- `blue_hour_master.webp`: immutable full-frame source plate.
+- `blue_hour_cloudless.webp`: source plate with selected cloud pixels removed or
   blended toward sky color.
-- `clouds_far.png`, `clouds_mid.png`, `clouds_near.png`: exact-size transparent
+- `clouds_far.webp`, `clouds_mid.webp`, `clouds_near.webp`: exact-size transparent
   cloud plates derived from the master. They are not cropped.
-- `city_bridge.png`, `yacht.png`, `foreground.png`: structure/occluder layers
+- `city_bridge.webp`, `yacht.webp`, `foreground.webp`: structure/occluder layers
   cut from same-size masks.
-- `city_windows.png`: sampled window field used by `CityLightsLayer`.
+- `city_windows.webp`: sampled window field used by `CityLightsLayer`.
 
 Full-frame assets are intentional. Cropping would require independent alignment
 metadata and creates visible drift errors when layers are cover-fit at different
@@ -242,24 +242,24 @@ frame.
 
 ## Asset Preparation
 
-The generated PNG stack lives under `assets/scenery/`; the tooling lives under
+The generated WebP stack lives under `assets/scenery/`; the tooling lives under
 `tools/scenery_art/`.
 
 ```mermaid
 flowchart LR
-  master[blue_hour_master.png] --> masks[layer masks]
+  master[blue_hour_master.webp] --> masks[layer masks]
   masks --> layerer[layer_from_masks.py]
-  layerer --> city[city_bridge.png]
-  layerer --> yacht[yacht.png]
-  layerer --> fg[foreground.png]
+  layerer --> city[city_bridge.webp]
+  layerer --> yacht[yacht.webp]
+  layerer --> fg[foreground.webp]
   master --> clouds[isolate_clouds.py]
   city --> clouds
   yacht --> clouds
   fg --> clouds
-  clouds --> base[blue_hour_cloudless.png]
-  clouds --> far[clouds_far.png]
-  clouds --> mid[clouds_mid.png]
-  clouds --> near[clouds_near.png]
+  clouds --> base[blue_hour_cloudless.webp]
+  clouds --> far[clouds_far.webp]
+  clouds --> mid[clouds_mid.webp]
+  clouds --> near[clouds_near.webp]
 ```
 
 Regenerate with:

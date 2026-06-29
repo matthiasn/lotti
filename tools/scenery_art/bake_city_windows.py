@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Bake a REGISTERED city-window field from the painted master plate.
 
-The blue-hour master (`assets/scenery/blue_hour_master.png`) already paints every
+The blue-hour master (`assets/scenery/blue_hour_master.webp`) already paints every
 building with its real window grid. Rather than ship a second skyline render whose
-windows never line up (the discarded `city_bridge.png`), we DETECT the painted
+windows never line up (the discarded `city_bridge.webp`), we DETECT the painted
 windows in the master itself, so the runtime glow lands exactly on them by
 construction.
 
@@ -31,7 +31,7 @@ Pipeline (all in the master's own pixel space, so output is pixel-registered):
             faces with sky-bright (reflective) windows still light whole floors.
         wfield = clip(0.40*face + 0.85*panes, 0, 1), hard-stopped at the waterline.
 
-Output `assets/scenery/city_windows.png` (RGBA, opaque). Channel packing:
+Output `assets/scenery/city_windows.webp` (RGBA, opaque). Channel packing:
   * R: city window field — "is this a lit-able window face, how strong". The
     city-lights shader paints its own per-floor lit/dark selection + tint +
     flicker on top. SOLID faces + registered pane fills, never edges, so lit
@@ -39,7 +39,7 @@ Output `assets/scenery/city_windows.png` (RGBA, opaque). Channel packing:
   * G: unused (0). Formerly an offset hand-placed "TV window" box; removed — every
     lit yacht window now lives in the cabin mask (B).
   * B: yacht cabin-window mask — every window lit warm from inside. Authoritative
-    source is the hand-cut `yacht_windows.png` layer (opaque ONLY on the window
+    source is the hand-cut `yacht_windows.webp` layer (opaque ONLY on the window
     glass); its alpha is read straight in. A luminance detector is the fallback.
     The shader fills the warm cabin glow exactly there.
 
@@ -55,15 +55,15 @@ import numpy as np
 from PIL import Image, ImageFilter
 
 REPO = Path(__file__).resolve().parents[2]
-MASTER = REPO / "assets/scenery/blue_hour_master.png"
-FOREGROUND = REPO / "assets/scenery/foreground.png"
-YACHT = REPO / "assets/scenery/yacht.png"
-# HAND-CUT lit-window layer (the cut-out PNG: opaque ONLY on the window glass,
-# transparent everywhere else), aligned 1:1 to yacht.png. Its ALPHA is the
+MASTER = REPO / "assets/scenery/blue_hour_master.webp"
+FOREGROUND = REPO / "assets/scenery/foreground.webp"
+YACHT = REPO / "assets/scenery/yacht.webp"
+# HAND-CUT lit-window layer (opaque ONLY on the window glass,
+# transparent everywhere else), aligned 1:1 to yacht.webp. Its ALPHA is the
 # authoritative B-channel mask — the shader fills warm interior glow exactly on
 # the cut pixels. When absent, the luminance detector below is the fallback.
-YACHT_WINDOWS = REPO / "assets/scenery/yacht_windows.png"
-OUT = REPO / "assets/scenery/city_windows.png"
+YACHT_WINDOWS = REPO / "assets/scenery/yacht_windows.webp"
+OUT = REPO / "assets/scenery/city_windows.webp"
 
 # Skyline band in normalized art-y: above the tallest tower top, down to the far
 # shore waterline. Buildings live entirely inside this band.
@@ -185,8 +185,8 @@ def main() -> int:
     yt_a = yt_arr[..., 3] / 255.0
 
     # --- Yacht cabin-window mask (BLUE channel) ---
-    # The HAND-CUT `yacht_windows.png` layer is AUTHORITATIVE when present: a
-    # cut-out aligned 1:1 to yacht.png that is opaque ONLY over the window glass.
+    # The HAND-CUT `yacht_windows.webp` layer is AUTHORITATIVE when present: a
+    # cut-out aligned 1:1 to yacht.webp that is opaque ONLY over the window glass.
     # Its alpha is read straight in (resized to the bake canvas), so the shader
     # fills the warm interior glow exactly on the cut pixels — the lit windows
     # match the painted glass by construction.
@@ -243,7 +243,13 @@ def main() -> int:
     rgba[..., 1] = 0       # G: unused (the former offset TV box is removed)
     rgba[..., 2] = cabin   # B: yacht cabin-window mask (warm interior glow)
     rgba[..., 3] = 255
-    Image.fromarray(rgba, "RGBA").save(OUT)
+    Image.fromarray(rgba, "RGBA").save(
+        OUT,
+        "WEBP",
+        lossless=True,
+        quality=100,
+        method=6,
+    )
     print(
         f"wrote {OUT}  city px(>0.1)={int((wfield > 0.1).sum())}  "
         f"cabin px(>0.1)={int((cabin_mask > 0.1).sum())}  "

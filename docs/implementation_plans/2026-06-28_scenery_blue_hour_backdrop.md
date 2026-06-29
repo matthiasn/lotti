@@ -4,16 +4,16 @@
 
 ## Context
 
-The new **beat-synced audio player** `lib/features/character/demo/character_dance_to_track_demo.dart` (commit `7a6903dee`) plays a track with `media_kit`, pumps a 60 fps `Ticker` whose time comes from the audio position warped through `BeatMap.clipSecondsAt`, and renders the dancing cat via `CustomPaint(CharacterPainter(... backdrop: CharacterBackdrop.waterfront ...))` over a single **opaque** plate (`lagos_waterfront.png` + 2 scrolling alpha masks). That flat plate reads as cheap/lifeless.
+The new **beat-synced audio player** `lib/features/character/demo/character_dance_to_track_demo.dart` (commit `7a6903dee`) plays a track with `media_kit`, pumps a 60 fps `Ticker` whose time comes from the audio position warped through `BeatMap.clipSecondsAt`, and renders the dancing cat via `CustomPaint(CharacterPainter(... backdrop: CharacterBackdrop.waterfront ...))` over a single **opaque** plate (`lagos_waterfront.webp` + 2 scrolling alpha masks). That flat plate reads as cheap/lifeless.
 
-We're replacing **just this player's** backdrop with a **reusable, layered, blue-hour cartoon scene**: multiple **transparent bitmap (PNG) layers** for the static structures (skyline tiers, bridge, yacht, foreground), with **GLSL shaders drawn in between** the bitmaps as needed (sky gradient + moon + stars + drifting clouds *behind* everything; water + foam + moon-glint *in front of* the structures, below the dancer), plus a cheap canvas layer for the "alive" signals (lit windows, blinking aircraft beacons, police sweeps on the bridge, a helicopter crossing, ships + a moored yacht with running lights). Because the clock is the audio position, the scene moves **with the music**, and `BeatMap` lets chosen elements pulse on the beat. Cartoonish but production-quality ("expensive animated feature establishing shot"), visually popping, grimy/lived-in, **not** photorealistic.
+We're replacing **just this player's** backdrop with a **reusable, layered, blue-hour cartoon scene**: multiple **transparent bitmap layers** for the static structures (skyline tiers, bridge, yacht, foreground), with **GLSL shaders drawn in between** the bitmaps as needed (sky gradient + moon + stars + drifting clouds *behind* everything; water + foam + moon-glint *in front of* the structures, below the dancer), plus a cheap canvas layer for the "alive" signals (lit windows, blinking aircraft beacons, police sweeps on the bridge, a helicopter crossing, ships + a moored yacht with running lights). Because the clock is the audio position, the scene moves **with the music**, and `BeatMap` lets chosen elements pulse on the beat. Cartoonish but production-quality ("expensive animated feature establishing shot"), visually popping, grimy/lived-in, **not** photorealistic.
 
 The scene subject is unchanged from today's plate: the **Lagos lagoon waterfront**, the **cable-stayed bridge**, **palms**, and a **luxury yacht** — reborn as a layered, animated, blue-hour version.
 
 ## Decisions locked (from the user)
 
-- **Multiple transparent BITMAP (PNG) layers**, not SVG, not one flat plate. Shaders interleave between layers ("draw in between with shaders, on individual ones, layer as needed").
-- **Codex builds the artwork layers** — a committed, regenerable generator that emits the transparent PNGs + art-matched manifest values. Detailed brief at the end. We build everything else. (Runtime only *loads* PNGs + manifest, so a hand-painted PNG set can later drop in over Codex's without code changes.)
+- **Multiple transparent BITMAP layers**, not SVG, not one flat plate. Shaders interleave between layers ("draw in between with shaders, on individual ones, layer as needed"). The committed runtime assets are lossless WebP; masks/previews can remain PNG.
+- **Codex builds the artwork layers** — a committed, regenerable generator that emits transparent bitmap assets + art-matched manifest values. Detailed brief at the end. We build everything else. Runtime currently loads lossless WebP + manifest, so a hand-painted replacement set can later drop in over Codex's without code changes beyond filenames.
 - **Physics-guided palette** (blue-hour twilight optics), defined below — one tweakable source of truth; it art-directs both the shaders and the Codex bitmaps.
 - **Grimy, not pristine** — weathered/lived-in, not shiny-new.
 - **Reusable** — self-contained module `lib/features/scenery/` exposing one `LayeredBackdrop` widget; **only** the audio player is wired to it now. The old `CharacterBackdrop.waterfront` plate path is left fully intact (still used by the other demo + main dance). No enum/painter changes, no removals this pass.
@@ -23,7 +23,7 @@ The scene subject is unchanged from today's plate: the **Lagos lagoon waterfront
 
 | Who | Builds |
 |-----|--------|
-| **Codex** (brief at end) | `tools/scenery_art/` generator → `assets/scenery/skyline_far.png`, `skyline_near.png`, `bridge.png`, `yacht.png`, optional `foreground.png` (transparent, colored per palette, mostly dark grimy silhouettes — **no baked windows/beacons**); art-matched values for `lib/features/scenery/model/skyline_manifest.dart` (the `SkylineManifest` type already exists); a preview screenshot. |
+| **Codex** (brief at end) | `tools/scenery_art/` generator → transparent full-frame structure/cloud assets under `assets/scenery/` (runtime format: lossless WebP; masks/previews may be PNG), colored per palette, mostly dark grimy silhouettes — **no baked windows/beacons**; art-matched values for `lib/features/scenery/model/skyline_manifest.dart` (the `SkylineManifest` type already exists); a preview screenshot. |
 | **Us** | `lib/features/scenery/` framework + reusable `LayeredBackdrop` (interleaved bitmap/shader/props compositor); physics `BackdropPalette`; sky + ocean fragment shaders (+ loaders/painters/fallbacks); `PropsLayer` (windows, beacons, police, helicopter, ships, yacht) driven by the manifest + audio/beat clock; wiring into the audio player; tests; docs/CHANGELOG. |
 
 ## Reusable architecture
@@ -32,7 +32,7 @@ New module `lib/features/scenery/` (depends only on `dart:ui`, `flutter`, its ow
 
 ```
 lib/features/scenery/
-  layered_backdrop.dart        # reusable widget: layer stack + clock + program/PNG loading + reduced-motion + RepaintBoundary
+  layered_backdrop.dart        # reusable widget: layer stack + clock + program/bitmap loading + reduced-motion + RepaintBoundary
   model/
     backdrop_palette.dart      # physics palette (single source of truth) + copyWith
     backdrop_scene.dart        # ordered layer list + knobs
@@ -43,18 +43,18 @@ lib/features/scenery/
   layers/
     backdrop_layer.dart        # BackdropLayer interface + BackdropContext
     sky_layer.dart             # full-screen sky shader (+ CPU fallback) + buildSkyUniforms
-    bitmap_layer.dart          # generic transparent-PNG layer (parallax offset, opacity, optional tint)
+    bitmap_layer.dart          # generic transparent bitmap layer (parallax offset, opacity, optional tint)
     ocean_layer.dart           # band-clipped water/foam shader (+ CPU fallback) + buildOceanUniforms
     props_layer.dart           # canvas signals
 ```
 
 **`LayeredBackdrop`** builds one `CustomPaint` whose painter walks an **ordered list of `BackdropLayer`s**, composited back-to-front so shaders interleave with bitmaps:
 - **Sky layer** — full-screen fragment shader.
-- **Bitmap layers** — transparent PNGs (skyline_far, skyline_near, bridge, yacht, foreground), drawn with optional parallax x-offset, opacity, and optional `srcIn` tint. (A bitmap's alpha can also *mask* a shader via `BlendMode.dstIn` for animating an individual layer later.)
+- **Bitmap layers** — transparent full-frame bitmap assets, drawn with optional parallax x-offset, opacity, and optional `srcIn` tint. (A bitmap's alpha can also *mask* a shader via `BlendMode.dstIn` for animating an individual layer later.)
 - **Ocean layer** — lower-band fragment shader (clipped/translated so frag coords are band-local → cheap).
 - **Props layer** — canvas point/sprite lights from `SkylineManifest`.
 
-Default scene (back→front): `sky → skyline_far → skyline_near → bridge → yacht → ocean (band) → props → foreground → [dancer on top]`. Missing bitmaps no-op, so the scene degrades gracefully before Codex's art lands. The widget takes a `BackdropScene` + `BackdropPalette`, an injected `timeSeconds` (the audio/dance clock; standalone it self-drives a `Ticker`), an optional beat pulse, and `reducedMotion`. Light positions are normalized 0..1 from the manifest so they pin onto the PNGs at any size.
+Default scene (back→front): `sky → skyline_far → skyline_near → bridge → yacht → ocean (band) → props → foreground → [dancer on top]`. Missing bitmaps no-op, so the scene degrades gracefully before Codex's art lands. The widget takes a `BackdropScene` + `BackdropPalette`, an injected `timeSeconds` (the audio/dance clock; standalone it self-drives a `Ticker`), an optional beat pulse, and `reducedMotion`. Light positions are normalized 0..1 from the manifest so they pin onto the bitmap art at any size.
 
 **Integration (audio player only):** in `character_dance_to_track_demo.dart`, wrap the render in a `Stack`: `LayeredBackdrop(timeSeconds: danceSeconds, palette: kBlueHourPalette, scene: BackdropScene.blueHourWaterfront())` **behind** the existing `CustomPaint(CharacterPainter(...))`. Flip that painter to `backdrop: CharacterBackdrop.none` and drop its `backdropImage/Clouds/Waves` args (the painter renders a transparent background for `none`, so **no CharacterPainter change**). Remove the file's `_loadBackdrop()` + `_backdrop/_clouds/_waves` fields. The audio position already drives the ticker; reuse it as the backdrop clock, and optionally pulse beacons/foam/windows on `BeatMap` beats.
 
@@ -104,7 +104,7 @@ Clock = the audio player's dance seconds (injected). `MediaQuery.disableAnimatio
 
 ## Performance
 
-Sky is the only heavy shader (fixed ~5 octaves, slow drift). Ocean band-clipped (~30–40% height, fewer octaves). PNGs decode once to `ui.Image` and `drawImageRect` per frame. Props capped/mostly-zero. `RepaintBoundary` around the backdrop. Overscan layer rects for parallax. Escalate sky to a throttled cached image only if profiled hot (default: direct draw).
+Sky is the only heavy shader (fixed ~5 octaves, slow drift). Ocean band-clipped (~30–40% height, fewer octaves). Bitmap assets decode once to `ui.Image` and `drawImageRect` per frame. Props capped/mostly-zero. `RepaintBoundary` around the backdrop. Overscan layer rects for parallax. Escalate sky to a throttled cached image only if profiled hot (default: direct draw).
 
 ## Tests (repo-strict: one file per source, meaningful assertions, no real timers, deterministic, centralized helpers)
 
@@ -127,9 +127,9 @@ Sky is the only heavy shader (fixed ~5 octaves, slow drift). Ocean band-clipped 
 ## Build order (each stage: compiles, analyzer zero warnings, tests green before next)
 
 `make build_runner` not needed.
-0. `lib/features/scenery/` scaffolding: palette, scene/layer interfaces, shader cache, minimal valid `.frag`s, pubspec `shaders:` (+ `assets/scenery/` once PNGs exist).
+0. `lib/features/scenery/` scaffolding: palette, scene/layer interfaces, shader cache, minimal valid `.frag`s, pubspec `shaders:` (+ `assets/scenery/` once bitmap assets exist).
 a. Sky shader + `sky_layer` + `LayeredBackdrop` (sky only) + wire into the audio player (Stack behind `CharacterPainter(none)`), driven by the dance clock.
-b. `bitmap_layer` + load + composite Codex's PNGs (skyline tiers, bridge, yacht, foreground) over the sky.
+b. `bitmap_layer` + load + composite Codex's bitmap assets (skyline tiers, bridge, yacht, foreground) over the sky.
 c. Ocean shader + `ocean_layer` (band, in front of structures).
 d. `props_layer` + schedulers from the manifest (windows + beacons first; then police/helicopter/ships/yacht; then optional beat-pulse). Run `app-screenshots` + `design-review-panel` to tune palette/cloud/foam/beat.
 e. Docs + CHANGELOG + flatpak.
@@ -144,20 +144,20 @@ e. Docs + CHANGELOG + flatpak.
 
 ## CODEX PROMPT — build the bitmap artwork layers (copy-paste)
 
-> **Task:** Build the static *structure* artwork for a reusable blue-hour waterfront backdrop in a Flutter app (repo root is the working dir). The dynamic sky (gradient, moon, stars, clouds) and ocean (water, foam, glint) are GLSL fragment shaders built separately — **do not** build those. Your job is the city **skyline**, the lagoon **bridge**, and a moored **yacht** as **multiple transparent bitmap (PNG) layers with opacity**, produced by a **committed, regenerable generator**, plus art-matched values for the geometry manifest so runtime code can pin lights/windows onto them.
+> **Task:** Build the static *structure* artwork for a reusable blue-hour waterfront backdrop in a Flutter app (repo root is the working dir). The dynamic sky (gradient, moon, stars, clouds) and ocean (water, foam, glint) are GLSL fragment shaders built separately — **do not** build those. Your job is the city **skyline**, the lagoon **bridge**, and a moored **yacht** as **multiple transparent bitmap layers with opacity**, produced by a **committed, regenerable generator**, plus art-matched values for the geometry manifest so runtime code can pin lights/windows onto them.
 >
-> **Style (hard constraints):** Cartoon, production-quality — an expensive animated feature's establishing shot. NOT photorealistic, NOT AI-painterly. Clean flat shapes, but **grimy, weathered, lived-in — NOT impeccable/shiny/new**: uneven building tones, soot streaks, a few dark/derelict/under-construction patches, irregular rooflines, antennae and water tanks, a worn bridge. Subject: a tropical lagoon waterfront (Lagos-inspired) — a varied high-rise skyline plus a long cable-stayed/suspension bridge over the water, with a luxury yacht moored at mid-distance. Each layer is a **separate transparent PNG**; the structures are **mostly dark silhouettes** colored from the palette below, with only a faint cool moon-side rim light and subtle ambient at the base. **Do NOT bake windows, beacons, police lights, cabin lights, or any glow into the bitmaps** — those are drawn dynamically at runtime from the manifest. Shape + base tone (with grime) only.
+> **Style (hard constraints):** Cartoon, production-quality — an expensive animated feature's establishing shot. NOT photorealistic, NOT AI-painterly. Clean flat shapes, but **grimy, weathered, lived-in — NOT impeccable/shiny/new**: uneven building tones, soot streaks, a few dark/derelict/under-construction patches, irregular rooflines, antennae and water tanks, a worn bridge. Subject: a tropical lagoon waterfront (Lagos-inspired) — a varied high-rise skyline plus a long cable-stayed/suspension bridge over the water, with a luxury yacht moored at mid-distance. Each layer is a **separate transparent bitmap**; the structures are **mostly dark silhouettes** colored from the palette below, with only a faint cool moon-side rim light and subtle ambient at the base. **Do NOT bake windows, beacons, police lights, cabin lights, or any glow into the bitmaps** — those are drawn dynamically at runtime from the manifest. Shape + base tone (with grime) only.
 >
 > **Color palette to paint against (physics-guided blue hour):** skyline_far `#213A5C` (distant, lower-contrast, aerial perspective), skyline_near `#0D1A30` (near-black blue), bridge `#14233B`, yacht hull `#16283C`, optional moon-side rim `#6C8098`. Design the tiers to separate clearly against a deep-blue moonlit sky (height/width contrast, overlap; near reads in front of far).
 >
 > **Deliverables (exact):**
-> 1. `tools/scenery_art/` — a committed, documented generator (Python+Pillow/cairo **or** a Dart/Flutter `PictureRecorder→toImage→PNG` export harness; your choice) with a README + Makefile, that **regenerably** renders the PNGs below to `assets/scenery/`. Deterministic (seeded). This is how the art is produced and re-tuned.
-> 2. `assets/scenery/skyline_far.png` — distant skyline tier, transparent, canvas `2560×1440`, baseline ≈ 58% height, colored ~`#213A5C`.
-> 3. `assets/scenery/skyline_near.png` — foreground tier (taller, varied: setbacks, antennae, water tanks, 2–3 distinctive towers), same canvas, baseline ≈ 63% height, colored ~`#0D1A30`, reads clearly in front of the far tier.
-> 4. `assets/scenery/bridge.png` — full-width cable-stayed/suspension span: two proportional towers, catenary main cables, vertical hangers, deck ≈ 65% height, piers into the water; colored ~`#14233B`. Towers tall enough to carry aircraft beacons.
-> 5. `assets/scenery/yacht.png` — a moored luxury motor yacht (multi-deck) at mid-distance on the lagoon, transparent, dark hull silhouette ~`#16283C`. **No baked cabin lights** — the runtime adds warm cabin windows + red/green/white nav lights from the manifest.
-> 6. *(optional)* `assets/scenery/foreground.png` — subtle bottom foreground (quay railing / palms / pier posts) for depth, transparent, restrained.
-> 7. `lib/features/scenery/model/skyline_manifest.dart` — this file already exists with the `SkylineManifest` type and a `kPlaceholderSkylineManifest` const. **Replace that const's values** (or add a new named const the runtime can point at) with **art-derived normalized 0..1 coordinates** relative to the 2560×1440 canvas, generated from the *same* parameters that drew the PNGs so they cannot drift: `buildingTops` (apex points for beacons/roof lights), `windowCells` (rects where lit windows go), `bridgeTowerTops` (two points), `bridgeDeck` (deck polyline for police sweeps), `yachtCabin` (rect for warm cabin windows), `yachtNavLights` (bow/stern/mast points), `waterline` (normalized y). Do **not** change the type's field set without coordinating. Anchors MUST match the PNG art exactly — this is the contract the runtime light layer relies on.
-> 8. A preview screenshot of the stacked PNGs over a flat blue-hour gradient (1920×1080 + a phone aspect).
+> 1. `tools/scenery_art/` — a committed, documented generator (Python+Pillow/cairo **or** a Dart/Flutter `PictureRecorder→toImage` export harness; your choice) with a README + Makefile, that **regenerably** renders full-frame runtime assets to `assets/scenery/` (lossless WebP) plus PNG previews/masks. Deterministic (seeded). This is how the art is produced and re-tuned.
+> 2. `assets/scenery/skyline_far.webp` — distant skyline tier, transparent, canvas `2560×1440`, baseline ≈ 58% height, colored ~`#213A5C`.
+> 3. `assets/scenery/skyline_near.webp` — foreground tier (taller, varied: setbacks, antennae, water tanks, 2–3 distinctive towers), same canvas, baseline ≈ 63% height, colored ~`#0D1A30`, reads clearly in front of the far tier.
+> 4. `assets/scenery/bridge.webp` — full-width cable-stayed/suspension span: two proportional towers, catenary main cables, vertical hangers, deck ≈ 65% height, piers into the water; colored ~`#14233B`. Towers tall enough to carry aircraft beacons.
+> 5. `assets/scenery/yacht.webp` — a moored luxury motor yacht (multi-deck) at mid-distance on the lagoon, transparent, dark hull silhouette ~`#16283C`. **No baked cabin lights** — the runtime adds warm cabin windows + red/green/white nav lights from the manifest.
+> 6. *(optional)* `assets/scenery/foreground.webp` — subtle bottom foreground (quay railing / palms / pier posts) for depth, transparent, restrained.
+> 7. `lib/features/scenery/model/skyline_manifest.dart` — this file already exists with the `SkylineManifest` type and a `kPlaceholderSkylineManifest` const. **Replace that const's values** (or add a new named const the runtime can point at) with **art-derived normalized 0..1 coordinates** relative to the 2560×1440 canvas, generated from the *same* parameters that drew the bitmap assets so they cannot drift: `buildingTops` (apex points for beacons/roof lights), `windowCells` (rects where lit windows go), `bridgeTowerTops` (two points), `bridgeDeck` (deck polyline for police sweeps), `yachtCabin` (rect for warm cabin windows), `yachtNavLights` (bow/stern/mast points), `waterline` (normalized y). Do **not** change the type's field set without coordinating. Anchors MUST match the bitmap art exactly — this is the contract the runtime light layer relies on.
+> 8. A preview screenshot of the stacked assets over a flat blue-hour gradient (1920×1080 + a phone aspect).
 >
-> **Quality bar / acceptance:** Varied, believable skyline rhythm (no obviously repeating buildings; mixed widths/heights/setbacks; a couple of distinctive towers). Bridge reads as a real span (correct cable fan/catenary, proportional towers). Yacht reads as a sleek multi-deck motor yacht. Layers cleanly separable with clean alpha; structures read as dark grimy silhouettes that let the sky show between/above them; nothing dynamic baked in. PNG-24 with alpha. Register `assets/scenery/` under `flutter: assets:` in `pubspec.yaml`. `fvm flutter analyze` clean; `fvm dart format .` applied. Follow `AGENTS.md` + `test/README.md` for any tests (one test file per source file, meaningful assertions, no real timers/delays): at minimum unit-test the manifest (anchors within 0..1, sane counts/positions). **Do not** modify `lib/features/character/` or the old waterfront plate — keep this to the new module under `lib/features/scenery/` + `tools/scenery_art/`. Deliver the generator, the PNGs, the manifest values, the preview, and a short note mapping the manifest anchors to the art.
+> **Quality bar / acceptance:** Varied, believable skyline rhythm (no obviously repeating buildings; mixed widths/heights/setbacks; a couple of distinctive towers). Bridge reads as a real span (correct cable fan/catenary, proportional towers). Yacht reads as a sleek multi-deck motor yacht. Layers cleanly separable with clean alpha; structures read as dark grimy silhouettes that let the sky show between/above them; nothing dynamic baked in. Runtime assets are lossless WebP with alpha. Register `assets/scenery/` under `flutter: assets:` in `pubspec.yaml`. `fvm flutter analyze` clean; `fvm dart format .` applied. Follow `AGENTS.md` + `test/README.md` for any tests (one test file per source file, meaningful assertions, no real timers/delays): at minimum unit-test the manifest (anchors within 0..1, sane counts/positions). **Do not** modify `lib/features/character/` or the old waterfront plate — keep this to the new module under `lib/features/scenery/` + `tools/scenery_art/`. Deliver the generator, the runtime assets, the manifest values, the preview, and a short note mapping the manifest anchors to the art.

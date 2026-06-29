@@ -1,7 +1,8 @@
 # Scenery Art Pipeline
 
 Reusable art-build helpers for turning one generated full-frame scene plate into
-stackable Flutter backdrop assets. Runtime code consumes plain PNGs and shaders;
+stackable Flutter backdrop assets. Runtime code consumes lossless WebP assets
+and shaders; masks/previews remain PNG debug artifacts.
 OpenCV/Python are build-time tools only.
 
 The current scene is the Lagos-inspired blue-hour waterfront used by
@@ -13,7 +14,7 @@ All scenery art uses one native coordinate space: `2560x1440`.
 
 Required source:
 
-- `assets/scenery/blue_hour_master.png` - immutable full-frame master plate.
+- `assets/scenery/blue_hour_master.webp` - immutable full-frame master plate.
 
 Mask sources:
 
@@ -23,13 +24,13 @@ Mask sources:
 
 Generated runtime assets:
 
-- `assets/scenery/city_bridge.png`
-- `assets/scenery/yacht.png`
-- `assets/scenery/foreground.png`
-- `assets/scenery/blue_hour_cloudless.png`
-- `assets/scenery/clouds_far.png`
-- `assets/scenery/clouds_mid.png`
-- `assets/scenery/clouds_near.png`
+- `assets/scenery/city_bridge.webp`
+- `assets/scenery/yacht.webp`
+- `assets/scenery/foreground.webp`
+- `assets/scenery/blue_hour_cloudless.webp`
+- `assets/scenery/clouds_far.webp`
+- `assets/scenery/clouds_mid.webp`
+- `assets/scenery/clouds_near.webp`
 
 Generated previews/debug files go to `tmp/scenery_work/` and are not bundled.
 
@@ -44,24 +45,26 @@ python3 -m venv /tmp/lotti-scenery-opencv
 make -C tools/scenery_art PYTHON=/tmp/lotti-scenery-opencv/bin/python blue-hour
 ```
 
-The make target first cuts structure layers from masks, then extracts cloud
-layers from the master:
+The make target cuts structure layers from masks, extracts cloud layers from the
+master, then bakes the registered city/yacht window lookup:
 
 ```mermaid
 flowchart LR
-  master[blue_hour_master.png] --> masks[full-frame masks]
+  master[blue_hour_master.webp] --> masks[full-frame masks]
   masks --> lfm[layer_from_masks.py]
-  lfm --> city[city_bridge.png]
-  lfm --> yacht[yacht.png]
-  lfm --> foreground[foreground.png]
+  lfm --> city[city_bridge.webp]
+  lfm --> yacht[yacht.webp]
+  lfm --> foreground[foreground.webp]
   master --> iso[isolate_clouds.py]
   city --> iso
   yacht --> iso
   foreground --> iso
-  iso --> cloudless[blue_hour_cloudless.png]
-  iso --> far[clouds_far.png]
-  iso --> mid[clouds_mid.png]
-  iso --> near[clouds_near.png]
+  iso --> cloudless[blue_hour_cloudless.webp]
+  iso --> far[clouds_far.webp]
+  iso --> mid[clouds_mid.webp]
+  iso --> near[clouds_near.webp]
+  iso --> bake[bake_city_windows.py]
+  bake --> windows[city_windows.webp]
 ```
 
 ## Layer Extraction
@@ -73,14 +76,14 @@ mask. Masks may be RGB, RGBA, or grayscale:
 - dark mask pixels become transparent;
 - midtones become antialiased alpha.
 
-The output PNGs are same-size full-frame layers. Do not crop them. Runtime code
+The output WebPs are same-size full-frame layers. Do not crop them. Runtime code
 expects every layer to line up with the master plate by coordinate alone.
 
 Direct invocation:
 
 ```bash
 python3 tools/scenery_art/layer_from_masks.py \
-  --master assets/scenery/blue_hour_master.png \
+  --master assets/scenery/blue_hour_master.webp \
   --out-dir assets/scenery \
   --preview-dir tmp/scenery_work \
   --layer city_bridge=tools/scenery_art/scenes/blue_hour_waterfront/masks/city_bridge.png \
@@ -125,13 +128,13 @@ assets being full-frame and aligned:
 
 ```mermaid
 flowchart BT
-  foreground[foreground.png]
+  foreground[foreground.webp]
   lights[city/yacht lights shader + canvas]
-  yacht[yacht.png]
-  city[city_bridge.png]
+  yacht[yacht.webp]
+  city[city_bridge.webp]
   ocean[ocean shader]
-  clouds[clouds_far/mid/near.png]
-  base[blue_hour_cloudless.png]
+  clouds[clouds_far/mid/near.webp]
+  base[blue_hour_cloudless.webp]
   base --> clouds --> ocean --> city --> yacht --> lights --> foreground
 ```
 
@@ -159,10 +162,10 @@ from PIL import Image, ImageChops, ImageDraw
 W, H = 2560, 1440
 out = Path('tmp/scenery_work/cloud_runtime_preview')
 out.mkdir(parents=True, exist_ok=True)
-base = Image.open('assets/scenery/blue_hour_cloudless.png').convert('RGBA')
-city = Image.open('assets/scenery/city_bridge.png').convert('RGBA')
-yacht = Image.open('assets/scenery/yacht.png').convert('RGBA')
-fg = Image.open('assets/scenery/foreground.png').convert('RGBA')
+base = Image.open('assets/scenery/blue_hour_cloudless.webp').convert('RGBA')
+city = Image.open('assets/scenery/city_bridge.webp').convert('RGBA')
+yacht = Image.open('assets/scenery/yacht.webp').convert('RGBA')
+fg = Image.open('assets/scenery/foreground.webp').convert('RGBA')
 cloud_specs = [
     ('clouds_far', 0.84, 0.00165),
     ('clouds_mid', 0.84, 0.0021),
@@ -172,7 +175,7 @@ cloud_specs = [
 def comp(t):
     im = base.copy()
     for name, opacity, dxps in cloud_specs:
-        cloud = Image.open(f'assets/scenery/{name}.png').convert('RGBA')
+        cloud = Image.open(f'assets/scenery/{name}.webp').convert('RGBA')
         cloud.putalpha(cloud.getchannel('A').point(lambda p: int(p * opacity)))
         phase = (t * dxps) % 1.0
         dx = round((phase if phase <= 0.5 else phase - 1) * W)
@@ -221,5 +224,5 @@ should still register in `top_dark_diff_overlay_t43.png`.
 - Open sky has blocky scars: the erase/stencil mask is too broad for inpainting.
   Keep broad dark bodies as low-alpha overlays and only inpaint sparse confident
   highlights.
-- Runtime asset changes do not appear after hot reload: PNG asset bytes may be
+- Runtime asset changes do not appear after hot reload: image asset bytes may be
   cached. Full restart the Flutter app after regenerating assets.
