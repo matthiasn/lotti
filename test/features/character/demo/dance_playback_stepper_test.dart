@@ -89,5 +89,34 @@ void main() {
       // The backup IS singing → its mouth opens.
       expect(stepper.bgMouth, greaterThan(0.4));
     });
+
+    test(
+      'a lead word drives the frontman via voiceActive (not words.isEmpty)',
+      () {
+        const cues = [(start: 0.0, end: 1.0, shape: 'D')];
+        final perf = _perf(
+          words: const [
+            (start: 0, end: 2, word: 'go', voice: 'lead', section: 'verse'),
+          ],
+        );
+        final stepper = DancePlaybackStepper()..advance(perf, cues, 0.5, 0.06);
+        expect(stepper.leadMouth, greaterThan(0.4));
+        // A verse (not a group hook) → the backups stay shut.
+        expect(stepper.bgMouth, 0);
+      },
+    );
+
+    test('on a group-hook section the backups join the lead word', () {
+      const cues = [(start: 0.0, end: 1.0, shape: 'D')];
+      final perf = _perf(
+        words: const [
+          (start: 0, end: 2, word: 'oh', voice: 'lead', section: 'chorus'),
+        ],
+      );
+      final stepper = DancePlaybackStepper()..advance(perf, cues, 0.5, 0.06);
+      expect(stepper.leadMouth, greaterThan(0.4));
+      // 'chorus' is a group hook → the backups sing the lead word too.
+      expect(stepper.bgMouth, greaterThan(0.4));
+    });
   });
 }

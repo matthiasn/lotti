@@ -484,30 +484,14 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
               ?.map((e) => (e as num).toDouble())
               .toList() ??
           const <double>[];
-      final rawSections = ((json['sections'] as List?) ?? const [])
-          .cast<Map<String, Object?>>()
-          .map(
-            (s) => (
-              start: (s['start_sec']! as num).toDouble(),
-              end: (s['end_sec']! as num).toDouble(),
-              label: (s['label'] as String?) ?? '',
-            ),
-          )
-          .toList();
-      final sections = classifyDanceSections(rawSections, amplitudes, duration);
       final words = await loadDanceWords(kDanceWordsPath);
       final cues = await loadDanceCues(kDanceCuesPath);
-      final spans = buildDanceSectionSpans(words, duration);
-      // Anchor the looping phrase on the first downbeat and span whole bars; the
-      // 3-bar loop then stays beat-locked for the entire track.
-      final binding = BeatLoopBinding.barAligned(map, bars: kDancePhraseBars);
-      // The single source of truth for the per-frame derivation; the offline
-      // composer builds the same object so its renders match this player.
-      final perf = DancePerformance(
+      // The single source of truth for the per-frame derivation, assembled
+      // through the same factory the offline composer uses so its renders match
+      // this player.
+      final perf = DancePerformance.fromBeatMapJson(
+        json: json,
         map: map,
-        binding: binding,
-        sections: sections,
-        sectionSpans: spans,
         trackDurationSec: duration,
         words: words,
       );
@@ -519,9 +503,13 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         _bpm = (tempo?['global_bpm'] as num?)?.toDouble() ?? 0;
         _perf = perf;
         _amplitudes = amplitudes;
-        _waveformSections = _buildWaveformSections(spans, sections, duration);
+        _waveformSections = _buildWaveformSections(
+          perf.sectionSpans,
+          perf.sections,
+          duration,
+        );
         _words = words;
-        _sectionSpans = spans;
+        _sectionSpans = perf.sectionSpans;
         _cues = cues;
       });
       if (kDanceAppExport) unawaited(_exportFramesFromApp());

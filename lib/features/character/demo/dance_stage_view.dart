@@ -18,18 +18,21 @@ import 'package:lotti/features/scenery/stage_lights_overlay.dart';
 
 /// The generalized **live paint path** for the beat-synced dance showcase.
 ///
-/// The whole point of this widget is that there is exactly ONE composite. The
-/// live player (`DanceToTrackPage`) renders it, and every offline renderer — the
-/// MP4 exporter, the position-window debug harness, the cinematography render
-/// skill — pumps the *same* `DanceStageView` and captures its [RepaintBoundary].
-/// So an offline frame is the live frame, not a hand-reconstruction that drifts.
+/// The live player (`DanceToTrackPage`) renders this widget. It owns the paint
+/// constants and the stage-light rig that previously had to be hand-synced
+/// across two paint paths (gel cadence via [danceStageRig], backlight weights,
+/// body grade, haze band, cast scale, cast, caption), so they cannot diverge.
 ///
-/// It owns the paint constants and the stage-light rig that previously had to be
-/// hand-synced across the two paint paths (gel cadence, backlight weights, body
-/// grade, haze band, cast scale), so they cannot diverge. The per-frame
-/// *derivation* (which move, warped clock, beat, camera) is supplied by the
-/// caller from a [DancePerformance]; the stateful camera/mouth integration by a
-/// `DancePlaybackStepper`.
+/// The offline renderers (the MP4 exporter and the position-window debug
+/// harness) do NOT pump this widget — they go through `DanceFrameComposer`, a
+/// fast canvas re-paint that *single-sources those same constants/rig from this
+/// file*. So the two paint paths share their constants and the cat compositor
+/// (via [danceCharacterPainter]); only the ambient stage-light phase differs
+/// offline, by design (see `DanceFrameComposer`).
+///
+/// The per-frame *derivation* (which move, warped clock, beat, camera) is
+/// supplied by the caller from a [DancePerformance]; the stateful camera/mouth
+/// integration by a `DancePlaybackStepper`.
 class DanceStageView extends StatelessWidget {
   const DanceStageView({
     required this.cast,
@@ -167,45 +170,22 @@ class DanceStageView extends StatelessWidget {
                     ),
                   if (useNewBackdrop) const SceneTextureOverlay(),
                   CustomPaint(
-                    painter: CharacterPainter(
-                      scene: cast.lead,
-                      partnerScene: cast.left,
-                      ensembleScenes: [cast.left, cast.right],
-                      ensembleExpressions: [
-                        danceSingExpression(
-                          leadMouth,
-                          Expression.neutral,
-                          leadShape,
-                        ),
-                        danceSingExpression(
-                          bgMouth,
-                          Expression.content,
-                          bgShape,
-                        ),
-                        danceSingExpression(bgMouth, Expression.happy, bgShape),
-                      ],
-                      ensembleClips: stage.ensemble,
-                      synchronousEnsemble: stage.synchronous,
-                      singingHeadMotion: true,
-                      walkingPair: true,
-                      clip: stage.lead,
-                      timeSeconds: stage.seconds,
-                      cameraOverride: shot,
-                      onDancerAnchors: useNewBackdrop ? onDancerAnchors : null,
-                      scale: scale,
-                      groundColor: useNewBackdrop
-                          ? null
-                          : const Color(0xFF374551),
-                      backdrop: useNewBackdrop
-                          ? CharacterBackdrop.none
-                          : CharacterBackdrop.waterfront,
-                      backdropImage: useNewBackdrop ? null : backdropImage,
-                      backdropCloudsImage: useNewBackdrop ? null : cloudsImage,
-                      backdropWavesImage: useNewBackdrop ? null : wavesImage,
-                      memberBacklights: backlights,
-                      bodyGrade: useNewBackdrop ? kDanceBodyGrade : null,
-                      heroStaging: useNewBackdrop,
+                    painter: danceCharacterPainter(
+                      cast: cast,
                       renderer: renderer,
+                      stage: stage,
+                      shot: shot,
+                      leadMouth: leadMouth,
+                      bgMouth: bgMouth,
+                      leadShape: leadShape,
+                      bgShape: bgShape,
+                      scale: scale,
+                      backlights: backlights,
+                      onDancerAnchors: onDancerAnchors,
+                      useNewBackdrop: useNewBackdrop,
+                      backdropImage: backdropImage,
+                      cloudsImage: cloudsImage,
+                      wavesImage: wavesImage,
                     ),
                     child: const SizedBox.expand(),
                   ),
@@ -314,6 +294,61 @@ const LinearGradient kDanceHazeGradient = LinearGradient(
   stops: [0.0, 0.40, 0.52, 0.64, 0.76],
 );
 
+/// Builds the trio compositor for one frame — the single `CharacterPainter`
+/// wiring used by BOTH the live [DanceStageView] and the offline
+/// `DanceFrameComposer`, so the ~20-argument painter can't be hand-synced out of
+/// step (add a staging param here and both paths pick it up).
+///
+/// [useNewBackdrop] false selects the legacy single-plate path (the painter
+/// draws the waterfront plate + a grey floor band); the offline renderers always
+/// use the new layered scene and leave the plate images null.
+CharacterPainter danceCharacterPainter({
+  required DanceCast cast,
+  required CharacterRenderer renderer,
+  required DanceStage stage,
+  required Shot shot,
+  required double leadMouth,
+  required double bgMouth,
+  required MouthShape leadShape,
+  required MouthShape bgShape,
+  required double scale,
+  required List<Color> backlights,
+  ValueChanged<List<Offset>>? onDancerAnchors,
+  bool useNewBackdrop = true,
+  ui.Image? backdropImage,
+  ui.Image? cloudsImage,
+  ui.Image? wavesImage,
+}) => CharacterPainter(
+  scene: cast.lead,
+  partnerScene: cast.left,
+  ensembleScenes: [cast.left, cast.right],
+  ensembleExpressions: [
+    danceSingExpression(leadMouth, Expression.neutral, leadShape),
+    danceSingExpression(bgMouth, Expression.content, bgShape),
+    danceSingExpression(bgMouth, Expression.happy, bgShape),
+  ],
+  ensembleClips: stage.ensemble,
+  synchronousEnsemble: stage.synchronous,
+  singingHeadMotion: true,
+  walkingPair: true,
+  clip: stage.lead,
+  timeSeconds: stage.seconds,
+  cameraOverride: shot,
+  onDancerAnchors: useNewBackdrop ? onDancerAnchors : null,
+  scale: scale,
+  groundColor: useNewBackdrop ? null : const Color(0xFF374551),
+  backdrop: useNewBackdrop
+      ? CharacterBackdrop.none
+      : CharacterBackdrop.waterfront,
+  backdropImage: useNewBackdrop ? null : backdropImage,
+  backdropCloudsImage: useNewBackdrop ? null : cloudsImage,
+  backdropWavesImage: useNewBackdrop ? null : wavesImage,
+  memberBacklights: backlights,
+  bodyGrade: useNewBackdrop ? kDanceBodyGrade : null,
+  heroStaging: useNewBackdrop,
+  renderer: renderer,
+);
+
 /// The karaoke caption: a short window of lyric words centred on the current
 /// one (highlighted). Empty when no word is active. Shared by the live player
 /// and the offline renderers so the caption can't drift.
@@ -326,6 +361,11 @@ class DanceCaption extends StatelessWidget {
 
   final List<DanceWord> words;
   final double positionSeconds;
+
+  /// Backdrop alpha + corner radius for the caption box. Shared by this widget
+  /// and the offline canvas caption so the two cannot drift.
+  static const double backdropAlpha = 0.45;
+  static const double cornerRadius = 10;
 
   /// Index of the lyric word to caption: the most recent word that has started,
   /// hidden during instrumental gaps (>2 s after the last word ended).
@@ -343,31 +383,40 @@ class DanceCaption extends StatelessWidget {
     return recent;
   }
 
+  /// The inclusive-from / exclusive-to window of words shown around the [active]
+  /// word in a list of [length] (a few before, a few after).
+  static ({int from, int to}) captionWindow(int active, int length) => (
+    from: active - 3 < 0 ? 0 : active - 3,
+    to: active + 4 > length ? length : active + 4,
+  );
+
+  /// The per-word style: the current word is brighter, larger and bolder.
+  static TextStyle captionWordStyle({required bool active}) => TextStyle(
+    color: active ? Colors.white : Colors.white54,
+    fontSize: active ? 26 : 21,
+    fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+    height: 1.2,
+  );
+
   @override
   Widget build(BuildContext context) {
     final i = captionWordIndex(words, positionSeconds);
     if (i == null) return const SizedBox.shrink();
-    final from = i - 3 < 0 ? 0 : i - 3;
-    final to = i + 4 > words.length ? words.length : i + 4;
+    final window = captionWindow(i, words.length);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.black.withValues(alpha: backdropAlpha),
+        borderRadius: BorderRadius.circular(cornerRadius),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: RichText(
           text: TextSpan(
             children: [
-              for (var j = from; j < to; j++)
+              for (var j = window.from; j < window.to; j++)
                 TextSpan(
                   text: '${words[j].word} ',
-                  style: TextStyle(
-                    color: j == i ? Colors.white : Colors.white54,
-                    fontSize: j == i ? 26 : 21,
-                    fontWeight: j == i ? FontWeight.w700 : FontWeight.w400,
-                    height: 1.2,
-                  ),
+                  style: captionWordStyle(active: j == i),
                 ),
             ],
           ),

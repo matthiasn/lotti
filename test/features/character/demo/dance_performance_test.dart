@@ -252,6 +252,17 @@ void main() {
       expect(perf.choreoTrioByLevel(0.30).lead.name, 'azonto');
       expect(perf.choreoTrioByLevel(0.05).lead.name, 'pouncingCat');
     });
+
+    test('the two shaku-led bands differ by ensemble at the 0.62 boundary', () {
+      expect(
+        perf.choreoTrioByLevel(0.62).ensemble.map((c) => c.name).toList(),
+        ['shaku', 'zanku', 'sekem'],
+      );
+      expect(
+        perf.choreoTrioByLevel(0.45).ensemble.map((c) => c.name).toList(),
+        ['shaku', 'azonto', 'zanku'],
+      );
+    });
   });
 
   group('DancePerformance.stageAt', () {
@@ -414,6 +425,9 @@ void main() {
         );
         expect(trio.ensemble.length, 3);
         expect(trio.ensemble.first.name, trio.lead.name);
+        // ensemble[0] IS the lead instance — `synchronous: lead != _pounce`
+        // relies on this identity, so the invariant test asserts identity too.
+        expect(identical(trio.ensemble.first, trio.lead), isTrue);
       },
       tags: 'glados',
     );

@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -10,7 +9,6 @@ import 'package:lotti/features/character/demo/dance_performance.dart';
 import 'package:lotti/features/character/demo/dance_playback_stepper.dart';
 import 'package:lotti/features/character/demo/dance_stage_view.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
-import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/runtime/character_painter.dart';
 import 'package:lotti/features/character/runtime/character_renderer.dart';
 import 'package:lotti/features/scenery/layers/backdrop_layer.dart';
@@ -221,42 +219,20 @@ class DanceFrameComposer {
     const SceneTexturePainter().paint(canvas, size);
 
     final samples = _stageRig.sample(time: pos, beat: beat);
-    final catBacklights = danceMemberBacklights(samples);
 
-    CharacterPainter(
-      scene: _cast.lead,
-      partnerScene: _cast.left,
-      ensembleScenes: [_cast.left, _cast.right],
-      ensembleExpressions: [
-        danceSingExpression(
-          _stepper.leadMouth,
-          Expression.neutral,
-          _stepper.leadShape,
-        ),
-        danceSingExpression(
-          _stepper.bgMouth,
-          Expression.content,
-          _stepper.bgShape,
-        ),
-        danceSingExpression(
-          _stepper.bgMouth,
-          Expression.happy,
-          _stepper.bgShape,
-        ),
-      ],
-      ensembleClips: stage.ensemble,
-      synchronousEnsemble: stage.synchronous,
-      singingHeadMotion: true,
-      walkingPair: true,
-      clip: stage.lead,
-      timeSeconds: stage.seconds,
-      cameraOverride: _stepper.shot,
-      onDancerAnchors: (anchors) => _dancerAnchors = anchors,
-      scale: danceCastScale(size.height),
-      memberBacklights: catBacklights,
-      bodyGrade: kDanceBodyGrade,
-      heroStaging: true,
+    // Same trio compositor the live DanceStageView builds — one source of truth.
+    danceCharacterPainter(
+      cast: _cast,
       renderer: _renderer,
+      stage: stage,
+      shot: _stepper.shot,
+      leadMouth: _stepper.leadMouth,
+      bgMouth: _stepper.bgMouth,
+      leadShape: _stepper.leadShape,
+      bgShape: _stepper.bgShape,
+      scale: danceCastScale(size.height),
+      backlights: danceMemberBacklights(samples),
+      onDancerAnchors: (anchors) => _dancerAnchors = anchors,
     ).paint(canvas, size);
 
     if (captions && perf.words.isNotEmpty) _paintCaption(canvas, pos);
@@ -298,23 +274,19 @@ class DanceFrameComposer {
   }
 
   void _paintCaption(Canvas canvas, double pos) {
-    final i = _captionWordIndex(pos);
-    if (i == null) return;
+    // Caption window, per-word style and box metrics are single-sourced from
+    // DanceCaption (the live widget), so the canvas caption cannot drift from it.
     final words = perf.words;
-    final from = math.max(0, i - 3);
-    final to = math.min(words.length, i + 4);
+    final i = DanceCaption.captionWordIndex(words, pos);
+    if (i == null) return;
+    final window = DanceCaption.captionWindow(i, words.length);
     final painter = TextPainter(
       text: TextSpan(
         children: [
-          for (var j = from; j < to; j++)
+          for (var j = window.from; j < window.to; j++)
             TextSpan(
               text: '${words[j].word} ',
-              style: TextStyle(
-                color: j == i ? Colors.white : Colors.white54,
-                fontSize: j == i ? 26 : 21,
-                fontWeight: j == i ? FontWeight.w700 : FontWeight.w400,
-                height: 1.2,
-              ),
+              style: DanceCaption.captionWordStyle(active: j == i),
             ),
         ],
       ),
@@ -324,28 +296,14 @@ class DanceFrameComposer {
     const top = 20.0;
     final bg = RRect.fromRectAndRadius(
       Rect.fromLTWH(left - 16, top, painter.width + 32, painter.height + 16),
-      const Radius.circular(10),
+      const Radius.circular(DanceCaption.cornerRadius),
     );
     canvas.drawRRect(
       bg,
-      Paint()..color = Colors.black.withValues(alpha: 0.45),
+      Paint()
+        ..color = Colors.black.withValues(alpha: DanceCaption.backdropAlpha),
     );
     painter.paint(canvas, Offset(left, top + 8));
-  }
-
-  int? _captionWordIndex(double pos) {
-    final words = perf.words;
-    int? recent;
-    for (var i = 0; i < words.length; i++) {
-      if (words[i].start <= pos) {
-        recent = i;
-      } else {
-        break;
-      }
-    }
-    if (recent == null) return null;
-    if (pos - words[recent].end > 2.0) return null;
-    return recent;
   }
 }
 
