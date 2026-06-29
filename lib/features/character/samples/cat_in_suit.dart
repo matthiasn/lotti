@@ -4545,47 +4545,48 @@ class CatClips {
   // up/down — the low paw no longer sinks onto the tie and tucks against the
   // torso. One paw is high (collarbone -57) while the other is low (mid-chest
   // -30), so the two diagonals cross with vertical daylight = an open scissor X.
-  // The piston EXTREMES (high collarbone / low mid-chest, every 4 frames) use
-  // Ease.easeOutBack so each paw whips PAST the extreme and settles back — the
-  // accent snaps with follow-through instead of reaching-and-holding. Needs the
-  // non-smooth channel below. Both paws ride at x ~34 so neither grazes the navy
-  // torso in the lower-cross frames.
+  // HIT-AND-HOLD square wave: the paw SNAPS to its extreme on each count
+  // (Ease.easeOutBack overshoots past then settles), then HOLDS the steep X for
+  // the rest of the count before snapping to the other extreme — the Shaku
+  // accent-then-freeze, not a smooth oscillation through mid-chest. Both paws
+  // ride at x ~34 so neither grazes the navy torso (now also rim-read by the
+  // sleeve band). Needs the non-smooth channel below.
   static const _shakuHandLTargetKeys = [
-    DanceIkTargetKey(0, x: 34, y: -66, ease: Ease.easeOutBack), // high
-    DanceIkTargetKey(2, x: 33, y: -45),
-    DanceIkTargetKey(4, x: 34, y: -22, ease: Ease.easeOutBack), // low
-    DanceIkTargetKey(6, x: 33, y: -45),
-    DanceIkTargetKey(8, x: 34, y: -66, ease: Ease.easeOutBack),
-    DanceIkTargetKey(10, x: 33, y: -45),
+    DanceIkTargetKey(0, x: 34, y: -66), // high (held from the loop snap)
+    DanceIkTargetKey(3, x: 34, y: -66), // hold the high
+    DanceIkTargetKey(4, x: 34, y: -22, ease: Ease.easeOutBack), // SNAP low
+    DanceIkTargetKey(7, x: 34, y: -22), // hold the low
+    DanceIkTargetKey(8, x: 34, y: -66, ease: Ease.easeOutBack), // SNAP high
+    DanceIkTargetKey(11, x: 34, y: -66),
     DanceIkTargetKey(12, x: 34, y: -22, ease: Ease.easeOutBack),
-    DanceIkTargetKey(14, x: 33, y: -45),
+    DanceIkTargetKey(15, x: 34, y: -22),
     DanceIkTargetKey(16, x: 34, y: -66, ease: Ease.easeOutBack),
-    DanceIkTargetKey(18, x: 33, y: -45),
+    DanceIkTargetKey(19, x: 34, y: -66),
     DanceIkTargetKey(20, x: 34, y: -22, ease: Ease.easeOutBack),
-    DanceIkTargetKey(22, x: 33, y: -45),
+    DanceIkTargetKey(23, x: 34, y: -22),
     DanceIkTargetKey(24, x: 34, y: -66, ease: Ease.easeOutBack),
-    DanceIkTargetKey(26, x: 33, y: -45),
+    DanceIkTargetKey(27, x: 34, y: -66),
     DanceIkTargetKey(28, x: 34, y: -22, ease: Ease.easeOutBack),
-    DanceIkTargetKey(30, x: 33, y: -45),
+    DanceIkTargetKey(31, x: 34, y: -22),
     DanceIkTargetKey(32, x: 34, y: -66, ease: Ease.easeOutBack),
   ];
   static const _shakuHandRTargetKeys = [
-    DanceIkTargetKey(0, x: -34, y: -22, ease: Ease.easeOutBack), // low (opp.)
-    DanceIkTargetKey(2, x: -33, y: -45),
-    DanceIkTargetKey(4, x: -34, y: -66, ease: Ease.easeOutBack), // high
-    DanceIkTargetKey(6, x: -33, y: -45),
-    DanceIkTargetKey(8, x: -34, y: -22, ease: Ease.easeOutBack),
-    DanceIkTargetKey(10, x: -33, y: -45),
+    DanceIkTargetKey(0, x: -34, y: -22), // low (opposite phase, held)
+    DanceIkTargetKey(3, x: -34, y: -22), // hold the low
+    DanceIkTargetKey(4, x: -34, y: -66, ease: Ease.easeOutBack), // SNAP high
+    DanceIkTargetKey(7, x: -34, y: -66), // hold the high
+    DanceIkTargetKey(8, x: -34, y: -22, ease: Ease.easeOutBack), // SNAP low
+    DanceIkTargetKey(11, x: -34, y: -22),
     DanceIkTargetKey(12, x: -34, y: -66, ease: Ease.easeOutBack),
-    DanceIkTargetKey(14, x: -33, y: -45),
+    DanceIkTargetKey(15, x: -34, y: -66),
     DanceIkTargetKey(16, x: -34, y: -22, ease: Ease.easeOutBack),
-    DanceIkTargetKey(18, x: -33, y: -45),
+    DanceIkTargetKey(19, x: -34, y: -22),
     DanceIkTargetKey(20, x: -34, y: -66, ease: Ease.easeOutBack),
-    DanceIkTargetKey(22, x: -33, y: -45),
+    DanceIkTargetKey(23, x: -34, y: -66),
     DanceIkTargetKey(24, x: -34, y: -22, ease: Ease.easeOutBack),
-    DanceIkTargetKey(26, x: -33, y: -45),
+    DanceIkTargetKey(27, x: -34, y: -22),
     DanceIkTargetKey(28, x: -34, y: -66, ease: Ease.easeOutBack),
-    DanceIkTargetKey(30, x: -33, y: -45),
+    DanceIkTargetKey(31, x: -34, y: -66),
     DanceIkTargetKey(32, x: -34, y: -22, ease: Ease.easeOutBack),
   ];
   static final KeyframeIkTargetChannel _shakuHandLTarget = _dancePhrase
@@ -4667,7 +4668,7 @@ class CatClips {
           swayAmplitude: -28,
         ),
         const SineRootChannel(
-          bobAmplitude: -0.055,
+          bobAmplitude: -0.1,
           bobPhase: 0.125,
           bobHarmonic: 8,
           leanAmplitude: 0.001,
