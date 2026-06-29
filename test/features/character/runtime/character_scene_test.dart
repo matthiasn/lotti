@@ -5,7 +5,6 @@ import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/affine2d.dart';
 import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/runtime/character_scene.dart';
-import 'package:lotti/features/character/runtime/temporal_motion_analyzer.dart';
 import 'package:lotti/features/character/samples/cat_in_suit.dart';
 
 void main() {
@@ -13,30 +12,25 @@ void main() {
     test('frameAt resolves a world transform for every bone', () {
       final rig = buildCatInSuitRig();
       final scene = CharacterScene(rig);
-      final frame = scene.frameAt(clip: CatClips.walk, timeSeconds: 0.4);
+      final frame = scene.frameAt(clip: CatClips.shaku, timeSeconds: 0.4);
       expect(frame.world.length, rig.bones.length);
       for (final bone in rig.bones) {
         expect(frame.world.containsKey(bone.id), isTrue);
       }
     });
 
-    test('locomotionX advances with a constant-speed clip (run)', () {
+    test('public character clips animate in place', () {
       final scene = CharacterScene(buildCatInSuitRig());
-      final frame = scene.frameAt(clip: CatClips.run, timeSeconds: 2);
-      expect(
-        frame.locomotionX,
-        closeTo(CatClips.run.locomotionSpeed * 2, 1e-9),
-      );
-    });
 
-    test('foot-locked walk travel advances one stride per cycle', () {
-      final scene = CharacterScene(buildCatInSuitRig());
-      // duration is 1s, so t=1 is one full cycle and t=2 two cycles; foot-lock
-      // travel is periodic, so two cycles cover exactly twice the stride.
-      final oneCycle = scene.locomotionOffset(CatClips.walk, 1);
-      final twoCycles = scene.locomotionOffset(CatClips.walk, 2);
-      expect(oneCycle, greaterThan(0));
-      expect(twoCycles, closeTo(2 * oneCycle, 1e-6));
+      for (final clip in CatClips.all) {
+        final frame = scene.frameAt(clip: clip, timeSeconds: 2);
+        expect(frame.locomotionX, 0, reason: '${clip.name} should not travel');
+        expect(
+          scene.locomotionOffset(clip, 2),
+          0,
+          reason: '${clip.name} should stay centred for the dance showcase',
+        );
+      }
     });
 
     test('contact spans damp support-foot drift for one-shot clips', () {
@@ -107,35 +101,35 @@ void main() {
       var rawVerticalDrift = 0.0;
       var lockedLateralDrift = 0.0;
 
-      for (final span in CatClips.dance.contactSpans) {
+      for (final span in CatClips.shaku.contactSpans) {
         final mid = (span.start + span.end) / 2;
         final width = (span.end - span.start) / 3;
         final lockedAnchor = _supportPoint(
           scene,
-          CatClips.dance,
+          CatClips.shaku,
           span.bone,
-          mid * CatClips.dance.duration,
+          mid * CatClips.shaku.duration,
         );
         final rawAnchor = _rawSupportPoint(
           scene,
-          CatClips.dance,
+          CatClips.shaku,
           span.bone,
-          mid * CatClips.dance.duration,
+          mid * CatClips.shaku.duration,
         );
 
         for (var i = -3; i <= 3; i++) {
           final p = mid + width * i / 6;
           final locked = _supportPoint(
             scene,
-            CatClips.dance,
+            CatClips.shaku,
             span.bone,
-            p * CatClips.dance.duration,
+            p * CatClips.shaku.duration,
           );
           final raw = _rawSupportPoint(
             scene,
-            CatClips.dance,
+            CatClips.shaku,
             span.bone,
-            p * CatClips.dance.duration,
+            p * CatClips.shaku.duration,
           );
           lockedVerticalDrift = math.max(
             lockedVerticalDrift,
@@ -191,16 +185,8 @@ void main() {
         return drift;
       }
 
-      // `shaku` opts into the anchor; the otherwise-similar shipped `dance` does
-      // not — so shaku's planted foot must drift markedly less, and stay well
-      // under the unanchored skate budget.
-      expect(
-        driftOf(CatClips.shaku),
-        lessThan(driftOf(CatClips.dance)),
-        reason:
-            'the world anchor should plant the support foot harder than the '
-            'unanchored shipped dance',
-      );
+      // Shaku opts into the support-foot world anchor; with the deleted generic
+      // dance baseline gone, this test only guards the shipped skate budget.
       expect(
         driftOf(CatClips.shaku),
         lessThan(20),
@@ -213,14 +199,14 @@ void main() {
       () {
         final scene = CharacterScene(buildCatInSuitRig());
 
-        for (final span in CatClips.dance.contactSpans) {
+        for (final span in CatClips.shaku.contactSpans) {
           final spanLength = span.end - span.start;
           final anchorP = span.start + spanLength * 0.18;
           final anchor = _supportPoint(
             scene,
-            CatClips.dance,
+            CatClips.shaku,
             span.bone,
-            anchorP * CatClips.dance.duration,
+            anchorP * CatClips.shaku.duration,
           );
 
           var verticalDrift = 0.0;
@@ -229,9 +215,9 @@ void main() {
             final p = span.start + spanLength * i / 8;
             final support = _supportPoint(
               scene,
-              CatClips.dance,
+              CatClips.shaku,
               span.bone,
-              p * CatClips.dance.duration,
+              p * CatClips.shaku.duration,
             );
             verticalDrift = math.max(
               verticalDrift,
@@ -259,18 +245,18 @@ void main() {
           );
         }
 
-        final lastSpan = CatClips.dance.contactSpans.last;
+        final lastSpan = CatClips.shaku.contactSpans.last;
         final seamBefore = _supportPoint(
           scene,
-          CatClips.dance,
+          CatClips.shaku,
           lastSpan.bone,
-          CatClips.dance.duration * 31 / 32,
+          CatClips.shaku.duration * 31 / 32,
         );
         final seamAfter = _supportPoint(
           scene,
-          CatClips.dance,
+          CatClips.shaku,
           lastSpan.bone,
-          CatClips.dance.duration,
+          CatClips.shaku.duration,
         );
         expect(
           (seamBefore.y - seamAfter.y).abs(),
@@ -281,9 +267,9 @@ void main() {
         );
         final seamCarry = _supportPoint(
           scene,
-          CatClips.dance,
+          CatClips.shaku,
           lastSpan.bone,
-          CatClips.dance.duration / 16,
+          CatClips.shaku.duration / 16,
         );
         expect(
           (seamBefore.y - seamCarry.y).abs(),
@@ -308,8 +294,8 @@ void main() {
       for (var frameIndex = 0; frameIndex < 32; frameIndex += 1) {
         final p = frameIndex / 32;
         final frame = scene.frameAt(
-          clip: CatClips.dance,
-          timeSeconds: p * CatClips.dance.duration,
+          clip: CatClips.shaku,
+          timeSeconds: p * CatClips.shaku.duration,
         );
         final hip = frame.world[CatBones.hips]!.origin;
         final torso = frame.world[CatBones.torso]!.origin;
@@ -328,7 +314,7 @@ void main() {
       final scene = CharacterScene(buildCatInSuitRig());
 
       for (final clip in [
-        CatClips.dance,
+        CatClips.shaku,
         CatClips.danceBackupLeft,
         CatClips.danceBackupRight,
       ]) {
@@ -367,15 +353,15 @@ void main() {
         final p = frameIndex / 16;
         final support = phrase.supportAtPhase(p);
         final frame = scene.frameAt(
-          clip: CatClips.dance,
-          timeSeconds: p * CatClips.dance.duration,
+          clip: CatClips.shaku,
+          timeSeconds: p * CatClips.shaku.duration,
         );
         final hip = frame.world[CatBones.hips]!.origin;
         final supportPoint = _supportPoint(
           scene,
-          CatClips.dance,
+          CatClips.shaku,
           support.footBoneId,
-          p * CatClips.dance.duration,
+          p * CatClips.shaku.duration,
         );
 
         expect(
@@ -392,12 +378,12 @@ void main() {
       final scene = CharacterScene(buildCatInSuitRig());
 
       for (final clip in [
-        CatClips.dance,
+        CatClips.shaku,
         CatClips.danceBackupLeft,
         CatClips.danceBackupRight,
       ]) {
         for (final frameIndex in [19, 20, 21, 22, 23]) {
-          final timeSeconds = CatClips.dance.duration * frameIndex / 32;
+          final timeSeconds = CatClips.shaku.duration * frameIndex / 32;
           final frame = scene.frameAt(clip: clip, timeSeconds: timeSeconds);
           final hip = frame.world[CatBones.hips]!.origin;
           final support = _supportPoint(
@@ -426,8 +412,8 @@ void main() {
       for (final support in phrase.supports) {
         final p = support.loadFrame / phrase.frameCount;
         final frame = scene.frameAt(
-          clip: CatClips.dance,
-          timeSeconds: p * CatClips.dance.duration,
+          clip: CatClips.shaku,
+          timeSeconds: p * CatClips.shaku.duration,
         );
         final torsoScaleY = _axisScaleY(frame.world[CatBones.torso]!);
 
@@ -441,36 +427,6 @@ void main() {
       }
     });
 
-    test('dance keeps feet separated through second-half phrase accents', () {
-      final scene = CharacterScene(buildCatInSuitRig());
-
-      for (final frameIndex in [16, 18, 20, 22, 24]) {
-        final timeSeconds = CatClips.dance.duration * frameIndex / 32;
-        final left = _supportPoint(
-          scene,
-          CatClips.dance,
-          CatBones.footL,
-          timeSeconds,
-        );
-        final right = _supportPoint(
-          scene,
-          CatClips.dance,
-          CatBones.footR,
-          timeSeconds,
-        );
-        final separation = (left.x - right.x).abs();
-
-        expect(
-          separation,
-          greaterThan(32),
-          reason:
-              'dance frame $frameIndex should keep the second-half feet '
-              'separated enough that the leg ribbons do not merge into a '
-              'crossed dark tangle',
-        );
-      }
-    });
-
     test('is deterministic: identical scenes resolve identical frames', () {
       final a = CharacterScene(
         buildCatInSuitRig(),
@@ -480,8 +436,8 @@ void main() {
         buildCatInSuitRig(),
         autonomic: AutonomicLayer(),
       );
-      final fa = a.frameAt(clip: CatClips.run, timeSeconds: 0.7);
-      final fb = b.frameAt(clip: CatClips.run, timeSeconds: 0.7);
+      final fa = a.frameAt(clip: CatClips.zanku, timeSeconds: 0.7);
+      final fb = b.frameAt(clip: CatClips.zanku, timeSeconds: 0.7);
       expect(fa.world['head'], fb.world['head']);
       expect(fa.world['hand.L'], fb.world['hand.L']);
       expect(fa.face.eyeOpenLeft, fb.face.eyeOpenLeft);
@@ -491,9 +447,9 @@ void main() {
       final scene = CharacterScene(buildCatInSuitRig());
 
       for (final clip in [
-        CatClips.walk,
+        CatClips.shaku,
         CatClips.kick,
-        CatClips.dance,
+        CatClips.shaku,
         CatClips.danceBackupLeft,
         CatClips.danceBackupRight,
       ]) {
@@ -531,8 +487,8 @@ void main() {
 
       for (var i = 0; i < samples; i++) {
         final frame = scene.frameAt(
-          clip: CatClips.dance,
-          timeSeconds: CatClips.dance.duration * i / samples,
+          clip: CatClips.shaku,
+          timeSeconds: CatClips.shaku.duration * i / samples,
         );
         final head = frame.world[CatBones.head]!;
         final torso = frame.world[CatBones.torso]!;
@@ -583,125 +539,6 @@ void main() {
             'the Shaku chest bite should not whip the rigid skull sideways '
             'between dense frame samples',
       );
-    });
-
-    test('dance has no discontinuous frame-to-frame jumps', () {
-      const samples = 96;
-      const watchedBones = [
-        CatBones.hips,
-        CatBones.torso,
-        CatBones.head,
-        CatBones.handL,
-        CatBones.handR,
-        CatBones.footL,
-        CatBones.footR,
-        CatBones.tail6,
-      ];
-
-      final report =
-          TemporalMotionAnalyzer(
-            CharacterScene(buildCatInSuitRig()),
-          ).analyze(
-            clip: CatClips.dance,
-            samples: samples,
-            boneIds: watchedBones,
-          );
-      final worst = report.worstDisplacement;
-
-      expect(
-        worst.distance,
-        lessThan(22),
-        reason:
-            'worst jump was ${worst.distance.toStringAsFixed(2)}px on '
-            '${worst.boneId} from frame ${worst.fromFrame} to '
-            '${worst.toFrame} '
-            '(p ${worst.fromPhase.toStringAsFixed(3)} -> '
-            '${worst.toPhase.toStringAsFixed(3)})',
-      );
-    });
-
-    test('dance crew keeps hand accents continuous through section changes', () {
-      const samples = 128;
-      const watchedHands = [CatBones.handL, CatBones.handR];
-
-      final analyzer = TemporalMotionAnalyzer(
-        CharacterScene(buildCatInSuitRig()),
-      );
-      for (final clip in [
-        CatClips.dance,
-        CatClips.danceBackupLeft,
-        CatClips.danceBackupRight,
-      ]) {
-        final report = analyzer.analyze(
-          clip: clip,
-          samples: samples,
-          boneIds: watchedHands,
-        );
-        final worstDisplacement = report.worstDisplacement;
-        final worstAcceleration = report.worstAcceleration;
-
-        expect(
-          worstDisplacement.distance,
-          lessThan(10.5),
-          reason:
-              '${clip.name} hand accent should travel through section '
-              'transitions, not snap ${worstDisplacement.boneId} from '
-              'frame ${worstDisplacement.fromFrame} to '
-              '${worstDisplacement.toFrame}',
-        );
-        expect(
-          worstAcceleration.magnitude,
-          lessThan(6),
-          reason:
-              '${clip.name} hand accent should ease through direction changes, '
-              'not jerk ${worstAcceleration.boneId} across frames '
-              '${worstAcceleration.fromFrame}->'
-              '${worstAcceleration.throughFrame}->'
-              '${worstAcceleration.toFrame}',
-        );
-      }
-    });
-
-    test('dance crew keeps foot-target handoffs continuous', () {
-      const samples = 128;
-      const watchedFeet = [CatBones.footL, CatBones.footR];
-
-      final analyzer = TemporalMotionAnalyzer(
-        CharacterScene(buildCatInSuitRig()),
-      );
-      for (final clip in [
-        CatClips.dance,
-        CatClips.danceBackupLeft,
-        CatClips.danceBackupRight,
-      ]) {
-        final report = analyzer.analyze(
-          clip: clip,
-          samples: samples,
-          boneIds: watchedFeet,
-        );
-        final worstDisplacement = report.worstDisplacement;
-        final worstAcceleration = report.worstAcceleration;
-
-        expect(
-          worstDisplacement.distance,
-          lessThan(8.2),
-          reason:
-              '${clip.name} support handoffs should move through foot targets, '
-              'not snap ${worstDisplacement.boneId} from frame '
-              '${worstDisplacement.fromFrame} to '
-              '${worstDisplacement.toFrame}',
-        );
-        expect(
-          worstAcceleration.magnitude,
-          lessThan(3.8),
-          reason:
-              '${clip.name} foot targets should ease into support changes, '
-              'not jerk ${worstAcceleration.boneId} across frames '
-              '${worstAcceleration.fromFrame}->'
-              '${worstAcceleration.throughFrame}->'
-              '${worstAcceleration.toFrame}',
-        );
-      }
     });
 
     test('limb targets solve hand goals in anchor-bone space', () {

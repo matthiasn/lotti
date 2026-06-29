@@ -46,7 +46,7 @@ void main() {
   CharacterPainter painterAt(double t, {Expression e = Expression.neutral}) =>
       CharacterPainter(
         scene: scene,
-        clip: CatClips.walk,
+        clip: CatClips.shaku,
         timeSeconds: t,
         expression: e,
         renderer: renderer,
@@ -67,7 +67,7 @@ void main() {
     test('repaints when the renderer instance changes', () {
       final other = CharacterPainter(
         scene: scene,
-        clip: CatClips.walk,
+        clip: CatClips.shaku,
         timeSeconds: 0.5,
         renderer: CharacterRenderer(antiAlias: false),
       );
@@ -77,7 +77,7 @@ void main() {
     test('repaints when walking pair mode changes', () {
       final pair = CharacterPainter(
         scene: scene,
-        clip: CatClips.walk,
+        clip: CatClips.shaku,
         timeSeconds: 0.5,
         walkingPair: true,
         renderer: renderer,
@@ -88,15 +88,15 @@ void main() {
     test('repaints when ensemble clips change', () {
       final lead = CharacterPainter(
         scene: scene,
-        clip: CatClips.dance,
+        clip: CatClips.shaku,
         timeSeconds: 0.5,
         walkingPair: true,
-        ensembleClips: [CatClips.dance],
+        ensembleClips: [CatClips.shaku],
         renderer: renderer,
       );
       final backup = CharacterPainter(
         scene: scene,
-        clip: CatClips.dance,
+        clip: CatClips.shaku,
         timeSeconds: 0.5,
         walkingPair: true,
         ensembleClips: [CatClips.danceBackupLeft],
@@ -108,7 +108,7 @@ void main() {
     test('repaints when the backdrop changes', () {
       final waterfront = CharacterPainter(
         scene: scene,
-        clip: CatClips.walk,
+        clip: CatClips.shaku,
         timeSeconds: 0.5,
         backdrop: CharacterBackdrop.waterfront,
         renderer: renderer,
@@ -119,7 +119,7 @@ void main() {
     test('repaints when the dance camera review mode changes', () {
       final locked = CharacterPainter(
         scene: scene,
-        clip: CatClips.dance,
+        clip: CatClips.shaku,
         timeSeconds: 0.5,
         enableDanceCamera: false,
         renderer: renderer,
@@ -141,7 +141,7 @@ void main() {
         final canvas = Canvas(recorder);
         CharacterPainter(
           scene: scene,
-          clip: CatClips.walk,
+          clip: CatClips.shaku,
           // A time where the walk has travelled a good fraction of a stride.
           timeSeconds: 0.6,
           locomote: locomote,
@@ -210,7 +210,7 @@ void main() {
         final canvas = Canvas(recorder);
         CharacterPainter(
           scene: scene,
-          clip: CatClips.dance,
+          clip: CatClips.shaku,
           timeSeconds: t,
           feetFraction: feetFraction,
           shadowColor: const Color(0x00000000),
@@ -285,7 +285,7 @@ void main() {
         }
 
         for (final clip in [
-          CatClips.dance,
+          CatClips.shaku,
           CatClips.danceBackupLeft,
           CatClips.danceBackupRight,
         ]) {
@@ -323,7 +323,7 @@ void main() {
       final canvas = Canvas(recorder);
       CharacterPainter(
         scene: scene,
-        clip: CatClips.dance,
+        clip: CatClips.shaku,
         timeSeconds: 0.3,
         backdrop: CharacterBackdrop.waterfront,
         backdropImage: waterfrontBackdropImage,
@@ -370,7 +370,7 @@ void main() {
       final canvas = Canvas(recorder);
       CharacterPainter(
         scene: scene,
-        clip: CatClips.walk,
+        clip: CatClips.shaku,
         timeSeconds: 0.3,
         walkingPair: true,
         shadowColor: const Color(0x00000000),
@@ -434,7 +434,7 @@ void main() {
           ),
         ],
         ensembleClips: [
-          CatClips.dance,
+          CatClips.shaku,
           CatClips.danceBackupLeft,
           CatClips.danceBackupRight,
         ],
@@ -444,7 +444,7 @@ void main() {
           Expression.happy,
         ],
         synchronousEnsemble: true,
-        clip: CatClips.dance,
+        clip: CatClips.shaku,
         timeSeconds: 0.25,
         walkingPair: true,
         shadowColor: const Color(0x00000000),
@@ -530,13 +530,13 @@ void main() {
         CharacterScene(buildCatInSuitRig(palette: CatInSuitPalette.darkBrown)),
       ],
       ensembleClips: [
-        lead ?? CatClips.dance,
+        lead ?? CatClips.shaku,
         CatClips.danceBackupLeft,
         CatClips.danceBackupRight,
       ],
       synchronousEnsemble: true,
       walkingPair: true,
-      clip: lead ?? CatClips.dance,
+      clip: lead ?? CatClips.shaku,
       timeSeconds: 0.25,
       shadowColor: const Color(0x00000000),
       memberBacklights: backlights,
@@ -732,13 +732,13 @@ void main() {
             ),
           ],
           ensembleClips: [
-            CatClips.dance,
+            CatClips.shaku,
             CatClips.danceBackupLeft,
             CatClips.danceBackupRight,
           ],
           synchronousEnsemble: true,
-          clip: CatClips.dance,
-          timeSeconds: CatClips.dance.duration * p,
+          clip: CatClips.shaku,
+          timeSeconds: CatClips.shaku.duration * p,
           walkingPair: true,
           shadowColor: const Color(0x00000000),
           renderer: renderer,
@@ -823,8 +823,8 @@ void main() {
         CharacterPainter.debugDanceFormation(
           index,
           3,
-          CatClips.dance.duration * p,
-          CatClips.dance.duration,
+          CatClips.shaku.duration * p,
+          CatClips.shaku.duration,
         );
 
     final silverFrames = [
@@ -936,13 +936,13 @@ void main() {
             ),
           ],
           ensembleClips: [
-            CatClips.dance,
+            CatClips.shaku,
             CatClips.danceBackupLeft,
             CatClips.danceBackupRight,
           ],
           synchronousEnsemble: true,
-          clip: CatClips.dance,
-          timeSeconds: CatClips.dance.duration * p,
+          clip: CatClips.shaku,
+          timeSeconds: CatClips.shaku.duration * p,
           walkingPair: true,
           enableDanceCamera: enableDanceCamera,
           shadowColor: const Color(0x00000000),
@@ -1225,13 +1225,13 @@ void main() {
               ),
             ],
             ensembleClips: [
-              CatClips.dance,
+              CatClips.shaku,
               CatClips.danceBackupLeft,
               CatClips.danceBackupRight,
             ],
             synchronousEnsemble: true,
-            clip: CatClips.dance,
-            timeSeconds: CatClips.dance.duration * p,
+            clip: CatClips.shaku,
+            timeSeconds: CatClips.shaku.duration * p,
             walkingPair: true,
             danceCameraStrength: strength,
             scale: size.height * 0.78 / 300.0,

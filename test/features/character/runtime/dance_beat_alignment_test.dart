@@ -18,7 +18,7 @@ void main() {
 
     final report = TemporalMotionAnalyzer(CharacterScene(buildCatInSuitRig()))
         .analyze(
-          clip: CatClips.dance,
+          clip: CatClips.shaku,
           samples: samples,
           boneIds: const [
             CatBones.head,

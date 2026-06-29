@@ -130,12 +130,9 @@ const List<Offset> _kRimDirections = [
 /// Whether [clip] is a centred-trio **concert dance** phrase — the lead clip
 /// that turns on the whole stage act: the [_kRimDirections] rim/halo, the body
 /// grade, hero staging, the dance formation, foot-anchor publishing, the dance
-/// camera and the music head-bob. Both the original `dance` phrase and the
-/// shipping `shaku` phrase (what the audio player actually dances) qualify —
-/// gating on `'dance'` alone left every one of those dark/inert in the running
-/// player, because it dances `shaku`.
-bool _isTrioDanceClip(Clip clip) =>
-    clip.name == 'dance' || clip.name == 'shaku';
+/// camera and the music head-bob. The public catalog now exposes only authored
+/// show moves, so `shaku` is the representative concert-trio gate.
+bool _isTrioDanceClip(Clip clip) => clip.name == 'shaku';
 
 /// A [CustomPainter] that resolves and draws one frame of a [CharacterScene].
 ///

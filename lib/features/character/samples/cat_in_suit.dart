@@ -1270,7 +1270,7 @@ RigSpec buildCatInSuitRig({
   );
 }
 
-/// The Phase-1 clip library: walk, run, kick, dance, sit, jump, idle.
+/// The Phase-1 clip library: show-focused cat-in-suit performance clips.
 class CatClips {
   static const _dancePhrase = DancePhrase(
     frameCount: 32,
@@ -1988,131 +1988,6 @@ class CatClips {
 
   static final List<GroundSpan> _danceContactSpans = _dancePhrase
       .contactSpans();
-
-  // --- Shared walk step cycle (phase 0 = left-foot contact). ---
-  // The right leg reuses these exact keys at phase 0.5. The point of keyframes
-  // (vs sines) is the two distinct phases a sine can't make: a STANCE leg that
-  // plants, straightens and sweeps back under the body, and a SWING leg whose
-  // knee tucks so the foot lifts clear of the floor, then reaches out to plant.
-  // Smooth, not snappy: the walk reads as a continuous step, so segments ease
-  // with easeOut/easeInOut. No `*Back` overshoot in a cycle — it reverses a
-  // limb mid-move and reads as a jerk; overshoot/settle is for the one-shots.
-  // NOTE: the leg channels are KeyframeChannel(smooth: true) — the Catmull-Rom
-  // spline ignores `ease` ENTIRELY (it returns before k1.ease is read). So
-  // constant-velocity stance is NOT an Ease.linear; it is encoded as evenly
-  // SPACED keys carrying evenly STEPPED values — a straight line the spline can
-  // only trace. The stance keys (0.42 -> -0.42, ~constant slope) keep the planted
-  // foot's ground sweep linear so it stamps, not skates.
-  //
-  // Stance is HELD on the floor until the swing foot plants (toe-off at p0.58,
-  // not p0.5): a walk by definition never leaves the ground, so the stance leg
-  // must bridge into the next contact or the whole rig hops (a flight phase).
-  // Mid-stance keys re-spaced so the FOOT's ground sweep (not the thigh angle)
-  // is near-constant — footX = 60·sin(thigh)+50·sin(thigh+shin) is non-linear, so
-  // a linear thigh raced the foot back early then stalled (a lurch-then-stall
-  // travel). Holding the thigh more positive through passing evens the body rate.
-  static const _thighKeys = [
-    Keyframe(p: 0, rotation: 0.38), // contact: foot lands under the hip
-    Keyframe(p: 0.14, rotation: 0.3), // stance
-    Keyframe(
-      p: 0.28,
-      rotation: 0.17,
-    ), // passing (held forward — even foot sweep)
-    Keyframe(p: 0.42, rotation: -0.11), // late stance
-    Keyframe(p: 0.5, rotation: -0.25), // weight rolls forward over the foot
-    Keyframe(p: 0.58, rotation: -0.38), // toe-off — held until the swing plants
-    Keyframe(p: 0.72, rotation: -0.06), // swing drive (knee leads forward)
-    Keyframe(p: 0.88, rotation: 0.34), // reach for the plant
-    Keyframe(p: 1, rotation: 0.38),
-  ];
-  // The knee ARTICULATES through stance to cancel the ankle's arc and hold floor
-  // height (a rigid knee + rotating thigh lifts the ankle ~10-25px at midstance —
-  // that arc is the hop). Bent at contact, deepest at weight-accept, then
-  // progressively STRAIGHTENING (-0.12 -> +0.06 -> +0.22) as the thigh sweeps back
-  // so the foot stays planted instead of lifting. Deep tuck only in swing.
-  static const _shinKeys = [
-    Keyframe(p: 0, rotation: -0.23), // contact: knee bent to set the foot down
-    Keyframe(p: 0.14, rotation: -0.34), // weight-accept (deepest flex)
-    Keyframe(p: 0.28, rotation: -0.33), // passing — still flexed under the hip
-    Keyframe(p: 0.42, rotation: -0.14), // straightening to hold the ankle level
-    Keyframe(p: 0.5, rotation: 0.08), // nearly straight — foot still down
-    Keyframe(p: 0.58, rotation: 0.25), // extended push at toe-off
-    Keyframe(p: 0.72, rotation: -0.78), // swing: knee-tuck clears the body
-    Keyframe(p: 0.88, rotation: -0.18), // extends to plant
-    Keyframe(p: 1, rotation: -0.23),
-  ];
-  // Foot tilt signs are negated relative to a naive "toe at +x" foot because the
-  // shoe toe points -x (see footL/R dx) — heel-strike still lifts the toe, etc.
-  // (ease is dead under the smooth spline.) Toe-off shifts to p0.58 to match the
-  // thigh's held stance; the explicit p0.14 keeps the toe from stubbing the floor.
-  static const _footKeys = [
-    Keyframe(p: 0, rotation: -0.3), // heel strike: toe up, heel leads
-    Keyframe(p: 0.14, rotation: -0.1), // rolls toward flat (no toe stub)
-    Keyframe(p: 0.42, rotation: -0.03), // flat through stance
-    Keyframe(p: 0.58, rotation: -0.44), // toe-off push (late, with the thigh)
-    Keyframe(p: 0.7, rotation: 0.22), // swing: dorsiflex to clear
-    Keyframe(p: 0.86, rotation: 0.16), // held lifted through swing
-    Keyframe(p: 1, rotation: -0.3), // re-cock for heel strike
-  ];
-
-  // --- Run step cycle (phase 0 = contact). A run has a SHORT stance (the foot
-  // is on the ground only ~p 0..0.18, linear so it pins) and a long flight with
-  // a deep knee tuck — so the foot plants briefly then flies, instead of pure
-  // sines that never hold a contact. ---
-  static const _runThighKeys = [
-    Keyframe(
-      p: 0,
-      rotation: 0.42,
-    ), // contact: land UNDER the hip (not over-reaching)
-    Keyframe(
-      p: 0.13,
-      rotation: 0.05,
-      ease: Ease.linear,
-    ), // linear pinned stance
-    Keyframe(
-      p: 0.2,
-      rotation: -0.28,
-      ease: Ease.linear,
-    ), // toe-off: end of stance
-    Keyframe(p: 0.32, rotation: -0.7), // drive back HARD — propulsion
-    Keyframe(p: 0.62, rotation: 0.1), // flight: knee leads forward
-    Keyframe(
-      p: 0.85,
-      rotation: 0.5,
-      ease: Ease.easeOut,
-    ), // reach for next plant
-    Keyframe(p: 1, rotation: 0.42),
-  ];
-  static const _runShinKeys = [
-    Keyframe(p: 0, rotation: -0.22), // contact: near-straight to land
-    Keyframe(
-      p: 0.07,
-      rotation: -0.78,
-      ease: Ease.easeOut,
-    ), // hard absorb (down-accent)
-    Keyframe(
-      p: 0.2,
-      rotation: -0.08,
-      ease: Ease.linear,
-    ), // extend — propulsive push-off
-    Keyframe(p: 0.32, rotation: -1.05), // fold for flight
-    Keyframe(p: 0.52, rotation: -1.85), // DEEP flight tuck — heel to rump
-    Keyframe(
-      p: 0.85,
-      rotation: -0.32,
-      ease: Ease.easeOut,
-    ), // whips out to reach
-    Keyframe(p: 1, rotation: -0.22),
-  ];
-  static const _runFootKeys = [
-    Keyframe(p: 0, rotation: -0.2), // heel contact
-    Keyframe(p: 0.1, rotation: -0.12, ease: Ease.easeOut), // rolls toward flat
-    Keyframe(p: 0.2, rotation: -0.34, ease: Ease.linear), // rolls onto the ball
-    Keyframe(p: 0.32, rotation: -0.7, ease: Ease.easeIn), // hard toe-off
-    Keyframe(p: 0.52, rotation: 0.34, ease: Ease.easeOut), // flight dorsiflex
-    Keyframe(p: 0.85, rotation: 0.12),
-    Keyframe(p: 1, rotation: -0.2),
-  ];
 
   // 32-frame / two-bar Afrobeats phrase. The support foot changes only on the
   // big count windows; the body keeps moving through compression/rebound so the
@@ -3781,229 +3656,6 @@ class CatClips {
     Keyframe(p: 1, rotation: 0.04),
   ];
 
-  static Clip get walk => const Clip(
-    name: 'walk',
-    duration: 1,
-    // FOOT-LOCKED locomotion: the body's travel is derived from the planted
-    // foot's real leg-sweep. The stance foot is held to p0.58; the short
-    // footR wrap span keeps the previous step planted through the double-support
-    // handoff instead of swapping support too early at p0.50.
-    groundSpans: [
-      GroundSpan(CatBones.footR, 0, 0.06),
-      GroundSpan(CatBones.footL, 0.06, 0.56),
-      GroundSpan(CatBones.footR, 0.56, 1),
-    ],
-    root: SineRootChannel(
-      // The COM drops onto each footfall (weight acceptance) and rises at
-      // passing — the double-bounce that reads as carrying mass. ~5% of rig
-      // height. bobPhase puts the lowest point on the contacts (p=0, 0.5).
-      bobAmplitude:
-          -3.2, // stronger load now that the stance foot sweep is tighter
-      // Kept below the old hop-inducing range, but no longer so polite that the
-      // torso looks pasted above the legs.
-      bobPhase:
-          0.36, // COM trough lands just after contact — sinks onto the plant
-      swayAmplitude: 7.2,
-      // Phase 0.5 puts the COM OVER the planted (stance) foot at midstance. The
-      // previous default (0) lurched the body AWAY from the support foot — an
-      // off-balance rock that read as a limp.
-      swayPhase: 0.5,
-      leanAmplitude: 0.04,
-    ),
-    channels: {
-      // --- Line of action: a real pelvic list that propagates up a soft spine
-      // and is re-leveled by the chest + neck/head so the face holds a steady
-      // gaze instead of wobbling with every hip sway. The body still moves; the
-      // head counter-rotates enough to avoid a bobble-head read.
-      // Chest counter-phased against the pelvis (torso phase 0.5 vs hips phase 0)
-      // so the spine forms a living S/contrapposto instead of a rigid C-lean.
-      // A tiny torso scale pulse lands after foot contact to sell weight without
-      // turning the head into a squashy bobble.
-      CatBones.hips: SineChannel(amplitude: 0.12),
-      CatBones.torso: SineChannel(
-        amplitude: 0.09,
-        phase: 0.5,
-        // Subtle volume change on each footfall: the jacket compresses just
-        // after contact and widens a hair, breaking the cardboard-slab read.
-        scaleYAmplitude: -0.018,
-        scaleYHarmonic: 2,
-        scaleYPhase: 0.06,
-        scaleXAmplitude: 0.012,
-        scaleXHarmonic: 2,
-        scaleXPhase: 0.06,
-      ),
-      CatBones.neck: SineChannel(amplitude: 0.026, phase: 0.5),
-      CatBones.head: SineChannel(amplitude: 0.01, phase: 0.5),
-
-      // --- Legs: a real keyframed step, not a pendulum. Left leg drives the
-      // cycle; the right shares the same keys half a beat later (phase 0.5). ---
-      CatBones.legUpperL: KeyframeChannel(_thighKeys, smooth: true),
-      CatBones.legUpperR: KeyframeChannel(_thighKeys, phase: 0.5, smooth: true),
-      CatBones.legLowerL: KeyframeChannel(_shinKeys, smooth: true),
-      CatBones.legLowerR: KeyframeChannel(_shinKeys, phase: 0.5, smooth: true),
-      CatBones.footL: KeyframeChannel(_footKeys, smooth: true),
-      CatBones.footR: KeyframeChannel(_footKeys, phase: 0.5, smooth: true),
-
-      // --- Arms: in this front-view rig, side-view arm swing becomes a weird
-      // X/M silhouette. These are restrained sleeve lanes, but with enough
-      // forearm drag that the hands no longer look asleep.
-      CatBones.armUpperL: SineChannel(
-        amplitude: 0.055,
-        phase: 0.58,
-        bias: 0.035,
-      ),
-      CatBones.armUpperR: SineChannel(
-        amplitude: 0.05,
-        phase: 0.08,
-        bias: -0.035,
-      ),
-      CatBones.armLowerL: SineChannel(
-        amplitude: 0.055,
-        phase: 0.74,
-        bias: 0.14,
-        harmonicAmplitude: 0.012,
-        harmonicPhase: 0.18,
-      ),
-      CatBones.armLowerR: SineChannel(
-        amplitude: 0.05,
-        phase: 0.24,
-        bias: -0.14,
-        harmonicAmplitude: 0.012,
-        harmonicPhase: 0.68,
-      ),
-
-      // --- Ears flick a beat behind the head bob — the cheapest "alive" tell.
-      // Asymmetric outer swing kept modest so the ear BASE stays tucked behind
-      // the head crown (a bigger swing swings the base out and opens a gap). The
-      // inner ear has NO channel of its own: it inherits the outer ear's rotation
-      // rigidly, so the pink inner never splays away from the fur outer.
-      CatBones.earL: SineChannel(amplitude: 0.045, phase: 0.52),
-      CatBones.earR: SineChannel(amplitude: 0.05, phase: 0.58),
-
-      // --- Tie: the blade follows the knot with only a shallow tip lag. Bigger
-      // lower-link motion reads like a one-joint pendulum, so most swing lives
-      // on the knot and the blade only softens the settle.
-      CatBones.tie: SineChannel(amplitude: 0.07, phase: 0.38),
-      CatBones.tieLower: SineChannel(
-        amplitude: 0.055,
-        phase: 0.4,
-        harmonicAmplitude: 0.018,
-        harmonicPhase: 0.5,
-      ),
-
-      // --- Tail: a real travelling wave. The amplitude ramps steeply and the
-      // phase lags ~0.10 per link (total ~0.60 base->tip), so the whip visibly
-      // travels down the chain; the last three links carry growing 2nd
-      // harmonics so the tip cracks/overshoots instead of swinging as a blade.
-      // Base bias pulls the whole chain UP/back (-0.12) so the orange tip clears
-      // the right hand's height — same-fur-orange tail tip + hand were fusing into
-      // one smudge. Mid-chain amps eased so the tip stays high behind the rump.
-      CatBones.tail0: SineChannel(amplitude: 0.03, bias: -0.36),
-      CatBones.tail1: SineChannel(amplitude: 0.075, phase: 0.1, bias: -0.06),
-      CatBones.tail2: SineChannel(amplitude: 0.095, phase: 0.2, bias: -0.04),
-      CatBones.tail3: SineChannel(amplitude: 0.14, phase: 0.3),
-      CatBones.tail4: SineChannel(
-        amplitude: 0.18,
-        phase: 0.4,
-        harmonicAmplitude: 0.05,
-        harmonicPhase: 0.1,
-      ),
-      CatBones.tail5: SineChannel(
-        amplitude: 0.21,
-        phase: 0.5,
-        harmonicAmplitude: 0.1,
-        harmonicPhase: 0.2,
-      ),
-      CatBones.tail6: SineChannel(
-        amplitude: 0.26,
-        phase: 0.6,
-        harmonicAmplitude: 0.12,
-        harmonicPhase: 0.3,
-      ),
-    },
-  );
-
-  static Clip get run => const Clip(
-    name: 'run',
-    duration: 0.62,
-    // Speed-matched to the linear-stance foot sweep (shortened contact) so the
-    // brief sprint contact pins; tuned in the 600-660 window against
-    // run_travel.png until the shoes stamp instead of smear.
-    locomotionSpeed: 640,
-    root: SineRootChannel(
-      // A run is BALLISTIC: throw the COM high into a flight arc (the sine's
-      // zero-velocity apex is the natural hang) so it reads as a run, not a fast
-      // walk. Trough (lowest) lands on each contact (p=0, 0.5).
-      bobAmplitude: -14,
-      bobPhase: 0.345,
-      swayAmplitude: 4,
-      leanAmplitude: 0.06,
-    ),
-    channels: {
-      // Spine = a confident C-curve, pulsed (not a frozen plank): the pelvis
-      // tucks under, the chest carries the forward lean and reaches on the drive
-      // / gathers on recovery; neck/head mostly stabilize the gaze.
-      CatBones.hips: SineChannel(amplitude: 0.1, bias: 0.14),
-      CatBones.torso: SineChannel(
-        amplitude: 0.16,
-        phase: 0.5,
-        bias: 0.3,
-        harmonicAmplitude: 0.05,
-      ),
-      CatBones.neck: SineChannel(amplitude: 0.012, bias: -0.26),
-      CatBones.head: SineChannel(amplitude: 0.004, phase: 0.5, bias: -0.16),
-      CatBones.earL: SineChannel(amplitude: 0.1, phase: 0.52),
-      CatBones.earR: SineChannel(amplitude: 0.1, phase: 0.58),
-
-      // Legs reach further with a hard knee snap (strong 2nd harmonic) and a
-      // foot that plants then kicks back on toe-off.
-      CatBones.legUpperL: KeyframeChannel(_runThighKeys, smooth: true),
-      CatBones.legUpperR: KeyframeChannel(
-        _runThighKeys,
-        phase: 0.5,
-        smooth: true,
-      ),
-      CatBones.legLowerL: KeyframeChannel(_runShinKeys, smooth: true),
-      CatBones.legLowerR: KeyframeChannel(
-        _runShinKeys,
-        phase: 0.5,
-        smooth: true,
-      ),
-      CatBones.footL: KeyframeChannel(_runFootKeys, smooth: true),
-      CatBones.footR: KeyframeChannel(_runFootKeys, phase: 0.5, smooth: true),
-
-      // Pumping arms, elbows well bent — broken L/R so they aren't matched
-      // pistons.
-      CatBones.armUpperL: SineChannel(amplitude: 0.6, phase: 0.5, bias: 0.18),
-      CatBones.armUpperR: SineChannel(amplitude: 0.54, bias: 0.16),
-      // Elbows bent up to run, but bias kept off the body centreline.
-      CatBones.armLowerL: SineChannel(amplitude: 0.2, phase: 0.1, bias: 0.5),
-      CatBones.armLowerR: SineChannel(amplitude: 0.2, phase: 0.6, bias: 0.5),
-
-      // Tie streams with the chest instead of hinging as an independent blade.
-      CatBones.tie: SineChannel(amplitude: 0.1, phase: 0.1, bias: 0.18),
-      CatBones.tieLower: SineChannel(
-        amplitude: 0.075,
-        phase: 0.14,
-        bias: 0.2,
-        harmonicAmplitude: 0.018,
-        harmonicPhase: 0.3,
-      ),
-      CatBones.tail0: SineChannel(amplitude: 0.06, bias: -0.08),
-      CatBones.tail1: SineChannel(amplitude: 0.1, phase: 0.06),
-      CatBones.tail2: SineChannel(amplitude: 0.14, phase: 0.12),
-      CatBones.tail3: SineChannel(amplitude: 0.18, phase: 0.18),
-      CatBones.tail4: SineChannel(amplitude: 0.22, phase: 0.24),
-      CatBones.tail5: SineChannel(amplitude: 0.27, phase: 0.3),
-      CatBones.tail6: SineChannel(
-        amplitude: 0.33,
-        phase: 0.36,
-        harmonicAmplitude: 0.16,
-        harmonicPhase: 0.42,
-      ),
-    },
-  );
-
   static Clip get kick => const Clip(
     name: 'kick',
     duration: 1,
@@ -4240,8 +3892,8 @@ class CatClips {
     },
   );
 
-  static Clip get dance => Clip(
-    name: 'dance',
+  static Clip get _danceBase => Clip(
+    name: '_danceBase',
     duration: 6,
     contactSpans: _danceContactSpans,
     contactPinning: ContactPinning.lowestContact,
@@ -4992,7 +4644,7 @@ class CatClips {
   /// planted one). The crossed-X hand IK uses a hit-and-hold square wave with
   /// `easeOutBack` overshoot; the forearm reads via the shared sleeve band.
   static Clip get shaku {
-    final base = dance;
+    final base = _danceBase;
     return Clip(
       name: 'shaku',
       duration: base.duration,
@@ -5275,7 +4927,7 @@ class CatClips {
   /// pistoning at the chest, a vertical push-off hop, and a leaned-back torso.
   /// Panel-certified ≥9/10 on all three lenses.
   static Clip get zanku {
-    final base = dance;
+    final base = _danceBase;
     return Clip(
       name: 'zanku',
       duration: base.duration,
@@ -5439,7 +5091,7 @@ class CatClips {
   /// + the committed lateral weight-drop + the point-out arms (`easeOutBack`
   /// overshoot). Panel-certified ≥9/10 on all three lenses.
   static Clip get azonto {
-    final base = dance;
+    final base = _danceBase;
     return Clip(
       name: 'azonto',
       duration: base.duration,
@@ -5614,7 +5266,7 @@ class CatClips {
   /// presenting arm thrust + overshoot on each cell's hit (right on frame 12,
   /// left on frame 28). Panel-certified ≥9/10 on all three lenses.
   static Clip get buga {
-    final base = dance;
+    final base = _danceBase;
     return Clip(
       name: 'buga',
       duration: base.duration,
@@ -5754,7 +5406,7 @@ class CatClips {
   /// reversals). The deliberately non-snappy foil to the rest of the catalog.
   /// Panel-certified ≥9/10 on all three lenses.
   static Clip get pouncingCat {
-    final base = dance;
+    final base = _danceBase;
     return Clip(
       name: 'pouncingCat',
       duration: base.duration,
@@ -5940,7 +5592,7 @@ class CatClips {
   /// `rootDx`) over the planting foot, knees bent and low, hands pinned (chest +
   /// waist, swapping each cell). Panel-certified ≥9/10 on all three lenses.
   static Clip get sekem {
-    final base = dance;
+    final base = _danceBase;
     return Clip(
       name: 'sekem',
       duration: base.duration,
@@ -5982,7 +5634,7 @@ class CatClips {
     required String name,
     required DanceRoleStyle style,
   }) {
-    final base = dance;
+    final base = _danceBase;
     final bodyKeys = style.bodyKeys(_dancePhrase);
     return Clip(
       name: name,
@@ -6034,185 +5686,6 @@ class CatClips {
     smooth: true,
   );
 
-  static Clip get sit => const Clip(
-    name: 'sit',
-    duration: 1.4,
-    loop: false,
-    // Anticipation (a small lift), then sink past the target and settle back up
-    // (easeOutBack) so the body lands with weight instead of stopping dead.
-    root: KeyframeRootChannel([
-      RootKeyframe(p: 0),
-      RootKeyframe(p: 0.12, dy: -4, ease: Ease.easeOut),
-      RootKeyframe(p: 0.62, dy: 41, ease: Ease.easeIn),
-      RootKeyframe(p: 1, dy: 38, ease: Ease.easeOutBack),
-    ]),
-    channels: {
-      CatBones.legUpperL: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.55, rotation: 1.15),
-        Keyframe(p: 1, rotation: 1.1),
-      ]),
-      CatBones.legUpperR: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.55, rotation: 1.15),
-        Keyframe(p: 1, rotation: 1.1),
-      ]),
-      CatBones.legLowerL: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.55, rotation: -1.5),
-        Keyframe(p: 1, rotation: -1.45),
-      ]),
-      CatBones.legLowerR: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.55, rotation: -1.5),
-        Keyframe(p: 1, rotation: -1.45),
-      ]),
-      CatBones.torso: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.55, rotation: 0.12),
-        Keyframe(p: 1, rotation: 0.08),
-      ]),
-      CatBones.armUpperL: KeyframeChannel([
-        Keyframe(p: 0, rotation: 0.12),
-        Keyframe(p: 1, rotation: 0.35),
-      ]),
-      CatBones.armUpperR: KeyframeChannel([
-        Keyframe(p: 0, rotation: -0.12),
-        Keyframe(p: 1, rotation: -0.35),
-      ]),
-      // Cloth follow-through: as the body sinks and settles, the tail tip, tie
-      // and ears swing past then settle back (easeOutBack) instead of freezing
-      // dead the instant the body stops — the inertial settle.
-      CatBones.tail4: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.62, rotation: 0.34, ease: Ease.easeIn),
-        Keyframe(p: 0.82, rotation: -0.1, ease: Ease.easeOut),
-        Keyframe(p: 1, ease: Ease.easeOutBack),
-      ]),
-      CatBones.tail5: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.66, rotation: 0.46, ease: Ease.easeIn),
-        Keyframe(p: 0.86, rotation: -0.16, ease: Ease.easeOut),
-        Keyframe(p: 1, ease: Ease.easeOutBack),
-      ]),
-      CatBones.tail6: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.7, rotation: 0.6, ease: Ease.easeIn),
-        Keyframe(p: 0.9, rotation: -0.22, ease: Ease.easeOut),
-        Keyframe(p: 1, ease: Ease.easeOutBack),
-      ]),
-      CatBones.tieLower: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.62, rotation: 0.07, ease: Ease.easeIn),
-        Keyframe(p: 0.84, rotation: -0.025, ease: Ease.easeOut),
-        Keyframe(p: 1, ease: Ease.easeOutBack),
-      ]),
-      CatBones.earL: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.62, rotation: 0.1, ease: Ease.easeIn),
-        Keyframe(p: 0.82, rotation: -0.04, ease: Ease.easeOut),
-        Keyframe(p: 1, ease: Ease.easeOutBack),
-      ]),
-    },
-  );
-
-  static Clip get jump => const Clip(
-    name: 'jump',
-    duration: 1,
-    loop: false,
-    root: KeyframeRootChannel([
-      RootKeyframe(p: 0),
-      RootKeyframe(p: 0.22, dy: 20, ease: Ease.easeOut),
-      RootKeyframe(p: 0.46, dy: -64, ease: Ease.easeOut),
-      RootKeyframe(p: 0.6, dy: -70),
-      RootKeyframe(p: 0.78, dy: 16, ease: Ease.easeIn),
-      RootKeyframe(p: 0.9, dy: 6, ease: Ease.easeOut),
-      RootKeyframe(p: 1),
-    ]),
-    channels: {
-      CatBones.legUpperL: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.22, rotation: 0.8),
-        Keyframe(p: 0.46, rotation: 0.45), // apex: knees tuck up
-        Keyframe(p: 0.78, rotation: 0.9),
-        Keyframe(p: 1),
-      ]),
-      CatBones.legUpperR: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.22, rotation: 0.8),
-        Keyframe(p: 0.46, rotation: 0.45), // apex: knees tuck up
-        Keyframe(p: 0.78, rotation: 0.9),
-        Keyframe(p: 1),
-      ]),
-      CatBones.legLowerL: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.22, rotation: -1.3),
-        Keyframe(p: 0.46, rotation: -0.95), // apex: shins folded under
-        Keyframe(p: 0.78, rotation: -1.4),
-        Keyframe(p: 1),
-      ]),
-      CatBones.legLowerR: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.22, rotation: -1.3),
-        Keyframe(p: 0.46, rotation: -0.95), // apex: shins folded under
-        Keyframe(p: 0.78, rotation: -1.4),
-        Keyframe(p: 1),
-      ]),
-      // Squash on crouch/land, stretch at launch — via torso scaleY.
-      CatBones.torso: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.22, scaleY: 0.9),
-        Keyframe(p: 0.46, scaleY: 1.12),
-        Keyframe(p: 0.78, scaleY: 0.88),
-        Keyframe(p: 1),
-      ]),
-      CatBones.armUpperL: KeyframeChannel([
-        Keyframe(p: 0, rotation: 0.12),
-        Keyframe(p: 0.22, rotation: -0.6),
-        Keyframe(p: 0.46, rotation: -2.4),
-        Keyframe(p: 0.78, rotation: -0.4),
-        Keyframe(p: 1, rotation: 0.12),
-      ]),
-      CatBones.armUpperR: KeyframeChannel([
-        Keyframe(p: 0, rotation: -0.12),
-        Keyframe(p: 0.22, rotation: 0.6),
-        Keyframe(p: 0.46, rotation: 2.4),
-        Keyframe(p: 0.78, rotation: 0.4),
-        Keyframe(p: 1, rotation: -0.12),
-      ]),
-      // Cloth follow-through: the tail tip / tie fly up on the launch, whip down
-      // on the landing, then overshoot and settle (easeOutBack) — not frozen.
-      CatBones.tail4: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.46, rotation: -0.3, ease: Ease.easeOut),
-        Keyframe(p: 0.78, rotation: 0.42, ease: Ease.easeIn),
-        Keyframe(p: 0.92, rotation: -0.12, ease: Ease.easeOut),
-        Keyframe(p: 1, ease: Ease.easeOutBack),
-      ]),
-      CatBones.tail5: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.46, rotation: -0.42, ease: Ease.easeOut),
-        Keyframe(p: 0.78, rotation: 0.54, ease: Ease.easeIn),
-        Keyframe(p: 0.92, rotation: -0.18, ease: Ease.easeOut),
-        Keyframe(p: 1, ease: Ease.easeOutBack),
-      ]),
-      CatBones.tail6: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.46, rotation: -0.56, ease: Ease.easeOut),
-        Keyframe(p: 0.78, rotation: 0.68, ease: Ease.easeIn),
-        Keyframe(p: 0.92, rotation: -0.24, ease: Ease.easeOut),
-        Keyframe(p: 1, ease: Ease.easeOutBack),
-      ]),
-      CatBones.tieLower: KeyframeChannel([
-        Keyframe(p: 0),
-        Keyframe(p: 0.46, rotation: -0.08, ease: Ease.easeOut),
-        Keyframe(p: 0.78, rotation: 0.09, ease: Ease.easeIn),
-        Keyframe(p: 0.92, rotation: -0.035, ease: Ease.easeOut),
-        Keyframe(p: 1, ease: Ease.easeOutBack),
-      ]),
-    },
-  );
-
   static Clip get idle => const Clip(
     name: 'idle',
     duration: 3.6,
@@ -6258,18 +5731,13 @@ class CatClips {
   );
 
   static List<Clip> get all => [
-    walk,
-    run,
     kick,
-    dance,
     shaku,
     zanku,
     azonto,
     buga,
     pouncingCat,
     sekem,
-    sit,
-    jump,
     idle,
   ];
 }

@@ -190,46 +190,58 @@ void main() {
     return count;
   }
 
-  testWidgets('renders cycle film strips (walk/run/kick/dance/sit/jump)', (
+  testWidgets('renders cycle film strips for public character clips', (
     tester,
   ) async {
     await tester.runAsync(() async {
       final strips = <String, Uint8List>{
-        'walk': await renderCycleStrip(
-          scene,
-          clip: CatClips.walk,
-          frames: 14,
-          span: CatClips.walk.duration,
-        ),
-        'run': await renderCycleStrip(
-          scene,
-          clip: CatClips.run,
-          frames: 14,
-          span: CatClips.run.duration,
-        ),
         'kick': await renderCycleStrip(
           scene,
           clip: CatClips.kick,
           frames: 16,
           span: CatClips.kick.duration,
         ),
-        'dance': await renderCycleStrip(
+        'shaku': await renderCycleStrip(
           scene,
-          clip: CatClips.dance,
+          clip: CatClips.shaku,
           frames: 14,
-          span: CatClips.dance.duration,
+          span: CatClips.shaku.duration,
         ),
-        'sit': await renderCycleStrip(
+        'zanku': await renderCycleStrip(
           scene,
-          clip: CatClips.sit,
-          frames: 16,
-          span: CatClips.sit.duration,
+          clip: CatClips.zanku,
+          frames: 14,
+          span: CatClips.zanku.duration,
         ),
-        'jump': await renderCycleStrip(
+        'azonto': await renderCycleStrip(
           scene,
-          clip: CatClips.jump,
-          frames: 16,
-          span: CatClips.jump.duration,
+          clip: CatClips.azonto,
+          frames: 14,
+          span: CatClips.azonto.duration,
+        ),
+        'buga': await renderCycleStrip(
+          scene,
+          clip: CatClips.buga,
+          frames: 14,
+          span: CatClips.buga.duration,
+        ),
+        'pouncingCat': await renderCycleStrip(
+          scene,
+          clip: CatClips.pouncingCat,
+          frames: 14,
+          span: CatClips.pouncingCat.duration,
+        ),
+        'sekem': await renderCycleStrip(
+          scene,
+          clip: CatClips.sekem,
+          frames: 14,
+          span: CatClips.sekem.duration,
+        ),
+        'idle': await renderCycleStrip(
+          scene,
+          clip: CatClips.idle,
+          frames: 14,
+          span: CatClips.idle.duration,
         ),
       };
 
@@ -283,15 +295,15 @@ void main() {
     await tester.runAsync(() async {
       final a = await renderCycleStrip(
         scene,
-        clip: CatClips.walk,
+        clip: CatClips.shaku,
         frames: 6,
-        span: CatClips.walk.duration,
+        span: CatClips.shaku.duration,
       );
       final b = await renderCycleStrip(
         CharacterScene(buildCatInSuitRig(), autonomic: AutonomicLayer()),
-        clip: CatClips.walk,
+        clip: CatClips.shaku,
         frames: 6,
-        span: CatClips.walk.duration,
+        span: CatClips.shaku.duration,
       );
       expect(a, equals(b), reason: 'same inputs must render identical pixels');
     });
