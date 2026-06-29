@@ -22,9 +22,15 @@ Each ADR contains: `Status`, `Date`, `Context`, `Decision`, `Consequences`,
 ## Index
 
 - [`CHAR-0001-dance-choreography-encoding-and-move-library.md`](./CHAR-0001-dance-choreography-encoding-and-move-library.md)
-  — how dance dynamics are encoded (the Laban-Effort layer over keyframed
-  accents), the move-library/notation-as-score model, and which Afrobeats moves
-  the catalog encodes (and which were dropped, and why).
+  — **Accepted/implemented.** How dance dynamics are encoded (the Laban-Effort
+  layer over keyframed accents), the move-library/notation-as-score model, and
+  which Afrobeats moves the catalog encodes (and which were dropped, and why).
+  Its **Implementation outcome** section records the as-built reality: all six
+  moves shipped and panel-certified ≥9.0/10, authored as separate hand-keyed
+  clips (a deliberate divergence from the planned `AfrobeatsMove`-compilation),
+  plus the reusable engine toolkit that grind produced (`danceHeadBobScale`,
+  `supportFootWorldAnchor`, `easeOutBack` IK overshoot, the forearm sleeve band)
+  and the keyframe-sampling constraint that shaped it.
 
 ## Related research
 

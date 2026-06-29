@@ -9,9 +9,94 @@
 
 ## Status
 
-Proposed (2026-06-28). The Effort-dynamics curve foundation
-(`model/dance_dynamics.dart`) is landed; the remainder is planned in the roadmap
-(Decision 7).
+**Accepted — implemented (2026-06-29).** All six catalog moves (Decision 4) ship
+as data and each was certified **≥9.0/10 on every lens** (afrobeats coach +
+rigging/mocap + physics) by the frame-by-frame expert panel:
+
+| Move | Coach | Rig | Physics |
+| --- | --- | --- | --- |
+| Azonto | 9.1 | 9.0 | 9.0 |
+| Buga | 9.1 | 9.0 | 9.0 |
+| Zanku | 9.1 | 9.0 | 9.0 |
+| Sekem | 9.1 | 9.0 | 9.0 |
+| Pouncing Cat | 9.1 | 9.0 | 9.1 |
+| Shaku | 9.0 | 9.1 | 9.0 |
+
+The Effort-dynamics foundation (D1) and the `AfrobeatsMove` descriptor + sub-frame
+timing (D2) landed as designed and are unit-tested. The **shipped moves
+themselves**, however, were authored by a more direct path than the planned
+`AfrobeatsMove`-compilation — see **[Implementation outcome](#implementation-outcome-as-built-2026-06-29)** for what was actually built, the
+reusable engine levers it produced, and where it diverged from the plan below.
+The slot timeline (D3) and the audio time-warp (D8) remain unbuilt by design.
+
+## Implementation outcome (as-built, 2026-06-29)
+
+The render→panel→fix grind (below) drove a deliberate divergence from the planned
+authoring path. Documenting it honestly so the docs match the code:
+
+**Each move is its own hand-keyed `Clip`, not an `AfrobeatsMove`-compiled cell.**
+The six moves live in `samples/cat_in_suit.dart` as separate `CatClips` getters
+(`shaku`, `zanku`, `azonto`, `buga`, `pouncingCat`, `sekem`). Each reuses the base
+`dance` channels and overrides what its signature needs: per-clip body-groove
+keys, per-beat support `contactSpans`, and **hand/foot/limb IK targets**
+(`LimbIkTarget` + `KeyframeIkTargetChannel`). This is what the panel grind
+rewarded — direct, per-frame control of the silhouette — over routing every move
+through the `DanceMoveSignature`/`AfrobeatsMove` compiler. The compiler
+infrastructure is built and tested and remains the right path for a future
+data-driven catalog, but the current moves did not need it to reach 9/10.
+
+**The reusable engine toolkit the grind produced** (all opt-in per clip, the
+shipped `dance` untouched at defaults):
+
+- **`Clip.danceHeadBobScale`** (default `1.0`) — scales the engine's dance head
+  treatment in `CharacterScene._rigidHeadWorld`: the head-attitude nod **and**
+  the vertical **and lateral** head counters. Lower → the skull lags more of the
+  body's lateral sway, so the tall ears stop sweeping side-to-side (the dominant
+  onion "fan" on big-amplitude moves was a *lateral* sweep, not a vertical bob).
+  Pouncing uses `0.0` for a dead-level head (its signature); Shaku/Azonto use
+  `0.2`–`0.3`.
+- **`Clip.supportFootWorldAnchor`** (default `false`) — world-anchors the active
+  support foot during its contact span so an in-place groove rides *over* a
+  planted foot instead of dragging it (the "skate"). Every dance move opts in.
+- **`Ease.easeOutBack` on the non-smooth `KeyframeIkTargetChannel`** — the
+  systematic way to get visible anticipation→overshoot→settle on an accent limb
+  (point-out, piston, arm pendulum): the paw whips *past* the target then settles.
+  `DanceIkTargetKey` already carries an `Ease`; switching the channel to
+  non-smooth (the default) activates per-key easing. This closed the physics lens
+  on Azonto/Shaku/Pouncing. (See the keyframe-sampling note below for *why*
+  this — and not an `easeFn` curve — is what reads.)
+- **Per-clip leg-lower / foot-IK overrides for visible weight** — a `legLowerL/R`
+  keyframe override gives Buga a leg-*driven* rise (knees flex deep through the
+  dips, **extend** on the hit); Sekem's deeper on-beat squash + harder lateral
+  hip commit (`rootDx`) makes the stomp "sit" over the planting foot.
+- **The forearm sleeve band (shared rig, costume)** — Shaku's crossed-X ran the
+  navy forearm over the navy torso, so the paws read as detached mitts. The
+  light wrist-cuff (`cuffL/cuffR`) was lengthened into a rolled-up shirt-sleeve
+  band so the forearm reads light against the body. This was the one shared-rig
+  (all-clips) change; it was made with the owner's sign-off because it is a
+  character-costume decision, not choreography.
+
+**The decisive constraint — the panel sees only keyframes.** Acceptance is judged
+on a 32-frame contact sheet, and those 32 samples land *on the integer phrase
+frames = the keyframes*. So **sub-frame velocity is invisible to the panel**:
+easing that only changes motion *between* sampled frames (e.g. a dense-keyed
+foot's `easeIn` hard-stop) cannot move the score, while anything expressed as a
+**pose at a sampled frame** can. This is why `easeOutBack` works (its overshoot
+peak lands on an intermediate sampled frame) and why every fix above is a
+position/pose change, not a timing tweak. It also means a couple of genuinely
+sub-frame qualities (a stomp's contact-velocity "crack") are correct for the live
+60 fps app yet uncertifiable by the frame panel — noted, not chased.
+
+**The render→panel→fix loop (the acceptance process).**
+
+```mermaid
+flowchart LR
+  edit["edit the move's Clip<br/>(IK targets / body keys / engine lever)"]
+  edit -->|"GRID_CLIPS=&lt;move&gt; frame_grid_test.dart"| png["grid + onion + live PNGs"]
+  png -->|"3 expert agents Read the PNGs"| panel["panel: coach / rig / physics<br/>score /10 + ranked pose fixes"]
+  panel -->|"&lt; 9 on any lens"| edit
+  panel -->|"all ≥ 9"| ship["commit · push · next move"]
+```
 
 ## Context
 
@@ -103,10 +188,23 @@ invariants).
 **Smooth-channel caveat (important for wiring).** The dance accent channels are
 built with `smooth: true` (periodic Catmull-Rom), and that path **ignores per-key
 easing**. Therefore a *dynamics-bearing* accent must compile to a **non-smooth**
-channel carrying the `EaseFn`; accents *without* dynamics stay on the smooth path
+channel carrying the ease; accents *without* dynamics stay on the smooth path
 untouched (this is what makes D1 regression-free). The accent layer is already a
 separate `LayeredJointChannel` entry from the continuous groove layer, so this
 split is local.
+
+**Two ease carriers (as-built).** There are two non-smooth paths and they carry
+ease differently — the implementation uses whichever the channel exposes:
+
+- **Joint/root keyframes** carry an open-ended `EaseCurve` (`Keyframe.easeFn`),
+  which is what `dynamicsCurve(DanceDynamics)` produces (the analytic curve of
+  D1, with its sub-0 dip and >1 overshoot).
+- **IK-target keyframes** (`IkTargetKeyframe`/`DanceIkTargetKey`, the hand/foot
+  paths) carry the **`Ease` enum**, not an `EaseCurve`. The shipped moves get
+  their hand/foot anticipation→overshoot→settle from **`Ease.easeOutBack`** on
+  the non-smooth IK channel (and, in a few hit accents, an explicit extra
+  overshoot keyframe). Same perceptual result, different carrier — see the
+  [Implementation outcome](#implementation-outcome-as-built-2026-06-29).
 
 ```mermaid
 flowchart LR
@@ -232,38 +330,43 @@ values to be confirmed by eye on rendered output, not derived constants.
 ### D7 — Increment roadmap
 
 1. **Effort dynamics on accents** — `DanceDynamics` + `dynamicsCurve` + the
-   `EaseFn` wiring through `Keyframe`/the accent compiler (non-smooth dynamics
-   channels), proved with kinematic tests (✅ landed).
+   `EaseCurve` wiring through `Keyframe.easeFn`/the accent compiler (non-smooth
+   dynamics channels), proved with kinematic tests (✅ landed).
 2. **`AfrobeatsMove` + explicit timing** — the move descriptor (`feel`,
    `featuredRegion`, `dynamics`, `swingFrames`, `styleJointAccents`) and
-   **sub-frame swing** (`DanceJointAccent.microFrames`) (✅ landed). Still to do:
-   extract the current Shaku/Gbese/komole routine into the first catalog entries
-   (behavior-preserving).
-3. **Author the catalog moves** (all six) as data entries, each with a render
-   check, kinematic tests, and a 3-expert panel pass (afrobeats coach +
-   rigging/mocap + physics) to **9/10** on rendered frames.
+   **sub-frame swing** (`DanceJointAccent.microFrames`) (✅ landed, unit-tested).
+3. **Author the catalog moves** (all six) to **9/10** on rendered frames (✅
+   landed). Authored as **separate hand-keyed clips** via the render→panel grind
+   rather than `AfrobeatsMove`-compiled cells — see
+   [Implementation outcome](#implementation-outcome-as-built-2026-06-29). Each
+   carries a kinematic clip-set test and the engine levers it needed.
 4. **Slot timeline + per-cat assignment** — call-response + polyrhythm +
-   personality.
+   personality (⬜ **not built**). The shipped showcase trio is three *fixed*
+   clips (Shaku lead / Azonto left / Zanku right) on the shared phrase; the
+   `DanceRoleStyle` seam for tinting and the per-cat assignment timeline are the
+   open extension. A future data-driven catalog would route moves through the
+   D2 `AfrobeatsMove` compiler that this increment now justifies.
 
-### D8 — Audio time-warp alignment is deferred (explicit TODO)
+### D8 — Audio time-warp: built but unnecessary for a steady track
 
-**TODO (deferred, not yet built):** precise alignment of the authored loop to the
-song's *actual* detected downbeats — Beat-This!-style beat detection feeding a
-`BeatMap` time-warp so every loop iteration lands on the real "one". This is
-intentionally the **last mile**:
+The runtime warp **code is built and wired**: `BeatMap` (`model/beat_map.dart`,
+piecewise-linear `beatAt`/`timeAtBeat`/`clipSecondsAt`) and
+`BeatLoopBinding.barAligned`, and the audio demo
+(`demo/character_dance_to_track_demo.dart`) plays the loop through them so it
+stays downbeat-anchored. What was *deferred* — and, per the owner's call
+(2026-06-29), is **not needed for the current track** — is generating a dense
+per-song beat map and dialing in a full drift-absorbing warp:
 
-- the loop is already bar-aligned (`BeatLoopBinding.barAligned`,
-  `clipSecondsAt`), so within-loop timing (the accent-frame grid + sub-frame
-  swing of D2) is what is visible and reviewable now;
-- the loop→song warp is a *fixed transform* applied to whatever the loop is — it
-  does not change as moves are re-authored, so building it before the moves are
-  good would mean re-aligning every iteration for no per-iteration benefit;
-- it is a separate, sizable tooling effort (offline beat detection + warp
-  integration; see the project's dance-audio analysis plan and the feature
-  README's "Audio beat-sync — not yet wired" section).
+- Modern Afrobeats/Amapiano is produced to a DAW grid, so the tempo is steady.
+  A steady track only needs **two numbers — BPM and the downbeat offset** —
+  which is exactly what `BeatLoopBinding.barAligned` consumes; the loop then
+  locks forever.
+- The dense beat-by-beat `clipSecondsAt` warp only earns its keep on
+  tempo-*drifting* material (live bands, old recordings, rubato). It remains a
+  documented option, not a required build step.
 
-Sequence: finish the six moves (D3) to 9/10 on the bare loop, **then** wire the
-audio time-warp as the final integration step.
+So this is closed as **"available, only build the dense map if a drifting track
+is ever added."** No further work is required for the shipped demo.
 
 ## Consequences
 

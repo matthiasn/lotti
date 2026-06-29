@@ -666,14 +666,16 @@ class Clip {
   /// Display/lookup name.
   final String name;
 
-  /// Scales the shared dance head treatment for this clip in [0, 1]: it both
-  /// damps the engine's rotational head-nod accents (which sweep the long ears
-  /// into the dominant onion "fan") and increases how much of the body bob the
-  /// head counters vertically. `1.0` is the original behavior (shipped `dance`
-  /// untouched); lower values calm the skull so the beat reads in the body, and
-  /// near-`0` holds the head almost level (e.g. the Pouncing Cat glide).
-  /// Opt-in per clip — the deferred per-clip head-nod scale the dance-family
-  /// head path always needed.
+  /// Scales the shared dance head treatment for this clip in [0, 1], applied in
+  /// `CharacterScene`'s rigid-head pass. At `1.0` (the original behavior, shipped
+  /// `dance` untouched) it does nothing; lower values calm the skull so the beat
+  /// reads in the body. It scales three things: the rotational head-nod accents,
+  /// the vertical head counter, and — the dominant lever — the **lateral** head
+  /// counter, so the head lags more of the body's side-to-side sway. That last
+  /// one matters because the big-amplitude moves' dominant onion "fan" is the
+  /// tall ears being swept *laterally* by the sway, not a vertical bob; lagging
+  /// the head laterally tightens it. Near-`0` holds the head almost level (the
+  /// Pouncing Cat glide). Opt-in per clip.
   final double danceHeadBobScale;
 
   /// When true, the active SUPPORT foot (per [contactSpans]) is held toward its

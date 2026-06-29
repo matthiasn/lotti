@@ -4639,12 +4639,13 @@ class CatClips {
     Keyframe(p: 1, rotation: -0.008),
   ];
 
-  /// Standalone "Shaku Shaku" lead clip — the redesign in progress. Reuses the
-  /// dance channels and overrides the groove (on-beat dip), the support-knee
-  /// pump, and adds a per-bar upper-body LEAN (chest over the support foot — the
-  /// weight commit that does NOT translate the root, so it never drags the free
-  /// foot into the planted one). Iterated to a panel 9/10 before replacing
-  /// `dance`.
+  /// Standalone "Shaku Shaku" catalog move — separate from the shipped `dance`,
+  /// panel-certified 9/10 on all three lenses. Reuses the dance channels and
+  /// overrides the groove (on-beat dip), the support-knee pump, and adds a
+  /// per-bar upper-body LEAN (chest over the support foot — the weight commit
+  /// that does NOT translate the root, so it never drags the free foot into the
+  /// planted one). The crossed-X hand IK uses a hit-and-hold square wave with
+  /// `easeOutBack` overshoot; the forearm reads via the shared sleeve band.
   static Clip get shaku {
     final base = dance;
     return Clip(
@@ -4919,11 +4920,12 @@ class CatClips {
     DanceBodyKey(32, rootDx: -24),
   ];
 
-  /// Standalone "Zanku / Legwork" lead clip. Reuses the dance channels + the
+  /// Standalone "Zanku / Legwork" catalog move. Reuses the dance channels + the
   /// proven shaku groove, and adds the Zanku signatures: per-BEAT LEGWORK via
   /// the foot IK targets (the support foot ricochets L,R,L,R every beat while
   /// the free leg whips out to a ~45° kick — see [_zankuContactSpans]), fists
-  /// pistoning at the chest, a vertical hop, and a leaned-back torso.
+  /// pistoning at the chest, a vertical push-off hop, and a leaned-back torso.
+  /// Panel-certified ≥9/10 on all three lenses.
   static Clip get zanku {
     final base = dance;
     return Clip(
@@ -5008,7 +5010,7 @@ class CatClips {
   // Azonto (Ghana, ~2011) — a bent-knee, hip-swivel groove whose signature is
   // the expressive miming HAND gestures. Reuses the shaku bent-knee groove for
   // the lower body; the Azonto character lives in the hip swivel (with a chest
-  // counter-rotation) and an alternating point-out arm mime. First pass.
+  // counter-rotation) and an alternating point-out arm mime.
   // ─────────────────────────────────────────────────────────────────────────
   // The signature mime: a near-FULLY-EXTENDED point-out so the sleeved arm shoots
   // clear of the torso (a bent hand at the waist just reads as a parked paw, or
@@ -5082,11 +5084,12 @@ class CatClips {
     _danceLimbTargets[3],
   ];
 
-  /// Standalone "Azonto" lead clip — a bent-knee, hip-swivel groove with the
-  /// signature miming HAND gestures (here: alternating point-out). Reuses the
-  /// shaku bent-knee groove for the lower body; the Azonto character is the hip
-  /// swivel + chest counter-rotation + the arm mime. First pass, iterated via
-  /// the panel like shaku/zanku.
+  /// Standalone "Azonto" catalog move — a bent-knee, hip-swivel groove with the
+  /// signature miming HAND gestures (here: alternating point-out, de-symmetrized
+  /// into a high/low V in bar 2). Reuses the shaku bent-knee groove for the
+  /// lower body; the Azonto character is the hip swivel + chest counter-rotation
+  /// + the committed lateral weight-drop + the point-out arms (`easeOutBack`
+  /// overshoot). Panel-certified ≥9/10 on all three lenses.
   static Clip get azonto {
     final base = dance;
     return Clip(
@@ -5255,10 +5258,11 @@ class CatClips {
     _danceLimbTargets[3],
   ];
 
-  /// Standalone "Buga" lead clip — the unison-hit show-off move: three prep
-  /// knee-dips loading at the chest, then a full-height RISE with a chest pop and
-  /// a single presenting arm thrust on each cell's hit (right on frame 12, left
-  /// on frame 28). First pass, iterated via the panel.
+  /// Standalone "Buga" catalog move — the unison-hit show-off move: three prep
+  /// knee-dips loading at the chest, then a leg-DRIVEN full-height RISE (knees
+  /// flex deep through the dips, extend on the hit) with a chest pop and a single
+  /// presenting arm thrust + overshoot on each cell's hit (right on frame 12,
+  /// left on frame 28). Panel-certified ≥9/10 on all three lenses.
   static Clip get buga {
     final base = dance;
     return Clip(
@@ -5393,10 +5397,12 @@ class CatClips {
     _danceLimbTargets[3].withChannel(_pounceFootRTarget),
   ];
 
-  /// Standalone "Pouncing Cat" lead clip — the Amapiano gliding contrast: a deep
-  /// crouch with a slow lateral CoM glide (half-time, harmonic 2) over fast low
-  /// foot-shuffle taps, head dead-level, arms passive. The deliberately
-  /// non-snappy foil to the rest of the catalog. First pass.
+  /// Standalone "Pouncing Cat" catalog move — the Amapiano gliding contrast: a
+  /// deep crouch with a wide lateral CoM glide over fast low foot-shuffle taps, a
+  /// DEAD-LEVEL head (`danceHeadBobScale: 0` + flat neck/head — the signature),
+  /// and loose pendulum arms that trail the glide (`easeOutBack` overshoot at the
+  /// reversals). The deliberately non-snappy foil to the rest of the catalog.
+  /// Panel-certified ≥9/10 on all three lenses.
   static Clip get pouncingCat {
     final base = dance;
     return Clip(
@@ -5578,10 +5584,11 @@ class CatClips {
     _danceLimbTargets[3].withChannel(_sekemFootRTarget),
   ];
 
-  /// Standalone "Sekem" lead clip — the grounded-stomp contrast: an alternating
-  /// per-beat lateral weight shift (one hard low plant per beat, R,L,R,L) with
-  /// the hip committed over the planting foot (harmonic-4 sway), knees bent and
-  /// low, and hands pinned (chest + waist, swapping each cell). First pass.
+  /// Standalone "Sekem" catalog move — the grounded-stomp contrast: a free foot
+  /// per beat does a pick-up → coil → SLAM (one hard low plant per beat, L,R,L,R)
+  /// with a deep on-beat body squash and the hip committed (keyframed dwelling
+  /// `rootDx`) over the planting foot, knees bent and low, hands pinned (chest +
+  /// waist, swapping each cell). Panel-certified ≥9/10 on all three lenses.
   static Clip get sekem {
     final base = dance;
     return Clip(

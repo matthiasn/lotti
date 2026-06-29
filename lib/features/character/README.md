@@ -24,7 +24,8 @@ with per-move keying notes under [`docs/research/`](./docs/research/).
 | Area | State |
 | --- | --- |
 | Pure-Dart engine (math, FK, clips, face, autonomic) | ✅ built + unit-tested |
-| Hand-authored "cat in a suit" rig + 7 clips | ✅ `samples/cat_in_suit.dart` |
+| Hand-authored "cat in a suit" rig + base clips (walk/run/idle/dance/kick/sit/jump) | ✅ `samples/cat_in_suit.dart` |
+| Afrobeats dance-move catalog — 6 moves, each panel-certified **≥9.0/10** on all 3 lenses | ✅ `samples/cat_in_suit.dart`, [CHAR-0001](./docs/adr/CHAR-0001-dance-choreography-encoding-and-move-library.md), [Dance moves](#dance-moves--the-afrobeats-catalog) |
 | Frame-addressed dance phrase authoring | ✅ `model/dance_phrase.dart` |
 | `CustomPainter` runtime drawing bones + soft limb ribbons | ✅ `runtime/` |
 | Bendy ribbons for arms/legs/tail | ✅ shoulder→bicep→wrist, hip→quad→knee→calf→ankle, and 7-control tail surfaces |
@@ -526,6 +527,72 @@ cable-stayed bridge road line, build a stem, spread through a measured middle
 transition, hold compact dot-matrix `Omah Lay`, then morph into `Moving` behind
 the city/yacht redraw.
 
+## Dance moves — the Afrobeats catalog
+
+Six Afrobeats/Amapiano moves ship as data in `samples/cat_in_suit.dart`, each a
+`CatClips` getter selectable in the demo's motion picker and in the showcase
+trio. Each was iterated to **≥9.0/10 on all three lenses** (afrobeats coach +
+rigging/mocap + physics) by the frame-by-frame expert panel (the loop below). The
+full decision record — encoding, catalog rationale, and the as-built outcome — is
+[`docs/adr/CHAR-0001`](./docs/adr/CHAR-0001-dance-choreography-encoding-and-move-library.md).
+
+| Clip | Move | Signature (what reads in profile) | Leans on |
+| --- | --- | --- | --- |
+| `shaku` | Shaku Shaku | crossed-arm **X** at the chest, one paw high/one low, hit-and-hold then snap each count | hand IK + `easeOutBack` swap; **forearm sleeve band**; `danceHeadBobScale` |
+| `zanku` | Zanku / Legwork | per-beat alternating support **ricochet** + ~45° air-kick; chest fists piston; back-lean | per-beat `contactSpans`; foot IK kicks; push-off hop |
+| `azonto` | Azonto | bent-knee **hip swivel** (hip-vs-shoulder isolation) + alternating point-out mime arms | committed `rootDx` weight-drop; point-arm `easeOutBack`; head-lag |
+| `buga` | Buga | "lo-lo-lo-**BUGA**": three dips then a leg-driven rise + presenting arm | `legLowerL/R` override (load→extend); present overshoot + tail whip |
+| `pouncingCat` | Pouncing Cat (Amapiano) | low **gliding** crouch, dead-level head, loose pendulum arms, fast foot-taps | `danceHeadBobScale: 0`; wide lateral glide; pendulum `easeOutBack` |
+| `sekem` | Sekem | grounded **stomp**: per-beat pick-up→coil→slam, hip committed over the plant | per-beat `contactSpans`; deep on-beat squash; lateral hip commit |
+
+**Authoring pattern (as-built).** A move is its **own `Clip`** that reuses the
+base `dance` channels and overrides only what its signature needs: per-clip
+body-groove keys, per-beat support `contactSpans`, and hand/foot **IK targets**
+(`LimbIkTarget` + `KeyframeIkTargetChannel`). This direct, per-frame control of
+the silhouette is what the panel grind rewarded. (The `DanceMoveSignature` /
+`AfrobeatsMove` compiler and the Laban-Effort `DanceDynamics` layer exist and are
+unit-tested — see CHAR-0001 — but the shipped moves did not need to route through
+them to reach 9/10.)
+
+**Reusable engine levers** (all opt-in per `Clip`; the shipped `dance` stays at
+defaults):
+
+- **`Clip.danceHeadBobScale`** (default `1.0`) — scales the dance head treatment
+  in `CharacterScene._rigidHeadWorld` (the attitude nod + the vertical *and
+  lateral* head counters). Lower → the skull lags more of the lateral sway so the
+  tall ears stop sweeping side-to-side (the dominant onion "fan" was a lateral
+  sweep, not a vertical bob). `0.0` = the dead-level Pouncing head.
+- **`Clip.supportFootWorldAnchor`** (default `false`) — world-anchors the active
+  support foot during its contact span so an in-place groove rides *over* a
+  planted foot instead of skating it.
+- **`Ease.easeOutBack` on a non-smooth `KeyframeIkTargetChannel`** — visible
+  anticipation→overshoot→settle on an accent hand/foot (the paw whips past the
+  target then settles). `DanceIkTargetKey` carries the `Ease`; the non-smooth
+  path applies it.
+- **Per-clip `legLowerL/R` + body-key overrides** — visible weight: Buga's
+  leg-driven rise (knees extend on the hit), Sekem's deep squash + lateral hip
+  commit.
+- **The forearm sleeve band** (`cuffL/cuffR`, shared rig) — the one costume
+  change: a rolled-up shirt sleeve up the forearm so the crossed-arm X reads
+  light against the navy suit instead of as detached paws.
+
+**The constraint that shaped all of it.** Acceptance renders 32 frames that land
+on the integer phrase frames = the keyframes, so **sub-frame velocity is invisible
+to the panel** — every readability/dynamics fix is a *pose at a sampled frame*,
+not a timing tweak (`easeOutBack` reads because its overshoot peak lands on an
+intermediate sampled frame; a dense-keyed foot's hard-stop `easeIn`, being purely
+between keys, does not — it is kept for the live 60 fps app but is uncertifiable
+by the frame panel).
+
+```mermaid
+flowchart LR
+  edit["edit the move's Clip<br/>(IK targets · body keys · engine lever)"]
+  edit -->|"GRID_CLIPS=&lt;move&gt; frame_grid_test.dart"| png["grid · onion · live PNGs"]
+  png -->|"3 expert agents read the PNGs"| panel["panel: coach / rig / physics<br/>score /10 + ranked pose fixes"]
+  panel -->|"&lt; 9 on any lens"| edit
+  panel -->|"all ≥ 9"| ship["commit · push · next move"]
+```
+
 ## Reviewing motion — film strips, grids, onions, travel
 
 Two harnesses render to PNGs under `build/character_film_strips/` (override with
@@ -581,6 +648,15 @@ mapping from those counts to wall-clock seconds differs by surface:
 
 The beat map is an offline analysis of an audio file (beats + downbeats) that
 the runtime warps the dance onto.
+
+**Steady track vs. drifting track.** Modern Afrobeats/Amapiano is produced to a
+DAW grid, so the tempo is steady — and a steady track only needs **two numbers,
+BPM and the downbeat offset**, which is exactly what `BeatLoopBinding.barAligned`
+consumes; the loop then locks forever. The dense, beat-by-beat drift-absorbing
+warp (`BeatMap.clipSecondsAt` over a per-song beat map) only earns its keep on
+tempo-*drifting* material (live bands, old recordings, rubato). The warp code is
+built and wired; generating a dense per-song map is a documented option, not a
+required step for the shipped (steady) demo. See CHAR-0001 D8.
 
 ```mermaid
 flowchart LR
