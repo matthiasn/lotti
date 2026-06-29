@@ -109,6 +109,13 @@ const Color _kFaceCoolFill = Color(0x52223E5C);
 /// colour pools. Drawn under the figure, tight to the soles.
 const Color _kContactShadow = Color(0xBE03060D);
 
+/// The dense INNER core of the contact shadow — near-opaque right where the
+/// soles press the boards, held across the middle of the ellipse before it fades
+/// to [_kContactShadow] and out. Without a held core the single radial washed out
+/// under the bright additive floor pool and the feet read as floating; this dark
+/// centre cuts a real occlusion into the pool so the dancer is planted.
+const Color _kContactCore = Color(0xDE01040A);
+
 /// Unit direction (screen space, +x right / +y down) from each dance lane toward
 /// its rim-light source, i.e. the direction the gel halo is offset so the rim
 /// lands on the source-facing edge. A fanned overhead back-key array: the
@@ -540,8 +547,8 @@ class CharacterPainter extends CustomPainter {
         // radial gradient squashed to the foot ellipse (no MaskFilter blur) keeps
         // it cheap and soft-edged. Concert dance only.
         if (leadCentreOrder) {
-          final footW = 98 * memberScale;
-          final footH = 26 * memberScale;
+          final footW = 104 * memberScale;
+          final footH = 30 * memberScale;
           final footRect = Rect.fromCenter(
             center: Offset(memberCentreX, memberFloorY),
             width: footW,
@@ -564,8 +571,8 @@ class CharacterPainter extends CustomPainter {
               ..shader = ui.Gradient.radial(
                 footRect.center,
                 footW / 2,
-                const [_kContactShadow, Color(0x00000000)],
-                const [0.0, 1.0],
+                const [_kContactCore, _kContactShadow, Color(0x00000000)],
+                const [0.0, 0.5, 1.0],
                 TileMode.clamp,
                 squash,
               ),
