@@ -286,10 +286,21 @@ void main() {
   float yachtFoot =
       smoothstep(0.60, 0.66, art.x) * smoothstep(0.52, 0.56, art.y);
   vec4 outc = vec4(added, coverage) * (1.0 - clamp(yachtFoot, 0.0, 1.0));
+  // Right-half (yacht-side) ambient water lift. The painted plate is ~40% darker
+  // under the yacht, and the footprint mask above zeroes the ocean shader there,
+  // so the right bay read as a near-black void between the reflection columns. A
+  // subtle cool fill on the open near-water IN FRONT of the hull (gated below the
+  // hull waterline so it only touches water, added after the mask) lifts it to
+  // read as lit lagoon — additive can only fill, not darken, so this rebalances
+  // toward the brighter left half rather than crushing the left.
+  float rightLift = smoothstep(0.60, 0.82, art.x) *
+      smoothstep(0.13, 0.22, depth) * (1.0 - smoothstep(0.82, 1.0, depth));
+  vec3 rightCool = mix(uOceanHorizon.rgb, uOceanNear.rgb, depth);
+  outc.rgb += rightCool * rightLift * 0.16;
   // Yacht reflection added AFTER the footprint suppression: it lives on the
   // open near-water in front of the hull, and the opaque yacht bitmap drawn over
   // this layer still occludes any part that falls behind the hull.
   outc.rgb += yachtWarm * reflYachtA;
-  outc.a = clamp(outc.a + reflYachtA, 0.0, 1.0);
+  outc.a = clamp(outc.a + rightLift * 0.16 + reflYachtA, 0.0, 1.0);
   fragColor = outc;
 }
