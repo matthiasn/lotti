@@ -204,7 +204,7 @@ class StageLightsPainter extends CustomPainter {
     // stays the darkest value under him (it was reading as a bright spotlight
     // decal that out-glowed its own AO). The lead still dominates via its larger
     // radius + longer forward run + warm gel, not raw luminance.
-    final i = l.intensity * (isLead ? 1.0 : (demoted ? 0.46 : 1.0));
+    final i = l.intensity * (isLead ? 1.0 : (demoted ? 0.42 : 1.0));
     // Backups: desaturate HARDER toward a cool blue-hour slate (was a neutral
     // grey) so the flanking pools stop advertising themselves as candy magenta/
     // violet and instead read as cool ambient spill supporting the warm lead.
@@ -229,13 +229,15 @@ class StageLightsPainter extends CustomPainter {
       ..transform(frame.storage);
     // Hot at the foot contact, fading downstage: the gradient centre rides up
     // near the foot (Alignment y < 0) while the ellipse body extends forward.
-    // The lead's pool runs LONGER down the boards (a raking key streak rather
-    // than a circular spotlight decal) so it reads as light grazing the deck.
-    final cy = ry * (isLead ? 1.45 : 1.15);
+    // Every pool runs LONGER down the boards (a raking key streak rather than a
+    // circular spotlight decal) so it reads as light grazing the deck; the lead
+    // rakes the most, the backups a moderate amount (they were still reading as
+    // hard near-circular discs that pulled focus sideways).
+    final cy = ry * (isLead ? 1.45 : (demoted ? 1.32 : 1.15));
     final spread = Rect.fromCenter(
       center: Offset(0, cy),
       width: rx * 2,
-      height: ry * (isLead ? 3.0 : 2.4),
+      height: ry * (isLead ? 3.0 : (demoted ? 2.75 : 2.4)),
     );
     canvas.drawOval(
       spread,

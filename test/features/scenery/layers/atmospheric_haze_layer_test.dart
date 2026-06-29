@@ -14,12 +14,13 @@ const _w = 160;
 const _h = 90;
 
 // Screen rows of interest derived from the manifest waterline + the layer's
-// default reaches (skyReach 0.18, waterReach 0.09). The band hugs the waterline
-// and reaches further UP (onto the distant bases) than DOWN (off the water).
+// default reaches (skyReach 0.18, waterReach 0.04). The band sits mostly ABOVE
+// the waterline (dissolving the distant bases) and barely dips onto the water,
+// so it never washes the reflection-column heads at the waterline lip.
 final int _waterRow = (kPlaceholderSkylineManifest.waterline * _h).round();
 final int _skyRow =
     (_waterRow - 0.18 * _h).round() - 4; // clear sky, above band
-final int _deckRow = (_waterRow + 0.09 * _h).round() + 4; // clear near water
+final int _deckRow = (_waterRow + 0.04 * _h).round() + 4; // clear near water
 
 // Paint the haze over solid black so the cool lift it adds is directly readable
 // as surviving luminance.

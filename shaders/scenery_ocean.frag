@@ -178,12 +178,18 @@ void main() {
   // neutral to survive the cool plate and the haze — so the city columns are
   // multiplied hard (uReflection x ~3.5) and tinted a saturated sodium WARM
   // (vec3(1.0,0.62,0.32)), not the near-neutral glint tone the navy swamped.
+  // The skyline has SEVERAL lit-window clusters but the water was showing only
+  // one reflection (the lagoon read under-reflecting). Populate the left bay
+  // with five columns spanning the cluster (0.10..0.33) so the city throws a
+  // believable spread of warm streaks, not a lone pool.
   float reflCity = 0.0;
-  for (int s = 0; s < 3; s++) {
-    // Anchored on the MEASURED warm window centroids (0.15/0.22/0.33); the old
-    // 0.27 sat in a cool gap with no source above it.
-    float cx = s == 0 ? 0.15 : (s == 1 ? 0.22 : 0.33);
-    float str = s == 0 ? 1.0 : (s == 1 ? 0.9 : 0.85);
+  for (int s = 0; s < 5; s++) {
+    float cx = s == 0
+        ? 0.10
+        : s == 1 ? 0.15 : s == 2 ? 0.20 : s == 3 ? 0.27 : 0.33;
+    float str = s == 0
+        ? 0.7
+        : s == 1 ? 1.0 : s == 2 ? 0.95 : s == 3 ? 0.75 : 0.8;
     float d = abs(art.x - cx) * aspect;
     // ANISOTROPIC: keep sigma_x small (a tight vertical streak, not a wash blob)
     // and let it fan only slightly toward the viewer.
@@ -209,7 +215,7 @@ void main() {
   float dashY = smoothstep(0.35, 0.88,
       fbm(vec2(art.x * 40.0, depth * 26.0 - uTime * 0.5 + 30.0)));
   float colFallY = max(0.3, smoothstep(0.0, 0.04, depth)) * exp(-depth * 4.5);
-  float reflYacht = colY * dashY * 0.9 * colFallY;
+  float reflYacht = colY * dashY * 1.6 * colFallY;
 
   // Gain pushed to ~6x (measured: at 3.5x the warm peak never crossed neutral
   // R-B — the cool plate still won). At this gain the column centre reads as a

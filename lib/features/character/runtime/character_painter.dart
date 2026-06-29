@@ -60,7 +60,7 @@ _kBacklightPasses = [
   // displaced haze column (a gaffer lens flagged the old wide offset as a "40px
   // amber fog slab"). The colour presence lives ON the fabric (the body key in
   // the grade) and on the deck (the floor pools), not in the air.
-  (sigmaFrac: 0.005, alphaScale: 0.72, offsetScale: 1.4),
+  (sigmaFrac: 0.005, alphaScale: 0.63, offsetScale: 1.4),
 ];
 
 /// Cool, dark plate-blue the concert BODIES are lerped toward (`srcATop`) so the
@@ -789,7 +789,7 @@ class CharacterPainter extends CustomPainter {
             // not a strobe: only this small, terminator-edge gel term moves — the
             // seats + wrap stay STATIC — so the full-figure luminance never pulses
             // anywhere near the photosensitivity threshold.
-            final gelKey = (0.72 + 0.20 * glow.a).clamp(0.72, 0.9);
+            final gelKey = (0.82 + 0.20 * glow.a).clamp(0.82, 0.96);
             canvas
               ..drawRect(
                 gradeBounds,
