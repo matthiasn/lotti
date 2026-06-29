@@ -44,7 +44,9 @@ class LayeredBackdrop extends StatefulWidget {
     this.beatPulse = 0,
     this.skyProgramLoader,
     this.oceanProgramLoader,
+    this.cityLightsProgramLoader,
     this.imageLoader,
+    this.onReady,
     this.timeOverride,
     super.key,
   });
@@ -64,7 +66,13 @@ class LayeredBackdrop extends StatefulWidget {
 
   final SceneryShaderProgramLoader? skyProgramLoader;
   final SceneryShaderProgramLoader? oceanProgramLoader;
+  final SceneryShaderProgramLoader? cityLightsProgramLoader;
   final SceneryImageLoader? imageLoader;
+
+  /// Called after the first frame that has all scene bitmap assets and shader
+  /// programs loaded has painted. Exporters use this as their capture-ready
+  /// signal so frame 0 never records the asset-loading fallback.
+  final VoidCallback? onReady;
 
   /// Pins the clock for golden/unit tests.
   final double? timeOverride;
@@ -84,6 +92,7 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
   ui.FragmentProgram? _cityLightsProgram;
   final Map<String, ui.Image> _images = {};
   int _imagesVersion = 0;
+  bool _readyNotified = false;
 
   bool get _usesSelfClock =>
       widget.timeSeconds == null && widget.timeOverride == null;
@@ -107,10 +116,13 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
   void didUpdateWidget(LayeredBackdrop oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.skyProgramLoader != widget.skyProgramLoader ||
-        oldWidget.oceanProgramLoader != widget.oceanProgramLoader) {
+        oldWidget.oceanProgramLoader != widget.oceanProgramLoader ||
+        oldWidget.cityLightsProgramLoader != widget.cityLightsProgramLoader) {
+      _readyNotified = false;
       _loadPrograms();
     }
     if (oldWidget.scene.imageAssets != widget.scene.imageAssets) {
+      _readyNotified = false;
       _loadImages();
     }
     _syncTicker();
@@ -134,7 +146,8 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
     unawaited(_assignProgram(oceanLoader, (p) => _oceanProgram = p));
     unawaited(
       _assignProgram(
-        SceneryShaderProgramCache.loadCityLights,
+        widget.cityLightsProgramLoader ??
+            SceneryShaderProgramCache.loadCityLights,
         (p) => _cityLightsProgram = p,
       ),
     );
@@ -193,10 +206,26 @@ class _LayeredBackdropState extends State<LayeredBackdrop>
         _elapsed.inMicroseconds / Duration.microsecondsPerSecond;
   }
 
+  bool get _resourcesReady =>
+      _skyProgram != null &&
+      _oceanProgram != null &&
+      _cityLightsProgram != null &&
+      widget.scene.imageAssets.every(_images.containsKey);
+
+  void _notifyReadyAfterPaintIfNeeded() {
+    if (_readyNotified || widget.onReady == null || !_resourcesReady) return;
+    _readyNotified = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onReady?.call();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final time = _time;
     final background = _backdropPaint(widget.scene.layers, time);
+    _notifyReadyAfterPaintIfNeeded();
 
     if (widget.child == null && widget.scene.foregroundLayers.isEmpty) {
       return background;

@@ -100,6 +100,39 @@ void main() {
     });
   });
 
+  testWidgets('notifies after the first resource-complete frame paints', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final sky = await ui.FragmentProgram.fromAsset(SceneryShaderAssets.sky);
+      final ocean = await ui.FragmentProgram.fromAsset(
+        SceneryShaderAssets.ocean,
+      );
+      final cityLights = await ui.FragmentProgram.fromAsset(
+        SceneryShaderAssets.cityLights,
+      );
+
+      var ready = false;
+      await tester.pumpWidget(
+        _host(
+          LayeredBackdrop(
+            scene: BackdropScene.blueHourWaterfront(),
+            timeOverride: 0,
+            skyProgramLoader: () async => sky,
+            oceanProgramLoader: () async => ocean,
+            cityLightsProgramLoader: () async => cityLights,
+            imageLoader: (_) => _solid(const Color(0xFF112233), 4, 4),
+            onReady: () => ready = true,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(ready, isTrue);
+    });
+  });
+
   testWidgets('self-drives a clock when no time is injected', (tester) async {
     await tester.pumpWidget(
       _host(

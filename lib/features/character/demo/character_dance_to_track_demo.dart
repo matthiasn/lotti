@@ -508,6 +508,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   bool _renderStarted = false;
   double _renderClockSeconds = 0;
   bool _appExportStarted = false;
+  bool _backdropReadyForExport = false;
 
   double get _positionSec {
     if (!kDanceRenderOnly) {
@@ -553,6 +554,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
 
   void _signalRenderReadyIfNeeded() {
     if (!kDanceRenderOnly || _renderReadySignaled || _map == null) return;
+    if (!_renderBackdropReady) return;
     final path = kDanceRenderReadyFile;
     if (path.isNotEmpty) {
       final file = File(path);
@@ -560,6 +562,14 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       file.writeAsStringSync('ready\n');
     }
     _renderReadySignaled = true;
+  }
+
+  bool get _renderBackdropReady => !_useNewBackdrop || _backdropReadyForExport;
+
+  void _markBackdropReadyForExport() {
+    if (_backdropReadyForExport) return;
+    _backdropReadyForExport = true;
+    _signalRenderReadyIfNeeded();
   }
 
   // Per-frame: repaint and ease the singing mouths. The dance camera is no longer
@@ -745,9 +755,16 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     // loads time to settle. This avoids exporting the CPU fallback / empty image
     // state that can exist immediately after the widget tree is mounted.
     await SchedulerBinding.instance.endOfFrame;
-    await Future<void>.delayed(
-      Duration(milliseconds: (kDanceAppExportWarmupSec * 1000).round()),
-    );
+    final timeout = math.max(kDanceAppExportWarmupSec, 30);
+    final deadline = Stopwatch()..start();
+    while (!_renderBackdropReady &&
+        deadline.elapsed < Duration(milliseconds: (timeout * 1000).round())) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await SchedulerBinding.instance.endOfFrame;
+    }
+    if (!_renderBackdropReady) {
+      throw StateError('timed out waiting for layered backdrop resources');
+    }
     await SchedulerBinding.instance.endOfFrame;
   }
 
@@ -1307,6 +1324,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                         // still run on the beat-locked phrase clock.
                         timeSeconds: posSec,
                         beatPulse: beat,
+                        onReady: kDanceRenderOnly
+                            ? _markBackdropReadyForExport
+                            : null,
                       ),
                     ),
                   // Aerial-perspective haze band at the waterline: a soft
