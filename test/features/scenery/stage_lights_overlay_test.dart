@@ -87,6 +87,40 @@ void main() {
       });
     });
 
+    testWidgets('a designated lead crushes the flanking backup pools', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        // Same rig with vs without a designated lead. The flanking backup pools
+        // (anchors 0 + 2) dim + desaturate under a lead so they stop out-glowing
+        // it; with no designated lead every pool stays at full gel.
+        const anchors = [0.30, 0.5, 0.70];
+        final flat = await _render(
+          const StageLightsPainter(
+            time: 0,
+            beat: 0,
+            rig: StageLightRig(),
+            reducedMotion: true,
+          ),
+        );
+        final ranked = await _render(
+          const StageLightsPainter(
+            time: 0,
+            beat: 0,
+            rig: StageLightRig(leadGoldIndex: 1),
+            reducedMotion: true,
+          ),
+        );
+        for (final b in const [0, 2]) {
+          expect(
+            _lum(_at(ranked, anchors[b], _poolY)),
+            lessThan(_lum(_at(flat, anchors[b], _poolY))),
+            reason: 'backup pool $b is crushed under a designated lead',
+          );
+        }
+      });
+    });
+
     testWidgets('the beat boosts the pool brightness', (tester) async {
       await tester.runAsync(() async {
         // Both at time 0 (identical geometry — only the beat differs). Light 0

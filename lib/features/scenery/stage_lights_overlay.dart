@@ -178,7 +178,9 @@ class StageLightsPainter extends CustomPainter {
       final l = lights[i];
       final aim = (aimX != null && i < aimX!.length ? aimX![i] : l.targetX) * w;
       final fy = (footY != null && i < footY!.length ? footY![i] : floorY) * h;
-      _paintPool(canvas, l, w, aim, fy);
+      final hasLead = rig.leadGoldIndex != null;
+      final isLead = hasLead && i == rig.leadGoldIndex;
+      _paintPool(canvas, l, w, aim, fy, isLead: isLead, hasLead: hasLead);
     }
   }
 
@@ -187,10 +189,22 @@ class StageLightsPainter extends CustomPainter {
     StageLightSample l,
     double w,
     double aim,
-    double fy,
-  ) {
-    final i = l.intensity;
-    final rx = poolRadius * w;
+    double fy, {
+    required bool isLead,
+    required bool hasLead,
+  }) {
+    // Focal hierarchy: when a lead is designated, its warm pool must be the
+    // hottest + largest puddle on the deck. The backups are crushed (~58%
+    // intensity, ~84% radius) and desaturated toward a cool grey so their
+    // saturated magenta/violet stops out-glowing the lead (every craft lens
+    // flagged the inverted focus — the backup pools were the most chromatic
+    // objects in frame). With no designated lead, every pool renders at full gel.
+    final demoted = hasLead && !isLead;
+    final i = l.intensity * (isLead ? 1.15 : (demoted ? 0.58 : 1.0));
+    final col = demoted
+        ? Color.lerp(l.color, const Color(0xFF5A6072), 0.34)!
+        : l.color;
+    final rx = poolRadius * w * (isLead ? 1.18 : (demoted ? 0.84 : 1.0));
     final ry =
         rx * 0.42; // foreshortened, but with real forward (downstage) run
     // Lay the pool along the deck's perspective instead of stamping a flat disc:
@@ -221,9 +235,9 @@ class StageLightsPainter extends CustomPainter {
         ..shader = RadialGradient(
           center: const Alignment(0, -0.45),
           colors: [
-            l.color.withValues(alpha: 0.54 * i),
-            l.color.withValues(alpha: 0.22 * i),
-            l.color.withValues(alpha: 0),
+            col.withValues(alpha: 0.54 * i),
+            col.withValues(alpha: 0.22 * i),
+            col.withValues(alpha: 0),
           ],
           stops: const [0.0, 0.5, 1.0],
         ).createShader(spread),
@@ -231,7 +245,7 @@ class StageLightsPainter extends CustomPainter {
     // Hot core: a tight bright hotspot at the foot/deck contact — fast falloff,
     // only faintly white-clipped so the gel stays its own hue (not a blown white
     // puddle), reading as light landing rather than a sticker.
-    final hot = Color.lerp(l.color, const Color(0xFFFFFFFF), 0.07)!;
+    final hot = Color.lerp(col, const Color(0xFFFFFFFF), 0.07)!;
     final core = Rect.fromCenter(
       center: Offset(0, ry * 0.45),
       width: rx,
@@ -245,8 +259,8 @@ class StageLightsPainter extends CustomPainter {
           center: const Alignment(0, -0.3),
           colors: [
             hot.withValues(alpha: 0.64 * i),
-            l.color.withValues(alpha: 0.28 * i),
-            l.color.withValues(alpha: 0),
+            col.withValues(alpha: 0.28 * i),
+            col.withValues(alpha: 0),
           ],
           stops: const [0.0, 0.55, 1.0],
         ).createShader(core),
