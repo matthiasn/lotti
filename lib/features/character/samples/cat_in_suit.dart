@@ -783,9 +783,12 @@ RigSpec buildCatInSuitRig({
         // A distinct knot: clearly WIDER than the blade below it and short, so it
         // reads as a four-in-hand knot the blade hangs from — not a uniform red
         // stripe emerging straight from the throat.
-        width: 18, // knot top, wider than the 11-wide blade
-        widthTip: 8,
-        height: 13,
+        // A trapezoid knot: clearly wide at the collar (18) tapering to the
+        // blade's width (11) at its base, so the knot reads as a four-in-hand the
+        // blade flows straight out of — wide top, no gap, no bell.
+        width: 18,
+        widthTip: 11,
+        height: 15,
         dy: 6,
         color: _tie,
         outlineColor: _outline,
@@ -801,16 +804,17 @@ RigSpec buildCatInSuitRig({
       pivotX: 0,
       pivotY: 20,
       z: 14,
+      // A whisper of lean so the blade hangs on a slight diagonal like real
+      // cloth, not a ruler-straight stripe.
+      restRotation: 0.05,
       drawable: BoneDrawable(
         kind: BoneShapeKind.taperedCapsule,
-        // Slimmer than the knot and tapering steadily to the point — a narrow
-        // necktie descending the shirt, not a wide lozenge bulging mid-torso.
-        // Long enough to reach down toward the placket button, not a stub
-        // floating mid-chest.
+        // Slimmer than the knot and tapering to a near-POINT (widthTip 2) so the
+        // blade comes to a tip down the shirt, not a rounded sticker stub.
         width: 11,
-        widthTip: 3,
+        widthTip: 2,
         height: 54,
-        dy: 25,
+        dy: 17, // tucks up under the knot base so there is no shirt gap
         color: _tie,
         outlineColor: _outline,
         outlineWidth: 2,
