@@ -1139,14 +1139,17 @@ RigSpec buildCatInSuitRig({
         SkinnedMeshVertex([
           MeshInfluence(boneId: CatBones.hips, x: 20, y: 21, weight: 1),
         ]),
+        // Bottom edge is an M, not a U: two thigh-tops with a CROTCH NOTCH
+        // between them, so the legs emerge from hips with a V-crotch instead of
+        // hanging off a filled rounded "disk" that reads as no real body part.
         SkinnedMeshVertex([
-          MeshInfluence(boneId: CatBones.hips, x: 10, y: 29, weight: 1),
+          MeshInfluence(boneId: CatBones.hips, x: 16, y: 26, weight: 1),
         ]),
         SkinnedMeshVertex([
-          MeshInfluence(boneId: CatBones.hips, x: 0, y: 31, weight: 1),
+          MeshInfluence(boneId: CatBones.hips, x: 0, y: 13, weight: 1),
         ]),
         SkinnedMeshVertex([
-          MeshInfluence(boneId: CatBones.hips, x: -10, y: 29, weight: 1),
+          MeshInfluence(boneId: CatBones.hips, x: -16, y: 26, weight: 1),
         ]),
         SkinnedMeshVertex([
           MeshInfluence(boneId: CatBones.hips, x: -20, y: 21, weight: 1),
