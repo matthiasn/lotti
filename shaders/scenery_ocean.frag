@@ -172,11 +172,13 @@ void main() {
     float d = abs(art.x - cx) * aspect;
     float colw = 0.016 + 0.03 * depth;
     float col = exp(-pow(d / colw, 2.0));
-    float dash = smoothstep(0.45, 0.95,
+    float dash = smoothstep(0.40, 0.92,
         fbm(vec2(art.x * 40.0, depth * 26.0 - uTime * 0.5 + float(s) * 7.0)));
-    refl += col * dash * str * (0.12 + 0.7 * depth);
+    // Brighter + longer than the first pass (the columns were too dim/short to
+    // separate from the water): reach further down (0.95) off a lifted floor.
+    refl += col * dash * str * (0.2 + 0.95 * depth);
   }
-  float reflA = clamp(refl * clamp(uReflection, 0.0, 2.0), 0.0, 0.55);
+  float reflA = clamp(refl * clamp(uReflection, 0.0, 2.0), 0.0, 0.72);
 
   // --- Fresnel horizon sheen: at the grazing angle near the far shore the
   // lagoon mirrors the bright twilight sky, so the band just under the waterline
@@ -186,7 +188,11 @@ void main() {
   // from being a clean horizontal stripe. ---
   float fres = 1.0 - smoothstep(0.0, 0.55, depth);
   float sheenRipple = 0.75 + 0.25 * fbm(vec2(x * 6.0, depth * 22.0 - uTime * 0.3));
-  vec3 sheenCol = mix(uOceanHorizon.rgb * 1.9, uFoam.rgb, 0.28);
+  // Desaturated toward a cool slate (not bright teal): oceanHorizon * 1.9 read
+  // as a milky CYAN smear at the far waterline. Pull the multiplier down and mix
+  // harder toward the neutral foam tone so the sheen lifts the horizon without a
+  // saturated cyan blob.
+  vec3 sheenCol = mix(uOceanHorizon.rgb * 1.35, uFoam.rgb, 0.5);
   float sheenA = fres * fres * 0.2 * sheenRipple;
 
   // Summed colored contribution + summed coverage (city-lights convention).

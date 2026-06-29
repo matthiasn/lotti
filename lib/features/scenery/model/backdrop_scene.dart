@@ -60,7 +60,7 @@ class BackdropScene {
         // Animated water first; the additive ocean and additive city lights
         // commute, so the only thing the order buys us is letting the opaque
         // yacht sit BETWEEN them.
-        OceanLayer(foamDensity: 0.95, reflection: 0.5),
+        OceanLayer(foamDensity: 0.95, reflection: 0.65),
         // Re-draw fixed skyline + bridge over the drifting cloud layers and
         // ocean shimmer, preserving the original depth ordering.
         ImageLayer(SceneryAssets.cityBridge),
