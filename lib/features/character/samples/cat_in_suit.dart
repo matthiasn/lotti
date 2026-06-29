@@ -1256,7 +1256,7 @@ RigSpec buildCatInSuitRig({
       // jacket DOESN'T cover deflated into a rubber-hose noodle. Keeping the
       // knee-down full (≥11) and the hem broad makes the visible suit read as
       // trousers that break over the shoe instead of skinny calves.
-      halfWidths: scaledLegWidths(const [15.5, 14.5, 10, 12.5, 10]),
+      halfWidths: scaledLegWidths(const [15.5, 14.5, 11.5, 13, 11.5]),
       z: 3,
       color: _trouserRear,
       outlineColor: _outline,
@@ -1273,7 +1273,7 @@ RigSpec buildCatInSuitRig({
         CatBones.footL,
       ],
       hiddenBoneIds: const [CatBones.legUpperL, CatBones.legLowerL],
-      halfWidths: scaledLegWidths(const [15.5, 14.5, 10, 12.5, 10]),
+      halfWidths: scaledLegWidths(const [15.5, 14.5, 11.5, 13, 11.5]),
       z: 6,
       color: _trouser,
       outlineColor: _outline,
