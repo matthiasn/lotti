@@ -723,6 +723,7 @@ RigSpec buildCatInSuitRig({
         color: palette.furDark,
         outlineColor: _outline,
         outlineWidth: 2,
+        formRound: false, // keep the head/neck join clean — see celShade note
       ),
     ),
     Bone(
@@ -739,6 +740,7 @@ RigSpec buildCatInSuitRig({
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2,
+        formRound: false, // head keeps the flat terminator — see celShade note
       ),
     ),
   ];
@@ -1013,11 +1015,14 @@ RigSpec buildCatInSuitRig({
       // without going so bright that the thin limbs/cuffs chrome out.
       highlightAmount: 0.24,
       highlightCoverage: 0.24,
-      // Painterly form-rounding is left OFF for this rig (roundAmount defaults to
-      // 0): even at a moderate setting it darkened the head-ellipse bottom against
-      // the torso top, reading as a detached "about to fall off" head. The cel
-      // terminator plus the concert grade carry the volume; the rig stays a clean
-      // cartoon.
+      // Painterly form-rounding rounds each volume's contour into a cool
+      // occlusion so limbs/torso read as TUBES, not flat sticks (the panel's
+      // flat-bodies note). The head + neck opt OUT (BoneDrawable.formRound:false):
+      // their rounded bottoms darkened against the torso top into a detached
+      // "about to fall off" head. So the body gets volume; the head/neck keep the
+      // flat cel terminator only.
+      roundAmount: 0.42,
+      roundCoverage: 0.6,
     ),
   );
 }

@@ -42,6 +42,7 @@ class BoneDrawable {
     this.widthTip = -1,
     this.outlineColor,
     this.outlineWidth = 0,
+    this.formRound = true,
   });
 
   final BoneShapeKind kind;
@@ -69,6 +70,14 @@ class BoneDrawable {
   /// Optional outline colour (ARGB). When null, no outline is drawn.
   final int? outlineColor;
   final double outlineWidth;
+
+  /// Whether the cel-shade's painterly form-rounding (the cool contour
+  /// occlusion that rounds a volume into a tube) applies to this shape. Default
+  /// true. Set false on shapes where the contour darkening reads as a detached
+  /// seam rather than volume — notably the head and neck, whose rounded bottoms
+  /// would darken against the torso top and make the head look "about to fall
+  /// off". Those keep the flat cel terminator only.
+  final bool formRound;
 }
 
 /// A single rigid bone in the skeleton.

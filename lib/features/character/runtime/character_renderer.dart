@@ -207,7 +207,9 @@ class CharacterRenderer {
     canvas.save();
     _clipKind(canvas, d);
     canvas.drawRect(rect, _celShadePaint(rect, d.color, s));
-    final round = _formRoundPaint(rect, d.color, s);
+    // Form-rounding is opt-out per shape: the head/neck darken into a detached
+    // seam rather than volume, so they keep the flat terminator only.
+    final round = d.formRound ? _formRoundPaint(rect, d.color, s) : null;
     if (round != null) canvas.drawRect(rect, round);
     canvas.restore();
   }

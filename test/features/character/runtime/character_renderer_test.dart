@@ -223,6 +223,48 @@ void main() {
     });
   });
 
+  testWidgets('formRound:false on a shape skips the contour occlusion', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      const rounding = CelShadeSpec(roundAmount: 0.6);
+      const rounded = BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 70,
+        height: 110,
+        cornerRadius: 16,
+        dy: 50,
+        color: 0xFF808080,
+      );
+      const optedOut = BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 70,
+        height: 110,
+        cornerRadius: 16,
+        dy: 50,
+        color: 0xFF808080,
+        formRound: false,
+      );
+      // Same directional cel-shade both times; only the form-round opt-out
+      // differs, so the contour diff isolates the gate.
+      final withRound = await _renderOne(rounded, celShade: rounding);
+      final withoutRound = await _renderOne(optedOut, celShade: rounding);
+      int lum(Uint8List px, int x, int y) {
+        final o = (y * w + x) * 4;
+        return px[o] + px[o + 1] + px[o + 2];
+      }
+
+      // At the left contour (≈ x=28, y=82) the opted-out shape stays markedly
+      // brighter — no occlusion ring darkens it.
+      final edgeLift = lum(withoutRound, 28, 82) - lum(withRound, 28, 82);
+      expect(
+        edgeLift,
+        greaterThan(24),
+        reason: 'formRound:false leaves the contour undarkened',
+      );
+    });
+  });
+
   testWidgets('taperedCapsule is wide at the top and narrows to the tip', (
     tester,
   ) async {
