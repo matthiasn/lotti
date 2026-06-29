@@ -88,15 +88,17 @@ void main() {
 
   setUpAll(() async {
     outputDir.createSync(recursive: true);
-    waterfrontBackdropImage = await _imageFromFile(
-      kCharacterWaterfrontBackdropAsset,
-    );
-    waterfrontCloudsImage = await _imageFromFile(
-      kCharacterWaterfrontCloudsAsset,
-    );
-    waterfrontWavesImage = await _imageFromFile(
-      kCharacterWaterfrontWavesAsset,
-    );
+    if (live) {
+      waterfrontBackdropImage = await _imageFromFile(
+        kCharacterWaterfrontBackdropAsset,
+      );
+      waterfrontCloudsImage = await _imageFromFile(
+        kCharacterWaterfrontCloudsAsset,
+      );
+      waterfrontWavesImage = await _imageFromFile(
+        kCharacterWaterfrontWavesAsset,
+      );
+    }
   });
 
   tearDownAll(() {

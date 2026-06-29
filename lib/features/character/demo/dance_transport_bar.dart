@@ -23,6 +23,7 @@ class DanceTransportBar extends StatelessWidget {
     required this.positionSec,
     required this.durationSec,
     required this.currentSectionLabel,
+    required this.moveLabels,
     required this.amplitudes,
     required this.sections,
     required this.onPlayPause,
@@ -47,6 +48,7 @@ class DanceTransportBar extends StatelessWidget {
   final double positionSec;
   final double durationSec;
   final String? currentSectionLabel;
+  final List<String> moveLabels;
 
   /// Full-track waveform, normalized 0..1. Null while loading; empty when the
   /// beat map carries no waveform.
@@ -97,7 +99,22 @@ class DanceTransportBar extends StatelessWidget {
       children: [
         _transportControls(),
         const SizedBox(width: 18),
+        Expanded(child: _readoutRow()),
+      ],
+    );
+  }
+
+  Widget _readoutRow() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
         _timeGroup(),
+        if (moveLabels.isNotEmpty) ...[
+          const SizedBox(width: 18),
+          Flexible(child: _moveReadout()),
+          const SizedBox(width: 18),
+        ],
         const Spacer(),
         _metaGroup(),
       ],
@@ -257,6 +274,8 @@ class DanceTransportBar extends StatelessWidget {
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
       children: [_timecode(), const SizedBox(width: 14), _barsBeats()],
     );
   }
@@ -267,6 +286,8 @@ class DanceTransportBar extends StatelessWidget {
     if (loading) return const SizedBox.shrink();
     return Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
       children: [
         _bpmMeter(),
         const SizedBox(width: 18),
@@ -274,6 +295,40 @@ class DanceTransportBar extends StatelessWidget {
         const SizedBox(width: 18),
         _sectionReadout(),
       ],
+    );
+  }
+
+  /// Current dancer clips, left-to-right on screen. Kept as plain diagnostic
+  /// text so screenshots reveal which authored move produced a questionable
+  /// pose without making the labels look interactive.
+  Widget _moveReadout() {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 380),
+      child: Text.rich(
+        TextSpan(
+          children: [
+            const TextSpan(
+              text: 'MOVES ',
+              style: TextStyle(
+                color: _Chrome.textLow,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+              ),
+            ),
+            TextSpan(
+              text: moveLabels.map(_displayMoveName).join('  /  '),
+              style: const TextStyle(
+                color: _Chrome.textMid,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 
@@ -487,6 +542,11 @@ String formatDancePlaybackTimestamp(double seconds) {
   if (hours > 0) return '$hours:$minText:$secText.$millisText';
   return '$minText:$secText.$millisText';
 }
+
+String _displayMoveName(String name) => switch (name) {
+  'pouncing-cat' => 'pounce',
+  _ => name,
+};
 
 /// A thin hairline vertical rule used between the metadata readouts.
 class _VRule extends StatelessWidget {

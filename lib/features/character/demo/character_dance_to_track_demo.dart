@@ -685,6 +685,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                   positionSec: posSec,
                   durationSec: _trackDurationSec,
                   currentSectionLabel: musicalLabel,
+                  moveLabels: [
+                    for (final clip in stage.ensemble) clip.name,
+                  ],
                   amplitudes: _amplitudes,
                   sections: _waveformSections,
                   onPlayPause: () => unawaited(_togglePlay()),

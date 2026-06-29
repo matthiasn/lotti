@@ -2166,7 +2166,7 @@ void main() {
       }
     });
 
-    test('shaku borrows a one-count dab accent, then recovers to the X', () {
+    test('shaku crosses wrists, opens the elbows, then borrows a dab accent', () {
       final phrase = CatClips.dancePhrase;
       final shaku = CatClips.shaku;
       final handL = _targetFor(shaku, CatBones.handL).channel;
@@ -2176,15 +2176,45 @@ void main() {
 
       expect(phrase.moveAtFrame(28).signature, contains('borrowed dab'));
 
-      final shakuXLeft = handL.sample(20 / phrase.frameCount);
-      final shakuXRight = handR.sample(20 / phrase.frameCount);
-      expect(shakuXLeft.x, greaterThan(25));
-      expect(shakuXRight.x, lessThan(-25));
+      final wristCrossLeft = handL.sample(17 / phrase.frameCount);
+      final wristCrossRight = handR.sample(17 / phrase.frameCount);
+      expect(wristCrossLeft.x, greaterThan(6));
+      expect(wristCrossRight.x, lessThan(-6));
       expect(
-        shakuXLeft.y,
-        greaterThan(shakuXRight.y + 35),
+        (wristCrossLeft.x - wristCrossRight.x).abs(),
+        lessThan(32),
         reason:
-            'before the borrowed accent the hands should still read Shaku X',
+            'Shaku should cross the wrists near the sternum, not fold both '
+            'forearms back through the belly',
+      );
+      expect(
+        wristCrossLeft.y,
+        lessThan(-42),
+        reason: 'the wrist-cross should live at chest height',
+      );
+
+      final openLeft = handL.sample(19 / phrase.frameCount);
+      final openRight = handR.sample(19 / phrase.frameCount);
+      expect(openLeft.x, lessThan(-42));
+      expect(openRight.x, greaterThan(42));
+      expect(
+        openRight.x - openLeft.x,
+        greaterThan(90),
+        reason:
+            'after the wrist-cross both elbows should open outward so the arms '
+            'remain physically possible',
+      );
+
+      final sideHitLeft = handL.sample(22 / phrase.frameCount);
+      final sideHitRight = handR.sample(22 / phrase.frameCount);
+      expect(sideHitLeft.x, lessThan(-48));
+      expect(sideHitRight.x, greaterThan(48));
+      expect(
+        sideHitRight.x - sideHitLeft.x,
+        greaterThan(96),
+        reason:
+            'the Shaku release should be an outside sweep/hit rather than a '
+            'held folded-arm pose',
       );
 
       final dabLeft = handL.sample(28 / phrase.frameCount);
@@ -2225,19 +2255,74 @@ void main() {
 
       final loopLeft = handL.sample(32 / phrase.frameCount);
       final loopRight = handR.sample(32 / phrase.frameCount);
-      expect(loopLeft.x, greaterThan(25));
-      expect(loopRight.x, lessThan(-25));
+      expect(loopLeft.x, lessThan(-25));
+      expect(loopRight.x, greaterThan(25));
       expect(
         loopLeft.y,
-        lessThan(-60),
-        reason: 'the next loop should recover to the high Shaku X hand',
+        greaterThan(-36),
+        reason: 'the next loop should recover to the low open-ready left hand',
       );
       expect(
         loopRight.y,
-        greaterThan(-30),
-        reason: 'the opposite hand should recover to the low Shaku X hand',
+        greaterThan(-36),
+        reason: 'the opposite hand should recover to the low open-ready guard',
       );
     });
+
+    test(
+      'buga keeps prep hands separated instead of folding arms through belly',
+      () {
+        final phrase = CatClips.dancePhrase;
+        final buga = CatClips.buga;
+        final handL = _targetFor(buga, CatBones.handL).channel;
+        final handR = _targetFor(buga, CatBones.handR).channel;
+
+        for (final frame in [0, 4, 8, 11, 16, 20, 24, 27]) {
+          final p = frame / phrase.frameCount;
+          final left = handL.sample(p);
+          final right = handR.sample(p);
+
+          expect(
+            right.x - left.x,
+            greaterThan(55),
+            reason:
+                'Buga prep frame $frame should keep hands as separated rib '
+                'guards, not a centreline clasp that implies impossible elbows',
+          );
+          expect(
+            left.y,
+            lessThan(-25),
+            reason: 'left hand should stay above the belt on prep frame $frame',
+          );
+          expect(
+            right.y,
+            lessThan(-25),
+            reason:
+                'right hand should stay above the belt on prep frame $frame',
+          );
+        }
+
+        final rightPresentOffHand = handL.sample(12 / phrase.frameCount);
+        expect(
+          rightPresentOffHand.x,
+          lessThan(-40),
+          reason:
+              'when the right arm presents, the left hand must drop outside/back '
+              'instead of clasping at the belly',
+        );
+        expect(rightPresentOffHand.y, lessThan(-24));
+
+        final leftPresentOffHand = handR.sample(28 / phrase.frameCount);
+        expect(
+          leftPresentOffHand.x,
+          greaterThan(40),
+          reason:
+              'when the left arm presents, the right hand must drop outside/back '
+              'instead of clasping at the belly',
+        );
+        expect(leftPresentOffHand.y, lessThan(-24));
+      },
+    );
 
     test('dance keeps major phrase handoffs in continuous hand paths', () {
       final lead = CatClips.dance;

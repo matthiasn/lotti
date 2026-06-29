@@ -31,6 +31,7 @@ Future<_Recorder> _pump(
   double positionSec = 93.433,
   double durationSec = 144.06,
   String? sectionLabel = 'B',
+  List<String> moveLabels = const ['shaku', 'zanku', 'buga'],
   List<double>? amplitudes = _amplitudes,
   List<DanceWaveformSection> sections = _sections,
   Size size = const Size(1280, 800),
@@ -60,6 +61,7 @@ Future<_Recorder> _pump(
               positionSec: positionSec,
               durationSec: durationSec,
               currentSectionLabel: sectionLabel,
+              moveLabels: moveLabels,
               amplitudes: amplitudes,
               sections: sections,
               onPlayPause: () => rec.play++,
@@ -118,6 +120,12 @@ void main() {
       // BPM readout and the now-playing section name (uppercased).
       expect(find.textContaining('120', findRichText: true), findsOneWidget);
       expect(find.text('B'), findsOneWidget);
+      // Move names are shown left-to-right so screenshots identify the active
+      // choreography for each dancer.
+      expect(
+        find.textContaining('shaku  /  zanku  /  buga', findRichText: true),
+        findsOneWidget,
+      );
     });
 
     testWidgets('loading hides metadata and disables play', (tester) async {
