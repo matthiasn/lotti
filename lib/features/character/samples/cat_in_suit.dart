@@ -112,6 +112,9 @@ class CatBones {
   static const shirtV = 'shirt_v';
   static const lapelL = 'lapel.L';
   static const lapelR = 'lapel.R';
+  static const jacketHem = 'jacket_hem';
+  static const button0 = 'button_0';
+  static const button1 = 'button_1';
   static const tie = 'tie';
   static const tieLower = 'tie_lower';
   static const neck = 'neck';
@@ -534,12 +537,12 @@ RigSpec buildCatInSuitRig({
       id: CatBones.cuffR,
       parent: CatBones.armLowerR,
       pivotX: 0,
-      pivotY: 37,
+      pivotY: 40,
       z: 17,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 15,
-        height: 11,
+        width: 14,
+        height: 8,
         cornerRadius: 4,
         color: _cuff,
         outlineColor: _outline,
@@ -652,6 +655,57 @@ RigSpec buildCatInSuitRig({
       ),
     ),
 
+    // Waist tailoring: a hem band at the jacket's bottom edge plus two buttons
+    // down the placket below the tie, so the lower jacket reads as cut cloth
+    // meeting the trousers instead of merging into one shapeless torso-to-hip
+    // mass. Sit on the jacket (z14) below the crossing arms (z15/16).
+    const Bone(
+      id: CatBones.jacketHem,
+      parent: CatBones.torso,
+      pivotX: 0,
+      pivotY: 8,
+      z: 14,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 50,
+        height: 8,
+        cornerRadius: 4,
+        color: _trouserRear, // a darker band reads as the jacket's shadowed hem
+        outlineColor: _outline,
+        outlineWidth: 2,
+      ),
+    ),
+    const Bone(
+      id: CatBones.button0,
+      parent: CatBones.torso,
+      pivotX: 0,
+      pivotY: -16,
+      z: 14,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.ellipse,
+        width: 6,
+        height: 6,
+        color: _outline,
+        outlineColor: _outline,
+        outlineWidth: 1,
+      ),
+    ),
+    const Bone(
+      id: CatBones.button1,
+      parent: CatBones.torso,
+      pivotX: 0,
+      pivotY: -3,
+      z: 14,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.ellipse,
+        width: 6,
+        height: 6,
+        color: _outline,
+        outlineColor: _outline,
+        outlineWidth: 1,
+      ),
+    ),
+
     // Near (left) arm.
     Bone(
       id: CatBones.armUpperL,
@@ -706,12 +760,12 @@ RigSpec buildCatInSuitRig({
       id: CatBones.cuffL,
       parent: CatBones.armLowerL,
       pivotX: 0,
-      pivotY: 37,
+      pivotY: 40,
       z: 18,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 15,
-        height: 11,
+        width: 14,
+        height: 8,
         cornerRadius: 4,
         color: _cuff,
         outlineColor: _outline,
