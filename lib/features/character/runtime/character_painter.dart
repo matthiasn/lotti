@@ -41,26 +41,25 @@ Affine2D groundedBase(
   (floorY ?? size.height * feetFraction) - feetOffset * scale,
 ).multiply(Affine2D.scale(flip ? -scale : scale, scale));
 
-/// Backlight (rim/halo) passes, drawn back-to-front behind each lit member: a
-/// soft outer bloom then a tight bright rim. `sigmaFrac` is the blur sigma as a
-/// fraction of the canvas short side; `alphaScale` scales the member's gel alpha
-/// for that pass; `offsetScale` displaces the blurred silhouette toward the
-/// member's light source ([_kRimDirections]) as a multiple of that pass' sigma.
-/// The offset biases the halo toward the source edge, but DIRECTIONALITY is
-/// guaranteed by a per-pass `dstIn` gradient mask (in the paint loop) that erases
-/// the shadow-side half outright — without it the blur pokes out on every edge
-/// and reads as a uniform outer-glow outline. See [CharacterPainter.memberBacklights].
+/// Backlight RIM pass(es), drawn behind each lit member as a blurred gel
+/// silhouette. `sigmaFrac` is the blur sigma as a fraction of the canvas short
+/// side; `alphaScale` scales the member's gel alpha; `offsetScale` displaces the
+/// blurred silhouette toward the member's light source ([_kRimDirections]) as a
+/// multiple of that pass' sigma. The offset puts the rim on the source edge, and
+/// a `dstIn` gradient mask (in the paint loop) ERASES the shadow-side half so the
+/// gel reads as a one-sided backlight, never a wrap-around glow. (A second soft
+/// bloom pass used to wrap the silhouette; it was dropped as an outer-glow
+/// sticker.) See [CharacterPainter.memberBacklights].
 const List<({double sigmaFrac, double alphaScale, double offsetScale})>
 _kBacklightPasses = [
-  // soft outer bloom: thinned and pushed HARD toward the source so the air-glow
-  // sits on the source-facing arc only and the body occludes the retreating
-  // side. The wrap-around halo is the look the user wants — present but not
-  // overpowering and HUGGING the silhouette, not spreading far into the air — so
-  // its blur radius is kept tight (the on-body inner rim in the grade carries the
-  // colour presence so the outer halo needn't bloom wide).
-  (sigmaFrac: 0.015, alphaScale: 0.2, offsetScale: 1.7),
-  // tight bright rim: a thin hot kicker on the source-facing contour.
-  (sigmaFrac: 0.010, alphaScale: 0.8, offsetScale: 3.0),
+  // A single thin directional RIM — no wrap. The soft outer bloom that used to
+  // wrap the whole silhouette was removed: every craft lens read it as a
+  // symmetric "outer-glow" sticker floating around the figure, and the user
+  // called to drop it. What remains is one tight, hot kicker displaced onto the
+  // source-facing contour and masked one-sided (below), so the gel reads as a
+  // backlight catching one edge — the colour presence now lives ON the fabric
+  // (the body key in the grade) and on the deck (the floor pools), not in the air.
+  (sigmaFrac: 0.009, alphaScale: 0.7, offsetScale: 3.2),
 ];
 
 /// Cool, dark plate-blue the concert BODIES are lerped toward (`srcATop`) so the
@@ -107,7 +106,7 @@ const Color _kFaceCoolFill = Color(0x52223E5C);
 /// to clear) so the trio is GROUNDED on the painted deck — a real contact shadow
 /// the figure occludes the floor with — instead of floating over the additive
 /// colour pools. Drawn under the figure, tight to the soles.
-const Color _kContactShadow = Color(0x8C05080F);
+const Color _kContactShadow = Color(0xBE03060D);
 
 /// Unit direction (screen space, +x right / +y down) from each dance lane toward
 /// its rim-light source, i.e. the direction the gel halo is offset so the rim
@@ -586,15 +585,12 @@ class CharacterPainter extends CustomPainter {
             ? _kRimDirections[i]
             : Offset.zero;
         if (glow != null && glow.a > 0) {
-          // Two passes so the gel reads as real backlight, not a sticker glow:
-          // a soft outer BLOOM for atmosphere, then a tight bright RIM that hugs
-          // the contour. Both flatten the member to a solid gel silhouette and
-          // blur it behind the real draw, so only the part protruding past the
-          // outline shows. The silhouette is OFFSET toward this lane's light
-          // source ([_kRimDirections]) before blurring, so the halo pokes out on
-          // the source-facing edge and the body occludes its retreating shadow
-          // side — a directional kicker with a real shadow side, not an even
-          // outline. Aligned for free — they reuse the member's exact transform.
+          // A thin directional RIM (no wrap): flatten the member to a solid gel
+          // silhouette, blur it, and OFFSET it toward this lane's light source
+          // ([_kRimDirections]) before drawing it behind the real figure, so only
+          // the slice protruding past the source-facing edge shows. The dstIn mask
+          // below erases the retreating side, so it reads as a backlight catching
+          // one edge. Aligned for free — it reuses the member's exact transform.
           for (final pass in _kBacklightPasses) {
             final sigma = size.shortestSide * pass.sigmaFrac;
             final off = rimDir * (sigma * pass.offsetScale);
@@ -636,16 +632,12 @@ class CharacterPainter extends CustomPainter {
               horizontalScale: memberHorizontalScale,
             );
             canvas.restore();
-            // DIRECTIONAL BIAS (not erasure). The halo should wrap the whole cat
-            // — that approved concert-backlight look — but read a touch HOTTER on
-            // the lamp-facing side so it still has a sense of direction. A `dstIn`
-            // linear gradient keeps the halo at full strength on the source side
-            // and dims (but does NOT erase) it on the retreating side. (An earlier
-            // pass zeroed the shadow side outright to satisfy a film panel's
-            // "symmetric aura" note, but that stripped the glow the look depends
-            // on.) The split is biased toward the HORIZONTAL — [_kRimDirections]
-            // are mostly vertical (lamps rake down from above), so masking along
-            // rimDir would dim the whole lower body instead of one side.
+            // ONE-SIDED rim. A `dstIn` linear gradient keeps the thin rim at full
+            // strength on the lamp-facing side and ERASES it on the retreating
+            // side, so it reads as a backlight catching one edge, never a wrap.
+            // The split is biased toward the HORIZONTAL — [_kRimDirections] are
+            // mostly vertical (lamps rake down from above), so masking along rimDir
+            // would dim the whole lower body instead of one side.
             final maskVec = Offset(rimDir.dx, rimDir.dy * 0.28);
             final maskLen = maskVec.distance;
             final maskUnit = maskLen > 0
@@ -655,17 +647,16 @@ class CharacterPainter extends CustomPainter {
               memberCentreX,
               memberFloorY - size.height * 0.42,
             );
-            final rimReach = maskUnit * (size.height * 0.24);
+            final rimReach = maskUnit * (size.height * 0.22);
             canvas
               ..drawRect(
                 haloBounds,
                 Paint()
                   ..blendMode = BlendMode.dstIn
                   ..shader = ui.Gradient.linear(
-                    rimMid + rimReach, // lamp side — full-strength halo
-                    rimMid -
-                        rimReach, // shadow side — dimmed, but still glowing
-                    const [Color(0xFFFFFFFF), Color(0xB0FFFFFF)],
+                    rimMid + rimReach, // lamp side — full-strength rim
+                    rimMid - rimReach, // shadow side — erased
+                    const [Color(0xFFFFFFFF), Color(0x00FFFFFF)],
                     const [0.0, 1.0],
                   ),
               )
@@ -797,7 +788,7 @@ class CharacterPainter extends CustomPainter {
             // not a strobe: only this small, terminator-edge gel term moves — the
             // seats + wrap stay STATIC — so the full-figure luminance never pulses
             // anywhere near the photosensitivity threshold.
-            final gelKey = (0.54 + 0.20 * glow.a).clamp(0.54, 0.74);
+            final gelKey = (0.64 + 0.20 * glow.a).clamp(0.64, 0.84);
             canvas
               ..drawRect(
                 gradeBounds,
@@ -813,11 +804,12 @@ class CharacterPainter extends CustomPainter {
                       const Color(0x00000000),
                       _kBodyShadowFloor, // cool ambient bounce, NOT a black crush
                     ],
-                    // gradual terminator: the gel side carries well past centre so
-                    // more of the now-seated suit reads as lit fabric, and the
-                    // shadow side settles onto the cool ambient floor (dark navy
-                    // material) instead of slamming to a flat black void.
-                    const [0.0, 0.66, 0.96],
+                    // gradual terminator: with the outer halo gone, the gel KEY is
+                    // now what colours the figure, so it carries further across the
+                    // lit side (0.74) — most of the source-facing body reads as lit
+                    // fabric — while the shadow side still settles onto the cool
+                    // ambient floor (dark navy material), not a flat black void.
+                    const [0.0, 0.74, 0.98],
                   ),
               )
               // INNER RIM. A tight, hot gel band hugging the lamp-facing edge
