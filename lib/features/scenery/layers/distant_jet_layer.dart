@@ -16,7 +16,7 @@ const double kDistantJetPassSeconds = 60;
 const double kDistantJetStartDelaySeconds = 0.18;
 
 /// Extra seconds the contrails remain after the aircraft has left the stage.
-const double kDistantJetTrailHoldSeconds = 32;
+const double kDistantJetTrailHoldSeconds = 82;
 
 /// FAA Part 25 anti-collision systems must flash at 40-100 cycles/minute.
 /// Use a centered 60 cpm cadence so the distant jet reads as aviation lighting
@@ -261,11 +261,11 @@ DistantJetSample? _sampleDistantJetLocal(double local, double safePass) {
   return DistantJetSample(
     position: ui.Offset(x, y),
     widthFraction: 0.06 - progress * 0.0015,
-    opacity: edge * (0.84 - progress * 0.10) * (afterPassSeconds > 0 ? 0 : 1),
+    opacity: edge * (0.84 - progress * 0.08) * (afterPassSeconds > 0 ? 0 : 1),
     trailOpacity:
         edge *
         trailAfterPassFade *
-        (0.48 + math.sin(progress * math.pi) * 0.12),
+        (0.68 + math.sin(progress * math.pi) * 0.16),
     trailLengthScale: math.min(7.2, math.max(0.28, local * 0.36)),
     headingRadians: -0.01,
     beacon: aircraftBeaconPulse(local),
@@ -396,8 +396,8 @@ void _paintTrail(
         points.last.position,
         [
           ctx.palette.cloudLit.withValues(alpha: 0),
-          ctx.palette.cloudLit.withValues(alpha: current.trailOpacity * 0.11),
-          ctx.palette.cloudBase.withValues(alpha: current.trailOpacity * 0.07),
+          ctx.palette.cloudLit.withValues(alpha: current.trailOpacity * 0.16),
+          ctx.palette.cloudBase.withValues(alpha: current.trailOpacity * 0.1),
           ctx.palette.cloudBase.withValues(alpha: 0),
         ],
         [0, 0.08, 0.62, 1],
@@ -417,8 +417,8 @@ void _paintTrail(
         points.last.position,
         [
           ctx.palette.cloudLit.withValues(alpha: 0),
-          ctx.palette.cloudLit.withValues(alpha: current.trailOpacity * 0.46),
-          ctx.palette.cloudBase.withValues(alpha: current.trailOpacity * 0.13),
+          ctx.palette.cloudLit.withValues(alpha: current.trailOpacity * 0.62),
+          ctx.palette.cloudBase.withValues(alpha: current.trailOpacity * 0.18),
           ctx.palette.cloudBase.withValues(alpha: 0),
         ],
         [0, 0.045, 0.34, 1],
@@ -563,16 +563,16 @@ void _paintLights(
   lamp(
     visibleWingtip,
     ctx.palette.shipPort,
-    0.76,
-    r * 0.82,
-    bloom: 3.2,
+    0.58,
+    r * 0.68,
+    bloom: 2.2,
   );
   lamp(
     tailCone,
     ctx.palette.shipMast,
-    0.74,
-    r * 0.86,
-    bloom: 3.4,
+    0.56,
+    r * 0.7,
+    bloom: 2.3,
   );
 
   // Anti-collision lights: one FAA-rate system pulse, aviation red on the
@@ -580,23 +580,23 @@ void _paintLights(
   lamp(
     visibleWingtip.translate(0, -r * 0.7),
     ctx.palette.aircraftStrobe,
-    sample.strobe,
-    r * 1.2,
-    bloom: 5.4,
+    sample.strobe * 0.55,
+    r * 0.82,
+    bloom: 3,
   );
   lamp(
     topBeacon,
     ctx.palette.aircraftBeacon,
-    sample.beacon,
-    r,
-    bloom: 4.4,
+    sample.beacon * 0.5,
+    r * 0.74,
+    bloom: 2.7,
   );
   lamp(
     bottomBeacon,
     ctx.palette.aircraftBeacon,
-    sample.beacon * 0.62,
-    r * 0.8,
-    bloom: 3.4,
+    sample.beacon * 0.28,
+    r * 0.62,
+    bloom: 2.1,
   );
 }
 
