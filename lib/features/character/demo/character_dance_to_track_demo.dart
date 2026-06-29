@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:lotti/features/character/demo/dance_camera_director.dart';
 import 'package:lotti/features/character/demo/dance_camera_rig.dart';
 import 'package:lotti/features/character/demo/dance_lip_sync.dart';
+import 'package:lotti/features/character/demo/dance_transport_bar.dart';
 import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
 import 'package:lotti/features/character/model/clip.dart';
@@ -141,24 +142,6 @@ double get kDanceAppExportWarmupSec =>
 /// plain black.
 const Size kDanceDemoWindowSize = Size(1600, 900);
 const double kDanceDemoAspectRatio = 16 / 9;
-
-/// Formats a playback position like a video editor transport display.
-///
-/// Tracks under an hour use `mm:ss.mmm`; longer tracks use `h:mm:ss.mmm`.
-String formatDancePlaybackTimestamp(double seconds) {
-  final safeSeconds = seconds.isFinite && seconds > 0 ? seconds : 0.0;
-  final totalMillis = (safeSeconds * 1000).round();
-  final wholeSeconds = totalMillis ~/ 1000;
-  final millis = totalMillis % 1000;
-  final hours = wholeSeconds ~/ 3600;
-  final minutes = (wholeSeconds % 3600) ~/ 60;
-  final secs = wholeSeconds % 60;
-  final millisText = millis.toString().padLeft(3, '0');
-  final secText = secs.toString().padLeft(2, '0');
-  final minText = minutes.toString().padLeft(2, '0');
-  if (hours > 0) return '$hours:$minText:$secText.$millisText';
-  return '$minText:$secText.$millisText';
-}
 
 /// Bars the 32-frame [CatClips.dance] phrase spans: `duration 6 s` at the
 /// authored 120 BPM = 12 beats = 3 bars of 4/4.
@@ -360,10 +343,16 @@ class DanceToTrackApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Inter (a bundled family) across the transport chrome for a crisp,
+    // consistent console look; falls back to the platform font if absent.
+    final base = ThemeData.dark(useMaterial3: true);
     return MaterialApp(
       title: kDanceRenderOnly ? 'Lotti dance export' : 'Dance to track',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(useMaterial3: true),
+      theme: base.copyWith(
+        textTheme: base.textTheme.apply(fontFamily: 'Inter'),
+        primaryTextTheme: base.primaryTextTheme.apply(fontFamily: 'Inter'),
+      ),
       home: const DanceToTrackPage(),
     );
   }
@@ -490,6 +479,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   BeatLoopBinding? _binding;
   List<double>? _amplitudes; // full-track waveform, normalized 0..1
   List<_Section> _sections = const [];
+  // Section bands for the transport timeline, mapped from [_sections] once on
+  // load so the bar doesn't re-allocate the list every frame.
+  List<DanceWaveformSection> _waveformSections = const [];
   List<_Word> _words = const []; // synced lyrics (optional)
   // Contiguous semantic-section spans (chorus/verse/bridge/...) collapsed from the
   // per-word section tags; the virtual director reads the section label, progress
@@ -711,6 +703,10 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         _binding = BeatLoopBinding.barAligned(map, bars: kDancePhraseBars);
         _amplitudes = amplitudes;
         _sections = sections;
+        _waveformSections = [
+          for (final s in sections)
+            DanceWaveformSection(start: s.start, end: s.end, label: s.label),
+        ];
         _words = words;
         _sectionSpans = spans;
         _cues = cues;
@@ -1497,6 +1493,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         ),
       ),
     );
+    final section = _sectionAt(posSec);
     return Scaffold(
       backgroundColor: Colors.black,
       body: kDanceRenderOnly
@@ -1504,241 +1501,30 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
           : Column(
               children: [
                 Expanded(child: stageView),
-                _waveformPanel(),
+                DanceTransportBar(
+                  loading: _map == null,
+                  playing: _player.state.playing,
+                  loop: _loop,
+                  showCaptions: _showCaptions,
+                  captionsAvailable: _words.isNotEmpty,
+                  useNewBackdrop: _useNewBackdrop,
+                  bpm: _bpm,
+                  positionSec: posSec,
+                  durationSec: _trackDurationSec,
+                  currentSectionLabel: section?.label,
+                  currentSectionEnergetic: section?.energetic ?? true,
+                  amplitudes: _amplitudes,
+                  sections: _waveformSections,
+                  onPlayPause: () => unawaited(_togglePlay()),
+                  onToggleLoop: () => unawaited(_toggleLoop()),
+                  onToggleCaptions: () =>
+                      setState(() => _showCaptions = !_showCaptions),
+                  onToggleBackdrop: () =>
+                      setState(() => _useNewBackdrop = !_useNewBackdrop),
+                  onSeekToSeconds: _seekToTime,
+                ),
               ],
             ),
     );
   }
-
-  Widget _waveformPanel() {
-    final posSec = _positionSec;
-    final playing = _player.state.playing;
-    final section = _sectionAt(posSec);
-    return Container(
-      color: const Color(0xFF14181D),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              IconButton.filledTonal(
-                onPressed: _map == null ? null : _togglePlay,
-                tooltip: playing ? 'Pause (Space)' : 'Play (Space)',
-                icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                onPressed: _map == null ? null : _toggleLoop,
-                tooltip: _loop ? 'Looping track' : 'Play once',
-                icon: Icon(
-                  Icons.repeat,
-                  color: _loop ? Colors.tealAccent : Colors.white38,
-                ),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                onPressed: _words.isEmpty
-                    ? null
-                    : () => setState(() => _showCaptions = !_showCaptions),
-                tooltip: _showCaptions ? 'Hide lyrics' : 'Show lyrics',
-                icon: Icon(
-                  _showCaptions
-                      ? Icons.closed_caption
-                      : Icons.closed_caption_off,
-                  color: _showCaptions && _words.isNotEmpty
-                      ? Colors.tealAccent
-                      : Colors.white38,
-                ),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                onPressed: () =>
-                    setState(() => _useNewBackdrop = !_useNewBackdrop),
-                tooltip: _useNewBackdrop
-                    ? 'New blue-hour scene'
-                    : 'Old waterfront plate',
-                icon: Icon(
-                  _useNewBackdrop ? Icons.nightlight_round : Icons.image,
-                  color: _useNewBackdrop ? Colors.tealAccent : Colors.white38,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  _map == null
-                      ? 'loading…'
-                      : '${_bpm.toStringAsFixed(0)} BPM   ·   '
-                            '${formatDancePlaybackTimestamp(posSec)} / '
-                            '${formatDancePlaybackTimestamp(_trackDurationSec)}'
-                            '   ·   '
-                            'section ${section?.label ?? '–'} · '
-                            '${(section?.energetic ?? true) ? 'dance' : 'calm'}',
-                  style: const TextStyle(
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ),
-              const Text(
-                'tap / drag the waveform to seek',
-                style: TextStyle(color: Colors.white38, fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 96,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.maxWidth;
-                final amplitudes = _amplitudes;
-                if (amplitudes == null || _trackDurationSec <= 0) {
-                  return const Center(child: Text('loading…'));
-                }
-                if (amplitudes.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'no waveform in beat map — regenerate with analyze.py',
-                    ),
-                  );
-                }
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTapUp: (d) => _seekToTime(
-                    d.localPosition.dx / width * _trackDurationSec,
-                  ),
-                  onHorizontalDragUpdate: (d) => _seekToTime(
-                    d.localPosition.dx / width * _trackDurationSec,
-                  ),
-                  child: CustomPaint(
-                    size: Size(width, constraints.maxHeight),
-                    painter: _WaveformPainter(
-                      amplitudes: amplitudes,
-                      sections: _sections,
-                      trackDurationSec: _trackDurationSec,
-                      positionSec: posSec,
-                      playing: playing,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Paints the full-track waveform as a seek bar with the live playhead.
-class _WaveformPainter extends CustomPainter {
-  _WaveformPainter({
-    required this.amplitudes,
-    required this.sections,
-    required this.trackDurationSec,
-    required this.positionSec,
-    required this.playing,
-  });
-
-  final List<double> amplitudes;
-  final List<_Section> sections;
-  final double trackDurationSec;
-  final double positionSec;
-  final bool playing;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (amplitudes.isEmpty || trackDurationSec <= 0) return;
-    final mid = size.height / 2;
-    final px = positionSec / trackDurationSec * size.width;
-
-    // Section bands (rung-4 structure) behind the bars: a faint hue per label
-    // (recurring sections share a colour), a boundary line, and the label.
-    for (final s in sections) {
-      final sx0 = s.start / trackDurationSec * size.width;
-      final sx1 = s.end / trackDurationSec * size.width;
-      final active = positionSec >= s.start && positionSec < s.end;
-      canvas
-        ..drawRect(
-          Rect.fromLTRB(sx0, 0, sx1, size.height),
-          Paint()..color = _sectionColor(s.label),
-        )
-        ..drawLine(
-          Offset(sx0, 0),
-          Offset(sx0, size.height),
-          Paint()
-            ..color = const Color(0x33FFFFFF)
-            ..strokeWidth = 1,
-        );
-      if (active) {
-        // Brighten the current section + a top accent bar.
-        canvas
-          ..drawRect(
-            Rect.fromLTRB(sx0, 0, sx1, size.height),
-            Paint()..color = const Color(0x14FFFFFF),
-          )
-          ..drawRect(
-            Rect.fromLTRB(sx0, 0, sx1, 3),
-            Paint()..color = Colors.white70,
-          );
-      }
-      TextPainter(
-          text: TextSpan(
-            text: s.label,
-            style: TextStyle(
-              color: active ? Colors.white : Colors.white60,
-              fontSize: 10,
-              fontWeight: active ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )
-        ..layout()
-        ..paint(canvas, Offset(sx0 + 2, 1));
-    }
-
-    // Bars: brighter up to the playhead (played), dim ahead.
-    final barWidth = size.width / amplitudes.length;
-    final played = Paint()..color = const Color(0xFF8FD0FF);
-    final ahead = Paint()..color = const Color(0xFF3A4654);
-    for (var i = 0; i < amplitudes.length; i++) {
-      final x = i * barWidth;
-      final h = _atLeast1(amplitudes[i] * (size.height - 2));
-      canvas.drawRect(
-        Rect.fromLTWH(x, mid - h / 2, _barWidth(barWidth), h),
-        x <= px ? played : ahead,
-      );
-    }
-
-    // Playhead (always shown so a paused seek is visible).
-    canvas.drawLine(
-      Offset(px, 0),
-      Offset(px, size.height),
-      Paint()
-        ..color = playing ? Colors.white : Colors.white70
-        ..strokeWidth = 1.5,
-    );
-  }
-
-  static double _atLeast1(double v) => v < 1 ? 1 : v;
-  static double _barWidth(double w) => w - 0.5 < 1 ? 1 : w - 0.5;
-
-  static Color _sectionColor(String label) {
-    const palette = <String, Color>{
-      'A': Color(0x22FF6B6B),
-      'B': Color(0x2245C7B8),
-      'C': Color(0x22FFD166),
-      'D': Color(0x22A78BFA),
-      'E': Color(0x2206D6A0),
-      'F': Color(0x22EF476F),
-    };
-    return palette[label] ?? const Color(0x18FFFFFF);
-  }
-
-  @override
-  bool shouldRepaint(_WaveformPainter old) =>
-      old.positionSec != positionSec ||
-      old.playing != playing ||
-      !identical(old.amplitudes, amplitudes) ||
-      !identical(old.sections, sections);
 }

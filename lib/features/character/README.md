@@ -641,6 +641,18 @@ downbeat-anchored to the real track.
 The beat map is an offline analysis of an audio file (beats + downbeats) that
 the runtime warps the dance onto.
 
+**Transport + timeline chrome.** The console under the song-first demo's video
+stage lives in `demo/dance_transport_bar.dart` as a self-contained, presentational
+`DanceTransportBar` widget (no design-system import, so the feature stays
+ejectable). It renders the supplied state and reports intent through callbacks —
+all playback/seek logic stays in the page. It styles a DAW/NLE-grade transport:
+a hero play button, a grouped toggle cluster (loop / captions / backdrop), a
+right-aligned readout (tabular timecode, BPM, now-playing section), and a
+`CustomPaint` timeline with a time ruler, a tempo-derived bar grid, section
+rehearsal-mark pills (collision-collapsed), a mirrored waveform split played/
+ahead at the playhead, and a draggable playhead knob. `formatDancePlaybackTimestamp`
+and the `DanceWaveformSection` band model live alongside it.
+
 **Steady track vs. drifting track.** Modern Afrobeats/Amapiano is produced to a
 DAW grid, so the tempo is steady — and a steady track only needs **two numbers,
 BPM and the downbeat offset**, which is exactly what `BeatLoopBinding.barAligned`
