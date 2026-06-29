@@ -69,17 +69,16 @@ move cues are all keyed to frames, then compiled into the engine's normalized
 grid** — it does not know seconds. This is exactly the right shape to drive from
 detected beats.
 
-**2.2 The mapping from musical time → wall-clock seconds is a single global scalar.**
-Today the demo turns BPM into a uniform time-scale and nothing more:
+**2.2 The first prototype mapped musical time → wall-clock seconds as one global scalar.**
+The removed clip-first character demo turned BPM into a uniform time-scale and
+nothing more:
 
 ```dart
-// character_demo.dart:46,47,173
 const double kAuthoredDanceBpm = 120;   // the phrase was authored at 120 BPM
 const double kDefaultDanceBpm  = 124;
 final timeScale = _clip.name == CatClips.dance.name
     ? _danceBpm / kAuthoredDanceBpm     // e.g. 124/120 = 1.033×
     : 1;
-// character_view.dart:175 — the ticker's elapsed time is simply scaled:
 final seconds = (_offset + _elapsed).inMicroseconds / 1e6 * widget.playbackRate;
 // → CharacterPainter(timeSeconds: seconds) → scene.frameAt(clip, seconds)
 ```
@@ -352,10 +351,10 @@ class BeatMap {
 }
 ```
 
-`CharacterView` then computes `timeSeconds` from `BeatMap.clipSecondsAt(elapsed,
-…)` instead of `elapsed × playbackRate` when a beat map is supplied; with no beat
-map it falls back to today's scalar (so existing demo/tests are unaffected).
-Because `clipSecondsAt` is a pure function of the (fixed) beat map, the
+The audio demo computes `timeSeconds` from
+`BeatMap.clipSecondsAt(player.position, …)` and feeds that value directly into
+`CharacterPainter`; isolated clip review stays in the frame-grid/film-strip
+harness. Because `clipSecondsAt` is a pure function of the fixed beat map, the
 film-strip "byte-identical renders" invariant holds: a given beat map yields a
 deterministic time-warp, and you can even *render the strip on the beat grid*
 (one cell per beat/subdivision) to review on-beat poses directly.
@@ -551,10 +550,9 @@ Smallest end-to-end slice that proves the whole spine (rungs 1–3 on one track)
 1. **Stand up the offline tool** (`tool/dance_audio/`): `audio → Beat This!
    (+ librosa cross-check) → §5 beat-map JSON`, with a tempo prior and the
    `human_corrected` flag. Optionally Demucs drum-stem pre-pass.
-2. **Define `BeatMap` in Dart** (`model/`) + `clipSecondsAt` (§7), with the no-map
-   fallback to today's scalar so nothing existing breaks.
-3. **Wire `CharacterView`** to use the beat map when present; keep the demo's BPM
-   slider as the no-map path.
+2. **Define `BeatMap` in Dart** (`model/`) + `clipSecondsAt` (§7).
+3. **Wire the audio demo** to use the beat map and feed the warped clock directly
+   into `CharacterPainter`.
 4. **Validate on one Afrobeats track** (e.g. the "soso" reference): generate the
    beat map, drive the existing trio, and report **BAS + F-measure/CMLt** (§12)
    plus an on-beat-grid film strip. That gives a real "how aligned is it" number
@@ -638,9 +636,8 @@ No change to the `frameAt` pipeline. Keep it additive:
   widget that owns a `media_kit` `Player`, loads the 30 s clip + its beat-map JSON
   from local paths, and paints via `CharacterPainter` directly, feeding
   `timeSeconds = beatMap.clipSecondsAt(player.position, …)`.
-- It replicates the small backdrop-asset/ticker setup `CharacterView` does (or, if
-  preferred later, add one optional `timeSecondsOverride` parameter to
-  `CharacterView` — a minimal opt-in change to an existing file).
+- It owns the backdrop/ticker setup directly and feeds `CharacterPainter`; no
+  separate ticking character widget is kept around.
 
 ### 15.6 Determinism note
 

@@ -34,8 +34,8 @@ with per-move keying notes under [`docs/research/`](./docs/research/).
 | Ground floor + per-foot contact shadows | ✅ `runtime/character_painter.dart` |
 | Dance waterfront backdrop, stage lights, and drone-show scenery | ✅ `runtime/character_painter.dart`, `demo/character_dance_to_track_demo.dart`, `features/scenery/` |
 | Film-strip + frame-grid + onion + travel + live harness | ✅ `test/.../{film_strip,frame_grid}_test.dart` |
-| Interactive demo (clip/expression/blink/wander/BPM keys) | ✅ `demo/character_demo.dart` |
-| Offline audio beat-sync (beat map → on-beat dance) | ✅ `tools/dance_audio/`, `BeatMap`, `CharacterDanceToTrackDemo` |
+| Interactive audio-backed dance demo | ✅ `demo/character_dance_to_track_demo.dart` |
+| Offline audio beat-sync (beat map → on-beat dance) | ✅ `tools/dance_audio/`, `BeatMap`, `DanceToTrackApp` |
 | Offline AI rigging (SVG → rig) | ⛔ not started (Phase 2) |
 | Batched `drawAtlas` runtime + degradation ladder | ⛔ Phase 2 |
 | Quadruped (4-leg) stance + rear-up transition | ⛔ Phase 2 |
@@ -64,19 +64,18 @@ channels. That keeps the movement review language ("frame 16 right-foot plant",
 normalized phases through the sample. The current phrase is a compact 12-count
 Afrobeats groove: an 8-count pocket plus a 4-count toe-flick bounce, with a
 small additive root pulse layered over the keyed body motion so slower tempos
-still have off-beat life. The demo previews that same authored phrase at 124 BPM
-by default, using Omah Lay's "soso" as the current movement reference: warm,
-compact, waist-led pocket before bigger stage hits. The BPM slider still spans
-80–240 BPM for review. The standalone character demo and screenshot harness can
-still use `CharacterBackdrop.waterfront`: the legacy painter-owned Lagos lagoon
-plate with alpha-mask cloud/wave motion. The audio-synced dance player now uses
-`LayeredBackdrop` from `features/scenery/` instead: the scenery is driven by the
-same audio position as the choreography, with a cloudless master-derived base,
-independent parallax cloud PNGs, animated ocean/lights, and fixed structure
-layers redrawn over those moving effects. That same scenery pass now centers a
-deterministic sky drone show that holds `Omah Lay` first, then morphs into
-`Moving`. The tail is a single ribbon driven by a 7-link drag chain; the tie is
-a keyed 2-link cloth shape; ears flick a beat behind the head bob.
+still have off-beat life. The interactive demo is song-first: it plays Omah
+Lay's "Moving", maps the authored phrase to the offline beat map, and exposes a
+video-editor-style transport with waveform scrubbing and spacebar play/pause.
+The frame-grid/film-strip harness remains the isolated clip-review surface. The
+audio-synced dance player uses `LayeredBackdrop` from `features/scenery/`: the
+scenery is driven by the same audio position as the choreography, with a
+cloudless master-derived base, independent parallax cloud PNGs, animated
+ocean/lights, and fixed structure layers redrawn over those moving effects. That
+same scenery pass now centers a deterministic sky drone show that holds
+`Omah Lay` first, then morphs into `Moving`. The tail is a single ribbon driven
+by a 7-link drag chain; the tie is a keyed 2-link cloth shape; ears flick a beat
+behind the head bob.
 
 ## Architecture
 
@@ -104,7 +103,6 @@ flowchart TD
     TM[TemporalMotionAnalyzer\nresolved continuity report]
     RN[CharacterRenderer — draws to a Canvas]
     PA[CharacterPainter — CustomPainter]
-    VW[CharacterView — ticking widget]
   end
   samples[samples/cat_in_suit.dart] --> B & DP & F
   DP --> C
@@ -115,7 +113,6 @@ flowchart TD
   SC --> TM
   SC --> RN
   PA --> SC & RN
-  VW --> PA
 ```
 
 ### Per-frame pipeline
@@ -266,8 +263,8 @@ stateDiagram-v2
   `BeatLoopBinding.barAligned` anchors a loop on a real downbeat over whole bars
   (bar-correct); `beatAligned` is the beat-level fallback. It warps only the
   *input time*, leaving `frameAt` untouched. The audio playback demo wires it
-  through `BeatLoopBinding.barAligned`; the standalone clip demo still uses the
-  manual BPM slider (see
+  through `BeatLoopBinding.barAligned`; isolated visual review uses the
+  frame-grid/film-strip harness (see
   [Audio beat-sync](#audio-beat-sync-offline-tooling--runtime-player)).
 - **`TemporalMotionAnalyzer`** — a resolved-frame diagnostic over
   `CharacterScene`. It records per-bone frame-to-frame displacement and
@@ -625,10 +622,9 @@ Pure-Dart math carries the value and is exhaustively unit-tested (one test file
 per source file): `Affine2D` algebra, FK against hand-computed joint positions,
 clip phase wrap/clamp + channel sampling, autonomic determinism + bounds, face
 blending, frame-addressed dance phrase compilation, and temporal motion
-diagnostics. Runtime is covered by `CharacterScene`/`CharacterPainter` tests and
-the `CharacterView` ticker test (`fakeAsync`-free, `tester.pump(duration)`), plus
-the film-strip harness. No `Future.delayed`, no `pumpAndSettle`, no
-`Math.random`.
+diagnostics. Runtime is covered by `CharacterScene`/`CharacterPainter` tests,
+the audio-demo helper tests, and the film-strip harness. No `Future.delayed`, no
+`pumpAndSettle`, no `Math.random`.
 
 ```bash
 fvm flutter test test/features/character/
@@ -636,15 +632,11 @@ fvm flutter test test/features/character/
 
 ## Audio beat-sync (offline tooling + runtime player)
 
-The dance is authored on a normalized beat grid (`DancePhrase` frames), but the
-mapping from those counts to wall-clock seconds differs by surface:
-
-- `demo/character_demo.dart` is clip-first and keeps the manual BPM slider
-  (`seconds = elapsed × bpm/120`) for quick isolated motion review.
-- `demo/character_dance_to_track_demo.dart` is song-first. It loads the offline
-  beat-map JSON, opens the audio file, and maps audio playback position through
-  `BeatLoopBinding.barAligned`, so the loop stays downbeat-anchored to the real
-  track.
+The dance is authored on a normalized beat grid (`DancePhrase` frames).
+`demo/character_dance_to_track_demo.dart` is the interactive runtime surface: it
+loads the offline beat-map JSON, opens the audio file, and maps audio playback
+position through `BeatLoopBinding.barAligned`, so the loop stays
+downbeat-anchored to the real track.
 
 The beat map is an offline analysis of an audio file (beats + downbeats) that
 the runtime warps the dance onto.
@@ -674,13 +666,10 @@ flowchart LR
 - `tools/dance_audio/` — the offline Python tool (Beat This! + librosa) that
   produces the beat-map JSON `BeatMap` consumes; see its README for the schema.
 
-In the audio player, the ticker swaps the standalone demo's constant scalar for
-the beat-map warp — everything downstream of `frameAt` is unchanged:
+In the audio player, the ticker uses the beat-map warp; everything downstream of
+`frameAt` is unchanged:
 
 ```dart
-// standalone demo (constant tempo, no phase anchor):
-final seconds = elapsed * (danceBpm / kAuthoredDanceBpm);
-
 // audio demo (on-beat, drift-following, bar-anchored):
 final binding = BeatLoopBinding.barAligned(beatMap, bars: kDancePhraseBars);
 final seconds = beatMap.clipSecondsAt(

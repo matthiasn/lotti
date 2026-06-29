@@ -160,8 +160,8 @@ String formatDancePlaybackTimestamp(double seconds) {
   return '$minText:$secText.$millisText';
 }
 
-/// Bars the 32-frame [CatClips.dance] phrase spans: `duration 6 s` at
-/// `kAuthoredDanceBpm 120` = 12 beats = 3 bars of 4/4.
+/// Bars the 32-frame [CatClips.dance] phrase spans: `duration 6 s` at the
+/// authored 120 BPM = 12 beats = 3 bars of 4/4.
 const int kDancePhraseBars = 3;
 
 /// Section-aware choreography: a section below this fraction of the energy range

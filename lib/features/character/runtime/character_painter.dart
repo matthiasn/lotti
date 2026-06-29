@@ -323,11 +323,11 @@ class CharacterPainter extends CustomPainter {
   /// stage size.
   static const double _directorPivotFraction = 0.88;
 
-  /// Zoom-pivot fraction for the **built-in** [_danceCamera] push-in (the legacy
-  /// per-phrase move used by `character_demo.dart` when no [cameraOverride] is
-  /// supplied). Its keyframes were authored around a head/torso-height pivot, so
-  /// it keeps that pivot — the director's feet-planted pivot above is a property
-  /// of the director's framing, not of this older move.
+  /// Zoom-pivot fraction for the built-in [_danceCamera] push-in when no
+  /// [cameraOverride] is supplied. Its keyframes were authored around a
+  /// head/torso-height pivot, so it keeps that pivot — the director's
+  /// feet-planted pivot above is a property of the director's framing, not of
+  /// this older move.
   static const double _builtInDancePivotFraction = 0.56;
 
   @override

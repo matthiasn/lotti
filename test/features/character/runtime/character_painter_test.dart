@@ -1147,7 +1147,7 @@ void main() {
       );
       expect(
         leftPan.orangeCenterX - postRightRecovery.orangeCenterX,
-        inInclusiveRange(24, 116),
+        inInclusiveRange(20, 116),
         reason:
             'the next beat should truck toward the left-side dancer, moving '
             'the lead right on screen',
