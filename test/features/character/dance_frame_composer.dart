@@ -294,8 +294,15 @@ class DanceFrameComposer {
     )..layout(maxWidth: size.width - 96);
     final left = (size.width - painter.width) / 2;
     const top = 20.0;
+    const insetH = DanceCaption.insetH;
+    const insetV = DanceCaption.insetV;
     final bg = RRect.fromRectAndRadius(
-      Rect.fromLTWH(left - 16, top, painter.width + 32, painter.height + 16),
+      Rect.fromLTWH(
+        left - insetH,
+        top,
+        painter.width + 2 * insetH,
+        painter.height + 2 * insetV,
+      ),
       const Radius.circular(DanceCaption.cornerRadius),
     );
     canvas.drawRRect(
@@ -303,7 +310,7 @@ class DanceFrameComposer {
       Paint()
         ..color = Colors.black.withValues(alpha: DanceCaption.backdropAlpha),
     );
-    painter.paint(canvas, Offset(left, top + 8));
+    painter.paint(canvas, Offset(left, top + insetV));
   }
 }
 

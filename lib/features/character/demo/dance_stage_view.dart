@@ -362,10 +362,12 @@ class DanceCaption extends StatelessWidget {
   final List<DanceWord> words;
   final double positionSeconds;
 
-  /// Backdrop alpha + corner radius for the caption box. Shared by this widget
-  /// and the offline canvas caption so the two cannot drift.
+  /// Backdrop alpha, corner radius and text insets for the caption box. Shared
+  /// by this widget and the offline canvas caption so the two cannot drift.
   static const double backdropAlpha = 0.45;
   static const double cornerRadius = 10;
+  static const double insetH = 16;
+  static const double insetV = 8;
 
   /// Index of the lyric word to caption: the most recent word that has started,
   /// hidden during instrumental gaps (>2 s after the last word ended).
@@ -409,7 +411,10 @@ class DanceCaption extends StatelessWidget {
         borderRadius: BorderRadius.circular(cornerRadius),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: insetH,
+          vertical: insetV,
+        ),
         child: RichText(
           text: TextSpan(
             children: [
