@@ -5306,11 +5306,11 @@ class CatClips {
     // — a low gliding creep, not a continuous side-to-side pendulum. Modest
     // amplitude so it reads as a calm float, especially when the whole trio is
     // on it in the bridge.
-    DanceBodyKey(0, rootDx: -18, rootDy: 22, chestScaleY: 0.97),
-    DanceBodyKey(12, rootDx: -18, rootDy: 22, chestScaleY: 0.97), // settle left
-    DanceBodyKey(16, rootDx: 18, rootDy: 22, chestScaleY: 0.97), // ease across
-    DanceBodyKey(28, rootDx: 18, rootDy: 22, chestScaleY: 0.97), // settle right
-    DanceBodyKey(32, rootDx: -18, rootDy: 22, chestScaleY: 0.97), // ease back
+    DanceBodyKey(0, rootDx: -28, rootDy: 22, chestScaleY: 0.97),
+    DanceBodyKey(12, rootDx: -28, rootDy: 22, chestScaleY: 0.97), // settle left
+    DanceBodyKey(16, rootDx: 28, rootDy: 22, chestScaleY: 0.97), // ease across
+    DanceBodyKey(28, rootDx: 28, rootDy: 22, chestScaleY: 0.97), // settle right
+    DanceBodyKey(32, rootDx: -28, rootDy: 22, chestScaleY: 0.97), // ease back
   ];
   // Fast low heel-toe shuffle taps (sole skims, never lifts past shin-low); the
   // lateral travel comes from the root glide, not the feet.
@@ -5356,18 +5356,21 @@ class CatClips {
   // trails the lateral glide (both hands translate the same way, ~2 frames
   // behind the COM — passive overlapping action, no active gesture). Wider
   // lateral throw than before so they read loose, not welded at center.
+  // The swing extremes (frames 8/24) use easeOutBack so the passive paw
+  // pendulum continues PAST the reversal then settles back — overlapping
+  // follow-through that clearly lags the glide. Needs the non-smooth channel.
   static const _pounceHandLTargetKeys = [
     DanceIkTargetKey(0, x: -32, y: 14),
-    DanceIkTargetKey(8, x: -50, y: 16), // trailing left (lags the glide)
+    DanceIkTargetKey(8, x: -50, y: 16, ease: Ease.easeOutBack), // trail left
     DanceIkTargetKey(16, x: -32, y: 14),
-    DanceIkTargetKey(24, x: -14, y: 16), // trailing right
+    DanceIkTargetKey(24, x: -14, y: 16, ease: Ease.easeOutBack), // trail right
     DanceIkTargetKey(32, x: -32, y: 14),
   ];
   static const _pounceHandRTargetKeys = [
     DanceIkTargetKey(0, x: 32, y: 14),
-    DanceIkTargetKey(8, x: 14, y: 16), // trailing left
+    DanceIkTargetKey(8, x: 14, y: 16, ease: Ease.easeOutBack), // trail left
     DanceIkTargetKey(16, x: 32, y: 14),
-    DanceIkTargetKey(24, x: 50, y: 16), // trailing right
+    DanceIkTargetKey(24, x: 50, y: 16, ease: Ease.easeOutBack), // trail right
     DanceIkTargetKey(32, x: 32, y: 14),
   ];
   static final KeyframeIkTargetChannel _pounceFootLTarget = _dancePhrase
@@ -5375,9 +5378,9 @@ class CatClips {
   static final KeyframeIkTargetChannel _pounceFootRTarget = _dancePhrase
       .ikTargetChannel(_pounceFootRTargetKeys, smooth: true);
   static final KeyframeIkTargetChannel _pounceHandLTarget = _dancePhrase
-      .ikTargetChannel(_pounceHandLTargetKeys, smooth: true);
+      .ikTargetChannel(_pounceHandLTargetKeys);
   static final KeyframeIkTargetChannel _pounceHandRTarget = _dancePhrase
-      .ikTargetChannel(_pounceHandRTargetKeys, smooth: true);
+      .ikTargetChannel(_pounceHandRTargetKeys);
   static final List<LimbIkTarget> _pounceLimbTargets = [
     _danceLimbTargets[0].withChannel(_pounceHandLTarget),
     _danceLimbTargets[1].withChannel(_pounceHandRTarget),
