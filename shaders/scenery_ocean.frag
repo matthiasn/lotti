@@ -139,6 +139,14 @@ void main() {
       0.55 + 0.45 * fbm(vec2(x * 5.0, depth * 30.0 - uTime * 0.18));
   foamA = clamp(
       foamA + lip * lipWob * 0.55 * clamp(uFoamDensity, 0.0, 1.0), 0.0, 0.95);
+  // NEAR foam: a broader broken wash where the lagoon laps the foreground
+  // seawall/deck. This band is big and close to camera, so it is the foam that
+  // actually reads — the far waterline lip alone is too distant to register.
+  float nearLip =
+      smoothstep(0.80, 0.93, depth) * (1.0 - smoothstep(0.93, 1.0, depth));
+  float nearWob = 0.5 + 0.5 * fbm(vec2(x * 6.5, depth * 22.0 - uTime * 0.14));
+  foamA = clamp(
+      foamA + nearLip * nearWob * 0.6 * clamp(uFoamDensity, 0.0, 1.0), 0.0, 0.95);
 
   // --- Moon glint: a soft, broken vertical shimmer under uMoonX. Kept gentle
   // (the plate already paints the city's reflections); ripples horizontally so
