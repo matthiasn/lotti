@@ -87,12 +87,15 @@ class DanceTransportBar extends StatelessWidget {
   }
 
   Widget _transportRow() {
-    // Program-monitor layout: time readout left, transport controls centred,
-    // metadata right — three anchored zones, so there is no hollow middle.
+    // Transport + time read as one left-anchored unit; metadata sits right, with
+    // a single intentional gap between them (the full-width timeline below
+    // carries the middle) — no hollow centre.
     return Row(
       children: [
+        _transportControls(),
+        const SizedBox(width: 18),
         _timeGroup(),
-        Expanded(child: Center(child: _transportControls())),
+        const Spacer(),
         _metaGroup(),
       ],
     );
@@ -202,13 +205,15 @@ class DanceTransportBar extends StatelessWidget {
     required String tooltip,
     required VoidCallback onTap,
   }) {
-    // Active glyph is WHITE (not teal): the teal wash + underline carry the
-    // on-state, so the solid play disc stays the single dominant teal mass.
+    // Unmistakable on/off: an active cell lights up with a strong teal wash +
+    // a white glyph + a thick underline; an inactive cell is a dim glyph on the
+    // bare group. The play disc still dominates (solid fill, larger, glow), so
+    // a bold active wash here doesn't steal its primacy.
     final color = !enabled
-        ? _Chrome.textLow
+        ? const Color(0xFF3C434D)
         : active
         ? _Chrome.textHi
-        : _Chrome.textMid;
+        : _Chrome.textLow;
     return Tooltip(
       message: tooltip,
       child: InkWell(
@@ -219,9 +224,9 @@ class DanceTransportBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 13),
           decoration: active && enabled
               ? const BoxDecoration(
-                  color: Color(0x264DD6C0),
+                  color: Color(0x594DD6C0),
                   border: Border(
-                    bottom: BorderSide(color: _Chrome.accent, width: 2),
+                    bottom: BorderSide(color: _Chrome.accent, width: 2.5),
                   ),
                 )
               : null,
@@ -374,10 +379,12 @@ class DanceTransportBar extends StatelessWidget {
         ),
         const SizedBox(width: 7),
         Text(
-          label,
+          // Uppercase to match the timeline's marker pills (one label system).
+          label.toUpperCase(),
           style: const TextStyle(
             color: _Chrome.textHi,
-            fontSize: 14,
+            fontSize: 13,
+            letterSpacing: 0.6,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -589,7 +596,6 @@ class _DanceTimelinePainter extends CustomPainter {
     final mid = (waveTop + waveBottom) / 2;
 
     _paintSectionBands(canvas, size, waveTop);
-    _paintBeatGrid(canvas, size, waveTop);
     _paintBaseline(canvas, size, mid);
     _paintWaveform(
       canvas,
@@ -599,6 +605,8 @@ class _DanceTimelinePainter extends CustomPainter {
       mid: mid,
       px: px,
     );
+    // The grid overlays the waveform so the downbeats actually read through it.
+    _paintBeatGrid(canvas, size, waveTop);
     _paintRuler(canvas, size);
     _paintMarkers(canvas, size);
     _paintPlayhead(canvas, size, px);
@@ -611,22 +619,20 @@ class _DanceTimelinePainter extends CustomPainter {
       final sx1 = _x(s.end, size.width);
       final active = positionSec >= s.start && positionSec < s.end;
       final hue = _sectionHue(s.label);
-      canvas
-        // Clip-region header: a saturated colored top-edge across the lane —
-        // reads as a clip's colour bar WITHOUT flooding/dirtying the waveform.
-        ..drawRect(
-          Rect.fromLTRB(sx0, waveTop, sx1, waveTop + 4),
-          Paint()..color = hue.withValues(alpha: active ? 0.95 : 0.55),
-        )
-        // Boundary line spanning the full height (ties marker → header → wave).
-        ..drawRect(
-          Rect.fromLTWH(sx0, 0, 1, size.height),
-          Paint()..color = const Color(0x1FFFFFFF),
-        );
+      // Boundary line spanning the full height (ties marker → header → wave).
+      canvas.drawRect(
+        Rect.fromLTWH(sx0, 0, 1, size.height),
+        Paint()..color = const Color(0x1FFFFFFF),
+      );
       if (active) {
-        // The live region: a NEUTRAL cool wash + a hue frame — no hue flood over
-        // the data layer, so the waveform (and the whole ahead side) stays clean.
+        // The live region gets the colored clip top-edge + a neutral cool wash +
+        // a hue frame; inactive sections rely on their marker pill alone, so the
+        // wave-lane top stays clean and the current clip clearly pops.
         canvas
+          ..drawRect(
+            Rect.fromLTRB(sx0, waveTop, sx1, waveTop + 4),
+            Paint()..color = hue.withValues(alpha: 0.95),
+          )
           ..drawRect(
             Rect.fromLTRB(sx0, waveTop + 4, sx1, size.height),
             Paint()..color = const Color(0x0EFFFFFF),
@@ -655,10 +661,12 @@ class _DanceTimelinePainter extends CustomPainter {
     for (var t = barSec; t < trackDurationSec; t += barSec, bar++) {
       final x = _x(t, size.width);
       final phrase = (bar - 1) % 4 == 0; // downbeats of 4-bar phrases
+      // Drawn over the waveform: phrase downbeats read clearly, bar lines stay a
+      // faint texture so the grid is present without striping the lane.
       canvas.drawRect(
         Rect.fromLTWH(x, waveTop, 1, h),
         Paint()
-          ..color = phrase ? const Color(0x33FFFFFF) : const Color(0x0CFFFFFF),
+          ..color = phrase ? const Color(0x47FFFFFF) : const Color(0x0AFFFFFF),
       );
     }
   }
