@@ -2,6 +2,7 @@ import 'dart:ui' show Color, Size;
 
 import 'package:lotti/features/scenery/layers/atmospheric_haze_layer.dart';
 import 'package:lotti/features/scenery/layers/backdrop_layer.dart';
+import 'package:lotti/features/scenery/layers/bridge_police_layer.dart';
 import 'package:lotti/features/scenery/layers/city_lights_layer.dart';
 import 'package:lotti/features/scenery/layers/cloud_parallax_layer.dart';
 import 'package:lotti/features/scenery/layers/deck_glow_layer.dart';
@@ -87,6 +88,13 @@ class BackdropScene {
         AtmosphericHazeLayer(),
         ImageLayer(SceneryAssets.foreground),
         DeckGlowLayer(),
+        // Police cordon on the bridge roadway: blue (and a few red) emergency
+        // strobes that stop traffic while the drones stage on the cleared deck,
+        // timed to the drone loop so they roll in before launch and clear out as
+        // the formation climbs away. Drawn just under the drones (both are the
+        // post-haze "active light show" passes) so the dancers still occlude any
+        // strobe behind them.
+        BridgePoliceLayer(),
         // Drones are the highest backdrop art pass: the takeoff starts as
         // unlit dark dots and switches on above the cable-stayed bridge, so
         // painted bridge cables/trees must not cut gaps through the aircraft.

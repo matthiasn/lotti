@@ -52,6 +52,7 @@ flowchart BT
   glow[DeckGlowLayer]
   fg[foreground.png]
   lights[CityLightsLayer]
+  police[BridgePoliceLayer cordon]
   launchDrones[DroneShowLayer launch/ascent pass]
   skyDrones[DroneShowLayer sky pass]
   yacht[yacht.png]
@@ -62,7 +63,7 @@ flowchart BT
   far[clouds_far.png parallax]
   base[blue_hour_cloudless.png]
 
-  base --> far --> mid --> near --> ocean --> city --> yacht --> lights --> fg --> glow --> skyDrones --> launchDrones --> child --> vignette
+  base --> far --> mid --> near --> ocean --> city --> yacht --> lights --> fg --> glow --> police --> skyDrones --> launchDrones --> child --> vignette
 ```
 
 The ordering is the important contract:
@@ -76,6 +77,11 @@ The ordering is the important contract:
 - `CityLightsLayer` draws additive windows, yacht lamps, and beacon glows on top
   of the structure layers.
 - `foreground.png` and `DeckGlowLayer` sit over the animated water/deck area.
+- `BridgePoliceLayer` strobes a blue (plus sparse red) emergency cordon along the
+  bridge roadway. It is timed to the drone-show loop: the lights roll in before
+  launch, hold while the drones stage on the cleared road, then clear out as the
+  formation climbs — so the road is dark again once the show is in the sky. Drawn
+  with the drones as a post-haze active light pass; suppressed under reduce-motion.
 - `DroneShowLayer.sky()` and `DroneShowLayer.launchRoad()` are the highest
   background art passes. The ascent starts as small unlit aircraft dots, then
   switches on above the cable-stayed bridge; drawing both passes here keeps

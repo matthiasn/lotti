@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/scenery/layers/atmospheric_haze_layer.dart';
+import 'package:lotti/features/scenery/layers/bridge_police_layer.dart';
 import 'package:lotti/features/scenery/layers/city_lights_layer.dart';
 import 'package:lotti/features/scenery/layers/cloud_parallax_layer.dart';
 import 'package:lotti/features/scenery/layers/deck_glow_layer.dart';
@@ -70,6 +71,7 @@ void main() {
         );
         final glow = layers.indexWhere((l) => l is DeckGlowLayer);
         final haze = layers.indexWhere((l) => l is AtmosphericHazeLayer);
+        final police = layers.indexWhere((l) => l is BridgePoliceLayer);
         expect(plate, 0);
         expect(cloud, greaterThan(plate));
         // Animated water sits over the painted plate.
@@ -92,6 +94,11 @@ void main() {
         // never streaks the planks; the lantern glow pools on the now-lit deck.
         expect(deck, greaterThan(ocean));
         expect(glow, greaterThan(deck));
+        // The police road-closure cordon sits over the deck glow and under the
+        // drones — both are post-haze active light passes — so the strobes read
+        // on the bridge roadway just before the formation launches off it.
+        expect(police, greaterThan(glow));
+        expect(police, lessThan(skyDrones));
         // Drone passes are the highest background art pass: bridge cables,
         // palms and deck masks must not slice gaps through the ascent.
         expect(skyDrones, greaterThan(glow));
