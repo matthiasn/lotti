@@ -11,10 +11,11 @@ import 'package:flutter/services.dart';
 import 'package:lotti/features/character/demo/dance_camera_director.dart';
 import 'package:lotti/features/character/demo/dance_camera_rig.dart';
 import 'package:lotti/features/character/demo/dance_lip_sync.dart';
+import 'package:lotti/features/character/demo/dance_loaders.dart';
+import 'package:lotti/features/character/demo/dance_performance.dart';
 import 'package:lotti/features/character/demo/dance_transport_bar.dart';
 import 'package:lotti/features/character/engine/autonomic.dart';
 import 'package:lotti/features/character/model/beat_map.dart';
-import 'package:lotti/features/character/model/clip.dart';
 import 'package:lotti/features/character/model/face.dart';
 import 'package:lotti/features/character/runtime/character_painter.dart';
 import 'package:lotti/features/character/runtime/character_renderer.dart';
@@ -143,55 +144,10 @@ double get kDanceAppExportWarmupSec =>
 const Size kDanceDemoWindowSize = Size(1600, 900);
 const double kDanceDemoAspectRatio = 16 / 9;
 
-/// Bars the 32-frame [CatClips.dance] phrase spans: `duration 6 s` at the
-/// authored 120 BPM = 12 beats = 3 bars of 4/4.
-const int kDancePhraseBars = 3;
-
-/// Section-aware choreography: a section below this fraction of the energy range
-/// (and long enough, see [kMinCalmSeconds]) is "calm" — the trio eases into idle
-/// instead of the energetic beat-locked dance.
-const double kSectionEnergyThreshold = 0.5;
-
-/// Calm sections shorter than this stay energetic, to avoid flicker on the short
-/// transition sections between routines.
-const double kMinCalmSeconds = 4;
-
-/// Lip-sync mouth easing: each Rhubarb cue snaps the jaw open fast (attack) and
-/// relaxes it shut more slowly (release), so a syllable punches then settles
-/// instead of fluttering. The cue carries the target opening; these are just the
-/// time constants for following it.
-const double kMouthAttackSeconds = 0.045;
-const double kMouthReleaseSeconds = 0.12;
-
-typedef _Section = ({
-  double start,
-  double end,
-  String label,
-  bool energetic,
-  double level, // normalized 0..1 energy across the track's sections
-});
-typedef _Word = ({
-  double start,
-  double end,
-  String word,
-  String voice,
-  String section,
-});
-
-/// A Rhubarb mouth-shape cue: shape letter (A-F, G, H, X) active over a span.
-typedef _Cue = ({double start, double end, String shape});
-
-/// Sections the whole trio sings (a group hook): the backups' mouths join the
-/// frontman on the *lead* words here, not just on the `(...)` ad-libs.
-const Set<String> kGroupSections = {'chorus', 'post-chorus', 'outro'};
-typedef _Stage = ({
-  Clip lead,
-  List<Clip> ensemble,
-  double seconds,
-  _Section? section,
-  bool energetic,
-  bool synchronous, // false = canon (stagger the trio's phase, e.g. Pouncing)
-});
+// The beat-synced choreography derivation (which move, warped clock, beat,
+// camera context), its data types, the track-config constants and the side-file
+// loaders all live in the shared dance-core modules so the live player and the
+// offline frame composer derive identical content from one source of truth.
 
 final class _AppFrameEncoder {
   _AppFrameEncoder._(
@@ -389,105 +345,24 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   final Player _player = Player();
   final GlobalKey _stageBoundaryKey = GlobalKey();
 
-  // Cached clips: rebuilding a clip compiles the whole DancePhrase, so build all
-  // six dance moves once and reuse them across sections. They share the same
-  // 6s/32-frame phrase, so a trio (and section-to-section swaps) stay beat-synced.
-  late final Clip _shaku = CatClips.shaku;
-  late final Clip _zanku = CatClips.zanku;
-  late final Clip _azonto = CatClips.azonto;
-  late final Clip _buga = CatClips.buga;
-  late final Clip _pounce = CatClips.pouncingCat;
-  late final Clip _sekem = CatClips.sekem;
-  late final Clip _idle = CatClips.idle;
-  late final List<Clip> _idleEnsemble = [_idle, _idle, _idle];
-
-  // Energy-aware choreography: map a section's normalized energy level (0 = the
-  // track's quietest section, 1 = its loudest) to a trio drawn from all six
-  // moves, building from the gliding Pouncing Cat in the calm pockets up to the
-  // full Legwork + Stomp + Buga-hit at the peaks. ensemble[0] is the lead.
-  // The full, lyric-driven choreography: each semantic section of the song (from
-  // the synced lyrics) gets its own routine across all six moves, so the dance
-  // reads as a designed set — verses groove, the chorus punches its hook into a
-  // unison Buga hit, the bridge drops to the Pouncing-Cat glide for contrast,
-  // the outro winds down. [phase] is 0..1 progress through the current section.
-  // Falls back to the energy-level map for untagged sections / no lyrics.
-  ({Clip lead, List<Clip> ensemble}) _choreoTrioForSection(
-    String section,
-    double phase,
-    double level,
-    int
-    variant, // section occurrence (0 = first), so repeats don't read identical
-  ) {
-    switch (section) {
-      case 'chorus':
-      case 'post-chorus':
-        // The hook. The back half always lands the lo-lo-lo-BUGA unison hit (the
-        // recognisable money shot); the front half rotates per chorus so the
-        // repeats don't read identical.
-        if (phase >= 0.55) {
-          return (lead: _buga, ensemble: [_buga, _buga, _buga]);
-        }
-        final fronts = [
-          [_zanku, _sekem, _buga],
-          [_sekem, _zanku, _buga],
-          [_zanku, _buga, _sekem],
-        ];
-        final front = fronts[variant % fronts.length];
-        return (lead: front[0], ensemble: front);
-      case 'pre-chorus':
-        // Build into the chorus: groovy lead, legwork + stomp rising behind.
-        return (lead: _shaku, ensemble: [_shaku, _zanku, _sekem]);
-      case 'verse':
-        // Groovy storytelling: the mime/arms trio; swap the lead per verse.
-        return variant.isEven
-            ? (lead: _azonto, ensemble: [_azonto, _shaku, _zanku])
-            : (lead: _shaku, ensemble: [_shaku, _azonto, _zanku]);
-      case 'bridge':
-        // The deliberate low contrast: the whole trio on the Pouncing-Cat glide.
-        return (lead: _pounce, ensemble: [_pounce, _pounce, _pounce]);
-      case 'outro':
-        // Wind down: the glide eases out, one cat still grooving.
-        return (lead: _pounce, ensemble: [_pounce, _pounce, _shaku]);
-      default:
-        // Intro / untagged: follow the raw energy level.
-        return _choreoTrioByLevel(level);
-    }
-  }
-
-  // Energy-only fallback (no lyrics): map the section's normalized level to a
-  // trio, building from the Pouncing-Cat glide up to the unison Buga hit.
-  ({Clip lead, List<Clip> ensemble}) _choreoTrioByLevel(double level) {
-    if (level >= 0.90) return (lead: _buga, ensemble: [_buga, _buga, _buga]);
-    if (level >= 0.78) {
-      return (lead: _zanku, ensemble: [_zanku, _sekem, _buga]);
-    }
-    if (level >= 0.62) {
-      return (lead: _shaku, ensemble: [_shaku, _zanku, _sekem]);
-    }
-    if (level >= 0.45) {
-      return (lead: _shaku, ensemble: [_shaku, _azonto, _zanku]);
-    }
-    if (level >= 0.28) {
-      return (lead: _azonto, ensemble: [_azonto, _shaku, _pounce]);
-    }
-    return (lead: _pounce, ensemble: [_pounce, _pounce, _pounce]);
-  }
-
   late final Ticker _ticker; // 60 fps repaint pump; time comes from the player.
 
   BeatMap? _map;
-  BeatLoopBinding? _binding;
+  // The shared per-frame derivation (which move, warped clock, beat, camera
+  // context). Null until the beat map loads; the player then delegates every
+  // frame to it so the offline composer renders identically. It also holds the
+  // beat-loop binding and structural sections, so the State keeps no copies.
+  DancePerformance? _perf;
   List<double>? _amplitudes; // full-track waveform, normalized 0..1
-  List<_Section> _sections = const [];
-  // Section bands for the transport timeline, mapped from [_sections] once on
-  // load so the bar doesn't re-allocate the list every frame.
+  // Section bands for the transport timeline, mapped from the structural
+  // sections once on load so the bar doesn't re-allocate the list every frame.
   List<DanceWaveformSection> _waveformSections = const [];
-  List<_Word> _words = const []; // synced lyrics (optional)
+  List<DanceWord> _words = const []; // synced lyrics (optional)
   // Contiguous semantic-section spans (chorus/verse/bridge/...) collapsed from the
   // per-word section tags; the virtual director reads the section label, progress
   // within it, and bar-from-its-downbeat here. Empty without a lyrics file.
-  List<({double start, double end, String section})> _sectionSpans = const [];
-  List<_Cue> _cues = const []; // Rhubarb lip-sync cues (optional)
+  List<DanceSectionSpan> _sectionSpans = const [];
+  List<DanceCue> _cues = const []; // Rhubarb lip-sync cues (optional)
   double _trackDurationSec = 0;
   double _bpm = 0;
   bool _loop = true;
@@ -615,19 +490,23 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   }
 
   void _advancePerformance({required double pos, required double dt}) {
+    final perf = _perf;
     final cue = mouthForCue(cueShapeAt(_cues, pos));
     final leadOn =
-        _words.isEmpty || _voiceActive(pos, (w) => w.voice == 'lead');
-    final bgOn = _voiceActive(
-      pos,
-      (w) =>
-          w.voice == 'background' ||
-          (w.voice == 'lead' && kGroupSections.contains(w.section)),
-    );
+        _words.isEmpty ||
+        (perf?.voiceActive(pos, (w) => w.voice == 'lead') ?? false);
+    final bgOn =
+        perf?.voiceActive(
+          pos,
+          (w) =>
+              w.voice == 'background' ||
+              (w.voice == 'lead' && kGroupSections.contains(w.section)),
+        ) ??
+        false;
     if (leadOn) _leadShape = cue.shape;
     if (bgOn) _bgShape = cue.shape;
-    final stage = _stageAt(pos);
-    final ctx = _directorContext(pos, energetic: stage.energetic);
+    final stage = perf?.stageAt(pos) ?? danceIdleStage(pos);
+    final ctx = perf?.directorContext(pos, energetic: stage.energetic);
     final target = ctx == null ? _liveShot : cameraShot(ctx);
     _liveShot = _cameraRig.update(
       target: target,
@@ -636,18 +515,8 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
           (isHardCut(ctx) || isChorusDrop(ctx) || isBridgeCut(ctx)),
       dt: dt,
     );
-    _leadMouth = _easeMouth(_leadMouth, leadOn ? cue.open : 0.0, dt);
-    _bgMouth = _easeMouth(_bgMouth, bgOn ? cue.open : 0.0, dt);
-  }
-
-  /// Eases a mouth-open value toward [target] with a fast attack and slower
-  /// release (frame-rate independent), so each sung syllable snaps open and then
-  /// relaxes shut instead of fluttering symmetrically.
-  double _easeMouth(double current, double target, double dt) {
-    final tc = target > current ? kMouthAttackSeconds : kMouthReleaseSeconds;
-    var k = dt / tc;
-    if (k > 1) k = 1;
-    return current + (target - current) * k;
+    _leadMouth = easeDanceMouth(_leadMouth, leadOn ? cue.open : 0.0, dt);
+    _bgMouth = easeDanceMouth(_bgMouth, bgOn ? cue.open : 0.0, dt);
   }
 
   Future<void> _load() async {
@@ -688,21 +557,31 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
             ),
           )
           .toList();
-      final sections = _classifySections(rawSections, amplitudes, duration);
-      final words = await _loadWords();
-      final cues = await _loadCues();
-      final spans = _buildSectionSpans(words, duration);
+      final sections = classifyDanceSections(rawSections, amplitudes, duration);
+      final words = await loadDanceWords(kDanceWordsPath);
+      final cues = await loadDanceCues(kDanceCuesPath);
+      final spans = buildDanceSectionSpans(words, duration);
+      // Anchor the looping phrase on the first downbeat and span whole bars; the
+      // 3-bar loop then stays beat-locked for the entire track.
+      final binding = BeatLoopBinding.barAligned(map, bars: kDancePhraseBars);
+      // The single source of truth for the per-frame derivation; the offline
+      // composer builds the same object so its renders match this player.
+      final perf = DancePerformance(
+        map: map,
+        binding: binding,
+        sections: sections,
+        sectionSpans: spans,
+        trackDurationSec: duration,
+        words: words,
+      );
 
       if (!mounted) return;
       setState(() {
         _map = map;
         _trackDurationSec = duration;
         _bpm = (tempo?['global_bpm'] as num?)?.toDouble() ?? 0;
-        // Anchor the looping phrase on the first downbeat and span whole bars;
-        // the 3-bar loop then stays beat-locked for the entire track.
-        _binding = BeatLoopBinding.barAligned(map, bars: kDancePhraseBars);
+        _perf = perf;
         _amplitudes = amplitudes;
-        _sections = sections;
         _waveformSections = _buildWaveformSections(spans, sections, duration);
         _words = words;
         _sectionSpans = spans;
@@ -829,104 +708,13 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     }
   }
 
-  /// Tags each detected section energetic/calm by its mean waveform energy
-  /// (relative to the track's energy range). Calm only when genuinely low-energy
-  /// AND long enough — short transition sections stay energetic to avoid flicker.
-  List<_Section> _classifySections(
-    List<({double start, double end, String label})> raw,
-    List<double> amplitudes,
-    double duration,
-  ) {
-    if (raw.isEmpty || amplitudes.isEmpty || duration <= 0) {
-      return [
-        for (final s in raw)
-          (
-            start: s.start,
-            end: s.end,
-            label: s.label,
-            energetic: true,
-            level: 1.0,
-          ),
-      ];
-    }
-    final n = amplitudes.length;
-    double energyOf(double start, double end) {
-      var i0 = (start / duration * n).floor();
-      var i1 = (end / duration * n).ceil();
-      if (i0 < 0) i0 = 0;
-      if (i0 >= n) i0 = n - 1;
-      if (i1 > n) i1 = n;
-      if (i1 <= i0) i1 = i0 + 1;
-      var sum = 0.0;
-      for (var i = i0; i < i1; i++) {
-        sum += amplitudes[i];
-      }
-      return sum / (i1 - i0);
-    }
-
-    final energies = [for (final s in raw) energyOf(s.start, s.end)];
-    var minE = energies.first;
-    var maxE = energies.first;
-    for (final e in energies) {
-      if (e < minE) minE = e;
-      if (e > maxE) maxE = e;
-    }
-    final threshold = minE + kSectionEnergyThreshold * (maxE - minE);
-    final range = maxE - minE;
-    return [
-      for (var i = 0; i < raw.length; i++)
-        (
-          start: raw[i].start,
-          end: raw[i].end,
-          label: raw[i].label,
-          energetic:
-              !(energies[i] < threshold &&
-                  (raw[i].end - raw[i].start) >= kMinCalmSeconds),
-          level: range > 0 ? (energies[i] - minE) / range : 1.0,
-        ),
-    ];
-  }
-
-  _Section? _sectionAt(double pos) {
-    for (final s in _sections) {
-      if (pos >= s.start && pos < s.end) return s;
-    }
-    return _sections.isEmpty ? null : _sections.last;
-  }
-
-  /// Collapses the per-word `_Word.section` tags into contiguous spans — each
-  /// chorus / verse / bridge occurrence becomes its own span — so the director
-  /// can report progress WITHIN the current section and the bar from its
-  /// downbeat. The last span runs to [duration]; earlier ones are trimmed to the
-  /// next span's start. Empty when there are no tagged words.
-  static List<({double start, double end, String section})> _buildSectionSpans(
-    List<_Word> words,
-    double duration,
-  ) {
-    final spans = <({double start, double end, String section})>[];
-    for (final w in words) {
-      final section = w.section.toLowerCase();
-      if (spans.isEmpty || spans.last.section != section) {
-        spans.add((start: w.start, end: duration, section: section));
-      }
-    }
-    for (var i = 0; i < spans.length - 1; i++) {
-      spans[i] = (
-        start: spans[i].start,
-        end: spans[i + 1].start,
-        section: spans[i].section,
-      );
-    }
-    return spans;
-  }
-
   /// The transport timeline's section bands: the musical (lyric) sections when
   /// available — labelled Verse/Chorus/Bridge/… with a leading Intro for any
   /// pre-vocal gap — else the structural energy sections (A/B/C/D). Musical
   /// names give the markers real information scent instead of recycled letters.
   static List<DanceWaveformSection> _buildWaveformSections(
-    List<({double start, double end, String section})> spans,
-    List<_Section> structural,
+    List<DanceSectionSpan> spans,
+    List<DanceSection> structural,
     double duration,
   ) {
     if (spans.isEmpty) {
@@ -945,130 +733,11 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         DanceWaveformSection(
           start: s.start,
           end: s.end,
-          label: _sectionDisplayName(s.section),
+          label: danceSectionDisplayName(s.section),
         ),
       );
     }
     return out;
-  }
-
-  /// A short, human display name for a lyric section tag.
-  static String _sectionDisplayName(String section) {
-    switch (section.toLowerCase()) {
-      case 'pre-chorus':
-        return 'Pre';
-      case 'post-chorus':
-        return 'Post';
-      case 'chorus':
-        return 'Chorus';
-      case 'verse':
-        return 'Verse';
-      case 'bridge':
-        return 'Bridge';
-      case 'intro':
-        return 'Intro';
-      case 'outro':
-        return 'Outro';
-      case '':
-        return '—';
-      default:
-        return section[0].toUpperCase() + section.substring(1);
-    }
-  }
-
-  /// Where [pos] sits inside the current semantic section: its label and progress
-  /// 0..1. Defaults to the empty section (→ the director's grounded medium) when
-  /// no span covers [pos].
-  ({String section, double phase}) _sectionInfoAt(double pos) {
-    for (final s in _sectionSpans) {
-      if (pos >= s.start && pos < s.end) {
-        final span = (s.end - s.start) <= 0 ? 1.0 : s.end - s.start;
-        return (
-          section: s.section,
-          phase: ((pos - s.start) / span).clamp(0.0, 1.0),
-        );
-      }
-    }
-    return (section: '', phase: 0);
-  }
-
-  /// How many earlier spans share [section]'s label — 0 for its first occurrence.
-  /// Lets the choreography vary repeated choruses/verses so they don't read
-  /// identical.
-  int _sectionOccurrenceAt(double pos, String section) {
-    var occ = 0;
-    for (final s in _sectionSpans) {
-      if (pos >= s.start && pos < s.end) break;
-      if (s.section == section) occ++;
-    }
-    return occ;
-  }
-
-  /// The virtual director's CONTEXT for the current frame, from which the target
-  /// framing ([cameraShot]) and cut predicates are derived.
-  /// Null until the beat map loads (the rig then rests neutral). [energetic]
-  /// mirrors [_stageNow]'s acoustic dance gate so the camera rests on a wide
-  /// establish exactly when the dancers ease to idle, and performs when they dance.
-  DanceCameraContext? _directorContext(double pos, {required bool energetic}) {
-    final map = _map;
-    final binding = _binding;
-    if (map == null || binding == null) return null;
-    final info = _sectionInfoAt(pos);
-    return cameraContext(
-      beat: map.beatAt(pos),
-      anchorBeat: binding.anchorBeatIndex.toDouble(),
-      loopLengthBeats: binding.loopLengthBeats.toDouble(),
-      section: info.section,
-      energetic: energetic,
-      build: _trackDurationSec > 0 ? pos / _trackDurationSec : 0,
-      sectionPhase: info.phase,
-    );
-  }
-
-  /// Loads the optional word-level lyrics file (absent → no captions).
-  Future<List<_Word>> _loadWords() async {
-    final file = File(kDanceWordsPath);
-    if (!file.existsSync()) return const [];
-    try {
-      final wj = jsonDecode(await file.readAsString()) as Map<String, Object?>;
-      return ((wj['words'] as List?) ?? const [])
-          .cast<Map<String, Object?>>()
-          .where((w) => w['start_sec'] != null && w['end_sec'] != null)
-          .map(
-            (w) => (
-              start: (w['start_sec']! as num).toDouble(),
-              end: (w['end_sec']! as num).toDouble(),
-              word: (w['word'] as String?) ?? '',
-              // 'lead' | 'background' (from --lyrics); defaults to lead.
-              voice: (w['voice'] as String?) ?? 'lead',
-              section: (w['section'] as String?) ?? '',
-            ),
-          )
-          .toList();
-    } catch (_) {
-      return const [];
-    }
-  }
-
-  /// Loads the optional Rhubarb lip-sync cue track (absent → no mouth movement).
-  Future<List<_Cue>> _loadCues() async {
-    final file = File(kDanceCuesPath);
-    if (!file.existsSync()) return const [];
-    try {
-      final cj = jsonDecode(await file.readAsString()) as Map<String, Object?>;
-      return ((cj['cues'] as List?) ?? const [])
-          .cast<Map<String, Object?>>()
-          .map(
-            (c) => (
-              start: (c['start_sec']! as num).toDouble(),
-              end: (c['end_sec']! as num).toDouble(),
-              shape: (c['shape'] as String?) ?? 'X',
-            ),
-          )
-          .toList();
-    } catch (_) {
-      return const [];
-    }
   }
 
   /// Index of the lyric word to caption at [pos]: the most recent word that has
@@ -1085,43 +754,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
     if (recent == null) return null;
     if (pos - _words[recent].end > 2.0) return null;
     return recent;
-  }
-
-  /// Whether a voice (selected by [test]) is singing at [pos], dilated by
-  /// [_voiceSlack] so short gaps between a phrase's words don't make the mouth
-  /// flicker shut — it only rests between phrases / when that voice is silent.
-  bool _voiceActive(double pos, bool Function(_Word w) test) {
-    for (final w in _words) {
-      if (test(w) && windowActiveAt(w.start, w.end, pos, _voiceSlack)) {
-        return true;
-      }
-      if (w.start - _voiceSlack > pos) break;
-    }
-    return false;
-  }
-
-  static const double _voiceSlack = 0.3;
-
-  /// A face whose mouth is driven open by [mouth] (lyric-synced) on the [shape]
-  /// viseme, falling back to [base] when essentially closed. The upper face sings
-  /// too: brows lift and the eyes squint a touch as the mouth opens, so the
-  /// performance isn't a dead-eyed mask over a moving mouth. Drives the frontman
-  /// on lead words and the backups on background ad-libs / group hooks.
-  Expression _singExpression(double mouth, Expression base, MouthShape shape) {
-    if (mouth < 0.04) return base;
-    final brow = 0.18 + mouth * 0.4; // gentle engagement, not a hard arch
-    final eye = 1 - mouth * 0.18; // a whisper of a squint, not a grimace
-    return Expression(
-      'sing',
-      FaceState(
-        mouthShape: shape,
-        mouthOpen: mouth,
-        browRaiseLeft: brow,
-        browRaiseRight: brow,
-        eyeOpenLeft: eye,
-        eyeOpenRight: eye,
-      ),
-    );
   }
 
   /// A karaoke caption: a short window of lyric words centred on the current one,
@@ -1155,83 +787,6 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
           ),
         ),
       ),
-    );
-  }
-
-  /// A 0..1 musical pulse that spikes on each detected beat and decays, so the
-  /// backdrop lights shimmer with the track. Driven by the audio position, so
-  /// it freezes with playback.
-  double _beatPulse(double pos) {
-    final beats = _map?.beatTimesSec;
-    if (beats == null || beats.isEmpty) return 0;
-    var lo = 0;
-    var hi = beats.length - 1;
-    var idx = 0;
-    while (lo <= hi) {
-      final mid = (lo + hi) >> 1;
-      if (beats[mid] <= pos) {
-        idx = mid;
-        lo = mid + 1;
-      } else {
-        hi = mid - 1;
-      }
-    }
-    final since = pos - beats[idx];
-    if (since < 0) return 0;
-    final v = 1 - since / 0.18;
-    return v <= 0 ? 0 : v * v;
-  }
-
-  /// Picks the clip + clock for the current section: the beat-locked energetic
-  /// dance in loud sections, an eased idle (driven by raw playback time) in calm
-  /// ones — so the quiet intro stays calm until the beat kicks in. The phrase
-  /// loops via clipSecondsAt's own modulo across the track. The same `energetic`
-  /// flag gates the virtual director ([_directorContext]): it performs on the dance
-  /// and rests on a wide establish in the calm pockets.
-  _Stage _stageNow() => _stageAt(_positionSec);
-
-  _Stage _stageAt(double pos) {
-    final section = _sectionAt(pos);
-    final map = _map;
-    final binding = _binding;
-    final level = section?.level ?? 1.0;
-    // Only fully rest (idle) on a genuinely dead-quiet section; otherwise the
-    // trio dances the routine chosen for the current semantic (lyric) section,
-    // falling back to the energy level when the song has no lyrics. The lead's
-    // duration sets the beat-lock clock (all dance moves share the 6s phrase).
-    final resting = section != null && !section.energetic && level < 0.15;
-    if (!resting && map != null && binding != null) {
-      final lyric = _sectionInfoAt(pos);
-      final occ = _sectionOccurrenceAt(pos, lyric.section);
-      final trio = _choreoTrioForSection(
-        lyric.section,
-        lyric.phase,
-        level,
-        occ,
-      );
-      return (
-        lead: trio.lead,
-        ensemble: trio.ensemble,
-        seconds: map.clipSecondsAt(
-          pos,
-          clipDuration: trio.lead.duration,
-          binding: binding,
-        ),
-        section: section,
-        energetic: section?.energetic ?? true,
-        // Canon (staggered phase) when the trio is on the Pouncing-Cat glide so
-        // they creep in sequence rather than swinging as one pendulum; tight
-        // unison for every other move.
-        synchronous: trio.lead != _pounce,
-      );
-    }
-    return (
-      lead: _idle,
-      ensemble: _idleEnsemble,
-      seconds: pos,
-      section: section,
-      energetic: false,
-      synchronous: true,
     );
   }
 
@@ -1317,9 +872,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
       );
     }
 
-    final stage = _stageNow();
     final posSec = _positionSec;
-    final beat = _beatPulse(posSec);
+    final stage = _perf?.stageAt(posSec) ?? danceIdleStage(posSec);
+    final beat = _perf?.beatPulse(posSec) ?? 0;
     // The virtual director owns the camera, but the rig OWNS the move: the live
     // shot is the rig's eased framing (advanced each tick toward the director's
     // target), so refrains/feature shots can cut onto committed homes while the
@@ -1457,17 +1012,17 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                       // Lip-sync: the frontman moves on lead words, the two
                       // backups on background ad-libs.
                       ensembleExpressions: [
-                        _singExpression(
+                        danceSingExpression(
                           _leadMouth,
                           Expression.neutral,
                           _leadShape,
                         ),
-                        _singExpression(
+                        danceSingExpression(
                           _bgMouth,
                           Expression.content,
                           _bgShape,
                         ),
-                        _singExpression(
+                        danceSingExpression(
                           _bgMouth,
                           Expression.happy,
                           _bgShape,
@@ -1549,11 +1104,11 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
         ),
       ),
     );
-    final section = _sectionAt(posSec);
+    final section = _perf?.sectionAt(posSec);
     // Prefer the musical section name (Verse/Chorus/…) for the now-playing chip
     // when lyrics are loaded; fall back to the structural label otherwise.
     final musicalLabel = _sectionSpans.isNotEmpty
-        ? _sectionDisplayName(_sectionInfoAt(posSec).section)
+        ? danceSectionDisplayName(_perf?.sectionInfoAt(posSec).section ?? '')
         : section?.label;
     return Scaffold(
       backgroundColor: Colors.black,

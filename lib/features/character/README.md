@@ -616,6 +616,24 @@ The travel-onion is the instrument for tuning `locomotionSpeed`: a planted foot
 that holds its world-x as the body advances reads as discrete footprints; a
 mismatched speed smears them ("moonwalk").
 
+Those strips review the **rig in isolation** (a clip sampled by frame). To review
+the **whole player at a reported audio position** — the full composite, the
+section-driven move selection, the camera, and the beat alignment — use the
+position-window harness, which renders through `DanceFrameComposer` (see
+[Shared per-frame derivation](#shared-per-frame-derivation--one-source-of-truth)):
+
+```bash
+DANCE_POS=73.4 DANCE_WINDOW=12 DANCE_FPS=60 \
+  fvm flutter test test/features/character/dance_player_window_test.dart
+```
+
+It writes numbered full-res frames plus a labelled `window.png` contact sheet to
+`DANCE_WINDOW_OUT` (default `build/dance_window`): a grid of the frames around the
+position (the reported frame outlined), each annotated with its audio position,
+the warped clip-seconds the rig samples, the active move, the fractional beat
+index and the beat pulse — so "the foot lands a frame late at X" is inspectable
+against the music.
+
 ## Testing
 
 Pure-Dart math carries the value and is exhaustively unit-tested (one test file
@@ -691,6 +709,42 @@ final seconds = beatMap.clipSecondsAt(
 );
 // → scene.frameAt(clip, seconds) exactly as before.
 ```
+
+### Shared per-frame derivation — one source of truth
+
+The live player and the offline renderers must show **identical** content at a
+given audio position, or any render-based review lies about the running app. That
+derivation — *which* move the trio dances, the warped pose clock it samples, the
+musical beat pulse, and the virtual director's camera context — lives once in
+`demo/dance_performance.dart` (`DancePerformance`), with the track-config
+constants and the side-file (lyrics/cues) loaders in `demo/dance_loaders.dart`.
+Both the live `DanceToTrackPage` and the offline `DanceFrameComposer` build the
+*same* `DancePerformance` and delegate to it, so they cannot drift; the only
+per-caller state is the camera rig's smoothing and the singing mouths (stateful
+integrators that each caller advances per frame).
+
+```mermaid
+flowchart TD
+  json[("beat-map JSON<br/>+ lyrics / cues")] --> perf
+  perf["DancePerformance (pure)<br/>stageAt · beatPulse · directorContext<br/>sectionInfoAt · choreoTrio · voiceActive"]
+  perf --> player["DanceToTrackPage<br/>live widget Stack"]
+  perf --> composer["DanceFrameComposer<br/>offline canvas (prerolled camera)"]
+  composer --> export["dance_video_export_test<br/>MP4 exporter"]
+  composer --> window["dance_player_window_test<br/>labelled frame window"]
+```
+
+`DancePerformance` is a pure function of `pos` plus the loaded track data and is
+unit-tested in `dance_performance_test.dart`; the loaders' parse/IO split is
+covered by `dance_loaders_test.dart`.
+
+**Faithful offline render.** `DanceFrameComposer`
+(`test/features/character/dance_frame_composer.dart`) paints the exact production
+composite (backdrop → haze → stage lights → scene texture → the trio → captions)
+to an offscreen canvas from an audio position. Because the camera rig and mouths
+are history-dependent, callers **preroll** it (advance without rendering) from a
+lead-in up to the first frame of interest, so the framing matches the running
+player. The MP4 exporter and the position-window debug harness both render
+through it — there is no second, drift-prone copy of the paint path.
 
 Design rationale, the tooling survey, and the quality ladder (on-beat → bar-correct
 → structure → choreography) live in

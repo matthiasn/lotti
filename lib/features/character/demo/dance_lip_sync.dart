@@ -32,6 +32,32 @@ typedef DanceCue = ({double start, double end, String shape});
   }
 }
 
+/// A face whose mouth is driven open by [mouth] (lyric-synced) on the [shape]
+/// viseme, falling back to [base] when essentially closed. The upper face sings
+/// too: brows lift and the eyes squint a touch as the mouth opens, so the
+/// performance isn't a dead-eyed mask over a moving mouth. Shared by the live
+/// player and the offline composer.
+Expression danceSingExpression(
+  double mouth,
+  Expression base,
+  MouthShape shape,
+) {
+  if (mouth < 0.04) return base;
+  final brow = 0.18 + mouth * 0.4; // gentle engagement, not a hard arch
+  final eye = 1 - mouth * 0.18; // a whisper of a squint, not a grimace
+  return Expression(
+    'sing',
+    FaceState(
+      mouthShape: shape,
+      mouthOpen: mouth,
+      browRaiseLeft: brow,
+      browRaiseRight: brow,
+      eyeOpenLeft: eye,
+      eyeOpenRight: eye,
+    ),
+  );
+}
+
 /// The cue shape active at [pos] in a time-ordered [cues] list; `'X'` (rest) when
 /// none. Stops early once a cue starts after [pos].
 String cueShapeAt(List<DanceCue> cues, double pos) {
