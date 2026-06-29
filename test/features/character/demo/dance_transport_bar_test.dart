@@ -141,7 +141,8 @@ void main() {
       final rec = await _pump(tester);
 
       await tester.tap(find.byIcon(Icons.play_arrow_rounded));
-      await tester.tap(find.byIcon(Icons.repeat_rounded));
+      // Loop defaults on, so its on-glyph (repeat_on) is shown.
+      await tester.tap(find.byIcon(Icons.repeat_on_rounded));
       await tester.tap(find.byIcon(Icons.image_rounded));
       await tester.pump();
 

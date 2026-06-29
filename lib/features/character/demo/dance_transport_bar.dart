@@ -169,7 +169,9 @@ class DanceTransportBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _toggle(
-            icon: Icons.repeat_rounded,
+            // Distinct on-glyph (repeat-on) so loop state reads by shape, not
+            // only by the underline.
+            icon: loop ? Icons.repeat_on_rounded : Icons.repeat_rounded,
             active: loop,
             enabled: !loading,
             tooltip: loop ? 'Looping track' : 'Play once',
@@ -230,9 +232,10 @@ class DanceTransportBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 13),
           decoration: active && enabled
               ? const BoxDecoration(
-                  // A clean tab-bar indicator: bright white glyph + a solid teal
-                  // underline carry the on-state. No background fill, so the
-                  // solid play disc stays the only filled-teal element.
+                  // Armed state = bright white glyph + a subtle teal fill + a
+                  // solid teal underline. The fill is a whisper (well below the
+                  // play disc's solid teal) but enough to read the cell as "on".
+                  color: Color(0x1A4DD6C0),
                   border: Border(
                     bottom: BorderSide(color: _Chrome.accent, width: 3),
                   ),
@@ -516,17 +519,14 @@ abstract final class _Chrome {
   static const double radius = 10;
 
   // Two-tone waveform (the neutral cool DATA layer, never the teal accent): a
-  // dim PEAK outline + a brighter RMS body, drawn symmetrically, so real
-  // dynamics read instead of a uniform sausage. Played is bright; ahead is
-  // clearly dimmer so progress reads from the waveform itself, not only the
-  // playhead.
-  static const Color wavePeakPlayed = Color(0xFF7E93A6);
-  static const Color waveBodyPlayed = Color(0xFFC9DEEE);
-  // Ahead is a much dimmer (still cool) version so the consumed/played portion
-  // is obviously brighter — progress reads from the track, not just the head.
-  static const Color wavePeakAhead = Color(0xFF333E49);
-  static const Color waveBodyAhead = Color(0xFF4C5A6A);
-  static const Color rulerText = Color(0xFF7C8896);
+  // BRIGHT raw-peak outline ringing a DARKER RMS core (like a Logic/Live clip).
+  // Played is bright; ahead stays clearly dimmer but legible end-to-end, so the
+  // whole song's shape previews and progress reads from the brightness step.
+  static const Color wavePeakPlayed = Color(0xFFCBE0F0); // bright outline
+  static const Color waveBodyPlayed = Color(0xFF6E8CA6); // darker core
+  static const Color wavePeakAhead = Color(0xFF74838F); // legible outline
+  static const Color waveBodyAhead = Color(0xFF454F5B); // dim core
+  static const Color rulerText = Color(0xFF96A2AE);
   static const Color markerPill = Color(0xD90B0F14);
 }
 
@@ -597,7 +597,7 @@ class _DanceTimelinePainter extends CustomPainter {
     final waveBottom = size.height;
     final mid = (waveTop + waveBottom) / 2;
 
-    _paintSectionBands(canvas, size, waveTop);
+    _paintSectionBands(canvas, size);
     _paintBaseline(canvas, size, mid);
     _paintWaveform(
       canvas,
@@ -614,29 +614,16 @@ class _DanceTimelinePainter extends CustomPainter {
     _paintPlayhead(canvas, size, px);
   }
 
-  void _paintSectionBands(Canvas canvas, Size size, double waveTop) {
+  void _paintSectionBands(Canvas canvas, Size size) {
+    // Just full-height clip boundary lines. The active clip is carried by its
+    // filled marker pill (+ its connector stem) and the playhead — no clip-
+    // spanning colored band, which kept reading as a loop/selection range.
     for (final s in sections) {
       final sx0 = _x(s.start, size.width);
-      final sx1 = _x(s.end, size.width);
-      final active = positionSec >= s.start && positionSec < s.end;
-      final hue = _sectionHue(s.label);
-      // Boundary line spanning the full height (ties marker → header → wave).
       canvas.drawRect(
         Rect.fromLTWH(sx0, 0, 1, size.height),
         Paint()..color = const Color(0x1FFFFFFF),
       );
-      if (active) {
-        // The live region: a colored clip top-edge + a neutral cool wash. The
-        // filled marker pill finishes the "you are here" read — no heavy hue box
-        // (the old full side+top frame read like a loop region on the wrong cue).
-        // Just a colored clip top-edge — no body wash. The faded wash read as
-        // dead pixels AND as a loop/selection range; the teal playhead + the
-        // filled marker pill carry "you are here" instead.
-        canvas.drawRect(
-          Rect.fromLTRB(sx0, waveTop, sx1, waveTop + 4),
-          Paint()..color = hue.withValues(alpha: 0.7),
-        );
-      }
     }
   }
 
@@ -651,17 +638,17 @@ class _DanceTimelinePainter extends CustomPainter {
     for (var t = barSec; t < trackDurationSec; t += barSec, bar++) {
       final x = _x(t, size.width);
       if ((bar - 1) % 4 == 0) {
-        // Phrase downbeats run the FULL height — clearly legible in the header
-        // (no waveform to hide them) — the beat-grid reference a sync tool needs.
-        // A dark casing behind a bright line so the downbeat survives over the
-        // bright played waveform as well as the dark ahead side.
+        // Phrase downbeats live in the WAVE LANE only (not the header) so the
+        // header's full-height verticals stay reserved for clip boundaries +
+        // the playhead. A dark casing keeps the bright line legible over the
+        // played waveform and the dim ahead side alike.
         canvas
           ..drawRect(
-            Rect.fromLTWH(x - 1, 0, 3, size.height),
+            Rect.fromLTWH(x - 1, waveTop, 3, size.height - waveTop),
             Paint()..color = const Color(0x55060B10),
           )
           ..drawRect(
-            Rect.fromLTWH(x, 0, 1, size.height),
+            Rect.fromLTWH(x, waveTop, 1, size.height - waveTop),
             Paint()..color = const Color(0x73FFFFFF),
           );
       } else {
@@ -772,7 +759,7 @@ class _DanceTimelinePainter extends CustomPainter {
           style: const TextStyle(
             fontFamily: 'Inter',
             color: _Chrome.rulerText,
-            fontSize: 8.5,
+            fontSize: 9.5,
             fontWeight: FontWeight.w600,
             fontFeatures: [FontFeature.tabularFigures()],
           ),
@@ -820,7 +807,14 @@ class _DanceTimelinePainter extends CustomPainter {
         const Radius.circular(3),
       );
       if (active) {
-        canvas.drawRRect(rrect, Paint()..color = hue);
+        canvas
+          ..drawRRect(rrect, Paint()..color = hue)
+          // A short hue tab at the wave-lane top, the same width as the pill, so
+          // the live clip reads as a pill-anchored header — not a stray band.
+          ..drawRect(
+            Rect.fromLTWH(left, _headerH, pillW, 4),
+            Paint()..color = hue.withValues(alpha: 0.85),
+          );
       } else {
         // Plain dark pill with a hairline edge — grey, no hue.
         canvas
