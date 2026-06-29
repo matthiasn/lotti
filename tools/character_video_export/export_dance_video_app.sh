@@ -15,7 +15,8 @@ Usage:
   tools/character_video_export/export_dance_video_app.sh [options]
 
 Options:
-  --preset 1080p|720p       Output size preset (default: 1080p)
+  --preset 1440p|1080p|720p
+                             Output size preset (default: 1080p)
   --width PX                Override output width (must be even)
   --height PX               Override output height (must be even)
   --fps N                   Output frames per second (default: 60)
@@ -148,6 +149,10 @@ case "$preset" in
   1080p)
     width="${width:-1920}"
     height="${height:-1080}"
+    ;;
+  1440p)
+    width="${width:-2560}"
+    height="${height:-1440}"
     ;;
   720p)
     width="${width:-1280}"
