@@ -46,6 +46,30 @@ void main() {
       expect(rig.bone(CatBones.shoeHighlightR)?.drawable?.color, 0xFF565A74);
     });
 
+    test('wrist cuffs read as white shirt cuffs (matching the collar)', () {
+      final shirt = rig.bone(CatBones.shirtV)?.drawable?.color;
+      expect(rig.bone(CatBones.cuffL)?.drawable?.color, shirt);
+      expect(rig.bone(CatBones.cuffR)?.drawable?.color, shirt);
+    });
+
+    test('the cap-toe seam never lowers the shoe contact point', () {
+      // The contact/grounding solver keys off the lowest drawn point of the
+      // foot; the cap-toe is decorative and must stay above the sole so it can't
+      // shift grounding or the support-foot lock.
+      for (final pair in const [
+        (CatBones.footR, CatBones.toeCapR),
+        (CatBones.footL, CatBones.toeCapL),
+      ]) {
+        final shoe = rig.bone(pair.$1)!.drawable!;
+        final cap = rig.bone(pair.$2)!.drawable!;
+        expect(
+          cap.dy + cap.height / 2,
+          lessThan(shoe.dy + shoe.height / 2),
+          reason: 'cap-toe stays above the sole bottom',
+        );
+      }
+    });
+
     test('hips are the single root', () {
       final roots = rig.bones.where((b) => b.parent == null).toList();
       expect(roots.length, 1);

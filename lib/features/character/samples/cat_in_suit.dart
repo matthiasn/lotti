@@ -25,11 +25,6 @@ const int _sleeveNear =
     0xFF4A5A80; // NEAR (left) sleeve — lighter still. The left arm draws on top
 // (z16/17 > right z15/16), so a 3-step value gradient torso < far < near keeps
 // the two CROSSED forearms reading as two distinct arms, not one fused band.
-// Muted slate cuff: a LIGHT cuff (was 0xFFB9C0D4) reads as brushed chrome once
-// the directional cel-shade ramps across the lengthened forearm band, so it is
-// toned down into the navy suit's cool family — still a distinct shirt cuff
-// against the sleeve, but dark enough that the cel gradient stays cloth.
-const int _cuff = 0xFF7E869C;
 const int _button = 0xFFAE955C; // muted brass placket button — a dark horn
 // button vanished on the navy front; a metal tone reads as a button line.
 const int _lapel = 0xFF46588A; // jacket lapel — a CLEAR step lighter than the
@@ -151,12 +146,14 @@ class CatBones {
   static const legCalfL = 'leg_calf.L';
   static const footL = 'foot.L';
   static const shoeHighlightL = 'shoe_highlight.L';
+  static const toeCapL = 'toe_cap.L';
   static const legUpperR = 'leg_upper.R';
   static const legQuadR = 'leg_quad.R';
   static const legLowerR = 'leg_lower.R';
   static const legCalfR = 'leg_calf.R';
   static const footR = 'foot.R';
   static const shoeHighlightR = 'shoe_highlight.R';
+  static const toeCapR = 'toe_cap.R';
   static const tail0 = 'tail_0';
   static const tail1 = 'tail_1';
   static const tail2 = 'tail_2';
@@ -390,6 +387,26 @@ RigSpec buildCatInSuitRig({
         color: _shoeHighlight,
       ),
     ),
+    // Cap-toe seam: a thin ink line across the vamp near the toe so the shoe
+    // reads as a structured dress shoe, not a flat oval. Kept ABOVE the sole
+    // bottom (its lowest point y≈7 < the shoe's 9.5) so it never becomes the
+    // lowest drawn point and the contact/grounding solver is unperturbed.
+    const Bone(
+      id: CatBones.toeCapR,
+      parent: CatBones.footR,
+      pivotX: 0,
+      pivotY: 0,
+      z: 6,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 3,
+        height: 9,
+        dx: -17,
+        dy: 2.5,
+        cornerRadius: 1.5,
+        color: _outline,
+      ),
+    ),
 
     // Near (left) leg controls. The visible leg is a continuous ribbon that
     // starts inside the hip volume; the hip is drawn over the top so the leg
@@ -457,6 +474,23 @@ RigSpec buildCatInSuitRig({
         dy: 7,
         cornerRadius: 2,
         color: _shoeHighlight,
+      ),
+    ),
+    // Cap-toe seam — see toeCapR. Above the sole bottom so contact is unchanged.
+    const Bone(
+      id: CatBones.toeCapL,
+      parent: CatBones.footL,
+      pivotX: 0,
+      pivotY: 0,
+      z: 9,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 3,
+        height: 9,
+        dx: -17,
+        dy: 2.5,
+        cornerRadius: 1.5,
+        color: _outline,
       ),
     ),
 
@@ -600,16 +634,20 @@ RigSpec buildCatInSuitRig({
       id: CatBones.cuffR,
       parent: CatBones.armLowerR,
       pivotX: 0,
-      pivotY: 40,
+      pivotY: 39,
       z: 17,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 14,
-        height: 8,
+        width: 17,
+        height: 10,
         cornerRadius: 4,
-        color: _cuff,
+        // White shirt cuff (matching the collar), not the old muted grey: it
+        // reads as the dress-shirt cuff breaking the navy sleeve at the wrist, so
+        // the forearm no longer plugs straight into the paw as one navy tube.
+        color: _shirt,
         outlineColor: _outline,
         outlineWidth: 2,
+        celShade: false,
       ),
     ),
 
@@ -892,16 +930,18 @@ RigSpec buildCatInSuitRig({
       id: CatBones.cuffL,
       parent: CatBones.armLowerL,
       pivotX: 0,
-      pivotY: 40,
+      pivotY: 39,
       z: 18,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 14,
-        height: 8,
+        width: 17,
+        height: 10,
         cornerRadius: 4,
-        color: _cuff,
+        // White shirt cuff at the wrist — see cuffR.
+        color: _shirt,
         outlineColor: _outline,
         outlineWidth: 2,
+        celShade: false,
       ),
     ),
 
