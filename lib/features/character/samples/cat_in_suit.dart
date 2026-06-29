@@ -38,8 +38,10 @@ const int _fur = 0xFFE8A55A; // orange tabby
 const int _furDark = 0xFFD08A3C; // tail tip / shading
 const int _shirt = 0xFFF3EFE6; // collar
 const int _tie = 0xFF7A2233; // maroon
-const int _shoe = 0xFF15151F; // near-black
-const int _shoeHighlight = 0xFF3A3B4D; // moving toe/sole read at stage scale
+const int _shoe = 0xFF24263A; // dark dress shoe — lifted off near-black so it
+// separates from the near-black deck instead of dissolving into the floor.
+const int _shoeHighlight = 0xFF565A74; // brighter sole/toe edge (the ground
+// contact + toe-box read that gives the foot weight at stage scale).
 const int _outline = 0xFF1B1B2A;
 const int _innerEar = 0xFFE7A39B; // soft pink ear
 const int _muzzle = 0xFFF3DCB8; // lighter snout patch
@@ -343,13 +345,13 @@ RigSpec buildCatInSuitRig({
       z: 5,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 29,
-        height: 8,
+        width: 32,
+        height: 12,
         // Toe points -x (local), which — through the locomotion mirror — makes
         // the shoe LEAD the direction of travel instead of trailing it.
-        dx: -9,
-        dy: 5.5,
-        cornerRadius: 4,
+        dx: -10,
+        dy: 6,
+        cornerRadius: 5,
         color: _shoe,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -363,10 +365,10 @@ RigSpec buildCatInSuitRig({
       z: 6,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 12,
-        height: 3,
-        dx: -20,
-        dy: 8,
+        width: 23,
+        height: 4,
+        dx: -9,
+        dy: 10,
         cornerRadius: 2,
         color: _shoeHighlight,
       ),
@@ -413,12 +415,12 @@ RigSpec buildCatInSuitRig({
       z: 8,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 29,
-        height: 8,
+        width: 32,
+        height: 12,
         // Toe points -x (local) so the shoe leads travel — see footR.
-        dx: -9,
-        dy: 5.5,
-        cornerRadius: 4,
+        dx: -10,
+        dy: 6,
+        cornerRadius: 5,
         color: _shoe,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -432,10 +434,10 @@ RigSpec buildCatInSuitRig({
       z: 9,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 12,
-        height: 3,
-        dx: -20,
-        dy: 8,
+        width: 23,
+        height: 4,
+        dx: -9,
+        dy: 10,
         cornerRadius: 2,
         color: _shoeHighlight,
       ),

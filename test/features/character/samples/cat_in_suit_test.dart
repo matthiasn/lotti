@@ -24,8 +24,8 @@ void main() {
     test('shoes carry small moving highlights for footwork readability', () {
       expect(rig.bone(CatBones.shoeHighlightL)?.parent, CatBones.footL);
       expect(rig.bone(CatBones.shoeHighlightR)?.parent, CatBones.footR);
-      expect(rig.bone(CatBones.shoeHighlightL)?.drawable?.width, 12);
-      expect(rig.bone(CatBones.shoeHighlightR)?.drawable?.color, 0xFF3A3B4D);
+      expect(rig.bone(CatBones.shoeHighlightL)?.drawable?.width, 23);
+      expect(rig.bone(CatBones.shoeHighlightR)?.drawable?.color, 0xFF565A74);
     });
 
     test('hips are the single root', () {
