@@ -84,7 +84,11 @@ void main() {
   // moored yacht on the right, so the surface life (crest foam + glitter) dims
   // toward the right rather than staying evenly bright edge to edge. The warm
   // reflection columns are NOT subject to this (they track their own sources).
-  float lateralFall = mix(1.0, 0.62, smoothstep(0.4, 0.96, art.x));
+  // Onset pushed right (0.5) and floor raised (0.72): the dead-centre strip in
+  // front of the lead now keeps full crest amplitude, and the far-right open
+  // water between the lead and the yacht keeps legible chop instead of thinning
+  // to a glassy remnant — a gentle aerial dim toward the haze, not a wipe.
+  float lateralFall = mix(1.0, 0.72, smoothstep(0.5, 0.97, art.x));
 
   // --- Subtle vertical tint (very low alpha; the plate already paints water) ---
   vec3 water =
@@ -123,7 +127,7 @@ void main() {
     // y-frequency is dropped to depth*2.0 so the bright/dark segmentation does NOT
     // chop the filament vertically — segments stay long in x with dark gaps
     // between, reading as elongated foam streaks rather than a dot-field.
-    float dash = mix(0.28, 1.0, smoothstep(0.3, 0.78,
+    float dash = mix(0.16, 1.0, smoothstep(0.32, 0.76,
         fbm(vec2(x * 2.2 + fi * 9.0, depth * 2.0 - uTime * (speed + 0.1)))));
     // Tighter threshold (0.5..0.74) carves thinner, harder-edged horizontal
     // filaments; a lifted amplitude floor (0.85) so the crests in the visible
@@ -368,8 +372,13 @@ void main() {
   // toward the brighter left half rather than crushing the left.
   float rightLift = smoothstep(0.60, 0.82, art.x) *
       smoothstep(0.13, 0.22, depth) * (1.0 - smoothstep(0.82, 1.0, depth));
-  vec3 rightCool = mix(uOceanHorizon.rgb, uOceanNear.rgb, depth);
-  outc.rgb += rightCool * rightLift * 0.16;
+  // Bleed a whisper of warm sunset (~0.16) into the right fill so the band isn't
+  // one flat cool steel-blue edge to edge — the right sits under the warmer haze
+  // toward the sunset azimuth, so its open water carries a faint warm cast against
+  // the cool city-blue left.
+  vec3 rightCool = mix(
+      mix(uOceanHorizon.rgb, uOceanNear.rgb, depth), vec3(0.5, 0.4, 0.32), 0.16);
+  outc.rgb += rightCool * rightLift * 0.17;
   // Yacht reflection added AFTER the footprint suppression: it lives on the
   // open near-water in front of the hull, and the opaque yacht bitmap drawn over
   // this layer still occludes any part that falls behind the hull.
