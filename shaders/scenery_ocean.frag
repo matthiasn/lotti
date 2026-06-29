@@ -207,24 +207,41 @@ void main() {
     float colFall = max(0.3, smoothstep(0.0, 0.04, depth)) * exp(-depth * 4.5);
     reflCity += col * dash * str * colFall;
   }
-  // YACHT interior glow (right ~0.85): its own warmer reflection, already
-  // reading well, so it keeps the moon-glint tone at the original amplitude.
-  float dY = abs(art.x - 0.85) * aspect;
-  float colwY = 0.02 + 0.035 * depth;
-  float colY = exp(-pow(dY / colwY, 2.0));
-  float dashY = smoothstep(0.35, 0.88,
-      fbm(vec2(art.x * 40.0, depth * 26.0 - uTime * 0.5 + 30.0)));
-  float colFallY = max(0.3, smoothstep(0.0, 0.04, depth)) * exp(-depth * 4.5);
-  float reflYacht = colY * dashY * 1.6 * colFallY;
+  // YACHT reflection: the moored yacht's warm cabin/deck lights throw their own
+  // broken columns onto the near water IN FRONT of the hull. Three streaks span
+  // the lit superstructure (0.80..0.90). Their heads pin to the HULL waterline
+  // (further down-frame than the far-shore waterline), so the fall is offset by
+  // ~0.10 depth — anchoring at depth 0 would bury the bright head BEHIND the
+  // opaque hull, leaving only the dim tail (why the yacht read as not reflecting
+  // at all). The whole reflection is also added AFTER the hull footprint mask
+  // (below), so the footprint that hides ocean THROUGH the hull doesn't also
+  // erase the reflection on the open water just in front of it.
+  float reflYacht = 0.0;
+  float yDepth = depth - 0.10;
+  for (int yc = 0; yc < 3; yc++) {
+    float cx = yc == 0 ? 0.80 : (yc == 1 ? 0.85 : 0.90);
+    float str = yc == 0 ? 0.85 : (yc == 1 ? 1.0 : 0.7);
+    float d = abs(art.x - cx) * aspect;
+    float colw = 0.012 + 0.02 * depth;
+    float col = exp(-pow(d / colw, 2.0));
+    float dash = smoothstep(0.3, 0.85,
+        fbm(vec2(art.x * 8.0,
+            depth * 34.0 - uTime * 0.5 + float(yc) * 11.0 + 30.0)));
+    float colFall =
+        smoothstep(0.0, 0.04, yDepth) * exp(-max(yDepth, 0.0) * 4.5);
+    reflYacht += col * dash * str * colFall;
+  }
 
   // Gain pushed to ~6x (measured: at 3.5x the warm peak never crossed neutral
   // R-B — the cool plate still won). At this gain the column centre reads as a
-  // genuinely warm sodium reflection, not a faint less-blue patch.
+  // genuinely warm sodium reflection, not a faint less-blue patch. The yacht
+  // sits a touch under the city (~0.7x) and a warmer, softer 2700K amber.
   float reflCityA =
       clamp(reflCity * clamp(uReflection, 0.0, 2.0) * 6.0, 0.0, 0.9);
-  float reflYachtA = clamp(reflYacht * clamp(uReflection, 0.0, 2.0), 0.0, 0.7);
+  float reflYachtA =
+      clamp(reflYacht * clamp(uReflection, 0.0, 2.0) * 4.2, 0.0, 0.8);
   vec3 cityWarm = vec3(1.0, 0.62, 0.32);
-  float reflA = reflCityA + reflYachtA; // combined coverage for the alpha sum
+  vec3 yachtWarm = vec3(1.0, 0.66, 0.38);
 
   // --- Fresnel horizon sheen: at the grazing angle near the far shore the
   // lagoon mirrors the bright twilight sky, so the band just under the waterline
@@ -242,11 +259,12 @@ void main() {
   float sheenA = fres * fres * 0.2 * sheenRipple;
 
   // Summed colored contribution + summed coverage (city-lights convention). The
-  // city reflections carry their own saturated sodium WARM; the yacht reflection
-  // + moon glint stay on the cooler glint tone.
+  // city reflections carry their own saturated sodium WARM; the moon glint keeps
+  // the cooler glint tone. The yacht reflection is summed in LATER (after the
+  // hull footprint mask) so the mask can't erase it.
   vec3 added = water * tintA + sheenCol * sheenA + uFoam.rgb * foamA +
-      uMoonGlint.rgb * (glintA + reflYachtA) + cityWarm * reflCityA;
-  float coverage = clamp(tintA + sheenA + foamA + glintA + reflA, 0.0, 1.0);
+      uMoonGlint.rgb * glintA + cityWarm * reflCityA;
+  float coverage = clamp(tintA + sheenA + foamA + glintA + reflCityA, 0.0, 1.0);
 
   // Static (UV-locked) grain. The old per-frame reseed (fract(uTime) in the hash)
   // re-randomised every pixel every frame, which BOILED the bright foam/water —
@@ -261,5 +279,11 @@ void main() {
   // without a per-frame mask sampler (which crashed on hot-reload).
   float yachtFoot =
       smoothstep(0.60, 0.66, art.x) * smoothstep(0.52, 0.56, art.y);
-  fragColor = vec4(added, coverage) * (1.0 - clamp(yachtFoot, 0.0, 1.0));
+  vec4 outc = vec4(added, coverage) * (1.0 - clamp(yachtFoot, 0.0, 1.0));
+  // Yacht reflection added AFTER the footprint suppression: it lives on the
+  // open near-water in front of the hull, and the opaque yacht bitmap drawn over
+  // this layer still occludes any part that falls behind the hull.
+  outc.rgb += yachtWarm * reflYachtA;
+  outc.a = clamp(outc.a + reflYachtA, 0.0, 1.0);
+  fragColor = outc;
 }
