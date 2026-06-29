@@ -5455,26 +5455,26 @@ class CatClips {
     // off-frame.
     DanceBodyKey(
       0,
-      rootDx: -34,
-      rootDy: 31,
+      rootDx: -44,
+      rootDy: 40,
       chestScaleY: 0.85,
     ), // over LEFT foot
-    DanceBodyKey(2, rootDx: -34, rootDy: 7, chestScaleY: 1),
-    DanceBodyKey(4, rootDx: 34, rootDy: 31, chestScaleY: 0.85), // snap to RIGHT
-    DanceBodyKey(6, rootDx: 34, rootDy: 7, chestScaleY: 1),
-    DanceBodyKey(8, rootDx: -34, rootDy: 31, chestScaleY: 0.85),
-    DanceBodyKey(10, rootDx: -34, rootDy: 7, chestScaleY: 1),
-    DanceBodyKey(12, rootDx: 34, rootDy: 31, chestScaleY: 0.85),
-    DanceBodyKey(14, rootDx: 34, rootDy: 7, chestScaleY: 1),
-    DanceBodyKey(16, rootDx: -34, rootDy: 31, chestScaleY: 0.85),
-    DanceBodyKey(18, rootDx: -34, rootDy: 7, chestScaleY: 1),
-    DanceBodyKey(20, rootDx: 34, rootDy: 31, chestScaleY: 0.85),
-    DanceBodyKey(22, rootDx: 34, rootDy: 7, chestScaleY: 1),
-    DanceBodyKey(24, rootDx: -34, rootDy: 31, chestScaleY: 0.85),
-    DanceBodyKey(26, rootDx: -34, rootDy: 7, chestScaleY: 1),
-    DanceBodyKey(28, rootDx: 34, rootDy: 31, chestScaleY: 0.85),
-    DanceBodyKey(30, rootDx: 34, rootDy: 7, chestScaleY: 1),
-    DanceBodyKey(32, rootDx: -34, rootDy: 31, chestScaleY: 0.85),
+    DanceBodyKey(2, rootDx: -44, rootDy: 7, chestScaleY: 1),
+    DanceBodyKey(4, rootDx: 44, rootDy: 40, chestScaleY: 0.85), // snap to RIGHT
+    DanceBodyKey(6, rootDx: 44, rootDy: 7, chestScaleY: 1),
+    DanceBodyKey(8, rootDx: -44, rootDy: 40, chestScaleY: 0.85),
+    DanceBodyKey(10, rootDx: -44, rootDy: 7, chestScaleY: 1),
+    DanceBodyKey(12, rootDx: 44, rootDy: 40, chestScaleY: 0.85),
+    DanceBodyKey(14, rootDx: 44, rootDy: 7, chestScaleY: 1),
+    DanceBodyKey(16, rootDx: -44, rootDy: 40, chestScaleY: 0.85),
+    DanceBodyKey(18, rootDx: -44, rootDy: 7, chestScaleY: 1),
+    DanceBodyKey(20, rootDx: 44, rootDy: 40, chestScaleY: 0.85),
+    DanceBodyKey(22, rootDx: 44, rootDy: 7, chestScaleY: 1),
+    DanceBodyKey(24, rootDx: -44, rootDy: 40, chestScaleY: 0.85),
+    DanceBodyKey(26, rootDx: -44, rootDy: 7, chestScaleY: 1),
+    DanceBodyKey(28, rootDx: 44, rootDy: 40, chestScaleY: 0.85),
+    DanceBodyKey(30, rootDx: 44, rootDy: 7, chestScaleY: 1),
+    DanceBodyKey(32, rootDx: -44, rootDy: 40, chestScaleY: 0.85),
   ];
   // Feet STOMP in place (no lateral travel): each foot plants hard low on its
   // beats and lifts only shin-low on the off-frame, with a small twist (x nudge)
