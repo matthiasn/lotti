@@ -200,9 +200,12 @@ class StageLightsPainter extends CustomPainter {
     // flagged the inverted focus — the backup pools were the most chromatic
     // objects in frame). With no designated lead, every pool renders at full gel.
     final demoted = hasLead && !isLead;
-    final i = l.intensity * (isLead ? 1.15 : (demoted ? 0.58 : 1.0));
+    final i = l.intensity * (isLead ? 1.15 : (demoted ? 0.46 : 1.0));
+    // Backups: desaturate HARDER toward a cool blue-hour slate (was a neutral
+    // grey) so the flanking pools stop advertising themselves as candy magenta/
+    // violet and instead read as cool ambient spill supporting the warm lead.
     final col = demoted
-        ? Color.lerp(l.color, const Color(0xFF5A6072), 0.34)!
+        ? Color.lerp(l.color, const Color(0xFF42506E), 0.45)!
         : l.color;
     final rx = poolRadius * w * (isLead ? 1.18 : (demoted ? 0.84 : 1.0));
     final ry =
@@ -274,23 +277,26 @@ class StageLightsPainter extends CustomPainter {
     // Beat-independent (grounding must not pulse) and tight (a foot-length) so it
     // never becomes a murky hole. This is the grounding the rim/pool alone can't
     // give — a real dark contact, not just coloured spill.
+    // The lead's pool is the boosted/largest, so its warm spill most readily
+    // reads as the cat FLOATING on a glowing decal. Give the lead a DENSER,
+    // tighter contact core (the planted foot must read as weight on the deck);
+    // the backups keep the lighter core they already had.
+    const occBase = Color(0xFF060D18); // cool near-black
+    final occDense = occBase.withValues(alpha: isLead ? 0.86 : 0.7);
+    final occMid = occBase.withValues(alpha: isLead ? 0.46 : 0.4);
     final occ = Rect.fromCenter(
       center: Offset(0, ry * 0.12),
-      width: rx * 0.86,
-      height: ry * 1.05,
+      width: rx * (isLead ? 0.9 : 0.86),
+      height: ry * (isLead ? 1.15 : 1.05),
     );
     canvas
       ..drawOval(
         occ,
         Paint()
-          ..shader = const RadialGradient(
-            center: Alignment(0, -0.1),
-            colors: [
-              Color(0xB3060D18), // cool near-black, densest at the sole
-              Color(0x66060D18),
-              Color(0x00060D18),
-            ],
-            stops: [0.0, 0.55, 1.0],
+          ..shader = RadialGradient(
+            center: const Alignment(0, -0.1),
+            colors: [occDense, occMid, occBase.withValues(alpha: 0)],
+            stops: const [0.0, 0.55, 1.0],
           ).createShader(occ),
       )
       ..restore();

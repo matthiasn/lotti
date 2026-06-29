@@ -171,23 +171,45 @@ void main() {
   // detached from the windows above them). The city windows are the brightest
   // sources in frame yet the left bay was reading flat navy, so the left columns
   // carry the most weight. ---
-  float refl = 0.0;
-  for (int s = 0; s < 4; s++) {
-    float cx = s == 0 ? 0.13 : (s == 1 ? 0.22 : (s == 2 ? 0.33 : 0.85));
-    float str = s == 0 ? 0.95 : (s == 1 ? 0.85 : (s == 2 ? 0.7 : 0.9));
+  // CITY columns: the warm window centroid sits at art-x ~0.15..0.22, so the
+  // three sources are anchored there (the old 0.33 column sat over a dark
+  // building/bridge gap with no source above it). Pixel measurement showed the
+  // left bay reading flat navy — the additive contribution was too weak + too
+  // neutral to survive the cool plate and the haze — so the city columns are
+  // multiplied hard (uReflection x ~3.5) and tinted a saturated sodium WARM
+  // (vec3(1.0,0.62,0.32)), not the near-neutral glint tone the navy swamped.
+  float reflCity = 0.0;
+  for (int s = 0; s < 3; s++) {
+    float cx = s == 0 ? 0.15 : (s == 1 ? 0.20 : 0.27);
+    float str = s == 0 ? 1.0 : (s == 1 ? 0.9 : 0.6);
     float d = abs(art.x - cx) * aspect;
     // Widen the column gently toward the viewer so the streak fans as it nears.
     float colw = 0.02 + 0.035 * depth;
     float col = exp(-pow(d / colw, 2.0));
     float dash = smoothstep(0.35, 0.88,
         fbm(vec2(art.x * 40.0, depth * 26.0 - uTime * 0.5 + float(s) * 7.0)));
-    // Lip-weighted fall: fade in right at the waterline, then decay toward the
-    // foreground so the brightest part sits under the source and the column
-    // tapers to a faint shimmer ~2/3 of the way down (never reaching the deck).
-    float colFall = smoothstep(0.0, 0.03, depth) * exp(-depth * 5.0);
-    refl += col * dash * str * colFall;
+    // Lip-weighted fall with a raised floor at the lip itself (so the column
+    // doesn't go to dark navy right under the source) then a decay toward the
+    // foreground — the brightest part sits under the source and it tapers to a
+    // faint shimmer ~2/3 of the way down (never reaching the deck).
+    float colFall = max(0.3, smoothstep(0.0, 0.04, depth)) * exp(-depth * 4.5);
+    reflCity += col * dash * str * colFall;
   }
-  float reflA = clamp(refl * clamp(uReflection, 0.0, 2.0), 0.0, 0.85);
+  // YACHT interior glow (right ~0.85): its own warmer reflection, already
+  // reading well, so it keeps the moon-glint tone at the original amplitude.
+  float dY = abs(art.x - 0.85) * aspect;
+  float colwY = 0.02 + 0.035 * depth;
+  float colY = exp(-pow(dY / colwY, 2.0));
+  float dashY = smoothstep(0.35, 0.88,
+      fbm(vec2(art.x * 40.0, depth * 26.0 - uTime * 0.5 + 30.0)));
+  float colFallY = max(0.3, smoothstep(0.0, 0.04, depth)) * exp(-depth * 4.5);
+  float reflYacht = colY * dashY * 0.9 * colFallY;
+
+  float reflCityA =
+      clamp(reflCity * clamp(uReflection, 0.0, 2.0) * 3.5, 0.0, 0.85);
+  float reflYachtA = clamp(reflYacht * clamp(uReflection, 0.0, 2.0), 0.0, 0.7);
+  vec3 cityWarm = vec3(1.0, 0.62, 0.32);
+  float reflA = reflCityA + reflYachtA; // combined coverage for the alpha sum
 
   // --- Fresnel horizon sheen: at the grazing angle near the far shore the
   // lagoon mirrors the bright twilight sky, so the band just under the waterline
@@ -204,9 +226,11 @@ void main() {
   vec3 sheenCol = mix(uOceanHorizon.rgb * 1.35, uFoam.rgb, 0.5);
   float sheenA = fres * fres * 0.2 * sheenRipple;
 
-  // Summed colored contribution + summed coverage (city-lights convention).
+  // Summed colored contribution + summed coverage (city-lights convention). The
+  // city reflections carry their own saturated sodium WARM; the yacht reflection
+  // + moon glint stay on the cooler glint tone.
   vec3 added = water * tintA + sheenCol * sheenA + uFoam.rgb * foamA +
-      uMoonGlint.rgb * (glintA + reflA);
+      uMoonGlint.rgb * (glintA + reflYachtA) + cityWarm * reflCityA;
   float coverage = clamp(tintA + sheenA + foamA + glintA + reflA, 0.0, 1.0);
 
   // Static (UV-locked) grain. The old per-frame reseed (fract(uTime) in the hash)

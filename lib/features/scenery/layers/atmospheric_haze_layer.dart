@@ -35,7 +35,7 @@ class AtmosphericHazeLayer implements BackdropLayer {
     this.coolMix = 0.55,
     this.paleLift = 0.4,
     this.skyReach = 0.18,
-    this.waterReach = 0.12,
+    this.waterReach = 0.09,
   });
 
   /// Peak veil opacity at the waterline (0 = none).
