@@ -39,8 +39,10 @@ const int _shirt = 0xFFF3EFE6; // collar
 const int _tie = 0xFF7A2233; // maroon
 const int _shoe = 0xFF24263A; // dark dress shoe — lifted off near-black so it
 // separates from the near-black deck instead of dissolving into the floor.
-const int _shoeHighlight = 0xFF565A74; // brighter sole/toe edge (the ground
-// contact + toe-box read that gives the foot weight at stage scale).
+const int _shoeHighlight = 0xFF3C4058; // SUBTLE sole edge — a brighter strip
+// plus the cap-toe/toe-gloss marks read as a skeletal "bone" inside the
+// stage-lit shoe, so the shoe is now just a clean cel-shaded volume with this
+// gentle sole hint and nothing else.
 const int _outline = 0xFF1B1B2A;
 const int _innerEar = 0xFFE7A39B; // soft pink ear
 const int _muzzle = 0xFFF3DCB8; // lighter snout patch
@@ -107,14 +109,12 @@ class CatInSuitPalette {
 /// Stable bone ids, also the keys clips animate.
 class CatBones {
   static const hips = 'hips';
-  static const crotchSeam = 'crotch_seam';
   static const torso = 'torso';
   static const shirtV = 'shirt_v';
   static const collarL = 'collar.L';
   static const collarR = 'collar.R';
   static const lapelL = 'lapel.L';
   static const lapelR = 'lapel.R';
-  static const jacketHem = 'jacket_hem';
   static const button0 = 'button_0';
   static const button1 = 'button_1';
   static const tie = 'tie';
@@ -147,16 +147,12 @@ class CatBones {
   static const legCalfL = 'leg_calf.L';
   static const footL = 'foot.L';
   static const shoeHighlightL = 'shoe_highlight.L';
-  static const toeCapL = 'toe_cap.L';
-  static const toeShineL = 'toe_shine.L';
   static const legUpperR = 'leg_upper.R';
   static const legQuadR = 'leg_quad.R';
   static const legLowerR = 'leg_lower.R';
   static const legCalfR = 'leg_calf.R';
   static const footR = 'foot.R';
   static const shoeHighlightR = 'shoe_highlight.R';
-  static const toeCapR = 'toe_cap.R';
-  static const toeShineR = 'toe_shine.R';
   static const tail0 = 'tail_0';
   static const tail1 = 'tail_1';
   static const tail2 = 'tail_2';
@@ -390,43 +386,6 @@ RigSpec buildCatInSuitRig({
         color: _shoeHighlight,
       ),
     ),
-    // Cap-toe seam: a thin ink line across the vamp near the toe so the shoe
-    // reads as a structured dress shoe, not a flat oval. Kept ABOVE the sole
-    // bottom (its lowest point y≈7 < the shoe's 9.5) so it never becomes the
-    // lowest drawn point and the contact/grounding solver is unperturbed.
-    const Bone(
-      id: CatBones.toeCapR,
-      parent: CatBones.footR,
-      pivotX: 0,
-      pivotY: 0,
-      z: 6,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.roundedRect,
-        width: 3,
-        height: 9,
-        dx: -17,
-        dy: 2.5,
-        cornerRadius: 1.5,
-        color: _outline,
-      ),
-    ),
-    // Toe gloss: a small bright sliver on the toe-box so the leather reads as
-    // polished, not matte rubber.
-    const Bone(
-      id: CatBones.toeShineR,
-      parent: CatBones.footR,
-      pivotX: 0,
-      pivotY: 0,
-      z: 6,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.ellipse,
-        width: 9,
-        height: 3,
-        dx: -16,
-        color: _shoeHighlight,
-      ),
-    ),
-
     // Near (left) leg controls. The visible leg is a continuous ribbon that
     // starts inside the hip volume; the hip is drawn over the top so the leg
     // reads as part of the body, not a capsule bolted underneath.
@@ -495,38 +454,6 @@ RigSpec buildCatInSuitRig({
         color: _shoeHighlight,
       ),
     ),
-    // Cap-toe seam — see toeCapR. Above the sole bottom so contact is unchanged.
-    const Bone(
-      id: CatBones.toeCapL,
-      parent: CatBones.footL,
-      pivotX: 0,
-      pivotY: 0,
-      z: 9,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.roundedRect,
-        width: 3,
-        height: 9,
-        dx: -17,
-        dy: 2.5,
-        cornerRadius: 1.5,
-        color: _outline,
-      ),
-    ),
-    // Toe gloss — see toeShineR. Above the sole bottom.
-    const Bone(
-      id: CatBones.toeShineL,
-      parent: CatBones.footL,
-      pivotX: 0,
-      pivotY: 0,
-      z: 9,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.ellipse,
-        width: 9,
-        height: 3,
-        dx: -16,
-        color: _shoeHighlight,
-      ),
-    ),
 
     // Pelvis / seat (root). A single low trouser volume sits behind the jacket
     // and over the thigh roots: enough glute/hip mass that the legs feel
@@ -540,41 +467,14 @@ RigSpec buildCatInSuitRig({
       z: 9,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
-        // A fuller pelvis/seat so the thighs grow OUT of a hip mass instead of
-        // sprouting as sticks from the jacket hem (the last thing keeping the
-        // figure off a hero-grade read — a heavy torso on spindly legs).
-        width: 60,
-        height: 34,
-        dy: 10,
+        width: 54,
+        height: 30,
+        dy: 9,
         color: _trouser,
         outlineColor: _outline,
         outlineWidth: 2,
       ),
     ),
-    // Crotch inseam: a short dark wedge down the centreline below the pelvis,
-    // splitting the lower body into a LEFT and RIGHT trouser leg. Without it the
-    // jacket-skirt-to-legs junction read as one dark blob that forked into two
-    // stovepipes; this seam separates the thighs at the top. Drawn over the leg
-    // ribbons (z8) and under the pelvis (z9) so the pelvis caps its top.
-    const Bone(
-      id: CatBones.crotchSeam,
-      parent: CatBones.hips,
-      pivotX: 0,
-      pivotY: 16,
-      z: 8,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.taperedCapsule,
-        width: 7,
-        widthTip: 2,
-        height: 30,
-        dy: 15,
-        color: _trouserRear,
-        outlineColor: _outline,
-        outlineWidth: 1.5,
-        formRound: false,
-      ),
-    ),
-
     // Far (right) arm controls. The ribbon renderer hides these rigid segments
     // and draws one bendy arm surface through shoulder→elbow→wrist.
     Bone(
@@ -620,7 +520,7 @@ RigSpec buildCatInSuitRig({
         kind: BoneShapeKind.ellipse,
         width: 24,
         height: 23,
-        dy: 8,
+        dy: 1,
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2.5,
@@ -640,7 +540,7 @@ RigSpec buildCatInSuitRig({
         kind: BoneShapeKind.ellipse,
         width: 11,
         height: 11,
-        dy: 17,
+        dy: 9,
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2.5,
@@ -657,7 +557,7 @@ RigSpec buildCatInSuitRig({
         kind: BoneShapeKind.ellipse,
         width: 11,
         height: 11,
-        dy: 17,
+        dy: 9,
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2.5,
@@ -680,7 +580,7 @@ RigSpec buildCatInSuitRig({
         6,
         15,
         palette.fur,
-        dy: 5,
+        dy: 1,
         outlineWidth: 2.5,
         celShade: false,
       ),
@@ -858,26 +758,10 @@ RigSpec buildCatInSuitRig({
       ),
     ),
 
-    // Waist tailoring: a hem band at the jacket's bottom edge plus two buttons
-    // down the placket below the tie, so the lower jacket reads as cut cloth
-    // meeting the trousers instead of merging into one shapeless torso-to-hip
-    // mass. Sit on the jacket (z14) below the crossing arms (z15/16).
-    const Bone(
-      id: CatBones.jacketHem,
-      parent: CatBones.torso,
-      pivotX: 0,
-      pivotY: 8,
-      z: 14,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.roundedRect,
-        width: 50,
-        height: 8,
-        cornerRadius: 4,
-        color: _trouserRear, // a darker band reads as the jacket's shadowed hem
-        outlineColor: _outline,
-        outlineWidth: 2,
-      ),
-    ),
+    // Placket buttons down the centreline below the tie. The jacket→trouser
+    // transition is formed by the jacket.mesh and hips.mesh overlapping, so the
+    // old dark hem BAND that used to sit here is gone — it read as an ugly dark
+    // "U" stamped across the pelvis on top of the mesh.
     const Bone(
       id: CatBones.button0,
       parent: CatBones.torso,
@@ -947,7 +831,7 @@ RigSpec buildCatInSuitRig({
         kind: BoneShapeKind.ellipse,
         width: 24,
         height: 23,
-        dy: 8,
+        dy: 1,
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2.5,
@@ -964,7 +848,7 @@ RigSpec buildCatInSuitRig({
         kind: BoneShapeKind.ellipse,
         width: 11,
         height: 11,
-        dy: 17,
+        dy: 9,
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2.5,
@@ -981,7 +865,7 @@ RigSpec buildCatInSuitRig({
         kind: BoneShapeKind.ellipse,
         width: 11,
         height: 11,
-        dy: 17,
+        dy: 9,
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2.5,
@@ -1000,7 +884,7 @@ RigSpec buildCatInSuitRig({
         6,
         15,
         palette.fur,
-        dy: 5,
+        dy: 1,
         outlineWidth: 2.5,
         celShade: false,
       ),
@@ -1210,7 +1094,7 @@ RigSpec buildCatInSuitRig({
       // a knee dip (11.5), a calf bulge (13), then a NARROW ankle (8) that tapers
       // INTO the shoe so the trouser breaks cleanly over the foot instead of
       // flaring wider than the shoe and sticking out past the heel.
-      halfWidths: scaledLegWidths(const [15.5, 14.5, 11.5, 13, 8]),
+      halfWidths: scaledLegWidths(const [13.5, 13, 11.5, 12.5, 8]),
       z: 3,
       color: _trouserRear,
       outlineColor: _outline,
@@ -1227,7 +1111,7 @@ RigSpec buildCatInSuitRig({
         CatBones.footL,
       ],
       hiddenBoneIds: const [CatBones.legUpperL, CatBones.legLowerL],
-      halfWidths: scaledLegWidths(const [15.5, 14.5, 11.5, 13, 8]),
+      halfWidths: scaledLegWidths(const [13.5, 13, 11.5, 12.5, 8]),
       z: 6,
       color: _trouser,
       outlineColor: _outline,
@@ -1316,8 +1200,11 @@ RigSpec buildCatInSuitRig({
       hiddenBoneIds: const [CatBones.hips],
       z: 9,
       color: _trouser,
-      outlineColor: _outline,
-      outlineWidth: 2,
+      // NO outline and NO form-rounding: an outlined / contour-darkened pelvis
+      // read as a separate "plate" stamped between the jacket and the legs. The
+      // jacket caps its top and the same-tone leg ribbons flow out of its bottom,
+      // so the lower body reads as one continuous trouser form, not a panel.
+      formRound: false,
     ),
     SkinnedMeshSpec(
       id: 'jacket.mesh',

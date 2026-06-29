@@ -21,18 +21,6 @@ void main() {
       expect(rig.bone(CatBones.neck)?.drawable, isNotNull);
     });
 
-    test('a centred crotch seam separates the trouser legs', () {
-      final seam = rig.bone(CatBones.crotchSeam);
-      expect(seam?.parent, CatBones.hips);
-      expect(seam?.pivotX, 0); // on the centreline between the two legs
-      // The shadowed rear-trouser tone so it reads as a recessed inseam, not a
-      // lit ridge.
-      final rearTrouser = rig.ribbons
-          .singleWhere((r) => r.id == 'leg.R.ribbon')
-          .color;
-      expect(seam?.drawable?.color, rearTrouser);
-    });
-
     test('a white shirt collar frames the neck under the tie', () {
       final shirtColor = rig.bone(CatBones.shirtV)?.drawable?.color;
       for (final id in [CatBones.collarL, CatBones.collarR]) {
@@ -51,11 +39,13 @@ void main() {
       );
     });
 
-    test('shoes carry small moving highlights for footwork readability', () {
+    test('shoes carry a subtle sole edge for footwork readability', () {
       expect(rig.bone(CatBones.shoeHighlightL)?.parent, CatBones.footL);
       expect(rig.bone(CatBones.shoeHighlightR)?.parent, CatBones.footR);
       expect(rig.bone(CatBones.shoeHighlightL)?.drawable?.width, 23);
-      expect(rig.bone(CatBones.shoeHighlightR)?.drawable?.color, 0xFF565A74);
+      // A subtle sole edge, NOT a bright strip that reads as a skeletal mark in
+      // the stage-lit shoe.
+      expect(rig.bone(CatBones.shoeHighlightR)?.drawable?.color, 0xFF3C4058);
     });
 
     test('wrist cuffs read as white shirt cuffs (matching the collar)', () {
@@ -64,25 +54,21 @@ void main() {
       expect(rig.bone(CatBones.cuffR)?.drawable?.color, shirt);
     });
 
-    test('decorative shoe detail never lowers the contact point', () {
+    test('the sole edge never lowers the shoe contact point', () {
       // The contact/grounding solver keys off the lowest drawn point of the
-      // foot; the cap-toe and toe gloss are decorative and must stay above the
-      // sole so they can't shift grounding or the support-foot lock.
-      const groups = [
-        (CatBones.footR, [CatBones.toeCapR, CatBones.toeShineR]),
-        (CatBones.footL, [CatBones.toeCapL, CatBones.toeShineL]),
-      ];
-      for (final group in groups) {
-        final shoe = rig.bone(group.$1)!.drawable!;
-        final soleBottom = shoe.dy + shoe.height / 2;
-        for (final id in group.$2) {
-          final d = rig.bone(id)!.drawable!;
-          expect(
-            d.dy + d.height / 2,
-            lessThan(soleBottom),
-            reason: '$id stays above the sole bottom',
-          );
-        }
+      // foot; the sole-edge highlight must stay above the sole bottom so it
+      // can't shift grounding or the support-foot lock.
+      for (final pair in const [
+        (CatBones.footR, CatBones.shoeHighlightR),
+        (CatBones.footL, CatBones.shoeHighlightL),
+      ]) {
+        final shoe = rig.bone(pair.$1)!.drawable!;
+        final welt = rig.bone(pair.$2)!.drawable!;
+        expect(
+          welt.dy + welt.height / 2,
+          lessThan(shoe.dy + shoe.height / 2),
+          reason: 'sole edge stays above the sole bottom',
+        );
       }
     });
 
@@ -161,18 +147,18 @@ void main() {
       final baseTail = base.ribbons.singleWhere((r) => r.id == 'tail.ribbon');
       final leadTail = lead.ribbons.singleWhere((r) => r.id == 'tail.ribbon');
 
-      // Anatomical trouser profile: full thigh (15.5/14.5) growing from the hip,
-      // a knee dip (11.5), a calf bulge (13), then a narrow ankle (8) tapering
-      // into the shoe so the trouser breaks over the foot, not past it.
-      expect(baseLeg.halfWidths, const [15.5, 14.5, 11.5, 13, 8]);
+      // Anatomical trouser profile: full thigh (13.5/13), a knee dip (11.5), a
+      // calf bulge (12.5), then a narrow ankle (8) tapering into the shoe so the
+      // trouser breaks over the foot, not past it.
+      expect(baseLeg.halfWidths, const [13.5, 13, 11.5, 12.5, 8]);
       expect(
         leadLeg.halfWidths.first,
-        closeTo(15.5 * kDanceLeadLegWidthScale, 0.001),
+        closeTo(13.5 * kDanceLeadLegWidthScale, 0.001),
       );
       // The calf control (index 3) is fuller than the knee (index 2) — the bulge.
       expect(
         leadLeg.halfWidths[3],
-        closeTo(13 * kDanceLeadLegWidthScale, 0.001),
+        closeTo(12.5 * kDanceLeadLegWidthScale, 0.001),
       );
       expect(
         leadLeg.halfWidths[3],

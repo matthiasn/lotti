@@ -244,10 +244,14 @@ class StageLightsPainter extends CustomPainter {
       Paint()
         ..blendMode = BlendMode.plus
         ..shader = RadialGradient(
+          // DIMMED (was 0.54/0.22): the old pool was additive OVER the cat and
+          // so bright it washed the shoes pale/see-through, the sole detail
+          // reading as a skeletal "bone" in a translucent blob. A lighter spill
+          // still grounds the figure without bleaching the feet.
           center: const Alignment(0, -0.45),
           colors: [
-            col.withValues(alpha: 0.54 * i),
-            col.withValues(alpha: 0.22 * i),
+            col.withValues(alpha: 0.44 * i),
+            col.withValues(alpha: 0.18 * i),
             col.withValues(alpha: 0),
           ],
           stops: const [0.0, 0.5, 1.0],
@@ -257,6 +261,8 @@ class StageLightsPainter extends CustomPainter {
     // only faintly white-clipped so the gel stays its own hue (not a blown white
     // puddle), reading as light landing rather than a sticker.
     final hot = Color.lerp(col, const Color(0xFFFFFFFF), 0.07)!;
+    // DIMMED (was 0.64/0.28) so the contact hotspot grounds the shoe without
+    // bleaching it to a translucent blob.
     final core = Rect.fromCenter(
       center: Offset(0, ry * 0.45),
       width: rx,
@@ -269,8 +275,8 @@ class StageLightsPainter extends CustomPainter {
         ..shader = RadialGradient(
           center: const Alignment(0, -0.3),
           colors: [
-            hot.withValues(alpha: 0.64 * i),
-            col.withValues(alpha: 0.28 * i),
+            hot.withValues(alpha: 0.5 * i),
+            col.withValues(alpha: 0.22 * i),
             col.withValues(alpha: 0),
           ],
           stops: const [0.0, 0.55, 1.0],

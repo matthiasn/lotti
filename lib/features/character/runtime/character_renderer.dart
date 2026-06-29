@@ -310,19 +310,25 @@ class CharacterRenderer {
   ) {
     final path = _meshPath(mesh, world);
     if (path == null) return;
-    _celShadePath(canvas, path, mesh.color, s);
+    _celShadePath(canvas, path, mesh.color, s, formRound: mesh.formRound);
   }
 
   /// Cel-shades an arbitrary world-space [path] (ribbon/mesh): clip to it and
   /// paint the form-shadow gradient across its bounds.
-  void _celShadePath(Canvas canvas, Path path, int baseArgb, CelShadeSpec s) {
+  void _celShadePath(
+    Canvas canvas,
+    Path path,
+    int baseArgb,
+    CelShadeSpec s, {
+    bool formRound = true,
+  }) {
     final bounds = path.getBounds();
     if (bounds.isEmpty) return;
     canvas
       ..save()
       ..clipPath(path)
       ..drawRect(bounds, _celShadePaint(bounds, baseArgb, s));
-    final round = _formRoundPaint(bounds, baseArgb, s);
+    final round = formRound ? _formRoundPaint(bounds, baseArgb, s) : null;
     if (round != null) canvas.drawRect(bounds, round);
     canvas.restore();
   }

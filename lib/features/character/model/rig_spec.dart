@@ -379,6 +379,7 @@ class SkinnedMeshSpec {
     List<String> hiddenBoneIds = const [],
     this.outlineColor,
     this.outlineWidth = 0,
+    this.formRound = true,
   }) : vertices = List<SkinnedMeshVertex>.unmodifiable(vertices),
        boundary = List<int>.unmodifiable(boundary),
        hiddenBoneIds = List<String>.unmodifiable(hiddenBoneIds);
@@ -391,6 +392,13 @@ class SkinnedMeshSpec {
   final int color;
   final int? outlineColor;
   final double outlineWidth;
+
+  /// Whether the cel-shade's form-rounding (the cool contour occlusion) applies
+  /// to this mesh. Default true. Set false where the contour darkening reads as
+  /// a hard-edged "plate" rather than volume — e.g. the pelvis mesh, which sits
+  /// between the jacket and the trouser ribbons and should flow into them
+  /// seamlessly, not look like a stamped panel.
+  final bool formRound;
 }
 
 class SkinnedMeshVertex {
