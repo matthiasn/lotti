@@ -132,7 +132,6 @@ class CatBones {
   static const thumbL = 'thumb.L';
   static const pawToeL1 = 'paw_toe1.L';
   static const pawToeL2 = 'paw_toe2.L';
-  static const cuffL = 'cuff.L';
   static const armUpperR = 'arm_upper.R';
   static const armBicepR = 'arm_bicep.R';
   static const armLowerR = 'arm_lower.R';
@@ -140,7 +139,6 @@ class CatBones {
   static const thumbR = 'thumb.R';
   static const pawToeR1 = 'paw_toe1.R';
   static const pawToeR2 = 'paw_toe2.R';
-  static const cuffR = 'cuff.R';
   static const legUpperL = 'leg_upper.L';
   static const legQuadL = 'leg_quad.L';
   static const legLowerL = 'leg_lower.L';
@@ -585,31 +583,9 @@ RigSpec buildCatInSuitRig({
         celShade: false,
       ),
     ),
-    // Shirt CUFF: a short band at the WRIST where the jacket sleeve ends and the
-    // hand begins (the hand pivot is at forearm-y 41), not a tall block up the
-    // mid-forearm — the old 32-tall band sat in the middle of the forearm and
-    // read as a brushed-chrome capsule JOINT rather than a cuff. A thin band just
-    // proud of the sleeve reads as the shirt cuff peeking from the jacket sleeve.
-    const Bone(
-      id: CatBones.cuffR,
-      parent: CatBones.armLowerR,
-      pivotX: 0,
-      pivotY: 39,
-      z: 17,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.roundedRect,
-        width: 19,
-        height: 12,
-        cornerRadius: 4,
-        // White shirt cuff (matching the collar), not the old muted grey: it
-        // reads as the dress-shirt cuff breaking the navy sleeve at the wrist, so
-        // the forearm no longer plugs straight into the paw as one navy tube.
-        color: _shirt,
-        outlineColor: _outline,
-        outlineWidth: 2,
-        celShade: false,
-      ),
-    ),
+    // (No wrist cuff: it was forearm-parented while the paw rotates with the
+    // hand IK, so it peeked out the side of the paw as a white blob in the palm.
+    // The white collar carries the dress-shirt read.)
 
     // Torso (suit jacket): a tapered wedge — wide at the shoulders (top),
     // narrowing to the waist (bottom) — so it reads as a tailored jacket with a
@@ -889,24 +865,7 @@ RigSpec buildCatInSuitRig({
         celShade: false,
       ),
     ),
-    const Bone(
-      id: CatBones.cuffL,
-      parent: CatBones.armLowerL,
-      pivotX: 0,
-      pivotY: 39,
-      z: 18,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.roundedRect,
-        width: 19,
-        height: 12,
-        cornerRadius: 4,
-        // White shirt cuff at the wrist — see cuffR.
-        color: _shirt,
-        outlineColor: _outline,
-        outlineWidth: 2,
-        celShade: false,
-      ),
-    ),
+    // (No wrist cuff — see the right arm.)
 
     // Pointed ears (behind the head crown so only the tips show above it),
     // each with a smaller inner ear nested on top.

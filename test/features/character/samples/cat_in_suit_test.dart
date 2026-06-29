@@ -48,12 +48,6 @@ void main() {
       expect(rig.bone(CatBones.shoeHighlightR)?.drawable?.color, 0xFF3C4058);
     });
 
-    test('wrist cuffs read as white shirt cuffs (matching the collar)', () {
-      final shirt = rig.bone(CatBones.shirtV)?.drawable?.color;
-      expect(rig.bone(CatBones.cuffL)?.drawable?.color, shirt);
-      expect(rig.bone(CatBones.cuffR)?.drawable?.color, shirt);
-    });
-
     test('the sole edge never lowers the shoe contact point', () {
       // The contact/grounding solver keys off the lowest drawn point of the
       // foot; the sole-edge highlight must stay above the sole bottom so it
