@@ -142,6 +142,24 @@ double get kDanceAppExportWarmupSec =>
 const Size kDanceDemoWindowSize = Size(1600, 900);
 const double kDanceDemoAspectRatio = 16 / 9;
 
+/// Formats a playback position like a video editor transport display.
+///
+/// Tracks under an hour use `mm:ss.mmm`; longer tracks use `h:mm:ss.mmm`.
+String formatDancePlaybackTimestamp(double seconds) {
+  final safeSeconds = seconds.isFinite && seconds > 0 ? seconds : 0.0;
+  final totalMillis = (safeSeconds * 1000).round();
+  final wholeSeconds = totalMillis ~/ 1000;
+  final millis = totalMillis % 1000;
+  final hours = wholeSeconds ~/ 3600;
+  final minutes = (wholeSeconds % 3600) ~/ 60;
+  final secs = wholeSeconds % 60;
+  final millisText = millis.toString().padLeft(3, '0');
+  final secText = secs.toString().padLeft(2, '0');
+  final minText = minutes.toString().padLeft(2, '0');
+  if (hours > 0) return '$hours:$minText:$secText.$millisText';
+  return '$minText:$secText.$millisText';
+}
+
 /// Bars the 32-frame [CatClips.dance] phrase spans: `duration 6 s` at
 /// `kAuthoredDanceBpm 120` = 12 beats = 3 bars of 4/4.
 const int kDancePhraseBars = 3;
@@ -360,8 +378,8 @@ class DanceToTrackPage extends StatefulWidget {
 
 class _DanceToTrackPageState extends State<DanceToTrackPage>
     with SingleTickerProviderStateMixin {
-  // The trio, matching character_demo.dart so the look is identical; only the
-  // clock differs (audio position instead of a free-running scalar).
+  // The trio: lead plus two backing cats. The clock is the audio position warped
+  // through the beat map, not a free-running scalar.
   late final CharacterScene _lead = CharacterScene(
     buildCatInSuitRig(
       legWidthScale: kDanceLeadLegWidthScale,
@@ -529,11 +547,20 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
   @override
   void initState() {
     super.initState();
+    HardwareKeyboard.instance.addHandler(_handleGlobalKeyEvent);
     _ticker = createTicker(_onTick);
     if (!kDanceAppExport) _ticker.start();
     unawaited(_load());
     // Old-backdrop plate, loaded so the A/B toggle can switch to it instantly.
     unawaited(_loadBackdrop());
+  }
+
+  bool _handleGlobalKeyEvent(KeyEvent event) {
+    if (kDanceRenderOnly || kDanceAppExport) return false;
+    if (event is! KeyDownEvent) return false;
+    if (event.logicalKey != LogicalKeyboardKey.space) return false;
+    if (_map != null) unawaited(_togglePlay());
+    return true;
   }
 
   bool _advanceRenderClock(double dt) {
@@ -1214,6 +1241,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleGlobalKeyEvent);
     _ticker.dispose();
     unawaited(_player.dispose());
     _backdrop?.dispose();
@@ -1292,9 +1320,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
           aspectRatio: 16 / 9,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              // Match character_demo: size the cast to the available height
-              // (the painter scales uniformly, so this is what keeps the cats
-              // correctly proportioned instead of squat at the default scale 1).
+              // Size the cast to the available height (the painter scales
+              // uniformly, so this keeps the cats correctly proportioned instead
+              // of squat at the default scale 1).
               final scale = constraints.maxHeight * 0.78 / 300.0;
               // Parallax the layered scene with the director's shot so it
               // drifts behind the dancers (lagged) instead of sitting dead
@@ -1496,6 +1524,7 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
             children: [
               IconButton.filledTonal(
                 onPressed: _map == null ? null : _togglePlay,
+                tooltip: playing ? 'Pause (Space)' : 'Play (Space)',
                 icon: Icon(playing ? Icons.pause : Icons.play_arrow),
               ),
               const SizedBox(width: 4),
@@ -1540,8 +1569,9 @@ class _DanceToTrackPageState extends State<DanceToTrackPage>
                   _map == null
                       ? 'loading…'
                       : '${_bpm.toStringAsFixed(0)} BPM   ·   '
-                            'pos ${posSec.toStringAsFixed(1)} / '
-                            '${_trackDurationSec.toStringAsFixed(0)} s   ·   '
+                            '${formatDancePlaybackTimestamp(posSec)} / '
+                            '${formatDancePlaybackTimestamp(_trackDurationSec)}'
+                            '   ·   '
                             'section ${section?.label ?? '–'} · '
                             '${(section?.energetic ?? true) ? 'dance' : 'calm'}',
                   style: const TextStyle(
