@@ -25,7 +25,11 @@ const int _sleeveNear =
     0xFF4A5A80; // NEAR (left) sleeve — lighter still. The left arm draws on top
 // (z16/17 > right z15/16), so a 3-step value gradient torso < far < near keeps
 // the two CROSSED forearms reading as two distinct arms, not one fused band.
-const int _cuff = 0xFFB9C0D4; // light dress-shirt cuff at the wrist
+// Muted slate cuff: a LIGHT cuff (was 0xFFB9C0D4) reads as brushed chrome once
+// the directional cel-shade ramps across the lengthened forearm band, so it is
+// toned down into the navy suit's cool family — still a distinct shirt cuff
+// against the sleeve, but dark enough that the cel gradient stays cloth.
+const int _cuff = 0xFF7E869C;
 const int _trouser = 0xFF26304A; // darker navy
 const int _trouserRear = 0xFF202941; // slightly darker rear leg
 const int _fur = 0xFFE8A55A; // orange tabby
@@ -1005,17 +1009,15 @@ RigSpec buildCatInSuitRig({
       coolAmount: 0.26,
       coverage: 0.52,
       softness: 0.16,
-      // A slightly tighter lit-side SHEEN so the fabric/fur reads as catching the
-      // key, without going so bright/deep that thin limbs chrome out.
-      highlightAmount: 0.3,
+      // A modest lit-side SHEEN so the fabric/fur reads as catching the key,
+      // without going so bright that the thin limbs/cuffs chrome out.
+      highlightAmount: 0.24,
       highlightCoverage: 0.24,
-      // Painterly form-rounding: darken each volume toward its contour into a cool
-      // blue-hour fill so limbs/torso read as rounded tubes. Kept MODERATE: pushed
-      // deeper, the head-ellipse and torso-top both darken at the neck and the
-      // head reads as a separate blob "about to fall off", so the rounding stays
-      // gentle enough to keep the head visually attached to the body.
-      roundAmount: 0.42,
-      roundCoverage: 0.6,
+      // Painterly form-rounding is left OFF for this rig (roundAmount defaults to
+      // 0): even at a moderate setting it darkened the head-ellipse bottom against
+      // the torso top, reading as a detached "about to fall off" head. The cel
+      // terminator plus the concert grade carry the volume; the rig stays a clean
+      // cartoon.
     ),
   );
 }
@@ -4476,6 +4478,41 @@ class CatClips {
       chestScaleX: 1.06,
     ),
   ];
+
+  /// How far to scale the shaku-family lateral weight commit (1.0 = the authored
+  /// [_shakuBodyGrooveKeys] groove). The body commits so far to the side that,
+  /// under a head deliberately kept facing camera, the torso reads as a pendulum
+  /// swinging beneath a fixed head; pulling the side-to-side commit in tames that
+  /// without flattening the move.
+  static const double _shakuLateralGain = 0.7;
+
+  /// [_shakuBodyGrooveKeys] with only the LATERAL groove scaled by
+  /// [_shakuLateralGain] — the side-to-side weight commit (`rootDx` +
+  /// pelvis/chest rotation). The vertical knee-dip (`rootDy`) and the chest
+  /// squash are preserved, so the on-beat pocket keeps its full depth. Shared by
+  /// every clip that grooves on these keys — shaku, zanku, azonto (lead and the
+  /// ensemble backups alike) — so the whole crew commits less far, not just the
+  /// lead.
+  static final List<DanceBodyKey> _shakuGrooveCalm = [
+    for (final k in _shakuBodyGrooveKeys)
+      DanceBodyKey(
+        k.frame,
+        rootDx: k.rootDx == null ? null : k.rootDx! * _shakuLateralGain,
+        rootDy: k.rootDy,
+        rootRotation: k.rootRotation == null
+            ? null
+            : k.rootRotation! * _shakuLateralGain,
+        pelvisRotation: k.pelvisRotation == null
+            ? null
+            : k.pelvisRotation! * _shakuLateralGain,
+        chestRotation: k.chestRotation == null
+            ? null
+            : k.chestRotation! * _shakuLateralGain,
+        chestScaleX: k.chestScaleX,
+        chestScaleY: k.chestScaleY,
+        ease: k.ease,
+      ),
+  ];
   // Support knee pumps deepest on each count: LEFT supports bar 1 (deep on
   // 0/4/8/12), RIGHT supports bar 2 (deep on 16/20/24/28).
   static const _shakuLegLowerLKeys = [
@@ -4660,7 +4697,7 @@ class CatClips {
       // sway, so the tall ears stop sweeping side to side.
       danceHeadBobScale: 0.2,
       root: LayeredRootChannel([
-        _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
+        _dancePhrase.bodyRootChannel(_shakuGrooveCalm, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
         // Per-BAR pelvis/COM travel — a small lateral shift (harmonic 1) that
         // stacks the body OVER the support foot (left bar 1, right bar 2). Safe
@@ -4690,7 +4727,7 @@ class CatClips {
       channels: {
         ...base.channels,
         CatBones.hips: LayeredJointChannel([
-          _dancePhrase.bodyPelvisChannel(_shakuBodyGrooveKeys),
+          _dancePhrase.bodyPelvisChannel(_shakuGrooveCalm),
           _dancePhrase.bodyPelvisChannel(_danceBodyAccentKeys, smooth: true),
           const SineChannel(
             harmonicAmplitude: 0.004,
@@ -4705,7 +4742,7 @@ class CatClips {
           ),
         ]),
         CatBones.torso: LayeredJointChannel([
-          _dancePhrase.bodyChestChannel(_shakuBodyGrooveKeys),
+          _dancePhrase.bodyChestChannel(_shakuGrooveCalm),
           _dancePhrase.bodyChestChannel(_danceBodyAccentKeys, smooth: true),
           const SineChannel(
             harmonicAmplitude: 0.003,
@@ -4936,7 +4973,7 @@ class CatClips {
       limbTargets: _zankuLimbTargets,
       supportFootWorldAnchor: true,
       root: LayeredRootChannel([
-        _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
+        _dancePhrase.bodyRootChannel(_shakuGrooveCalm, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
         // Per-BEAT weight commit that DWELLS over the stamping foot (replaces the
         // sine sway that just passed through centre). See [_zankuCommitKeys].
@@ -4955,11 +4992,11 @@ class CatClips {
       channels: {
         ...base.channels,
         CatBones.hips: LayeredJointChannel([
-          _dancePhrase.bodyPelvisChannel(_shakuBodyGrooveKeys),
+          _dancePhrase.bodyPelvisChannel(_shakuGrooveCalm),
           _dancePhrase.bodyPelvisChannel(_danceBodyAccentKeys, smooth: true),
         ]),
         CatBones.torso: LayeredJointChannel([
-          _dancePhrase.bodyChestChannel(_shakuBodyGrooveKeys),
+          _dancePhrase.bodyChestChannel(_shakuGrooveCalm),
           _dancePhrase.bodyChestChannel(_danceBodyAccentKeys, smooth: true),
           // Leaned-back confident carriage — the Zanku posture (constant bias).
           const SineChannel(bias: -0.14),
@@ -5103,7 +5140,7 @@ class CatClips {
       // rather than bouncing — the groove dip is in rootDy, which this counters.
       danceHeadBobScale: 0.3,
       root: LayeredRootChannel([
-        _dancePhrase.bodyRootChannel(_shakuBodyGrooveKeys, smooth: true),
+        _dancePhrase.bodyRootChannel(_shakuGrooveCalm, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
         const SineRootChannel(
           bobAmplitude: -0.04,
@@ -5119,7 +5156,7 @@ class CatClips {
       channels: {
         ...base.channels,
         CatBones.hips: LayeredJointChannel([
-          _dancePhrase.bodyPelvisChannel(_shakuBodyGrooveKeys),
+          _dancePhrase.bodyPelvisChannel(_shakuGrooveCalm),
           _dancePhrase.bodyPelvisChannel(_danceBodyAccentKeys, smooth: true),
           // Azonto waist swivel — the hips roll side to side, twice per phrase
           // (harmonicMultiplier defaults to 2). Sharpened so the pelvis snap
@@ -5127,7 +5164,7 @@ class CatClips {
           const SineChannel(harmonicAmplitude: 0.17),
         ]),
         CatBones.torso: LayeredJointChannel([
-          _dancePhrase.bodyChestChannel(_shakuBodyGrooveKeys),
+          _dancePhrase.bodyChestChannel(_shakuGrooveCalm),
           _dancePhrase.bodyChestChannel(_danceBodyAccentKeys, smooth: true),
           // Chest counters the hip swivel — the Azonto torso/hip opposition.
           // Stronger counter so the shoulders hold while the pelvis snaps under
