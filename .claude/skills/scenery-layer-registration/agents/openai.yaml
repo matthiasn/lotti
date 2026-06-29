@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scenery Layer Registration"
+  short_description: "Verify and debug full-frame scenery masks and layers."
+  default_prompt: "Use this skill to prove that scenery masks and alpha layers are full-frame, registered to their master plate, and free of ghost occluders before changing runtime composition."

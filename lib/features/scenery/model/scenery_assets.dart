@@ -14,7 +14,8 @@ const Size kSceneryCanvasSize = Size(2560, 1440);
 /// `tools/scenery_art/bake_city_windows.py`) — the city-lights shader lights its
 /// painted windows directly. [cityBridge], [yacht] and [foreground] are
 /// alpha-cut structure/occluder layers re-drawn over animated atmosphere/water
-/// so moving effects stay behind solid painted objects.
+/// so moving effects stay behind solid painted objects. [lufthansa747] is a
+/// cropped transparent overlay asset used by the distant-jet layer.
 abstract final class SceneryAssets {
   static const masterPlate = 'assets/scenery/blue_hour_master.webp';
   static const cloudlessPlate = 'assets/scenery/blue_hour_cloudless.webp';
@@ -25,4 +26,5 @@ abstract final class SceneryAssets {
   static const cityBridge = 'assets/scenery/city_bridge.webp';
   static const yacht = 'assets/scenery/yacht.webp';
   static const foreground = 'assets/scenery/foreground.webp';
+  static const lufthansa747 = 'assets/scenery/lufthansa_747.png';
 }

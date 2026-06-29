@@ -4,6 +4,7 @@ import 'package:lotti/features/scenery/layers/bridge_police_layer.dart';
 import 'package:lotti/features/scenery/layers/city_lights_layer.dart';
 import 'package:lotti/features/scenery/layers/cloud_parallax_layer.dart';
 import 'package:lotti/features/scenery/layers/deck_glow_layer.dart';
+import 'package:lotti/features/scenery/layers/distant_jet_layer.dart';
 import 'package:lotti/features/scenery/layers/drone_show_layer.dart';
 import 'package:lotti/features/scenery/layers/image_layer.dart';
 import 'package:lotti/features/scenery/layers/ocean_layer.dart';
@@ -38,12 +39,13 @@ void main() {
           SceneryAssets.cityWindows,
           SceneryAssets.yacht,
           SceneryAssets.foreground,
+          SceneryAssets.lufthansa747,
         ]),
       );
     });
 
     test(
-      'composites plate -> clouds -> ocean -> city/yacht -> deck -> drones',
+      'composites plate -> clouds -> jet -> ocean -> city/yacht -> deck -> drones',
       () {
         final layers = BackdropScene.blueHourWaterfront().layers;
         final plate = layers.indexWhere(
@@ -59,6 +61,7 @@ void main() {
         );
         final lights = layers.indexWhere((l) => l is CityLightsLayer);
         final ocean = layers.indexWhere((l) => l is OceanLayer);
+        final jet = layers.indexWhere((l) => l is DistantJetLayer);
         final skyDrones = layers.indexWhere(
           (l) =>
               l is DroneShowLayer &&
@@ -74,6 +77,8 @@ void main() {
         final police = layers.indexWhere((l) => l is BridgePoliceLayer);
         expect(plate, 0);
         expect(cloud, greaterThan(plate));
+        expect(jet, greaterThan(cloud));
+        expect(jet, lessThan(ocean));
         // Animated water sits over the painted plate.
         expect(ocean, greaterThan(plate));
         expect(ocean, greaterThan(cloud));

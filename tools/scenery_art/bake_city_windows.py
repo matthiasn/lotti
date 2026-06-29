@@ -21,21 +21,20 @@ Pipeline (all in the master's own pixel space, so output is pixel-registered):
   7. erode interior (MinFilter 9) so glowing silhouette outlines / wireframe rims
      drop out and only deep interior survives
   8. FILL the window panes, never the edges. The field must mark window GLASS
-     (filled cells) + a solid building-face base, NOT the high-pass edge lattice:
+     (filled cells), NOT a solid facade mask and NOT the high-pass edge lattice:
         panes = clip((blur - L)/12, 0, 1)   -> recessed dark window glass, filled.
             Because panes are the DARK cells, this lights pane INTERIORS and is 0
             on every bright edge (mullions AND the building's own silhouette
             sides), so nothing streaks vertically up the tower edges or past the
             roofline the way an |edge| field does.
-        face  = smoothstep(.35,.65, interiorEroded) -> solid lit-able face base, so
-            faces with sky-bright (reflective) windows still light whole floors.
-        wfield = clip(0.40*face + 0.85*panes, 0, 1), hard-stopped at the waterline.
+        wfield = paneCore, hard-stopped above the waterfront/bridge band.
 
 Output `assets/scenery/city_windows.webp` (RGBA, opaque). Channel packing:
   * R: city window field — "is this a lit-able window face, how strong". The
     city-lights shader paints its own per-floor lit/dark selection + tint +
-    flicker on top. SOLID faces + registered pane fills, never edges, so lit
-    windows read as filled panes/floors instead of a glowing wireframe.
+    flicker on top. Registered pane fills only, never solid facade regions, so
+    lit windows read as panes instead of glowing building-shaped blocks whose
+    reflections become fake bridge/pylon structures in the water.
   * G: unused (0). Formerly an offset hand-placed "TV window" box; removed — every
     lit yacht window now lives in the cabin mask (B).
   * B: yacht cabin-window mask — every window lit warm from inside. Authoritative
@@ -69,6 +68,14 @@ OUT = REPO / "assets/scenery/city_windows.webp"
 # shore waterline. Buildings live entirely inside this band.
 BAND_TOP = 0.15
 BAND_BOTTOM = 0.515
+
+# Stop city-window detection before the far-shore bridge/deck/waterfront clutter.
+# Those low structures contain dense lines and bright/dark edges that the detector
+# cannot distinguish from high-rise windows; if they enter the R channel, the
+# shader's water-reflection pass mirrors them into fake pylons/blocks in the
+# lagoon. Keep this conservative: dynamic city lights belong to the high-rises;
+# the low waterfront remains baked into the master plate.
+WINDOW_FIELD_BOTTOM = 0.405
 
 # Normalized art-x span of the cable-stayed bridge (left approach + piers + tower
 # + cable fan + right deck). The dynamic window field is hard-zeroed across this
@@ -146,11 +153,17 @@ def main() -> int:
     # FILL the panes, never the edges. `panes` lights the recessed DARK window
     # glass (filled cells), which is 0 on every bright edge — mullions and the
     # tower's own silhouette sides — so nothing streaks vertically up the towers
-    # or bleeds past the roofline the way an |edge| field does. `face` is a solid
-    # lit-able base so sky-bright (reflective) facades still light whole floors.
+    # or bleeds past the roofline the way an |edge| field does. Do NOT add a
+    # solid "face" component: it turns whole facades/low waterfront structures
+    # into light-emitting masks, and the reflection shader mirrors those blocks
+    # into fake bridge/pylon shapes in the water.
     panes = np.clip((blur - lum) / 12.0, 0.0, 1.0) * interior_eroded
-    face = _smoothstep(0.35, 0.65, interior_eroded)
-    wfield = np.clip(0.40 * face + 0.85 * panes, 0.0, 1.0)
+    pane_core = _smoothstep(0.16, 0.72, panes)
+    # Feather back a little of the sub-threshold pane edge after the hard core
+    # selection so individual windows still glow softly, without resurrecting
+    # the broad facade mask.
+    pane_soft = np.clip((panes - 0.06) / 0.42, 0.0, 1.0) * 0.28
+    wfield = np.clip(np.maximum(pane_core, pane_soft), 0.0, 1.0)
 
     # Hard-zero the whole cable-stayed BRIDGE span. Its towers, cable fan, deck
     # and piers carry dense structure that the texture detector reads as a
@@ -167,15 +180,14 @@ def main() -> int:
     )
     wfield *= 1.0 - bridge_band
 
-    # Distant buildings behind the foreground palm on the FAR RIGHT show through
-    # its sparse fronds as ugly bright window squares (the palm alpha is too thin
-    # to mask them). They are deep background beside the yacht, so drop the
-    # dynamic field there and let them sit as dim painted silhouettes under the
-    # sunset instead of a lit "house" behind the palm.
-    far_right = _smoothstep(0.86, 0.90, xx)
+    # Distant/yacht-adjacent right-side structure and mast detail is not part of
+    # the high-rise window field. The yacht is lit by the B-channel cabin mask and
+    # canvas navigation lamps; leaving city-window R pixels here makes antennas
+    # and palm slivers emit like high-rise panes.
+    far_right = _smoothstep(0.80, 0.84, xx)
     wfield *= 1.0 - far_right
 
-    wfield[yy > BAND_BOTTOM] = 0.0
+    wfield[yy > WINDOW_FIELD_BOTTOM] = 0.0
 
     yt = Image.open(YACHT).convert("RGBA").resize((w, h), Image.Resampling.LANCZOS)
     yt_arr = np.asarray(yt, dtype=np.float64)

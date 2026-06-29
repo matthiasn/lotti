@@ -85,7 +85,7 @@ void main() {
       final copy = kBlueHourPalette.copyWith();
       expect(copy.skyZenith, kBlueHourPalette.skyZenith);
       expect(copy.moonGlint, kBlueHourPalette.moonGlint);
-      expect(copy.heliStrobe, kBlueHourPalette.heliStrobe);
+      expect(copy.aircraftStrobe, kBlueHourPalette.aircraftStrobe);
     });
   });
 }

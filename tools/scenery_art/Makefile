@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: blue-hour
+.PHONY: blue-hour inspect
 
 blue-hour:
 	$(PYTHON) layer_from_masks.py \
@@ -18,3 +18,6 @@ blue-hour:
 		--out-dir ../../assets/scenery \
 		--preview-dir ../../tmp/scenery_work
 	$(PYTHON) bake_city_windows.py
+
+inspect:
+	$(PYTHON) inspect_layers.py

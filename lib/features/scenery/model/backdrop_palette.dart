@@ -60,8 +60,8 @@ class BackdropPalette {
     required this.shipPort,
     required this.shipStarboard,
     required this.shipMast,
-    required this.heliBeacon,
-    required this.heliStrobe,
+    required this.aircraftBeacon,
+    required this.aircraftStrobe,
   });
 
   /// Zenith of the sky gradient — deepest, darkest twilight blue.
@@ -157,11 +157,11 @@ class BackdropPalette {
   /// COLREGS masthead/stern navigation light — white.
   final Color shipMast;
 
-  /// Helicopter red anti-collision beacon.
-  final Color heliBeacon;
+  /// Red aircraft anti-collision beacon.
+  final Color aircraftBeacon;
 
-  /// Helicopter white anti-collision strobe.
-  final Color heliStrobe;
+  /// White aircraft anti-collision strobe.
+  final Color aircraftStrobe;
 
   BackdropPalette copyWith({
     Color? skyZenith,
@@ -195,8 +195,8 @@ class BackdropPalette {
     Color? shipPort,
     Color? shipStarboard,
     Color? shipMast,
-    Color? heliBeacon,
-    Color? heliStrobe,
+    Color? aircraftBeacon,
+    Color? aircraftStrobe,
   }) {
     return BackdropPalette(
       skyZenith: skyZenith ?? this.skyZenith,
@@ -230,8 +230,8 @@ class BackdropPalette {
       shipPort: shipPort ?? this.shipPort,
       shipStarboard: shipStarboard ?? this.shipStarboard,
       shipMast: shipMast ?? this.shipMast,
-      heliBeacon: heliBeacon ?? this.heliBeacon,
-      heliStrobe: heliStrobe ?? this.heliStrobe,
+      aircraftBeacon: aircraftBeacon ?? this.aircraftBeacon,
+      aircraftStrobe: aircraftStrobe ?? this.aircraftStrobe,
     );
   }
 }
@@ -270,6 +270,6 @@ const BackdropPalette kBlueHourPalette = BackdropPalette(
   shipPort: Color(0xFFE23A2E),
   shipStarboard: Color(0xFF1FB85A),
   shipMast: Color(0xFFFFF3DE),
-  heliBeacon: Color(0xFFFF2A1F),
-  heliStrobe: Color(0xFFFFFFFF),
+  aircraftBeacon: Color(0xFFFF2A1F),
+  aircraftStrobe: Color(0xFFFFFFFF),
 );

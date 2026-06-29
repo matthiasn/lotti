@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/scenery/model/scenery_assets.dart';
 
 void main() {
   group('blue-hour scenery assets', () {
@@ -14,6 +15,73 @@ void main() {
       'yacht',
       'foreground',
     ];
+
+    const fullFrameAssets = [
+      SceneryAssets.masterPlate,
+      SceneryAssets.cloudlessPlate,
+      SceneryAssets.cloudsFar,
+      SceneryAssets.cloudsMid,
+      SceneryAssets.cloudsNear,
+      SceneryAssets.cityWindows,
+      SceneryAssets.cityBridge,
+      SceneryAssets.yacht,
+      'assets/scenery/yacht_windows.webp',
+      SceneryAssets.foreground,
+    ];
+
+    test('registered plates and lookup images are all full-frame', () async {
+      for (final path in fullFrameAssets) {
+        final image = await _readImage(path);
+
+        expect(image.width, 2560, reason: path);
+        expect(image.height, 1440, reason: path);
+      }
+    });
+
+    test('city-window lookup only marks registered high-rise panes', () async {
+      final image = await _readImage(SceneryAssets.cityWindows);
+
+      final highRise = _countChannelAbove(
+        image,
+        channel: 0,
+        threshold: 25,
+        bounds: const _Bounds(left: 0, top: 216, right: 2559, bottom: 575),
+      );
+      final lowWaterfront = _countChannelAbove(
+        image,
+        channel: 0,
+        threshold: 25,
+        bounds: const _Bounds(left: 0, top: 576, right: 2559, bottom: 683),
+      );
+      final water = _countChannelAbove(
+        image,
+        channel: 0,
+        threshold: 25,
+        bounds: const _Bounds(left: 0, top: 684, right: 2559, bottom: 839),
+      );
+      final bridgeSpan = _countChannelAbove(
+        image,
+        channel: 0,
+        threshold: 25,
+        bounds: const _Bounds(left: 1362, top: 0, right: 2047, bottom: 1439),
+      );
+      final yachtSide = _countChannelAbove(
+        image,
+        channel: 0,
+        threshold: 25,
+        bounds: const _Bounds(left: 2048, top: 0, right: 2559, bottom: 1439),
+      );
+
+      expect(highRise, greaterThan(5000));
+      expect(
+        lowWaterfront,
+        lessThan(highRise * 0.15),
+        reason: 'low waterfront/bridge edges must not dominate city lights',
+      );
+      expect(water, 0);
+      expect(bridgeSpan, 0);
+      expect(yachtSide, 0);
+    });
 
     test(
       'base plate and derived layers share one full-frame coordinate space',
@@ -63,6 +131,20 @@ void main() {
         expect(foreground.bounds.top, 0);
       },
     );
+
+    test(
+      'Lufthansa 747 overlay is a cropped transparent aircraft asset',
+      () async {
+        final jet = _alphaStats(
+          await _readImage('assets/scenery/lufthansa_747.png'),
+        );
+
+        expect(jet.bounds.left, greaterThan(0));
+        expect(jet.bounds.right, lessThan(1414));
+        expect(jet.transparent, isPositive);
+        expect(jet.opaque, isPositive);
+      },
+    );
   });
 }
 
@@ -109,6 +191,22 @@ _AlphaStats _alphaStats(_DecodedImage image) {
     opaque: opaque,
     bounds: _Bounds(left: left, top: top, right: right, bottom: bottom),
   );
+}
+
+int _countChannelAbove(
+  _DecodedImage image, {
+  required int channel,
+  required int threshold,
+  required _Bounds bounds,
+}) {
+  var count = 0;
+  for (var y = bounds.top; y <= bounds.bottom; y++) {
+    for (var x = bounds.left; x <= bounds.right; x++) {
+      final value = image.bytes[(y * image.width + x) * 4 + channel];
+      if (value > threshold) count++;
+    }
+  }
+  return count;
 }
 
 class _DecodedImage {

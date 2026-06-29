@@ -6,6 +6,7 @@ import 'package:lotti/features/scenery/layers/bridge_police_layer.dart';
 import 'package:lotti/features/scenery/layers/city_lights_layer.dart';
 import 'package:lotti/features/scenery/layers/cloud_parallax_layer.dart';
 import 'package:lotti/features/scenery/layers/deck_glow_layer.dart';
+import 'package:lotti/features/scenery/layers/distant_jet_layer.dart';
 import 'package:lotti/features/scenery/layers/drone_show_layer.dart';
 import 'package:lotti/features/scenery/layers/image_layer.dart';
 import 'package:lotti/features/scenery/layers/ocean_layer.dart';
@@ -26,9 +27,10 @@ class BackdropScene {
 
   /// The painted Lagos-lagoon blue-hour scene, back to front: the cloudless
   /// master-derived base plate, three exact-pixel cloud layers drifting at
-  /// different depths, the animated ocean, solid skyline/bridge/yacht structure
-  /// re-drawn OVER atmosphere/water so clouds/foam never slide across them, the
-  /// additive city/yacht night lights, the foreground deck/palms, the warm
+  /// different depths, a subtle distant jet crossing behind the skyline early
+  /// in the loop, the animated ocean, solid skyline/bridge/yacht structure
+  /// re-drawn OVER atmosphere/water so clouds/foam never slide across them,
+  /// the additive city/yacht night lights, the foreground deck/palms, the warm
   /// lantern glow pooling on the now-lit deck, and finally both drone-show
   /// passes above the painted structures so bridge cables cannot slice holes in
   /// the ascent. All sit behind the dancers (they are background layers).
@@ -59,6 +61,11 @@ class BackdropScene {
           dyCycleSeconds: 46,
           phase: 0.71,
         ),
+        // Small 747-ish wide-body crossing in the far sky. It sits behind the
+        // fixed skyline/yacht redraws and far below the dancer plane, giving the
+        // opening seconds a readable motion cue without becoming foreground
+        // spectacle.
+        DistantJetLayer(),
         // Animated water first; the additive ocean and additive city lights
         // commute, so the only thing the order buys us is letting the opaque
         // yacht sit BETWEEN them.
@@ -112,6 +119,7 @@ class BackdropScene {
         SceneryAssets.cityWindows,
         SceneryAssets.yacht,
         SceneryAssets.foreground,
+        SceneryAssets.lufthansa747,
       ],
     );
   }

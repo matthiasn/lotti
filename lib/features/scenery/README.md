@@ -58,12 +58,13 @@ flowchart BT
   yacht[yacht.webp]
   city[city_bridge.webp]
   ocean[OceanLayer shader/fallback]
+  jet[DistantJetLayer]
   near[clouds_near.webp parallax]
   mid[clouds_mid.webp parallax]
   far[clouds_far.webp parallax]
   base[blue_hour_cloudless.webp]
 
-  base --> far --> mid --> near --> ocean --> city --> yacht --> lights --> fg --> glow --> police --> skyDrones --> launchDrones --> child --> vignette
+  base --> far --> mid --> near --> jet --> ocean --> city --> yacht --> lights --> fg --> glow --> police --> skyDrones --> launchDrones --> child --> vignette
 ```
 
 The ordering is the important contract:
@@ -71,6 +72,12 @@ The ordering is the important contract:
 - The base is `blue_hour_cloudless.webp`, not the original master plate.
 - Clouds are reintroduced as transparent full-frame WebPs and drift with
   `CloudParallaxLayer`.
+- `DistantJetLayer` draws the generated transparent `lufthansa_747.png` asset
+  as a small right-to-left opening pass. The pass is clipped to the active 16:9
+  stage rect so it never crosses desktop/export side bars, and adds four
+  engine-origin contrails that diffuse and fade behind the aircraft. Its lights
+  model the visible side only: steady red port wingtip, steady aft white, plus
+  FAA-rate red/white anti-collision pulses.
 - `OceanLayer` adds animated foam/glint over the painted lagoon.
 - `city_bridge.webp` and `yacht.webp` are redrawn after the moving clouds and
   ocean so clouds and foam never slide across solid structure.
