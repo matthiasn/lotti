@@ -707,17 +707,21 @@ RigSpec buildCatInSuitRig({
       id: CatBones.shirtV,
       parent: CatBones.torso,
       pivotX: 0,
-      pivotY: -86,
+      pivotY: -88,
       z: 13,
       restScaleY: -1,
       drawable: BoneDrawable(
         kind: BoneShapeKind.triangle,
-        width: 30,
-        height: 30,
-        dy: -15,
+        // Wider, taller wedge raised under the chin so a clear white collar
+        // opening reads (was a thin sliver that the head swallowed), making the
+        // face rise out of a shirt collar rather than sit on the jacket.
+        width: 38,
+        height: 36,
+        dy: -16,
         color: _shirt,
         outlineColor: _outline,
         outlineWidth: 2,
+        celShade: false,
       ),
     ),
     // Lapels: tapered panels angled down-and-in from each collar point to the
@@ -749,20 +753,20 @@ RigSpec buildCatInSuitRig({
     Bone(
       id: CatBones.collarL,
       parent: CatBones.torso,
-      pivotX: -10,
-      pivotY: -93,
+      pivotX: -11,
+      pivotY: -94,
       z: 13,
-      restRotation: 0.42,
-      drawable: _tapered(12, 3, 22, _shirt, dy: 10, celShade: false),
+      restRotation: 0.5,
+      drawable: _tapered(15, 4, 26, _shirt, dy: 11, celShade: false),
     ),
     Bone(
       id: CatBones.collarR,
       parent: CatBones.torso,
-      pivotX: 10,
-      pivotY: -93,
+      pivotX: 11,
+      pivotY: -94,
       z: 13,
-      restRotation: -0.42,
-      drawable: _tapered(12, 3, 22, _shirt, dy: 10, celShade: false),
+      restRotation: -0.5,
+      drawable: _tapered(15, 4, 26, _shirt, dy: 11, celShade: false),
     ),
 
     // Tie: a 2-link cloth pendulum over the jacket. The knot is short and nearly
@@ -776,10 +780,12 @@ RigSpec buildCatInSuitRig({
       z: 14,
       drawable: BoneDrawable(
         kind: BoneShapeKind.taperedCapsule,
-        width: 16, // knot
-        widthTip: 14,
-        height: 24,
-        dy: 11,
+        // A COMPACT knot at the collar that narrows downward (14→10), so the tie
+        // reads as a knotted necktie, not a uniform-width red slab.
+        width: 14, // knot top
+        widthTip: 10,
+        height: 16,
+        dy: 8,
         color: _tie,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -796,10 +802,12 @@ RigSpec buildCatInSuitRig({
       z: 14,
       drawable: BoneDrawable(
         kind: BoneShapeKind.taperedCapsule,
-        width: 16, // blade: widest at the knot, tapering to the point
-        widthTip: 4,
-        height: 38,
-        dy: 18,
+        // Slimmer than the knot and tapering steadily to the point — a narrow
+        // necktie descending the shirt, not a wide lozenge bulging mid-torso.
+        width: 11,
+        widthTip: 3,
+        height: 42,
+        dy: 19,
         color: _tie,
         outlineColor: _outline,
         outlineWidth: 2,
