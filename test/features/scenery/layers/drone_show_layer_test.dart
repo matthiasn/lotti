@@ -123,9 +123,11 @@ void main() {
           .map((s) => s.position.dy)
           .reduce((a, b) => a > b ? a : b);
 
-      expect(minX, greaterThanOrEqualTo(0.44));
-      expect(maxX, lessThanOrEqualTo(0.691));
-      expect(maxX - minX, inInclusiveRange(0.21, 0.23));
+      // The launch line is aligned to the police cordon span (x ≈ 0.555→0.745)
+      // so the drones stage on the cleared stretch of road, not left of it.
+      expect(minX, greaterThanOrEqualTo(0.55));
+      expect(maxX, lessThanOrEqualTo(0.746));
+      expect(maxX - minX, inInclusiveRange(0.18, 0.20));
       final step = xs[1] - xs[0];
       for (var i = 2; i < xs.length; i++) {
         expect(xs[i] - xs[i - 1], closeTo(step, 1e-12));

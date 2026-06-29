@@ -32,8 +32,13 @@ const double _textTransitionEnd = 0.74;
 const double _reducedMotionCycleProgress = 0.9;
 const double _bridgeClearY = 0.36;
 const int _ascentSpiralCount = 5;
-const double _launchStartX = 0.47;
-const double _launchSpanX = 0.22;
+// The launch line is aligned to the police cordon's span on the bridge deck
+// (BridgePoliceLayer's roadway, x ≈ 0.555→0.745): the drones stage on exactly
+// the stretch of road the police have cleared, so the line of unlit aircraft
+// reads as "drones on the closed road" instead of a stray dark bar poking out
+// to the left of the cordon.
+const double _launchStartX = 0.555;
+const double _launchSpanX = 0.19;
 const double _launchBaseY = 0.475;
 const double _launchSlopeY = 0.005;
 const double _ascentSpiralXRadius = 0.014;
