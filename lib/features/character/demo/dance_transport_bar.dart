@@ -524,10 +524,13 @@ abstract final class _Chrome {
   // whole song's shape previews and progress reads from the brightness step.
   // Neutral cool STEEL (low chroma) so teal is the bar's only chromatic accent;
   // the played/ahead read comes from the brightness step, not from blue.
-  static const Color wavePeakPlayed = Color(0xFFC6D2DA); // bright outline
-  static const Color waveBodyPlayed = Color(0xFF6C7A86); // darker core
-  static const Color wavePeakAhead = Color(0xFF6E767E); // legible outline
-  static const Color waveBodyAhead = Color(0xFF424850); // dim core
+  // A decisive brightness step played→ahead so progress reads off the clip
+  // fill itself, not only the playhead. Played is near-white; ahead's dim
+  // outline still previews the song's shape, but clearly trails.
+  static const Color wavePeakPlayed = Color(0xFFDCE6EC); // near-white outline
+  static const Color waveBodyPlayed = Color(0xFF7C8A96); // mid core
+  static const Color wavePeakAhead = Color(0xFF4A535D); // dim outline
+  static const Color waveBodyAhead = Color(0xFF323941); // darkest core
   static const Color rulerText = Color(0xFF96A2AE);
   static const Color markerPill = Color(0xD90B0F14);
 }
@@ -702,7 +705,7 @@ class _DanceTimelinePainter extends CustomPainter {
           c++;
         }
       }
-      return (c > 0 ? s / c : amplitudes[i]) * 0.85;
+      return (c > 0 ? s / c : amplitudes[i]) * 0.7;
     }
 
     Path envelope(double Function(int) sample) {
@@ -858,11 +861,13 @@ class _DanceTimelinePainter extends CustomPainter {
     // classic editor playhead, unmistakably a position marker rather than the
     // pause-glyph the old twin grip-bars read as.
     final flag = Path()
+      // Kept within the ruler band (above the marker-pill row) so the flag and
+      // the active clip pill never collide at the common in-clip position.
       ..moveTo(px - 8, 0)
       ..lineTo(px + 8, 0)
-      ..lineTo(px + 8, 11)
-      ..lineTo(px, 17)
-      ..lineTo(px - 8, 11)
+      ..lineTo(px + 8, 8)
+      ..lineTo(px, 12)
+      ..lineTo(px - 8, 8)
       ..close();
     canvas
       ..drawPath(
