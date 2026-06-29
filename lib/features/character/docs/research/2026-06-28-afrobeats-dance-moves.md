@@ -174,6 +174,14 @@ screen-right.
 
 ## Dropped / optional
 
+- **Dab** (Atlanta hip-hop/trap viral gesture, ~2015–2016) — **borrowed accent
+  only**. Not a core Lagos/Afrobeats style. It can sit as a one-count pop-culture
+  punctuation because Afrobeats club choreography did borrow global viral moves
+  during that era, but it should never replace the Shaku/Zanku/Azonto engine.
+  Use it as a quick diagonal hit: one forearm crosses the face, the opposite arm
+  extends on a high diagonal, chest counters, then immediately recover into the
+  native groove. Avoid a full dab phrase, which reads Atlanta/football/meme
+  rather than Lagos.
 - **Soapy** (Naira Marley, 2019) — **dropped**. Well-known meaning is a
   masturbation mime (the artist's stated prison framing); drew public
   condemnation; off-tone for suited cats. Its low-squat contrast is covered by

@@ -1495,7 +1495,8 @@ class CatClips {
         endFrame: 32,
         accentFrame: 28,
         featuredDancer: 'lead',
-        signature: 'free-left toe flick into compact hook reset',
+        signature:
+            'borrowed dab accent with free-left toe flick into hook reset',
       ),
     ],
   );
@@ -4945,7 +4946,10 @@ class CatClips {
   // the rest of the count before snapping to the other extreme — the Shaku
   // accent-then-freeze, not a smooth oscillation through mid-chest. Both paws
   // ride at x ~34 so neither grazes the navy torso (now also rim-read by the
-  // sleeve band). Needs the non-smooth channel below.
+  // sleeve band). The final count borrows a one-beat dab as a late phrase accent:
+  // left paw extends diagonally up-left while the right paw crosses the face,
+  // then the next loop lands back in the Shaku X. This is intentionally a
+  // borrowed pop/hip-hop gesture, not the primary Afrobeats engine.
   static const _shakuHandLTargetKeys = [
     DanceIkTargetKey(0, x: 34, y: -66), // high (held from the loop snap)
     DanceIkTargetKey(3, x: 34, y: -66), // hold the high
@@ -4960,9 +4964,13 @@ class CatClips {
     DanceIkTargetKey(20, x: 34, y: -22, ease: Ease.easeOutBack),
     DanceIkTargetKey(23, x: 34, y: -22),
     DanceIkTargetKey(24, x: 34, y: -66, ease: Ease.easeOutBack),
-    DanceIkTargetKey(27, x: 34, y: -66),
-    DanceIkTargetKey(28, x: 34, y: -22, ease: Ease.easeOutBack),
-    DanceIkTargetKey(31, x: 34, y: -22),
+    DanceIkTargetKey(25, x: 8, y: -68),
+    DanceIkTargetKey(26, x: -24, y: -82),
+    DanceIkTargetKey(27, x: -46, y: -100),
+    DanceIkTargetKey(28, x: -62, y: -120, ease: Ease.easeOutBack),
+    DanceIkTargetKey(29, x: -61, y: -118),
+    DanceIkTargetKey(30, x: -42, y: -68),
+    DanceIkTargetKey(31, x: -6, y: -36),
     DanceIkTargetKey(32, x: 34, y: -66, ease: Ease.easeOutBack),
   ];
   static const _shakuHandRTargetKeys = [
@@ -4979,9 +4987,13 @@ class CatClips {
     DanceIkTargetKey(20, x: -34, y: -66, ease: Ease.easeOutBack),
     DanceIkTargetKey(23, x: -34, y: -66),
     DanceIkTargetKey(24, x: -34, y: -22, ease: Ease.easeOutBack),
-    DanceIkTargetKey(27, x: -34, y: -22),
-    DanceIkTargetKey(28, x: -34, y: -66, ease: Ease.easeOutBack),
-    DanceIkTargetKey(31, x: -34, y: -66),
+    DanceIkTargetKey(25, x: -38, y: -42),
+    DanceIkTargetKey(26, x: -44, y: -60),
+    DanceIkTargetKey(27, x: -36, y: -74),
+    DanceIkTargetKey(28, x: -18, y: -82, ease: Ease.easeOutBack),
+    DanceIkTargetKey(29, x: -18, y: -80),
+    DanceIkTargetKey(30, x: -28, y: -58),
+    DanceIkTargetKey(31, x: -34, y: -34),
     DanceIkTargetKey(32, x: -34, y: -22, ease: Ease.easeOutBack),
   ];
   static final KeyframeIkTargetChannel _shakuHandLTarget = _dancePhrase
@@ -5031,6 +5043,62 @@ class CatClips {
     Keyframe(p: 1, rotation: -0.008),
   ];
 
+  // Shaku-only body punctuation for the borrowed dab. It adds a small chest
+  // counter-lean and hip load around frame 28 without altering the base `dance`
+  // phrase or the standalone Zanku/Azonto variants.
+  static const _shakuDabBodyKeys = [
+    DanceBodyKey(
+      24,
+      rootDx: 0,
+      rootDy: 0,
+      rootRotation: 0,
+      pelvisRotation: 0,
+      chestRotation: 0,
+      chestScaleY: 1,
+      chestScaleX: 1,
+    ),
+    DanceBodyKey(
+      26,
+      rootDx: -1.4,
+      rootDy: 0.45,
+      rootRotation: -0.001,
+      pelvisRotation: 0.035,
+      chestRotation: -0.06,
+      chestScaleY: 0.986,
+      chestScaleX: 1.01,
+    ),
+    DanceBodyKey(
+      28,
+      rootDx: -4.8,
+      rootDy: 1.1,
+      rootRotation: -0.002,
+      pelvisRotation: 0.075,
+      chestRotation: -0.16,
+      chestScaleY: 0.958,
+      chestScaleX: 1.028,
+    ),
+    DanceBodyKey(
+      30,
+      rootDx: -1.6,
+      rootDy: 0.35,
+      rootRotation: -0.001,
+      pelvisRotation: 0.035,
+      chestRotation: -0.07,
+      chestScaleY: 0.985,
+      chestScaleX: 1.008,
+    ),
+    DanceBodyKey(
+      32,
+      rootDx: 0,
+      rootDy: 0,
+      rootRotation: 0,
+      pelvisRotation: 0,
+      chestRotation: 0,
+      chestScaleY: 1,
+      chestScaleX: 1,
+    ),
+  ];
+
   /// Standalone "Shaku Shaku" catalog move — separate from the shipped `dance`,
   /// panel-certified 9/10 on all three lenses. Reuses the dance channels and
   /// overrides the groove (on-beat dip), the support-knee pump, and adds a
@@ -5054,6 +5122,7 @@ class CatClips {
       root: LayeredRootChannel([
         _dancePhrase.bodyRootChannel(_shakuGrooveCalm, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
+        _dancePhrase.bodyRootChannel(_shakuDabBodyKeys, smooth: true),
         // Per-BAR pelvis/COM travel — a small lateral shift (harmonic 1) that
         // stacks the body OVER the support foot (left bar 1, right bar 2). Safe
         // now the support foot is world-anchored: it holds while the body slides
@@ -5084,6 +5153,7 @@ class CatClips {
         CatBones.hips: LayeredJointChannel([
           _dancePhrase.bodyPelvisChannel(_shakuGrooveCalm),
           _dancePhrase.bodyPelvisChannel(_danceBodyAccentKeys, smooth: true),
+          _dancePhrase.bodyPelvisChannel(_shakuDabBodyKeys, smooth: true),
           const SineChannel(
             harmonicAmplitude: 0.004,
             harmonicPhase: 0.015,
@@ -5099,6 +5169,7 @@ class CatClips {
         CatBones.torso: LayeredJointChannel([
           _dancePhrase.bodyChestChannel(_shakuGrooveCalm),
           _dancePhrase.bodyChestChannel(_danceBodyAccentKeys, smooth: true),
+          _dancePhrase.bodyChestChannel(_shakuDabBodyKeys, smooth: true),
           const SineChannel(
             harmonicAmplitude: 0.003,
             harmonicPhase: 0.04,

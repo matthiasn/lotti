@@ -2175,6 +2175,79 @@ void main() {
       }
     });
 
+    test('shaku borrows a one-count dab accent, then recovers to the X', () {
+      final phrase = CatClips.dancePhrase;
+      final shaku = CatClips.shaku;
+      final handL = _targetFor(shaku, CatBones.handL).channel;
+      final handR = _targetFor(shaku, CatBones.handR).channel;
+      final torso = shaku.channels[CatBones.torso]!;
+      final hips = shaku.channels[CatBones.hips]!;
+
+      expect(phrase.moveAtFrame(28).signature, contains('borrowed dab'));
+
+      final shakuXLeft = handL.sample(20 / phrase.frameCount);
+      final shakuXRight = handR.sample(20 / phrase.frameCount);
+      expect(shakuXLeft.x, greaterThan(25));
+      expect(shakuXRight.x, lessThan(-25));
+      expect(
+        shakuXLeft.y,
+        greaterThan(shakuXRight.y + 35),
+        reason:
+            'before the borrowed accent the hands should still read Shaku X',
+      );
+
+      final dabLeft = handL.sample(28 / phrase.frameCount);
+      final dabRight = handR.sample(28 / phrase.frameCount);
+      expect(
+        dabLeft.x,
+        lessThan(-55),
+        reason: 'dab accent should extend the lead left paw diagonally up-left',
+      );
+      expect(dabLeft.y, lessThan(-112));
+      expect(
+        dabRight.x,
+        lessThan(-10),
+        reason: 'opposite paw should cross the face rather than stay in the X',
+      );
+      expect(dabRight.y, lessThan(-76));
+      expect(
+        dabRight.x - dabLeft.x,
+        greaterThan(38),
+        reason: 'the two paws should form a readable diagonal dab silhouette',
+      );
+
+      expect(
+        _targetDistance(handL, 28, 29),
+        lessThan(7),
+        reason: 'the dab should hold for a beat instead of flickering past',
+      );
+      expect(
+        torso.sample(28 / phrase.frameCount).rotation,
+        lessThan(torso.sample(24 / phrase.frameCount).rotation - 0.05),
+        reason: 'the dab needs a small shoulder counter-lean, not only arm IK',
+      );
+      expect(
+        hips.sample(28 / phrase.frameCount).rotation,
+        greaterThan(hips.sample(24 / phrase.frameCount).rotation + 0.04),
+        reason: 'the hip should load under the upper-body diagonal',
+      );
+
+      final loopLeft = handL.sample(32 / phrase.frameCount);
+      final loopRight = handR.sample(32 / phrase.frameCount);
+      expect(loopLeft.x, greaterThan(25));
+      expect(loopRight.x, lessThan(-25));
+      expect(
+        loopLeft.y,
+        lessThan(-60),
+        reason: 'the next loop should recover to the high Shaku X hand',
+      );
+      expect(
+        loopRight.y,
+        greaterThan(-30),
+        reason: 'the opposite hand should recover to the low Shaku X hand',
+      );
+    });
+
     test('dance keeps major phrase handoffs in continuous hand paths', () {
       final lead = CatClips.dance;
       final handL = _targetFor(lead, CatBones.handL).channel;
