@@ -112,10 +112,10 @@ void main() {
         leadLeg.halfWidths[3],
         closeTo(9.6 * kDanceLeadLegWidthScale, 0.001),
       );
-      expect(baseArm.halfWidths, const [11.6, 12.2, 8.6, 5.5]);
+      expect(baseArm.halfWidths, const [11.0, 12.6, 7.6, 4.6]);
       expect(
         leadArm.halfWidths[1],
-        closeTo(12.2 * kDanceLeadArmWidthScale, 0.001),
+        closeTo(12.6 * kDanceLeadArmWidthScale, 0.001),
       );
       expect(leadTail.halfWidths, baseTail.halfWidths);
     });

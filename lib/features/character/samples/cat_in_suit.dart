@@ -117,11 +117,13 @@ class CatBones {
   static const armBicepL = 'arm_bicep.L';
   static const armLowerL = 'arm_lower.L';
   static const handL = 'hand.L';
+  static const thumbL = 'thumb.L';
   static const cuffL = 'cuff.L';
   static const armUpperR = 'arm_upper.R';
   static const armBicepR = 'arm_bicep.R';
   static const armLowerR = 'arm_lower.R';
   static const handR = 'hand.R';
+  static const thumbR = 'thumb.R';
   static const cuffR = 'cuff.R';
   static const legUpperL = 'leg_upper.L';
   static const legQuadL = 'leg_quad.L';
@@ -483,6 +485,10 @@ RigSpec buildCatInSuitRig({
       z: 16,
       drawable: _tapered(18, 13, 50, _sleeve, dy: 20),
     ),
+    // Paw/fist: a slightly TALLER-than-wide oval (was a dead-round 24×24 ball)
+    // so the crossed-arm hands read as curled fists with a knuckle mass, not
+    // mitts. The thumb below breaks the silhouette so it grips rather than ends
+    // in a blob.
     Bone(
       id: CatBones.handR,
       parent: CatBones.armLowerR,
@@ -491,29 +497,43 @@ RigSpec buildCatInSuitRig({
       z: 17,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
-        width: 24,
-        height: 24,
-        dy: 6,
+        width: 23,
+        height: 26,
+        dy: 7,
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2.5,
       ),
     ),
-    // Light shirt-SLEEVE band running up the forearm (a rolled-up sleeve),
-    // drawn on top of the suit ribbon so the navy-on-navy forearm reads — what
-    // lets the crossed-arm dance poses (esp. the Shaku X over the navy torso)
-    // read as two distinct forearms instead of detached paws.
+    // Thumb: a short tapered digit on the inner (centreline) side of the fist,
+    // angled up across the knuckles, so the paw reads as an articulated hand that
+    // can grip. Drawn just under the hand (z 16 < hand z 17) so the fist mass
+    // overlaps its root and it reads as a thumb wrapping the fist, not a spur.
+    Bone(
+      id: CatBones.thumbR,
+      parent: CatBones.handR,
+      pivotX: -8,
+      pivotY: 3,
+      z: 16,
+      restRotation: 0.6,
+      drawable: _tapered(9, 5, 16, palette.fur, dy: 4, outlineWidth: 2.5),
+    ),
+    // Shirt CUFF: a short band at the WRIST where the jacket sleeve ends and the
+    // hand begins (the hand pivot is at forearm-y 41), not a tall block up the
+    // mid-forearm — the old 32-tall band sat in the middle of the forearm and
+    // read as a brushed-chrome capsule JOINT rather than a cuff. A thin band just
+    // proud of the sleeve reads as the shirt cuff peeking from the jacket sleeve.
     const Bone(
       id: CatBones.cuffR,
       parent: CatBones.armLowerR,
       pivotX: 0,
-      pivotY: 25,
+      pivotY: 37,
       z: 17,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 16,
-        height: 32,
-        cornerRadius: 7,
+        width: 15,
+        height: 11,
+        cornerRadius: 4,
         color: _cuff,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -612,25 +632,34 @@ RigSpec buildCatInSuitRig({
       z: 18,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
-        width: 24,
-        height: 24,
-        dy: 6,
+        width: 23,
+        height: 26,
+        dy: 7,
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2.5,
       ),
     ),
+    Bone(
+      id: CatBones.thumbL,
+      parent: CatBones.handL,
+      pivotX: 8,
+      pivotY: 3,
+      z: 17,
+      restRotation: -0.6,
+      drawable: _tapered(9, 5, 16, palette.fur, dy: 4, outlineWidth: 2.5),
+    ),
     const Bone(
       id: CatBones.cuffL,
       parent: CatBones.armLowerL,
       pivotX: 0,
-      pivotY: 25,
+      pivotY: 37,
       z: 18,
       drawable: BoneDrawable(
         kind: BoneShapeKind.roundedRect,
-        width: 16,
-        height: 32,
-        cornerRadius: 7,
+        width: 15,
+        height: 11,
+        cornerRadius: 4,
         color: _cuff,
         outlineColor: _outline,
         outlineWidth: 2,
@@ -850,8 +879,9 @@ RigSpec buildCatInSuitRig({
         CatBones.handR,
       ],
       hiddenBoneIds: const [CatBones.armUpperR, CatBones.armLowerR],
-      // Broad shoulder into a bicep swell, then a narrower forearm/wrist.
-      halfWidths: scaledArmWidths(const [11.6, 12.2, 8.6, 5.5]),
+      // Broad shoulder into a fuller bicep swell, then a clear neck-down to a
+      // slim wrist so the forearm reads as a tapering arm, not a constant tube.
+      halfWidths: scaledArmWidths(const [11.0, 12.6, 7.6, 4.6]),
       z: 15,
       color: _suit,
       outlineColor: _outline,
@@ -867,7 +897,7 @@ RigSpec buildCatInSuitRig({
         CatBones.handL,
       ],
       hiddenBoneIds: const [CatBones.armUpperL, CatBones.armLowerL],
-      halfWidths: scaledArmWidths(const [11.6, 12.2, 8.6, 5.5]),
+      halfWidths: scaledArmWidths(const [11.0, 12.6, 7.6, 4.6]),
       z: 16,
       color: _suit,
       outlineColor: _outline,
