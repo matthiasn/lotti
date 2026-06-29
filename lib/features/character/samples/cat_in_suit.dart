@@ -30,6 +30,8 @@ const int _sleeveNear =
 // toned down into the navy suit's cool family — still a distinct shirt cuff
 // against the sleeve, but dark enough that the cel gradient stays cloth.
 const int _cuff = 0xFF7E869C;
+const int _lapel = 0xFF3B4A6F; // jacket lapel — a step lighter than the suit so
+// the folded-back collar panels read as their own planes against the navy front.
 const int _trouser = 0xFF26304A; // darker navy
 const int _trouserRear = 0xFF202941; // slightly darker rear leg
 const int _fur = 0xFFE8A55A; // orange tabby
@@ -105,6 +107,9 @@ class CatInSuitPalette {
 class CatBones {
   static const hips = 'hips';
   static const torso = 'torso';
+  static const shirtV = 'shirt_v';
+  static const lapelL = 'lapel.L';
+  static const lapelR = 'lapel.R';
   static const tie = 'tie';
   static const tieLower = 'tie_lower';
   static const neck = 'neck';
@@ -559,6 +564,52 @@ RigSpec buildCatInSuitRig({
         outlineColor: _outline,
         outlineWidth: 2,
       ),
+    ),
+
+    // Jacket front tailoring: a pale shirt wedge at the collar opening with two
+    // navy lapels folded back over it, framing a V down to the tie knot — the
+    // single biggest "this is a tailored suit" cue the flat navy front lacked.
+    // All sit on the jacket mesh (z13) under the tie (z14) and under the crossing
+    // arms (z15/16), so the dance's crossed-X still reads over the chest.
+    // Pale shirt V: a downward wedge (restScaleY -1 flips the apex-up triangle to
+    // apex-down) showing the collar opening behind the tie.
+    const Bone(
+      id: CatBones.shirtV,
+      parent: CatBones.torso,
+      pivotX: 0,
+      pivotY: -86,
+      z: 13,
+      restScaleY: -1,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.triangle,
+        width: 30,
+        height: 30,
+        dy: -15,
+        color: _shirt,
+        outlineColor: _outline,
+        outlineWidth: 2,
+      ),
+    ),
+    // Lapels: tapered panels angled down-and-in from each collar point to the
+    // sternum, in a step-lighter navy so the folded edges read as their own
+    // planes. They overlap the shirt wedge's sides, leaving the pale V between.
+    Bone(
+      id: CatBones.lapelL,
+      parent: CatBones.torso,
+      pivotX: -15,
+      pivotY: -88,
+      z: 13,
+      restRotation: 0.6,
+      drawable: _tapered(15, 5, 36, _lapel, dy: 16),
+    ),
+    Bone(
+      id: CatBones.lapelR,
+      parent: CatBones.torso,
+      pivotX: 15,
+      pivotY: -88,
+      z: 13,
+      restRotation: -0.6,
+      drawable: _tapered(15, 5, 36, _lapel, dy: 16),
     ),
 
     // Tie: a 2-link cloth pendulum over the jacket. The knot is short and nearly
