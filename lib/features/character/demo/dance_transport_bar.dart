@@ -113,22 +113,37 @@ class DanceTransportBar extends StatelessWidget {
     final enabled = !loading;
     return Tooltip(
       message: playing ? 'Pause (Space)' : 'Play (Space)',
-      child: Material(
-        color: enabled ? _Chrome.accent : _Chrome.group,
-        shape: const CircleBorder(),
-        // A little lift so the primary action clearly outranks the flat toggles.
-        elevation: enabled ? 3 : 0,
-        shadowColor: Colors.black,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: enabled ? onPlayPause : null,
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(
-              playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              size: 24,
-              color: enabled ? const Color(0xFF06231F) : _Chrome.textLow,
+      child: DecoratedBox(
+        // A soft TEAL glow lifts the disc cleanly off the panel — no black
+        // Material drop-shadow (which muddies into a grey halo on dark).
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: enabled
+              ? [
+                  BoxShadow(
+                    color: _Chrome.accent.withValues(alpha: 0.42),
+                    blurRadius: 14,
+                    spreadRadius: -3,
+                  ),
+                ]
+              : null,
+        ),
+        child: Material(
+          color: enabled ? _Chrome.accent : _Chrome.group,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: enabled ? onPlayPause : null,
+            child: SizedBox(
+              // Larger than the 40px toggle cluster so primacy comes from size,
+              // not just colour — the play disc is the single solid-teal element.
+              width: 48,
+              height: 48,
+              child: Icon(
+                playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                size: 28,
+                color: enabled ? const Color(0xFF06231F) : _Chrome.textLow,
+              ),
             ),
           ),
         ),
@@ -156,8 +171,7 @@ class DanceTransportBar extends StatelessWidget {
           ),
           // Captions are hidden entirely when there are no lyrics, so an inert
           // disabled control can never be mistaken for a live one (or vice versa).
-          if (captionsAvailable) ...[
-            const _VRule(height: 40, color: _Chrome.groupBorder),
+          if (captionsAvailable)
             _toggle(
               icon: showCaptions
                   ? Icons.closed_caption_rounded
@@ -167,13 +181,10 @@ class DanceTransportBar extends StatelessWidget {
               tooltip: showCaptions ? 'Hide lyrics' : 'Show lyrics',
               onTap: onToggleCaptions,
             ),
-          ],
-          const _VRule(height: 40, color: _Chrome.groupBorder),
           _toggle(
-            // A backdrop-swap glyph, not a moon (which reads as dark-mode).
-            icon: useNewBackdrop
-                ? Icons.wallpaper_rounded
-                : Icons.image_outlined,
+            // A picture glyph (filled = layered scene, outline = flat plate) so
+            // it reads as a backdrop swap, not fullscreen/fit.
+            icon: useNewBackdrop ? Icons.image_rounded : Icons.image_outlined,
             active: useNewBackdrop,
             enabled: true,
             tooltip: useNewBackdrop ? 'Blue-hour scene' : 'Waterfront plate',
@@ -191,10 +202,12 @@ class DanceTransportBar extends StatelessWidget {
     required String tooltip,
     required VoidCallback onTap,
   }) {
+    // Active glyph is WHITE (not teal): the teal wash + underline carry the
+    // on-state, so the solid play disc stays the single dominant teal mass.
     final color = !enabled
         ? _Chrome.textLow
         : active
-        ? _Chrome.accent
+        ? _Chrome.textHi
         : _Chrome.textMid;
     return Tooltip(
       message: tooltip,
@@ -204,11 +217,9 @@ class DanceTransportBar extends StatelessWidget {
           height: 40,
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(horizontal: 13),
-          // Active = a stronger teal wash AND a teal underline, so on/off reads
-          // by position too, not by icon tint alone.
           decoration: active && enabled
               ? const BoxDecoration(
-                  color: Color(0x334DD6C0),
+                  color: Color(0x264DD6C0),
                   border: Border(
                     bottom: BorderSide(color: _Chrome.accent, width: 2),
                   ),
@@ -257,6 +268,7 @@ class DanceTransportBar extends StatelessWidget {
     final totalBeats = positionSec / beatSec;
     final bar = (totalBeats ~/ 4) + 1;
     final beat = (totalBeats % 4).floor() + 1;
+    final sixteenth = ((totalBeats % 1) * 4).floor() + 1;
     return Text.rich(
       TextSpan(
         children: [
@@ -270,7 +282,7 @@ class DanceTransportBar extends StatelessWidget {
             ),
           ),
           TextSpan(
-            text: '$bar.$beat',
+            text: '$bar.$beat.$sixteenth',
             style: const TextStyle(
               color: _Chrome.textMid,
               fontSize: 14,
@@ -466,19 +478,17 @@ String formatDancePlaybackTimestamp(double seconds) {
   return '$minText:$secText.$millisText';
 }
 
-/// A thin vertical rule used between control groups and inside the toggle
-/// cluster.
+/// A thin hairline vertical rule used between the metadata readouts.
 class _VRule extends StatelessWidget {
-  const _VRule({this.height = 26, this.color = _Chrome.hairline});
+  const _VRule({this.height = 26});
 
   final double height;
-  final Color color;
 
   @override
   Widget build(BuildContext context) => SizedBox(
     width: 1,
     height: height,
-    child: ColoredBox(color: color),
+    child: const ColoredBox(color: _Chrome.hairline),
   );
 }
 
@@ -504,9 +514,9 @@ abstract final class _Chrome {
   // clearly dimmer so progress reads from the waveform itself, not only the
   // playhead.
   static const Color wavePeakPlayed = Color(0xFF7E93A6);
-  static const Color waveBodyPlayed = Color(0xFFD3E7F4);
-  static const Color wavePeakAhead = Color(0xFF464F59);
-  static const Color waveBodyAhead = Color(0xFF727F8C);
+  static const Color waveBodyPlayed = Color(0xFFC9DEEE);
+  static const Color wavePeakAhead = Color(0xFF525C68);
+  static const Color waveBodyAhead = Color(0xFF808E9C);
   static const Color rulerText = Color(0xFF7C8896);
   static const Color markerPill = Color(0xD90B0F14);
 }
@@ -648,25 +658,8 @@ class _DanceTimelinePainter extends CustomPainter {
       canvas.drawRect(
         Rect.fromLTWH(x, waveTop, 1, h),
         Paint()
-          ..color = phrase ? const Color(0x26FFFFFF) : const Color(0x08FFFFFF),
+          ..color = phrase ? const Color(0x33FFFFFF) : const Color(0x0CFFFFFF),
       );
-      // Sparse bar numbers (every 8 bars) so the grid reads as bars, not just
-      // ticks — the musical reference a beat-sync tool needs.
-      if ((bar - 1) % 8 == 0) {
-        (TextPainter(
-          text: TextSpan(
-            text: '$bar',
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              color: Color(0x59FFFFFF),
-              fontSize: 8,
-              fontWeight: FontWeight.w600,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout()).paint(canvas, Offset(x + 3, waveTop + 3));
-      }
     }
   }
 
@@ -708,8 +701,8 @@ class _DanceTimelinePainter extends CustomPainter {
         cnt++;
       }
       final rms = cnt > 0 ? sum / cnt : peak;
-      final peakH = (math.pow(peak, 1.35) * maxH).clamp(2, maxH).toDouble();
-      final bodyH = (math.pow(rms, 1.35) * maxH).clamp(1, peakH).toDouble();
+      final peakH = (math.pow(peak, 1.7) * maxH).clamp(3, maxH).toDouble();
+      final bodyH = (math.pow(rms, 1.7) * maxH).clamp(2, peakH).toDouble();
       final past = x + barW <= px;
       canvas
         ..drawRect(

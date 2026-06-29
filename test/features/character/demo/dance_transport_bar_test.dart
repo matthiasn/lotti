@@ -151,7 +151,7 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.play_arrow_rounded));
       await tester.tap(find.byIcon(Icons.repeat_rounded));
-      await tester.tap(find.byIcon(Icons.wallpaper_rounded));
+      await tester.tap(find.byIcon(Icons.image_rounded));
       await tester.pump();
 
       expect(rec.play, 1);
