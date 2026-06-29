@@ -41,6 +41,7 @@ const int _shoe = 0xFF24263A; // dark dress shoe — lifted off near-black so it
 // separates from the near-black deck instead of dissolving into the floor.
 const int _shoeHighlight = 0xFF565A74; // brighter sole/toe edge (the ground
 // contact + toe-box read that gives the foot weight at stage scale).
+const int _shoeHeel = 0xFF181A2A; // darker heel counter at the shoe's back.
 const int _outline = 0xFF1B1B2A;
 const int _innerEar = 0xFFE7A39B; // soft pink ear
 const int _muzzle = 0xFFF3DCB8; // lighter snout patch
@@ -148,6 +149,8 @@ class CatBones {
   static const footL = 'foot.L';
   static const shoeHighlightL = 'shoe_highlight.L';
   static const toeCapL = 'toe_cap.L';
+  static const heelL = 'heel.L';
+  static const toeShineL = 'toe_shine.L';
   static const legUpperR = 'leg_upper.R';
   static const legQuadR = 'leg_quad.R';
   static const legLowerR = 'leg_lower.R';
@@ -155,6 +158,8 @@ class CatBones {
   static const footR = 'foot.R';
   static const shoeHighlightR = 'shoe_highlight.R';
   static const toeCapR = 'toe_cap.R';
+  static const heelR = 'heel.R';
+  static const toeShineR = 'toe_shine.R';
   static const tail0 = 'tail_0';
   static const tail1 = 'tail_1';
   static const tail2 = 'tail_2';
@@ -408,6 +413,44 @@ RigSpec buildCatInSuitRig({
         color: _outline,
       ),
     ),
+    // Heel counter: a darker block standing at the BACK of the shoe (toe leads
+    // -x, so the heel is +x) that rises a touch above the vamp, giving the shoe
+    // a real heel instead of reading as a flat oval. Stays above the sole bottom
+    // (lowest point y≈8 < the shoe's 9.5) so contact is unperturbed.
+    const Bone(
+      id: CatBones.heelR,
+      parent: CatBones.footR,
+      pivotX: 0,
+      pivotY: 0,
+      z: 6,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 12,
+        height: 13,
+        dx: 3,
+        dy: 1.5,
+        cornerRadius: 4,
+        color: _shoeHeel,
+        outlineColor: _outline,
+        outlineWidth: 2,
+      ),
+    ),
+    // Toe gloss: a small bright sliver on the toe-box so the leather reads as
+    // polished, not matte rubber.
+    const Bone(
+      id: CatBones.toeShineR,
+      parent: CatBones.footR,
+      pivotX: 0,
+      pivotY: 0,
+      z: 6,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.ellipse,
+        width: 9,
+        height: 3,
+        dx: -16,
+        color: _shoeHighlight,
+      ),
+    ),
 
     // Near (left) leg controls. The visible leg is a continuous ribbon that
     // starts inside the hip volume; the hip is drawn over the top so the leg
@@ -492,6 +535,39 @@ RigSpec buildCatInSuitRig({
         dy: 2.5,
         cornerRadius: 1.5,
         color: _outline,
+      ),
+    ),
+    // Heel counter + toe gloss — see heelR / toeShineR. Above the sole bottom.
+    const Bone(
+      id: CatBones.heelL,
+      parent: CatBones.footL,
+      pivotX: 0,
+      pivotY: 0,
+      z: 9,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.roundedRect,
+        width: 12,
+        height: 13,
+        dx: 3,
+        dy: 1.5,
+        cornerRadius: 4,
+        color: _shoeHeel,
+        outlineColor: _outline,
+        outlineWidth: 2,
+      ),
+    ),
+    const Bone(
+      id: CatBones.toeShineL,
+      parent: CatBones.footL,
+      pivotX: 0,
+      pivotY: 0,
+      z: 9,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.ellipse,
+        width: 9,
+        height: 3,
+        dx: -16,
+        color: _shoeHighlight,
       ),
     ),
 

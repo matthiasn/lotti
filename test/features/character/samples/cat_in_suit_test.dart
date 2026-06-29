@@ -64,22 +64,42 @@ void main() {
       expect(rig.bone(CatBones.cuffR)?.drawable?.color, shirt);
     });
 
-    test('the cap-toe seam never lowers the shoe contact point', () {
+    test('decorative shoe detail never lowers the contact point', () {
       // The contact/grounding solver keys off the lowest drawn point of the
-      // foot; the cap-toe is decorative and must stay above the sole so it can't
-      // shift grounding or the support-foot lock.
-      for (final pair in const [
-        (CatBones.footR, CatBones.toeCapR),
-        (CatBones.footL, CatBones.toeCapL),
-      ]) {
-        final shoe = rig.bone(pair.$1)!.drawable!;
-        final cap = rig.bone(pair.$2)!.drawable!;
-        expect(
-          cap.dy + cap.height / 2,
-          lessThan(shoe.dy + shoe.height / 2),
-          reason: 'cap-toe stays above the sole bottom',
-        );
+      // foot; the cap-toe, heel counter and toe gloss are all decorative and
+      // must stay above the sole so they can't shift grounding or the
+      // support-foot lock.
+      const groups = [
+        (
+          CatBones.footR,
+          [CatBones.toeCapR, CatBones.heelR, CatBones.toeShineR],
+        ),
+        (
+          CatBones.footL,
+          [CatBones.toeCapL, CatBones.heelL, CatBones.toeShineL],
+        ),
+      ];
+      for (final group in groups) {
+        final shoe = rig.bone(group.$1)!.drawable!;
+        final soleBottom = shoe.dy + shoe.height / 2;
+        for (final id in group.$2) {
+          final d = rig.bone(id)!.drawable!;
+          expect(
+            d.dy + d.height / 2,
+            lessThan(soleBottom),
+            reason: '$id stays above the sole bottom',
+          );
+        }
       }
+    });
+
+    test('shoes carry a darker heel counter at the back', () {
+      // Heel is a distinctly darker tone than the shoe body, positioned at +x
+      // (the heel side, since the toe leads -x).
+      final shoeColor = rig.bone(CatBones.footR)?.drawable?.color;
+      final heel = rig.bone(CatBones.heelR)?.drawable;
+      expect(heel?.color, isNot(shoeColor));
+      expect(heel!.dx, greaterThan(0), reason: 'heel sits at the back (+x)');
     });
 
     test('hips are the single root', () {
