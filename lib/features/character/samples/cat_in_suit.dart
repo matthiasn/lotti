@@ -30,6 +30,8 @@ const int _sleeveNear =
 // toned down into the navy suit's cool family — still a distinct shirt cuff
 // against the sleeve, but dark enough that the cel gradient stays cloth.
 const int _cuff = 0xFF7E869C;
+const int _button = 0xFFAE955C; // muted brass placket button — a dark horn
+// button vanished on the navy front; a metal tone reads as a button line.
 const int _lapel = 0xFF46588A; // jacket lapel — a CLEAR step lighter than the
 // suit so the folded-back collar panels read as their own planes against the
 // navy front even on the dimmed, cool-pooled backup dancers (a subtle step
@@ -707,11 +709,11 @@ RigSpec buildCatInSuitRig({
       z: 14,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
-        width: 6,
-        height: 6,
-        color: _outline,
+        width: 7,
+        height: 7,
+        color: _button,
         outlineColor: _outline,
-        outlineWidth: 1,
+        outlineWidth: 1.5,
       ),
     ),
     const Bone(
@@ -722,11 +724,11 @@ RigSpec buildCatInSuitRig({
       z: 14,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
-        width: 6,
-        height: 6,
-        color: _outline,
+        width: 7,
+        height: 7,
+        color: _button,
         outlineColor: _outline,
-        outlineWidth: 1,
+        outlineWidth: 1.5,
       ),
     ),
 
