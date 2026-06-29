@@ -129,7 +129,9 @@ class CharacterRenderer {
         ..save()
         ..transform(transform.toMatrix4Storage(_matrix));
       _drawFill(canvas, drawable);
-      if (celShade != null) _celShadeKind(canvas, drawable, celShade);
+      if (celShade != null && drawable.celShade) {
+        _celShadeKind(canvas, drawable, celShade);
+      }
       canvas.restore();
     }
     while (ribbonIndex < ribbons.length) {

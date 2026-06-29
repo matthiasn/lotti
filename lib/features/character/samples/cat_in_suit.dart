@@ -132,14 +132,16 @@ class CatBones {
   static const armLowerL = 'arm_lower.L';
   static const handL = 'hand.L';
   static const thumbL = 'thumb.L';
-  static const knuckleL = 'knuckle.L';
+  static const pawToeL1 = 'paw_toe1.L';
+  static const pawToeL2 = 'paw_toe2.L';
   static const cuffL = 'cuff.L';
   static const armUpperR = 'arm_upper.R';
   static const armBicepR = 'arm_bicep.R';
   static const armLowerR = 'arm_lower.R';
   static const handR = 'hand.R';
   static const thumbR = 'thumb.R';
-  static const knuckleR = 'knuckle.R';
+  static const pawToeR1 = 'paw_toe1.R';
+  static const pawToeR2 = 'paw_toe2.R';
   static const cuffR = 'cuff.R';
   static const legUpperL = 'leg_upper.L';
   static const legQuadL = 'leg_quad.L';
@@ -172,6 +174,8 @@ BoneDrawable _tapered(
   int color, {
   double dy = 0,
   double outlineWidth = 2,
+  bool formRound = true,
+  bool celShade = true,
 }) => BoneDrawable(
   kind: BoneShapeKind.taperedCapsule,
   width: w,
@@ -181,6 +185,8 @@ BoneDrawable _tapered(
   color: color,
   outlineColor: _outline,
   outlineWidth: outlineWidth,
+  formRound: formRound,
+  celShade: celShade,
 );
 
 /// A tail link — a short tapered segment in the drag chain. Kept as a helper so
@@ -501,10 +507,13 @@ RigSpec buildCatInSuitRig({
       z: 16,
       drawable: _tapered(18, 13, 50, _sleeve, dy: 20),
     ),
-    // Paw/fist: a slightly TALLER-than-wide oval (was a dead-round 24×24 ball)
-    // so the crossed-arm hands read as curled fists with a knuckle mass, not
-    // mitts. The thumb below breaks the silhouette so it grips rather than ends
-    // in a blob.
+    // CAT PAW: a soft rounded pad with two toe beans bumping past its front edge
+    // and a short side thumb — it's a cat, so the hand reads as a paw, not a
+    // fist. The old build (taller fist + a light "knuckle" bar + a splayed thumb)
+    // chromed into a lumpy metallic mitt. The whole paw opts OUT of the cel
+    // form-rounding (formRound:false) so the gentle key sheen can't carve a
+    // specular streak across the small round volumes — the head/neck dodge it the
+    // same way.
     Bone(
       id: CatBones.handR,
       parent: CatBones.armLowerR,
@@ -513,45 +522,71 @@ RigSpec buildCatInSuitRig({
       z: 17,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
-        width: 23,
-        height: 26,
-        dy: 7,
+        width: 24,
+        height: 23,
+        dy: 8,
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2.5,
+        celShade: false,
       ),
     ),
-    // Thumb: a short tapered digit on the inner (centreline) side of the fist,
-    // angled up across the knuckles, so the paw reads as an articulated hand that
-    // can grip. Drawn just under the hand (z 16 < hand z 17) so the fist mass
-    // overlaps its root and it reads as a thumb wrapping the fist, not a spur.
+    // Two toe beans drawn BEHIND the pad (z 16 < pad z 17): only the arcs peeking
+    // past the pad's front edge show, so they scallop the silhouette into toes
+    // with no internal outline seams.
+    Bone(
+      id: CatBones.pawToeR1,
+      parent: CatBones.handR,
+      pivotX: -6,
+      pivotY: 0,
+      z: 16,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.ellipse,
+        width: 11,
+        height: 11,
+        dy: 17,
+        color: palette.fur,
+        outlineColor: _outline,
+        outlineWidth: 2.5,
+        celShade: false,
+      ),
+    ),
+    Bone(
+      id: CatBones.pawToeR2,
+      parent: CatBones.handR,
+      pivotX: 5,
+      pivotY: 0,
+      z: 16,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.ellipse,
+        width: 11,
+        height: 11,
+        dy: 17,
+        color: palette.fur,
+        outlineColor: _outline,
+        outlineWidth: 2.5,
+        celShade: false,
+      ),
+    ),
+    // Thumb: a short side toe on the inner (centreline) side of the paw, less
+    // splayed than before so it tucks against the pad as a digit rather than
+    // jutting out as a spur. Drawn over the pad (z 18) so it reads as the near
+    // toe.
     Bone(
       id: CatBones.thumbR,
       parent: CatBones.handR,
       pivotX: -9,
       pivotY: 2,
       z: 18,
-      restRotation: 0.95,
-      drawable: _tapered(11, 6, 18, palette.fur, dy: 6, outlineWidth: 2.5),
-    ),
-    // Knuckle ridge: a short light bar catching the key across the back of the
-    // fist, so the paw reads as a closed hand with knuckles instead of a plain
-    // ball. Light (muzzle tone) so it reads on dark fur where a shadow groove
-    // would vanish; drawn on top of the fist.
-    Bone(
-      id: CatBones.knuckleR,
-      parent: CatBones.handR,
-      pivotX: 0,
-      pivotY: 0,
-      z: 18,
-      restRotation: 0.12,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.roundedRect,
-        width: 14,
-        height: 3,
-        dy: 4,
-        cornerRadius: 1.5,
-        color: palette.muzzle,
+      restRotation: 0.8,
+      drawable: _tapered(
+        10,
+        6,
+        15,
+        palette.fur,
+        dy: 5,
+        outlineWidth: 2.5,
+        celShade: false,
       ),
     ),
     // Shirt CUFF: a short band at the WRIST where the jacket sleeve ends and the
@@ -757,6 +792,9 @@ RigSpec buildCatInSuitRig({
       z: 17,
       drawable: _tapered(18, 13, 50, _sleeveNear, dy: 20),
     ),
+    // CAT PAW (near side) — mirror of the right paw: rounded pad, two toe beans
+    // bumping past the front edge from behind, a tucked side thumb, all opted out
+    // of cel form-rounding so the small round volumes don't chrome.
     Bone(
       id: CatBones.handL,
       parent: CatBones.armLowerL,
@@ -765,12 +803,47 @@ RigSpec buildCatInSuitRig({
       z: 18,
       drawable: BoneDrawable(
         kind: BoneShapeKind.ellipse,
-        width: 23,
-        height: 26,
-        dy: 7,
+        width: 24,
+        height: 23,
+        dy: 8,
         color: palette.fur,
         outlineColor: _outline,
         outlineWidth: 2.5,
+        celShade: false,
+      ),
+    ),
+    Bone(
+      id: CatBones.pawToeL1,
+      parent: CatBones.handL,
+      pivotX: 6,
+      pivotY: 0,
+      z: 17,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.ellipse,
+        width: 11,
+        height: 11,
+        dy: 17,
+        color: palette.fur,
+        outlineColor: _outline,
+        outlineWidth: 2.5,
+        celShade: false,
+      ),
+    ),
+    Bone(
+      id: CatBones.pawToeL2,
+      parent: CatBones.handL,
+      pivotX: -5,
+      pivotY: 0,
+      z: 17,
+      drawable: BoneDrawable(
+        kind: BoneShapeKind.ellipse,
+        width: 11,
+        height: 11,
+        dy: 17,
+        color: palette.fur,
+        outlineColor: _outline,
+        outlineWidth: 2.5,
+        celShade: false,
       ),
     ),
     Bone(
@@ -778,24 +851,16 @@ RigSpec buildCatInSuitRig({
       parent: CatBones.handL,
       pivotX: 9,
       pivotY: 2,
-      z: 19,
-      restRotation: -0.95,
-      drawable: _tapered(11, 6, 18, palette.fur, dy: 6, outlineWidth: 2.5),
-    ),
-    Bone(
-      id: CatBones.knuckleL,
-      parent: CatBones.handL,
-      pivotX: 0,
-      pivotY: 0,
-      z: 19,
-      restRotation: -0.12,
-      drawable: BoneDrawable(
-        kind: BoneShapeKind.roundedRect,
-        width: 14,
-        height: 3,
-        dy: 4,
-        cornerRadius: 1.5,
-        color: palette.muzzle,
+      z: 20,
+      restRotation: -0.8,
+      drawable: _tapered(
+        10,
+        6,
+        15,
+        palette.fur,
+        dy: 5,
+        outlineWidth: 2.5,
+        celShade: false,
       ),
     ),
     const Bone(

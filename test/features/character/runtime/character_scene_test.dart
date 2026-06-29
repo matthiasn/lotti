@@ -511,8 +511,10 @@ void main() {
         );
         expect(
           headRange,
-          lessThan(0.12),
-          reason: '${clip.name} head wobble should stay visually subtle',
+          lessThan(0.2),
+          reason:
+              '${clip.name} head should bank with the body as a damped slice '
+              'of the lean (~10°), never a full rubber bobble',
         );
       }
     });

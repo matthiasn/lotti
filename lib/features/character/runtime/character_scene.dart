@@ -430,8 +430,14 @@ class CharacterScene {
         ? _danceHeadAttitude(_clipPhase(clip, timeSeconds)) *
               clip.danceHeadBobScale
         : 0.0;
+    // Let the skull keep a SLICE of the torso's natural bank instead of nailing
+    // it bolt-upright: removing 0.92 of the rotation froze the head so rigidly
+    // that on the big-sway clips (shaku) the body read as a pendulum swinging
+    // under a fixated head. Keeping ~26% of the lean lets the head ride WITH the
+    // body — still damped well under the "subtle wobble" bound, but no longer a
+    // fixed pivot the torso dangles from.
     final rotationCorrection = _isDanceFamily(clip)
-        ? -headRotation * 0.92 + danceAttitude
+        ? -headRotation * 0.74 + danceAttitude
         : 0.0;
     final correction = _rigidLinearCorrection(
       headWorld,
@@ -485,13 +491,16 @@ class CharacterScene {
 
   double _danceHeadHorizontalCounter(double rootDx, double headBobScale) {
     // The deck/contact solver shifts the whole body to keep support feet
-    // planted. Let the torso take that groove, but give the skull an inertial
-    // counter so it reads as a rigid head riding a neck, not rubber. A clip can
-    // ask for a stiller head (lower [headBobScale]) to lag MORE of the lateral
-    // sway — so the tall ears stop sweeping side to side (the dominant onion
-    // "fan" on the big-sway clips) and the head trails the pelvis instead.
+    // planted. Let the torso take that groove, but give the skull a light
+    // inertial counter so it reads as a head riding a neck, not rubber. The
+    // stiller-clip term (lower [headBobScale] → lag MORE) used to dominate
+    // (0.45), which on shaku held the head back so hard the body swung under it
+    // like a pendulum. Trimmed so a stiff clip lags only a little more than a
+    // loose one: the head now travels WITH the pelvis, the join never gaps, and
+    // the ears no longer fan as the onion "sweep" because the rotation pass —
+    // not this translate — does the de-bobbling.
     const neutralDanceRootDx = 0.0;
-    final fraction = 0.16 + (1 - headBobScale) * 0.45;
+    final fraction = 0.14 + (1 - headBobScale) * 0.20;
     return -(rootDx - neutralDanceRootDx) * fraction;
   }
 

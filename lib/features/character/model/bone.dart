@@ -43,6 +43,7 @@ class BoneDrawable {
     this.outlineColor,
     this.outlineWidth = 0,
     this.formRound = true,
+    this.celShade = true,
   });
 
   final BoneShapeKind kind;
@@ -78,6 +79,14 @@ class BoneDrawable {
   /// would darken against the torso top and make the head look "about to fall
   /// off". Those keep the flat cel terminator only.
   final bool formRound;
+
+  /// Whether the directional cel ramp (cool shade → base → warm key sheen) is
+  /// painted over this shape at all. Default true. Set false on small round
+  /// volumes — notably the cat paws/toes — where the lit-side sheen carves a
+  /// metallic specular STREAK across the fur instead of gently modelling it; a
+  /// flat fill with just the ink outline reads as a clean cartoon paw. Implies
+  /// no form-rounding either (the ramp is skipped wholesale).
+  final bool celShade;
 }
 
 /// A single rigid bone in the skeleton.
