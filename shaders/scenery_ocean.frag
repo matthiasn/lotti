@@ -84,7 +84,7 @@ void main() {
   // moored yacht on the right, so the surface life (crest foam + glitter) dims
   // toward the right rather than staying evenly bright edge to edge. The warm
   // reflection columns are NOT subject to this (they track their own sources).
-  float lateralFall = mix(1.0, 0.5, smoothstep(0.4, 0.96, art.x));
+  float lateralFall = mix(1.0, 0.62, smoothstep(0.4, 0.96, art.x));
 
   // --- Subtle vertical tint (very low alpha; the plate already paints water) ---
   vec3 water =
@@ -103,7 +103,10 @@ void main() {
     // not a fine speckle. Dense rows (the old 42 near the waterline) compress to
     // sub-pixel dots that read as sensor noise rather than moving foam, so the
     // pitch is kept low enough that each crest spans many pixels.
-    float rows = mix(26.0, 9.0, depth) * (1.0 + fi * 0.4);
+    // Denser crest pitch near the waterline (34 rows) collapsing to 9 toward the
+    // viewer gives perspective foreshortening — crests compress with distance so
+    // the band reads as a receding plane, not a uniformly-tiled wallpaper.
+    float rows = mix(34.0, 9.0, depth) * (1.0 + fi * 0.4);
     float speed = 0.05 + fi * 0.035;
     float wob = fbm(vec2(x * uWaveScale * (0.12 + 0.06 * fi), depth * 3.0) -
         vec2(uTime * speed, 0.0));
@@ -126,7 +129,7 @@ void main() {
     // filaments; a lifted amplitude floor (0.85) so the crests in the visible
     // upper strip out-punch the smooth reflection sheen below them, instead of
     // the foam being the dim element and the sheen the bright one.
-    foamAmt += smoothstep(0.5, 0.74, crest) * dash * (0.85 + 0.45 * wob);
+    foamAmt += smoothstep(0.5, 0.74, crest) * dash * (0.95 + 0.45 * wob);
   }
   // Ease foam in FAST just under the waterline (the upper strip of water is the
   // most-visible band; a slow 0..0.12 ramp left it bald) and concentrate the
@@ -153,9 +156,9 @@ void main() {
   // its brightness — so the lip reads as discrete bright tongues licking into the
   // water with dark gaps between, exactly where the camera can see it (in the pier
   // gaps), rather than a soft even glow stripe along the whole waterline.
-  float tongue = smoothstep(0.32, 0.7,
+  float tongue = smoothstep(0.36, 0.66,
       fbm(vec2(x * 4.5, 7.0 - uTime * 0.12)));
-  float lipReach = mix(0.06, 0.19, tongue);
+  float lipReach = mix(0.07, 0.24, tongue);
   float lip = (1.0 - smoothstep(0.0, lipReach, depth)) *
       smoothstep(0.0, 0.012, depth);
   // A finer scallop within each tongue keeps its inner edge ragged. Driven HOT
@@ -165,7 +168,7 @@ void main() {
       0.2 + 0.8 * smoothstep(0.3, 0.75,
           fbm(vec2(x * 6.0, depth * 12.0 - uTime * 0.18)));
   foamA = clamp(
-      foamA + lip * lipWob * tongue * 1.7 * clamp(uFoamDensity, 0.0, 1.0),
+      foamA + lip * lipWob * tongue * 2.3 * clamp(uFoamDensity, 0.0, 1.0),
       0.0,
       0.99);
   // NEAR foam: a broader broken wash where the lagoon laps the foreground
@@ -263,8 +266,8 @@ void main() {
     // Break the streak into STACKED vertical dashes: the noise runs mostly along
     // y (high depth frequency) so each column reads as ripple-broken segments
     // rather than a horizontal smear.
-    float dash = smoothstep(0.3, 0.85,
-        fbm(vec2(art.x * 8.0, depth * 34.0 - uTime * 0.5 + float(s) * 7.0)));
+    float dash = smoothstep(0.4, 0.82,
+        fbm(vec2(art.x * 8.0, depth * 42.0 - uTime * 0.5 + float(s) * 7.0)));
     // Lip-weighted fall with a raised floor at the lip itself (so the column
     // doesn't go to dark navy right under the source) then a decay toward the
     // foreground — the brightest part sits under the source and it tapers to a
@@ -308,7 +311,7 @@ void main() {
   // genuinely warm sodium reflection, not a faint less-blue patch. The yacht
   // sits a touch under the city (~0.7x) and a warmer, softer 2700K amber.
   float reflCityA =
-      clamp(reflCity * clamp(uReflection, 0.0, 2.0) * 6.0, 0.0, 0.9);
+      clamp(reflCity * clamp(uReflection, 0.0, 2.0) * 6.5, 0.0, 0.92);
   float reflYachtA =
       clamp(reflYacht * clamp(uReflection, 0.0, 2.0) * 5.7, 0.0, 0.88);
   vec3 cityWarm = vec3(1.0, 0.62, 0.32);
