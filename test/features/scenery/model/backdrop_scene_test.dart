@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/scenery/layers/atmospheric_haze_layer.dart';
 import 'package:lotti/features/scenery/layers/city_lights_layer.dart';
 import 'package:lotti/features/scenery/layers/cloud_parallax_layer.dart';
 import 'package:lotti/features/scenery/layers/deck_glow_layer.dart';
@@ -68,6 +69,7 @@ void main() {
               l.visiblePhases.contains(DroneShowPhase.launch),
         );
         final glow = layers.indexWhere((l) => l is DeckGlowLayer);
+        final haze = layers.indexWhere((l) => l is AtmosphericHazeLayer);
         expect(plate, 0);
         expect(cloud, greaterThan(plate));
         // Animated water sits over the painted plate.
@@ -81,6 +83,11 @@ void main() {
         // of the yacht so the warm cabin glow is not hidden behind the hull.
         expect(yacht, greaterThan(ocean));
         expect(lights, greaterThan(yacht));
+        // Aerial-perspective haze veils the distant structures + city lights
+        // (sits over them) but stays UNDER the foreground deck, so the deck and
+        // the dancers in front of it keep full contrast (the depth cue).
+        expect(haze, greaterThan(lights));
+        expect(haze, lessThan(deck));
         // The foreground deck is the LAST bitmap, drawn over the ocean so foam
         // never streaks the planks; the lantern glow pools on the now-lit deck.
         expect(deck, greaterThan(ocean));

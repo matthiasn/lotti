@@ -1,5 +1,6 @@
 import 'dart:ui' show Size;
 
+import 'package:lotti/features/scenery/layers/atmospheric_haze_layer.dart';
 import 'package:lotti/features/scenery/layers/backdrop_layer.dart';
 import 'package:lotti/features/scenery/layers/city_lights_layer.dart';
 import 'package:lotti/features/scenery/layers/cloud_parallax_layer.dart';
@@ -70,6 +71,11 @@ class BackdropScene {
         // More windows lit (brighter highrises) than the 0.6 default; drawn
         // after the yacht so the warm cabin glow reads on top of the hull.
         CityLightsLayer(windowAmount: 0.8),
+        // Aerial-perspective haze banded on the waterline: lifts + cools the
+        // distant skyline/bridge/yacht so the midground recedes behind the
+        // sharp, un-hazed foreground deck + trio (the establishing-shot depth
+        // cue). Sits over the structures + lights but under the deck/palms.
+        AtmosphericHazeLayer(),
         ImageLayer(SceneryAssets.foreground),
         DeckGlowLayer(),
         // Drones are the highest backdrop art pass: the takeoff starts as
