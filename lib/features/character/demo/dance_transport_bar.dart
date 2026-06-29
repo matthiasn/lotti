@@ -61,24 +61,29 @@ class DanceTransportBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [_Chrome.panelTop, _Chrome.panelBottom],
+    // Pin Inter across the whole console so the widget text and the painter's
+    // ruler/marker labels are provably one typeface (no theme-inherit drift).
+    return DefaultTextStyle.merge(
+      style: const TextStyle(fontFamily: 'Inter'),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_Chrome.panelTop, _Chrome.panelBottom],
+          ),
+          border: Border(top: BorderSide(color: _Chrome.topEdge)),
         ),
-        border: Border(top: BorderSide(color: _Chrome.topEdge)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _transportRow(),
-            const SizedBox(height: 12),
-            _timeline(),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _transportRow(),
+              const SizedBox(height: 12),
+              _timeline(),
+            ],
+          ),
         ),
       ),
     );
@@ -382,10 +387,11 @@ class DanceTransportBar extends StatelessWidget {
         ),
         const SizedBox(width: 7),
         Text(
-          // Uppercase to match the timeline's marker pills (one label system).
+          // Uppercase to match the timeline's marker pills (one label system);
+          // textMid so the headline timecode stays the single brightest reading.
           label.toUpperCase(),
           style: const TextStyle(
-            color: _Chrome.textHi,
+            color: _Chrome.textMid,
             fontSize: 13,
             letterSpacing: 0.6,
             fontWeight: FontWeight.w700,
@@ -620,14 +626,26 @@ class _DanceTimelinePainter extends CustomPainter {
         // The live region: a colored clip top-edge + a neutral cool wash. The
         // filled marker pill finishes the "you are here" read — no heavy hue box
         // (the old full side+top frame read like a loop region on the wrong cue).
+        final washRect = Rect.fromLTRB(sx0, waveTop + 4, sx1, size.height);
         canvas
           ..drawRect(
             Rect.fromLTRB(sx0, waveTop, sx1, waveTop + 4),
             Paint()..color = hue.withValues(alpha: 0.95),
           )
+          // An edge-faded wash reads as a highlight ("you are here"), not a
+          // hard-walled selectable/loopable range.
           ..drawRect(
-            Rect.fromLTRB(sx0, waveTop + 4, sx1, size.height),
-            Paint()..color = const Color(0x12FFFFFF),
+            washRect,
+            Paint()
+              ..shader = const LinearGradient(
+                colors: [
+                  Color(0x00FFFFFF),
+                  Color(0x14FFFFFF),
+                  Color(0x14FFFFFF),
+                  Color(0x00FFFFFF),
+                ],
+                stops: [0.0, 0.14, 0.86, 1.0],
+              ).createShader(washRect),
           );
       }
     }
@@ -676,43 +694,62 @@ class _DanceTimelinePainter extends CustomPainter {
     required double px,
   }) {
     final n = amplitudes.length;
+    if (n < 2) return;
     final maxH = (waveBottom - waveTop) - 6;
-    // Symmetric two-tone sample bars: a dim PEAK outline with a brighter RMS
-    // body inside, expanded (pow > 1) so loud/quiet actually differ instead of
-    // reading as a uniform sausage. Played bright, ahead dim — so playback
-    // progress reads from the waveform itself, not only the playhead.
-    const pitch = 3.0;
-    const barW = 2.0;
-    final cols = math.max(1, size.width ~/ pitch);
-    for (var c = 0; c < cols; c++) {
-      final x = c * pitch;
-      final i0 = (c * n) ~/ cols;
-      final i1 = math.max(i0 + 1, ((c + 1) * n) ~/ cols);
-      var peak = 0.0;
-      var sum = 0.0;
-      var cnt = 0;
-      for (var i = i0; i < i1 && i < n; i++) {
-        final v = amplitudes[i];
-        if (v > peak) peak = v;
-        sum += v;
-        cnt++;
-      }
-      final rms = cnt > 0 ? sum / cnt : peak;
-      final peakH = (math.pow(peak, 1.95) * maxH).clamp(2, maxH).toDouble();
-      final bodyH = (math.pow(rms, 1.95) * maxH).clamp(1, peakH).toDouble();
-      final past = x + barW <= px;
-      canvas
-        ..drawRect(
-          Rect.fromLTWH(x, mid - peakH / 2, barW, peakH),
-          Paint()
-            ..color = past ? _Chrome.wavePeakPlayed : _Chrome.wavePeakAhead,
-        )
-        ..drawRect(
-          Rect.fromLTWH(x, mid - bodyH / 2, barW, bodyH),
-          Paint()
-            ..color = past ? _Chrome.waveBodyPlayed : _Chrome.waveBodyAhead,
-        );
+    // Peak-normalise so the loudest hit fills the lane (otherwise the envelope
+    // sits underfilled and dynamics flatten).
+    var maxA = 0.0;
+    for (final v in amplitudes) {
+      if (v > maxA) maxA = v;
     }
+    final norm = maxA > 0 ? 1.0 / maxA : 1.0;
+    final width = size.width;
+
+    // A continuous filled mirrored envelope (a real DAW track, not gapped bars):
+    // a dim PEAK envelope behind a brighter RMS-ish BODY envelope, expanded so
+    // section dynamics read. Split played/ahead by clipping at the playhead.
+    Path envelope(double scale) {
+      double yAt(int i) {
+        final h = (math.pow(amplitudes[i] * norm, 1.4) * maxH * scale)
+            .clamp(1, maxH)
+            .toDouble();
+        return h;
+      }
+
+      final p = Path()..moveTo(0, mid);
+      for (var i = 0; i < n; i++) {
+        p.lineTo(i / (n - 1) * width, mid - yAt(i) / 2);
+      }
+      for (var i = n - 1; i >= 0; i--) {
+        p.lineTo(i / (n - 1) * width, mid + yAt(i) / 2);
+      }
+      return p..close();
+    }
+
+    final peakEnv = envelope(1);
+    final bodyEnv = envelope(0.62);
+
+    void fill(double from, double to, Color peak, Color body) {
+      canvas
+        ..save()
+        ..clipRect(Rect.fromLTWH(from, 0, to - from, size.height))
+        ..drawPath(
+          peakEnv,
+          Paint()
+            ..isAntiAlias = true
+            ..color = peak,
+        )
+        ..drawPath(
+          bodyEnv,
+          Paint()
+            ..isAntiAlias = true
+            ..color = body,
+        )
+        ..restore();
+    }
+
+    fill(0, px, _Chrome.wavePeakPlayed, _Chrome.waveBodyPlayed);
+    fill(px, width, _Chrome.wavePeakAhead, _Chrome.waveBodyAhead);
   }
 
   /// The time ruler: ticks + `m:ss` labels at a tempo-independent nice interval.
@@ -757,9 +794,9 @@ class _DanceTimelinePainter extends CustomPainter {
           text: s.label.toUpperCase(),
           style: TextStyle(
             fontFamily: 'Inter',
-            color: active
-                ? const Color(0xFF0B0F14)
-                : hue.withValues(alpha: 0.92),
+            // Only the ACTIVE clip carries its hue; inactive marks are mono so
+            // the bar stays teal-accent + cool-data, not a six-colour system.
+            color: active ? const Color(0xFF0B0F14) : _Chrome.textMid,
             fontSize: 9,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.5,
@@ -779,17 +816,15 @@ class _DanceTimelinePainter extends CustomPainter {
       if (active) {
         canvas.drawRRect(rrect, Paint()..color = hue);
       } else {
-        // A faint hue-tinted dark pill so the marks group by colour at a glance
-        // instead of reading as monochrome letter-soup.
+        // Plain dark pill with a hairline edge — grey, no hue.
         canvas
           ..drawRRect(rrect, Paint()..color = _Chrome.markerPill)
-          ..drawRRect(rrect, Paint()..color = hue.withValues(alpha: 0.20))
           ..drawRRect(
             rrect,
             Paint()
               ..style = PaintingStyle.stroke
               ..strokeWidth = 1
-              ..color = hue.withValues(alpha: 0.55),
+              ..color = const Color(0x1FFFFFFF),
           );
       }
       tp.paint(
