@@ -112,15 +112,21 @@ void main() {
     // and advected so segments fade/wander rather than popping frame to frame.
     float dash = mix(0.32, 1.0, smoothstep(0.3, 0.78,
         fbm(vec2(x * 2.0 + fi * 9.0, depth * 7.0 - uTime * (speed + 0.1)))));
-    // A harder crest threshold gives discrete bright filaments with dark water
-    // between (was a soft mush); still feathered enough to anti-alias as it moves.
-    foamAmt += smoothstep(0.54, 0.86, crest) * dash * (0.54 + 0.46 * wob);
+    // Discrete bright filaments with dark water between, but NOT thresholded so
+    // hard they fall below the perceptual floor over the dark plate — a moderate
+    // cut + a lifted amplitude so the elongated crests actually read mid-lagoon.
+    foamAmt += smoothstep(0.46, 0.80, crest) * dash * (0.7 + 0.5 * wob);
   }
-  // Ease foam in just under the waterline and off at the very bottom, and bias
-  // its brightness toward the viewer so the surface reads as receding water
-  // (busier near the deck, calmer toward the far shore) instead of a flat sheet.
-  float foamBand = smoothstep(0.0, 0.12, depth) *
-      (1.0 - smoothstep(0.8, 1.0, depth)) * (0.4 + 0.6 * depth);
+  // Ease foam in FAST just under the waterline (the upper strip of water is the
+  // most-visible band; a slow 0..0.12 ramp left it bald) and concentrate the
+  // crest brightness in the VISIBLE band only: the foreground deck occludes the
+  // water below art-y ~0.65, i.e. everything past depth ~0.28, so biasing
+  // brightness toward depth 1 (the old 0.55+0.55*depth) spent the foam energy
+  // UNDER the deck where the camera never sees it. Ramp up to full by the visible
+  // waterline-to-deck strip, then hold (the rest is hidden anyway).
+  float foamBand = smoothstep(0.0, 0.06, depth) *
+      (1.0 - smoothstep(0.8, 1.0, depth)) *
+      (0.6 + 0.7 * smoothstep(0.04, 0.26, depth));
   // Only a whisper of beat reactivity (was 0.6): a big beat-swell made the whole
   // foam field brighten and dim on every beat, which read as a weird pulsing of
   // the water. Keep it nearly steady.
@@ -131,16 +137,22 @@ void main() {
       0.85);
   // Foam LIP at the waterline: a brighter, broken band right where the water
   // meets the seawall / far shore — the single strongest "this is liquid" cue.
-  // Peaks just under the waterline (depth ~0.02) and falls off by ~0.10, with a
-  // wobble so it scallops instead of forming a clean stripe.
-  float lip = (1.0 - smoothstep(0.0, 0.10, depth)) * smoothstep(0.0, 0.015, depth);
+  // Peaks just under the waterline (depth ~0.02) and tongues DOWN to ~0.16 so the
+  // foam licks into the clearly-visible water strip below the waterline (the far
+  // contact line right at depth 0 is mostly occluded by the redrawn seawall /
+  // bridge piers, so a lip that died by depth 0.10 sat almost entirely behind
+  // structures), with a wobble so it scallops instead of forming a clean stripe.
+  float lip = (1.0 - smoothstep(0.0, 0.16, depth)) * smoothstep(0.0, 0.012, depth);
   // Hard-broken scallop (dark gaps between bright tongues) so the contact line
-  // reads as broken foam tonguing onto the shore, not a continuous smear.
+  // reads as broken foam tonguing onto the shore, not a continuous smear. Driven
+  // HOT (~1.4) — this is the single strongest "moving water" cue and it has to
+  // punch through the pale haze band that sits on the same waterline, so it runs
+  // far brighter than the crest field and quantizes toward a near-1.0 white line.
   float lipWob =
-      0.3 + 0.7 * smoothstep(0.32, 0.82,
+      0.15 + 0.85 * smoothstep(0.34, 0.82,
           fbm(vec2(x * 5.0, depth * 30.0 - uTime * 0.18)));
   foamA = clamp(
-      foamA + lip * lipWob * 0.78 * clamp(uFoamDensity, 0.0, 1.0), 0.0, 0.97);
+      foamA + lip * lipWob * 1.4 * clamp(uFoamDensity, 0.0, 1.0), 0.0, 0.98);
   // NEAR foam: a broader broken wash where the lagoon laps the foreground
   // seawall/deck. This band is big and close to camera, so it is the foam that
   // actually reads — the far waterline lip alone is too distant to register.
@@ -159,9 +171,9 @@ void main() {
   float ripple = smoothstep(0.5, 1.0,
       fbm(vec2(x * 18.0, depth * 14.0 - uTime * 0.4)));
   float glintA = clamp(
-      column * ripple * clamp(uReflection, 0.0, 2.0) * (0.4 + 0.7 * depth),
+      column * ripple * clamp(uReflection, 0.0, 2.0) * (0.55 + 0.85 * depth),
       0.0,
-      0.72);
+      0.85);
 
   // --- Surface glitter: broad, low-frequency broken HORIZONTAL specular dashes
   // running across the WHOLE lagoon, NOT anchored to any source. The reflection
@@ -183,7 +195,11 @@ void main() {
   // Strongest in the mid-water, easing off at the far waterline and the deck.
   float glitBand =
       smoothstep(0.06, 0.32, depth) * (1.0 - smoothstep(0.86, 1.0, depth));
-  float glitA = clamp(glit * glitBand * 0.26, 0.0, 0.4);
+  // Carry extra specular energy across the seam just right of the city columns
+  // (~x 0.40) with a soft exponential bump, so the bright reflected-city band
+  // doesn't drop in a hard vertical luminance step into the centre water.
+  float seamLift = 1.0 + 0.55 * exp(-pow((art.x - 0.40) / 0.13, 2.0));
+  float glitA = clamp(glit * glitBand * 0.34 * seamLift, 0.0, 0.5);
   // Cool sky-reflection tone (the surface mirrors the twilight sky between
   // crests), warming a touch toward the city columns on the left.
   vec3 glitCol = mix(uOceanHorizon.rgb * 1.7, uFoam.rgb, 0.35);
