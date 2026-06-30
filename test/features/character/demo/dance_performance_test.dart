@@ -212,15 +212,14 @@ void main() {
       expect(trio.ensemble.map((c) => c.name), everyElement('buga'));
     });
 
-    test('the chorus front half rotates its lead by occurrence', () {
-      expect(
-        perf.choreoTrioForSection('chorus', 0.2, 0.5, 0).lead.name,
-        'zanku',
-      );
-      expect(
-        perf.choreoTrioForSection('chorus', 0.2, 0.5, 1).lead.name,
-        'sekem',
-      );
+    test('the chorus front half uses one readable unison phrase', () {
+      final first = perf.choreoTrioForSection('chorus', 0.2, 0.5, 0);
+      final second = perf.choreoTrioForSection('chorus', 0.2, 0.5, 1);
+
+      expect(first.lead.name, 'zanku');
+      expect(first.ensemble.map((c) => c.name), everyElement('zanku'));
+      expect(second.lead.name, 'shaku');
+      expect(second.ensemble.map((c) => c.name), everyElement('shaku'));
     });
 
     test('verses swap the lead on even/odd occurrence', () {
@@ -377,16 +376,19 @@ void main() {
       );
     });
 
-    test('the chorus front rotates to the third variant', () {
-      expect(
-        perf
-            .choreoTrioForSection('chorus', 0.2, 0.5, 2)
-            .ensemble
-            .map((c) => c.name)
-            .toList(),
-        ['zanku', 'buga', 'sekem'],
-      );
-    });
+    test(
+      'the chorus front repeats the unison Zanku variant on the third hook',
+      () {
+        expect(
+          perf
+              .choreoTrioForSection('chorus', 0.2, 0.5, 2)
+              .ensemble
+              .map((c) => c.name)
+              .toList(),
+          ['zanku', 'zanku', 'zanku'],
+        );
+      },
+    );
   });
 
   group('DancePerformance.stageAt — the resting gate', () {

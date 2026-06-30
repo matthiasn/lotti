@@ -378,13 +378,12 @@ class DancePerformance {
         if (phase >= 0.55) {
           return (lead: _buga, ensemble: [_buga, _buga, _buga]);
         }
-        final fronts = [
-          [_zanku, _sekem, _buga],
-          [_sekem, _zanku, _buga],
-          [_zanku, _buga, _sekem],
-        ];
-        final front = fronts[variant % fronts.length];
-        return (lead: front[0], ensemble: front);
+        // The first half of the hook needs one unmistakable legwork statement.
+        // Mixing Zanku/Sekem/Buga here made each dancer tell a different arm
+        // story on the same beat, which read as generic stage posing. Variation
+        // happens across repeated hook occurrences, not inside the same beat.
+        final front = variant.isEven ? _zanku : _shaku;
+        return (lead: front, ensemble: [front, front, front]);
       case 'pre-chorus':
         return (lead: _shaku, ensemble: [_shaku, _zanku, _sekem]);
       case 'verse':
