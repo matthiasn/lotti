@@ -472,7 +472,7 @@ void main() {
       );
       expect(
         rightFlick.x,
-        inInclusiveRange(60, 66),
+        inInclusiveRange(54, 60),
         reason: 'Zanku should flick outward without becoming a long side kick',
       );
       expect(rightFlick.y, inInclusiveRange(96, 100));
@@ -500,7 +500,7 @@ void main() {
       );
       expect(
         leftFlick.x,
-        inInclusiveRange(-66, -60),
+        inInclusiveRange(-60, -54),
         reason: 'Zanku should flick outward without becoming a long side kick',
       );
       expect(leftFlick.y, inInclusiveRange(96, 100));
@@ -633,8 +633,10 @@ void main() {
         final rightPlantHand = handR.sample(0);
         expect(
           leftPlantHand.x,
-          greaterThan(15),
-          reason: 'Sekem should show one hand sweeping low across the beltline',
+          inInclusiveRange(-12, -4),
+          reason:
+              'Sekem should brush the sweep just off centre without punching '
+              'through the jacket',
         );
         expect(leftPlantHand.y, greaterThan(10));
         expect(
@@ -669,9 +671,10 @@ void main() {
         );
         expect(
           rightSweep.x,
-          lessThan(-15),
+          greaterThan(6),
           reason:
-              'the next plant should swap: right hand sweeps low across the belt',
+              'the next plant should swap: right hand brushes centre without '
+              'crossing through the jacket',
         );
         expect(
           footRRotation.sample(2 / phrase.frameCount).rotation,
