@@ -1834,7 +1834,9 @@ class CatClips {
       ikTargetKeys: {
         CatBones.handL: [
           // Close-up hand phrase: sweep up through the chest, answer the
-          // shoulder roll, then throw the F23 hit outside the body silhouette.
+          // shoulder roll, then prepare the F24 outside hook without crossing
+          // the left-arm IK branch. A harder F23 throw made the hand solve flip
+          // between dense analyzer samples (a visible one-frame snap).
           DanceIkTargetKey(17, x: -58.4, y: 25.2),
           DanceIkTargetKey(18, x: -67.2, y: 18.6),
           DanceIkTargetKey(19, x: -61, y: 15.8),
@@ -1842,8 +1844,8 @@ class CatClips {
           // the close-up reads as isolation instead of one simultaneous pose.
           DanceIkTargetKey(20, x: -55.8, y: 21.8),
           DanceIkTargetKey(21, x: -65, y: 18.4),
-          DanceIkTargetKey(22, x: -85.4, y: 13.8),
-          DanceIkTargetKey(23, x: -87.2, y: 12.2),
+          DanceIkTargetKey(22, x: -72.4, y: 18.2),
+          DanceIkTargetKey(23, x: -76.2, y: 18.8),
         ],
         CatBones.handR: [
           DanceIkTargetKey(18, x: 72.8, y: 23.2),
@@ -4608,9 +4610,9 @@ class CatClips {
     DanceIkTargetKey(32, x: 46, y: -66, ease: Ease.easeOutBack),
   ];
   static final KeyframeIkTargetChannel _shakuHandLTarget = _dancePhrase
-      .ikTargetChannel(_shakuHandLTargetKeys);
+      .ikTargetChannel(_shakuHandLTargetKeys, smooth: true);
   static final KeyframeIkTargetChannel _shakuHandRTarget = _dancePhrase
-      .ikTargetChannel(_shakuHandRTargetKeys);
+      .ikTargetChannel(_shakuHandRTargetKeys, smooth: true);
   static const _shakuFootLTargetKeys = [
     DanceIkTargetKey(0, x: -66, y: 103), // planted support, visible outside
     DanceIkTargetKey(1, x: -68, y: 103),

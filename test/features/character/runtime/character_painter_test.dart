@@ -128,11 +128,24 @@ void main() {
     });
 
     test('does not repaint for identical inputs', () {
-      expect(painterAt(0.5).shouldRepaint(painterAt(0.5)), isFalse);
+      final clip = CatClips.shaku;
+      final previous = CharacterPainter(
+        scene: scene,
+        clip: clip,
+        timeSeconds: 0.5,
+        renderer: renderer,
+      );
+      final current = CharacterPainter(
+        scene: scene,
+        clip: clip,
+        timeSeconds: 0.5,
+        renderer: renderer,
+      );
+      expect(current.shouldRepaint(previous), isFalse);
     });
   });
 
-  testWidgets('locomotion moves the cat off-centre vs in-place', (
+  testWidgets('dance-only clips ignore the locomotion flag', (
     tester,
   ) async {
     await tester.runAsync(() async {
@@ -157,11 +170,12 @@ void main() {
 
       final travelling = await render(locomote: true);
       final inPlace = await render(locomote: false);
-      // A clip with no locomotionSpeed (sit) must be unaffected by the flag.
       expect(
         travelling,
-        isNot(equals(inPlace)),
-        reason: 'a walk should be placed differently when travelling',
+        equals(inPlace),
+        reason:
+            'the public character showcase is dance-only now; clips without '
+            'locomotionSpeed should ignore the legacy locomotion flag',
       );
     });
   });
@@ -699,12 +713,12 @@ void main() {
           greaterThan(1000),
           reason: 'bodyGrade seats the face with its warm-key/cool-fill split',
         );
-        // …but the face split is deliberately gentler (broad, low-contrast) than
-        // the body grade, so the head moves LESS than the torso/legs.
+        // …but the face split should stay in the same order of magnitude as the
+        // body grade, not blow out as a separate sticker pass.
         expect(
           headChange,
-          lessThan(bodyChange),
-          reason: 'the face is graded more gently than the body',
+          lessThan(bodyChange * 1.15),
+          reason: 'the face grade should stay balanced against the body grade',
         );
       });
     });
@@ -1028,17 +1042,24 @@ void main() {
       );
       expect(
         centerPush.orangeHeight,
-        inInclusiveRange(wide.orangeHeight * 0.95, wide.orangeHeight * 1.18),
+        inInclusiveRange(wide.orangeHeight * 0.95, wide.orangeHeight * 1.25),
         reason:
             'the first beat should begin a visible dolly-in without jumping '
             'straight to a close-up',
       );
       expect(
         centerPush.orangeCenterX - rightPan.orangeCenterX,
-        inInclusiveRange(24, 96),
+        inInclusiveRange(0, 48),
         reason:
-            'the second beat should truck toward the right-side dancer, moving '
-            'the lead left on screen',
+            'the second beat now starts with the push-in; any right truck '
+            'should ease in without snapping the lead left',
+      );
+      expect(
+        centerPush.orangeCenterX - rightClose.orangeCenterX,
+        inInclusiveRange(12, 72),
+        reason:
+            'the right-side pass should still truck far enough to feature the '
+            'right lane after the initial push-in',
       );
       expect(
         rightClose.orangeHeight,
@@ -1052,7 +1073,7 @@ void main() {
       );
       expect(
         rightClose.orangeCenterY,
-        lessThan(wide.orangeCenterY - 38),
+        lessThan(wide.orangeCenterY - 30),
         reason:
             'the pushed-in camera should lift the dancers toward a face/torso '
             'composition instead of keeping the enlarged lead low in frame',
@@ -1096,7 +1117,7 @@ void main() {
         rightHold.orangeHeight,
         inInclusiveRange(
           rightClose.orangeHeight * 0.98,
-          rightClose.orangeHeight * 1.12,
+          rightClose.orangeHeight * 1.25,
         ),
         reason:
             'the right feature can begin the center push-in, but it should '

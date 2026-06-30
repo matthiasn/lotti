@@ -17,10 +17,8 @@ enum CharacterBackdrop { none, waterfront }
 
 const kCharacterWaterfrontBackdropAsset =
     'assets/images/character/lagos_waterfront.webp';
-const kCharacterWaterfrontCloudsAsset =
-    'assets/images/character/lagos_clouds_alpha.webp';
-const kCharacterWaterfrontWavesAsset =
-    'assets/images/character/lagos_wave_glints_alpha.webp';
+const kCharacterWaterfrontCloudsAsset = 'assets/scenery/clouds_mid.webp';
+const kCharacterWaterfrontWavesAsset = 'assets/scenery/clouds_near.webp';
 
 /// Stands the character on the ground of a [size] canvas with its **feet** at
 /// [feetFraction] of the height, horizontally at [centreX], facing right unless

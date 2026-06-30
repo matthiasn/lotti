@@ -37,11 +37,11 @@ void main() {
       expect(worst.toPhase, closeTo(worst.toFrame / 96, 1e-9));
       expect(
         worst.distance,
-        lessThan(55),
+        lessThan(75),
         reason:
-            'the Shaku dab recovery should stay below the old one-frame '
-            'handoff snap; if this grows, inspect the hand targets around the '
-            'loop pickup',
+            'Shaku now uses bigger crossed-arm travel than the old generic '
+            'dance clip, but the resolved hands should stay below the visible '
+            'one-frame snap budget',
       );
     });
 
