@@ -436,6 +436,39 @@ void main() {
       );
     });
 
+    test('zanku anticipates kicks and lands into a heavier stomp', () {
+      final phrase = CatClips.dancePhrase;
+      final zanku = CatClips.zanku;
+      final footL = _targetFor(zanku, CatBones.footL).channel;
+      final footR = _targetFor(zanku, CatBones.footR).channel;
+
+      final rightAnticipation = footR.sample(1 / phrase.frameCount);
+      final rightKick = footR.sample(2 / phrase.frameCount);
+      final rightStomp = zanku.root.sample(4 / phrase.frameCount);
+      final rightKickLift = zanku.root.sample(2 / phrase.frameCount);
+      expect(rightAnticipation.y, lessThan(80));
+      expect(rightKick.x, greaterThan(104));
+      expect(rightKick.y, lessThan(84));
+      expect(
+        rightStomp.dy - rightKickLift.dy,
+        greaterThan(18),
+        reason: 'Zanku should drop into the stomp after the right-leg kick',
+      );
+
+      final leftAnticipation = footL.sample(21 / phrase.frameCount);
+      final leftKick = footL.sample(22 / phrase.frameCount);
+      final leftStomp = zanku.root.sample(24 / phrase.frameCount);
+      final leftKickLift = zanku.root.sample(22 / phrase.frameCount);
+      expect(leftAnticipation.y, lessThan(80));
+      expect(leftKick.x, lessThan(-104));
+      expect(leftKick.y, lessThan(82));
+      expect(
+        leftStomp.dy - leftKickLift.dy,
+        greaterThan(18),
+        reason: 'Zanku should drop into the stomp after the left-leg kick',
+      );
+    });
+
     test(
       'buga keeps prep hands separated instead of folding arms through belly',
       () {
@@ -516,6 +549,17 @@ void main() {
         );
         expect(left.y, lessThan(-64));
       }
+
+      expect(
+        _targetDistance(handR, 14, 15),
+        lessThan(10),
+        reason: 'right Buga show-off pose should hold for two readable frames',
+      );
+      expect(
+        _targetDistance(handL, 30, 31),
+        lessThan(10),
+        reason: 'left Buga show-off pose should hold for two readable frames',
+      );
     });
 
     test('pouncing cat compresses, launches, lands, and rebounds in stages', () {
@@ -565,6 +609,18 @@ void main() {
       expect(launchRight.x, greaterThan(110));
       expect(launchLeft.y, lessThan(-75));
       expect(launchRight.y, lessThan(-55));
+
+      final mirrorLaunchLeft = handL.sample(24 / phrase.frameCount);
+      final mirrorLaunchRight = handR.sample(24 / phrase.frameCount);
+      expect(mirrorLaunchLeft.x, lessThan(-105));
+      expect(mirrorLaunchRight.x, lessThan(-55));
+      expect(
+        (mirrorLaunchRight.x - mirrorLaunchLeft.x).abs(),
+        greaterThan(42),
+        reason:
+            'the mirrored pounce launch needs two separated paws, not one '
+            'collapsed target',
+      );
 
       for (final frame in [4, 12, 20, 28]) {
         final p = frame / phrase.frameCount;
