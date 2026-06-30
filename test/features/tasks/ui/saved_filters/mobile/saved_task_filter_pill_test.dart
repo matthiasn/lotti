@@ -49,32 +49,35 @@ void main() {
       expect(taps, 1);
     });
 
-    testWidgets('active pill shows check + chevron and tap opens the sheet', (
-      tester,
-    ) async {
-      var opened = 0;
-      await _pump(
-        tester,
-        SavedTaskFilterPill(
-          label: 'In Progress',
-          semanticsLabel: 'In Progress, 5 tasks',
-          selected: true,
-          count: 5,
-          onTap: () => opened++,
-          onOpenSheet: () {},
-        ),
-      );
+    testWidgets(
+      'active pill shows the chevron but no redundant check; tap opens sheet',
+      (tester) async {
+        var opened = 0;
+        await _pump(
+          tester,
+          SavedTaskFilterPill(
+            label: 'In Progress',
+            semanticsLabel: 'In Progress, 5 tasks',
+            selected: true,
+            count: 5,
+            onTap: () => opened++,
+            onOpenSheet: () {},
+          ),
+        );
 
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-      expect(
-        find.byKey(SavedTaskFilterPill.chevronKey('In Progress')),
-        findsOneWidget,
-      );
+        // The active state is already encoded by the border/fill/bold name, so
+        // the in-pill check is gone — only the disclosure chevron remains.
+        expect(find.byIcon(Icons.check_rounded), findsNothing);
+        expect(
+          find.byKey(SavedTaskFilterPill.chevronKey('In Progress')),
+          findsOneWidget,
+        );
 
-      await tester.tap(find.byType(SavedTaskFilterPill));
-      await tester.pump();
-      expect(opened, 1);
-    });
+        await tester.tap(find.byType(SavedTaskFilterPill));
+        await tester.pump();
+        expect(opened, 1);
+      },
+    );
 
     testWidgets('zero count renders a dimmed 0', (tester) async {
       await _pump(
@@ -151,36 +154,85 @@ void main() {
     );
 
     testWidgets(
-      'selected pill renders count + check + chevron in high-emphasis',
+      'count reads secondary (medium-emphasis) whether selected or not',
       (tester) async {
-        // On the mint surface.selected fill, teal-on-mint was low contrast;
-        // the count, check, and chevron now use high-emphasis on-surface.
+        // The same datum must not change colour between states: the count is
+        // medium-emphasis in BOTH the selected and unselected pill (matching
+        // the sheet), with the active state carried by border/fill/bold name.
+        for (final selected in [false, true]) {
+          await _pump(
+            tester,
+            SavedTaskFilterPill(
+              label: 'Active',
+              semanticsLabel: 'Active, 5 tasks',
+              selected: selected,
+              count: 5,
+              onTap: () {},
+              onOpenSheet: selected ? () {} : null,
+            ),
+          );
+
+          expect(
+            tester.widget<Text>(find.text('5')).style?.color,
+            dsTokensLight.colors.text.mediumEmphasis,
+            reason: 'count colour must be secondary when selected=$selected',
+          );
+        }
+      },
+    );
+
+    testWidgets('selected pill chevron stays high-emphasis (legible cue)', (
+      tester,
+    ) async {
+      // The chevron is a disclosure affordance, not a count — it keeps
+      // high-emphasis so it reads over the mint selected fill in light theme.
+      await _pump(
+        tester,
+        SavedTaskFilterPill(
+          label: 'Active',
+          semanticsLabel: 'Active, 5 tasks',
+          selected: true,
+          count: 5,
+          onTap: () {},
+          onOpenSheet: () {},
+        ),
+      );
+
+      expect(
+        tester
+            .widget<Icon>(find.byKey(SavedTaskFilterPill.chevronKey('Active')))
+            .color,
+        dsTokensLight.colors.text.highEmphasis,
+      );
+    });
+
+    testWidgets(
+      'long "Category · Status" name truncates the prefix, keeps the status',
+      (tester) async {
+        // The category dot already encodes the category, so when the name must
+        // truncate the leading "Lotti · " prefix yields width first while the
+        // trailing "· In Progress" status segment stays fully visible.
         await _pump(
           tester,
           SavedTaskFilterPill(
-            label: 'Active',
-            semanticsLabel: 'Active, 5 tasks',
+            label: 'Lotti · In Progress',
+            semanticsLabel: 'Lotti, In Progress, 5 tasks',
             selected: true,
             count: 5,
             onTap: () {},
             onOpenSheet: () {},
           ),
+          mq: phoneMediaQueryData.copyWith(
+            textScaler: const TextScaler.linear(2.4),
+          ),
         );
 
-        final high = dsTokensLight.colors.text.highEmphasis;
-        expect(tester.widget<Text>(find.text('5')).style?.color, high);
-        expect(
-          tester.widget<Icon>(find.byIcon(Icons.check_rounded)).color,
-          high,
-        );
-        expect(
-          tester
-              .widget<Icon>(
-                find.byKey(SavedTaskFilterPill.chevronKey('Active')),
-              )
-              .color,
-          high,
-        );
+        // The status segment renders in full as its own (pinned) text node…
+        final tail = tester.widget<Text>(find.text('· In Progress'));
+        expect(tail.overflow, TextOverflow.ellipsis);
+        // …while the category prefix is a separate, ellipsizing node.
+        final head = tester.widget<Text>(find.text('Lotti '));
+        expect(head.overflow, TextOverflow.ellipsis);
       },
     );
 

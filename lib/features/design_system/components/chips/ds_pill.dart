@@ -26,6 +26,7 @@ class DsPill extends StatelessWidget {
   const DsPill({
     required this.variant,
     this.label,
+    this.labelWidget,
     this.leading,
     this.trailing,
     this.color,
@@ -46,6 +47,15 @@ class DsPill extends StatelessWidget {
 
   final DsPillVariant variant;
   final String? label;
+
+  /// Optional custom label widget rendered in place of the [label] string.
+  /// When non-null it takes precedence over [label] and the caller owns its
+  /// styling (the canonical [label] styling is NOT applied). Like the string
+  /// label it is wrapped in a [Flexible] so it ellipsizes instead of
+  /// overflowing the row — used by the mobile saved-filter pill to keep the
+  /// trailing status segment of a long name visible while the leading category
+  /// prefix truncates first.
+  final Widget? labelWidget;
   final Widget? leading;
   final Widget? trailing;
 
@@ -109,7 +119,11 @@ class DsPill extends StatelessWidget {
         leading!,
         SizedBox(width: gap),
       ],
-      if (label != null)
+      if (labelWidget != null)
+        // Caller-styled custom label; still Flexible so it ellipsizes rather
+        // than overflowing a width-bounded pill.
+        Flexible(child: labelWidget!)
+      else if (label != null)
         // Flexible so a host-bounded pill (e.g. a max-width link badge)
         // ellipsizes the label instead of overflowing the row.
         Flexible(

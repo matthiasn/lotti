@@ -793,7 +793,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
-      expect(find.text('Saved (1)'), findsOneWidget);
+      expect(find.text('Saved'), findsOneWidget);
       // The active pill shows the saved filter's name.
       expect(find.text('In Progress P0'), findsOneWidget);
     });

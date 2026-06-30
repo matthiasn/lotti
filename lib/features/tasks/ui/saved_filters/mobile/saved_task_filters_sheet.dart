@@ -95,6 +95,9 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
 
   Future<void> _delete(SavedTaskFilter saved) async {
     final messages = context.messages;
+    // Capture whether the deleted filter is the live selection *before* the
+    // async gap so a background re-match can't flip the answer mid-delete.
+    final wasActive = ref.read(currentSavedTaskFilterIdProvider) == saved.id;
     final confirmed = await showConfirmationModal(
       context: context,
       message: messages.tasksSavedFiltersDeleteConfirmMessage(saved.name),
@@ -105,6 +108,12 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     await ref
         .read(savedTaskFiltersControllerProvider.notifier)
         .delete(saved.id);
+    // Safe fallback: deleting the *active* filter would otherwise leave the
+    // list showing an orphaned filter shape with no pill selected. Reset the
+    // live filter to the default "All" view so the selection is never
+    // undefined. clearToDefault() makes the live shape match no saved filter,
+    // so `currentSavedTaskFilterIdProvider` resolves to null ("All" selected).
+    if (wasActive) await _activator.clearToDefault();
     if (mounted) showSavedTaskFilterDeletedToast(context);
   }
 
@@ -190,11 +199,18 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
 /// so the digits line up into a comparison column. A `step8` min-width holds
 /// the column start steady, but the slot is free to GROW so the digits are
 /// NEVER width-clipped at large text (the name ellipsizes instead).
+///
+/// The count is a *secondary* datum: it reads `text.mediumEmphasis` in every
+/// state — selected or not — exactly matching the rail pill's `_CountSlot`, so
+/// the same number never changes colour between the two surfaces. The active
+/// row is conveyed by the radio + bold name, never by re-colouring the count
+/// (teal here was both inconsistent with the rail and a light-theme
+/// teal-on-mint contrast trap). A dimmed `0` / cold-start `–` drop to
+/// low-emphasis.
 class _SheetCount extends StatelessWidget {
-  const _SheetCount({required this.count, required this.selected});
+  const _SheetCount({required this.count});
 
   final int? count;
-  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -211,9 +227,7 @@ class _SheetCount extends StatelessWidget {
       text = count! > SavedTaskFilterPill.countCap
           ? '${SavedTaskFilterPill.countCap}+'
           : '$count';
-      color = selected
-          ? tokens.colors.interactive.enabled
-          : tokens.colors.text.mediumEmphasis;
+      color = tokens.colors.text.mediumEmphasis;
     }
     return ConstrainedBox(
       constraints: BoxConstraints(minWidth: tokens.spacing.step8),
@@ -223,7 +237,7 @@ class _SheetCount extends StatelessWidget {
         maxLines: 1,
         style: tokens.typography.styles.body.bodyMedium.copyWith(
           color: color,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          fontWeight: FontWeight.w500,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
@@ -344,7 +358,7 @@ class _AllTasksRow extends StatelessWidget {
           ),
           // Edit mode has no per-row actions for "All tasks" (it is not a saved
           // definition), so the count column stays visible throughout.
-          _SheetCount(count: total, selected: selected),
+          _SheetCount(count: total),
         ],
       ),
     );
@@ -462,7 +476,7 @@ class _SavedFilterRow extends StatelessWidget {
           _RadioDot(selected: selected),
           SizedBox(width: tokens.spacing.step3),
           nameWidget,
-          _SheetCount(count: count, selected: selected),
+          _SheetCount(count: count),
         ],
       ),
     );

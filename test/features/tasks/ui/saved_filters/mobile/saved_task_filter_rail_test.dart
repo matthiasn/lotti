@@ -44,6 +44,18 @@ const _largeTextMq = MediaQueryData(
   textScaler: TextScaler.linear(1.4),
 );
 
+// A harder accessibility size: at 1.6x the old non-scrolling collapse overflowed
+// the row by ~15px. The collapsed rail must now scroll instead of overflowing.
+const _xLargeTextMq = MediaQueryData(
+  size: Size(390, 844),
+  textScaler: TextScaler.linear(1.6),
+);
+
+/// The left-edge x of the widget with [key] — used to assert the collapsed
+/// large-text order (active anchor leads, then All, then Saved).
+double _leftOf(WidgetTester tester, Key key) =>
+    tester.getTopLeft(find.byKey(key)).dx;
+
 class _StubSavedController extends SavedTaskFiltersController {
   _StubSavedController(this._seed);
   final List<SavedTaskFilter> _seed;
@@ -74,6 +86,7 @@ Future<({ProviderContainer container})> _pumpRail(
   List<SavedTaskFilter> seed = const [_f1, _f2],
   List<Override> extraOverrides = const [],
   Override? countsOverride,
+  Override? currentCountOverride,
   MediaQueryData? mq,
 }) async {
   final fake = FakeJournalPageController(pageState);
@@ -90,6 +103,10 @@ Future<({ProviderContainer container})> _pumpRail(
             (ref) async => const {'f1': 12, 'f2': 7},
           ),
       allTasksTotalCountProvider.overrideWith((ref) async => 124),
+      // The "Custom" pill's live filtered count — kept off the GetIt-backed
+      // repository. A distinctive value so the pill assertion is unambiguous.
+      currentCountOverride ??
+          currentTasksFilterCountProvider.overrideWith((ref) async => 4),
       ...extraOverrides,
     ],
   );
@@ -129,19 +146,49 @@ void main() {
     expect(find.byKey(SavedTaskFilterRailKeys.allPill), findsNothing);
   });
 
-  testWidgets('Saved (N) button shows the total and opens the sheet', (
-    tester,
-  ) async {
-    await _pumpRail(tester, pageState: const JournalPageState());
+  testWidgets(
+    'Saved button reads just "Saved" (no count) and opens the sheet',
+    (
+      tester,
+    ) async {
+      await _pumpRail(tester, pageState: const JournalPageState());
 
-    expect(find.text('Saved (2)'), findsOneWidget);
+      // No "(N)" badge — that read like a third task-count beside the pills.
+      expect(find.text('Saved'), findsOneWidget);
+      expect(find.textContaining('Saved ('), findsNothing);
 
-    await tester.tap(find.byKey(SavedTaskFilterRailKeys.savedButton));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.byKey(SavedTaskFilterRailKeys.savedButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
-  });
+      expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Saved button glyphs use high-emphasis for light-theme contrast',
+    (
+      tester,
+    ) async {
+      await _pumpRail(tester, pageState: const JournalPageState());
+
+      final high = dsTokensLight.colors.text.highEmphasis;
+      final bookmark = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(SavedTaskFilterRailKeys.savedButton),
+          matching: find.byIcon(Icons.bookmarks_outlined),
+        ),
+      );
+      final chevron = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(SavedTaskFilterRailKeys.savedButton),
+          matching: find.byIcon(Icons.expand_more_rounded),
+        ),
+      );
+      expect(bookmark.color, high);
+      expect(chevron.color, high);
+    },
+  );
 
   testWidgets('Saved button reads as a button: DsPill chrome + chevron', (
     tester,
@@ -194,7 +241,7 @@ void main() {
   });
 
   testWidgets(
-    'large text collapses the rail to Saved + the active anchor only',
+    'large text leads with the active anchor, then All, then Saved (scrollable)',
     (tester) async {
       await _pumpRail(
         tester,
@@ -204,19 +251,64 @@ void main() {
         mq: _largeTextMq,
       );
 
-      // The active saved pill is the only anchor; "All" + the f2 quick-jump
-      // pill are dropped so the active name + count stay readable.
-      expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
+      // The active saved pill is the anchor and LEADS; the MRU f2 quick-jump is
+      // dropped, but "All" is KEPT (an unselected reset) so return-to-unfiltered
+      // stays one tap, followed by the Saved button.
       expect(
         _pill(tester, SavedTaskFilterRailKeys.pill('f1')).selected,
         isTrue,
       );
-      expect(find.byKey(SavedTaskFilterRailKeys.allPill), findsNothing);
+      expect(_pill(tester, SavedTaskFilterRailKeys.allPill).selected, isFalse);
+      expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
       expect(find.byKey(SavedTaskFilterRailKeys.pill('f2')), findsNothing);
+
+      // Order: active anchor → All → Saved.
+      expect(
+        _leftOf(tester, SavedTaskFilterRailKeys.pill('f1')),
+        lessThan(_leftOf(tester, SavedTaskFilterRailKeys.allPill)),
+      );
+      expect(
+        _leftOf(tester, SavedTaskFilterRailKeys.allPill),
+        lessThan(_leftOf(tester, SavedTaskFilterRailKeys.savedButton)),
+      );
+
+      // The collapsed run is a horizontal scroll view (so the trailing chips
+      // scroll in instead of overflowing at accessibility sizes).
+      final root = tester.widget(
+        find.byKey(SavedTaskFilterRailKeys.root),
+      );
+      expect(root, isA<SingleChildScrollView>());
+      expect(
+        (root as SingleChildScrollView).scrollDirection,
+        Axis.horizontal,
+      );
     },
   );
 
-  testWidgets('large text default view keeps All as the active anchor', (
+  testWidgets(
+    'large text leads with the Custom anchor, then All + Save chip',
+    (tester) async {
+      await _pumpRail(
+        tester,
+        pageState: const JournalPageState(selectedPriorities: {'P0'}),
+        mq: _largeTextMq,
+      );
+
+      // Ad-hoc filter → Custom anchor leads; "All" survives the collapse as the
+      // one-tap reset, and the Save chip is still offered.
+      final custom = _pill(tester, SavedTaskFilterRailKeys.customPill);
+      expect(custom.selected, isTrue);
+      expect(_pill(tester, SavedTaskFilterRailKeys.allPill).selected, isFalse);
+      expect(find.byKey(SavedTaskFilterRailKeys.saveChip), findsOneWidget);
+      // Custom leads the All reset.
+      expect(
+        _leftOf(tester, SavedTaskFilterRailKeys.customPill),
+        lessThan(_leftOf(tester, SavedTaskFilterRailKeys.allPill)),
+      );
+    },
+  );
+
+  testWidgets('large text default view keeps All as the leading anchor', (
     tester,
   ) async {
     await _pumpRail(
@@ -225,12 +317,41 @@ void main() {
       mq: _largeTextMq,
     );
 
-    // All is the active selection, surfaced as the single anchor pill; no
-    // quick-jump pills render in the collapsed rail.
+    // All is the active selection, surfaced as the single anchor pill (no
+    // duplicate reset) and leading the Saved button; no quick-jump pills render.
     expect(_pill(tester, SavedTaskFilterRailKeys.allPill).selected, isTrue);
     expect(find.byKey(SavedTaskFilterRailKeys.pill('f1')), findsNothing);
     expect(find.byKey(SavedTaskFilterRailKeys.pill('f2')), findsNothing);
+    expect(
+      _leftOf(tester, SavedTaskFilterRailKeys.allPill),
+      lessThan(_leftOf(tester, SavedTaskFilterRailKeys.savedButton)),
+    );
   });
+
+  testWidgets(
+    'large text collapsed rail never overflows at 1.6x accessibility scale',
+    (tester) async {
+      // Regression: the old non-scrolling [Saved][All][anchor] row overflowed
+      // by ~15px at 1.6x. The scrollable collapse must lay out cleanly.
+      await _pumpRail(
+        tester,
+        pageState: const JournalPageState(
+          selectedTaskStatuses: {'IN_PROGRESS'},
+        ),
+        mq: _xLargeTextMq,
+      );
+
+      expect(tester.takeException(), isNull);
+      // Anchor still leads and is fully on-screen (its left edge is within the
+      // viewport), with the row scrollable for the trailing chips.
+      expect(
+        _leftOf(tester, SavedTaskFilterRailKeys.pill('f1')),
+        lessThan(390),
+      );
+      final root = tester.widget(find.byKey(SavedTaskFilterRailKeys.root));
+      expect(root, isA<SingleChildScrollView>());
+    },
+  );
 
   testWidgets('tri-state: default view selects "All"', (tester) async {
     await _pumpRail(tester, pageState: const JournalPageState());
@@ -257,19 +378,55 @@ void main() {
     expect(find.text('12'), findsOneWidget);
   });
 
-  testWidgets('tri-state: an ad-hoc filter shows Custom + the Save chip', (
+  testWidgets(
+    'tri-state: an ad-hoc filter shows Custom (with its count) + the Save chip',
+    (tester) async {
+      await _pumpRail(
+        tester,
+        pageState: const JournalPageState(selectedPriorities: {'P0'}),
+      );
+
+      final custom = _pill(tester, SavedTaskFilterRailKeys.customPill);
+      expect(custom.selected, isTrue);
+      // The active filter never hides its magnitude: Custom now surfaces the
+      // live filtered count (4 from the override) in the reserved slot.
+      expect(custom.showCount, isTrue);
+      expect(
+        find.descendant(
+          of: find.byKey(SavedTaskFilterRailKeys.customPill),
+          matching: find.text('4'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(SavedTaskFilterRailKeys.saveChip), findsOneWidget);
+      expect(_pill(tester, SavedTaskFilterRailKeys.allPill).selected, isFalse);
+    },
+  );
+
+  testWidgets('Custom pill shows a "–" placeholder while its count computes', (
     tester,
   ) async {
+    // Gate the live count so it never resolves during the test: the Custom
+    // pill must still render, showing the reserved-slot placeholder.
+    final gate = Completer<int>();
+    addTearDown(() => gate.complete(0));
     await _pumpRail(
       tester,
       pageState: const JournalPageState(selectedPriorities: {'P0'}),
+      currentCountOverride: currentTasksFilterCountProvider.overrideWith(
+        (ref) => gate.future,
+      ),
     );
 
     final custom = _pill(tester, SavedTaskFilterRailKeys.customPill);
-    expect(custom.selected, isTrue);
-    expect(custom.showCount, isFalse);
-    expect(find.byKey(SavedTaskFilterRailKeys.saveChip), findsOneWidget);
-    expect(_pill(tester, SavedTaskFilterRailKeys.allPill).selected, isFalse);
+    expect(custom.showCount, isTrue);
+    expect(
+      find.descendant(
+        of: find.byKey(SavedTaskFilterRailKeys.customPill),
+        matching: find.text('–'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('one tap on a quick-jump pill applies its filter', (

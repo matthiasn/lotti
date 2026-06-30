@@ -228,7 +228,41 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(bench.saved.deleteCalls.single, 'f1');
+    // f1 is not the active filter here (default page state), so the live
+    // filter is left untouched — no fallback reset.
+    expect(bench.fake.applyBatchFilterUpdateCalled, 0);
   });
+
+  testWidgets(
+    'deleting the ACTIVE filter falls back to the default "All" view',
+    (tester) async {
+      // Page state matches f1 ("IN_PROGRESS"), so f1 reads as the active
+      // selection. Deleting it must not strand the list on an orphaned filter:
+      // the live filter resets to the default (empty) shape.
+      final bench = await _pumpSheet(
+        tester,
+        pageState: const JournalPageState(
+          selectedTaskStatuses: {'IN_PROGRESS'},
+        ),
+      );
+
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+      await tester.pump();
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.delete('f1')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.tap(find.text('DELETE'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(bench.saved.deleteCalls.single, 'f1');
+      // Fallback reset to default: clearToDefault() pushes an empty status set
+      // (the "All" view) onto the live page.
+      expect(bench.fake.applyBatchFilterUpdateCalled, 1);
+      expect(bench.fake.setSelectedTaskStatusesCalls.single, <String>{});
+    },
+  );
 
   testWidgets('Save current filter as… creates from the live filter', (
     tester,

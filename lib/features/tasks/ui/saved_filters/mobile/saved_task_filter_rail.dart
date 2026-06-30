@@ -30,17 +30,20 @@ class SavedTaskFilterRailKeys {
 /// filter exists; otherwise it collapses to nothing so the layout is unchanged
 /// for users without saved filters.
 ///
-/// Left → right: a chip-chromed "Saved (N)" button with a disclosure chevron
-/// (opens the complete sheet), then a hard-capped, non-scrolling run of pills —
-/// "All" (clears to the default view), the active saved pill (or a "Custom"
-/// pill for an ad-hoc filter), and as many most-recently-used quick-jump pills
-/// as fit — and a trailing teal "+ Save" call-to-action pill shown only when
-/// the live filter has unsaved clauses. Overflow lives in the sheet; the rail
-/// never scrolls.
+/// Left → right: a chip-chromed "Saved" button with a disclosure chevron
+/// (opens the complete sheet — it carries no filter-count badge so it never
+/// reads like a third task-count next to the pill numbers), then a hard-capped,
+/// non-scrolling run of pills — "All" (clears to the default view), the active
+/// saved pill (or a "Custom" pill carrying the live filtered count for an
+/// ad-hoc filter), and as many most-recently-used quick-jump pills as fit — and
+/// a trailing teal "+ Save" call-to-action pill shown only when the live filter
+/// has unsaved clauses. Overflow lives in the sheet; the rail never scrolls.
 ///
-/// At large text (textScaler ≥ ~1.3) the rail collapses to just the "Saved (N)"
-/// button + the single active anchor pill (dropping "All" and the MRU pills) so
-/// the active filter's name + count stay readable.
+/// At large text (textScaler ≥ ~1.3) the rail collapses to the "Saved" button +
+/// a compact "All" reset + the single active anchor pill (dropping the MRU
+/// pills). "All" is kept even in the collapse because clearing back to the
+/// unfiltered view is the most common escape hatch — dropping it would regress
+/// return-to-unfiltered from one tap to two.
 class SavedTaskFilterRail extends ConsumerWidget {
   const SavedTaskFilterRail({super.key});
 
@@ -72,6 +75,16 @@ class SavedTaskFilterRail extends ConsumerWidget {
         : saved.where((f) => f.id == activeId).firstOrNull;
     final allSelected = activeId == null && !hasUnsaved;
 
+    // The "Custom" anchor's live magnitude. Only watched when an ad-hoc filter
+    // is active (`hasUnsaved` implies no saved filter matched, hence no active
+    // saved pill), so the count query never runs for the common saved/"All"
+    // views. Stale-while-revalidate via `AsyncValue.value` keeps the last count
+    // during a background recompute instead of flashing back to `–`.
+    final customCount = hasUnsaved
+        ? ref.watch(currentTasksFilterCountProvider).value
+        : null;
+    final customCountLoading = hasUnsaved && customCount == null;
+
     final mruCandidates = _orderedMru(
       saved: saved,
       mruOrder: mruOrder,
@@ -90,22 +103,30 @@ class SavedTaskFilterRail extends ConsumerWidget {
           builder: (context, constraints) {
             final gap = SizedBox(width: tokens.spacing.step2);
             final savedButton = _SavedButton(
-              count: saved.length,
               onTap: () => showSavedTaskFiltersSheet(context),
             );
             final saveChip = _SaveChip(
               onTap: () => promptSaveCurrentTaskFilter(context, ref),
             );
 
-            // Large text (textScaler ≥ ~1.3): collapse to the Saved button +
-            // the single active anchor pill (its name `Flexible` + ellipsis,
-            // its count never clipped). The "All" pill and MRU quick-jumps are
-            // dropped so the active filter stays readable instead of every
-            // pill fighting for width on a phone.
+            // Large text (textScaler ≥ ~1.3): collapse to the active anchor +
+            // a compact "All" reset + the "Saved" button (only the MRU
+            // quick-jumps are dropped). The active anchor LEADS so the user's
+            // current filter + count is the first thing on-screen and always
+            // fully readable; "All" (the reset) and "Saved" follow. The run is
+            // horizontally scrollable so at accessibility text sizes the
+            // trailing chips scroll into view instead of overflowing — which is
+            // acceptable here precisely because the collapse is ~3 chips, not
+            // the many-filter scrub-to-find case the rail's no-scroll rule
+            // guards against. "All" is kept because return-to-unfiltered is the
+            // most common escape hatch; when "All" *is* the active selection it
+            // doubles as the anchor rather than being rendered twice.
             final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.3;
             if (largeText) {
               final Widget anchor;
+              final bool allIsAnchor;
               if (activeFilter != null) {
+                allIsAnchor = false;
                 anchor = _savedPill(
                   context,
                   ref,
@@ -115,18 +136,41 @@ class SavedTaskFilterRail extends ConsumerWidget {
                   countLoading: counts == null,
                 );
               } else if (hasUnsaved) {
-                anchor = _customPill(context);
+                allIsAnchor = false;
+                anchor = _customPill(
+                  context,
+                  count: customCount,
+                  countLoading: customCountLoading,
+                );
               } else {
+                allIsAnchor = true;
                 anchor = _allPill(context, ref, selected: true, total: total);
               }
-              return Row(
+              return SingleChildScrollView(
                 key: SavedTaskFilterRailKeys.root,
-                children: [
-                  savedButton,
-                  gap,
-                  Flexible(child: anchor),
-                  if (hasUnsaved) ...[gap, saveChip],
-                ],
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Cap the leading anchor at the viewport width: a long name
+                    // ellipsizes (the name stays `Flexible` inside DsPill, the
+                    // count is never clipped) instead of pushing the row
+                    // arbitrarily wide, while a short name stays content-sized.
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth,
+                      ),
+                      child: anchor,
+                    ),
+                    if (!allIsAnchor) ...[
+                      gap,
+                      _allPill(context, ref, selected: false, total: total),
+                    ],
+                    gap,
+                    savedButton,
+                    if (hasUnsaved) ...[gap, saveChip],
+                  ],
+                ),
               );
             }
 
@@ -159,7 +203,13 @@ class SavedTaskFilterRail extends ConsumerWidget {
                   ),
                 ] else if (hasUnsaved) ...[
                   gap,
-                  Flexible(child: _customPill(context)),
+                  Flexible(
+                    child: _customPill(
+                      context,
+                      count: customCount,
+                      countLoading: customCountLoading,
+                    ),
+                  ),
                 ],
                 for (final f in mru) ...[
                   gap,
@@ -207,15 +257,27 @@ class SavedTaskFilterRail extends ConsumerWidget {
   }
 
   /// The "Custom" anchor pill for an ad-hoc filter that matches no saved view;
-  /// tapping it opens the sheet (paired with the chevron cue).
-  Widget _customPill(BuildContext context) {
+  /// tapping it opens the sheet (paired with the chevron cue). It carries the
+  /// live filtered task count in the same reserved tabular slot as every other
+  /// pill (a `–` placeholder while the count is still computing) — the active
+  /// filter must never hide its magnitude.
+  Widget _customPill(
+    BuildContext context, {
+    required int? count,
+    required bool countLoading,
+  }) {
     final messages = context.messages;
     return SavedTaskFilterPill(
       key: SavedTaskFilterRailKeys.customPill,
       label: messages.tasksSavedFiltersCustom,
       selected: true,
-      showCount: false,
-      semanticsLabel: messages.tasksSavedFiltersCustom,
+      count: count,
+      countLoading: countLoading,
+      semanticsLabel: _semanticsFor(
+        context,
+        name: messages.tasksSavedFiltersCustom,
+        count: countLoading ? null : count,
+      ),
       onTap: () => showSavedTaskFiltersSheet(context),
       onOpenSheet: () => showSavedTaskFiltersSheet(context),
     );
@@ -331,15 +393,17 @@ class SavedTaskFilterRail extends ConsumerWidget {
   }
 }
 
-/// The band-leading "Saved (N)" button. Wears the same neutral filled+bordered
+/// The band-leading "Saved" button. Wears the same neutral filled+bordered
 /// [DsPill] chrome as the "All" pill (so it reads as a chip, not a static
 /// label), led by a bookmark glyph and closed by a disclosure chevron that
-/// signals "opens a menu". One tap opens the complete sheet; the ≥48dp tap
-/// target comes from the padded [InkWell] wrapper, never a mutated pill height.
+/// signals "opens a menu". It deliberately carries **no** filter-count badge —
+/// "Saved (5)" read like a third task-count beside "All 214" and the pill
+/// numbers, conflating "5 saved definitions" with "N matching tasks". One tap
+/// opens the complete sheet; the ≥48dp tap target comes from the padded
+/// [InkWell] wrapper, never a mutated pill height.
 class _SavedButton extends StatelessWidget {
-  const _SavedButton({required this.count, required this.onTap});
+  const _SavedButton({required this.onTap});
 
-  final int count;
   final VoidCallback onTap;
 
   @override
@@ -348,7 +412,11 @@ class _SavedButton extends StatelessWidget {
     final messages = context.messages;
     final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
     final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    final label = messages.tasksSavedFiltersRailButton(count);
+    final label = messages.tasksSavedFiltersRailButton;
+    // Primary on-surface for both the label (DsPill's filled default) and the
+    // glyphs: at medium emphasis the bookmark + chevron read gray-on-gray over
+    // the light-theme pill fill. High emphasis keeps the whole button legible.
+    final glyphColor = tokens.colors.text.highEmphasis;
 
     final pill = DsPill(
       variant: DsPillVariant.filled,
@@ -357,12 +425,12 @@ class _SavedButton extends StatelessWidget {
       leading: Icon(
         Icons.bookmarks_outlined,
         size: tokens.spacing.step4,
-        color: tokens.colors.text.mediumEmphasis,
+        color: glyphColor,
       ),
       trailing: Icon(
         Icons.expand_more_rounded,
         size: tokens.spacing.step4,
-        color: tokens.colors.text.mediumEmphasis,
+        color: glyphColor,
       ),
     );
 

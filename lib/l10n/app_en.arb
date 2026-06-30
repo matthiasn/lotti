@@ -4390,14 +4390,7 @@
   "tasksSavedFiltersDone": "Done",
   "tasksSavedFiltersEdit": "Edit",
   "tasksSavedFiltersGroupSemantics": "Saved filters",
-  "tasksSavedFiltersRailButton": "Saved ({count})",
-  "@tasksSavedFiltersRailButton": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "tasksSavedFiltersRailButton": "Saved",
   "tasksSavedFiltersRenameNamed": "Rename {name}",
   "@tasksSavedFiltersRenameNamed": {
     "placeholders": {

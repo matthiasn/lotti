@@ -33,11 +33,16 @@ String? savedFilterCategoryName(SavedTaskFilter filter) {
 
 /// A single tappable saved-filter pill in the mobile rail.
 ///
-/// Anatomy (left → right): a leading selection check (only when [selected]) and
-/// an optional [categoryColor] dot, an ellipsizing [label], and a
-/// stable-width trailing count slot. When [selected] and [onOpenSheet] is set,
-/// a trailing chevron cues "tap to open the saved-filters sheet" so a
-/// selected-looking chip that navigates isn't a surprise.
+/// Anatomy (left → right): an optional [categoryColor] dot, an ellipsizing
+/// [label], and a stable-width trailing count slot. When [selected] and
+/// [onOpenSheet] is set, a trailing chevron cues "tap to open the
+/// saved-filters sheet" so a selected-looking chip that navigates isn't a
+/// surprise. There is deliberately **no in-pill selection check** — the active
+/// state is already encoded by the teal border + tinted fill + bold name (and
+/// the category dot), so a redundant check would only steal width from the
+/// name. The width it frees goes to the name, and a name that still overflows
+/// truncates its leading category prefix *before* its trailing status segment
+/// (see [_PillLabel]).
 ///
 /// The whole pill is wrapped in a ≥48dp tap target (the wrapper owns the tap +
 /// ripple; [DsPill.onTap] is intentionally unused) and presented to assistive
@@ -71,7 +76,7 @@ class SavedTaskFilterPill extends StatelessWidget {
   final String semanticsLabel;
 
   /// Whether this pill reads as the active selection (teal border + tinted
-  /// fill + check + bold name).
+  /// fill + bold name).
   final bool selected;
 
   /// Resolved category colour for the leading dot, or null when the filter
@@ -117,7 +122,7 @@ class SavedTaskFilterPill extends StatelessWidget {
       variant: DsPillVariant.filled,
       bordered: true,
       selected: selected,
-      label: label,
+      labelWidget: _PillLabel(label: label, selected: selected, tokens: tokens),
       leading: leading,
       trailing: trailing,
     );
@@ -151,29 +156,18 @@ class SavedTaskFilterPill extends StatelessWidget {
   }
 
   Widget? _buildLeading(DsTokens tokens) {
-    final children = <Widget>[
-      if (selected)
-        Icon(
-          Icons.check_rounded,
-          size: tokens.spacing.step4,
-          // High-emphasis on-surface (not the teal accent) so the check stays
-          // legible on the mint `surface.selected` fill in light theme.
-          color: tokens.colors.text.highEmphasis,
-        ),
-      if (categoryColor != null) ...[
-        if (selected) SizedBox(width: tokens.spacing.step1),
-        Container(
-          width: tokens.spacing.step3,
-          height: tokens.spacing.step3,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: categoryColor,
-          ),
-        ),
-      ],
-    ];
-    if (children.isEmpty) return null;
-    return Row(mainAxisSize: MainAxisSize.min, children: children);
+    // Only the category dot leads the pill — no redundant selection check (the
+    // teal border + tinted fill + bold name already mark the active pill, and
+    // dropping the check returns that width to the name).
+    if (categoryColor == null) return null;
+    return Container(
+      width: tokens.spacing.step3,
+      height: tokens.spacing.step3,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: categoryColor,
+      ),
+    );
   }
 
   Widget? _buildTrailing(DsTokens tokens) {
@@ -188,7 +182,6 @@ class SavedTaskFilterPill extends StatelessWidget {
             tokens: tokens,
             count: count,
             loading: countLoading,
-            selected: selected,
           ),
         if (showChevron) ...[
           SizedBox(width: tokens.spacing.step2),
@@ -196,9 +189,10 @@ class SavedTaskFilterPill extends StatelessWidget {
             Icons.expand_more_rounded,
             key: chevronKey(label),
             size: tokens.spacing.step4,
-            // High-emphasis on-surface to match the check/count: the teal
-            // border + tinted fill already mark the pill as the interactive
-            // anchor, so the glyph reads for contrast over the mint fill.
+            // High-emphasis on-surface: this disclosure affordance must stay
+            // legible over the mint `surface.selected` fill in light theme
+            // (teal-on-mint was low contrast). The count, by contrast, is a
+            // secondary datum and stays medium-emphasis.
             color: tokens.colors.text.highEmphasis,
           ),
         ],
@@ -211,20 +205,23 @@ class SavedTaskFilterPill extends StatelessWidget {
 /// for 1- vs 3-digit values (so the name-truncation point doesn't jump), but
 /// the slot is free to GROW so the digits are NEVER width-clipped — at large
 /// text the name (DsPill's `Flexible` label) ellipsizes while the full count
-/// (e.g. `214`) still renders. Tabular figures keep the column aligned; a
-/// dimmed `0` and a cold-start `–` use low-emphasis.
+/// (e.g. `214`) still renders. Tabular figures keep the column aligned.
+///
+/// The count is a *secondary* datum, so it reads `text.mediumEmphasis` in every
+/// state — selected or not — exactly matching the sheet's `_SheetCount`. The
+/// active state is conveyed by the pill's border / fill / bold name, never by
+/// re-colouring the number (teal-on-mint was also a light-theme contrast trap).
+/// A dimmed `0` and a cold-start `–` drop to low-emphasis.
 class _CountSlot extends StatelessWidget {
   const _CountSlot({
     required this.tokens,
     required this.count,
     required this.loading,
-    required this.selected,
   });
 
   final DsTokens tokens;
   final int? count;
   final bool loading;
-  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -240,11 +237,7 @@ class _CountSlot extends StatelessWidget {
       text = count! > SavedTaskFilterPill.countCap
           ? '${SavedTaskFilterPill.countCap}+'
           : '$count';
-      // High-emphasis on-surface when selected so the digits stay legible on
-      // the mint `surface.selected` fill (teal-on-mint was low contrast).
-      color = selected
-          ? tokens.colors.text.highEmphasis
-          : tokens.colors.text.mediumEmphasis;
+      color = tokens.colors.text.mediumEmphasis;
     }
 
     return ConstrainedBox(
@@ -258,10 +251,80 @@ class _CountSlot extends StatelessWidget {
         style: tokens.typography.styles.others.caption.copyWith(
           color: color,
           height: 1,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+          fontWeight: FontWeight.w600,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
+    );
+  }
+}
+
+/// Renders the pill [label] so that, when the pill is width-bounded, a leading
+/// "Category · …" prefix ellipsizes *before* the trailing status segment.
+///
+/// The category is already encoded by the leading dot, so the status (the text
+/// after the last `·`) is the higher-value half to keep visible. When the name
+/// carries a `·`, the prefix is laid out in a [Flexible] (so it truncates
+/// first) and the `·`-led suffix is pinned beside it; otherwise the whole name
+/// falls back to an ordinary trailing ellipsis. Styling mirrors `DsPill`'s
+/// canonical filled label (caption, high-emphasis, bold when [selected]).
+class _PillLabel extends StatelessWidget {
+  const _PillLabel({
+    required this.label,
+    required this.selected,
+    required this.tokens,
+  });
+
+  final String label;
+  final bool selected;
+  final DsTokens tokens;
+
+  static const String _separator = '·';
+
+  @override
+  Widget build(BuildContext context) {
+    final style = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.highEmphasis,
+      height: 1,
+      fontWeight: selected ? FontWeight.w700 : null,
+    );
+
+    final idx = label.lastIndexOf(_separator);
+    // No usable separator (or it sits at the very start/end) → ordinary
+    // trailing ellipsis on the whole name.
+    if (idx <= 0 || idx >= label.length - 1) {
+      return Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+
+    final head = label.substring(0, idx); // "Lotti " (keeps the spacing)
+    final tail = label.substring(idx); // "· In Progress" (the status segment)
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // The category prefix yields width first and ellipsizes…
+        Flexible(
+          child: Text(
+            head,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          ),
+        ),
+        // …while the status segment is pinned and stays readable.
+        Text(
+          tail,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        ),
+      ],
     );
   }
 }

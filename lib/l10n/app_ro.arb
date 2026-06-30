@@ -3829,7 +3829,7 @@
   "tasksSavedFiltersDone": "Gata",
   "tasksSavedFiltersEdit": "Editează",
   "tasksSavedFiltersGroupSemantics": "Filtre salvate",
-  "tasksSavedFiltersRailButton": "Salvate ({count})",
+  "tasksSavedFiltersRailButton": "Salvate",
   "tasksSavedFiltersRenameNamed": "Redenumește {name}",
   "tasksSavedFiltersSaveButtonLabel": "Salvați",
   "tasksSavedFiltersSaveCurrentAs": "Salvează filtrul curent ca…",
