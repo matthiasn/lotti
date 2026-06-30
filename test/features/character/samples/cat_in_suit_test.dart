@@ -436,7 +436,7 @@ void main() {
       );
     });
 
-    test('zanku anticipates kicks and lands into a heavier stomp', () {
+    test('zanku anticipates compact foot flicks and lands into a stomp', () {
       final phrase = CatClips.dancePhrase;
       final zanku = CatClips.zanku;
       final footL = _targetFor(zanku, CatBones.footL).channel;
@@ -447,8 +447,14 @@ void main() {
       final rightStomp = zanku.root.sample(4 / phrase.frameCount);
       final rightKickLift = zanku.root.sample(2 / phrase.frameCount);
       expect(rightAnticipation.y, lessThan(80));
-      expect(rightKick.x, greaterThan(104));
-      expect(rightKick.y, lessThan(84));
+      expect(
+        rightKick.x,
+        inInclusiveRange(86, 100),
+        reason:
+            'Zanku should use a compact heel/toe foot flick, not a long side '
+            'kick that reads as cardio',
+      );
+      expect(rightKick.y, inInclusiveRange(84, 92));
       expect(
         rightStomp.dy - rightKickLift.dy,
         greaterThan(18),
@@ -460,8 +466,14 @@ void main() {
       final leftStomp = zanku.root.sample(24 / phrase.frameCount);
       final leftKickLift = zanku.root.sample(22 / phrase.frameCount);
       expect(leftAnticipation.y, lessThan(80));
-      expect(leftKick.x, lessThan(-104));
-      expect(leftKick.y, lessThan(82));
+      expect(
+        leftKick.x,
+        inInclusiveRange(-100, -86),
+        reason:
+            'Zanku should use a compact heel/toe foot flick, not a long side '
+            'kick that reads as cardio',
+      );
+      expect(leftKick.y, inInclusiveRange(84, 92));
       expect(
         leftStomp.dy - leftKickLift.dy,
         greaterThan(18),
@@ -605,21 +617,33 @@ void main() {
 
       final launchLeft = handL.sample(8 / phrase.frameCount);
       final launchRight = handR.sample(8 / phrase.frameCount);
-      expect(launchLeft.x, greaterThan(55));
-      expect(launchRight.x, greaterThan(110));
+      expect(
+        launchLeft.x,
+        inInclusiveRange(18, 42),
+        reason:
+            'the first pounce hit should keep the left paw as a bent guard, '
+            'not fire both paws straight forward',
+      );
+      expect(launchRight.x, greaterThan(100));
       expect(launchLeft.y, lessThan(-75));
       expect(launchRight.y, lessThan(-55));
 
       final mirrorLaunchLeft = handL.sample(24 / phrase.frameCount);
       final mirrorLaunchRight = handR.sample(24 / phrase.frameCount);
-      expect(mirrorLaunchLeft.x, lessThan(-105));
-      expect(mirrorLaunchRight.x, lessThan(-55));
+      expect(mirrorLaunchLeft.x, lessThan(-96));
+      expect(
+        mirrorLaunchRight.x,
+        inInclusiveRange(-42, -12),
+        reason:
+            'the mirrored hit should keep the right paw as a bent guard, '
+            'not repeat the old double-forward projection',
+      );
       expect(
         (mirrorLaunchRight.x - mirrorLaunchLeft.x).abs(),
-        greaterThan(42),
+        greaterThan(64),
         reason:
-            'the mirrored pounce launch needs two separated paws, not one '
-            'collapsed target',
+            'the mirrored pounce launch needs a clear lead paw plus a guard, '
+            'not one collapsed double-paw target',
       );
 
       for (final frame in [4, 12, 20, 28]) {
