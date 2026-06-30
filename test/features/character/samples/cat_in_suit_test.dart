@@ -518,7 +518,7 @@ void main() {
       }
     });
 
-    test('pouncing cat keeps the cat flavor inside a compact groove', () {
+    test('pouncing cat compresses, launches, lands, and rebounds in stages', () {
       final phrase = CatClips.dancePhrase;
       final pounce = CatClips.pouncingCat;
       final handL = _targetFor(pounce, CatBones.handL).channel;
@@ -526,33 +526,45 @@ void main() {
       final footL = _targetFor(pounce, CatBones.footL).channel;
       final footR = _targetFor(pounce, CatBones.footR).channel;
 
-      final lowPocket = pounce.root.sample(4 / phrase.frameCount);
-      final rebound = pounce.root.sample(6 / phrase.frameCount);
-      final rightSettle = pounce.root.sample(12 / phrase.frameCount);
-      final secondLaunch = pounce.root.sample(24 / phrase.frameCount);
+      final crouch = pounce.root.sample(4 / phrase.frameCount);
+      final airborne = pounce.root.sample(8 / phrase.frameCount);
+      final landing = pounce.root.sample(12 / phrase.frameCount);
+      final recoil = pounce.root.sample(16 / phrase.frameCount);
+      final mirrorCrouch = pounce.root.sample(20 / phrase.frameCount);
+      final mirrorAirborne = pounce.root.sample(24 / phrase.frameCount);
 
       expect(
-        lowPocket.dy - rebound.dy,
-        greaterThan(14),
-        reason: 'the cat groove needs a visible down-up bounce, not a glide',
+        crouch.dy - airborne.dy,
+        greaterThan(70),
+        reason: 'the pounce needs a real crouch-to-airborne height contrast',
       );
       expect(
-        rightSettle.dx,
-        greaterThan(12),
-        reason: 'the compact pounce should settle to the right side',
+        landing.dy,
+        greaterThan(airborne.dy + 70),
+        reason: 'landing should squash back down after the airborne reach',
       );
       expect(
-        secondLaunch.dx,
-        lessThan(-12),
-        reason: 'the mirrored pounce should spring back to the left side',
+        landing.dx,
+        greaterThan(28),
+        reason: 'the first landing should clearly settle to the right side',
+      );
+      expect(
+        recoil.dy,
+        greaterThan(airborne.dy + 45),
+        reason: 'the recoil should stay grounded instead of snapping upright',
+      );
+      expect(
+        mirrorCrouch.dy - mirrorAirborne.dy,
+        greaterThan(70),
+        reason: 'the mirrored cell should keep the same crouch-to-air contrast',
       );
 
       final launchLeft = handL.sample(8 / phrase.frameCount);
       final launchRight = handR.sample(8 / phrase.frameCount);
-      expect(launchLeft.x, greaterThan(20));
-      expect(launchRight.x, greaterThan(80));
-      expect(launchLeft.y, lessThan(-55));
-      expect(launchRight.y, lessThan(-42));
+      expect(launchLeft.x, greaterThan(55));
+      expect(launchRight.x, greaterThan(110));
+      expect(launchLeft.y, lessThan(-75));
+      expect(launchRight.y, lessThan(-55));
 
       for (final frame in [4, 12, 20, 28]) {
         final p = frame / phrase.frameCount;
@@ -575,10 +587,16 @@ void main() {
         );
       }
       expect(
-        _targetDistance(handL, 12, 16),
-        lessThan(90),
+        _targetDistance(handL, 12, 14),
+        lessThan(58),
         reason:
-            'pounce should rebound into groove rather than teleporting arms',
+            'the landing-to-recoil arm path should have an intermediate stage',
+      );
+      expect(
+        _targetDistance(handL, 14, 16),
+        lessThan(70),
+        reason:
+            'the pounce should rebound into groove rather than teleporting arms',
       );
     });
 
