@@ -383,26 +383,26 @@ void main() {
 
       final openLeft = handL.sample(21 / phrase.frameCount);
       final openRight = handR.sample(21 / phrase.frameCount);
-      expect(openLeft.x, lessThan(-42));
-      expect(openRight.x, greaterThan(42));
+      expect(openLeft.x, lessThan(-40));
+      expect(openRight.x, greaterThan(40));
       expect(
         openRight.x - openLeft.x,
-        greaterThan(90),
+        greaterThan(80),
         reason:
-            'after the wrist-cross both elbows should open outward so the arms '
-            'remain physically possible',
+            'after the wrist-cross both elbows should open outward, but stay '
+            'close enough to the sternum to keep the Shaku pocket compact',
       );
 
       final sideHitLeft = handL.sample(22 / phrase.frameCount);
       final sideHitRight = handR.sample(22 / phrase.frameCount);
-      expect(sideHitLeft.x, lessThan(-48));
-      expect(sideHitRight.x, greaterThan(48));
+      expect(sideHitLeft.x, lessThan(-44));
+      expect(sideHitRight.x, greaterThan(44));
       expect(
         sideHitRight.x - sideHitLeft.x,
-        greaterThan(96),
+        greaterThan(88),
         reason:
-            'the Shaku release should be an outside sweep/hit rather than a '
-            'held folded-arm pose',
+            'the Shaku release should open, but not flare into a generic '
+            'wide fist-pump groove',
       );
 
       final recoveryCrossLeft = handL.sample(29 / phrase.frameCount);
@@ -453,48 +453,66 @@ void main() {
       );
     });
 
-    test('zanku anticipates compact foot flicks and lands into a stomp', () {
+    test('zanku taps, digs low, pops the knee, and lands into a stomp', () {
       final phrase = CatClips.dancePhrase;
       final zanku = CatClips.zanku;
       final footL = _targetFor(zanku, CatBones.footL).channel;
       final footR = _targetFor(zanku, CatBones.footR).channel;
 
-      final rightAnticipation = footR.sample(1 / phrase.frameCount);
-      final rightKick = footR.sample(2 / phrase.frameCount);
+      final rightLift = footR.sample(1 / phrase.frameCount);
+      final rightFlick = footR.sample(2 / phrase.frameCount);
+      final rightRecoil = footR.sample(3 / phrase.frameCount);
       final rightStomp = zanku.root.sample(4 / phrase.frameCount);
-      final rightKickLift = zanku.root.sample(2 / phrase.frameCount);
-      expect(rightAnticipation.y, lessThan(90));
+      final rightFlickLift = zanku.root.sample(2 / phrase.frameCount);
       expect(
-        rightKick.x,
-        inInclusiveRange(70, 80),
-        reason:
-            'Zanku should use a bent-knee heel/toe foot flick, not a long '
-            'side kick that reads as cardio',
+        rightLift.y,
+        inInclusiveRange(78, 86),
+        reason: 'Zanku starts each cell with a clear knee lift',
       );
-      expect(rightKick.y, inInclusiveRange(92, 96));
       expect(
-        rightStomp.dy - rightKickLift.dy,
+        rightFlick.x,
+        inInclusiveRange(54, 62),
+        reason: 'Zanku should flick outward without becoming a long side kick',
+      );
+      expect(rightFlick.y, inInclusiveRange(96, 100));
+      expect(
+        rightRecoil.x,
+        lessThan(rightFlick.x - 25),
+        reason:
+            'the free foot should recoil back under the body after flicking',
+      );
+      expect(
+        rightStomp.dy - rightFlickLift.dy,
         greaterThan(18),
-        reason: 'Zanku should drop into the stomp after the right-leg kick',
+        reason: 'Zanku should drop into the stomp after the right-leg flick',
       );
 
-      final leftAnticipation = footL.sample(21 / phrase.frameCount);
-      final leftKick = footL.sample(22 / phrase.frameCount);
+      final leftLift = footL.sample(21 / phrase.frameCount);
+      final leftFlick = footL.sample(22 / phrase.frameCount);
+      final leftRecoil = footL.sample(23 / phrase.frameCount);
       final leftStomp = zanku.root.sample(24 / phrase.frameCount);
-      final leftKickLift = zanku.root.sample(22 / phrase.frameCount);
-      expect(leftAnticipation.y, lessThan(90));
+      final leftFlickLift = zanku.root.sample(22 / phrase.frameCount);
       expect(
-        leftKick.x,
-        inInclusiveRange(-80, -70),
-        reason:
-            'Zanku should use a bent-knee heel/toe foot flick, not a long '
-            'side kick that reads as cardio',
+        leftLift.y,
+        inInclusiveRange(78, 86),
+        reason: 'Zanku starts each cell with a clear knee lift',
       );
-      expect(leftKick.y, inInclusiveRange(92, 96));
       expect(
-        leftStomp.dy - leftKickLift.dy,
+        leftFlick.x,
+        inInclusiveRange(-62, -54),
+        reason: 'Zanku should flick outward without becoming a long side kick',
+      );
+      expect(leftFlick.y, inInclusiveRange(96, 100));
+      expect(
+        leftRecoil.x,
+        greaterThan(leftFlick.x + 25),
+        reason:
+            'the free foot should recoil back under the body after flicking',
+      );
+      expect(
+        leftStomp.dy - leftFlickLift.dy,
         greaterThan(18),
-        reason: 'Zanku should drop into the stomp after the left-leg kick',
+        reason: 'Zanku should drop into the stomp after the left-leg flick',
       );
     });
 
@@ -588,6 +606,44 @@ void main() {
         _targetDistance(handL, 30, 31),
         lessThan(10),
         reason: 'left Buga show-off pose should hold for two readable frames',
+      );
+    });
+
+    test('sekem widens the planted stance and paddles hands on offbeats', () {
+      final phrase = CatClips.dancePhrase;
+      final sekem = CatClips.sekem;
+      final footL = _targetFor(sekem, CatBones.footL).channel;
+      final footR = _targetFor(sekem, CatBones.footR).channel;
+      final handL = _targetFor(sekem, CatBones.handL).channel;
+      final handR = _targetFor(sekem, CatBones.handR).channel;
+
+      final leftPlant = footL.sample(0);
+      final rightPlant = footR.sample(4 / phrase.frameCount);
+      expect(leftPlant.x, lessThan(-28));
+      expect(rightPlant.x, greaterThan(28));
+      expect(leftPlant.y, greaterThanOrEqualTo(99));
+      expect(rightPlant.y, greaterThanOrEqualTo(99));
+
+      final leftOffbeat = handL.sample(2 / phrase.frameCount);
+      final rightOffbeat = handR.sample(2 / phrase.frameCount);
+      final leftPlantHand = handL.sample(0);
+      final rightPlantHand = handR.sample(0);
+      expect(
+        leftOffbeat.x,
+        lessThan(leftPlantHand.x - 10),
+        reason: 'Sekem left elbow should lag down/back on the offbeat',
+      );
+      expect(
+        rightOffbeat.x,
+        lessThan(rightPlantHand.x),
+        reason: 'Sekem right wrist should roll inward on the offbeat',
+      );
+      expect(
+        rightPlantHand.y - leftPlantHand.y,
+        greaterThan(30),
+        reason:
+            'one hand should sit at the chest while the other rolls at waist '
+            'height, avoiding a locked fist bundle',
       );
     });
 
