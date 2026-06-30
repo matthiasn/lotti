@@ -52,6 +52,18 @@ void main() {
       expect(cuffR?.z, lessThan(rig.bone(CatBones.handR)!.z));
     });
 
+    test('elbow creases expose arm mechanics over the sleeve ribbons', () {
+      final creaseL = rig.bone(CatBones.armElbowCreaseL);
+      final creaseR = rig.bone(CatBones.armElbowCreaseR);
+
+      expect(creaseL?.parent, CatBones.armLowerL);
+      expect(creaseR?.parent, CatBones.armLowerR);
+      expect(creaseL?.drawable?.height, lessThan(creaseL!.drawable!.width));
+      expect(creaseR?.drawable?.height, lessThan(creaseR!.drawable!.width));
+      expect(creaseL.z, greaterThan(rig.bone(CatBones.armUpperL)!.z));
+      expect(creaseR.z, greaterThan(rig.bone(CatBones.armUpperR)!.z));
+    });
+
     test('shoes carry a subtle sole edge for footwork readability', () {
       expect(rig.bone(CatBones.shoeHighlightL)?.parent, CatBones.footL);
       expect(rig.bone(CatBones.shoeHighlightR)?.parent, CatBones.footR);
@@ -172,10 +184,15 @@ void main() {
         greaterThan(leadLeg.halfWidths[2]),
         reason: 'the calf must bulge past the knee dip',
       );
-      expect(baseArm.halfWidths, const [11.0, 12.6, 7.6, 4.6]);
+      expect(baseArm.halfWidths, const [10.6, 11.4, 5.8, 4.4]);
       expect(
         leadArm.halfWidths[1],
-        closeTo(12.6 * kDanceLeadArmWidthScale, 0.001),
+        closeTo(11.4 * kDanceLeadArmWidthScale, 0.001),
+      );
+      expect(
+        leadArm.halfWidths[2],
+        lessThan(leadArm.halfWidths[1] * 0.6),
+        reason: 'the elbow valley should keep crossed arms readable',
       );
       expect(leadTail.halfWidths, baseTail.halfWidths);
     });
@@ -446,15 +463,15 @@ void main() {
       final rightKick = footR.sample(2 / phrase.frameCount);
       final rightStomp = zanku.root.sample(4 / phrase.frameCount);
       final rightKickLift = zanku.root.sample(2 / phrase.frameCount);
-      expect(rightAnticipation.y, lessThan(80));
+      expect(rightAnticipation.y, lessThan(90));
       expect(
         rightKick.x,
-        inInclusiveRange(86, 100),
+        inInclusiveRange(70, 80),
         reason:
-            'Zanku should use a compact heel/toe foot flick, not a long side '
-            'kick that reads as cardio',
+            'Zanku should use a bent-knee heel/toe foot flick, not a long '
+            'side kick that reads as cardio',
       );
-      expect(rightKick.y, inInclusiveRange(84, 92));
+      expect(rightKick.y, inInclusiveRange(92, 96));
       expect(
         rightStomp.dy - rightKickLift.dy,
         greaterThan(18),
@@ -465,15 +482,15 @@ void main() {
       final leftKick = footL.sample(22 / phrase.frameCount);
       final leftStomp = zanku.root.sample(24 / phrase.frameCount);
       final leftKickLift = zanku.root.sample(22 / phrase.frameCount);
-      expect(leftAnticipation.y, lessThan(80));
+      expect(leftAnticipation.y, lessThan(90));
       expect(
         leftKick.x,
-        inInclusiveRange(-100, -86),
+        inInclusiveRange(-80, -70),
         reason:
-            'Zanku should use a compact heel/toe foot flick, not a long side '
-            'kick that reads as cardio',
+            'Zanku should use a bent-knee heel/toe foot flick, not a long '
+            'side kick that reads as cardio',
       );
-      expect(leftKick.y, inInclusiveRange(84, 92));
+      expect(leftKick.y, inInclusiveRange(92, 96));
       expect(
         leftStomp.dy - leftKickLift.dy,
         greaterThan(18),
@@ -574,7 +591,7 @@ void main() {
       );
     });
 
-    test('pouncing cat compresses, launches, lands, and rebounds in stages', () {
+    test('pouncing cat compresses, pushes, lands, and rebounds compactly', () {
       final phrase = CatClips.dancePhrase;
       final pounce = CatClips.pouncingCat;
       final handL = _targetFor(pounce, CatBones.handL).channel;
@@ -583,67 +600,78 @@ void main() {
       final footR = _targetFor(pounce, CatBones.footR).channel;
 
       final crouch = pounce.root.sample(4 / phrase.frameCount);
-      final airborne = pounce.root.sample(8 / phrase.frameCount);
+      final push = pounce.root.sample(8 / phrase.frameCount);
       final landing = pounce.root.sample(12 / phrase.frameCount);
-      final recoil = pounce.root.sample(16 / phrase.frameCount);
+      final rebound = pounce.root.sample(16 / phrase.frameCount);
       final mirrorCrouch = pounce.root.sample(20 / phrase.frameCount);
-      final mirrorAirborne = pounce.root.sample(24 / phrase.frameCount);
+      final mirrorPush = pounce.root.sample(24 / phrase.frameCount);
 
       expect(
-        crouch.dy - airborne.dy,
-        greaterThan(70),
-        reason: 'the pounce needs a real crouch-to-airborne height contrast',
+        crouch.dy - push.dy,
+        greaterThan(55),
+        reason: 'the cat hook should show a clear compress-to-push contrast',
       );
       expect(
         landing.dy,
-        greaterThan(airborne.dy + 70),
-        reason: 'landing should squash back down after the airborne reach',
+        greaterThan(push.dy + 55),
+        reason: 'the landing should squash after the push accent',
       );
       expect(
         landing.dx,
-        greaterThan(28),
+        greaterThan(20),
         reason: 'the first landing should clearly settle to the right side',
       );
       expect(
-        recoil.dy,
-        greaterThan(airborne.dy + 45),
-        reason: 'the recoil should stay grounded instead of snapping upright',
+        rebound.dy,
+        greaterThan(push.dy + 32),
+        reason: 'the rebound should stay in the dance pocket after the landing',
       );
       expect(
-        mirrorCrouch.dy - mirrorAirborne.dy,
-        greaterThan(70),
-        reason: 'the mirrored cell should keep the same crouch-to-air contrast',
+        mirrorCrouch.dy - mirrorPush.dy,
+        greaterThan(55),
+        reason: 'the mirrored cell should keep the same compress-to-push hook',
       );
 
-      final launchLeft = handL.sample(8 / phrase.frameCount);
-      final launchRight = handR.sample(8 / phrase.frameCount);
+      final firstAccentLeft = handL.sample(8 / phrase.frameCount);
+      final firstAccentRight = handR.sample(8 / phrase.frameCount);
       expect(
-        launchLeft.x,
-        inInclusiveRange(18, 42),
+        firstAccentLeft.x,
+        inInclusiveRange(8, 28),
         reason:
-            'the first pounce hit should keep the left paw as a bent guard, '
-            'not fire both paws straight forward',
+            'the first cat accent should keep the left paw as a bent chest '
+            'guard, not fire both paws straight forward',
       );
-      expect(launchRight.x, greaterThan(100));
-      expect(launchLeft.y, lessThan(-75));
-      expect(launchRight.y, lessThan(-55));
+      expect(
+        firstAccentRight.x,
+        inInclusiveRange(84, 100),
+        reason:
+            'the outer paw should lead as a compact elbow/wrist accent, not a '
+            'long straight attack pose',
+      );
+      expect(firstAccentLeft.y, lessThan(-68));
+      expect(firstAccentRight.y, inInclusiveRange(-60, -48));
 
-      final mirrorLaunchLeft = handL.sample(24 / phrase.frameCount);
-      final mirrorLaunchRight = handR.sample(24 / phrase.frameCount);
-      expect(mirrorLaunchLeft.x, lessThan(-96));
+      final mirrorAccentLeft = handL.sample(24 / phrase.frameCount);
+      final mirrorAccentRight = handR.sample(24 / phrase.frameCount);
       expect(
-        mirrorLaunchRight.x,
-        inInclusiveRange(-42, -12),
+        mirrorAccentLeft.x,
+        inInclusiveRange(-100, -84),
         reason:
-            'the mirrored hit should keep the right paw as a bent guard, '
-            'not repeat the old double-forward projection',
+            'the mirrored outer paw should stay compact and dance-like, not '
+            'turn into a long side punch',
       );
       expect(
-        (mirrorLaunchRight.x - mirrorLaunchLeft.x).abs(),
-        greaterThan(64),
+        mirrorAccentRight.x,
+        inInclusiveRange(-28, -8),
         reason:
-            'the mirrored pounce launch needs a clear lead paw plus a guard, '
-            'not one collapsed double-paw target',
+            'the mirrored hit should keep the right paw as a bent chest guard',
+      );
+      expect(
+        (mirrorAccentRight.x - mirrorAccentLeft.x).abs(),
+        inInclusiveRange(70, 100),
+        reason:
+            'the mirrored accent needs clear lead paw plus guard separation '
+            'without a full attack reach',
       );
 
       for (final frame in [4, 12, 20, 28]) {
@@ -657,26 +685,39 @@ void main() {
         );
         expect(
           leftFoot.y,
-          greaterThan(97),
+          greaterThanOrEqualTo(98),
           reason: 'pounce frame $frame should stay grounded on the left foot',
         );
         expect(
           rightFoot.y,
-          greaterThan(97),
+          greaterThanOrEqualTo(98),
           reason: 'pounce frame $frame should stay grounded on the right foot',
         );
       }
+
+      final rightPush = footR.sample(8 / phrase.frameCount);
+      final leftPush = footL.sample(24 / phrase.frameCount);
+      expect(rightPush.x, inInclusiveRange(70, 86));
+      expect(leftPush.x, inInclusiveRange(-86, -70));
+      expect(
+        rightPush.y,
+        inInclusiveRange(76, 86),
+        reason:
+            'the push should lift modestly through the pounce hook without a '
+            'long side kick',
+      );
+      expect(leftPush.y, inInclusiveRange(76, 86));
+
       expect(
         _targetDistance(handL, 12, 14),
         lessThan(58),
-        reason:
-            'the landing-to-recoil arm path should have an intermediate stage',
+        reason: 'the groove rebound should have an intermediate arm stage',
       );
       expect(
         _targetDistance(handL, 14, 16),
         lessThan(70),
         reason:
-            'the pounce should rebound into groove rather than teleporting arms',
+            'the cat groove should rebound smoothly rather than teleport arms',
       );
     });
 

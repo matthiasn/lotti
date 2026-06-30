@@ -289,7 +289,6 @@ class DancePerformance {
   static final Clip _zanku = CatClips.zanku;
   static final Clip _azonto = CatClips.azonto;
   static final Clip _buga = CatClips.buga;
-  static final Clip _pounce = CatClips.pouncingCat;
   static final Clip _sekem = CatClips.sekem;
 
   /// How far open the lyric-synced mouth slack window is dilated so short gaps
@@ -319,10 +318,7 @@ class DancePerformance {
         ),
         section: section,
         energetic: section?.energetic ?? true,
-        // Canon (staggered phase) when the trio is on the Pouncing-Cat glide so
-        // they creep in sequence rather than swinging as one pendulum; tight
-        // unison for every other move.
-        synchronous: trio.lead != _pounce,
+        synchronous: true,
       );
     }
     return danceIdleStage(pos, section: section);
@@ -364,9 +360,9 @@ class DancePerformance {
   }
 
   /// The lyric-driven routine for a semantic [section]: each section of the song
-  /// gets its own trio across the six moves, so the dance reads as a designed set
+  /// gets its own trio across the named moves, so the dance reads as a designed set
   /// — verses groove, the chorus punches its hook into a unison Buga hit, the
-  /// bridge drops to the Pouncing-Cat glide, the outro winds down. [phase] is
+  /// bridge drops to a grounded Sekem pocket, the outro winds down. [phase] is
   /// 0..1 progress through the section; [variant] is the section occurrence (0 =
   /// first) so repeats don't read identical. Falls back to the energy-level map
   /// for untagged sections / no lyrics.
@@ -396,16 +392,16 @@ class DancePerformance {
             ? (lead: _azonto, ensemble: [_azonto, _shaku, _zanku])
             : (lead: _shaku, ensemble: [_shaku, _azonto, _zanku]);
       case 'bridge':
-        return (lead: _pounce, ensemble: [_pounce, _pounce, _pounce]);
+        return (lead: _sekem, ensemble: [_sekem, _sekem, _sekem]);
       case 'outro':
-        return (lead: _pounce, ensemble: [_pounce, _pounce, _shaku]);
+        return (lead: _sekem, ensemble: [_sekem, _sekem, _shaku]);
       default:
         return choreoTrioByLevel(level);
     }
   }
 
   /// Energy-only fallback (no lyrics): map the section's normalized [level] to a
-  /// trio, building from the Pouncing-Cat glide up to the unison Buga hit.
+  /// trio, building from the grounded Sekem pocket up to the unison Buga hit.
   DanceTrio choreoTrioByLevel(double level) {
     if (level >= 0.90) return (lead: _buga, ensemble: [_buga, _buga, _buga]);
     if (level >= 0.78) {
@@ -418,9 +414,9 @@ class DancePerformance {
       return (lead: _shaku, ensemble: [_shaku, _azonto, _zanku]);
     }
     if (level >= 0.28) {
-      return (lead: _azonto, ensemble: [_azonto, _shaku, _pounce]);
+      return (lead: _azonto, ensemble: [_azonto, _shaku, _sekem]);
     }
-    return (lead: _pounce, ensemble: [_pounce, _pounce, _pounce]);
+    return (lead: _sekem, ensemble: [_sekem, _sekem, _sekem]);
   }
 
   /// The virtual director's CONTEXT for [pos], from which the target framing
