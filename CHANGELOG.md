@@ -12,6 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transcription runs and no task summary is generated — and returns you to the
   page exactly as it was before you started. Stop still behaves as before: it
   keeps the recording and kicks off transcription and the linked task's agent.
+- **Saved task filters on your phone, synced across devices.** The named filter
+  presets you build on the Tasks page now come to mobile. A slim rail under the
+  Tasks header shows the filter you're on and a couple of recent ones with live
+  task counts and one-tap switching; tapping **Saved** opens a "Saved filters"
+  sheet — the full list where you pick one to switch, hit **Edit** to rename or
+  delete, or **Save current filter as…** to keep a view you've tuned. When you've
+  hand-tuned an unsaved filter, a **Custom** pill and an inline **+ Save** appear
+  right on the rail. Saved filters now sync between your devices too: create or
+  delete one anywhere and it shows up (or disappears) on the rest, and a new
+  **Settings → Sync → Sync Entities → "Saved task filters"** step pushes across
+  the presets you already had. Each device works out its own counts, so the
+  numbers always match what that device actually holds.
 - **Customizable completion celebrations.** Settings → Advanced → Animations now
   lets you tune each celebration style — particle count, size, spread, and
   per-style physics like gravity, twinkle, sway, spin, swell — in a full-screen
