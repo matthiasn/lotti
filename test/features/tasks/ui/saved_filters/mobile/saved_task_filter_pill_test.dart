@@ -261,6 +261,42 @@ void main() {
       expect((circle.decoration! as BoxDecoration).color, dot);
     });
 
+    testWidgets(
+      'category dot carries a background-toned separation ring on the active '
+      'pill',
+      (tester) async {
+        // A teal category colour would otherwise melt into the selected pill's
+        // teal accent; the ring keeps the dot a distinct disc.
+        const dot = Color(0xFF1F7963);
+        await _pump(
+          tester,
+          SavedTaskFilterPill(
+            label: 'Lotti',
+            semanticsLabel: 'Lotti, 3 tasks',
+            selected: true,
+            categoryColor: dot,
+            count: 3,
+            onTap: () {},
+          ),
+        );
+
+        final circle = tester
+            .widgetList<Container>(find.byType(Container))
+            .firstWhere((c) {
+              final decoration = c.decoration;
+              return decoration is BoxDecoration &&
+                  decoration.shape == BoxShape.circle &&
+                  decoration.color == dot;
+            });
+        final border = (circle.decoration! as BoxDecoration).border;
+        expect(border, isNotNull);
+        expect(
+          (border! as Border).top.color,
+          dsTokensLight.colors.background.level01,
+        );
+      },
+    );
+
     testWidgets('hidden count slot omits the count entirely (Custom)', (
       tester,
     ) async {

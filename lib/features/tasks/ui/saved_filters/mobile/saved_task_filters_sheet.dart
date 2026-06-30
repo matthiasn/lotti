@@ -195,19 +195,47 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
   }
 }
 
-/// Leading single-select indicator: a filled teal dot when selected, an empty
-/// ring otherwise (radio affordance). The resting ring uses
-/// `text.mediumEmphasis` (not the near-invisible `lowEmphasis`) so the
-/// single-select control is clearly perceivable before it is filled; the
-/// selected state keeps the teal `interactive.enabled` fill.
-class _RadioDot extends StatelessWidget {
-  const _RadioDot({required this.selected});
+/// Leading row indicator. Its meaning depends on [editing]:
+///
+/// * **Outside Edit mode** it is a single-select **radio**: a filled teal dot
+///   when selected, an empty ring otherwise. The resting ring uses
+///   `text.mediumEmphasis` (not the near-invisible `lowEmphasis`) so the
+///   control is clearly perceivable before it is filled; the selected state
+///   keeps the teal `interactive.enabled` fill.
+/// * **In Edit mode selection is disabled** (rows surface Rename / Delete, not
+///   a tap-to-select), so a radio would be a mixed signal. The indicator
+///   degrades to a non-interactive **status dot** — a filled accent dot marks
+///   the currently-applied filter; non-active rows show an empty slot of the
+///   same footprint so the name column never shifts when Edit toggles.
+class _SelectionIndicator extends StatelessWidget {
+  const _SelectionIndicator({required this.selected, this.editing = false});
 
   final bool selected;
+  final bool editing;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    if (editing) {
+      // Status indicator (not a radio): same step5 footprint as the radio so
+      // the name column stays put across the Edit toggle.
+      return SizedBox(
+        width: tokens.spacing.step5,
+        height: tokens.spacing.step5,
+        child: selected
+            ? Center(
+                child: Container(
+                  width: tokens.spacing.step4,
+                  height: tokens.spacing.step4,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: tokens.colors.interactive.enabled,
+                  ),
+                ),
+              )
+            : null,
+      );
+    }
     return Icon(
       selected
           ? Icons.radio_button_checked_rounded
@@ -310,7 +338,7 @@ class _AllTasksRow extends StatelessWidget {
             : '$name, ${messages.tasksSavedFiltersTaskCount(total!)}',
         onTap: onTap,
         children: [
-          _RadioDot(selected: selected),
+          _SelectionIndicator(selected: selected, editing: editing),
           SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: Text(
@@ -385,6 +413,10 @@ class _SavedFilterRow extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: categoryColor,
+                // A thin background-toned ring so a teal category colour stays
+                // a distinct disc against the active row's teal selection tint
+                // (`surface.selected`) — matching the rail pill's dot moat.
+                border: Border.all(color: tokens.colors.background.level01),
               ),
             ),
             SizedBox(width: tokens.spacing.step2),
@@ -424,7 +456,7 @@ class _SavedFilterRow extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
             child: Row(
               children: [
-                _RadioDot(selected: selected),
+                _SelectionIndicator(selected: selected, editing: true),
                 SizedBox(width: tokens.spacing.step3),
                 nameWidget,
                 _EditAction(
@@ -462,7 +494,7 @@ class _SavedFilterRow extends StatelessWidget {
         semanticsLabel: semanticsLabel,
         onTap: onTap,
         children: [
-          _RadioDot(selected: selected),
+          _SelectionIndicator(selected: selected),
           SizedBox(width: tokens.spacing.step3),
           nameWidget,
           SavedFilterCountText(

@@ -158,6 +158,11 @@ class SavedTaskFilterPill extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: categoryColor,
+        // A thin background-toned ring so a teal category colour never melts
+        // into the teal selection accent (the selected pill's mint fill +
+        // `interactive.enabled` border). The moat keeps the dot a distinct disc
+        // regardless of the category colour.
+        border: Border.all(color: tokens.colors.background.level01),
       ),
     );
   }

@@ -269,6 +269,60 @@ void main() {
     },
   );
 
+  Iterable<Container> accentDots(WidgetTester tester, Key rowKey) => tester
+      .widgetList<Container>(
+        find.descendant(
+          of: find.byKey(rowKey),
+          matching: find.byType(Container),
+        ),
+      )
+      .where((c) {
+        final d = c.decoration;
+        return d is BoxDecoration &&
+            d.shape == BoxShape.circle &&
+            d.color == dsTokensLight.colors.interactive.enabled;
+      });
+
+  testWidgets(
+    'Edit mode demotes the active radio to a non-interactive status dot',
+    (tester) async {
+      // f1 matches the live filter → it is the active selection.
+      await _pumpSheet(
+        tester,
+        pageState: const JournalPageState(
+          selectedTaskStatuses: {'IN_PROGRESS'},
+        ),
+      );
+
+      // Outside Edit mode the active row carries a tap-to-select radio.
+      expect(
+        find.descendant(
+          of: find.byKey(SavedTaskFiltersSheetKeys.row('f1')),
+          matching: find.byIcon(Icons.radio_button_checked_rounded),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+      await tester.pump();
+
+      // In Edit mode selection is disabled, so NO radio remains anywhere (a
+      // radio would imply "tap to select" against the Rename/Delete actions)…
+      expect(find.byIcon(Icons.radio_button_checked_rounded), findsNothing);
+      expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsNothing);
+      // …the active row instead shows a plain accent status dot…
+      expect(
+        accentDots(tester, SavedTaskFiltersSheetKeys.row('f1')),
+        isNotEmpty,
+      );
+      // …and an inactive row shows neither a radio nor a status dot.
+      expect(
+        accentDots(tester, SavedTaskFiltersSheetKeys.row('f2')),
+        isEmpty,
+      );
+    },
+  );
+
   testWidgets(
     'active-row count lifts to high emphasis on its mint surface; inactive '
     'stays medium',

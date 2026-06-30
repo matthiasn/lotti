@@ -147,13 +147,14 @@ void main() {
   });
 
   testWidgets(
-    'Saved button shows the plain "Saved" label (no count) and opens the sheet',
+    'Saved button shows the saved-filter count in the shared slot and opens '
+    'the sheet',
     (
       tester,
     ) async {
-      // Seed has 2 filters, but the Saved button carries NO count: the bookmark
-      // + chevron already signal a menu opener, and a trailing numeral there
-      // misread as a third task-count next to the real per-filter counts.
+      // Seed has 2 filters → the Saved button reads "Saved  2", using the SAME
+      // shared count widget as the rail pills so it stays consistent with the
+      // "All 124" / per-filter numerals.
       await _pumpRail(tester, pageState: const JournalPageState());
 
       final label = tester.widget<Text>(
@@ -164,7 +165,22 @@ void main() {
       );
       // The label inherits the filled pill's high-emphasis colour…
       expect(label.style?.color, dsTokensLight.colors.text.highEmphasis);
-      // …and there is no "(N)" numeral anywhere on the button.
+      // …the count rides the shared SavedFilterCountText slot (reads "2")…
+      expect(
+        find.descendant(
+          of: find.byKey(SavedTaskFilterRailKeys.savedButton),
+          matching: find.byType(SavedFilterCountText),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(SavedTaskFilterRailKeys.savedButton),
+          matching: find.text('2'),
+        ),
+        findsOneWidget,
+      );
+      // …and the count rides the slot, never a parenthetical baked into label.
       expect(
         find.descendant(
           of: find.byKey(SavedTaskFilterRailKeys.savedButton),
@@ -195,39 +211,47 @@ void main() {
           matching: find.byIcon(Icons.bookmarks_outlined),
         ),
       );
-      final chevron = tester.widget<Icon>(
+      final glyph = tester.widget<Icon>(
         find.descendant(
           of: find.byKey(SavedTaskFilterRailKeys.savedButton),
-          matching: find.byIcon(Icons.expand_more_rounded),
+          matching: find.byIcon(Icons.unfold_more_rounded),
         ),
       );
       expect(bookmark.color, high);
-      expect(chevron.color, high);
+      expect(glyph.color, high);
     },
   );
 
-  testWidgets('Saved button reads as a button: DsPill chrome + chevron', (
-    tester,
-  ) async {
-    await _pumpRail(tester, pageState: const JournalPageState());
+  testWidgets(
+    'Saved button is a distinct borderless chip with a panel-disclosure glyph',
+    (
+      tester,
+    ) async {
+      await _pumpRail(tester, pageState: const JournalPageState());
 
-    // Same neutral chip chrome as the "All" pill, not a bare label.
-    expect(
-      find.descendant(
-        of: find.byKey(SavedTaskFilterRailKeys.savedButton),
-        matching: find.byType(DsPill),
-      ),
-      findsOneWidget,
-    );
-    // A disclosure chevron signals that it opens a menu.
-    expect(
-      find.descendant(
-        of: find.byKey(SavedTaskFilterRailKeys.savedButton),
-        matching: find.byIcon(Icons.expand_more_rounded),
-      ),
-      findsOneWidget,
-    );
-  });
+      final pill = tester.widget<DsPill>(
+        find.descendant(
+          of: find.byKey(SavedTaskFilterRailKeys.savedButton),
+          matching: find.byType(DsPill),
+        ),
+      );
+      // Chip chrome (not a bare label)…
+      expect(pill.variant, DsPillVariant.filled);
+      // …but borderless, so the menu-opener is visually distinct from the
+      // bordered All / active filter pills rather than reading as a filter value.
+      expect(pill.bordered, isFalse);
+      // An `unfold_more` glyph (not a down-chevron) signals a panel that rises
+      // as a bottom sheet rather than a dropdown.
+      expect(
+        find.descendant(
+          of: find.byKey(SavedTaskFilterRailKeys.savedButton),
+          matching: find.byIcon(Icons.unfold_more_rounded),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.expand_more_rounded), findsNothing);
+    },
+  );
 
   testWidgets('Save chip is a teal-tinted CTA, not a bordered/ghost chip', (
     tester,
@@ -290,25 +314,20 @@ void main() {
         lessThan(_leftOf(tester, SavedTaskFilterRailKeys.savedButton)),
       );
 
-      // The anchor + "All" scroll horizontally (so the leading chips scroll
-      // instead of overflowing at accessibility sizes)…
-      final scroll = find.descendant(
-        of: find.byKey(SavedTaskFilterRailKeys.root),
-        matching: find.byType(SingleChildScrollView),
+      // The whole run is ONE horizontal scroll view (the rail root itself), so
+      // at accessibility sizes the chips scroll instead of overflowing…
+      final root = tester.widget<SingleChildScrollView>(
+        find.byKey(SavedTaskFilterRailKeys.root),
       );
-      expect(scroll, findsOneWidget);
-      expect(
-        tester.widget<SingleChildScrollView>(scroll).scrollDirection,
-        Axis.horizontal,
-      );
-      // …while the "Saved" button is PINNED outside that scroll view (it must
-      // never scroll off into an "S" sliver at large text).
+      expect(root.scrollDirection, Axis.horizontal);
+      // …and the "Saved" button now lives INSIDE that scroll run (no pinned
+      // split that could overlap a bisected "All").
       expect(
         find.descendant(
-          of: scroll,
+          of: find.byKey(SavedTaskFilterRailKeys.root),
           matching: find.byKey(SavedTaskFilterRailKeys.savedButton),
         ),
-        findsNothing,
+        findsOneWidget,
       );
     },
   );
@@ -357,10 +376,12 @@ void main() {
   });
 
   testWidgets(
-    'large text collapsed rail never overflows at 1.6x accessibility scale',
+    'large text collapsed rail scrolls without overlap at 1.6x scale',
     (tester) async {
-      // Regression: the old non-scrolling [Saved][All][anchor] row overflowed
-      // by ~15px at 1.6x. The scrollable collapse must lay out cleanly.
+      // Regression: the old split — an Expanded horizontal scroll of
+      // [anchor][All] plus a separately-pinned "Saved" — let "Saved" overlap a
+      // bisected "All" at ~1.6x. The single scroll run must lay out cleanly with
+      // a real gap between every chip and never overlap.
       await _pumpRail(
         tester,
         pageState: const JournalPageState(
@@ -369,40 +390,52 @@ void main() {
         mq: _xLargeTextMq,
       );
 
-      // No RenderFlex overflow: the Expanded scroll area absorbs the slack that
-      // the old non-scrolling [Saved][All][anchor] row could not.
+      // No RenderFlex overflow / exception: the single scroll run absorbs the
+      // slack the old pinned split could not.
       expect(tester.takeException(), isNull);
 
-      final scroll = find.descendant(
-        of: find.byKey(SavedTaskFilterRailKeys.root),
-        matching: find.byType(SingleChildScrollView),
+      // The rail root IS a single horizontal scroll view.
+      final root = tester.widget<SingleChildScrollView>(
+        find.byKey(SavedTaskFilterRailKeys.root),
       );
-      expect(scroll, findsOneWidget);
-      // The anchor leads inside the scroll area…
+      expect(root.scrollDirection, Axis.horizontal);
+
+      // The active anchor leads and "Saved" rides the same run.
       expect(
         find.descendant(
-          of: scroll,
+          of: find.byKey(SavedTaskFilterRailKeys.root),
           matching: find.byKey(SavedTaskFilterRailKeys.pill('f1')),
         ),
         findsOneWidget,
       );
-      // …and the "Saved" button is PINNED outside it, sitting flush within the
-      // rail's right edge (never pushed past it / clipped off), so the sheet
-      // opener stays reachable instead of scrolling off into an "S" sliver.
       expect(
         find.descendant(
-          of: scroll,
+          of: find.byKey(SavedTaskFilterRailKeys.root),
           matching: find.byKey(SavedTaskFilterRailKeys.savedButton),
         ),
-        findsNothing,
+        findsOneWidget,
       );
-      final railRight = tester
-          .getRect(find.byKey(SavedTaskFilterRailKeys.root))
-          .right;
-      final savedRight = tester
-          .getRect(find.byKey(SavedTaskFilterRailKeys.savedButton))
-          .right;
-      expect(savedRight, lessThanOrEqualTo(railRight + 0.5));
+
+      // A REAL gap between chips (no overlap): "All" starts one inter-pill gap
+      // (step2) after the anchor's right edge, never on top of it.
+      final anchorRight = tester
+          .getTopRight(find.byKey(SavedTaskFilterRailKeys.pill('f1')))
+          .dx;
+      final allLeft = tester
+          .getTopLeft(find.byKey(SavedTaskFilterRailKeys.allPill))
+          .dx;
+      expect(allLeft, greaterThanOrEqualTo(anchorRight));
+      expect(allLeft - anchorRight, closeTo(dsTokensLight.spacing.step2, 0.5));
+
+      // …and the same true between "All" and "Saved".
+      final allRight = tester
+          .getTopRight(find.byKey(SavedTaskFilterRailKeys.allPill))
+          .dx;
+      final savedLeft = tester
+          .getTopLeft(find.byKey(SavedTaskFilterRailKeys.savedButton))
+          .dx;
+      expect(savedLeft, greaterThanOrEqualTo(allRight));
+      expect(savedLeft - allRight, closeTo(dsTokensLight.spacing.step2, 0.5));
     },
   );
 

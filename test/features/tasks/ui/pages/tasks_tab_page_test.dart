@@ -793,7 +793,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
-      // The Saved button is a plain "Saved" label — no count numeral.
+      // The Saved button keeps the plain "Saved" label (its saved-count rides a
+      // separate slot, not a parenthetical).
       expect(find.text('Saved'), findsOneWidget);
       // The active pill shows the saved filter's name.
       expect(find.text('In Progress P0'), findsOneWidget);
