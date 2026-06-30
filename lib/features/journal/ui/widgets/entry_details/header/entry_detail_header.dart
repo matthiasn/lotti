@@ -98,12 +98,22 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         !widget.inLinkedEntries;
     return Row(
       children: [
-        EntryDatetimeWidget(entryId: widget.entryId),
-        if (showCategory) ...[
-          SizedBox(width: tokens.spacing.step3),
-          CategorySelectionIconButton(entry: entry),
-        ],
-        const Spacer(),
+        // The date/category cluster takes the slack the old Spacer held, but as
+        // an Expanded it also *yields* it: on narrow phones the trailing action
+        // buttons (ending in the overflow `…`) keep their full width and the
+        // timestamp ellipsizes instead of the row overflowing and the `…` being
+        // clipped by the card's rounded clip.
+        Expanded(
+          child: Row(
+            children: [
+              Flexible(child: EntryDatetimeWidget(entryId: widget.entryId)),
+              if (showCategory) ...[
+                SizedBox(width: tokens.spacing.step3),
+                CategorySelectionIconButton(entry: entry),
+              ],
+            ],
+          ),
+        ),
         ..._spacedTrailing(
           context,
           _trailingActions(context, entry, id, notifier, tokens),
@@ -265,8 +275,18 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     // the same x as every other card type.
     return Row(
       children: [
-        EntryDatetimeWidget(entryId: widget.entryId),
-        const Spacer(),
+        // Expanded (not a fixed widget + Spacer) so the timestamp yields space
+        // to the trailing rail on narrow phones instead of the row overflowing
+        // and clipping the overflow `…`. The Align keeps the datetime widget's
+        // tap target at its intrinsic text width — without it the Expanded
+        // would stretch the underlying GestureDetector across the empty gap and
+        // make that whitespace open the date/time picker.
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: EntryDatetimeWidget(entryId: widget.entryId),
+          ),
+        ),
         ..._spacedTrailing(
           context,
           _trailingActions(
