@@ -31,6 +31,7 @@ class DsPill extends StatelessWidget {
     this.color,
     this.labelColor,
     this.bordered = false,
+    this.selected = false,
     this.onTap,
     this.onLongPress,
     super.key,
@@ -63,6 +64,19 @@ class DsPill extends StatelessWidget {
   /// chip boundary against the near-same-tone surface. No-op for the other
   /// variants, which already carry their own border / tint.
   final bool bordered;
+
+  /// Orthogonal selection state. Composes with [variant] (it is **not** a new
+  /// variant): when true, the pill draws a 1px teal `interactive.enabled`
+  /// border, a teal-tinted fill (`surface.selected` on the `filled` variant;
+  /// the variant's own tint is kept on `tinted`), and a bold label — the
+  /// multi-channel "active saved filter" treatment used by the mobile saved
+  /// filter rail.
+  ///
+  /// Only `filled` and `tinted` react to selection; `outline` / `muted` ignore
+  /// it. **Regression guarantee:** `selected: false` leaves every existing
+  /// consumer byte-identical (no border, no fill change, no weight change), so
+  /// the orthogonal flag is safe to add without touching current callers.
+  final bool selected;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
@@ -80,8 +94,15 @@ class DsPill extends StatelessWidget {
       fontStyle: variant == DsPillVariant.muted
           ? FontStyle.italic
           : FontStyle.normal,
+      // Bold only when selected so unselected pills keep the caption's own
+      // weight (regression-safe: copyWith(null) is a no-op).
+      fontWeight: selected ? FontWeight.w700 : null,
       height: 1,
     );
+
+    // The teal selection border, shared by the variants that react to
+    // selection. Built once so the decoration branches stay terse.
+    final selectedBorder = Border.all(color: tokens.colors.interactive.enabled);
 
     final children = <Widget>[
       if (leading != null) ...[
@@ -116,11 +137,17 @@ class DsPill extends StatelessWidget {
     final shaped = switch (variant) {
       DsPillVariant.filled => DecoratedBox(
         decoration: BoxDecoration(
-          color: tokens.colors.surface.enabled,
+          // Teal-tinted surface when selected; the quiet/plain surface
+          // otherwise (unchanged for existing consumers).
+          color: selected
+              ? tokens.colors.surface.selected
+              : tokens.colors.surface.enabled,
           borderRadius: radius,
-          border: bordered
-              ? Border.all(color: tokens.colors.decorative.level02)
-              : null,
+          border: selected
+              ? selectedBorder
+              : (bordered
+                    ? Border.all(color: tokens.colors.decorative.level02)
+                    : null),
         ),
         child: content,
       ),
@@ -128,6 +155,7 @@ class DsPill extends StatelessWidget {
         decoration: BoxDecoration(
           color: color!.withValues(alpha: 0.18),
           borderRadius: radius,
+          border: selected ? selectedBorder : null,
         ),
         child: content,
       ),

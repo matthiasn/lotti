@@ -8698,13 +8698,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadAiConfigDelete => 'Ștergere configurare AI';
 
   @override
-  String get syncPayloadSavedTaskFilter => 'Filtru de sarcini salvat';
-
-  @override
-  String get syncPayloadSavedTaskFilterDelete =>
-      'Ștergere filtru de sarcini salvat';
-
-  @override
   String get syncPayloadBackfillRequest => 'Cerere de completare';
 
   @override
@@ -8731,6 +8724,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPayloadOutboxBundle => 'Pachet din căsuța de trimitere';
+
+  @override
+  String get syncPayloadSavedTaskFilter => 'Filtru de sarcini salvat';
+
+  @override
+  String get syncPayloadSavedTaskFilterDelete =>
+      'Ștergere filtru de sarcini salvat';
 
   @override
   String get syncPayloadSyncNodeProfile => 'Profilul nodului de sincronizare';
@@ -9199,7 +9199,51 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksSavedFilterRenameSemantics => 'Redenumiți filtrul salvat';
 
   @override
+  String get tasksSavedFiltersAllShort => 'Toate';
+
+  @override
+  String get tasksSavedFiltersAllTasks => 'Toate sarcinile';
+
+  @override
+  String get tasksSavedFiltersCustom => 'Personalizat';
+
+  @override
+  String get tasksSavedFiltersDeleteConfirmAction => 'Șterge';
+
+  @override
+  String tasksSavedFiltersDeleteConfirmMessage(String name) {
+    return 'Ștergeți filtrul salvat „$name”? Această acțiune nu poate fi anulată.';
+  }
+
+  @override
+  String tasksSavedFiltersDeleteNamed(String name) {
+    return 'Șterge $name';
+  }
+
+  @override
+  String get tasksSavedFiltersDone => 'Gata';
+
+  @override
+  String get tasksSavedFiltersEdit => 'Editează';
+
+  @override
+  String get tasksSavedFiltersGroupSemantics => 'Filtre salvate';
+
+  @override
+  String tasksSavedFiltersRailButton(int count) {
+    return 'Salvate ($count)';
+  }
+
+  @override
+  String tasksSavedFiltersRenameNamed(String name) {
+    return 'Redenumește $name';
+  }
+
+  @override
   String get tasksSavedFiltersSaveButtonLabel => 'Salvați';
+
+  @override
+  String get tasksSavedFiltersSaveCurrentAs => 'Salvează filtrul curent ca…';
 
   @override
   String get tasksSavedFiltersSavePopupCancel => 'Anulați';
@@ -9224,6 +9268,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSavePopupTitle => 'Denumiți acest filtru';
+
+  @override
+  String get tasksSavedFiltersSheetTitle => 'Filtre salvate';
+
+  @override
+  String tasksSavedFiltersTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sarcini',
+      few: '$count sarcini',
+      one: '1 sarcină',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get tasksSavedFilterToastDeleted => 'Filtru șters';

@@ -8713,13 +8713,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncPayloadAiConfigDelete => 'Suppression de configuration AI';
 
   @override
-  String get syncPayloadSavedTaskFilter => 'Filtre de tâches enregistré';
-
-  @override
-  String get syncPayloadSavedTaskFilterDelete =>
-      'Suppression du filtre de tâches enregistré';
-
-  @override
   String get syncPayloadBackfillRequest => 'Demande de rattrapage';
 
   @override
@@ -8746,6 +8739,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPayloadOutboxBundle => 'Lot d\'envoi';
+
+  @override
+  String get syncPayloadSavedTaskFilter => 'Filtre de tâches enregistré';
+
+  @override
+  String get syncPayloadSavedTaskFilterDelete =>
+      'Suppression du filtre de tâches enregistré';
 
   @override
   String get syncPayloadSyncNodeProfile => 'Profil du nœud de synchronisation';
@@ -9221,7 +9221,52 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksSavedFilterRenameSemantics => 'Renommer le filtre enregistré';
 
   @override
+  String get tasksSavedFiltersAllShort => 'Toutes';
+
+  @override
+  String get tasksSavedFiltersAllTasks => 'Toutes les tâches';
+
+  @override
+  String get tasksSavedFiltersCustom => 'Personnalisé';
+
+  @override
+  String get tasksSavedFiltersDeleteConfirmAction => 'Supprimer';
+
+  @override
+  String tasksSavedFiltersDeleteConfirmMessage(String name) {
+    return 'Supprimer le filtre enregistré « $name » ? Cette action est irréversible.';
+  }
+
+  @override
+  String tasksSavedFiltersDeleteNamed(String name) {
+    return 'Supprimer $name';
+  }
+
+  @override
+  String get tasksSavedFiltersDone => 'Terminé';
+
+  @override
+  String get tasksSavedFiltersEdit => 'Modifier';
+
+  @override
+  String get tasksSavedFiltersGroupSemantics => 'Filtres enregistrés';
+
+  @override
+  String tasksSavedFiltersRailButton(int count) {
+    return 'Enregistrés ($count)';
+  }
+
+  @override
+  String tasksSavedFiltersRenameNamed(String name) {
+    return 'Renommer $name';
+  }
+
+  @override
   String get tasksSavedFiltersSaveButtonLabel => 'Enregistrer';
+
+  @override
+  String get tasksSavedFiltersSaveCurrentAs =>
+      'Enregistrer le filtre actuel sous…';
 
   @override
   String get tasksSavedFiltersSavePopupCancel => 'Annuler';
@@ -9246,6 +9291,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSavePopupTitle => 'Nomme ce filtre';
+
+  @override
+  String get tasksSavedFiltersSheetTitle => 'Filtres enregistrés';
+
+  @override
+  String tasksSavedFiltersTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches',
+      one: '1 tâche',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get tasksSavedFilterToastDeleted => 'Filtre supprimé';

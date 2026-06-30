@@ -336,4 +336,51 @@ void main() {
       );
     });
   });
+
+  group('allTasksTotalCountProvider', () {
+    test('counts every task via the repository (all statuses)', () async {
+      final repo = _FakeRepo(const [124]);
+      final container = ProviderContainer(
+        overrides: [
+          savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(allTasksTotalCountProvider, (_, _) {});
+      addTearDown(sub.close);
+
+      expect(await container.read(allTasksTotalCountProvider.future), 124);
+      // The repository was asked for the all-statuses total exactly once.
+      expect(repo.calls, 1);
+    });
+
+    test('recomputes when a task notification arrives', () {
+      fakeAsync((async) {
+        final controller = StreamController<Set<String>>.broadcast();
+        addTearDown(controller.close);
+        when(
+          () => mocks.updateNotifications.updateStream,
+        ).thenAnswer((_) => controller.stream);
+
+        final repo = _FakeRepo(const [10, 20]);
+        final container = ProviderContainer(
+          overrides: [
+            savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
+          ],
+        )..listen(allTasksTotalCountProvider, (_, _) {});
+        addTearDown(container.dispose);
+
+        container.read(allTasksTotalCountProvider.future).ignore();
+        async.elapse(Duration.zero);
+        expect(container.read(allTasksTotalCountProvider).value, 10);
+
+        // A task-shaped notification triggers a debounced recompute.
+        controller.add({taskNotification});
+        async.elapse(const Duration(milliseconds: 300));
+        container.read(allTasksTotalCountProvider.future).ignore();
+        async.elapse(Duration.zero);
+        expect(container.read(allTasksTotalCountProvider).value, 20);
+      });
+    });
+  });
 }

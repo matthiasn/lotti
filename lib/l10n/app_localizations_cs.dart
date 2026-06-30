@@ -8636,13 +8636,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadAiConfigDelete => 'Smazání nastavení AI';
 
   @override
-  String get syncPayloadSavedTaskFilter => 'Uložený filtr úkolů';
-
-  @override
-  String get syncPayloadSavedTaskFilterDelete =>
-      'Smazání uloženého filtru úkolů';
-
-  @override
   String get syncPayloadBackfillRequest => 'Žádost o doplnění';
 
   @override
@@ -8668,6 +8661,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPayloadOutboxBundle => 'Odchozí balíček';
+
+  @override
+  String get syncPayloadSavedTaskFilter => 'Uložený filtr úkolů';
+
+  @override
+  String get syncPayloadSavedTaskFilterDelete =>
+      'Smazání uloženého filtru úkolů';
 
   @override
   String get syncPayloadSyncNodeProfile => 'Profil synchronizačního uzlu';
@@ -9132,7 +9132,51 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksSavedFilterRenameSemantics => 'Přejmenovat uložený filtr';
 
   @override
+  String get tasksSavedFiltersAllShort => 'Vše';
+
+  @override
+  String get tasksSavedFiltersAllTasks => 'Všechny úkoly';
+
+  @override
+  String get tasksSavedFiltersCustom => 'Vlastní';
+
+  @override
+  String get tasksSavedFiltersDeleteConfirmAction => 'Smazat';
+
+  @override
+  String tasksSavedFiltersDeleteConfirmMessage(String name) {
+    return 'Smazat uložený filtr „$name“? Tuto akci nelze vrátit zpět.';
+  }
+
+  @override
+  String tasksSavedFiltersDeleteNamed(String name) {
+    return 'Smazat $name';
+  }
+
+  @override
+  String get tasksSavedFiltersDone => 'Hotovo';
+
+  @override
+  String get tasksSavedFiltersEdit => 'Upravit';
+
+  @override
+  String get tasksSavedFiltersGroupSemantics => 'Uložené filtry';
+
+  @override
+  String tasksSavedFiltersRailButton(int count) {
+    return 'Uložené ($count)';
+  }
+
+  @override
+  String tasksSavedFiltersRenameNamed(String name) {
+    return 'Přejmenovat $name';
+  }
+
+  @override
   String get tasksSavedFiltersSaveButtonLabel => 'Uložit';
+
+  @override
+  String get tasksSavedFiltersSaveCurrentAs => 'Uložit aktuální filtr jako…';
 
   @override
   String get tasksSavedFiltersSavePopupCancel => 'Zrušit';
@@ -9158,6 +9202,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSavePopupTitle => 'Pojmenuj tento filtr';
+
+  @override
+  String get tasksSavedFiltersSheetTitle => 'Uložené filtry';
+
+  @override
+  String tasksSavedFiltersTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úkolů',
+      few: '$count úkoly',
+      one: '1 úkol',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get tasksSavedFilterToastDeleted => 'Filtr smazán';

@@ -1,0 +1,252 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_pill.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../../../mocks/mocks.dart';
+import '../../../../../test_utils/fake_journal_page_controller.dart';
+import '../../../../../widget_test_utils.dart';
+
+const _f1 = SavedTaskFilter(
+  id: 'f1',
+  name: 'In Progress',
+  filter: TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'}),
+);
+const _f2 = SavedTaskFilter(
+  id: 'f2',
+  name: 'Blocked',
+  filter: TasksFilter(selectedTaskStatuses: {'BLOCKED'}),
+);
+
+const _wideMq = MediaQueryData(
+  size: Size(900, 800),
+  textScaler: TextScaler.noScaling,
+);
+
+class _StubSavedController extends SavedTaskFiltersController {
+  _StubSavedController(this._seed);
+  final List<SavedTaskFilter> _seed;
+
+  @override
+  Future<List<SavedTaskFilter>> build() async => _seed;
+}
+
+/// Repository that returns [value] for any filter, or a gated future once
+/// [gate] is set — used to hold the counts provider in the loading state while
+/// keeping its previous value (stale-while-revalidate).
+class _GatedRepo implements SavedTaskFilterCountRepository {
+  _GatedRepo(this.value);
+  int value;
+  Completer<int>? gate;
+
+  @override
+  Future<int> count(TasksFilter filter) {
+    final g = gate;
+    if (g != null) return g.future;
+    return Future.value(value);
+  }
+}
+
+Future<({ProviderContainer container})> _pumpRail(
+  WidgetTester tester, {
+  required JournalPageState pageState,
+  List<SavedTaskFilter> seed = const [_f1, _f2],
+  List<Override> extraOverrides = const [],
+  Override? countsOverride,
+  MediaQueryData? mq,
+}) async {
+  final fake = FakeJournalPageController(pageState);
+  final result = makeTestableWidgetWithContainer(
+    const Scaffold(body: SavedTaskFilterRail()),
+    mediaQueryData: mq ?? phoneMediaQueryData,
+    overrides: [
+      journalPageControllerProvider(true).overrideWith(() => fake),
+      savedTaskFiltersControllerProvider.overrideWith(
+        () => _StubSavedController(seed),
+      ),
+      countsOverride ??
+          savedTaskFilterCountsProvider.overrideWith(
+            (ref) async => const {'f1': 12, 'f2': 7},
+          ),
+      allTasksTotalCountProvider.overrideWith((ref) async => 124),
+      ...extraOverrides,
+    ],
+  );
+  addTearDown(result.container.dispose);
+  await tester.pumpWidget(result.widget);
+  await tester.pump();
+  await tester.pump();
+  return (container: result.container);
+}
+
+SavedTaskFilterPill _pill(WidgetTester tester, Key key) =>
+    tester.widget<SavedTaskFilterPill>(find.byKey(key));
+
+void main() {
+  setUp(() async {
+    await setUpTestGetIt(
+      additionalSetup: () {
+        final cache = MockEntitiesCacheService();
+        when(() => cache.getCategoryById(any())).thenReturn(null);
+        getIt.registerSingleton<EntitiesCacheService>(cache);
+      },
+    );
+  });
+
+  tearDown(tearDownTestGetIt);
+
+  testWidgets('collapses to nothing when there are no saved filters', (
+    tester,
+  ) async {
+    await _pumpRail(
+      tester,
+      pageState: const JournalPageState(),
+      seed: const [],
+    );
+
+    expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsNothing);
+    expect(find.byKey(SavedTaskFilterRailKeys.allPill), findsNothing);
+  });
+
+  testWidgets('Saved (N) button shows the total and opens the sheet', (
+    tester,
+  ) async {
+    await _pumpRail(tester, pageState: const JournalPageState());
+
+    expect(find.text('Saved (2)'), findsOneWidget);
+
+    await tester.tap(find.byKey(SavedTaskFilterRailKeys.savedButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
+  });
+
+  testWidgets('tri-state: default view selects "All"', (tester) async {
+    await _pumpRail(tester, pageState: const JournalPageState());
+
+    expect(_pill(tester, SavedTaskFilterRailKeys.allPill).selected, isTrue);
+    // No active saved pill, no Custom pill, no Save chip in the default view.
+    expect(find.byKey(SavedTaskFilterRailKeys.customPill), findsNothing);
+    expect(find.byKey(SavedTaskFilterRailKeys.saveChip), findsNothing);
+  });
+
+  testWidgets('tri-state: a matching live filter selects its saved pill', (
+    tester,
+  ) async {
+    await _pumpRail(
+      tester,
+      pageState: const JournalPageState(
+        selectedTaskStatuses: {'IN_PROGRESS'},
+      ),
+    );
+
+    expect(_pill(tester, SavedTaskFilterRailKeys.pill('f1')).selected, isTrue);
+    expect(_pill(tester, SavedTaskFilterRailKeys.allPill).selected, isFalse);
+    // The active pill carries the live count.
+    expect(find.text('12'), findsOneWidget);
+  });
+
+  testWidgets('tri-state: an ad-hoc filter shows Custom + the Save chip', (
+    tester,
+  ) async {
+    await _pumpRail(
+      tester,
+      pageState: const JournalPageState(selectedPriorities: {'P0'}),
+    );
+
+    final custom = _pill(tester, SavedTaskFilterRailKeys.customPill);
+    expect(custom.selected, isTrue);
+    expect(custom.showCount, isFalse);
+    expect(find.byKey(SavedTaskFilterRailKeys.saveChip), findsOneWidget);
+    expect(_pill(tester, SavedTaskFilterRailKeys.allPill).selected, isFalse);
+  });
+
+  testWidgets('one tap on a quick-jump pill applies its filter', (
+    tester,
+  ) async {
+    // Wide layout so the MRU quick-jump pills render alongside All.
+    final result = await _pumpRail(
+      tester,
+      pageState: const JournalPageState(),
+      mq: _wideMq,
+    );
+
+    // f2 ("Blocked") is an inactive quick-jump pill in the default view.
+    expect(find.byKey(SavedTaskFilterRailKeys.pill('f2')), findsOneWidget);
+    await tester.tap(find.byKey(SavedTaskFilterRailKeys.pill('f2')));
+    await tester.pump();
+
+    final fake =
+        result.container.read(journalPageControllerProvider(true).notifier)
+            as FakeJournalPageController;
+    expect(fake.applyBatchFilterUpdateCalled, 1);
+    expect(fake.setSelectedTaskStatusesCalls.single, {'BLOCKED'});
+  });
+
+  testWidgets(
+    'stale-while-revalidate: counts do not flash to a dash on reload',
+    (tester) async {
+      final repo = _GatedRepo(12);
+      await _pumpRail(
+        tester,
+        pageState: const JournalPageState(
+          selectedTaskStatuses: {'IN_PROGRESS'},
+        ),
+        // Use the real counts provider backed by a gated repo so we can hold it
+        // in the loading state with a retained previous value.
+        countsOverride: savedTaskFilterCountsProvider.overrideWith(
+          savedTaskFilterCounts,
+        ),
+        extraOverrides: [
+          savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      // Let the counts resolve. The active f1 pill shows its count.
+      await tester.pump();
+      await tester.pump();
+      final f1Count = find.descendant(
+        of: find.byKey(SavedTaskFilterRailKeys.pill('f1')),
+        matching: find.text('12'),
+      );
+      expect(f1Count, findsOneWidget);
+
+      // Gate the next computation, then invalidate — the provider re-enters
+      // loading but retains its previous value (no `–` flash).
+      repo.gate = Completer<int>();
+      ProviderScope.containerOf(
+        tester.element(find.byType(SavedTaskFilterRail)),
+      ).invalidate(savedTaskFilterCountsProvider);
+      await tester.pump();
+      await tester.pump();
+
+      // Still 12 (retained), never a loading dash, while the recompute is
+      // in flight.
+      expect(f1Count, findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(SavedTaskFilterRailKeys.pill('f1')),
+          matching: find.text('–'),
+        ),
+        findsNothing,
+      );
+
+      repo.gate!.complete(12);
+      await tester.pump();
+    },
+  );
+}

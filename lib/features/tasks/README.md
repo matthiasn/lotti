@@ -594,7 +594,7 @@ Two derived providers wire the UI to the live page state:
 - `currentSavedTaskFilterIdProvider` — id of the saved filter whose persisted shape matches the live filter (display-only fields like `showCoverArt`/`showProjectsHeader`/`showDistances` are ignored when matching), or `null` when nothing matches.
 - `tasksFilterHasUnsavedClausesProvider` — `true` when the live filter has clauses but doesn't match any saved filter; gates the modal Save button (`canSave`).
 
-Both derive the live `TasksFilter` snapshot from the page state via the private helper `_liveFilterFor(JournalPageState)` in `saved_task_filter_activator.dart` (the Save flow itself builds the filter via `_draftStateToTasksFilter` in `task_filter_modal.dart`) — there is no `liveTasksFilterProvider`.
+Both derive the live `TasksFilter` snapshot from the page state via the top-level helper `liveTasksFilterFor(JournalPageState)` in `saved_task_filter_activator.dart` (the desktop Save flow builds the filter via `_draftStateToTasksFilter` in `task_filter_modal.dart`; the mobile "Save current filter as…" flow reuses `liveTasksFilterFor`) — there is no `liveTasksFilterProvider`. `SavedTaskFilterActivator` also exposes `clearToDefault()`, which resets every clause to the `TasksFilter` defaults (the mobile "All" entry; the search query is preserved).
 
 Sidebar counts: `savedTaskFilterCountsProvider` computes `{savedFilterId → matching task count}` by fanning out one `repo.count` per saved filter, recomputed on `taskNotification`. Because each recompute is one count query per filter, notification-driven invalidations are debounced (300ms in `savedTaskFilterCounts`) so a sync burst — already coalesced upstream by `UpdateNotifications` into ~1s/100ms batches — collapses into a single recompute instead of re-running every filter's count per batch. The initial computation is never debounced.
 
@@ -602,7 +602,7 @@ Surfaces:
 
 1. Sidebar treeview (`TasksSavedFiltersTree` → `SavedTaskFiltersSection` + `SavedTaskFilterRow`) — rendered via `DesktopSidebarDestination.expandedChildBuilder` only when the Tasks destination is active and the sidebar is expanded. Hover-trash with two-tap confirm delete, double-click rename, drag-to-reorder via `ReorderableListView.builder`. When there are no saved filters the section is hidden entirely (`SizedBox.shrink`) — there is no add affordance in the sidebar; new filters are saved only through the Save button in the Tasks Filter modal.
 2. Filter modal Save flow — `DesignSystemTaskFilterActionBar` gained an optional Save button next to Apply. Tapping it opens an inline name popup (`MenuAnchor`-anchored) with autofocus, Enter-to-commit, Escape-to-cancel, click-outside dismiss. The name is passed to `showTaskFilterModal`'s `onSavePressed` handler, which calls `create()` for new saves and `updateFilter()` when the user edits and re-saves the currently active filter under the same name.
-3. Tasks pane named-filter indicator — `TabSectionHeader.titleSuffix` renders `· {savedFilterName}` next to "Tasks" when a saved filter is active.
+3. Mobile saved-filter rail + sheet (`lib/features/tasks/ui/saved_filters/mobile/`) — see "Mobile saved-filter rail" below. The mobile rail replaces the old header `· {savedFilterName}` suffix (the now-removed `_SavedFilterTitleSuffix`); the desktop layout still surfaces the active filter through the sidebar treeview.
 4. Save / update / delete confirmation toasts via the design-system toast (`context.showToast`, in `saved_task_filter_toast.dart`).
 
 ```mermaid
@@ -618,6 +618,18 @@ stateDiagram-v2
 ```
 
 Counts in the saved-filter rows are surfaced through the optional `counts: Map<String, int>?` parameter on `SavedTaskFiltersSection`. The desktop wiring (`TasksSavedFiltersTree`) supplies real counts by watching `savedTaskFilterCountsProvider` (falling back to an empty map while loading); the row hides the count for any filter not present in the map.
+
+### Mobile saved-filter rail
+
+On mobile (`!isDesktopLayout`), `TasksTabPage` renders `SavedTaskFilterRail` between the header and the active-filter chips. The mobile widgets live in `lib/features/tasks/ui/saved_filters/mobile/` and reuse the shared state (`savedTaskFiltersControllerProvider`, `currentSavedTaskFilterIdProvider`, `tasksFilterHasUnsavedClausesProvider`, `savedTaskFilterCountsProvider`, `SavedTaskFilterActivator`) — they create no dependency on the desktop `SavedTaskFilterRow`.
+
+- `SavedTaskFilterRail` — a conditional band rendered only when ≥1 saved filter exists (otherwise `SizedBox.shrink`, so the layout is unchanged for users without saved filters). Left→right: a text-bearing "Saved (N)" button (opens the sheet), an "All" pill that clears to the default view, the active saved pill (or a "Custom" pill for an ad-hoc filter that matches no saved filter), as many most-recently-used quick-jump pills as fit, and a trailing "+ Save" `DsGhostChip` shown only when `tasksFilterHasUnsavedClausesProvider` is true. The pill run is hard-capped and never scrolls — overflow lives in the sheet; MRU fit is computed deterministically in `LayoutBuilder` from token-derived width heuristics. The selection is tri-state (a saved pill, "All", or "Custom") so exactly one anchor always reads. Counts use stale-while-revalidate (`AsyncValue.value`) so a background sync never flashes pills back to `–`.
+- `SavedTaskFilterPill` — a `DsPill`-based pill (leading selection check + optional category dot, ellipsizing name, reserved-width tabular count slot capped at `999+`, dimmed `0`, `–` on cold start) wrapped in a ≥48dp tap target. The active pill carries a chevron cue and opens the sheet; inactive pills apply their filter. Selection draws on the new orthogonal `DsPill.selected` flag (teal `interactive.enabled` border + `surface.selected` tint + bold label).
+- `SavedTaskFiltersSheet` (`showSavedTaskFiltersSheet`) — the complete switcher + manager: full-width ≥48dp single-select rows with a right-aligned tabular count column, an "All tasks" row showing `allTasksTotalCountProvider`, an Edit toggle revealing per-row Rename (text modal) / Delete (`showConfirmationModal`), and a bottom "Save current filter as…" create row. Tapping a row applies + closes.
+- `promptSaveCurrentTaskFilter` / `promptTaskFilterName` (`save_current_task_filter.dart`) — the one create verb shared by the rail "+ Save" chip and the sheet create row: snapshot the live filter via `liveTasksFilterFor`, prompt for a name, then `create()` and promote the new id in the per-device MRU order.
+- `savedTaskFilterMruProvider` (`saved_task_filter_mru_controller.dart`) — an in-memory, per-device most-recently-used order (never persisted or synced) feeding the rail's quick-jump pills; `touch(id)` promotes an id to the front on activation/create.
+
+The "Saved (N)" total is the count of saved *definitions*; per-pill/per-row task counts are a distinct tabular slot — the two number semantics never read alike.
 
 The redesigned browse page also preserves the existing non-filter runtime behavior:
 

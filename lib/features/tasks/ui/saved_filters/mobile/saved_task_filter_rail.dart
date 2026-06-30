@@ -1,0 +1,333 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_mru_controller.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/save_current_task_filter.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_pill.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// Stable keys for the mobile saved-filter rail.
+@visibleForTesting
+class SavedTaskFilterRailKeys {
+  const SavedTaskFilterRailKeys._();
+
+  static const Key root = Key('saved-filter-rail');
+  static const Key savedButton = Key('saved-filter-rail-saved-button');
+  static const Key allPill = Key('saved-filter-rail-all-pill');
+  static const Key customPill = Key('saved-filter-rail-custom-pill');
+  static const Key saveChip = Key('saved-filter-rail-save-chip');
+  static Key pill(String id) => Key('saved-filter-rail-pill-$id');
+}
+
+/// The always-on glance band above the task list. Rendered only when ≥1 saved
+/// filter exists; otherwise it collapses to nothing so the layout is unchanged
+/// for users without saved filters.
+///
+/// Left → right: a text-bearing "Saved (N)" button (opens the complete sheet),
+/// then a hard-capped, non-scrolling run of pills — "All" (clears to the
+/// default view), the active saved pill (or a "Custom" pill for an ad-hoc
+/// filter), and as many most-recently-used quick-jump pills as fit — and a
+/// trailing "+ Save" ghost shown only when the live filter has unsaved clauses.
+/// Overflow lives in the sheet; the rail never scrolls.
+class SavedTaskFilterRail extends ConsumerWidget {
+  const SavedTaskFilterRail({super.key});
+
+  /// Hard cap on MRU quick-jump pills regardless of available width.
+  static const int maxMruPills = 2;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+
+    final saved =
+        ref.watch(savedTaskFiltersControllerProvider).value ??
+        const <SavedTaskFilter>[];
+    if (saved.isEmpty) {
+      return const SizedBox.shrink(key: SavedTaskFilterRailKeys.root);
+    }
+
+    final activeId = ref.watch(currentSavedTaskFilterIdProvider);
+    final hasUnsaved = ref.watch(tasksFilterHasUnsavedClausesProvider);
+    // Stale-while-revalidate: keep the last-known counts during a refresh so
+    // pills never flash back to `–` on a background sync.
+    final counts = ref.watch(savedTaskFilterCountsProvider).value;
+    final total = ref.watch(allTasksTotalCountProvider).value;
+    final mruOrder = ref.watch(savedTaskFilterMruProvider);
+
+    final activeFilter = activeId == null
+        ? null
+        : saved.where((f) => f.id == activeId).firstOrNull;
+    final allSelected = activeId == null && !hasUnsaved;
+
+    final mruCandidates = _orderedMru(
+      saved: saved,
+      mruOrder: mruOrder,
+      excludeId: activeFilter?.id,
+    );
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step3,
+        vertical: tokens.spacing.step2,
+      ),
+      child: Semantics(
+        container: true,
+        label: messages.tasksSavedFiltersGroupSemantics,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final hasAnchorPill = activeFilter != null || hasUnsaved;
+            final maxMru = _fitMruCount(
+              tokens: tokens,
+              available: constraints.maxWidth,
+              hasAnchorPill: hasAnchorPill,
+              showSaveChip: hasUnsaved,
+            );
+            final mru = mruCandidates.take(maxMru).toList(growable: false);
+
+            return Row(
+              key: SavedTaskFilterRailKeys.root,
+              children: [
+                _SavedButton(
+                  count: saved.length,
+                  onTap: () => showSavedTaskFiltersSheet(context),
+                ),
+                SizedBox(width: tokens.spacing.step2),
+                SavedTaskFilterPill(
+                  key: SavedTaskFilterRailKeys.allPill,
+                  label: messages.tasksSavedFiltersAllShort,
+                  selected: allSelected,
+                  count: total,
+                  countLoading: total == null,
+                  semanticsLabel: _semanticsFor(
+                    context,
+                    name: messages.tasksSavedFiltersAllTasks,
+                    count: total,
+                  ),
+                  onTap: () => _applyAll(ref),
+                ),
+                if (activeFilter != null) ...[
+                  SizedBox(width: tokens.spacing.step2),
+                  Flexible(
+                    child: _savedPill(
+                      context,
+                      ref,
+                      filter: activeFilter,
+                      selected: true,
+                      count: counts?[activeFilter.id],
+                      countLoading: counts == null,
+                    ),
+                  ),
+                ] else if (hasUnsaved) ...[
+                  SizedBox(width: tokens.spacing.step2),
+                  Flexible(
+                    child: SavedTaskFilterPill(
+                      key: SavedTaskFilterRailKeys.customPill,
+                      label: messages.tasksSavedFiltersCustom,
+                      selected: true,
+                      showCount: false,
+                      semanticsLabel: messages.tasksSavedFiltersCustom,
+                      onTap: () => showSavedTaskFiltersSheet(context),
+                      onOpenSheet: () => showSavedTaskFiltersSheet(context),
+                    ),
+                  ),
+                ],
+                for (final f in mru) ...[
+                  SizedBox(width: tokens.spacing.step2),
+                  _savedPill(
+                    context,
+                    ref,
+                    filter: f,
+                    selected: false,
+                    count: counts?[f.id],
+                    countLoading: counts == null,
+                  ),
+                ],
+                if (hasUnsaved) ...[
+                  SizedBox(width: tokens.spacing.step2),
+                  DsGhostChip(
+                    key: SavedTaskFilterRailKeys.saveChip,
+                    label: messages.tasksSavedFiltersSaveButtonLabel,
+                    onTap: () => promptSaveCurrentTaskFilter(context, ref),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _savedPill(
+    BuildContext context,
+    WidgetRef ref, {
+    required SavedTaskFilter filter,
+    required bool selected,
+    required int? count,
+    required bool countLoading,
+  }) {
+    return SavedTaskFilterPill(
+      key: SavedTaskFilterRailKeys.pill(filter.id),
+      label: filter.name,
+      selected: selected,
+      categoryColor: savedFilterCategoryColor(filter),
+      count: count,
+      countLoading: countLoading,
+      semanticsLabel: _semanticsFor(
+        context,
+        name: filter.name,
+        category: savedFilterCategoryName(filter),
+        count: countLoading ? null : count,
+      ),
+      onTap: selected
+          ? () => showSavedTaskFiltersSheet(context)
+          : () => _applySaved(ref, filter),
+      onOpenSheet: selected ? () => showSavedTaskFiltersSheet(context) : null,
+    );
+  }
+
+  Future<void> _applySaved(WidgetRef ref, SavedTaskFilter filter) async {
+    await SavedTaskFilterActivator(
+      ref.read(journalPageControllerProvider(true).notifier),
+    ).activate(filter);
+    ref.read(savedTaskFilterMruProvider.notifier).touch(filter.id);
+  }
+
+  Future<void> _applyAll(WidgetRef ref) {
+    return SavedTaskFilterActivator(
+      ref.read(journalPageControllerProvider(true).notifier),
+    ).clearToDefault();
+  }
+
+  /// Builds the "{category}, {name}, {count} tasks" label, dropping the count
+  /// clause entirely on cold start / dropped counts (never speaks `–`).
+  String _semanticsFor(
+    BuildContext context, {
+    required String name,
+    String? category,
+    int? count,
+  }) {
+    final messages = context.messages;
+    return [
+      ?category,
+      name,
+      if (count != null) messages.tasksSavedFiltersTaskCount(count),
+    ].join(', ');
+  }
+
+  /// Saved filters in MRU order (most recent first), then the remaining saved
+  /// filters in stored order, excluding [excludeId]. The rail takes as many as
+  /// fit from the front.
+  List<SavedTaskFilter> _orderedMru({
+    required List<SavedTaskFilter> saved,
+    required List<String> mruOrder,
+    required String? excludeId,
+  }) {
+    final byId = {for (final f in saved) f.id: f};
+    final seen = <String>{};
+    final ordered = <SavedTaskFilter>[];
+    for (final id in mruOrder) {
+      if (id == excludeId || seen.contains(id)) continue;
+      final f = byId[id];
+      if (f != null) {
+        ordered.add(f);
+        seen.add(id);
+      }
+    }
+    for (final f in saved) {
+      if (f.id == excludeId || seen.contains(f.id)) continue;
+      ordered.add(f);
+      seen.add(f.id);
+    }
+    return ordered;
+  }
+
+  /// Coarse, deterministic fit: how many MRU pills the remaining width holds
+  /// after reserving the fixed head (Saved button + All pill + optional Save
+  /// chip) and a generous slot for the flexible anchor pill. Hard-capped at
+  /// [maxMruPills]. Widths are token-derived layout heuristics, so overflow is
+  /// decided by layout — not implementer judgement — and the rail never scrolls.
+  int _fitMruCount({
+    required DsTokens tokens,
+    required double available,
+    required bool hasAnchorPill,
+    required bool showSaveChip,
+  }) {
+    final gap = tokens.spacing.step2; // 4
+    final savedButton = tokens.spacing.step12 + tokens.spacing.step3; // ~104
+    final allPill = tokens.spacing.step11; // 80
+    final saveChip = showSaveChip ? tokens.spacing.step11 : 0.0; // 80
+    final anchorReserve = hasAnchorPill ? tokens.spacing.step13 : 0.0; // 160
+    final mruPill = tokens.spacing.step12; // 96 per quick-jump pill
+
+    final fixedHead = savedButton + gap + allPill + saveChip + anchorReserve;
+    final remaining = available - fixedHead;
+    if (remaining <= 0) return 0;
+    final fits = (remaining / (mruPill + gap)).floor();
+    return fits.clamp(0, maxMruPills);
+  }
+}
+
+/// The band-leading "Saved (N)" button: bookmark glyph + label + low-emphasis
+/// tabular total of saved definitions. One tap opens the complete sheet.
+class _SavedButton extends StatelessWidget {
+  const _SavedButton({required this.count, required this.onTap});
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
+    return Semantics(
+      button: true,
+      label: messages.tasksSavedFiltersRailButton(count),
+      onTap: onTap,
+      child: ExcludeSemantics(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            key: SavedTaskFilterRailKeys.savedButton,
+            borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: minTarget),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.bookmarks_outlined,
+                      size: tokens.spacing.step5,
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                    SizedBox(width: tokens.spacing.step2),
+                    Text(
+                      messages.tasksSavedFiltersRailButton(count),
+                      maxLines: 1,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
