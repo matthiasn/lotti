@@ -156,7 +156,9 @@ class SavedTaskFilterPill extends StatelessWidget {
         Icon(
           Icons.check_rounded,
           size: tokens.spacing.step4,
-          color: tokens.colors.interactive.enabled,
+          // High-emphasis on-surface (not the teal accent) so the check stays
+          // legible on the mint `surface.selected` fill in light theme.
+          color: tokens.colors.text.highEmphasis,
         ),
       if (categoryColor != null) ...[
         if (selected) SizedBox(width: tokens.spacing.step1),
@@ -194,7 +196,10 @@ class SavedTaskFilterPill extends StatelessWidget {
             Icons.expand_more_rounded,
             key: chevronKey(label),
             size: tokens.spacing.step4,
-            color: tokens.colors.interactive.enabled,
+            // High-emphasis on-surface to match the check/count: the teal
+            // border + tinted fill already mark the pill as the interactive
+            // anchor, so the glyph reads for contrast over the mint fill.
+            color: tokens.colors.text.highEmphasis,
           ),
         ],
       ],
@@ -202,9 +207,12 @@ class SavedTaskFilterPill extends StatelessWidget {
   }
 }
 
-/// Fixed-width trailing count, reserved at the widest token (`999+`) so 1- vs
-/// 3-digit values never shift the name-truncation point. Tabular figures keep
-/// the column aligned; a dimmed `0` and a cold-start `–` use low-emphasis.
+/// Trailing count column: a `step7` min-width reserves the same column start
+/// for 1- vs 3-digit values (so the name-truncation point doesn't jump), but
+/// the slot is free to GROW so the digits are NEVER width-clipped — at large
+/// text the name (DsPill's `Flexible` label) ellipsizes while the full count
+/// (e.g. `214`) still renders. Tabular figures keep the column aligned; a
+/// dimmed `0` and a cold-start `–` use low-emphasis.
 class _CountSlot extends StatelessWidget {
   const _CountSlot({
     required this.tokens,
@@ -232,15 +240,17 @@ class _CountSlot extends StatelessWidget {
       text = count! > SavedTaskFilterPill.countCap
           ? '${SavedTaskFilterPill.countCap}+'
           : '$count';
+      // High-emphasis on-surface when selected so the digits stay legible on
+      // the mint `surface.selected` fill (teal-on-mint was low contrast).
       color = selected
-          ? tokens.colors.interactive.enabled
+          ? tokens.colors.text.highEmphasis
           : tokens.colors.text.mediumEmphasis;
     }
 
-    return SizedBox(
-      // step7 (32) holds `999+` in tabular caption without shifting the name
-      // when the value changes — kept tight so the dense rail fits a phone.
-      width: tokens.spacing.step7,
+    return ConstrainedBox(
+      // step7 (32) keeps a stable column start for `999+` in tabular caption,
+      // but only as a MIN — the slot grows so a large-text value never clips.
+      constraints: BoxConstraints(minWidth: tokens.spacing.step7),
       child: Text(
         text,
         textAlign: TextAlign.end,

@@ -30,12 +30,17 @@ class SavedTaskFilterRailKeys {
 /// filter exists; otherwise it collapses to nothing so the layout is unchanged
 /// for users without saved filters.
 ///
-/// Left → right: a text-bearing "Saved (N)" button (opens the complete sheet),
-/// then a hard-capped, non-scrolling run of pills — "All" (clears to the
-/// default view), the active saved pill (or a "Custom" pill for an ad-hoc
-/// filter), and as many most-recently-used quick-jump pills as fit — and a
-/// trailing "+ Save" ghost shown only when the live filter has unsaved clauses.
-/// Overflow lives in the sheet; the rail never scrolls.
+/// Left → right: a chip-chromed "Saved (N)" button with a disclosure chevron
+/// (opens the complete sheet), then a hard-capped, non-scrolling run of pills —
+/// "All" (clears to the default view), the active saved pill (or a "Custom"
+/// pill for an ad-hoc filter), and as many most-recently-used quick-jump pills
+/// as fit — and a trailing teal "+ Save" call-to-action pill shown only when
+/// the live filter has unsaved clauses. Overflow lives in the sheet; the rail
+/// never scrolls.
+///
+/// At large text (textScaler ≥ ~1.3) the rail collapses to just the "Saved (N)"
+/// button + the single active anchor pill (dropping "All" and the MRU pills) so
+/// the active filter's name + count stay readable.
 class SavedTaskFilterRail extends ConsumerWidget {
   const SavedTaskFilterRail({super.key});
 
@@ -83,6 +88,48 @@ class SavedTaskFilterRail extends ConsumerWidget {
         label: messages.tasksSavedFiltersGroupSemantics,
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final gap = SizedBox(width: tokens.spacing.step2);
+            final savedButton = _SavedButton(
+              count: saved.length,
+              onTap: () => showSavedTaskFiltersSheet(context),
+            );
+            final saveChip = _SaveChip(
+              onTap: () => promptSaveCurrentTaskFilter(context, ref),
+            );
+
+            // Large text (textScaler ≥ ~1.3): collapse to the Saved button +
+            // the single active anchor pill (its name `Flexible` + ellipsis,
+            // its count never clipped). The "All" pill and MRU quick-jumps are
+            // dropped so the active filter stays readable instead of every
+            // pill fighting for width on a phone.
+            final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.3;
+            if (largeText) {
+              final Widget anchor;
+              if (activeFilter != null) {
+                anchor = _savedPill(
+                  context,
+                  ref,
+                  filter: activeFilter,
+                  selected: true,
+                  count: counts?[activeFilter.id],
+                  countLoading: counts == null,
+                );
+              } else if (hasUnsaved) {
+                anchor = _customPill(context);
+              } else {
+                anchor = _allPill(context, ref, selected: true, total: total);
+              }
+              return Row(
+                key: SavedTaskFilterRailKeys.root,
+                children: [
+                  savedButton,
+                  gap,
+                  Flexible(child: anchor),
+                  if (hasUnsaved) ...[gap, saveChip],
+                ],
+              );
+            }
+
             final hasAnchorPill = activeFilter != null || hasUnsaved;
             final maxMru = _fitMruCount(
               tokens: tokens,
@@ -95,26 +142,11 @@ class SavedTaskFilterRail extends ConsumerWidget {
             return Row(
               key: SavedTaskFilterRailKeys.root,
               children: [
-                _SavedButton(
-                  count: saved.length,
-                  onTap: () => showSavedTaskFiltersSheet(context),
-                ),
-                SizedBox(width: tokens.spacing.step2),
-                SavedTaskFilterPill(
-                  key: SavedTaskFilterRailKeys.allPill,
-                  label: messages.tasksSavedFiltersAllShort,
-                  selected: allSelected,
-                  count: total,
-                  countLoading: total == null,
-                  semanticsLabel: _semanticsFor(
-                    context,
-                    name: messages.tasksSavedFiltersAllTasks,
-                    count: total,
-                  ),
-                  onTap: () => _applyAll(ref),
-                ),
+                savedButton,
+                gap,
+                _allPill(context, ref, selected: allSelected, total: total),
                 if (activeFilter != null) ...[
-                  SizedBox(width: tokens.spacing.step2),
+                  gap,
                   Flexible(
                     child: _savedPill(
                       context,
@@ -126,21 +158,11 @@ class SavedTaskFilterRail extends ConsumerWidget {
                     ),
                   ),
                 ] else if (hasUnsaved) ...[
-                  SizedBox(width: tokens.spacing.step2),
-                  Flexible(
-                    child: SavedTaskFilterPill(
-                      key: SavedTaskFilterRailKeys.customPill,
-                      label: messages.tasksSavedFiltersCustom,
-                      selected: true,
-                      showCount: false,
-                      semanticsLabel: messages.tasksSavedFiltersCustom,
-                      onTap: () => showSavedTaskFiltersSheet(context),
-                      onOpenSheet: () => showSavedTaskFiltersSheet(context),
-                    ),
-                  ),
+                  gap,
+                  Flexible(child: _customPill(context)),
                 ],
                 for (final f in mru) ...[
-                  SizedBox(width: tokens.spacing.step2),
+                  gap,
                   _savedPill(
                     context,
                     ref,
@@ -150,19 +172,52 @@ class SavedTaskFilterRail extends ConsumerWidget {
                     countLoading: counts == null,
                   ),
                 ],
-                if (hasUnsaved) ...[
-                  SizedBox(width: tokens.spacing.step2),
-                  DsGhostChip(
-                    key: SavedTaskFilterRailKeys.saveChip,
-                    label: messages.tasksSavedFiltersSaveButtonLabel,
-                    onTap: () => promptSaveCurrentTaskFilter(context, ref),
-                  ),
-                ],
+                if (hasUnsaved) ...[gap, saveChip],
               ],
             );
           },
         ),
       ),
+    );
+  }
+
+  /// The neutral "All" pill (clears to the default view). Non-flexible in the
+  /// normal rail so it stays compact and the active pill gets priority width;
+  /// the large-text collapse wraps it in a `Flexible` when it is the anchor.
+  Widget _allPill(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool selected,
+    required int? total,
+  }) {
+    final messages = context.messages;
+    return SavedTaskFilterPill(
+      key: SavedTaskFilterRailKeys.allPill,
+      label: messages.tasksSavedFiltersAllShort,
+      selected: selected,
+      count: total,
+      countLoading: total == null,
+      semanticsLabel: _semanticsFor(
+        context,
+        name: messages.tasksSavedFiltersAllTasks,
+        count: total,
+      ),
+      onTap: () => _applyAll(ref),
+    );
+  }
+
+  /// The "Custom" anchor pill for an ad-hoc filter that matches no saved view;
+  /// tapping it opens the sheet (paired with the chevron cue).
+  Widget _customPill(BuildContext context) {
+    final messages = context.messages;
+    return SavedTaskFilterPill(
+      key: SavedTaskFilterRailKeys.customPill,
+      label: messages.tasksSavedFiltersCustom,
+      selected: true,
+      showCount: false,
+      semanticsLabel: messages.tasksSavedFiltersCustom,
+      onTap: () => showSavedTaskFiltersSheet(context),
+      onOpenSheet: () => showSavedTaskFiltersSheet(context),
     );
   }
 
@@ -276,8 +331,11 @@ class SavedTaskFilterRail extends ConsumerWidget {
   }
 }
 
-/// The band-leading "Saved (N)" button: bookmark glyph + label + low-emphasis
-/// tabular total of saved definitions. One tap opens the complete sheet.
+/// The band-leading "Saved (N)" button. Wears the same neutral filled+bordered
+/// [DsPill] chrome as the "All" pill (so it reads as a chip, not a static
+/// label), led by a bookmark glyph and closed by a disclosure chevron that
+/// signals "opens a menu". One tap opens the complete sheet; the ≥48dp tap
+/// target comes from the padded [InkWell] wrapper, never a mutated pill height.
 class _SavedButton extends StatelessWidget {
   const _SavedButton({required this.count, required this.onTap});
 
@@ -289,41 +347,90 @@ class _SavedButton extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    final label = messages.tasksSavedFiltersRailButton(count);
+
+    final pill = DsPill(
+      variant: DsPillVariant.filled,
+      bordered: true,
+      label: label,
+      leading: Icon(
+        Icons.bookmarks_outlined,
+        size: tokens.spacing.step4,
+        color: tokens.colors.text.mediumEmphasis,
+      ),
+      trailing: Icon(
+        Icons.expand_more_rounded,
+        size: tokens.spacing.step4,
+        color: tokens.colors.text.mediumEmphasis,
+      ),
+    );
+
     return Semantics(
       button: true,
-      label: messages.tasksSavedFiltersRailButton(count),
+      label: label,
       onTap: onTap,
       child: ExcludeSemantics(
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             key: SavedTaskFilterRailKeys.savedButton,
-            borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+            borderRadius: radius,
             onTap: onTap,
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: minTarget),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.bookmarks_outlined,
-                      size: tokens.spacing.step5,
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    Text(
-                      messages.tasksSavedFiltersRailButton(count),
-                      maxLines: 1,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              child: Center(widthFactor: 1, heightFactor: 1, child: pill),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The trailing "+ Save" call-to-action, shown only while the live filter has
+/// unsaved clauses. A teal `outline` [DsPill] (NOT the muted dashed ghost-chip
+/// skin, which is reserved for true empty/placeholder states) so it reads as a
+/// live action, wrapped in a ≥48dp tap target.
+class _SaveChip extends StatelessWidget {
+  const _SaveChip({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    final accent = tokens.colors.interactive.enabled;
+    final label = messages.tasksSavedFiltersSaveButtonLabel;
+
+    final pill = DsPill(
+      variant: DsPillVariant.outline,
+      color: accent,
+      label: label,
+      leading: Icon(
+        Icons.add_rounded,
+        size: tokens.spacing.step4,
+        color: accent,
+      ),
+    );
+
+    return Semantics(
+      button: true,
+      label: label,
+      onTap: onTap,
+      child: ExcludeSemantics(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            key: SavedTaskFilterRailKeys.saveChip,
+            borderRadius: radius,
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: minTarget),
+              child: Center(widthFactor: 1, heightFactor: 1, child: pill),
             ),
           ),
         ),

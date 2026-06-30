@@ -140,6 +140,11 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
           alignment: Alignment.centerRight,
           child: TextButton(
             key: SavedTaskFiltersSheetKeys.editToggle,
+            // Teal foreground (not the default purple TextButton theme) so the
+            // sheet carries exactly one tappable accent.
+            style: TextButton.styleFrom(
+              foregroundColor: tokens.colors.interactive.enabled,
+            ),
             onPressed: () => setState(() => _editing = !_editing),
             child: Text(
               _editing
@@ -181,8 +186,10 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
   }
 }
 
-/// Reserved trailing count column shared by the sheet rows — right-aligned and
-/// tabular so the digits line up into a comparison column.
+/// Trailing count column shared by the sheet rows — right-aligned and tabular
+/// so the digits line up into a comparison column. A `step8` min-width holds
+/// the column start steady, but the slot is free to GROW so the digits are
+/// NEVER width-clipped at large text (the name ellipsizes instead).
 class _SheetCount extends StatelessWidget {
   const _SheetCount({required this.count, required this.selected});
 
@@ -208,8 +215,8 @@ class _SheetCount extends StatelessWidget {
           ? tokens.colors.interactive.enabled
           : tokens.colors.text.mediumEmphasis;
     }
-    return SizedBox(
-      width: tokens.spacing.step8,
+    return ConstrainedBox(
+      constraints: BoxConstraints(minWidth: tokens.spacing.step8),
       child: Text(
         text,
         textAlign: TextAlign.end,
@@ -429,6 +436,9 @@ class _SavedFilterRow extends StatelessWidget {
                 tooltip: messages.tasksSavedFiltersRenameNamed(filter.name),
                 onTap: onRename,
               ),
+              // Clear gap between the two ≥48dp targets so the destructive
+              // Delete never abuts Rename (mis-tap safety).
+              SizedBox(width: tokens.spacing.step3),
               _EditAction(
                 buttonKey: SavedTaskFiltersSheetKeys.delete(filter.id),
                 icon: Icons.delete_outline_rounded,

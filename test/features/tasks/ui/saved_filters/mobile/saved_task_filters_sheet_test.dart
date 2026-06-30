@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -132,6 +133,45 @@ void main() {
     // Cleared: empty status set is forwarded.
     expect(bench.fake.setSelectedTaskStatusesCalls.single, <String>{});
   });
+
+  testWidgets('Edit toggle uses the teal interactive accent, not purple', (
+    tester,
+  ) async {
+    await _pumpSheet(tester);
+
+    final button = tester.widget<TextButton>(
+      find.byKey(SavedTaskFiltersSheetKeys.editToggle),
+    );
+    expect(
+      button.style?.foregroundColor?.resolve(const <WidgetState>{}),
+      dsTokensLight.colors.interactive.enabled,
+    );
+  });
+
+  testWidgets(
+    'Edit-mode Rename/Delete are >=48dp targets with a clear gap between them',
+    (tester) async {
+      await _pumpSheet(tester);
+
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+      await tester.pump();
+
+      final renameRect = tester.getRect(
+        find.byKey(SavedTaskFiltersSheetKeys.rename('f1')),
+      );
+      final deleteRect = tester.getRect(
+        find.byKey(SavedTaskFiltersSheetKeys.delete('f1')),
+      );
+
+      for (final r in [renameRect, deleteRect]) {
+        expect(r.width, greaterThanOrEqualTo(48));
+        expect(r.height, greaterThanOrEqualTo(48));
+      }
+      // Delete sits clearly to the right of Rename — the tap targets do not
+      // abut, so the destructive action can't be mis-tapped.
+      expect(deleteRect.left - renameRect.right, greaterThanOrEqualTo(4));
+    },
+  );
 
   testWidgets('Edit toggle reveals and hides per-row Rename / Delete', (
     tester,

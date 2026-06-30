@@ -15,9 +15,12 @@ import '../../../../categories/test_utils.dart';
 
 Future<void> _pump(
   WidgetTester tester,
-  Widget pill,
-) async {
-  await tester.pumpWidget(makeTestableWidgetWithScaffold(pill));
+  Widget pill, {
+  MediaQueryData? mq,
+}) async {
+  await tester.pumpWidget(
+    makeTestableWidgetWithScaffold(pill, mediaQueryData: mq),
+  );
   await tester.pump();
 }
 
@@ -117,6 +120,69 @@ void main() {
 
       expect(find.text('999+'), findsOneWidget);
     });
+
+    testWidgets(
+      'count slot grows at large text so multi-digit counts never clip',
+      (tester) async {
+        // The headline defect: at large text the fixed-width slot clipped
+        // "214"→"21". The slot now sizes to its full content. 2x is a strictly
+        // harder case than the reviewed 1.6x, so passing here covers it.
+        await _pump(
+          tester,
+          SavedTaskFilterPill(
+            label: 'Quarterly planning backlog with a very long name',
+            semanticsLabel: 'Quarterly, 214 tasks',
+            count: 214,
+            onTap: () {},
+          ),
+          mq: phoneMediaQueryData.copyWith(
+            textScaler: const TextScaler.linear(2),
+          ),
+        );
+
+        expect(find.text('214'), findsOneWidget);
+        // The slot grew past the step7 (32) reserve to hold all three digits;
+        // the old fixed-width slot would clamp to 32 and clip the digits.
+        expect(
+          tester.getSize(find.text('214')).width,
+          greaterThan(32),
+        );
+      },
+    );
+
+    testWidgets(
+      'selected pill renders count + check + chevron in high-emphasis',
+      (tester) async {
+        // On the mint surface.selected fill, teal-on-mint was low contrast;
+        // the count, check, and chevron now use high-emphasis on-surface.
+        await _pump(
+          tester,
+          SavedTaskFilterPill(
+            label: 'Active',
+            semanticsLabel: 'Active, 5 tasks',
+            selected: true,
+            count: 5,
+            onTap: () {},
+            onOpenSheet: () {},
+          ),
+        );
+
+        final high = dsTokensLight.colors.text.highEmphasis;
+        expect(tester.widget<Text>(find.text('5')).style?.color, high);
+        expect(
+          tester.widget<Icon>(find.byIcon(Icons.check_rounded)).color,
+          high,
+        );
+        expect(
+          tester
+              .widget<Icon>(
+                find.byKey(SavedTaskFilterPill.chevronKey('Active')),
+              )
+              .color,
+          high,
+        );
+      },
+    );
 
     testWidgets('category dot paints the supplied colour', (tester) async {
       const dot = Color(0xFF8833AA);

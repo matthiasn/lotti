@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -35,6 +37,11 @@ const _f2 = SavedTaskFilter(
 const _wideMq = MediaQueryData(
   size: Size(900, 800),
   textScaler: TextScaler.noScaling,
+);
+
+const _largeTextMq = MediaQueryData(
+  size: Size(390, 844),
+  textScaler: TextScaler.linear(1.4),
 );
 
 class _StubSavedController extends SavedTaskFiltersController {
@@ -134,6 +141,95 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
+  });
+
+  testWidgets('Saved button reads as a button: DsPill chrome + chevron', (
+    tester,
+  ) async {
+    await _pumpRail(tester, pageState: const JournalPageState());
+
+    // Same neutral chip chrome as the "All" pill, not a bare label.
+    expect(
+      find.descendant(
+        of: find.byKey(SavedTaskFilterRailKeys.savedButton),
+        matching: find.byType(DsPill),
+      ),
+      findsOneWidget,
+    );
+    // A disclosure chevron signals that it opens a menu.
+    expect(
+      find.descendant(
+        of: find.byKey(SavedTaskFilterRailKeys.savedButton),
+        matching: find.byIcon(Icons.expand_more_rounded),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Save chip is a teal outline CTA, not a muted ghost chip', (
+    tester,
+  ) async {
+    await _pumpRail(
+      tester,
+      pageState: const JournalPageState(selectedPriorities: {'P0'}),
+    );
+
+    final pill = tester.widget<DsPill>(
+      find.descendant(
+        of: find.byKey(SavedTaskFilterRailKeys.saveChip),
+        matching: find.byType(DsPill),
+      ),
+    );
+    expect(pill.variant, DsPillVariant.outline);
+    expect(pill.color, dsTokensLight.colors.interactive.enabled);
+    // Leading "+" affordance; the muted dashed ghost-chip skin is gone.
+    expect(find.byType(DsGhostChip), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(SavedTaskFilterRailKeys.saveChip),
+        matching: find.byIcon(Icons.add_rounded),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'large text collapses the rail to Saved + the active anchor only',
+    (tester) async {
+      await _pumpRail(
+        tester,
+        pageState: const JournalPageState(
+          selectedTaskStatuses: {'IN_PROGRESS'},
+        ),
+        mq: _largeTextMq,
+      );
+
+      // The active saved pill is the only anchor; "All" + the f2 quick-jump
+      // pill are dropped so the active name + count stay readable.
+      expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
+      expect(
+        _pill(tester, SavedTaskFilterRailKeys.pill('f1')).selected,
+        isTrue,
+      );
+      expect(find.byKey(SavedTaskFilterRailKeys.allPill), findsNothing);
+      expect(find.byKey(SavedTaskFilterRailKeys.pill('f2')), findsNothing);
+    },
+  );
+
+  testWidgets('large text default view keeps All as the active anchor', (
+    tester,
+  ) async {
+    await _pumpRail(
+      tester,
+      pageState: const JournalPageState(),
+      mq: _largeTextMq,
+    );
+
+    // All is the active selection, surfaced as the single anchor pill; no
+    // quick-jump pills render in the collapsed rail.
+    expect(_pill(tester, SavedTaskFilterRailKeys.allPill).selected, isTrue);
+    expect(find.byKey(SavedTaskFilterRailKeys.pill('f1')), findsNothing);
+    expect(find.byKey(SavedTaskFilterRailKeys.pill('f2')), findsNothing);
   });
 
   testWidgets('tri-state: default view selects "All"', (tester) async {
