@@ -3612,7 +3612,7 @@
   "tasksSavedFiltersDone": "Hotovo",
   "tasksSavedFiltersEdit": "Upravit",
   "tasksSavedFiltersGroupSemantics": "Uložené filtry",
-  "tasksSavedFiltersRailButton": "Uložené",
+  "tasksSavedFiltersRailButton": "Uložené ({count})",
   "tasksSavedFiltersRenameNamed": "Přejmenovat {name}",
   "tasksSavedFiltersSaveButtonLabel": "Uložit",
   "tasksSavedFiltersSaveCurrentAs": "Uložit aktuální filtr jako…",

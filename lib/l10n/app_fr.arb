@@ -3829,7 +3829,7 @@
   "tasksSavedFiltersDone": "Terminé",
   "tasksSavedFiltersEdit": "Modifier",
   "tasksSavedFiltersGroupSemantics": "Filtres enregistrés",
-  "tasksSavedFiltersRailButton": "Enregistrés",
+  "tasksSavedFiltersRailButton": "Enregistrés ({count})",
   "tasksSavedFiltersRenameNamed": "Renommer {name}",
   "tasksSavedFiltersSaveButtonLabel": "Enregistrer",
   "tasksSavedFiltersSaveCurrentAs": "Enregistrer le filtre actuel sous…",

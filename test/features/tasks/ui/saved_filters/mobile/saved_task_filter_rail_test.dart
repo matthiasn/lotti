@@ -147,15 +147,30 @@ void main() {
   });
 
   testWidgets(
-    'Saved button reads just "Saved" (no count) and opens the sheet',
+    'Saved button shows the subordinate "(N)" count and opens the sheet',
     (
       tester,
     ) async {
+      // Seed has 2 filters → "Saved (2)".
       await _pumpRail(tester, pageState: const JournalPageState());
 
-      // No "(N)" badge — that read like a third task-count beside the pills.
-      expect(find.text('Saved'), findsOneWidget);
-      expect(find.textContaining('Saved ('), findsNothing);
+      final rich = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(SavedTaskFilterRailKeys.savedButton),
+          matching: find.text('Saved (2)'),
+        ),
+      );
+      // The "(2)" parenthetical is de-ranked to low-emphasis (dimmer than the
+      // medium-emphasis task-count pills), while the "Saved" word inherits the
+      // root span's filled-pill high-emphasis colour.
+      final root = rich.textSpan! as TextSpan;
+      expect(root.style?.color, dsTokensLight.colors.text.highEmphasis);
+      final spans = root.children!;
+      final head = spans.first as TextSpan;
+      final tail = spans.last as TextSpan;
+      expect(head.text, 'Saved ');
+      expect(tail.text, '(2)');
+      expect(tail.style?.color, dsTokensLight.colors.text.lowEmphasis);
 
       await tester.tap(find.byKey(SavedTaskFilterRailKeys.savedButton));
       await tester.pump();
@@ -272,15 +287,25 @@ void main() {
         lessThan(_leftOf(tester, SavedTaskFilterRailKeys.savedButton)),
       );
 
-      // The collapsed run is a horizontal scroll view (so the trailing chips
-      // scroll in instead of overflowing at accessibility sizes).
-      final root = tester.widget(
-        find.byKey(SavedTaskFilterRailKeys.root),
+      // The anchor + "All" scroll horizontally (so the leading chips scroll
+      // instead of overflowing at accessibility sizes)…
+      final scroll = find.descendant(
+        of: find.byKey(SavedTaskFilterRailKeys.root),
+        matching: find.byType(SingleChildScrollView),
       );
-      expect(root, isA<SingleChildScrollView>());
+      expect(scroll, findsOneWidget);
       expect(
-        (root as SingleChildScrollView).scrollDirection,
+        tester.widget<SingleChildScrollView>(scroll).scrollDirection,
         Axis.horizontal,
+      );
+      // …while the "Saved" button is PINNED outside that scroll view (it must
+      // never scroll off into an "S" sliver at large text).
+      expect(
+        find.descendant(
+          of: scroll,
+          matching: find.byKey(SavedTaskFilterRailKeys.savedButton),
+        ),
+        findsNothing,
       );
     },
   );
@@ -341,15 +366,40 @@ void main() {
         mq: _xLargeTextMq,
       );
 
+      // No RenderFlex overflow: the Expanded scroll area absorbs the slack that
+      // the old non-scrolling [Saved][All][anchor] row could not.
       expect(tester.takeException(), isNull);
-      // Anchor still leads and is fully on-screen (its left edge is within the
-      // viewport), with the row scrollable for the trailing chips.
-      expect(
-        _leftOf(tester, SavedTaskFilterRailKeys.pill('f1')),
-        lessThan(390),
+
+      final scroll = find.descendant(
+        of: find.byKey(SavedTaskFilterRailKeys.root),
+        matching: find.byType(SingleChildScrollView),
       );
-      final root = tester.widget(find.byKey(SavedTaskFilterRailKeys.root));
-      expect(root, isA<SingleChildScrollView>());
+      expect(scroll, findsOneWidget);
+      // The anchor leads inside the scroll area…
+      expect(
+        find.descendant(
+          of: scroll,
+          matching: find.byKey(SavedTaskFilterRailKeys.pill('f1')),
+        ),
+        findsOneWidget,
+      );
+      // …and the "Saved" button is PINNED outside it, sitting flush within the
+      // rail's right edge (never pushed past it / clipped off), so the sheet
+      // opener stays reachable instead of scrolling off into an "S" sliver.
+      expect(
+        find.descendant(
+          of: scroll,
+          matching: find.byKey(SavedTaskFilterRailKeys.savedButton),
+        ),
+        findsNothing,
+      );
+      final railRight = tester
+          .getRect(find.byKey(SavedTaskFilterRailKeys.root))
+          .right;
+      final savedRight = tester
+          .getRect(find.byKey(SavedTaskFilterRailKeys.savedButton))
+          .right;
+      expect(savedRight, lessThanOrEqualTo(railRight + 0.5));
     },
   );
 

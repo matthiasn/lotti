@@ -30,20 +30,27 @@ class SavedTaskFilterRailKeys {
 /// filter exists; otherwise it collapses to nothing so the layout is unchanged
 /// for users without saved filters.
 ///
-/// Left → right: a chip-chromed "Saved" button with a disclosure chevron
-/// (opens the complete sheet — it carries no filter-count badge so it never
-/// reads like a third task-count next to the pill numbers), then a hard-capped,
-/// non-scrolling run of pills — "All" (clears to the default view), the active
-/// saved pill (or a "Custom" pill carrying the live filtered count for an
-/// ad-hoc filter), and as many most-recently-used quick-jump pills as fit — and
-/// a trailing teal "+ Save" call-to-action pill shown only when the live filter
-/// has unsaved clauses. Overflow lives in the sheet; the rail never scrolls.
+/// Left → right: a chip-chromed "Saved (N)" button with the rail's single
+/// disclosure chevron (opens the complete sheet; the "(N)" saved-filter count
+/// is shown as a de-ranked low-emphasis numeral so it never reads like a third
+/// task-count next to the pill numbers), then a hard-capped, non-scrolling run
+/// of pills — "All" (clears to the default view), the active saved pill (or a
+/// "Custom" pill carrying the live filtered count for an ad-hoc filter), and as
+/// many most-recently-used quick-jump pills as fit — and a trailing teal
+/// "+ Save" call-to-action pill shown only when the live filter has unsaved
+/// clauses. Overflow lives in the sheet; the rail never scrolls. The chevron
+/// lives ONLY on the "Saved" button — the active and "Custom" pills carry none,
+/// so each pill is a single predictable tap target (inactive pills apply/switch
+/// their filter; the active and "Custom" pills open the sheet on a whole-pill
+/// tap).
 ///
-/// At large text (textScaler ≥ ~1.3) the rail collapses to the "Saved" button +
-/// a compact "All" reset + the single active anchor pill (dropping the MRU
-/// pills). "All" is kept even in the collapse because clearing back to the
-/// unfiltered view is the most common escape hatch — dropping it would regress
-/// return-to-unfiltered from one tap to two.
+/// At large text (textScaler ≥ ~1.3) the rail collapses to the single active
+/// anchor pill + a compact "All" reset (those two scroll horizontally) with the
+/// "Saved" button PINNED outside the scroll at the trailing edge so the sheet
+/// opener is always visible (it must never scroll off into an "S" sliver); the
+/// MRU quick-jumps are dropped. "All" is kept even in the collapse because
+/// clearing back to the unfiltered view is the most common escape hatch —
+/// dropping it would regress return-to-unfiltered from one tap to two.
 class SavedTaskFilterRail extends ConsumerWidget {
   const SavedTaskFilterRail({super.key});
 
@@ -103,6 +110,10 @@ class SavedTaskFilterRail extends ConsumerWidget {
           builder: (context, constraints) {
             final gap = SizedBox(width: tokens.spacing.step2);
             final savedButton = _SavedButton(
+              // The saved-filter count is restored as a subordinate numeral:
+              // "Saved (N)" with the "(N)" de-ranked vs the task-count pills
+              // (rail only renders when ≥1 saved filter exists, so N ≥ 1).
+              count: saved.length,
               onTap: () => showSavedTaskFiltersSheet(context),
             );
             final saveChip = _SaveChip(
@@ -113,13 +124,16 @@ class SavedTaskFilterRail extends ConsumerWidget {
             // a compact "All" reset + the "Saved" button (only the MRU
             // quick-jumps are dropped). The active anchor LEADS so the user's
             // current filter + count is the first thing on-screen and always
-            // fully readable; "All" (the reset) and "Saved" follow. The run is
-            // horizontally scrollable so at accessibility text sizes the
-            // trailing chips scroll into view instead of overflowing — which is
-            // acceptable here precisely because the collapse is ~3 chips, not
-            // the many-filter scrub-to-find case the rail's no-scroll rule
-            // guards against. "All" is kept because return-to-unfiltered is the
-            // most common escape hatch; when "All" *is* the active selection it
+            // fully readable; "All" (the reset) follows it. Those two chips
+            // live in a horizontal scroll view so at accessibility text sizes
+            // they scroll into view instead of overflowing — acceptable here
+            // precisely because the collapse is ~2 chips, not the many-filter
+            // scrub-to-find case the rail's no-scroll rule guards against. The
+            // "Saved" manager button is PINNED outside the scroll (and the Save
+            // CTA with it) so the explicit sheet opener is always visible and
+            // reachable — at large text it must never scroll off into an "S"
+            // sliver. "All" is kept because return-to-unfiltered is the most
+            // common escape hatch; when "All" *is* the active selection it
             // doubles as the anchor rather than being rendered twice.
             final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.3;
             if (largeText) {
@@ -146,31 +160,45 @@ class SavedTaskFilterRail extends ConsumerWidget {
                 allIsAnchor = true;
                 anchor = _allPill(context, ref, selected: true, total: total);
               }
-              return SingleChildScrollView(
+              return Row(
                 key: SavedTaskFilterRailKeys.root,
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Cap the leading anchor at the viewport width: a long name
-                    // ellipsizes (the name stays `Flexible` inside DsPill, the
-                    // count is never clipped) instead of pushing the row
-                    // arbitrarily wide, while a short name stays content-sized.
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: constraints.maxWidth,
+                children: [
+                  // The anchor (+ "All") scroll; "Saved" stays pinned at the
+                  // trailing edge.
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Cap the leading anchor at the viewport width: a long
+                          // name ellipsizes (the name stays `Flexible` inside
+                          // DsPill, the count is never clipped) instead of
+                          // pushing the row arbitrarily wide, while a short name
+                          // stays content-sized.
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: constraints.maxWidth,
+                            ),
+                            child: anchor,
+                          ),
+                          if (!allIsAnchor) ...[
+                            gap,
+                            _allPill(
+                              context,
+                              ref,
+                              selected: false,
+                              total: total,
+                            ),
+                          ],
+                        ],
                       ),
-                      child: anchor,
                     ),
-                    if (!allIsAnchor) ...[
-                      gap,
-                      _allPill(context, ref, selected: false, total: total),
-                    ],
-                    gap,
-                    savedButton,
-                    if (hasUnsaved) ...[gap, saveChip],
-                  ],
-                ),
+                  ),
+                  gap,
+                  savedButton,
+                  if (hasUnsaved) ...[gap, saveChip],
+                ],
               );
             }
 
@@ -257,10 +285,11 @@ class SavedTaskFilterRail extends ConsumerWidget {
   }
 
   /// The "Custom" anchor pill for an ad-hoc filter that matches no saved view;
-  /// tapping it opens the sheet (paired with the chevron cue). It carries the
-  /// live filtered task count in the same reserved tabular slot as every other
-  /// pill (a `–` placeholder while the count is still computing) — the active
-  /// filter must never hide its magnitude.
+  /// tapping anywhere on the pill body opens the sheet (the chevron lives only
+  /// on the "Saved" button now). It carries the live filtered task count in the
+  /// same reserved tabular slot as every other pill (a `–` placeholder while
+  /// the count is still computing) — the active filter must never hide its
+  /// magnitude.
   Widget _customPill(
     BuildContext context, {
     required int? count,
@@ -279,7 +308,6 @@ class SavedTaskFilterRail extends ConsumerWidget {
         count: countLoading ? null : count,
       ),
       onTap: () => showSavedTaskFiltersSheet(context),
-      onOpenSheet: () => showSavedTaskFiltersSheet(context),
     );
   }
 
@@ -304,10 +332,11 @@ class SavedTaskFilterRail extends ConsumerWidget {
         category: savedFilterCategoryName(filter),
         count: countLoading ? null : count,
       ),
+      // The active pill opens the sheet (whole-pill tap, no caret); an inactive
+      // quick-jump applies its filter.
       onTap: selected
           ? () => showSavedTaskFiltersSheet(context)
           : () => _applySaved(ref, filter),
-      onOpenSheet: selected ? () => showSavedTaskFiltersSheet(context) : null,
     );
   }
 
@@ -393,17 +422,25 @@ class SavedTaskFilterRail extends ConsumerWidget {
   }
 }
 
-/// The band-leading "Saved" button. Wears the same neutral filled+bordered
-/// [DsPill] chrome as the "All" pill (so it reads as a chip, not a static
-/// label), led by a bookmark glyph and closed by a disclosure chevron that
-/// signals "opens a menu". It deliberately carries **no** filter-count badge —
-/// "Saved (5)" read like a third task-count beside "All 214" and the pill
-/// numbers, conflating "5 saved definitions" with "N matching tasks". One tap
-/// opens the complete sheet; the ≥48dp tap target comes from the padded
-/// [InkWell] wrapper, never a mutated pill height.
+/// The band-leading / large-text-pinned "Saved (N)" button — the rail's single
+/// explicit sheet opener, and the **only** element to carry the disclosure
+/// chevron (the active and "Custom" pills dropped theirs so each pill is one
+/// unambiguous tap target). Wears the same neutral filled+bordered [DsPill]
+/// chrome as the "All" pill (so it reads as a chip, not a static label), led by
+/// a bookmark glyph and closed by the chevron.
+///
+/// The "(N)" saved-filter count is restored as a *subordinate* numeral: it
+/// renders in `text.lowEmphasis` (dimmer than the `mediumEmphasis` task-count
+/// pills) and in a parenthetical form, so it reads as "N saved filters" rather
+/// than a peer task-count beside "All 214" and the pill numbers. The label word
+/// keeps the filled pill's `text.highEmphasis`. One tap opens the complete
+/// sheet; the ≥48dp tap target comes from the padded [InkWell] wrapper, never a
+/// mutated pill height.
 class _SavedButton extends StatelessWidget {
-  const _SavedButton({required this.onTap});
+  const _SavedButton({required this.count, required this.onTap});
 
+  /// Number of saved filters, shown as the de-ranked "(N)" numeral.
+  final int count;
   final VoidCallback onTap;
 
   @override
@@ -412,16 +449,22 @@ class _SavedButton extends StatelessWidget {
     final messages = context.messages;
     final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
     final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    final label = messages.tasksSavedFiltersRailButton;
-    // Primary on-surface for both the label (DsPill's filled default) and the
-    // glyphs: at medium emphasis the bookmark + chevron read gray-on-gray over
-    // the light-theme pill fill. High emphasis keeps the whole button legible.
+    // The full "Saved (N)" string drives the a11y label; the visual splits it
+    // so the parenthetical "(N)" can drop to low emphasis.
+    final label = messages.tasksSavedFiltersRailButton(count);
+    // Primary on-surface for both the label word (DsPill's filled default) and
+    // the glyphs: at medium emphasis the bookmark + chevron read gray-on-gray
+    // over the light-theme pill fill. High emphasis keeps the button legible.
     final glyphColor = tokens.colors.text.highEmphasis;
+    final baseStyle = tokens.typography.styles.others.caption.copyWith(
+      color: glyphColor,
+      height: 1,
+    );
 
     final pill = DsPill(
       variant: DsPillVariant.filled,
       bordered: true,
-      label: label,
+      labelWidget: _SavedButtonLabel(label: label, baseStyle: baseStyle),
       leading: Icon(
         Icons.bookmarks_outlined,
         size: tokens.spacing.step4,
@@ -452,6 +495,52 @@ class _SavedButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Renders the "Saved (N)" button label so the trailing parenthetical "(N)"
+/// drops to `text.lowEmphasis` while the leading word keeps the [baseStyle]
+/// high emphasis — visually de-ranking the saved-filter count below the
+/// task-count pills. The localized template is always `word ({count})`, so the
+/// split is taken at the last `(`; a string without one (defensive) renders
+/// flat in [baseStyle].
+class _SavedButtonLabel extends StatelessWidget {
+  const _SavedButtonLabel({required this.label, required this.baseStyle});
+
+  final String label;
+  final TextStyle baseStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final idx = label.lastIndexOf('(');
+    if (idx <= 0) {
+      return Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: baseStyle,
+      );
+    }
+    final head = label.substring(0, idx); // "Saved " (keeps the spacing)
+    final tail = label.substring(idx); // "(N)"
+    return Text.rich(
+      TextSpan(
+        style: baseStyle,
+        children: [
+          TextSpan(text: head),
+          TextSpan(
+            text: tail,
+            style: baseStyle.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

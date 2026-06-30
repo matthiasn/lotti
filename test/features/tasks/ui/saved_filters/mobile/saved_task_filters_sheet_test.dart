@@ -108,6 +108,48 @@ void main() {
     expect(find.text('7'), findsOneWidget); // f2
   });
 
+  bool rowHasSelectedSurface(WidgetTester tester, Key rowKey) {
+    final decorated = tester.widgetList<DecoratedBox>(
+      find.descendant(
+        of: find.byKey(rowKey),
+        matching: find.byType(DecoratedBox),
+      ),
+    );
+    return decorated.any(
+      (d) =>
+          d.decoration is BoxDecoration &&
+          (d.decoration as BoxDecoration).color ==
+              dsTokensLight.colors.surface.selected,
+    );
+  }
+
+  testWidgets(
+    'the active row carries a token-backed selected surface tint',
+    (tester) async {
+      // Page state matches f1 → f1 is the active selection. Selection must be
+      // multi-channel: the active row gets a `surface.selected` background tint
+      // (the rail pill's mint), not just the teal radio.
+      await _pumpSheet(
+        tester,
+        pageState: const JournalPageState(
+          selectedTaskStatuses: {'IN_PROGRESS'},
+        ),
+      );
+
+      expect(
+        rowHasSelectedSurface(tester, SavedTaskFiltersSheetKeys.row('f1')),
+        isTrue,
+        reason: 'active row tinted with surface.selected',
+      );
+      // An inactive row stays untinted, so the tint is a true selection signal.
+      expect(
+        rowHasSelectedSurface(tester, SavedTaskFiltersSheetKeys.row('f2')),
+        isFalse,
+        reason: 'inactive row is not tinted',
+      );
+    },
+  );
+
   testWidgets('tapping a saved row applies that filter', (tester) async {
     final bench = await _pumpSheet(tester);
 
@@ -170,6 +212,58 @@ void main() {
       // Delete sits clearly to the right of Rename — the tap targets do not
       // abut, so the destructive action can't be mis-tapped.
       expect(deleteRect.left - renameRect.right, greaterThanOrEqualTo(4));
+    },
+  );
+
+  testWidgets(
+    'toggling Edit keeps the same row height (the list does not jump)',
+    (tester) async {
+      await _pumpSheet(tester);
+
+      final normalHeight = tester
+          .getSize(find.byKey(SavedTaskFiltersSheetKeys.row('f1')))
+          .height;
+
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+      await tester.pump();
+
+      final editHeight = tester
+          .getSize(find.byKey(SavedTaskFiltersSheetKeys.row('f1')))
+          .height;
+
+      // Same min-height/padding in both modes: Edit swaps the count for the
+      // action pair without resizing the row, so the list stays steady.
+      expect(editHeight, normalHeight);
+      expect(editHeight, greaterThanOrEqualTo(48));
+    },
+  );
+
+  testWidgets(
+    '"All tasks" drops its count in Edit mode (no count vs action-pairs)',
+    (tester) async {
+      await _pumpSheet(tester);
+
+      // Normal mode: the All total is shown.
+      expect(
+        find.descendant(
+          of: find.byKey(SavedTaskFiltersSheetKeys.allRow),
+          matching: find.text('124'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+      await tester.pump();
+
+      // Edit mode: "All tasks" carries neither a count nor per-row actions, so
+      // it never mixes a lone count against the other rows' action pairs.
+      expect(
+        find.descendant(
+          of: find.byKey(SavedTaskFiltersSheetKeys.allRow),
+          matching: find.text('124'),
+        ),
+        findsNothing,
+      );
     },
   );
 

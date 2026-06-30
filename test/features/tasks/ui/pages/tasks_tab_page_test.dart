@@ -793,7 +793,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
-      expect(find.text('Saved'), findsOneWidget);
+      // One seeded filter → the subordinate "(1)" count on the Saved button.
+      expect(find.text('Saved (1)'), findsOneWidget);
       // The active pill shows the saved filter's name.
       expect(find.text('In Progress P0'), findsOneWidget);
     });

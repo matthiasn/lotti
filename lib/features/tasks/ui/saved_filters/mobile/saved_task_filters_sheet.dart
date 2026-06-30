@@ -195,56 +195,6 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
   }
 }
 
-/// Trailing count column shared by the sheet rows — right-aligned and tabular
-/// so the digits line up into a comparison column. A `step8` min-width holds
-/// the column start steady, but the slot is free to GROW so the digits are
-/// NEVER width-clipped at large text (the name ellipsizes instead).
-///
-/// The count is a *secondary* datum: it reads `text.mediumEmphasis` in every
-/// state — selected or not — exactly matching the rail pill's `_CountSlot`, so
-/// the same number never changes colour between the two surfaces. The active
-/// row is conveyed by the radio + bold name, never by re-colouring the count
-/// (teal here was both inconsistent with the rail and a light-theme
-/// teal-on-mint contrast trap). A dimmed `0` / cold-start `–` drop to
-/// low-emphasis.
-class _SheetCount extends StatelessWidget {
-  const _SheetCount({required this.count});
-
-  final int? count;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final String text;
-    final Color color;
-    if (count == null) {
-      text = '–';
-      color = tokens.colors.text.lowEmphasis;
-    } else if (count == 0) {
-      text = '0';
-      color = tokens.colors.text.lowEmphasis;
-    } else {
-      text = count! > SavedTaskFilterPill.countCap
-          ? '${SavedTaskFilterPill.countCap}+'
-          : '$count';
-      color = tokens.colors.text.mediumEmphasis;
-    }
-    return ConstrainedBox(
-      constraints: BoxConstraints(minWidth: tokens.spacing.step8),
-      child: Text(
-        text,
-        textAlign: TextAlign.end,
-        maxLines: 1,
-        style: tokens.typography.styles.body.bodyMedium.copyWith(
-          color: color,
-          fontWeight: FontWeight.w500,
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
-      ),
-    );
-  }
-}
-
 /// Leading single-select indicator: a filled teal dot when selected, an empty
 /// ring otherwise (radio affordance).
 class _RadioDot extends StatelessWidget {
@@ -268,6 +218,13 @@ class _RadioDot extends StatelessWidget {
 }
 
 /// Shared full-width ≥48dp row scaffold with single-select semantics.
+///
+/// The active row carries a token-backed `colors.surface.selected` background
+/// tint — the same mint the rail's selected pill uses (`DsPill.selected`) — so
+/// selection is multi-channel (tinted surface + radio + bold name) and shares
+/// the rail's visual vocabulary, instead of leaning on the teal radio alone
+/// next to a teal category dot. The tint sits behind a transparent [Material]
+/// so the tap ripple still draws on top, clipped to the row's `radii.m`.
 class _SheetRowScaffold extends StatelessWidget {
   const _SheetRowScaffold({
     required this.selected,
@@ -285,25 +242,32 @@ class _SheetRowScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
+    final radius = BorderRadius.circular(tokens.radii.m);
     return Semantics(
       inMutuallyExclusiveGroup: true,
       selected: selected,
       label: semanticsLabel,
       onTap: onTap,
       child: ExcludeSemantics(
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(tokens.radii.m),
-            onTap: onTap,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: minTarget),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step3,
-                  vertical: tokens.spacing.step2,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: selected ? tokens.colors.surface.selected : null,
+            borderRadius: radius,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: radius,
+              onTap: onTap,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: minTarget),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step3,
+                    vertical: tokens.spacing.step2,
+                  ),
+                  child: Row(children: children),
                 ),
-                child: Row(children: children),
               ),
             ),
           ),
@@ -356,9 +320,11 @@ class _AllTasksRow extends StatelessWidget {
               ),
             ),
           ),
-          // Edit mode has no per-row actions for "All tasks" (it is not a saved
-          // definition), so the count column stays visible throughout.
-          _SheetCount(count: total),
+          // "All tasks" is not a saved definition, so it gets no per-row
+          // actions in Edit mode — and to avoid mixing a lone count against the
+          // action-pairs on every other row, it also drops its count there.
+          if (!editing)
+            SavedFilterCountText(count: total, minWidth: tokens.spacing.step8),
         ],
       ),
     );
@@ -433,34 +399,45 @@ class _SavedFilterRow extends StatelessWidget {
 
     if (editing) {
       // In edit mode the row is not selectable; it surfaces labeled Rename /
-      // Delete actions instead of the count column.
+      // Delete actions instead of the count column. It keeps the SAME 48dp row
+      // height and the same horizontal padding as the normal
+      // `_SheetRowScaffold` row, so toggling Edit swaps the count for the action
+      // pair without the list rows jumping or shifting the radio / name
+      // positions. The ≥48dp action targets define the row height exactly, so
+      // (unlike the normal row, whose short content is floated to 48 by its
+      // minHeight + vertical padding) no extra vertical padding is added — that
+      // would push the row to 56 and make the list jump on toggle.
       return KeyedSubtree(
         key: rowKey,
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-          child: Row(
-            children: [
-              SizedBox(width: tokens.spacing.step3),
-              _RadioDot(selected: selected),
-              SizedBox(width: tokens.spacing.step3),
-              nameWidget,
-              _EditAction(
-                buttonKey: SavedTaskFiltersSheetKeys.rename(filter.id),
-                icon: Icons.edit_outlined,
-                tooltip: messages.tasksSavedFiltersRenameNamed(filter.name),
-                onTap: onRename,
-              ),
-              // Clear gap between the two ≥48dp targets so the destructive
-              // Delete never abuts Rename (mis-tap safety).
-              SizedBox(width: tokens.spacing.step3),
-              _EditAction(
-                buttonKey: SavedTaskFiltersSheetKeys.delete(filter.id),
-                icon: Icons.delete_outline_rounded,
-                tooltip: messages.tasksSavedFiltersDeleteNamed(filter.name),
-                onTap: onDelete,
-                destructive: true,
-              ),
-            ],
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: tokens.spacing.step8 + tokens.spacing.step3,
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
+            child: Row(
+              children: [
+                _RadioDot(selected: selected),
+                SizedBox(width: tokens.spacing.step3),
+                nameWidget,
+                _EditAction(
+                  buttonKey: SavedTaskFiltersSheetKeys.rename(filter.id),
+                  icon: Icons.edit_outlined,
+                  tooltip: messages.tasksSavedFiltersRenameNamed(filter.name),
+                  onTap: onRename,
+                ),
+                // Clear gap between the two ≥48dp targets so the destructive
+                // Delete never abuts Rename (mis-tap safety).
+                SizedBox(width: tokens.spacing.step3),
+                _EditAction(
+                  buttonKey: SavedTaskFiltersSheetKeys.delete(filter.id),
+                  icon: Icons.delete_outline_rounded,
+                  tooltip: messages.tasksSavedFiltersDeleteNamed(filter.name),
+                  onTap: onDelete,
+                  destructive: true,
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -476,7 +453,7 @@ class _SavedFilterRow extends StatelessWidget {
           _RadioDot(selected: selected),
           SizedBox(width: tokens.spacing.step3),
           nameWidget,
-          _SheetCount(count: count),
+          SavedFilterCountText(count: count, minWidth: tokens.spacing.step8),
         ],
       ),
     );

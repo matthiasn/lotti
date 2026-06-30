@@ -50,7 +50,7 @@ void main() {
     });
 
     testWidgets(
-      'active pill shows the chevron but no redundant check; tap opens sheet',
+      'active pill carries no chevron or check; whole-pill tap opens sheet',
       (tester) async {
         var opened = 0;
         await _pump(
@@ -61,17 +61,15 @@ void main() {
             selected: true,
             count: 5,
             onTap: () => opened++,
-            onOpenSheet: () {},
           ),
         );
 
-        // The active state is already encoded by the border/fill/bold name, so
-        // the in-pill check is gone — only the disclosure chevron remains.
+        // One chevron model: the disclosure caret lives only on the "Saved"
+        // button now, so the active pill carries neither a chevron nor a
+        // redundant in-pill check — the active state is encoded by the
+        // border/fill/bold name, and the whole pill body is the tap target.
         expect(find.byIcon(Icons.check_rounded), findsNothing);
-        expect(
-          find.byKey(SavedTaskFilterPill.chevronKey('In Progress')),
-          findsOneWidget,
-        );
+        expect(find.byIcon(Icons.expand_more_rounded), findsNothing);
 
         await tester.tap(find.byType(SavedTaskFilterPill));
         await tester.pump();
@@ -168,7 +166,6 @@ void main() {
               selected: selected,
               count: 5,
               onTap: () {},
-              onOpenSheet: selected ? () {} : null,
             ),
           );
 
@@ -181,29 +178,29 @@ void main() {
       },
     );
 
-    testWidgets('selected pill chevron stays high-emphasis (legible cue)', (
+    testWidgets('no pill carries a chevron — one chevron model', (
       tester,
     ) async {
-      // The chevron is a disclosure affordance, not a count — it keeps
-      // high-emphasis so it reads over the mint selected fill in light theme.
-      await _pump(
-        tester,
-        SavedTaskFilterPill(
-          label: 'Active',
-          semanticsLabel: 'Active, 5 tasks',
-          selected: true,
-          count: 5,
-          onTap: () {},
-          onOpenSheet: () {},
-        ),
-      );
-
-      expect(
-        tester
-            .widget<Icon>(find.byKey(SavedTaskFilterPill.chevronKey('Active')))
-            .color,
-        dsTokensLight.colors.text.highEmphasis,
-      );
+      // The disclosure chevron was removed from every pill (it lives only on
+      // the rail's "Saved" button), so neither a selected nor an unselected
+      // pill renders a caret. The pill is a single predictable tap target.
+      for (final selected in [false, true]) {
+        await _pump(
+          tester,
+          SavedTaskFilterPill(
+            label: 'Active',
+            semanticsLabel: 'Active, 5 tasks',
+            selected: selected,
+            count: 5,
+            onTap: () {},
+          ),
+        );
+        expect(
+          find.byIcon(Icons.expand_more_rounded),
+          findsNothing,
+          reason: 'no chevron when selected=$selected',
+        );
+      }
     });
 
     testWidgets(
@@ -220,7 +217,6 @@ void main() {
             selected: true,
             count: 5,
             onTap: () {},
-            onOpenSheet: () {},
           ),
           mq: phoneMediaQueryData.copyWith(
             textScaler: const TextScaler.linear(2.4),
@@ -292,7 +288,6 @@ void main() {
           selected: true,
           count: 5,
           onTap: () {},
-          onOpenSheet: () {},
         ),
       );
 
