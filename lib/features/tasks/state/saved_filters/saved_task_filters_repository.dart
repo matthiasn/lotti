@@ -37,16 +37,26 @@ class SavedTaskFiltersRepository {
   final SavedTaskFiltersPersistence _persistence;
   final UpdateNotifications _updateNotifications;
 
-  // Minimal in-class async lock. Each call chains off the previous mutation's
-  // completion (success or failure swallowed for the chain only — the real
-  // result/error still propagates to the caller), serializing the
-  // read-modify-write so two writers never interleave their load/save.
-  Future<void> _mutex = Future<void>.value();
+  // Serializes the read-modify-write so two writers never interleave their
+  // load/save. Each call awaits the previous holder's completer before running;
+  // the uncontended path (the common case) runs the action immediately with no
+  // intermediate Future indirection, which keeps it well-behaved under
+  // flutter_test's fake-async microtask flushing.
+  Completer<void>? _lockTail;
 
-  Future<T> _runLocked<T>(Future<T> Function() action) {
-    final result = _mutex.then((_) => action());
-    _mutex = result.then((_) {}, onError: (_) {});
-    return result;
+  Future<T> _runLocked<T>(Future<T> Function() action) async {
+    final previous = _lockTail?.future;
+    final mine = Completer<void>();
+    _lockTail = mine;
+    if (previous != null) {
+      await previous;
+    }
+    try {
+      return await action();
+    } finally {
+      if (identical(_lockTail, mine)) _lockTail = null;
+      mine.complete();
+    }
   }
 
   /// Loads the persisted list (ordered). Reads are not locked: a single

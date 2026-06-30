@@ -16,6 +16,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
+import '../../state/saved_filters/saved_filter_test_helpers.dart';
 
 const _filterA = TasksFilter(
   selectedTaskStatuses: {'IN_PROGRESS'},
@@ -53,6 +54,7 @@ void main() {
 
   setUp(() async {
     mocks = await setUpTestGetIt();
+    registerSavedTaskFilterSyncDeps(mocks);
   });
 
   tearDown(tearDownTestGetIt);
