@@ -30,15 +30,16 @@ class SavedTaskFilterRailKeys {
 /// filter exists; otherwise it collapses to nothing so the layout is unchanged
 /// for users without saved filters.
 ///
-/// Left → right: a chip-chromed "Saved (N)" button with the rail's single
-/// disclosure chevron (opens the complete sheet; the "(N)" saved-filter count
-/// is shown as a de-ranked low-emphasis numeral so it never reads like a third
-/// task-count next to the pill numbers), then a hard-capped, non-scrolling run
-/// of pills — "All" (clears to the default view), the active saved pill (or a
-/// "Custom" pill carrying the live filtered count for an ad-hoc filter), and as
-/// many most-recently-used quick-jump pills as fit — and a trailing teal
-/// "+ Save" call-to-action pill shown only when the live filter has unsaved
-/// clauses. Overflow lives in the sheet; the rail never scrolls. The chevron
+/// Left → right: a chip-chromed "Saved" button with the rail's single
+/// disclosure chevron (opens the complete sheet; it carries NO count — the
+/// bookmark glyph + chevron already mark it as a menu opener, and a trailing
+/// numeral there would read like a third task-count next to the pill numbers),
+/// then a hard-capped, non-scrolling run of pills — "All" (clears to the
+/// default view), the active saved pill (or a "Custom" pill carrying the live
+/// filtered count for an ad-hoc filter), and as many most-recently-used
+/// quick-jump pills as fit — and a trailing teal-tinted "+ Save"
+/// call-to-action pill shown only when the live filter has unsaved clauses.
+/// Overflow lives in the sheet; the rail never scrolls. The chevron
 /// lives ONLY on the "Saved" button — the active and "Custom" pills carry none,
 /// so each pill is a single predictable tap target (inactive pills apply/switch
 /// their filter; the active and "Custom" pills open the sheet on a whole-pill
@@ -110,10 +111,6 @@ class SavedTaskFilterRail extends ConsumerWidget {
           builder: (context, constraints) {
             final gap = SizedBox(width: tokens.spacing.step2);
             final savedButton = _SavedButton(
-              // The saved-filter count is restored as a subordinate numeral:
-              // "Saved (N)" with the "(N)" de-ranked vs the task-count pills
-              // (rail only renders when ≥1 saved filter exists, so N ≥ 1).
-              count: saved.length,
               onTap: () => showSavedTaskFiltersSheet(context),
             );
             final saveChip = _SaveChip(
@@ -422,25 +419,23 @@ class SavedTaskFilterRail extends ConsumerWidget {
   }
 }
 
-/// The band-leading / large-text-pinned "Saved (N)" button — the rail's single
+/// The band-leading / large-text-pinned "Saved" button — the rail's single
 /// explicit sheet opener, and the **only** element to carry the disclosure
 /// chevron (the active and "Custom" pills dropped theirs so each pill is one
 /// unambiguous tap target). Wears the same neutral filled+bordered [DsPill]
 /// chrome as the "All" pill (so it reads as a chip, not a static label), led by
 /// a bookmark glyph and closed by the chevron.
 ///
-/// The "(N)" saved-filter count is restored as a *subordinate* numeral: it
-/// renders in `text.lowEmphasis` (dimmer than the `mediumEmphasis` task-count
-/// pills) and in a parenthetical form, so it reads as "N saved filters" rather
-/// than a peer task-count beside "All 214" and the pill numbers. The label word
-/// keeps the filled pill's `text.highEmphasis`. One tap opens the complete
-/// sheet; the ≥48dp tap target comes from the padded [InkWell] wrapper, never a
-/// mutated pill height.
+/// It deliberately carries **no count**: the bookmark glyph + disclosure
+/// chevron already signal "this opens a menu", and a trailing numeral here was
+/// misread as a third task-count next to the real per-filter counts. The
+/// trailing-number slot in the rail is now reserved exclusively for task
+/// counts. The label word keeps the filled pill's `text.highEmphasis`. One tap
+/// opens the complete sheet; the ≥48dp tap target comes from the padded
+/// [InkWell] wrapper, never a mutated pill height.
 class _SavedButton extends StatelessWidget {
-  const _SavedButton({required this.count, required this.onTap});
+  const _SavedButton({required this.onTap});
 
-  /// Number of saved filters, shown as the de-ranked "(N)" numeral.
-  final int count;
   final VoidCallback onTap;
 
   @override
@@ -449,22 +444,16 @@ class _SavedButton extends StatelessWidget {
     final messages = context.messages;
     final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
     final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    // The full "Saved (N)" string drives the a11y label; the visual splits it
-    // so the parenthetical "(N)" can drop to low emphasis.
-    final label = messages.tasksSavedFiltersRailButton(count);
+    final label = messages.tasksSavedFiltersRailButton;
     // Primary on-surface for both the label word (DsPill's filled default) and
     // the glyphs: at medium emphasis the bookmark + chevron read gray-on-gray
     // over the light-theme pill fill. High emphasis keeps the button legible.
     final glyphColor = tokens.colors.text.highEmphasis;
-    final baseStyle = tokens.typography.styles.others.caption.copyWith(
-      color: glyphColor,
-      height: 1,
-    );
 
     final pill = DsPill(
       variant: DsPillVariant.filled,
       bordered: true,
-      labelWidget: _SavedButtonLabel(label: label, baseStyle: baseStyle),
+      label: label,
       leading: Icon(
         Icons.bookmarks_outlined,
         size: tokens.spacing.step4,
@@ -499,56 +488,11 @@ class _SavedButton extends StatelessWidget {
   }
 }
 
-/// Renders the "Saved (N)" button label so the trailing parenthetical "(N)"
-/// drops to `text.lowEmphasis` while the leading word keeps the [baseStyle]
-/// high emphasis — visually de-ranking the saved-filter count below the
-/// task-count pills. The localized template is always `word ({count})`, so the
-/// split is taken at the last `(`; a string without one (defensive) renders
-/// flat in [baseStyle].
-class _SavedButtonLabel extends StatelessWidget {
-  const _SavedButtonLabel({required this.label, required this.baseStyle});
-
-  final String label;
-  final TextStyle baseStyle;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final idx = label.lastIndexOf('(');
-    if (idx <= 0) {
-      return Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: baseStyle,
-      );
-    }
-    final head = label.substring(0, idx); // "Saved " (keeps the spacing)
-    final tail = label.substring(idx); // "(N)"
-    return Text.rich(
-      TextSpan(
-        style: baseStyle,
-        children: [
-          TextSpan(text: head),
-          TextSpan(
-            text: tail,
-            style: baseStyle.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    );
-  }
-}
-
 /// The trailing "+ Save" call-to-action, shown only while the live filter has
-/// unsaved clauses. A teal `outline` [DsPill] (NOT the muted dashed ghost-chip
-/// skin, which is reserved for true empty/placeholder states) so it reads as a
-/// live action, wrapped in a ≥48dp tap target.
+/// unsaved clauses. A teal-`tinted` [DsPill] (filled mint wash, no border) so it
+/// reads as a distinct CTA — NOT the teal-`outline` vocabulary the bordered
+/// active / "Custom" pills already use, and NOT the muted dashed ghost-chip skin
+/// reserved for true empty/placeholder states. Wrapped in a ≥48dp tap target.
 class _SaveChip extends StatelessWidget {
   const _SaveChip({required this.onTap});
 
@@ -564,7 +508,7 @@ class _SaveChip extends StatelessWidget {
     final label = messages.tasksSavedFiltersSaveButtonLabel;
 
     final pill = DsPill(
-      variant: DsPillVariant.outline,
+      variant: DsPillVariant.tinted,
       color: accent,
       label: label,
       leading: Icon(

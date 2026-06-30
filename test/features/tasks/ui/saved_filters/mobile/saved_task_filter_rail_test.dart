@@ -147,30 +147,31 @@ void main() {
   });
 
   testWidgets(
-    'Saved button shows the subordinate "(N)" count and opens the sheet',
+    'Saved button shows the plain "Saved" label (no count) and opens the sheet',
     (
       tester,
     ) async {
-      // Seed has 2 filters → "Saved (2)".
+      // Seed has 2 filters, but the Saved button carries NO count: the bookmark
+      // + chevron already signal a menu opener, and a trailing numeral there
+      // misread as a third task-count next to the real per-filter counts.
       await _pumpRail(tester, pageState: const JournalPageState());
 
-      final rich = tester.widget<Text>(
+      final label = tester.widget<Text>(
         find.descendant(
           of: find.byKey(SavedTaskFilterRailKeys.savedButton),
-          matching: find.text('Saved (2)'),
+          matching: find.text('Saved'),
         ),
       );
-      // The "(2)" parenthetical is de-ranked to low-emphasis (dimmer than the
-      // medium-emphasis task-count pills), while the "Saved" word inherits the
-      // root span's filled-pill high-emphasis colour.
-      final root = rich.textSpan! as TextSpan;
-      expect(root.style?.color, dsTokensLight.colors.text.highEmphasis);
-      final spans = root.children!;
-      final head = spans.first as TextSpan;
-      final tail = spans.last as TextSpan;
-      expect(head.text, 'Saved ');
-      expect(tail.text, '(2)');
-      expect(tail.style?.color, dsTokensLight.colors.text.lowEmphasis);
+      // The label inherits the filled pill's high-emphasis colour…
+      expect(label.style?.color, dsTokensLight.colors.text.highEmphasis);
+      // …and there is no "(N)" numeral anywhere on the button.
+      expect(
+        find.descendant(
+          of: find.byKey(SavedTaskFilterRailKeys.savedButton),
+          matching: find.textContaining('('),
+        ),
+        findsNothing,
+      );
 
       await tester.tap(find.byKey(SavedTaskFilterRailKeys.savedButton));
       await tester.pump();
@@ -228,7 +229,7 @@ void main() {
     );
   });
 
-  testWidgets('Save chip is a teal outline CTA, not a muted ghost chip', (
+  testWidgets('Save chip is a teal-tinted CTA, not a bordered/ghost chip', (
     tester,
   ) async {
     await _pumpRail(
@@ -242,7 +243,9 @@ void main() {
         matching: find.byType(DsPill),
       ),
     );
-    expect(pill.variant, DsPillVariant.outline);
+    // Filled teal-tint (no border) so the CTA does not share the teal-outline
+    // vocabulary of the bordered active / Custom selection pills.
+    expect(pill.variant, DsPillVariant.tinted);
     expect(pill.color, dsTokensLight.colors.interactive.enabled);
     // Leading "+" affordance; the muted dashed ghost-chip skin is gone.
     expect(find.byType(DsGhostChip), findsNothing);

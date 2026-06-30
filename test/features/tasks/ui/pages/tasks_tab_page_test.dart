@@ -768,7 +768,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // The rail collapses to nothing — no Saved (N) button — and the old
+      // The rail collapses to nothing — no Saved button — and the old
       // "· {name}" header suffix is gone for good.
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsNothing);
       expect(find.textContaining('· '), findsNothing);
@@ -793,8 +793,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
-      // One seeded filter → the subordinate "(1)" count on the Saved button.
-      expect(find.text('Saved (1)'), findsOneWidget);
+      // The Saved button is a plain "Saved" label — no count numeral.
+      expect(find.text('Saved'), findsOneWidget);
       // The active pill shows the saved filter's name.
       expect(find.text('In Progress P0'), findsOneWidget);
     });

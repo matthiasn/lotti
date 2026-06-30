@@ -196,7 +196,10 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
 }
 
 /// Leading single-select indicator: a filled teal dot when selected, an empty
-/// ring otherwise (radio affordance).
+/// ring otherwise (radio affordance). The resting ring uses
+/// `text.mediumEmphasis` (not the near-invisible `lowEmphasis`) so the
+/// single-select control is clearly perceivable before it is filled; the
+/// selected state keeps the teal `interactive.enabled` fill.
 class _RadioDot extends StatelessWidget {
   const _RadioDot({required this.selected});
 
@@ -212,7 +215,7 @@ class _RadioDot extends StatelessWidget {
       size: tokens.spacing.step5,
       color: selected
           ? tokens.colors.interactive.enabled
-          : tokens.colors.text.lowEmphasis,
+          : tokens.colors.text.mediumEmphasis,
     );
   }
 }
@@ -324,7 +327,11 @@ class _AllTasksRow extends StatelessWidget {
           // actions in Edit mode — and to avoid mixing a lone count against the
           // action-pairs on every other row, it also drops its count there.
           if (!editing)
-            SavedFilterCountText(count: total, minWidth: tokens.spacing.step8),
+            SavedFilterCountText(
+              count: total,
+              selected: selected,
+              minWidth: tokens.spacing.step8,
+            ),
         ],
       ),
     );
@@ -426,9 +433,10 @@ class _SavedFilterRow extends StatelessWidget {
                   tooltip: messages.tasksSavedFiltersRenameNamed(filter.name),
                   onTap: onRename,
                 ),
-                // Clear gap between the two ≥48dp targets so the destructive
-                // Delete never abuts Rename (mis-tap safety).
-                SizedBox(width: tokens.spacing.step3),
+                // Generous gap between the two ≥48dp targets so the destructive
+                // Delete is clearly separated from Rename (mis-tap safety) and
+                // is not the smallest / tightest-packed element in the row.
+                SizedBox(width: tokens.spacing.step5),
                 _EditAction(
                   buttonKey: SavedTaskFiltersSheetKeys.delete(filter.id),
                   icon: Icons.delete_outline_rounded,
@@ -436,6 +444,10 @@ class _SavedFilterRow extends StatelessWidget {
                   onTap: onDelete,
                   destructive: true,
                 ),
+                // Breathing room between the destructive target and the row's
+                // right edge, so Delete isn't the edge-most element (on top of
+                // the row's own step3 horizontal padding → step5 total inset).
+                SizedBox(width: tokens.spacing.step3),
               ],
             ),
           ),
@@ -453,7 +465,11 @@ class _SavedFilterRow extends StatelessWidget {
           _RadioDot(selected: selected),
           SizedBox(width: tokens.spacing.step3),
           nameWidget,
-          SavedFilterCountText(count: count, minWidth: tokens.spacing.step8),
+          SavedFilterCountText(
+            count: count,
+            selected: selected,
+            minWidth: tokens.spacing.step8,
+          ),
         ],
       ),
     );
@@ -496,8 +512,11 @@ class _EditAction extends StatelessWidget {
             ),
             child: Center(
               child: Icon(
+                // Larger than the radio / create-row glyphs (step5) so the
+                // Rename / Delete controls carry clear icon weight and the
+                // destructive target isn't the smallest element in the row.
                 icon,
-                size: tokens.spacing.step5,
+                size: tokens.spacing.step6,
                 color: destructive
                     ? tokens.colors.alert.error.defaultColor
                     : tokens.colors.text.mediumEmphasis,

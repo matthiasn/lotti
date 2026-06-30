@@ -15652,8 +15652,8 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersRailButton.
   ///
   /// In en, this message translates to:
-  /// **'Saved ({count})'**
-  String tasksSavedFiltersRailButton(int count);
+  /// **'Saved'**
+  String get tasksSavedFiltersRailButton;
 
   /// No description provided for @tasksSavedFiltersRenameNamed.
   ///

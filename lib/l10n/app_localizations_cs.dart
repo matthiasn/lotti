@@ -9163,9 +9163,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksSavedFiltersGroupSemantics => 'Uložené filtry';
 
   @override
-  String tasksSavedFiltersRailButton(int count) {
-    return 'Uložené ($count)';
-  }
+  String get tasksSavedFiltersRailButton => 'Uložené';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {

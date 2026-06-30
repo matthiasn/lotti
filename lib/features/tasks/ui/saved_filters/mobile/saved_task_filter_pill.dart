@@ -166,29 +166,49 @@ class SavedTaskFilterPill extends StatelessWidget {
     if (!showCount) return null;
     // Loading folds into the `null` placeholder so the one shared renderer
     // (`SavedFilterCountText`) owns the dash; the pill never styles the count
-    // itself, keeping the rail and sheet numerals byte-identical.
-    return SavedFilterCountText(count: countLoading ? null : count);
+    // itself, keeping the rail and sheet numerals byte-identical. `selected`
+    // lifts the count to high emphasis so it stays legible on the mint fill.
+    return SavedFilterCountText(
+      count: countLoading ? null : count,
+      selected: selected,
+    );
   }
 }
 
 /// The single count renderer shared by the rail pill and the sheet rows, so the
-/// same number never changes type, weight, or emphasis between the two
-/// surfaces. One type token (`others.caption`), tabular figures, and a fixed
-/// weight; the count is a *secondary* datum so it reads `text.mediumEmphasis`,
-/// while a dimmed `0` and a cold-start / loading `–` (a null [count]) drop to
-/// `text.lowEmphasis`. The active state is conveyed by the pill's border / fill
-/// / bold name and the sheet row's radio + selected surface — never by
-/// re-colouring the number (teal-on-mint was a light-theme contrast trap).
+/// same number never changes type, weight, or sizing between the two surfaces.
+/// One type token (`others.caption`), tabular figures, and a fixed weight.
+///
+/// The count's emphasis is gated on [selected] so it stays legible against the
+/// selected pill's mint / `surface.selected` tint: a selected count reads
+/// `text.highEmphasis`, an unselected one the *secondary* `text.mediumEmphasis`,
+/// and a dimmed `0` or a cold-start / loading `–` (a null [count]) the
+/// `text.lowEmphasis` placeholder tone. This mirrors how the name already gates
+/// its weight on selection; the bold label stays visually primary, the count
+/// reads as legible DATA in every state/theme. The active state itself is still
+/// carried by the pill's border / fill / bold name and the sheet row's radio +
+/// selected surface — emphasis only lifts the number enough to stay readable on
+/// the mint fill (teal-on-mint was the original light-theme contrast trap).
 ///
 /// [minWidth] reserves a stable column start (so the name-truncation point
 /// doesn't jump between 1- and 3-digit values) but is only a MIN — the slot is
 /// free to GROW, so at large text the name ellipsizes while the full count
 /// (e.g. `214`) is NEVER width-clipped.
 class SavedFilterCountText extends StatelessWidget {
-  const SavedFilterCountText({required this.count, this.minWidth, super.key});
+  const SavedFilterCountText({
+    required this.count,
+    this.selected = false,
+    this.minWidth,
+    super.key,
+  });
 
   /// Match count; `null` renders the loading / cold-start `–` placeholder.
   final int? count;
+
+  /// Whether the count belongs to the active selection. When true a non-zero
+  /// count lifts to `text.highEmphasis` so it stays legible on the mint fill;
+  /// otherwise it reads `text.mediumEmphasis`.
+  final bool selected;
 
   /// Reserved column min-width. Defaults to `step7` (the rail pill slot); the
   /// sheet passes `step8` for its slightly wider comparison column.
@@ -209,7 +229,9 @@ class SavedFilterCountText extends StatelessWidget {
       text = count! > SavedTaskFilterPill.countCap
           ? '${SavedTaskFilterPill.countCap}+'
           : '$count';
-      color = tokens.colors.text.mediumEmphasis;
+      color = selected
+          ? tokens.colors.text.highEmphasis
+          : tokens.colors.text.mediumEmphasis;
     }
 
     return ConstrainedBox(

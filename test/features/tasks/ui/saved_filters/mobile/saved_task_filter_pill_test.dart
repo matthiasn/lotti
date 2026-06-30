@@ -152,11 +152,16 @@ void main() {
     );
 
     testWidgets(
-      'count reads secondary (medium-emphasis) whether selected or not',
+      'count emphasis is gated on selection so it stays legible on the mint fill',
       (tester) async {
-        // The same datum must not change colour between states: the count is
-        // medium-emphasis in BOTH the selected and unselected pill (matching
-        // the sheet), with the active state carried by border/fill/bold name.
+        // The count must stay readable DATA in every state: on the selected
+        // pill's mint / surface.selected tint it lifts to high emphasis, while
+        // an unselected pill keeps the secondary medium emphasis. The active
+        // state is still primarily carried by the border/fill/bold name.
+        final expected = {
+          false: dsTokensLight.colors.text.mediumEmphasis,
+          true: dsTokensLight.colors.text.highEmphasis,
+        };
         for (final selected in [false, true]) {
           await _pump(
             tester,
@@ -171,8 +176,8 @@ void main() {
 
           expect(
             tester.widget<Text>(find.text('5')).style?.color,
-            dsTokensLight.colors.text.mediumEmphasis,
-            reason: 'count colour must be secondary when selected=$selected',
+            expected[selected],
+            reason: 'count emphasis must gate on selected=$selected',
           );
         }
       },

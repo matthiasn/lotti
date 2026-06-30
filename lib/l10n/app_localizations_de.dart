@@ -9128,9 +9128,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksSavedFiltersGroupSemantics => 'Gespeicherte Filter';
 
   @override
-  String tasksSavedFiltersRailButton(int count) {
-    return 'Gespeichert ($count)';
-  }
+  String get tasksSavedFiltersRailButton => 'Gespeichert';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {

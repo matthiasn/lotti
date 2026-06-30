@@ -191,7 +191,8 @@ void main() {
   });
 
   testWidgets(
-    'Edit-mode Rename/Delete are >=48dp targets with a clear gap between them',
+    'Edit-mode Rename/Delete: >=48dp targets, generous separation, inset from '
+    'the row edge, with clear icon weight',
     (tester) async {
       await _pumpSheet(tester);
 
@@ -204,14 +205,101 @@ void main() {
       final deleteRect = tester.getRect(
         find.byKey(SavedTaskFiltersSheetKeys.delete('f1')),
       );
+      final rowRect = tester.getRect(
+        find.byKey(SavedTaskFiltersSheetKeys.row('f1')),
+      );
 
       for (final r in [renameRect, deleteRect]) {
         expect(r.width, greaterThanOrEqualTo(48));
         expect(r.height, greaterThanOrEqualTo(48));
       }
-      // Delete sits clearly to the right of Rename — the tap targets do not
-      // abut, so the destructive action can't be mis-tapped.
-      expect(deleteRect.left - renameRect.right, greaterThanOrEqualTo(4));
+      // Generous (>= step5) gap between the two targets so the destructive
+      // Delete is clearly separated from Rename and can't be mis-tapped.
+      expect(
+        deleteRect.left - renameRect.right,
+        greaterThanOrEqualTo(dsTokensLight.spacing.step5),
+      );
+      // Delete is inset from the row's right edge (trailing gap + row padding),
+      // so the destructive control isn't the smallest / edge-most element.
+      expect(
+        rowRect.right - deleteRect.right,
+        greaterThanOrEqualTo(dsTokensLight.spacing.step4),
+      );
+      // Both glyphs carry the larger (step6) icon weight — bigger than the
+      // step5 radio — for clear parity between the two controls.
+      for (final key in [
+        SavedTaskFiltersSheetKeys.rename('f1'),
+        SavedTaskFiltersSheetKeys.delete('f1'),
+      ]) {
+        final icon = tester.widget<Icon>(
+          find.descendant(of: find.byKey(key), matching: find.byType(Icon)),
+        );
+        expect(icon.size, dsTokensLight.spacing.step6);
+      }
+    },
+  );
+
+  testWidgets(
+    'unselected radio uses a perceivable medium-emphasis ring; selected is teal',
+    (tester) async {
+      // f1 matches the live filter → filled teal radio; f2 is resting → a
+      // medium-emphasis ring (raised from the old near-invisible low emphasis)
+      // so the single-select control is perceivable before it's filled.
+      await _pumpSheet(
+        tester,
+        pageState: const JournalPageState(
+          selectedTaskStatuses: {'IN_PROGRESS'},
+        ),
+      );
+
+      final selectedRadio = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(SavedTaskFiltersSheetKeys.row('f1')),
+          matching: find.byIcon(Icons.radio_button_checked_rounded),
+        ),
+      );
+      final restingRadio = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(SavedTaskFiltersSheetKeys.row('f2')),
+          matching: find.byIcon(Icons.radio_button_unchecked_rounded),
+        ),
+      );
+      expect(selectedRadio.color, dsTokensLight.colors.interactive.enabled);
+      expect(restingRadio.color, dsTokensLight.colors.text.mediumEmphasis);
+    },
+  );
+
+  testWidgets(
+    'active-row count lifts to high emphasis on its mint surface; inactive '
+    'stays medium',
+    (tester) async {
+      // The count must read as legible DATA on the selected row's mint tint:
+      // the active f1 count (12) lifts to high emphasis, the inactive f2 count
+      // (7) keeps the secondary medium emphasis.
+      await _pumpSheet(
+        tester,
+        pageState: const JournalPageState(
+          selectedTaskStatuses: {'IN_PROGRESS'},
+        ),
+      );
+
+      final activeCount = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(SavedTaskFiltersSheetKeys.row('f1')),
+          matching: find.text('12'),
+        ),
+      );
+      final inactiveCount = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(SavedTaskFiltersSheetKeys.row('f2')),
+          matching: find.text('7'),
+        ),
+      );
+      expect(activeCount.style?.color, dsTokensLight.colors.text.highEmphasis);
+      expect(
+        inactiveCount.style?.color,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
     },
   );
 
