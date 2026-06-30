@@ -735,26 +735,30 @@ void main() {
         final rightPlantHand = handR.sample(0);
         expect(
           leftPlantHand.x,
-          lessThan(-82),
+          lessThan(-62),
           reason:
               'Sekem left hand should stay in the left anatomical lane; '
               'cross-body targets make the arms fold impossibly',
         );
-        expect(leftPlantHand.y, greaterThan(10));
+        expect(
+          leftPlantHand.y,
+          greaterThan(32),
+          reason: 'the low Sekem hand should visibly sit on the beltline',
+        );
         expect(
           rightPlantHand.x,
-          greaterThan(108),
+          greaterThan(100),
           reason:
               'the opposite hand should paddle outward in its own lane so '
               'the move reads as Sekem without folded forearms',
         );
-        expect(rightPlantHand.y, inInclusiveRange(-58, -50));
+        expect(rightPlantHand.y, inInclusiveRange(-42, -34));
 
         final leftPullback = handL.sample(2 / phrase.frameCount);
         final rightRecover = handR.sample(2 / phrase.frameCount);
         expect(
           leftPullback.x,
-          inInclusiveRange(-104, -96),
+          inInclusiveRange(-100, -92),
           reason:
               'the left Sekem offbeat should rebound up in the left lane '
               'instead of sweeping across the torso',
@@ -766,7 +770,7 @@ void main() {
         );
         expect(
           rightRecover.x,
-          greaterThan(98),
+          greaterThan(92),
           reason:
               'the right Sekem recover must stay outside the right shoulder '
               'line; centerline targets create impossible folded arms',
@@ -790,30 +794,34 @@ void main() {
         final rightSweep = handR.sample(4 / phrase.frameCount);
         expect(
           leftPoint.x,
-          lessThan(-108),
+          lessThan(-100),
           reason:
               'the next plant should swap: left hand becomes the outward '
               'paddle',
         );
         expect(
           leftPoint.y,
-          inInclusiveRange(-58, -50),
+          inInclusiveRange(-42, -34),
           reason:
               'the outward Sekem hit should sit at chest/shoulder level, '
               'not punch into an impossible high fold',
         );
         expect(
           rightSweep.x,
-          greaterThan(88),
+          greaterThan(62),
           reason:
               'the next plant should swap levels while right hand stays in '
               'the right anatomical lane',
         );
-        expect(rightSweep.y, greaterThan(10));
+        expect(
+          rightSweep.y,
+          greaterThan(32),
+          reason: 'the low Sekem hand should visibly sit on the beltline',
+        );
         final rightSweepInward = handR.sample(6 / phrase.frameCount);
         expect(
           rightSweepInward.x,
-          greaterThan(96),
+          greaterThan(92),
           reason: 'right Sekem sweep must never cross the torso centreline',
         );
         final leftPickup = footL.sample(6 / phrase.frameCount);
@@ -854,6 +862,37 @@ void main() {
           inInclusiveRange(0.14, 0.18),
           reason:
               'the low left scrape should mark the toe without becoming a kick',
+        );
+
+        final leftGroove = sekem.root.sample(0);
+        final leftRecoil = sekem.root.sample(2 / phrase.frameCount);
+        final rightGroove = sekem.root.sample(4 / phrase.frameCount);
+        final hips = sekem.channels[CatBones.hips]!;
+        final torso = sekem.channels[CatBones.torso]!;
+        expect(
+          leftGroove.dx,
+          lessThan(-22),
+          reason: 'Sekem should visibly dwell over the left plant',
+        );
+        expect(
+          rightGroove.dx,
+          greaterThan(22),
+          reason: 'Sekem should visibly dwell over the right plant',
+        );
+        expect(
+          leftGroove.dy - leftRecoil.dy,
+          greaterThan(20),
+          reason: 'Sekem needs a grounded downbeat squash, not a flat sway',
+        );
+        expect(
+          hips.sample(0).rotation,
+          lessThan(-0.28),
+          reason: 'the hip should lead the left Sekem weight commit',
+        );
+        expect(
+          torso.sample(0).rotation,
+          greaterThan(0.26),
+          reason: 'the torso should counter the hip for the Sekem groove',
         );
       },
     );
