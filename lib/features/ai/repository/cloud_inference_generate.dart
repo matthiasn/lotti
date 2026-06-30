@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
+import 'package:lotti/features/ai/repository/mistral_ocr_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -24,6 +25,7 @@ class CloudInferenceGenerate {
     required this._geminiRepository,
     required this._meliousRepository,
     required this._mistralRepository,
+    required this._mistralOcrRepository,
     required this._helpers,
   });
 
@@ -31,6 +33,7 @@ class CloudInferenceGenerate {
   final GeminiInferenceRepository _geminiRepository;
   final MeliousInferenceRepository _meliousRepository;
   final MistralInferenceRepository _mistralRepository;
+  final MistralOcrRepository _mistralOcrRepository;
   final CloudInferenceRequestHelpers _helpers;
 
   Stream<CreateChatCompletionStreamResponse> generate(
@@ -199,6 +202,19 @@ class CloudInferenceGenerate {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
+      );
+    }
+
+    // Mistral OCR models live on the dedicated /v1/ocr endpoint, not chat
+    // completions — route them there so they extract text instead of failing
+    // with `invalid_model`.
+    if (provider?.inferenceProviderType == InferenceProviderType.mistral &&
+        MistralOcrRepository.isMistralOcrModel(model)) {
+      return _mistralOcrRepository.extractText(
+        model: model,
+        images: images,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
       );
     }
 

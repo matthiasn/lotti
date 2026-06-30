@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
+import 'package:lotti/features/ai/repository/mistral_ocr_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/omlx_transcription_repository.dart';
@@ -44,6 +45,9 @@ class CloudInferenceRepository {
     final mistralTranscriptionRepository = MistralTranscriptionRepository(
       httpClient: httpClient,
     );
+    final mistralOcrRepository = MistralOcrRepository(
+      httpClient: httpClient,
+    );
     final whisperRepository = WhisperInferenceRepository(
       httpClient: httpClient,
     );
@@ -64,6 +68,7 @@ class CloudInferenceRepository {
       geminiRepository: geminiRepository,
       meliousRepository: meliousRepository,
       mistralRepository: mistralRepository,
+      mistralOcrRepository: mistralOcrRepository,
       helpers: helpers,
     );
 

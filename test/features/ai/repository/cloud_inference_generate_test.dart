@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dar
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
+import 'package:lotti/features/ai/repository/mistral_ocr_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -74,6 +75,40 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
   }
 }
 
+class _FakeMistralOcrRepository extends MistralOcrRepository {
+  final calls =
+      <({String model, String baseUrl, String apiKey, List<String> images})>[];
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> extractText({
+    required String model,
+    required List<String> images,
+    required String baseUrl,
+    required String apiKey,
+    Duration timeout = MistralOcrRepository.defaultTimeout,
+  }) {
+    calls.add((
+      model: model,
+      baseUrl: baseUrl,
+      apiKey: apiKey,
+      images: images,
+    ));
+    return Stream.value(
+      const CreateChatCompletionStreamResponse(
+        id: 'mistral-ocr-response-id',
+        choices: [
+          ChatCompletionStreamResponseChoice(
+            delta: ChatCompletionStreamResponseDelta(content: 'ocr markdown'),
+            index: 0,
+          ),
+        ],
+        object: 'chat.completion.chunk',
+        created: 0,
+      ),
+    );
+  }
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeCreateChatCompletionRequest());
@@ -86,6 +121,7 @@ void main() {
   late MockGeminiInferenceRepository geminiRepo;
   late MeliousInferenceRepository meliousRepo;
   late MistralInferenceRepository mistralRepo;
+  late MistralOcrRepository mistralOcrRepo;
   late MockOpenAIClient client;
   late CloudInferenceGenerate generate;
 
@@ -125,12 +161,14 @@ void main() {
     geminiRepo = MockGeminiInferenceRepository();
     meliousRepo = MeliousInferenceRepository();
     mistralRepo = MistralInferenceRepository();
+    mistralOcrRepo = MistralOcrRepository();
     client = MockOpenAIClient();
     generate = CloudInferenceGenerate(
       ollamaRepository: ollamaRepo,
       geminiRepository: geminiRepo,
       meliousRepository: meliousRepo,
       mistralRepository: mistralRepo,
+      mistralOcrRepository: mistralOcrRepo,
       helpers: const CloudInferenceRequestHelpers(),
     );
   });
@@ -138,6 +176,7 @@ void main() {
   tearDown(() {
     meliousRepo.close();
     mistralRepo.close();
+    mistralOcrRepo.close();
   });
 
   group('generate', () {
@@ -235,6 +274,7 @@ void main() {
         geminiRepository: geminiRepo,
         meliousRepository: fakeMeliousRepo,
         mistralRepository: mistralRepo,
+        mistralOcrRepository: mistralOcrRepo,
         helpers: const CloudInferenceRequestHelpers(),
       );
       final meliousProvider = providerOfType(InferenceProviderType.melious);
@@ -356,6 +396,7 @@ void main() {
         geminiRepository: geminiRepo,
         meliousRepository: fakeMeliousRepo,
         mistralRepository: mistralRepo,
+        mistralOcrRepository: mistralOcrRepo,
         helpers: const CloudInferenceRequestHelpers(),
       );
       final meliousProvider = providerOfType(InferenceProviderType.melious);
@@ -387,5 +428,82 @@ void main() {
         ),
       );
     });
+
+    test(
+      'routes a Mistral OCR model to the OCR endpoint, not chat completions',
+      () async {
+        final fakeOcrRepo = _FakeMistralOcrRepository();
+        generate = CloudInferenceGenerate(
+          ollamaRepository: ollamaRepo,
+          geminiRepository: geminiRepo,
+          meliousRepository: meliousRepo,
+          mistralRepository: mistralRepo,
+          mistralOcrRepository: fakeOcrRepo,
+          helpers: const CloudInferenceRequestHelpers(),
+        );
+        final mistralProvider = providerOfType(InferenceProviderType.mistral);
+
+        final chunks = await generate
+            .generateWithImages(
+              prompt,
+              baseUrl: 'https://api.mistral.ai/v1',
+              apiKey: apiKey,
+              model: 'mistral-ocr-2512',
+              temperature: null,
+              images: const ['letter-scan'],
+              provider: mistralProvider,
+            )
+            .toList();
+
+        expect(chunks.single.choices?.single.delta?.content, 'ocr markdown');
+        expect(fakeOcrRepo.calls, hasLength(1));
+        expect(fakeOcrRepo.calls.single.model, 'mistral-ocr-2512');
+        expect(fakeOcrRepo.calls.single.images, const ['letter-scan']);
+        expect(fakeOcrRepo.calls.single.baseUrl, 'https://api.mistral.ai/v1');
+        // Crucially, the OCR model must NOT hit chat completions.
+        verifyNever(
+          () => client.createChatCompletionStream(
+            request: any(named: 'request'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'a non-OCR Mistral vision model still uses chat completions',
+      () async {
+        final fakeOcrRepo = _FakeMistralOcrRepository();
+        generate = CloudInferenceGenerate(
+          ollamaRepository: ollamaRepo,
+          geminiRepository: geminiRepo,
+          meliousRepository: meliousRepo,
+          mistralRepository: mistralRepo,
+          mistralOcrRepository: fakeOcrRepo,
+          helpers: const CloudInferenceRequestHelpers(),
+        );
+        when(
+          () => client.createChatCompletionStream(
+            request: any(named: 'request'),
+          ),
+        ).thenAnswer((_) => Stream.fromIterable([chunk('pixtral vision')]));
+
+        final chunks = await generate
+            .generateWithImages(
+              prompt,
+              baseUrl: 'https://api.mistral.ai/v1',
+              apiKey: apiKey,
+              model: 'pixtral-large-latest',
+              temperature: null,
+              images: const ['photo'],
+              provider: providerOfType(InferenceProviderType.mistral),
+              overrideClient: client,
+            )
+            .toList();
+
+        expect(chunks.single.choices?.single.delta?.content, 'pixtral vision');
+        // The OCR repository is bypassed for non-OCR models.
+        expect(fakeOcrRepo.calls, isEmpty);
+      },
+    );
   });
 }

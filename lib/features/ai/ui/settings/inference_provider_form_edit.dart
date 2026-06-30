@@ -778,8 +778,8 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
     if (id.contains('ocr')) {
       return Icons.document_scanner_rounded;
     }
-    // Code-focused models.
-    if (id.contains('code') || id.contains('codestral')) {
+    // Code-focused models (covers `codestral`, which contains `code`).
+    if (id.contains('code')) {
       return Icons.code_rounded;
     }
     // Reasoning / thinking.

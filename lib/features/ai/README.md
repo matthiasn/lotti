@@ -272,6 +272,16 @@ and `magistral`/`reasoning` ids are flagged as reasoning models. Rows that match
 the curated `mistralModels` list keep their hand-tuned names and descriptions,
 and live capability metadata refines them when present.
 
+Mistral OCR models (`mistral-ocr-*`) are **not** chat-completion models — they
+live on the dedicated `POST /v1/ocr` endpoint and reject `/v1/chat/completions`
+with `invalid_model`. `CloudInferenceGenerate.generateWithImages` therefore
+special-cases `InferenceProviderType.mistral` + `MistralOcrRepository.isMistralOcrModel(model)`
+and routes to `MistralOcrRepository.extractText`, which posts each image as a
+base64 `image_url` document, concatenates the per-page Markdown, and emits it as
+a single streamed chat-completion chunk so the existing image-analysis skill
+runner appends the extracted text to the image entry unchanged. The OCR endpoint
+ignores the skill's prompt/system message — it only extracts text.
+
 ## Developer Eval Tool
 
 `tool/qwen_local_inference_eval.sh` is a narrow local oMLX/OpenAI-compatible
@@ -568,7 +578,7 @@ It is now a thin **facade**: every public method delegates to one of two collabo
 | Operation | Dedicated branches | Fallback |
 | --- | --- | --- |
 | `generate()` | Ollama, Gemini, Mistral | OpenAI-compatible chat streaming |
-| `generateWithImages()` | Ollama | OpenAI-compatible multimodal chat; Gemini receives `reasoning_effort` for its thinking mode |
+| `generateWithImages()` | Ollama, Melious, Mistral OCR (`/v1/ocr` for `mistral-ocr-*`) | OpenAI-compatible multimodal chat; Gemini receives `reasoning_effort` for its thinking mode |
 | `generateWithAudio()` | Whisper, Voxtral, MLX Audio native bridge, oMLX transcription endpoint, OpenAI transcription endpoint, Mistral transcription endpoint, Melious transcription endpoint | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` for its thinking mode |
 | `generateWithMessages()` | Gemini, Ollama, Mistral | OpenAI-compatible full-history chat |
 | `generateImage()` | Gemini, Alibaba DashScope | Unsupported for all other provider types |
