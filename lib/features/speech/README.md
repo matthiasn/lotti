@@ -92,9 +92,12 @@ Standard recording goes through `AudioRecorderRepository`, which wraps the
 - if the repository is already recording, it stops and saves
 - otherwise it starts a new recording
 
-The current recording modal exposes `record` and `stop`. The controller also
-has `pause()` and `resume()`, but that branch is not surfaced by the current
-modal UI.
+The current recording modal exposes `record`, `stop`, and `cancel`. `stop()`
+keeps the recording (creates a `JournalAudio` entry and fires automatic
+prompts); `cancel()` discards it (stops the recorder, deletes the partial
+audio file, and creates no entry — nothing is transcribed and no task agent is
+woken). The controller also has `pause()` and `resume()`, but that branch is
+not surfaced by the current modal UI.
 
 ### Recorder state
 
@@ -121,8 +124,15 @@ stateDiagram-v2
   Recording --> Paused: pause()
   Paused --> Recording: resume()
   Recording --> Stopped: record() or stop()
+  Recording --> Stopped: cancel() discards (no entry)
   Paused --> Stopped: stop()
+  Paused --> Stopped: cancel() discards (no entry)
 ```
+
+Both `stop()` and `cancel()` land in `Stopped`, but only `stop()` persists a
+`JournalAudio` and triggers downstream transcription/automatic prompts.
+`cancel()` deletes the partial file via `AudioRecorderRepository.deleteRecording`
+and resets the state as if the recording never happened.
 
 One implementation detail worth calling out: the state object still has
 `showIndicator`, but the current desktop `SidebarAudioRecordingSection` and
@@ -160,6 +170,13 @@ sequenceDiagram
 
 The persisted `JournalAudio` is created from `AudioData` and stored through
 `PersistenceLogic`. The audio file lives under `/audio/YYYY-MM-DD/`.
+
+The modal also offers a discard (✕) control next to Stop while recording, in
+both standard and realtime modes. In standard mode it calls `cancel()`, which
+stops the recorder, deletes the partially-written `/audio/YYYY-MM-DD/` file, and
+resets state without creating a `JournalAudio` — so the page returns to exactly
+how it looked before recording. In realtime mode it calls `cancelRealtime()`
+(see below).
 
 ## Realtime Recording
 
@@ -220,8 +237,11 @@ Two important implementation details:
    `AudioTranscript` to `JournalAudio.data.transcripts` and also mirrors the
    transcript into `entryText`.
 
-`cancelRealtime()` is a real third path. It tears down the recorder and
-realtime service without creating or updating a `JournalAudio` entry.
+`cancelRealtime()` is the realtime discard path (the ✕ button in realtime
+mode). It tears down the recorder and realtime service without creating or
+updating a `JournalAudio` entry. The standard-mode discard path is `cancel()`,
+which mirrors this for file-based recordings (stop + delete the partial file,
+no entry).
 
 ## Playback And Waveforms
 

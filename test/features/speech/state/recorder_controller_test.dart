@@ -97,6 +97,14 @@ void main() {
     registerFallbackValue(const rec.RecordConfig());
     registerFallbackValue(StackTrace.current);
     registerFallbackValue(
+      AudioNote(
+        createdAt: DateTime(2024),
+        audioFile: 'fallback.m4a',
+        audioDirectory: '/audio/fallback/',
+        duration: Duration.zero,
+      ),
+    );
+    registerFallbackValue(
       Metadata(
         id: 'fallback',
         createdAt: DateTime(2024),
@@ -625,6 +633,204 @@ void main() {
           );
         },
       );
+    });
+
+    group('cancel', () {
+      setUp(() {
+        when(
+          () => mockAudioRecorderRepository.deleteRecording(any()),
+        ).thenAnswer((_) async {});
+      });
+
+      AudioNote buildAudioNote() => AudioNote(
+        createdAt: DateTime(2024, 3, 15, 10, 30),
+        audioFile: 'audio.m4a',
+        audioDirectory: '/test/path/',
+        duration: const Duration(seconds: 5),
+      );
+
+      Future<AudioRecorderController> startRecording(
+        ProviderContainer c,
+      ) async {
+        when(
+          () => mockAudioRecorderRepository.hasPermission(),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockAudioRecorderRepository.startRecording(),
+        ).thenAnswer((_) async => buildAudioNote());
+        final controller = c.read(audioRecorderControllerProvider.notifier);
+        await controller.record(linkedId: 'task-id');
+        return controller;
+      }
+
+      test(
+        'resets state to stopped and discards the active recording',
+        () async {
+          final controller = await startRecording(container);
+          expect(
+            container.read(audioRecorderControllerProvider).status,
+            AudioRecorderStatus.recording,
+          );
+
+          await controller.cancel();
+
+          final state = container.read(audioRecorderControllerProvider);
+          expect(state.status, AudioRecorderStatus.stopped);
+          expect(state.progress, Duration.zero);
+          expect(state.vu, -20.0);
+          expect(state.dBFS, -160.0);
+          expect(state.showIndicator, isFalse);
+          expect(state.modalVisible, isFalse);
+          verify(() => mockAudioRecorderRepository.stopRecording()).called(1);
+          verify(
+            () => mockAudioRecorderRepository.deleteRecording(any()),
+          ).called(1);
+        },
+      );
+
+      test('is a safe no-op when no recording is in progress', () async {
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
+        );
+
+        await controller.cancel();
+
+        // No active recording (no audio note) → nothing to stop or delete.
+        verifyNever(() => mockAudioRecorderRepository.stopRecording());
+        verifyNever(
+          () => mockAudioRecorderRepository.deleteRecording(any()),
+        );
+        expect(
+          container.read(audioRecorderControllerProvider).status,
+          AudioRecorderStatus.stopped,
+        );
+      });
+
+      test('ignores a second concurrent cancel (double-tap guard)', () async {
+        final controller = await startRecording(container);
+
+        // Fire two cancels without awaiting the first, simulating a double-tap.
+        final first = controller.cancel();
+        final second = controller.cancel();
+        await Future.wait([first, second]);
+
+        // The recording is only torn down once despite the two calls.
+        verify(() => mockAudioRecorderRepository.stopRecording()).called(1);
+        verify(
+          () => mockAudioRecorderRepository.deleteRecording(any()),
+        ).called(1);
+      });
+
+      test('deletes the partial recording file when a note exists', () async {
+        final controller = await startRecording(container);
+
+        await controller.cancel();
+
+        verify(
+          () => mockAudioRecorderRepository.deleteRecording(
+            any(
+              that: isA<AudioNote>().having(
+                (n) => n.audioFile,
+                'audioFile',
+                'audio.m4a',
+              ),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('preserves inference preferences', () async {
+        final controller = await startRecording(container);
+        controller.setEnableSpeechRecognition(enable: true);
+
+        await controller.cancel();
+
+        expect(
+          container
+              .read(audioRecorderControllerProvider)
+              .enableSpeechRecognition,
+          isTrue,
+        );
+      });
+
+      test(
+        'does not trigger automatic prompts for a linked recording',
+        () async {
+          final mockTrigger = MockAutomaticPromptTrigger();
+          when(
+            () => mockTrigger.triggerAutomaticPrompts(
+              any(),
+              any(),
+              linkedTaskId: any(named: 'linkedTaskId'),
+              realtimeTranscriptProvided: any(
+                named: 'realtimeTranscriptProvided',
+              ),
+            ),
+          ).thenAnswer((_) async {});
+
+          container.dispose();
+          container = ProviderContainer(
+            overrides: [
+              audioRecorderRepositoryProvider.overrideWithValue(
+                mockAudioRecorderRepository,
+              ),
+              playerFactoryProvider.overrideWithValue(() => mockPlayer),
+              automaticPromptTriggerProvider.overrideWithValue(mockTrigger),
+            ],
+          );
+
+          final controller = await startRecording(container);
+          await controller.cancel();
+
+          verifyNever(
+            () => mockTrigger.triggerAutomaticPrompts(
+              any(),
+              any(),
+              linkedTaskId: any(named: 'linkedTaskId'),
+              realtimeTranscriptProvided: any(
+                named: 'realtimeTranscriptProvided',
+              ),
+            ),
+          );
+        },
+      );
+
+      test('logs the cancellation', () async {
+        final controller = await startRecording(container);
+
+        await controller.cancel();
+
+        verify(
+          () => mockDomainLogger.log(
+            LogDomain.speech,
+            any<String>(that: contains('Recording cancelled')),
+            subDomain: 'cancel',
+          ),
+        ).called(1);
+      });
+
+      test('captures and logs exceptions, still resetting state', () async {
+        final controller = await startRecording(container);
+
+        final testException = Exception('Test cancel error');
+        when(
+          () => mockAudioRecorderRepository.stopRecording(),
+        ).thenThrow(testException);
+
+        await controller.cancel();
+
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            testException,
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'cancel',
+          ),
+        ).called(1);
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.status, AudioRecorderStatus.stopped);
+        expect(state.progress, Duration.zero);
+      });
     });
   });
 

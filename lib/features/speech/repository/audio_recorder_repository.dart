@@ -47,6 +47,7 @@ class AudioRecorderConstants {
   static const String isRecordingSubdomain = 'isRecording';
   static const String startRecordingSubdomain = 'startRecording';
   static const String stopRecordingSubdomain = 'stopRecording';
+  static const String deleteRecordingSubdomain = 'deleteRecording';
   static const String pauseRecordingSubdomain = 'pauseRecording';
   static const String resumeRecordingSubdomain = 'resumeRecording';
   static const String disposeSubdomain = 'dispose';
@@ -216,6 +217,38 @@ class AudioRecorderRepository {
         e,
         stackTrace: stackTrace,
         subDomain: AudioRecorderConstants.stopRecordingSubdomain,
+      );
+    }
+  }
+
+  /// Deletes the on-disk file for a cancelled recording, if it still exists.
+  ///
+  /// Used when the user discards a recording instead of stopping it: the
+  /// partially-written m4a is removed so no orphaned audio lingers on disk and
+  /// no journal entry is ever created for it. Best-effort — swallows and logs
+  /// any error so cancelling never throws to the caller.
+  Future<void> deleteRecording(AudioNote audioNote) async {
+    try {
+      final docDir = getDocumentsDirectory();
+      final filePath =
+          '${docDir.path}${audioNote.audioDirectory}${audioNote.audioFile}';
+      final file = File(filePath);
+      // Synchronous existence check satisfies avoid_slow_async_io; the delete
+      // itself stays async. Any TOCTOU/IO error is caught and logged below.
+      if (file.existsSync()) {
+        await file.delete();
+        _loggingService.log(
+          LogDomain.speech,
+          'Deleted cancelled recording: $filePath',
+          subDomain: AudioRecorderConstants.deleteRecordingSubdomain,
+        );
+      }
+    } catch (e, stackTrace) {
+      _loggingService.error(
+        LogDomain.speech,
+        e,
+        stackTrace: stackTrace,
+        subDomain: AudioRecorderConstants.deleteRecordingSubdomain,
       );
     }
   }
