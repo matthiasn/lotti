@@ -526,6 +526,47 @@ void main() {
       }
     });
 
+    test('pouncing cat compresses, launches, and lands with wide support', () {
+      final phrase = CatClips.dancePhrase;
+      final pounce = CatClips.pouncingCat;
+      final handL = _targetFor(pounce, CatBones.handL).channel;
+      final handR = _targetFor(pounce, CatBones.handR).channel;
+      final footL = _targetFor(pounce, CatBones.footL).channel;
+      final footR = _targetFor(pounce, CatBones.footR).channel;
+
+      final crouch = pounce.root.sample(4 / phrase.frameCount);
+      final airborne = pounce.root.sample(8 / phrase.frameCount);
+      final landing = pounce.root.sample(12 / phrase.frameCount);
+
+      expect(
+        crouch.dy - airborne.dy,
+        greaterThan(45),
+        reason: 'pounce needs a real compression-to-launch height change',
+      );
+      expect(
+        landing.dy,
+        greaterThan(airborne.dy + 30),
+        reason: 'landing should recoil down after the airborne hit',
+      );
+
+      final launchLeft = handL.sample(8 / phrase.frameCount);
+      final launchRight = handR.sample(8 / phrase.frameCount);
+      expect(launchLeft.x, greaterThan(35));
+      expect(launchRight.x, greaterThan(95));
+      expect(launchLeft.y, lessThan(-60));
+      expect(launchRight.y, lessThan(-45));
+
+      final leftLandingFoot = footL.sample(12 / phrase.frameCount);
+      final rightLandingFoot = footR.sample(12 / phrase.frameCount);
+      expect(
+        (leftLandingFoot.x - rightLandingFoot.x).abs(),
+        greaterThan(10),
+        reason: 'landing feet should not collapse into the old crossed bundle',
+      );
+      expect(leftLandingFoot.y, greaterThan(98));
+      expect(rightLandingFoot.y, greaterThan(98));
+    });
+
     test('show clips animate in place', () {
       expect(CatClips.kick.locomotes, isFalse);
       expect(CatClips.shaku.locomotes, isFalse);
