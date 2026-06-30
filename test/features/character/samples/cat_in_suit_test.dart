@@ -341,15 +341,11 @@ void main() {
       expect(phrase.moveAtFrame(31).name, 'toe-flick hook reset');
     });
 
-    test('shaku crosses wrists, opens the elbows, then borrows a dab accent', () {
+    test('shaku crosses wrists, opens elbows, and recovers as shaku', () {
       final phrase = CatClips.dancePhrase;
       final shaku = CatClips.shaku;
       final handL = _targetFor(shaku, CatBones.handL).channel;
       final handR = _targetFor(shaku, CatBones.handR).channel;
-      final torso = shaku.channels[CatBones.torso]!;
-      final hips = shaku.channels[CatBones.hips]!;
-
-      expect(phrase.moveAtFrame(28).signature, contains('borrowed dab'));
 
       final wristCrossLeft = handL.sample(17 / phrase.frameCount);
       final wristCrossRight = handR.sample(17 / phrase.frameCount);
@@ -368,8 +364,8 @@ void main() {
         reason: 'the wrist-cross should live at chest height',
       );
 
-      final openLeft = handL.sample(19 / phrase.frameCount);
-      final openRight = handR.sample(19 / phrase.frameCount);
+      final openLeft = handL.sample(21 / phrase.frameCount);
+      final openRight = handR.sample(21 / phrase.frameCount);
       expect(openLeft.x, lessThan(-42));
       expect(openRight.x, greaterThan(42));
       expect(
@@ -392,40 +388,36 @@ void main() {
             'held folded-arm pose',
       );
 
-      final dabLeft = handL.sample(28 / phrase.frameCount);
-      final dabRight = handR.sample(28 / phrase.frameCount);
+      final recoveryCrossLeft = handL.sample(29 / phrase.frameCount);
+      final recoveryCrossRight = handR.sample(29 / phrase.frameCount);
       expect(
-        dabLeft.x,
-        lessThan(-55),
-        reason: 'dab accent should extend the lead left paw diagonally up-left',
+        recoveryCrossLeft.x,
+        lessThan(-35),
+        reason:
+            'the final phrase should recover through shaku arm vocabulary, '
+            'not a generic forward punch',
       );
-      expect(dabLeft.y, lessThan(-112));
+      expect(recoveryCrossLeft.y, lessThan(-45));
       expect(
-        dabRight.x,
-        lessThan(-10),
-        reason: 'opposite paw should cross the face rather than stay in the X',
+        recoveryCrossRight.x,
+        greaterThan(35),
+        reason:
+            'the opposite paw should open as part of the shaku recovery, '
+            'not stay parked at the chest',
       );
-      expect(dabRight.y, lessThan(-76));
+      expect(recoveryCrossRight.y, lessThan(-39));
       expect(
-        dabRight.x - dabLeft.x,
-        greaterThan(38),
-        reason: 'the two paws should form a readable diagonal dab silhouette',
+        recoveryCrossRight.x - recoveryCrossLeft.x,
+        greaterThan(70),
+        reason: 'the final recovery should keep a readable open arm silhouette',
       );
 
       expect(
         _targetDistance(handL, 28, 29),
-        lessThan(7),
-        reason: 'the dab should hold for a beat instead of flickering past',
-      );
-      expect(
-        torso.sample(28 / phrase.frameCount).rotation,
-        lessThan(torso.sample(24 / phrase.frameCount).rotation - 0.05),
-        reason: 'the dab needs a small shoulder counter-lean, not only arm IK',
-      );
-      expect(
-        hips.sample(28 / phrase.frameCount).rotation,
-        greaterThan(hips.sample(24 / phrase.frameCount).rotation + 0.04),
-        reason: 'the hip should load under the upper-body diagonal',
+        lessThan(36),
+        reason:
+            'the final shaku recovery should travel smoothly instead of '
+            'snapping through the loop pickup',
       );
 
       final loopLeft = handL.sample(32 / phrase.frameCount);
@@ -526,7 +518,7 @@ void main() {
       }
     });
 
-    test('pouncing cat compresses, launches, and lands with wide support', () {
+    test('pouncing cat keeps the cat flavor inside a compact groove', () {
       final phrase = CatClips.dancePhrase;
       final pounce = CatClips.pouncingCat;
       final handL = _targetFor(pounce, CatBones.handL).channel;
@@ -534,37 +526,60 @@ void main() {
       final footL = _targetFor(pounce, CatBones.footL).channel;
       final footR = _targetFor(pounce, CatBones.footR).channel;
 
-      final crouch = pounce.root.sample(4 / phrase.frameCount);
-      final airborne = pounce.root.sample(8 / phrase.frameCount);
-      final landing = pounce.root.sample(12 / phrase.frameCount);
+      final lowPocket = pounce.root.sample(4 / phrase.frameCount);
+      final rebound = pounce.root.sample(6 / phrase.frameCount);
+      final rightSettle = pounce.root.sample(12 / phrase.frameCount);
+      final secondLaunch = pounce.root.sample(24 / phrase.frameCount);
 
       expect(
-        crouch.dy - airborne.dy,
-        greaterThan(45),
-        reason: 'pounce needs a real compression-to-launch height change',
+        lowPocket.dy - rebound.dy,
+        greaterThan(14),
+        reason: 'the cat groove needs a visible down-up bounce, not a glide',
       );
       expect(
-        landing.dy,
-        greaterThan(airborne.dy + 30),
-        reason: 'landing should recoil down after the airborne hit',
+        rightSettle.dx,
+        greaterThan(12),
+        reason: 'the compact pounce should settle to the right side',
+      );
+      expect(
+        secondLaunch.dx,
+        lessThan(-12),
+        reason: 'the mirrored pounce should spring back to the left side',
       );
 
       final launchLeft = handL.sample(8 / phrase.frameCount);
       final launchRight = handR.sample(8 / phrase.frameCount);
-      expect(launchLeft.x, greaterThan(35));
-      expect(launchRight.x, greaterThan(95));
-      expect(launchLeft.y, lessThan(-60));
-      expect(launchRight.y, lessThan(-45));
+      expect(launchLeft.x, greaterThan(20));
+      expect(launchRight.x, greaterThan(80));
+      expect(launchLeft.y, lessThan(-55));
+      expect(launchRight.y, lessThan(-42));
 
-      final leftLandingFoot = footL.sample(12 / phrase.frameCount);
-      final rightLandingFoot = footR.sample(12 / phrase.frameCount);
+      for (final frame in [4, 12, 20, 28]) {
+        final p = frame / phrase.frameCount;
+        final leftFoot = footL.sample(p);
+        final rightFoot = footR.sample(p);
+        expect(
+          rightFoot.x - leftFoot.x,
+          greaterThan(58),
+          reason: 'pounce frame $frame needs a stable stance, not crossed feet',
+        );
+        expect(
+          leftFoot.y,
+          greaterThan(97),
+          reason: 'pounce frame $frame should stay grounded on the left foot',
+        );
+        expect(
+          rightFoot.y,
+          greaterThan(97),
+          reason: 'pounce frame $frame should stay grounded on the right foot',
+        );
+      }
       expect(
-        (leftLandingFoot.x - rightLandingFoot.x).abs(),
-        greaterThan(10),
-        reason: 'landing feet should not collapse into the old crossed bundle',
+        _targetDistance(handL, 12, 16),
+        lessThan(90),
+        reason:
+            'pounce should rebound into groove rather than teleporting arms',
       );
-      expect(leftLandingFoot.y, greaterThan(98));
-      expect(rightLandingFoot.y, greaterThan(98));
     });
 
     test('show clips animate in place', () {
