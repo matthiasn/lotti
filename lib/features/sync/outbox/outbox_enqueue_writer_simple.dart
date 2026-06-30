@@ -62,6 +62,28 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'id=${msg.id}',
   );
 
+  Future<bool> enqueueSavedTaskFilter({
+    required SyncSavedTaskFilter msg,
+    required OutboxCompanion commonFields,
+  }) => enqueueSimple(
+    commonFields: commonFields,
+    subject: 'savedTaskFilter',
+    logMessage:
+        'enqueue type=SyncSavedTaskFilter subject=savedTaskFilter '
+        'id=${msg.filter.id}',
+  );
+
+  Future<bool> enqueueSavedTaskFilterDelete({
+    required SyncSavedTaskFilterDelete msg,
+    required OutboxCompanion commonFields,
+  }) => enqueueSimple(
+    commonFields: commonFields,
+    subject: 'savedTaskFilterDelete',
+    logMessage:
+        'enqueue type=SyncSavedTaskFilterDelete subject=savedTaskFilterDelete '
+        'id=${msg.id}',
+  );
+
   /// Enqueues a config-flag change, coalescing with an already-pending row for
   /// the same flag when one exists: the existing row's message is updated in
   /// place (keeping the higher priority) so only the latest value ships.

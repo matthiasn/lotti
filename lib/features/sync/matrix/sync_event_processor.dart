@@ -40,6 +40,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -90,6 +91,7 @@ class SyncEventProcessor {
     required this._loggingService,
     required this._updateNotifications,
     required this._aiConfigRepository,
+    required this._savedTaskFiltersRepository,
     required this._settingsDb,
     this._domainLogger,
     SyncJournalEntityLoader? journalEntityLoader,
@@ -107,6 +109,7 @@ class SyncEventProcessor {
   final DomainLogger? _domainLogger;
   final UpdateNotifications _updateNotifications;
   final AiConfigRepository _aiConfigRepository;
+  final SavedTaskFiltersRepository _savedTaskFiltersRepository;
   final SettingsDb _settingsDb;
   final SyncJournalEntityLoader _journalEntityLoader;
   final SyncSequenceLogService? _sequenceLogService;
@@ -370,9 +373,11 @@ class SyncEventProcessor {
 
   /// Returns the `originatingHostId` field for any [SyncMessage] family
   /// that carries one. Families without the field (`SyncEntityDefinition`,
-  /// `SyncAiConfig`, `SyncAiConfigDelete`, `SyncThemingSelection`,
+  /// `SyncAiConfig`, `SyncAiConfigDelete`, `SyncSavedTaskFilter`,
+  /// `SyncSavedTaskFilterDelete`, `SyncThemingSelection`,
   /// `SyncBackfillRequest`, `SyncBackfillResponse`) return null and bypass
-  /// the self-echo check.
+  /// the self-echo check. The saved-task-filter families instead rely on the
+  /// `fromSync` flag in `SavedTaskFiltersRepository` to suppress re-enqueue.
   static String? _originatingHostIdOf(SyncMessage message) => switch (message) {
     final SyncJournalEntity m => m.originatingHostId,
     final SyncEntryLink m => m.originatingHostId,

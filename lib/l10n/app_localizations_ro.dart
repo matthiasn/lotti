@@ -8698,6 +8698,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadAiConfigDelete => 'Ștergere configurare AI';
 
   @override
+  String get syncPayloadSavedTaskFilter => 'Filtru de sarcini salvat';
+
+  @override
+  String get syncPayloadSavedTaskFilterDelete =>
+      'Ștergere filtru de sarcini salvat';
+
+  @override
   String get syncPayloadBackfillRequest => 'Cerere de completare';
 
   @override
@@ -8765,6 +8772,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncStepMeasurables => 'Măsurabile';
+
+  @override
+  String get syncStepSavedTaskFilters => 'Filtre de sarcini salvate';
 
   @override
   String get taskActionBarAudioRecordingActive =>

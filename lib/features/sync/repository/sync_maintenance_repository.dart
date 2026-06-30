@@ -14,6 +14,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -54,6 +56,7 @@ class SyncMaintenanceRepository {
     required this._outboxService,
     required this._loggingService,
     required this._aiConfigRepository,
+    required this._savedTaskFiltersRepository,
     required this._agentRepository,
     required this._vectorClockService,
   });
@@ -62,6 +65,7 @@ class SyncMaintenanceRepository {
   final OutboxService _outboxService;
   final DomainLogger _loggingService;
   final AiConfigRepository _aiConfigRepository;
+  final SavedTaskFiltersRepository _savedTaskFiltersRepository;
   final AgentRepository _agentRepository;
   final VectorClockService _vectorClockService;
 
@@ -144,6 +148,22 @@ class SyncMaintenanceRepository {
         shouldSync: (_) => true,
       );
 
+  // Saved task filters: re-enqueue every locally persisted definition so a
+  // previously local-only saved filter converges across devices. Order is
+  // per-device and intentionally not synced.
+  late final SyncOperation<SavedTaskFilter> _savedTaskFiltersSyncOperation =
+      _createOperation<SavedTaskFilter>(
+        step: SyncStep.savedTaskFilters,
+        fetchEntities: _savedTaskFiltersRepository.load,
+        enqueueEntity: (filter) => _outboxService.enqueueMessage(
+          SyncMessage.savedTaskFilter(
+            filter: filter,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+        shouldSync: (_) => true,
+      );
+
   late final SyncOperation<AgentDomainEntity> _agentEntitySyncOperation =
       _createOperation<AgentDomainEntity>(
         step: SyncStep.agentEntities,
@@ -177,6 +197,7 @@ class SyncMaintenanceRepository {
     SyncStep.dashboards: _dashboardSyncOperation,
     SyncStep.habits: _habitSyncOperation,
     SyncStep.aiSettings: _aiConfigSyncOperation,
+    SyncStep.savedTaskFilters: _savedTaskFiltersSyncOperation,
     SyncStep.agentEntities: _agentEntitySyncOperation,
     SyncStep.agentLinks: _agentLinkSyncOperation,
   };
@@ -354,6 +375,17 @@ class SyncMaintenanceRepository {
     );
   }
 
+  Future<void> syncSavedTaskFilters({
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runOperation<SavedTaskFilter>(
+      _savedTaskFiltersSyncOperation,
+      onProgress: onProgress,
+      onDetailedProgress: onDetailedProgress,
+    );
+  }
+
   Future<void> syncAgentEntities({
     SyncProgressCallback? onProgress,
     SyncDetailedProgressCallback? onDetailedProgress,
@@ -526,6 +558,7 @@ class SyncMaintenanceRepository {
     SyncStep.dashboards: 'syncDashboards',
     SyncStep.habits: 'syncHabits',
     SyncStep.aiSettings: 'syncAiSettings',
+    SyncStep.savedTaskFilters: 'syncSavedTaskFilters',
     SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
     SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
     SyncStep.agentEntities: 'syncAgentEntities',
@@ -567,6 +600,7 @@ final syncMaintenanceRepositoryProvider = Provider<SyncMaintenanceRepository>((
     outboxService: ref.watch(outboxServiceProvider),
     loggingService: getIt<DomainLogger>(),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    savedTaskFiltersRepository: ref.watch(savedTaskFiltersRepositoryProvider),
     agentRepository: ref.watch(agentRepositoryProvider),
     vectorClockService: getIt<VectorClockService>(),
   );

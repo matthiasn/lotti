@@ -56,6 +56,8 @@ import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart'
 import 'package:lotti/features/sync/state/conflict_notification_observer.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -151,6 +153,17 @@ Future<void> registerSingletons() async {
   final journalDb = getIt<JournalDb>();
   final notificationsDb = getIt<NotificationsDb>();
   final settingsDb = getIt<SettingsDb>();
+  // Per-item saved-task-filter persistence + sync. Resolves OutboxService
+  // lazily (mirrors AiConfigRepository), so it can be constructed here — ahead
+  // of the OutboxService registration below — and injected into the
+  // SyncEventProcessor.
+  final savedTaskFiltersRepository = SavedTaskFiltersRepository(
+    SavedTaskFiltersPersistence(settingsDb),
+    getIt<UpdateNotifications>(),
+  );
+  getIt.registerSingleton<SavedTaskFiltersRepository>(
+    savedTaskFiltersRepository,
+  );
   final syncNodeProfileRepository = SyncNodeProfileRepository(
     settingsDb: settingsDb,
   );
@@ -253,6 +266,7 @@ Future<void> registerSingletons() async {
     domainLogger: domainLogger,
     updateNotifications: getIt<UpdateNotifications>(),
     aiConfigRepository: aiConfigRepository,
+    savedTaskFiltersRepository: savedTaskFiltersRepository,
     settingsDb: settingsDb,
     journalEntityLoader: SmartJournalEntityLoader(
       attachmentIndex: attachmentIndex,

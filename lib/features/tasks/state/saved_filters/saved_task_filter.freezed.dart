@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SavedTaskFilter {
 
- String get id; String get name; TasksFilter get filter;
+ String get id; String get name; TasksFilter get filter; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of SavedTaskFilter
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $SavedTaskFilterCopyWith<SavedTaskFilter> get copyWith => _$SavedTaskFilterCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SavedTaskFilter&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.filter, filter) || other.filter == filter));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SavedTaskFilter&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,filter);
+int get hashCode => Object.hash(runtimeType,id,name,filter,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'SavedTaskFilter(id: $id, name: $name, filter: $filter)';
+  return 'SavedTaskFilter(id: $id, name: $name, filter: $filter, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $SavedTaskFilterCopyWith<$Res>  {
   factory $SavedTaskFilterCopyWith(SavedTaskFilter value, $Res Function(SavedTaskFilter) _then) = _$SavedTaskFilterCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, TasksFilter filter
+ String id, String name, TasksFilter filter, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -65,12 +65,14 @@ class _$SavedTaskFilterCopyWithImpl<$Res>
 
 /// Create a copy of SavedTaskFilter
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? filter = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? filter = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,filter: null == filter ? _self.filter : filter // ignore: cast_nullable_to_non_nullable
-as TasksFilter,
+as TasksFilter,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 /// Create a copy of SavedTaskFilter
@@ -164,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  TasksFilter filter)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  TasksFilter filter,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SavedTaskFilter() when $default != null:
-return $default(_that.id,_that.name,_that.filter);case _:
+return $default(_that.id,_that.name,_that.filter,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -185,10 +187,10 @@ return $default(_that.id,_that.name,_that.filter);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  TasksFilter filter)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  TasksFilter filter,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _SavedTaskFilter():
-return $default(_that.id,_that.name,_that.filter);case _:
+return $default(_that.id,_that.name,_that.filter,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +207,10 @@ return $default(_that.id,_that.name,_that.filter);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  TasksFilter filter)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  TasksFilter filter,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _SavedTaskFilter() when $default != null:
-return $default(_that.id,_that.name,_that.filter);case _:
+return $default(_that.id,_that.name,_that.filter,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -220,12 +222,14 @@ return $default(_that.id,_that.name,_that.filter);case _:
 
 @JsonSerializable(explicitToJson: true)
 class _SavedTaskFilter implements SavedTaskFilter {
-  const _SavedTaskFilter({required this.id, required this.name, required this.filter});
+  const _SavedTaskFilter({required this.id, required this.name, required this.filter, this.createdAt, this.updatedAt});
   factory _SavedTaskFilter.fromJson(Map<String, dynamic> json) => _$SavedTaskFilterFromJson(json);
 
 @override final  String id;
 @override final  String name;
 @override final  TasksFilter filter;
+@override final  DateTime? createdAt;
+@override final  DateTime? updatedAt;
 
 /// Create a copy of SavedTaskFilter
 /// with the given fields replaced by the non-null parameter values.
@@ -240,16 +244,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SavedTaskFilter&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.filter, filter) || other.filter == filter));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SavedTaskFilter&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,filter);
+int get hashCode => Object.hash(runtimeType,id,name,filter,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'SavedTaskFilter(id: $id, name: $name, filter: $filter)';
+  return 'SavedTaskFilter(id: $id, name: $name, filter: $filter, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -260,7 +264,7 @@ abstract mixin class _$SavedTaskFilterCopyWith<$Res> implements $SavedTaskFilter
   factory _$SavedTaskFilterCopyWith(_SavedTaskFilter value, $Res Function(_SavedTaskFilter) _then) = __$SavedTaskFilterCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, TasksFilter filter
+ String id, String name, TasksFilter filter, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -277,12 +281,14 @@ class __$SavedTaskFilterCopyWithImpl<$Res>
 
 /// Create a copy of SavedTaskFilter
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? filter = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? filter = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_SavedTaskFilter(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,filter: null == filter ? _self.filter : filter // ignore: cast_nullable_to_non_nullable
-as TasksFilter,
+as TasksFilter,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 

@@ -32,6 +32,8 @@ int priorityForMessage(SyncMessage message) {
     SyncEntityDefinition() => OutboxPriority.low.index,
     SyncAiConfig() => OutboxPriority.low.index,
     SyncAiConfigDelete() => OutboxPriority.low.index,
+    SyncSavedTaskFilter() => OutboxPriority.low.index,
+    SyncSavedTaskFilterDelete() => OutboxPriority.low.index,
     SyncConfigFlag() => OutboxPriority.normal.index,
     SyncOutboxBundle() => OutboxPriority.normal.index,
     SyncSyncNodeProfile() => OutboxPriority.low.index,

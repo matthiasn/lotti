@@ -329,6 +329,9 @@ class QueueApplyAdapter {
       // ai_config_db.
       aiConfig: (_) => false,
       aiConfigDelete: (_) => false,
+      // settings_db (saved task filters).
+      savedTaskFilter: (_) => false,
+      savedTaskFilterDelete: (_) => false,
       // config_flags table in JournalDb.
       configFlag: (_) => true,
       // settings_db.

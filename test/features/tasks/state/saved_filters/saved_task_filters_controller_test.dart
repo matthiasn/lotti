@@ -3,11 +3,16 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 const _filterA = TasksFilter(
@@ -26,8 +31,24 @@ const _filterC = TasksFilter(
 void main() {
   late TestGetItMocks mocks;
 
+  setUpAll(() {
+    registerFallbackValue(
+      const SyncMessage.savedTaskFilterDelete(id: 'fallback'),
+    );
+  });
+
   setUp(() async {
     mocks = await setUpTestGetIt();
+    final outbox = MockOutboxService();
+    when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+    getIt
+      ..registerSingleton<OutboxService>(outbox)
+      ..registerSingleton<SavedTaskFiltersRepository>(
+        SavedTaskFiltersRepository(
+          SavedTaskFiltersPersistence(mocks.settingsDb),
+          mocks.updateNotifications,
+        ),
+      );
   });
 
   tearDown(tearDownTestGetIt);

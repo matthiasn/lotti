@@ -14707,6 +14707,18 @@ abstract class AppLocalizations {
   /// **'AI configuration delete'**
   String get syncPayloadAiConfigDelete;
 
+  /// No description provided for @syncPayloadSavedTaskFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved task filter'**
+  String get syncPayloadSavedTaskFilter;
+
+  /// No description provided for @syncPayloadSavedTaskFilterDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved task filter delete'**
+  String get syncPayloadSavedTaskFilterDelete;
+
   /// No description provided for @syncPayloadBackfillRequest.
   ///
   /// In en, this message translates to:
@@ -14838,6 +14850,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Measurables'**
   String get syncStepMeasurables;
+
+  /// No description provided for @syncStepSavedTaskFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved task filters'**
+  String get syncStepSavedTaskFilters;
 
   /// No description provided for @taskActionBarAudioRecordingActive.
   ///

@@ -394,6 +394,8 @@ class MatrixService {
       entryLink: (_) => 'entryLink',
       aiConfig: (_) => 'aiConfig',
       aiConfigDelete: (_) => 'aiConfigDelete',
+      savedTaskFilter: (_) => 'savedTaskFilter',
+      savedTaskFilterDelete: (_) => 'savedTaskFilterDelete',
       configFlag: (_) => 'configFlag',
       themingSelection: (_) => 'themingSelection',
       notification: (_) => 'notification',

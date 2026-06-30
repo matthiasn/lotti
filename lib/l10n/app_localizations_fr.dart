@@ -8713,6 +8713,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncPayloadAiConfigDelete => 'Suppression de configuration AI';
 
   @override
+  String get syncPayloadSavedTaskFilter => 'Filtre de tâches enregistré';
+
+  @override
+  String get syncPayloadSavedTaskFilterDelete =>
+      'Suppression du filtre de tâches enregistré';
+
+  @override
   String get syncPayloadBackfillRequest => 'Demande de rattrapage';
 
   @override
@@ -8780,6 +8787,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncStepMeasurables => 'Mesurables';
+
+  @override
+  String get syncStepSavedTaskFilters => 'Filtres de tâches enregistrés';
 
   @override
   String get taskActionBarAudioRecordingActive =>

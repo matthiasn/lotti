@@ -8636,6 +8636,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadAiConfigDelete => 'Smazání nastavení AI';
 
   @override
+  String get syncPayloadSavedTaskFilter => 'Uložený filtr úkolů';
+
+  @override
+  String get syncPayloadSavedTaskFilterDelete =>
+      'Smazání uloženého filtru úkolů';
+
+  @override
   String get syncPayloadBackfillRequest => 'Žádost o doplnění';
 
   @override
@@ -8701,6 +8708,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncStepMeasurables => 'Měřitelné hodnoty';
+
+  @override
+  String get syncStepSavedTaskFilters => 'Uložené filtry úkolů';
 
   @override
   String get taskActionBarAudioRecordingActive => 'Probíhá nahrávání zvuku';

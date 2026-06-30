@@ -8596,6 +8596,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPayloadAiConfigDelete => 'AI-Konfiguration löschen';
 
   @override
+  String get syncPayloadSavedTaskFilter => 'Gespeicherter Aufgabenfilter';
+
+  @override
+  String get syncPayloadSavedTaskFilterDelete =>
+      'Gespeicherter Aufgabenfilter gelöscht';
+
+  @override
   String get syncPayloadBackfillRequest => 'Nachfüllanfrage';
 
   @override
@@ -8663,6 +8670,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncStepMeasurables => 'Messgrößen';
+
+  @override
+  String get syncStepSavedTaskFilters => 'Gespeicherte Aufgabenfilter';
 
   @override
   String get taskActionBarAudioRecordingActive => 'Audioaufnahme läuft';

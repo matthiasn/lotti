@@ -412,6 +412,15 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
           msg: msg,
           commonFields: commonFields,
         ),
+        final SyncSavedTaskFilter msg => _enqueueWriter.enqueueSavedTaskFilter(
+          msg: msg,
+          commonFields: commonFields,
+        ),
+        final SyncSavedTaskFilterDelete msg =>
+          _enqueueWriter.enqueueSavedTaskFilterDelete(
+            msg: msg,
+            commonFields: commonFields,
+          ),
         final SyncConfigFlag msg => _enqueueWriter.enqueueConfigFlag(
           msg: msg,
           commonFields: commonFields,

@@ -69,6 +69,18 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           fromSync: true,
         );
         return null;
+      case SyncSavedTaskFilter(:final filter):
+        await _savedTaskFiltersRepository.upsert(
+          filter,
+          fromSync: true,
+        );
+        return null;
+      case SyncSavedTaskFilterDelete(:final id):
+        await _savedTaskFiltersRepository.delete(
+          id,
+          fromSync: true,
+        );
+        return null;
       case SyncConfigFlag(:final name, :final description, :final status):
         final configFlag = ConfigFlag(
           name: name,

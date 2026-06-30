@@ -9,10 +9,13 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -28,6 +31,7 @@ void main() {
   late MockOutboxService mockOutboxService;
   late MockDomainLogger mockLoggingService;
   late MockAiConfigRepository mockAiConfigRepository;
+  late MockSavedTaskFiltersRepository mockSavedTaskFiltersRepository;
   late MockAgentRepository mockAgentRepository;
   late MockVectorClockService mockVectorClockService;
   late SyncMaintenanceRepository syncMaintenanceRepository;
@@ -70,6 +74,10 @@ void main() {
     mockOutboxService = MockOutboxService();
     mockLoggingService = MockDomainLogger();
     mockAiConfigRepository = MockAiConfigRepository();
+    mockSavedTaskFiltersRepository = MockSavedTaskFiltersRepository();
+    when(
+      () => mockSavedTaskFiltersRepository.load(),
+    ).thenAnswer((_) async => []);
     mockAgentRepository = MockAgentRepository();
     mockVectorClockService = MockVectorClockService();
 
@@ -87,6 +95,7 @@ void main() {
       outboxService: mockOutboxService,
       loggingService: mockLoggingService,
       aiConfigRepository: mockAiConfigRepository,
+      savedTaskFiltersRepository: mockSavedTaskFiltersRepository,
       agentRepository: mockAgentRepository,
       vectorClockService: mockVectorClockService,
     );
@@ -950,6 +959,9 @@ void main() {
             mockAiConfigRepository,
           ),
           agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+          savedTaskFiltersRepositoryProvider.overrideWithValue(
+            mockSavedTaskFiltersRepository,
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -958,6 +970,33 @@ void main() {
 
       expect(repository, isA<SyncMaintenanceRepository>());
     });
+  });
+
+  group('syncSavedTaskFilters', () {
+    test(
+      'enqueues an update message for every persisted saved filter',
+      () async {
+        when(() => mockSavedTaskFiltersRepository.load()).thenAnswer(
+          (_) async => const [
+            SavedTaskFilter(id: 'sv-1', name: 'A', filter: TasksFilter()),
+            SavedTaskFilter(id: 'sv-2', name: 'B', filter: TasksFilter()),
+          ],
+        );
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        await syncMaintenanceRepository.syncSavedTaskFilters();
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured.cast<SyncMessage>();
+        expect(
+          captured.whereType<SyncSavedTaskFilter>().map((m) => m.filter.id),
+          ['sv-1', 'sv-2'],
+        );
+      },
+    );
   });
 
   group('backfillAgentEntityClocks', () {
@@ -1320,6 +1359,7 @@ void main() {
       SyncStep.dashboards: 'syncDashboards',
       SyncStep.habits: 'syncHabits',
       SyncStep.aiSettings: 'syncAiSettings',
+      SyncStep.savedTaskFilters: 'syncSavedTaskFilters',
       SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
       SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
       SyncStep.agentEntities: 'syncAgentEntities',
@@ -1332,6 +1372,7 @@ void main() {
       SyncStep.dashboards: 'fetchTotals_dashboards',
       SyncStep.habits: 'fetchTotals_habits',
       SyncStep.aiSettings: 'fetchTotals_aiSettings',
+      SyncStep.savedTaskFilters: 'fetchTotals_savedTaskFilters',
       SyncStep.backfillAgentEntityClocks:
           'fetchTotals_backfillAgentEntityClocks',
       SyncStep.backfillAgentLinkClocks: 'fetchTotals_backfillAgentLinkClocks',
