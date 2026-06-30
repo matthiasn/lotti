@@ -4458,7 +4458,7 @@ class CatClips {
   /// under a head deliberately kept facing camera, the torso reads as a pendulum
   /// swinging beneath a fixed head; pulling the side-to-side commit in tames that
   /// without flattening the move.
-  static const double _shakuLateralGain = 0.7;
+  static const double _shakuLateralGain = 0.45;
 
   /// [_shakuBodyGrooveKeys] with only the LATERAL groove scaled by
   /// [_shakuLateralGain] — the side-to-side weight commit (`rootDx` +
@@ -4540,72 +4540,72 @@ class CatClips {
   // paw extends diagonally up-left while the right paw crosses the face.
   static const _shakuHandLTargetKeys = [
     DanceIkTargetKey(0, x: -30, y: -32), // low-ready, own side
-    DanceIkTargetKey(1, x: 12, y: -54, ease: Ease.easeOutBack), // wrist-cross
-    DanceIkTargetKey(2, x: 18, y: -58),
-    DanceIkTargetKey(3, x: 10, y: -52), // loose cross, not a centered clamp
-    DanceIkTargetKey(4, x: -44, y: -48), // release before the side hit
-    DanceIkTargetKey(5, x: -42, y: -40, ease: Ease.easeOutBack), // side prep
-    DanceIkTargetKey(6, x: -46, y: -38), // compact shoulder hit
-    DanceIkTargetKey(7, x: -24, y: -34),
-    DanceIkTargetKey(8, x: 14, y: -50, ease: Ease.easeOutBack),
-    DanceIkTargetKey(9, x: 24, y: -56),
-    DanceIkTargetKey(10, x: -12, y: -48),
-    DanceIkTargetKey(11, x: 18, y: -50),
-    DanceIkTargetKey(12, x: -28, y: -34, ease: Ease.easeOutBack),
-    DanceIkTargetKey(13, x: -42, y: -40),
-    DanceIkTargetKey(14, x: -46, y: -38),
-    DanceIkTargetKey(15, x: -22, y: -34),
-    DanceIkTargetKey(16, x: 14, y: -56, ease: Ease.easeOutBack),
-    DanceIkTargetKey(17, x: 18, y: -60),
-    DanceIkTargetKey(18, x: 10, y: -58),
-    DanceIkTargetKey(19, x: 12, y: -54),
-    DanceIkTargetKey(20, x: -28, y: -34, ease: Ease.easeOutBack),
-    DanceIkTargetKey(21, x: -42, y: -40),
-    DanceIkTargetKey(22, x: -46, y: -38),
-    DanceIkTargetKey(23, x: -22, y: -34),
-    DanceIkTargetKey(24, x: 10, y: -52, ease: Ease.easeOutBack),
-    DanceIkTargetKey(25, x: 18, y: -58),
-    DanceIkTargetKey(26, x: -18, y: -60),
-    DanceIkTargetKey(27, x: 6, y: -54),
+    DanceIkTargetKey(1, x: 24, y: -62, ease: Ease.easeOutBack), // wrist-cross
+    DanceIkTargetKey(2, x: 30, y: -66),
+    DanceIkTargetKey(3, x: 18, y: -58), // loose cross, not a centered clamp
+    DanceIkTargetKey(4, x: -32, y: -48), // forearm sweep setup
+    DanceIkTargetKey(5, x: -12, y: -44, ease: Ease.easeOutBack), // sweep across
+    DanceIkTargetKey(6, x: 6, y: -42), // wrist-roll hit, not a wide pump
+    DanceIkTargetKey(7, x: -24, y: -36),
+    DanceIkTargetKey(8, x: 24, y: -60, ease: Ease.easeOutBack),
+    DanceIkTargetKey(9, x: 30, y: -64),
+    DanceIkTargetKey(10, x: -14, y: -48),
+    DanceIkTargetKey(11, x: 20, y: -54),
+    DanceIkTargetKey(12, x: -28, y: -36, ease: Ease.easeOutBack),
+    DanceIkTargetKey(13, x: -12, y: -44),
+    DanceIkTargetKey(14, x: 6, y: -42),
+    DanceIkTargetKey(15, x: -22, y: -36),
+    DanceIkTargetKey(16, x: 24, y: -64, ease: Ease.easeOutBack),
+    DanceIkTargetKey(17, x: 30, y: -68),
+    DanceIkTargetKey(18, x: 20, y: -62),
+    DanceIkTargetKey(19, x: 18, y: -58),
+    DanceIkTargetKey(20, x: -28, y: -36, ease: Ease.easeOutBack),
+    DanceIkTargetKey(21, x: -12, y: -44),
+    DanceIkTargetKey(22, x: 6, y: -42),
+    DanceIkTargetKey(23, x: -22, y: -36),
+    DanceIkTargetKey(24, x: 22, y: -60, ease: Ease.easeOutBack),
+    DanceIkTargetKey(25, x: 30, y: -66),
+    DanceIkTargetKey(26, x: -20, y: -62),
+    DanceIkTargetKey(27, x: 8, y: -58),
     DanceIkTargetKey(28, x: -24, y: -50, ease: Ease.easeOutBack),
-    DanceIkTargetKey(29, x: -44, y: -48),
-    DanceIkTargetKey(30, x: -50, y: -42),
-    DanceIkTargetKey(31, x: -42, y: -40),
+    DanceIkTargetKey(29, x: -8, y: -52),
+    DanceIkTargetKey(30, x: 10, y: -46),
+    DanceIkTargetKey(31, x: -22, y: -40),
     DanceIkTargetKey(32, x: -30, y: -32, ease: Ease.easeOutBack),
   ];
   static const _shakuHandRTargetKeys = [
     DanceIkTargetKey(0, x: 30, y: -32),
-    DanceIkTargetKey(1, x: 34, y: -30, ease: Ease.easeOutBack),
-    DanceIkTargetKey(2, x: 42, y: -28),
-    DanceIkTargetKey(3, x: 24, y: -34),
-    DanceIkTargetKey(4, x: 36, y: -42), // release before the guard hit
-    DanceIkTargetKey(5, x: 42, y: -40, ease: Ease.easeOutBack),
-    DanceIkTargetKey(6, x: 46, y: -38),
-    DanceIkTargetKey(7, x: 24, y: -34),
-    DanceIkTargetKey(8, x: -14, y: -40, ease: Ease.easeOutBack),
-    DanceIkTargetKey(9, x: -24, y: -42),
-    DanceIkTargetKey(10, x: -34, y: -48),
-    DanceIkTargetKey(11, x: -12, y: -42),
-    DanceIkTargetKey(12, x: 28, y: -34, ease: Ease.easeOutBack),
-    DanceIkTargetKey(13, x: 42, y: -40),
-    DanceIkTargetKey(14, x: 46, y: -38),
-    DanceIkTargetKey(15, x: 22, y: -34),
-    DanceIkTargetKey(16, x: -14, y: -40, ease: Ease.easeOutBack),
-    DanceIkTargetKey(17, x: -10, y: -44),
-    DanceIkTargetKey(18, x: -18, y: -48),
-    DanceIkTargetKey(19, x: -12, y: -46),
-    DanceIkTargetKey(20, x: 28, y: -34, ease: Ease.easeOutBack),
-    DanceIkTargetKey(21, x: 42, y: -40),
-    DanceIkTargetKey(22, x: 46, y: -38),
-    DanceIkTargetKey(23, x: 22, y: -34),
+    DanceIkTargetKey(1, x: -22, y: -42, ease: Ease.easeOutBack),
+    DanceIkTargetKey(2, x: -30, y: -38),
+    DanceIkTargetKey(3, x: -18, y: -36),
+    DanceIkTargetKey(4, x: 30, y: -42), // release before the roll hit
+    DanceIkTargetKey(5, x: 10, y: -44, ease: Ease.easeOutBack),
+    DanceIkTargetKey(6, x: -8, y: -42),
+    DanceIkTargetKey(7, x: 24, y: -36),
+    DanceIkTargetKey(8, x: -22, y: -44, ease: Ease.easeOutBack),
+    DanceIkTargetKey(9, x: -30, y: -42),
+    DanceIkTargetKey(10, x: -38, y: -50),
+    DanceIkTargetKey(11, x: -16, y: -44),
+    DanceIkTargetKey(12, x: 28, y: -36, ease: Ease.easeOutBack),
+    DanceIkTargetKey(13, x: 10, y: -44),
+    DanceIkTargetKey(14, x: -8, y: -42),
+    DanceIkTargetKey(15, x: 22, y: -36),
+    DanceIkTargetKey(16, x: -22, y: -44, ease: Ease.easeOutBack),
+    DanceIkTargetKey(17, x: -30, y: -42),
+    DanceIkTargetKey(18, x: -24, y: -50),
+    DanceIkTargetKey(19, x: -16, y: -48),
+    DanceIkTargetKey(20, x: 28, y: -36, ease: Ease.easeOutBack),
+    DanceIkTargetKey(21, x: 10, y: -44),
+    DanceIkTargetKey(22, x: -8, y: -42),
+    DanceIkTargetKey(23, x: 22, y: -36),
     DanceIkTargetKey(24, x: -10, y: -42, ease: Ease.easeOutBack),
     DanceIkTargetKey(25, x: -18, y: -46),
     DanceIkTargetKey(26, x: -30, y: -52),
     DanceIkTargetKey(27, x: -12, y: -46),
     DanceIkTargetKey(28, x: 24, y: -44, ease: Ease.easeOutBack),
-    DanceIkTargetKey(29, x: 44, y: -42),
-    DanceIkTargetKey(30, x: 50, y: -40),
-    DanceIkTargetKey(31, x: 32, y: -40),
+    DanceIkTargetKey(29, x: 8, y: -50),
+    DanceIkTargetKey(30, x: -10, y: -46),
+    DanceIkTargetKey(31, x: 24, y: -40),
     DanceIkTargetKey(32, x: 30, y: -32, ease: Ease.easeOutBack),
   ];
   static final KeyframeIkTargetChannel _shakuHandLTarget = _dancePhrase
@@ -4613,42 +4613,42 @@ class CatClips {
   static final KeyframeIkTargetChannel _shakuHandRTarget = _dancePhrase
       .ikTargetChannel(_shakuHandRTargetKeys);
   static const _shakuFootLTargetKeys = [
-    DanceIkTargetKey(0, x: -36, y: 100),
-    DanceIkTargetKey(1, x: -52, y: 100),
-    DanceIkTargetKey(3, x: -60, y: 100),
-    DanceIkTargetKey(5, x: -64, y: 100),
-    DanceIkTargetKey(8, x: -28, y: 100),
-    DanceIkTargetKey(9, x: -34, y: 100),
-    DanceIkTargetKey(11, x: -48, y: 100),
-    DanceIkTargetKey(13, x: -56, y: 100),
-    DanceIkTargetKey(16, x: -38, y: 100),
-    DanceIkTargetKey(17, x: -54, y: 100),
-    DanceIkTargetKey(19, x: -62, y: 100),
-    DanceIkTargetKey(21, x: -58, y: 100),
-    DanceIkTargetKey(24, x: -34, y: 100),
-    DanceIkTargetKey(25, x: -40, y: 100),
-    DanceIkTargetKey(27, x: -48, y: 100),
-    DanceIkTargetKey(29, x: -56, y: 100),
-    DanceIkTargetKey(32, x: -36, y: 100),
+    DanceIkTargetKey(0, x: -34, y: 101), // planted support, visible outside
+    DanceIkTargetKey(1, x: -36, y: 101),
+    DanceIkTargetKey(3, x: -38, y: 101),
+    DanceIkTargetKey(5, x: -36, y: 101),
+    DanceIkTargetKey(8, x: -32, y: 101),
+    DanceIkTargetKey(9, x: -34, y: 101),
+    DanceIkTargetKey(11, x: -36, y: 101),
+    DanceIkTargetKey(13, x: -34, y: 101),
+    DanceIkTargetKey(16, x: -22, y: 92), // free foot scuffs, unweighted
+    DanceIkTargetKey(17, x: -8, y: 86),
+    DanceIkTargetKey(19, x: 10, y: 88),
+    DanceIkTargetKey(21, x: -8, y: 90),
+    DanceIkTargetKey(24, x: -20, y: 92),
+    DanceIkTargetKey(25, x: -6, y: 86),
+    DanceIkTargetKey(27, x: 12, y: 88),
+    DanceIkTargetKey(29, x: -6, y: 90),
+    DanceIkTargetKey(32, x: -34, y: 101),
   ];
   static const _shakuFootRTargetKeys = [
-    DanceIkTargetKey(0, x: 40, y: 100),
-    DanceIkTargetKey(1, x: 56, y: 100),
-    DanceIkTargetKey(3, x: 66, y: 100),
-    DanceIkTargetKey(5, x: 70, y: 100),
-    DanceIkTargetKey(8, x: 32, y: 100),
-    DanceIkTargetKey(9, x: 38, y: 100),
-    DanceIkTargetKey(11, x: 52, y: 100),
-    DanceIkTargetKey(13, x: 60, y: 100),
-    DanceIkTargetKey(16, x: 42, y: 100),
-    DanceIkTargetKey(17, x: 58, y: 100),
-    DanceIkTargetKey(19, x: 68, y: 100),
-    DanceIkTargetKey(21, x: 62, y: 100),
-    DanceIkTargetKey(24, x: 38, y: 100),
-    DanceIkTargetKey(25, x: 44, y: 100),
-    DanceIkTargetKey(27, x: 52, y: 100),
-    DanceIkTargetKey(29, x: 60, y: 100),
-    DanceIkTargetKey(32, x: 40, y: 100),
+    DanceIkTargetKey(0, x: 22, y: 92), // free foot brushes across
+    DanceIkTargetKey(1, x: 8, y: 86),
+    DanceIkTargetKey(3, x: -10, y: 88),
+    DanceIkTargetKey(5, x: 8, y: 90),
+    DanceIkTargetKey(8, x: 20, y: 92),
+    DanceIkTargetKey(9, x: 6, y: 86),
+    DanceIkTargetKey(11, x: -12, y: 88),
+    DanceIkTargetKey(13, x: 6, y: 90),
+    DanceIkTargetKey(16, x: 34, y: 101), // planted support, visible outside
+    DanceIkTargetKey(17, x: 36, y: 101),
+    DanceIkTargetKey(19, x: 38, y: 101),
+    DanceIkTargetKey(21, x: 36, y: 101),
+    DanceIkTargetKey(24, x: 32, y: 101),
+    DanceIkTargetKey(25, x: 34, y: 101),
+    DanceIkTargetKey(27, x: 36, y: 101),
+    DanceIkTargetKey(29, x: 34, y: 101),
+    DanceIkTargetKey(32, x: 22, y: 92),
   ];
   static final KeyframeIkTargetChannel _shakuFootLTarget = _dancePhrase
       .ikTargetChannel(_shakuFootLTargetKeys, smooth: true);
@@ -4891,7 +4891,7 @@ class CatClips {
         // committed weight transfer rather than the whole trio sliding.
         // Deepened so the COM clearly commits over the planted foot each bar.
         const SineRootChannel(
-          swayAmplitude: -8,
+          swayAmplitude: -2,
         ),
         const SineRootChannel(
           bobAmplitude: -0.1,
@@ -5000,7 +5000,7 @@ class CatClips {
     DanceIkTargetKey(1, x: -62, y: 2),
     DanceIkTargetKey(2, x: -66, y: 8), // low counter to right-foot heel dig
     DanceIkTargetKey(3, x: -38, y: -10),
-    DanceIkTargetKey(4, x: -18, y: -30), // stamp guard
+    DanceIkTargetKey(4, x: -30, y: 8), // down/across stomp punch
     DanceIkTargetKey(5, x: 12, y: -12),
     DanceIkTargetKey(6, x: 44, y: 8), // low counter to left-foot heel dig
     DanceIkTargetKey(7, x: -18, y: -28),
@@ -5008,7 +5008,7 @@ class CatClips {
     DanceIkTargetKey(9, x: -62, y: 2),
     DanceIkTargetKey(10, x: -66, y: 8),
     DanceIkTargetKey(11, x: -38, y: -10),
-    DanceIkTargetKey(12, x: -18, y: -30),
+    DanceIkTargetKey(12, x: -30, y: 8),
     DanceIkTargetKey(13, x: 12, y: -12),
     DanceIkTargetKey(14, x: 44, y: 8),
     DanceIkTargetKey(15, x: -18, y: -28),
@@ -5016,7 +5016,7 @@ class CatClips {
     DanceIkTargetKey(17, x: -62, y: 2),
     DanceIkTargetKey(18, x: -66, y: 8),
     DanceIkTargetKey(19, x: -38, y: -10),
-    DanceIkTargetKey(20, x: -18, y: -30),
+    DanceIkTargetKey(20, x: -30, y: 8),
     DanceIkTargetKey(21, x: 12, y: -12),
     DanceIkTargetKey(22, x: 44, y: 8),
     DanceIkTargetKey(23, x: -18, y: -28),
@@ -5024,7 +5024,7 @@ class CatClips {
     DanceIkTargetKey(25, x: -62, y: 2),
     DanceIkTargetKey(26, x: -66, y: 8),
     DanceIkTargetKey(27, x: -38, y: -10),
-    DanceIkTargetKey(28, x: -18, y: -30),
+    DanceIkTargetKey(28, x: -30, y: 8),
     DanceIkTargetKey(29, x: 12, y: -12),
     DanceIkTargetKey(30, x: 44, y: 8),
     DanceIkTargetKey(31, x: -18, y: -28),
@@ -5035,7 +5035,7 @@ class CatClips {
     DanceIkTargetKey(1, x: -12, y: -12),
     DanceIkTargetKey(2, x: -44, y: 8),
     DanceIkTargetKey(3, x: 18, y: -28),
-    DanceIkTargetKey(4, x: 54, y: -8),
+    DanceIkTargetKey(4, x: 30, y: 8),
     DanceIkTargetKey(5, x: 62, y: 2),
     DanceIkTargetKey(6, x: 66, y: 8),
     DanceIkTargetKey(7, x: 38, y: -10),
@@ -5043,7 +5043,7 @@ class CatClips {
     DanceIkTargetKey(9, x: -12, y: -12),
     DanceIkTargetKey(10, x: -44, y: 8),
     DanceIkTargetKey(11, x: 18, y: -28),
-    DanceIkTargetKey(12, x: 54, y: -8),
+    DanceIkTargetKey(12, x: 30, y: 8),
     DanceIkTargetKey(13, x: 62, y: 2),
     DanceIkTargetKey(14, x: 66, y: 8),
     DanceIkTargetKey(15, x: 38, y: -10),
@@ -5051,7 +5051,7 @@ class CatClips {
     DanceIkTargetKey(17, x: -12, y: -12),
     DanceIkTargetKey(18, x: -44, y: 8),
     DanceIkTargetKey(19, x: 18, y: -28),
-    DanceIkTargetKey(20, x: 54, y: -8),
+    DanceIkTargetKey(20, x: 30, y: 8),
     DanceIkTargetKey(21, x: 62, y: 2),
     DanceIkTargetKey(22, x: 66, y: 8),
     DanceIkTargetKey(23, x: 38, y: -10),
@@ -5059,7 +5059,7 @@ class CatClips {
     DanceIkTargetKey(25, x: -12, y: -12),
     DanceIkTargetKey(26, x: -44, y: 8),
     DanceIkTargetKey(27, x: 18, y: -28),
-    DanceIkTargetKey(28, x: 54, y: -8),
+    DanceIkTargetKey(28, x: 30, y: 8),
     DanceIkTargetKey(29, x: 62, y: 2),
     DanceIkTargetKey(30, x: 66, y: 8),
     DanceIkTargetKey(31, x: 38, y: -10),
@@ -5076,55 +5076,55 @@ class CatClips {
   // then the free foot digs out, pops back under the knee, and the other foot
   // stamps.
   static const _zankuFootLTargetKeys = [
-    DanceIkTargetKey(0, x: -32, y: 101), // stamp (support [0-4])
+    DanceIkTargetKey(0, x: -32, y: 101), // stamp/support, visible base
     DanceIkTargetKey(2, x: -32, y: 100), // planted, held
     DanceIkTargetKey(4, x: -32, y: 101), // plant end — swap
-    DanceIkTargetKey(5, x: -30, y: 82), // knee lift
-    DanceIkTargetKey(6, x: -58, y: 98), // outward ankle flick
+    DanceIkTargetKey(5, x: -26, y: 76), // knee lift
+    DanceIkTargetKey(6, x: -62, y: 98), // outward ankle flick
     DanceIkTargetKey(7, x: -24, y: 92), // recoil under hip
     DanceIkTargetKey(8, x: -32, y: 101), // stamp
     DanceIkTargetKey(10, x: -32, y: 100),
     DanceIkTargetKey(12, x: -32, y: 101),
-    DanceIkTargetKey(13, x: -30, y: 82),
-    DanceIkTargetKey(14, x: -60, y: 98),
+    DanceIkTargetKey(13, x: -26, y: 76),
+    DanceIkTargetKey(14, x: -64, y: 98),
     DanceIkTargetKey(15, x: -24, y: 92),
     DanceIkTargetKey(16, x: -32, y: 101), // stamp
     DanceIkTargetKey(18, x: -32, y: 100),
     DanceIkTargetKey(20, x: -32, y: 101),
-    DanceIkTargetKey(21, x: -30, y: 82),
-    DanceIkTargetKey(22, x: -58, y: 98),
+    DanceIkTargetKey(21, x: -26, y: 76),
+    DanceIkTargetKey(22, x: -62, y: 98),
     DanceIkTargetKey(23, x: -24, y: 92),
     DanceIkTargetKey(24, x: -32, y: 101), // stamp
     DanceIkTargetKey(26, x: -32, y: 100),
     DanceIkTargetKey(28, x: -32, y: 101),
-    DanceIkTargetKey(29, x: -30, y: 82),
-    DanceIkTargetKey(30, x: -60, y: 98),
+    DanceIkTargetKey(29, x: -26, y: 76),
+    DanceIkTargetKey(30, x: -64, y: 98),
     DanceIkTargetKey(31, x: -24, y: 92),
     DanceIkTargetKey(32, x: -32, y: 101), // == frame 0
   ];
   // RIGHT foot: opposite phase — digs out on 2/10/18/26, stamps on 4/12/20/28.
   static const _zankuFootRTargetKeys = [
     DanceIkTargetKey(0, x: 24, y: 92), // recoil from previous flick
-    DanceIkTargetKey(1, x: 30, y: 82), // knee lift
-    DanceIkTargetKey(2, x: 58, y: 98), // outward ankle flick
+    DanceIkTargetKey(1, x: 26, y: 76), // knee lift
+    DanceIkTargetKey(2, x: 62, y: 98), // outward ankle flick
     DanceIkTargetKey(3, x: 24, y: 92), // recoil under hip
-    DanceIkTargetKey(4, x: 32, y: 101), // stamp (support [4-8])
+    DanceIkTargetKey(4, x: 32, y: 101), // stamp/support, visible base
     DanceIkTargetKey(6, x: 32, y: 100), // planted, held
     DanceIkTargetKey(8, x: 24, y: 92),
-    DanceIkTargetKey(9, x: 30, y: 82),
-    DanceIkTargetKey(10, x: 58, y: 98),
+    DanceIkTargetKey(9, x: 26, y: 76),
+    DanceIkTargetKey(10, x: 62, y: 98),
     DanceIkTargetKey(11, x: 24, y: 92),
     DanceIkTargetKey(12, x: 32, y: 101), // stamp
     DanceIkTargetKey(14, x: 32, y: 100),
     DanceIkTargetKey(16, x: 24, y: 92),
-    DanceIkTargetKey(17, x: 30, y: 82),
-    DanceIkTargetKey(18, x: 58, y: 98),
+    DanceIkTargetKey(17, x: 26, y: 76),
+    DanceIkTargetKey(18, x: 62, y: 98),
     DanceIkTargetKey(19, x: 24, y: 92),
     DanceIkTargetKey(20, x: 32, y: 101), // stamp
     DanceIkTargetKey(22, x: 32, y: 100),
     DanceIkTargetKey(24, x: 24, y: 92),
-    DanceIkTargetKey(25, x: 30, y: 82),
-    DanceIkTargetKey(26, x: 58, y: 98),
+    DanceIkTargetKey(25, x: 26, y: 76),
+    DanceIkTargetKey(26, x: 62, y: 98),
     DanceIkTargetKey(27, x: 24, y: 92),
     DanceIkTargetKey(28, x: 32, y: 101), // stamp
     DanceIkTargetKey(30, x: 24, y: 92), // pickup for loop
@@ -5204,234 +5204,234 @@ class CatClips {
   static const _zankuCommitKeys = [
     DanceBodyKey(
       0,
-      rootDx: -32,
-      rootDy: 42,
-      pelvisRotation: -0.22,
-      chestRotation: 0.18,
+      rootDx: -28,
+      rootDy: 50,
+      pelvisRotation: -0.26,
+      chestRotation: 0.24,
     ),
     DanceBodyKey(
       1,
-      rootDx: -36,
-      rootDy: 48,
-      pelvisRotation: -0.28,
-      chestRotation: 0.22,
+      rootDx: -30,
+      rootDy: 38,
+      pelvisRotation: -0.3,
+      chestRotation: 0.32,
     ),
     DanceBodyKey(
       2,
-      rootDx: -34,
-      rootDy: 34,
-      pelvisRotation: -0.24,
-      chestRotation: 0.2,
+      rootDx: -28,
+      rootDy: 24,
+      pelvisRotation: -0.28,
+      chestRotation: 0.34,
     ),
     DanceBodyKey(
       3,
-      rootDx: -22,
-      rootDy: 28,
-      pelvisRotation: -0.12,
-      chestRotation: 0.1,
+      rootDx: -18,
+      rootDy: 32,
+      pelvisRotation: -0.16,
+      chestRotation: 0.18,
     ),
     DanceBodyKey(
       4,
-      rootDx: 34,
-      rootDy: 66,
-      pelvisRotation: 0.32,
-      chestRotation: -0.3,
+      rootDx: 28,
+      rootDy: 76,
+      pelvisRotation: 0.38,
+      chestRotation: -0.36,
     ),
     DanceBodyKey(
       5,
-      rootDx: 36,
-      rootDy: 48,
-      pelvisRotation: 0.28,
-      chestRotation: -0.22,
+      rootDx: 30,
+      rootDy: 38,
+      pelvisRotation: 0.3,
+      chestRotation: -0.32,
     ),
     DanceBodyKey(
       6,
-      rootDx: 34,
-      rootDy: 34,
-      pelvisRotation: 0.24,
-      chestRotation: -0.2,
+      rootDx: 28,
+      rootDy: 24,
+      pelvisRotation: 0.28,
+      chestRotation: -0.34,
     ),
     DanceBodyKey(
       7,
-      rootDx: 22,
-      rootDy: 28,
-      pelvisRotation: 0.12,
-      chestRotation: -0.1,
+      rootDx: 18,
+      rootDy: 32,
+      pelvisRotation: 0.16,
+      chestRotation: -0.18,
     ),
     DanceBodyKey(
       8,
-      rootDx: -34,
-      rootDy: 66,
-      pelvisRotation: -0.32,
-      chestRotation: 0.3,
+      rootDx: -28,
+      rootDy: 76,
+      pelvisRotation: -0.38,
+      chestRotation: 0.36,
     ),
     DanceBodyKey(
       9,
-      rootDx: -36,
-      rootDy: 48,
-      pelvisRotation: -0.28,
-      chestRotation: 0.22,
+      rootDx: -30,
+      rootDy: 38,
+      pelvisRotation: -0.3,
+      chestRotation: 0.32,
     ),
     DanceBodyKey(
       10,
-      rootDx: -34,
-      rootDy: 34,
-      pelvisRotation: -0.24,
-      chestRotation: 0.2,
+      rootDx: -28,
+      rootDy: 24,
+      pelvisRotation: -0.28,
+      chestRotation: 0.34,
     ),
     DanceBodyKey(
       11,
-      rootDx: -22,
-      rootDy: 28,
-      pelvisRotation: -0.12,
-      chestRotation: 0.1,
+      rootDx: -18,
+      rootDy: 32,
+      pelvisRotation: -0.16,
+      chestRotation: 0.18,
     ),
     DanceBodyKey(
       12,
-      rootDx: 34,
-      rootDy: 66,
-      pelvisRotation: 0.32,
-      chestRotation: -0.3,
+      rootDx: 28,
+      rootDy: 76,
+      pelvisRotation: 0.38,
+      chestRotation: -0.36,
     ),
     DanceBodyKey(
       13,
-      rootDx: 36,
-      rootDy: 48,
-      pelvisRotation: 0.28,
-      chestRotation: -0.22,
+      rootDx: 30,
+      rootDy: 38,
+      pelvisRotation: 0.3,
+      chestRotation: -0.32,
     ),
     DanceBodyKey(
       14,
-      rootDx: 34,
-      rootDy: 34,
-      pelvisRotation: 0.24,
-      chestRotation: -0.2,
+      rootDx: 28,
+      rootDy: 24,
+      pelvisRotation: 0.28,
+      chestRotation: -0.34,
     ),
     DanceBodyKey(
       15,
-      rootDx: 22,
-      rootDy: 28,
-      pelvisRotation: 0.12,
-      chestRotation: -0.1,
+      rootDx: 18,
+      rootDy: 32,
+      pelvisRotation: 0.16,
+      chestRotation: -0.18,
     ),
     DanceBodyKey(
       16,
-      rootDx: -34,
-      rootDy: 66,
-      pelvisRotation: -0.32,
-      chestRotation: 0.3,
+      rootDx: -28,
+      rootDy: 76,
+      pelvisRotation: -0.38,
+      chestRotation: 0.36,
     ),
     DanceBodyKey(
       17,
-      rootDx: -36,
-      rootDy: 48,
-      pelvisRotation: -0.28,
-      chestRotation: 0.22,
+      rootDx: -30,
+      rootDy: 38,
+      pelvisRotation: -0.3,
+      chestRotation: 0.32,
     ),
     DanceBodyKey(
       18,
-      rootDx: -34,
-      rootDy: 34,
-      pelvisRotation: -0.24,
-      chestRotation: 0.2,
+      rootDx: -28,
+      rootDy: 24,
+      pelvisRotation: -0.28,
+      chestRotation: 0.34,
     ),
     DanceBodyKey(
       19,
-      rootDx: -22,
-      rootDy: 28,
-      pelvisRotation: -0.12,
-      chestRotation: 0.1,
+      rootDx: -18,
+      rootDy: 32,
+      pelvisRotation: -0.16,
+      chestRotation: 0.18,
     ),
     DanceBodyKey(
       20,
-      rootDx: 34,
-      rootDy: 66,
-      pelvisRotation: 0.32,
-      chestRotation: -0.3,
+      rootDx: 28,
+      rootDy: 76,
+      pelvisRotation: 0.38,
+      chestRotation: -0.36,
     ),
     DanceBodyKey(
       21,
-      rootDx: 36,
-      rootDy: 48,
-      pelvisRotation: 0.28,
-      chestRotation: -0.22,
+      rootDx: 30,
+      rootDy: 38,
+      pelvisRotation: 0.3,
+      chestRotation: -0.32,
     ),
     DanceBodyKey(
       22,
-      rootDx: 34,
-      rootDy: 34,
-      pelvisRotation: 0.24,
-      chestRotation: -0.2,
+      rootDx: 28,
+      rootDy: 24,
+      pelvisRotation: 0.28,
+      chestRotation: -0.34,
     ),
     DanceBodyKey(
       23,
-      rootDx: 22,
-      rootDy: 28,
-      pelvisRotation: 0.12,
-      chestRotation: -0.1,
+      rootDx: 18,
+      rootDy: 32,
+      pelvisRotation: 0.16,
+      chestRotation: -0.18,
     ),
     DanceBodyKey(
       24,
-      rootDx: -34,
-      rootDy: 66,
-      pelvisRotation: -0.32,
-      chestRotation: 0.3,
+      rootDx: -28,
+      rootDy: 76,
+      pelvisRotation: -0.38,
+      chestRotation: 0.36,
     ),
     DanceBodyKey(
       25,
-      rootDx: -36,
-      rootDy: 48,
-      pelvisRotation: -0.28,
-      chestRotation: 0.22,
+      rootDx: -30,
+      rootDy: 38,
+      pelvisRotation: -0.3,
+      chestRotation: 0.32,
     ),
     DanceBodyKey(
       26,
-      rootDx: -34,
-      rootDy: 34,
-      pelvisRotation: -0.24,
-      chestRotation: 0.2,
+      rootDx: -28,
+      rootDy: 24,
+      pelvisRotation: -0.28,
+      chestRotation: 0.34,
     ),
     DanceBodyKey(
       27,
-      rootDx: -22,
-      rootDy: 28,
-      pelvisRotation: -0.12,
-      chestRotation: 0.1,
+      rootDx: -18,
+      rootDy: 32,
+      pelvisRotation: -0.16,
+      chestRotation: 0.18,
     ),
     DanceBodyKey(
       28,
-      rootDx: 34,
-      rootDy: 66,
-      pelvisRotation: 0.32,
-      chestRotation: -0.3,
+      rootDx: 28,
+      rootDy: 76,
+      pelvisRotation: 0.38,
+      chestRotation: -0.36,
     ),
     DanceBodyKey(
       29,
-      rootDx: 36,
-      rootDy: 48,
-      pelvisRotation: 0.28,
-      chestRotation: -0.22,
+      rootDx: 30,
+      rootDy: 38,
+      pelvisRotation: 0.3,
+      chestRotation: -0.32,
     ),
     DanceBodyKey(
       30,
-      rootDx: 34,
-      rootDy: 34,
-      pelvisRotation: 0.24,
-      chestRotation: -0.2,
+      rootDx: 28,
+      rootDy: 24,
+      pelvisRotation: 0.28,
+      chestRotation: -0.34,
     ),
     DanceBodyKey(
       31,
-      rootDx: 22,
-      rootDy: 28,
-      pelvisRotation: 0.12,
-      chestRotation: -0.1,
+      rootDx: 18,
+      rootDy: 32,
+      pelvisRotation: 0.16,
+      chestRotation: -0.18,
     ),
     DanceBodyKey(
       32,
-      rootDx: -32,
-      rootDy: 42,
-      pelvisRotation: -0.22,
-      chestRotation: 0.18,
+      rootDx: -28,
+      rootDy: 50,
+      pelvisRotation: -0.26,
+      chestRotation: 0.24,
     ),
   ];
 
@@ -5452,7 +5452,6 @@ class CatClips {
       limbTargets: _zankuLimbTargets,
       supportFootWorldAnchor: true,
       root: LayeredRootChannel([
-        _dancePhrase.bodyRootChannel(_shakuGrooveCalm, smooth: true),
         _dancePhrase.bodyRootChannel(_danceBodyAccentKeys, smooth: true),
         // Per-BEAT weight commit that DWELLS over the stamping foot (replaces the
         // sine sway that just passed through centre). See [_zankuCommitKeys].
@@ -5471,12 +5470,10 @@ class CatClips {
       channels: {
         ...base.channels,
         CatBones.hips: LayeredJointChannel([
-          _dancePhrase.bodyPelvisChannel(_shakuGrooveCalm),
           _dancePhrase.bodyPelvisChannel(_danceBodyAccentKeys, smooth: true),
           _dancePhrase.bodyPelvisChannel(_zankuCommitKeys, smooth: true),
         ]),
         CatBones.torso: LayeredJointChannel([
-          _dancePhrase.bodyChestChannel(_shakuGrooveCalm),
           _dancePhrase.bodyChestChannel(_danceBodyAccentKeys, smooth: true),
           _dancePhrase.bodyChestChannel(_zankuCommitKeys, smooth: true),
           // Leaned-back confident carriage — the Zanku posture (constant bias).
@@ -5912,10 +5909,10 @@ class CatClips {
     DanceIkTargetKey(8, x: 94, y: -112),
     DanceIkTargetKey(10, x: 92, y: -94), // shoulder/scapula starts lifting
     DanceIkTargetKey(11, x: 104, y: -116), // elbow follows before the fist
-    DanceIkTargetKey(12, x: 120, y: -140), // THRUST UP+OUT — present
-    DanceIkTargetKey(13, x: 124, y: -150), // overshoot well past the peak
-    DanceIkTargetKey(14, x: 120, y: -142), // proud hold, not immediate drop
-    DanceIkTargetKey(15, x: 118, y: -140),
+    DanceIkTargetKey(12, x: 82, y: -162), // vertical declarative present
+    DanceIkTargetKey(13, x: 84, y: -174), // overshoot well past the peak
+    DanceIkTargetKey(14, x: 82, y: -166), // proud hold, not immediate drop
+    DanceIkTargetKey(15, x: 82, y: -162),
     DanceIkTargetKey(16, x: 54, y: -34),
     DanceIkTargetKey(20, x: 44, y: -34),
     DanceIkTargetKey(22, x: 50, y: -32),
@@ -5943,12 +5940,12 @@ class CatClips {
     DanceIkTargetKey(27, x: -104, y: -116),
     DanceIkTargetKey(
       28,
-      x: -120,
-      y: -140,
-    ), // THRUST UP+OUT — present (mirror hit)
-    DanceIkTargetKey(29, x: -124, y: -150), // overshoot well past the peak
-    DanceIkTargetKey(30, x: -120, y: -142), // proud hold
-    DanceIkTargetKey(31, x: -118, y: -140),
+      x: -82,
+      y: -162,
+    ), // vertical declarative present (mirror hit)
+    DanceIkTargetKey(29, x: -84, y: -174), // overshoot well past the peak
+    DanceIkTargetKey(30, x: -82, y: -166), // proud hold
+    DanceIkTargetKey(31, x: -82, y: -162),
     DanceIkTargetKey(32, x: -88, y: -92),
   ];
   static final KeyframeIkTargetChannel _bugaHandLTarget = _dancePhrase
@@ -5958,29 +5955,29 @@ class CatClips {
   static const _bugaFootLTargetKeys = [
     DanceIkTargetKey(0, x: -48, y: 100),
     DanceIkTargetKey(4, x: -58, y: 101),
-    DanceIkTargetKey(8, x: -64, y: 101),
-    DanceIkTargetKey(11, x: -68, y: 101),
-    DanceIkTargetKey(12, x: -72, y: 101),
-    DanceIkTargetKey(14, x: -72, y: 101),
+    DanceIkTargetKey(8, x: -70, y: 101),
+    DanceIkTargetKey(11, x: -76, y: 101),
+    DanceIkTargetKey(12, x: -80, y: 101),
+    DanceIkTargetKey(14, x: -80, y: 101),
     DanceIkTargetKey(16, x: -48, y: 100),
     DanceIkTargetKey(20, x: -58, y: 101),
-    DanceIkTargetKey(24, x: -66, y: 101),
-    DanceIkTargetKey(28, x: -74, y: 101),
-    DanceIkTargetKey(30, x: -74, y: 101),
+    DanceIkTargetKey(24, x: -72, y: 101),
+    DanceIkTargetKey(28, x: -82, y: 101),
+    DanceIkTargetKey(30, x: -82, y: 101),
     DanceIkTargetKey(32, x: -48, y: 100),
   ];
   static const _bugaFootRTargetKeys = [
     DanceIkTargetKey(0, x: 52, y: 100),
     DanceIkTargetKey(4, x: 62, y: 101),
-    DanceIkTargetKey(8, x: 68, y: 101),
-    DanceIkTargetKey(12, x: 74, y: 101),
-    DanceIkTargetKey(14, x: 74, y: 101),
+    DanceIkTargetKey(8, x: 74, y: 101),
+    DanceIkTargetKey(12, x: 82, y: 101),
+    DanceIkTargetKey(14, x: 82, y: 101),
     DanceIkTargetKey(16, x: 52, y: 100),
     DanceIkTargetKey(20, x: 62, y: 101),
-    DanceIkTargetKey(24, x: 68, y: 101),
-    DanceIkTargetKey(27, x: 72, y: 101),
-    DanceIkTargetKey(28, x: 74, y: 101),
-    DanceIkTargetKey(30, x: 74, y: 101),
+    DanceIkTargetKey(24, x: 74, y: 101),
+    DanceIkTargetKey(27, x: 78, y: 101),
+    DanceIkTargetKey(28, x: 82, y: 101),
+    DanceIkTargetKey(30, x: 82, y: 101),
     DanceIkTargetKey(32, x: 52, y: 100),
   ];
   static final KeyframeIkTargetChannel _bugaFootLTarget = _dancePhrase
@@ -6441,7 +6438,7 @@ class CatClips {
     // off-frame.
     DanceBodyKey(
       0,
-      rootDx: -54,
+      rootDx: -44,
       rootDy: 46,
       pelvisRotation: -0.28,
       chestRotation: 0.24,
@@ -6449,7 +6446,7 @@ class CatClips {
     ), // over LEFT foot
     DanceBodyKey(
       2,
-      rootDx: -46,
+      rootDx: -36,
       rootDy: 12,
       pelvisRotation: -0.12,
       chestRotation: 0.12,
@@ -6457,7 +6454,7 @@ class CatClips {
     ),
     DanceBodyKey(
       4,
-      rootDx: 54,
+      rootDx: 44,
       rootDy: 46,
       pelvisRotation: 0.28,
       chestRotation: -0.24,
@@ -6465,7 +6462,7 @@ class CatClips {
     ), // snap to RIGHT
     DanceBodyKey(
       6,
-      rootDx: 46,
+      rootDx: 36,
       rootDy: 12,
       pelvisRotation: 0.12,
       chestRotation: -0.12,
@@ -6473,7 +6470,7 @@ class CatClips {
     ),
     DanceBodyKey(
       8,
-      rootDx: -54,
+      rootDx: -44,
       rootDy: 46,
       pelvisRotation: -0.28,
       chestRotation: 0.24,
@@ -6481,7 +6478,7 @@ class CatClips {
     ),
     DanceBodyKey(
       10,
-      rootDx: -46,
+      rootDx: -36,
       rootDy: 12,
       pelvisRotation: -0.12,
       chestRotation: 0.12,
@@ -6489,7 +6486,7 @@ class CatClips {
     ),
     DanceBodyKey(
       12,
-      rootDx: 54,
+      rootDx: 44,
       rootDy: 46,
       pelvisRotation: 0.28,
       chestRotation: -0.24,
@@ -6497,7 +6494,7 @@ class CatClips {
     ),
     DanceBodyKey(
       14,
-      rootDx: 46,
+      rootDx: 36,
       rootDy: 12,
       pelvisRotation: 0.12,
       chestRotation: -0.12,
@@ -6505,7 +6502,7 @@ class CatClips {
     ),
     DanceBodyKey(
       16,
-      rootDx: -54,
+      rootDx: -44,
       rootDy: 46,
       pelvisRotation: -0.28,
       chestRotation: 0.24,
@@ -6513,7 +6510,7 @@ class CatClips {
     ),
     DanceBodyKey(
       18,
-      rootDx: -46,
+      rootDx: -36,
       rootDy: 12,
       pelvisRotation: -0.12,
       chestRotation: 0.12,
@@ -6521,7 +6518,7 @@ class CatClips {
     ),
     DanceBodyKey(
       20,
-      rootDx: 54,
+      rootDx: 44,
       rootDy: 46,
       pelvisRotation: 0.28,
       chestRotation: -0.24,
@@ -6529,7 +6526,7 @@ class CatClips {
     ),
     DanceBodyKey(
       22,
-      rootDx: 46,
+      rootDx: 36,
       rootDy: 12,
       pelvisRotation: 0.12,
       chestRotation: -0.12,
@@ -6537,7 +6534,7 @@ class CatClips {
     ),
     DanceBodyKey(
       24,
-      rootDx: -56,
+      rootDx: -46,
       rootDy: 46,
       pelvisRotation: -0.32,
       chestRotation: 0.28,
@@ -6545,7 +6542,7 @@ class CatClips {
     ),
     DanceBodyKey(
       26,
-      rootDx: -46,
+      rootDx: -36,
       rootDy: 12,
       pelvisRotation: -0.1,
       chestRotation: 0.1,
@@ -6553,7 +6550,7 @@ class CatClips {
     ),
     DanceBodyKey(
       28,
-      rootDx: 56,
+      rootDx: 46,
       rootDy: 46,
       pelvisRotation: 0.32,
       chestRotation: -0.28,
@@ -6561,7 +6558,7 @@ class CatClips {
     ),
     DanceBodyKey(
       30,
-      rootDx: 46,
+      rootDx: 36,
       rootDy: 12,
       pelvisRotation: 0.1,
       chestRotation: -0.1,
@@ -6569,7 +6566,7 @@ class CatClips {
     ),
     DanceBodyKey(
       32,
-      rootDx: -54,
+      rootDx: -44,
       rootDy: 46,
       pelvisRotation: -0.28,
       chestRotation: 0.24,
@@ -6586,94 +6583,126 @@ class CatClips {
   // footL lands on the downbeats (frames 0/8/16/24); footR on the 2/4 (4/12/
   // 20/28), mirroring the per-beat support map.
   static const _sekemFootLTargetKeys = [
-    DanceIkTargetKey(0, x: -30, y: 99), // SLAM / plant (support [0-4])
-    DanceIkTargetKey(2, x: -30, y: 99),
-    DanceIkTargetKey(4, x: -31, y: 95), // support end, peel begins
-    DanceIkTargetKey(5, x: -28, y: 74),
-    DanceIkTargetKey(6, x: -26, y: 64), // peak lift (free)
-    DanceIkTargetKey(7, x: -28, y: 62), // coil, held high
-    DanceIkTargetKey(8, x: -30, y: 99, ease: Ease.easeIn), // SLAM (hard stop)
-    DanceIkTargetKey(10, x: -30, y: 99),
-    DanceIkTargetKey(12, x: -31, y: 95),
-    DanceIkTargetKey(13, x: -28, y: 74),
-    DanceIkTargetKey(14, x: -26, y: 64),
-    DanceIkTargetKey(15, x: -28, y: 62),
-    DanceIkTargetKey(16, x: -30, y: 99, ease: Ease.easeIn), // SLAM
-    DanceIkTargetKey(18, x: -30, y: 99),
-    DanceIkTargetKey(20, x: -31, y: 95),
-    DanceIkTargetKey(21, x: -28, y: 74),
-    DanceIkTargetKey(22, x: -26, y: 64),
-    DanceIkTargetKey(23, x: -28, y: 62),
-    DanceIkTargetKey(24, x: -32, y: 99, ease: Ease.easeIn), // bigger 4th beat
-    DanceIkTargetKey(26, x: -32, y: 99),
-    DanceIkTargetKey(28, x: -33, y: 95),
-    DanceIkTargetKey(29, x: -29, y: 74),
-    DanceIkTargetKey(30, x: -26, y: 64),
-    DanceIkTargetKey(31, x: -28, y: 62),
-    DanceIkTargetKey(32, x: -30, y: 99, ease: Ease.easeIn), // SLAM (loop)
+    DanceIkTargetKey(0, x: -44, y: 99), // SLAM / plant (support [0-4])
+    DanceIkTargetKey(2, x: -44, y: 99),
+    DanceIkTargetKey(4, x: -42, y: 95), // support end, step-touch begins
+    DanceIkTargetKey(5, x: -30, y: 88),
+    DanceIkTargetKey(6, x: -18, y: 84), // low side-touch, not Zanku knee
+    DanceIkTargetKey(7, x: -30, y: 86), // coil before plant
+    DanceIkTargetKey(8, x: -44, y: 99, ease: Ease.easeIn), // SLAM
+    DanceIkTargetKey(10, x: -44, y: 99),
+    DanceIkTargetKey(12, x: -42, y: 95),
+    DanceIkTargetKey(13, x: -30, y: 88),
+    DanceIkTargetKey(14, x: -18, y: 84),
+    DanceIkTargetKey(15, x: -30, y: 86),
+    DanceIkTargetKey(16, x: -44, y: 99, ease: Ease.easeIn), // SLAM
+    DanceIkTargetKey(18, x: -44, y: 99),
+    DanceIkTargetKey(20, x: -42, y: 95),
+    DanceIkTargetKey(21, x: -30, y: 88),
+    DanceIkTargetKey(22, x: -18, y: 84),
+    DanceIkTargetKey(23, x: -30, y: 86),
+    DanceIkTargetKey(24, x: -46, y: 99, ease: Ease.easeIn), // bigger 4th beat
+    DanceIkTargetKey(26, x: -46, y: 99),
+    DanceIkTargetKey(28, x: -44, y: 95),
+    DanceIkTargetKey(29, x: -32, y: 88),
+    DanceIkTargetKey(30, x: -18, y: 84),
+    DanceIkTargetKey(31, x: -30, y: 86),
+    DanceIkTargetKey(32, x: -44, y: 99, ease: Ease.easeIn), // SLAM
   ];
   static const _sekemFootRTargetKeys = [
-    DanceIkTargetKey(0, x: 28, y: 80), // peel begins (free [0-4])
-    DanceIkTargetKey(2, x: 26, y: 64), // peak lift
-    DanceIkTargetKey(3, x: 28, y: 62), // coil
-    DanceIkTargetKey(4, x: 30, y: 99, ease: Ease.easeIn), // SLAM (hard stop)
-    DanceIkTargetKey(6, x: 30, y: 99),
-    DanceIkTargetKey(8, x: 31, y: 95), // support end, peel begins
-    DanceIkTargetKey(10, x: 26, y: 64),
-    DanceIkTargetKey(11, x: 28, y: 62),
-    DanceIkTargetKey(12, x: 30, y: 99, ease: Ease.easeIn), // SLAM
-    DanceIkTargetKey(14, x: 30, y: 99),
-    DanceIkTargetKey(16, x: 31, y: 95),
-    DanceIkTargetKey(18, x: 26, y: 64),
-    DanceIkTargetKey(19, x: 28, y: 62),
-    DanceIkTargetKey(20, x: 30, y: 99, ease: Ease.easeIn), // SLAM
-    DanceIkTargetKey(22, x: 30, y: 99),
-    DanceIkTargetKey(24, x: 31, y: 95),
-    DanceIkTargetKey(26, x: 26, y: 64),
-    DanceIkTargetKey(27, x: 28, y: 62),
-    DanceIkTargetKey(28, x: 32, y: 99, ease: Ease.easeIn), // bigger 4th beat
-    DanceIkTargetKey(30, x: 32, y: 99),
-    DanceIkTargetKey(32, x: 28, y: 80),
+    DanceIkTargetKey(0, x: 30, y: 88), // side-touch pickup (free [0-4])
+    DanceIkTargetKey(2, x: 18, y: 84), // low side-touch
+    DanceIkTargetKey(3, x: 30, y: 86), // coil
+    DanceIkTargetKey(4, x: 44, y: 99, ease: Ease.easeIn), // SLAM
+    DanceIkTargetKey(6, x: 44, y: 99),
+    DanceIkTargetKey(8, x: 42, y: 95), // support end, step-touch begins
+    DanceIkTargetKey(10, x: 18, y: 84),
+    DanceIkTargetKey(11, x: 30, y: 86),
+    DanceIkTargetKey(12, x: 44, y: 99, ease: Ease.easeIn), // SLAM
+    DanceIkTargetKey(14, x: 44, y: 99),
+    DanceIkTargetKey(16, x: 42, y: 95),
+    DanceIkTargetKey(18, x: 18, y: 84),
+    DanceIkTargetKey(19, x: 30, y: 86),
+    DanceIkTargetKey(20, x: 44, y: 99, ease: Ease.easeIn), // SLAM
+    DanceIkTargetKey(22, x: 44, y: 99),
+    DanceIkTargetKey(24, x: 42, y: 95),
+    DanceIkTargetKey(26, x: 18, y: 84),
+    DanceIkTargetKey(27, x: 30, y: 86),
+    DanceIkTargetKey(28, x: 46, y: 99, ease: Ease.easeIn), // bigger 4th beat
+    DanceIkTargetKey(30, x: 46, y: 99),
+    DanceIkTargetKey(32, x: 34, y: 80),
   ];
-  // Hands paddle/roll low across the body: elbows lag the torso on the offbeat,
-  // wrists follow, then the next plant swaps the chest/waist relationship.
+  static const _sekemFootLKeys = [
+    DanceJointKey(0, rotation: 0.06), // planted flat
+    DanceJointKey(4, rotation: 0.08),
+    DanceJointKey(6, rotation: 0.34), // lifted toe angles down
+    DanceJointKey(8, rotation: 0.06),
+    DanceJointKey(12, rotation: 0.08),
+    DanceJointKey(14, rotation: 0.34),
+    DanceJointKey(16, rotation: 0.06),
+    DanceJointKey(20, rotation: 0.08),
+    DanceJointKey(22, rotation: 0.34),
+    DanceJointKey(24, rotation: 0.06),
+    DanceJointKey(28, rotation: 0.08),
+    DanceJointKey(30, rotation: 0.34),
+    DanceJointKey(32, rotation: 0.06),
+  ];
+  static const _sekemFootRKeys = [
+    DanceJointKey(0, rotation: -0.32), // lifted toe angles down
+    DanceJointKey(2, rotation: -0.34),
+    DanceJointKey(4, rotation: -0.06), // planted flat
+    DanceJointKey(8, rotation: -0.08),
+    DanceJointKey(10, rotation: -0.34),
+    DanceJointKey(12, rotation: -0.06),
+    DanceJointKey(16, rotation: -0.08),
+    DanceJointKey(18, rotation: -0.34),
+    DanceJointKey(20, rotation: -0.06),
+    DanceJointKey(24, rotation: -0.08),
+    DanceJointKey(26, rotation: -0.34),
+    DanceJointKey(28, rotation: -0.06),
+    DanceJointKey(32, rotation: -0.32),
+  ];
+  // Hands now alternate Sekem's readable call-and-answer: one hand sweeps low
+  // across the beltline while the other flicks/points outward, then they swap
+  // on the next plant. The old pair of contained paddles was stable but read as
+  // a generic Afro side groove instead of a named Sekem phrase.
   static const _sekemHandLTargetKeys = [
-    DanceIkTargetKey(0, x: -32, y: -26), // chest-side paddle
-    DanceIkTargetKey(2, x: -54, y: -6), // elbow lags down/back
-    DanceIkTargetKey(4, x: -30, y: 20), // waist roll
-    DanceIkTargetKey(6, x: 10, y: 8), // crosses through low centre
-    DanceIkTargetKey(8, x: -32, y: -26),
-    DanceIkTargetKey(10, x: -54, y: -6),
-    DanceIkTargetKey(12, x: -30, y: 20),
-    DanceIkTargetKey(14, x: 10, y: 8),
-    DanceIkTargetKey(16, x: -30, y: 20), // swap cell
-    DanceIkTargetKey(18, x: -10, y: 8),
-    DanceIkTargetKey(20, x: -32, y: -26),
-    DanceIkTargetKey(22, x: -54, y: -6),
-    DanceIkTargetKey(24, x: -30, y: 20),
-    DanceIkTargetKey(26, x: -10, y: 8),
-    DanceIkTargetKey(28, x: -38, y: -28), // bigger 4th-count accent
-    DanceIkTargetKey(30, x: -58, y: -8),
-    DanceIkTargetKey(32, x: -32, y: -26),
+    DanceIkTargetKey(0, x: 30, y: 18), // low diagonal sweep across body
+    DanceIkTargetKey(2, x: -48, y: 6), // sweep pulls through waistline
+    DanceIkTargetKey(4, x: -56, y: -14), // outward accent, elbow still tucked
+    DanceIkTargetKey(6, x: -24, y: -30), // chest recovery
+    DanceIkTargetKey(8, x: 30, y: 18),
+    DanceIkTargetKey(10, x: -48, y: 6),
+    DanceIkTargetKey(12, x: -56, y: -14),
+    DanceIkTargetKey(14, x: -24, y: -30),
+    DanceIkTargetKey(16, x: -24, y: -30), // swapped-answer setup
+    DanceIkTargetKey(18, x: 12, y: 16), // low centre sweep
+    DanceIkTargetKey(20, x: 34, y: 20),
+    DanceIkTargetKey(22, x: -50, y: 6),
+    DanceIkTargetKey(24, x: -60, y: -16), // bigger outward accent
+    DanceIkTargetKey(26, x: -26, y: -32),
+    DanceIkTargetKey(28, x: 34, y: 20),
+    DanceIkTargetKey(30, x: -52, y: 6),
+    DanceIkTargetKey(32, x: 30, y: 18),
   ];
   static const _sekemHandRTargetKeys = [
-    DanceIkTargetKey(0, x: 30, y: 20), // waist-side roll
-    DanceIkTargetKey(2, x: -10, y: 8),
-    DanceIkTargetKey(4, x: 32, y: -26), // chest-side paddle
-    DanceIkTargetKey(6, x: 54, y: -6),
-    DanceIkTargetKey(8, x: 30, y: 20),
-    DanceIkTargetKey(10, x: -10, y: 8),
-    DanceIkTargetKey(12, x: 32, y: -26),
-    DanceIkTargetKey(14, x: 54, y: -6),
-    DanceIkTargetKey(16, x: 32, y: -26), // swap cell
-    DanceIkTargetKey(18, x: 54, y: -6),
-    DanceIkTargetKey(20, x: 30, y: 20),
-    DanceIkTargetKey(22, x: 10, y: 8),
-    DanceIkTargetKey(24, x: 32, y: -26),
-    DanceIkTargetKey(26, x: 54, y: -6),
-    DanceIkTargetKey(28, x: 38, y: -28),
-    DanceIkTargetKey(30, x: 58, y: -8),
-    DanceIkTargetKey(32, x: 30, y: 20),
+    DanceIkTargetKey(0, x: 56, y: -14), // outward accent
+    DanceIkTargetKey(2, x: 24, y: -30), // recover to chest
+    DanceIkTargetKey(4, x: -30, y: 18), // low diagonal sweep across body
+    DanceIkTargetKey(6, x: 48, y: 6), // sweep pulls through waistline
+    DanceIkTargetKey(8, x: 56, y: -14),
+    DanceIkTargetKey(10, x: 24, y: -30),
+    DanceIkTargetKey(12, x: -30, y: 18),
+    DanceIkTargetKey(14, x: 48, y: 6),
+    DanceIkTargetKey(16, x: 24, y: -30),
+    DanceIkTargetKey(18, x: 56, y: -14),
+    DanceIkTargetKey(20, x: 24, y: -30),
+    DanceIkTargetKey(22, x: -12, y: 16),
+    DanceIkTargetKey(24, x: -34, y: 20),
+    DanceIkTargetKey(26, x: 50, y: 6),
+    DanceIkTargetKey(28, x: 60, y: -16), // bigger outward accent
+    DanceIkTargetKey(30, x: 26, y: -32),
+    DanceIkTargetKey(32, x: 56, y: -14),
   ];
   // Non-smooth (the default) so the per-key ease applies: the slam keys use
   // Ease.easeIn (accelerate into the floor) for a hard-stop strike in the live
@@ -6718,6 +6747,14 @@ class CatClips {
         CatBones.torso: LayeredJointChannel([
           _dancePhrase.bodyChestChannel(_sekemBodyKeys),
         ]),
+        CatBones.footL: _dancePhrase.jointChannel(
+          _sekemFootLKeys,
+          smooth: true,
+        ),
+        CatBones.footR: _dancePhrase.jointChannel(
+          _sekemFootRKeys,
+          smooth: true,
+        ),
         CatBones.earL: const SineChannel(amplitude: 0.02),
         CatBones.earR: const SineChannel(amplitude: 0.02, phase: 0.5),
         CatBones.tail0: const SineChannel(amplitude: 0.02, bias: -0.34),

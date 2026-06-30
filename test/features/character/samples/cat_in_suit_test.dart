@@ -366,14 +366,14 @@ void main() {
 
       final wristCrossLeft = handL.sample(17 / phrase.frameCount);
       final wristCrossRight = handR.sample(17 / phrase.frameCount);
-      expect(wristCrossLeft.x, greaterThan(6));
-      expect(wristCrossRight.x, lessThan(-6));
+      expect(wristCrossLeft.x, greaterThan(20));
+      expect(wristCrossRight.x, lessThan(-20));
       expect(
         (wristCrossLeft.x - wristCrossRight.x).abs(),
-        lessThan(32),
+        inInclusiveRange(45, 75),
         reason:
-            'Shaku should cross the wrists near the sternum, not fold both '
-            'forearms back through the belly',
+            'Shaku should read as a strong diagonal wrist-cross with broken '
+            'wrists, not a compact belly fold or generic fist pump',
       );
       expect(
         wristCrossLeft.y,
@@ -381,35 +381,35 @@ void main() {
         reason: 'the wrist-cross should live at chest height',
       );
 
-      final openLeft = handL.sample(21 / phrase.frameCount);
-      final openRight = handR.sample(21 / phrase.frameCount);
-      expect(openLeft.x, lessThan(-40));
-      expect(openRight.x, greaterThan(40));
+      final sweepLeft = handL.sample(21 / phrase.frameCount);
+      final sweepRight = handR.sample(21 / phrase.frameCount);
+      expect(sweepLeft.x, lessThan(-8));
+      expect(sweepRight.x, greaterThan(8));
       expect(
-        openRight.x - openLeft.x,
-        greaterThan(80),
+        sweepRight.x - sweepLeft.x,
+        lessThan(30),
         reason:
-            'after the wrist-cross both elbows should open outward, but stay '
-            'close enough to the sternum to keep the Shaku pocket compact',
+            'every second Shaku beat should roll through a compact forearm '
+            'sweep, not flare into a generic wide fist pump',
       );
 
       final sideHitLeft = handL.sample(22 / phrase.frameCount);
       final sideHitRight = handR.sample(22 / phrase.frameCount);
-      expect(sideHitLeft.x, lessThan(-44));
-      expect(sideHitRight.x, greaterThan(44));
+      expect(sideHitLeft.x, greaterThan(0));
+      expect(sideHitRight.x, lessThan(0));
       expect(
-        sideHitRight.x - sideHitLeft.x,
-        greaterThan(88),
+        sideHitLeft.x - sideHitRight.x,
+        greaterThan(10),
         reason:
-            'the Shaku release should open, but not flare into a generic '
-            'wide fist-pump groove',
+            'the Shaku release beat should hit as a wrist-roll cross rather '
+            'than a physically vague open-elbow pump',
       );
 
       final recoveryCrossLeft = handL.sample(29 / phrase.frameCount);
       final recoveryCrossRight = handR.sample(29 / phrase.frameCount);
       expect(
         recoveryCrossLeft.x,
-        lessThan(-35),
+        lessThan(0),
         reason:
             'the final phrase should recover through shaku arm vocabulary, '
             'not a generic forward punch',
@@ -417,16 +417,17 @@ void main() {
       expect(recoveryCrossLeft.y, lessThan(-45));
       expect(
         recoveryCrossRight.x,
-        greaterThan(35),
+        greaterThan(0),
         reason:
-            'the opposite paw should open as part of the shaku recovery, '
-            'not stay parked at the chest',
+            'the opposite paw should stay in the compact wrist-roll phrase, '
+            'not open into a generic chest pump',
       );
       expect(recoveryCrossRight.y, lessThan(-39));
       expect(
         recoveryCrossRight.x - recoveryCrossLeft.x,
-        greaterThan(70),
-        reason: 'the final recovery should keep a readable open arm silhouette',
+        lessThan(30),
+        reason:
+            'the final recovery should stay compact enough to read as Shaku',
       );
 
       expect(
@@ -466,12 +467,12 @@ void main() {
       final rightFlickLift = zanku.root.sample(2 / phrase.frameCount);
       expect(
         rightLift.y,
-        inInclusiveRange(78, 86),
+        inInclusiveRange(72, 80),
         reason: 'Zanku starts each cell with a clear knee lift',
       );
       expect(
         rightFlick.x,
-        inInclusiveRange(54, 62),
+        inInclusiveRange(60, 66),
         reason: 'Zanku should flick outward without becoming a long side kick',
       );
       expect(rightFlick.y, inInclusiveRange(96, 100));
@@ -483,7 +484,7 @@ void main() {
       );
       expect(
         rightStomp.dy - rightFlickLift.dy,
-        greaterThan(18),
+        greaterThan(40),
         reason: 'Zanku should drop into the stomp after the right-leg flick',
       );
 
@@ -494,12 +495,12 @@ void main() {
       final leftFlickLift = zanku.root.sample(22 / phrase.frameCount);
       expect(
         leftLift.y,
-        inInclusiveRange(78, 86),
+        inInclusiveRange(72, 80),
         reason: 'Zanku starts each cell with a clear knee lift',
       );
       expect(
         leftFlick.x,
-        inInclusiveRange(-62, -54),
+        inInclusiveRange(-66, -60),
         reason: 'Zanku should flick outward without becoming a long side kick',
       );
       expect(leftFlick.y, inInclusiveRange(96, 100));
@@ -511,7 +512,7 @@ void main() {
       );
       expect(
         leftStomp.dy - leftFlickLift.dy,
-        greaterThan(18),
+        greaterThan(40),
         reason: 'Zanku should drop into the stomp after the left-leg flick',
       );
     });
@@ -609,43 +610,81 @@ void main() {
       );
     });
 
-    test('sekem widens the planted stance and paddles hands on offbeats', () {
-      final phrase = CatClips.dancePhrase;
-      final sekem = CatClips.sekem;
-      final footL = _targetFor(sekem, CatBones.footL).channel;
-      final footR = _targetFor(sekem, CatBones.footR).channel;
-      final handL = _targetFor(sekem, CatBones.handL).channel;
-      final handR = _targetFor(sekem, CatBones.handR).channel;
+    test(
+      'sekem widens the stance and alternates belt sweep with outward flick',
+      () {
+        final phrase = CatClips.dancePhrase;
+        final sekem = CatClips.sekem;
+        final footL = _targetFor(sekem, CatBones.footL).channel;
+        final footR = _targetFor(sekem, CatBones.footR).channel;
+        final handL = _targetFor(sekem, CatBones.handL).channel;
+        final handR = _targetFor(sekem, CatBones.handR).channel;
+        final footLRotation = sekem.channels[CatBones.footL]!;
+        final footRRotation = sekem.channels[CatBones.footR]!;
 
-      final leftPlant = footL.sample(0);
-      final rightPlant = footR.sample(4 / phrase.frameCount);
-      expect(leftPlant.x, lessThan(-28));
-      expect(rightPlant.x, greaterThan(28));
-      expect(leftPlant.y, greaterThanOrEqualTo(99));
-      expect(rightPlant.y, greaterThanOrEqualTo(99));
+        final leftPlant = footL.sample(0);
+        final rightPlant = footR.sample(4 / phrase.frameCount);
+        expect(leftPlant.x, lessThan(-28));
+        expect(rightPlant.x, greaterThan(28));
+        expect(leftPlant.y, greaterThanOrEqualTo(99));
+        expect(rightPlant.y, greaterThanOrEqualTo(99));
 
-      final leftOffbeat = handL.sample(2 / phrase.frameCount);
-      final rightOffbeat = handR.sample(2 / phrase.frameCount);
-      final leftPlantHand = handL.sample(0);
-      final rightPlantHand = handR.sample(0);
-      expect(
-        leftOffbeat.x,
-        lessThan(leftPlantHand.x - 10),
-        reason: 'Sekem left elbow should lag down/back on the offbeat',
-      );
-      expect(
-        rightOffbeat.x,
-        lessThan(rightPlantHand.x),
-        reason: 'Sekem right wrist should roll inward on the offbeat',
-      );
-      expect(
-        rightPlantHand.y - leftPlantHand.y,
-        greaterThan(30),
-        reason:
-            'one hand should sit at the chest while the other rolls at waist '
-            'height, avoiding a locked fist bundle',
-      );
-    });
+        final leftPlantHand = handL.sample(0);
+        final rightPlantHand = handR.sample(0);
+        expect(
+          leftPlantHand.x,
+          greaterThan(15),
+          reason: 'Sekem should show one hand sweeping low across the beltline',
+        );
+        expect(leftPlantHand.y, greaterThan(10));
+        expect(
+          rightPlantHand.x,
+          greaterThan(38),
+          reason:
+              'the opposite hand should flick/point outward, but compactly, '
+              'so the move reads as Sekem instead of generic side reaches',
+        );
+        expect(rightPlantHand.y, lessThanOrEqualTo(-12));
+
+        final leftPullback = handL.sample(2 / phrase.frameCount);
+        final rightRecover = handR.sample(2 / phrase.frameCount);
+        expect(
+          leftPullback.x,
+          lessThan(leftPlantHand.x - 10),
+          reason: 'the belt sweep should visibly pull back on the offbeat',
+        );
+        expect(
+          rightRecover.y,
+          lessThan(rightPlantHand.y - 10),
+          reason: 'the flicking hand should recover upward to chest height',
+        );
+
+        final leftPoint = handL.sample(4 / phrase.frameCount);
+        final rightSweep = handR.sample(4 / phrase.frameCount);
+        expect(
+          leftPoint.x,
+          lessThan(-38),
+          reason:
+              'the next plant should swap: left hand becomes the outward flick',
+        );
+        expect(
+          rightSweep.x,
+          lessThan(-15),
+          reason:
+              'the next plant should swap: right hand sweeps low across the belt',
+        );
+        expect(
+          footRRotation.sample(2 / phrase.frameCount).rotation,
+          lessThan(-0.25),
+          reason: 'the lifted right foot should angle down instead of floating',
+        );
+        expect(
+          footLRotation.sample(6 / phrase.frameCount).rotation,
+          greaterThan(0.25),
+          reason: 'the lifted left foot should angle down instead of floating',
+        );
+      },
+    );
 
     test('pouncing cat compresses, pushes, lands, and rebounds compactly', () {
       final phrase = CatClips.dancePhrase;
