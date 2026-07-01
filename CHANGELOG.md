@@ -82,6 +82,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   audio transcription, reasoning, function calling) so you can search and
   install any Mistral model — not just the curated defaults — directly from the
   provider page.
+- **Mistral OCR support.** Running "Analyze Image" with a Mistral OCR model
+  (e.g. `mistral-ocr-latest`) now extracts the document's actual text. OCR
+  models use Mistral's dedicated `/v1/ocr` endpoint instead of chat completions
+  (which rejected them), so a scanned letter or form comes back as real
+  Markdown text you can read and ask follow-up questions about — rather than a
+  vision model's loose description.
 
 ### Changed
 - Provider detail pages now list your installed models above the searchable
