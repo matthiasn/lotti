@@ -211,6 +211,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   after they appear — their progress chip and bar hold their space from the
   first frame, so the list doesn't shuffle under you as you scroll.
 ### Fixed
+- Entry header action buttons (the favorite star and the `…` overflow menu) are
+  no longer clipped at the top-right on narrow phones. When the row ran out of
+  room the timestamp now shortens instead of pushing the buttons off the edge.
 - Coding prompts generated from a task-linked audio note now attach to the
   parent task even when the note's task relationship has to be resolved from
   the link graph, so follow-up prompts can see the earlier generated prompt as

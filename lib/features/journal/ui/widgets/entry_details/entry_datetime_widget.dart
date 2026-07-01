@@ -51,6 +51,11 @@ class EntryDatetimeWidget extends ConsumerWidget {
         child: Text(
           dfShorter.format(entry.meta.dateFrom),
           style: style,
+          // Allow the (least-important) timestamp to ellipsize when the header
+          // is space-constrained, so it yields room instead of pushing the
+          // trailing action buttons off the edge on narrow phones.
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );
