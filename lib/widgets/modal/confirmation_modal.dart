@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// shows a confirmation modal with customizable message and action labels.
+/// Shows a design-system confirmation modal with optional title, message, and
+/// customizable action labels.
 Future<bool> showConfirmationModal({
   required BuildContext context,
   required String message,
@@ -13,12 +15,15 @@ Future<bool> showConfirmationModal({
   bool isDestructive = true,
 }) async {
   bool? result;
-  final theme = Theme.of(context);
 
   await ModalUtils.showSinglePageModal<void>(
     context: context,
     hasTopBarLayer: false,
     builder: (BuildContext context) {
+      final theme = Theme.of(context);
+      final tokens = context.designTokens;
+      final spacing = tokens.spacing;
+
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -26,23 +31,32 @@ Future<bool> showConfirmationModal({
           if (isDestructive)
             Icon(
               Icons.warning_amber_rounded,
-              size: 36,
+              size: spacing.step9,
               color: theme.colorScheme.error,
             ),
-          const SizedBox(height: 16),
+          if (isDestructive) SizedBox(height: spacing.step4),
+
+          if (title != null) ...[
+            Text(
+              title,
+              style: tokens.typography.styles.heading.heading3.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: spacing.step2),
+          ],
 
           // Confirmation Text
           Text(
             message,
-            style: theme.textTheme.titleMedium?.copyWith(
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
               color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
             ),
             textAlign: TextAlign.center,
           ),
 
-          const SizedBox(height: 28),
+          SizedBox(height: spacing.step7),
 
           // Action Buttons
           DesignSystemModalActionBar(

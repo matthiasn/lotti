@@ -19,6 +19,7 @@ const _expectedComponentNames = [
   'Caption',
   'Checkbox',
   'Chips',
+  'Confirmation Modal',
   'Context menu',
   'Divider',
   'Dropdowns',

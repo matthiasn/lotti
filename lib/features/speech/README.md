@@ -172,11 +172,11 @@ The persisted `JournalAudio` is created from `AudioData` and stored through
 `PersistenceLogic`. The audio file lives under `/audio/YYYY-MM-DD/`.
 
 The modal also offers a discard (✕) control next to Stop while recording, in
-both standard and realtime modes. In standard mode it calls `cancel()`, which
-stops the recorder, deletes the partially-written `/audio/YYYY-MM-DD/` file, and
-resets state without creating a `JournalAudio` — so the page returns to exactly
-how it looked before recording. In realtime mode it calls `cancelRealtime()`
-(see below).
+both standard and realtime modes. It asks for confirmation before discarding. In
+standard mode it calls `cancel()`, which stops the recorder, deletes the
+partially-written `/audio/YYYY-MM-DD/` file, and resets state without creating a
+`JournalAudio` — so the page returns to exactly how it looked before recording.
+In realtime mode it calls `cancelRealtime()` (see below).
 
 ## Realtime Recording
 

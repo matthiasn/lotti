@@ -2213,6 +2213,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingCancel => 'ANULARE';
 
   @override
+  String get audioRecordingDiscardDialogBody =>
+      'Această înregistrare va fi ștearsă. Nu se va crea nicio intrare audio, transcriere sau rezumat al sarcinii.';
+
+  @override
+  String get audioRecordingDiscardDialogCancel => 'Continuați înregistrarea';
+
+  @override
+  String get audioRecordingDiscardDialogConfirm => 'Renunțați';
+
+  @override
+  String get audioRecordingDiscardDialogTitle => 'Renunțați la înregistrare?';
+
+  @override
   String get audioRecordingListening => 'Se ascultă...';
 
   @override

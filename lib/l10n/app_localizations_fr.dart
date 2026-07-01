@@ -2213,6 +2213,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get audioRecordingCancel => 'ANNULER';
 
   @override
+  String get audioRecordingDiscardDialogBody =>
+      'Cet enregistrement sera supprimé. Aucune entrée audio, transcription ni résumé de tâche ne sera créé.';
+
+  @override
+  String get audioRecordingDiscardDialogCancel => 'Continuer l\'enregistrement';
+
+  @override
+  String get audioRecordingDiscardDialogConfirm => 'Abandonner';
+
+  @override
+  String get audioRecordingDiscardDialogTitle =>
+      'Abandonner l\'enregistrement ?';
+
+  @override
   String get audioRecordingListening => 'Écoute en cours...';
 
   @override

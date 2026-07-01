@@ -2200,6 +2200,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get audioRecordingCancel => 'ABBRECHEN';
 
   @override
+  String get audioRecordingDiscardDialogBody =>
+      'Diese Aufnahme wird gelöscht. Es wird kein Audioeintrag, Transkript oder Aufgaben-Zusammenfassung erstellt.';
+
+  @override
+  String get audioRecordingDiscardDialogCancel => 'Weiter aufnehmen';
+
+  @override
+  String get audioRecordingDiscardDialogConfirm => 'Verwerfen';
+
+  @override
+  String get audioRecordingDiscardDialogTitle => 'Aufnahme verwerfen?';
+
+  @override
   String get audioRecordingListening => 'Hört zu...';
 
   @override

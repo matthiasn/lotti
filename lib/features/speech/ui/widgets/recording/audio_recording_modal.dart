@@ -9,6 +9,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/ui/app_fonts.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 
@@ -87,6 +88,7 @@ class AudioRecordingModalContent extends ConsumerStatefulWidget {
 class _AudioRecordingModalContentState
     extends ConsumerState<AudioRecordingModalContent> {
   bool _useRealtimeMode = false;
+  bool _terminalActionInProgress = false;
 
   @override
   void initState() {
@@ -178,6 +180,9 @@ class _AudioRecordingModalContentState
   }
 
   Future<void> _stop() async {
+    if (_terminalActionInProgress) return;
+
+    setState(() => _terminalActionInProgress = true);
     final controller = ref.read(audioRecorderControllerProvider.notifier);
     final state = ref.read(audioRecorderControllerProvider);
 
@@ -209,6 +214,12 @@ class _AudioRecordingModalContentState
   /// recording started. Branches to the realtime or standard cancel path
   /// depending on the active recording mode.
   Future<void> _cancel() async {
+    if (_terminalActionInProgress) return;
+
+    final confirmed = await _confirmCancel();
+    if (!confirmed || !mounted) return;
+
+    setState(() => _terminalActionInProgress = true);
     final controller = ref.read(audioRecorderControllerProvider.notifier);
     final state = ref.read(audioRecorderControllerProvider);
     try {
@@ -222,6 +233,17 @@ class _AudioRecordingModalContentState
         Navigator.of(context).pop();
       }
     }
+  }
+
+  Future<bool> _confirmCancel() async {
+    final messages = context.messages;
+    return showConfirmationModal(
+      context: context,
+      title: messages.audioRecordingDiscardDialogTitle,
+      message: messages.audioRecordingDiscardDialogBody,
+      cancelLabel: messages.audioRecordingDiscardDialogCancel,
+      confirmLabel: messages.audioRecordingDiscardDialogConfirm,
+    );
   }
 
   Widget _buildLiveTranscript(AudioRecorderState state, ThemeData theme) {
@@ -331,7 +353,7 @@ class _AudioRecordingModalContentState
           // Container fill is transparent so without this hits only land on
           // the icon.
           behavior: HitTestBehavior.opaque,
-          onTap: _cancel,
+          onTap: _terminalActionInProgress ? null : _cancel,
           child: Container(
             width: 48,
             height: 48,
@@ -367,7 +389,7 @@ class _AudioRecordingModalContentState
         const SizedBox(width: 12),
         // Stop button
         GestureDetector(
-          onTap: _stop,
+          onTap: _terminalActionInProgress ? null : _stop,
           child: Container(
             width: 120,
             height: 48,
