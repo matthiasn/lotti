@@ -127,6 +127,32 @@ SyncAiConfigDelete _$SyncAiConfigDeleteFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$SyncAiConfigDeleteToJson(SyncAiConfigDelete instance) =>
     <String, dynamic>{'id': instance.id, 'runtimeType': instance.$type};
 
+SyncSavedTaskFilter _$SyncSavedTaskFilterFromJson(Map<String, dynamic> json) =>
+    SyncSavedTaskFilter(
+      filter: SavedTaskFilter.fromJson(json['filter'] as Map<String, dynamic>),
+      status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncSavedTaskFilterToJson(
+  SyncSavedTaskFilter instance,
+) => <String, dynamic>{
+  'filter': instance.filter,
+  'status': _$SyncEntryStatusEnumMap[instance.status]!,
+  'runtimeType': instance.$type,
+};
+
+SyncSavedTaskFilterDelete _$SyncSavedTaskFilterDeleteFromJson(
+  Map<String, dynamic> json,
+) => SyncSavedTaskFilterDelete(
+  id: json['id'] as String,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncSavedTaskFilterDeleteToJson(
+  SyncSavedTaskFilterDelete instance,
+) => <String, dynamic>{'id': instance.id, 'runtimeType': instance.$type};
+
 SyncConfigFlag _$SyncConfigFlagFromJson(Map<String, dynamic> json) =>
     SyncConfigFlag(
       name: json['name'] as String,

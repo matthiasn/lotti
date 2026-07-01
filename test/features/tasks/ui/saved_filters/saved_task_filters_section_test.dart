@@ -13,6 +13,7 @@ import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filters_section
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../state/saved_filters/saved_filter_test_helpers.dart';
 
 const _filterA = TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'});
 const _filterB = TasksFilter(
@@ -48,6 +49,7 @@ void main() {
 
   setUp(() async {
     mocks = await setUpTestGetIt();
+    registerSavedTaskFilterSyncDeps(mocks);
   });
 
   tearDown(tearDownTestGetIt);

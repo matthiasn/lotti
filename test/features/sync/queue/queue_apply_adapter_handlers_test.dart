@@ -4,11 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -328,6 +330,23 @@ void main() {
 
     test('SyncAiConfigDelete bypasses outer wrap (ai_config_db)', () {
       const message = SyncMessage.aiConfigDelete(id: 'cfg-id');
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncSavedTaskFilter bypasses outer wrap (writes to settings_db)', () {
+      const message = SyncMessage.savedTaskFilter(
+        filter: SavedTaskFilter(
+          id: 'stf-id',
+          name: 'In Progress',
+          filter: TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'}),
+        ),
+        status: SyncEntryStatus.initial,
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncSavedTaskFilterDelete bypasses outer wrap (settings_db)', () {
+      const message = SyncMessage.savedTaskFilterDelete(id: 'stf-id');
       expect(wraps(message), isFalse);
     });
 

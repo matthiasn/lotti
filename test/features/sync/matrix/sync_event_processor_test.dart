@@ -12,12 +12,14 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -288,6 +290,7 @@ void main() {
         loggingService: loggingService,
         updateNotifications: updateNotifications,
         aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
         settingsDb: settingsDb,
         journalEntityLoader: journalEntityLoader,
         sequenceLogService: mockSeqService,
@@ -558,6 +561,37 @@ void main() {
     verify(() => aiConfigRepository.deleteConfig(id, fromSync: true)).called(1);
   });
 
+  test('processes saved task filter messages', () async {
+    const filter = SavedTaskFilter(
+      id: 'stf-1',
+      name: 'In Progress',
+      filter: TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'}),
+    );
+    const message = SyncMessage.savedTaskFilter(
+      filter: filter,
+      status: SyncEntryStatus.update,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(
+      () => savedTaskFiltersRepository.upsert(filter, fromSync: true),
+    ).called(1);
+  });
+
+  test('processes saved task filter delete messages', () async {
+    const id = 'stf-1';
+    const message = SyncMessage.savedTaskFilterDelete(id: id);
+    when(() => event.text).thenReturn(encodeMessage(message));
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(
+      () => savedTaskFiltersRepository.delete(id, fromSync: true),
+    ).called(1);
+  });
+
   test('processes config flag messages', () async {
     const flag = ConfigFlag(
       name: 'enableDailyOs',
@@ -609,6 +643,7 @@ void main() {
         loggingService: loggingService,
         updateNotifications: updateNotifications,
         aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
         settingsDb: settingsDb,
         journalEntityLoader: const FileSyncJournalEntityLoader(),
       );
@@ -623,6 +658,7 @@ void main() {
         loggingService: loggingService,
         updateNotifications: updateNotifications,
         aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
         settingsDb: settingsDb,
         journalEntityLoader: const FileSyncJournalEntityLoader(),
       );
@@ -672,6 +708,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: loader,
         );
@@ -870,6 +907,7 @@ void main() {
         loggingService: loggingService,
         updateNotifications: updateNotifications,
         aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
         settingsDb: settingsDb,
         journalEntityLoader: journalEntityLoader,
         sequenceLogService: mockSequenceService,
@@ -1331,6 +1369,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
         );
@@ -1370,6 +1409,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
         );
@@ -1405,6 +1445,7 @@ void main() {
         loggingService: loggingService,
         updateNotifications: updateNotifications,
         aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
         settingsDb: settingsDb,
         journalEntityLoader: journalEntityLoader,
       );
@@ -1438,6 +1479,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
         );
@@ -1474,6 +1516,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
         );
@@ -1509,6 +1552,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
         );
@@ -1567,6 +1611,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           sequenceLogService: sequenceLogService,
@@ -1615,6 +1660,7 @@ void main() {
           domainLogger: domainLogger,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
         );
@@ -1659,6 +1705,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           vectorClockService: localVcService,
@@ -1706,6 +1753,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           vectorClockService: localVcService,
@@ -1745,6 +1793,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           vectorClockService: localVcService,
@@ -1781,6 +1830,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           vectorClockService: localVcService,
@@ -1833,6 +1883,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           vectorClockService: localVcService,
@@ -1979,6 +2030,7 @@ void main() {
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           vectorClockService: localVcService,
@@ -2079,6 +2131,7 @@ void main() {
         loggingService: loggingService,
         updateNotifications: updateNotifications,
         aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
         settingsDb: settingsDb,
         journalEntityLoader: loader,
       );
@@ -2111,6 +2164,7 @@ void main() {
         loggingService: loggingService,
         updateNotifications: updateNotifications,
         aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
         settingsDb: settingsDb,
         journalEntityLoader: journalEntityLoader,
         vectorClockService: localVcService,
@@ -2196,6 +2250,7 @@ void main() {
         loggingService: loggingService,
         updateNotifications: updateNotifications,
         aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
         settingsDb: settingsDb,
         journalEntityLoader: journalEntityLoader,
         syncNodeProfileRepository: repo,

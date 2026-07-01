@@ -18,6 +18,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -32,6 +33,7 @@ late MockJournalDb journalDb;
 late MockUpdateNotifications updateNotifications;
 late MockDomainLogger loggingService;
 late MockAiConfigRepository aiConfigRepository;
+late MockSavedTaskFiltersRepository savedTaskFiltersRepository;
 late MockJournalEntityLoader journalEntityLoader;
 late MockSettingsDb settingsDb;
 late SyncEventProcessor processor;
@@ -67,6 +69,7 @@ void setUpProcessorMocks() {
   updateNotifications = MockUpdateNotifications();
   loggingService = MockDomainLogger();
   aiConfigRepository = MockAiConfigRepository();
+  savedTaskFiltersRepository = MockSavedTaskFiltersRepository();
   journalEntityLoader = MockJournalEntityLoader();
   settingsDb = MockSettingsDb();
 
@@ -103,6 +106,18 @@ void setUpProcessorMocks() {
       fromSync: any<bool>(named: 'fromSync'),
     ),
   ).thenAnswer((_) async {});
+  when(
+    () => savedTaskFiltersRepository.upsert(
+      any<SavedTaskFilter>(),
+      fromSync: any<bool>(named: 'fromSync'),
+    ),
+  ).thenAnswer((_) async {});
+  when(
+    () => savedTaskFiltersRepository.delete(
+      any<String>(),
+      fromSync: any<bool>(named: 'fromSync'),
+    ),
+  ).thenAnswer((_) async {});
 
   when(() => event.eventId).thenReturn('event-id');
   when(() => event.originServerTs).thenReturn(DateTime(2024));
@@ -118,6 +133,7 @@ void setUpProcessorMocks() {
     loggingService: loggingService,
     updateNotifications: updateNotifications,
     aiConfigRepository: aiConfigRepository,
+    savedTaskFiltersRepository: savedTaskFiltersRepository,
     settingsDb: settingsDb,
     journalEntityLoader: journalEntityLoader,
   );

@@ -30,6 +30,7 @@ class SyncMaintenanceController extends Notifier<SyncState> {
       SyncStep.dashboards,
       SyncStep.habits,
       SyncStep.aiSettings,
+      SyncStep.savedTaskFilters,
       SyncStep.backfillAgentEntityClocks,
       SyncStep.backfillAgentLinkClocks,
       SyncStep.agentEntities,
@@ -74,6 +75,7 @@ class SyncMaintenanceController extends Notifier<SyncState> {
           SyncStep.dashboards: _repository.syncDashboards,
           SyncStep.habits: _repository.syncHabits,
           SyncStep.aiSettings: _repository.syncAiSettings,
+          SyncStep.savedTaskFilters: _repository.syncSavedTaskFilters,
           SyncStep.backfillAgentEntityClocks:
               _repository.backfillAgentEntityClocks,
           SyncStep.backfillAgentLinkClocks: _repository.backfillAgentLinkClocks,

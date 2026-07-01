@@ -78,6 +78,33 @@ void main() {
     );
   });
 
+  group('SavedTaskFilterActivator.clearToDefault', () {
+    test(
+      'forwards an empty/default filter to applyBatchFilterUpdate',
+      () async {
+        final fake = FakeJournalPageController(
+          const JournalPageState(
+            selectedTaskStatuses: {'IN_PROGRESS'},
+            selectedPriorities: {'P0'},
+          ),
+        );
+
+        await SavedTaskFilterActivator(fake).clearToDefault();
+
+        expect(fake.applyBatchFilterUpdateCalled, 1);
+        expect(fake.setSelectedTaskStatusesCalls.single, <String>{});
+        expect(fake.setSelectedPrioritiesCalls.single, <String>{});
+        expect(fake.sortOptionCalls.single, TaskSortOption.byPriority);
+        expect(
+          fake.agentAssignmentFilterCalls.single,
+          AgentAssignmentFilter.all,
+        );
+        expect(fake.showCreationDateCalls.single, false);
+        expect(fake.showDueDateCalls.single, true);
+      },
+    );
+  });
+
   group('currentSavedTaskFilterIdProvider', () {
     test('returns null when no saved filter matches the live state', () async {
       final fake = FakeJournalPageController(

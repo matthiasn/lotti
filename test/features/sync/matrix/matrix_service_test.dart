@@ -7,6 +7,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:matrix/encryption/utils/key_verification.dart';
@@ -1144,6 +1146,17 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
       'aiConfigDelete': const SyncMessage.aiConfigDelete(id: 'ai1'),
+      'savedTaskFilter': const SyncMessage.savedTaskFilter(
+        filter: SavedTaskFilter(
+          id: 'stf1',
+          name: 'In Progress',
+          filter: TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'}),
+        ),
+        status: SyncEntryStatus.initial,
+      ),
+      'savedTaskFilterDelete': const SyncMessage.savedTaskFilterDelete(
+        id: 'stf1',
+      ),
       'configFlag': const SyncMessage.configFlag(
         name: 'enable_logging',
         description: 'Enable logging',

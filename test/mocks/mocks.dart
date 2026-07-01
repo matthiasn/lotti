@@ -146,6 +146,7 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/features/tts/engine/supertonic_tts_session.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -952,6 +953,9 @@ class MockTaskAgentWorkflow extends Mock implements TaskAgentWorkflow {}
 class MockTaskToolDispatcher extends Mock implements TaskToolDispatcher {}
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+
+class MockSavedTaskFiltersRepository extends Mock
+    implements SavedTaskFiltersRepository {}
 
 class FakeMeliousInferenceRepository extends MeliousInferenceRepository {
   FakeMeliousInferenceRepository(this._results)

@@ -4132,6 +4132,8 @@
   "syncPayloadNotification": "Notification",
   "syncPayloadNotificationStateUpdate": "Notification state update",
   "syncPayloadOutboxBundle": "Outbox bundle",
+  "syncPayloadSavedTaskFilter": "Saved task filter",
+  "syncPayloadSavedTaskFilterDelete": "Saved task filter delete",
   "syncPayloadSyncNodeProfile": "Sync node profile",
   "syncPayloadThemingSelection": "Theming selection",
   "syncStepAgentEntities": "Agent entities",
@@ -4145,6 +4147,7 @@
   "syncStepHabits": "Habits",
   "syncStepLabels": "Labels",
   "syncStepMeasurables": "Measurables",
+  "syncStepSavedTaskFilters": "Saved task filters",
   "taskActionBarAudioRecordingActive": "Audio recording in progress",
   "taskActionBarMoreActions": "More actions",
   "taskActionBarOpenRunningTimer": "Open running timer",
@@ -4364,7 +4367,40 @@
   "tasksSavedFilterDeleteTooltip": "Delete saved filter",
   "tasksSavedFilterDragHandleSemantics": "Drag to reorder",
   "tasksSavedFilterRenameSemantics": "Rename saved filter",
+  "tasksSavedFiltersAllShort": "All",
+  "tasksSavedFiltersAllTasks": "All tasks",
+  "tasksSavedFiltersCustom": "Custom",
+  "tasksSavedFiltersDeleteConfirmAction": "Delete",
+  "tasksSavedFiltersDeleteConfirmMessage": "Delete the saved filter '{name}'? This can't be undone.",
+  "@tasksSavedFiltersDeleteConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFiltersDeleteNamed": "Delete {name}",
+  "@tasksSavedFiltersDeleteNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFiltersDone": "Done",
+  "tasksSavedFiltersEdit": "Edit",
+  "tasksSavedFiltersGroupSemantics": "Saved filters",
+  "tasksSavedFiltersRailButton": "Saved",
+  "tasksSavedFiltersRenameNamed": "Rename {name}",
+  "@tasksSavedFiltersRenameNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSavedFiltersSaveButtonLabel": "Save",
+  "tasksSavedFiltersSaveCurrentAs": "Save current filter as…",
   "tasksSavedFiltersSavePopupCancel": "Cancel",
   "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filter active. Saved to sidebar under Tasks.} other{{count} filters active. Saved to sidebar under Tasks.}}",
   "@tasksSavedFiltersSavePopupHelper": {
@@ -4377,6 +4413,15 @@
   "tasksSavedFiltersSavePopupHint": "e.g. Blocked or on hold",
   "tasksSavedFiltersSavePopupSave": "Save",
   "tasksSavedFiltersSavePopupTitle": "Name this filter",
+  "tasksSavedFiltersSheetTitle": "Saved filters",
+  "tasksSavedFiltersTaskCount": "{count, plural, =1{1 task} other{{count} tasks}}",
+  "@tasksSavedFiltersTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "tasksSavedFilterToastDeleted": "Filter deleted",
   "tasksSavedFilterToastSaved": "Saved '{name}'",
   "@tasksSavedFilterToastSaved": {

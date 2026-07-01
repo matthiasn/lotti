@@ -8624,6 +8624,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPayloadOutboxBundle => 'Outbox-Bündel';
 
   @override
+  String get syncPayloadSavedTaskFilter => 'Gespeicherter Aufgabenfilter';
+
+  @override
+  String get syncPayloadSavedTaskFilterDelete =>
+      'Gespeicherter Aufgabenfilter gelöscht';
+
+  @override
   String get syncPayloadSyncNodeProfile => 'Sync-Knoten-Profil';
 
   @override
@@ -8663,6 +8670,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncStepMeasurables => 'Messgrößen';
+
+  @override
+  String get syncStepSavedTaskFilters => 'Gespeicherte Aufgabenfilter';
 
   @override
   String get taskActionBarAudioRecordingActive => 'Audioaufnahme läuft';
@@ -9087,7 +9097,50 @@ class AppLocalizationsDe extends AppLocalizations {
       'Gespeicherten Filter umbenennen';
 
   @override
+  String get tasksSavedFiltersAllShort => 'Alle';
+
+  @override
+  String get tasksSavedFiltersAllTasks => 'Alle Aufgaben';
+
+  @override
+  String get tasksSavedFiltersCustom => 'Eigene';
+
+  @override
+  String get tasksSavedFiltersDeleteConfirmAction => 'Löschen';
+
+  @override
+  String tasksSavedFiltersDeleteConfirmMessage(String name) {
+    return 'Den gespeicherten Filter „$name“ löschen? Das lässt sich nicht rückgängig machen.';
+  }
+
+  @override
+  String tasksSavedFiltersDeleteNamed(String name) {
+    return '$name löschen';
+  }
+
+  @override
+  String get tasksSavedFiltersDone => 'Fertig';
+
+  @override
+  String get tasksSavedFiltersEdit => 'Bearbeiten';
+
+  @override
+  String get tasksSavedFiltersGroupSemantics => 'Gespeicherte Filter';
+
+  @override
+  String get tasksSavedFiltersRailButton => 'Gespeichert';
+
+  @override
+  String tasksSavedFiltersRenameNamed(String name) {
+    return '$name umbenennen';
+  }
+
+  @override
   String get tasksSavedFiltersSaveButtonLabel => 'Speichern';
+
+  @override
+  String get tasksSavedFiltersSaveCurrentAs =>
+      'Aktuellen Filter speichern als…';
 
   @override
   String get tasksSavedFiltersSavePopupCancel => 'Abbrechen';
@@ -9112,6 +9165,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSavePopupTitle => 'Diesen Filter benennen';
+
+  @override
+  String get tasksSavedFiltersSheetTitle => 'Gespeicherte Filter';
+
+  @override
+  String tasksSavedFiltersTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufgaben',
+      one: '1 Aufgabe',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get tasksSavedFilterToastDeleted => 'Filter gelöscht';

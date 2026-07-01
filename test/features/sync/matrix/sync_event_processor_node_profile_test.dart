@@ -37,6 +37,7 @@ void main() {
       loggingService: loggingService,
       updateNotifications: updateNotifications,
       aiConfigRepository: aiConfigRepository,
+      savedTaskFiltersRepository: savedTaskFiltersRepository,
       settingsDb: settingsDb,
       journalEntityLoader: journalEntityLoader,
       syncNodeProfileRepository: repo,
@@ -130,6 +131,7 @@ void main() {
       loggingService: loggingService,
       updateNotifications: updateNotifications,
       aiConfigRepository: aiConfigRepository,
+      savedTaskFiltersRepository: savedTaskFiltersRepository,
       settingsDb: settingsDb,
       journalEntityLoader: journalEntityLoader,
     );

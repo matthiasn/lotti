@@ -7,11 +7,13 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/view_models/outbox_list_item_view_model.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -567,6 +569,23 @@ void main() {
                 status: SyncEntryStatus.update,
               ),
               (ctx) => ctx.messages.syncPayloadAiConfig,
+            ),
+            (
+              'savedTaskFilter',
+              () => const SyncMessage.savedTaskFilter(
+                filter: SavedTaskFilter(
+                  id: 'stf-001',
+                  name: 'In Progress',
+                  filter: TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'}),
+                ),
+                status: SyncEntryStatus.update,
+              ),
+              (ctx) => ctx.messages.syncPayloadSavedTaskFilter,
+            ),
+            (
+              'savedTaskFilterDelete',
+              () => const SyncMessage.savedTaskFilterDelete(id: 'stf-001'),
+              (ctx) => ctx.messages.syncPayloadSavedTaskFilterDelete,
             ),
             (
               'configFlag',

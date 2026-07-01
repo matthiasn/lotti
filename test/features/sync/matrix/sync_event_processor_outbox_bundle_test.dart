@@ -372,6 +372,7 @@ void main() {
             loggingService: loggingService,
             updateNotifications: updateNotifications,
             aiConfigRepository: aiConfigRepository,
+            savedTaskFiltersRepository: savedTaskFiltersRepository,
             settingsDb: settingsDb,
             journalEntityLoader: journalEntityLoader,
             journalDb: journalDb,

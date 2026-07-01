@@ -155,6 +155,8 @@ class OutboxListItemViewModel {
         entryLink: (_) => messages.syncPayloadEntryLink,
         aiConfig: (_) => messages.syncPayloadAiConfig,
         aiConfigDelete: (_) => messages.syncPayloadAiConfigDelete,
+        savedTaskFilter: (_) => messages.syncPayloadSavedTaskFilter,
+        savedTaskFilterDelete: (_) => messages.syncPayloadSavedTaskFilterDelete,
         configFlag: (_) => messages.syncPayloadConfigFlag,
         themingSelection: (_) => messages.syncPayloadThemingSelection,
         notification: (_) => messages.syncPayloadNotification,

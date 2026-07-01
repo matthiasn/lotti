@@ -14761,6 +14761,18 @@ abstract class AppLocalizations {
   /// **'Outbox bundle'**
   String get syncPayloadOutboxBundle;
 
+  /// No description provided for @syncPayloadSavedTaskFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved task filter'**
+  String get syncPayloadSavedTaskFilter;
+
+  /// No description provided for @syncPayloadSavedTaskFilterDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved task filter delete'**
+  String get syncPayloadSavedTaskFilterDelete;
+
   /// No description provided for @syncPayloadSyncNodeProfile.
   ///
   /// In en, this message translates to:
@@ -14838,6 +14850,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Measurables'**
   String get syncStepMeasurables;
+
+  /// No description provided for @syncStepSavedTaskFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved task filters'**
+  String get syncStepSavedTaskFilters;
 
   /// No description provided for @taskActionBarAudioRecordingActive.
   ///
@@ -15577,11 +15595,83 @@ abstract class AppLocalizations {
   /// **'Rename saved filter'**
   String get tasksSavedFilterRenameSemantics;
 
+  /// No description provided for @tasksSavedFiltersAllShort.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get tasksSavedFiltersAllShort;
+
+  /// No description provided for @tasksSavedFiltersAllTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'All tasks'**
+  String get tasksSavedFiltersAllTasks;
+
+  /// No description provided for @tasksSavedFiltersCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get tasksSavedFiltersCustom;
+
+  /// No description provided for @tasksSavedFiltersDeleteConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get tasksSavedFiltersDeleteConfirmAction;
+
+  /// No description provided for @tasksSavedFiltersDeleteConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the saved filter \'{name}\'? This can\'t be undone.'**
+  String tasksSavedFiltersDeleteConfirmMessage(String name);
+
+  /// No description provided for @tasksSavedFiltersDeleteNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}'**
+  String tasksSavedFiltersDeleteNamed(String name);
+
+  /// No description provided for @tasksSavedFiltersDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get tasksSavedFiltersDone;
+
+  /// No description provided for @tasksSavedFiltersEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get tasksSavedFiltersEdit;
+
+  /// No description provided for @tasksSavedFiltersGroupSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved filters'**
+  String get tasksSavedFiltersGroupSemantics;
+
+  /// No description provided for @tasksSavedFiltersRailButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get tasksSavedFiltersRailButton;
+
+  /// No description provided for @tasksSavedFiltersRenameNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename {name}'**
+  String tasksSavedFiltersRenameNamed(String name);
+
   /// No description provided for @tasksSavedFiltersSaveButtonLabel.
   ///
   /// In en, this message translates to:
   /// **'Save'**
   String get tasksSavedFiltersSaveButtonLabel;
+
+  /// No description provided for @tasksSavedFiltersSaveCurrentAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save current filter as…'**
+  String get tasksSavedFiltersSaveCurrentAs;
 
   /// No description provided for @tasksSavedFiltersSavePopupCancel.
   ///
@@ -15612,6 +15702,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Name this filter'**
   String get tasksSavedFiltersSavePopupTitle;
+
+  /// No description provided for @tasksSavedFiltersSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved filters'**
+  String get tasksSavedFiltersSheetTitle;
+
+  /// No description provided for @tasksSavedFiltersTaskCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 task} other{{count} tasks}}'**
+  String tasksSavedFiltersTaskCount(int count);
 
   /// No description provided for @tasksSavedFilterToastDeleted.
   ///

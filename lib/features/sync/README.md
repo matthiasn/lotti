@@ -86,6 +86,8 @@ Current message families in `model/sync_message.dart`:
 - `entryLink`
 - `aiConfig`
 - `aiConfigDelete`
+- `savedTaskFilter`
+- `savedTaskFilterDelete`
 - `configFlag`
 - `themingSelection`
 - `notification`
@@ -124,6 +126,24 @@ Those payloads can carry:
 `coveredVectorClocks` are not optional decoration. `SyncSequenceLogService`
 pre-marks covered counters before normal gap detection so a newer payload can
 prove that older counters were semantically superseded instead of simply lost.
+
+### Saved task filters
+
+Saved task-filter *definitions* (`savedTaskFilter`, `savedTaskFilterDelete`)
+sync per-item like AI configs — fire-and-forget, with no vector clock and no
+`originatingHostId`, so they are not sequence-tracked. Receivers upsert by
+`filter.id` under a last-write-wins guard on `updatedAt` (a strictly older
+incoming revision is dropped), and self-echoes are bypassed by the `fromSync`
+flag the apply path (`SyncSavedTaskFilter` / `SyncSavedTaskFilterDelete` in
+`sync_event_processor_apply.dart`) passes into `SavedTaskFiltersRepository` — an
+applied remote change never re-enqueues itself. Persistence is a per-item
+read-modify-write over the single `SettingsDb` JSON blob, serialized by an
+in-class async lock so concurrent local edits and inbound applies never clobber
+each other's slice of the list. Existing local-only filters are converged onto
+other devices by the `SyncStep.savedTaskFilters` maintenance step
+(Settings → Sync → Sync Entities), which re-enqueues every persisted
+definition. Per-device list order and the derived per-filter task counts are
+computed locally and are never synced.
 
 ## Sync Node Profile And Auto-Trigger
 
@@ -628,7 +648,8 @@ or backfill rows while the per-priority order stays stable.
 3. Emit a single manifest of records:
    `{version: 1, entries: [{envelope: <SyncMessage>, payload: <JournalEntity?>}]}`.
    Inline-payload families (`SyncEntryLink`, `SyncAiConfig`,
-   `SyncAiConfigDelete`, `SyncEntityDefinition`, `SyncThemingSelection`,
+   `SyncAiConfigDelete`, `SyncSavedTaskFilter`, `SyncSavedTaskFilterDelete`,
+   `SyncEntityDefinition`, `SyncThemingSelection`,
    `SyncBackfillRequest`, `SyncBackfillResponse`) and agent envelopes
    (`SyncAgentEntity`, `SyncAgentLink`) carry their data inside the freezed
    envelope and need no separate `payload` field.
@@ -1134,6 +1155,9 @@ The code still depends on a few sharp assumptions:
   links
 - `agents/sync/agent_sync_service.dart` enqueues agent entities and links
 - `ai` repositories enqueue AI config updates and deletes
+- `tasks/state/saved_filters/SavedTaskFiltersRepository` enqueues
+  `savedTaskFilter` / `savedTaskFilterDelete` per-item, and re-syncs local-only
+  definitions through the `SyncStep.savedTaskFilters` maintenance step
 - Settings flag flips enqueue `configFlag` messages through
   `PersistenceLogic.setConfigFlag(...)`. Startup flag seeding deliberately uses
   `JournalDb.insertFlagIfNotExists(...)` and does not broadcast, so a device

@@ -232,6 +232,113 @@ void main() {
       expect(find.byKey(const ValueKey('lead')), findsOneWidget);
       expect(find.byKey(const ValueKey('tail')), findsOneWidget);
     });
+
+    BoxDecoration decorationOf(WidgetTester tester) =>
+        tester
+                .widgetList<DecoratedBox>(
+                  find.descendant(
+                    of: find.byType(DsPill),
+                    matching: find.byType(DecoratedBox),
+                  ),
+                )
+                .first
+                .decoration
+            as BoxDecoration;
+
+    testWidgets(
+      'filled + selected: teal-tinted fill, interactive border, bold label',
+      (tester) async {
+        await pump(
+          tester,
+          const DsPill(
+            variant: DsPillVariant.filled,
+            label: 'Sel',
+            selected: true,
+          ),
+        );
+
+        final decoration = decorationOf(tester);
+        expect(decoration.color, dsTokensDark.colors.surface.selected);
+        expect(
+          (decoration.border! as Border).top.color,
+          dsTokensDark.colors.interactive.enabled,
+        );
+        expect(
+          tester.widget<Text>(find.text('Sel')).style?.fontWeight,
+          FontWeight.w700,
+        );
+      },
+    );
+
+    testWidgets(
+      'tinted + selected: keeps tint fill, adds interactive border + bold',
+      (tester) async {
+        const accent = Color(0xFFD65E5C);
+        await pump(
+          tester,
+          const DsPill(
+            variant: DsPillVariant.tinted,
+            label: 'P0',
+            color: accent,
+            selected: true,
+          ),
+        );
+
+        final decoration = decorationOf(tester);
+        // Tint fill is unchanged; only the border + weight are added.
+        expect(decoration.color, accent.withValues(alpha: 0.18));
+        expect(
+          (decoration.border! as Border).top.color,
+          dsTokensDark.colors.interactive.enabled,
+        );
+        expect(
+          tester.widget<Text>(find.text('P0')).style?.fontWeight,
+          FontWeight.w700,
+        );
+      },
+    );
+
+    testWidgets(
+      'regression: selected:false leaves the filled pill byte-identical',
+      (tester) async {
+        // selected:false must reproduce the default filled pill exactly — no
+        // border, surface.enabled fill, no bold — so existing consumers are
+        // untouched by the new orthogonal flag.
+        await pump(
+          tester,
+          const DsPill(
+            variant: DsPillVariant.filled,
+            label: 'Plain',
+          ),
+        );
+        final decoration = decorationOf(tester);
+        expect(decoration.color, dsTokensDark.colors.surface.enabled);
+        expect(decoration.border, isNull);
+        expect(
+          tester.widget<Text>(find.text('Plain')).style?.fontWeight,
+          isNot(FontWeight.w700),
+        );
+      },
+    );
+
+    testWidgets(
+      'regression: selected:false keeps the bordered filled border quiet',
+      (tester) async {
+        await pump(
+          tester,
+          const DsPill(
+            variant: DsPillVariant.filled,
+            label: 'Bordered',
+            bordered: true,
+          ),
+        );
+        final decoration = decorationOf(tester);
+        expect(
+          (decoration.border! as Border).top.color,
+          dsTokensDark.colors.decorative.level02,
+        );
+      },
+    );
   });
 
   group('DsGhostChip', () {

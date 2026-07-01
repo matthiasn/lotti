@@ -25,11 +25,13 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:research_package/model.dart';
@@ -68,6 +70,12 @@ const SyncMessage fallbackSyncMessage = SyncJournalEntity(
   jsonPath: '/tmp/fallback.json',
   vectorClock: null,
   status: SyncEntryStatus.initial,
+);
+
+const SavedTaskFilter fallbackSavedTaskFilter = SavedTaskFilter(
+  id: 'fallback-saved-filter',
+  name: 'Fallback',
+  filter: TasksFilter(),
 );
 
 final AiConfig fallbackAiConfig = AiConfig.inferenceProvider(
@@ -148,6 +156,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackProjectEntry);
   registerFallbackValue(fallbackSyncMessage);
   registerFallbackValue(fallbackAiConfig);
+  registerFallbackValue(fallbackSavedTaskFilter);
   registerFallbackValue(fallbackNotificationEntity);
   registerFallbackValue(fallbackConfigFlag);
   registerFallbackValue(fallbackSurveyData);

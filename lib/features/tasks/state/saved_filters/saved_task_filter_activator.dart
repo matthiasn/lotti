@@ -31,15 +31,34 @@ class SavedTaskFilterActivator {
       showDueDate: f.showDueDate,
     );
   }
+
+  /// Clears every persisted clause back to the [TasksFilter] defaults — the
+  /// "All" / "All tasks" entry on mobile. The search query is preserved (it is
+  /// never part of a saved filter). Mirrors the default field set so a cleared
+  /// page matches the default-shape `TasksFilter`.
+  Future<void> clearToDefault() {
+    return _controller.applyBatchFilterUpdate(
+      statuses: const <String>{},
+      categoryIds: const <String>{},
+      labelIds: const <String>{},
+      projectIds: const <String>{},
+      priorities: const <String>{},
+      sortOption: TaskSortOption.byPriority,
+      agentAssignmentFilter: AgentAssignmentFilter.all,
+      showCreationDate: false,
+      showDueDate: true,
+    );
+  }
 }
 
 /// Builds a [TasksFilter] snapshot from the live tasks-page state for
-/// comparison against persisted saved filters.
+/// comparison against persisted saved filters — and for the mobile
+/// "Save current filter as…" flow, which persists exactly this shape.
 ///
 /// Mirrors the field set in [JournalPageController._persistTasksFilterWithoutRefresh],
 /// minus the display-only `showCoverArt` / `showProjectsHeader` / `showDistances`
 /// flags which the saved-filter UX intentionally ignores when matching.
-TasksFilter _liveFilterFor(JournalPageState pageState) {
+TasksFilter liveTasksFilterFor(JournalPageState pageState) {
   return TasksFilter(
     selectedCategoryIds: pageState.selectedCategoryIds,
     selectedProjectIds: pageState.selectedProjectIds,
@@ -103,7 +122,7 @@ String? currentSavedTaskFilterId(Ref ref) {
       ref.watch(savedTaskFiltersControllerProvider).value ??
       const <SavedTaskFilter>[];
   if (saved.isEmpty) return null;
-  final live = _liveFilterFor(pageState);
+  final live = liveTasksFilterFor(pageState);
   for (final v in saved) {
     if (_matches(v.filter, live)) return v.id;
   }
@@ -120,7 +139,7 @@ final Provider<bool> tasksFilterHasUnsavedClausesProvider =
     );
 bool tasksFilterHasUnsavedClauses(Ref ref) {
   final pageState = ref.watch(journalPageControllerProvider(true));
-  final live = _liveFilterFor(pageState);
+  final live = liveTasksFilterFor(pageState);
   if (!_hasActiveClauses(live)) return false;
   final matchedId = ref.watch(currentSavedTaskFilterIdProvider);
   return matchedId == null;

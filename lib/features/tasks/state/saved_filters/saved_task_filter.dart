@@ -9,6 +9,12 @@ part 'saved_task_filter.g.dart';
 /// Position in the persisted list is the sort order. The ephemeral
 /// search query is intentionally NOT part of [filter] — it stays on
 /// the live page state and is preserved across saved-filter activations.
+///
+/// [createdAt] / [updatedAt] are optional sync metadata used for
+/// cross-device last-write-wins. They are intentionally excluded from
+/// saved-filter *matching* (`currentSavedTaskFilterIdProvider` compares the
+/// filter shape only), so a synced timestamp never changes which pill reads
+/// as active.
 @Freezed(toJson: true, fromJson: true)
 abstract class SavedTaskFilter with _$SavedTaskFilter {
   @JsonSerializable(explicitToJson: true)
@@ -16,6 +22,8 @@ abstract class SavedTaskFilter with _$SavedTaskFilter {
     required String id,
     required String name,
     required TasksFilter filter,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) = _SavedTaskFilter;
 
   factory SavedTaskFilter.fromJson(Map<String, dynamic> json) =>

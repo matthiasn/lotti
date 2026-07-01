@@ -15,8 +15,10 @@ import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -722,7 +724,10 @@ void main() {
     );
   });
 
-  group('Tasks header saved-filter suffix', () {
+  group('Tasks saved-filter rail', () {
+    // The header no longer carries a "· {name}" suffix; the mobile rail surfaces
+    // the active saved filter instead. These tests exercise the page-level
+    // wiring (rail visible only when ≥1 saved filter exists, active name shown).
     Widget buildSubjectWithSavedFilter({
       required String? activeId,
       required List<SavedTaskFilter> seed,
@@ -742,11 +747,16 @@ void main() {
           ),
           currentSavedTaskFilterIdProvider.overrideWith((ref) => activeId),
           tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+          // Keep counts off the GetIt-backed repository in this page-level test.
+          savedTaskFilterCountsProvider.overrideWith(
+            (ref) async => const {'sv-1': 3},
+          ),
+          allTasksTotalCountProvider.overrideWith((ref) async => 50),
         ],
       );
     }
 
-    testWidgets('renders no suffix when no saved filter is active', (
+    testWidgets('omits the rail entirely when no saved filters exist', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -758,37 +768,43 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
+      // The rail collapses to nothing — no Saved button — and the old
+      // "· {name}" header suffix is gone for good.
+      expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsNothing);
       expect(find.textContaining('· '), findsNothing);
     });
 
-    testWidgets(
-      'renders the "· {name}" suffix when activeId resolves to a saved view',
-      (tester) async {
-        await tester.pumpWidget(
-          buildSubjectWithSavedFilter(
-            activeId: 'sv-1',
-            seed: const [
-              SavedTaskFilter(
-                id: 'sv-1',
-                name: 'In progress · P0',
-                filter: TasksFilter(),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+    testWidgets('surfaces the active saved filter name in the rail', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubjectWithSavedFilter(
+          activeId: 'sv-1',
+          seed: const [
+            SavedTaskFilter(
+              id: 'sv-1',
+              name: 'In Progress P0',
+              filter: TasksFilter(),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('· In progress · P0'), findsOneWidget);
-      },
-    );
+      expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
+      // The Saved button keeps the plain "Saved" label (its saved-count rides a
+      // separate slot, not a parenthetical).
+      expect(find.text('Saved'), findsOneWidget);
+      // The active pill shows the saved filter's name.
+      expect(find.text('In Progress P0'), findsOneWidget);
+    });
 
     testWidgets(
-      'renders no suffix when activeId does not resolve to any saved view',
+      'rail collapses when activeId does not resolve to any saved view',
       (tester) async {
-        // Stale-id case: provider says sv-1 is active, but the list does not
-        // contain it (e.g. concurrent delete). The suffix must degrade to
-        // empty rather than throwing.
+        // Stale-id case: provider says sv-1 is active, but the list is empty
+        // (e.g. concurrent delete). The rail must collapse rather than throw.
         await tester.pumpWidget(
           buildSubjectWithSavedFilter(
             activeId: 'sv-1',
@@ -798,7 +814,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.textContaining('· '), findsNothing);
+        expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsNothing);
+        expect(tester.takeException(), isNull);
       },
     );
   });

@@ -104,6 +104,7 @@ void main() {
       SyncStep.dashboards: 8,
       SyncStep.habits: 9,
       SyncStep.aiSettings: 10,
+      SyncStep.savedTaskFilters: 13,
       SyncStep.backfillAgentEntityClocks: 11,
       SyncStep.backfillAgentLinkClocks: 12,
       SyncStep.agentEntities: 3,
@@ -176,6 +177,14 @@ void main() {
       ),
     ).thenAnswer(
       (invocation) => simulateStep(SyncStep.aiSettings, invocation),
+    );
+    when(
+      () => mockSyncMaintenanceRepository.syncSavedTaskFilters(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer(
+      (invocation) => simulateStep(SyncStep.savedTaskFilters, invocation),
     );
     when(
       () => mockSyncMaintenanceRepository.syncAgentEntities(
@@ -318,6 +327,7 @@ void main() {
             SyncStep.dashboards,
             SyncStep.habits,
             SyncStep.aiSettings,
+            SyncStep.savedTaskFilters,
             SyncStep.backfillAgentEntityClocks,
             SyncStep.backfillAgentLinkClocks,
             SyncStep.agentEntities,
@@ -334,6 +344,7 @@ void main() {
       expect(find.text('8 / 8'), findsOneWidget);
       expect(find.text('9 / 9'), findsOneWidget);
       expect(find.text('10 / 10'), findsOneWidget);
+      expect(find.text('13 / 13'), findsOneWidget);
     },
   );
 

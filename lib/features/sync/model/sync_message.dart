@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 
 part 'sync_message.freezed.dart';
 part 'sync_message.g.dart';
@@ -99,6 +100,21 @@ sealed class SyncMessage with _$SyncMessage {
   const factory SyncMessage.aiConfigDelete({
     required String id,
   }) = SyncAiConfigDelete;
+
+  /// A saved task-filter *definition* (id, name, filter shape) synced per
+  /// item across devices. Carries no vector clock / `originatingHostId` —
+  /// receivers upsert by `filter.id` under a last-write-wins guard
+  /// (`SavedTaskFiltersRepository`), and self-echoes are dropped via the
+  /// `fromSync` flag on the apply path. Derived task counts are never synced.
+  const factory SyncMessage.savedTaskFilter({
+    required SavedTaskFilter filter,
+    required SyncEntryStatus status,
+  }) = SyncSavedTaskFilter;
+
+  /// Removal of a saved task-filter definition by id.
+  const factory SyncMessage.savedTaskFilterDelete({
+    required String id,
+  }) = SyncSavedTaskFilterDelete;
 
   const factory SyncMessage.configFlag({
     required String name,
