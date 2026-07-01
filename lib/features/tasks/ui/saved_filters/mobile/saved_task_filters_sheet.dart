@@ -88,6 +88,9 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
   Future<void> _rename(SavedTaskFilter saved) async {
     final name = await promptTaskFilterName(context, initialValue: saved.name);
     if (name == null) return;
+    // The name modal is an async gap — don't read a disposed ref if the sheet
+    // closed while it was open.
+    if (!mounted) return;
     await ref
         .read(savedTaskFiltersControllerProvider.notifier)
         .rename(saved.id, name);
@@ -105,6 +108,9 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
       cancelLabel: messages.tasksSavedFiltersSavePopupCancel,
     );
     if (!confirmed) return;
+    // The confirmation modal is an async gap — bail before touching the ref if
+    // the sheet unmounted meanwhile.
+    if (!mounted) return;
     await ref
         .read(savedTaskFiltersControllerProvider.notifier)
         .delete(saved.id);
@@ -119,8 +125,10 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
 
   Future<void> _create() async {
     if (!mounted) return;
-    await promptSaveCurrentTaskFilter(context, ref);
-    if (mounted) await Navigator.of(context).maybePop();
+    // Only close the sheet when a filter was actually saved — a cancelled or
+    // blank name returns null and should leave the user on the list.
+    final created = await promptSaveCurrentTaskFilter(context, ref);
+    if (created != null && mounted) await Navigator.of(context).maybePop();
   }
 
   @override

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -523,4 +525,74 @@ void main() {
 
     expect(bench.saved.createCalls.single, 'My filter');
   });
+
+  testWidgets(
+    'create closes the sheet only when a filter is saved, not on cancel',
+    (tester) async {
+      // The sheet is presented as a real route so its post-create
+      // `Navigator.maybePop()` has something to close — the default harness
+      // renders it as the root route where a pop is a no-op.
+      final fake = FakeJournalPageController(
+        const JournalPageState(selectedTaskStatuses: {'OPEN'}),
+      );
+      final saved = _RecordingSavedController(const [_f1, _f2]);
+      final navKey = GlobalKey<NavigatorState>();
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Scaffold(body: SizedBox.shrink()),
+          navigatorKey: navKey,
+          overrides: [
+            journalPageControllerProvider(true).overrideWith(() => fake),
+            savedTaskFiltersControllerProvider.overrideWith(() => saved),
+            savedTaskFilterCountsProvider.overrideWith(
+              (ref) async => const {'f1': 12, 'f2': 7},
+            ),
+            allTasksTotalCountProvider.overrideWith((ref) async => 124),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      unawaited(
+        navKey.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (_) => const Scaffold(body: SavedTaskFiltersSheet()),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
+
+      // Cancel the name modal → nothing is created and the sheet stays open.
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.createRow));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(saved.createCalls, isEmpty);
+      expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
+
+      // Save a name → the filter is created and the sheet closes.
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.createRow));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.enterText(
+        find.byKey(SaveCurrentTaskFilterKeys.nameField),
+        'My filter',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(SaveCurrentTaskFilterKeys.saveButton));
+      await tester.pump();
+      // Two transitions run back-to-back: the name modal closes, then
+      // `_create` pops the sheet route — pump enough for both to finish.
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(saved.createCalls, ['My filter']);
+      expect(find.byType(SavedTaskFiltersSheet), findsNothing);
+    },
+  );
 }

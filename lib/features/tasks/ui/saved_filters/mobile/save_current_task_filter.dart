@@ -39,15 +39,19 @@ Future<SavedTaskFilter?> promptSaveCurrentTaskFilter(
   if (name == null) return null;
   final trimmed = name.trim();
   if (trimmed.isEmpty) return null;
+  // The name modal is an async gap: bail if the caller unmounted so the
+  // Riverpod reads below never touch a disposed WidgetRef.
+  if (!context.mounted) return null;
 
   try {
     final created = await ref
         .read(savedTaskFiltersControllerProvider.notifier)
         .create(name: trimmed, filter: filter);
+    // `create` is another async gap — the filter is persisted regardless, so
+    // return it, but skip the MRU touch/toast when the ref/context are gone.
+    if (!context.mounted) return created;
     ref.read(savedTaskFilterMruProvider.notifier).touch(created.id);
-    if (context.mounted) {
-      showSavedTaskFilterSavedToast(context, name: created.name);
-    }
+    showSavedTaskFilterSavedToast(context, name: created.name);
     return created;
   } catch (error, stackTrace) {
     if (getIt.isRegistered<DomainLogger>()) {

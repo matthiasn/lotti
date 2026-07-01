@@ -164,10 +164,12 @@ class SavedTaskFilterRail extends ConsumerWidget {
                 // empty trailing space (no overflow) it is a visual no-op.
                 blendMode: BlendMode.dstIn,
                 shaderCallback: (bounds) {
-                  final fade = (tokens.spacing.step6 / bounds.width).clamp(
-                    0.0,
-                    1.0,
-                  );
+                  // Guard the divide: a zero-width bounds (initial layout pass
+                  // or a collapsed test viewport) would yield NaN/Infinity, and
+                  // `NaN.clamp(...)` throws — crashing the whole layout.
+                  final fade = bounds.width > 0
+                      ? (tokens.spacing.step6 / bounds.width).clamp(0.0, 1.0)
+                      : 0.0;
                   return LinearGradient(
                     stops: [0, 1 - fade, 1],
                     colors: const [
@@ -422,7 +424,16 @@ class SavedTaskFilterRail extends ConsumerWidget {
     final anchorReserve = hasAnchorPill ? tokens.spacing.step13 : 0.0; // 160
     final mruPill = tokens.spacing.step12; // 96 per quick-jump pill
 
-    final fixedHead = savedButton + gap + allPill + saveChip + anchorReserve;
+    // Each conditional element carries its own preceding gap in the real Row,
+    // so reserve that gap only when the element is present — otherwise the
+    // heuristic under-reserves by up to two gaps and can overflow on tight
+    // screens.
+    final fixedHead =
+        savedButton +
+        gap +
+        allPill +
+        (hasAnchorPill ? gap + anchorReserve : 0.0) +
+        (showSaveChip ? gap + saveChip : 0.0);
     final remaining = available - fixedHead;
     if (remaining <= 0) return 0;
     final fits = (remaining / (mruPill + gap)).floor();

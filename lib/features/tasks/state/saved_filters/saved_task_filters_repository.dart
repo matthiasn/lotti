@@ -48,10 +48,13 @@ class SavedTaskFiltersRepository {
     final previous = _lockTail?.future;
     final mine = Completer<void>();
     _lockTail = mine;
-    if (previous != null) {
-      await previous;
-    }
+    // `await previous` sits *inside* the try so a throwing predecessor still
+    // runs the finally and completes `mine` — otherwise every later caller
+    // would await a completer that never fires and deadlock permanently.
     try {
+      if (previous != null) {
+        await previous;
+      }
       return await action();
     } finally {
       if (identical(_lockTail, mine)) _lockTail = null;

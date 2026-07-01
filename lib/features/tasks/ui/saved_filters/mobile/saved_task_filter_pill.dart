@@ -313,13 +313,18 @@ class _PillLabel extends StatelessWidget {
             style: style,
           ),
         ),
-        // …while the status segment is pinned and stays readable.
-        Text(
-          tail,
-          maxLines: 1,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
-          style: style,
+        // …while the status segment is pinned and stays readable. `Flexible`
+        // (loose fit) keeps its natural width whenever the head can absorb the
+        // shrink, and only lets it ellipsize (rather than overflow) in the
+        // pathological case where the status alone exceeds the pill.
+        Flexible(
+          child: Text(
+            tail,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          ),
         ),
       ],
     );
