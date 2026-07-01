@@ -1,18 +1,24 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/omlx_inference_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
-import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit_setup.dart';
+import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:uuid/uuid.dart';
@@ -37,6 +43,15 @@ final omlxInferenceRepositoryProvider =
       return repository;
     });
 
+// Riverpod 3 keeps the concrete auto-dispose provider type internal.
+// ignore: specify_nonobvious_property_types
+final mistralInferenceRepositoryProvider =
+    Provider.autoDispose<MistralInferenceRepository>((ref) {
+      final repository = MistralInferenceRepository();
+      ref.onDispose(repository.close);
+      return repository;
+    });
+
 // Riverpod 3 keeps the concrete provider-family type internal, so this family
 // has to rely on inference to remain callable and invalidatable.
 // ignore: specify_nonobvious_property_types
@@ -47,6 +62,7 @@ final _dynamicKnownModelsProvider = FutureProvider.autoDispose
     ) async {
       final meliousRepository = ref.watch(meliousInferenceRepositoryProvider);
       final omlxRepository = ref.watch(omlxInferenceRepositoryProvider);
+      final mistralRepository = ref.watch(mistralInferenceRepositoryProvider);
       final repository = ref.read(aiConfigRepositoryProvider);
       final config = await repository.getConfigById(providerId);
       if (config is! AiConfigInferenceProvider) {
@@ -63,6 +79,10 @@ final _dynamicKnownModelsProvider = FutureProvider.autoDispose
           apiKey: config.apiKey,
         ),
         InferenceProviderType.omlx => omlxRepository.listModels(
+          baseUrl: baseUrl,
+          apiKey: config.apiKey,
+        ),
+        InferenceProviderType.mistral => mistralRepository.listModels(
           baseUrl: baseUrl,
           apiKey: config.apiKey,
         ),
@@ -222,8 +242,7 @@ class AvailableModelsSection extends ConsumerWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
 
-    if (providerType == InferenceProviderType.melious ||
-        providerType == InferenceProviderType.omlx) {
+    if (ProviderConfig.supportsDynamicCatalog(providerType)) {
       return _DynamicAvailableModelsSection(providerId: providerId);
     }
 
@@ -240,12 +259,9 @@ class AvailableModelsSection extends ConsumerWidget {
 
     return allModelsAsync.when(
       data: (allModels) {
-        // Get models already configured for this provider
-        final existingModelIds = allModels
-            .whereType<AiConfigModel>()
-            .where((m) => m.inferenceProviderId == providerId)
-            .map((m) => m.providerModelId)
-            .toSet();
+        // Map each already-configured model id to its saved config id so a
+        // tile can both show its "Added" state and offer a remove control.
+        final existingConfigs = _configsByModelId(allModels, providerId);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,16 +273,13 @@ class AvailableModelsSection extends ConsumerWidget {
               description: messages.apiKeyAvailableModelsDescription,
               children: [
                 ...knownModels.map((knownModel) {
-                  final isAdded = existingModelIds.contains(
-                    knownModel.providerModelId,
-                  );
                   return Padding(
                     padding: EdgeInsets.only(bottom: tokens.spacing.step4),
                     child: _KnownModelTile(
                       key: ValueKey(knownModel.providerModelId),
                       knownModel: knownModel,
                       providerId: providerId,
-                      isAdded: isAdded,
+                      addedConfig: existingConfigs[knownModel.providerModelId],
                     ),
                   );
                 }),
@@ -326,91 +339,138 @@ class _DynamicAvailableModelsSectionState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(height: tokens.spacing.step4),
-        AiFormSection(
+        // Plain token header — a peer of the installed "Models · N" section
+        // title, not the heavier iconed AiFormSection card, so the primary
+        // installed list is not visually outranked by the catalog below it.
+        _DynamicCatalogHeader(
           title: messages.apiKeyAvailableModelsTitle,
-          icon: Icons.psychology_rounded,
-          description: messages.apiKeyAvailableModelsDescription,
-          children: [
-            allModelsAsync.when(
+          description: messages.apiKeyDynamicModelsDescription,
+        ),
+        SizedBox(height: tokens.spacing.step4),
+        allModelsAsync.when(
+          skipLoadingOnReload: true,
+          data: (allModels) {
+            final existingConfigs = _configsByModelId(
+              allModels,
+              widget.providerId,
+            );
+
+            return catalogAsync.when(
               skipLoadingOnReload: true,
-              data: (allModels) {
-                final existingModelIds = allModels
-                    .whereType<AiConfigModel>()
-                    .where((m) => m.inferenceProviderId == widget.providerId)
-                    .map((m) => m.providerModelId)
-                    .toSet();
+              data: (knownModels) {
+                if (knownModels.isEmpty) {
+                  return Padding(
+                    padding: EdgeInsets.all(tokens.spacing.step4),
+                    child: Text(
+                      messages.aiConfigNoModelsAvailable,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  );
+                }
 
-                return catalogAsync.when(
-                  skipLoadingOnReload: true,
-                  data: (knownModels) {
-                    if (knownModels.isEmpty) {
-                      return Padding(
-                        padding: EdgeInsets.all(tokens.spacing.step4),
-                        child: Text(
-                          messages.aiConfigNoModelsAvailable,
-                          style: tokens.typography.styles.body.bodySmall
-                              .copyWith(
-                                color: context.colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      );
-                    }
+                final sortedModels = [...knownModels]
+                  ..sort((a, b) => a.name.compareTo(b.name));
+                final filteredModels = _filterDynamicModels(
+                  sortedModels,
+                  _searchQuery,
+                );
 
-                    final sortedModels = [...knownModels]
-                      ..sort((a, b) => a.name.compareTo(b.name));
-                    final filteredModels = _filterDynamicModels(
-                      sortedModels,
-                      _searchQuery,
-                    );
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AiSettingsSearchBar(
-                          key: const ValueKey('dynamic-model-catalog-search'),
-                          controller: _searchController,
-                          hintText: messages.aiProfileModelPickerSearchHint,
-                          isCompact: true,
-                          onChanged: (value) {
-                            setState(() => _searchQuery = value);
-                          },
-                          onClear: () {
-                            setState(() => _searchQuery = '');
-                          },
-                        ),
-                        SizedBox(height: tokens.spacing.step4),
-                        if (filteredModels.isEmpty)
-                          _DynamicModelsNoMatches(tokens: tokens)
-                        else if (filteredModels.length <= _inlineModelLimit)
-                          _DynamicModelsColumn(
-                            models: filteredModels,
-                            existingModelIds: existingModelIds,
-                            providerId: widget.providerId,
-                          )
-                        else
-                          _DynamicModelsScrollableList(
-                            models: filteredModels,
-                            existingModelIds: existingModelIds,
-                            providerId: widget.providerId,
-                          ),
-                      ],
-                    );
-                  },
-                  loading: () => _DynamicModelsLoading(tokens: tokens),
-                  error: (error, _) => _DynamicModelsError(
-                    providerId: widget.providerId,
-                    error: error,
-                  ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AiSettingsSearchBar(
+                      key: const ValueKey('dynamic-model-catalog-search'),
+                      controller: _searchController,
+                      hintText: messages.aiProfileModelPickerSearchHint,
+                      isCompact: true,
+                      onChanged: (value) {
+                        setState(() => _searchQuery = value);
+                      },
+                      onClear: () {
+                        setState(() => _searchQuery = '');
+                      },
+                    ),
+                    SizedBox(height: tokens.spacing.step4),
+                    if (filteredModels.isEmpty)
+                      _DynamicModelsNoMatches(tokens: tokens)
+                    else if (filteredModels.length <= _inlineModelLimit)
+                      _DynamicModelsColumn(
+                        models: filteredModels,
+                        existingConfigs: existingConfigs,
+                        providerId: widget.providerId,
+                      )
+                    else
+                      _DynamicModelsScrollableList(
+                        models: filteredModels,
+                        existingConfigs: existingConfigs,
+                        providerId: widget.providerId,
+                      ),
+                  ],
                 );
               },
               loading: () => _DynamicModelsLoading(tokens: tokens),
-              error: (_, _) => const SizedBox.shrink(),
-            ),
-          ],
+              error: (error, _) => _DynamicModelsError(
+                providerId: widget.providerId,
+                error: error,
+              ),
+            );
+          },
+          loading: () => _DynamicModelsLoading(tokens: tokens),
+          error: (_, _) => const SizedBox.shrink(),
         ),
       ],
     );
   }
+}
+
+/// Plain section header for the dynamic model catalog — a title + supporting
+/// line styled to sit as a peer of the token-based "Models · N" section title,
+/// instead of the legacy iconed [AiFormSection] card.
+class _DynamicCatalogHeader extends StatelessWidget {
+  const _DynamicCatalogHeader({required this.title, required this.description});
+
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final colors = tokens.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+            color: colors.text.highEmphasis,
+            fontWeight: tokens.typography.weight.semiBold,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step1),
+        Text(
+          description,
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            color: colors.text.mediumEmphasis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Maps each model already configured for [providerId] to its saved config,
+/// keyed by `providerModelId`. Tiles use this both to show the "Added" state
+/// and to remove the configured model again (through [AiConfigDeleteService]).
+Map<String, AiConfigModel> _configsByModelId(
+  List<AiConfig> allModels,
+  String providerId,
+) {
+  return {
+    for (final model in allModels.whereType<AiConfigModel>())
+      if (model.inferenceProviderId == providerId) model.providerModelId: model,
+  };
 }
 
 List<KnownModel> _filterDynamicModels(
@@ -457,12 +517,12 @@ class _DynamicModelsNoMatches extends StatelessWidget {
 class _DynamicModelsColumn extends StatelessWidget {
   const _DynamicModelsColumn({
     required this.models,
-    required this.existingModelIds,
+    required this.existingConfigs,
     required this.providerId,
   });
 
   final List<KnownModel> models;
-  final Set<String> existingModelIds;
+  final Map<String, AiConfigModel> existingConfigs;
   final String providerId;
 
   @override
@@ -471,16 +531,13 @@ class _DynamicModelsColumn extends StatelessWidget {
     return Column(
       children: [
         ...models.map((knownModel) {
-          final isAdded = existingModelIds.contains(
-            knownModel.providerModelId,
-          );
           return Padding(
             padding: EdgeInsets.only(bottom: tokens.spacing.step4),
             child: _KnownModelTile(
               key: ValueKey(knownModel.providerModelId),
               knownModel: knownModel,
               providerId: providerId,
-              isAdded: isAdded,
+              addedConfig: existingConfigs[knownModel.providerModelId],
             ),
           );
         }),
@@ -492,12 +549,12 @@ class _DynamicModelsColumn extends StatelessWidget {
 class _DynamicModelsScrollableList extends StatelessWidget {
   const _DynamicModelsScrollableList({
     required this.models,
-    required this.existingModelIds,
+    required this.existingConfigs,
     required this.providerId,
   });
 
   final List<KnownModel> models;
-  final Set<String> existingModelIds;
+  final Map<String, AiConfigModel> existingConfigs;
   final String providerId;
 
   @override
@@ -517,7 +574,7 @@ class _DynamicModelsScrollableList extends StatelessWidget {
             key: ValueKey(knownModel.providerModelId),
             knownModel: knownModel,
             providerId: providerId,
-            isAdded: existingModelIds.contains(knownModel.providerModelId),
+            addedConfig: existingConfigs[knownModel.providerModelId],
           );
         },
       ),
@@ -615,18 +672,22 @@ String _dynamicModelsErrorDetail(Object error) {
       : detail;
 }
 
-/// Tile displaying a known model with an add button or "Added" indicator.
+/// Tile displaying a catalog model with an add button, or — once installed —
+/// an "Added" badge plus a remove control so the action stays reversible.
 class _KnownModelTile extends ConsumerStatefulWidget {
   const _KnownModelTile({
     required this.knownModel,
     required this.providerId,
-    required this.isAdded,
+    required this.addedConfig,
     super.key,
   });
 
   final KnownModel knownModel;
   final String providerId;
-  final bool isAdded;
+
+  /// The saved config when this model is already installed, else `null`.
+  /// Non-null drives the "Added" state and powers the remove control.
+  final AiConfigModel? addedConfig;
 
   @override
   ConsumerState<_KnownModelTile> createState() => _KnownModelTileState();
@@ -634,6 +695,7 @@ class _KnownModelTile extends ConsumerStatefulWidget {
 
 class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
   bool _isAdding = false;
+  bool _isRemoving = false;
 
   Future<void> _addModel() async {
     if (_isAdding) return;
@@ -650,6 +712,23 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
         inferenceProviderId: widget.providerId,
       );
       await repository.saveConfig(config);
+    } catch (error, stackTrace) {
+      // Keep the raw, potentially sensitive error out of the UI: log it for
+      // diagnostics and show a localized generic message instead.
+      developer.log(
+        'Failed to add Mistral model ${widget.knownModel.providerModelId}',
+        name: 'KnownModelTile',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showDesignSystemToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.aiSettingsAddModelErrorTitle,
+          description: context.messages.aiSettingsAddModelErrorDescription,
+          replaceCurrent: true,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -659,46 +738,89 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
     }
   }
 
+  Future<void> _removeModel() async {
+    final config = widget.addedConfig;
+    if (_isRemoving || config == null) return;
+
+    setState(() {
+      _isRemoving = true;
+    });
+
+    try {
+      // Route through the shared delete service so removal gets the same
+      // confirmation modal, undo toast, and error feedback as every other
+      // model deletion in settings — instead of a silent raw delete.
+      await const AiConfigDeleteService().deleteConfig(
+        context: context,
+        ref: ref,
+        config: config,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRemoving = false;
+        });
+      }
+    }
+  }
+
   IconData _getModelIcon() {
-    // Check for image generation capability
+    final id = widget.knownModel.providerModelId.toLowerCase();
+    // Image generation (text -> image).
     if (widget.knownModel.outputModalities.contains(Modality.image)) {
       return Icons.palette_rounded;
     }
-    // Check for audio input (transcription)
+    // Audio transcription.
     if (widget.knownModel.inputModalities.contains(Modality.audio)) {
       return Icons.mic_rounded;
     }
-    // Reasoning model
+    // OCR / document reading.
+    if (id.contains('ocr')) {
+      return Icons.document_scanner_rounded;
+    }
+    // Code-focused models.
+    if (id.contains('code') || id.contains('codestral')) {
+      return Icons.code_rounded;
+    }
+    // Reasoning / thinking.
     if (widget.knownModel.isReasoningModel) {
       return Icons.psychology_alt_rounded;
     }
-    // Default
+    // Vision (image input).
+    if (widget.knownModel.inputModalities.contains(Modality.image)) {
+      return Icons.image_search_rounded;
+    }
     return Icons.smart_toy_rounded;
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final colors = tokens.colors;
     final messages = context.messages;
-    final inputModalities = widget.knownModel.inputModalities
-        .map((m) => m.displayName(context))
-        .join(', ');
-    final outputModalities = widget.knownModel.outputModalities
-        .map((m) => m.displayName(context))
-        .join(', ');
+    final isAdded = widget.addedConfig != null;
+    final accent = colors.interactive.enabled;
+
+    // Same capability vocabulary + chip component as the installed
+    // AiModelCard, so the catalog and the configured-model list read as one
+    // system instead of two competing chip languages.
+    final capabilityLabels = modelCapabilityLabels(
+      messages: messages,
+      isReasoning: widget.knownModel.isReasoningModel,
+      inputModalities: widget.knownModel.inputModalities,
+      outputModalities: widget.knownModel.outputModalities,
+    );
 
     return Container(
       decoration: BoxDecoration(
-        color: widget.isAdded
-            ? context.colorScheme.primaryContainer.withValues(alpha: 0.1)
-            : context.colorScheme.surfaceContainerHighest.withValues(
-                alpha: 0.3,
-              ),
+        color: isAdded
+            ? accent.withValues(alpha: 0.10)
+            : colors.background.level02,
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(
-          color: widget.isAdded
-              ? context.colorScheme.primary.withValues(alpha: 0.3)
-              : context.colorScheme.outlineVariant.withValues(alpha: 0.3),
+          color: isAdded
+              ? accent.withValues(alpha: 0.40)
+              : colors.decorative.level01,
         ),
       ),
       child: Padding(
@@ -706,178 +828,168 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Model icon
+            // Flat, token-styled capability icon tile (no gradient/glow).
             Container(
               width: tokens.spacing.step8,
               height: tokens.spacing.step8,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: widget.isAdded
-                      ? [
-                          context.colorScheme.primary.withValues(alpha: 0.2),
-                          context.colorScheme.primary.withValues(alpha: 0.1),
-                        ]
-                      : [
-                          context.colorScheme.surfaceContainerHighest,
-                          context.colorScheme.surfaceContainerHighest
-                              .withValues(alpha: 0.7),
-                        ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: isAdded
+                    ? accent.withValues(alpha: 0.16)
+                    : colors.background.level03,
                 borderRadius: BorderRadius.circular(tokens.radii.s),
               ),
               child: Icon(
                 _getModelIcon(),
                 size: tokens.spacing.step6,
-                color: widget.isAdded
-                    ? context.colorScheme.primary
-                    : context.colorScheme.onSurfaceVariant,
+                color: isAdded ? accent : colors.text.mediumEmphasis,
               ),
             ),
 
             SizedBox(width: tokens.spacing.step4),
 
-            // Model info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Name and badge
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Text(
                           widget.knownModel.name,
-                          style: tokens.typography.styles.body.bodyMedium
+                          style: tokens.typography.styles.subtitle.subtitle2
                               .copyWith(
                                 fontWeight: tokens.typography.weight.semiBold,
-                                color: context.colorScheme.onSurface,
+                                color: colors.text.highEmphasis,
                               ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (widget.isAdded) ...[
+                      if (isAdded) ...[
                         SizedBox(width: tokens.spacing.step3),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: tokens.spacing.step3,
-                            vertical: tokens.spacing.step1,
-                          ),
-                          decoration: BoxDecoration(
-                            color: context.colorScheme.primary,
-                            borderRadius: BorderRadius.circular(tokens.radii.s),
-                          ),
-                          child: Text(
-                            messages.aiSettingsAddedLabel,
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(
-                                  color: context.colorScheme.onPrimary,
-                                  fontWeight: tokens.typography.weight.semiBold,
-                                ),
-                          ),
+                        // Success tone separates the installed STATUS from the
+                        // secondary-tone capability chips below it.
+                        DesignSystemBadge.filled(
+                          label: messages.aiSettingsAddedLabel,
+                          tone: DesignSystemBadgeTone.success,
                         ),
                       ],
                     ],
                   ),
 
-                  SizedBox(height: tokens.spacing.step2),
+                  SizedBox(height: tokens.spacing.step1),
 
-                  // Description
+                  // Monospace provider model id — the stable identifier, shown
+                  // the same way as on the installed AiModelCard.
                   Text(
-                    widget.knownModel.description,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: context.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.8,
-                      ),
+                    widget.knownModel.providerModelId,
+                    style: monoMetaStyle(
+                      tokens,
+                      colors,
+                      color: colors.text.mediumEmphasis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    softWrap: true,
                   ),
 
-                  SizedBox(height: tokens.spacing.step3),
+                  if (widget.knownModel.description.isNotEmpty) ...[
+                    SizedBox(height: tokens.spacing.step2),
+                    Text(
+                      widget.knownModel.description,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: colors.text.mediumEmphasis,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
 
-                  // Modalities
-                  Wrap(
-                    spacing: tokens.spacing.step2,
-                    runSpacing: tokens.spacing.step2,
-                    children: [
-                      ModalityChip(
-                        label: messages.apiKeyKnownModelInputLabel(
-                          inputModalities,
-                        ),
-                        icon: Icons.input_rounded,
-                      ),
-                      ModalityChip(
-                        label: messages.apiKeyKnownModelOutputLabel(
-                          outputModalities,
-                        ),
-                        icon: Icons.output_rounded,
-                      ),
-                      if (widget.knownModel.isReasoningModel)
-                        ModalityChip(
-                          label: messages.aiSettingsReasoningLabel,
-                          icon: Icons.psychology_alt_rounded,
-                        ),
-                    ],
-                  ),
+                  if (capabilityLabels.isNotEmpty) ...[
+                    SizedBox(height: tokens.spacing.step3),
+                    Wrap(
+                      spacing: tokens.spacing.step2,
+                      runSpacing: tokens.spacing.step2,
+                      children: [
+                        for (final label in capabilityLabels)
+                          DesignSystemBadge.filled(
+                            label: label,
+                            tone: DesignSystemBadgeTone.secondary,
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
 
             SizedBox(width: tokens.spacing.step3),
 
-            // Add button
-            if (!widget.isAdded)
-              IconButton(
-                onPressed: _isAdding ? null : _addModel,
-                icon: _isAdding
-                    ? SizedBox(
-                        width: tokens.spacing.step6,
-                        height: tokens.spacing.step6,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: context.colorScheme.primary,
-                        ),
-                      )
-                    : Container(
-                        width: tokens.spacing.step7,
-                        height: tokens.spacing.step7,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              context.colorScheme.primaryContainer,
-                              context.colorScheme.primaryContainer.withValues(
-                                alpha: 0.7,
-                              ),
-                            ],
-                          ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: context.colorScheme.primary.withValues(
-                                alpha: 0.2,
-                              ),
-                              blurRadius: tokens.spacing.step3,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.add_rounded,
-                          size: tokens.spacing.step5,
-                          color: context.colorScheme.primary,
-                        ),
-                      ),
-                tooltip: messages.aiSettingsAddModelTooltip,
-                style: IconButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                ),
-              ),
+            // Trailing control always answers "what next": add when the model
+            // is not installed, remove (reversible) once it is.
+            _TileTrailingAction(
+              isAdded: isAdded,
+              isBusy: isAdded ? _isRemoving : _isAdding,
+              onAdd: _addModel,
+              onRemove: _removeModel,
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The circular add / remove affordance on a catalog tile. Flat token-tinted
+/// circle wrapped in an [IconButton] so it keeps the 48px Material hit area.
+class _TileTrailingAction extends StatelessWidget {
+  const _TileTrailingAction({
+    required this.isAdded,
+    required this.isBusy,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final bool isAdded;
+  final bool isBusy;
+  final Future<void> Function() onAdd;
+  final Future<void> Function() onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final colors = tokens.colors;
+    final messages = context.messages;
+    final accent = colors.interactive.enabled;
+    // The remove control reads as a quiet, neutral action; add stays accented.
+    final tint = isAdded ? colors.text.mediumEmphasis : accent;
+
+    return IconButton(
+      onPressed: isBusy ? null : (isAdded ? onRemove : onAdd),
+      tooltip: isAdded
+          ? messages.aiSettingsRemoveModelTooltip
+          : messages.aiSettingsAddModelTooltip,
+      style: IconButton.styleFrom(padding: EdgeInsets.zero),
+      icon: isBusy
+          ? SizedBox(
+              width: tokens.spacing.step6,
+              height: tokens.spacing.step6,
+              child: CircularProgressIndicator(strokeWidth: 2, color: tint),
+            )
+          : Container(
+              width: tokens.spacing.step7,
+              height: tokens.spacing.step7,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: tint.withValues(alpha: 0.16),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isAdded ? Icons.remove_rounded : Icons.add_rounded,
+                size: tokens.spacing.step5,
+                color: tint,
+              ),
+            ),
     );
   }
 }

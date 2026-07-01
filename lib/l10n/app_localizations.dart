@@ -3265,6 +3265,18 @@ abstract class AppLocalizations {
   /// **'Add model'**
   String get aiSettingsAddModelButton;
 
+  /// No description provided for @aiSettingsAddModelErrorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong while adding the model. Please try again.'**
+  String get aiSettingsAddModelErrorDescription;
+
+  /// No description provided for @aiSettingsAddModelErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t add model'**
+  String get aiSettingsAddModelErrorTitle;
+
   /// No description provided for @aiSettingsAddModelTooltip.
   ///
   /// In en, this message translates to:
@@ -3408,6 +3420,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reasoning'**
   String get aiSettingsReasoningLabel;
+
+  /// No description provided for @aiSettingsRemoveModelTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this model from your provider'**
+  String get aiSettingsRemoveModelTooltip;
 
   /// No description provided for @aiSettingsSearchHint.
   ///
@@ -3708,6 +3726,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Display Name'**
   String get apiKeyDisplayNameLabel;
+
+  /// No description provided for @apiKeyDynamicModelsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Search this provider\'s live model catalog and add any model'**
+  String get apiKeyDynamicModelsDescription;
 
   /// No description provided for @apiKeyEditGoBackButton.
   ///

@@ -1850,6 +1850,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSettingsAddModelButton => 'Add model';
 
   @override
+  String get aiSettingsAddModelErrorDescription =>
+      'Something went wrong while adding the model. Please try again.';
+
+  @override
+  String get aiSettingsAddModelErrorTitle => 'Couldn\'t add model';
+
+  @override
   String get aiSettingsAddModelTooltip => 'Add this model to your provider';
 
   @override
@@ -1928,6 +1935,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSettingsReasoningLabel => 'Reasoning';
+
+  @override
+  String get aiSettingsRemoveModelTooltip =>
+      'Remove this model from your provider';
 
   @override
   String get aiSettingsSearchHint => 'Search providers, models, profiles...';
@@ -2119,6 +2130,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get apiKeyDisplayNameLabel => 'Display Name';
+
+  @override
+  String get apiKeyDynamicModelsDescription =>
+      'Search this provider\'s live model catalog and add any model';
 
   @override
   String get apiKeyEditGoBackButton => 'Go Back';

@@ -250,15 +250,27 @@ still point at the legacy Flux 2 Dev default or the previous Whisper Turbo
 transcription default, move to Flux 2 Klein 9B and Whisper Large v3 during
 `upgradeExisting()` after the model backfill has created the rows.
 
-Melious and oMLX provider settings also use live catalogs. The provider detail
-page and edit form render the same `AvailableModelsSection`, so endpoint-backed
-rows can be installed from the screen that also shows the provider's configured
-`Models · N` count. oMLX calls `GET /models` on the configured local
+Melious, Mistral, and oMLX provider settings also use live catalogs
+(`ProviderConfig.supportsDynamicCatalog`). The provider detail page and edit
+form render the same `AvailableModelsSection`, so endpoint-backed rows can be
+installed from the screen that also shows the provider's configured
+`Models · N` count. On the detail page the installed `Models · N` list renders
+**above** the searchable catalog, so users see what they already have before
+scrolling on to add more. oMLX calls `GET /models` on the configured local
 OpenAI-compatible base URL, then maps returned IDs into installable
 `KnownModel` rows. IDs that match the bundled oMLX catalog keep their curated
 modality and reasoning metadata; Whisper/ASR/STT-looking IDs are treated as
 audio-to-text transcription models; unknown local IDs remain installable as text
 models.
+
+Mistral uses a self-contained `listModels()` on `MistralInferenceRepository`
+that calls `GET /v1/models` with bearer auth and maps each row's `capabilities`
+object into the `KnownModel` shape. Modalities are inferred from the capability
+flags plus conservative id heuristics: `vision`/`ocr` add image input, Voxtral
+and other transcription-shaped ids (or an `audio` flag) map to audio-to-text,
+and `magistral`/`reasoning` ids are flagged as reasoning models. Rows that match
+the curated `mistralModels` list keep their hand-tuned names and descriptions,
+and live capability metadata refines them when present.
 
 ## Developer Eval Tool
 

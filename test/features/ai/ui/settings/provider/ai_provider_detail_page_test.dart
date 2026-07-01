@@ -8,7 +8,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
-    show meliousInferenceRepositoryProvider;
+    show meliousInferenceRepositoryProvider, mistralInferenceRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -876,7 +876,7 @@ void main() {
 
     testWidgets(
       'Melious detail page exposes fetched provider models as installable '
-      'rows before the configured model list',
+      'rows after the configured model list',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1800));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -935,6 +935,11 @@ void main() {
         expect(find.text('Configured Turbo'), findsNWidgets(2));
         expect(find.text('Added'), findsOneWidget);
         expect(find.text('Models · 1'), findsOneWidget);
+        // Installed models render above the searchable catalog.
+        expect(
+          tester.getTopLeft(find.text('Models · 1')).dy,
+          lessThan(tester.getTopLeft(find.text('Available Models')).dy),
+        );
         expect(fakeMeliousRepo.calls, [
           (baseUrl: 'https://api.melious.ai/v1', apiKey: 'sk-mel-test'),
         ]);
@@ -953,6 +958,221 @@ void main() {
         expect(captured.inputModalities, [Modality.text, Modality.image]);
         expect(captured.outputModalities, [Modality.text]);
         expect(captured.isReasoningModel, isTrue);
+
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'Mistral detail page fetches the live catalog and installs a model, '
+      'with installed models above the searchable catalog',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = buildProvider(
+          id: 'mistral-detail-1',
+          type: InferenceProviderType.mistral,
+          name: 'Mistral',
+          apiKey: 'sk-mistral-test',
+          baseUrl: 'https://api.mistral.ai/v1',
+        );
+        final existingModel = buildModel(
+          id: 'configured-mistral-model',
+          providerId: provider.id,
+          name: 'Configured Medium',
+          providerModelId: 'mistral-installed',
+        );
+        final fakeMistralRepo = FakeMistralInferenceRepository([
+          () async => const [
+            KnownModel(
+              providerModelId: 'mistral-installed',
+              name: 'Configured Medium',
+              inputModalities: [Modality.text],
+              outputModalities: [Modality.text],
+              isReasoningModel: false,
+              description: 'Already configured from the provider catalog.',
+            ),
+            KnownModel(
+              providerModelId: 'magistral-live-model',
+              name: 'Magistral Live Model',
+              inputModalities: [Modality.text, Modality.image],
+              outputModalities: [Modality.text],
+              isReasoningModel: true,
+              description: 'Fetched from the Mistral models endpoint.',
+            ),
+          ],
+        ]);
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: [existingModel],
+          profiles: const <AiConfig>[],
+          overrides: [
+            mistralInferenceRepositoryProvider.overrideWithValue(
+              fakeMistralRepo,
+            ),
+          ],
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump();
+
+        expect(find.text('Available Models'), findsOneWidget);
+        expect(find.text('Magistral Live Model'), findsOneWidget);
+        expect(find.text('Configured Medium'), findsNWidgets(2));
+        expect(find.text('Added'), findsOneWidget);
+        expect(find.text('Models · 1'), findsOneWidget);
+        // Installed models render above the searchable catalog.
+        expect(
+          tester.getTopLeft(find.text('Models · 1')).dy,
+          lessThan(tester.getTopLeft(find.text('Available Models')).dy),
+        );
+        expect(fakeMistralRepo.calls, [
+          (baseUrl: 'https://api.mistral.ai/v1', apiKey: 'sk-mistral-test'),
+        ]);
+
+        await tester.tap(find.byTooltip('Add this model to your provider'));
+        await tester.pump();
+
+        final captured =
+            verify(
+                  () => mockRepository.saveConfig(captureAny()),
+                ).captured.single
+                as AiConfigModel;
+        expect(captured.inferenceProviderId, provider.id);
+        expect(captured.providerModelId, 'magistral-live-model');
+        expect(captured.name, 'Magistral Live Model');
+        expect(captured.inputModalities, [Modality.text, Modality.image]);
+        expect(captured.outputModalities, [Modality.text]);
+        expect(captured.isReasoningModel, isTrue);
+
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'removing an installed catalog model routes through the shared delete '
+      'service — its confirmation modal appears instead of a silent delete',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = buildProvider(
+          id: 'mistral-remove-1',
+          type: InferenceProviderType.mistral,
+          name: 'Mistral',
+          apiKey: 'sk-mistral-test',
+          baseUrl: 'https://api.mistral.ai/v1',
+        );
+        final existingModel = buildModel(
+          id: 'configured-mistral-model',
+          providerId: provider.id,
+          name: 'Configured Medium',
+          providerModelId: 'mistral-installed',
+        );
+        final fakeMistralRepo = FakeMistralInferenceRepository([
+          () async => const [
+            KnownModel(
+              providerModelId: 'mistral-installed',
+              name: 'Configured Medium',
+              inputModalities: [Modality.text],
+              outputModalities: [Modality.text],
+              isReasoningModel: false,
+              description: 'Already configured.',
+            ),
+          ],
+        ]);
+
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: [existingModel],
+          profiles: const <AiConfig>[],
+          overrides: [
+            mistralInferenceRepositoryProvider.overrideWithValue(
+              fakeMistralRepo,
+            ),
+          ],
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump();
+
+        // The added row exposes a remove affordance, not an add button.
+        final removeButton = find.byTooltip(
+          'Remove this model from your provider',
+        );
+        expect(removeButton, findsOneWidget);
+        await tester.ensureVisible(removeButton);
+        await tester.tap(removeButton);
+        // The detail page has perpetual tickers, so settle the dialog with
+        // fixed pumps rather than pumpAndSettle (which would time out).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The shared AiConfigDeleteService confirmation modal is shown — the
+        // tile did not perform a silent, unconfirmed delete.
+        expect(find.text('This action cannot be undone'), findsOneWidget);
+
+        // Dismiss the modal so no timers/routes linger into teardown.
+        await tester.tapAt(const Offset(10, 10));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+      },
+    );
+
+    testWidgets(
+      'a failed add surfaces an error toast instead of silently resetting',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = buildProvider(
+          id: 'mistral-adderr-1',
+          type: InferenceProviderType.mistral,
+          name: 'Mistral',
+          apiKey: 'sk-mistral-test',
+          baseUrl: 'https://api.mistral.ai/v1',
+        );
+        final fakeMistralRepo = FakeMistralInferenceRepository([
+          () async => const [
+            KnownModel(
+              providerModelId: 'magistral-live-model',
+              name: 'Magistral Live Model',
+              inputModalities: [Modality.text],
+              outputModalities: [Modality.text],
+              isReasoningModel: true,
+              description: 'Fetched from the Mistral models endpoint.',
+            ),
+          ],
+        ]);
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenThrow(Exception('network down'));
+
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+          overrides: [
+            mistralInferenceRepositoryProvider.overrideWithValue(
+              fakeMistralRepo,
+            ),
+          ],
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump();
+
+        final addButton = find.byTooltip('Add this model to your provider');
+        expect(addButton, findsOneWidget);
+        await tester.ensureVisible(addButton);
+        await tester.tap(addButton);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text("Couldn't add model"), findsOneWidget);
 
         await settleTimers(tester);
       },

@@ -1886,6 +1886,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiSettingsAddModelButton => 'Ajouter un modèle';
 
   @override
+  String get aiSettingsAddModelErrorDescription =>
+      'Une erreur s\'est produite lors de l\'ajout du modèle. Réessaie.';
+
+  @override
+  String get aiSettingsAddModelErrorTitle => 'Impossible d\'ajouter le modèle';
+
+  @override
   String get aiSettingsAddModelTooltip => 'Ajouter ce modèle à ton fournisseur';
 
   @override
@@ -1966,6 +1973,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiSettingsReasoningLabel => 'Raisonnement';
+
+  @override
+  String get aiSettingsRemoveModelTooltip =>
+      'Retirer ce modèle de ton fournisseur';
 
   @override
   String get aiSettingsSearchHint =>
@@ -2160,6 +2171,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get apiKeyDisplayNameLabel => 'Nom d\'affichage';
+
+  @override
+  String get apiKeyDynamicModelsDescription =>
+      'Parcours le catalogue de modèles en direct de ce fournisseur et ajoute n\'importe quel modèle';
 
   @override
   String get apiKeyEditGoBackButton => 'Retour';

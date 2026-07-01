@@ -95,7 +95,11 @@ class AiModelCard extends StatelessWidget {
                     SizedBox(height: tokens.spacing.step1),
                     Text(
                       model.providerModelId,
-                      style: monoMetaStyle(tokens, tokens.colors),
+                      style: monoMetaStyle(
+                        tokens,
+                        tokens.colors,
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
                       softWrap: true,
                     ),
                     SizedBox(height: tokens.spacing.step2),

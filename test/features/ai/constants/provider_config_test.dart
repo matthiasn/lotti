@@ -264,6 +264,33 @@ void main() {
         }
       });
     });
+
+    group('supportsDynamicCatalog', () {
+      test('is true exactly for the dynamic-catalog providers', () {
+        expect(
+          ProviderConfig.dynamicCatalogProviders,
+          unorderedEquals([
+            InferenceProviderType.melious,
+            InferenceProviderType.mistral,
+            InferenceProviderType.omlx,
+          ]),
+        );
+        for (final type in InferenceProviderType.values) {
+          expect(
+            ProviderConfig.supportsDynamicCatalog(type),
+            ProviderConfig.dynamicCatalogProviders.contains(type),
+            reason: '$type dynamic-catalog support should match the set',
+          );
+        }
+      });
+
+      test('is false for a representative static-catalog provider', () {
+        expect(
+          ProviderConfig.supportsDynamicCatalog(InferenceProviderType.gemini),
+          isFalse,
+        );
+      });
+    });
   });
 
   group('AiConfigInferenceProviderUsability.isUsable', () {
