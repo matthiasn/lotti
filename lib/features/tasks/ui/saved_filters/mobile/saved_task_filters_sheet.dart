@@ -19,9 +19,7 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Stable keys for the saved-filters sheet internals.
 @visibleForTesting
-class SavedTaskFiltersSheetKeys {
-  const SavedTaskFiltersSheetKeys._();
-
+abstract final class SavedTaskFiltersSheetKeys {
   static const Key root = Key('saved-filters-sheet');
   static const Key editToggle = Key('saved-filters-sheet-edit-toggle');
   static const Key allRow = Key('saved-filters-sheet-all-row');

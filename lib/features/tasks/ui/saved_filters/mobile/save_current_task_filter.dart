@@ -14,9 +14,7 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Stable keys for the "Save current filter as…" name modal.
 @visibleForTesting
-class SaveCurrentTaskFilterKeys {
-  const SaveCurrentTaskFilterKeys._();
-
+abstract final class SaveCurrentTaskFilterKeys {
   static const Key nameField = Key('save-current-filter-name-field');
   static const Key saveButton = Key('save-current-filter-save-button');
 }

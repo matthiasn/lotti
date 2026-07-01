@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
@@ -30,6 +31,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -740,6 +742,43 @@ void main() {
       () => loggingService.log(
         LogDomain.sync,
         any<String>(that: contains('type=SyncAiConfigDelete')),
+        subDomain: 'enqueueMessage',
+      ),
+    ).called(1);
+  });
+
+  test('enqueueMessage logs SyncSavedTaskFilter', () async {
+    const msg = SyncMessage.savedTaskFilter(
+      filter: SavedTaskFilter(
+        id: 'stf1',
+        name: 'In Progress',
+        filter: TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'}),
+      ),
+      status: SyncEntryStatus.initial,
+    );
+
+    await service.enqueueMessage(msg);
+
+    verify(
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(
+          that: contains('type=SyncSavedTaskFilter subject=savedTaskFilter'),
+        ),
+        subDomain: 'enqueueMessage',
+      ),
+    ).called(1);
+  });
+
+  test('enqueueMessage logs SyncSavedTaskFilterDelete', () async {
+    const del = SyncMessage.savedTaskFilterDelete(id: 'stf1');
+
+    await service.enqueueMessage(del);
+
+    verify(
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(that: contains('type=SyncSavedTaskFilterDelete')),
         subDomain: 'enqueueMessage',
       ),
     ).called(1);

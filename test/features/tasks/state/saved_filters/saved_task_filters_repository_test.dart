@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -80,6 +81,21 @@ void main() {
         .map((e) => (e as Map<String, dynamic>)['id'] as String)
         .toList();
   }
+
+  group('savedTaskFiltersRepositoryProvider', () {
+    test('resolves the getIt-registered repository instance', () {
+      getIt.registerSingleton<SavedTaskFiltersRepository>(repository);
+      addTearDown(() => getIt.unregister<SavedTaskFiltersRepository>());
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(savedTaskFiltersRepositoryProvider),
+        same(repository),
+      );
+    });
+  });
 
   group('upsert', () {
     test('appends a new filter, persists, enqueues, and notifies', () async {

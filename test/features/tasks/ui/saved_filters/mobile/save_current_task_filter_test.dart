@@ -7,7 +7,11 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart'
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_mru_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/save_current_task_filter.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../../mocks/mocks.dart';
 import '../../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../../widget_test_utils.dart';
 
@@ -26,6 +30,21 @@ class _RecordingSavedController extends SavedTaskFiltersController {
   }) async {
     created.add(filter);
     return SavedTaskFilter(id: 'new', name: name, filter: filter);
+  }
+}
+
+class _ThrowingSavedController extends SavedTaskFiltersController {
+  _ThrowingSavedController();
+
+  @override
+  Future<List<SavedTaskFilter>> build() async => const [];
+
+  @override
+  Future<SavedTaskFilter> create({
+    required String name,
+    required TasksFilter filter,
+  }) async {
+    throw StateError('create failed');
   }
 }
 
@@ -134,5 +153,76 @@ void main() {
 
     expect(bench.saved.created, isEmpty);
     expect(bench.results.single, isNull);
+  });
+
+  testWidgets('committing the name via the keyboard action saves', (
+    tester,
+  ) async {
+    final bench = await _pump(tester);
+
+    await tester.tap(find.byKey(const Key('go')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.enterText(
+      find.byKey(SaveCurrentTaskFilterKeys.nameField),
+      'Via keyboard',
+    );
+    await tester.pump();
+    // Press the on-screen keyboard's "done" action instead of the button.
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(bench.saved.created.single.selectedTaskStatuses, {'OPEN'});
+    expect(bench.results.single?.name, 'Via keyboard');
+  });
+
+  testWidgets('logs and swallows a create failure, returning null', (
+    tester,
+  ) async {
+    final logger = MockDomainLogger();
+    getIt.registerSingleton<DomainLogger>(logger);
+    addTearDown(() => getIt.unregister<DomainLogger>());
+
+    final results = <SavedTaskFilter?>[];
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        _Harness(onDone: results.add),
+        overrides: [
+          journalPageControllerProvider(true).overrideWith(
+            () => FakeJournalPageController(
+              const JournalPageState(selectedTaskStatuses: {'OPEN'}),
+            ),
+          ),
+          savedTaskFiltersControllerProvider.overrideWith(
+            _ThrowingSavedController.new,
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('go')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.enterText(
+      find.byKey(SaveCurrentTaskFilterKeys.nameField),
+      'Boom',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(SaveCurrentTaskFilterKeys.saveButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    verify(
+      () => logger.error(
+        LogDomain.tasks,
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'saveCurrentFilter',
+      ),
+    ).called(1);
+    expect(results.single, isNull);
   });
 }

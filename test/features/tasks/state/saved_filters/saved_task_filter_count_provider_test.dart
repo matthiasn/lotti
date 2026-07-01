@@ -450,6 +450,39 @@ void main() {
         expect(container.read(currentTasksFilterCountProvider).value, 20);
       });
     });
+
+    test('coalesces a burst of task notifications into a single recompute', () {
+      fakeAsync((async) {
+        final controller = StreamController<Set<String>>.broadcast();
+        addTearDown(controller.close);
+        when(
+          () => mocks.updateNotifications.updateStream,
+        ).thenAnswer((_) => controller.stream);
+
+        final repo = _FakeRepo(const [10, 20]);
+        final container = build(
+          pageState: const JournalPageState(
+            selectedTaskStatuses: {'IN PROGRESS'},
+          ),
+          repo: repo,
+        )..listen(currentTasksFilterCountProvider, (_, _) {});
+        addTearDown(container.dispose);
+
+        container.read(currentTasksFilterCountProvider.future).ignore();
+        async.elapse(Duration.zero);
+        expect(repo.calls, 1);
+
+        // Two notifications inside one debounce window: the second cancels the
+        // timer the first armed, so exactly one recompute fires.
+        controller
+          ..add({taskNotification})
+          ..add({taskNotification});
+        async.elapse(const Duration(milliseconds: 300));
+        container.read(currentTasksFilterCountProvider.future).ignore();
+        async.elapse(Duration.zero);
+        expect(repo.calls, 2);
+      });
+    });
   });
 
   group('allTasksTotalCountProvider', () {
@@ -495,6 +528,38 @@ void main() {
         container.read(allTasksTotalCountProvider.future).ignore();
         async.elapse(Duration.zero);
         expect(container.read(allTasksTotalCountProvider).value, 20);
+      });
+    });
+
+    test('coalesces a burst of task notifications into a single recompute', () {
+      fakeAsync((async) {
+        final controller = StreamController<Set<String>>.broadcast();
+        addTearDown(controller.close);
+        when(
+          () => mocks.updateNotifications.updateStream,
+        ).thenAnswer((_) => controller.stream);
+
+        final repo = _FakeRepo(const [10, 20]);
+        final container = ProviderContainer(
+          overrides: [
+            savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
+          ],
+        )..listen(allTasksTotalCountProvider, (_, _) {});
+        addTearDown(container.dispose);
+
+        container.read(allTasksTotalCountProvider.future).ignore();
+        async.elapse(Duration.zero);
+        expect(repo.calls, 1);
+
+        // Two notifications inside one debounce window: the second cancels the
+        // timer the first armed, so exactly one recompute fires.
+        controller
+          ..add({taskNotification})
+          ..add({taskNotification});
+        async.elapse(const Duration(milliseconds: 300));
+        container.read(allTasksTotalCountProvider.future).ignore();
+        async.elapse(Duration.zero);
+        expect(repo.calls, 2);
       });
     });
   });

@@ -15,9 +15,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Stable keys for the mobile saved-filter rail.
 @visibleForTesting
-class SavedTaskFilterRailKeys {
-  const SavedTaskFilterRailKeys._();
-
+abstract final class SavedTaskFilterRailKeys {
   static const Key root = Key('saved-filter-rail');
   static const Key savedButton = Key('saved-filter-rail-saved-button');
   static const Key allPill = Key('saved-filter-rail-all-pill');

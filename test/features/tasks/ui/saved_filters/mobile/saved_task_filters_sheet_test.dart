@@ -17,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../../widget_test_utils.dart';
+import '../../../../categories/test_utils.dart';
 
 const _f1 = SavedTaskFilter(
   id: 'f1',
@@ -525,6 +526,51 @@ void main() {
 
     expect(bench.saved.createCalls.single, 'My filter');
   });
+
+  testWidgets(
+    'a filter with a category renders a colored dot and names it in semantics',
+    (tester) async {
+      when(
+        () => getIt<EntitiesCacheService>().getCategoryById('cat-work'),
+      ).thenReturn(
+        CategoryTestUtils.createTestCategory(
+          id: 'cat-work',
+          name: 'Work',
+          color: '#00FF00',
+        ),
+      );
+
+      const categorized = SavedTaskFilter(
+        id: 'fc',
+        name: 'Work items',
+        filter: TasksFilter(selectedCategoryIds: {'cat-work'}),
+      );
+      await _pumpSheet(tester, seed: const [categorized]);
+
+      // The row draws the category dot: a circular, green-filled Container.
+      final dot = tester.widgetList<Container>(
+        find.descendant(
+          of: find.byKey(SavedTaskFiltersSheetKeys.row('fc')),
+          matching: find.byType(Container),
+        ),
+      );
+      expect(
+        dot.any(
+          (c) =>
+              c.decoration is BoxDecoration &&
+              (c.decoration! as BoxDecoration).shape == BoxShape.circle,
+        ),
+        isTrue,
+      );
+
+      // The category is also spoken in the row's accessibility label so the
+      // information is never colour-only.
+      final semantics = tester.getSemantics(
+        find.byKey(SavedTaskFiltersSheetKeys.row('fc')),
+      );
+      expect(semantics.label, contains('Work'));
+    },
+  );
 
   testWidgets(
     'create closes the sheet only when a filter is saved, not on cancel',

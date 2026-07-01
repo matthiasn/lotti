@@ -12,6 +12,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart'
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/save_current_task_filter.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_pill.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
@@ -22,6 +23,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../../widget_test_utils.dart';
+import '../../../../categories/test_utils.dart';
 
 const _f1 = SavedTaskFilter(
   id: 'f1',
@@ -586,6 +588,100 @@ void main() {
 
       repo.gate!.complete(12);
       await tester.pump();
+    },
+  );
+
+  testWidgets('tapping "All" clears the live filter to the default view', (
+    tester,
+  ) async {
+    // Start from an ad-hoc filter so "All" is not already the selection.
+    final result = await _pumpRail(
+      tester,
+      pageState: const JournalPageState(selectedTaskStatuses: {'OPEN'}),
+    );
+
+    await tester.tap(find.byKey(SavedTaskFilterRailKeys.allPill));
+    await tester.pump();
+
+    final fake =
+        result.container.read(journalPageControllerProvider(true).notifier)
+            as FakeJournalPageController;
+    expect(fake.applyBatchFilterUpdateCalled, 1);
+  });
+
+  testWidgets('tapping "+ Save" opens the name-entry modal', (tester) async {
+    // An ad-hoc filter makes the Save chip visible.
+    await _pumpRail(
+      tester,
+      pageState: const JournalPageState(selectedTaskStatuses: {'OPEN'}),
+    );
+
+    expect(find.byKey(SavedTaskFilterRailKeys.saveChip), findsOneWidget);
+    await tester.tap(find.byKey(SavedTaskFilterRailKeys.saveChip));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byKey(SaveCurrentTaskFilterKeys.nameField), findsOneWidget);
+  });
+
+  testWidgets('tapping the "Custom" anchor pill opens the sheet', (
+    tester,
+  ) async {
+    await _pumpRail(
+      tester,
+      pageState: const JournalPageState(selectedTaskStatuses: {'OPEN'}),
+    );
+
+    await tester.tap(find.byKey(SavedTaskFilterRailKeys.customPill));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byKey(SavedTaskFiltersSheetKeys.root), findsOneWidget);
+  });
+
+  testWidgets('tapping the active saved pill opens the sheet', (tester) async {
+    // Page state matches f1 ("In Progress") → f1 is the active anchor.
+    await _pumpRail(
+      tester,
+      pageState: const JournalPageState(selectedTaskStatuses: {'IN_PROGRESS'}),
+    );
+
+    await tester.tap(find.byKey(SavedTaskFilterRailKeys.pill('f1')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byKey(SavedTaskFiltersSheetKeys.root), findsOneWidget);
+  });
+
+  testWidgets(
+    'a saved pill with a category speaks the category in its semantics label',
+    (tester) async {
+      when(
+        () => getIt<EntitiesCacheService>().getCategoryById('cat-work'),
+      ).thenReturn(
+        CategoryTestUtils.createTestCategory(
+          id: 'cat-work',
+          name: 'Work',
+          color: '#00FF00',
+        ),
+      );
+
+      const categorized = SavedTaskFilter(
+        id: 'f3',
+        name: 'Work items',
+        filter: TasksFilter(selectedCategoryIds: {'cat-work'}),
+      );
+
+      // Wide layout so f3 renders as an inactive quick-jump pill.
+      await _pumpRail(
+        tester,
+        pageState: const JournalPageState(),
+        seed: const [categorized],
+        mq: _wideMq,
+      );
+
+      final pill = _pill(tester, SavedTaskFilterRailKeys.pill('f3'));
+      expect(pill.semanticsLabel, contains('Work'));
     },
   );
 }
