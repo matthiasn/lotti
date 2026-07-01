@@ -2218,6 +2218,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingCancel => 'ZRUŠIT';
 
   @override
+  String get audioRecordingDiscardDialogBody =>
+      'Tahle nahrávka se smaže. Nevytvoří se žádný audiozáznam, přepis ani shrnutí úkolu.';
+
+  @override
+  String get audioRecordingDiscardDialogCancel => 'Pokračovat v nahrávání';
+
+  @override
+  String get audioRecordingDiscardDialogConfirm => 'Zahodit';
+
+  @override
+  String get audioRecordingDiscardDialogTitle => 'Zahodit nahrávku?';
+
+  @override
   String get audioRecordingListening => 'Naslouchám...';
 
   @override

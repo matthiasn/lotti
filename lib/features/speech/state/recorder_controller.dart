@@ -48,6 +48,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   String? _categoryId;
   AudioNote? _audioNote;
   bool _disposed = false;
+  bool _terminalActionInProgress = false;
 
   // Realtime transcription fields
   rec.AudioRecorder? _realtimeRecorder;
@@ -204,9 +205,18 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   ///
   /// Returns the ID of the created journal entry, or null if no recording exists.
   Future<String?> stop() async {
+    if (_terminalActionInProgress) return null;
+
+    _terminalActionInProgress = true;
+    final note = _audioNote;
+    final linkedTaskId = _linkedId;
+    final categoryId = _categoryId;
+    final duration = state.progress;
+    _audioNote = null;
+    _linkedId = null;
+
     try {
       await _recorderRepository.stopRecording();
-      _audioNote = _audioNote?.copyWith(duration: state.progress);
       _vuMeter.reset();
 
       // Preserve the inference preferences before resetting state
@@ -222,16 +232,14 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         // Preserve the inference preferences
         enableSpeechRecognition: enableSpeechRecognition,
       );
-      if (_audioNote != null) {
+
+      if (note != null) {
         final journalAudio = await SpeechRepository.createAudioEntry(
-          _audioNote!,
-          linkedId: _linkedId,
-          categoryId: _categoryId,
+          note.copyWith(duration: duration),
+          linkedId: linkedTaskId,
+          categoryId: categoryId,
         );
-        final linkedTaskId = _linkedId;
-        _linkedId = null;
         final entryId = journalAudio?.meta.id;
-        _audioNote = null; // Reset audio note after processing
 
         // Trigger automatic prompts in the background via profile-driven automation
         if (entryId != null && linkedTaskId != null) {
@@ -261,6 +269,8 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         dBFS: -160,
         vu: -20,
       );
+    } finally {
+      _terminalActionInProgress = false;
     }
     return null;
   }
@@ -278,12 +288,15 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// turning into a transcript and task summary. The realtime flow has its
   /// own [cancelRealtime]; this handles the file-based standard flow.
   Future<void> cancel() async {
+    if (_terminalActionInProgress) return;
+
     final note = _audioNote;
     // Nothing to discard. Also guards against a double-tap (or a stop racing a
     // cancel): once the note is claimed below, a second call exits here instead
     // of stopping/deleting a recording that is already being torn down.
     if (note == null) return;
 
+    _terminalActionInProgress = true;
     // Claim the recording and clear the UI synchronously, before any await, so
     // concurrent calls can't re-run teardown and the recording indicator/modal
     // clear immediately rather than lingering through the async file deletion.
@@ -319,6 +332,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         'Recording cancelled and discarded',
         subDomain: 'cancel',
       );
+      _terminalActionInProgress = false;
     }
   }
 

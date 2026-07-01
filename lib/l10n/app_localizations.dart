@@ -3823,6 +3823,30 @@ abstract class AppLocalizations {
   /// **'CANCEL'**
   String get audioRecordingCancel;
 
+  /// No description provided for @audioRecordingDiscardDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This recording will be deleted. No audio entry, transcript, or task summary will be created.'**
+  String get audioRecordingDiscardDialogBody;
+
+  /// No description provided for @audioRecordingDiscardDialogCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Recording'**
+  String get audioRecordingDiscardDialogCancel;
+
+  /// No description provided for @audioRecordingDiscardDialogConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get audioRecordingDiscardDialogConfirm;
+
+  /// No description provided for @audioRecordingDiscardDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard recording?'**
+  String get audioRecordingDiscardDialogTitle;
+
   /// No description provided for @audioRecordingListening.
   ///
   /// In en, this message translates to:

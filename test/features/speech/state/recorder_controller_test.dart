@@ -650,8 +650,9 @@ void main() {
       );
 
       Future<AudioRecorderController> startRecording(
-        ProviderContainer c,
-      ) async {
+        ProviderContainer c, {
+        String? linkedId = 'task-id',
+      }) async {
         when(
           () => mockAudioRecorderRepository.hasPermission(),
         ).thenAnswer((_) async => true);
@@ -659,7 +660,7 @@ void main() {
           () => mockAudioRecorderRepository.startRecording(),
         ).thenAnswer((_) async => buildAudioNote());
         final controller = c.read(audioRecorderControllerProvider.notifier);
-        await controller.record(linkedId: 'task-id');
+        await controller.record(linkedId: linkedId);
         return controller;
       }
 
@@ -715,6 +716,52 @@ void main() {
         await Future.wait([first, second]);
 
         // The recording is only torn down once despite the two calls.
+        verify(() => mockAudioRecorderRepository.stopRecording()).called(1);
+        verify(
+          () => mockAudioRecorderRepository.deleteRecording(any()),
+        ).called(1);
+      });
+
+      test('does not let cancel discard after stop has started', () async {
+        final stopCompleter = Completer<void>();
+        when(
+          () => mockAudioRecorderRepository.stopRecording(),
+        ).thenAnswer((_) => stopCompleter.future);
+        final controller = await startRecording(container, linkedId: null);
+
+        final stopFuture = controller.stop();
+        await Future<void>.microtask(() {});
+
+        await controller.cancel();
+        verifyNever(
+          () => mockAudioRecorderRepository.deleteRecording(any()),
+        );
+
+        stopCompleter.complete();
+        await stopFuture;
+
+        verify(() => mockAudioRecorderRepository.stopRecording()).called(1);
+        verifyNever(
+          () => mockAudioRecorderRepository.deleteRecording(any()),
+        );
+      });
+
+      test('does not let stop save after cancel has started', () async {
+        final stopCompleter = Completer<void>();
+        when(
+          () => mockAudioRecorderRepository.stopRecording(),
+        ).thenAnswer((_) => stopCompleter.future);
+        final controller = await startRecording(container);
+
+        final cancelFuture = controller.cancel();
+        await Future<void>.microtask(() {});
+
+        final stopResult = await controller.stop();
+        expect(stopResult, isNull);
+
+        stopCompleter.complete();
+        await cancelFuture;
+
         verify(() => mockAudioRecorderRepository.stopRecording()).called(1);
         verify(
           () => mockAudioRecorderRepository.deleteRecording(any()),

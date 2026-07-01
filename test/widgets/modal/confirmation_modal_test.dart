@@ -8,6 +8,7 @@ void main() {
   Future<bool?> showModalAndGetResult(
     WidgetTester tester, {
     String message = 'Are you sure?',
+    String? title,
     String? confirmLabel,
     String? cancelLabel,
     bool? isDestructive,
@@ -21,6 +22,7 @@ void main() {
               onPressed: () async {
                 result = await showConfirmationModal(
                   context: context,
+                  title: title,
                   message: message,
                   confirmLabel: confirmLabel ?? 'YES, DELETE DATABASE',
                   cancelLabel: cancelLabel ?? 'CANCEL',
@@ -119,6 +121,19 @@ void main() {
 
       await showModalAndGetResult(tester, isDestructive: false);
       expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+    });
+
+    testWidgets('renders optional title above the confirmation message', (
+      tester,
+    ) async {
+      await showModalAndGetResult(
+        tester,
+        title: 'Discard recording?',
+        message: 'This recording will be deleted.',
+      );
+
+      expect(find.text('Discard recording?'), findsOneWidget);
+      expect(find.text('This recording will be deleted.'), findsOneWidget);
     });
 
     testWidgets('dismissing without choosing resolves to false', (

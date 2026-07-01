@@ -15,6 +15,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
@@ -491,6 +492,7 @@ void main() {
             ...extraOverrides,
           ],
           child: MaterialApp(
+            theme: resolveTestTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
@@ -513,6 +515,7 @@ void main() {
         ProviderScope(
           overrides: baseOverrides(),
           child: MaterialApp(
+            theme: resolveTestTheme(),
             home: Builder(
               builder: (context) {
                 return Scaffold(
@@ -1017,6 +1020,15 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        expect(find.text('Discard recording?'), findsOneWidget);
+        expect(cancelRealtimeCalled, isFalse);
+
+        await tester.tap(
+          find.widgetWithText(DesignSystemButton, 'DISCARD'),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
         expect(cancelRealtimeCalled, isTrue);
       });
 
@@ -1101,10 +1113,67 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        expect(find.text('Discard recording?'), findsOneWidget);
+        expect(cancelCalled, isFalse);
+        expect(stopCalled, isFalse);
+
+        await tester.tap(
+          find.widgetWithText(DesignSystemButton, 'DISCARD'),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
         // Cancel discards via cancel(); the standard stop()/transcription
         // path must not run.
         expect(cancelCalled, isTrue);
         expect(stopCalled, isFalse);
+      });
+
+      testWidgets('declining cancel confirmation keeps recording active', (
+        tester,
+      ) async {
+        stubCategory();
+
+        var cancelCalled = false;
+        final standardRecordingState = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          progress: const Duration(seconds: 5),
+          vu: 80,
+          dBFS: -20,
+          showIndicator: false,
+          modalVisible: true,
+        );
+
+        await pumpModalContent(
+          tester,
+          extraOverrides: [
+            realtimeAvailableProvider.overrideWith((_) async => false),
+            audioRecorderControllerProvider.overrideWith(
+              () => _CallbackTrackingController(
+                fixedState: standardRecordingState,
+                onCancelCalled: () => cancelCalled = true,
+              ),
+            ),
+          ],
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        await tester.tap(find.byKey(const ValueKey('cancel_recording')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Discard recording?'), findsOneWidget);
+
+        await tester.tap(
+          find.widgetWithText(DesignSystemButton, 'Keep Recording'),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(cancelCalled, isFalse);
+        expect(find.text('STOP'), findsOneWidget);
       });
 
       testWidgets('tapping RECORD in realtime mode calls recordRealtime', (
