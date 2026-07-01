@@ -23,6 +23,8 @@ import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -273,6 +275,10 @@ Future<MatrixService> createMatrixService({
     updateNotifications: updateNotifications,
     aiConfigRepository: aiConfigRepository,
     settingsDb: settingsDb,
+    savedTaskFiltersRepository: SavedTaskFiltersRepository(
+      SavedTaskFiltersPersistence(settingsDb),
+      updateNotifications,
+    ),
   );
 
   // Share a single AttachmentIndex between MatrixService and the
