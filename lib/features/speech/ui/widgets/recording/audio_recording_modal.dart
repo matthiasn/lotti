@@ -154,7 +154,7 @@ class _AudioRecordingModalContentState
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   child: _isRecording(state)
-                      ? _buildStopButton(context, theme, state)
+                      ? _buildStopButton(context, theme)
                       : _buildRecordButton(context, controller, theme),
                 ),
               ],
@@ -202,10 +202,21 @@ class _AudioRecordingModalContentState
     }
   }
 
+  /// Discards the in-progress recording entirely and closes the sheet.
+  ///
+  /// Unlike [_stop], no journal entry is created and no transcription / task
+  /// summary is triggered — the page returns to exactly how it was before
+  /// recording started. Branches to the realtime or standard cancel path
+  /// depending on the active recording mode.
   Future<void> _cancel() async {
     final controller = ref.read(audioRecorderControllerProvider.notifier);
+    final state = ref.read(audioRecorderControllerProvider);
     try {
-      await controller.cancelRealtime();
+      if (state.isRealtimeMode) {
+        await controller.cancelRealtime();
+      } else {
+        await controller.cancel();
+      }
     } finally {
       if (mounted) {
         Navigator.of(context).pop();
@@ -305,44 +316,55 @@ class _AudioRecordingModalContentState
     );
   }
 
+  /// Compact circular X control that discards the recording. Rendered to the
+  /// left of the stop button while recording, in both standard and realtime
+  /// modes. Uses the localized cancel label for accessibility/tooltip.
+  Widget _buildCancelButton(BuildContext context, ThemeData theme) {
+    return Tooltip(
+      message: context.messages.audioRecordingCancel,
+      child: Semantics(
+        button: true,
+        label: context.messages.audioRecordingCancel,
+        child: GestureDetector(
+          key: const ValueKey('cancel_recording'),
+          // Make the whole 48×48 ring tappable, not just the inner icon — the
+          // Container fill is transparent so without this hits only land on
+          // the icon.
+          behavior: HitTestBehavior.opaque,
+          onTap: _cancel,
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Icon(
+              Icons.close,
+              size: 22,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildStopButton(
     BuildContext context,
     ThemeData theme,
-    AudioRecorderState state,
   ) {
     return Row(
       key: const ValueKey('stop_controls'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Cancel button (for realtime mode)
-        if (state.isRealtimeMode) ...[
-          GestureDetector(
-            onTap: _cancel,
-            child: Container(
-              width: 90,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.5),
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  context.messages.audioRecordingCancel,
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-        ],
+        // Cancel (X) button — discards the whole recording without creating an
+        // entry. Available in both standard and realtime modes.
+        _buildCancelButton(context, theme),
+        const SizedBox(width: 12),
         // Stop button
         GestureDetector(
           onTap: _stop,

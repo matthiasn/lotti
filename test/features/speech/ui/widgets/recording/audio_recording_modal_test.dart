@@ -861,7 +861,10 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 250));
 
-          expect(find.text('CANCEL'), findsOneWidget);
+          expect(
+            find.byKey(const ValueKey('cancel_recording')),
+            findsOneWidget,
+          );
           expect(find.text('STOP'), findsOneWidget);
         },
       );
@@ -1008,12 +1011,100 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 250));
 
-        expect(find.text('CANCEL'), findsOneWidget);
-        await tester.tap(find.text('CANCEL'));
+        final cancelButton = find.byKey(const ValueKey('cancel_recording'));
+        expect(cancelButton, findsOneWidget);
+        await tester.tap(cancelButton);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(cancelRealtimeCalled, isTrue);
+      });
+
+      testWidgets(
+        'should render cancel (X) button in standard recording mode',
+        (tester) async {
+          stubCategory();
+
+          final standardRecordingState = AudioRecorderState(
+            status: AudioRecorderStatus.recording,
+            progress: const Duration(seconds: 5),
+            vu: 80,
+            dBFS: -20,
+            showIndicator: false,
+            modalVisible: true,
+          );
+
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              realtimeAvailableProvider.overrideWith((_) async => false),
+              audioRecorderControllerProvider.overrideWith(
+                () => TestAudioRecorderController(standardRecordingState),
+              ),
+            ],
+          );
+
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
+
+          // The discard control is available even though realtime is off.
+          expect(
+            find.byKey(const ValueKey('cancel_recording')),
+            findsOneWidget,
+          );
+          expect(find.byIcon(Icons.close), findsOneWidget);
+          expect(find.text('STOP'), findsOneWidget);
+        },
+      );
+
+      testWidgets('tapping cancel in standard mode calls cancel', (
+        tester,
+      ) async {
+        stubCategory();
+
+        var cancelCalled = false;
+        var stopCalled = false;
+        final standardRecordingState = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          progress: const Duration(seconds: 5),
+          vu: 80,
+          dBFS: -20,
+          showIndicator: false,
+          modalVisible: true,
+        );
+
+        await pumpModalContent(
+          tester,
+          extraOverrides: [
+            realtimeAvailableProvider.overrideWith((_) async => false),
+            audioRecorderControllerProvider.overrideWith(
+              () => _CallbackTrackingController(
+                fixedState: standardRecordingState,
+                onCancelCalled: () => cancelCalled = true,
+                onStopCalled: () => stopCalled = true,
+              ),
+            ),
+          ],
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        final cancelButton = find.byKey(const ValueKey('cancel_recording'));
+        expect(cancelButton, findsOneWidget);
+        // Tap inside the 48×48 ring but away from the centre icon to prove the
+        // whole control is tappable (HitTestBehavior.opaque), not just the
+        // ~22px icon.
+        await tester.tapAt(
+          tester.getTopLeft(cancelButton) + const Offset(6, 6),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Cancel discards via cancel(); the standard stop()/transcription
+        // path must not run.
+        expect(cancelCalled, isTrue);
+        expect(stopCalled, isFalse);
       });
 
       testWidgets('tapping RECORD in realtime mode calls recordRealtime', (
@@ -1770,12 +1861,16 @@ void main() {
 class _CallbackTrackingController extends AudioRecorderController {
   _CallbackTrackingController({
     required this.fixedState,
+    this.onStopCalled,
+    this.onCancelCalled,
     this.onStopRealtimeCalled,
     this.onCancelRealtimeCalled,
     this.onRecordRealtimeCalled,
   });
 
   final AudioRecorderState fixedState;
+  final VoidCallback? onStopCalled;
+  final VoidCallback? onCancelCalled;
   final VoidCallback? onStopRealtimeCalled;
   final VoidCallback? onCancelRealtimeCalled;
   final VoidCallback? onRecordRealtimeCalled;
@@ -1811,5 +1906,17 @@ class _CallbackTrackingController extends AudioRecorderController {
   Future<void> record({String? linkedId}) async {}
 
   @override
-  Future<String?> stop() async => null;
+  Future<String?> stop() async {
+    onStopCalled?.call();
+    return null;
+  }
+
+  @override
+  Future<void> cancel() async {
+    onCancelCalled?.call();
+    state = fixedState.copyWith(
+      status: AudioRecorderStatus.stopped,
+      modalVisible: false,
+    );
+  }
 }

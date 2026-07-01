@@ -265,6 +265,63 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     return null;
   }
 
+  /// Cancels the current standard recording, discarding it entirely.
+  ///
+  /// In contrast to [stop], this method:
+  /// - Stops the recorder and deletes the partially-recorded audio file
+  /// - Creates **no** journal entry
+  /// - Triggers **no** transcription, automatic prompts, or task-agent wake
+  /// - Resets state to stopped (preserving inference preferences)
+  ///
+  /// The recording is gone as if it never happened — used by the modal's
+  /// cancel (X) control so the user can back out of a recording without it
+  /// turning into a transcript and task summary. The realtime flow has its
+  /// own [cancelRealtime]; this handles the file-based standard flow.
+  Future<void> cancel() async {
+    final note = _audioNote;
+    // Nothing to discard. Also guards against a double-tap (or a stop racing a
+    // cancel): once the note is claimed below, a second call exits here instead
+    // of stopping/deleting a recording that is already being torn down.
+    if (note == null) return;
+
+    // Claim the recording and clear the UI synchronously, before any await, so
+    // concurrent calls can't re-run teardown and the recording indicator/modal
+    // clear immediately rather than lingering through the async file deletion.
+    _audioNote = null;
+    _linkedId = null;
+    _vuMeter.reset();
+
+    // Preserve the inference preferences before resetting state.
+    final enableSpeechRecognition = state.enableSpeechRecognition;
+    state = AudioRecorderState(
+      status: AudioRecorderStatus.stopped,
+      dBFS: -160,
+      vu: -20,
+      progress: Duration.zero,
+      showIndicator: false,
+      modalVisible: false,
+      enableSpeechRecognition: enableSpeechRecognition,
+    );
+
+    try {
+      await _recorderRepository.stopRecording();
+      await _recorderRepository.deleteRecording(note);
+    } catch (exception, stackTrace) {
+      _loggingService.error(
+        LogDomain.speech,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'cancel',
+      );
+    } finally {
+      _loggingService.log(
+        LogDomain.speech,
+        'Recording cancelled and discarded',
+        subDomain: 'cancel',
+      );
+    }
+  }
+
   /// Pauses the current recording.
   /// Updates the state to reflect paused status.
   Future<void> pause() async {

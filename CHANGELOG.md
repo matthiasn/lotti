@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1031]
 ### Added
+- **Cancel a recording.** The audio recording sheet now has a discard (✕) button
+  next to Stop, in both standard and realtime modes. Tapping it throws the
+  recording away entirely — no audio entry is saved, no transcription runs and no
+  task summary is generated — and returns you to the page exactly as it was
+  before you started. Stop still behaves as before: it keeps the recording and
+  kicks off transcription and the linked task's agent.
 - **Customizable completion celebrations.** Settings → Advanced → Animations now
   lets you tune each celebration style — particle count, size, spread, and
   per-style physics like gravity, twinkle, sway, spin, swell — in a full-screen

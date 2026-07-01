@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -295,6 +296,112 @@ void main() {
           subDomain: 'dispose',
         ),
       ).called(1);
+    });
+
+    group('deleteRecording', () {
+      late Directory tempDir;
+
+      setUp(() {
+        tempDir = Directory.systemTemp.createTempSync(
+          'audio_recorder_delete_test_',
+        );
+        getIt.registerSingleton<Directory>(tempDir);
+        when(
+          () => mockDomainLogger.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: any(named: 'subDomain'),
+            level: any(named: 'level'),
+          ),
+        ).thenReturn(null);
+      });
+
+      tearDown(() {
+        if (getIt.isRegistered<Directory>()) {
+          getIt.unregister<Directory>();
+        }
+        if (tempDir.existsSync()) {
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+
+      AudioNote noteFor(File file, {String directory = '/audio/day/'}) {
+        return AudioNote(
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          audioFile: file.uri.pathSegments.last,
+          audioDirectory: directory,
+          duration: const Duration(seconds: 5),
+        );
+      }
+
+      test('deletes the file on disk when it exists', () async {
+        final dir = Directory('${tempDir.path}/audio/day')
+          ..createSync(recursive: true);
+        final file = File('${dir.path}/clip.m4a')..writeAsBytesSync([1, 2, 3]);
+        expect(file.existsSync(), isTrue);
+
+        await repository.deleteRecording(noteFor(file));
+
+        expect(file.existsSync(), isFalse);
+        verify(
+          () => mockDomainLogger.log(
+            LogDomain.speech,
+            any<String>(that: contains('Deleted cancelled recording')),
+            subDomain: AudioRecorderConstants.deleteRecordingSubdomain,
+          ),
+        ).called(1);
+      });
+
+      test('is a no-op when the file does not exist', () async {
+        final note = AudioNote(
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          audioFile: 'missing.m4a',
+          audioDirectory: '/audio/none/',
+          duration: const Duration(seconds: 5),
+        );
+
+        await expectLater(repository.deleteRecording(note), completes);
+
+        verifyNever(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        );
+        verifyNever(
+          () => mockDomainLogger.log(
+            LogDomain.speech,
+            any<String>(that: contains('Deleted cancelled recording')),
+            subDomain: AudioRecorderConstants.deleteRecordingSubdomain,
+          ),
+        );
+      });
+
+      test('swallows and logs errors when path resolution fails', () async {
+        // No Directory registered → getDocumentsDirectory() throws inside the
+        // method, which must be caught and logged rather than rethrown.
+        getIt.unregister<Directory>();
+
+        final note = AudioNote(
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          audioFile: 'clip.m4a',
+          audioDirectory: '/audio/day/',
+          duration: const Duration(seconds: 5),
+        );
+
+        await expectLater(repository.deleteRecording(note), completes);
+
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: AudioRecorderConstants.deleteRecordingSubdomain,
+          ),
+        ).called(1);
+      });
     });
 
     test('amplitudeStream returns a stream', () {
