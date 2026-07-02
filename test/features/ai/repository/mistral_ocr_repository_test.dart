@@ -252,6 +252,37 @@ void main() {
         expect(text, 'Kept');
       });
 
+      test('strips figure placeholders the app never resolves', () async {
+        final text = await textFrom(
+          repoReturning({
+            'pages': [
+              {
+                'markdown': '# Title\n\n![img-0.jpeg](img-0.jpeg)\n\n'
+                    'Body text with inline ![fig 1](img-1.png) reference.',
+              },
+            ],
+          }),
+        );
+
+        expect(
+          text,
+          '# Title\n\nBody text with inline  reference.',
+        );
+      });
+
+      test('skips a page whose markdown is only image placeholders', () async {
+        final text = await textFrom(
+          repoReturning({
+            'pages': [
+              {'markdown': '![img-0.jpeg](img-0.jpeg)'},
+              {'markdown': 'Real text'},
+            ],
+          }),
+        );
+
+        expect(text, 'Real text');
+      });
+
       test('joins results across multiple images', () async {
         var call = 0;
         final repo = repoWithHandler((_) async {
