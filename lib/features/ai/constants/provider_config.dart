@@ -81,9 +81,11 @@ class ProviderConfig {
   /// that is mapped into installable model rows in the settings UI, instead of
   /// relying solely on the small curated `knownModelsByProvider` fallback list.
   static const Set<InferenceProviderType> dynamicCatalogProviders = {
+    InferenceProviderType.gemini,
     InferenceProviderType.melious,
     InferenceProviderType.mistral,
     InferenceProviderType.omlx,
+    InferenceProviderType.openAi,
   };
 
   /// Get the default base URL for a provider type

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,11 +8,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
+import 'package:lotti/features/ai/repository/gemini_models_repository.dart'
+    show GeminiModelsRepository;
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart'
     show MeliousInferenceException;
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart'
@@ -23,6 +27,7 @@ import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart'
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
     show
         AvailableModelsSection,
+        geminiModelsRepositoryProvider,
         meliousInferenceRepositoryProvider,
         mistralInferenceRepositoryProvider,
         omlxInferenceRepositoryProvider;
@@ -84,6 +89,29 @@ Future<void> _setTestSurface(
 }) async {
   await tester.binding.setSurfaceSize(Size(width, height));
   addTearDown(() => tester.binding.setSurfaceSize(null));
+}
+
+/// Overrides the Gemini (dynamic-catalog) repository with one whose `/models`
+/// listing returns the curated [geminiModels] ids. Since those ids are in the
+/// curated set, the repository maps them straight back to [geminiModels], so
+/// the dynamic `AvailableModelsSection` renders the same `_KnownModelTile`s the
+/// static catalog used to — letting the shared tile behaviour (Added badge,
+/// add button, capability chips, in-flight spinner) stay under test on Gemini.
+Override _geminiStaticCatalogOverride() {
+  return geminiModelsRepositoryProvider.overrideWithValue(
+    GeminiModelsRepository(
+      httpClient: MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'models': [
+              for (final model in geminiModels) {'name': model.providerModelId},
+            ],
+          }),
+          200,
+        ),
+      ),
+    ),
+  );
 }
 
 void main() {
@@ -1357,24 +1385,27 @@ void main() {
     ) async {
       await _setTestSurface(tester, height: 1200);
 
-      // Create a Gemini provider (which has known models)
-      final geminiProvider = AiConfig.inferenceProvider(
-        id: 'gemini-provider-id',
-        name: 'My Gemini',
-        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      // Use a static-catalog provider (Nebius) so the section renders the
+      // curated `knownModelsByProvider` list. Gemini and OpenAI now use the
+      // dynamic live-catalog section instead (covered by their repository
+      // tests and the dynamic-section widget tests below).
+      final nebiusProvider = AiConfig.inferenceProvider(
+        id: 'nebius-provider-id',
+        name: 'My Nebius',
+        baseUrl: 'https://api.studio.nebius.com/v1',
         apiKey: 'test-key',
         createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.gemini,
+        inferenceProviderType: InferenceProviderType.nebiusAiStudio,
       );
 
       when(
-        () => mockRepository.getConfigById('gemini-provider-id'),
-      ).thenAnswer((_) async => geminiProvider);
+        () => mockRepository.getConfigById('nebius-provider-id'),
+      ).thenAnswer((_) async => nebiusProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
       ).thenAnswer((_) => Stream.value([]));
 
-      await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
+      await tester.pumpWidget(buildTestWidget(configId: 'nebius-provider-id'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -1918,9 +1949,20 @@ void main() {
           ],
         ]);
 
+        // A saved config whose type is NOT a dynamic-catalog provider (Anthropic
+        // has no `/models` catalog wired), so the dynamic provider returns empty
+        // for this mismatched id without attempting any live fetch.
+        final staleProvider = AiConfig.inferenceProvider(
+          id: 'stale-provider-id',
+          name: 'Stale Anthropic',
+          baseUrl: 'https://api.anthropic.com/v1',
+          apiKey: 'sk-stale',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.anthropic,
+        );
         when(
           () => mockRepository.getConfigById('stale-provider-id'),
-        ).thenAnswer((_) async => testProvider);
+        ).thenAnswer((_) async => staleProvider);
         when(
           () => mockRepository.watchConfigsByType(AiConfigType.model),
         ).thenAnswer((_) => Stream.value([]));
@@ -2068,7 +2110,12 @@ void main() {
         () => mockRepository.watchConfigsByType(AiConfigType.model),
       ).thenAnswer((_) => Stream.value([]));
 
-      await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'gemini-provider-id',
+          additionalOverrides: [_geminiStaticCatalogOverride()],
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -2118,7 +2165,12 @@ void main() {
         () => mockRepository.watchConfigsByType(AiConfigType.model),
       ).thenAnswer((_) => Stream.value([existingModel]));
 
-      await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'gemini-provider-id',
+          additionalOverrides: [_geminiStaticCatalogOverride()],
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -2152,7 +2204,12 @@ void main() {
         () => mockRepository.watchConfigsByType(AiConfigType.model),
       ).thenAnswer((_) => Stream.value([]));
 
-      await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'gemini-provider-id',
+          additionalOverrides: [_geminiStaticCatalogOverride()],
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -2215,7 +2272,10 @@ void main() {
         ).thenAnswer((_) => saveCompleter.future);
 
         await tester.pumpWidget(
-          buildTestWidget(configId: 'gemini-provider-id'),
+          buildTestWidget(
+            configId: 'gemini-provider-id',
+            additionalOverrides: [_geminiStaticCatalogOverride()],
+          ),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
@@ -2265,7 +2325,12 @@ void main() {
         () => mockRepository.watchConfigsByType(AiConfigType.model),
       ).thenAnswer((_) => Stream.value([]));
 
-      await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
+      await tester.pumpWidget(
+        buildTestWidget(
+          configId: 'gemini-provider-id',
+          additionalOverrides: [_geminiStaticCatalogOverride()],
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 

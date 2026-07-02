@@ -94,6 +94,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   audio transcription, reasoning, function calling) so you can search and
   install any Mistral model — not just the curated defaults — directly from the
   provider page.
+- Gemini and OpenAI provider settings now fetch their live model catalogs in the
+  Available Models section too, just like Melious, Mistral, and oMLX. Gemini
+  reads Google's native `/v1beta/models` listing (display names, descriptions,
+  token limits and the thinking flag); OpenAI reads `/v1/models` and derives
+  each model's capabilities from its id, dropping embedding, moderation and
+  text-to-speech rows. When a new Gemini or OpenAI model ships, you can search
+  for it and install it straight from the provider page instead of waiting for a
+  curated update.
 - **Mistral OCR support.** Running "Analyze Image" with a Mistral OCR model
   (e.g. `mistral-ocr-latest`) now extracts the document's actual text. OCR
   models use Mistral's dedicated `/v1/ocr` endpoint instead of chat completions

@@ -203,19 +203,42 @@ Persisted rows that predate the field deserialize with
 #### Dynamic Provider Catalogs
 
 The provider edit form normally renders the static `knownModelsByProvider`
-catalog for the selected provider type. Melious.ai, Mistral, and oMLX are the
-dynamic exceptions (`ProviderConfig.supportsDynamicCatalog`): for saved
-providers of these types, `AvailableModelsSection` fetches the live catalog from
-the provider's configured base URL. The same section is also embedded in the
+catalog for the selected provider type. Melious.ai, Mistral, oMLX, Gemini, and
+OpenAI are the dynamic exceptions (`ProviderConfig.supportsDynamicCatalog`): for
+saved providers of these types, `AvailableModelsSection` fetches the live catalog
+from the provider's configured base URL. The same section is also embedded in the
 provider detail page **after** the installed `Models · N` list, so users see
-their configured models first and then scroll on to the searchable catalog.
-Melious uses the saved API key and `/models?include_meta=true`; Mistral uses the
-saved API key and `/v1/models`; oMLX calls the local OpenAI-compatible `/models`
-endpoint and only sends bearer auth when an API key is configured. The responses
-are translated into the same `KnownModel` shape used by static catalogs, so the
-UI can reuse the existing install tile and "Added" state. Live catalogs with
-more than eight rows render inside a bounded, searchable list so provider detail
-pages do not grow by the full endpoint result size.
+their configured models first and then scroll on to the searchable catalog. Each
+provider maps its endpoint's response into the same `KnownModel` shape used by
+static catalogs, so the UI can reuse the existing install tile and "Added" state:
+
+- **Melious** — saved API key, `/models?include_meta=true`, mapping `_meta`
+  capabilities.
+- **Mistral** — saved API key, `/v1/models`, mapping the `capabilities` block.
+- **oMLX** — local OpenAI-compatible `/models`, bearer auth only when an API key
+  is configured; mostly id-only rows refined with heuristics.
+- **Gemini** — `GeminiModelsRepository` hits Google's **native** rich listing
+  `GET /v1beta/models` (the OpenAI-compatible base URL is rewritten to the native
+  host/path), authenticating with the `x-goog-api-key` **header** so the key
+  never appears in the URL. It reads `displayName`, `description`, token limits
+  and the `thinking` flag, follows `nextPageToken` pagination, and drops rows
+  that don't support `generateContent` (e.g. embeddings). Non-Gemini families
+  (Gemma) map to conservative text-only rows. Curated `geminiModels` ids are
+  returned verbatim.
+- **OpenAI** — `OpenAiModelsRepository` hits `GET /v1/models` (bearer auth). The
+  endpoint returns bare ids, so capabilities are derived from the id (vision +
+  tools for chat, audio-in only for the `gpt-4o-transcribe` family the
+  transcription router supports, image out for `gpt-image`/`dall-e`, text-only
+  for legacy `davinci`/`babbage`/`instruct`). Embedding, moderation, tts,
+  realtime and unrouted transcription (e.g. `whisper-1`) rows are dropped.
+  Curated `openaiModels` ids are returned verbatim.
+
+Both new repositories validate a host-less base URL, skip (and log) individual
+malformed rows instead of failing the whole fetch, and share their parsing
+primitives via `ModelCatalogMapping`. Live catalogs with more than eight rows
+render inside a bounded, searchable list so provider detail pages do not grow by
+the full endpoint result size. A failed live fetch shows an inline error banner
+with a retry control, consistent across all dynamic providers.
 
 ```mermaid
 sequenceDiagram
@@ -224,28 +247,28 @@ sequenceDiagram
   participant Melious as MeliousInferenceRepository
   participant Mistral as MistralInferenceRepository
   participant Omlx as OmlxInferenceRepository
-  participant API as Melious /models
-  participant MistralAPI as Mistral /v1/models
-  participant Local as oMLX /models
+  participant Gemini as GeminiModelsRepository
+  participant OpenAi as OpenAiModelsRepository
 
   UI->>Repo: load saved provider by ID
   Repo-->>UI: base URL + API key
   alt Melious.ai
   UI->>Melious: listModels(baseUrl, apiKey)
-  Melious->>API: GET /models?include_meta=true
-  API-->>Melious: data[] with _meta capabilities
-  Melious-->>UI: KnownModel[]
+  Melious->>Melious: GET /models?include_meta=true
   else Mistral
   UI->>Mistral: listModels(baseUrl, apiKey)
-  Mistral->>MistralAPI: GET /v1/models
-  MistralAPI-->>Mistral: data[] with capabilities
-  Mistral-->>UI: KnownModel[]
+  Mistral->>Mistral: GET /v1/models
   else oMLX
   UI->>Omlx: listModels(baseUrl, apiKey?)
-  Omlx->>Local: GET /models
-  Local-->>Omlx: OpenAI-compatible data[] model IDs
-  Omlx-->>UI: KnownModel[]
+  Omlx->>Omlx: GET /models
+  else Gemini
+  UI->>Gemini: listModels(baseUrl, apiKey)
+  Gemini->>Gemini: GET /v1beta/models?key=… (paginated)
+  else OpenAI
+  UI->>OpenAi: listModels(baseUrl, apiKey)
+  OpenAi->>OpenAi: GET /v1/models
   end
+  Note over Melious,OpenAi: response mapped to KnownModel[]
   UI->>Repo: save AiConfig.model when user taps Add
 ```
 

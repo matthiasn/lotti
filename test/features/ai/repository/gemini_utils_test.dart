@@ -142,6 +142,69 @@ void main() {
     });
   });
 
+  group('GeminiUtils.buildListModelsUri', () {
+    test('targets the native /v1beta/models listing regardless of base path',
+        () {
+      final uri = GeminiUtils.buildListModelsUri(
+        // The OpenAI-compatible default base URL still resolves to the native
+        // (richer) listing.
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      );
+      expect(uri.scheme, 'https');
+      expect(uri.host, 'generativelanguage.googleapis.com');
+      expect(uri.path, '/v1beta/models');
+      // The API key is carried in a header, never the URL.
+      expect(uri.queryParameters.containsKey('key'), isFalse);
+      expect(uri.queryParameters, isEmpty);
+    });
+
+    test('preserves scheme, host and port from the base URL', () {
+      final uri = GeminiUtils.buildListModelsUri(
+        baseUrl: 'http://localhost:8080/openai',
+      );
+      expect(uri.scheme, 'http');
+      expect(uri.host, 'localhost');
+      expect(uri.port, 8080);
+      expect(uri.path, '/v1beta/models');
+    });
+
+    test('defaults scheme to https when the base URL omits one', () {
+      final uri = GeminiUtils.buildListModelsUri(
+        baseUrl: 'generativelanguage.googleapis.com',
+      );
+      expect(uri.scheme, 'https');
+    });
+
+    test('yields an empty host for a scheme-less, path-only base URL', () {
+      // Callers must reject this before requesting so the key-bearing header
+      // never leaves for a host-less URL.
+      final uri = GeminiUtils.buildListModelsUri(
+        baseUrl: 'generativelanguage.googleapis.com/v1beta/openai',
+      );
+      expect(uri.host, isEmpty);
+    });
+
+    test('includes pageSize and non-empty pageToken when provided', () {
+      final uri = GeminiUtils.buildListModelsUri(
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        pageSize: 1000,
+        pageToken: 'page-2',
+      );
+      expect(uri.queryParameters['pageSize'], '1000');
+      expect(uri.queryParameters['pageToken'], 'page-2');
+    });
+
+    test('omits an empty pageToken', () {
+      final uri = GeminiUtils.buildListModelsUri(
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        pageSize: 1000,
+        pageToken: '',
+      );
+      expect(uri.queryParameters.containsKey('pageToken'), isFalse);
+      expect(uri.queryParameters['pageSize'], '1000');
+    });
+  });
+
   group('GeminiUtils.buildRequestBody', () {
     test('includes prompt, temperature, thinking and optional fields', () {
       final body = GeminiUtils.buildRequestBody(
