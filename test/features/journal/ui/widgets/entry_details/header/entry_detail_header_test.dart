@@ -155,6 +155,48 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
     });
 
+    testWidgets(
+      'does not overflow / clip trailing actions at a narrow phone width',
+      (WidgetTester tester) async {
+        // A flagged entry maximizes the trailing rail (AI + flag + star +
+        // overflow). Constrain to a small-phone content width to reproduce the
+        // header overflow that clipped the overflow `…` on narrow screens.
+        final flaggedTextEntry = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(flag: EntryFlag.import),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => flaggedTextEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Align(
+              // Anchor at the left edge so the box spans x: 0..280 and the
+              // overflow control's global x maps directly to the 280px width.
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: 280,
+                child: EntryDetailHeader(
+                  entryId: testTextEntry.meta.id,
+                  inLinkedEntries: true,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // No RenderFlex overflow was thrown while laying out the row...
+        expect(tester.takeException(), isNull);
+        // ...and the trailing overflow control is present and rendered within
+        // the 280px width (not clipped off the right edge).
+        final overflow = find.byIcon(Icons.more_horiz);
+        expect(overflow, findsOneWidget);
+        expect(tester.getTopRight(overflow).dx, lessThanOrEqualTo(280));
+      },
+    );
+
     testWidgets('rating entry shows the edit affordance in the header', (
       WidgetTester tester,
     ) async {
