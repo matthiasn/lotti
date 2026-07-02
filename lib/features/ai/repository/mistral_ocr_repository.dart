@@ -57,9 +57,11 @@ class MistralOcrRepository {
   /// Markdown as a single streamed chat-completion chunk.
   ///
   /// Each image is sent as its own `/v1/ocr` request (concurrently across
-  /// images), and the per-page Markdown is concatenated in image order. The
-  /// prompt/system message from the calling skill is intentionally ignored —
-  /// the OCR endpoint only extracts text and takes no instructions.
+  /// images), and the per-page Markdown is concatenated in image order, with
+  /// figure placeholders like `![img-0.jpeg](img-0.jpeg)` stripped (see
+  /// [_stripImageReferences]). The prompt/system message from the calling
+  /// skill is intentionally ignored — the OCR endpoint only extracts text and
+  /// takes no instructions.
   ///
   /// Error surface (matches the sibling transcription/inference repositories):
   /// argument validation throws [ArgumentError] **synchronously**, before the
@@ -197,8 +199,11 @@ class MistralOcrRepository {
       for (final page in pages) {
         if (page is Map<String, dynamic>) {
           final text = page['markdown'];
-          if (text is String && text.trim().isNotEmpty) {
-            markdown.add(text.trim());
+          if (text is String) {
+            final stripped = _stripImageReferences(text);
+            if (stripped.isNotEmpty) {
+              markdown.add(stripped);
+            }
           }
         }
       }
@@ -225,6 +230,21 @@ class MistralOcrRepository {
       );
     }
   }
+
+  /// Figure regions the OCR model detects inside the page are referenced in
+  /// the markdown as image placeholders, e.g. `![img-0.jpeg](img-0.jpeg)`,
+  /// resolved by the response's `pages[].images[]` entries. The request sets
+  /// `include_image_base64: false` and those entries are never processed, so
+  /// the placeholders would land in the journal text as broken image links.
+  static final _imageRefPattern = RegExp(r'!\[[^\]]*\]\([^)]*\)');
+  static final _multiNewlinePattern = RegExp(r'(?:\r?\n){3,}');
+
+  /// Removes figure placeholders (see [_imageRefPattern]) and collapses the
+  /// blank lines they leave behind.
+  static String _stripImageReferences(String markdown) => markdown
+      .replaceAll(_imageRefPattern, '')
+      .replaceAll(_multiNewlinePattern, '\n\n')
+      .trim();
 
   static Uri _ocrUri(String baseUrl) {
     final baseUri = Uri.parse(baseUrl.endsWith('/') ? baseUrl : '$baseUrl/');
