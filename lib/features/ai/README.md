@@ -279,8 +279,13 @@ special-cases `InferenceProviderType.mistral` + `MistralOcrRepository.isMistralO
 and routes to `MistralOcrRepository.extractText`, which posts each image as a
 base64 `image_url` document, concatenates the per-page Markdown, and emits it as
 a single streamed chat-completion chunk so the existing image-analysis skill
-runner appends the extracted text to the image entry unchanged. The OCR endpoint
-ignores the skill's prompt/system message — it only extracts text.
+runner appends the extracted text to the image entry unchanged. Figure regions
+the model detects are referenced in the Markdown as placeholders like
+`![img-0.jpeg](img-0.jpeg)`, resolved by `pages[].images[]`; the request sets
+`include_image_base64: false` and those entries are never processed, so the
+repository strips the placeholders instead of leaking broken image links into
+the journal text. The OCR endpoint ignores the skill's prompt/system message —
+it only extracts text.
 
 ## Developer Eval Tool
 
