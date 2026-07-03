@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_models_repository.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/omlx_inference_repository.dart';
+import 'package:lotti/features/ai/repository/openai_models_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
@@ -52,6 +54,24 @@ final mistralInferenceRepositoryProvider =
       return repository;
     });
 
+// Riverpod 3 keeps the concrete auto-dispose provider type internal.
+// ignore: specify_nonobvious_property_types
+final geminiModelsRepositoryProvider =
+    Provider.autoDispose<GeminiModelsRepository>((ref) {
+      final repository = GeminiModelsRepository();
+      ref.onDispose(repository.close);
+      return repository;
+    });
+
+// Riverpod 3 keeps the concrete auto-dispose provider type internal.
+// ignore: specify_nonobvious_property_types
+final openAiModelsRepositoryProvider =
+    Provider.autoDispose<OpenAiModelsRepository>((ref) {
+      final repository = OpenAiModelsRepository();
+      ref.onDispose(repository.close);
+      return repository;
+    });
+
 // Riverpod 3 keeps the concrete provider-family type internal, so this family
 // has to rely on inference to remain callable and invalidatable.
 // ignore: specify_nonobvious_property_types
@@ -63,6 +83,8 @@ final _dynamicKnownModelsProvider = FutureProvider.autoDispose
       final meliousRepository = ref.watch(meliousInferenceRepositoryProvider);
       final omlxRepository = ref.watch(omlxInferenceRepositoryProvider);
       final mistralRepository = ref.watch(mistralInferenceRepositoryProvider);
+      final geminiRepository = ref.watch(geminiModelsRepositoryProvider);
+      final openAiRepository = ref.watch(openAiModelsRepositoryProvider);
       final repository = ref.read(aiConfigRepositoryProvider);
       final config = await repository.getConfigById(providerId);
       if (config is! AiConfigInferenceProvider) {
@@ -83,6 +105,14 @@ final _dynamicKnownModelsProvider = FutureProvider.autoDispose
           apiKey: config.apiKey,
         ),
         InferenceProviderType.mistral => mistralRepository.listModels(
+          baseUrl: baseUrl,
+          apiKey: config.apiKey,
+        ),
+        InferenceProviderType.gemini => geminiRepository.listModels(
+          baseUrl: baseUrl,
+          apiKey: config.apiKey,
+        ),
+        InferenceProviderType.openAi => openAiRepository.listModels(
           baseUrl: baseUrl,
           apiKey: config.apiKey,
         ),

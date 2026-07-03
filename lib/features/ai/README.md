@@ -250,9 +250,9 @@ still point at the legacy Flux 2 Dev default or the previous Whisper Turbo
 transcription default, move to Flux 2 Klein 9B and Whisper Large v3 during
 `upgradeExisting()` after the model backfill has created the rows.
 
-Melious, Mistral, and oMLX provider settings also use live catalogs
-(`ProviderConfig.supportsDynamicCatalog`). The provider detail page and edit
-form render the same `AvailableModelsSection`, so endpoint-backed rows can be
+Melious, Mistral, oMLX, Gemini, and OpenAI provider settings also use live
+catalogs (`ProviderConfig.supportsDynamicCatalog`). The provider detail page and
+edit form render the same `AvailableModelsSection`, so endpoint-backed rows can be
 installed from the screen that also shows the provider's configured
 `Models · N` count. On the detail page the installed `Models · N` list renders
 **above** the searchable catalog, so users see what they already have before
@@ -262,6 +262,40 @@ OpenAI-compatible base URL, then maps returned IDs into installable
 modality and reasoning metadata; Whisper/ASR/STT-looking IDs are treated as
 audio-to-text transcription models; unknown local IDs remain installable as text
 models.
+
+Gemini uses `GeminiModelsRepository.listModels()`, which fetches Google's
+**native** catalog `GET /v1beta/models` rather than the OpenAI-compatible
+`/openai/models` surface — the native listing carries `displayName`,
+`description`, `inputTokenLimit`/`outputTokenLimit`, `supportedGenerationMethods`
+and a `thinking` flag, which the OpenAI-compatible surface flattens away. The
+repository rewrites the saved base URL to the native host/path via
+`GeminiUtils.buildListModelsUri`, authenticates with the `x-goog-api-key`
+**header** (so the key never appears in the request URL), rejects a host-less
+base URL up front, follows `nextPageToken` pagination (capped at
+`maxCatalogPages`), skips (and logs) any malformed row instead of failing the
+whole fetch, and drops rows that don't advertise `generateContent` (e.g.
+embedding models). Ids in the curated `geminiModels` list are returned verbatim;
+unknown ids are derived from the metadata plus id heuristics: `*image*` →
+image-in/out, `*tts*` → text→audio, `gemini-*` → a natively multimodal
+(text+image+audio-in) chat model with tools that reasons when `thinking:true` or
+the id looks like a 2.5/3 model, and any other family (e.g. Gemma) → a
+conservative text-only chat model with no tools.
+
+OpenAI uses `OpenAiModelsRepository.listModels()`, which calls `GET /v1/models`
+with bearer auth (rejecting a host-less base URL up front). That endpoint returns
+bare ids with no capability metadata, so capabilities are derived from the id:
+the `gpt-4o-transcribe` family recognized by
+`OpenAiTranscriptionRepository.isOpenAiTranscriptionModel` → audio-to-text,
+`gpt-image` → image in+out, `dall-e`/other `*image*` → text→image, legacy
+completions ids (`davinci`/`babbage`/`instruct`) → plain text-only, `o1`/`o3`/`o4`
+(and `reasoning`/`thinking`) → reasoning, everything else a vision-capable text
+chat model with tools. Embedding, moderation, TTS, realtime **and unrouted
+transcription models (e.g. `whisper-1`, which the app can't send to
+`/v1/audio/transcriptions`)** are dropped as non-installable, malformed rows are
+skipped and logged, and curated `openaiModels` ids are returned verbatim.
+
+As with the other dynamic providers, a failed live fetch renders an inline error
+banner with a retry control (no silent fall back to the curated list).
 
 Mistral uses a self-contained `listModels()` on `MistralInferenceRepository`
 that calls `GET /v1/models` with bearer auth and maps each row's `capabilities`

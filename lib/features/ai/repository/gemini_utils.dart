@@ -42,6 +42,39 @@ class GeminiUtils {
     endpoint: 'generateContent',
   );
 
+  /// Builds the native `/v1beta/models` catalog URI from a provider base URL.
+  ///
+  /// - Ignores any existing path in [baseUrl] but preserves scheme/host/port,
+  ///   so the OpenAI-compatible default base URL
+  ///   (`.../v1beta/openai`) still resolves to the richer native listing.
+  /// - The API key is intentionally **not** put in the query string — the
+  ///   catalog fetch authenticates with the `x-goog-api-key` header instead, so
+  ///   the key can't leak through proxy/access logs or an exception that echoes
+  ///   the URL. Only the optional `pageSize`/`pageToken` pagination cursors are
+  ///   added to the query.
+  /// - When [baseUrl] omits a host (e.g. a scheme-less value), the returned URI
+  ///   has an empty host; callers should validate before requesting.
+  static Uri buildListModelsUri({
+    required String baseUrl,
+    int? pageSize,
+    String? pageToken,
+  }) {
+    final parsed = Uri.parse(baseUrl);
+    final root = Uri(
+      scheme: parsed.scheme.isNotEmpty ? parsed.scheme : 'https',
+      host: parsed.host,
+      port: parsed.hasPort ? parsed.port : null,
+    );
+    final query = <String, String>{
+      if (pageSize != null) 'pageSize': '$pageSize',
+      if (pageToken != null && pageToken.isNotEmpty) 'pageToken': pageToken,
+    };
+    return root.replace(
+      path: '/v1beta/models',
+      queryParameters: query.isEmpty ? null : query,
+    );
+  }
+
   /// Internal helper to build Gemini API URIs with the specified endpoint.
   static Uri _buildGeminiUri({
     required String baseUrl,

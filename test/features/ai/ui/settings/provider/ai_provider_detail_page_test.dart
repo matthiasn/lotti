@@ -3,12 +3,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
+import 'package:lotti/features/ai/repository/gemini_models_repository.dart';
+import 'package:lotti/features/ai/repository/openai_models_repository.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
-    show meliousInferenceRepositoryProvider, mistralInferenceRepositoryProvider;
+    show
+        geminiModelsRepositoryProvider,
+        meliousInferenceRepositoryProvider,
+        mistralInferenceRepositoryProvider,
+        openAiModelsRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -153,6 +161,25 @@ void main() {
       ),
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+        // The default harness provider is Gemini (a dynamic-catalog provider),
+        // so its detail page mounts the live `AvailableModelsSection`. Back the
+        // Gemini/OpenAI catalog repositories with empty stub responses so no
+        // real network call is made (and `pumpAndSettle` can settle). Tests
+        // that need a populated catalog override these explicitly.
+        geminiModelsRepositoryProvider.overrideWithValue(
+          GeminiModelsRepository(
+            httpClient: MockClient(
+              (_) async => http.Response('{"models":[]}', 200),
+            ),
+          ),
+        ),
+        openAiModelsRepositoryProvider.overrideWithValue(
+          OpenAiModelsRepository(
+            httpClient: MockClient(
+              (_) async => http.Response('{"data":[]}', 200),
+            ),
+          ),
+        ),
         ...overrides,
       ],
       navigatorObservers: navigatorObservers,
@@ -208,7 +235,12 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       // Complete the future so the page's pending work flushes before teardown.
+      // Feed the model/profile streams so the (dynamic) provider's live
+      // AvailableModelsSection resolves to data instead of spinning forever on
+      // an empty model stream, which would hang pumpAndSettle.
       completer.complete(buildProvider());
+      modelsController.add(const <AiConfig>[]);
+      profilesController.add(const <AiConfig>[]);
       await tester.pumpAndSettle();
     });
 
@@ -1339,6 +1371,13 @@ void main() {
         when(
           () => mockRepository.getConfigById('provider-1'),
         ).thenAnswer((_) async => provider);
+        // Emit the model/profile lists immediately (Gemini is a dynamic-catalog
+        // provider, so its detail page mounts the live AvailableModelsSection —
+        // an empty, never-resolving model stream would leave it spinning and
+        // hang pumpAndSettle).
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.value(const <AiConfig>[]));
 
         await tester.pumpWidget(
           makeTestableWidgetNoScroll(
@@ -1360,16 +1399,21 @@ void main() {
             ),
             overrides: [
               aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+              // Gemini is a dynamic-catalog provider; stub its catalog fetch so
+              // the live AvailableModelsSection can't hang pumpAndSettle on a
+              // real network request.
+              geminiModelsRepositoryProvider.overrideWithValue(
+                GeminiModelsRepository(
+                  httpClient: MockClient(
+                    (_) async => http.Response('{"models":[]}', 200),
+                  ),
+                ),
+              ),
             ],
           ),
         );
 
         await tester.tap(find.text('open-provider-detail'));
-        await tester.pumpAndSettle();
-        // Drain the async getConfigById future + the stream-fed model
-        // and profile lists.
-        modelsController.add(const <AiConfig>[]);
-        profilesController.add(const <AiConfig>[]);
         await tester.pumpAndSettle();
 
         // The detail page is now mounted.

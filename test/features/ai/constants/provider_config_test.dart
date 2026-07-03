@@ -270,9 +270,11 @@ void main() {
         expect(
           ProviderConfig.dynamicCatalogProviders,
           unorderedEquals([
+            InferenceProviderType.gemini,
             InferenceProviderType.melious,
             InferenceProviderType.mistral,
             InferenceProviderType.omlx,
+            InferenceProviderType.openAi,
           ]),
         );
         for (final type in InferenceProviderType.values) {
@@ -286,7 +288,9 @@ void main() {
 
       test('is false for a representative static-catalog provider', () {
         expect(
-          ProviderConfig.supportsDynamicCatalog(InferenceProviderType.gemini),
+          ProviderConfig.supportsDynamicCatalog(
+            InferenceProviderType.anthropic,
+          ),
           isFalse,
         );
       });
