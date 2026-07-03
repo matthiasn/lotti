@@ -6,12 +6,18 @@ void main() {
   group('ModelCatalogMapping.redactedEndpoint', () {
     test('keeps host and path but drops userinfo and query', () {
       final uri = Uri.parse('https://user:pw@api.example.com/v1/models?key=sk');
-      expect(ModelCatalogMapping.redactedEndpoint(uri), 'api.example.com/v1/models');
+      expect(
+        ModelCatalogMapping.redactedEndpoint(uri),
+        'api.example.com/v1/models',
+      );
     });
 
     test('labels a host-less URI as <local>', () {
       final uri = Uri(path: '/v1beta/models');
-      expect(ModelCatalogMapping.redactedEndpoint(uri), '<local>/v1beta/models');
+      expect(
+        ModelCatalogMapping.redactedEndpoint(uri),
+        '<local>/v1beta/models',
+      );
     });
   });
 

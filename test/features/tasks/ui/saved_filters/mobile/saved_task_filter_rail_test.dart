@@ -36,6 +36,17 @@ const _f2 = SavedTaskFilter(
   filter: TasksFilter(selectedTaskStatuses: {'BLOCKED'}),
 );
 
+// A wordy real-world filter name (category + status), matching the shape
+// that overflowed the rail in production: at normal text scale on a narrow
+// phone width, the MRU pill's actual rendered width blew past
+// `_fitMruCount`'s flat per-pill estimate, since only the anchor pill was
+// ever wrapped in `Flexible`.
+const _fLong = SavedTaskFilter(
+  id: 'f-long',
+  name: 'Lotti-in-progress',
+  filter: TasksFilter(selectedCategoryIds: {'cat-lotti'}),
+);
+
 const _wideMq = MediaQueryData(
   size: Size(900, 800),
   textScaler: TextScaler.noScaling,
@@ -682,6 +693,41 @@ void main() {
 
       final pill = _pill(tester, SavedTaskFilterRailKeys.pill('f3'));
       expect(pill.semanticsLabel, contains('Work'));
+    },
+  );
+
+  testWidgets(
+    'a long MRU filter name never overflows the row at phone width',
+    (tester) async {
+      // Regression: `_fitMruCount` only estimates how many quick-jump pills to
+      // attempt from a flat per-pill width assumption — it does not measure
+      // the real label. A wordy saved filter (e.g. "Lotti-in-progress") could
+      // still render past the estimate and throw a RenderFlex overflow,
+      // because only the anchor pill was wrapped in `Flexible`; the MRU pills
+      // were bare `Row` children with no bound on their width at all.
+      //
+      // `phoneMediaQueryData` alone only overrides what `MediaQuery.of()`
+      // reports — it does not change the real root view size that
+      // `LayoutBuilder`'s `constraints.maxWidth` is derived from, so the rail
+      // would otherwise lay out against the (much wider) default test
+      // surface and never actually exercise the narrow-width path. Pin the
+      // real view to match.
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pumpRail(
+        tester,
+        pageState: const JournalPageState(),
+        seed: const [_fLong, _f2],
+        countsOverride: savedTaskFilterCountsProvider.overrideWith(
+          (ref) async => const {'f-long': 13, 'f2': 7},
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
     },
   );
 }

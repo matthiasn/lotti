@@ -12,7 +12,8 @@ void main() {
   // widget test — it requires a real `super_drag_and_drop` DropEvent backed by
   // the native `super_native_extensions` plumbing, which is not mockable under
   // the test binding. Coverage here focuses on the extracted pure
-  // `sanitizeDropFileName` helper and the widget's `build` path.
+  // `sanitizeDropFileName` / `isUsableLocalFileUri` helpers and the widget's
+  // `build` path.
   group('sanitizeDropFileName', () {
     test('passes a plain file name through unchanged', () {
       expect(sanitizeDropFileName('photo.jpg'), 'photo.jpg');
@@ -48,6 +49,27 @@ void main() {
       // `p.basename` strips trailing separators rather than returning empty.
       expect(sanitizeDropFileName(''), 'dropped_file');
       expect(p.basename('some/dir/'), 'dir');
+    });
+  });
+
+  group('isUsableLocalFileUri', () {
+    test('accepts a file-scheme URI', () {
+      expect(
+        isUsableLocalFileUri(Uri.file('/Users/me/Desktop/screenshot.png')),
+        isTrue,
+      );
+    });
+
+    test('rejects a null URI (no local path exposed for this item)', () {
+      expect(isUsableLocalFileUri(null), isFalse);
+    });
+
+    test('rejects non-file schemes', () {
+      expect(
+        isUsableLocalFileUri(Uri.parse('https://example.com/a.png')),
+        isFalse,
+      );
+      expect(isUsableLocalFileUri(Uri.parse('content://media/a.png')), isFalse);
     });
   });
 
