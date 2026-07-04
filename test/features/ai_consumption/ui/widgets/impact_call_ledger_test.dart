@@ -115,6 +115,59 @@ void main() {
     expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
   });
 
+  testWidgets('maps every response type to its icon and localized label', (
+    tester,
+  ) async {
+    const cases = <AiConsumptionResponseType, (IconData, String)>{
+      AiConsumptionResponseType.agentTurn: (
+        Icons.smart_toy_outlined,
+        'Agent turn',
+      ),
+      AiConsumptionResponseType.textGeneration: (
+        Icons.notes_outlined,
+        'Text generation',
+      ),
+      AiConsumptionResponseType.audioTranscription: (
+        Icons.mic_outlined,
+        'Transcription',
+      ),
+      AiConsumptionResponseType.imageAnalysis: (
+        Icons.image_search_outlined,
+        'Image analysis',
+      ),
+      AiConsumptionResponseType.imageGeneration: (
+        Icons.brush_outlined,
+        'Image generation',
+      ),
+      AiConsumptionResponseType.promptGeneration: (
+        Icons.edit_note_outlined,
+        'Prompt generation',
+      ),
+    };
+    stubEvents([
+      for (final type in cases.keys)
+        makeConsumptionEvent(
+          id: 'evt-${type.name}',
+          createdAt: DateTime(2026, 6, 3, 12),
+          responseType: type,
+        ),
+    ]);
+    await pumpLedger(tester);
+
+    for (final MapEntry(key: type, value: (icon, label)) in cases.entries) {
+      expect(
+        find.byIcon(icon),
+        findsOneWidget,
+        reason: 'icon for ${type.name}',
+      );
+      expect(
+        find.textContaining(label),
+        findsWidgets,
+        reason: 'label for ${type.name}',
+      );
+    }
+  });
+
   testWidgets('surfaces the cap caption when the page hits the ledger limit', (
     tester,
   ) async {

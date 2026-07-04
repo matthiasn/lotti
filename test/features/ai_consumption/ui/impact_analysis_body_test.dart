@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/features/ai_consumption/model/consumption_aggregation_mode
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -65,6 +68,8 @@ void main() {
   Future<void> pumpBody(
     WidgetTester tester, {
     Size surface = const Size(1280, 1100),
+    UpdateNotifications? notifications,
+    bool unboundedHost = false,
   }) async {
     tester.view
       ..physicalSize = surface
@@ -78,7 +83,9 @@ void main() {
           overrides: [
             consumptionRepositoryProvider.overrideWithValue(repository),
             consumptionRefetchThrottleProvider.overrideWithValue(null),
-            maybeUpdateNotificationsProvider.overrideWith((ref) => null),
+            maybeUpdateNotificationsProvider.overrideWith(
+              (ref) => notifications,
+            ),
             categoriesStreamProvider.overrideWith(
               (ref) => Stream.value(categories),
             ),
@@ -87,7 +94,13 @@ void main() {
               (ref) => DateTime.monday % 7,
             ),
           ],
-          const Scaffold(body: ImpactAnalysisBody()),
+          unboundedHost
+              // The Settings ai-usage host: unbounded height, body
+              // shrink-wraps and the host scrolls.
+              ? const Scaffold(
+                  body: SingleChildScrollView(child: ImpactAnalysisBody()),
+                )
+              : const Scaffold(body: ImpactAnalysisBody()),
         ),
       );
       await tester.pump();
@@ -253,5 +266,61 @@ void main() {
 
     expect(find.text("Couldn't load AI impact data"), findsOneWidget);
     expect(find.byType(BarChart), findsNothing);
+  });
+
+  testWidgets('shrink-wraps in an unbounded host (settings panel) instead '
+      'of mounting its own ListView', (tester) async {
+    stubRows([
+      row(day: 3, categoryId: 'cat-a', credits: 0.4),
+    ]);
+    await pumpBody(tester, unboundedHost: true);
+
+    expect(tester.takeException(), isNull);
+    // The scrollable belongs to the host; the body renders its column.
+    expect(
+      find.descendant(
+        of: find.byType(ImpactAnalysisBody),
+        matching: find.byType(ListView),
+      ),
+      findsNothing,
+    );
+    expect(find.text('AI Impact'), findsOneWidget);
+    expect(find.byType(BarChart), findsOneWidget);
+  });
+
+  testWidgets('a failed refetch keeps the dashboard and shows the stale '
+      'strip instead of an error shell', (tester) async {
+    final notifications = MockUpdateNotifications();
+    final controller = StreamController<Set<String>>.broadcast();
+    addTearDown(controller.close);
+    when(
+      () => notifications.updateStream,
+    ).thenAnswer((_) => controller.stream);
+
+    stubRows([
+      row(day: 3, categoryId: 'cat-a', credits: 0.4),
+    ]);
+    await pumpBody(tester, notifications: notifications);
+    expect(find.byType(BarChart), findsOneWidget);
+    expect(find.byIcon(Icons.sync_problem_rounded), findsNothing);
+
+    // The next window fetch fails; the established dashboard must stay.
+    when(
+      () => repository.metricRowsInRange(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer((_) async => throw Exception('db gone'));
+    controller.add({aiConsumptionNotification});
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(BarChart), findsOneWidget);
+    expect(find.byIcon(Icons.sync_problem_rounded), findsOneWidget);
+    expect(
+      find.text("Couldn't refresh — showing the last loaded data"),
+      findsOneWidget,
+    );
   });
 }

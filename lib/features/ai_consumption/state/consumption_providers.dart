@@ -97,14 +97,10 @@ final consumptionBucketsProvider = StreamProvider.autoDispose
           notificationKeys: const {aiConsumptionNotification},
           fetcher: fetch,
           refetchThrottle: refetchThrottle,
-        ).map(
-          (buckets) =>
-              buckets ??
-              ConsumptionDayBuckets(
-                windowStartDay: window.startDay,
-                days: const {},
-              ),
-        );
+          // The fetcher always yields a value (failures surface via
+          // addError), so the helper's nullable item type is asserted away
+          // rather than carrying a dead fallback branch.
+        ).map((buckets) => buckets!);
       },
       name: 'consumptionBucketsProvider',
     );
