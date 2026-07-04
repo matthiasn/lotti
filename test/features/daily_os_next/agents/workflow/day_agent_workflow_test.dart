@@ -4120,6 +4120,11 @@ class _ConversationHarness extends ConversationRepository {
     ChatCompletionToolChoiceOption? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
+    String? consumptionAgentId,
+    String? consumptionTaskId,
+    String? consumptionCategoryId,
+    String? consumptionWakeRunKey,
+    String? consumptionThreadId,
   }) async {
     final thrown = errorToThrow;
     if (thrown != null) throw thrown;

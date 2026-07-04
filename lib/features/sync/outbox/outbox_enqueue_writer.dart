@@ -228,6 +228,26 @@ class OutboxEnqueueWriter {
     return linkMsg;
   }
 
+  /// Prepares a SyncConsumptionEvent by adding originatingHostId and merging
+  /// covered vector clocks. Mirrors [prepareEntryLink] (inline payload).
+  SyncConsumptionEvent prepareConsumptionEvent(
+    SyncConsumptionEvent msg,
+    String? host,
+  ) {
+    var eventMsg = msg;
+    if (eventMsg.originatingHostId == null && host != null) {
+      eventMsg = eventMsg.copyWith(originatingHostId: host);
+    }
+    final coveredClocks = VectorClock.mergeUniqueClocks([
+      ...?eventMsg.coveredVectorClocks,
+      eventMsg.event.vectorClock,
+    ]);
+    if (coveredClocks != eventMsg.coveredVectorClocks) {
+      eventMsg = eventMsg.copyWith(coveredVectorClocks: coveredClocks);
+    }
+    return eventMsg;
+  }
+
   /// Routes message preparation based on type.
   Future<SyncMessage> prepareMessage(SyncMessage message, String? host) async {
     return switch (message) {
@@ -235,6 +255,7 @@ class OutboxEnqueueWriter {
       final SyncEntryLink msg => await prepareEntryLink(msg, host),
       final SyncAgentEntity msg => prepareAgentEntity(msg, host),
       final SyncAgentLink msg => prepareAgentLink(msg, host),
+      final SyncConsumptionEvent msg => prepareConsumptionEvent(msg, host),
       final SyncConfigFlag msg =>
         msg.originatingHostId == null && host != null
             ? msg.copyWith(originatingHostId: host)

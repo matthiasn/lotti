@@ -25,6 +25,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/content_extraction_helper.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
@@ -191,6 +193,13 @@ class TemplateEvolutionWorkflow {
         ),
         tools: _buildToolDefinitions(bridge: active.genUiBridge),
         strategy: active.strategy,
+        // Evolution attributes consumption to the template being improved.
+        consumptionAgentId: getIt.isRegistered<AiConsumptionRecorder>()
+            ? active.templateId
+            : null,
+        consumptionThreadId: getIt.isRegistered<AiConsumptionRecorder>()
+            ? active.conversationId
+            : null,
       );
 
       return _extractLastAssistantContent(active.conversationId);

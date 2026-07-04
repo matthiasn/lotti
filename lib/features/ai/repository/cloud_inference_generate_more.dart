@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
@@ -288,6 +289,7 @@ class CloudInferenceGenerateMore {
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
     GeminiThinkingMode? geminiThinkingMode,
+    InferenceImpactCollector? impactCollector,
   }) {
     developer.log(
       'CloudInferenceRepository.generateWithMessages called with:\n'
@@ -362,6 +364,7 @@ class CloudInferenceGenerateMore {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        impactCollector: impactCollector,
       );
     }
 
@@ -424,6 +427,7 @@ class CloudInferenceGenerateMore {
     required AiConfigInferenceProvider provider,
     String? systemMessage,
     List<ProcessedReferenceImage>? referenceImages,
+    InferenceImpactCollector? impactCollector,
   }) async {
     developer.log(
       'CloudInferenceRepository.generateImage called with:\n'
@@ -458,6 +462,7 @@ class CloudInferenceGenerateMore {
           model: model,
           provider: provider,
           referenceImages: referenceImages,
+          impactCollector: impactCollector,
         );
       case InferenceProviderType.anthropic:
       case InferenceProviderType.genericOpenAi:

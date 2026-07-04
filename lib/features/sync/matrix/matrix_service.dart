@@ -400,6 +400,7 @@ class MatrixService {
       themingSelection: (_) => 'themingSelection',
       notification: (_) => 'notification',
       notificationStateUpdate: (_) => 'notificationStateUpdate',
+      consumptionEvent: (_) => 'consumptionEvent',
       backfillRequest: (_) => 'backfillRequest',
       backfillResponse: (_) => 'backfillResponse',
       agentEntity: (_) => 'agentEntity',

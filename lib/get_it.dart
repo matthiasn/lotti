@@ -22,6 +22,10 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
+import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
+import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
@@ -99,6 +103,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<SyncActivitySignaler>(SyncActivitySignaler())
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<AgentDatabase>(AgentDatabase())
+    ..registerSingleton<ConsumptionDatabase>(ConsumptionDatabase())
     ..registerSingleton<NotificationsDb>(NotificationsDb())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<OnboardingMetricsDb>(OnboardingMetricsDb())
@@ -280,6 +285,15 @@ Future<void> registerSingletons() async {
     notificationScheduler: notificationScheduler,
     syncNodeProfileRepository: syncNodeProfileRepository,
   );
+
+  // Consumption repository has no circular dependency (only ConsumptionDatabase),
+  // so — unlike the agent repository, which is wired via Riverpod — it can be
+  // constructed here and injected directly onto the inbound sync collaborators.
+  final consumptionRepository = ConsumptionRepository(
+    getIt<ConsumptionDatabase>(),
+  );
+  syncEventProcessor.consumptionRepository = consumptionRepository;
+
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 
   // Room discovery service for single-user multi-device flow
@@ -377,6 +391,24 @@ Future<void> registerSingletons() async {
 
   // Self-healing sync: create backfill services after OutboxService is available
   final outboxService = getIt<OutboxService>();
+
+  // Sync-aware consumption write path, now that OutboxService exists, plus the
+  // thin recorder facade that AI call sites use to persist one event per call.
+  final consumptionSyncService = ConsumptionSyncService(
+    repository: consumptionRepository,
+    outboxService: outboxService,
+    vectorClockService: vectorClockService,
+    sequenceLogService: syncSequenceLogService,
+  );
+  getIt
+    ..registerSingleton<ConsumptionRepository>(consumptionRepository)
+    ..registerSingleton<ConsumptionSyncService>(consumptionSyncService)
+    ..registerSingleton<AiConsumptionRecorder>(
+      AiConsumptionRecorder(
+        syncService: consumptionSyncService,
+        logger: domainLogger,
+      ),
+    );
   final notificationRepository = NotificationRepository(
     notificationsDb: notificationsDb,
     journalDb: journalDb,
@@ -573,7 +605,7 @@ Future<void> registerSingletons() async {
     vectorClockService: vectorClockService,
     domainLogger: domainLogger,
     notificationsDb: notificationsDb,
-  );
+  )..consumptionRepository = consumptionRepository;
   final backfillRequestService = BackfillRequestService(
     sequenceLogService: syncSequenceLogService,
     syncDatabase: syncDatabase,

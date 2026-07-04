@@ -4,10 +4,15 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/get_it.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -228,6 +233,14 @@ class ConversationRepository extends Notifier<void> {
     ChatCompletionToolChoiceOption? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
+    // Owner ids for per-turn consumption recording. When [consumptionAgentId]
+    // is null, recording is skipped (non-agent callers). Agent workflows pass
+    // these so each turn is attributed to the task/category/wake.
+    String? consumptionAgentId,
+    String? consumptionTaskId,
+    String? consumptionCategoryId,
+    String? consumptionWakeRunKey,
+    String? consumptionThreadId,
   }) async {
     final manager = _conversations[conversationId];
     if (manager == null) {
@@ -264,6 +277,11 @@ class ConversationRepository extends Notifier<void> {
 
         // Create signature collector for this turn (Gemini 3 multi-turn support)
         final signatureCollector = ThoughtSignatureCollector();
+        // Per-turn cost/energy side-channel (Melious populates it) + timing and
+        // the turn index captured before the request advances the count.
+        final impactCollector = InferenceImpactCollector();
+        final turnStart = DateTime.now();
+        final turnIndex = manager.turnCount;
 
         // Make API call with full conversation history
         // Pass previous signatures and collector for new ones
@@ -277,7 +295,8 @@ class ConversationRepository extends Notifier<void> {
           temperature: effectiveTemperature,
           thoughtSignatures: manager.thoughtSignatures,
           signatureCollector: signatureCollector,
-          turnIndex: manager.turnCount,
+          turnIndex: turnIndex,
+          impactCollector: impactCollector,
         );
 
         // Collect response
@@ -331,6 +350,21 @@ class ConversationRepository extends Notifier<void> {
         if (turnUsage != null) {
           accumulated = accumulated.merge(turnUsage);
         }
+
+        // Record one consumption event for this turn (per-turn granularity).
+        await _recordTurnConsumption(
+          agentId: consumptionAgentId,
+          taskId: consumptionTaskId,
+          categoryId: consumptionCategoryId,
+          wakeRunKey: consumptionWakeRunKey,
+          threadId: consumptionThreadId,
+          turnIndex: turnIndex,
+          model: model,
+          provider: provider,
+          usage: turnUsage,
+          impact: impactCollector.impact,
+          start: turnStart,
+        );
 
         // Add assistant message.
         //
@@ -421,6 +455,59 @@ class ConversationRepository extends Notifier<void> {
   void deleteConversation(String conversationId) {
     final manager = _conversations.remove(conversationId);
     manager?.dispose();
+  }
+
+  /// Records one AI-consumption event for a single agent turn. A no-op when no
+  /// [agentId] is supplied (non-agent callers) or no recorder is wired. Owner
+  /// ids come from the workflow; tokens from [usage]; cost/energy from [impact]
+  /// (Melious only). `parentId` is the wake run key, so a wake's turns share a
+  /// causal parent.
+  Future<void> _recordTurnConsumption({
+    required String? agentId,
+    required String? taskId,
+    required String? categoryId,
+    required String? wakeRunKey,
+    required String? threadId,
+    required int turnIndex,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required InferenceUsage? usage,
+    required MeliousCallImpact? impact,
+    required DateTime start,
+  }) async {
+    if (agentId == null) return;
+    if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
+    await getIt<AiConsumptionRecorder>().record(
+      AiConsumptionEvent(
+        id: const Uuid().v1(),
+        createdAt: start,
+        providerType: provider.inferenceProviderType,
+        responseType: AiConsumptionResponseType.agentTurn,
+        vectorClock: null,
+        parentId: wakeRunKey,
+        agentId: agentId,
+        taskId: taskId,
+        categoryId: categoryId,
+        wakeRunKey: wakeRunKey,
+        threadId: threadId,
+        turnIndex: turnIndex,
+        providerModelId: model,
+        durationMs: DateTime.now().difference(start).inMilliseconds,
+        inputTokens: usage?.inputTokens,
+        outputTokens: usage?.outputTokens,
+        cachedInputTokens: usage?.cachedInputTokens,
+        thoughtsTokens: usage?.thoughtsTokens,
+        totalTokens: usage?.totalTokens,
+        credits: impact?.costCredits,
+        energyKwh: impact?.energyKwh,
+        carbonGCo2: impact?.carbonGCo2,
+        waterLiters: impact?.waterLiters,
+        renewablePercent: impact?.renewablePercent,
+        pue: impact?.pue,
+        dataCenter: impact?.dataCenter,
+        upstreamProviderId: impact?.providerId,
+      ),
+    );
   }
 }
 

@@ -8645,6 +8645,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadConfigFlag => 'Konfigurační příznak';
 
   @override
+  String get syncPayloadConsumptionEvent => 'Spotřeba AI';
+
+  @override
   String get syncPayloadEntityDefinition => 'Definice entity';
 
   @override

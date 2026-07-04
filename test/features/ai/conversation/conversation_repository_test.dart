@@ -34,6 +34,7 @@ When<Stream<CreateChatCompletionStreamResponse>> _stubGenerateText(
       thoughtSignatures: any(named: 'thoughtSignatures'),
       signatureCollector: any(named: 'signatureCollector'),
       turnIndex: any(named: 'turnIndex'),
+      impactCollector: any(named: 'impactCollector'),
     ),
   );
 }
@@ -252,6 +253,7 @@ void main() {
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
             turnIndex: any(named: 'turnIndex'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).captured;
         expect(captured.single, 1.0);
@@ -295,6 +297,7 @@ void main() {
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
               turnIndex: any(named: 'turnIndex'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           expect(captured.single, 0.2);
@@ -320,6 +323,7 @@ void main() {
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
             turnIndex: any(named: 'turnIndex'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
@@ -357,6 +361,7 @@ void main() {
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
             turnIndex: any(named: 'turnIndex'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).captured;
         expect(captured.single, toolChoice);

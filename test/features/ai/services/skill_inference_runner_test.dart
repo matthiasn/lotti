@@ -1422,6 +1422,7 @@ void main() {
             images: any(named: 'images'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
@@ -1453,6 +1454,7 @@ void main() {
             ],
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).called(1);
 
@@ -1510,6 +1512,7 @@ void main() {
             images: any(named: 'images'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([makeStreamChunk('New analysis')]),
@@ -1555,6 +1558,7 @@ void main() {
             images: any(named: 'images'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer((_) => Stream.fromIterable([]));
 
@@ -1658,6 +1662,7 @@ void main() {
             images: any(named: 'images'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([makeStreamChunk('Analysis')]),
@@ -1755,6 +1760,7 @@ void main() {
               images: any(named: 'images'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -1784,6 +1790,7 @@ void main() {
               images: any(named: 'images'),
               provider: overrideProvider,
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).called(1);
         },
@@ -1817,6 +1824,7 @@ void main() {
               images: any(named: 'images'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -1849,6 +1857,7 @@ void main() {
               images: any(named: 'images'),
               provider: testInferenceProvider(id: 'p-vision'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).called(1);
         },
@@ -1897,6 +1906,7 @@ void main() {
               images: any(named: 'images'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -1927,6 +1937,7 @@ void main() {
               images: any(named: 'images'),
               provider: testInferenceProvider(id: 'p-vision'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).called(1);
         },
@@ -2042,6 +2053,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -2075,6 +2087,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           final userMessage = captured.first as String;
@@ -2115,6 +2128,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([makeStreamChunk('out')]),
@@ -2143,6 +2157,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           final userMessage = captured.first as String;
@@ -2167,6 +2182,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([makeStreamChunk('out')]),
@@ -2195,6 +2211,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           final userMessage = captured.first as String;
@@ -2246,6 +2263,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
@@ -2282,6 +2300,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).called(1);
       });
@@ -2322,6 +2341,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
@@ -2353,6 +2373,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).called(1);
       });
@@ -2400,6 +2421,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
@@ -2486,6 +2508,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -2579,6 +2602,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -2674,6 +2698,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([makeStreamChunk('Generated prompt')]),
@@ -2703,6 +2728,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           final userMessage = generateCall.first as String;
@@ -2746,6 +2772,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer((_) => Stream.fromIterable([]));
         stubLoggingException();
@@ -2847,6 +2874,7 @@ void main() {
                 apiKey: any(named: 'apiKey'),
                 provider: any(named: 'provider'),
                 systemMessage: any(named: 'systemMessage'),
+                impactCollector: any(named: 'impactCollector'),
               ),
             ).thenAnswer(
               (_) => Stream.fromIterable(
@@ -3006,6 +3034,7 @@ void main() {
                   apiKey: any(named: 'apiKey'),
                   provider: any(named: 'provider'),
                   systemMessage: any(named: 'systemMessage'),
+                  impactCollector: any(named: 'impactCollector'),
                 ),
               ).thenAnswer(
                 (_) => Stream.fromIterable(
@@ -3069,6 +3098,7 @@ void main() {
                   apiKey: any(named: 'apiKey'),
                   provider: any(named: 'provider'),
                   systemMessage: any(named: 'systemMessage'),
+                  impactCollector: any(named: 'impactCollector'),
                 ),
               );
             } else {
@@ -3081,6 +3111,7 @@ void main() {
                   apiKey: any(named: 'apiKey'),
                   provider: any(named: 'provider'),
                   systemMessage: any(named: 'systemMessage'),
+                  impactCollector: any(named: 'impactCollector'),
                 ),
               ).captured;
               final prompt = generatedCall.single as String;
@@ -3185,6 +3216,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([makeStreamChunk('out')]),
@@ -3263,6 +3295,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -3422,6 +3455,7 @@ void main() {
               prompt: any(named: 'prompt'),
               model: any(named: 'model'),
               provider: any(named: 'provider'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           );
           verify(
@@ -3452,6 +3486,7 @@ void main() {
             prompt: any(named: 'prompt'),
             model: any(named: 'model'),
             provider: any(named: 'provider'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         );
         verify(
@@ -3493,6 +3528,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -3557,6 +3593,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           final prompt = captured.first as String;
@@ -3626,6 +3663,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -3692,6 +3730,7 @@ void main() {
               provider: overrideProvider,
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).called(1);
         },
@@ -3729,6 +3768,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenThrow(
             ImageGenerationException(
@@ -3762,6 +3802,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenThrow(Exception('network down'));
           stubLoggingException();
@@ -3804,6 +3845,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -3867,6 +3909,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           final prompt = captured.first as String;
@@ -3949,6 +3992,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -4055,6 +4099,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).called(1);
 
@@ -4131,6 +4176,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -4217,6 +4263,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -4331,6 +4378,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -4466,6 +4514,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -4569,6 +4618,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: refImages,
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).called(1);
         },
@@ -4688,6 +4738,7 @@ void main() {
               images: any(named: 'images'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([makeStreamChunk('A photo of a cat')]),

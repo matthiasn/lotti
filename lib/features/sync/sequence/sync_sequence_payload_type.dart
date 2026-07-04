@@ -7,4 +7,9 @@ enum SyncSequencePayloadType {
   agentLink,
   notification,
   notificationStateUpdate,
+
+  // Appended last on purpose: the enum ordinal (`.index`) is persisted in the
+  // sync sequence log (`sync_sequence_receiver.dart`), so existing values must
+  // never be reordered — only new values may be added at the end.
+  consumptionEvent,
 }

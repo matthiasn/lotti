@@ -27,6 +27,9 @@ int priorityForMessage(SyncMessage message) {
     SyncAgentLink() => OutboxPriority.normal.index,
     SyncNotification() => OutboxPriority.normal.index,
     SyncNotificationStateUpdate() => OutboxPriority.normal.index,
+    // Consumption metrics are best-effort diagnostics — keep them at the back
+    // so they never queue-jump user writes.
+    SyncConsumptionEvent() => OutboxPriority.low.index,
     SyncAgentBundle() => OutboxPriority.normal.index,
     SyncThemingSelection() => OutboxPriority.normal.index,
     SyncEntityDefinition() => OutboxPriority.low.index,

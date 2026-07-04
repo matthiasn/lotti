@@ -8605,6 +8605,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPayloadConfigFlag => 'Konfigurationsflag';
 
   @override
+  String get syncPayloadConsumptionEvent => 'KI-Verbrauch';
+
+  @override
   String get syncPayloadEntityDefinition => 'Entitätsdefinition';
 
   @override

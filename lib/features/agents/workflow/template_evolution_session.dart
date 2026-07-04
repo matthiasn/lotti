@@ -251,6 +251,13 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
         ),
         tools: _buildToolDefinitions(bridge: bridge),
         strategy: strategy,
+        // Evolution attributes consumption to the template being improved.
+        consumptionAgentId: getIt.isRegistered<AiConsumptionRecorder>()
+            ? templateId
+            : null,
+        consumptionThreadId: getIt.isRegistered<AiConsumptionRecorder>()
+            ? conversationId
+            : null,
       );
 
       _notifyUpdate(templateId);

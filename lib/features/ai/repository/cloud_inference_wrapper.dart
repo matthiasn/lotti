@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -63,6 +64,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
+    InferenceImpactCollector? impactCollector,
   }) async* {
     developer.log(
       'CloudInferenceWrapper: Processing ${messages.length} messages for '
@@ -87,6 +89,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       signatureCollector: signatureCollector,
       turnIndex: turnIndex,
       geminiThinkingMode: geminiThinkingMode,
+      impactCollector: impactCollector,
     );
 
     // Pass through the stream but log any tool calls we see

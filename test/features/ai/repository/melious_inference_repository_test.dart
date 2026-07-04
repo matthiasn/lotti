@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
@@ -1379,6 +1380,154 @@ void main() {
         const MeliousInferenceException('failed').toString(),
         'MeliousInferenceException: failed',
       );
+    });
+  });
+
+  group('non-streaming impact path', () {
+    test(
+      'generateTextWithMessages with a collector issues a non-streaming '
+      'request, returns a synthetic chunk, and records impact',
+      () async {
+        late http.Request captured;
+        final repo = MeliousInferenceRepository(
+          httpClient: MockClient((request) async {
+            captured = request;
+            return http.Response(
+              jsonEncode({
+                'choices': [
+                  {
+                    'message': {'content': 'Hello world'},
+                    'finish_reason': 'stop',
+                  },
+                ],
+                'usage': {
+                  'prompt_tokens': 1000,
+                  'completion_tokens': 500,
+                  'total_tokens': 1500,
+                  'cached_tokens': 100,
+                },
+                'environment_impact': {
+                  'energy_kwh': 0.0003,
+                  'carbon_g_co2': 0.12,
+                  'water_liters': 0.01,
+                  'location': 'FI',
+                  'provider_id': 'nebius',
+                  'renewable_percent': 100,
+                  'pue': 1.1,
+                },
+                'billing_cost': {'credits': 0.002},
+              }),
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          }),
+        );
+
+        final collector = InferenceImpactCollector();
+        final chunks = await repo
+            .generateTextWithMessages(
+              messages: const [
+                ChatCompletionMessage.user(
+                  content: ChatCompletionUserMessageContent.string('hi'),
+                ),
+              ],
+              model: 'glm-5.2',
+              baseUrl: 'https://api.melious.ai/v1',
+              apiKey: 'key',
+              impactCollector: collector,
+            )
+            .toList();
+
+        // A non-streaming POST to /chat/completions was issued.
+        expect(captured.url.path, endsWith('/chat/completions'));
+        expect(
+          (jsonDecode(captured.body) as Map<String, dynamic>)['stream'],
+          false,
+        );
+
+        // Content is assembled from the delta; usage rides the trailing chunk.
+        final content = chunks
+            .expand(
+              (c) => c.choices ?? const <ChatCompletionStreamResponseChoice>[],
+            )
+            .map((ch) => ch.delta?.content ?? '')
+            .join();
+        expect(content, 'Hello world');
+        final usage = chunks.firstWhere((c) => c.usage != null).usage!;
+        expect(usage.promptTokens, 1000);
+        expect(usage.completionTokens, 500);
+        expect(usage.promptTokensDetails?.cachedTokens, 100);
+
+        // Impact surfaced via the side-channel.
+        expect(collector.impact, isNotNull);
+        expect(collector.impact!.energyKwh, 0.0003);
+        expect(collector.impact!.costCredits, 0.002);
+        expect(collector.impact!.dataCenter, 'FI');
+        expect(collector.impact!.renewablePercent, 100);
+      },
+    );
+
+    test('parses tool calls into the synthetic chunk', () async {
+      final repo = MeliousInferenceRepository(
+        httpClient: MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {
+                    'content': null,
+                    'tool_calls': [
+                      {
+                        'id': 'call_1',
+                        'type': 'function',
+                        'function': {
+                          'name': 'do_thing',
+                          'arguments': '{"x":1}',
+                        },
+                      },
+                    ],
+                  },
+                  'finish_reason': 'tool_calls',
+                },
+              ],
+              'usage': {'prompt_tokens': 10, 'completion_tokens': 5},
+            }),
+            200,
+          );
+        }),
+      );
+
+      final collector = InferenceImpactCollector();
+      final chunks = await repo
+          .generateTextWithMessages(
+            messages: const [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('hi'),
+              ),
+            ],
+            model: 'm',
+            baseUrl: 'https://api.melious.ai/v1',
+            apiKey: 'key',
+            impactCollector: collector,
+          )
+          .toList();
+
+      final toolCalls = chunks
+          .expand(
+            (c) => c.choices ?? const <ChatCompletionStreamResponseChoice>[],
+          )
+          .expand(
+            (ch) =>
+                ch.delta?.toolCalls ??
+                const <ChatCompletionStreamMessageToolCallChunk>[],
+          )
+          .toList();
+      expect(toolCalls, hasLength(1));
+      expect(toolCalls.first.id, 'call_1');
+      expect(toolCalls.first.function?.name, 'do_thing');
+      expect(toolCalls.first.function?.arguments, '{"x":1}');
+      // No impact block in the response → collector stays empty.
+      expect(collector.impact, isNull);
     });
   });
 }

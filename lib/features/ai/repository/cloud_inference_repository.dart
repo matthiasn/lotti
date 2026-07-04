@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
@@ -105,6 +106,7 @@ class CloudInferenceRepository {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
     GeminiThinkingMode? geminiThinkingMode,
+    InferenceImpactCollector? impactCollector,
   }) => _generate.generate(
     prompt,
     model: model,
@@ -118,6 +120,7 @@ class CloudInferenceRepository {
     tools: tools,
     toolChoice: toolChoice,
     geminiThinkingMode: geminiThinkingMode,
+    impactCollector: impactCollector,
   );
 
   Stream<CreateChatCompletionStreamResponse> generateWithImages(
@@ -133,6 +136,7 @@ class CloudInferenceRepository {
     List<ChatCompletionTool>? tools,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
+    InferenceImpactCollector? impactCollector,
   }) => _generate.generateWithImages(
     prompt,
     baseUrl: baseUrl,
@@ -146,6 +150,7 @@ class CloudInferenceRepository {
     tools: tools,
     systemMessage: systemMessage,
     geminiThinkingMode: geminiThinkingMode,
+    impactCollector: impactCollector,
   );
 
   Stream<CreateChatCompletionStreamResponse> generateWithAudio(
@@ -193,6 +198,7 @@ class CloudInferenceRepository {
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
     GeminiThinkingMode? geminiThinkingMode,
+    InferenceImpactCollector? impactCollector,
   }) => _generateMore.generateWithMessages(
     messages: messages,
     model: model,
@@ -205,6 +211,7 @@ class CloudInferenceRepository {
     signatureCollector: signatureCollector,
     turnIndex: turnIndex,
     geminiThinkingMode: geminiThinkingMode,
+    impactCollector: impactCollector,
   );
 
   /// Install a model in Ollama with progress tracking
@@ -218,12 +225,14 @@ class CloudInferenceRepository {
     required AiConfigInferenceProvider provider,
     String? systemMessage,
     List<ProcessedReferenceImage>? referenceImages,
+    InferenceImpactCollector? impactCollector,
   }) => _generateMore.generateImage(
     prompt: prompt,
     model: model,
     provider: provider,
     systemMessage: systemMessage,
     referenceImages: referenceImages,
+    impactCollector: impactCollector,
   );
 
   /// Closes HTTP clients held by sub-repositories that this instance owns.

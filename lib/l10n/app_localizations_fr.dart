@@ -8722,6 +8722,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncPayloadConfigFlag => 'Option de configuration';
 
   @override
+  String get syncPayloadConsumptionEvent => 'Consommation IA';
+
+  @override
   String get syncPayloadEntityDefinition => 'Définition d\'entité';
 
   @override

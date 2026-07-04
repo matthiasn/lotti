@@ -79,6 +79,8 @@ extension _BackfillResponseBuilders on BackfillResponseHandler {
         return (await _notificationsDb?.notificationById(
           payloadId,
         ))?.meta.vectorClock;
+      case SyncSequencePayloadType.consumptionEvent:
+        return await consumptionRepository?.getVectorClock(payloadId);
     }
   }
 

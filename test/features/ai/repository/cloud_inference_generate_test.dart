@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_generate.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
@@ -34,6 +35,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    InferenceImpactCollector? impactCollector,
   }) {
     textCalls.add((prompt: prompt, model: model, baseUrl: baseUrl));
     return Stream.value(_chunk('melious text'));
@@ -50,6 +52,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     double? temperature,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    InferenceImpactCollector? impactCollector,
   }) {
     imageCalls.add((
       prompt: prompt,

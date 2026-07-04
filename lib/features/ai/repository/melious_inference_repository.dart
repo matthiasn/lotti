@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:openai_dart/openai_dart.dart';
+import 'package:uuid/uuid.dart';
 
 typedef MeliousChatCompletionStreamFactory =
     Stream<CreateChatCompletionStreamResponse> Function({
@@ -38,6 +40,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   static const _providerName = 'MeliousInferenceRepository';
   static const _modelListTimeout = Duration(seconds: 15);
   static const _imageGenerationTimeout = Duration(seconds: 180);
+  static const _chatCompletionTimeout = Duration(seconds: 300);
   static const _imageGenerationWidth = 1792;
   static const _imageGenerationHeight = 1008;
 
@@ -205,7 +208,14 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     );
   }
 
-  /// Generates text using Melious' OpenAI-compatible streaming endpoint.
+  /// Generates text using Melious' OpenAI-compatible endpoint.
+  ///
+  /// When [impactCollector] is provided the call is issued **non-streaming** so
+  /// Melious returns `environment_impact` + `billing_cost` (only present on
+  /// non-streaming responses); the parsed impact is written to the collector and
+  /// the buffered reply is re-emitted as a single synthetic stream chunk so
+  /// existing consumers are unchanged. Without a collector the original
+  /// streaming path is used verbatim.
   Stream<CreateChatCompletionStreamResponse> generateText({
     required String prompt,
     required String model,
@@ -216,18 +226,33 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    InferenceImpactCollector? impactCollector,
   }) {
+    final messages = [
+      if (systemMessage != null)
+        ChatCompletionMessage.system(content: systemMessage),
+      ChatCompletionMessage.user(
+        content: ChatCompletionUserMessageContent.string(prompt),
+      ),
+    ];
+    if (impactCollector != null) {
+      return _nonStreamingChat(
+        messages: messages,
+        model: model,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        temperature: temperature,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+        toolChoice: toolChoice,
+        impactCollector: impactCollector,
+      );
+    }
     final stream = _chatCompletionStreamFactory(
       baseUrl: baseUrl,
       apiKey: apiKey,
       request: _helpers.createBaseRequest(
-        messages: [
-          if (systemMessage != null)
-            ChatCompletionMessage.system(content: systemMessage),
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string(prompt),
-          ),
-        ],
+        messages: messages,
         model: model,
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
@@ -250,7 +275,21 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    InferenceImpactCollector? impactCollector,
   }) {
+    if (impactCollector != null) {
+      return _nonStreamingChat(
+        messages: messages,
+        model: model,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        temperature: temperature,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+        toolChoice: toolChoice,
+        impactCollector: impactCollector,
+      );
+    }
     final stream = _chatCompletionStreamFactory(
       baseUrl: baseUrl,
       apiKey: apiKey,
@@ -279,27 +318,41 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     double? temperature,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    InferenceImpactCollector? impactCollector,
   }) {
+    final messages = [
+      if (systemMessage != null)
+        ChatCompletionMessage.system(content: systemMessage),
+      ChatCompletionMessage.user(
+        content: ChatCompletionUserMessageContent.parts([
+          ChatCompletionMessageContentPart.text(text: prompt),
+          ...images.map(
+            (image) => ChatCompletionMessageContentPart.image(
+              imageUrl: ChatCompletionMessageImageUrl(
+                url: 'data:image/jpeg;base64,$image',
+              ),
+            ),
+          ),
+        ]),
+      ),
+    ];
+    if (impactCollector != null) {
+      return _nonStreamingChat(
+        messages: messages,
+        model: model,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        temperature: temperature,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+        impactCollector: impactCollector,
+      );
+    }
     return _chatCompletionStreamFactory(
       baseUrl: baseUrl,
       apiKey: apiKey,
       request: _helpers.createBaseRequest(
-        messages: [
-          if (systemMessage != null)
-            ChatCompletionMessage.system(content: systemMessage),
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.parts([
-              ChatCompletionMessageContentPart.text(text: prompt),
-              ...images.map(
-                (image) => ChatCompletionMessageContentPart.image(
-                  imageUrl: ChatCompletionMessageImageUrl(
-                    url: 'data:image/jpeg;base64,$image',
-                  ),
-                ),
-              ),
-            ]),
-          ),
-        ],
+        messages: messages,
         model: model,
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
@@ -316,6 +369,189 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   }) {
     final client = OpenAIClient(baseUrl: baseUrl, apiKey: apiKey);
     return client.createChatCompletionStream(request: request);
+  }
+
+  /// Non-streaming Melious chat: one raw POST that returns the full body
+  /// (`usage` + `environment_impact` + `billing_cost`), buffered and re-emitted
+  /// as a single synthetic stream so streaming consumers are unchanged. The
+  /// parsed [MeliousCallImpact] is written to [impactCollector].
+  Stream<CreateChatCompletionStreamResponse> _nonStreamingChat({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required String baseUrl,
+    required String apiKey,
+    required InferenceImpactCollector impactCollector,
+    double? temperature,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+  }) async* {
+    final result = await _postChatCompletion(
+      baseUrl: baseUrl,
+      apiKey: apiKey,
+      request: _helpers.createBaseRequest(
+        messages: messages,
+        model: model,
+        temperature: temperature,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+        toolChoice: toolChoice,
+        stream: false,
+      ),
+    );
+    if (result.impact.hasData) {
+      impactCollector.impact = result.impact;
+    }
+
+    final id = 'melious-chat-${const Uuid().v4()}';
+    yield CreateChatCompletionStreamResponse(
+      id: id,
+      created: 0,
+      model: model,
+      choices: [
+        ChatCompletionStreamResponseChoice(
+          index: 0,
+          delta: ChatCompletionStreamResponseDelta(
+            content: result.content.isEmpty ? null : result.content,
+            toolCalls: result.toolCalls.isEmpty ? null : result.toolCalls,
+          ),
+        ),
+      ],
+    );
+    // Trailing usage-only chunk, mirroring the streaming API's final usage
+    // frame that consumers read token counts from.
+    final usage = result.usage;
+    if (usage != null) {
+      yield CreateChatCompletionStreamResponse(
+        id: id,
+        created: 0,
+        model: model,
+        choices: const [],
+        usage: usage,
+      );
+    }
+  }
+
+  Future<_MeliousChatResult> _postChatCompletion({
+    required String baseUrl,
+    required String apiKey,
+    required CreateChatCompletionRequest request,
+    Duration timeout = _chatCompletionTimeout,
+  }) async {
+    final uri = _buildEndpointUri(baseUrl, 'chat/completions');
+    try {
+      final response = await httpClient
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': 'Bearer ${apiKey.trim()}',
+            },
+            body: jsonEncode(request.toJson()),
+          )
+          .timeout(timeout);
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw MeliousInferenceException(
+          _extractErrorMessage(response.body, response.statusCode),
+          statusCode: response.statusCode,
+        );
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw const MeliousInferenceException(
+          'Melious chat completion response must be a JSON object',
+        );
+      }
+
+      final choices = decoded['choices'];
+      final firstChoice =
+          choices is List && choices.isNotEmpty && choices.first is Map
+          ? (choices.first as Map).cast<String, dynamic>()
+          : const <String, dynamic>{};
+      final messageMap = firstChoice['message'] is Map
+          ? (firstChoice['message'] as Map).cast<String, dynamic>()
+          : const <String, dynamic>{};
+      final content = messageMap['content'];
+
+      return _MeliousChatResult(
+        content: content is String ? content : '',
+        toolCalls: _parseToolCalls(messageMap['tool_calls']),
+        usage: _parseUsage(decoded['usage']),
+        impact: MeliousCallImpact.fromResponseJson(decoded),
+      );
+    } on MeliousInferenceException {
+      rethrow;
+    } on TimeoutException catch (e) {
+      throw MeliousInferenceException(
+        'Melious chat completion request timed out',
+        originalError: e,
+      );
+    } on FormatException catch (e) {
+      throw MeliousInferenceException(
+        'Melious chat completion response was not valid JSON',
+        originalError: e,
+      );
+    } on Exception catch (e) {
+      throw MeliousInferenceException(
+        'Failed to complete Melious chat: $e',
+        originalError: e,
+      );
+    }
+  }
+
+  static List<ChatCompletionStreamMessageToolCallChunk> _parseToolCalls(
+    Object? raw,
+  ) {
+    if (raw is! List) return const [];
+    final out = <ChatCompletionStreamMessageToolCallChunk>[];
+    for (final (index, item) in raw.indexed) {
+      if (item is! Map) continue;
+      final map = item.cast<String, dynamic>();
+      final fn = map['function'] is Map
+          ? (map['function'] as Map).cast<String, dynamic>()
+          : const <String, dynamic>{};
+      final id = map['id'];
+      final name = fn['name'];
+      final arguments = fn['arguments'];
+      out.add(
+        ChatCompletionStreamMessageToolCallChunk(
+          index: index,
+          id: id is String ? id : 'tool_$index',
+          function: ChatCompletionStreamMessageFunctionCall(
+            name: name is String ? name : null,
+            arguments: arguments is String ? arguments : '',
+          ),
+        ),
+      );
+    }
+    return out;
+  }
+
+  static CompletionUsage? _parseUsage(Object? raw) {
+    if (raw is! Map) return null;
+    final map = raw.cast<String, dynamic>();
+    final prompt = _asInt(map['prompt_tokens']);
+    final completion = _asInt(map['completion_tokens']);
+    final cached = _asInt(map['cached_tokens']);
+    return CompletionUsage(
+      promptTokens: prompt,
+      completionTokens: completion,
+      totalTokens:
+          _asInt(map['total_tokens']) ?? (prompt ?? 0) + (completion ?? 0),
+      promptTokensDetails: cached != null
+          ? PromptTokensDetails(cachedTokens: cached)
+          : null,
+    );
+  }
+
+  static int? _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 
   /// Transcribes audio through Melious' OpenAI-compatible
@@ -395,6 +631,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     required AiConfigInferenceProvider provider,
     List<ProcessedReferenceImage>? referenceImages,
     Duration timeout = _imageGenerationTimeout,
+    InferenceImpactCollector? impactCollector,
   }) async {
     if (prompt.trim().isEmpty) {
       throw ArgumentError('Prompt cannot be empty');
@@ -467,6 +704,11 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         throw const MeliousInferenceException(
           'Melious image generation response is missing b64_json',
         );
+      }
+
+      if (impactCollector != null) {
+        final impact = MeliousCallImpact.fromResponseJson(decoded);
+        if (impact.hasData) impactCollector.impact = impact;
       }
 
       return _decodeGeneratedImage(encodedImage);
@@ -885,6 +1127,22 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
     return body.length > 240 ? '${body.substring(0, 240)}...' : body;
   }
+}
+
+/// The parsed result of a non-streaming Melious chat completion, used to build
+/// the synthetic stream chunk and surface the impact side-channel.
+class _MeliousChatResult {
+  const _MeliousChatResult({
+    required this.content,
+    required this.toolCalls,
+    required this.usage,
+    required this.impact,
+  });
+
+  final String content;
+  final List<ChatCompletionStreamMessageToolCallChunk> toolCalls;
+  final CompletionUsage? usage;
+  final MeliousCallImpact impact;
 }
 
 final Map<String, KnownModel> _knownMeliousModels = {

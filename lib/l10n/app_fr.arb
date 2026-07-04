@@ -3579,6 +3579,7 @@
   "syncPayloadBackfillRequest": "Demande de rattrapage",
   "syncPayloadBackfillResponse": "Réponse de rattrapage",
   "syncPayloadConfigFlag": "Option de configuration",
+  "syncPayloadConsumptionEvent": "Consommation IA",
   "syncPayloadEntityDefinition": "Définition d'entité",
   "syncPayloadEntryLink": "Lien d'entrée",
   "syncPayloadJournalEntity": "Entrée de journal",

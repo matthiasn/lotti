@@ -20,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Declarations moved from backfill_response_handler_generated_test.dart
@@ -567,6 +568,7 @@ class _GeneratedBackfillResponseBench {
     required this.sequenceService,
     required this.outboxService,
     required this.agentRepository,
+    required this.consumptionRepository,
     required this.notificationsDb,
     required this.handler,
   });
@@ -582,21 +584,29 @@ class _GeneratedBackfillResponseBench {
     final logging = MockDomainLogger();
     final vcService = MockVectorClockService();
     final agentRepository = MockAgentRepository();
+    final consumptionRepository = MockConsumptionRepository();
     final notificationsDb = MockNotificationsDb();
-    final handler = BackfillResponseHandler(
-      journalDb: journalDb,
-      sequenceLogService: sequenceService,
-      outboxService: outboxService,
-      loggingService: logging,
-      vectorClockService: vcService,
-      notificationsDb: notificationsDb,
-    )..agentRepository = agentRepository;
+    final handler =
+        BackfillResponseHandler(
+            journalDb: journalDb,
+            sequenceLogService: sequenceService,
+            outboxService: outboxService,
+            loggingService: logging,
+            vectorClockService: vcService,
+            notificationsDb: notificationsDb,
+          )
+          ..agentRepository = agentRepository
+          ..consumptionRepository = consumptionRepository;
+    when(
+      () => consumptionRepository.getEvent(any()),
+    ).thenAnswer((_) async => null);
 
     final bench = _GeneratedBackfillResponseBench._(
       journalDb: journalDb,
       sequenceService: sequenceService,
       outboxService: outboxService,
       agentRepository: agentRepository,
+      consumptionRepository: consumptionRepository,
       notificationsDb: notificationsDb,
       handler: handler,
     );
@@ -732,6 +742,7 @@ class _GeneratedBackfillResponseBench {
   final MockSyncSequenceLogService sequenceService;
   final MockOutboxService outboxService;
   final MockAgentRepository agentRepository;
+  final MockConsumptionRepository consumptionRepository;
   final MockNotificationsDb notificationsDb;
   final BackfillResponseHandler handler;
   final sentMessages = <SyncMessage>[];
@@ -761,8 +772,16 @@ class _GeneratedBackfillResponseBench {
 }
 
 extension _AnyGeneratedBackfillResponseScenario on glados.Any {
+  // Excludes `consumptionEvent`: its backfill responder reuses the generic
+  // `_processAgentBackfillEntry` path (already exercised here via `agentEntity`
+  // /`agentLink`), so it is covered without teaching this expectation model a
+  // new payload family. The exhaustive-switch cases below still handle it.
   glados.Generator<SyncSequencePayloadType> get generatedPayloadType =>
-      glados.AnyUtils(this).choose(SyncSequencePayloadType.values);
+      glados.AnyUtils(this).choose(
+        SyncSequencePayloadType.values
+            .where((t) => t != SyncSequencePayloadType.consumptionEvent)
+            .toList(),
+      );
 
   glados.Generator<_GeneratedRequestHost> get generatedRequestHost =>
       glados.AnyUtils(this).choose(_GeneratedRequestHost.values);
@@ -3818,6 +3837,14 @@ void _stubPayloadByType(
             ? null
             : _createNotification(payloadId, vectorClock: vectorClock),
       );
+    case SyncSequencePayloadType.consumptionEvent:
+      when(
+        () => bench.consumptionRepository.getEvent(payloadId),
+      ).thenAnswer(
+        (_) async => vectorClock == null
+            ? null
+            : makeConsumptionEvent(id: payloadId, vectorClock: vectorClock),
+      );
   }
 }
 
@@ -3873,6 +3900,14 @@ void _stubVerificationPayload(
       ).thenAnswer(
         (_) async => scenario.payloadExists
             ? _createNotification(payloadId, vectorClock: vectorClock!)
+            : null,
+      );
+    case SyncSequencePayloadType.consumptionEvent:
+      when(
+        () => bench.consumptionRepository.getEvent(payloadId),
+      ).thenAnswer(
+        (_) async => scenario.payloadExists
+            ? makeConsumptionEvent(id: payloadId, vectorClock: vectorClock)
             : null,
       );
   }
@@ -4007,5 +4042,10 @@ void _expectPayloadMessage(
       expect(message, isA<SyncNotificationStateUpdate>());
       final stateUpdate = message as SyncNotificationStateUpdate;
       expect(stateUpdate.id, payloadId);
+    case SyncSequencePayloadType.consumptionEvent:
+      expect(message, isA<SyncConsumptionEvent>());
+      final consumptionEvent = message as SyncConsumptionEvent;
+      expect(consumptionEvent.event.id, payloadId);
+      expect(consumptionEvent.status, SyncEntryStatus.update);
   }
 }

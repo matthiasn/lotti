@@ -162,6 +162,7 @@ class OutboxListItemViewModel {
         notification: (_) => messages.syncPayloadNotification,
         notificationStateUpdate: (_) =>
             messages.syncPayloadNotificationStateUpdate,
+        consumptionEvent: (_) => messages.syncPayloadConsumptionEvent,
         backfillRequest: (_) => messages.syncPayloadBackfillRequest,
         backfillResponse: (_) => messages.syncPayloadBackfillResponse,
         agentEntity: (_) => messages.syncPayloadAgentEntity,

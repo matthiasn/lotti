@@ -223,6 +223,30 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
     return result;
   }
 
+  /// Enqueues an AI consumption event. These are immutable and append-only
+  /// (unique id, no pending-merge case) and ride inline (no attachment), so this
+  /// just writes the row with the event id and records the send in the sequence
+  /// log for gap detection/backfill. [recordAgentSent] is the generic
+  /// sequence-log recorder (accepts any [SyncSequencePayloadType]).
+  Future<bool> enqueueConsumptionEvent({
+    required SyncConsumptionEvent msg,
+    required OutboxCompanion commonFields,
+  }) async {
+    final id = msg.event.id;
+    final result = await enqueueSimple(
+      commonFields: commonFields.copyWith(outboxEntryId: Value(id)),
+      subject: 'consumptionEvent:$id',
+      logMessage:
+          'enqueue type=SyncConsumptionEvent subject=consumptionEvent:$id',
+    );
+    await recordAgentSent(
+      entryId: id,
+      vectorClock: msg.event.vectorClock,
+      payloadType: SyncSequencePayloadType.consumptionEvent,
+    );
+    return result;
+  }
+
   Future<bool> enqueueSyncNodeProfile({
     required SyncSyncNodeProfile msg,
     required OutboxCompanion commonFields,

@@ -14,9 +14,11 @@ import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart'
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/helpers/skill_prompt_builder.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/image_generation_error.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/ai/repository/ai_consumption_mapping.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
@@ -26,6 +28,8 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
@@ -36,6 +40,7 @@ import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:meta/meta.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 part 'skill_inference_runner_internals.dart';
 
@@ -207,12 +212,29 @@ class SkillInferenceRunner {
 
         // 6. Collect streaming response.
         final buffer = StringBuffer();
+        CompletionUsage? usage;
         await for (final chunk in responseStream) {
+          if (chunk.usage != null) usage = chunk.usage;
           final content = chunk.choices?.firstOrNull?.delta?.content;
           if (content != null) {
             buffer.write(content);
           }
         }
+
+        // Transcription runs on the /audio/transcriptions endpoint, which does
+        // not report environmental impact — record tokens only (impact null).
+        await _recordConsumption(
+          entryId: audioEntryId,
+          taskId: linkedTaskId,
+          categoryId: entity.meta.categoryId,
+          skillId: skill.id,
+          provider: provider,
+          modelId: modelId,
+          responseType: skill.skillType.toResponseType,
+          usage: usage,
+          impact: null,
+          start: start,
+        );
 
         final response = buffer.toString().trim();
         if (response.isEmpty) {
@@ -344,6 +366,8 @@ class SkillInferenceRunner {
         }
 
         // 5. Call inference with separate system/user messages.
+        final start = DateTime.now();
+        final impactCollector = InferenceImpactCollector();
         final responseStream = _cloudRepository.generateWithImages(
           promptResult.userMessage,
           baseUrl: provider.baseUrl,
@@ -354,16 +378,32 @@ class SkillInferenceRunner {
           provider: provider,
           systemMessage: promptResult.systemMessage,
           geminiThinkingMode: effectiveThinkingMode,
+          impactCollector: impactCollector,
         );
 
         // 6. Collect streaming response.
         final buffer = StringBuffer();
+        CompletionUsage? usage;
         await for (final chunk in responseStream) {
+          if (chunk.usage != null) usage = chunk.usage;
           final content = chunk.choices?.firstOrNull?.delta?.content;
           if (content != null) {
             buffer.write(content);
           }
         }
+
+        await _recordConsumption(
+          entryId: imageEntryId,
+          taskId: linkedTaskId,
+          categoryId: entity.meta.categoryId,
+          skillId: skill.id,
+          provider: provider,
+          modelId: modelId,
+          responseType: skill.skillType.toResponseType,
+          usage: usage,
+          impact: impactCollector.impact,
+          start: start,
+        );
 
         final response = buffer.toString().trim();
         if (response.isEmpty) {
@@ -482,6 +522,7 @@ class SkillInferenceRunner {
 
         // 5. Call inference with text-only (no audio/image upload).
         final start = DateTime.now();
+        final impactCollector = InferenceImpactCollector();
         final responseStream = _cloudRepository.generate(
           promptResult.userMessage,
           model: modelId,
@@ -491,16 +532,32 @@ class SkillInferenceRunner {
           provider: provider,
           systemMessage: promptResult.systemMessage,
           geminiThinkingMode: effectiveThinkingMode,
+          impactCollector: impactCollector,
         );
 
         // 6. Collect streaming response.
         final buffer = StringBuffer();
+        CompletionUsage? usage;
         await for (final chunk in responseStream) {
+          if (chunk.usage != null) usage = chunk.usage;
           final content = chunk.choices?.firstOrNull?.delta?.content;
           if (content != null) {
             buffer.write(content);
           }
         }
+
+        await _recordConsumption(
+          entryId: entryId,
+          taskId: linkedTaskId,
+          categoryId: entity.meta.categoryId,
+          skillId: skill.id,
+          provider: provider,
+          modelId: modelId,
+          responseType: skill.skillType.toResponseType,
+          usage: usage,
+          impact: impactCollector.impact,
+          start: start,
+        );
 
         final response = buffer.toString().trim();
         if (response.isEmpty) {
@@ -671,12 +728,15 @@ class SkillInferenceRunner {
           name: _logTag,
         );
 
+        final start = DateTime.now();
+        final impactCollector = InferenceImpactCollector();
         final generatedImage = await _cloudRepository.generateImage(
           prompt: promptResult.userMessage,
           model: modelId,
           provider: provider,
           systemMessage: promptResult.systemMessage,
           referenceImages: referenceImages,
+          impactCollector: impactCollector,
         );
 
         // 6. Verify linked task still exists and get its category.
@@ -688,6 +748,21 @@ class SkillInferenceRunner {
             'Linked task $linkedTaskId not found before cover art save',
           );
         }
+
+        // Image generation is a single request (no token stream), so tokens are
+        // null; impact comes from the collector for Melious.
+        await _recordConsumption(
+          entryId: entryId,
+          taskId: linkedTaskId,
+          categoryId: taskEntity.meta.categoryId,
+          skillId: skill.id,
+          provider: provider,
+          modelId: modelId,
+          responseType: skill.skillType.toResponseType,
+          usage: null,
+          impact: impactCollector.impact,
+          start: start,
+        );
 
         // 7. Import the generated image as a JournalImage linked to the task.
         final extension =
@@ -735,6 +810,53 @@ class SkillInferenceRunner {
               ),
         );
       },
+    );
+  }
+
+  /// Records one AI-consumption event for a completed skill call. Owner ids come
+  /// from the call context; tokens from [usage]; cost/energy from [impact]
+  /// (Melious only). Never breaks a run — a no-op when no recorder is wired, and
+  /// the recorder itself swallows failures.
+  Future<void> _recordConsumption({
+    required String entryId,
+    required String? taskId,
+    required String? categoryId,
+    required String skillId,
+    required AiConfigInferenceProvider provider,
+    required String modelId,
+    required AiResponseType responseType,
+    required CompletionUsage? usage,
+    required MeliousCallImpact? impact,
+    required DateTime start,
+  }) async {
+    if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
+    await getIt<AiConsumptionRecorder>().record(
+      AiConsumptionEvent(
+        id: uuid.v1(),
+        createdAt: start,
+        providerType: provider.inferenceProviderType,
+        responseType: responseType.consumptionResponseType,
+        vectorClock: null,
+        entryId: entryId,
+        taskId: taskId,
+        categoryId: categoryId,
+        skillId: skillId,
+        providerModelId: modelId,
+        durationMs: DateTime.now().difference(start).inMilliseconds,
+        inputTokens: usage?.promptTokens,
+        outputTokens: usage?.completionTokens,
+        cachedInputTokens: usage?.promptTokensDetails?.cachedTokens,
+        thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
+        totalTokens: usage?.totalTokens,
+        credits: impact?.costCredits,
+        energyKwh: impact?.energyKwh,
+        carbonGCo2: impact?.carbonGCo2,
+        waterLiters: impact?.waterLiters,
+        renewablePercent: impact?.renewablePercent,
+        pue: impact?.pue,
+        dataCenter: impact?.dataCenter,
+        upstreamProviderId: impact?.providerId,
+      ),
     );
   }
 }

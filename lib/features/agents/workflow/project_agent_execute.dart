@@ -269,6 +269,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       }
 
       // 9. Run the conversation.
+      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
       final usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -278,6 +279,13 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         tools: tools,
         temperature: 0.3,
         strategy: strategy,
+        consumptionAgentId: recordConsumption ? agentId : null,
+        consumptionTaskId: recordConsumption ? projectId : null,
+        consumptionCategoryId: recordConsumption
+            ? projectEntity.categoryId
+            : null,
+        consumptionWakeRunKey: recordConsumption ? runKey : null,
+        consumptionThreadId: recordConsumption ? threadId : null,
       );
 
       // Persist token usage.

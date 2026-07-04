@@ -191,6 +191,9 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
         return null;
+      case final SyncConsumptionEvent msg:
+        await _applyConsumptionEventMessage(msg: msg);
+        return null;
       case final SyncAgentLink msg:
         await _applyAgentLinkMessage(
           msg: msg,

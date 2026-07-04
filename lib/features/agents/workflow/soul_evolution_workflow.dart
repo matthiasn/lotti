@@ -302,6 +302,13 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
         ),
         tools: _buildSoulToolDefinitions(bridge: bridge),
         strategy: strategy,
+        // Evolution attributes consumption to the soul being improved.
+        consumptionAgentId: getIt.isRegistered<AiConsumptionRecorder>()
+            ? soulId
+            : null,
+        consumptionThreadId: getIt.isRegistered<AiConsumptionRecorder>()
+            ? conversationId
+            : null,
       );
 
       _notifyUpdate(soulId);

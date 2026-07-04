@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_generate_more.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
@@ -461,6 +462,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    InferenceImpactCollector? impactCollector,
   }) {
     messageCalls.add(
       (
@@ -484,6 +486,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     required AiConfigInferenceProvider provider,
     List<ProcessedReferenceImage>? referenceImages,
     Duration timeout = const Duration(seconds: 180),
+    InferenceImpactCollector? impactCollector,
   }) async {
     imageCalls.add((prompt: prompt, model: model, provider: provider));
     return const GeneratedImage(bytes: [9, 8, 7], mimeType: 'image/png');

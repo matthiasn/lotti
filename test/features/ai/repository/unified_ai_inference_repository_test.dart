@@ -31,6 +31,9 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:lotti/features/journal/repository/journal_repository.dart'
@@ -49,6 +52,7 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart' as consumption;
 import '../test_utils.dart';
 
 class MockPromptCapabilityFilter extends Mock
@@ -1220,6 +1224,7 @@ void main() {
         verify(
           () => mockCloudInferenceRepo.generate(
             any(),
+            impactCollector: any(named: 'impactCollector'),
             model: 'gpt-4',
             temperature: 0.6,
             baseUrl: 'https://api.example.com',
@@ -1229,6 +1234,89 @@ void main() {
             geminiThinkingMode: GeminiThinkingMode.low,
           ),
         ).called(1);
+      });
+
+      test('records an AI consumption event for the completed call', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(categoryId: 'cat-1'),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+          ),
+        );
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Prompt',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.promptGeneration,
+        );
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'glm-5.2',
+        );
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.melious,
+        );
+
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: taskEntity,
+          model: model,
+          provider: provider,
+        );
+        _stubGenerate(
+          mockCloudInferenceRepo,
+          stream: _createMockTextStream(['done']),
+        );
+        _stubCreateAiResponseEntry(mockAiInputRepo);
+        when(
+          () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+        ).thenAnswer((_) async => true);
+
+        // Register a recorder so `_recordConsumption` runs (it is a no-op when
+        // one isn't wired), and capture the event it emits.
+        registerFallbackValue(consumption.makeConsumptionEvent());
+        final recorder = MockAiConsumptionRecorder();
+        when(() => recorder.record(any())).thenAnswer((_) async {});
+        if (getIt.isRegistered<AiConsumptionRecorder>()) {
+          getIt.unregister<AiConsumptionRecorder>();
+        }
+        getIt.registerSingleton<AiConsumptionRecorder>(recorder);
+        addTearDown(() {
+          if (getIt.isRegistered<AiConsumptionRecorder>()) {
+            getIt.unregister<AiConsumptionRecorder>();
+          }
+        });
+
+        await repository!.runInference(
+          entityId: taskEntity.id,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        final captured = verify(
+          () => recorder.record(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final event = captured.single as AiConsumptionEvent;
+        expect(event.entryId, taskEntity.id);
+        expect(event.taskId, taskEntity.id);
+        expect(event.categoryId, 'cat-1');
+        expect(event.providerType, InferenceProviderType.melious);
+        expect(event.responseType, AiConsumptionResponseType.promptGeneration);
+        expect(event.modelId, 'model-1');
+        expect(event.providerModelId, 'glm-5.2');
       });
 
       group('coding prompt task linking', () {
@@ -1573,6 +1661,7 @@ void main() {
           verify(
             () => mockCloudInferenceRepo.generateWithImages(
               any(),
+              impactCollector: any(named: 'impactCollector'),
               provider: any(named: 'provider'),
               model: 'gpt-4-vision',
               temperature: 0.6,
@@ -1642,6 +1731,7 @@ void main() {
           when(
             () => mockCloudInferenceRepo.generateWithImages(
               any(),
+              impactCollector: any(named: 'impactCollector'),
               provider: any(named: 'provider'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
@@ -1668,6 +1758,7 @@ void main() {
             verify(
               () => mockCloudInferenceRepo.generateWithImages(
                 any(),
+                impactCollector: any(named: 'impactCollector'),
                 provider: any(named: 'provider'),
                 model: 'gemini-3-flash-preview',
                 temperature: any(named: 'temperature'),
@@ -1745,6 +1836,7 @@ void main() {
         verifyNever(
           () => mockCloudInferenceRepo.generateWithImages(
             any(),
+            impactCollector: any(named: 'impactCollector'),
             provider: any(named: 'provider'),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
@@ -2205,6 +2297,7 @@ void main() {
           when(
             () => mockCloudInferenceRepo.generate(
               any(),
+              impactCollector: any(named: 'impactCollector'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
               baseUrl: any(named: 'baseUrl'),
@@ -2814,6 +2907,7 @@ void main() {
           verify(
             () => mockCloudInferenceRepo.generateWithImages(
               any(),
+              impactCollector: any(named: 'impactCollector'),
               provider: any(named: 'provider'),
               model: 'gpt-4-vision',
               temperature: 0.6,
@@ -3297,6 +3391,7 @@ If the image IS relevant:
           final captured = verify(
             () => mockCloudInferenceRepo.generateWithImages(
               captureAny(),
+              impactCollector: any(named: 'impactCollector'),
               provider: any(named: 'provider'),
               model: 'gpt-4-vision',
               temperature: 0.6,
@@ -3441,6 +3536,7 @@ Extract ONLY information from the image that is relevant to this task. Be concis
             final captured = verify(
               () => mockCloudInferenceRepo.generateWithImages(
                 captureAny(),
+                impactCollector: any(named: 'impactCollector'),
                 provider: any(named: 'provider'),
                 model: 'gpt-4-vision',
                 temperature: 0.6,
@@ -3815,6 +3911,7 @@ Take into account the following task context:
       when(
         () => mockCloudInferenceRepo.generate(
           any(),
+          impactCollector: any(named: 'impactCollector'),
           model: any(named: 'model'),
           temperature: any(named: 'temperature'),
           baseUrl: any(named: 'baseUrl'),
@@ -6756,6 +6853,7 @@ Take into account the following task context:
           when(
             () => mockCloudInferenceRepo.generate(
               any(),
+              impactCollector: any(named: 'impactCollector'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
               baseUrl: any(named: 'baseUrl'),
@@ -6865,6 +6963,7 @@ Take into account the following task context:
           when(
             () => mockCloudInferenceRepo.generate(
               any(),
+              impactCollector: any(named: 'impactCollector'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
               baseUrl: any(named: 'baseUrl'),
@@ -7871,6 +7970,7 @@ void _stubGenerate(
       provider: any(named: 'provider'),
       tools: any(named: 'tools'),
       geminiThinkingMode: any(named: 'geminiThinkingMode'),
+      impactCollector: any(named: 'impactCollector'),
     ),
   ).thenAnswer((_) => stream);
 }
@@ -7890,6 +7990,7 @@ void _stubGenerateWithImages(
       baseUrl: any(named: 'baseUrl'),
       apiKey: any(named: 'apiKey'),
       maxCompletionTokens: any(named: 'maxCompletionTokens'),
+      impactCollector: any(named: 'impactCollector'),
     ),
   ).thenAnswer((_) => stream);
 }

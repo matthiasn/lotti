@@ -8700,6 +8700,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncPayloadConfigFlag => 'Indicador de configuración';
 
   @override
+  String get syncPayloadConsumptionEvent => 'Consumo de IA';
+
+  @override
   String get syncPayloadEntityDefinition => 'Definición de entidad';
 
   @override

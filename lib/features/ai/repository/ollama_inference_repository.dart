@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
@@ -83,6 +84,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     Map<String, String>? thoughtSignatures, // Ignored for Ollama
     ThoughtSignatureCollector? signatureCollector, // Ignored for Ollama
     int? turnIndex, // Ignored for Ollama
+    InferenceImpactCollector? impactCollector, // Ignored for Ollama (no impact)
   }) {
     // Convert ChatCompletionMessage objects to Ollama format
     final ollamaMessages = messages.map((msg) {
