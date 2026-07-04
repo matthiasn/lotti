@@ -35,16 +35,9 @@ class ConsumptionRepository {
   /// used by the inbound sync dominance check. Returns null when the row is
   /// absent or has no clock.
   Future<VectorClock?> getVectorClock(String id) async {
-    final rows = await _db
-        .customSelect(
-          r"SELECT json_extract(serialized, '$.vectorClock') AS vc "
-          'FROM consumption_events WHERE id = ?',
-          variables: [Variable.withString(id)],
-          readsFrom: {_db.consumptionEvents},
-        )
-        .get();
-    if (rows.isEmpty) return null;
-    final raw = rows.first.read<String?>('vc');
+    final raw = await _db
+        .getConsumptionEventVectorClockById(id)
+        .getSingleOrNull();
     if (raw == null) return null;
     final decoded = jsonDecode(raw);
     if (decoded is! Map<String, dynamic>) return null;

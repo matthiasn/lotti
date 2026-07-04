@@ -846,7 +846,9 @@ class UnifiedAiInferenceRepository {
     // the recorder isn't wired (e.g. in a unit test), quietly skip.
     if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
     final event = AiConsumptionEvent(
-      id: const Uuid().v1(),
+      // v4 (opaque random): the record id carries no timestamp/node info;
+      // createdAt already captures the time explicitly.
+      id: const Uuid().v4(),
       createdAt: start,
       providerType: provider.inferenceProviderType,
       responseType: promptConfig.aiResponseType.consumptionResponseType,

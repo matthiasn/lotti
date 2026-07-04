@@ -182,6 +182,7 @@ class TemplateEvolutionWorkflow {
     final provider = inferenceSlot.provider;
 
     try {
+      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
       await conversationRepository.sendMessage(
         conversationId: active.conversationId,
         message: userMessage,
@@ -194,12 +195,8 @@ class TemplateEvolutionWorkflow {
         tools: _buildToolDefinitions(bridge: active.genUiBridge),
         strategy: active.strategy,
         // Evolution attributes consumption to the template being improved.
-        consumptionAgentId: getIt.isRegistered<AiConsumptionRecorder>()
-            ? active.templateId
-            : null,
-        consumptionThreadId: getIt.isRegistered<AiConsumptionRecorder>()
-            ? active.conversationId
-            : null,
+        consumptionAgentId: recordConsumption ? active.templateId : null,
+        consumptionThreadId: recordConsumption ? active.conversationId : null,
       );
 
       return _extractLastAssistantContent(active.conversationId);

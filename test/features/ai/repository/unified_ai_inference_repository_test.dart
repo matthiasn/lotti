@@ -52,7 +52,6 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../../ai_consumption/test_utils.dart' as consumption;
 import '../test_utils.dart';
 
 class MockPromptCapabilityFilter extends Mock
@@ -121,6 +120,7 @@ void main() {
     registerFallbackValue(FakeChecklistData());
     registerFallbackValue(FakeChecklistItemData());
     registerFallbackValue(ChatCompletionMessageInputAudioFormat.wav);
+    registerFallbackValue(fallbackAiConsumptionEvent);
 
     // One suite-level temp root; each test gets a cheap unique subdirectory
     // instead of its own systemTemp dir + recursive delete (~92 fs round
@@ -1285,7 +1285,6 @@ void main() {
 
         // Register a recorder so `_recordConsumption` runs (it is a no-op when
         // one isn't wired), and capture the event it emits.
-        registerFallbackValue(consumption.makeConsumptionEvent());
         final recorder = MockAiConsumptionRecorder();
         when(() => recorder.record(any())).thenAnswer((_) async {});
         if (getIt.isRegistered<AiConsumptionRecorder>()) {

@@ -10,10 +10,7 @@ import '../../ai_consumption/test_utils.dart';
 import 'sync_event_processor_test_helpers.dart';
 
 void main() {
-  setUpAll(() {
-    registerSyncProcessorFallbacks();
-    registerFallbackValue(makeConsumptionEvent());
-  });
+  setUpAll(registerSyncProcessorFallbacks);
   setUp(setUpProcessorMocks);
 
   group('SyncEventProcessor - consumption events', () {

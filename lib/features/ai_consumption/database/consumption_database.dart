@@ -48,15 +48,21 @@ class ConsumptionDatabase extends _$ConsumptionDatabase {
   /// Stream consumption events with their vector clocks for populating the sync
   /// sequence log. Yields batches of `(id, vectorClock)` records using
   /// lightweight SQL + JSON extraction to avoid full deserialization. Mirrors
-  /// `AgentDatabase.streamAgentEntitiesWithVectorClock`.
+  /// `AgentDatabase.streamAgentEntitiesWithVectorClock`, but uses keyset
+  /// pagination (`id > last`) instead of OFFSET so the scan stays linear as
+  /// this high-volume table grows.
   Stream<List<({String id, Map<String, int>? vectorClock})>>
   streamConsumptionEventsWithVectorClock({int batchSize = 1000}) async* {
-    var offset = 0;
+    String? lastId;
     while (true) {
       final rows = await customSelect(
         'SELECT id, serialized FROM consumption_events '
-        'ORDER BY id LIMIT ? OFFSET ?',
-        variables: [Variable(batchSize), Variable(offset)],
+        '${lastId != null ? 'WHERE id > ? ' : ''}'
+        'ORDER BY id LIMIT ?',
+        variables: [
+          if (lastId != null) Variable(lastId),
+          Variable(batchSize),
+        ],
       ).get();
 
       if (rows.isEmpty) break;
@@ -69,7 +75,7 @@ class ConsumptionDatabase extends _$ConsumptionDatabase {
             ),
           )
           .toList();
-      offset += batchSize;
+      lastId = rows.last.read<String>('id');
     }
   }
 

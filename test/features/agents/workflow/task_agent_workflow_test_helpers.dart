@@ -57,6 +57,15 @@ class MockConversationRepository extends ConversationRepository {
   /// higher).
   int maxDelegateCalls = 1;
 
+  /// Consumption owner ids captured from the most recent [sendMessage] call,
+  /// so tests can assert the workflow's pass-through wiring without widening
+  /// the [sendMessageDelegate] signature.
+  String? lastConsumptionAgentId;
+  String? lastConsumptionTaskId;
+  String? lastConsumptionCategoryId;
+  String? lastConsumptionWakeRunKey;
+  String? lastConsumptionThreadId;
+
   @override
   void build() {
     // No-op for test mock.
@@ -98,6 +107,11 @@ class MockConversationRepository extends ConversationRepository {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
   }) async {
+    lastConsumptionAgentId = consumptionAgentId;
+    lastConsumptionTaskId = consumptionTaskId;
+    lastConsumptionCategoryId = consumptionCategoryId;
+    lastConsumptionWakeRunKey = consumptionWakeRunKey;
+    lastConsumptionThreadId = consumptionThreadId;
     if (sendMessageDelegate != null &&
         sendMessageDelegateCallCount < maxDelegateCalls) {
       sendMessageDelegateCallCount++;

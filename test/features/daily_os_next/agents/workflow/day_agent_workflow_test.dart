@@ -4083,6 +4083,9 @@ class _ConversationHarness extends ConversationRepository {
           String model,
           ChatCompletionToolChoiceOption? toolChoice,
           List<ChatCompletionTool> tools,
+          String? consumptionAgentId,
+          String? consumptionWakeRunKey,
+          String? consumptionThreadId,
         })
       >[];
   List<List<ChatCompletionMessageToolCall>> toolCallsByInvocation = const [];
@@ -4138,6 +4141,9 @@ class _ConversationHarness extends ConversationRepository {
         model: model,
         toolChoice: toolChoice,
         tools: tools ?? const <ChatCompletionTool>[],
+        consumptionAgentId: consumptionAgentId,
+        consumptionWakeRunKey: consumptionWakeRunKey,
+        consumptionThreadId: consumptionThreadId,
       ),
     );
     final invocationIndex = sendMessageCalls.length - 1;

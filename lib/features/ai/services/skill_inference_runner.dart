@@ -211,15 +211,7 @@ class SkillInferenceRunner {
         );
 
         // 6. Collect streaming response.
-        final buffer = StringBuffer();
-        CompletionUsage? usage;
-        await for (final chunk in responseStream) {
-          if (chunk.usage != null) usage = chunk.usage;
-          final content = chunk.choices?.firstOrNull?.delta?.content;
-          if (content != null) {
-            buffer.write(content);
-          }
-        }
+        final collected = await _collectStream(responseStream);
 
         // Transcription runs on the /audio/transcriptions endpoint, which does
         // not report environmental impact — record tokens only (impact null).
@@ -231,12 +223,12 @@ class SkillInferenceRunner {
           provider: provider,
           modelId: modelId,
           responseType: skill.skillType.toResponseType,
-          usage: usage,
+          usage: collected.usage,
           impact: null,
           start: start,
         );
 
-        final response = buffer.toString().trim();
+        final response = collected.content.trim();
         if (response.isEmpty) {
           throw StateError('Empty transcription response for $audioEntryId');
         }
@@ -382,15 +374,7 @@ class SkillInferenceRunner {
         );
 
         // 6. Collect streaming response.
-        final buffer = StringBuffer();
-        CompletionUsage? usage;
-        await for (final chunk in responseStream) {
-          if (chunk.usage != null) usage = chunk.usage;
-          final content = chunk.choices?.firstOrNull?.delta?.content;
-          if (content != null) {
-            buffer.write(content);
-          }
-        }
+        final collected = await _collectStream(responseStream);
 
         await _recordConsumption(
           entryId: imageEntryId,
@@ -400,12 +384,12 @@ class SkillInferenceRunner {
           provider: provider,
           modelId: modelId,
           responseType: skill.skillType.toResponseType,
-          usage: usage,
+          usage: collected.usage,
           impact: impactCollector.impact,
           start: start,
         );
 
-        final response = buffer.toString().trim();
+        final response = collected.content.trim();
         if (response.isEmpty) {
           throw StateError(
             'Empty image analysis response for $imageEntryId',
@@ -536,15 +520,7 @@ class SkillInferenceRunner {
         );
 
         // 6. Collect streaming response.
-        final buffer = StringBuffer();
-        CompletionUsage? usage;
-        await for (final chunk in responseStream) {
-          if (chunk.usage != null) usage = chunk.usage;
-          final content = chunk.choices?.firstOrNull?.delta?.content;
-          if (content != null) {
-            buffer.write(content);
-          }
-        }
+        final collected = await _collectStream(responseStream);
 
         await _recordConsumption(
           entryId: entryId,
@@ -554,12 +530,12 @@ class SkillInferenceRunner {
           provider: provider,
           modelId: modelId,
           responseType: skill.skillType.toResponseType,
-          usage: usage,
+          usage: collected.usage,
           impact: impactCollector.impact,
           start: start,
         );
 
-        final response = buffer.toString().trim();
+        final response = collected.content.trim();
         if (response.isEmpty) {
           throw StateError(
             'Empty prompt generation response for $entryId',
@@ -743,18 +719,16 @@ class SkillInferenceRunner {
         final taskEntity = await _journalRepository.getJournalEntityById(
           linkedTaskId,
         );
-        if (taskEntity is! Task) {
-          throw StateError(
-            'Linked task $linkedTaskId not found before cover art save',
-          );
-        }
 
-        // Image generation is a single request (no token stream), so tokens are
-        // null; impact comes from the collector for Melious.
+        // Image generation is a single request (no token stream), so tokens
+        // are null; impact comes from the collector for Melious. Record
+        // before the task-existence check below: the billed call already
+        // happened, so a task deleted mid-flight must not erase its
+        // cost/impact record.
         await _recordConsumption(
           entryId: entryId,
           taskId: linkedTaskId,
-          categoryId: taskEntity.meta.categoryId,
+          categoryId: taskEntity is Task ? taskEntity.meta.categoryId : null,
           skillId: skill.id,
           provider: provider,
           modelId: modelId,
@@ -763,6 +737,12 @@ class SkillInferenceRunner {
           impact: impactCollector.impact,
           start: start,
         );
+
+        if (taskEntity is! Task) {
+          throw StateError(
+            'Linked task $linkedTaskId not found before cover art save',
+          );
+        }
 
         // 7. Import the generated image as a JournalImage linked to the task.
         final extension =
@@ -813,6 +793,25 @@ class SkillInferenceRunner {
     );
   }
 
+  /// Drains a chat-completion stream, concatenating content deltas and
+  /// capturing the last reported [CompletionUsage] (providers emit usage on
+  /// the final chunk). Shared by the transcription, image-analysis, and
+  /// prompt-generation paths so the accumulation logic lives in one place.
+  Future<({String content, CompletionUsage? usage})> _collectStream(
+    Stream<CreateChatCompletionStreamResponse> stream,
+  ) async {
+    final buffer = StringBuffer();
+    CompletionUsage? usage;
+    await for (final chunk in stream) {
+      if (chunk.usage != null) usage = chunk.usage;
+      final content = chunk.choices?.firstOrNull?.delta?.content;
+      if (content != null) {
+        buffer.write(content);
+      }
+    }
+    return (content: buffer.toString(), usage: usage);
+  }
+
   /// Records one AI-consumption event for a completed skill call. Owner ids come
   /// from the call context; tokens from [usage]; cost/energy from [impact]
   /// (Melious only). Never breaks a run — a no-op when no recorder is wired, and
@@ -832,7 +831,9 @@ class SkillInferenceRunner {
     if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
     await getIt<AiConsumptionRecorder>().record(
       AiConsumptionEvent(
-        id: uuid.v1(),
+        // v4 (opaque random): the record id carries no timestamp/node info;
+        // createdAt already captures the time explicitly.
+        id: uuid.v4(),
         createdAt: start,
         providerType: provider.inferenceProviderType,
         responseType: responseType.consumptionResponseType,

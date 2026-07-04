@@ -25,6 +25,8 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -42,6 +44,14 @@ import '../test_data/test_data.dart';
 // Real fallback values for sealed unions used with mocktail
 
 final JournalEntity fallbackJournalEntity = testTextEntry;
+
+final AiConsumptionEvent fallbackAiConsumptionEvent = AiConsumptionEvent(
+  id: 'fallback-consumption-event',
+  createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+  providerType: InferenceProviderType.melious,
+  responseType: AiConsumptionResponseType.agentTurn,
+  vectorClock: null,
+);
 
 final ProjectEntry fallbackProjectEntry =
     JournalEntity.project(
@@ -408,6 +418,9 @@ void registerAllFallbackValues() {
       response: '',
     ),
   );
+
+  // AI consumption event fallback (recorder/repository mocks).
+  registerFallbackValue(fallbackAiConsumptionEvent);
 
   // GenUI A2uiMessage fallback (needed when MockSurfaceController.handleMessage
   // is stubbed with any()).

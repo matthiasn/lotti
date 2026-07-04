@@ -40,6 +40,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   static const _providerName = 'MeliousInferenceRepository';
   static const _modelListTimeout = Duration(seconds: 15);
   static const _imageGenerationTimeout = Duration(seconds: 180);
+  // Generous because the non-streaming impact path buffers the entire
+  // response: nothing is emitted (and no onProgress fires) until the full
+  // body arrives or this timeout trips.
   static const _chatCompletionTimeout = Duration(seconds: 300);
   static const _imageGenerationWidth = 1792;
   static const _imageGenerationHeight = 1008;
@@ -375,6 +378,12 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// (`usage` + `environment_impact` + `billing_cost`), buffered and re-emitted
   /// as a single synthetic stream so streaming consumers are unchanged. The
   /// parsed [MeliousCallImpact] is written to [impactCollector].
+  ///
+  /// Deliberate trade-off: because the whole response is buffered, callers see
+  /// no incremental deltas — `onProgress` in the unified path fires only once,
+  /// when the call completes (or [_chatCompletionTimeout] trips). Melious only
+  /// reports impact/cost on non-streaming responses, and streaming display is
+  /// not needed for the measured call sites.
   Stream<CreateChatCompletionStreamResponse> _nonStreamingChat({
     required List<ChatCompletionMessage> messages,
     required String model,
@@ -533,25 +542,19 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   static CompletionUsage? _parseUsage(Object? raw) {
     if (raw is! Map) return null;
     final map = raw.cast<String, dynamic>();
-    final prompt = _asInt(map['prompt_tokens']);
-    final completion = _asInt(map['completion_tokens']);
-    final cached = _asInt(map['cached_tokens']);
+    final prompt = _integerValue(map['prompt_tokens']);
+    final completion = _integerValue(map['completion_tokens']);
+    final cached = _integerValue(map['cached_tokens']);
     return CompletionUsage(
       promptTokens: prompt,
       completionTokens: completion,
       totalTokens:
-          _asInt(map['total_tokens']) ?? (prompt ?? 0) + (completion ?? 0),
+          _integerValue(map['total_tokens']) ??
+          (prompt ?? 0) + (completion ?? 0),
       promptTokensDetails: cached != null
           ? PromptTokensDetails(cachedTokens: cached)
           : null,
     );
-  }
-
-  static int? _asInt(Object? value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value);
-    return null;
   }
 
   /// Transcribes audio through Melious' OpenAI-compatible

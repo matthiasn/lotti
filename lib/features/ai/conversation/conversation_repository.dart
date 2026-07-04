@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -280,7 +281,7 @@ class ConversationRepository extends Notifier<void> {
         // Per-turn cost/energy side-channel (Melious populates it) + timing and
         // the turn index captured before the request advances the count.
         final impactCollector = InferenceImpactCollector();
-        final turnStart = DateTime.now();
+        final turnStart = clock.now();
         final turnIndex = manager.turnCount;
 
         // Make API call with full conversation history
@@ -479,7 +480,9 @@ class ConversationRepository extends Notifier<void> {
     if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
     await getIt<AiConsumptionRecorder>().record(
       AiConsumptionEvent(
-        id: const Uuid().v1(),
+        // v4 (opaque random): the record id carries no timestamp/node info;
+        // createdAt already captures the time explicitly.
+        id: const Uuid().v4(),
         createdAt: start,
         providerType: provider.inferenceProviderType,
         responseType: AiConsumptionResponseType.agentTurn,
@@ -492,7 +495,7 @@ class ConversationRepository extends Notifier<void> {
         threadId: threadId,
         turnIndex: turnIndex,
         providerModelId: model,
-        durationMs: DateTime.now().difference(start).inMilliseconds,
+        durationMs: clock.now().difference(start).inMilliseconds,
         inputTokens: usage?.inputTokens,
         outputTokens: usage?.outputTokens,
         cachedInputTokens: usage?.cachedInputTokens,

@@ -240,6 +240,7 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
         eventHandler: eventHandler,
       );
 
+      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
       await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: ctx.initialUserMessage,
@@ -252,12 +253,8 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
         tools: _buildToolDefinitions(bridge: bridge),
         strategy: strategy,
         // Evolution attributes consumption to the template being improved.
-        consumptionAgentId: getIt.isRegistered<AiConsumptionRecorder>()
-            ? templateId
-            : null,
-        consumptionThreadId: getIt.isRegistered<AiConsumptionRecorder>()
-            ? conversationId
-            : null,
+        consumptionAgentId: recordConsumption ? templateId : null,
+        consumptionThreadId: recordConsumption ? conversationId : null,
       );
 
       _notifyUpdate(templateId);
