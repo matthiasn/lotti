@@ -247,7 +247,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Photos dragged into Lotti now keep the moment they were taken. They were being
   dated to the time of the drop; the importer now reads the original capture time
   from the image's EXIF metadata (and its GPS location, when present), falling
-  back to the file's modified time only when the photo carries no timestamp.
+  back to the file's modified time only when the photo carries no timestamp. That
+  fallback used to read as the drop time too, so dragging a batch of screenshots
+  from a meeting stamped them all with the same time and out of order — dragged
+  files are now read straight from their original location on disk instead of a
+  copy, so the real modified time (and the original order) comes through.
 - The celebration **Style** settings got a small polish pass. Each style's
   preview is now a single crisp play button instead of a blurry triangle and dot
   layered on top of each other, and the Tasks / Habits / Checklist items selector

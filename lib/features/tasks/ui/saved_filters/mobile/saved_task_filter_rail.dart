@@ -245,13 +245,22 @@ class SavedTaskFilterRail extends ConsumerWidget {
                 ],
                 for (final f in mru) ...[
                   gap,
-                  _savedPill(
-                    context,
-                    ref,
-                    filter: f,
-                    selected: false,
-                    count: counts?[f.id],
-                    countLoading: counts == null,
+                  // `_fitMruCount` only estimates how many quick-jump pills fit
+                  // from a flat per-pill width assumption — it does not measure
+                  // the real label, so a wordy saved-filter name can still be
+                  // wider than budgeted. `Flexible` (mirroring the anchor pill
+                  // above) is the hard backstop: it lets the pill's own
+                  // ellipsis logic (`_PillLabel`) shrink the name instead of
+                  // the row overflowing.
+                  Flexible(
+                    child: _savedPill(
+                      context,
+                      ref,
+                      filter: f,
+                      selected: false,
+                      count: counts?[f.id],
+                      countLoading: counts == null,
+                    ),
                   ),
                 ],
                 if (hasUnsaved) ...[gap, saveChip],

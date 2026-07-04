@@ -143,20 +143,22 @@ void main() {
   });
 
   group('GeminiUtils.buildListModelsUri', () {
-    test('targets the native /v1beta/models listing regardless of base path',
-        () {
-      final uri = GeminiUtils.buildListModelsUri(
-        // The OpenAI-compatible default base URL still resolves to the native
-        // (richer) listing.
-        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-      );
-      expect(uri.scheme, 'https');
-      expect(uri.host, 'generativelanguage.googleapis.com');
-      expect(uri.path, '/v1beta/models');
-      // The API key is carried in a header, never the URL.
-      expect(uri.queryParameters.containsKey('key'), isFalse);
-      expect(uri.queryParameters, isEmpty);
-    });
+    test(
+      'targets the native /v1beta/models listing regardless of base path',
+      () {
+        final uri = GeminiUtils.buildListModelsUri(
+          // The OpenAI-compatible default base URL still resolves to the native
+          // (richer) listing.
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        );
+        expect(uri.scheme, 'https');
+        expect(uri.host, 'generativelanguage.googleapis.com');
+        expect(uri.path, '/v1beta/models');
+        // The API key is carried in a header, never the URL.
+        expect(uri.queryParameters.containsKey('key'), isFalse);
+        expect(uri.queryParameters, isEmpty);
+      },
+    );
 
     test('preserves scheme, host and port from the base URL', () {
       final uri = GeminiUtils.buildListModelsUri(
