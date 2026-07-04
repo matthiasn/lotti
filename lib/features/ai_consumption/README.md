@@ -25,7 +25,7 @@ flowchart LR
   SS -->|SyncMessage.consumptionEvent| OB[Outbox → Matrix]
   OB -. inbound apply .-> DB
   DB --> Agg[Aggregation<br/>totalsForTask / bucketize]
-  Agg --> UI[Dashboards<br/>future]
+  Agg --> UI[AI Impact dashboard<br/>ImpactAnalysisBody]
 ```
 
 ## Data model
@@ -124,8 +124,89 @@ mutate, so there is no concurrent-merge case.
   epoch-int `created_at`, and the denormalized `categoryId` means no
   `linked_entries` join fan-out.
 
-The dashboard UI is intentionally **not** built here — this delivers only the
-query layer a later dashboard consumes.
+Adaptive-unit display formatting lives beside the bucketing logic
+(`logic/consumption_formatting.dart`): every formatter returns the value
+**with** its unit (`€1.23`, `40 Wh`, `1.2 kg`, `12.3K`) so no call site can
+mislabel a converted number.
+
+## Impact dashboard (UI)
+
+`ui/impact_analysis_body.dart` (`ImpactAnalysisBody`) is the host-independent
+dashboard core. Two hosts embed it:
+
+- `ui/impact_analysis_page.dart` — the `/calendar/impact` route (a thin
+  `Scaffold` around the body), reached via `ui/widgets/impact_sidebar_entry.dart`.
+- The Settings `ai-usage` panel (`settings_v2` panel registry), which wraps the
+  body in a `SingleChildScrollView`. The body adapts: with bounded height it
+  scrolls itself (`ListView`), with unbounded height it shrink-wraps and lets
+  the host scroll. It also degrades to phone-width panes (~390 px): the period
+  stepper — a fixed intrinsic-width strip — scrolls horizontally instead of
+  overflowing, and the metric toggle switches to the design system's dense
+  fill-width `expand` mode below 480 px.
+
+```mermaid
+flowchart TD
+  RC[consumptionRangeControllerProvider<br/>InsightsRangeController instance] -->|selection| Body[ImpactAnalysisBody]
+  BP[consumptionBucketsProvider<br/>insightsWindowFor year window] -->|ConsumptionDayBuckets| Body
+  Cat[categoriesStreamProvider] -->|id → CategoryDefinition| Body
+  Body --> D1[impactTotalsInRange → ImpactKpiRow]
+  Body --> D2[dailyMetricTotals + rankedImpactCategoryTotals → ImpactRankedTable]
+  Body --> D3[buildImpactChartData → ImpactChartCard]
+  Body --> D4[ImpactCallLedger<br/>range-scoped]
+  LP[consumptionLedgerProvider<br/>InsightsRange family] -->|newest calls| D4
+  Toggle[DsSegmentedToggle<br/>Cost · Energy · CO₂e · Tokens] -->|local state| Body
+```
+
+The body is the single provider consumer; the children are dumb value widgets:
+
+- **Metric lens** — `model/impact_dashboard_models.dart` defines
+  `ConsumptionMetric { cost, energy, carbon, tokens }` with `valueOf`
+  (projects credits / kWh / g CO₂ / total tokens out of a
+  `ConsumptionMetrics`) and `formatValue` (delegates to the shared
+  formatters). The KPI row always shows all four totals; the segmented
+  toggle picks the one the chart + table break down.
+- **Pure derivations** — `logic/impact_dashboard_data.dart` mirrors the
+  Insights `time_bucketing.dart` builders over `ConsumptionDayBuckets`:
+  `dailyMetricTotals` (zero-filled per-day maps, zero values dropped),
+  `rankedImpactCategoryTotals` (descending), `impactTotalsInRange` (KPI
+  fold), and `buildImpactChartData` (weekly aggregation via `weekStartDay`,
+  largest-first stacking, "Other" rollup via the Insights sentinel/caps).
+  Granularity deliberately never goes hourly: consumption cells are
+  day-keyed, so a 1-day range renders one day bucket. The Y axis snaps to a
+  1/2/5 × 10ⁿ nice ceiling (`impactNiceCeiling`), not the Insights hour
+  ladder.
+- **Chart** — `ui/widgets/impact_chart_card.dart`: fl_chart stacked bars,
+  axis/tooltip/legend all formatted through the metric lens; elapsed-buckets
+  trimming and a quiet today-bar edge, like the Insights chart.
+- **Category identity** — reuses `InsightsCategoryResolver` +
+  `chartColorFor`/`swatchColorFor`, so both dashboards speak the same
+  color/label language ("Uncategorized", "Other", "Deleted category").
+- **Per-call ledger** — `ui/widgets/impact_call_ledger.dart`
+  (`ImpactCallLedger`) renders the newest individual calls in the selected
+  period (time · model · call type · tokens · cost · energy), the
+  Cursor-style request table. It watches `consumptionLedgerProvider`
+  (family-keyed by the value-equal `InsightsRange`, backed by
+  `ConsumptionRepository.newestEventsInRange`, capped at
+  `kConsumptionLedgerLimit` = 100 with an explicit "newest N" caption — never
+  a silent truncation) itself, so the body integrates it as one child.
+  Unmeasured calls simply omit the cost/energy parts of the row.
+- **keepPreviousData** — the buckets provider is year-window keyed; the body
+  retains the last fully-loaded generation (buckets + the selection they
+  cover) so window switches and failed refetches never flash a loading
+  shell. A failed load over retained data shows a slim stale-notice strip; a
+  failed *first* load shows the error text. An empty period renders a calm
+  icon + explanation card.
+
+## Task header chip
+
+`lib/features/tasks/ui/header/task_consumption_chip.dart`
+(`TaskConsumptionChip`) is the per-task surface: a `DsPill` in the task
+header's `MetaRow` (`consumptionSlot`) showing the task's lifetime AI cost —
+`€0.42 · 12 Wh · 3.4 g` when impact was measured, the token total otherwise —
+with the full breakdown (calls/measured, token split, energy/CO₂e/water,
+cost) in the tooltip. It watches `taskConsumptionTotalsProvider(taskId)`
+(refreshed via `aiConsumptionNotification`) and renders nothing for tasks
+without recorded calls, so non-AI tasks carry zero extra chrome.
 
 ## Capture wiring
 
@@ -161,15 +242,24 @@ the project / event / day / evolution agent workflows — they call
 Delivered and tested: the storage schema, repository, aggregation query layer,
 full Matrix sync integration, the Melious non-streaming impact-capture mechanism
 (`MeliousCallImpact` + `InferenceImpactCollector`), the `AiConsumptionRecorder`,
-and end-to-end capture on the unified inference path, the skill runner, and
-task-agent turns. The dashboard UI and the remaining agent workflows above are
-the follow-on work.
+end-to-end capture on the unified inference path, the skill runner, and
+task-agent turns, and the AI Impact dashboard (KPI row, stacked metric chart,
+ranked table, period stepper). The remaining agent workflows above are the
+follow-on work.
 
 ## Testing
 
 - `test/features/ai_consumption/` — DB round-trip/idempotency, aggregation
   (`totalsForTask`, `metricRowsInRange` epoch-int guard), pure bucketing
   (example + Glados property), and the sync service (VC stamp + enqueue).
+- `test/features/ai_consumption/logic/impact_dashboard_data_test.dart` +
+  `model/impact_dashboard_models_test.dart` — exact bucket/ranking/rollup/
+  ceiling expectations plus Glados properties (chart columns sum to range
+  totals, monotone ranking, never-hourly granularity, ceiling bounds).
+- `test/features/ai_consumption/ui/` — widget tests for the KPI row, chart
+  card, ranked table, and the full body (provider-driven: stubbed repository
+  rows → formatter-exact KPI/table figures, metric toggle, empty state,
+  first-load error).
 - `test/features/ai/model/ai_call_impact_test.dart` — the Melious impact
   contract parsing.
 - `test/features/sync/…` — `SyncMessage.consumptionEvent` round-trip, inbound

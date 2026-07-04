@@ -21,6 +21,7 @@ import 'package:lotti/features/projects/ui/widgets/project_selection_modal_conte
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/estimated_time_widget.dart';
+import 'package:lotti/features/tasks/ui/header/task_consumption_chip.dart';
 import 'package:lotti/features/tasks/ui/header/task_due_date_widget.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_modal_content.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
@@ -67,6 +68,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     return DesktopTaskHeader(
       data: data,
       estimateSlot: _TaskEstimateChip(taskId: task.meta.id),
+      consumptionSlot: TaskConsumptionChip(taskId: task.meta.id),
       onTitleSaved: (newTitle) {
         controller.save(title: newTitle);
       },

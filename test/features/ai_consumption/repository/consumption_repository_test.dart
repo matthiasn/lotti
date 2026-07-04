@@ -357,4 +357,77 @@ void main() {
       expect(await db.countAllConsumptionEvents(), 0);
     });
   });
+
+  group('newestEventsInRange', () {
+    test(
+      'returns newest first, bounded to [start, end), capped at limit',
+      () async {
+        // Five events across three days; the range covers the middle three.
+        for (final (id, createdAt) in [
+          ('before', DateTime(2026, 3, 14, 23)),
+          ('a', DateTime(2026, 3, 15, 9)),
+          ('b', DateTime(2026, 3, 15, 14)),
+          ('c', DateTime(2026, 3, 16, 8)),
+          ('at-end', DateTime(2026, 3, 17)),
+        ]) {
+          await repo.upsertEvent(
+            makeConsumptionEvent(id: id, createdAt: createdAt),
+          );
+        }
+
+        final events = await repo.newestEventsInRange(
+          start: DateTime(2026, 3, 15),
+          end: DateTime(2026, 3, 17),
+          limit: 10,
+        );
+        expect(events.map((e) => e.id).toList(), ['c', 'b', 'a']);
+
+        // The limit keeps only the newest rows.
+        final capped = await repo.newestEventsInRange(
+          start: DateTime(2026, 3, 15),
+          end: DateTime(2026, 3, 17),
+          limit: 2,
+        );
+        expect(capped.map((e) => e.id).toList(), ['c', 'b']);
+      },
+    );
+
+    test(
+      'breaks created-at ties by id descending for stable ordering',
+      () async {
+        final sameInstant = DateTime(2026, 3, 15, 12);
+        for (final id in ['tie-1', 'tie-3', 'tie-2']) {
+          await repo.upsertEvent(
+            makeConsumptionEvent(id: id, createdAt: sameInstant),
+          );
+        }
+
+        final events = await repo.newestEventsInRange(
+          start: DateTime(2026, 3, 15),
+          end: DateTime(2026, 3, 16),
+          limit: 10,
+        );
+        expect(events.map((e) => e.id).toList(), ['tie-3', 'tie-2', 'tie-1']);
+      },
+    );
+
+    test('deserializes the full event, not just the projection', () async {
+      final event = makeConsumptionEvent(
+        id: 'full',
+        createdAt: DateTime(2026, 3, 15, 10),
+        vectorClock: const VectorClock({'host-a': 7}),
+        agentId: 'agent-1',
+        wakeRunKey: 'wake-1',
+        turnIndex: 2,
+      );
+      await repo.upsertEvent(event);
+
+      final events = await repo.newestEventsInRange(
+        start: DateTime(2026, 3, 15),
+        end: DateTime(2026, 3, 16),
+        limit: 1,
+      );
+      expect(events.single, event);
+    });
+  });
 }

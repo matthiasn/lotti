@@ -732,6 +732,73 @@
   "aiConfigSelectProviderModalTitle": "Select Inference Provider",
   "aiConfigSelectProviderTypeModalTitle": "Select Provider Type",
   "aiConfigUseReasoningFieldLabel": "Use Reasoning",
+  "aiConsumptionCallsLine": "AI calls: {count} · impact measured for {measured}",
+  "@aiConsumptionCallsLine": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "measured": {
+        "type": "int"
+      }
+    }
+  },
+  "aiConsumptionCostLine": "Cost: {cost}",
+  "@aiConsumptionCostLine": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConsumptionImpactLine": "Impact: {energy} · {carbon} CO₂e · {water} water",
+  "@aiConsumptionImpactLine": {
+    "placeholders": {
+      "energy": {
+        "type": "String"
+      },
+      "carbon": {
+        "type": "String"
+      },
+      "water": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConsumptionLedgerCap": "Showing the newest {limit} calls in this period",
+  "@aiConsumptionLedgerCap": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "aiConsumptionLedgerTitle": "Recent calls",
+  "aiConsumptionTokensLabel": "{tokens} tokens",
+  "@aiConsumptionTokensLabel": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConsumptionTokensLine": "Tokens: {input} in · {output} out",
+  "@aiConsumptionTokensLine": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      }
+    }
+  },
+  "aiConsumptionTypeAgentTurn": "Agent turn",
+  "aiConsumptionTypeAudioTranscription": "Transcription",
+  "aiConsumptionTypeImageAnalysis": "Image analysis",
+  "aiConsumptionTypeImageGeneration": "Image generation",
+  "aiConsumptionTypePromptGeneration": "Prompt generation",
+  "aiConsumptionTypeTextGeneration": "Text generation",
   "aiDeleteToastCascadeDescription": "{count, plural, =1{Also removed 1 model: {names}} other{Also removed {count} models: {names}}}",
   "@aiDeleteToastCascadeDescription": {
     "placeholders": {
@@ -763,6 +830,26 @@
   "aiImageAnalysisPickerDefaultBadge": "Default",
   "aiImageAnalysisPickerTitle": "Pick an image analysis model",
   "aiImageGenerationPickerTitle": "Pick an image generation model",
+  "aiImpactChartTitle": "{metric} by category",
+  "@aiImpactChartTitle": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "aiImpactEmptyBody": "AI calls from your tasks and agents will show up here.",
+  "aiImpactEmptyTitle": "No AI usage in this range",
+  "aiImpactKpiCarbon": "CO₂E",
+  "aiImpactKpiCost": "COST",
+  "aiImpactKpiEnergy": "ENERGY",
+  "aiImpactKpiTokens": "TOKENS",
+  "aiImpactLoadError": "Couldn't load AI impact data",
+  "aiImpactMetricCarbon": "CO₂e",
+  "aiImpactMetricCost": "Cost",
+  "aiImpactMetricEnergy": "Energy",
+  "aiImpactMetricTokens": "Tokens",
+  "aiImpactTitle": "AI Impact",
   "aiInferenceErrorAuthenticationTitle": "Authentication Failed",
   "aiInferenceErrorConnectionFailedTitle": "Connection Failed",
   "aiInferenceErrorInvalidRequestTitle": "Invalid Request",
@@ -3707,6 +3794,8 @@
   "settingsAiProvidersTitle": "Providers",
   "settingsAiSubtitle": "Configure AI providers, models, and prompts",
   "settingsAiTitle": "AI Settings",
+  "settingsAiUsageSubtitle": "Cost, energy, and CO₂e of AI calls",
+  "settingsAiUsageTitle": "Usage & Impact",
   "settingsBeamPageEditModelTitle": "Edit model",
   "settingsBeamPageEditProfileTitle": "Edit profile",
   "settingsCategoriesCreateTitle": "Create category",

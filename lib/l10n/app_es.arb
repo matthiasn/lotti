@@ -544,6 +544,19 @@
   "aiConfigSelectProviderModalTitle": "Seleccionar proveedor de inferencia",
   "aiConfigSelectProviderTypeModalTitle": "Seleccionar tipo de proveedor",
   "aiConfigUseReasoningFieldLabel": "Usar razonamiento",
+  "aiConsumptionCallsLine": "Llamadas de IA: {count} · impacto medido en {measured}",
+  "aiConsumptionCostLine": "Coste: {cost}",
+  "aiConsumptionImpactLine": "Impacto: {energy} · {carbon} CO₂e · {water} de agua",
+  "aiConsumptionLedgerCap": "Mostrando las {limit} llamadas más recientes de este período",
+  "aiConsumptionLedgerTitle": "Llamadas recientes",
+  "aiConsumptionTokensLabel": "{tokens} tokens",
+  "aiConsumptionTokensLine": "Tokens: {input} entrada · {output} salida",
+  "aiConsumptionTypeAgentTurn": "Turno de agente",
+  "aiConsumptionTypeAudioTranscription": "Transcripción",
+  "aiConsumptionTypeImageAnalysis": "Análisis de imagen",
+  "aiConsumptionTypeImageGeneration": "Generación de imagen",
+  "aiConsumptionTypePromptGeneration": "Generación de prompt",
+  "aiConsumptionTypeTextGeneration": "Generación de texto",
   "aiDeleteToastCascadeDescription": "{count, plural, =1{También se eliminó 1 modelo: {names}} other{También se eliminaron {count} modelos: {names}}}",
   "@aiDeleteToastCascadeDescription": {
     "placeholders": {
@@ -575,6 +588,26 @@
   "aiImageAnalysisPickerDefaultBadge": "Predeterminado",
   "aiImageAnalysisPickerTitle": "Elige un modelo de análisis de imágenes",
   "aiImageGenerationPickerTitle": "Elige un modelo de generación de imágenes",
+  "aiImpactChartTitle": "{metric} por categoría",
+  "@aiImpactChartTitle": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "aiImpactEmptyBody": "Las llamadas de IA de tus tareas y agentes aparecerán aquí.",
+  "aiImpactEmptyTitle": "Sin uso de IA en este periodo",
+  "aiImpactKpiCarbon": "CO₂E",
+  "aiImpactKpiCost": "COSTE",
+  "aiImpactKpiEnergy": "ENERGÍA",
+  "aiImpactKpiTokens": "TOKENS",
+  "aiImpactLoadError": "No se pudieron cargar los datos de impacto de IA",
+  "aiImpactMetricCarbon": "CO₂e",
+  "aiImpactMetricCost": "Coste",
+  "aiImpactMetricEnergy": "Energía",
+  "aiImpactMetricTokens": "Tokens",
+  "aiImpactTitle": "Impacto de IA",
   "aiInferenceErrorAuthenticationTitle": "Autenticación fallida",
   "aiInferenceErrorConnectionFailedTitle": "Conexión fallida",
   "aiInferenceErrorInvalidRequestTitle": "Solicitud no válida",
@@ -3181,6 +3214,8 @@
   "settingsAiProvidersTitle": "Proveedores",
   "settingsAiSubtitle": "Configurar proveedores de AI, modelos y prompts",
   "settingsAiTitle": "Configuración de AI",
+  "settingsAiUsageSubtitle": "Coste, energía y CO₂e de tus llamadas de IA",
+  "settingsAiUsageTitle": "Uso e impacto",
   "settingsBeamPageEditModelTitle": "Editar modelo",
   "settingsBeamPageEditProfileTitle": "Editar perfil",
   "settingsCategoriesCreateTitle": "Crear categoría",

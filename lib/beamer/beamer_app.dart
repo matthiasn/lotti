@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
@@ -854,6 +855,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           children: [
             DailyOsSidebarCalendar(),
             InsightsSidebarEntry(),
+            ImpactSidebarEntry(),
           ],
         ),
       ),

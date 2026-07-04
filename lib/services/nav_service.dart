@@ -104,6 +104,13 @@ class NavService {
     false,
   );
 
+  /// Whether the AI Impact dashboard (`/calendar/impact`) is showing.
+  /// Written exclusively by `CalendarLocation` from the URL, mirroring
+  /// [desktopShowTimeAnalysis]; the sidebar sub-entry only reads it.
+  final ValueNotifier<bool> desktopShowAiImpact = ValueNotifier<bool>(
+    false,
+  );
+
   /// Tracks the current settings sub-route on desktop so the right pane
   /// can render the matching content page.
   final ValueNotifier<DesktopSettingsRoute?> desktopSelectedSettingsRoute =
@@ -385,6 +392,7 @@ class NavService {
     desktopSelectedProjectId.dispose();
     desktopSelectedDashboardId.dispose();
     desktopShowTimeAnalysis.dispose();
+    desktopShowAiImpact.dispose();
     desktopSelectedSettingsRoute.dispose();
     await _navigationFlagsSub.cancel();
     await indexStreamController.close();

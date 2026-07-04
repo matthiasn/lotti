@@ -1242,6 +1242,57 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Schlussfolgerung verwenden';
 
   @override
+  String aiConsumptionCallsLine(int count, int measured) {
+    return 'KI-Aufrufe: $count · Impact gemessen bei $measured';
+  }
+
+  @override
+  String aiConsumptionCostLine(String cost) {
+    return 'Kosten: $cost';
+  }
+
+  @override
+  String aiConsumptionImpactLine(String energy, String carbon, String water) {
+    return 'Impact: $energy · $carbon CO₂e · $water Wasser';
+  }
+
+  @override
+  String aiConsumptionLedgerCap(int limit) {
+    return 'Zeigt die neuesten $limit Aufrufe in diesem Zeitraum';
+  }
+
+  @override
+  String get aiConsumptionLedgerTitle => 'Letzte Aufrufe';
+
+  @override
+  String aiConsumptionTokensLabel(String tokens) {
+    return '$tokens Tokens';
+  }
+
+  @override
+  String aiConsumptionTokensLine(String input, String output) {
+    return 'Tokens: $input rein · $output raus';
+  }
+
+  @override
+  String get aiConsumptionTypeAgentTurn => 'Agenten-Turn';
+
+  @override
+  String get aiConsumptionTypeAudioTranscription => 'Transkription';
+
+  @override
+  String get aiConsumptionTypeImageAnalysis => 'Bildanalyse';
+
+  @override
+  String get aiConsumptionTypeImageGeneration => 'Bildgenerierung';
+
+  @override
+  String get aiConsumptionTypePromptGeneration => 'Prompt-Generierung';
+
+  @override
+  String get aiConsumptionTypeTextGeneration => 'Textgenerierung';
+
+  @override
   String aiDeleteToastCascadeDescription(int count, String names) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1292,6 +1343,49 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiImageGenerationPickerTitle => 'Wähle ein Bildgenerierungsmodell';
+
+  @override
+  String aiImpactChartTitle(String metric) {
+    return '$metric nach Kategorie';
+  }
+
+  @override
+  String get aiImpactEmptyBody =>
+      'KI-Aufrufe aus deinen Aufgaben und Agenten erscheinen hier.';
+
+  @override
+  String get aiImpactEmptyTitle => 'Keine KI-Nutzung in diesem Zeitraum';
+
+  @override
+  String get aiImpactKpiCarbon => 'CO₂E';
+
+  @override
+  String get aiImpactKpiCost => 'KOSTEN';
+
+  @override
+  String get aiImpactKpiEnergy => 'ENERGIE';
+
+  @override
+  String get aiImpactKpiTokens => 'TOKENS';
+
+  @override
+  String get aiImpactLoadError =>
+      'KI-Impact-Daten konnten nicht geladen werden';
+
+  @override
+  String get aiImpactMetricCarbon => 'CO₂e';
+
+  @override
+  String get aiImpactMetricCost => 'Kosten';
+
+  @override
+  String get aiImpactMetricEnergy => 'Energie';
+
+  @override
+  String get aiImpactMetricTokens => 'Tokens';
+
+  @override
+  String get aiImpactTitle => 'KI-Impact';
 
   @override
   String get aiInferenceErrorAuthenticationTitle =>
@@ -7523,6 +7617,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsAiTitle => 'AI-Einstellungen';
+
+  @override
+  String get settingsAiUsageSubtitle =>
+      'Kosten, Energie und CO₂e deiner KI-Aufrufe';
+
+  @override
+  String get settingsAiUsageTitle => 'Verbrauch & Impact';
 
   @override
   String get settingsBeamPageEditModelTitle => 'Modell bearbeiten';

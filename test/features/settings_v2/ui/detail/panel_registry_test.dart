@@ -82,6 +82,7 @@ void main() {
       'ai-providers',
       'ai-models',
       'ai-profiles',
+      'ai-usage',
       'agents-stats',
       'agents-templates',
       'agents-instances',

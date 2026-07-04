@@ -1248,6 +1248,57 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Utiliser le raisonnement';
 
   @override
+  String aiConsumptionCallsLine(int count, int measured) {
+    return 'Appels IA : $count · impact mesuré pour $measured';
+  }
+
+  @override
+  String aiConsumptionCostLine(String cost) {
+    return 'Coût : $cost';
+  }
+
+  @override
+  String aiConsumptionImpactLine(String energy, String carbon, String water) {
+    return 'Impact : $energy · $carbon CO₂e · $water d\'eau';
+  }
+
+  @override
+  String aiConsumptionLedgerCap(int limit) {
+    return 'Affiche les $limit appels les plus récents de cette période';
+  }
+
+  @override
+  String get aiConsumptionLedgerTitle => 'Appels récents';
+
+  @override
+  String aiConsumptionTokensLabel(String tokens) {
+    return '$tokens jetons';
+  }
+
+  @override
+  String aiConsumptionTokensLine(String input, String output) {
+    return 'Jetons : $input entrée · $output sortie';
+  }
+
+  @override
+  String get aiConsumptionTypeAgentTurn => 'Tour d\'agent';
+
+  @override
+  String get aiConsumptionTypeAudioTranscription => 'Transcription';
+
+  @override
+  String get aiConsumptionTypeImageAnalysis => 'Analyse d\'image';
+
+  @override
+  String get aiConsumptionTypeImageGeneration => 'Génération d\'image';
+
+  @override
+  String get aiConsumptionTypePromptGeneration => 'Génération de prompt';
+
+  @override
+  String get aiConsumptionTypeTextGeneration => 'Génération de texte';
+
+  @override
   String aiDeleteToastCascadeDescription(int count, String names) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1300,6 +1351,50 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get aiImageGenerationPickerTitle =>
       'Choisis un modèle de génération d\'images';
+
+  @override
+  String aiImpactChartTitle(String metric) {
+    return '$metric par catégorie';
+  }
+
+  @override
+  String get aiImpactEmptyBody =>
+      'Les appels IA de tes tâches et agents apparaîtront ici.';
+
+  @override
+  String get aiImpactEmptyTitle =>
+      'Aucune utilisation de l\'IA sur cette période';
+
+  @override
+  String get aiImpactKpiCarbon => 'CO₂E';
+
+  @override
+  String get aiImpactKpiCost => 'COÛT';
+
+  @override
+  String get aiImpactKpiEnergy => 'ÉNERGIE';
+
+  @override
+  String get aiImpactKpiTokens => 'TOKENS';
+
+  @override
+  String get aiImpactLoadError =>
+      'Impossible de charger les données d\'impact IA';
+
+  @override
+  String get aiImpactMetricCarbon => 'CO₂e';
+
+  @override
+  String get aiImpactMetricCost => 'Coût';
+
+  @override
+  String get aiImpactMetricEnergy => 'Énergie';
+
+  @override
+  String get aiImpactMetricTokens => 'Tokens';
+
+  @override
+  String get aiImpactTitle => 'Impact IA';
 
   @override
   String get aiInferenceErrorAuthenticationTitle =>
@@ -7624,6 +7719,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsAiTitle => 'Paramètres AI';
+
+  @override
+  String get settingsAiUsageSubtitle =>
+      'Coût, énergie et CO₂e de tes appels IA';
+
+  @override
+  String get settingsAiUsageTitle => 'Utilisation et impact';
 
   @override
   String get settingsBeamPageEditModelTitle => 'Modifier le modèle';

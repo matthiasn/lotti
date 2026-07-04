@@ -384,6 +384,19 @@
   "aiConfigSelectProviderModalTitle": "Vyberte poskytovatele inferencí",
   "aiConfigSelectProviderTypeModalTitle": "Vyberte typ poskytovatele",
   "aiConfigUseReasoningFieldLabel": "Použít uvažování",
+  "aiConsumptionCallsLine": "AI volání: {count} · dopad změřen u {measured}",
+  "aiConsumptionCostLine": "Náklady: {cost}",
+  "aiConsumptionImpactLine": "Dopad: {energy} · {carbon} CO₂e · {water} vody",
+  "aiConsumptionLedgerCap": "Zobrazuje nejnovějších {limit} volání v tomto období",
+  "aiConsumptionLedgerTitle": "Nedávná volání",
+  "aiConsumptionTokensLabel": "{tokens} tokenů",
+  "aiConsumptionTokensLine": "Tokeny: {input} vstup · {output} výstup",
+  "aiConsumptionTypeAgentTurn": "Tah agenta",
+  "aiConsumptionTypeAudioTranscription": "Přepis",
+  "aiConsumptionTypeImageAnalysis": "Analýza obrázku",
+  "aiConsumptionTypeImageGeneration": "Generování obrázku",
+  "aiConsumptionTypePromptGeneration": "Generování promptu",
+  "aiConsumptionTypeTextGeneration": "Generování textu",
   "aiDeleteToastCascadeDescription": "{count, plural, =1{Odebrán také 1 model: {names}} few{Odebrány také {count} modely: {names}} other{Odebráno také {count} modelů: {names}}}",
   "@aiDeleteToastCascadeDescription": {
     "placeholders": {
@@ -415,6 +428,26 @@
   "aiImageAnalysisPickerDefaultBadge": "Výchozí",
   "aiImageAnalysisPickerTitle": "Vyber model pro analýzu obrázků",
   "aiImageGenerationPickerTitle": "Vyber model pro generování obrázků",
+  "aiImpactChartTitle": "{metric} podle kategorie",
+  "@aiImpactChartTitle": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "aiImpactEmptyBody": "AI volání z tvých úkolů a agentů se zobrazí zde.",
+  "aiImpactEmptyTitle": "Žádné využití AI v tomto období",
+  "aiImpactKpiCarbon": "CO₂E",
+  "aiImpactKpiCost": "NÁKLADY",
+  "aiImpactKpiEnergy": "ENERGIE",
+  "aiImpactKpiTokens": "TOKENY",
+  "aiImpactLoadError": "Data o dopadu AI se nepodařilo načíst",
+  "aiImpactMetricCarbon": "CO₂e",
+  "aiImpactMetricCost": "Náklady",
+  "aiImpactMetricEnergy": "Energie",
+  "aiImpactMetricTokens": "Tokeny",
+  "aiImpactTitle": "Dopad AI",
   "aiInferenceErrorAuthenticationTitle": "Autentizace selhala",
   "aiInferenceErrorConnectionFailedTitle": "Připojení selhalo",
   "aiInferenceErrorInvalidRequestTitle": "Neplatný požadavek",
@@ -2973,6 +3006,8 @@
   "settingsAiProvidersTitle": "Poskytovatelé",
   "settingsAiSubtitle": "Konfigurace poskytovatelů AI, modelů a promptů",
   "settingsAiTitle": "Nastavení AI",
+  "settingsAiUsageSubtitle": "Náklady, energie a CO₂e AI volání",
+  "settingsAiUsageTitle": "Využití a dopad",
   "settingsBeamPageEditModelTitle": "Upravit model",
   "settingsBeamPageEditProfileTitle": "Upravit profil",
   "settingsCategoriesCreateTitle": "Vytvořit kategorii",

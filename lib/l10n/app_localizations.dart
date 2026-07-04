@@ -2239,6 +2239,84 @@ abstract class AppLocalizations {
   /// **'Use Reasoning'**
   String get aiConfigUseReasoningFieldLabel;
 
+  /// No description provided for @aiConsumptionCallsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'AI calls: {count} · impact measured for {measured}'**
+  String aiConsumptionCallsLine(int count, int measured);
+
+  /// No description provided for @aiConsumptionCostLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost: {cost}'**
+  String aiConsumptionCostLine(String cost);
+
+  /// No description provided for @aiConsumptionImpactLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Impact: {energy} · {carbon} CO₂e · {water} water'**
+  String aiConsumptionImpactLine(String energy, String carbon, String water);
+
+  /// No description provided for @aiConsumptionLedgerCap.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the newest {limit} calls in this period'**
+  String aiConsumptionLedgerCap(int limit);
+
+  /// No description provided for @aiConsumptionLedgerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent calls'**
+  String get aiConsumptionLedgerTitle;
+
+  /// No description provided for @aiConsumptionTokensLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{tokens} tokens'**
+  String aiConsumptionTokensLabel(String tokens);
+
+  /// No description provided for @aiConsumptionTokensLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens: {input} in · {output} out'**
+  String aiConsumptionTokensLine(String input, String output);
+
+  /// No description provided for @aiConsumptionTypeAgentTurn.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent turn'**
+  String get aiConsumptionTypeAgentTurn;
+
+  /// No description provided for @aiConsumptionTypeAudioTranscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription'**
+  String get aiConsumptionTypeAudioTranscription;
+
+  /// No description provided for @aiConsumptionTypeImageAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Image analysis'**
+  String get aiConsumptionTypeImageAnalysis;
+
+  /// No description provided for @aiConsumptionTypeImageGeneration.
+  ///
+  /// In en, this message translates to:
+  /// **'Image generation'**
+  String get aiConsumptionTypeImageGeneration;
+
+  /// No description provided for @aiConsumptionTypePromptGeneration.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt generation'**
+  String get aiConsumptionTypePromptGeneration;
+
+  /// No description provided for @aiConsumptionTypeTextGeneration.
+  ///
+  /// In en, this message translates to:
+  /// **'Text generation'**
+  String get aiConsumptionTypeTextGeneration;
+
   /// No description provided for @aiDeleteToastCascadeDescription.
   ///
   /// In en, this message translates to:
@@ -2322,6 +2400,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pick an image generation model'**
   String get aiImageGenerationPickerTitle;
+
+  /// No description provided for @aiImpactChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{metric} by category'**
+  String aiImpactChartTitle(String metric);
+
+  /// No description provided for @aiImpactEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'AI calls from your tasks and agents will show up here.'**
+  String get aiImpactEmptyBody;
+
+  /// No description provided for @aiImpactEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI usage in this range'**
+  String get aiImpactEmptyTitle;
+
+  /// No description provided for @aiImpactKpiCarbon.
+  ///
+  /// In en, this message translates to:
+  /// **'CO₂E'**
+  String get aiImpactKpiCarbon;
+
+  /// No description provided for @aiImpactKpiCost.
+  ///
+  /// In en, this message translates to:
+  /// **'COST'**
+  String get aiImpactKpiCost;
+
+  /// No description provided for @aiImpactKpiEnergy.
+  ///
+  /// In en, this message translates to:
+  /// **'ENERGY'**
+  String get aiImpactKpiEnergy;
+
+  /// No description provided for @aiImpactKpiTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'TOKENS'**
+  String get aiImpactKpiTokens;
+
+  /// No description provided for @aiImpactLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load AI impact data'**
+  String get aiImpactLoadError;
+
+  /// No description provided for @aiImpactMetricCarbon.
+  ///
+  /// In en, this message translates to:
+  /// **'CO₂e'**
+  String get aiImpactMetricCarbon;
+
+  /// No description provided for @aiImpactMetricCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get aiImpactMetricCost;
+
+  /// No description provided for @aiImpactMetricEnergy.
+  ///
+  /// In en, this message translates to:
+  /// **'Energy'**
+  String get aiImpactMetricEnergy;
+
+  /// No description provided for @aiImpactMetricTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens'**
+  String get aiImpactMetricTokens;
+
+  /// No description provided for @aiImpactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Impact'**
+  String get aiImpactTitle;
 
   /// No description provided for @aiInferenceErrorAuthenticationTitle.
   ///
@@ -12825,6 +12981,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Settings'**
   String get settingsAiTitle;
+
+  /// No description provided for @settingsAiUsageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost, energy, and CO₂e of AI calls'**
+  String get settingsAiUsageSubtitle;
+
+  /// No description provided for @settingsAiUsageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage & Impact'**
+  String get settingsAiUsageTitle;
 
   /// No description provided for @settingsBeamPageEditModelTitle.
   ///

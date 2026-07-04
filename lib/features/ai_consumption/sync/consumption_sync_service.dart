@@ -5,6 +5,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 
@@ -26,12 +27,14 @@ class ConsumptionSyncService {
     required this._outboxService,
     required this._vectorClockService,
     this._sequenceLogService,
+    this._updateNotifications,
   });
 
   final ConsumptionRepository _repository;
   final OutboxService _outboxService;
   final VectorClockService _vectorClockService;
   final SyncSequenceLogService? _sequenceLogService;
+  final UpdateNotifications? _updateNotifications;
 
   /// The underlying repository for read-only operations.
   ConsumptionRepository get repository => _repository;
@@ -41,6 +44,23 @@ class ConsumptionSyncService {
       (getIt.isRegistered<SyncSequenceLogService>()
           ? getIt<SyncSequenceLogService>()
           : null);
+
+  UpdateNotifications? get _notifications =>
+      _updateNotifications ??
+      (getIt.isRegistered<UpdateNotifications>()
+          ? getIt<UpdateNotifications>()
+          : null);
+
+  /// Fires the UI refresh for a committed consumption write. `notifyUiOnly`
+  /// (never plain `notify`): per-turn events are recorded mid-wake, and a
+  /// regular notification would feed back into the wake orchestrator.
+  void _notifyWrite(AiConsumptionEvent event) {
+    _notifications?.notifyUiOnly({
+      if (event.taskId != null) event.taskId!,
+      if (event.categoryId != null) event.categoryId!,
+      aiConsumptionNotification,
+    });
+  }
 
   /// Records a consumption event locally and enqueues it for sync.
   ///
@@ -54,6 +74,7 @@ class ConsumptionSyncService {
   }) async {
     if (fromSync) {
       await _repository.upsertEvent(event);
+      _notifyWrite(event);
       return;
     }
     await _vectorClockService.withVcScope<void>(() async {
@@ -66,6 +87,7 @@ class ConsumptionSyncService {
       // The DB write committed the stamped VC, so it MUST commit. Record +
       // enqueue failures are swallowed so the VC scope's
       // default-commit-on-normal-return still fires.
+      _notifyWrite(stamped);
       await _recordSequence(stamped);
       await _enqueuePostWrite(
         SyncMessage.consumptionEvent(
