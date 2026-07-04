@@ -12,6 +12,8 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -35,6 +37,11 @@ class _TestConversationRepository extends ConversationRepository {
 
   /// Optional delegate to control createConversation behavior (e.g., throwing).
   String Function()? createConversationDelegate;
+
+  /// Consumption owner ids captured from the most recent [sendMessage] call,
+  /// so tests can assert the workflow's pass-through wiring.
+  String? lastConsumptionAgentId;
+  String? lastConsumptionThreadId;
 
   @override
   void build() {}
@@ -88,6 +95,8 @@ class _TestConversationRepository extends ConversationRepository {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
   }) async {
+    lastConsumptionAgentId = consumptionAgentId;
+    lastConsumptionThreadId = consumptionThreadId;
     if (sendMessageDelegate != null) {
       return sendMessageDelegate!();
     }
@@ -277,6 +286,48 @@ void main() {
       expect(sessionEntity.status, EvolutionSessionStatus.active);
       expect(sessionEntity.sessionNumber, 1);
     });
+
+    test(
+      'attributes consumption to the template and conversation when an '
+      'AiConsumptionRecorder is registered',
+      () async {
+        getIt.registerSingleton<AiConsumptionRecorder>(
+          MockAiConsumptionRecorder(),
+        );
+        addTearDown(() {
+          if (getIt.isRegistered<AiConsumptionRecorder>()) {
+            getIt.unregister<AiConsumptionRecorder>();
+          }
+        });
+        stubFullContext();
+        final convRepo = _TestConversationRepository(
+          assistantResponse: 'I see some patterns in the data.',
+        );
+        final workflow = buildSessionWorkflow(convRepo: convRepo);
+
+        // Opening message (startSession): attributed to the template being
+        // improved, threaded by the evolution conversation.
+        final response = await workflow.startSession(
+          templateId: kTestTemplateId,
+        );
+        expect(response, 'I see some patterns in the data.');
+        expect(convRepo.lastConsumptionAgentId, kTestTemplateId);
+        expect(convRepo.lastConsumptionThreadId, 'test-conv-id');
+
+        // Follow-up user message (sendMessage): same attribution, taken from
+        // the active session.
+        convRepo
+          ..lastConsumptionAgentId = null
+          ..lastConsumptionThreadId = null;
+        final sessionId = workflow.activeSessions.keys.single;
+        await workflow.sendMessage(
+          sessionId: sessionId,
+          userMessage: 'What patterns do you see?',
+        );
+        expect(convRepo.lastConsumptionAgentId, kTestTemplateId);
+        expect(convRepo.lastConsumptionThreadId, 'test-conv-id');
+      },
+    );
 
     test('computes session number from existing sessions', () async {
       stubFullContext();

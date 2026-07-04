@@ -27,6 +27,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -801,7 +802,74 @@ void main() {
           mockConversationRepository.deletedConversationIds,
           contains('test-conv-id'),
         );
+
+        // No AiConsumptionRecorder is registered in this suite's default
+        // setup, so the consumption gate stays closed: no owner ids are
+        // forwarded to sendMessage.
+        expect(mockConversationRepository.lastConsumptionAgentId, isNull);
+        expect(mockConversationRepository.lastConsumptionTaskId, isNull);
+        expect(mockConversationRepository.lastConsumptionCategoryId, isNull);
+        expect(mockConversationRepository.lastConsumptionWakeRunKey, isNull);
+        expect(mockConversationRepository.lastConsumptionThreadId, isNull);
       });
+
+      test(
+        'passes consumption owner ids to sendMessage when an '
+        'AiConsumptionRecorder is registered',
+        () async {
+          getIt.registerSingleton<AiConsumptionRecorder>(
+            MockAiConsumptionRecorder(),
+          );
+          addTearDown(() {
+            if (getIt.isRegistered<AiConsumptionRecorder>()) {
+              getIt.unregister<AiConsumptionRecorder>();
+            }
+          });
+
+          // With the gate open the workflow resolves the task's category via
+          // journalDb, so the entity lookup must yield a categorised task.
+          when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
+            (_) async => Task(
+              data: TaskData(
+                status: TaskStatus.open(
+                  id: 'status_id',
+                  createdAt: DateTime(2024, 3, 15),
+                  utcOffset: 60,
+                ),
+                title: 'Consumption task',
+                statusHistory: const [],
+                dateTo: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+              ),
+              meta: Metadata(
+                id: taskId,
+                createdAt: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                categoryId: 'cat-consumption-001',
+              ),
+            ),
+          );
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(mockConversationRepository.lastConsumptionAgentId, agentId);
+          expect(mockConversationRepository.lastConsumptionTaskId, taskId);
+          expect(
+            mockConversationRepository.lastConsumptionCategoryId,
+            'cat-consumption-001',
+          );
+          expect(mockConversationRepository.lastConsumptionWakeRunKey, runKey);
+          expect(mockConversationRepository.lastConsumptionThreadId, threadId);
+        },
+      );
 
       test('persists the system prompt content-addressed and references it '
           'from a system message', () async {

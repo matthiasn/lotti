@@ -1059,6 +1059,75 @@ void main() {
       expect(image.mimeType, equals('image/webp'));
     });
 
+    test(
+      'generateImage records impact only when the response carries data',
+      () async {
+        const pngBytes = [137, 80, 78, 71];
+        http.Response imageResponse({required bool withImpact}) {
+          return http.Response(
+            jsonEncode({
+              'data': [
+                {'b64_json': base64Encode(pngBytes)},
+              ],
+              if (withImpact) ...{
+                'environment_impact': {
+                  'energy_kwh': 0.004,
+                  'carbon_g_co2': 1.5,
+                  'location': 'SE',
+                },
+                'billing_cost': {'credits': 0.05},
+              },
+            }),
+            200,
+          );
+        }
+
+        final impactRepository = MeliousInferenceRepository(
+          httpClient: MockClient(
+            (_) async => imageResponse(withImpact: true),
+          ),
+        );
+        addTearDown(impactRepository.close);
+
+        final collectorWithImpact = InferenceImpactCollector();
+        await impactRepository.generateImage(
+          prompt: 'a quiet lake',
+          model: 'flux-2-klein',
+          provider: meliousProvider(),
+          impactCollector: collectorWithImpact,
+        );
+
+        expect(collectorWithImpact.impact, isNotNull);
+        expect(collectorWithImpact.impact!.energyKwh, 0.004);
+        expect(collectorWithImpact.impact!.carbonGCo2, 1.5);
+        expect(collectorWithImpact.impact!.dataCenter, 'SE');
+        expect(collectorWithImpact.impact!.costCredits, 0.05);
+
+        final plainRepository = MeliousInferenceRepository(
+          httpClient: MockClient(
+            (_) async => imageResponse(withImpact: false),
+          ),
+        );
+        addTearDown(plainRepository.close);
+
+        final collectorWithoutImpact = InferenceImpactCollector();
+        await plainRepository.generateImage(
+          prompt: 'a quiet lake',
+          model: 'flux-2-klein',
+          provider: meliousProvider(),
+          impactCollector: collectorWithoutImpact,
+        );
+
+        expect(
+          collectorWithoutImpact.impact,
+          isNull,
+          reason:
+              'a response without impact data must not touch the '
+              'collector',
+        );
+      },
+    );
+
     test('generateImage rejects reference images explicitly', () async {
       final repository = MeliousInferenceRepository();
       addTearDown(repository.close);
@@ -1384,59 +1453,100 @@ void main() {
   });
 
   group('non-streaming impact path', () {
+    const baseUrl = 'https://api.melious.ai/v1';
+    const apiKey = 'key';
+
+    MeliousInferenceRepository repositoryWith(MockClientHandler handler) {
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient(handler),
+      );
+      addTearDown(repository.close);
+      return repository;
+    }
+
+    Future<List<CreateChatCompletionStreamResponse>> collectChat(
+      MeliousInferenceRepository repository,
+      InferenceImpactCollector collector, {
+      String model = 'glm-5.2',
+    }) {
+      return repository
+          .generateTextWithMessages(
+            messages: const [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('hi'),
+              ),
+            ],
+            model: model,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            impactCollector: collector,
+          )
+          .toList();
+    }
+
+    String contentOf(List<CreateChatCompletionStreamResponse> chunks) {
+      return chunks
+          .expand(
+            (c) => c.choices ?? const <ChatCompletionStreamResponseChoice>[],
+          )
+          .map((ch) => ch.delta?.content ?? '')
+          .join();
+    }
+
+    List<ChatCompletionStreamMessageToolCallChunk> toolCallsOf(
+      List<CreateChatCompletionStreamResponse> chunks,
+    ) {
+      return chunks
+          .expand(
+            (c) => c.choices ?? const <ChatCompletionStreamResponseChoice>[],
+          )
+          .expand(
+            (ch) =>
+                ch.delta?.toolCalls ??
+                const <ChatCompletionStreamMessageToolCallChunk>[],
+          )
+          .toList();
+    }
+
     test(
       'generateTextWithMessages with a collector issues a non-streaming '
       'request, returns a synthetic chunk, and records impact',
       () async {
         late http.Request captured;
-        final repo = MeliousInferenceRepository(
-          httpClient: MockClient((request) async {
-            captured = request;
-            return http.Response(
-              jsonEncode({
-                'choices': [
-                  {
-                    'message': {'content': 'Hello world'},
-                    'finish_reason': 'stop',
-                  },
-                ],
-                'usage': {
-                  'prompt_tokens': 1000,
-                  'completion_tokens': 500,
-                  'total_tokens': 1500,
-                  'cached_tokens': 100,
+        final repo = repositoryWith((request) async {
+          captured = request;
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {'content': 'Hello world'},
+                  'finish_reason': 'stop',
                 },
-                'environment_impact': {
-                  'energy_kwh': 0.0003,
-                  'carbon_g_co2': 0.12,
-                  'water_liters': 0.01,
-                  'location': 'FI',
-                  'provider_id': 'nebius',
-                  'renewable_percent': 100,
-                  'pue': 1.1,
-                },
-                'billing_cost': {'credits': 0.002},
-              }),
-              200,
-              headers: {'content-type': 'application/json'},
-            );
-          }),
-        );
+              ],
+              'usage': {
+                'prompt_tokens': 1000,
+                'completion_tokens': 500,
+                'total_tokens': 1500,
+                'cached_tokens': 100,
+              },
+              'environment_impact': {
+                'energy_kwh': 0.0003,
+                'carbon_g_co2': 0.12,
+                'water_liters': 0.01,
+                'location': 'FI',
+                'provider_id': 'nebius',
+                'renewable_percent': 100,
+                'pue': 1.1,
+              },
+              'billing_cost': {'credits': 0.002},
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        });
 
         final collector = InferenceImpactCollector();
-        final chunks = await repo
-            .generateTextWithMessages(
-              messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('hi'),
-                ),
-              ],
-              model: 'glm-5.2',
-              baseUrl: 'https://api.melious.ai/v1',
-              apiKey: 'key',
-              impactCollector: collector,
-            )
-            .toList();
+        final chunks = await collectChat(repo, collector);
 
         // A non-streaming POST to /chat/completions was issued.
         expect(captured.url.path, endsWith('/chat/completions'));
@@ -1446,13 +1556,7 @@ void main() {
         );
 
         // Content is assembled from the delta; usage rides the trailing chunk.
-        final content = chunks
-            .expand(
-              (c) => c.choices ?? const <ChatCompletionStreamResponseChoice>[],
-            )
-            .map((ch) => ch.delta?.content ?? '')
-            .join();
-        expect(content, 'Hello world');
+        expect(contentOf(chunks), 'Hello world');
         final usage = chunks.firstWhere((c) => c.usage != null).usage!;
         expect(usage.promptTokens, 1000);
         expect(usage.completionTokens, 500);
@@ -1468,60 +1572,37 @@ void main() {
     );
 
     test('parses tool calls into the synthetic chunk', () async {
-      final repo = MeliousInferenceRepository(
-        httpClient: MockClient((request) async {
-          return http.Response(
-            jsonEncode({
-              'choices': [
-                {
-                  'message': {
-                    'content': null,
-                    'tool_calls': [
-                      {
-                        'id': 'call_1',
-                        'type': 'function',
-                        'function': {
-                          'name': 'do_thing',
-                          'arguments': '{"x":1}',
-                        },
+      final repo = repositoryWith((request) async {
+        return http.Response(
+          jsonEncode({
+            'choices': [
+              {
+                'message': {
+                  'content': null,
+                  'tool_calls': [
+                    {
+                      'id': 'call_1',
+                      'type': 'function',
+                      'function': {
+                        'name': 'do_thing',
+                        'arguments': '{"x":1}',
                       },
-                    ],
-                  },
-                  'finish_reason': 'tool_calls',
+                    },
+                  ],
                 },
-              ],
-              'usage': {'prompt_tokens': 10, 'completion_tokens': 5},
-            }),
-            200,
-          );
-        }),
-      );
+                'finish_reason': 'tool_calls',
+              },
+            ],
+            'usage': {'prompt_tokens': 10, 'completion_tokens': 5},
+          }),
+          200,
+        );
+      });
 
       final collector = InferenceImpactCollector();
-      final chunks = await repo
-          .generateTextWithMessages(
-            messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('hi'),
-              ),
-            ],
-            model: 'm',
-            baseUrl: 'https://api.melious.ai/v1',
-            apiKey: 'key',
-            impactCollector: collector,
-          )
-          .toList();
+      final chunks = await collectChat(repo, collector, model: 'm');
 
-      final toolCalls = chunks
-          .expand(
-            (c) => c.choices ?? const <ChatCompletionStreamResponseChoice>[],
-          )
-          .expand(
-            (ch) =>
-                ch.delta?.toolCalls ??
-                const <ChatCompletionStreamMessageToolCallChunk>[],
-          )
-          .toList();
+      final toolCalls = toolCallsOf(chunks);
       expect(toolCalls, hasLength(1));
       expect(toolCalls.first.id, 'call_1');
       expect(toolCalls.first.function?.name, 'do_thing');
@@ -1529,5 +1610,297 @@ void main() {
       // No impact block in the response → collector stays empty.
       expect(collector.impact, isNull);
     });
+
+    test(
+      'generateText with a collector routes through the non-streaming path',
+      () async {
+        late http.Request captured;
+        final repo = repositoryWith((request) async {
+          captured = request;
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {'content': 'non-streaming reply'},
+                },
+              ],
+            }),
+            200,
+          );
+        });
+
+        final chunks = await repo
+            .generateText(
+              prompt: 'Say hello',
+              model: 'glm-5.2',
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              systemMessage: 'Be concise.',
+              impactCollector: InferenceImpactCollector(),
+            )
+            .toList();
+
+        expect(captured.url.path, endsWith('/chat/completions'));
+        final body = jsonDecode(captured.body) as Map<String, dynamic>;
+        expect(body['stream'], false);
+        final messages = body['messages'] as List<dynamic>;
+        expect(messages, hasLength(2));
+        expect((messages.first as Map)['role'], 'system');
+        expect((messages.last as Map)['role'], 'user');
+
+        expect(contentOf(chunks), 'non-streaming reply');
+        expect(chunks.single.id, startsWith('melious-chat-'));
+        expect(
+          chunks.single.usage,
+          isNull,
+          reason: 'no usage in the response → no trailing usage chunk',
+        );
+      },
+    );
+
+    test(
+      'generateWithImages with a collector routes through the '
+      'non-streaming path',
+      () async {
+        late http.Request captured;
+        final repo = repositoryWith((request) async {
+          captured = request;
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {'content': 'vision reply'},
+                },
+              ],
+            }),
+            200,
+          );
+        });
+
+        final chunks = await repo
+            .generateWithImages(
+              prompt: 'Describe this image',
+              model: 'gemma-4-26b-a4b',
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              images: const ['abc123'],
+              impactCollector: InferenceImpactCollector(),
+            )
+            .toList();
+
+        final body = jsonDecode(captured.body) as Map<String, dynamic>;
+        expect(body['stream'], false);
+        expect(captured.body, contains('data:image/jpeg;base64,abc123'));
+        expect(contentOf(chunks), 'vision reply');
+      },
+    );
+
+    test(
+      'wraps an HTTP timeout in a MeliousInferenceException without '
+      'real waiting',
+      () async {
+        var calls = 0;
+        final repo = repositoryWith((_) async {
+          calls++;
+          throw TimeoutException('simulated hang');
+        });
+
+        await expectLater(
+          collectChat(repo, InferenceImpactCollector()),
+          throwsA(
+            isA<MeliousInferenceException>()
+                .having(
+                  (e) => e.message,
+                  'message',
+                  'Melious chat completion request timed out',
+                )
+                .having(
+                  (e) => e.originalError,
+                  'originalError',
+                  isA<TimeoutException>(),
+                )
+                .having((e) => e.statusCode, 'statusCode', isNull),
+          ),
+        );
+        expect(calls, 1);
+      },
+    );
+
+    test(
+      'surfaces provider error messages with the HTTP status code',
+      () async {
+        final repo = repositoryWith((_) async {
+          return http.Response(
+            jsonEncode({
+              'error': {'message': 'model overloaded'},
+            }),
+            503,
+          );
+        });
+
+        await expectLater(
+          collectChat(repo, InferenceImpactCollector()),
+          throwsA(
+            isA<MeliousInferenceException>()
+                .having((e) => e.message, 'message', 'model overloaded')
+                .having((e) => e.statusCode, 'statusCode', 503),
+          ),
+        );
+      },
+    );
+
+    test(
+      'wraps malformed, non-object, and transport-failure responses',
+      () async {
+        final malformed = repositoryWith((_) async => http.Response('{', 200));
+        await expectLater(
+          collectChat(malformed, InferenceImpactCollector()),
+          throwsA(
+            isA<MeliousInferenceException>().having(
+              (e) => e.message,
+              'message',
+              'Melious chat completion response was not valid JSON',
+            ),
+          ),
+        );
+
+        final nonObject = repositoryWith(
+          (_) async => http.Response(jsonEncode([1, 2, 3]), 200),
+        );
+        await expectLater(
+          collectChat(nonObject, InferenceImpactCollector()),
+          throwsA(
+            isA<MeliousInferenceException>().having(
+              (e) => e.message,
+              'message',
+              'Melious chat completion response must be a JSON object',
+            ),
+          ),
+        );
+
+        final failing = repositoryWith(
+          (_) async => throw Exception('connection reset'),
+        );
+        await expectLater(
+          collectChat(failing, InferenceImpactCollector()),
+          throwsA(
+            isA<MeliousInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('Failed to complete Melious chat'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('coerces malformed tool calls and string token counts', () async {
+      final repo = repositoryWith((_) async {
+        return http.Response(
+          jsonEncode({
+            'choices': [
+              {
+                'message': {
+                  'tool_calls': [
+                    'not-a-map',
+                    {'type': 'function'},
+                    {
+                      'id': 7,
+                      'function': {'name': 99, 'arguments': 42},
+                    },
+                  ],
+                },
+              },
+            ],
+            'usage': {
+              'prompt_tokens': '12',
+              'completion_tokens': 8.9,
+              'cached_tokens': 'not-a-number',
+            },
+          }),
+          200,
+        );
+      });
+
+      final chunks = await collectChat(repo, InferenceImpactCollector());
+
+      final toolCalls = toolCallsOf(chunks);
+      expect(
+        toolCalls,
+        hasLength(2),
+        reason: 'the non-map entry is skipped',
+      );
+      expect(
+        toolCalls.first.index,
+        1,
+        reason: 'skipped entries keep their slot in the index sequence',
+      );
+      expect(toolCalls.first.id, 'tool_1');
+      expect(toolCalls.first.function?.name, isNull);
+      expect(toolCalls.first.function?.arguments, '');
+      expect(toolCalls.last.index, 2);
+      expect(toolCalls.last.id, 'tool_2');
+      expect(toolCalls.last.function?.name, isNull);
+      expect(toolCalls.last.function?.arguments, '');
+
+      final usage = chunks.firstWhere((c) => c.usage != null).usage!;
+      expect(usage.promptTokens, 12, reason: 'string counts are coerced');
+      expect(
+        usage.completionTokens,
+        8,
+        reason: 'fractional counts are truncated',
+      );
+      expect(
+        usage.totalTokens,
+        20,
+        reason: 'missing total falls back to prompt + completion',
+      );
+      expect(
+        usage.promptTokensDetails,
+        isNull,
+        reason: 'unparseable cached_tokens yields no details block',
+      );
+    });
+
+    test(
+      'yields an empty synthetic chunk for responses without usable choices',
+      () async {
+        final payloads = <Map<String, Object?>>[
+          <String, Object?>{},
+          {'choices': <Object?>[]},
+          {
+            'choices': ['not-a-map'],
+          },
+          {
+            'choices': [
+              {'message': 'not-a-map'},
+            ],
+          },
+          {
+            'choices': [
+              {
+                'message': {'content': 42},
+              },
+            ],
+          },
+        ];
+
+        for (final payload in payloads) {
+          final repo = repositoryWith(
+            (_) async => http.Response(jsonEncode(payload), 200),
+          );
+          final chunks = await collectChat(repo, InferenceImpactCollector());
+
+          expect(
+            chunks,
+            hasLength(1),
+            reason: 'no usage → no trailing chunk for $payload',
+          );
+          final delta = chunks.single.choices!.single.delta!;
+          expect(delta.content, isNull, reason: 'payload: $payload');
+          expect(delta.toolCalls, isNull, reason: 'payload: $payload');
+        }
+      },
+    );
   });
 }

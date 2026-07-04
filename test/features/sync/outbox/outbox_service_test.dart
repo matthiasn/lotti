@@ -43,6 +43,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 class TestableOutboxService extends OutboxService {
   TestableOutboxService({
@@ -708,6 +709,43 @@ void main() {
     expect(stateUpdate.vectorClock, const VectorClock({'hostA': 4}));
     expect(stateUpdate.originatingHostId, 'hostA');
   });
+
+  test(
+    'enqueueMessage routes SyncConsumptionEvent to a low-priority inline row '
+    'stamped with this host and its covered clock',
+    () async {
+      final message = SyncMessage.consumptionEvent(
+        event: makeConsumptionEvent(
+          vectorClock: const VectorClock({'hostA': 6}),
+        ),
+        status: SyncEntryStatus.initial,
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured, hasLength(1));
+      final companion = captured.single as OutboxCompanion;
+      expect(companion.subject.value, 'consumptionEvent:evt-1');
+      expect(companion.outboxEntryId.value, 'evt-1');
+      // Consumption metrics are best-effort diagnostics — they must never
+      // queue-jump user writes.
+      expect(companion.priority.value, OutboxPriority.low.index);
+
+      final queued = SyncMessage.fromJson(
+        jsonDecode(companion.message.value) as Map<String, dynamic>,
+      );
+      expect(queued, isA<SyncConsumptionEvent>());
+      final consumption = queued as SyncConsumptionEvent;
+      expect(consumption.event.id, 'evt-1');
+      // prepareMessage stamped this device as the originator and folded the
+      // event's own clock into the covered set.
+      expect(consumption.originatingHostId, 'hostA');
+      expect(consumption.coveredVectorClocks!.single.vclock, {'hostA': 6});
+    },
+  );
 
   test('enqueueMessage logs SyncAiConfig', () async {
     final cfg = SyncMessage.aiConfig(

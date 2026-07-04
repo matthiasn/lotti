@@ -18,6 +18,7 @@ import 'package:path/path.dart' as p;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 /// Shared collaborators for constructing an [OutboxEnqueueWriter] with the
 /// central mocks: recorded `saveJson` writes, recorded `enqueueNextSendRequest`
@@ -197,6 +198,20 @@ SyncEntryLink _entryLinkMessage({
           originatingHostId: originatingHostId,
         )
         as SyncEntryLink;
+
+SyncConsumptionEvent _consumptionEventMessage({
+  String id = 'evt-1',
+  VectorClock? vectorClock,
+  List<VectorClock>? coveredVectorClocks,
+  String? originatingHostId,
+}) =>
+    SyncMessage.consumptionEvent(
+          event: makeConsumptionEvent(id: id, vectorClock: vectorClock),
+          status: SyncEntryStatus.update,
+          coveredVectorClocks: coveredVectorClocks,
+          originatingHostId: originatingHostId,
+        )
+        as SyncConsumptionEvent;
 
 AgentDomainEntity _agentEntity({
   String id = 'agent-1',
@@ -705,6 +720,69 @@ void main() {
     });
   });
 
+  group('enqueueConsumptionEvent', () {
+    test(
+      'adds the row keyed by event id and records the consumption '
+      'payload type in the sequence log',
+      () async {
+        final bench = _WriterBench();
+        const vc = VectorClock({'host-A': 7});
+        final msg = _consumptionEventMessage(vectorClock: vc);
+
+        final merged = await bench.writer.enqueueConsumptionEvent(
+          msg: msg,
+          commonFields: _commonFields(msg),
+        );
+
+        expect(merged, isFalse);
+        final companion = bench.capturedOutboxItem();
+        expect(companion.subject.value, 'consumptionEvent:evt-1');
+        expect(companion.outboxEntryId.value, 'evt-1');
+        final decoded = _decode(companion.message.value);
+        expect(
+          decoded,
+          isA<SyncConsumptionEvent>()
+              .having((m) => m.event.id, 'event.id', 'evt-1')
+              .having((m) => m.event.vectorClock, 'event.vectorClock', vc),
+        );
+
+        verify(
+          () => bench.sequenceLogService!.recordSentEntry(
+            entryId: 'evt-1',
+            vectorClock: vc,
+            payloadType: SyncSequencePayloadType.consumptionEvent,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'still writes the row but skips sequence recording when the event '
+      'carries no vector clock',
+      () async {
+        final bench = _WriterBench();
+        final msg = _consumptionEventMessage();
+
+        final merged = await bench.writer.enqueueConsumptionEvent(
+          msg: msg,
+          commonFields: _commonFields(msg),
+        );
+
+        expect(merged, isFalse);
+        final companion = bench.capturedOutboxItem();
+        expect(companion.subject.value, 'consumptionEvent:evt-1');
+        expect(companion.outboxEntryId.value, 'evt-1');
+        verifyNever(
+          () => bench.sequenceLogService!.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        );
+      },
+    );
+  });
+
   group('enqueueConfigFlag', () {
     const msg =
         SyncMessage.configFlag(
@@ -881,6 +959,66 @@ void main() {
           prepared.coveredVectorClocks!.map((covered) => covered.vclock),
           contains(equals({'host-A': 10})),
         );
+      },
+    );
+
+    test(
+      'stamps originating host and covers the event clock on '
+      'consumption events',
+      () async {
+        final bench = _WriterBench();
+        const vc = VectorClock({'host-A': 7});
+        const priorCovered = VectorClock({'host-B': 2});
+        final msg = _consumptionEventMessage(
+          vectorClock: vc,
+          coveredVectorClocks: const [priorCovered],
+        );
+
+        final prepared =
+            await bench.writer.prepareMessage(msg, 'host-A')
+                as SyncConsumptionEvent;
+
+        expect(prepared.originatingHostId, 'host-A');
+        expect(
+          prepared.coveredVectorClocks!.map((covered) => covered.vclock),
+          containsAll(<Map<String, int>>[
+            {'host-B': 2},
+            {'host-A': 7},
+          ]),
+        );
+      },
+    );
+
+    test(
+      'keeps an existing originating host and null covered clocks on a '
+      'clockless consumption event',
+      () async {
+        final bench = _WriterBench();
+        final msg = _consumptionEventMessage(originatingHostId: 'host-B');
+
+        final prepared =
+            await bench.writer.prepareMessage(msg, 'host-A')
+                as SyncConsumptionEvent;
+
+        expect(prepared.originatingHostId, 'host-B');
+        expect(prepared.coveredVectorClocks, isNull);
+      },
+    );
+
+    test(
+      'leaves the originating host unset on consumption events when no '
+      'local host is known but still covers the event clock',
+      () async {
+        final bench = _WriterBench();
+        const vc = VectorClock({'host-A': 7});
+        final msg = _consumptionEventMessage(vectorClock: vc);
+
+        final prepared =
+            await bench.writer.prepareMessage(msg, null)
+                as SyncConsumptionEvent;
+
+        expect(prepared.originatingHostId, isNull);
+        expect(prepared.coveredVectorClocks!.single.vclock, {'host-A': 7});
       },
     );
   });

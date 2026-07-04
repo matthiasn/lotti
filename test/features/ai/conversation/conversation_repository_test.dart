@@ -1,15 +1,23 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 // ChatCompletionMessage is a sealed class and cannot be faked
@@ -18,6 +26,24 @@ class FakeChatCompletionMessageToolCall extends Fake
     implements ChatCompletionMessageToolCall {}
 
 class FakeConversationManager extends Fake implements ConversationManager {}
+
+/// Registers a stubbed [MockAiConsumptionRecorder] in getIt for one test.
+/// Guards against a pre-existing registration and unregisters via
+/// [addTearDown] so the global getIt stays clean for other suites.
+MockAiConsumptionRecorder _registerConsumptionRecorder() {
+  final recorder = MockAiConsumptionRecorder();
+  when(() => recorder.record(any())).thenAnswer((_) async {});
+  if (getIt.isRegistered<AiConsumptionRecorder>()) {
+    getIt.unregister<AiConsumptionRecorder>();
+  }
+  getIt.registerSingleton<AiConsumptionRecorder>(recorder);
+  addTearDown(() {
+    if (getIt.isRegistered<AiConsumptionRecorder>()) {
+      getIt.unregister<AiConsumptionRecorder>();
+    }
+  });
+  return recorder;
+}
 
 /// Shared 8-argument stub for `generateTextWithMessages`;
 /// chain `.thenAnswer(...)` with the stream (or function) the test needs.
@@ -52,6 +78,7 @@ void main() {
     registerFallbackValue(FakeConversationManager());
     registerFallbackValue(ThoughtSignatureCollector());
     registerFallbackValue(<String, String>{});
+    registerFallbackValue(fallbackAiConsumptionEvent);
   });
 
   setUp(() {
@@ -1639,6 +1666,47 @@ void main() {
         expect(usage, isNull);
       });
 
+      test(
+        'stores thought signatures captured during the turn on the manager '
+        'for reuse in subsequent turns',
+        () async {
+          _stubGenerateText(mockOllamaRepo).thenAnswer((invocation) {
+            // Simulate a Gemini adapter capturing a signature mid-stream via
+            // the collector sendMessage passed down.
+            (invocation.namedArguments[#signatureCollector]
+                    as ThoughtSignatureCollector?)
+                ?.addSignature('tool-1', 'sig-abc');
+            return Stream.fromIterable([
+              const CreateChatCompletionStreamResponse(
+                id: 'resp',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(content: 'Hi'),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: 1710500000,
+              ),
+            ]);
+          });
+
+          await repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Sign this',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+          );
+
+          final manager = repository.getConversation(conversationId)!;
+          expect(
+            manager.thoughtSignatures,
+            containsPair('tool-1', 'sig-abc'),
+          );
+        },
+      );
+
       test('captures reasoning and cached tokens from usage details', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([
@@ -1680,6 +1748,291 @@ void main() {
         expect(usage.outputTokens, 100);
         expect(usage.thoughtsTokens, 40);
         expect(usage.cachedInputTokens, 50);
+      });
+
+      group('per-turn consumption recording', () {
+        /// Stubs `generateTextWithMessages` with a single content chunk whose
+        /// final response carries [usage], optionally writing [impact] into
+        /// the `InferenceImpactCollector` that `sendMessage` passes down —
+        /// mirroring how the Melious adapter reports cost/energy out of band.
+        void stubTurnWithUsage({
+          CompletionUsage? usage,
+          MeliousCallImpact? impact,
+        }) {
+          _stubGenerateText(mockOllamaRepo).thenAnswer((invocation) {
+            if (impact != null) {
+              (invocation.namedArguments[#impactCollector]
+                          as InferenceImpactCollector?)
+                      ?.impact =
+                  impact;
+            }
+            return Stream.fromIterable([
+              CreateChatCompletionStreamResponse(
+                id: 'resp',
+                choices: const [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(content: 'Hi'),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: 1710500000,
+                usage: usage,
+              ),
+            ]);
+          });
+        }
+
+        /// Sends one message with the full set of consumption owner ids the
+        /// agent workflows pass. [agentId] is required so each test states
+        /// explicitly whether recording should be active.
+        Future<InferenceUsage?> sendWithConsumption({
+          required String? agentId,
+        }) {
+          return repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Hello',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+            consumptionAgentId: agentId,
+            consumptionTaskId: 'task-1',
+            consumptionCategoryId: 'cat-1',
+            consumptionWakeRunKey: 'wake-1',
+            consumptionThreadId: 'thread-1',
+          );
+        }
+
+        test(
+          'records an agentTurn event with owner ids, tokens, and impact',
+          () async {
+            final recorder = _registerConsumptionRecorder();
+            stubTurnWithUsage(
+              usage: const CompletionUsage(
+                promptTokens: 100,
+                completionTokens: 40,
+                totalTokens: 140,
+                promptTokensDetails: PromptTokensDetails(cachedTokens: 25),
+                completionTokensDetails: CompletionTokensDetails(
+                  reasoningTokens: 15,
+                ),
+              ),
+              impact: const MeliousCallImpact(
+                costCredits: 0.5,
+                energyKwh: 0.002,
+                carbonGCo2: 1.5,
+                waterLiters: 0.3,
+                renewablePercent: 80,
+                pue: 1.2,
+                dataCenter: 'FI',
+                providerId: 'upstream-x',
+              ),
+            );
+
+            await withClock(
+              Clock.fixed(DateTime(2024, 3, 15, 10, 30)),
+              () => sendWithConsumption(agentId: 'agent-1'),
+            );
+
+            final event =
+                verify(() => recorder.record(captureAny())).captured.single
+                    as AiConsumptionEvent;
+            expect(event.responseType, AiConsumptionResponseType.agentTurn);
+            // The wake run key doubles as the causal parent id.
+            expect(event.parentId, 'wake-1');
+            expect(event.agentId, 'agent-1');
+            expect(event.taskId, 'task-1');
+            expect(event.categoryId, 'cat-1');
+            expect(event.wakeRunKey, 'wake-1');
+            expect(event.threadId, 'thread-1');
+            // turnIndex mirrors ConversationManager.turnCount (the number of
+            // user messages), captured after the user message was added — so
+            // the first turn records index 1.
+            expect(event.turnIndex, 1);
+            expect(event.providerModelId, 'test-model');
+            expect(event.providerType, InferenceProviderType.ollama);
+            expect(event.createdAt, DateTime(2024, 3, 15, 10, 30));
+            expect(event.durationMs, 0);
+            expect(event.inputTokens, 100);
+            expect(event.outputTokens, 40);
+            expect(event.cachedInputTokens, 25);
+            expect(event.thoughtsTokens, 15);
+            expect(event.totalTokens, 140);
+            expect(event.credits, 0.5);
+            expect(event.energyKwh, 0.002);
+            expect(event.carbonGCo2, 1.5);
+            expect(event.waterLiters, 0.3);
+            expect(event.renewablePercent, 80);
+            expect(event.pue, 1.2);
+            expect(event.dataCenter, 'FI');
+            expect(event.upstreamProviderId, 'upstream-x');
+          },
+        );
+
+        test(
+          'increments turnIndex per turn and parents every turn on the '
+          'wake run key',
+          () async {
+            final recorder = _registerConsumptionRecorder();
+
+            var callCount = 0;
+            _stubGenerateText(mockOllamaRepo).thenAnswer((_) {
+              callCount++;
+              if (callCount == 1) {
+                return Stream.fromIterable([
+                  const CreateChatCompletionStreamResponse(
+                    id: 'resp-1',
+                    choices: [
+                      ChatCompletionStreamResponseChoice(
+                        index: 0,
+                        delta: ChatCompletionStreamResponseDelta(
+                          toolCalls: [
+                            ChatCompletionStreamMessageToolCallChunk(
+                              index: 0,
+                              id: 'tool-1',
+                              type: ChatCompletionStreamMessageToolCallChunkType
+                                  .function,
+                              function: ChatCompletionStreamMessageFunctionCall(
+                                name: 'test_function',
+                                arguments: '{}',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    object: 'chat.completion.chunk',
+                    created: 1710500000,
+                    usage: CompletionUsage(
+                      promptTokens: 80,
+                      completionTokens: 20,
+                      totalTokens: 100,
+                    ),
+                  ),
+                ]);
+              }
+              return Stream.fromIterable([
+                const CreateChatCompletionStreamResponse(
+                  id: 'resp-2',
+                  choices: [
+                    ChatCompletionStreamResponseChoice(
+                      index: 0,
+                      delta: ChatCompletionStreamResponseDelta(
+                        content: 'Done',
+                      ),
+                    ),
+                  ],
+                  object: 'chat.completion.chunk',
+                  created: 1710500000,
+                  usage: CompletionUsage(
+                    promptTokens: 120,
+                    completionTokens: 30,
+                    totalTokens: 150,
+                  ),
+                ),
+              ]);
+            });
+
+            when(
+              () => mockStrategy.processToolCalls(
+                toolCalls: any(named: 'toolCalls'),
+                manager: any(named: 'manager'),
+              ),
+            ).thenAnswer((_) async => ConversationAction.continueConversation);
+            when(
+              () => mockStrategy.getContinuationPrompt(any()),
+            ).thenReturn('Continue');
+
+            await repository.sendMessage(
+              conversationId: conversationId,
+              message: 'Multi-turn',
+              model: 'test-model',
+              provider: provider,
+              inferenceRepo: mockOllamaRepo,
+              strategy: mockStrategy,
+              consumptionAgentId: 'agent-1',
+              consumptionTaskId: 'task-1',
+              consumptionCategoryId: 'cat-1',
+              consumptionWakeRunKey: 'wake-1',
+              consumptionThreadId: 'thread-1',
+              tools: [
+                const ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: 'test_function',
+                    description: 'A test function',
+                  ),
+                ),
+              ],
+            );
+
+            final events = verify(
+              () => recorder.record(captureAny()),
+            ).captured.cast<AiConsumptionEvent>();
+            expect(events, hasLength(2));
+            // turnIndex mirrors ConversationManager.turnCount (user-message
+            // count at request time): 1 for the first turn, 2 after the
+            // continuation prompt added a second user message.
+            expect(events[0].turnIndex, 1);
+            expect(events[0].inputTokens, 80);
+            expect(events[0].outputTokens, 20);
+            expect(events[1].turnIndex, 2);
+            expect(events[1].inputTokens, 120);
+            expect(events[1].outputTokens, 30);
+            for (final event in events) {
+              expect(event.responseType, AiConsumptionResponseType.agentTurn);
+              expect(event.parentId, 'wake-1');
+              expect(event.agentId, 'agent-1');
+            }
+          },
+        );
+
+        test(
+          'does not record when consumptionAgentId is null (non-agent caller)',
+          () async {
+            final recorder = _registerConsumptionRecorder();
+            stubTurnWithUsage(
+              usage: const CompletionUsage(
+                promptTokens: 10,
+                completionTokens: 5,
+                totalTokens: 15,
+              ),
+            );
+
+            final usage = await sendWithConsumption(agentId: null);
+
+            expect(usage, isNotNull);
+            verifyNever(() => recorder.record(any()));
+          },
+        );
+
+        test(
+          'completes normally when no recorder is registered',
+          () async {
+            if (getIt.isRegistered<AiConsumptionRecorder>()) {
+              getIt.unregister<AiConsumptionRecorder>();
+            }
+            stubTurnWithUsage(
+              usage: const CompletionUsage(
+                promptTokens: 100,
+                completionTokens: 40,
+                totalTokens: 140,
+              ),
+            );
+
+            final usage = await sendWithConsumption(agentId: 'agent-1');
+
+            // The turn still completes and reports usage; the missing
+            // recorder is silently skipped.
+            expect(usage, isNotNull);
+            expect(usage!.inputTokens, 100);
+            final manager = repository.getConversation(conversationId)!;
+            expect(
+              manager.messages.last.role,
+              ChatCompletionMessageRole.assistant,
+            );
+          },
+        );
       });
     });
 
@@ -1778,6 +2131,36 @@ void main() {
           expect(toolCalls.single.id, 'tool-1');
           expect(toolCalls.single.function.name, 'fn');
           expect(toolCalls.single.function.arguments, '{"arg": "value"}');
+        },
+      );
+
+      test(
+        'accumulateOpenAiToolCallChunks rebuilds the buffer from an existing '
+        'tool call when no argument buffer exists for it yet',
+        () {
+          // A tool call can enter the list without a buffer (e.g. appended by
+          // the Gemini path); a later OpenAI-style continuation must seed the
+          // buffer from the already-accumulated arguments, not drop them.
+          final toolCalls = <ChatCompletionMessageToolCall>[
+            const ChatCompletionMessageToolCall(
+              id: 'tool-pre',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'fn',
+                arguments: '{"start":',
+              ),
+            ),
+          ];
+          final buffers = <String, StringBuffer>{};
+
+          ConversationRepository.accumulateOpenAiToolCallChunks(
+            toolCalls: toolCalls,
+            argumentBuffers: buffers,
+            chunks: [chunk(id: 'tool-pre', arguments: 'true}')],
+          );
+
+          expect(toolCalls.single.function.arguments, '{"start":true}');
+          expect(buffers['tool-pre'].toString(), '{"start":true}');
         },
       );
 

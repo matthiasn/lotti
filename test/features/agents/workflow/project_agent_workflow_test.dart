@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -368,6 +369,47 @@ void main() {
           ),
         ).thenAnswer((_) async => []);
       });
+
+      test(
+        'passes consumption owner ids to sendMessage when an '
+        'AiConsumptionRecorder is registered',
+        () async {
+          getIt.registerSingleton<AiConsumptionRecorder>(
+            MockAiConsumptionRecorder(),
+          );
+          addTearDown(() {
+            if (getIt.isRegistered<AiConsumptionRecorder>()) {
+              getIt.unregister<AiConsumptionRecorder>();
+            }
+          });
+          // The project's own category is what consumption is attributed to.
+          final project = _fakeProjectEntity();
+          when(
+            () => mockJournalRepository.getJournalEntityById(projectId),
+          ).thenAnswer(
+            (_) async => project.copyWith(
+              meta: project.meta.copyWith(categoryId: 'cat-project-001'),
+            ),
+          );
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(mockConversationRepository.lastConsumptionAgentId, agentId);
+          expect(mockConversationRepository.lastConsumptionTaskId, projectId);
+          expect(
+            mockConversationRepository.lastConsumptionCategoryId,
+            'cat-project-001',
+          );
+          expect(mockConversationRepository.lastConsumptionWakeRunKey, runKey);
+          expect(mockConversationRepository.lastConsumptionThreadId, threadId);
+        },
+      );
 
       test(
         'captures project-linked journal entries into the agent log',

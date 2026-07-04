@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -403,6 +404,43 @@ void main() {
           capturedMilestones(mockSyncService),
           contains(AgentMilestone.wakeCompleted),
         );
+      },
+    );
+
+    test(
+      'passes consumption owner ids to sendMessage when an '
+      'AiConsumptionRecorder is registered',
+      () async {
+        getIt.registerSingleton<AiConsumptionRecorder>(
+          MockAiConsumptionRecorder(),
+        );
+        addTearDown(() {
+          if (getIt.isRegistered<AiConsumptionRecorder>()) {
+            getIt.unregister<AiConsumptionRecorder>();
+          }
+        });
+        // The event's own category is what consumption is attributed to.
+        final event = eventEntity();
+        when(
+          () => mockJournalRepository.getJournalEntityById(eventId),
+        ).thenAnswer(
+          (_) async => event.copyWith(
+            meta: event.meta.copyWith(categoryId: 'cat-event-001'),
+          ),
+        );
+        stubReportPublishingRun();
+
+        final result = await run();
+
+        expect(result.success, isTrue);
+        expect(mockConversationRepository.lastConsumptionAgentId, agentId);
+        expect(mockConversationRepository.lastConsumptionTaskId, eventId);
+        expect(
+          mockConversationRepository.lastConsumptionCategoryId,
+          'cat-event-001',
+        );
+        expect(mockConversationRepository.lastConsumptionWakeRunKey, runKey);
+        expect(mockConversationRepository.lastConsumptionThreadId, threadId);
       },
     );
 
