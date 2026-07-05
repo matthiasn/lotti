@@ -120,7 +120,12 @@ class _LedgerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toString();
-    final time = DateFormat.MMMd(locale).add_Hm().format(event.createdAt);
+    // toLocal(): locally captured events already carry wall time, but a
+    // UTC-stamped event (e.g. from a future capture path) must render in the
+    // viewer's timezone, not as raw UTC digits.
+    final time = DateFormat.MMMd(
+      locale,
+    ).add_Hm().format(event.createdAt.toLocal());
     final model = event.providerModelId ?? event.modelId ?? '—';
 
     return Padding(

@@ -283,6 +283,39 @@ void main() {
         );
         // Tooltip background resolves from tokens.
         expect(tooltipData.getTooltipColor(group), isA<Color>());
+        // Defensive guards against fl_chart edge events: an out-of-range
+        // group index is suppressed instead of throwing a RangeError…
+        final outOfRange = BarChartGroupData(x: 99);
+        expect(
+          tooltipData.getTooltipItem(outOfRange, 0, BarChartRodData(toY: 0), 0),
+          isNull,
+        );
+        expect(
+          tooltipData.getTooltipItem(
+            BarChartGroupData(x: -1),
+            0,
+            BarChartRodData(toY: 0),
+            0,
+          ),
+          isNull,
+        );
+        // …and a non-finite axis value renders as an empty title instead of
+        // crashing toInt().
+        final bottomTitles =
+            chart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
+        final meta = TitleMeta(
+          min: 0,
+          max: 1,
+          parentAxisSize: 100,
+          axisPosition: 0,
+          appliedInterval: 1,
+          sideTitles: chart.data.titlesData.bottomTitles.sideTitles,
+          formattedValue: '',
+          axisSide: AxisSide.bottom,
+          rotationQuarterTurns: 0,
+        );
+        expect(bottomTitles(double.nan, meta), isA<SizedBox>());
+        expect(bottomTitles(double.infinity, meta), isA<SizedBox>());
       },
     );
 

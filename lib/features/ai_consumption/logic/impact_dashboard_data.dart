@@ -188,8 +188,11 @@ double impactNiceCeiling(double maxValue) {
   final exponent = (math.log(maxValue) / math.ln10).floor();
   final magnitude = math.pow(10.0, exponent).toDouble();
   final normalized = maxValue / magnitude;
-  if (normalized <= 1) return magnitude;
-  if (normalized <= 2) return 2 * magnitude;
-  if (normalized <= 5) return 5 * magnitude;
+  // Tolerance for floating-point accumulation noise: a summed maximum like
+  // 2.0000000000000004 must snap to 2, not jump a whole ladder step to 5.
+  const epsilon = 1e-9;
+  if (normalized <= 1 + epsilon) return magnitude;
+  if (normalized <= 2 + epsilon) return 2 * magnitude;
+  if (normalized <= 5 + epsilon) return 5 * magnitude;
   return 10 * magnitude;
 }

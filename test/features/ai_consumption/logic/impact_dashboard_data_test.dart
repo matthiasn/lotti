@@ -230,6 +230,15 @@ void main() {
       expect(impactNiceCeiling(470), 500.0);
       expect(impactNiceCeiling(720), 1000.0);
     });
+
+    test('absorbs floating-point accumulation noise at ladder thresholds', () {
+      // Sums like 0.1+0.2 land epsilon above a rung; the ceiling must snap
+      // to the rung, not jump a whole step.
+      expect(impactNiceCeiling(1.0000000000000002), 1.0);
+      expect(impactNiceCeiling(2.0000000000000004), 2.0);
+      expect(impactNiceCeiling(5.000000000000001), 5.0);
+      expect(impactNiceCeiling(0.30000000000000004), 0.5);
+    });
   });
 
   // ---------------------------------------------------------------------
@@ -309,7 +318,9 @@ void main() {
       // Spread across magnitudes: raw/100 covers 0.01 … 100k.
       final value = raw / 100;
       final ceiling = impactNiceCeiling(value);
-      expect(ceiling, greaterThanOrEqualTo(value));
+      // The fp-noise epsilon means the ceiling may sit a hair below the
+      // input when the input itself carries accumulation error.
+      expect(ceiling * (1 + 1e-9), greaterThanOrEqualTo(value));
       expect(ceiling, lessThanOrEqualTo(10 * value));
     },
     tags: 'glados',

@@ -224,6 +224,9 @@ class _ImpactStackedBars extends StatelessWidget {
                   showTitles: true,
                   reservedSize: 28,
                   getTitlesWidget: (value, meta) {
+                    // fl_chart can hand non-finite values on degenerate
+                    // transitions; toInt() on those throws.
+                    if (!value.isFinite) return const SizedBox.shrink();
                     final index = value.toInt();
                     if (index < 0 || index >= drawCount) {
                       return const SizedBox.shrink();
@@ -251,6 +254,9 @@ class _ImpactStackedBars extends StatelessWidget {
                 fitInsideVertically: true,
                 fitInsideHorizontally: true,
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  // Guard fl_chart edge events landing outside our own
+                  // bar-group range before indexing the series arrays.
+                  if (group.x < 0 || group.x >= drawCount) return null;
                   if (impactBucketTotal(data, group.x) <= 0) return null;
                   final style = tokens.typography.styles.others.caption
                       .copyWith(color: tokens.colors.text.highEmphasis);
