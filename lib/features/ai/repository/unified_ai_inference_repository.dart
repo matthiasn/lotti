@@ -13,8 +13,10 @@ import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_consumption_mapping.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/ai_prompt_resolver.dart';
 import 'package:lotti/features/ai/repository/ai_tool_call_processor.dart';
@@ -24,6 +26,8 @@ import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -32,6 +36,7 @@ import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
+import 'package:uuid/uuid.dart';
 
 export 'package:lotti/features/ai/repository/ai_tool_call_processor.dart'
     show extractJsonObjects;
@@ -206,6 +211,10 @@ class UnifiedAiInferenceRepository {
           model.isReasoningModel && promptConfig.useReasoning;
       final temperature = useReasoningEffort ? 1.0 : 0.6;
 
+      // Side-channel for per-call cost/energy impact (Melious non-streaming
+      // path populates it; other providers leave it null).
+      final impactCollector = InferenceImpactCollector();
+
       final stream = await _runCloudInference(
         prompt: prompt,
         model: model,
@@ -217,6 +226,7 @@ class UnifiedAiInferenceRepository {
         entity: entity,
         promptConfig: promptConfig,
         isAiStreamingEnabled: isAiStreamingEnabled,
+        impactCollector: impactCollector,
       );
 
       // Process the stream and accumulate tool calls
@@ -296,6 +306,7 @@ class UnifiedAiInferenceRepository {
         durationMs: durationMs,
         temperature: temperature,
         effectiveSystemMessage: systemMessage,
+        impactCollector: impactCollector,
       );
 
       onStatusChange(InferenceStatus.idle);
@@ -381,6 +392,7 @@ class UnifiedAiInferenceRepository {
     required JournalEntity entity,
     required AiConfigPrompt promptConfig,
     required bool isAiStreamingEnabled,
+    required InferenceImpactCollector impactCollector,
   }) async {
     final cloudRepo = ref.read(cloudInferenceRepositoryProvider);
 
@@ -437,6 +449,7 @@ class UnifiedAiInferenceRepository {
             provider.inferenceProviderType == InferenceProviderType.gemini
             ? model.geminiThinkingMode
             : null,
+        impactCollector: impactCollector,
       );
     } else {
       // No tools attached — checklist updates and task summaries are
@@ -454,6 +467,7 @@ class UnifiedAiInferenceRepository {
         maxCompletionTokens: model.maxCompletionTokens,
         provider: provider,
         geminiThinkingMode: model.geminiThinkingMode,
+        impactCollector: impactCollector,
       );
     }
   }
@@ -499,6 +513,7 @@ class UnifiedAiInferenceRepository {
     int? durationMs,
     double? temperature,
     String? effectiveSystemMessage,
+    InferenceImpactCollector? impactCollector,
   }) async {
     var thoughts = '';
     var cleanResponse = response;
@@ -514,6 +529,21 @@ class UnifiedAiInferenceRepository {
 
     // Process tool calls for checklist completions
     final taskForToolCalls = await _getTaskForEntity(entity);
+
+    // Record one AI-consumption event for this call. Done up-front (before any
+    // language-detection re-run early-returns) so every completed backend call
+    // is accounted for. Never throws — the recorder swallows its own failures.
+    await _recordConsumption(
+      entity: entity,
+      model: model,
+      provider: provider,
+      promptConfig: promptConfig,
+      task: taskForToolCalls,
+      usage: usage,
+      durationMs: durationMs,
+      start: start,
+      impact: impactCollector?.impact,
+    );
 
     if (toolCalls != null && toolCalls.isNotEmpty && taskForToolCalls != null) {
       developer.log(
@@ -796,6 +826,55 @@ class UnifiedAiInferenceRepository {
       return linkedEntities.firstWhereOrNull((e) => e is Task) as Task?;
     }
     return null;
+  }
+
+  /// Persists one [AiConsumptionEvent] for a completed backend call: token
+  /// counts from the response [usage], cost/energy from the Melious [impact]
+  /// (null for other providers), and the owner ids from the call context.
+  Future<void> _recordConsumption({
+    required JournalEntity entity,
+    required AiConfigModel model,
+    required AiConfigInferenceProvider provider,
+    required AiConfigPrompt promptConfig,
+    required Task? task,
+    required CompletionUsage? usage,
+    required int? durationMs,
+    required DateTime start,
+    required MeliousCallImpact? impact,
+  }) async {
+    // Recording is optional diagnostics — never let it break an inference. If
+    // the recorder isn't wired (e.g. in a unit test), quietly skip.
+    if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
+    final event = AiConsumptionEvent(
+      // v4 (opaque random): the record id carries no timestamp/node info;
+      // createdAt already captures the time explicitly.
+      id: const Uuid().v4(),
+      createdAt: start,
+      providerType: provider.inferenceProviderType,
+      responseType: promptConfig.aiResponseType.consumptionResponseType,
+      vectorClock: null,
+      entryId: entity.id,
+      taskId: task?.id,
+      categoryId: entity.meta.categoryId,
+      promptId: promptConfig.id,
+      modelId: model.id,
+      providerModelId: model.providerModelId,
+      durationMs: durationMs,
+      inputTokens: usage?.promptTokens,
+      outputTokens: usage?.completionTokens,
+      cachedInputTokens: usage?.promptTokensDetails?.cachedTokens,
+      thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
+      totalTokens: usage?.totalTokens,
+      credits: impact?.costCredits,
+      energyKwh: impact?.energyKwh,
+      carbonGCo2: impact?.carbonGCo2,
+      waterLiters: impact?.waterLiters,
+      renewablePercent: impact?.renewablePercent,
+      pue: impact?.pue,
+      dataCenter: impact?.dataCenter,
+      upstreamProviderId: impact?.providerId,
+    );
+    await getIt<AiConsumptionRecorder>().record(event);
   }
 }
 

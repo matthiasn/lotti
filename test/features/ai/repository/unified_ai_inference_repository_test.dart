@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart'
@@ -31,6 +32,9 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:lotti/features/journal/repository/journal_repository.dart'
@@ -117,6 +121,7 @@ void main() {
     registerFallbackValue(FakeChecklistData());
     registerFallbackValue(FakeChecklistItemData());
     registerFallbackValue(ChatCompletionMessageInputAudioFormat.wav);
+    registerFallbackValue(fallbackAiConsumptionEvent);
 
     // One suite-level temp root; each test gets a cheap unique subdirectory
     // instead of its own systemTemp dir + recursive delete (~92 fs round
@@ -1220,6 +1225,7 @@ void main() {
         verify(
           () => mockCloudInferenceRepo.generate(
             any(),
+            impactCollector: any(named: 'impactCollector'),
             model: 'gpt-4',
             temperature: 0.6,
             baseUrl: 'https://api.example.com',
@@ -1230,6 +1236,180 @@ void main() {
           ),
         ).called(1);
       });
+
+      test('records an AI consumption event for the completed call', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(categoryId: 'cat-1'),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+          ),
+        );
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Prompt',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.promptGeneration,
+        );
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'glm-5.2',
+        );
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.melious,
+        );
+
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: taskEntity,
+          model: model,
+          provider: provider,
+        );
+        _stubGenerate(
+          mockCloudInferenceRepo,
+          stream: _createMockTextStream(['done']),
+        );
+        _stubCreateAiResponseEntry(mockAiInputRepo);
+        when(
+          () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+        ).thenAnswer((_) async => true);
+
+        final recorder = _registerConsumptionRecorder();
+
+        await repository!.runInference(
+          entityId: taskEntity.id,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        final captured = verify(
+          () => recorder.record(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final event = captured.single as AiConsumptionEvent;
+        expect(event.entryId, taskEntity.id);
+        expect(event.taskId, taskEntity.id);
+        expect(event.categoryId, 'cat-1');
+        expect(event.providerType, InferenceProviderType.melious);
+        expect(event.responseType, AiConsumptionResponseType.promptGeneration);
+        expect(event.modelId, 'model-1');
+        expect(event.providerModelId, 'glm-5.2');
+      });
+
+      test(
+        'maps response token usage and Melious impact onto the recorded '
+        'consumption event',
+        () async {
+          final taskEntity = Task(
+            meta: _createMetadata(categoryId: 'cat-1'),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15, 10, 30),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: [],
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
+            ),
+          );
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Prompt',
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.promptGeneration,
+          );
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'glm-5.2',
+          );
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.melious,
+          );
+
+          _stubInferenceContext(
+            mockAiInputRepo: mockAiInputRepo,
+            mockAiConfigRepo: mockAiConfigRepo,
+            entity: taskEntity,
+            model: model,
+            provider: provider,
+          );
+          // Usage arrives on the final stream chunk; impact arrives out of
+          // band via the collector the repository threads through
+          // `_runCloudInference` into `cloudRepo.generate`.
+          _stubGenerate(
+            mockCloudInferenceRepo,
+            stream: _createMockTextStream(
+              ['done'],
+              usage: const CompletionUsage(
+                promptTokens: 150,
+                completionTokens: 60,
+                totalTokens: 210,
+                promptTokensDetails: PromptTokensDetails(cachedTokens: 40),
+                completionTokensDetails: CompletionTokensDetails(
+                  reasoningTokens: 25,
+                ),
+              ),
+            ),
+            impact: const MeliousCallImpact(
+              costCredits: 1.25,
+              energyKwh: 0.004,
+              carbonGCo2: 3.2,
+              waterLiters: 0.8,
+              renewablePercent: 85,
+              pue: 1.15,
+              dataCenter: 'FI',
+              providerId: 'upstream-glm',
+            ),
+          );
+          _stubCreateAiResponseEntry(mockAiInputRepo);
+          when(
+            () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+          ).thenAnswer((_) async => true);
+
+          final recorder = _registerConsumptionRecorder();
+
+          await repository!.runInference(
+            entityId: taskEntity.id,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
+
+          final event =
+              verify(() => recorder.record(captureAny())).captured.single
+                  as AiConsumptionEvent;
+          expect(event.promptId, 'prompt-1');
+          expect(event.durationMs, isNotNull);
+          expect(event.inputTokens, 150);
+          expect(event.outputTokens, 60);
+          expect(event.cachedInputTokens, 40);
+          expect(event.thoughtsTokens, 25);
+          expect(event.totalTokens, 210);
+          expect(event.credits, 1.25);
+          expect(event.energyKwh, 0.004);
+          expect(event.carbonGCo2, 3.2);
+          expect(event.waterLiters, 0.8);
+          expect(event.renewablePercent, 85);
+          expect(event.pue, 1.15);
+          expect(event.dataCenter, 'FI');
+          expect(event.upstreamProviderId, 'upstream-glm');
+        },
+      );
 
       group('coding prompt task linking', () {
         // A coding prompt (AiResponseType.promptGeneration) should attach to
@@ -1573,6 +1753,7 @@ void main() {
           verify(
             () => mockCloudInferenceRepo.generateWithImages(
               any(),
+              impactCollector: any(named: 'impactCollector'),
               provider: any(named: 'provider'),
               model: 'gpt-4-vision',
               temperature: 0.6,
@@ -1642,6 +1823,7 @@ void main() {
           when(
             () => mockCloudInferenceRepo.generateWithImages(
               any(),
+              impactCollector: any(named: 'impactCollector'),
               provider: any(named: 'provider'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
@@ -1668,6 +1850,7 @@ void main() {
             verify(
               () => mockCloudInferenceRepo.generateWithImages(
                 any(),
+                impactCollector: any(named: 'impactCollector'),
                 provider: any(named: 'provider'),
                 model: 'gemini-3-flash-preview',
                 temperature: any(named: 'temperature'),
@@ -1745,6 +1928,7 @@ void main() {
         verifyNever(
           () => mockCloudInferenceRepo.generateWithImages(
             any(),
+            impactCollector: any(named: 'impactCollector'),
             provider: any(named: 'provider'),
             model: any(named: 'model'),
             temperature: any(named: 'temperature'),
@@ -2205,6 +2389,7 @@ void main() {
           when(
             () => mockCloudInferenceRepo.generate(
               any(),
+              impactCollector: any(named: 'impactCollector'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
               baseUrl: any(named: 'baseUrl'),
@@ -2814,6 +2999,7 @@ void main() {
           verify(
             () => mockCloudInferenceRepo.generateWithImages(
               any(),
+              impactCollector: any(named: 'impactCollector'),
               provider: any(named: 'provider'),
               model: 'gpt-4-vision',
               temperature: 0.6,
@@ -3297,6 +3483,7 @@ If the image IS relevant:
           final captured = verify(
             () => mockCloudInferenceRepo.generateWithImages(
               captureAny(),
+              impactCollector: any(named: 'impactCollector'),
               provider: any(named: 'provider'),
               model: 'gpt-4-vision',
               temperature: 0.6,
@@ -3441,6 +3628,7 @@ Extract ONLY information from the image that is relevant to this task. Be concis
             final captured = verify(
               () => mockCloudInferenceRepo.generateWithImages(
                 captureAny(),
+                impactCollector: any(named: 'impactCollector'),
                 provider: any(named: 'provider'),
                 model: 'gpt-4-vision',
                 temperature: 0.6,
@@ -3815,6 +4003,7 @@ Take into account the following task context:
       when(
         () => mockCloudInferenceRepo.generate(
           any(),
+          impactCollector: any(named: 'impactCollector'),
           model: any(named: 'model'),
           temperature: any(named: 'temperature'),
           baseUrl: any(named: 'baseUrl'),
@@ -6756,6 +6945,7 @@ Take into account the following task context:
           when(
             () => mockCloudInferenceRepo.generate(
               any(),
+              impactCollector: any(named: 'impactCollector'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
               baseUrl: any(named: 'baseUrl'),
@@ -6865,6 +7055,7 @@ Take into account the following task context:
           when(
             () => mockCloudInferenceRepo.generate(
               any(),
+              impactCollector: any(named: 'impactCollector'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
               baseUrl: any(named: 'baseUrl'),
@@ -7831,10 +8022,12 @@ CreateChatCompletionStreamResponse _createStreamChunk(String content) {
 }
 
 /// Creates a mock stream of text chunks. The last chunk includes a stop
-/// finish reason. Replaces verbose inline [Stream.fromIterable] blocks.
+/// finish reason and, when given, the [usage] block providers report on the
+/// final chunk. Replaces verbose inline [Stream.fromIterable] blocks.
 Stream<CreateChatCompletionStreamResponse> _createMockTextStream(
-  List<String> chunks,
-) {
+  List<String> chunks, {
+  CompletionUsage? usage,
+}) {
   return Stream.fromIterable([
     for (var i = 0; i < chunks.length; i++)
       CreateChatCompletionStreamResponse(
@@ -7850,14 +8043,38 @@ Stream<CreateChatCompletionStreamResponse> _createMockTextStream(
         ],
         object: 'chat.completion.chunk',
         created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+        usage: i == chunks.length - 1 ? usage : null,
       ),
   ]);
 }
 
-/// Stubs `CloudInferenceRepository.generate` to return [stream].
+/// Registers a stubbed [MockAiConsumptionRecorder] in getIt for one test so
+/// `_recordConsumption` runs (it is a no-op when no recorder is wired).
+/// Guards against a pre-existing registration and unregisters via
+/// [addTearDown].
+MockAiConsumptionRecorder _registerConsumptionRecorder() {
+  final recorder = MockAiConsumptionRecorder();
+  when(() => recorder.record(any())).thenAnswer((_) async {});
+  if (getIt.isRegistered<AiConsumptionRecorder>()) {
+    getIt.unregister<AiConsumptionRecorder>();
+  }
+  getIt.registerSingleton<AiConsumptionRecorder>(recorder);
+  addTearDown(() {
+    if (getIt.isRegistered<AiConsumptionRecorder>()) {
+      getIt.unregister<AiConsumptionRecorder>();
+    }
+  });
+  return recorder;
+}
+
+/// Stubs `CloudInferenceRepository.generate` to return [stream]. When
+/// [impact] is given, the stub writes it into the `InferenceImpactCollector`
+/// the repository passed down — mirroring how the Melious adapter reports
+/// per-call cost/energy out of band.
 void _stubGenerate(
   MockCloudInferenceRepository mock, {
   required Stream<CreateChatCompletionStreamResponse> stream,
+  MeliousCallImpact? impact,
 }) {
   when(
     () => mock.generate(
@@ -7871,8 +8088,16 @@ void _stubGenerate(
       provider: any(named: 'provider'),
       tools: any(named: 'tools'),
       geminiThinkingMode: any(named: 'geminiThinkingMode'),
+      impactCollector: any(named: 'impactCollector'),
     ),
-  ).thenAnswer((_) => stream);
+  ).thenAnswer((invocation) {
+    if (impact != null) {
+      (invocation.namedArguments[#impactCollector] as InferenceImpactCollector?)
+              ?.impact =
+          impact;
+    }
+    return stream;
+  });
 }
 
 /// Stubs `CloudInferenceRepository.generateWithImages` to return [stream].
@@ -7890,6 +8115,7 @@ void _stubGenerateWithImages(
       baseUrl: any(named: 'baseUrl'),
       apiKey: any(named: 'apiKey'),
       maxCompletionTokens: any(named: 'maxCompletionTokens'),
+      impactCollector: any(named: 'impactCollector'),
     ),
   ).thenAnswer((_) => stream);
 }

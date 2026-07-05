@@ -1,0 +1,104 @@
+-- AI consumption event store (ai_consumption.sqlite)
+-- Separate from the journal (db.sqlite) and agent (agent.sqlite) domains so
+-- high-volume, append-only diagnostics writes never contend with primary data.
+--
+-- Blob-plus-projection: `serialized` (the entity JSON, including `vectorClock`)
+-- is the sync source of truth and round-trips losslessly; the typed columns are
+-- a denormalized projection written on insert purely so aggregation queries
+-- never have to touch the JSON blob.
+--
+-- The Drift row class is `ConsumptionEvent` (singular of the table name); the
+-- Freezed domain model is `AiConsumptionEvent` — deliberately different names,
+-- mirroring the agent domain's `AgentEntity` (row) vs `AgentDomainEntity`.
+
+CREATE TABLE consumption_events (
+  id TEXT NOT NULL PRIMARY KEY,
+  parent_id TEXT,
+  created_at DATETIME NOT NULL,
+
+  -- Denormalized owners (snapshot at call time)
+  task_id TEXT,
+  category_id TEXT,
+  entry_id TEXT,
+  agent_id TEXT,
+  wake_run_key TEXT,
+  thread_id TEXT,
+  turn_index INTEGER,
+  prompt_id TEXT,
+  skill_id TEXT,
+  config_id TEXT,
+
+  -- Provider / model / discriminator
+  provider_type TEXT NOT NULL,
+  model_id TEXT,
+  provider_model_id TEXT,
+  response_type TEXT NOT NULL,
+  duration_ms INTEGER,
+
+  -- Token metrics
+  input_tokens INTEGER,
+  output_tokens INTEGER,
+  cached_input_tokens INTEGER,
+  thoughts_tokens INTEGER,
+  total_tokens INTEGER,
+
+  -- Cost + environmental impact (all nullable — only Melious reports impact)
+  credits REAL,
+  energy_kwh REAL,
+  carbon_g_co2 REAL,
+  water_liters REAL,
+  renewable_percent REAL,
+  pue REAL,
+  data_center TEXT,
+  upstream_provider_id TEXT,
+
+  serialized TEXT NOT NULL,
+  schema_version INTEGER NOT NULL DEFAULT 1
+);
+
+-- Per-task lifetime totals: seek by task_id, walk by created_at. Partial
+-- (most rows have no task) keeps the index small.
+CREATE INDEX idx_consumption_task_created
+  ON consumption_events(task_id, created_at) WHERE task_id IS NOT NULL;
+
+-- Per-category time-bucketed range scans.
+CREATE INDEX idx_consumption_category_created
+  ON consumption_events(category_id, created_at);
+
+-- Global range scans (all categories, a time window).
+CREATE INDEX idx_consumption_created ON consumption_events(created_at);
+
+-- ── Named queries ───────────────────────────────────────────────────────────
+
+getConsumptionEventById:
+  SELECT * FROM consumption_events WHERE id = :id;
+
+-- Narrow projection for the inbound sync dominance check + null-VC backfill —
+-- reads the vector clock without deserializing the whole `serialized` blob
+-- (see the agent domain's `getAgentEntityVectorClockById` for the rationale).
+getConsumptionEventVectorClockById:
+  SELECT json_extract(serialized, '$.vectorClock') AS vector_clock
+  FROM consumption_events WHERE id = :id;
+
+getConsumptionEventsWithNullVectorClock:
+  SELECT * FROM consumption_events
+  WHERE json_extract(serialized, '$.vectorClock') IS NULL
+  ORDER BY created_at ASC;
+
+-- Per-task lifetime totals. COALESCE keeps the sums 0 (not NULL) when a task
+-- has no rows or all-null impact columns; COUNT(energy_kwh) counts only the
+-- calls that actually reported impact.
+sumConsumptionByTask:
+  SELECT
+    COUNT(*) AS call_count,
+    COUNT(energy_kwh) AS impact_call_count,
+    CAST(COALESCE(SUM(input_tokens), 0) AS INT) AS input_tokens,
+    CAST(COALESCE(SUM(output_tokens), 0) AS INT) AS output_tokens,
+    CAST(COALESCE(SUM(cached_input_tokens), 0) AS INT) AS cached_input_tokens,
+    CAST(COALESCE(SUM(thoughts_tokens), 0) AS INT) AS thoughts_tokens,
+    CAST(COALESCE(SUM(total_tokens), 0) AS INT) AS total_tokens,
+    COALESCE(SUM(credits), 0.0) AS credits,
+    COALESCE(SUM(energy_kwh), 0.0) AS energy_kwh,
+    COALESCE(SUM(carbon_g_co2), 0.0) AS carbon_g_co2,
+    COALESCE(SUM(water_liters), 0.0) AS water_liters
+  FROM consumption_events WHERE task_id = :taskId;

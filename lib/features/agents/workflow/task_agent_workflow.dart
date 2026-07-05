@@ -44,6 +44,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -276,6 +277,11 @@ class TaskAgentWorkflow {
     required CloudInferenceWrapper inferenceRepo,
     required List<ChatCompletionTool> tools,
     required TaskAgentStrategy strategy,
+    String? consumptionAgentId,
+    String? consumptionTaskId,
+    String? consumptionCategoryId,
+    String? consumptionWakeRunKey,
+    String? consumptionThreadId,
   }) async {
     _log(
       'no report published — retrying with forced update_report',
@@ -309,6 +315,11 @@ class TaskAgentWorkflow {
         toolChoice: forcedToolChoice,
         temperature: 0.3,
         strategy: strategy,
+        consumptionAgentId: consumptionAgentId,
+        consumptionTaskId: consumptionTaskId,
+        consumptionCategoryId: consumptionCategoryId,
+        consumptionWakeRunKey: consumptionWakeRunKey,
+        consumptionThreadId: consumptionThreadId,
       );
     } catch (e, s) {
       _logError(

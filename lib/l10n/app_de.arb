@@ -3579,6 +3579,7 @@
   "syncPayloadBackfillRequest": "Nachfüllanfrage",
   "syncPayloadBackfillResponse": "Nachfüllantwort",
   "syncPayloadConfigFlag": "Konfigurationsflag",
+  "syncPayloadConsumptionEvent": "KI-Verbrauch",
   "syncPayloadEntityDefinition": "Entitätsdefinition",
   "syncPayloadEntryLink": "Eintragsverknüpfung",
   "syncPayloadJournalEntity": "Journaleintrag",

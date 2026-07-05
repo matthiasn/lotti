@@ -451,6 +451,13 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         // Non-fatal: the wake can proceed without provenance tracking.
       }
 
+      // Resolve consumption owner ids only when a recorder is wired, so the
+      // wake path (and its DB reads) is untouched when tracking is off.
+      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
+      final consumptionCategoryId = recordConsumption
+          ? (await journalDb.journalEntityById(taskId))?.categoryId
+          : null;
+
       // 7. Invoke the LLM and execute tool calls via AgentToolExecutor.
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
@@ -461,6 +468,11 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         tools: tools,
         temperature: 0.3,
         strategy: strategy,
+        consumptionAgentId: recordConsumption ? agentId : null,
+        consumptionTaskId: recordConsumption ? taskId : null,
+        consumptionCategoryId: consumptionCategoryId,
+        consumptionWakeRunKey: recordConsumption ? runKey : null,
+        consumptionThreadId: recordConsumption ? threadId : null,
       );
 
       // 7b. Forced-report retry — only to bootstrap the FIRST report. Once a
@@ -474,6 +486,11 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           inferenceRepo: inferenceRepo,
           tools: tools,
           strategy: strategy,
+          consumptionAgentId: recordConsumption ? agentId : null,
+          consumptionTaskId: recordConsumption ? taskId : null,
+          consumptionCategoryId: consumptionCategoryId,
+          consumptionWakeRunKey: recordConsumption ? runKey : null,
+          consumptionThreadId: recordConsumption ? threadId : null,
         );
         if (retryUsage != null) {
           usage = usage == null ? retryUsage : usage.merge(retryUsage);

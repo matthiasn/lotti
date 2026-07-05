@@ -8491,6 +8491,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPayloadConfigFlag => 'Config flag';
 
   @override
+  String get syncPayloadConsumptionEvent => 'AI consumption';
+
+  @override
   String get syncPayloadEntityDefinition => 'Entity definition';
 
   @override

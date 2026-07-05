@@ -302,6 +302,7 @@ const _$SyncSequencePayloadTypeEnumMap = {
   SyncSequencePayloadType.agentLink: 'agentLink',
   SyncSequencePayloadType.notification: 'notification',
   SyncSequencePayloadType.notificationStateUpdate: 'notificationStateUpdate',
+  SyncSequencePayloadType.consumptionEvent: 'consumptionEvent',
 };
 
 SyncAgentEntity _$SyncAgentEntityFromJson(Map<String, dynamic> json) =>
@@ -353,6 +354,28 @@ Map<String, dynamic> _$SyncAgentLinkToJson(SyncAgentLink instance) =>
       'coveredVectorClocks': instance.coveredVectorClocks,
       'runtimeType': instance.$type,
     };
+
+SyncConsumptionEvent _$SyncConsumptionEventFromJson(
+  Map<String, dynamic> json,
+) => SyncConsumptionEvent(
+  event: AiConsumptionEvent.fromJson(json['event'] as Map<String, dynamic>),
+  status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+  originatingHostId: json['originatingHostId'] as String?,
+  coveredVectorClocks: (json['coveredVectorClocks'] as List<dynamic>?)
+      ?.map((e) => VectorClock.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncConsumptionEventToJson(
+  SyncConsumptionEvent instance,
+) => <String, dynamic>{
+  'event': instance.event,
+  'status': _$SyncEntryStatusEnumMap[instance.status]!,
+  'originatingHostId': instance.originatingHostId,
+  'coveredVectorClocks': instance.coveredVectorClocks,
+  'runtimeType': instance.$type,
+};
 
 SyncAgentBundle _$SyncAgentBundleFromJson(Map<String, dynamic> json) =>
     SyncAgentBundle(

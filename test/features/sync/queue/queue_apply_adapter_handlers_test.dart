@@ -17,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../ai_consumption/test_utils.dart';
 import 'queue_apply_adapter_test_helpers.dart';
 
 void main() {
@@ -440,6 +441,17 @@ void main() {
       );
       expect(wraps(message), isTrue);
     });
+
+    test(
+      'SyncConsumptionEvent bypasses outer wrap (ai_consumption.sqlite)',
+      () {
+        final message = SyncMessage.consumptionEvent(
+          event: makeConsumptionEvent(),
+          status: SyncEntryStatus.initial,
+        );
+        expect(wraps(message), isFalse);
+      },
+    );
   });
 
   group('apply respects the writesJournalDb classifier', () {

@@ -20,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Declarations moved from backfill_response_handler_generated_test.dart
@@ -567,6 +568,7 @@ class _GeneratedBackfillResponseBench {
     required this.sequenceService,
     required this.outboxService,
     required this.agentRepository,
+    required this.consumptionRepository,
     required this.notificationsDb,
     required this.handler,
   });
@@ -582,21 +584,29 @@ class _GeneratedBackfillResponseBench {
     final logging = MockDomainLogger();
     final vcService = MockVectorClockService();
     final agentRepository = MockAgentRepository();
+    final consumptionRepository = MockConsumptionRepository();
     final notificationsDb = MockNotificationsDb();
-    final handler = BackfillResponseHandler(
-      journalDb: journalDb,
-      sequenceLogService: sequenceService,
-      outboxService: outboxService,
-      loggingService: logging,
-      vectorClockService: vcService,
-      notificationsDb: notificationsDb,
-    )..agentRepository = agentRepository;
+    final handler =
+        BackfillResponseHandler(
+            journalDb: journalDb,
+            sequenceLogService: sequenceService,
+            outboxService: outboxService,
+            loggingService: logging,
+            vectorClockService: vcService,
+            notificationsDb: notificationsDb,
+          )
+          ..agentRepository = agentRepository
+          ..consumptionRepository = consumptionRepository;
+    when(
+      () => consumptionRepository.getEvent(any()),
+    ).thenAnswer((_) async => null);
 
     final bench = _GeneratedBackfillResponseBench._(
       journalDb: journalDb,
       sequenceService: sequenceService,
       outboxService: outboxService,
       agentRepository: agentRepository,
+      consumptionRepository: consumptionRepository,
       notificationsDb: notificationsDb,
       handler: handler,
     );
@@ -732,6 +742,7 @@ class _GeneratedBackfillResponseBench {
   final MockSyncSequenceLogService sequenceService;
   final MockOutboxService outboxService;
   final MockAgentRepository agentRepository;
+  final MockConsumptionRepository consumptionRepository;
   final MockNotificationsDb notificationsDb;
   final BackfillResponseHandler handler;
   final sentMessages = <SyncMessage>[];
@@ -761,8 +772,16 @@ class _GeneratedBackfillResponseBench {
 }
 
 extension _AnyGeneratedBackfillResponseScenario on glados.Any {
+  // Excludes `consumptionEvent`: its backfill responder reuses the generic
+  // `_processAgentBackfillEntry` path (already exercised here via `agentEntity`
+  // /`agentLink`), so it is covered without teaching this expectation model a
+  // new payload family. The exhaustive-switch cases below still handle it.
   glados.Generator<SyncSequencePayloadType> get generatedPayloadType =>
-      glados.AnyUtils(this).choose(SyncSequencePayloadType.values);
+      glados.AnyUtils(this).choose(
+        SyncSequencePayloadType.values
+            .where((t) => t != SyncSequencePayloadType.consumptionEvent)
+            .toList(),
+      );
 
   glados.Generator<_GeneratedRequestHost> get generatedRequestHost =>
       glados.AnyUtils(this).choose(_GeneratedRequestHost.values);
@@ -3332,6 +3351,255 @@ void main() {
     });
   });
 
+  group('handleBackfillRequest - ConsumptionEvent', () {
+    const eventId = 'consumption-event-id';
+    late MockConsumptionRepository mockConsumptionRepository;
+
+    setUp(() {
+      mockConsumptionRepository = MockConsumptionRepository();
+      handler.consumptionRepository = mockConsumptionRepository;
+    });
+
+    test(
+      're-sends consumption event and hint when counter not in VC',
+      () async {
+        final logItem = _createLogItem(
+          aliceHostId,
+          30,
+          entryId: eventId,
+          originatingHostId: bobHostId,
+          payloadType: SyncSequencePayloadType.consumptionEvent,
+        );
+
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 30),
+        ).thenAnswer((_) async => logItem);
+
+        // Counter 30 is not in the VC (superseded by 35).
+        const eventVc = VectorClock({'alice-host-uuid': 35});
+        final consumptionEvent = makeConsumptionEvent(
+          id: eventId,
+          vectorClock: eventVc,
+        );
+
+        // The handler first verifies the exact row's payload VC via the
+        // repository's clock lookup, then loads the full event for re-send.
+        when(
+          () => mockConsumptionRepository.getVectorClock(eventId),
+        ).thenAnswer((_) async => eventVc);
+        when(
+          () => mockConsumptionRepository.getEvent(eventId),
+        ).thenAnswer((_) async => consumptionEvent);
+
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 30),
+          ],
+          requesterId: requesterId,
+        );
+
+        await handler.handleBackfillRequest(request);
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+
+        expect(captured.length, 2);
+        expect(
+          captured[0],
+          isA<SyncConsumptionEvent>()
+              .having((m) => m.event.id, 'event.id', eventId)
+              .having(
+                (m) => m.originatingHostId,
+                'originatingHostId',
+                bobHostId,
+              ),
+        );
+        expect(
+          captured[1],
+          isA<SyncBackfillResponse>()
+              .having((r) => r.deleted, 'deleted', false)
+              .having((r) => r.payloadId, 'payloadId', eventId)
+              .having(
+                (r) => r.payloadType,
+                'payloadType',
+                SyncSequencePayloadType.consumptionEvent,
+              ),
+        );
+      },
+    );
+
+    test('sends deleted response when consumption event not found', () async {
+      const missingId = 'missing-event-id';
+      final logItem = _createLogItem(
+        aliceHostId,
+        30,
+        entryId: missingId,
+        originatingHostId: bobHostId,
+        payloadType: SyncSequencePayloadType.consumptionEvent,
+      );
+
+      _stubRequestLookup(
+        mockSequenceService,
+        mockOutboxService,
+        hostId: aliceHostId,
+        counter: 30,
+        logItem: logItem,
+      );
+
+      when(
+        () => mockConsumptionRepository.getVectorClock(missingId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockConsumptionRepository.getEvent(missingId),
+      ).thenAnswer((_) async => null);
+
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 30),
+        ],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          any<SyncMessage>(
+            that: isA<SyncBackfillResponse>()
+                .having((r) => r.deleted, 'deleted', true)
+                .having(
+                  (r) => r.payloadType,
+                  'payloadType',
+                  SyncSequencePayloadType.consumptionEvent,
+                ),
+          ),
+        ),
+      ).called(1);
+    });
+
+    test('skips backfill when consumptionRepository is null', () async {
+      handler.consumptionRepository = null;
+
+      final logItem = _createLogItem(
+        aliceHostId,
+        30,
+        entryId: 'some-event-id',
+        originatingHostId: bobHostId,
+        payloadType: SyncSequencePayloadType.consumptionEvent,
+      );
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 30),
+      ).thenAnswer((_) async => logItem);
+
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 30),
+        ],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      // Should not enqueue anything since there's no consumption repository
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+  });
+
+  group('handleBackfillResponse - ConsumptionEvent', () {
+    const eventId = 'consumption-event-id';
+    const response = SyncBackfillResponse(
+      hostId: aliceHostId,
+      counter: 30,
+      deleted: false,
+      payloadType: SyncSequencePayloadType.consumptionEvent,
+      payloadId: eventId,
+    );
+    late MockConsumptionRepository mockConsumptionRepository;
+
+    setUp(() {
+      mockConsumptionRepository = MockConsumptionRepository();
+      handler.consumptionRepository = mockConsumptionRepository;
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          deleted: any(named: 'deleted'),
+          unresolvable: any(named: 'unresolvable'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+    });
+
+    test(
+      'verifies consumption event and marks backfilled when found',
+      () async {
+        const eventVc = VectorClock({'test-host': 1});
+        when(
+          () => mockConsumptionRepository.getEvent(eventId),
+        ).thenAnswer(
+          (_) async => makeConsumptionEvent(id: eventId, vectorClock: eventVc),
+        );
+
+        when(
+          () => mockSequenceService.verifyAndMarkBackfilled(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+            entryId: any(named: 'entryId'),
+            entryVectorClock: any(named: 'entryVectorClock'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await handler.handleBackfillResponse(response);
+
+        verify(
+          () => mockSequenceService.verifyAndMarkBackfilled(
+            hostId: aliceHostId,
+            counter: 30,
+            entryId: eventId,
+            entryVectorClock: eventVc,
+            payloadType: SyncSequencePayloadType.consumptionEvent,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('skips verify when consumptionRepository is null', () async {
+      handler.consumptionRepository = null;
+
+      await handler.handleBackfillResponse(response);
+
+      // The hint is still stored for when the payload arrives …
+      verify(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 30,
+          deleted: false,
+          unresolvable: false,
+          entryId: eventId,
+          payloadType: SyncSequencePayloadType.consumptionEvent,
+        ),
+      ).called(1);
+      // … but nothing can be verified without a repository.
+      verifyNever(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      );
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // Tests merged from backfill_response_handler_generated_test.dart
   // ---------------------------------------------------------------------------
@@ -3818,6 +4086,14 @@ void _stubPayloadByType(
             ? null
             : _createNotification(payloadId, vectorClock: vectorClock),
       );
+    case SyncSequencePayloadType.consumptionEvent:
+      when(
+        () => bench.consumptionRepository.getEvent(payloadId),
+      ).thenAnswer(
+        (_) async => vectorClock == null
+            ? null
+            : makeConsumptionEvent(id: payloadId, vectorClock: vectorClock),
+      );
   }
 }
 
@@ -3873,6 +4149,14 @@ void _stubVerificationPayload(
       ).thenAnswer(
         (_) async => scenario.payloadExists
             ? _createNotification(payloadId, vectorClock: vectorClock!)
+            : null,
+      );
+    case SyncSequencePayloadType.consumptionEvent:
+      when(
+        () => bench.consumptionRepository.getEvent(payloadId),
+      ).thenAnswer(
+        (_) async => scenario.payloadExists
+            ? makeConsumptionEvent(id: payloadId, vectorClock: vectorClock)
             : null,
       );
   }
@@ -4007,5 +4291,10 @@ void _expectPayloadMessage(
       expect(message, isA<SyncNotificationStateUpdate>());
       final stateUpdate = message as SyncNotificationStateUpdate;
       expect(stateUpdate.id, payloadId);
+    case SyncSequencePayloadType.consumptionEvent:
+      expect(message, isA<SyncConsumptionEvent>());
+      final consumptionEvent = message as SyncConsumptionEvent;
+      expect(consumptionEvent.event.id, payloadId);
+      expect(consumptionEvent.status, SyncEntryStatus.update);
   }
 }

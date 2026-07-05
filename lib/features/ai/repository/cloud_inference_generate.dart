@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart'
     show CloudInferenceRepository;
@@ -49,6 +50,7 @@ class CloudInferenceGenerate {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
     GeminiThinkingMode? geminiThinkingMode,
+    InferenceImpactCollector? impactCollector,
   }) {
     developer.log(
       'CloudInferenceRepository.generate called with:\n'
@@ -120,6 +122,7 @@ class CloudInferenceGenerate {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        impactCollector: impactCollector,
       );
     }
 
@@ -170,6 +173,7 @@ class CloudInferenceGenerate {
     List<ChatCompletionTool>? tools,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
+    InferenceImpactCollector? impactCollector,
   }) {
     final client =
         overrideClient ??
@@ -202,6 +206,7 @@ class CloudInferenceGenerate {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
+        impactCollector: impactCollector,
       );
     }
 

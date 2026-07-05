@@ -8707,6 +8707,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadConfigFlag => 'Indicator de configurare';
 
   @override
+  String get syncPayloadConsumptionEvent => 'Consum AI';
+
+  @override
   String get syncPayloadEntityDefinition => 'Definiție entitate';
 
   @override

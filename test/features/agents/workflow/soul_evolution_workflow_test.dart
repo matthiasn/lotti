@@ -9,6 +9,8 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -31,6 +33,11 @@ class _TestConversationRepository extends ConversationRepository {
 
   /// Optional delegate to control createConversation behavior (e.g., throwing).
   String Function()? createConversationDelegate;
+
+  /// Consumption owner ids captured from the most recent [sendMessage] call,
+  /// so tests can assert the workflow's pass-through wiring.
+  String? lastConsumptionAgentId;
+  String? lastConsumptionThreadId;
 
   @override
   void build() {}
@@ -78,7 +85,14 @@ class _TestConversationRepository extends ConversationRepository {
     ChatCompletionToolChoiceOption? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
+    String? consumptionAgentId,
+    String? consumptionTaskId,
+    String? consumptionCategoryId,
+    String? consumptionWakeRunKey,
+    String? consumptionThreadId,
   }) async {
+    lastConsumptionAgentId = consumptionAgentId;
+    lastConsumptionThreadId = consumptionThreadId;
     if (sendMessageDelegate != null) {
       return sendMessageDelegate!();
     }
@@ -704,6 +718,34 @@ void main() {
       expect(sessionEntity.status, EvolutionSessionStatus.active);
       expect(sessionEntity.sessionNumber, 1);
     });
+
+    test(
+      'attributes consumption to the soul and conversation when an '
+      'AiConsumptionRecorder is registered',
+      () async {
+        getIt.registerSingleton<AiConsumptionRecorder>(
+          MockAiConsumptionRecorder(),
+        );
+        addTearDown(() {
+          if (getIt.isRegistered<AiConsumptionRecorder>()) {
+            getIt.unregister<AiConsumptionRecorder>();
+          }
+        });
+        stubSoulContext();
+        final convRepo = _TestConversationRepository(
+          assistantResponse: 'Hi! How has my tone been landing?',
+        );
+        final workflow = buildSoulWorkflow(convRepo: convRepo);
+
+        final response = await workflow.startSoulSession(soulId: kTestSoulId);
+
+        expect(response, 'Hi! How has my tone been landing?');
+        // The opening message attributes consumption to the soul being
+        // improved, threaded by the evolution conversation.
+        expect(convRepo.lastConsumptionAgentId, kTestSoulId);
+        expect(convRepo.lastConsumptionThreadId, 'test-conv-id');
+      },
+    );
 
     test('returns null when soul not found', () async {
       stubProviderResolution();

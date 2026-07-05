@@ -11,6 +11,8 @@ import 'package:lotti/features/sync/outbox/outbox_scheduling.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
+import '../../ai_consumption/test_utils.dart';
+
 enum _GeneratedPriorityMessageKind {
   journalEntity,
   entityDefinition,
@@ -25,6 +27,7 @@ enum _GeneratedPriorityMessageKind {
   agentBundle,
   notification,
   notificationStateUpdate,
+  consumptionEvent,
   outboxBundle,
   syncNodeProfile,
   configFlag,
@@ -141,6 +144,14 @@ class _GeneratedPriorityScenario {
           vectorClock: VectorClock({'hostA': counterSlot}),
           originatingHostId: 'hostA',
         ),
+      _GeneratedPriorityMessageKind.consumptionEvent =>
+        SyncMessage.consumptionEvent(
+          event: makeConsumptionEvent(
+            id: id,
+            vectorClock: VectorClock({'hostA': counterSlot}),
+          ),
+          status: status,
+        ),
       _GeneratedPriorityMessageKind.outboxBundle => SyncMessage.outboxBundle(
         children: [SyncMessage.aiConfigDelete(id: id)],
       ),
@@ -179,6 +190,9 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.entityDefinition ||
       _GeneratedPriorityMessageKind.aiConfig ||
       _GeneratedPriorityMessageKind.aiConfigDelete ||
+      // Consumption metrics are best-effort diagnostics — they must never
+      // queue-jump user writes.
+      _GeneratedPriorityMessageKind.consumptionEvent ||
       _GeneratedPriorityMessageKind.syncNodeProfile => OutboxPriority.low.index,
     };
   }

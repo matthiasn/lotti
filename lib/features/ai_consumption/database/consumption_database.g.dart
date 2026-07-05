@@ -1,0 +1,2726 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'consumption_database.dart';
+
+// ignore_for_file: type=lint
+class ConsumptionEvents extends Table
+    with TableInfo<ConsumptionEvents, ConsumptionEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  ConsumptionEvents(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL PRIMARY KEY',
+  );
+  static const VerificationMeta _parentIdMeta = const VerificationMeta(
+    'parentId',
+  );
+  late final GeneratedColumn<String> parentId = GeneratedColumn<String>(
+    'parent_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
+  late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
+    'task_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+    'category_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _entryIdMeta = const VerificationMeta(
+    'entryId',
+  );
+  late final GeneratedColumn<String> entryId = GeneratedColumn<String>(
+    'entry_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
+  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
+    'agent_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _wakeRunKeyMeta = const VerificationMeta(
+    'wakeRunKey',
+  );
+  late final GeneratedColumn<String> wakeRunKey = GeneratedColumn<String>(
+    'wake_run_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _threadIdMeta = const VerificationMeta(
+    'threadId',
+  );
+  late final GeneratedColumn<String> threadId = GeneratedColumn<String>(
+    'thread_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _turnIndexMeta = const VerificationMeta(
+    'turnIndex',
+  );
+  late final GeneratedColumn<int> turnIndex = GeneratedColumn<int>(
+    'turn_index',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _promptIdMeta = const VerificationMeta(
+    'promptId',
+  );
+  late final GeneratedColumn<String> promptId = GeneratedColumn<String>(
+    'prompt_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _skillIdMeta = const VerificationMeta(
+    'skillId',
+  );
+  late final GeneratedColumn<String> skillId = GeneratedColumn<String>(
+    'skill_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _configIdMeta = const VerificationMeta(
+    'configId',
+  );
+  late final GeneratedColumn<String> configId = GeneratedColumn<String>(
+    'config_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _providerTypeMeta = const VerificationMeta(
+    'providerType',
+  );
+  late final GeneratedColumn<String> providerType = GeneratedColumn<String>(
+    'provider_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _modelIdMeta = const VerificationMeta(
+    'modelId',
+  );
+  late final GeneratedColumn<String> modelId = GeneratedColumn<String>(
+    'model_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _providerModelIdMeta = const VerificationMeta(
+    'providerModelId',
+  );
+  late final GeneratedColumn<String> providerModelId = GeneratedColumn<String>(
+    'provider_model_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _responseTypeMeta = const VerificationMeta(
+    'responseType',
+  );
+  late final GeneratedColumn<String> responseType = GeneratedColumn<String>(
+    'response_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _durationMsMeta = const VerificationMeta(
+    'durationMs',
+  );
+  late final GeneratedColumn<int> durationMs = GeneratedColumn<int>(
+    'duration_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _inputTokensMeta = const VerificationMeta(
+    'inputTokens',
+  );
+  late final GeneratedColumn<int> inputTokens = GeneratedColumn<int>(
+    'input_tokens',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _outputTokensMeta = const VerificationMeta(
+    'outputTokens',
+  );
+  late final GeneratedColumn<int> outputTokens = GeneratedColumn<int>(
+    'output_tokens',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _cachedInputTokensMeta = const VerificationMeta(
+    'cachedInputTokens',
+  );
+  late final GeneratedColumn<int> cachedInputTokens = GeneratedColumn<int>(
+    'cached_input_tokens',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _thoughtsTokensMeta = const VerificationMeta(
+    'thoughtsTokens',
+  );
+  late final GeneratedColumn<int> thoughtsTokens = GeneratedColumn<int>(
+    'thoughts_tokens',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _totalTokensMeta = const VerificationMeta(
+    'totalTokens',
+  );
+  late final GeneratedColumn<int> totalTokens = GeneratedColumn<int>(
+    'total_tokens',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _creditsMeta = const VerificationMeta(
+    'credits',
+  );
+  late final GeneratedColumn<double> credits = GeneratedColumn<double>(
+    'credits',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _energyKwhMeta = const VerificationMeta(
+    'energyKwh',
+  );
+  late final GeneratedColumn<double> energyKwh = GeneratedColumn<double>(
+    'energy_kwh',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _carbonGCo2Meta = const VerificationMeta(
+    'carbonGCo2',
+  );
+  late final GeneratedColumn<double> carbonGCo2 = GeneratedColumn<double>(
+    'carbon_g_co2',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _waterLitersMeta = const VerificationMeta(
+    'waterLiters',
+  );
+  late final GeneratedColumn<double> waterLiters = GeneratedColumn<double>(
+    'water_liters',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _renewablePercentMeta = const VerificationMeta(
+    'renewablePercent',
+  );
+  late final GeneratedColumn<double> renewablePercent = GeneratedColumn<double>(
+    'renewable_percent',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _pueMeta = const VerificationMeta('pue');
+  late final GeneratedColumn<double> pue = GeneratedColumn<double>(
+    'pue',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _dataCenterMeta = const VerificationMeta(
+    'dataCenter',
+  );
+  late final GeneratedColumn<String> dataCenter = GeneratedColumn<String>(
+    'data_center',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _upstreamProviderIdMeta =
+      const VerificationMeta('upstreamProviderId');
+  late final GeneratedColumn<String> upstreamProviderId =
+      GeneratedColumn<String>(
+        'upstream_provider_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        $customConstraints: '',
+      );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
+  late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _schemaVersionMeta = const VerificationMeta(
+    'schemaVersion',
+  );
+  late final GeneratedColumn<int> schemaVersion = GeneratedColumn<int>(
+    'schema_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1',
+    defaultValue: const CustomExpression('1'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    parentId,
+    createdAt,
+    taskId,
+    categoryId,
+    entryId,
+    agentId,
+    wakeRunKey,
+    threadId,
+    turnIndex,
+    promptId,
+    skillId,
+    configId,
+    providerType,
+    modelId,
+    providerModelId,
+    responseType,
+    durationMs,
+    inputTokens,
+    outputTokens,
+    cachedInputTokens,
+    thoughtsTokens,
+    totalTokens,
+    credits,
+    energyKwh,
+    carbonGCo2,
+    waterLiters,
+    renewablePercent,
+    pue,
+    dataCenter,
+    upstreamProviderId,
+    serialized,
+    schemaVersion,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'consumption_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ConsumptionEvent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('parent_id')) {
+      context.handle(
+        _parentIdMeta,
+        parentId.isAcceptableOrUnknown(data['parent_id']!, _parentIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('task_id')) {
+      context.handle(
+        _taskIdMeta,
+        taskId.isAcceptableOrUnknown(data['task_id']!, _taskIdMeta),
+      );
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    }
+    if (data.containsKey('entry_id')) {
+      context.handle(
+        _entryIdMeta,
+        entryId.isAcceptableOrUnknown(data['entry_id']!, _entryIdMeta),
+      );
+    }
+    if (data.containsKey('agent_id')) {
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
+    }
+    if (data.containsKey('wake_run_key')) {
+      context.handle(
+        _wakeRunKeyMeta,
+        wakeRunKey.isAcceptableOrUnknown(
+          data['wake_run_key']!,
+          _wakeRunKeyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('thread_id')) {
+      context.handle(
+        _threadIdMeta,
+        threadId.isAcceptableOrUnknown(data['thread_id']!, _threadIdMeta),
+      );
+    }
+    if (data.containsKey('turn_index')) {
+      context.handle(
+        _turnIndexMeta,
+        turnIndex.isAcceptableOrUnknown(data['turn_index']!, _turnIndexMeta),
+      );
+    }
+    if (data.containsKey('prompt_id')) {
+      context.handle(
+        _promptIdMeta,
+        promptId.isAcceptableOrUnknown(data['prompt_id']!, _promptIdMeta),
+      );
+    }
+    if (data.containsKey('skill_id')) {
+      context.handle(
+        _skillIdMeta,
+        skillId.isAcceptableOrUnknown(data['skill_id']!, _skillIdMeta),
+      );
+    }
+    if (data.containsKey('config_id')) {
+      context.handle(
+        _configIdMeta,
+        configId.isAcceptableOrUnknown(data['config_id']!, _configIdMeta),
+      );
+    }
+    if (data.containsKey('provider_type')) {
+      context.handle(
+        _providerTypeMeta,
+        providerType.isAcceptableOrUnknown(
+          data['provider_type']!,
+          _providerTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_providerTypeMeta);
+    }
+    if (data.containsKey('model_id')) {
+      context.handle(
+        _modelIdMeta,
+        modelId.isAcceptableOrUnknown(data['model_id']!, _modelIdMeta),
+      );
+    }
+    if (data.containsKey('provider_model_id')) {
+      context.handle(
+        _providerModelIdMeta,
+        providerModelId.isAcceptableOrUnknown(
+          data['provider_model_id']!,
+          _providerModelIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('response_type')) {
+      context.handle(
+        _responseTypeMeta,
+        responseType.isAcceptableOrUnknown(
+          data['response_type']!,
+          _responseTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_responseTypeMeta);
+    }
+    if (data.containsKey('duration_ms')) {
+      context.handle(
+        _durationMsMeta,
+        durationMs.isAcceptableOrUnknown(data['duration_ms']!, _durationMsMeta),
+      );
+    }
+    if (data.containsKey('input_tokens')) {
+      context.handle(
+        _inputTokensMeta,
+        inputTokens.isAcceptableOrUnknown(
+          data['input_tokens']!,
+          _inputTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('output_tokens')) {
+      context.handle(
+        _outputTokensMeta,
+        outputTokens.isAcceptableOrUnknown(
+          data['output_tokens']!,
+          _outputTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cached_input_tokens')) {
+      context.handle(
+        _cachedInputTokensMeta,
+        cachedInputTokens.isAcceptableOrUnknown(
+          data['cached_input_tokens']!,
+          _cachedInputTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('thoughts_tokens')) {
+      context.handle(
+        _thoughtsTokensMeta,
+        thoughtsTokens.isAcceptableOrUnknown(
+          data['thoughts_tokens']!,
+          _thoughtsTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_tokens')) {
+      context.handle(
+        _totalTokensMeta,
+        totalTokens.isAcceptableOrUnknown(
+          data['total_tokens']!,
+          _totalTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('credits')) {
+      context.handle(
+        _creditsMeta,
+        credits.isAcceptableOrUnknown(data['credits']!, _creditsMeta),
+      );
+    }
+    if (data.containsKey('energy_kwh')) {
+      context.handle(
+        _energyKwhMeta,
+        energyKwh.isAcceptableOrUnknown(data['energy_kwh']!, _energyKwhMeta),
+      );
+    }
+    if (data.containsKey('carbon_g_co2')) {
+      context.handle(
+        _carbonGCo2Meta,
+        carbonGCo2.isAcceptableOrUnknown(
+          data['carbon_g_co2']!,
+          _carbonGCo2Meta,
+        ),
+      );
+    }
+    if (data.containsKey('water_liters')) {
+      context.handle(
+        _waterLitersMeta,
+        waterLiters.isAcceptableOrUnknown(
+          data['water_liters']!,
+          _waterLitersMeta,
+        ),
+      );
+    }
+    if (data.containsKey('renewable_percent')) {
+      context.handle(
+        _renewablePercentMeta,
+        renewablePercent.isAcceptableOrUnknown(
+          data['renewable_percent']!,
+          _renewablePercentMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pue')) {
+      context.handle(
+        _pueMeta,
+        pue.isAcceptableOrUnknown(data['pue']!, _pueMeta),
+      );
+    }
+    if (data.containsKey('data_center')) {
+      context.handle(
+        _dataCenterMeta,
+        dataCenter.isAcceptableOrUnknown(data['data_center']!, _dataCenterMeta),
+      );
+    }
+    if (data.containsKey('upstream_provider_id')) {
+      context.handle(
+        _upstreamProviderIdMeta,
+        upstreamProviderId.isAcceptableOrUnknown(
+          data['upstream_provider_id']!,
+          _upstreamProviderIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('serialized')) {
+      context.handle(
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_serializedMeta);
+    }
+    if (data.containsKey('schema_version')) {
+      context.handle(
+        _schemaVersionMeta,
+        schemaVersion.isAcceptableOrUnknown(
+          data['schema_version']!,
+          _schemaVersionMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ConsumptionEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ConsumptionEvent(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      parentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parent_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      taskId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task_id'],
+      ),
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_id'],
+      ),
+      entryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entry_id'],
+      ),
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      ),
+      wakeRunKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}wake_run_key'],
+      ),
+      threadId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thread_id'],
+      ),
+      turnIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}turn_index'],
+      ),
+      promptId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prompt_id'],
+      ),
+      skillId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}skill_id'],
+      ),
+      configId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}config_id'],
+      ),
+      providerType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider_type'],
+      )!,
+      modelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_id'],
+      ),
+      providerModelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider_model_id'],
+      ),
+      responseType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}response_type'],
+      )!,
+      durationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_ms'],
+      ),
+      inputTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}input_tokens'],
+      ),
+      outputTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}output_tokens'],
+      ),
+      cachedInputTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cached_input_tokens'],
+      ),
+      thoughtsTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}thoughts_tokens'],
+      ),
+      totalTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_tokens'],
+      ),
+      credits: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}credits'],
+      ),
+      energyKwh: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}energy_kwh'],
+      ),
+      carbonGCo2: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}carbon_g_co2'],
+      ),
+      waterLiters: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}water_liters'],
+      ),
+      renewablePercent: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}renewable_percent'],
+      ),
+      pue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}pue'],
+      ),
+      dataCenter: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}data_center'],
+      ),
+      upstreamProviderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}upstream_provider_id'],
+      ),
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+      schemaVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}schema_version'],
+      )!,
+    );
+  }
+
+  @override
+  ConsumptionEvents createAlias(String alias) {
+    return ConsumptionEvents(attachedDatabase, alias);
+  }
+
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class ConsumptionEvent extends DataClass
+    implements Insertable<ConsumptionEvent> {
+  final String id;
+  final String? parentId;
+  final DateTime createdAt;
+
+  /// Denormalized owners (snapshot at call time)
+  final String? taskId;
+  final String? categoryId;
+  final String? entryId;
+  final String? agentId;
+  final String? wakeRunKey;
+  final String? threadId;
+  final int? turnIndex;
+  final String? promptId;
+  final String? skillId;
+  final String? configId;
+
+  /// Provider / model / discriminator
+  final String providerType;
+  final String? modelId;
+  final String? providerModelId;
+  final String responseType;
+  final int? durationMs;
+
+  /// Token metrics
+  final int? inputTokens;
+  final int? outputTokens;
+  final int? cachedInputTokens;
+  final int? thoughtsTokens;
+  final int? totalTokens;
+
+  /// Cost + environmental impact (all nullable — only Melious reports impact)
+  final double? credits;
+  final double? energyKwh;
+  final double? carbonGCo2;
+  final double? waterLiters;
+  final double? renewablePercent;
+  final double? pue;
+  final String? dataCenter;
+  final String? upstreamProviderId;
+  final String serialized;
+  final int schemaVersion;
+  const ConsumptionEvent({
+    required this.id,
+    this.parentId,
+    required this.createdAt,
+    this.taskId,
+    this.categoryId,
+    this.entryId,
+    this.agentId,
+    this.wakeRunKey,
+    this.threadId,
+    this.turnIndex,
+    this.promptId,
+    this.skillId,
+    this.configId,
+    required this.providerType,
+    this.modelId,
+    this.providerModelId,
+    required this.responseType,
+    this.durationMs,
+    this.inputTokens,
+    this.outputTokens,
+    this.cachedInputTokens,
+    this.thoughtsTokens,
+    this.totalTokens,
+    this.credits,
+    this.energyKwh,
+    this.carbonGCo2,
+    this.waterLiters,
+    this.renewablePercent,
+    this.pue,
+    this.dataCenter,
+    this.upstreamProviderId,
+    required this.serialized,
+    required this.schemaVersion,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || parentId != null) {
+      map['parent_id'] = Variable<String>(parentId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || taskId != null) {
+      map['task_id'] = Variable<String>(taskId);
+    }
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<String>(categoryId);
+    }
+    if (!nullToAbsent || entryId != null) {
+      map['entry_id'] = Variable<String>(entryId);
+    }
+    if (!nullToAbsent || agentId != null) {
+      map['agent_id'] = Variable<String>(agentId);
+    }
+    if (!nullToAbsent || wakeRunKey != null) {
+      map['wake_run_key'] = Variable<String>(wakeRunKey);
+    }
+    if (!nullToAbsent || threadId != null) {
+      map['thread_id'] = Variable<String>(threadId);
+    }
+    if (!nullToAbsent || turnIndex != null) {
+      map['turn_index'] = Variable<int>(turnIndex);
+    }
+    if (!nullToAbsent || promptId != null) {
+      map['prompt_id'] = Variable<String>(promptId);
+    }
+    if (!nullToAbsent || skillId != null) {
+      map['skill_id'] = Variable<String>(skillId);
+    }
+    if (!nullToAbsent || configId != null) {
+      map['config_id'] = Variable<String>(configId);
+    }
+    map['provider_type'] = Variable<String>(providerType);
+    if (!nullToAbsent || modelId != null) {
+      map['model_id'] = Variable<String>(modelId);
+    }
+    if (!nullToAbsent || providerModelId != null) {
+      map['provider_model_id'] = Variable<String>(providerModelId);
+    }
+    map['response_type'] = Variable<String>(responseType);
+    if (!nullToAbsent || durationMs != null) {
+      map['duration_ms'] = Variable<int>(durationMs);
+    }
+    if (!nullToAbsent || inputTokens != null) {
+      map['input_tokens'] = Variable<int>(inputTokens);
+    }
+    if (!nullToAbsent || outputTokens != null) {
+      map['output_tokens'] = Variable<int>(outputTokens);
+    }
+    if (!nullToAbsent || cachedInputTokens != null) {
+      map['cached_input_tokens'] = Variable<int>(cachedInputTokens);
+    }
+    if (!nullToAbsent || thoughtsTokens != null) {
+      map['thoughts_tokens'] = Variable<int>(thoughtsTokens);
+    }
+    if (!nullToAbsent || totalTokens != null) {
+      map['total_tokens'] = Variable<int>(totalTokens);
+    }
+    if (!nullToAbsent || credits != null) {
+      map['credits'] = Variable<double>(credits);
+    }
+    if (!nullToAbsent || energyKwh != null) {
+      map['energy_kwh'] = Variable<double>(energyKwh);
+    }
+    if (!nullToAbsent || carbonGCo2 != null) {
+      map['carbon_g_co2'] = Variable<double>(carbonGCo2);
+    }
+    if (!nullToAbsent || waterLiters != null) {
+      map['water_liters'] = Variable<double>(waterLiters);
+    }
+    if (!nullToAbsent || renewablePercent != null) {
+      map['renewable_percent'] = Variable<double>(renewablePercent);
+    }
+    if (!nullToAbsent || pue != null) {
+      map['pue'] = Variable<double>(pue);
+    }
+    if (!nullToAbsent || dataCenter != null) {
+      map['data_center'] = Variable<String>(dataCenter);
+    }
+    if (!nullToAbsent || upstreamProviderId != null) {
+      map['upstream_provider_id'] = Variable<String>(upstreamProviderId);
+    }
+    map['serialized'] = Variable<String>(serialized);
+    map['schema_version'] = Variable<int>(schemaVersion);
+    return map;
+  }
+
+  ConsumptionEventsCompanion toCompanion(bool nullToAbsent) {
+    return ConsumptionEventsCompanion(
+      id: Value(id),
+      parentId: parentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentId),
+      createdAt: Value(createdAt),
+      taskId: taskId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskId),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      entryId: entryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entryId),
+      agentId: agentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(agentId),
+      wakeRunKey: wakeRunKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(wakeRunKey),
+      threadId: threadId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(threadId),
+      turnIndex: turnIndex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(turnIndex),
+      promptId: promptId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(promptId),
+      skillId: skillId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(skillId),
+      configId: configId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(configId),
+      providerType: Value(providerType),
+      modelId: modelId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(modelId),
+      providerModelId: providerModelId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(providerModelId),
+      responseType: Value(responseType),
+      durationMs: durationMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationMs),
+      inputTokens: inputTokens == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inputTokens),
+      outputTokens: outputTokens == null && nullToAbsent
+          ? const Value.absent()
+          : Value(outputTokens),
+      cachedInputTokens: cachedInputTokens == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cachedInputTokens),
+      thoughtsTokens: thoughtsTokens == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thoughtsTokens),
+      totalTokens: totalTokens == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalTokens),
+      credits: credits == null && nullToAbsent
+          ? const Value.absent()
+          : Value(credits),
+      energyKwh: energyKwh == null && nullToAbsent
+          ? const Value.absent()
+          : Value(energyKwh),
+      carbonGCo2: carbonGCo2 == null && nullToAbsent
+          ? const Value.absent()
+          : Value(carbonGCo2),
+      waterLiters: waterLiters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(waterLiters),
+      renewablePercent: renewablePercent == null && nullToAbsent
+          ? const Value.absent()
+          : Value(renewablePercent),
+      pue: pue == null && nullToAbsent ? const Value.absent() : Value(pue),
+      dataCenter: dataCenter == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dataCenter),
+      upstreamProviderId: upstreamProviderId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upstreamProviderId),
+      serialized: Value(serialized),
+      schemaVersion: Value(schemaVersion),
+    );
+  }
+
+  factory ConsumptionEvent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ConsumptionEvent(
+      id: serializer.fromJson<String>(json['id']),
+      parentId: serializer.fromJson<String?>(json['parent_id']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      taskId: serializer.fromJson<String?>(json['task_id']),
+      categoryId: serializer.fromJson<String?>(json['category_id']),
+      entryId: serializer.fromJson<String?>(json['entry_id']),
+      agentId: serializer.fromJson<String?>(json['agent_id']),
+      wakeRunKey: serializer.fromJson<String?>(json['wake_run_key']),
+      threadId: serializer.fromJson<String?>(json['thread_id']),
+      turnIndex: serializer.fromJson<int?>(json['turn_index']),
+      promptId: serializer.fromJson<String?>(json['prompt_id']),
+      skillId: serializer.fromJson<String?>(json['skill_id']),
+      configId: serializer.fromJson<String?>(json['config_id']),
+      providerType: serializer.fromJson<String>(json['provider_type']),
+      modelId: serializer.fromJson<String?>(json['model_id']),
+      providerModelId: serializer.fromJson<String?>(json['provider_model_id']),
+      responseType: serializer.fromJson<String>(json['response_type']),
+      durationMs: serializer.fromJson<int?>(json['duration_ms']),
+      inputTokens: serializer.fromJson<int?>(json['input_tokens']),
+      outputTokens: serializer.fromJson<int?>(json['output_tokens']),
+      cachedInputTokens: serializer.fromJson<int?>(json['cached_input_tokens']),
+      thoughtsTokens: serializer.fromJson<int?>(json['thoughts_tokens']),
+      totalTokens: serializer.fromJson<int?>(json['total_tokens']),
+      credits: serializer.fromJson<double?>(json['credits']),
+      energyKwh: serializer.fromJson<double?>(json['energy_kwh']),
+      carbonGCo2: serializer.fromJson<double?>(json['carbon_g_co2']),
+      waterLiters: serializer.fromJson<double?>(json['water_liters']),
+      renewablePercent: serializer.fromJson<double?>(json['renewable_percent']),
+      pue: serializer.fromJson<double?>(json['pue']),
+      dataCenter: serializer.fromJson<String?>(json['data_center']),
+      upstreamProviderId: serializer.fromJson<String?>(
+        json['upstream_provider_id'],
+      ),
+      serialized: serializer.fromJson<String>(json['serialized']),
+      schemaVersion: serializer.fromJson<int>(json['schema_version']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'parent_id': serializer.toJson<String?>(parentId),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'task_id': serializer.toJson<String?>(taskId),
+      'category_id': serializer.toJson<String?>(categoryId),
+      'entry_id': serializer.toJson<String?>(entryId),
+      'agent_id': serializer.toJson<String?>(agentId),
+      'wake_run_key': serializer.toJson<String?>(wakeRunKey),
+      'thread_id': serializer.toJson<String?>(threadId),
+      'turn_index': serializer.toJson<int?>(turnIndex),
+      'prompt_id': serializer.toJson<String?>(promptId),
+      'skill_id': serializer.toJson<String?>(skillId),
+      'config_id': serializer.toJson<String?>(configId),
+      'provider_type': serializer.toJson<String>(providerType),
+      'model_id': serializer.toJson<String?>(modelId),
+      'provider_model_id': serializer.toJson<String?>(providerModelId),
+      'response_type': serializer.toJson<String>(responseType),
+      'duration_ms': serializer.toJson<int?>(durationMs),
+      'input_tokens': serializer.toJson<int?>(inputTokens),
+      'output_tokens': serializer.toJson<int?>(outputTokens),
+      'cached_input_tokens': serializer.toJson<int?>(cachedInputTokens),
+      'thoughts_tokens': serializer.toJson<int?>(thoughtsTokens),
+      'total_tokens': serializer.toJson<int?>(totalTokens),
+      'credits': serializer.toJson<double?>(credits),
+      'energy_kwh': serializer.toJson<double?>(energyKwh),
+      'carbon_g_co2': serializer.toJson<double?>(carbonGCo2),
+      'water_liters': serializer.toJson<double?>(waterLiters),
+      'renewable_percent': serializer.toJson<double?>(renewablePercent),
+      'pue': serializer.toJson<double?>(pue),
+      'data_center': serializer.toJson<String?>(dataCenter),
+      'upstream_provider_id': serializer.toJson<String?>(upstreamProviderId),
+      'serialized': serializer.toJson<String>(serialized),
+      'schema_version': serializer.toJson<int>(schemaVersion),
+    };
+  }
+
+  ConsumptionEvent copyWith({
+    String? id,
+    Value<String?> parentId = const Value.absent(),
+    DateTime? createdAt,
+    Value<String?> taskId = const Value.absent(),
+    Value<String?> categoryId = const Value.absent(),
+    Value<String?> entryId = const Value.absent(),
+    Value<String?> agentId = const Value.absent(),
+    Value<String?> wakeRunKey = const Value.absent(),
+    Value<String?> threadId = const Value.absent(),
+    Value<int?> turnIndex = const Value.absent(),
+    Value<String?> promptId = const Value.absent(),
+    Value<String?> skillId = const Value.absent(),
+    Value<String?> configId = const Value.absent(),
+    String? providerType,
+    Value<String?> modelId = const Value.absent(),
+    Value<String?> providerModelId = const Value.absent(),
+    String? responseType,
+    Value<int?> durationMs = const Value.absent(),
+    Value<int?> inputTokens = const Value.absent(),
+    Value<int?> outputTokens = const Value.absent(),
+    Value<int?> cachedInputTokens = const Value.absent(),
+    Value<int?> thoughtsTokens = const Value.absent(),
+    Value<int?> totalTokens = const Value.absent(),
+    Value<double?> credits = const Value.absent(),
+    Value<double?> energyKwh = const Value.absent(),
+    Value<double?> carbonGCo2 = const Value.absent(),
+    Value<double?> waterLiters = const Value.absent(),
+    Value<double?> renewablePercent = const Value.absent(),
+    Value<double?> pue = const Value.absent(),
+    Value<String?> dataCenter = const Value.absent(),
+    Value<String?> upstreamProviderId = const Value.absent(),
+    String? serialized,
+    int? schemaVersion,
+  }) => ConsumptionEvent(
+    id: id ?? this.id,
+    parentId: parentId.present ? parentId.value : this.parentId,
+    createdAt: createdAt ?? this.createdAt,
+    taskId: taskId.present ? taskId.value : this.taskId,
+    categoryId: categoryId.present ? categoryId.value : this.categoryId,
+    entryId: entryId.present ? entryId.value : this.entryId,
+    agentId: agentId.present ? agentId.value : this.agentId,
+    wakeRunKey: wakeRunKey.present ? wakeRunKey.value : this.wakeRunKey,
+    threadId: threadId.present ? threadId.value : this.threadId,
+    turnIndex: turnIndex.present ? turnIndex.value : this.turnIndex,
+    promptId: promptId.present ? promptId.value : this.promptId,
+    skillId: skillId.present ? skillId.value : this.skillId,
+    configId: configId.present ? configId.value : this.configId,
+    providerType: providerType ?? this.providerType,
+    modelId: modelId.present ? modelId.value : this.modelId,
+    providerModelId: providerModelId.present
+        ? providerModelId.value
+        : this.providerModelId,
+    responseType: responseType ?? this.responseType,
+    durationMs: durationMs.present ? durationMs.value : this.durationMs,
+    inputTokens: inputTokens.present ? inputTokens.value : this.inputTokens,
+    outputTokens: outputTokens.present ? outputTokens.value : this.outputTokens,
+    cachedInputTokens: cachedInputTokens.present
+        ? cachedInputTokens.value
+        : this.cachedInputTokens,
+    thoughtsTokens: thoughtsTokens.present
+        ? thoughtsTokens.value
+        : this.thoughtsTokens,
+    totalTokens: totalTokens.present ? totalTokens.value : this.totalTokens,
+    credits: credits.present ? credits.value : this.credits,
+    energyKwh: energyKwh.present ? energyKwh.value : this.energyKwh,
+    carbonGCo2: carbonGCo2.present ? carbonGCo2.value : this.carbonGCo2,
+    waterLiters: waterLiters.present ? waterLiters.value : this.waterLiters,
+    renewablePercent: renewablePercent.present
+        ? renewablePercent.value
+        : this.renewablePercent,
+    pue: pue.present ? pue.value : this.pue,
+    dataCenter: dataCenter.present ? dataCenter.value : this.dataCenter,
+    upstreamProviderId: upstreamProviderId.present
+        ? upstreamProviderId.value
+        : this.upstreamProviderId,
+    serialized: serialized ?? this.serialized,
+    schemaVersion: schemaVersion ?? this.schemaVersion,
+  );
+  ConsumptionEvent copyWithCompanion(ConsumptionEventsCompanion data) {
+    return ConsumptionEvent(
+      id: data.id.present ? data.id.value : this.id,
+      parentId: data.parentId.present ? data.parentId.value : this.parentId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      taskId: data.taskId.present ? data.taskId.value : this.taskId,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+      entryId: data.entryId.present ? data.entryId.value : this.entryId,
+      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      wakeRunKey: data.wakeRunKey.present
+          ? data.wakeRunKey.value
+          : this.wakeRunKey,
+      threadId: data.threadId.present ? data.threadId.value : this.threadId,
+      turnIndex: data.turnIndex.present ? data.turnIndex.value : this.turnIndex,
+      promptId: data.promptId.present ? data.promptId.value : this.promptId,
+      skillId: data.skillId.present ? data.skillId.value : this.skillId,
+      configId: data.configId.present ? data.configId.value : this.configId,
+      providerType: data.providerType.present
+          ? data.providerType.value
+          : this.providerType,
+      modelId: data.modelId.present ? data.modelId.value : this.modelId,
+      providerModelId: data.providerModelId.present
+          ? data.providerModelId.value
+          : this.providerModelId,
+      responseType: data.responseType.present
+          ? data.responseType.value
+          : this.responseType,
+      durationMs: data.durationMs.present
+          ? data.durationMs.value
+          : this.durationMs,
+      inputTokens: data.inputTokens.present
+          ? data.inputTokens.value
+          : this.inputTokens,
+      outputTokens: data.outputTokens.present
+          ? data.outputTokens.value
+          : this.outputTokens,
+      cachedInputTokens: data.cachedInputTokens.present
+          ? data.cachedInputTokens.value
+          : this.cachedInputTokens,
+      thoughtsTokens: data.thoughtsTokens.present
+          ? data.thoughtsTokens.value
+          : this.thoughtsTokens,
+      totalTokens: data.totalTokens.present
+          ? data.totalTokens.value
+          : this.totalTokens,
+      credits: data.credits.present ? data.credits.value : this.credits,
+      energyKwh: data.energyKwh.present ? data.energyKwh.value : this.energyKwh,
+      carbonGCo2: data.carbonGCo2.present
+          ? data.carbonGCo2.value
+          : this.carbonGCo2,
+      waterLiters: data.waterLiters.present
+          ? data.waterLiters.value
+          : this.waterLiters,
+      renewablePercent: data.renewablePercent.present
+          ? data.renewablePercent.value
+          : this.renewablePercent,
+      pue: data.pue.present ? data.pue.value : this.pue,
+      dataCenter: data.dataCenter.present
+          ? data.dataCenter.value
+          : this.dataCenter,
+      upstreamProviderId: data.upstreamProviderId.present
+          ? data.upstreamProviderId.value
+          : this.upstreamProviderId,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
+      schemaVersion: data.schemaVersion.present
+          ? data.schemaVersion.value
+          : this.schemaVersion,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConsumptionEvent(')
+          ..write('id: $id, ')
+          ..write('parentId: $parentId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('taskId: $taskId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('entryId: $entryId, ')
+          ..write('agentId: $agentId, ')
+          ..write('wakeRunKey: $wakeRunKey, ')
+          ..write('threadId: $threadId, ')
+          ..write('turnIndex: $turnIndex, ')
+          ..write('promptId: $promptId, ')
+          ..write('skillId: $skillId, ')
+          ..write('configId: $configId, ')
+          ..write('providerType: $providerType, ')
+          ..write('modelId: $modelId, ')
+          ..write('providerModelId: $providerModelId, ')
+          ..write('responseType: $responseType, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('inputTokens: $inputTokens, ')
+          ..write('outputTokens: $outputTokens, ')
+          ..write('cachedInputTokens: $cachedInputTokens, ')
+          ..write('thoughtsTokens: $thoughtsTokens, ')
+          ..write('totalTokens: $totalTokens, ')
+          ..write('credits: $credits, ')
+          ..write('energyKwh: $energyKwh, ')
+          ..write('carbonGCo2: $carbonGCo2, ')
+          ..write('waterLiters: $waterLiters, ')
+          ..write('renewablePercent: $renewablePercent, ')
+          ..write('pue: $pue, ')
+          ..write('dataCenter: $dataCenter, ')
+          ..write('upstreamProviderId: $upstreamProviderId, ')
+          ..write('serialized: $serialized, ')
+          ..write('schemaVersion: $schemaVersion')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    parentId,
+    createdAt,
+    taskId,
+    categoryId,
+    entryId,
+    agentId,
+    wakeRunKey,
+    threadId,
+    turnIndex,
+    promptId,
+    skillId,
+    configId,
+    providerType,
+    modelId,
+    providerModelId,
+    responseType,
+    durationMs,
+    inputTokens,
+    outputTokens,
+    cachedInputTokens,
+    thoughtsTokens,
+    totalTokens,
+    credits,
+    energyKwh,
+    carbonGCo2,
+    waterLiters,
+    renewablePercent,
+    pue,
+    dataCenter,
+    upstreamProviderId,
+    serialized,
+    schemaVersion,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ConsumptionEvent &&
+          other.id == this.id &&
+          other.parentId == this.parentId &&
+          other.createdAt == this.createdAt &&
+          other.taskId == this.taskId &&
+          other.categoryId == this.categoryId &&
+          other.entryId == this.entryId &&
+          other.agentId == this.agentId &&
+          other.wakeRunKey == this.wakeRunKey &&
+          other.threadId == this.threadId &&
+          other.turnIndex == this.turnIndex &&
+          other.promptId == this.promptId &&
+          other.skillId == this.skillId &&
+          other.configId == this.configId &&
+          other.providerType == this.providerType &&
+          other.modelId == this.modelId &&
+          other.providerModelId == this.providerModelId &&
+          other.responseType == this.responseType &&
+          other.durationMs == this.durationMs &&
+          other.inputTokens == this.inputTokens &&
+          other.outputTokens == this.outputTokens &&
+          other.cachedInputTokens == this.cachedInputTokens &&
+          other.thoughtsTokens == this.thoughtsTokens &&
+          other.totalTokens == this.totalTokens &&
+          other.credits == this.credits &&
+          other.energyKwh == this.energyKwh &&
+          other.carbonGCo2 == this.carbonGCo2 &&
+          other.waterLiters == this.waterLiters &&
+          other.renewablePercent == this.renewablePercent &&
+          other.pue == this.pue &&
+          other.dataCenter == this.dataCenter &&
+          other.upstreamProviderId == this.upstreamProviderId &&
+          other.serialized == this.serialized &&
+          other.schemaVersion == this.schemaVersion);
+}
+
+class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
+  final Value<String> id;
+  final Value<String?> parentId;
+  final Value<DateTime> createdAt;
+  final Value<String?> taskId;
+  final Value<String?> categoryId;
+  final Value<String?> entryId;
+  final Value<String?> agentId;
+  final Value<String?> wakeRunKey;
+  final Value<String?> threadId;
+  final Value<int?> turnIndex;
+  final Value<String?> promptId;
+  final Value<String?> skillId;
+  final Value<String?> configId;
+  final Value<String> providerType;
+  final Value<String?> modelId;
+  final Value<String?> providerModelId;
+  final Value<String> responseType;
+  final Value<int?> durationMs;
+  final Value<int?> inputTokens;
+  final Value<int?> outputTokens;
+  final Value<int?> cachedInputTokens;
+  final Value<int?> thoughtsTokens;
+  final Value<int?> totalTokens;
+  final Value<double?> credits;
+  final Value<double?> energyKwh;
+  final Value<double?> carbonGCo2;
+  final Value<double?> waterLiters;
+  final Value<double?> renewablePercent;
+  final Value<double?> pue;
+  final Value<String?> dataCenter;
+  final Value<String?> upstreamProviderId;
+  final Value<String> serialized;
+  final Value<int> schemaVersion;
+  final Value<int> rowid;
+  const ConsumptionEventsCompanion({
+    this.id = const Value.absent(),
+    this.parentId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.entryId = const Value.absent(),
+    this.agentId = const Value.absent(),
+    this.wakeRunKey = const Value.absent(),
+    this.threadId = const Value.absent(),
+    this.turnIndex = const Value.absent(),
+    this.promptId = const Value.absent(),
+    this.skillId = const Value.absent(),
+    this.configId = const Value.absent(),
+    this.providerType = const Value.absent(),
+    this.modelId = const Value.absent(),
+    this.providerModelId = const Value.absent(),
+    this.responseType = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    this.inputTokens = const Value.absent(),
+    this.outputTokens = const Value.absent(),
+    this.cachedInputTokens = const Value.absent(),
+    this.thoughtsTokens = const Value.absent(),
+    this.totalTokens = const Value.absent(),
+    this.credits = const Value.absent(),
+    this.energyKwh = const Value.absent(),
+    this.carbonGCo2 = const Value.absent(),
+    this.waterLiters = const Value.absent(),
+    this.renewablePercent = const Value.absent(),
+    this.pue = const Value.absent(),
+    this.dataCenter = const Value.absent(),
+    this.upstreamProviderId = const Value.absent(),
+    this.serialized = const Value.absent(),
+    this.schemaVersion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ConsumptionEventsCompanion.insert({
+    required String id,
+    this.parentId = const Value.absent(),
+    required DateTime createdAt,
+    this.taskId = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.entryId = const Value.absent(),
+    this.agentId = const Value.absent(),
+    this.wakeRunKey = const Value.absent(),
+    this.threadId = const Value.absent(),
+    this.turnIndex = const Value.absent(),
+    this.promptId = const Value.absent(),
+    this.skillId = const Value.absent(),
+    this.configId = const Value.absent(),
+    required String providerType,
+    this.modelId = const Value.absent(),
+    this.providerModelId = const Value.absent(),
+    required String responseType,
+    this.durationMs = const Value.absent(),
+    this.inputTokens = const Value.absent(),
+    this.outputTokens = const Value.absent(),
+    this.cachedInputTokens = const Value.absent(),
+    this.thoughtsTokens = const Value.absent(),
+    this.totalTokens = const Value.absent(),
+    this.credits = const Value.absent(),
+    this.energyKwh = const Value.absent(),
+    this.carbonGCo2 = const Value.absent(),
+    this.waterLiters = const Value.absent(),
+    this.renewablePercent = const Value.absent(),
+    this.pue = const Value.absent(),
+    this.dataCenter = const Value.absent(),
+    this.upstreamProviderId = const Value.absent(),
+    required String serialized,
+    this.schemaVersion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       createdAt = Value(createdAt),
+       providerType = Value(providerType),
+       responseType = Value(responseType),
+       serialized = Value(serialized);
+  static Insertable<ConsumptionEvent> custom({
+    Expression<String>? id,
+    Expression<String>? parentId,
+    Expression<DateTime>? createdAt,
+    Expression<String>? taskId,
+    Expression<String>? categoryId,
+    Expression<String>? entryId,
+    Expression<String>? agentId,
+    Expression<String>? wakeRunKey,
+    Expression<String>? threadId,
+    Expression<int>? turnIndex,
+    Expression<String>? promptId,
+    Expression<String>? skillId,
+    Expression<String>? configId,
+    Expression<String>? providerType,
+    Expression<String>? modelId,
+    Expression<String>? providerModelId,
+    Expression<String>? responseType,
+    Expression<int>? durationMs,
+    Expression<int>? inputTokens,
+    Expression<int>? outputTokens,
+    Expression<int>? cachedInputTokens,
+    Expression<int>? thoughtsTokens,
+    Expression<int>? totalTokens,
+    Expression<double>? credits,
+    Expression<double>? energyKwh,
+    Expression<double>? carbonGCo2,
+    Expression<double>? waterLiters,
+    Expression<double>? renewablePercent,
+    Expression<double>? pue,
+    Expression<String>? dataCenter,
+    Expression<String>? upstreamProviderId,
+    Expression<String>? serialized,
+    Expression<int>? schemaVersion,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (parentId != null) 'parent_id': parentId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (taskId != null) 'task_id': taskId,
+      if (categoryId != null) 'category_id': categoryId,
+      if (entryId != null) 'entry_id': entryId,
+      if (agentId != null) 'agent_id': agentId,
+      if (wakeRunKey != null) 'wake_run_key': wakeRunKey,
+      if (threadId != null) 'thread_id': threadId,
+      if (turnIndex != null) 'turn_index': turnIndex,
+      if (promptId != null) 'prompt_id': promptId,
+      if (skillId != null) 'skill_id': skillId,
+      if (configId != null) 'config_id': configId,
+      if (providerType != null) 'provider_type': providerType,
+      if (modelId != null) 'model_id': modelId,
+      if (providerModelId != null) 'provider_model_id': providerModelId,
+      if (responseType != null) 'response_type': responseType,
+      if (durationMs != null) 'duration_ms': durationMs,
+      if (inputTokens != null) 'input_tokens': inputTokens,
+      if (outputTokens != null) 'output_tokens': outputTokens,
+      if (cachedInputTokens != null) 'cached_input_tokens': cachedInputTokens,
+      if (thoughtsTokens != null) 'thoughts_tokens': thoughtsTokens,
+      if (totalTokens != null) 'total_tokens': totalTokens,
+      if (credits != null) 'credits': credits,
+      if (energyKwh != null) 'energy_kwh': energyKwh,
+      if (carbonGCo2 != null) 'carbon_g_co2': carbonGCo2,
+      if (waterLiters != null) 'water_liters': waterLiters,
+      if (renewablePercent != null) 'renewable_percent': renewablePercent,
+      if (pue != null) 'pue': pue,
+      if (dataCenter != null) 'data_center': dataCenter,
+      if (upstreamProviderId != null)
+        'upstream_provider_id': upstreamProviderId,
+      if (serialized != null) 'serialized': serialized,
+      if (schemaVersion != null) 'schema_version': schemaVersion,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ConsumptionEventsCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? parentId,
+    Value<DateTime>? createdAt,
+    Value<String?>? taskId,
+    Value<String?>? categoryId,
+    Value<String?>? entryId,
+    Value<String?>? agentId,
+    Value<String?>? wakeRunKey,
+    Value<String?>? threadId,
+    Value<int?>? turnIndex,
+    Value<String?>? promptId,
+    Value<String?>? skillId,
+    Value<String?>? configId,
+    Value<String>? providerType,
+    Value<String?>? modelId,
+    Value<String?>? providerModelId,
+    Value<String>? responseType,
+    Value<int?>? durationMs,
+    Value<int?>? inputTokens,
+    Value<int?>? outputTokens,
+    Value<int?>? cachedInputTokens,
+    Value<int?>? thoughtsTokens,
+    Value<int?>? totalTokens,
+    Value<double?>? credits,
+    Value<double?>? energyKwh,
+    Value<double?>? carbonGCo2,
+    Value<double?>? waterLiters,
+    Value<double?>? renewablePercent,
+    Value<double?>? pue,
+    Value<String?>? dataCenter,
+    Value<String?>? upstreamProviderId,
+    Value<String>? serialized,
+    Value<int>? schemaVersion,
+    Value<int>? rowid,
+  }) {
+    return ConsumptionEventsCompanion(
+      id: id ?? this.id,
+      parentId: parentId ?? this.parentId,
+      createdAt: createdAt ?? this.createdAt,
+      taskId: taskId ?? this.taskId,
+      categoryId: categoryId ?? this.categoryId,
+      entryId: entryId ?? this.entryId,
+      agentId: agentId ?? this.agentId,
+      wakeRunKey: wakeRunKey ?? this.wakeRunKey,
+      threadId: threadId ?? this.threadId,
+      turnIndex: turnIndex ?? this.turnIndex,
+      promptId: promptId ?? this.promptId,
+      skillId: skillId ?? this.skillId,
+      configId: configId ?? this.configId,
+      providerType: providerType ?? this.providerType,
+      modelId: modelId ?? this.modelId,
+      providerModelId: providerModelId ?? this.providerModelId,
+      responseType: responseType ?? this.responseType,
+      durationMs: durationMs ?? this.durationMs,
+      inputTokens: inputTokens ?? this.inputTokens,
+      outputTokens: outputTokens ?? this.outputTokens,
+      cachedInputTokens: cachedInputTokens ?? this.cachedInputTokens,
+      thoughtsTokens: thoughtsTokens ?? this.thoughtsTokens,
+      totalTokens: totalTokens ?? this.totalTokens,
+      credits: credits ?? this.credits,
+      energyKwh: energyKwh ?? this.energyKwh,
+      carbonGCo2: carbonGCo2 ?? this.carbonGCo2,
+      waterLiters: waterLiters ?? this.waterLiters,
+      renewablePercent: renewablePercent ?? this.renewablePercent,
+      pue: pue ?? this.pue,
+      dataCenter: dataCenter ?? this.dataCenter,
+      upstreamProviderId: upstreamProviderId ?? this.upstreamProviderId,
+      serialized: serialized ?? this.serialized,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (parentId.present) {
+      map['parent_id'] = Variable<String>(parentId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (taskId.present) {
+      map['task_id'] = Variable<String>(taskId.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (entryId.present) {
+      map['entry_id'] = Variable<String>(entryId.value);
+    }
+    if (agentId.present) {
+      map['agent_id'] = Variable<String>(agentId.value);
+    }
+    if (wakeRunKey.present) {
+      map['wake_run_key'] = Variable<String>(wakeRunKey.value);
+    }
+    if (threadId.present) {
+      map['thread_id'] = Variable<String>(threadId.value);
+    }
+    if (turnIndex.present) {
+      map['turn_index'] = Variable<int>(turnIndex.value);
+    }
+    if (promptId.present) {
+      map['prompt_id'] = Variable<String>(promptId.value);
+    }
+    if (skillId.present) {
+      map['skill_id'] = Variable<String>(skillId.value);
+    }
+    if (configId.present) {
+      map['config_id'] = Variable<String>(configId.value);
+    }
+    if (providerType.present) {
+      map['provider_type'] = Variable<String>(providerType.value);
+    }
+    if (modelId.present) {
+      map['model_id'] = Variable<String>(modelId.value);
+    }
+    if (providerModelId.present) {
+      map['provider_model_id'] = Variable<String>(providerModelId.value);
+    }
+    if (responseType.present) {
+      map['response_type'] = Variable<String>(responseType.value);
+    }
+    if (durationMs.present) {
+      map['duration_ms'] = Variable<int>(durationMs.value);
+    }
+    if (inputTokens.present) {
+      map['input_tokens'] = Variable<int>(inputTokens.value);
+    }
+    if (outputTokens.present) {
+      map['output_tokens'] = Variable<int>(outputTokens.value);
+    }
+    if (cachedInputTokens.present) {
+      map['cached_input_tokens'] = Variable<int>(cachedInputTokens.value);
+    }
+    if (thoughtsTokens.present) {
+      map['thoughts_tokens'] = Variable<int>(thoughtsTokens.value);
+    }
+    if (totalTokens.present) {
+      map['total_tokens'] = Variable<int>(totalTokens.value);
+    }
+    if (credits.present) {
+      map['credits'] = Variable<double>(credits.value);
+    }
+    if (energyKwh.present) {
+      map['energy_kwh'] = Variable<double>(energyKwh.value);
+    }
+    if (carbonGCo2.present) {
+      map['carbon_g_co2'] = Variable<double>(carbonGCo2.value);
+    }
+    if (waterLiters.present) {
+      map['water_liters'] = Variable<double>(waterLiters.value);
+    }
+    if (renewablePercent.present) {
+      map['renewable_percent'] = Variable<double>(renewablePercent.value);
+    }
+    if (pue.present) {
+      map['pue'] = Variable<double>(pue.value);
+    }
+    if (dataCenter.present) {
+      map['data_center'] = Variable<String>(dataCenter.value);
+    }
+    if (upstreamProviderId.present) {
+      map['upstream_provider_id'] = Variable<String>(upstreamProviderId.value);
+    }
+    if (serialized.present) {
+      map['serialized'] = Variable<String>(serialized.value);
+    }
+    if (schemaVersion.present) {
+      map['schema_version'] = Variable<int>(schemaVersion.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConsumptionEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('parentId: $parentId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('taskId: $taskId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('entryId: $entryId, ')
+          ..write('agentId: $agentId, ')
+          ..write('wakeRunKey: $wakeRunKey, ')
+          ..write('threadId: $threadId, ')
+          ..write('turnIndex: $turnIndex, ')
+          ..write('promptId: $promptId, ')
+          ..write('skillId: $skillId, ')
+          ..write('configId: $configId, ')
+          ..write('providerType: $providerType, ')
+          ..write('modelId: $modelId, ')
+          ..write('providerModelId: $providerModelId, ')
+          ..write('responseType: $responseType, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('inputTokens: $inputTokens, ')
+          ..write('outputTokens: $outputTokens, ')
+          ..write('cachedInputTokens: $cachedInputTokens, ')
+          ..write('thoughtsTokens: $thoughtsTokens, ')
+          ..write('totalTokens: $totalTokens, ')
+          ..write('credits: $credits, ')
+          ..write('energyKwh: $energyKwh, ')
+          ..write('carbonGCo2: $carbonGCo2, ')
+          ..write('waterLiters: $waterLiters, ')
+          ..write('renewablePercent: $renewablePercent, ')
+          ..write('pue: $pue, ')
+          ..write('dataCenter: $dataCenter, ')
+          ..write('upstreamProviderId: $upstreamProviderId, ')
+          ..write('serialized: $serialized, ')
+          ..write('schemaVersion: $schemaVersion, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+abstract class _$ConsumptionDatabase extends GeneratedDatabase {
+  _$ConsumptionDatabase(QueryExecutor e) : super(e);
+  _$ConsumptionDatabase.connect(DatabaseConnection c) : super.connect(c);
+  $ConsumptionDatabaseManager get managers => $ConsumptionDatabaseManager(this);
+  late final ConsumptionEvents consumptionEvents = ConsumptionEvents(this);
+  late final Index idxConsumptionTaskCreated = Index(
+    'idx_consumption_task_created',
+    'CREATE INDEX idx_consumption_task_created ON consumption_events (task_id, created_at) WHERE task_id IS NOT NULL',
+  );
+  late final Index idxConsumptionCategoryCreated = Index(
+    'idx_consumption_category_created',
+    'CREATE INDEX idx_consumption_category_created ON consumption_events (category_id, created_at)',
+  );
+  late final Index idxConsumptionCreated = Index(
+    'idx_consumption_created',
+    'CREATE INDEX idx_consumption_created ON consumption_events (created_at)',
+  );
+  Selectable<ConsumptionEvent> getConsumptionEventById(String id) {
+    return customSelect(
+      'SELECT * FROM consumption_events WHERE id = ?1',
+      variables: [Variable<String>(id)],
+      readsFrom: {consumptionEvents},
+    ).asyncMap(consumptionEvents.mapFromRow);
+  }
+
+  Selectable<String?> getConsumptionEventVectorClockById(String id) {
+    return customSelect(
+      'SELECT json_extract(serialized, \'\$.vectorClock\') AS vector_clock FROM consumption_events WHERE id = ?1',
+      variables: [Variable<String>(id)],
+      readsFrom: {consumptionEvents},
+    ).map((QueryRow row) => row.readNullable<String>('vector_clock'));
+  }
+
+  Selectable<ConsumptionEvent> getConsumptionEventsWithNullVectorClock() {
+    return customSelect(
+      'SELECT * FROM consumption_events WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
+      variables: [],
+      readsFrom: {consumptionEvents},
+    ).asyncMap(consumptionEvents.mapFromRow);
+  }
+
+  Selectable<SumConsumptionByTaskResult> sumConsumptionByTask(String? taskId) {
+    return customSelect(
+      'SELECT COUNT(*) AS call_count, COUNT(energy_kwh) AS impact_call_count, CAST(COALESCE(SUM(input_tokens), 0) AS INT) AS input_tokens, CAST(COALESCE(SUM(output_tokens), 0) AS INT) AS output_tokens, CAST(COALESCE(SUM(cached_input_tokens), 0) AS INT) AS cached_input_tokens, CAST(COALESCE(SUM(thoughts_tokens), 0) AS INT) AS thoughts_tokens, CAST(COALESCE(SUM(total_tokens), 0) AS INT) AS total_tokens, COALESCE(SUM(credits), 0.0) AS credits, COALESCE(SUM(energy_kwh), 0.0) AS energy_kwh, COALESCE(SUM(carbon_g_co2), 0.0) AS carbon_g_co2, COALESCE(SUM(water_liters), 0.0) AS water_liters FROM consumption_events WHERE task_id = ?1',
+      variables: [Variable<String>(taskId)],
+      readsFrom: {consumptionEvents},
+    ).map(
+      (QueryRow row) => SumConsumptionByTaskResult(
+        callCount: row.read<int>('call_count'),
+        impactCallCount: row.read<int>('impact_call_count'),
+        inputTokens: row.read<int>('input_tokens'),
+        outputTokens: row.read<int>('output_tokens'),
+        cachedInputTokens: row.read<int>('cached_input_tokens'),
+        thoughtsTokens: row.read<int>('thoughts_tokens'),
+        totalTokens: row.read<int>('total_tokens'),
+        credits: row.read<double>('credits'),
+        energyKwh: row.read<double>('energy_kwh'),
+        carbonGCo2: row.read<double>('carbon_g_co2'),
+        waterLiters: row.read<double>('water_liters'),
+      ),
+    );
+  }
+
+  @override
+  Iterable<TableInfo<Table, Object?>> get allTables =>
+      allSchemaEntities.whereType<TableInfo<Table, Object?>>();
+  @override
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    consumptionEvents,
+    idxConsumptionTaskCreated,
+    idxConsumptionCategoryCreated,
+    idxConsumptionCreated,
+  ];
+}
+
+typedef $ConsumptionEventsCreateCompanionBuilder =
+    ConsumptionEventsCompanion Function({
+      required String id,
+      Value<String?> parentId,
+      required DateTime createdAt,
+      Value<String?> taskId,
+      Value<String?> categoryId,
+      Value<String?> entryId,
+      Value<String?> agentId,
+      Value<String?> wakeRunKey,
+      Value<String?> threadId,
+      Value<int?> turnIndex,
+      Value<String?> promptId,
+      Value<String?> skillId,
+      Value<String?> configId,
+      required String providerType,
+      Value<String?> modelId,
+      Value<String?> providerModelId,
+      required String responseType,
+      Value<int?> durationMs,
+      Value<int?> inputTokens,
+      Value<int?> outputTokens,
+      Value<int?> cachedInputTokens,
+      Value<int?> thoughtsTokens,
+      Value<int?> totalTokens,
+      Value<double?> credits,
+      Value<double?> energyKwh,
+      Value<double?> carbonGCo2,
+      Value<double?> waterLiters,
+      Value<double?> renewablePercent,
+      Value<double?> pue,
+      Value<String?> dataCenter,
+      Value<String?> upstreamProviderId,
+      required String serialized,
+      Value<int> schemaVersion,
+      Value<int> rowid,
+    });
+typedef $ConsumptionEventsUpdateCompanionBuilder =
+    ConsumptionEventsCompanion Function({
+      Value<String> id,
+      Value<String?> parentId,
+      Value<DateTime> createdAt,
+      Value<String?> taskId,
+      Value<String?> categoryId,
+      Value<String?> entryId,
+      Value<String?> agentId,
+      Value<String?> wakeRunKey,
+      Value<String?> threadId,
+      Value<int?> turnIndex,
+      Value<String?> promptId,
+      Value<String?> skillId,
+      Value<String?> configId,
+      Value<String> providerType,
+      Value<String?> modelId,
+      Value<String?> providerModelId,
+      Value<String> responseType,
+      Value<int?> durationMs,
+      Value<int?> inputTokens,
+      Value<int?> outputTokens,
+      Value<int?> cachedInputTokens,
+      Value<int?> thoughtsTokens,
+      Value<int?> totalTokens,
+      Value<double?> credits,
+      Value<double?> energyKwh,
+      Value<double?> carbonGCo2,
+      Value<double?> waterLiters,
+      Value<double?> renewablePercent,
+      Value<double?> pue,
+      Value<String?> dataCenter,
+      Value<String?> upstreamProviderId,
+      Value<String> serialized,
+      Value<int> schemaVersion,
+      Value<int> rowid,
+    });
+
+class $ConsumptionEventsFilterComposer
+    extends Composer<_$ConsumptionDatabase, ConsumptionEvents> {
+  $ConsumptionEventsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parentId => $composableBuilder(
+    column: $table.parentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taskId => $composableBuilder(
+    column: $table.taskId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entryId => $composableBuilder(
+    column: $table.entryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get agentId => $composableBuilder(
+    column: $table.agentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get wakeRunKey => $composableBuilder(
+    column: $table.wakeRunKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get threadId => $composableBuilder(
+    column: $table.threadId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get turnIndex => $composableBuilder(
+    column: $table.turnIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get promptId => $composableBuilder(
+    column: $table.promptId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get skillId => $composableBuilder(
+    column: $table.skillId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get configId => $composableBuilder(
+    column: $table.configId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get providerType => $composableBuilder(
+    column: $table.providerType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get providerModelId => $composableBuilder(
+    column: $table.providerModelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get responseType => $composableBuilder(
+    column: $table.responseType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get inputTokens => $composableBuilder(
+    column: $table.inputTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get outputTokens => $composableBuilder(
+    column: $table.outputTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cachedInputTokens => $composableBuilder(
+    column: $table.cachedInputTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get thoughtsTokens => $composableBuilder(
+    column: $table.thoughtsTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalTokens => $composableBuilder(
+    column: $table.totalTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get credits => $composableBuilder(
+    column: $table.credits,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get energyKwh => $composableBuilder(
+    column: $table.energyKwh,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get carbonGCo2 => $composableBuilder(
+    column: $table.carbonGCo2,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get waterLiters => $composableBuilder(
+    column: $table.waterLiters,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get renewablePercent => $composableBuilder(
+    column: $table.renewablePercent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get pue => $composableBuilder(
+    column: $table.pue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dataCenter => $composableBuilder(
+    column: $table.dataCenter,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get upstreamProviderId => $composableBuilder(
+    column: $table.upstreamProviderId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get schemaVersion => $composableBuilder(
+    column: $table.schemaVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $ConsumptionEventsOrderingComposer
+    extends Composer<_$ConsumptionDatabase, ConsumptionEvents> {
+  $ConsumptionEventsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get parentId => $composableBuilder(
+    column: $table.parentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get taskId => $composableBuilder(
+    column: $table.taskId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entryId => $composableBuilder(
+    column: $table.entryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get agentId => $composableBuilder(
+    column: $table.agentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get wakeRunKey => $composableBuilder(
+    column: $table.wakeRunKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get threadId => $composableBuilder(
+    column: $table.threadId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get turnIndex => $composableBuilder(
+    column: $table.turnIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get promptId => $composableBuilder(
+    column: $table.promptId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get skillId => $composableBuilder(
+    column: $table.skillId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get configId => $composableBuilder(
+    column: $table.configId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get providerType => $composableBuilder(
+    column: $table.providerType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get providerModelId => $composableBuilder(
+    column: $table.providerModelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get responseType => $composableBuilder(
+    column: $table.responseType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get inputTokens => $composableBuilder(
+    column: $table.inputTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get outputTokens => $composableBuilder(
+    column: $table.outputTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cachedInputTokens => $composableBuilder(
+    column: $table.cachedInputTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get thoughtsTokens => $composableBuilder(
+    column: $table.thoughtsTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalTokens => $composableBuilder(
+    column: $table.totalTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get credits => $composableBuilder(
+    column: $table.credits,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get energyKwh => $composableBuilder(
+    column: $table.energyKwh,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get carbonGCo2 => $composableBuilder(
+    column: $table.carbonGCo2,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get waterLiters => $composableBuilder(
+    column: $table.waterLiters,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get renewablePercent => $composableBuilder(
+    column: $table.renewablePercent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get pue => $composableBuilder(
+    column: $table.pue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dataCenter => $composableBuilder(
+    column: $table.dataCenter,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get upstreamProviderId => $composableBuilder(
+    column: $table.upstreamProviderId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get schemaVersion => $composableBuilder(
+    column: $table.schemaVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $ConsumptionEventsAnnotationComposer
+    extends Composer<_$ConsumptionDatabase, ConsumptionEvents> {
+  $ConsumptionEventsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get parentId =>
+      $composableBuilder(column: $table.parentId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get taskId =>
+      $composableBuilder(column: $table.taskId, builder: (column) => column);
+
+  GeneratedColumn<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entryId =>
+      $composableBuilder(column: $table.entryId, builder: (column) => column);
+
+  GeneratedColumn<String> get agentId =>
+      $composableBuilder(column: $table.agentId, builder: (column) => column);
+
+  GeneratedColumn<String> get wakeRunKey => $composableBuilder(
+    column: $table.wakeRunKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get threadId =>
+      $composableBuilder(column: $table.threadId, builder: (column) => column);
+
+  GeneratedColumn<int> get turnIndex =>
+      $composableBuilder(column: $table.turnIndex, builder: (column) => column);
+
+  GeneratedColumn<String> get promptId =>
+      $composableBuilder(column: $table.promptId, builder: (column) => column);
+
+  GeneratedColumn<String> get skillId =>
+      $composableBuilder(column: $table.skillId, builder: (column) => column);
+
+  GeneratedColumn<String> get configId =>
+      $composableBuilder(column: $table.configId, builder: (column) => column);
+
+  GeneratedColumn<String> get providerType => $composableBuilder(
+    column: $table.providerType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get modelId =>
+      $composableBuilder(column: $table.modelId, builder: (column) => column);
+
+  GeneratedColumn<String> get providerModelId => $composableBuilder(
+    column: $table.providerModelId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get responseType => $composableBuilder(
+    column: $table.responseType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get inputTokens => $composableBuilder(
+    column: $table.inputTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get outputTokens => $composableBuilder(
+    column: $table.outputTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get cachedInputTokens => $composableBuilder(
+    column: $table.cachedInputTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get thoughtsTokens => $composableBuilder(
+    column: $table.thoughtsTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get totalTokens => $composableBuilder(
+    column: $table.totalTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get credits =>
+      $composableBuilder(column: $table.credits, builder: (column) => column);
+
+  GeneratedColumn<double> get energyKwh =>
+      $composableBuilder(column: $table.energyKwh, builder: (column) => column);
+
+  GeneratedColumn<double> get carbonGCo2 => $composableBuilder(
+    column: $table.carbonGCo2,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get waterLiters => $composableBuilder(
+    column: $table.waterLiters,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get renewablePercent => $composableBuilder(
+    column: $table.renewablePercent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get pue =>
+      $composableBuilder(column: $table.pue, builder: (column) => column);
+
+  GeneratedColumn<String> get dataCenter => $composableBuilder(
+    column: $table.dataCenter,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get upstreamProviderId => $composableBuilder(
+    column: $table.upstreamProviderId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+    column: $table.serialized,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get schemaVersion => $composableBuilder(
+    column: $table.schemaVersion,
+    builder: (column) => column,
+  );
+}
+
+class $ConsumptionEventsTableManager
+    extends
+        RootTableManager<
+          _$ConsumptionDatabase,
+          ConsumptionEvents,
+          ConsumptionEvent,
+          $ConsumptionEventsFilterComposer,
+          $ConsumptionEventsOrderingComposer,
+          $ConsumptionEventsAnnotationComposer,
+          $ConsumptionEventsCreateCompanionBuilder,
+          $ConsumptionEventsUpdateCompanionBuilder,
+          (
+            ConsumptionEvent,
+            BaseReferences<
+              _$ConsumptionDatabase,
+              ConsumptionEvents,
+              ConsumptionEvent
+            >,
+          ),
+          ConsumptionEvent,
+          PrefetchHooks Function()
+        > {
+  $ConsumptionEventsTableManager(
+    _$ConsumptionDatabase db,
+    ConsumptionEvents table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $ConsumptionEventsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $ConsumptionEventsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $ConsumptionEventsAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> parentId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> taskId = const Value.absent(),
+                Value<String?> categoryId = const Value.absent(),
+                Value<String?> entryId = const Value.absent(),
+                Value<String?> agentId = const Value.absent(),
+                Value<String?> wakeRunKey = const Value.absent(),
+                Value<String?> threadId = const Value.absent(),
+                Value<int?> turnIndex = const Value.absent(),
+                Value<String?> promptId = const Value.absent(),
+                Value<String?> skillId = const Value.absent(),
+                Value<String?> configId = const Value.absent(),
+                Value<String> providerType = const Value.absent(),
+                Value<String?> modelId = const Value.absent(),
+                Value<String?> providerModelId = const Value.absent(),
+                Value<String> responseType = const Value.absent(),
+                Value<int?> durationMs = const Value.absent(),
+                Value<int?> inputTokens = const Value.absent(),
+                Value<int?> outputTokens = const Value.absent(),
+                Value<int?> cachedInputTokens = const Value.absent(),
+                Value<int?> thoughtsTokens = const Value.absent(),
+                Value<int?> totalTokens = const Value.absent(),
+                Value<double?> credits = const Value.absent(),
+                Value<double?> energyKwh = const Value.absent(),
+                Value<double?> carbonGCo2 = const Value.absent(),
+                Value<double?> waterLiters = const Value.absent(),
+                Value<double?> renewablePercent = const Value.absent(),
+                Value<double?> pue = const Value.absent(),
+                Value<String?> dataCenter = const Value.absent(),
+                Value<String?> upstreamProviderId = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<int> schemaVersion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConsumptionEventsCompanion(
+                id: id,
+                parentId: parentId,
+                createdAt: createdAt,
+                taskId: taskId,
+                categoryId: categoryId,
+                entryId: entryId,
+                agentId: agentId,
+                wakeRunKey: wakeRunKey,
+                threadId: threadId,
+                turnIndex: turnIndex,
+                promptId: promptId,
+                skillId: skillId,
+                configId: configId,
+                providerType: providerType,
+                modelId: modelId,
+                providerModelId: providerModelId,
+                responseType: responseType,
+                durationMs: durationMs,
+                inputTokens: inputTokens,
+                outputTokens: outputTokens,
+                cachedInputTokens: cachedInputTokens,
+                thoughtsTokens: thoughtsTokens,
+                totalTokens: totalTokens,
+                credits: credits,
+                energyKwh: energyKwh,
+                carbonGCo2: carbonGCo2,
+                waterLiters: waterLiters,
+                renewablePercent: renewablePercent,
+                pue: pue,
+                dataCenter: dataCenter,
+                upstreamProviderId: upstreamProviderId,
+                serialized: serialized,
+                schemaVersion: schemaVersion,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> parentId = const Value.absent(),
+                required DateTime createdAt,
+                Value<String?> taskId = const Value.absent(),
+                Value<String?> categoryId = const Value.absent(),
+                Value<String?> entryId = const Value.absent(),
+                Value<String?> agentId = const Value.absent(),
+                Value<String?> wakeRunKey = const Value.absent(),
+                Value<String?> threadId = const Value.absent(),
+                Value<int?> turnIndex = const Value.absent(),
+                Value<String?> promptId = const Value.absent(),
+                Value<String?> skillId = const Value.absent(),
+                Value<String?> configId = const Value.absent(),
+                required String providerType,
+                Value<String?> modelId = const Value.absent(),
+                Value<String?> providerModelId = const Value.absent(),
+                required String responseType,
+                Value<int?> durationMs = const Value.absent(),
+                Value<int?> inputTokens = const Value.absent(),
+                Value<int?> outputTokens = const Value.absent(),
+                Value<int?> cachedInputTokens = const Value.absent(),
+                Value<int?> thoughtsTokens = const Value.absent(),
+                Value<int?> totalTokens = const Value.absent(),
+                Value<double?> credits = const Value.absent(),
+                Value<double?> energyKwh = const Value.absent(),
+                Value<double?> carbonGCo2 = const Value.absent(),
+                Value<double?> waterLiters = const Value.absent(),
+                Value<double?> renewablePercent = const Value.absent(),
+                Value<double?> pue = const Value.absent(),
+                Value<String?> dataCenter = const Value.absent(),
+                Value<String?> upstreamProviderId = const Value.absent(),
+                required String serialized,
+                Value<int> schemaVersion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConsumptionEventsCompanion.insert(
+                id: id,
+                parentId: parentId,
+                createdAt: createdAt,
+                taskId: taskId,
+                categoryId: categoryId,
+                entryId: entryId,
+                agentId: agentId,
+                wakeRunKey: wakeRunKey,
+                threadId: threadId,
+                turnIndex: turnIndex,
+                promptId: promptId,
+                skillId: skillId,
+                configId: configId,
+                providerType: providerType,
+                modelId: modelId,
+                providerModelId: providerModelId,
+                responseType: responseType,
+                durationMs: durationMs,
+                inputTokens: inputTokens,
+                outputTokens: outputTokens,
+                cachedInputTokens: cachedInputTokens,
+                thoughtsTokens: thoughtsTokens,
+                totalTokens: totalTokens,
+                credits: credits,
+                energyKwh: energyKwh,
+                carbonGCo2: carbonGCo2,
+                waterLiters: waterLiters,
+                renewablePercent: renewablePercent,
+                pue: pue,
+                dataCenter: dataCenter,
+                upstreamProviderId: upstreamProviderId,
+                serialized: serialized,
+                schemaVersion: schemaVersion,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $ConsumptionEventsProcessedTableManager =
+    ProcessedTableManager<
+      _$ConsumptionDatabase,
+      ConsumptionEvents,
+      ConsumptionEvent,
+      $ConsumptionEventsFilterComposer,
+      $ConsumptionEventsOrderingComposer,
+      $ConsumptionEventsAnnotationComposer,
+      $ConsumptionEventsCreateCompanionBuilder,
+      $ConsumptionEventsUpdateCompanionBuilder,
+      (
+        ConsumptionEvent,
+        BaseReferences<
+          _$ConsumptionDatabase,
+          ConsumptionEvents,
+          ConsumptionEvent
+        >,
+      ),
+      ConsumptionEvent,
+      PrefetchHooks Function()
+    >;
+
+class $ConsumptionDatabaseManager {
+  final _$ConsumptionDatabase _db;
+  $ConsumptionDatabaseManager(this._db);
+  $ConsumptionEventsTableManager get consumptionEvents =>
+      $ConsumptionEventsTableManager(_db, _db.consumptionEvents);
+}
+
+class SumConsumptionByTaskResult {
+  final int callCount;
+  final int impactCallCount;
+  final int inputTokens;
+  final int outputTokens;
+  final int cachedInputTokens;
+  final int thoughtsTokens;
+  final int totalTokens;
+  final double credits;
+  final double energyKwh;
+  final double carbonGCo2;
+  final double waterLiters;
+  SumConsumptionByTaskResult({
+    required this.callCount,
+    required this.impactCallCount,
+    required this.inputTokens,
+    required this.outputTokens,
+    required this.cachedInputTokens,
+    required this.thoughtsTokens,
+    required this.totalTokens,
+    required this.credits,
+    required this.energyKwh,
+    required this.carbonGCo2,
+    required this.waterLiters,
+  });
+}

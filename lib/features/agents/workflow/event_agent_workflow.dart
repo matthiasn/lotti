@@ -21,7 +21,9 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -247,6 +249,7 @@ class EventAgentWorkflow {
       }
 
       // 6. Run the conversation.
+      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -256,6 +259,13 @@ class EventAgentWorkflow {
         tools: tools,
         temperature: 0.3,
         strategy: strategy,
+        consumptionAgentId: recordConsumption ? agentId : null,
+        consumptionTaskId: recordConsumption ? eventId : null,
+        consumptionCategoryId: recordConsumption
+            ? eventEntity.meta.categoryId
+            : null,
+        consumptionWakeRunKey: recordConsumption ? runKey : null,
+        consumptionThreadId: recordConsumption ? threadId : null,
       );
 
       // 6b. Forced-report retry: if the model stopped without publishing a
@@ -269,6 +279,13 @@ class EventAgentWorkflow {
           inferenceRepo: inferenceRepo,
           tools: tools,
           strategy: strategy,
+          consumptionAgentId: recordConsumption ? agentId : null,
+          consumptionTaskId: recordConsumption ? eventId : null,
+          consumptionCategoryId: recordConsumption
+              ? eventEntity.meta.categoryId
+              : null,
+          consumptionWakeRunKey: recordConsumption ? runKey : null,
+          consumptionThreadId: recordConsumption ? threadId : null,
         );
         if (retryUsage != null) {
           usage = usage == null ? retryUsage : usage.merge(retryUsage);
@@ -542,6 +559,11 @@ class EventAgentWorkflow {
     required CloudInferenceWrapper inferenceRepo,
     required List<ChatCompletionTool> tools,
     required EventAgentStrategy strategy,
+    String? consumptionAgentId,
+    String? consumptionTaskId,
+    String? consumptionCategoryId,
+    String? consumptionWakeRunKey,
+    String? consumptionThreadId,
   }) async {
     _log(
       'no recap published — retrying with forced update_report',
@@ -574,6 +596,11 @@ class EventAgentWorkflow {
         toolChoice: forcedToolChoice,
         temperature: 0.3,
         strategy: strategy,
+        consumptionAgentId: consumptionAgentId,
+        consumptionTaskId: consumptionTaskId,
+        consumptionCategoryId: consumptionCategoryId,
+        consumptionWakeRunKey: consumptionWakeRunKey,
+        consumptionThreadId: consumptionThreadId,
       );
     } catch (e, s) {
       _logError(

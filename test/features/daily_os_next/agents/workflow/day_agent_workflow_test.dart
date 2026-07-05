@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
@@ -25,6 +26,7 @@ import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sect
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -1711,6 +1713,39 @@ void main() {
         final wrapper = inferenceRepo as CloudInferenceWrapper;
         // testAiModel defaults to AiConfigModel.geminiThinkingMode == low.
         expect(wrapper.geminiThinkingMode, GeminiThinkingMode.low);
+
+        // No AiConsumptionRecorder is registered, so the consumption gate
+        // stays closed and no owner ids are forwarded to sendMessage.
+        final call = conversationRepository.sendMessageCalls.single;
+        expect(call.consumptionAgentId, isNull);
+        expect(call.consumptionWakeRunKey, isNull);
+        expect(call.consumptionThreadId, isNull);
+      },
+    );
+
+    test(
+      'passes consumption owner ids to sendMessage when an '
+      'AiConsumptionRecorder is registered',
+      () async {
+        getIt.registerSingleton<AiConsumptionRecorder>(
+          MockAiConsumptionRecorder(),
+        );
+        addTearDown(() {
+          if (getIt.isRegistered<AiConsumptionRecorder>()) {
+            getIt.unregister<AiConsumptionRecorder>();
+          }
+        });
+        conversationRepository.finalResponse = 'Day-agent wake completed.';
+
+        final result = await execute(workflow());
+
+        expect(result.success, isTrue);
+        // Day agents are day-level: only agent/run/thread ownership is
+        // attributed (no per-task or per-category owner).
+        final call = conversationRepository.sendMessageCalls.single;
+        expect(call.consumptionAgentId, agentId);
+        expect(call.consumptionWakeRunKey, runKey);
+        expect(call.consumptionThreadId, threadId);
       },
     );
 
@@ -4083,6 +4118,9 @@ class _ConversationHarness extends ConversationRepository {
           String model,
           ChatCompletionToolChoiceOption? toolChoice,
           List<ChatCompletionTool> tools,
+          String? consumptionAgentId,
+          String? consumptionWakeRunKey,
+          String? consumptionThreadId,
         })
       >[];
   List<List<ChatCompletionMessageToolCall>> toolCallsByInvocation = const [];
@@ -4120,6 +4158,11 @@ class _ConversationHarness extends ConversationRepository {
     ChatCompletionToolChoiceOption? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
+    String? consumptionAgentId,
+    String? consumptionTaskId,
+    String? consumptionCategoryId,
+    String? consumptionWakeRunKey,
+    String? consumptionThreadId,
   }) async {
     final thrown = errorToThrow;
     if (thrown != null) throw thrown;
@@ -4133,6 +4176,9 @@ class _ConversationHarness extends ConversationRepository {
         model: model,
         toolChoice: toolChoice,
         tools: tools ?? const <ChatCompletionTool>[],
+        consumptionAgentId: consumptionAgentId,
+        consumptionWakeRunKey: consumptionWakeRunKey,
+        consumptionThreadId: consumptionThreadId,
       ),
     );
     final invocationIndex = sendMessageCalls.length - 1;

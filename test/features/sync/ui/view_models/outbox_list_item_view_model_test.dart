@@ -17,6 +17,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart'
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../../ai_consumption/test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -286,6 +287,18 @@ void main() {
               subject: 'agentBundle:agent-001:run-001',
             ),
             expectedLabel: (ctx) => ctx.messages.syncPayloadAgentBundle,
+          ),
+          (
+            name: 'consumption event',
+            item: payloadItem(
+              id: 15,
+              message: SyncMessage.consumptionEvent(
+                event: makeConsumptionEvent(),
+                status: SyncEntryStatus.update,
+              ).toJson(),
+              subject: 'consumptionEvent:evt-1',
+            ),
+            expectedLabel: (ctx) => ctx.messages.syncPayloadConsumptionEvent,
           ),
         ];
 

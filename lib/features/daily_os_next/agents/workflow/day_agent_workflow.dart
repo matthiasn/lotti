@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/daily_os_planner_wake_context.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
@@ -39,6 +40,7 @@ import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -373,6 +375,7 @@ class DayAgentWorkflow {
       }
 
       final tools = _buildToolDefinitions();
+      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -382,6 +385,10 @@ class DayAgentWorkflow {
         tools: tools,
         temperature: 0.3,
         strategy: strategy,
+        // Day agents are day-level, so there's no single task/category owner.
+        consumptionAgentId: recordConsumption ? agentId : null,
+        consumptionWakeRunKey: recordConsumption ? runKey : null,
+        consumptionThreadId: recordConsumption ? threadId : null,
       );
 
       if (_requiresCaptureParse(

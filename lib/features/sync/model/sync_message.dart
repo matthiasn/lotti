@@ -4,6 +4,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -221,6 +222,23 @@ sealed class SyncMessage with _$SyncMessage {
     /// clock and superseded outbox entries.
     List<VectorClock>? coveredVectorClocks,
   }) = SyncAgentLink;
+
+  /// One immutable AI-consumption event (tokens/cost/energy for a backend
+  /// call). Append-only and tiny, so it rides **inline** in the envelope (like
+  /// [SyncEntryLink]) rather than as a file attachment. Receivers upsert by
+  /// `event.id` under vector-clock dominance; a replayed id is a no-op.
+  const factory SyncMessage.consumptionEvent({
+    required AiConsumptionEvent event,
+    required SyncEntryStatus status,
+
+    /// The host UUID that created this consumption event.
+    /// Used for sequence tracking to detect gaps in sync.
+    String? originatingHostId,
+
+    /// Vector clocks covered by this payload, including the current vector
+    /// clock and superseded outbox entries.
+    List<VectorClock>? coveredVectorClocks,
+  }) = SyncConsumptionEvent;
 
   /// A wake-scoped bundle of agent entity/link mutations.
   ///

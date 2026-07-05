@@ -13,6 +13,7 @@ void main() {
           SyncSequencePayloadType.agentLink,
           SyncSequencePayloadType.notification,
           SyncSequencePayloadType.notificationStateUpdate,
+          SyncSequencePayloadType.consumptionEvent,
         ],
       );
     });

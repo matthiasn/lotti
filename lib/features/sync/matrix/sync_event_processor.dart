@@ -25,6 +25,8 @@ import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -61,6 +63,7 @@ part 'sync_event_processor_descriptor_cache.dart';
 part 'sync_event_processor_notification_handlers.dart';
 part 'sync_event_processor_outbox_bundle.dart';
 part 'sync_event_processor_apply.dart';
+part 'sync_event_processor_consumption_handlers.dart';
 
 /// Sync message bodies below this base64 length are decoded inline; anything
 /// longer hands off to a worker isolate via `compute`. The break-even point
@@ -165,6 +168,11 @@ class SyncEventProcessor {
   /// dependency. When set, incoming agent entities and links are upserted
   /// directly (no outbox enqueue — prevents echo loops).
   AgentRepository? agentRepository;
+
+  /// Consumption repository, injected after construction (same rationale as
+  /// [agentRepository]). When set, incoming consumption events are upserted
+  /// directly (no outbox enqueue — prevents echo loops).
+  ConsumptionRepository? consumptionRepository;
 
   /// Wake orchestrator, injected after agent infrastructure starts. Used to
   /// remove subscriptions when an incoming sync message pauses or destroys
@@ -384,6 +392,7 @@ class SyncEventProcessor {
     final SyncConfigFlag m => m.originatingHostId,
     final SyncAgentEntity m => m.originatingHostId,
     final SyncAgentLink m => m.originatingHostId,
+    final SyncConsumptionEvent m => m.originatingHostId,
     final SyncNotification m => m.originatingHostId,
     final SyncNotificationStateUpdate m => m.originatingHostId,
     final SyncAgentBundle m => m.originatingHostId,

@@ -7,6 +7,8 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -53,6 +55,10 @@ class BackfillResponseHandler {
   /// Agent repository, injected after construction to avoid circular
   /// dependency. When set, backfill can look up agent entities and links.
   AgentRepository? agentRepository;
+
+  /// Consumption repository, injected after construction (same rationale as
+  /// [agentRepository]). When set, backfill can look up consumption events.
+  ConsumptionRepository? consumptionRepository;
 
   /// Tracks recently-responded (hostId, counter) pairs with their timestamp
   /// to prevent duplicate responses across request cycles.
@@ -298,6 +304,18 @@ class BackfillResponseHandler {
                 ),
                 getVectorClock: (notification) => notification.meta.vectorClock,
                 payloadTypeName: 'notificationStateUpdate',
+              );
+            }
+          case SyncSequencePayloadType.consumptionEvent:
+            if (consumptionRepository != null) {
+              await _tryVerifyAndMarkBackfilled(
+                hostId: response.hostId,
+                counter: response.counter,
+                payloadId: payloadId,
+                payloadType: payloadType,
+                loadPayload: () => consumptionRepository!.getEvent(payloadId),
+                getVectorClock: (event) => event.vectorClock,
+                payloadTypeName: 'consumptionEvent',
               );
             }
         }
@@ -687,6 +705,33 @@ class BackfillResponseHandler {
         }
 
         return true;
+      case SyncSequencePayloadType.consumptionEvent:
+        if (consumptionRepository == null) {
+          _trace(
+            'consumptionRepository not wired, skipping consumptionEvent '
+            '$payloadId',
+            subDomain: 'backfill.processEntry',
+          );
+          return false;
+        }
+        // Reuses the generic agent-backfill helper (immutable payload, inline
+        // re-enqueue) — the "Agent" name is historical; it is type-generic.
+        return _processAgentBackfillEntry<AiConsumptionEvent>(
+          hostId: hostId,
+          counter: counter,
+          payloadId: payloadId,
+          payloadType: payloadType,
+          originatingHostId: originatingHostId,
+          sentPayloads: sentPayloads,
+          loadPayload: () => consumptionRepository!.getEvent(payloadId),
+          getVectorClock: (event) => event.vectorClock,
+          buildSyncMessage: (event) => SyncMessage.consumptionEvent(
+            status: SyncEntryStatus.update,
+            event: event,
+            originatingHostId: originatingHostId,
+          ),
+          typeName: 'consumptionEvent',
+        );
     }
   }
 

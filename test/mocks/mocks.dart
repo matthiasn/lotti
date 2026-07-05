@@ -87,6 +87,9 @@ import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
+import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -841,6 +844,16 @@ class MockAgentRepository extends Mock implements AgentRepository {
   @override
   Future<T> runInTransaction<T>(Future<T> Function() action) => action();
 }
+
+class MockConsumptionRepository extends Mock implements ConsumptionRepository {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) => action();
+}
+
+class MockAiConsumptionRecorder extends Mock implements AiConsumptionRecorder {}
+
+class MockConsumptionSyncService extends Mock
+    implements ConsumptionSyncService {}
 
 class MockAgentService extends Mock implements AgentService {}
 

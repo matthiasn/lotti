@@ -291,6 +291,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       );
 
       // Soul sessions only get soul tools (no propose_directives).
+      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
       await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: ctx.initialUserMessage,
@@ -302,6 +303,9 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
         ),
         tools: _buildSoulToolDefinitions(bridge: bridge),
         strategy: strategy,
+        // Evolution attributes consumption to the soul being improved.
+        consumptionAgentId: recordConsumption ? soulId : null,
+        consumptionThreadId: recordConsumption ? conversationId : null,
       );
 
       _notifyUpdate(soulId);

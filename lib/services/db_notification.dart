@@ -129,6 +129,11 @@ const labelUsageNotification = 'LABEL_USAGE_CHANGED';
 /// standalone link mutations carry no TEXT_ENTRY/TASK token.
 const linkNotification = 'LINK_CHANGED';
 const agentNotification = 'AGENT_CHANGED';
+
+/// Fired alongside the affected task/category ids whenever an AI consumption
+/// event is recorded or arrives via sync. Consumption dashboards subscribe to
+/// this to refresh per-task and per-category aggregates.
+const aiConsumptionNotification = 'AI_CONSUMPTION_CHANGED';
 const inboxNotification = 'INBOX_CHANGED';
 
 /// Zone key set to `true` during agent wake execution.

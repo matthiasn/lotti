@@ -328,6 +328,8 @@ class QueueApplyAdapter {
       entityDefinition: (_) => true,
       // ai_config_db.
       aiConfig: (_) => false,
+      // ai_consumption.sqlite — not JournalDb.
+      consumptionEvent: (_) => false,
       aiConfigDelete: (_) => false,
       // settings_db (saved task filters).
       savedTaskFilter: (_) => false,

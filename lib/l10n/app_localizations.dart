@@ -14725,6 +14725,12 @@ abstract class AppLocalizations {
   /// **'Config flag'**
   String get syncPayloadConfigFlag;
 
+  /// No description provided for @syncPayloadConsumptionEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'AI consumption'**
+  String get syncPayloadConsumptionEvent;
+
   /// No description provided for @syncPayloadEntityDefinition.
   ///
   /// In en, this message translates to:

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
@@ -36,6 +37,9 @@ class _RecordingInferenceRepository extends InferenceRepositoryInterface {
   /// The signatureCollector passed to the last call.
   ThoughtSignatureCollector? lastSignatureCollector;
 
+  /// The impactCollector passed to the last call.
+  InferenceImpactCollector? lastImpactCollector;
+
   /// The turnIndex passed to the last call.
   int? lastTurnIndex;
 
@@ -54,6 +58,7 @@ class _RecordingInferenceRepository extends InferenceRepositoryInterface {
     ChatCompletionToolChoiceOption? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
+    InferenceImpactCollector? impactCollector,
     int? turnIndex,
   }) {
     lastMessages = messages;
@@ -65,6 +70,7 @@ class _RecordingInferenceRepository extends InferenceRepositoryInterface {
     lastToolChoice = toolChoice;
     lastThoughtSignatures = thoughtSignatures;
     lastSignatureCollector = signatureCollector;
+    lastImpactCollector = impactCollector;
     lastTurnIndex = turnIndex;
     return streamToReturn;
   }
@@ -168,6 +174,27 @@ void main() {
           expect(repository.lastProvider, testProvider);
           expect(repository.lastMaxCompletionTokens, 4096);
           expect(repository.lastTools, tools);
+        },
+      );
+
+      test(
+        'passes the impact collector through generateTextWithMessages',
+        () {
+          final collector = InferenceImpactCollector();
+
+          repository.generateTextWithMessages(
+            messages: const [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('hi'),
+              ),
+            ],
+            model: 'glm-5.2',
+            temperature: 0.7,
+            provider: testProvider,
+            impactCollector: collector,
+          );
+
+          expect(repository.lastImpactCollector, same(collector));
         },
       );
 

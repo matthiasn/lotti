@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/image_generation_error.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -23,6 +24,9 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -179,6 +183,24 @@ void _stubLoggingExceptionFor(MockDomainLogger logger) {
       subDomain: any<String>(named: 'subDomain'),
     ),
   ).thenReturn(null);
+}
+
+/// Registers a stubbed [MockAiConsumptionRecorder] in getIt for one test.
+/// Guards against a pre-existing registration and unregisters via
+/// [addTearDown] so the recorder never leaks into other tests.
+MockAiConsumptionRecorder _registerConsumptionRecorder() {
+  final recorder = MockAiConsumptionRecorder();
+  when(() => recorder.record(any())).thenAnswer((_) async {});
+  if (getIt.isRegistered<AiConsumptionRecorder>()) {
+    getIt.unregister<AiConsumptionRecorder>();
+  }
+  getIt.registerSingleton<AiConsumptionRecorder>(recorder);
+  addTearDown(() {
+    if (getIt.isRegistered<AiConsumptionRecorder>()) {
+      getIt.unregister<AiConsumptionRecorder>();
+    }
+  });
+  return recorder;
 }
 
 /// Stubs the [MockDomainLogger.log] sink for event-path code. Shared by the
@@ -474,8 +496,13 @@ void main() {
         as JournalImage;
   }
 
-  /// Creates a stream response chunk with the given content.
-  CreateChatCompletionStreamResponse makeStreamChunk(String content) {
+  /// Creates a stream response chunk with the given content. Providers report
+  /// [usage] on the final chunk, so tests exercising consumption recording
+  /// attach it there.
+  CreateChatCompletionStreamResponse makeStreamChunk(
+    String content, {
+    CompletionUsage? usage,
+  }) {
     return CreateChatCompletionStreamResponse(
       id: 'resp-1',
       choices: [
@@ -486,6 +513,7 @@ void main() {
       ],
       object: 'chat.completion.chunk',
       created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
+      usage: usage,
     );
   }
 
@@ -779,6 +807,89 @@ void main() {
         expect(updatedEntity.data.transcripts!.last.transcript, 'Hello World');
         expect(updatedEntity.data.transcripts!.last.model, 'whisper-1');
       });
+
+      test(
+        'records a consumption event with tokens from the response usage '
+        'and no environmental impact (transcription endpoint reports none)',
+        () async {
+          final recorder = _registerConsumptionRecorder();
+          final audioEntity = makeAudioEntity(categoryId: 'cat-audio');
+          await createStubAudioFile();
+
+          when(
+            () => mockAiInputRepo.getEntity('audio-1'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockPromptBuilderHelper.getSpeechDictionaryTerms(
+              audioEntity,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              makeStreamChunk('Hello'),
+              makeStreamChunk(
+                ' World',
+                usage: const CompletionUsage(
+                  promptTokens: 120,
+                  completionTokens: 45,
+                  totalTokens: 165,
+                  promptTokensDetails: PromptTokensDetails(cachedTokens: 30),
+                  completionTokensDetails: CompletionTokensDetails(
+                    reasoningTokens: 12,
+                  ),
+                ),
+              ),
+            ]),
+          );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResult(),
+          );
+
+          final event =
+              verify(() => recorder.record(captureAny())).captured.single
+                  as AiConsumptionEvent;
+          expect(event.entryId, 'audio-1');
+          expect(event.taskId, isNull);
+          expect(event.categoryId, 'cat-audio');
+          expect(event.skillId, 'skill-transcribe');
+          expect(
+            event.responseType,
+            AiConsumptionResponseType.audioTranscription,
+          );
+          expect(event.providerModelId, 'whisper-1');
+          expect(event.providerType, InferenceProviderType.gemini);
+          expect(event.inputTokens, 120);
+          expect(event.outputTokens, 45);
+          expect(event.totalTokens, 165);
+          expect(event.cachedInputTokens, 30);
+          expect(event.thoughtsTokens, 12);
+          // The /audio/transcriptions endpoint never reports impact.
+          expect(event.credits, isNull);
+          expect(event.energyKwh, isNull);
+          expect(event.carbonGCo2, isNull);
+          expect(event.dataCenter, isNull);
+        },
+      );
 
       test(
         'forwards the resolved Gemini thinking mode for Gemini 3 targets',
@@ -1422,6 +1533,7 @@ void main() {
             images: any(named: 'images'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
@@ -1453,6 +1565,7 @@ void main() {
             ],
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).called(1);
 
@@ -1510,6 +1623,7 @@ void main() {
             images: any(named: 'images'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([makeStreamChunk('New analysis')]),
@@ -1555,6 +1669,7 @@ void main() {
             images: any(named: 'images'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer((_) => Stream.fromIterable([]));
 
@@ -1658,6 +1773,7 @@ void main() {
             images: any(named: 'images'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([makeStreamChunk('Analysis')]),
@@ -1755,6 +1871,7 @@ void main() {
               images: any(named: 'images'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -1784,6 +1901,7 @@ void main() {
               images: any(named: 'images'),
               provider: overrideProvider,
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).called(1);
         },
@@ -1817,6 +1935,7 @@ void main() {
               images: any(named: 'images'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -1849,6 +1968,7 @@ void main() {
               images: any(named: 'images'),
               provider: testInferenceProvider(id: 'p-vision'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).called(1);
         },
@@ -1897,6 +2017,7 @@ void main() {
               images: any(named: 'images'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -1927,6 +2048,7 @@ void main() {
               images: any(named: 'images'),
               provider: testInferenceProvider(id: 'p-vision'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).called(1);
         },
@@ -2042,6 +2164,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -2075,6 +2198,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           final userMessage = captured.first as String;
@@ -2115,6 +2239,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([makeStreamChunk('out')]),
@@ -2143,6 +2268,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           final userMessage = captured.first as String;
@@ -2167,6 +2293,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([makeStreamChunk('out')]),
@@ -2195,6 +2322,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           final userMessage = captured.first as String;
@@ -2246,6 +2374,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
@@ -2282,6 +2411,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).called(1);
       });
@@ -2322,6 +2452,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
@@ -2353,6 +2484,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).called(1);
       });
@@ -2400,6 +2532,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
@@ -2486,6 +2619,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -2579,6 +2713,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -2674,6 +2809,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([makeStreamChunk('Generated prompt')]),
@@ -2703,6 +2839,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           final userMessage = generateCall.first as String;
@@ -2746,6 +2883,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer((_) => Stream.fromIterable([]));
         stubLoggingException();
@@ -2847,6 +2985,7 @@ void main() {
                 apiKey: any(named: 'apiKey'),
                 provider: any(named: 'provider'),
                 systemMessage: any(named: 'systemMessage'),
+                impactCollector: any(named: 'impactCollector'),
               ),
             ).thenAnswer(
               (_) => Stream.fromIterable(
@@ -3006,6 +3145,7 @@ void main() {
                   apiKey: any(named: 'apiKey'),
                   provider: any(named: 'provider'),
                   systemMessage: any(named: 'systemMessage'),
+                  impactCollector: any(named: 'impactCollector'),
                 ),
               ).thenAnswer(
                 (_) => Stream.fromIterable(
@@ -3069,6 +3209,7 @@ void main() {
                   apiKey: any(named: 'apiKey'),
                   provider: any(named: 'provider'),
                   systemMessage: any(named: 'systemMessage'),
+                  impactCollector: any(named: 'impactCollector'),
                 ),
               );
             } else {
@@ -3081,6 +3222,7 @@ void main() {
                   apiKey: any(named: 'apiKey'),
                   provider: any(named: 'provider'),
                   systemMessage: any(named: 'systemMessage'),
+                  impactCollector: any(named: 'impactCollector'),
                 ),
               ).captured;
               final prompt = generatedCall.single as String;
@@ -3185,6 +3327,7 @@ void main() {
             apiKey: any(named: 'apiKey'),
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([makeStreamChunk('out')]),
@@ -3263,6 +3406,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -3422,6 +3566,7 @@ void main() {
               prompt: any(named: 'prompt'),
               model: any(named: 'model'),
               provider: any(named: 'provider'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           );
           verify(
@@ -3452,6 +3597,7 @@ void main() {
             prompt: any(named: 'prompt'),
             model: any(named: 'model'),
             provider: any(named: 'provider'),
+            impactCollector: any(named: 'impactCollector'),
           ),
         );
         verify(
@@ -3493,6 +3639,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -3557,6 +3704,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           final prompt = captured.first as String;
@@ -3626,6 +3774,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -3692,6 +3841,7 @@ void main() {
               provider: overrideProvider,
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).called(1);
         },
@@ -3719,6 +3869,96 @@ void main() {
       }
 
       test(
+        'records the billed call with its Melious impact even when the '
+        'linked task disappeared mid-flight (recording happens before the '
+        'task-existence check)',
+        () async {
+          final recorder = _registerConsumptionRecorder();
+          stubImageGenPipeline('img-gone', 'task-gone');
+          when(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer((invocation) async {
+            // The Melious adapter reports impact out of band by writing into
+            // the collector the runner passed down.
+            (invocation.namedArguments[#impactCollector]
+                    as InferenceImpactCollector?)
+                ?.impact = const MeliousCallImpact(
+              costCredits: 0.75,
+              energyKwh: 0.01,
+              carbonGCo2: 2.5,
+              waterLiters: 0.6,
+              renewablePercent: 90,
+              pue: 1.1,
+              dataCenter: 'FI',
+              providerId: 'upstream-img',
+            );
+            return const GeneratedImage(
+              bytes: [0x89, 0x50, 0x4E, 0x47],
+              mimeType: 'image/png',
+            );
+          });
+          // The linked task is gone by the time the generated image returns.
+          when(
+            () => mockJournalRepo.getJournalEntityById('task-gone'),
+          ).thenAnswer((_) async => null);
+          stubLoggingException();
+
+          await runner.runImageGeneration(
+            entryId: 'img-gone',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-gone',
+          );
+
+          // The run itself fails on the task-existence check afterwards…
+          final loggedError =
+              verify(
+                    () => mockLoggingService.error(
+                      LogDomain.ai,
+                      captureAny<Object>(),
+                      stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                      subDomain: 'runImageGeneration',
+                    ),
+                  ).captured.single
+                  as Object;
+          expect(loggedError, isA<StateError>());
+
+          // …but the billed call was already recorded, without a category
+          // (there is no task left to read it from) and without token counts
+          // (image generation is a single request, not a token stream).
+          final event =
+              verify(() => recorder.record(captureAny())).captured.single
+                  as AiConsumptionEvent;
+          expect(event.entryId, 'img-gone');
+          expect(event.taskId, 'task-gone');
+          expect(event.categoryId, isNull);
+          expect(event.skillId, 'skill-image-gen');
+          expect(
+            event.responseType,
+            AiConsumptionResponseType.imageGeneration,
+          );
+          expect(event.providerModelId, 'models/gemini-image');
+          expect(event.inputTokens, isNull);
+          expect(event.outputTokens, isNull);
+          expect(event.totalTokens, isNull);
+          expect(event.credits, 0.75);
+          expect(event.energyKwh, 0.01);
+          expect(event.carbonGCo2, 2.5);
+          expect(event.waterLiters, 0.6);
+          expect(event.renewablePercent, 90);
+          expect(event.pue, 1.1);
+          expect(event.dataCenter, 'FI');
+          expect(event.upstreamProviderId, 'upstream-img');
+        },
+      );
+
+      test(
         'publishes the provider reason to the error controller on rejection',
         () async {
           stubImageGenPipeline('img-rej', 'task-rej');
@@ -3729,6 +3969,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenThrow(
             ImageGenerationException(
@@ -3762,6 +4003,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenThrow(Exception('network down'));
           stubLoggingException();
@@ -3804,6 +4046,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -3867,6 +4110,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).captured;
           final prompt = captured.first as String;
@@ -3949,6 +4193,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -4055,6 +4300,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).called(1);
 
@@ -4131,6 +4377,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -4217,6 +4464,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -4331,6 +4579,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -4466,6 +4715,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) async => const GeneratedImage(
@@ -4569,6 +4819,7 @@ void main() {
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               referenceImages: refImages,
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).called(1);
         },
@@ -4688,6 +4939,7 @@ void main() {
               images: any(named: 'images'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([makeStreamChunk('A photo of a cat')]),
