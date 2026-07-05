@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1031]
 ### Added
+- **See what your AI actually costs — in money, energy, and CO₂e.** Lotti now
+  records every AI call it makes (agents turn by turn, transcription, image
+  analysis, cover art, text generation) with its cost in credits, energy use,
+  CO₂ footprint, water use, tokens, and the data center it ran in — measured
+  per call by Melious for Melious-hosted models. A new **AI Impact** dashboard
+  (next to Time Analysis in the sidebar, and under Settings → AI → Usage &
+  Impact) shows where it goes: switch between Cost, Energy, CO₂e and Tokens,
+  browse by week, month or year, and see stacked per-category charts, period
+  totals, a ranked category breakdown, and a ledger of your most recent
+  individual calls (time, model, kind, tokens, cost, energy). Tasks that used
+  AI carry a quiet header chip with their lifetime footprint — for example
+  "€0.42 · 12 Wh · 3.4 g" — with the full breakdown a hover away. Consumption
+  records sync across your devices, so the numbers cover everything, not just
+  one machine.
 - **Cancel a recording.** The audio recording sheet now has a discard (✕) button
   next to Stop, in both standard and realtime modes. Tapping it throws the
   recording away entirely after confirmation — no audio entry is saved, no

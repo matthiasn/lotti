@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
+import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
@@ -179,6 +180,7 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
       'ai-providers': SettingsPanelSpec(build: _aiProvidersPanel),
       'ai-models': SettingsPanelSpec(build: _aiModelsPanel),
       'ai-profiles': SettingsPanelSpec(build: _aiProfilesPanel),
+      'ai-usage': SettingsPanelSpec(build: _aiUsagePanel, scrollable: true),
       'agents-stats': SettingsPanelSpec(build: _agentsStatsPanel),
       'agents-templates': SettingsPanelSpec(build: _agentsTemplatesPanel),
       'agents-instances': SettingsPanelSpec(build: _agentsInstancesPanel),
@@ -394,6 +396,7 @@ Widget _agentsPanel(BuildContext context) => const AgentSettingsBody();
 // its tab from the URL on desktop, so the explicit `initialTab`
 // argument here is just a fallback for mobile / test contexts where
 // `NavService` isn't desktop-driven.
+Widget _aiUsagePanel(BuildContext context) => const ImpactAnalysisBody();
 Widget _agentsStatsPanel(BuildContext context) =>
     const AgentSettingsBody(initialTab: AgentSettingsTab.stats);
 Widget _agentsPendingWakesPanel(BuildContext context) =>

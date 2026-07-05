@@ -1236,6 +1236,57 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Použít uvažování';
 
   @override
+  String aiConsumptionCallsLine(int count, int measured) {
+    return 'AI volání: $count · dopad změřen u $measured';
+  }
+
+  @override
+  String aiConsumptionCostLine(String cost) {
+    return 'Náklady: $cost';
+  }
+
+  @override
+  String aiConsumptionImpactLine(String energy, String carbon, String water) {
+    return 'Dopad: $energy · $carbon CO₂e · $water vody';
+  }
+
+  @override
+  String aiConsumptionLedgerCap(int limit) {
+    return 'Zobrazuje nejnovějších $limit volání v tomto období';
+  }
+
+  @override
+  String get aiConsumptionLedgerTitle => 'Nedávná volání';
+
+  @override
+  String aiConsumptionTokensLabel(String tokens) {
+    return '$tokens tokenů';
+  }
+
+  @override
+  String aiConsumptionTokensLine(String input, String output) {
+    return 'Tokeny: $input vstup · $output výstup';
+  }
+
+  @override
+  String get aiConsumptionTypeAgentTurn => 'Tah agenta';
+
+  @override
+  String get aiConsumptionTypeAudioTranscription => 'Přepis';
+
+  @override
+  String get aiConsumptionTypeImageAnalysis => 'Analýza obrázku';
+
+  @override
+  String get aiConsumptionTypeImageGeneration => 'Generování obrázku';
+
+  @override
+  String get aiConsumptionTypePromptGeneration => 'Generování promptu';
+
+  @override
+  String get aiConsumptionTypeTextGeneration => 'Generování textu';
+
+  @override
   String aiDeleteToastCascadeDescription(int count, String names) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1288,6 +1339,48 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get aiImageGenerationPickerTitle =>
       'Vyber model pro generování obrázků';
+
+  @override
+  String aiImpactChartTitle(String metric) {
+    return '$metric podle kategorie';
+  }
+
+  @override
+  String get aiImpactEmptyBody =>
+      'AI volání z tvých úkolů a agentů se zobrazí zde.';
+
+  @override
+  String get aiImpactEmptyTitle => 'Žádné využití AI v tomto období';
+
+  @override
+  String get aiImpactKpiCarbon => 'CO₂E';
+
+  @override
+  String get aiImpactKpiCost => 'NÁKLADY';
+
+  @override
+  String get aiImpactKpiEnergy => 'ENERGIE';
+
+  @override
+  String get aiImpactKpiTokens => 'TOKENY';
+
+  @override
+  String get aiImpactLoadError => 'Data o dopadu AI se nepodařilo načíst';
+
+  @override
+  String get aiImpactMetricCarbon => 'CO₂e';
+
+  @override
+  String get aiImpactMetricCost => 'Náklady';
+
+  @override
+  String get aiImpactMetricEnergy => 'Energie';
+
+  @override
+  String get aiImpactMetricTokens => 'Tokeny';
+
+  @override
+  String get aiImpactTitle => 'Dopad AI';
 
   @override
   String get aiInferenceErrorAuthenticationTitle => 'Autentizace selhala';
@@ -7571,6 +7664,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsAiTitle => 'Nastavení AI';
+
+  @override
+  String get settingsAiUsageSubtitle => 'Náklady, energie a CO₂e AI volání';
+
+  @override
+  String get settingsAiUsageTitle => 'Využití a dopad';
 
   @override
   String get settingsBeamPageEditModelTitle => 'Upravit model';

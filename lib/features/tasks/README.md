@@ -171,6 +171,11 @@ Checklist content is modeled separately through checklist entities and linked ch
 `TaskDetailsPage` is the main task surface. It composes:
 
 - `TaskSliverAppBar`
+- `TaskConsumptionChip` (`ui/header/task_consumption_chip.dart`) — the AI
+  consumption pill in the header's `MetaRow` (`consumptionSlot`): lifetime
+  cost/energy/CO₂e for tasks with recorded AI calls, full breakdown in the
+  tooltip, hidden entirely otherwise. Backed by the `ai_consumption` feature's
+  `taskConsumptionTotalsProvider` (see `lib/features/ai_consumption/README.md`).
 - `TaskForm` — stacks the reading bands in order: the `DesktopTaskHeaderConnector`
   identity header (a `heading2` title as the focal point; the breadcrumb and
   unset metadata are muted-but-legible at medium emphasis), the optional legacy

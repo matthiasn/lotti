@@ -89,6 +89,7 @@ List<SettingsNode> buildSettingsTree({
         leaf('ai/providers', Icons.bolt_rounded, panel: 'ai-providers'),
         leaf('ai/models', Icons.psychology_alt_rounded, panel: 'ai-models'),
         leaf('ai/profiles', Icons.tune_rounded, panel: 'ai-profiles'),
+        leaf('ai/usage', Icons.eco_outlined, panel: 'ai-usage'),
       ],
     ),
     branch(

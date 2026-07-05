@@ -31,6 +31,30 @@ class ConsumptionRepository {
     return ConsumptionDbConversions.fromRow(rows.first);
   }
 
+  /// The newest events with `start <= createdAt < end`, newest first, capped
+  /// at [limit] — the per-call ledger read. Full rows (one page, bounded) are
+  /// deserialized; ordering ties on `createdAt` break by `id` so pagination
+  /// stays stable across identical timestamps.
+  Future<List<AiConsumptionEvent>> newestEventsInRange({
+    required DateTime start,
+    required DateTime end,
+    required int limit,
+  }) async {
+    final query = _db.select(_db.consumptionEvents)
+      ..where(
+        (tbl) =>
+            tbl.createdAt.isBiggerOrEqualValue(start) &
+            tbl.createdAt.isSmallerThanValue(end),
+      )
+      ..orderBy([
+        (tbl) => OrderingTerm.desc(tbl.createdAt),
+        (tbl) => OrderingTerm.desc(tbl.id),
+      ])
+      ..limit(limit);
+    final rows = await query.get();
+    return rows.map(ConsumptionDbConversions.fromRow).toList();
+  }
+
   /// Read just the vector clock for [id] without deserializing the whole row —
   /// used by the inbound sync dominance check. Returns null when the row is
   /// absent or has no clock.

@@ -544,6 +544,19 @@
   "aiConfigSelectProviderModalTitle": "Selectați furnizorul de inferență",
   "aiConfigSelectProviderTypeModalTitle": "Selectați tipul de furnizor",
   "aiConfigUseReasoningFieldLabel": "Folosește raționamentul",
+  "aiConsumptionCallsLine": "Apeluri AI: {count} · impact măsurat pentru {measured}",
+  "aiConsumptionCostLine": "Cost: {cost}",
+  "aiConsumptionImpactLine": "Impact: {energy} · {carbon} CO₂e · {water} apă",
+  "aiConsumptionLedgerCap": "Se afișează cele mai noi {limit} apeluri din această perioadă",
+  "aiConsumptionLedgerTitle": "Apeluri recente",
+  "aiConsumptionTokensLabel": "{tokens} tokenuri",
+  "aiConsumptionTokensLine": "Tokenuri: {input} intrare · {output} ieșire",
+  "aiConsumptionTypeAgentTurn": "Tur de agent",
+  "aiConsumptionTypeAudioTranscription": "Transcriere",
+  "aiConsumptionTypeImageAnalysis": "Analiză de imagine",
+  "aiConsumptionTypeImageGeneration": "Generare de imagine",
+  "aiConsumptionTypePromptGeneration": "Generare de prompt",
+  "aiConsumptionTypeTextGeneration": "Generare de text",
   "aiDeleteToastCascadeDescription": "{count, plural, =1{Am eliminat și 1 model: {names}} few{Am eliminat și {count} modele: {names}} other{Am eliminat și {count} de modele: {names}}}",
   "@aiDeleteToastCascadeDescription": {
     "placeholders": {
@@ -575,6 +588,26 @@
   "aiImageAnalysisPickerDefaultBadge": "Implicit",
   "aiImageAnalysisPickerTitle": "Alegeți un model pentru analiza imaginilor",
   "aiImageGenerationPickerTitle": "Alegeți un model pentru generarea imaginilor",
+  "aiImpactChartTitle": "{metric} pe categorii",
+  "@aiImpactChartTitle": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "aiImpactEmptyBody": "Apelurile AI din sarcinile și agenții dvs. vor apărea aici.",
+  "aiImpactEmptyTitle": "Nicio utilizare AI în această perioadă",
+  "aiImpactKpiCarbon": "CO₂E",
+  "aiImpactKpiCost": "COST",
+  "aiImpactKpiEnergy": "ENERGIE",
+  "aiImpactKpiTokens": "TOKENURI",
+  "aiImpactLoadError": "Datele despre impactul AI nu au putut fi încărcate",
+  "aiImpactMetricCarbon": "CO₂e",
+  "aiImpactMetricCost": "Cost",
+  "aiImpactMetricEnergy": "Energie",
+  "aiImpactMetricTokens": "Tokenuri",
+  "aiImpactTitle": "Impact AI",
   "aiInferenceErrorAuthenticationTitle": "Autentificare eșuată",
   "aiInferenceErrorConnectionFailedTitle": "Conexiune eșuată",
   "aiInferenceErrorInvalidRequestTitle": "Cerere invalidă",
@@ -3181,6 +3214,8 @@
   "settingsAiProvidersTitle": "Furnizori",
   "settingsAiSubtitle": "Configurați furnizorii AI, modelele și prompturile",
   "settingsAiTitle": "Setări AI",
+  "settingsAiUsageSubtitle": "Costul, energia și CO₂e ale apelurilor AI",
+  "settingsAiUsageTitle": "Utilizare și impact",
   "settingsBeamPageEditModelTitle": "Editare model",
   "settingsBeamPageEditProfileTitle": "Editare profil",
   "settingsCategoriesCreateTitle": "Creare categorie",

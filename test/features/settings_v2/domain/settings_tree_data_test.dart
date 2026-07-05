@@ -361,6 +361,7 @@ void main() {
         'ai/providers': 'ai-providers',
         'ai/models': 'ai-models',
         'ai/profiles': 'ai-profiles',
+        'ai/usage': 'ai-usage',
         'agents/stats': 'agents-stats',
         'agents/templates': 'agents-templates',
         'agents/instances': 'agents-instances',
@@ -428,6 +429,7 @@ void main() {
         'ai/providers',
         'ai/models',
         'ai/profiles',
+        'ai/usage',
       ]);
     });
 

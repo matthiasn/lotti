@@ -1247,6 +1247,57 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Folosește raționamentul';
 
   @override
+  String aiConsumptionCallsLine(int count, int measured) {
+    return 'Apeluri AI: $count · impact măsurat pentru $measured';
+  }
+
+  @override
+  String aiConsumptionCostLine(String cost) {
+    return 'Cost: $cost';
+  }
+
+  @override
+  String aiConsumptionImpactLine(String energy, String carbon, String water) {
+    return 'Impact: $energy · $carbon CO₂e · $water apă';
+  }
+
+  @override
+  String aiConsumptionLedgerCap(int limit) {
+    return 'Se afișează cele mai noi $limit apeluri din această perioadă';
+  }
+
+  @override
+  String get aiConsumptionLedgerTitle => 'Apeluri recente';
+
+  @override
+  String aiConsumptionTokensLabel(String tokens) {
+    return '$tokens tokenuri';
+  }
+
+  @override
+  String aiConsumptionTokensLine(String input, String output) {
+    return 'Tokenuri: $input intrare · $output ieșire';
+  }
+
+  @override
+  String get aiConsumptionTypeAgentTurn => 'Tur de agent';
+
+  @override
+  String get aiConsumptionTypeAudioTranscription => 'Transcriere';
+
+  @override
+  String get aiConsumptionTypeImageAnalysis => 'Analiză de imagine';
+
+  @override
+  String get aiConsumptionTypeImageGeneration => 'Generare de imagine';
+
+  @override
+  String get aiConsumptionTypePromptGeneration => 'Generare de prompt';
+
+  @override
+  String get aiConsumptionTypeTextGeneration => 'Generare de text';
+
+  @override
   String aiDeleteToastCascadeDescription(int count, String names) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1301,6 +1352,49 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get aiImageGenerationPickerTitle =>
       'Alegeți un model pentru generarea imaginilor';
+
+  @override
+  String aiImpactChartTitle(String metric) {
+    return '$metric pe categorii';
+  }
+
+  @override
+  String get aiImpactEmptyBody =>
+      'Apelurile AI din sarcinile și agenții dvs. vor apărea aici.';
+
+  @override
+  String get aiImpactEmptyTitle => 'Nicio utilizare AI în această perioadă';
+
+  @override
+  String get aiImpactKpiCarbon => 'CO₂E';
+
+  @override
+  String get aiImpactKpiCost => 'COST';
+
+  @override
+  String get aiImpactKpiEnergy => 'ENERGIE';
+
+  @override
+  String get aiImpactKpiTokens => 'TOKENURI';
+
+  @override
+  String get aiImpactLoadError =>
+      'Datele despre impactul AI nu au putut fi încărcate';
+
+  @override
+  String get aiImpactMetricCarbon => 'CO₂e';
+
+  @override
+  String get aiImpactMetricCost => 'Cost';
+
+  @override
+  String get aiImpactMetricEnergy => 'Energie';
+
+  @override
+  String get aiImpactMetricTokens => 'Tokenuri';
+
+  @override
+  String get aiImpactTitle => 'Impact AI';
 
   @override
   String get aiInferenceErrorAuthenticationTitle => 'Autentificare eșuată';
@@ -7619,6 +7713,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsAiTitle => 'Setări AI';
+
+  @override
+  String get settingsAiUsageSubtitle =>
+      'Costul, energia și CO₂e ale apelurilor AI';
+
+  @override
+  String get settingsAiUsageTitle => 'Utilizare și impact';
 
   @override
   String get settingsBeamPageEditModelTitle => 'Editare model';

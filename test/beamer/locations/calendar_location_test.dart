@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/beamer/locations/calendar_location.dart';
+import 'package:lotti/features/ai_consumption/ui/impact_analysis_page.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/time_history_header_controller.dart';
@@ -165,6 +166,7 @@ void main() {
       expect(location.pathPatterns, [
         '/calendar',
         '/calendar/time',
+        '/calendar/impact',
         '/calendar/set-time-blocks',
         '/calendar/refine/:date',
         '/calendar/commit/:date',
@@ -178,9 +180,13 @@ void main() {
       () async {
         final navService = MockNavService();
         final showTimeAnalysis = ValueNotifier<bool>(false);
+        final showAiImpact = ValueNotifier<bool>(false);
         when(
           () => navService.desktopShowTimeAnalysis,
         ).thenReturn(showTimeAnalysis);
+        when(
+          () => navService.desktopShowAiImpact,
+        ).thenReturn(showAiImpact);
         // Shared harness owns the GetIt lifecycle; NavService rides its
         // additionalSetup extension point.
         await setUpTestGetIt(
@@ -190,6 +196,7 @@ void main() {
         );
         addTearDown(tearDownTestGetIt);
         addTearDown(showTimeAnalysis.dispose);
+        addTearDown(showAiImpact.dispose);
 
         final routeInformation = RouteInformation(
           uri: Uri.parse('/calendar/time'),
@@ -210,6 +217,51 @@ void main() {
           BeamState.fromRouteInformation(rootInformation),
         );
         expect(showTimeAnalysis.value, isFalse);
+      },
+    );
+
+    test(
+      'pushes the full-screen AI Impact page on /calendar/impact and '
+      'mirrors the route into desktopShowAiImpact',
+      () async {
+        final navService = MockNavService();
+        final showTimeAnalysis = ValueNotifier<bool>(false);
+        final showAiImpact = ValueNotifier<bool>(false);
+        when(
+          () => navService.desktopShowTimeAnalysis,
+        ).thenReturn(showTimeAnalysis);
+        when(
+          () => navService.desktopShowAiImpact,
+        ).thenReturn(showAiImpact);
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt.registerSingleton<NavService>(navService);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
+        addTearDown(showTimeAnalysis.dispose);
+        addTearDown(showAiImpact.dispose);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/calendar/impact'),
+        );
+        final location = CalendarLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final pages = location.buildPages(mockBuildContext, beamState);
+
+        expect(pages.length, 2);
+        expect(pages[0].child, isA<CalendarRoot>());
+        expect(pages[1].child, isA<ImpactAnalysisPage>());
+        expect(showAiImpact.value, isTrue);
+        expect(showTimeAnalysis.value, isFalse);
+
+        // Navigating back to the root clears the highlight.
+        final rootInformation = RouteInformation(uri: Uri.parse('/calendar'));
+        CalendarLocation(rootInformation).buildPages(
+          mockBuildContext,
+          BeamState.fromRouteInformation(rootInformation),
+        );
+        expect(showAiImpact.value, isFalse);
       },
     );
 

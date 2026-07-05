@@ -39,6 +39,7 @@ class MetaRow extends StatefulWidget {
     required this.dueDate,
     required this.labels,
     required this.estimateSlot,
+    required this.consumptionSlot,
     required this.onPriorityTap,
     required this.onStatusTap,
     required this.onDueDateTap,
@@ -52,6 +53,11 @@ class MetaRow extends StatefulWidget {
   final DesktopTaskHeaderDueDate? dueDate;
   final List<LabelDefinition> labels;
   final Widget? estimateSlot;
+
+  /// Optional AI-consumption pill (cost/energy/CO₂e), rendered after the time
+  /// group. Null (or a chip that renders nothing) keeps the lane unchanged for
+  /// tasks without AI usage.
+  final Widget? consumptionSlot;
   final VoidCallback? onPriorityTap;
   final VoidCallback? onStatusTap;
   final VoidCallback? onDueDateTap;
@@ -93,6 +99,7 @@ class _MetaRowState extends State<MetaRow> {
       TaskHeaderStatusPill(status: widget.status, onTap: widget.onStatusTap),
       _PriorityPill(priority: widget.priority, onTap: widget.onPriorityTap),
       _timeGroup(chipGap),
+      if (widget.consumptionSlot != null) widget.consumptionSlot!,
       // With no labels yet, the "Add Label" affordance rides the END of the
       // attribute lane rather than orphaning on its own near-empty second
       // line — the dedicated label lane only materialises once there is real

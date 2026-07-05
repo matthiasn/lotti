@@ -7,11 +7,13 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -20,27 +22,37 @@ void main() {
   late MockOutboxService outbox;
   late MockVectorClockService vcService;
   late MockSyncSequenceLogService sequenceLog;
+  late MockUpdateNotifications updateNotifications;
   late ConsumptionSyncService service;
 
   const stamped = VectorClock({'host-a': 5});
 
-  setUpAll(() {
-    registerFallbackValue(fallbackSyncMessage);
-    registerFallbackValue(const VectorClock({'fallback': 0}));
-    registerFallbackValue(SyncSequencePayloadType.consumptionEvent);
-  });
+  setUpAll(registerAllFallbackValues);
 
-  setUp(() {
+  setUp(() async {
+    // Register a mock DomainLogger so the swallowed post-write failure paths
+    // can log without blowing up on an unregistered GetIt lookup (mirrors
+    // agent_sync_service_test.dart).
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(MockDomainLogger());
+      },
+    );
+
     db = ConsumptionDatabase(inMemoryDatabase: true);
     repo = ConsumptionRepository(db);
     outbox = MockOutboxService();
     vcService = MockVectorClockService();
     sequenceLog = MockSyncSequenceLogService();
+    updateNotifications = MockUpdateNotifications();
     service = ConsumptionSyncService(
       repository: repo,
       outboxService: outbox,
       vectorClockService: vcService,
       sequenceLogService: sequenceLog,
+      updateNotifications: updateNotifications,
     );
 
     when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
@@ -58,6 +70,7 @@ void main() {
 
   tearDown(() async {
     await db.close();
+    await tearDownTestGetIt();
   });
 
   test(
@@ -167,9 +180,7 @@ void main() {
       'a sequence-log failure is logged and swallowed — the stamped write '
       'commits and the message is still enqueued',
       () async {
-        final logger = MockDomainLogger();
-        getIt.registerSingleton<DomainLogger>(logger);
-        addTearDown(() => getIt.unregister<DomainLogger>());
+        final logger = getIt<DomainLogger>() as MockDomainLogger;
         when(
           () => sequenceLog.recordSentEntry(
             entryId: any(named: 'entryId'),
@@ -198,9 +209,7 @@ void main() {
       'an outbox-enqueue failure is logged and swallowed — the stamped '
       'write stays committed',
       () async {
-        final logger = MockDomainLogger();
-        getIt.registerSingleton<DomainLogger>(logger);
-        addTearDown(() => getIt.unregister<DomainLogger>());
+        final logger = getIt<DomainLogger>() as MockDomainLogger;
         when(
           () => outbox.enqueueMessage(any()),
         ).thenThrow(Exception('outbox down'));
@@ -219,5 +228,146 @@ void main() {
         ).called(1);
       },
     );
+  });
+
+  group('UI notifications', () {
+    test('local write fires notifyUiOnly with task, category, and the '
+        'consumption key', () async {
+      await service.recordEvent(makeConsumptionEvent(id: 'e3'));
+
+      verify(
+        () => updateNotifications.notifyUiOnly({
+          'task-1',
+          'cat-1',
+          aiConsumptionNotification,
+        }),
+      ).called(1);
+      // Never plain notify: a regular notification would feed back into the
+      // wake orchestrator mid-wake.
+      verifyNever(
+        () => updateNotifications.notify(
+          any(),
+          fromSync: any(named: 'fromSync'),
+        ),
+      );
+    });
+
+    test('event without task or category notifies with only the '
+        'consumption key', () async {
+      await service.recordEvent(
+        makeConsumptionEvent(id: 'e4', taskId: null, categoryId: null),
+      );
+
+      verify(
+        () => updateNotifications.notifyUiOnly({aiConsumptionNotification}),
+      ).called(1);
+    });
+
+    test('fromSync write also fires the UI-only notification', () async {
+      await service.recordEvent(
+        makeConsumptionEvent(
+          id: 'e5',
+          vectorClock: const VectorClock({'host-b': 7}),
+        ),
+        fromSync: true,
+      );
+
+      verify(
+        () => updateNotifications.notifyUiOnly({
+          'task-1',
+          'cat-1',
+          aiConsumptionNotification,
+        }),
+      ).called(1);
+      verifyNever(
+        () => updateNotifications.notify(
+          any(),
+          fromSync: any(named: 'fromSync'),
+        ),
+      );
+    });
+  });
+
+  group('get_it fallbacks', () {
+    test('exposes the repository and resolves sequence log + notifications '
+        'from get_it when not injected', () async {
+      getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
+      final bare = ConsumptionSyncService(
+        repository: repo,
+        outboxService: outbox,
+        vectorClockService: vcService,
+      );
+      expect(bare.repository, same(repo));
+
+      await bare.recordEvent(makeConsumptionEvent(id: 'e6'));
+
+      verify(
+        () => sequenceLog.recordSentEntry(
+          entryId: 'e6',
+          vectorClock: stamped,
+          payloadType: SyncSequencePayloadType.consumptionEvent,
+        ),
+      ).called(1);
+      // The get_it-registered UpdateNotifications received the UI-only ping.
+      final getItNotifications =
+          getIt<UpdateNotifications>() as MockUpdateNotifications;
+      verify(
+        () => getItNotifications.notifyUiOnly({
+          'task-1',
+          'cat-1',
+          aiConsumptionNotification,
+        }),
+      ).called(1);
+    });
+  });
+
+  group('post-write failure handling', () {
+    test('sequence-log failure is swallowed and logged; the message is '
+        'still enqueued', () async {
+      when(
+        () => sequenceLog.recordSentEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenThrow(StateError('sequence ledger boom'));
+
+      await service.recordEvent(makeConsumptionEvent(id: 'e7'));
+
+      // The DB write committed and the outbox enqueue still happened.
+      expect(await repo.getEvent('e7'), isNotNull);
+      verify(() => outbox.enqueueMessage(any())).called(1);
+      final logger = getIt<DomainLogger>() as MockDomainLogger;
+      verify(
+        () => logger.error(
+          LogDomain.sync,
+          any(),
+          message: any(named: 'message'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'consumptionSync.record',
+        ),
+      ).called(1);
+    });
+
+    test('outbox enqueue failure is swallowed and logged; the write still '
+        'commits', () async {
+      when(
+        () => outbox.enqueueMessage(any()),
+      ).thenThrow(Exception('outbox boom'));
+
+      await service.recordEvent(makeConsumptionEvent(id: 'e8'));
+
+      expect(await repo.getEvent('e8'), isNotNull);
+      final logger = getIt<DomainLogger>() as MockDomainLogger;
+      verify(
+        () => logger.error(
+          LogDomain.sync,
+          any(),
+          message: any(named: 'message'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'consumptionSync.enqueue',
+        ),
+      ).called(1);
+    });
   });
 }

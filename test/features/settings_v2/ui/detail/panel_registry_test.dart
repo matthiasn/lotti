@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
+import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
@@ -82,6 +83,7 @@ void main() {
       'ai-providers',
       'ai-models',
       'ai-profiles',
+      'ai-usage',
       'agents-stats',
       'agents-templates',
       'agents-instances',
@@ -291,6 +293,8 @@ void main() {
         // create flow, so they reuse `AgentSettingsBody` directly
         // with the matching `initialTab` as the mobile/test fallback.
         // On desktop the URL drives the tab regardless.
+        expect(build('ai-usage'), isA<ImpactAnalysisBody>());
+
         final stats = build('agents-stats');
         expect(stats, isA<AgentSettingsBody>());
         expect(

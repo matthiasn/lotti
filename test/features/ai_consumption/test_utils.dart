@@ -1,6 +1,7 @@
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 /// Deterministic factory for [AiConsumptionEvent]s in tests. Every field is
@@ -73,5 +74,55 @@ AiConsumptionEvent makeConsumptionEvent({
     pue: pue,
     dataCenter: dataCenter,
     upstreamProviderId: upstreamProviderId,
+  );
+}
+
+/// Deterministic factory for [ConsumptionTotals] fixtures. Defaults to the
+/// all-zero totals so tests only set the fields they assert on.
+ConsumptionTotals makeConsumptionTotals({
+  int callCount = 0,
+  int impactCallCount = 0,
+  int inputTokens = 0,
+  int outputTokens = 0,
+  int cachedInputTokens = 0,
+  int thoughtsTokens = 0,
+  int totalTokens = 0,
+  double credits = 0,
+  double energyKwh = 0,
+  double carbonGCo2 = 0,
+  double waterLiters = 0,
+}) {
+  return ConsumptionTotals(
+    callCount: callCount,
+    impactCallCount: impactCallCount,
+    inputTokens: inputTokens,
+    outputTokens: outputTokens,
+    cachedInputTokens: cachedInputTokens,
+    thoughtsTokens: thoughtsTokens,
+    totalTokens: totalTokens,
+    credits: credits,
+    energyKwh: energyKwh,
+    carbonGCo2: carbonGCo2,
+    waterLiters: waterLiters,
+  );
+}
+
+/// Deterministic factory for [ConsumptionMetricRow] fixtures — one call with
+/// binary-exact double defaults so summed cells compare exactly.
+ConsumptionMetricRow makeMetricRow({
+  DateTime? createdAt,
+  String? categoryId = 'work',
+  int callCount = 1,
+  int totalTokens = 100,
+  double credits = 0.25,
+}) {
+  return ConsumptionMetricRow(
+    createdAt: createdAt ?? DateTime(2026, 6, 7, 9),
+    categoryId: categoryId,
+    metrics: ConsumptionMetrics(
+      callCount: callCount,
+      totalTokens: totalTokens,
+      credits: credits,
+    ),
   );
 }
