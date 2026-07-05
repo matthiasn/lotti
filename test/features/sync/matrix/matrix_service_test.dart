@@ -25,6 +25,7 @@ import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 class _FakeMatrixMessageContext extends Fake implements MatrixMessageContext {}
 
@@ -1183,6 +1184,10 @@ void main() {
       ),
       'agentLink': const SyncMessage.agentLink(
         status: SyncEntryStatus.initial,
+      ),
+      'consumptionEvent': SyncMessage.consumptionEvent(
+        event: makeConsumptionEvent(),
+        status: SyncEntryStatus.update,
       ),
       'outboxBundle': const SyncMessage.outboxBundle(children: []),
       'syncNodeProfile': SyncMessage.syncNodeProfile(

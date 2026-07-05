@@ -934,6 +934,101 @@ void main() {
       );
     });
   });
+
+  group('forced-retry consumption attribution', () {
+    setUp(() {
+      when(
+        () => mockAgentRepository.getAgentState(agentId),
+      ).thenAnswer((_) async => testAgentState);
+      stubProviderResolution();
+    });
+
+    test(
+      'the forced update_report retry carries the consumption owner ids '
+      'when a recorder is registered',
+      () async {
+        getIt.registerSingleton<AiConsumptionRecorder>(
+          MockAiConsumptionRecorder(),
+        );
+        addTearDown(() {
+          if (getIt.isRegistered<AiConsumptionRecorder>()) {
+            getIt.unregister<AiConsumptionRecorder>();
+          }
+        });
+        final event = eventEntity();
+        when(
+          () => mockJournalRepository.getJournalEntityById(eventId),
+        ).thenAnswer(
+          (_) async => event.copyWith(
+            meta: event.meta.copyWith(categoryId: 'cat-event-001'),
+          ),
+        );
+
+        // First pass publishes nothing; only the forced retry (toolChoice
+        // pinned to update_report) lands the recap.
+        mockConversationRepository.maxDelegateCalls = 2;
+        // ignore: cascade_invocations
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (toolChoice != null && strategy != null) {
+                final manager = mockConversationRepository.getConversation(
+                  conversationId,
+                )!;
+                when(
+                  () => manager.addToolResponse(
+                    toolCallId: any(named: 'toolCallId'),
+                    response: any(named: 'response'),
+                  ),
+                ).thenReturn(null);
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    ChatCompletionMessageToolCall(
+                      id: 'call-forced',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: EventAgentToolNames.updateReport,
+                        arguments: jsonEncode({
+                          'oneLiner': 'forced',
+                          'tldr': 'forced recap',
+                          'content': '# Forced\nrecovered.',
+                        }),
+                      ),
+                    ),
+                  ],
+                  manager: manager,
+                );
+              }
+              return null;
+            };
+
+        final result = await run();
+
+        expect(result.success, isTrue);
+        // Both the first pass and the forced retry went out.
+        expect(mockConversationRepository.sendMessageDelegateCallCount, 2);
+        // The fake records the ids of the most recent sendMessage — the
+        // retry — proving the second call was attributed too.
+        expect(mockConversationRepository.lastConsumptionAgentId, agentId);
+        expect(mockConversationRepository.lastConsumptionTaskId, eventId);
+        expect(
+          mockConversationRepository.lastConsumptionCategoryId,
+          'cat-event-001',
+        );
+        expect(mockConversationRepository.lastConsumptionWakeRunKey, runKey);
+        expect(mockConversationRepository.lastConsumptionThreadId, threadId);
+      },
+    );
+  });
 }
 
 typedef WakeResultLike = ({bool success, String? error});

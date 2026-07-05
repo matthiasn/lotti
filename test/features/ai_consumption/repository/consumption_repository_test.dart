@@ -298,4 +298,63 @@ void main() {
       expect(metrics.callCount, 1);
     });
   });
+
+  group('eventsWithNullVectorClock', () {
+    test('returns only unstamped events, fully deserialized', () async {
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'stamped',
+          vectorClock: const VectorClock({'host-a': 1}),
+        ),
+      );
+      await repo.upsertEvent(
+        makeConsumptionEvent(id: 'unstamped-1', totalTokens: 42),
+      );
+      await repo.upsertEvent(makeConsumptionEvent(id: 'unstamped-2'));
+
+      final events = await repo.eventsWithNullVectorClock();
+
+      expect(events.map((e) => e.id).toSet(), {'unstamped-1', 'unstamped-2'});
+      // Full rows come back, not just ids — the backfill needs the payload.
+      final first = events.singleWhere((e) => e.id == 'unstamped-1');
+      expect(first.totalTokens, 42);
+      expect(first.vectorClock, isNull);
+    });
+
+    test('returns an empty list when every event is stamped', () async {
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'only',
+          vectorClock: const VectorClock({'host-a': 2}),
+        ),
+      );
+      expect(await repo.eventsWithNullVectorClock(), isEmpty);
+    });
+  });
+
+  group('runInTransaction', () {
+    test('commits writes and returns the action result', () async {
+      final result = await repo.runInTransaction(() async {
+        await repo.upsertEvent(makeConsumptionEvent(id: 'tx-1'));
+        await repo.upsertEvent(makeConsumptionEvent(id: 'tx-2'));
+        return 'done';
+      });
+
+      expect(result, 'done');
+      expect(await db.countAllConsumptionEvents(), 2);
+    });
+
+    test('rolls the write back when the action throws', () async {
+      await expectLater(
+        repo.runInTransaction(() async {
+          await repo.upsertEvent(makeConsumptionEvent(id: 'tx-rollback'));
+          throw Exception('abort');
+        }),
+        throwsException,
+      );
+
+      expect(await repo.getEvent('tx-rollback'), isNull);
+      expect(await db.countAllConsumptionEvents(), 0);
+    });
+  });
 }
