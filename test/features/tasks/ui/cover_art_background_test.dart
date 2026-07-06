@@ -58,6 +58,70 @@ void main() {
     return fullPath;
   }
 
+  group('coverArtCacheExtent', () {
+    test('returns null for an unbounded constraint', () {
+      expect(coverArtCacheExtent(double.infinity, 2), isNull);
+    });
+
+    test('returns null for a zero extent (SliverAppBar collapse)', () {
+      expect(coverArtCacheExtent(0, 2), isNull);
+    });
+
+    test('returns null for a negative extent', () {
+      expect(coverArtCacheExtent(-10, 2), isNull);
+    });
+
+    test('returns null for NaN', () {
+      expect(coverArtCacheExtent(double.nan, 2), isNull);
+    });
+
+    test('returns null for a non-finite devicePixelRatio', () {
+      // ceil() on a NaN/infinite product throws — the guard must catch the
+      // ratio before the multiplication happens.
+      expect(coverArtCacheExtent(100, double.nan), isNull);
+      expect(coverArtCacheExtent(100, double.infinity), isNull);
+    });
+
+    test('returns null for a non-positive devicePixelRatio', () {
+      expect(coverArtCacheExtent(100, 0), isNull);
+      expect(coverArtCacheExtent(100, -2), isNull);
+    });
+
+    test('rounds physical pixels up to the next bucket multiple', () {
+      // 360 logical × 3 DPR = 1080 physical → next 256-multiple is 1280.
+      expect(coverArtCacheExtent(360, 3), 1280);
+    });
+
+    test('keeps an exact bucket multiple unchanged', () {
+      // 256 logical × 1 DPR = 256 physical — already on a bucket boundary.
+      expect(coverArtCacheExtent(256, 1), coverArtDecodeBucket);
+    });
+
+    test('maps a tiny extent to a full bucket, never below one', () {
+      expect(coverArtCacheExtent(1, 1), coverArtDecodeBucket);
+    });
+
+    test('yields identical extents for all widths within one bucket', () {
+      // The whole point of quantization: every divider position between
+      // two bucket boundaries produces the same decode target, so the
+      // image cache is hit instead of re-decoding per dragged pixel.
+      final low = coverArtCacheExtent(342, 3); // 1026 physical
+      final high = coverArtCacheExtent(426, 3); // 1278 physical
+      expect(low, 1280);
+      expect(high, 1280);
+    });
+
+    test('yields a larger extent once a bucket boundary is crossed', () {
+      expect(coverArtCacheExtent(426, 3), 1280); // 1278 physical
+      expect(coverArtCacheExtent(428, 3), 1536); // 1284 physical
+    });
+
+    test('clamps to coverArtMaxDecodeExtent for huge extents', () {
+      // 4000 logical × 3 DPR = 12000 physical → bucketed 12032 → clamped.
+      expect(coverArtCacheExtent(4000, 3), coverArtMaxDecodeExtent);
+    });
+  });
+
   group('CoverArtBackground', () {
     group('with mock file system', () {
       setUp(() async {
@@ -132,7 +196,7 @@ void main() {
       });
 
       testWidgets(
-        'renders Image.file with LayoutBuilder-derived cacheWidth/cacheHeight',
+        'renders Image.file with bucket-quantized cacheWidth/cacheHeight',
         (tester) async {
           final image = buildJournalImage();
           createInvalidImageFile(image);
@@ -146,16 +210,136 @@ void main() {
           expect(imageWidget.fit, BoxFit.cover);
           expect(imageWidget.errorBuilder, isNotNull);
 
-          // Both axes are capped: maxWidth × DPR and maxHeight × DPR.
-          // 360 × 3 = 1080 width; 240 × 3 = 720 height.
-          // ResizeImagePolicy.fit keeps the source aspect ratio at decode
-          // time so the displayed bitmap isn't squashed.
+          // The cap is derived from the width alone (360 × 3 = 1080 physical
+          // → next coverArtDecodeBucket multiple is 1280) and applied to both
+          // axes, so the cache key ignores the height that SliverAppBar
+          // collapse animates every frame. ResizeImagePolicy.fit keeps the
+          // source aspect ratio at decode time so the displayed bitmap isn't
+          // squashed.
           expect(imageWidget.image, isA<ResizeImage>());
           final resize = imageWidget.image as ResizeImage;
-          expect(resize.width, 1080);
-          expect(resize.height, 720);
+          expect(resize.width, 1280);
+          expect(resize.height, 1280);
           expect(resize.policy, ResizeImagePolicy.fit);
           expect(resize.imageProvider, isA<FileImage>());
+        },
+      );
+
+      testWidgets(
+        'keeps the same cache key when only the height changes (collapse)',
+        (tester) async {
+          final image = buildJournalImage();
+          createInvalidImageFile(image);
+
+          await tester.pumpWidget(
+            buildSubject(image, height: 240, width: 360),
+          );
+          await tester.pump();
+          final before = tester.widget<Image>(find.byType(Image)).image;
+          final beforeKey = await before.obtainKey(ImageConfiguration.empty);
+
+          // SliverAppBar collapse shrinks the height every scrolled frame;
+          // the decode target must not follow it or scrolling would churn
+          // the image cache exactly like the pane-resize bug did.
+          await tester.pumpWidget(
+            buildSubject(image, height: 120, width: 360),
+          );
+          await tester.pump();
+          final after = tester.widget<Image>(find.byType(Image)).image;
+          final afterKey = await after.obtainKey(ImageConfiguration.empty);
+
+          expect(afterKey, equals(beforeKey));
+        },
+      );
+
+      testWidgets(
+        'falls back to a height-derived cap when the width collapses to zero',
+        (tester) async {
+          final image = buildJournalImage();
+          createInvalidImageFile(image);
+
+          await tester.pumpWidget(
+            buildSubject(image, width: 0),
+          );
+          await tester.pump();
+
+          // Width extent is null at 0, so the height axis (default 100)
+          // supplies the cap: 100 × 3 = 300 physical → next bucket multiple
+          // is 512.
+          final imageWidget = tester.widget<Image>(find.byType(Image));
+          final resize = imageWidget.image as ResizeImage;
+          expect(resize.width, 512);
+          expect(resize.height, 512);
+        },
+      );
+
+      testWidgets(
+        'enables gaplessPlayback so resizes never blank the current frame',
+        (tester) async {
+          final image = buildJournalImage();
+          createInvalidImageFile(image);
+
+          await tester.pumpWidget(buildSubject(image));
+          await tester.pump();
+
+          final imageWidget = tester.widget<Image>(find.byType(Image));
+          expect(imageWidget.gaplessPlayback, isTrue);
+        },
+      );
+
+      testWidgets(
+        'keeps the same ResizeImage cache key while resizing inside a bucket',
+        (tester) async {
+          final image = buildJournalImage();
+          createInvalidImageFile(image);
+
+          // 360 × 3 = 1080 and 380 × 3 = 1140 both round up to 1280 — the
+          // decoded bitmap is reused for every intermediate divider position
+          // in that band instead of re-decoding per dragged pixel.
+          await tester.pumpWidget(
+            buildSubject(image, height: 240, width: 360),
+          );
+          await tester.pump();
+          final before = tester.widget<Image>(find.byType(Image)).image;
+          final beforeKey = await before.obtainKey(ImageConfiguration.empty);
+
+          await tester.pumpWidget(
+            buildSubject(image, height: 240, width: 380),
+          );
+          await tester.pump();
+          final after = tester.widget<Image>(find.byType(Image)).image;
+          final afterKey = await after.obtainKey(ImageConfiguration.empty);
+
+          // Identical image-cache keys mean the second layout resolves from
+          // the in-memory cache instead of kicking off a new decode.
+          expect(afterKey, equals(beforeKey));
+        },
+      );
+
+      testWidgets(
+        'changes the ResizeImage cache key when a bucket boundary is crossed',
+        (tester) async {
+          final image = buildJournalImage();
+          createInvalidImageFile(image);
+
+          // 360 × 3 = 1080 → 1280, but 480 × 3 = 1440 → 1536: a genuinely
+          // larger pane re-decodes at higher resolution.
+          await tester.pumpWidget(
+            buildSubject(image, height: 240, width: 360),
+          );
+          await tester.pump();
+          final before = tester.widget<Image>(find.byType(Image)).image;
+          final beforeKey = await before.obtainKey(ImageConfiguration.empty);
+
+          await tester.pumpWidget(
+            buildSubject(image, height: 240, width: 480),
+          );
+          await tester.pump();
+          final after = tester.widget<Image>(find.byType(Image)).image;
+          final afterKey = await after.obtainKey(ImageConfiguration.empty);
+
+          expect(afterKey, isNot(equals(beforeKey)));
+          expect((after as ResizeImage).width, 1536);
         },
       );
 

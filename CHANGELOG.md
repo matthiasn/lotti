@@ -251,6 +251,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   after they appear — their progress chip and bar hold their space from the
   first frame, so the list doesn't shuffle under you as you scroll.
 ### Fixed
+- Task cover art no longer flickers or briefly disappears while resizing the
+  desktop panes. Dragging any pane divider — including the sidebar, away from
+  the detail page — used to re-decode the cover image on every frame of the
+  drag; the detail page now reuses the already-decoded image while the width
+  changes and keeps the current frame on screen when a genuinely larger decode
+  is needed.
 - Entry header action buttons (the favorite star and the `…` overflow menu) are
   no longer clipped at the top-right on narrow phones. When the row ran out of
   room the timestamp now shortens instead of pushing the buttons off the edge.

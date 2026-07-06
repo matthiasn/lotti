@@ -669,6 +669,8 @@ Ellipsis actions (share, extended actions, speech modal) are NOT owned by the co
 Notable behavior already implemented:
 
 - `TaskSliverAppBar` switches between compact and expandable variants based on whether the task has `coverArtId`
+- `CoverArtBackground` (the expandable variant's cover image) quantizes its decode target: the layout width is converted to physical pixels and rounded **up** to the next 256-px bucket (`coverArtCacheExtent`), and that single cap is applied to both axes via `ResizeImagePolicy.fit`. The `ResizeImage` cache key therefore stays identical across a whole band of pane widths (no re-decode per dragged pixel) and ignores the height entirely, so SliverAppBar collapse doesn't churn the cache either; the height axis only supplies the cap when the width is unbounded or zero
+- when a resize does cross a bucket boundary, `gaplessPlayback` keeps the previous frame on screen while the larger decode resolves (the cover never blanks mid-resize), and the superseded decode variant is evicted from the image cache so a long drag doesn't accumulate one cached bitmap per bucket
 - the header is desktop-first and the same component serves mobile — chips wrap onto the next line on narrow widths
 - due dates on the detail page use calendar-day urgency styling (overdue,
   today, normal) that ignores time-of-day and daylight-saving offsets, while
