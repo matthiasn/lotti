@@ -108,6 +108,16 @@ void main() {
       expect(resolve('ai/profiles').title, 'Inference Profiles');
     });
 
+    testWidgets('ai leaves use their canonical settingsAi* arb keys', (
+      tester,
+    ) async {
+      final resolve = await _buildResolver(tester);
+      expect(resolve('ai/providers').title, 'Providers');
+      expect(resolve('ai/models').title, 'Models');
+      expect(resolve('ai/usage').title, 'Usage & Impact');
+      expect(resolve('ai/usage').desc, 'Cost, energy, and CO₂e of AI calls');
+    });
+
     testWidgets('agent leaves use their canonical agent* arb keys', (
       tester,
     ) async {
