@@ -2863,6 +2863,17 @@
   "imagePromptGenerationExpandTooltip": "Show full prompt",
   "imagePromptGenerationFullPromptLabel": "Full Image Prompt:",
   "images": "Images",
+  "imageViewerDownloadFailed": "Could not save image",
+  "imageViewerDownloadingTooltip": "Saving image",
+  "imageViewerDownloadSaved": "Saved {fileName} to Downloads/Lotti",
+  "@imageViewerDownloadSaved": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "imageViewerDownloadTooltip": "Download image",
   "inactiveLabel": "Inactive",
   "inactiveSwitchDescription": "Can be chosen for new entries when on",
   "inferenceProfileCreateTitle": "Create Profile",

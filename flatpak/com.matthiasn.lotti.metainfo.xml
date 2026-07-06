@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1032" date="2026-07-06">
+      <description>
+          <p>The journal image viewer is calmer and easier to use. Tapping a photo now opens it over a dimmed version of the app instead of a stark full-screen shell, keeps a visible margin around the image, has persistent top-right Download and Close buttons, closes with Escape, and adds a bottom zoom control while preserving pinch-to-zoom and panning. Download saves the original image into Downloads/Lotti with a unique filename.</p>
+      </description>
+    </release>
     <release version="0.9.1031" date="2026-06-20">
       <description>
           <p>Lotti now shows what your AI actually costs — in money, energy, and CO2e. Every AI call (agent turns, transcription, image analysis, cover art, text generation) is recorded with its cost in credits, energy use, CO2 footprint, water use, tokens, and the data center it ran in — measured per call by Melious for Melious-hosted models. A new AI Impact dashboard (next to Time Analysis in the sidebar, and under Settings → AI → Usage &amp; Impact) lets you switch between Cost, Energy, CO2e and Tokens, browse by week, month or year, and see stacked per-category charts, period totals, a ranked category breakdown, and a ledger of your most recent individual calls. Tasks that used AI carry a quiet header chip with their lifetime footprint, with the full breakdown a hover away. Consumption records sync across your devices, so the numbers cover everything, not just one machine.</p>

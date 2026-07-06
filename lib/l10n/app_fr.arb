@@ -2401,6 +2401,17 @@
   "imagePromptGenerationExpandTooltip": "Afficher le prompt complet",
   "imagePromptGenerationFullPromptLabel": "Prompt image complet :",
   "images": "Images",
+  "imageViewerDownloadFailed": "Impossible d'enregistrer l'image",
+  "imageViewerDownloadingTooltip": "Enregistrement de l'image",
+  "imageViewerDownloadSaved": "{fileName} enregistré dans Téléchargements/Lotti",
+  "@imageViewerDownloadSaved": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "imageViewerDownloadTooltip": "Télécharger l'image",
   "inactiveLabel": "Inactif",
   "inactiveSwitchDescription": "Peut être choisi pour de nouvelles entrées si actif",
   "inferenceProfileCreateTitle": "Créer un profil",
