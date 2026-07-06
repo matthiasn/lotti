@@ -32,10 +32,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1033" date="2026-07-07">
+      <description>
+          <p>The AI Impact dashboard now includes a Running total chart mode for cumulative cost, energy, CO2e and token usage over the selected period. Voxtral transcription records token usage when the server returns it in final accounting chunks, and transcription calls whose provider reports no token, cost or energy metrics are labelled instead of leaving a blank ledger row.</p>
+      </description>
+    </release>
     <release version="0.9.1032" date="2026-07-06">
       <description>
           <p>The journal image viewer is calmer and easier to use. Tapping a photo now opens it over a dimmed version of the app instead of a stark full-screen shell, keeps a visible margin around the image, has persistent top-right Download and Close buttons, closes with Escape, and adds a bottom zoom control while preserving pinch-to-zoom and panning. Download saves the original image into Downloads/Lotti with a unique filename.</p>
-          <p>The AI Impact dashboard now includes a Running total chart mode for cumulative cost, energy, CO2e and token usage over the selected period. Voxtral transcription records token usage when the server returns it in final accounting chunks, and transcription calls whose provider reports no token, cost or energy metrics are labelled instead of leaving a blank ledger row.</p>
       </description>
     </release>
     <release version="0.9.1031" date="2026-06-20">

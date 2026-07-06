@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1033]
+### Added
+- **Better AI Impact accounting for transcription.** The AI Impact dashboard
+  now has a **Running total** chart mode for cumulative cost, energy, CO₂e and
+  token usage over the selected period. Voxtral transcription records token
+  usage when the server returns it in final accounting chunks, and transcription
+  calls whose provider reports no token, cost or energy metrics are labelled
+  instead of leaving a blank ledger row.
+
 ## [0.9.1032]
 ### Added
 - **A calmer image viewer.** Tapping a journal photo now opens it over a
@@ -12,12 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and Close buttons, closes with Escape, and adds a bottom zoom control while
   preserving pinch-to-zoom and panning. Download saves the original image into
   `Downloads/Lotti` with a unique filename.
-- **Better AI Impact accounting for transcription.** The AI Impact dashboard
-  now has a **Running total** chart mode for cumulative cost, energy, CO₂e and
-  token usage over the selected period. Voxtral transcription records token
-  usage when the server returns it in final accounting chunks, and transcription
-  calls whose provider reports no token, cost or energy metrics are labelled
-  instead of leaving a blank ledger row.
 
 ## [0.9.1031]
 ### Added
