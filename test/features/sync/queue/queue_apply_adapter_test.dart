@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 import 'queue_apply_adapter_test_helpers.dart';
 
 void main() {
@@ -530,6 +532,21 @@ void main() {
       () async {
         await build().bindPrepareBatch()(const [], room);
         verifyNever(() => processor.prepare(event: any(named: 'event')));
+      },
+    );
+  });
+
+  group('writesJournalDb classification', () {
+    test(
+      'consumptionEvent bypasses the JournalDb transaction wrap — its apply '
+      'path writes to ai_consumption.sqlite, not JournalDb',
+      () {
+        final message = SyncMessage.consumptionEvent(
+          event: makeConsumptionEvent(),
+          status: SyncEntryStatus.update,
+        );
+
+        expect(QueueApplyAdapter.writesJournalDbForTesting(message), isFalse);
       },
     );
   });
