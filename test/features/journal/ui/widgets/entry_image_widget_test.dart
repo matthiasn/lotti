@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
@@ -96,11 +96,13 @@ void _pressIconButton(WidgetTester tester, IconData icon) {
   button.onPressed!();
 }
 
-Future<void> _waitForFileSystem(
+Future<void> _runAndWaitForFileSystem(
   WidgetTester tester,
+  VoidCallback action,
   bool Function() isReady,
 ) async {
   await tester.runAsync(() async {
+    action();
     for (var i = 0; i < 250 && !isReady(); i++) {
       await Future<void>.delayed(const Duration(milliseconds: 1));
     }
@@ -560,6 +562,35 @@ void main() {
     );
 
     testWidgets(
+      'layout size changes reset the cached minimum zoom scale',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1200, 900)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(buildWrapper());
+        await tester.pump();
+
+        _pressIconButton(tester, Icons.add_rounded);
+        await tester.pump();
+        expect(find.text('125%'), findsOneWidget);
+        var zoomOutButton = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.remove_rounded),
+        );
+        expect(zoomOutButton.onPressed, isNotNull);
+
+        tester.view.physicalSize = const Size(900, 1200);
+        await tester.pump();
+
+        zoomOutButton = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.remove_rounded),
+        );
+        expect(zoomOutButton.onPressed, isNull);
+      },
+    );
+
+    testWidgets(
       'download button copies the image to Downloads/Lotti with a unique name',
       (tester) async {
         final downloadsDir = Directory('${tempDir.path}/Downloads')
@@ -581,9 +612,15 @@ void main() {
         await tester.pump();
 
         final copied = File('${lottiDownloads.path}/photo 3.png');
-        _pressIconButton(tester, Icons.download_rounded);
-        await tester.pump();
-        await _waitForFileSystem(tester, copied.existsSync);
+        final downloadButton = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.download_rounded),
+        );
+        expect(downloadButton.onPressed, isNotNull);
+        await _runAndWaitForFileSystem(
+          tester,
+          downloadButton.onPressed!,
+          copied.existsSync,
+        );
         await tester.pump();
         await tester.pump();
 
@@ -612,9 +649,15 @@ void main() {
         );
         await tester.pump();
 
-        _pressIconButton(tester, Icons.download_rounded);
-        await tester.pump();
-        await _waitForFileSystem(tester, copied.existsSync);
+        final downloadButton = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.download_rounded),
+        );
+        expect(downloadButton.onPressed, isNotNull);
+        await _runAndWaitForFileSystem(
+          tester,
+          downloadButton.onPressed!,
+          copied.existsSync,
+        );
         await tester.pump();
         await tester.pump();
 
@@ -649,10 +692,14 @@ void main() {
           find.widgetWithIcon(IconButton, Icons.download_rounded),
         );
         expect(downloadButton.onPressed, isNotNull);
-        downloadButton.onPressed!();
-        downloadButton.onPressed!();
-        await tester.pump();
-        await _waitForFileSystem(tester, () => copyCalls == 1);
+        await _runAndWaitForFileSystem(
+          tester,
+          () {
+            downloadButton.onPressed!();
+            downloadButton.onPressed!();
+          },
+          () => copyCalls == 1,
+        );
         await tester.pump();
 
         expect(copyCalls, 1);
@@ -711,9 +758,15 @@ void main() {
         );
         await tester.pump();
 
-        _pressIconButton(tester, Icons.download_rounded);
-        await tester.pump();
-        await _waitForFileSystem(tester, () => copyAttempted);
+        final downloadButton = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.download_rounded),
+        );
+        expect(downloadButton.onPressed, isNotNull);
+        await _runAndWaitForFileSystem(
+          tester,
+          downloadButton.onPressed!,
+          () => copyAttempted,
+        );
         await tester.pump();
 
         expect(copyAttempted, isTrue);

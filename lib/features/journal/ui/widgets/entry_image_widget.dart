@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -120,6 +120,7 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
 
   double _scale = 1;
   double? _minimumScale;
+  Size? _lastSize;
   bool _isDownloading = false;
 
   @override
@@ -174,7 +175,7 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
   void _setZoom(double scale) {
     final minimumScale = _minimumScale ?? _scale;
     _minimumScale ??= minimumScale;
-    final nextScale = scale.clamp(minimumScale, _maxZoomScale).toDouble();
+    final nextScale = scale.clamp(minimumScale, _maxZoomScale);
     _photoController.updateMultiple(
       position: Offset.zero,
       scale: nextScale,
@@ -216,31 +217,34 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
     final lottiDirectory = await Directory(
       p.join(downloadsDirectory.path, 'Lotti'),
     ).create(recursive: true);
-    final target = _uniqueDownloadFile(
+    final target = await _uniqueDownloadFile(
       directory: lottiDirectory,
       sourceFile: widget.file,
     );
     return widget.fileCopier(widget.file, target);
   }
 
-  File _uniqueDownloadFile({
+  Future<File> _uniqueDownloadFile({
     required Directory directory,
     required File sourceFile,
-  }) {
+  }) async {
     final sourceName = p.basename(sourceFile.path);
     final extension = p.extension(sourceName);
     final baseName = p.basenameWithoutExtension(sourceName);
-    var candidate = File(p.join(directory.path, sourceName));
+    final existingNames = <String>{};
+    await for (final entity in directory.list()) {
+      existingNames.add(p.basename(entity.path));
+    }
+
+    var candidateName = sourceName;
     var suffix = 2;
 
-    while (candidate.existsSync()) {
-      candidate = File(
-        p.join(directory.path, '$baseName $suffix$extension'),
-      );
+    while (existingNames.contains(candidateName)) {
+      candidateName = '$baseName $suffix$extension';
       suffix++;
     }
 
-    return candidate;
+    return File(p.join(directory.path, candidateName));
   }
 
   void _showSnackBar(String message) {
@@ -251,6 +255,12 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    if (_lastSize != size) {
+      _lastSize = size;
+      _minimumScale = null;
+    }
+
     final imageProvider = FileImage(widget.file);
     final tokens = context.designTokens;
     final padding = MediaQuery.paddingOf(context);
