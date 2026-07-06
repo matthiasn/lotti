@@ -7,8 +7,8 @@ import 'package:openai_dart/openai_dart.dart';
 /// use input/output naming or camelCase keys. Unsupported duration-only usage
 /// payloads (for example audio seconds without token counts) return null.
 CompletionUsage? parseCompletionUsage(Object? raw) {
-  if (raw is! Map) return null;
-  final usage = raw.cast<String, dynamic>();
+  if (raw is! Map<dynamic, dynamic>) return null;
+  final usage = raw;
 
   final promptTokens = _integerValue(
     usage['prompt_tokens'] ?? usage['input_tokens'] ?? usage['promptTokens'],
@@ -59,9 +59,9 @@ CompletionUsage? parseCompletionUsage(Object? raw) {
   );
 }
 
-Map<String, dynamic>? _mapValue(Object? value) {
-  if (value is! Map) return null;
-  return value.cast<String, dynamic>();
+Map<dynamic, dynamic>? _mapValue(Object? value) {
+  if (value is! Map<dynamic, dynamic>) return null;
+  return value;
 }
 
 int? _integerValue(Object? value) {

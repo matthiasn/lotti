@@ -55,6 +55,13 @@ void main() {
     const audioBase64 = 'base64-encoded-audio-data';
 
     group('transcribeAudio', () {
+      test('default constructor creates a closable HTTP client', () {
+        final repository = WhisperInferenceRepository();
+
+        expect(repository.httpClient, isA<http.Client>());
+        expect(repository.close, returnsNormally);
+      });
+
       test('successfully transcribes audio', () async {
         // Arrange
         const transcribedText = 'This is the transcribed text from audio.';
@@ -184,6 +191,38 @@ void main() {
                   contains('Failed to transcribe audio (HTTP 500)'),
                 )
                 .having((e) => e.statusCode, 'statusCode', 500),
+          ),
+        );
+      });
+
+      test('uses structured provider error messages when available', () async {
+        // Arrange
+        stubPost(
+          body: jsonEncode({
+            'error': {'message': 'Provider quota exceeded'},
+          }),
+          statusCode: 429,
+        );
+
+        // Act
+        final stream = repository.transcribeAudio(
+          model: model,
+          audioBase64: audioBase64,
+          baseUrl: baseUrl,
+          prompt: prompt,
+        );
+
+        // Assert
+        await expectLater(
+          stream.first,
+          throwsA(
+            isA<TranscriptionException>()
+                .having(
+                  (e) => e.message,
+                  'message',
+                  contains('Provider quota exceeded'),
+                )
+                .having((e) => e.statusCode, 'statusCode', 429),
           ),
         );
       });

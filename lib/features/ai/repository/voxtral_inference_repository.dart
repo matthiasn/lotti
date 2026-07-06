@@ -338,12 +338,7 @@ class VoxtralInferenceRepository {
                               ),
                               index: 0,
                               finishReason: finishReason != null
-                                  ? ChatCompletionFinishReason.values
-                                        .firstWhere(
-                                          (e) => e.name == finishReason,
-                                          orElse: () =>
-                                              ChatCompletionFinishReason.stop,
-                                        )
+                                  ? _chatFinishReasonFromApi(finishReason)
                                   : null,
                             ),
                           ]
@@ -494,6 +489,14 @@ class VoxtralInferenceRepository {
 
   /// Closes the underlying HTTP client and any keep-alive connections.
   void close() => _httpClient.close();
+}
+
+ChatCompletionFinishReason _chatFinishReasonFromApi(String finishReason) {
+  final normalized = finishReason.replaceAll('_', '').toLowerCase();
+  return ChatCompletionFinishReason.values.firstWhere(
+    (value) => value.name.toLowerCase() == normalized,
+    orElse: () => ChatCompletionFinishReason.stop,
+  );
 }
 
 /// Health status of the Voxtral server

@@ -441,7 +441,8 @@ class _ImpactStackedArea extends StatelessWidget {
         if (stackedTops.last[i] > maxTop) maxTop = stackedTops.last[i];
       }
     }
-    final maxY = impactNiceCeiling(maxTop * 1.08);
+    final niceCeiling = impactNiceCeiling(maxTop * 1.08);
+    final maxY = niceCeiling <= 0 ? 1.0 : niceCeiling;
     final interval = maxY / 4;
     final labelEvery = lastDrawnBucket <= 7
         ? 1

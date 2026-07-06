@@ -59,8 +59,9 @@ void main() {
     WidgetTester tester, {
     required ImpactChartData chartData,
     ConsumptionMetric metric = ConsumptionMetric.cost,
+    DateTime? now,
   }) async {
-    await withClock(Clock.fixed(fixedNow), () async {
+    await withClock(Clock.fixed(now ?? fixedNow), () async {
       await tester.pumpWidget(
         makeTestableWidget(
           ImpactChartCard(
@@ -146,6 +147,33 @@ void main() {
     expect(rows, contains('Research  €1.00'));
     expect(rows.indexOf('Agents'), lessThan(rows.indexOf('Research')));
   });
+
+  testWidgets(
+    'cumulative chart keeps a positive axis when elapsed totals are zero',
+    (tester) async {
+      final chartData = buildImpactChartData(
+        bucketsWith({
+          4: {'cat-a': 2.0},
+        }),
+        range,
+        ConsumptionMetric.cost,
+      );
+      await pumpCard(
+        tester,
+        chartData: chartData,
+        now: DateTime(2024, 3, 5, 12),
+      );
+
+      await tester.tap(toggle('Running total'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.byType(LineChart), findsOneWidget);
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(chart.data.maxY, greaterThan(0));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('title follows the selected metric', (tester) async {
     final chartData = buildImpactChartData(
@@ -273,6 +301,44 @@ void main() {
       expect(find.text('Mar 5'), findsNothing);
       expect(find.text('Mar 14'), findsOneWidget);
       expect(find.textContaining('Mon'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'month-long cumulative chart thins labels and guards invalid tooltips',
+    (tester) async {
+      final monthRange = InsightsRange(
+        startDay: day0,
+        endDayExclusive: day0 + 30,
+      );
+      final chartData = buildImpactChartData(
+        bucketsWith({
+          0: {'cat-a': 2.0},
+          5: {'cat-b': 1.0},
+        }),
+        monthRange,
+        ConsumptionMetric.cost,
+      );
+      await pumpCard(tester, chartData: chartData);
+
+      await tester.tap(toggle('Running total'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      final tooltipData = chart.data.lineTouchData.touchTooltipData;
+      final barData = chart.data.lineBarsData.first;
+      final spot = LineBarSpot(barData, 0, barData.spots.first);
+
+      expect(tooltipData.getTooltipColor(spot), isA<Color>());
+      expect(find.text('Mar 4'), findsOneWidget);
+      expect(find.text('Mar 5'), findsNothing);
+      expect(
+        tooltipData.getTooltipItems([
+          LineBarSpot(barData, 0, const FlSpot(-1, 0)),
+        ]),
+        equals([null]),
+      );
     },
   );
 
