@@ -13,6 +13,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
+import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -56,6 +57,33 @@ void main() {
         title: title,
       ),
     );
+  }
+
+  void expectStatusGlyphForTitle(
+    WidgetTester tester, {
+    required String title,
+    required TaskStatus status,
+  }) {
+    final rowFinder = find.ancestor(
+      of: find.text(title),
+      matching: find.byType(Row),
+    );
+    final statusString = status.toDbString;
+    final expectedColor = taskColorFromStatusString(
+      statusString,
+      brightness: Theme.of(tester.element(rowFinder.first)).brightness,
+    );
+    final expectedIcon = taskIconFromStatusString(statusString);
+    final icon = tester
+        .widgetList<Icon>(
+          find.descendant(
+            of: rowFinder.first,
+            matching: find.byType(Icon),
+          ),
+        )
+        .firstWhere((icon) => icon.icon == expectedIcon);
+
+    expect(icon.color, expectedColor, reason: title);
   }
 
   Future<MockJournalRepository> pumpWidget(
@@ -287,69 +315,72 @@ void main() {
       expect(find.byType(Divider), findsNWidgets(2));
     });
 
-    testWidgets('shows completed glyph for done and rejected tasks', (
+    testWidgets('uses the shared task status glyph for each linked task', (
       tester,
     ) async {
-      final doneTask = buildTask(
-        id: 'done-1',
-        title: 'Done Task',
-        status: TaskStatus.done(
-          id: 's-d',
+      final statuses = <String, TaskStatus>{
+        'Open': TaskStatus.open(
+          id: 's-open',
           createdAt: now,
           utcOffset: 0,
         ),
-      );
-      final rejectedTask = buildTask(
-        id: 'rejected-1',
-        title: 'Rejected Task',
-        status: TaskStatus.rejected(
-          id: 's-r',
+        'Groomed': TaskStatus.groomed(
+          id: 's-groomed',
           createdAt: now,
           utcOffset: 0,
         ),
-      );
+        'In Progress': TaskStatus.inProgress(
+          id: 's-progress',
+          createdAt: now,
+          utcOffset: 0,
+        ),
+        'Blocked': TaskStatus.blocked(
+          id: 's-blocked',
+          createdAt: now,
+          utcOffset: 0,
+          reason: 'waiting',
+        ),
+        'On Hold': TaskStatus.onHold(
+          id: 's-hold',
+          createdAt: now,
+          utcOffset: 0,
+          reason: 'waiting',
+        ),
+        'Done': TaskStatus.done(
+          id: 's-done',
+          createdAt: now,
+          utcOffset: 0,
+        ),
+        'Rejected': TaskStatus.rejected(
+          id: 's-rejected',
+          createdAt: now,
+          utcOffset: 0,
+        ),
+      };
+
       await pumpWidget(
         tester,
         incoming: [],
-        outgoing: [doneTask, rejectedTask],
+        outgoing: statuses.entries
+            .map(
+              (entry) => buildTask(
+                id: 't-${entry.key}',
+                title: entry.key,
+                status: entry.value,
+              ),
+            )
+            .toList(),
       );
 
-      expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+      for (final entry in statuses.entries) {
+        expectStatusGlyphForTitle(
+          tester,
+          title: entry.key,
+          status: entry.value,
+        );
+      }
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
       expect(find.byIcon(Icons.circle_outlined), findsNothing);
-    });
-
-    testWidgets('shows open glyph for open, in-progress, blocked tasks', (
-      tester,
-    ) async {
-      await pumpWidget(
-        tester,
-        incoming: [],
-        outgoing: [
-          buildTask(id: 't-open', title: 'Open'),
-          buildTask(
-            id: 't-prog',
-            title: 'In Progress',
-            status: TaskStatus.inProgress(
-              id: 's-p',
-              createdAt: now,
-              utcOffset: 0,
-            ),
-          ),
-          buildTask(
-            id: 't-block',
-            title: 'Blocked',
-            status: TaskStatus.blocked(
-              id: 's-b',
-              createdAt: now,
-              utcOffset: 0,
-              reason: 'waiting',
-            ),
-          ),
-        ],
-      );
-
-      expect(find.byIcon(Icons.circle_outlined), findsNWidgets(3));
-      expect(find.byIcon(Icons.check_circle), findsNothing);
     });
 
     testWidgets('long titles are truncated with ellipsis', (tester) async {
