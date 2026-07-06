@@ -13,6 +13,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
+import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -352,8 +353,6 @@ class _LinkedTaskRow extends ConsumerWidget {
     final caption = isOutgoing
         ? context.messages.linkedToCaption
         : context.messages.linkedFromCaption;
-    final isCompleted =
-        task.data.status is TaskDone || task.data.status is TaskRejected;
 
     return InkWell(
       onTap: manageMode
@@ -380,7 +379,7 @@ class _LinkedTaskRow extends ConsumerWidget {
               ),
             ),
             SizedBox(width: tokens.spacing.step3),
-            _StatusGlyph(isCompleted: isCompleted),
+            _StatusGlyph(status: task.data.status),
             SizedBox(width: tokens.spacing.step2),
             Expanded(
               child: Text(
@@ -454,20 +453,20 @@ class _LinkedTaskRow extends ConsumerWidget {
 }
 
 class _StatusGlyph extends StatelessWidget {
-  const _StatusGlyph({required this.isCompleted});
+  const _StatusGlyph({required this.status});
 
-  final bool isCompleted;
+  final TaskStatus status;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final color = isCompleted
-        ? tokens.colors.alert.success.defaultColor
-        : tokens.colors.alert.info.defaultColor;
+    final brightness = Theme.of(context).brightness;
     return Icon(
-      isCompleted ? Icons.check_circle : Icons.circle_outlined,
+      taskIconFromStatusString(status.toDbString),
       size: 16,
-      color: color,
+      color: taskColorFromStatusString(
+        status.toDbString,
+        brightness: brightness,
+      ),
     );
   }
 }

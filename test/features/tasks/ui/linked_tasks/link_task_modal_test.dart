@@ -6,6 +6,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
+import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -402,8 +403,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       // Status icons should be present
-      expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
-      expect(find.byIcon(Icons.play_circle_outline_rounded), findsOneWidget);
+      expect(find.byIcon(taskIconFromStatusString('OPEN')), findsOneWidget);
+      expect(
+        find.byIcon(taskIconFromStatusString('IN PROGRESS')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows link icon for each task item', (tester) async {
@@ -790,7 +794,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Blocked'), findsOneWidget);
-      expect(find.byIcon(Icons.block_rounded), findsOneWidget);
+      expect(find.byIcon(taskIconFromStatusString('BLOCKED')), findsOneWidget);
     });
 
     testWidgets('shows status labels for on hold tasks', (tester) async {
@@ -837,7 +841,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('On Hold'), findsOneWidget);
-      expect(find.byIcon(Icons.pause_circle_outline_rounded), findsOneWidget);
+      expect(find.byIcon(taskIconFromStatusString('ON HOLD')), findsOneWidget);
     });
 
     testWidgets('shows status labels for groomed tasks', (tester) async {
@@ -879,7 +883,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Groomed'), findsOneWidget);
-      expect(find.byIcon(Icons.done_outline_rounded), findsOneWidget);
+      expect(find.byIcon(taskIconFromStatusString('GROOMED')), findsOneWidget);
     });
 
     testWidgets('FTS5 matches are used for filtering', (tester) async {
@@ -1011,7 +1015,7 @@ void main() {
     final terminalStatuses = <String, ({TaskStatus status, IconData icon})>{
       'Done': (
         status: TaskStatus.done(id: 's-done', createdAt: now, utcOffset: 0),
-        icon: Icons.check_circle_rounded,
+        icon: taskIconFromStatusString('DONE'),
       ),
       'Rejected': (
         status: TaskStatus.rejected(
@@ -1019,7 +1023,7 @@ void main() {
           createdAt: now,
           utcOffset: 0,
         ),
-        icon: Icons.cancel_rounded,
+        icon: taskIconFromStatusString('REJECTED'),
       ),
     };
 

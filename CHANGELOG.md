@@ -251,6 +251,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   after they appear — their progress chip and bar hold their space from the
   first frame, so the list doesn't shuffle under you as you scroll.
 ### Fixed
+- Linked tasks now show the actual task status glyph. In-progress linked tasks
+  use the same play icon as the task status pill and status picker instead of
+  falling back to an open circle, and the link-task picker uses that same shared
+  status icon set.
 - Task cover art no longer flickers or briefly disappears while resizing the
   desktop panes. Dragging any pane divider — including the sidebar, away from
   the detail page — used to re-decode the cover image on every frame of the

@@ -264,12 +264,16 @@ class _TaskListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = task.data.status;
-    final statusColor = status.colorForBrightness(Theme.of(context).brightness);
+    final statusString = status.toDbString;
+    final statusColor = taskColorFromStatusString(
+      statusString,
+      brightness: Theme.of(context).brightness,
+    );
 
     return ListTile(
       onTap: onTap,
       leading: Icon(
-        _getStatusIcon(status),
+        taskIconFromStatusString(statusString),
         color: statusColor,
         size: 20,
       ),
@@ -279,37 +283,13 @@ class _TaskListTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        _getStatusLabel(context, status),
+        taskLabelFromStatusString(statusString, context),
         style: TextStyle(
           color: statusColor,
           fontSize: 12,
         ),
       ),
       trailing: const Icon(Icons.add_link_rounded, size: 20),
-    );
-  }
-
-  String _getStatusLabel(BuildContext context, TaskStatus status) {
-    return status.map(
-      open: (_) => context.messages.taskStatusOpen,
-      groomed: (_) => context.messages.taskStatusGroomed,
-      inProgress: (_) => context.messages.taskStatusInProgress,
-      blocked: (_) => context.messages.taskStatusBlocked,
-      onHold: (_) => context.messages.taskStatusOnHold,
-      done: (_) => context.messages.taskStatusDone,
-      rejected: (_) => context.messages.taskStatusRejected,
-    );
-  }
-
-  IconData _getStatusIcon(TaskStatus status) {
-    return status.map(
-      open: (_) => Icons.radio_button_unchecked,
-      groomed: (_) => Icons.done_outline_rounded,
-      inProgress: (_) => Icons.play_circle_outline_rounded,
-      blocked: (_) => Icons.block_rounded,
-      onHold: (_) => Icons.pause_circle_outline_rounded,
-      done: (_) => Icons.check_circle_rounded,
-      rejected: (_) => Icons.cancel_rounded,
     );
   }
 }
