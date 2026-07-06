@@ -11500,23 +11500,11 @@ abstract class AppLocalizations {
   /// **'Verifying…'**
   String get onboardingApiKeyVerifying;
 
-  /// No description provided for @onboardingCaptureAccept.
-  ///
-  /// In en, this message translates to:
-  /// **'Looks good'**
-  String get onboardingCaptureAccept;
-
   /// No description provided for @onboardingCaptureCategoryPrompt.
   ///
   /// In en, this message translates to:
   /// **'Where should this land?'**
   String get onboardingCaptureCategoryPrompt;
-
-  /// No description provided for @onboardingCaptureEditHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap any line to edit'**
-  String get onboardingCaptureEditHint;
 
   /// No description provided for @onboardingCaptureListening.
   ///
@@ -11530,18 +11518,6 @@ abstract class AppLocalizations {
   /// **'Record your thought'**
   String get onboardingCaptureOrbLabel;
 
-  /// No description provided for @onboardingCapturePrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'What\'s on your mind?'**
-  String get onboardingCapturePrompt;
-
-  /// No description provided for @onboardingCapturePromptHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Try: remind me to call the dentist and book the car service'**
-  String get onboardingCapturePromptHint;
-
   /// No description provided for @onboardingCaptureRatherType.
   ///
   /// In en, this message translates to:
@@ -11553,12 +11529,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ll be able to edit everything next.'**
   String get onboardingCaptureReassurance;
-
-  /// No description provided for @onboardingCaptureRevealed.
-  ///
-  /// In en, this message translates to:
-  /// **'Here\'s your first task'**
-  String get onboardingCaptureRevealed;
 
   /// No description provided for @onboardingCaptureThinking.
   ///
@@ -11703,6 +11673,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose the AI brain for your tasks'**
   String get onboardingConnectTitle;
+
+  /// No description provided for @onboardingFirstTaskCreatedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap your task to open it'**
+  String get onboardingFirstTaskCreatedHint;
+
+  /// No description provided for @onboardingFirstTaskCreatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your first task is ready'**
+  String get onboardingFirstTaskCreatedTitle;
+
+  /// No description provided for @onboardingFirstTaskGuidance.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to talk and say what needs doing — Lotti turns it into a real task.'**
+  String get onboardingFirstTaskGuidance;
+
+  /// No description provided for @onboardingFirstTaskSuggestionDentist.
+  ///
+  /// In en, this message translates to:
+  /// **'Book a dentist appointment'**
+  String get onboardingFirstTaskSuggestionDentist;
+
+  /// No description provided for @onboardingFirstTaskSuggestionMeeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare for Monday\'s meeting'**
+  String get onboardingFirstTaskSuggestionMeeting;
+
+  /// No description provided for @onboardingFirstTaskSuggestionPlanWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan my week'**
+  String get onboardingFirstTaskSuggestionPlanWeek;
+
+  /// No description provided for @onboardingFirstTaskSuggestionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not ready to talk? Start with one of these:'**
+  String get onboardingFirstTaskSuggestionsLabel;
+
+  /// No description provided for @onboardingFirstTaskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first task'**
+  String get onboardingFirstTaskTitle;
 
   /// No description provided for @onboardingRecordingStyleAnalogue.
   ///

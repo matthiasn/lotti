@@ -5,17 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
-import 'package:lotti/features/onboarding/ui/pages/onboarding_capture_page.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_recording_style_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
-import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -33,8 +35,8 @@ String? onboardingSeededProfileId(InferenceProviderType type) => switch (type) {
   _ => null,
 };
 
-/// The areas created in the onboarding category step, handed to the live
-/// first-capture page so the structured task lands in a real place — and so the
+/// The areas created in the onboarding category step, handed to the in-panel
+/// first-task step so the structured task lands in a real place — and so the
 /// user can pick which one when they created more than one.
 class OnboardingFirstCapture {
   const OnboardingFirstCapture({
@@ -72,10 +74,9 @@ class OnboardingWelcomeModal {
     unawaited(repo?.recordEvent(OnboardingEventName.welcomeShown));
 
     InferenceProviderType? connectedType;
-    // The first category created in the category step — carried out of the
-    // modal route so the live first-capture page can be pushed after the modal
-    // pops (a full-screen route, not a child of the transparent modal).
-    OnboardingFirstCapture? firstCapture;
+    // The task the in-panel first-task step landed — carried out of the modal
+    // route so the real task page can be opened once the modal has popped.
+    String? createdTaskId;
     final dismissLabel = MaterialLocalizations.of(
       context,
     ).modalBarrierDismissLabel;
@@ -113,17 +114,16 @@ class OnboardingWelcomeModal {
                 // it now so it counts even if the user dismisses on the success
                 // beat; the route stays open to show that beat.
                 onConnected: (type) => connectedType = type,
-                // The category step finished with at least one created area —
-                // remember it and pop the modal; the capture page is pushed
-                // below once the modal route is gone.
-                onStartCapture: (capture) {
-                  firstCapture = capture;
+                // The in-panel first-task step landed a real task — remember
+                // its id and pop the modal; the task page is opened below once
+                // the modal route is gone.
+                onTaskCreated: (taskId) {
+                  createdTaskId = taskId;
                   Navigator.of(routeContext).pop();
                 },
-                // Reached only via the category step's no-area branch, which
-                // the disabled Continue button makes unreachable.
-                onComplete: () =>
-                    Navigator.of(routeContext).pop(), // coverage:ignore-line
+                // Reached when the first-task step cannot produce a task at
+                // all (a total structuring failure) — finish onboarding.
+                onComplete: () => Navigator.of(routeContext).pop(),
                 onSkip: () => Navigator.of(routeContext).pop(),
               ),
             ),
@@ -139,26 +139,11 @@ class OnboardingWelcomeModal {
           provider: connectedType!.name,
         ),
       );
-      // The user connected a provider and created at least one area: drop them
-      // straight into the live first-capture aha on a full-screen route. Its
-      // onDone pops back to the app.
-      final capture = firstCapture;
-      if (capture != null) {
-        await rootNavigator.push(
-          MaterialPageRoute<void>(
-            builder: (captureContext) => OnboardingCapturePage(
-              categories: capture.categories,
-              providerName: capture.providerName,
-              onDone: () => Navigator.of(captureContext).pop(),
-              // Forwards to openOnboardingCreatedTask (unit-tested); fired by
-              // the live capture pipeline landing a task.
-              // coverage:ignore-start
-              onTaskCreated: (taskId) =>
-                  openOnboardingCreatedTask(captureContext, taskId),
-              // coverage:ignore-end
-            ),
-          ),
-        );
+      // The in-panel first-task step landed a real task: the payoff is the
+      // real task page, opened now that the modal route is gone.
+      final taskId = createdTaskId;
+      if (taskId != null) {
+        openOnboardingCreatedTask(taskId);
       }
     } else {
       unawaited(repo?.recordEvent(OnboardingEventName.welcomeSkipped));
@@ -167,26 +152,14 @@ class OnboardingWelcomeModal {
   }
 }
 
-/// Lands the user on their freshly created task, replacing the capture route so
-/// backing out returns to the app rather than the capture screen. Mirrors
-/// `task_navigation.dart`'s mobile/desktop split.
+/// Lands the user on their freshly created task once the onboarding modal has
+/// popped. Deep-links through the app's canonical task route, which also
+/// switches to the Tasks destination — the flow may have been launched from
+/// anywhere (first run, or the Settings → Maintenance debug entry), and a bare
+/// detail-stack push from another tab would open the task invisibly.
 @visibleForTesting
-void openOnboardingCreatedTask(BuildContext captureContext, String taskId) {
-  final navService = getIt<NavService>();
-  if (navService.isDesktopMode) {
-    navService.pushDesktopTaskDetail(taskId);
-    Navigator.of(captureContext).pop();
-  } else {
-    // coverage:ignore-start
-    // Pushes the full TaskDetailsPage, which needs the entire task/journal
-    // provider graph to build — exercised via the live app, not a unit test.
-    Navigator.of(captureContext).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => TaskDetailsPage(taskId: taskId),
-      ),
-    );
-    // coverage:ignore-end
-  }
+void openOnboardingCreatedTask(String taskId) {
+  beamToNamed('/tasks/$taskId');
 }
 
 /// Full-screen dark canvas hosting the flow, centered + scrollable so the
@@ -196,7 +169,7 @@ class _OnboardingScaffold extends StatelessWidget {
     required this.heroStyle,
     required this.onProviderModalShown,
     required this.onConnected,
-    required this.onStartCapture,
+    required this.onTaskCreated,
     required this.onComplete,
     required this.onSkip,
   });
@@ -204,7 +177,7 @@ class _OnboardingScaffold extends StatelessWidget {
   final OnboardingHeroStyle heroStyle;
   final VoidCallback onProviderModalShown;
   final void Function(InferenceProviderType) onConnected;
-  final void Function(OnboardingFirstCapture) onStartCapture;
+  final void Function(String taskId) onTaskCreated;
   final VoidCallback onComplete;
   final VoidCallback onSkip;
 
@@ -227,7 +200,7 @@ class _OnboardingScaffold extends StatelessWidget {
         heroStyle: heroStyle,
         onProviderModalShown: onProviderModalShown,
         onConnected: onConnected,
-        onStartCapture: onStartCapture,
+        onTaskCreated: onTaskCreated,
         onComplete: onComplete,
         onSkip: onSkip,
       ),
@@ -276,16 +249,24 @@ class _OnboardingScaffold extends StatelessWidget {
   }
 }
 
-enum _FlowStep { welcome, connect, apiKey, success, recordingStyle, category }
+enum _FlowStep {
+  welcome,
+  connect,
+  apiKey,
+  success,
+  recordingStyle,
+  category,
+  firstTask,
+}
 
-/// Internal three-step flow swapped with a crossfade + height animation. Owning
+/// Internal step flow swapped with a crossfade + height animation. Owning
 /// the step locally keeps the in-panel back buttons hittable.
 class _OnboardingFlow extends StatefulWidget {
   const _OnboardingFlow({
     required this.heroStyle,
     required this.onProviderModalShown,
     required this.onConnected,
-    required this.onStartCapture,
+    required this.onTaskCreated,
     required this.onComplete,
     required this.onSkip,
   });
@@ -293,7 +274,7 @@ class _OnboardingFlow extends StatefulWidget {
   final OnboardingHeroStyle heroStyle;
   final VoidCallback onProviderModalShown;
   final void Function(InferenceProviderType) onConnected;
-  final void Function(OnboardingFirstCapture) onStartCapture;
+  final void Function(String taskId) onTaskCreated;
   final VoidCallback onComplete;
   final VoidCallback onSkip;
 
@@ -304,6 +285,10 @@ class _OnboardingFlow extends StatefulWidget {
 class _OnboardingFlowState extends State<_OnboardingFlow> {
   _FlowStep _step = _FlowStep.welcome;
   late InferenceProviderType _type;
+
+  /// The areas created in the category step, carried into the first-task step.
+  /// Set exactly once when the category step advances.
+  late OnboardingFirstCapture _capture;
 
   @override
   Widget build(BuildContext context) {
@@ -386,7 +371,21 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
         return _OnboardingCategoryStep(
           key: const ValueKey('onboarding-category'),
           type: _type,
-          onStartCapture: widget.onStartCapture,
+          // The category step finished with at least one created area — the
+          // first-task finale stays *inside* the panel (the same dialogue),
+          // rather than popping out to a full-screen takeover.
+          onStartCapture: (capture) => setState(() {
+            _capture = capture;
+            _step = _FlowStep.firstTask;
+          }),
+          onDone: widget.onComplete,
+        );
+      case _FlowStep.firstTask:
+        return OnboardingFirstTaskStep(
+          key: const ValueKey('onboarding-first-task'),
+          categories: _capture.categories,
+          providerName: _capture.providerName,
+          onTaskCreated: widget.onTaskCreated,
           onDone: widget.onComplete,
         );
     }
@@ -406,8 +405,8 @@ class _OnboardingCategoryStep extends ConsumerStatefulWidget {
 
   final InferenceProviderType type;
 
-  /// Invoked with the first created area when the user finishes with at least
-  /// one selection — the modal pops and hands these to the live capture page.
+  /// Invoked with the created areas when the user finishes with at least one
+  /// selection — the flow advances to the in-panel first-task step.
   final void Function(OnboardingFirstCapture) onStartCapture;
 
   /// Invoked when the step completes with no area created (nothing selected) —
@@ -507,10 +506,39 @@ class _OnboardingCategoryStepState
       );
       final chosen = options.where((o) => _selected.contains(o.label)).toList();
 
+      // Category names are UNIQUE across *all* rows in the database —
+      // including soft-deleted, private-hidden, and archived ones — so the
+      // duplicate check must consult the unfiltered set: a visible-only fetch
+      // would miss rows that still trip the constraint and make Continue die
+      // with an opaque error.
+      final existing = await repository.getAllCategoriesIncludingHidden();
+
       final created = <OnboardingCaptureCategory>[];
       for (var i = 0; i < chosen.length; i++) {
+        final label = chosen[i].label;
+        final match = existing
+            .where((c) => c.name.toLowerCase() == label.toLowerCase())
+            .firstOrNull;
+        if (match != null) {
+          // Reuse the existing category, made fit for its new job: resurrect
+          // a soft-deleted row, un-archive an inactive one (the first task
+          // must land somewhere the user's task views can show), and bind the
+          // just-seeded inference profile so the first-task structuring can
+          // actually run — the whole point of the area the user just picked.
+          // `private` is deliberately left untouched: flipping it would
+          // expose content the user chose to hide.
+          var reusable = match.copyWith(deletedAt: null, active: true);
+          if (profileId != null) {
+            reusable = reusable.copyWith(defaultProfileId: profileId);
+          }
+          final reused = await repository.updateCategory(reusable);
+          created.add(
+            OnboardingCaptureCategory(id: reused.id, label: reused.name),
+          );
+          continue;
+        }
         final category = await repository.createCategory(
-          name: chosen[i].label,
+          name: label,
           color: _palette[i % _palette.length],
           defaultProfileId: profileId,
         );
@@ -520,9 +548,9 @@ class _OnboardingCategoryStepState
       }
 
       if (created.isNotEmpty) {
-        // Hand every created area to the live first-capture aha; the modal pops
-        // and pushes the capture page in its place. With more than one area the
-        // page lets the user pick which one the task lands in.
+        // Hand every created area to the in-panel first-task step. With more
+        // than one area the step lets the user pick which one the task lands
+        // in.
         widget.onStartCapture(
           OnboardingFirstCapture(
             categories: created,
@@ -533,6 +561,15 @@ class _OnboardingCategoryStepState
         // No area selected — nothing to capture into, so just finish.
         // Defensive: Continue is disabled until at least one area is selected.
         widget.onDone(); // coverage:ignore-line
+      }
+    } catch (_) {
+      // A category write failure must not die silently under the Continue
+      // button — surface it so the user knows to retry.
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.commonError,
+        );
       }
     } finally {
       // Release the lock if a repository write threw. On success the modal has

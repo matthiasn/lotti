@@ -100,12 +100,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pick the life areas (Work, Fitness, Family, Friends, or your own) the AI should
   power — teaching that the provider is chosen per category; and a playful step
   to pick how recording looks (a modern energy orb or an analogue VU meter,
-  previewed live — try it with your voice). It ends in the real payoff: you
-  speak a thought, watch it become a
-  structured task with a checklist, and land straight on that task — already in
-  progress, in the area you pick — instead of a dead end. A "Rather type?" path, a
-  one-tap retry, and a soft-landing title-only task when structuring fails keep it
-  robust, and the whole flow honors reduce motion.
+  previewed live — try it with your voice). It ends in the real payoff, without
+  ever leaving the onboarding dialogue: a "Create your first task" step in the
+  same panel where you speak a thought — recorded with the visual you just
+  picked — or tap a starter suggestion (like "Plan my week") if you're not
+  ready to talk. Your words become a structured task with a checklist, revealed
+  right there in the panel as a glowing card ("Your first task is ready");
+  tapping it lands you straight on that task — already in progress, in the
+  area you picked, with your original voice recording attached to it. Areas
+  you already have (like an existing "Work" category) are reused instead of
+  duplicated. A "Rather type?" path, a one-tap retry, and a soft-landing
+  title-only task when structuring fails keep it robust, and the whole flow
+  honors reduce motion.
 - A first-class **Events** experience (behind the "Enable Events" flag in
   Settings → Advanced → Flags). Events — birthdays, trips, milestones — now get
   their own destination (under *More* on mobile, the sidebar on desktop) with a

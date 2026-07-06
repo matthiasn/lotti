@@ -6670,14 +6670,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Wird geprüft…';
 
   @override
-  String get onboardingCaptureAccept => 'Sieht gut aus';
-
-  @override
   String get onboardingCaptureCategoryPrompt => 'Wo soll das landen?';
-
-  @override
-  String get onboardingCaptureEditHint =>
-      'Tippe eine Zeile an, um sie zu bearbeiten';
 
   @override
   String get onboardingCaptureListening =>
@@ -6687,21 +6680,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingCaptureOrbLabel => 'Deinen Gedanken aufnehmen';
 
   @override
-  String get onboardingCapturePrompt => 'Was beschäftigt dich?';
-
-  @override
-  String get onboardingCapturePromptHint =>
-      'Versuch: erinnere mich daran, beim Zahnarzt anzurufen und den Wagen zum Service zu bringen';
-
-  @override
   String get onboardingCaptureRatherType => 'Lieber tippen?';
 
   @override
   String get onboardingCaptureReassurance =>
       'Du kannst danach noch alles bearbeiten.';
-
-  @override
-  String get onboardingCaptureRevealed => 'Hier ist deine erste Aufgabe';
 
   @override
   String get onboardingCaptureThinking =>
@@ -6779,6 +6762,36 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get onboardingConnectTitle => 'Wähle das KI-Gehirn für deine Aufgaben';
+
+  @override
+  String get onboardingFirstTaskCreatedHint =>
+      'Tippe auf deine Aufgabe, um sie zu öffnen';
+
+  @override
+  String get onboardingFirstTaskCreatedTitle =>
+      'Deine erste Aufgabe ist fertig';
+
+  @override
+  String get onboardingFirstTaskGuidance =>
+      'Tippe zum Sprechen und sag, was zu tun ist — Lotti macht daraus eine echte Aufgabe.';
+
+  @override
+  String get onboardingFirstTaskSuggestionDentist =>
+      'Einen Zahnarzttermin vereinbaren';
+
+  @override
+  String get onboardingFirstTaskSuggestionMeeting =>
+      'Das Meeting am Montag vorbereiten';
+
+  @override
+  String get onboardingFirstTaskSuggestionPlanWeek => 'Meine Woche planen';
+
+  @override
+  String get onboardingFirstTaskSuggestionsLabel =>
+      'Noch nicht bereit zu sprechen? Starte mit einem Vorschlag:';
+
+  @override
+  String get onboardingFirstTaskTitle => 'Erstelle deine erste Aufgabe';
 
   @override
   String get onboardingRecordingStyleAnalogue => 'Analog — VU-Meter';

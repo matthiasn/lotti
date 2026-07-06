@@ -6743,14 +6743,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Se verifică…';
 
   @override
-  String get onboardingCaptureAccept => 'Arată bine';
-
-  @override
   String get onboardingCaptureCategoryPrompt => 'Unde doriți să ajungă?';
-
-  @override
-  String get onboardingCaptureEditHint =>
-      'Atingeți orice rând pentru a-l edita';
 
   @override
   String get onboardingCaptureListening => 'Ascult… atingeți când ați terminat';
@@ -6759,21 +6752,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingCaptureOrbLabel => 'Înregistrați-vă gândul';
 
   @override
-  String get onboardingCapturePrompt => 'La ce vă gândiți?';
-
-  @override
-  String get onboardingCapturePromptHint =>
-      'Încercați: amintește-mi să sun la dentist și să programez mașina la service';
-
-  @override
   String get onboardingCaptureRatherType => 'Preferați să scrieți?';
 
   @override
   String get onboardingCaptureReassurance =>
       'Veți putea edita totul în continuare.';
-
-  @override
-  String get onboardingCaptureRevealed => 'Iată prima dvs. sarcină';
 
   @override
   String get onboardingCaptureThinking =>
@@ -6852,6 +6835,36 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get onboardingConnectTitle =>
       'Alegeți creierul AI pentru sarcinile dvs.';
+
+  @override
+  String get onboardingFirstTaskCreatedHint =>
+      'Atingeți sarcina pentru a o deschide';
+
+  @override
+  String get onboardingFirstTaskCreatedTitle => 'Prima dvs. sarcină este gata';
+
+  @override
+  String get onboardingFirstTaskGuidance =>
+      'Atingeți pentru a vorbi și spuneți ce aveți de făcut — Lotti o transformă într-o sarcină reală.';
+
+  @override
+  String get onboardingFirstTaskSuggestionDentist =>
+      'Să fac o programare la dentist';
+
+  @override
+  String get onboardingFirstTaskSuggestionMeeting =>
+      'Să pregătesc ședința de luni';
+
+  @override
+  String get onboardingFirstTaskSuggestionPlanWeek =>
+      'Să îmi planific săptămâna';
+
+  @override
+  String get onboardingFirstTaskSuggestionsLabel =>
+      'Nu sunteți încă pregătit să vorbiți? Începeți cu una dintre acestea:';
+
+  @override
+  String get onboardingFirstTaskTitle => 'Creați-vă prima sarcină';
 
   @override
   String get onboardingRecordingStyleAnalogue => 'Analogic — VU-metru';

@@ -5,6 +5,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_task_structuring_service.dart';
@@ -51,14 +52,17 @@ class OnboardingCaptureToTaskService {
     required this._autoChecklistService,
     required this._metricsRepository,
     PersistenceLogic? persistenceLogic,
+    JournalRepository? journalRepository,
     DateTime Function()? clock,
   }) : _persistenceLogic = persistenceLogic ?? getIt<PersistenceLogic>(),
+       _journalRepository = journalRepository ?? JournalRepository(),
        _clock = clock ?? DateTime.now;
 
   final OnboardingTaskStructuringService _structuringService;
   final AutoChecklistService _autoChecklistService;
   final OnboardingMetricsRepository _metricsRepository;
   final PersistenceLogic _persistenceLogic;
+  final JournalRepository _journalRepository;
   final DateTime Function() _clock;
 
   static const int _maxFloorTitleLength = 80;
@@ -73,10 +77,16 @@ class OnboardingCaptureToTaskService {
   /// [OnboardingEventName.realAha] (structured task landed) or the
   /// `structuring_failed` + `structuring_floor_used` pair (title-only soft
   /// landing). [providerName] is an optional low-cardinality funnel dimension.
+  ///
+  /// [audioId] is the `JournalAudio` entry the capture controller persisted for
+  /// the spoken capture (null on the typed path); it is linked under the task
+  /// so the recording — transcript, playback, and downstream affordances like
+  /// cover art — lives on the task instead of orphaned in the journal.
   Future<OnboardingCaptureResult> createTaskFromTranscript({
     required String transcript,
     required String categoryId,
     String? providerName,
+    String? audioId,
   }) async {
     await _metricsRepository.recordEvent(
       OnboardingEventName.makeTaskTapped,
@@ -95,6 +105,7 @@ class OnboardingCaptureToTaskService {
         categoryId: categoryId,
         failure: exception.failure,
         providerName: providerName,
+        audioId: audioId,
       );
     }
 
@@ -102,6 +113,7 @@ class OnboardingCaptureToTaskService {
       title: structured.title,
       items: structured.checklistItems,
       categoryId: categoryId,
+      audioId: audioId,
     );
 
     if (task == null) {
@@ -138,6 +150,7 @@ class OnboardingCaptureToTaskService {
     required String categoryId,
     required OnboardingStructuringFailure failure,
     required String? providerName,
+    required String? audioId,
   }) async {
     await _metricsRepository.recordEvent(
       OnboardingEventName.structuringFailed,
@@ -162,6 +175,7 @@ class OnboardingCaptureToTaskService {
       title: title,
       items: const [],
       categoryId: categoryId,
+      audioId: audioId,
     );
     if (task != null) {
       await _metricsRepository.recordEvent(
@@ -178,12 +192,14 @@ class OnboardingCaptureToTaskService {
     );
   }
 
-  /// Creates the title-only task, then attaches the checklist (best effort) so
-  /// a checklist hiccup degrades to a bare-title task rather than failing.
+  /// Creates the title-only task, then attaches the checklist and links the
+  /// captured audio entry (both best effort) so a checklist or link hiccup
+  /// degrades to a bare-title task rather than failing.
   Future<Task?> _materialize({
     required String title,
     required List<String> items,
     required String categoryId,
+    required String? audioId,
   }) async {
     final now = _clock();
     final task = await _persistenceLogic.createTaskEntry(
@@ -226,6 +242,24 @@ class OnboardingCaptureToTaskService {
         // Keep the title-only task.
       }
     }
+
+    if (task != null && audioId != null) {
+      // Attach the spoken capture under the task, mirroring how in-task
+      // recordings are linked — including the category: the capture
+      // controller persisted the audio entry without one, and an
+      // uncategorized recording would vanish from every category-filtered
+      // view of the area the task just landed in. Best effort: the task must
+      // land even if either write fails.
+      try {
+        await _persistenceLogic.createLink(fromId: task.id, toId: audioId);
+        await _journalRepository.updateCategoryId(
+          audioId,
+          categoryId: categoryId,
+        );
+      } catch (_) {
+        // Keep the task without the audio link/category.
+      }
+    }
     return task;
   }
 
@@ -258,5 +292,6 @@ final onboardingCaptureToTaskServiceProvider =
           checklistRepository: ref.watch(checklistRepositoryProvider),
         ),
         metricsRepository: getIt<OnboardingMetricsRepository>(),
+        journalRepository: ref.watch(journalRepositoryProvider),
       ),
     );

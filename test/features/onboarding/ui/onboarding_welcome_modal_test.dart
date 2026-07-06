@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/ai/ui/settings/services/connection_verifier_servi
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
@@ -21,16 +23,6 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
-
-/// Inert [CaptureController] so the live first-capture page (pushed after the
-/// category step) renders without touching the real mic / realtime services.
-class _FakeCaptureController extends CaptureController {
-  @override
-  CaptureState build() => const CaptureState.idle();
-
-  @override
-  Future<void> toggle() async {}
-}
 
 /// Canned probe so the API-key step's live verification resolves without a
 /// network call.
@@ -242,27 +234,59 @@ void main() {
     },
   );
 
-  testWidgets('connecting reveals the success beat, then completing pops and '
-      'records providerConnected', (tester) async {
-    // Drive the full flow welcome → connect → Ollama → verified → Connect →
-    // success → Get started, exercising the modal's onConnected glue
-    // (connectedType + the providerConnected event). Ollama needs no key and
-    // its FTUE setup only touches the category repository, so it's the cheapest
-    // provider to drive.
+  /// Drives the full flow welcome → connect → Ollama → verified → Connect →
+  /// success → recording style → category → Continue, landing on the in-panel
+  /// first-task step. Ollama needs no key and its FTUE setup only touches the
+  /// category repository, so it's the cheapest provider to drive. Returns the
+  /// mocks the caller asserts against.
+  Future<
+    ({
+      MockAiConfigRepository aiRepo,
+      MockCategoryRepository catRepo,
+      MockOnboardingCaptureToTaskService captureService,
+    })
+  >
+  driveToFirstTaskStep(
+    WidgetTester tester, {
+    List<CategoryDefinition> existingCategories = const [],
+    bool failCategoryWrites = false,
+  }) async {
     final aiRepo = MockAiConfigRepository();
     when(() => aiRepo.saveConfig(any())).thenAnswer((_) async {});
     final catRepo = MockCategoryRepository();
-    when(catRepo.getAllCategories).thenAnswer((_) async => []);
+    // The duplicate check consults the unfiltered set (deleted/hidden rows
+    // still trip the UNIQUE(name) constraint).
     when(
-      () => catRepo.createCategory(
-        name: any(named: 'name'),
-        color: any(named: 'color'),
-        defaultProfileId: any(named: 'defaultProfileId'),
-        defaultTemplateId: any(named: 'defaultTemplateId'),
-      ),
-    ).thenAnswer(
-      (_) async => CategoryTestUtils.createTestCategory(id: 'c1', name: 'AI'),
+      catRepo.getAllCategoriesIncludingHidden,
+    ).thenAnswer((_) async => existingCategories);
+    // Reused categories are resurrected/rebound through updateCategory;
+    // echo back the updated definition like the real repository does.
+    when(() => catRepo.updateCategory(any())).thenAnswer(
+      (invocation) async =>
+          invocation.positionalArguments.first as CategoryDefinition,
     );
+    if (failCategoryWrites) {
+      when(
+        () => catRepo.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
+        ),
+      ).thenThrow(Exception('category db down'));
+    } else {
+      when(
+        () => catRepo.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryTestUtils.createTestCategory(id: 'c1', name: 'AI'),
+      );
+    }
+    final captureService = MockOnboardingCaptureToTaskService();
 
     // Match the render surface to the 844-tall MediaQuery so the lower tiles /
     // Connect button are on-screen and hit-testable.
@@ -279,12 +303,12 @@ void main() {
         overrides: [
           aiConfigRepositoryProvider.overrideWithValue(aiRepo),
           categoryRepositoryProvider.overrideWithValue(catRepo),
-          // The category step now hands off to the live first-capture page;
-          // override its providers so the page renders without the real mic
+          // The category step now advances to the in-panel first-task step;
+          // override its providers so the step renders without the real mic
           // pipeline or a live structuring round-trip.
-          captureControllerProvider.overrideWith(_FakeCaptureController.new),
+          captureControllerProvider.overrideWith(FakeCaptureController.new),
           onboardingCaptureToTaskServiceProvider.overrideWithValue(
-            MockOnboardingCaptureToTaskService(),
+            captureService,
           ),
           connectionVerifierClientProvider.overrideWith(
             (ref) =>
@@ -356,38 +380,243 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Hobbies'), findsOneWidget);
 
-    // Pick a preset area too, then continue with both selected.
+    // Pick a preset area too, then continue with both selected. The flow
+    // advances in place — the first-task finale stays inside the panel. Its
+    // recording visual's tickers never settle, so step the crossfade with
+    // bounded pumps rather than pumpAndSettle.
     await tester.tap(find.text('Work'));
     await tester.pump();
     await tester.tap(find.text('Continue'));
-    // The modal pops and the live first-capture page is pushed in its place.
-    // The capture page's orb tickers never settle, so step the route
-    // transition with bounded pumps rather than pumpAndSettle.
-    await tester.pump();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
 
-    // Completing the category step pops the modal and reveals the live
-    // first-capture page; provider creation + FTUE setup ran; the chosen area
-    // became a category bound to the provider's seeded inference profile; the
-    // connected event is recorded.
-    expect(find.text('Choose your AI brain'), findsNothing);
-    expect(find.text("What's on your mind?"), findsOneWidget);
-    verify(() => aiRepo.saveConfig(any())).called(1);
+    return (aiRepo: aiRepo, catRepo: catRepo, captureService: captureService);
+  }
+
+  testWidgets('the category step advances to the in-panel first-task step and '
+      'a landed task pops the modal onto the task page', (tester) async {
+    final beamed = <String>[];
+    beamToNamedOverride = beamed.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    final mocks = await driveToFirstTaskStep(tester);
+
+    // The finale renders inside the panel: guided suggestions over the same
+    // modal surface, no full-screen takeover. Provider creation + FTUE setup
+    // ran; both chosen areas became categories bound to the provider's seeded
+    // inference profile.
+    expect(find.text('Create your first task'), findsOneWidget);
+    expect(find.text('Plan my week'), findsOneWidget);
+    verify(() => mocks.aiRepo.saveConfig(any())).called(1);
     verify(
-      () => catRepo.createCategory(
+      () => mocks.catRepo.createCategory(
         name: 'Work',
         color: any(named: 'color'),
         defaultProfileId: profileLocalId,
       ),
     ).called(1);
+    verify(
+      () => mocks.catRepo.createCategory(
+        name: 'Hobbies',
+        color: any(named: 'color'),
+        defaultProfileId: profileLocalId,
+      ),
+    ).called(1);
+
+    // A tapped starter suggestion rides the typed path through structuring;
+    // the landed task is revealed inside the panel as a tappable card.
+    when(
+      () => mocks.captureService.createTaskFromTranscript(
+        transcript: any(named: 'transcript'),
+        categoryId: any(named: 'categoryId'),
+        providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
+      ),
+    ).thenAnswer(
+      (_) async => OnboardingCaptureResult(
+        task: MockTask(id: 'task-1'),
+        title: 'Plan the week',
+        checklistItems: const ['Monday'],
+        isRealAha: true,
+      ),
+    );
+    await tester.tap(find.text('Plan my week'), warnIfMissed: false);
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // The created beat stays inside the dialogue: the card shows the task and
+    // the modal is still up until the user taps it.
+    expect(find.text('Your first task is ready'), findsOneWidget);
+    expect(find.text('Plan the week'), findsOneWidget);
+    expect(find.text('Monday'), findsOneWidget);
+    expect(beamed, isEmpty);
+
+    // Tapping the hint line (part of the card's tap target) pops the modal
+    // and deep-links to the real task page.
+    await tester.tap(
+      find.text('Tap your task to open it'),
+      warnIfMissed: false,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Create your first task'), findsNothing);
+    expect(beamed, ['/tasks/task-1']);
+    verify(
+      () => mocks.captureService.createTaskFromTranscript(
+        transcript: 'Plan my week',
+        categoryId: 'c1',
+        providerName: 'Ollama',
+        // ignore: avoid_redundant_argument_values
+        audioId: null,
+      ),
+    ).called(1);
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.providerConnected), isTrue);
+  });
 
-    // The capture page's close affordance finishes onboarding (pops the page).
-    await tester.tap(find.byIcon(Icons.close_rounded), warnIfMissed: false);
-    await tester.pumpAndSettle();
-    expect(find.text("What's on your mind?"), findsNothing);
+  testWidgets('a total structuring failure finishes onboarding without '
+      'navigating anywhere', (tester) async {
+    final beamed = <String>[];
+    beamToNamedOverride = beamed.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    final mocks = await driveToFirstTaskStep(tester);
+    expect(find.text('Create your first task'), findsOneWidget);
+
+    // The orchestrator couldn't land even a floor task — the step finishes
+    // onboarding (the modal pops); connected is still recorded, but there is
+    // no task page to open.
+    when(
+      () => mocks.captureService.createTaskFromTranscript(
+        transcript: any(named: 'transcript'),
+        categoryId: any(named: 'categoryId'),
+        providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
+      ),
+    ).thenAnswer(
+      (_) async => const OnboardingCaptureResult(
+        task: null,
+        title: '',
+        checklistItems: [],
+        isRealAha: false,
+      ),
+    );
+    await tester.tap(find.text('Plan my week'), warnIfMissed: false);
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Create your first task'), findsNothing);
+    expect(beamed, isEmpty);
+    final state = await repo.funnelState();
+    expect(state.reached(OnboardingEventName.providerConnected), isTrue);
+  });
+
+  testWidgets('the category step reuses an existing category with the same '
+      'name (case-insensitively) instead of tripping the unique constraint', (
+    tester,
+  ) async {
+    // The user once had a "work" category, since archived and soft-deleted,
+    // still bound to a stale profile. Its row keeps the UNIQUE name, so a
+    // blind create would throw and Continue used to die silently. The reuse
+    // must resurrect it (undelete + reactivate) and rebind the just-seeded
+    // profile so first-task structuring can actually run.
+    final mocks = await driveToFirstTaskStep(
+      tester,
+      existingCategories: [
+        CategoryTestUtils.createTestCategory(
+          id: 'existing-work',
+          name: 'work',
+          active: false,
+          deletedAt: DateTime(2025),
+          defaultProfileId: 'stale-profile',
+        ),
+      ],
+    );
+
+    // The flow still advanced into the first-task step…
+    expect(find.text('Create your first task'), findsOneWidget);
+    // …"Work" was reused, only the custom "Hobbies" area was created…
+    verifyNever(
+      () => mocks.catRepo.createCategory(
+        name: 'Work',
+        color: any(named: 'color'),
+        defaultProfileId: any(named: 'defaultProfileId'),
+      ),
+    );
+    verify(
+      () => mocks.catRepo.createCategory(
+        name: 'Hobbies',
+        color: any(named: 'color'),
+        defaultProfileId: profileLocalId,
+      ),
+    ).called(1);
+
+    // …resurrected, reactivated, and rebound to the seeded profile.
+    final updated =
+        verify(
+              () => mocks.catRepo.updateCategory(captureAny()),
+            ).captured.single
+            as CategoryDefinition;
+    expect(updated.id, 'existing-work');
+    expect(updated.deletedAt, isNull);
+    expect(updated.active, isTrue);
+    expect(updated.defaultProfileId, profileLocalId);
+
+    // …and the reused category is the pre-selected destination, so the
+    // structured task lands in the user's real existing area.
+    when(
+      () => mocks.captureService.createTaskFromTranscript(
+        transcript: any(named: 'transcript'),
+        categoryId: any(named: 'categoryId'),
+        providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
+      ),
+    ).thenAnswer(
+      (_) async => OnboardingCaptureResult(
+        task: MockTask(id: 'task-2'),
+        title: 'Planned',
+        checklistItems: const [],
+        isRealAha: true,
+      ),
+    );
+    await tester.tap(find.text('Plan my week'), warnIfMissed: false);
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    verify(
+      () => mocks.captureService.createTaskFromTranscript(
+        transcript: 'Plan my week',
+        categoryId: 'existing-work',
+        providerName: 'Ollama',
+        // ignore: avoid_redundant_argument_values
+        audioId: null,
+      ),
+    ).called(1);
+  });
+
+  testWidgets('a category write failure surfaces an error toast and keeps '
+      'the category step usable', (tester) async {
+    await driveToFirstTaskStep(tester, failCategoryWrites: true);
+
+    // Continue failed: the flow did NOT advance to the first-task step, the
+    // category step is still up for a retry, and the failure surfaced as an
+    // error toast instead of dying silently under the button.
+    expect(find.text('Create your first task'), findsNothing);
+    expect(find.text('Where should your AI work?'), findsOneWidget);
+    expect(find.byType(DesignSystemToast), findsOneWidget);
+    expect(
+      tester.widget<DesignSystemToast>(find.byType(DesignSystemToast)).tone,
+      DesignSystemToastTone.error,
+    );
+
+    // Let the toast's display timer expire so the test tears down cleanly.
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgets('falls back to the getIt-registered metrics repo', (
@@ -448,52 +677,19 @@ void main() {
     expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
   });
 
-  testWidgets(
-    'openOnboardingCreatedTask (desktop) opens the task and pops the capture '
-    'route',
-    (tester) async {
-      final nav = MockNavService();
-      when(() => nav.isDesktopMode).thenReturn(true);
-      if (getIt.isRegistered<NavService>()) {
-        getIt.unregister<NavService>();
-      }
-      getIt.registerSingleton<NavService>(nav);
-      addTearDown(() => getIt.unregister<NavService>());
+  test(
+    'openOnboardingCreatedTask deep-links through the canonical task route',
+    () {
+      // The deep link (rather than a bare detail-stack push) also switches to
+      // the Tasks destination, so the task is visible even when onboarding was
+      // launched from another tab (e.g. Settings → Maintenance).
+      final beamed = <String>[];
+      beamToNamedOverride = beamed.add;
+      addTearDown(() => beamToNamedOverride = null);
 
-      late BuildContext captureContext;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (rootContext) => Scaffold(
-              body: Center(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(rootContext).push(
-                    MaterialPageRoute<void>(
-                      builder: (capCtx) {
-                        captureContext = capCtx;
-                        return const Scaffold(body: Text('capture'));
-                      },
-                    ),
-                  ),
-                  child: const Text('push'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('push'));
-      await tester.pumpAndSettle();
-      expect(find.text('capture'), findsOneWidget);
+      openOnboardingCreatedTask('task-9');
 
-      openOnboardingCreatedTask(captureContext, 'task-9');
-      await tester.pumpAndSettle();
-
-      // Desktop: hands the task to the detail stack and pops the capture route
-      // (back to the app), without pushing a TaskDetailsPage route here.
-      verify(() => nav.pushDesktopTaskDetail('task-9')).called(1);
-      expect(find.text('capture'), findsNothing);
-      expect(find.text('push'), findsOneWidget);
+      expect(beamed, ['/tasks/task-9']);
     },
   );
 }

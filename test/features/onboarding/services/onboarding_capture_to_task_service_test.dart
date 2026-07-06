@@ -23,6 +23,7 @@ void main() {
   late MockAutoChecklistService autoChecklist;
   late MockOnboardingMetricsRepository metrics;
   late MockPersistenceLogic persistence;
+  late MockJournalRepository journalRepository;
   late OnboardingCaptureToTaskService service;
 
   const categoryId = 'cat-1';
@@ -97,16 +98,33 @@ void main() {
           ).captured.single
           as TaskData;
 
+  void stubCreateLink({bool success = true}) {
+    when(
+      () => persistence.createLink(
+        fromId: any(named: 'fromId'),
+        toId: any(named: 'toId'),
+      ),
+    ).thenAnswer((_) async => success);
+  }
+
   setUp(() {
     structuring = MockOnboardingTaskStructuringService();
     autoChecklist = MockAutoChecklistService();
     metrics = MockOnboardingMetricsRepository();
     persistence = MockPersistenceLogic();
+    journalRepository = MockJournalRepository();
+    when(
+      () => journalRepository.updateCategoryId(
+        any(),
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenAnswer((_) async => true);
     service = OnboardingCaptureToTaskService(
       structuringService: structuring,
       autoChecklistService: autoChecklist,
       metricsRepository: metrics,
       persistenceLogic: persistence,
+      journalRepository: journalRepository,
       clock: () => fixedNow,
     );
     stubMetrics();
@@ -264,6 +282,133 @@ void main() {
           provider: any(named: 'provider'),
         ),
       );
+    });
+  });
+
+  group('audio linking', () {
+    test('links the captured audio entry under the structured task', () async {
+      stubStructureSuccess(
+        const OnboardingStructuredTask(
+          title: 'Call the dentist',
+          checklistItems: [],
+        ),
+      );
+      stubCreateTask(TestTaskFactory.create(id: 'task-1'));
+      stubCreateLink();
+
+      final result = await service.createTaskFromTranscript(
+        transcript: 'call the dentist',
+        categoryId: categoryId,
+        audioId: 'audio-1',
+      );
+
+      expect(result.created, isTrue);
+      verify(
+        () => persistence.createLink(fromId: 'task-1', toId: 'audio-1'),
+      ).called(1);
+      // The audio entry also inherits the task's category — the capture
+      // controller persisted it uncategorized.
+      verify(
+        () => journalRepository.updateCategoryId(
+          'audio-1',
+          categoryId: categoryId,
+        ),
+      ).called(1);
+    });
+
+    test('links the audio under the floor task on a soft landing', () async {
+      stubStructureFailure(OnboardingStructuringFailure.requestFailed);
+      stubCreateTask(TestTaskFactory.create(id: 'floor-1'));
+      stubCreateLink();
+
+      final result = await service.createTaskFromTranscript(
+        transcript: 'do the thing',
+        categoryId: categoryId,
+        audioId: 'audio-2',
+      );
+
+      expect(result.created, isTrue);
+      verify(
+        () => persistence.createLink(fromId: 'floor-1', toId: 'audio-2'),
+      ).called(1);
+    });
+
+    test('creates no link on the typed path (no audio entry)', () async {
+      stubStructureSuccess(
+        const OnboardingStructuredTask(title: 'Typed', checklistItems: []),
+      );
+      stubCreateTask(TestTaskFactory.create(id: 'task-1'));
+
+      await service.createTaskFromTranscript(
+        transcript: 'typed thought',
+        categoryId: categoryId,
+      );
+
+      verifyNever(
+        () => persistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+        ),
+      );
+      verifyNever(
+        () => journalRepository.updateCategoryId(
+          any(),
+          categoryId: any(named: 'categoryId'),
+        ),
+      );
+    });
+
+    test(
+      'defaults to a real JournalRepository when none is injected',
+      () async {
+        stubStructureSuccess(
+          const OnboardingStructuredTask(
+            title: 'Defaulted',
+            checklistItems: [],
+          ),
+        );
+        stubCreateTask(TestTaskFactory.create(id: 'task-1'));
+        final defaulted = OnboardingCaptureToTaskService(
+          structuringService: structuring,
+          autoChecklistService: autoChecklist,
+          metricsRepository: metrics,
+          persistenceLogic: persistence,
+          clock: () => fixedNow,
+        );
+
+        // The typed path (no audioId) never touches the journal repository, so
+        // the constructor default is exercised without hitting getIt.
+        final result = await defaulted.createTaskFromTranscript(
+          transcript: 'hello',
+          categoryId: categoryId,
+        );
+
+        expect(result.created, isTrue);
+        expect(result.title, 'Defaulted');
+      },
+    );
+
+    test('keeps the task when the link write throws', () async {
+      stubStructureSuccess(
+        const OnboardingStructuredTask(title: 'Resilient', checklistItems: []),
+      );
+      stubCreateTask(TestTaskFactory.create(id: 'task-1'));
+      when(
+        () => persistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+        ),
+      ).thenThrow(Exception('link write failed'));
+
+      final result = await service.createTaskFromTranscript(
+        transcript: 'still lands',
+        categoryId: categoryId,
+        audioId: 'audio-3',
+      );
+
+      // The link is best-effort: its failure never costs the user the task.
+      expect(result.created, isTrue);
+      expect(result.isRealAha, isTrue);
     });
   });
 
