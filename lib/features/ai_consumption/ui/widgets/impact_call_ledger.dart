@@ -113,6 +113,7 @@ class _LedgerRow extends StatelessWidget {
       if (event.credits != null) formatCredits(event.credits!),
       if (event.energyKwh != null) formatEnergyKwh(event.energyKwh!),
     ];
+    if (parts.isEmpty) return context.messages.aiConsumptionMetricsNotReported;
     return parts.join(' · ');
   }
 

@@ -1271,6 +1271,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiConsumptionLedgerTitle => 'Appels récents';
 
   @override
+  String get aiConsumptionMetricsNotReported => 'Non renseigné';
+
+  @override
   String aiConsumptionTokensLabel(String tokens) {
     return '$tokens jetons';
   }
@@ -5559,15 +5562,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get imageViewerDownloadFailed => 'Impossible d\'enregistrer l\'image';
 
   @override
+  String get imageViewerDownloadingTooltip => 'Enregistrement de l\'image';
+
+  @override
   String imageViewerDownloadSaved(String fileName) {
     return '$fileName enregistré dans Téléchargements/Lotti';
   }
 
   @override
   String get imageViewerDownloadTooltip => 'Télécharger l\'image';
-
-  @override
-  String get imageViewerDownloadingTooltip => 'Enregistrement de l\'image';
 
   @override
   String get inactiveLabel => 'Inactif';

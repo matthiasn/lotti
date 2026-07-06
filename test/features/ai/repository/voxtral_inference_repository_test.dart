@@ -41,6 +41,12 @@ void main() {
       const audioBase64 = 'base64_audio_data';
       const prompt = 'Test context';
 
+      test('default constructor creates a closable HTTP client', () {
+        final repository = VoxtralInferenceRepository();
+
+        expect(repository.close, returnsNormally);
+      });
+
       test('should transcribe audio with streaming', () async {
         // Arrange - simulate multiple chunks being streamed
         const chunk1 = 'This is the first chunk.';
@@ -162,6 +168,86 @@ void main() {
           equals('Transcribe this audio.'),
         );
       });
+
+      test('should emit token usage from a usage-only SSE chunk', () async {
+        // Arrange - common OpenAI-compatible streaming shape: text chunks
+        // first, then final accounting with no content delta.
+        final events = [
+          createSseChunkEvent(content: 'Transcribed text.'),
+          {
+            'id': 'chatcmpl-usage',
+            'object': 'chat.completion.chunk',
+            'created': 1234567890,
+            'model': 'test-model',
+            'choices': <dynamic>[],
+            'usage': {
+              'prompt_tokens': 42,
+              'completion_tokens': 9,
+              'total_tokens': 51,
+            },
+          },
+        ];
+
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
+
+        // Act
+        final results = await repository
+            .transcribeAudio(
+              model: model,
+              audioBase64: audioBase64,
+              baseUrl: baseUrl,
+              prompt: prompt,
+            )
+            .toList();
+
+        // Assert
+        expect(results.length, 2);
+        expect(
+          results.first.choices?.first.delta?.content,
+          equals('Transcribed text.'),
+        );
+        expect(results.last.choices, isEmpty);
+        expect(results.last.usage?.promptTokens, 42);
+        expect(results.last.usage?.completionTokens, 9);
+        expect(results.last.usage?.totalTokens, 51);
+      });
+
+      test(
+        'should emit fallback metadata from a usage-only SSE chunk',
+        () async {
+          final events = [
+            {
+              'object': 'chat.completion.chunk',
+              'usage': {
+                'prompt_tokens': 7,
+                'completion_tokens': 2,
+                'total_tokens': 9,
+              },
+            },
+          ];
+
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => createSseStreamedResponse(events: events),
+          );
+
+          final results = await repository
+              .transcribeAudio(
+                model: model,
+                audioBase64: audioBase64,
+                baseUrl: baseUrl,
+                prompt: prompt,
+              )
+              .toList();
+
+          expect(results, hasLength(1));
+          expect(results.single.id, startsWith('voxtral-'));
+          expect(results.single.created, isPositive);
+          expect(results.single.choices, isEmpty);
+          expect(results.single.usage?.totalTokens, 9);
+        },
+      );
 
       test('should use custom max completion tokens', () async {
         // Arrange
@@ -532,6 +618,7 @@ data: [DONE]
             'id': 'chatcmpl-test',
             'object': 'chat.completion',
             'created': 1234567890,
+            'model': 'test-model',
             'choices': [
               {
                 'index': 0,
@@ -542,6 +629,11 @@ data: [DONE]
                 'finish_reason': 'stop',
               },
             ],
+            'usage': {
+              'prompt_tokens': 21,
+              'completion_tokens': 7,
+              'total_tokens': 28,
+            },
           };
 
           when(
@@ -572,6 +664,9 @@ data: [DONE]
             equals('Transcribed text.'),
           );
           expect(results[0].id, equals('chatcmpl-test'));
+          expect(results[0].usage?.promptTokens, 21);
+          expect(results[0].usage?.completionTokens, 7);
+          expect(results[0].usage?.totalTokens, 28);
 
           // Verify request body has stream: false
           final captured = verify(
@@ -674,6 +769,46 @@ data: [DONE]
           final results = await stream.toList();
           expect(results, isEmpty);
         });
+
+        test(
+          'should emit usage-only chunks in non-streaming mode',
+          () async {
+            final responseBody = {
+              'object': 'chat.completion',
+              'choices': <dynamic>[],
+              'usage': {
+                'prompt_tokens': 5,
+                'completion_tokens': 3,
+                'total_tokens': 8,
+              },
+            };
+
+            when(
+              () => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              ),
+            ).thenAnswer(
+              (_) async => http.Response(jsonEncode(responseBody), 200),
+            );
+
+            final stream = repository.transcribeAudio(
+              model: model,
+              audioBase64: audioBase64,
+              baseUrl: baseUrl,
+              stream: false,
+            );
+
+            final results = await stream.toList();
+
+            expect(results, hasLength(1));
+            expect(results.single.id, startsWith('voxtral-'));
+            expect(results.single.created, isPositive);
+            expect(results.single.choices, isEmpty);
+            expect(results.single.usage?.totalTokens, 8);
+          },
+        );
 
         test(
           'should use fallback id when missing in non-streaming mode',
@@ -1257,6 +1392,45 @@ data: [DONE]
         expect(
           results[0].choices?.first.finishReason,
           equals(ChatCompletionFinishReason.stop),
+        );
+      });
+
+      test('should normalize snake_case finish_reason values', () async {
+        final events = [
+          {
+            'id': 'test-id',
+            'object': 'chat.completion.chunk',
+            'created': 1234567890,
+            'choices': [
+              {
+                'index': 0,
+                'delta': {'content': 'Filtered text'},
+                'finish_reason': 'content_filter',
+              },
+            ],
+          },
+        ];
+
+        final sseData =
+            '${events.map((e) => 'data: ${jsonEncode(e)}\n\n').join()}data: [DONE]\n\n';
+
+        final stream = Stream.fromIterable([utf8.encode(sseData)]);
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => http.StreamedResponse(stream, 200),
+        );
+
+        final transcriptionStream = repository.transcribeAudio(
+          model: model,
+          audioBase64: audioBase64,
+          baseUrl: baseUrl,
+        );
+
+        final results = await transcriptionStream.toList();
+
+        expect(results.length, equals(1));
+        expect(
+          results[0].choices?.first.finishReason,
+          equals(ChatCompletionFinishReason.contentFilter),
         );
       });
 

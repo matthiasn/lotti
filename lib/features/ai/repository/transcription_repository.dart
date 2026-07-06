@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -106,6 +107,7 @@ class TranscriptionRepository {
           }
 
           final text = result['text'] as String;
+          final usage = parseCompletionUsage(result['usage']);
 
           developer.log(
             'Successfully transcribed audio - '
@@ -125,6 +127,7 @@ class TranscriptionRepository {
             ],
             object: 'chat.completion.chunk',
             created: 0,
+            usage: usage,
           );
         } on TranscriptionException {
           rethrow;

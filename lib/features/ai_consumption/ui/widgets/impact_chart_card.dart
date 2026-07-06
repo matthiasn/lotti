@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/insights/logic/chart_colors.dart';
@@ -19,6 +20,16 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// Fixed plot height, matching the Insights chart card so the two
 /// dashboards read as siblings.
 const double _chartHeight = 260;
+
+/// Chart mode: per-bucket values or running cumulative totals.
+enum ImpactChartMode { perBucket, cumulative }
+
+/// How many leading buckets of [data] have elapsed (start on or before today).
+///
+/// A cumulative running total needs at least two points to draw a line; the
+/// chart card falls back to bars below this.
+int elapsedImpactBucketCount(ImpactChartData data) =>
+    _firstFutureBucket(data, epochDay(clock.now()));
 
 /// Display label for a metric — shared by the chart card title and the
 /// dashboard's metric toggle so the two always agree.
@@ -40,7 +51,7 @@ String consumptionMetricLabel(
 /// series on the baseline, "Other" rollup, exhaustive tooltip), but every
 /// number is formatted through the metric's own adaptive-unit formatter
 /// instead of the Insights seconds/duration helpers.
-class ImpactChartCard extends StatelessWidget {
+class ImpactChartCard extends StatefulWidget {
   const ImpactChartCard({
     required this.chartData,
     required this.resolver,
@@ -59,9 +70,34 @@ class ImpactChartCard extends StatelessWidget {
   final ConsumptionMetric metric;
 
   @override
+  State<ImpactChartCard> createState() => _ImpactChartCardState();
+}
+
+class _ImpactChartCardState extends State<ImpactChartCard> {
+  ImpactChartMode _mode = ImpactChartMode.perBucket;
+
+  bool get _cumulativeFallsBack =>
+      _mode == ImpactChartMode.cumulative &&
+      elapsedImpactBucketCount(widget.chartData) < 2;
+
+  String _perBucketLabel(AppLocalizations messages) =>
+      widget.chartData.granularity == InsightsGranularity.week
+      ? messages.insightsChartPerWeek
+      : messages.insightsChartPerDay;
+
+  String _captionText(AppLocalizations messages) {
+    if (_cumulativeFallsBack) return messages.insightsChartCumulativeShort;
+    if (_mode == ImpactChartMode.cumulative) {
+      return messages.insightsChartCumulativeCaption;
+    }
+    return _perBucketLabel(messages);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final showBars = _mode == ImpactChartMode.perBucket || _cumulativeFallsBack;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -74,30 +110,49 @@ class ImpactChartCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              messages.aiImpactChartTitle(
-                consumptionMetricLabel(messages, metric),
-              ),
-              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                color: tokens.colors.text.highEmphasis,
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step1),
-            Text(
-              // Names the bucket the bars represent so weekly bars are never
-              // misread as daily magnitudes.
-              chartData.granularity == InsightsGranularity.week
-                  ? messages.insightsChartPerWeek
-                  : messages.insightsChartPerDay,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-              overflow: TextOverflow.ellipsis,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  messages.aiImpactChartTitle(
+                    consumptionMetricLabel(messages, widget.metric),
+                  ),
+                  style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step1),
+                Text(
+                  _captionText(messages),
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: tokens.spacing.step3),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DsSegmentedToggle<ImpactChartMode>(
+                    selected: _mode,
+                    onChanged: (mode) => setState(() => _mode = mode),
+                    segments: [
+                      DsSegment(
+                        ImpactChartMode.perBucket,
+                        _perBucketLabel(messages),
+                      ),
+                      DsSegment(
+                        ImpactChartMode.cumulative,
+                        messages.insightsChartRunningTotal,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: tokens.spacing.step5),
             SizedBox(
               height: _chartHeight,
-              child: chartData.isEmpty
+              child: widget.chartData.isEmpty
                   ? Center(
                       child: Text(
                         messages.insightsEmptyChart,
@@ -106,20 +161,26 @@ class ImpactChartCard extends StatelessWidget {
                         ),
                       ),
                     )
-                  : _ImpactStackedBars(
-                      data: chartData,
-                      resolver: resolver,
-                      metric: metric,
+                  : showBars
+                  ? _ImpactStackedBars(
+                      data: widget.chartData,
+                      resolver: widget.resolver,
+                      metric: widget.metric,
+                    )
+                  : _ImpactStackedArea(
+                      data: widget.chartData,
+                      resolver: widget.resolver,
+                      metric: widget.metric,
                     ),
             ),
             // A one-item legend restates the obvious — only render when
             // there is more than one category to disambiguate.
-            if (chartData.seriesKeys.length > 1) ...[
+            if (widget.chartData.seriesKeys.length > 1) ...[
               SizedBox(height: tokens.spacing.step4),
               _ImpactChartLegend(
-                seriesKeys: chartData.seriesKeys,
-                rolledUpCount: chartData.rolledUpCount,
-                resolver: resolver,
+                seriesKeys: widget.chartData.seriesKeys,
+                rolledUpCount: widget.chartData.rolledUpCount,
+                resolver: widget.resolver,
               ),
             ],
           ],
@@ -331,6 +392,185 @@ class _ImpactStackedBars extends StatelessWidget {
   }
 }
 
+/// Cumulative running-total area chart: draws pre-stacked category series as
+/// filled areas across elapsed buckets. The card falls back to bars when fewer
+/// than two buckets have elapsed.
+class _ImpactStackedArea extends StatelessWidget {
+  const _ImpactStackedArea({
+    required this.data,
+    required this.resolver,
+    required this.metric,
+  });
+
+  final ImpactChartData data;
+  final InsightsCategoryResolver resolver;
+  final ConsumptionMetric metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final brightness = Theme.of(context).brightness;
+    final bucketCount = data.bucketStarts.length;
+    final axisStyle = monoMetaStyle(
+      tokens,
+      tokens.colors,
+      color: tokens.colors.text.mediumEmphasis,
+    );
+
+    final cumulative = _accumulateImpactValues(data.values);
+    final stackedTops = List.generate(
+      data.seriesKeys.length,
+      (s) => List.generate(bucketCount, (i) {
+        var top = 0.0;
+        for (var j = 0; j <= s; j++) {
+          top += cumulative[j][i];
+        }
+        return top;
+      }),
+    );
+
+    final today = epochDay(clock.now());
+    final firstFutureIndex = _firstFutureBucket(data, today);
+    final lastDrawnBucket = firstFutureIndex == 0
+        ? bucketCount
+        : firstFutureIndex;
+
+    var maxTop = 0.0;
+    if (stackedTops.isNotEmpty) {
+      for (var i = 0; i < lastDrawnBucket; i++) {
+        if (stackedTops.last[i] > maxTop) maxTop = stackedTops.last[i];
+      }
+    }
+    final niceCeiling = impactNiceCeiling(maxTop * 1.08);
+    final maxY = niceCeiling <= 0 ? 1.0 : niceCeiling;
+    final interval = maxY / 4;
+    final labelEvery = lastDrawnBucket <= 7
+        ? 1
+        : (lastDrawnBucket / 6).ceil().clamp(1, lastDrawnBucket);
+
+    return LineChart(
+      LineChartData(
+        minY: 0,
+        maxY: maxY,
+        borderData: FlBorderData(show: false),
+        gridData: FlGridData(
+          drawVerticalLine: false,
+          horizontalInterval: interval,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: tokens.colors.decorative.level01,
+            strokeWidth: 1,
+          ),
+        ),
+        titlesData: FlTitlesData(
+          topTitles: const AxisTitles(),
+          rightTitles: const AxisTitles(),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 56,
+              interval: interval,
+              getTitlesWidget: (value, meta) => SideTitleWidget(
+                meta: meta,
+                child: Text(
+                  value == 0 ? '' : metric.formatValue(value),
+                  style: axisStyle,
+                ),
+              ),
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 28,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                if (!value.isFinite) return const SizedBox.shrink();
+                final index = value.toInt();
+                if (index < 0 || index >= lastDrawnBucket) {
+                  return const SizedBox.shrink();
+                }
+                final label = _bottomAxisLabel(
+                  context,
+                  data,
+                  index,
+                  labelEvery,
+                );
+                if (label == null) return const SizedBox.shrink();
+                return SideTitleWidget(
+                  meta: meta,
+                  child: Text(label, style: axisStyle),
+                );
+              },
+            ),
+          ),
+        ),
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (_) => tokens.colors.background.level03,
+            tooltipBorderRadius: BorderRadius.circular(tokens.radii.s),
+            maxContentWidth: tokens.spacing.step13 * 1.5,
+            fitInsideVertically: true,
+            fitInsideHorizontally: true,
+            getTooltipItems: (spots) {
+              if (spots.isEmpty) return const [];
+              final index = spots.first.x.toInt();
+              if (index < 0 || index >= lastDrawnBucket) {
+                return [for (final _ in spots) null];
+              }
+              final style = tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              );
+              return [
+                for (var i = 0; i < spots.length; i++)
+                  if (i == 0)
+                    LineTooltipItem(
+                      '${_bucketLabel(context, data, index)}  '
+                      '${metric.formatValue(stackedTops.last[index])}',
+                      style.copyWith(
+                        fontWeight: tokens.typography.weight.semiBold,
+                      ),
+                      textAlign: TextAlign.left,
+                      children: _tooltipRows(
+                        data,
+                        resolver,
+                        metric,
+                        index,
+                        style,
+                        brightness,
+                        values: cumulative,
+                      ),
+                    )
+                  else
+                    null,
+              ];
+            },
+          ),
+        ),
+        lineBarsData: [
+          for (var s = data.seriesKeys.length - 1; s >= 0; s--)
+            () {
+              final fill = chartColorFor(
+                resolver.colorHexFor(data.seriesKeys[s]),
+                brightness,
+                seriesKey: data.seriesKeys[s],
+              );
+              return LineChartBarData(
+                spots: [
+                  for (var i = 0; i < lastDrawnBucket; i++)
+                    FlSpot(i.toDouble(), stackedTops[s][i]),
+                ],
+                color: bandEdgeColor(fill, brightness),
+                barWidth: 1.5,
+                dotData: const FlDotData(show: false),
+                belowBarData: BarAreaData(show: true, color: fill),
+              );
+            }(),
+        ],
+      ),
+    );
+  }
+}
+
 /// Legend: a saturated swatch + label per series, plus a "+N" rollup note
 /// disclosing how many smaller categories were folded into "Other".
 class _ImpactChartLegend extends StatelessWidget {
@@ -460,12 +700,13 @@ List<TextSpan> _tooltipRows(
   ConsumptionMetric metric,
   int index,
   TextStyle style,
-  Brightness brightness,
-) {
+  Brightness brightness, {
+  List<List<double>>? values,
+}) {
+  final rowValues = values ?? data.values;
   final rows = <(String?, double)>[
     for (var s = 0; s < data.seriesKeys.length; s++)
-      if (data.values[s][index] > 0)
-        (data.seriesKeys[s], data.values[s][index]),
+      if (rowValues[s][index] > 0) (data.seriesKeys[s], rowValues[s][index]),
   ]..sort((a, b) => b.$2.compareTo(a.$2));
 
   return [
@@ -487,4 +728,22 @@ List<TextSpan> _tooltipRows(
         ],
       ),
   ];
+}
+
+List<List<double>> _accumulateImpactValues(List<List<double>> values) {
+  return [
+    for (final row in values) _accumulateImpactValueRow(row),
+  ];
+}
+
+List<double> _accumulateImpactValueRow(List<double> row) {
+  final result = <double>[];
+  var running = 0.0;
+
+  for (final value in row) {
+    running += value;
+    result.add(running);
+  }
+
+  return result;
 }

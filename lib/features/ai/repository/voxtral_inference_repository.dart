@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -205,6 +206,7 @@ class VoxtralInferenceRepository {
         );
 
         final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final usage = parseCompletionUsage(json['usage']);
         final choices = json['choices'] as List<dynamic>?;
         if (choices != null && choices.isNotEmpty) {
           final choice = choices[0] as Map<String, dynamic>;
@@ -226,8 +228,25 @@ class VoxtralInferenceRepository {
               created:
                   json['created'] as int? ??
                   DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              model: json['model'] as String?,
+              usage: usage,
             );
+            return;
           }
+        }
+        if (usage != null) {
+          yield CreateChatCompletionStreamResponse(
+            id:
+                json['id'] as String? ??
+                'voxtral-${DateTime.now().millisecondsSinceEpoch}',
+            choices: const [],
+            object: 'chat.completion.chunk',
+            created:
+                json['created'] as int? ??
+                DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            model: json['model'] as String?,
+            usage: usage,
+          );
         }
         return;
       }
@@ -283,6 +302,7 @@ class VoxtralInferenceRepository {
 
             try {
               final json = jsonDecode(data) as Map<String, dynamic>;
+              final usage = parseCompletionUsage(json['usage']);
               final choices = json['choices'] as List<dynamic>?;
 
               if (choices != null && choices.isNotEmpty) {
@@ -291,36 +311,44 @@ class VoxtralInferenceRepository {
                 final content = delta?['content'] as String?;
                 final finishReason = choice['finish_reason'] as String?;
 
-                // Only yield chunks with actual content
-                if (content != null && content.isNotEmpty) {
-                  chunksReceived++;
-                  developer.log(
-                    'Received chunk $chunksReceived: ${content.length} chars',
-                    name: 'VoxtralInferenceRepository',
-                  );
+                final hasContent = content != null && content.isNotEmpty;
+
+                // Yield content chunks and final usage-only chunks. Some
+                // OpenAI-compatible servers put usage on a terminal SSE event
+                // with no text delta, and the recorder consumes usage from
+                // any chunk in the stream.
+                if (hasContent || usage != null) {
+                  if (hasContent) {
+                    chunksReceived++;
+                    developer.log(
+                      'Received chunk $chunksReceived: ${content.length} chars',
+                      name: 'VoxtralInferenceRepository',
+                    );
+                  }
 
                   yield CreateChatCompletionStreamResponse(
                     id:
                         json['id'] as String? ??
                         'voxtral-${DateTime.now().millisecondsSinceEpoch}',
-                    choices: [
-                      ChatCompletionStreamResponseChoice(
-                        delta: ChatCompletionStreamResponseDelta(
-                          content: content,
-                        ),
-                        index: 0,
-                        finishReason: finishReason != null
-                            ? ChatCompletionFinishReason.values.firstWhere(
-                                (e) => e.name == finishReason,
-                                orElse: () => ChatCompletionFinishReason.stop,
-                              )
-                            : null,
-                      ),
-                    ],
+                    choices: hasContent
+                        ? [
+                            ChatCompletionStreamResponseChoice(
+                              delta: ChatCompletionStreamResponseDelta(
+                                content: content,
+                              ),
+                              index: 0,
+                              finishReason: finishReason != null
+                                  ? _chatFinishReasonFromApi(finishReason)
+                                  : null,
+                            ),
+                          ]
+                        : const [],
                     object: 'chat.completion.chunk',
                     created:
                         json['created'] as int? ??
                         DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                    model: json['model'] as String?,
+                    usage: usage,
                   );
                 }
 
@@ -332,6 +360,19 @@ class VoxtralInferenceRepository {
                     name: 'VoxtralInferenceRepository',
                   );
                 }
+              } else if (usage != null) {
+                yield CreateChatCompletionStreamResponse(
+                  id:
+                      json['id'] as String? ??
+                      'voxtral-${DateTime.now().millisecondsSinceEpoch}',
+                  choices: const [],
+                  object: 'chat.completion.chunk',
+                  created:
+                      json['created'] as int? ??
+                      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                  model: json['model'] as String?,
+                  usage: usage,
+                );
               }
             } on FormatException catch (e) {
               developer.log(
@@ -448,6 +489,14 @@ class VoxtralInferenceRepository {
 
   /// Closes the underlying HTTP client and any keep-alive connections.
   void close() => _httpClient.close();
+}
+
+ChatCompletionFinishReason _chatFinishReasonFromApi(String finishReason) {
+  final normalized = finishReason.replaceAll('_', '').toLowerCase();
+  return ChatCompletionFinishReason.values.firstWhere(
+    (value) => value.name.toLowerCase() == normalized,
+    orElse: () => ChatCompletionFinishReason.stop,
+  );
 }
 
 /// Health status of the Voxtral server

@@ -389,6 +389,7 @@
   "aiConsumptionImpactLine": "Dopad: {energy} · {carbon} CO₂e · {water} vody",
   "aiConsumptionLedgerCap": "Zobrazuje nejnovějších {limit} volání v tomto období",
   "aiConsumptionLedgerTitle": "Nedávná volání",
+  "aiConsumptionMetricsNotReported": "Nenahlášeno",
   "aiConsumptionTokensLabel": "{tokens} tokenů",
   "aiConsumptionTokensLine": "Tokeny: {input} vstup · {output} výstup",
   "aiConsumptionTypeAgentTurn": "Tah agenta",

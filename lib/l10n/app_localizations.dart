@@ -2269,6 +2269,12 @@ abstract class AppLocalizations {
   /// **'Recent calls'**
   String get aiConsumptionLedgerTitle;
 
+  /// No description provided for @aiConsumptionMetricsNotReported.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reported'**
+  String get aiConsumptionMetricsNotReported;
+
   /// No description provided for @aiConsumptionTokensLabel.
   ///
   /// In en, this message translates to:
@@ -9450,6 +9456,12 @@ abstract class AppLocalizations {
   /// **'Could not save image'**
   String get imageViewerDownloadFailed;
 
+  /// No description provided for @imageViewerDownloadingTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving image'**
+  String get imageViewerDownloadingTooltip;
+
   /// No description provided for @imageViewerDownloadSaved.
   ///
   /// In en, this message translates to:
@@ -9461,12 +9473,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download image'**
   String get imageViewerDownloadTooltip;
-
-  /// No description provided for @imageViewerDownloadingTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Saving image'**
-  String get imageViewerDownloadingTooltip;
 
   /// No description provided for @inactiveLabel.
   ///

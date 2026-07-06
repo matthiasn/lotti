@@ -549,6 +549,7 @@
   "aiConsumptionImpactLine": "Impacto: {energy} · {carbon} CO₂e · {water} de agua",
   "aiConsumptionLedgerCap": "Mostrando las {limit} llamadas más recientes de este período",
   "aiConsumptionLedgerTitle": "Llamadas recientes",
+  "aiConsumptionMetricsNotReported": "No informado",
   "aiConsumptionTokensLabel": "{tokens} tokens",
   "aiConsumptionTokensLine": "Tokens: {input} entrada · {output} salida",
   "aiConsumptionTypeAgentTurn": "Turno de agente",

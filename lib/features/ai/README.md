@@ -624,6 +624,17 @@ It is now a thin **facade**: every public method delegates to one of two collabo
 
 This routing is implemented in code, not inferred from documentation. If a provider type is not branched explicitly for an operation, it falls through to the compatibility client or throws `UnsupportedError`.
 
+Audio transcription responses are normalized into chat-completion stream chunks
+so downstream skill/unified consumers can collect text and `usage` the same way
+for every provider. `completion_usage_parser.dart` accepts the common
+OpenAI-compatible token shapes (`prompt_tokens` / `completion_tokens`,
+input/output aliases, cached and reasoning token details). Duration-only audio
+usage is intentionally ignored because it cannot be represented as token
+consumption. Whisper-style `/audio/transcriptions` responses therefore carry
+token usage only when the endpoint actually reports it. Voxtral's streaming
+adapter also emits final usage-only SSE frames, which lets AI Consumption record
+tokens even when the final accounting chunk contains no text delta.
+
 For oMLX, the audio branch is model-sensitive. Regular oMLX Qwen and Gemma
 rows still use OpenAI-compatible chat or vision chat routes, while
 Whisper/ASR/STT-shaped oMLX model ids use the configured provider base URL plus

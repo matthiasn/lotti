@@ -55,6 +55,13 @@ void main() {
     const audioBase64 = 'base64-encoded-audio-data';
 
     group('transcribeAudio', () {
+      test('default constructor creates a closable HTTP client', () {
+        final repository = WhisperInferenceRepository();
+
+        expect(repository.httpClient, isA<http.Client>());
+        expect(repository.close, returnsNormally);
+      });
+
       test('successfully transcribes audio', () async {
         // Arrange
         const transcribedText = 'This is the transcribed text from audio.';
@@ -127,6 +134,40 @@ void main() {
         expect(response.choices?[0].delta?.content, equals(transcribedText));
       });
 
+      test('passes through token usage when the endpoint reports it', () async {
+        // Arrange
+        stubPost(
+          body: jsonEncode({
+            'text': 'Transcribed text',
+            'usage': {
+              'prompt_tokens': 12,
+              'completion_tokens': 8,
+              'total_tokens': 20,
+              'prompt_tokens_details': {'cached_tokens': 3},
+              'completion_tokens_details': {'reasoning_tokens': 2},
+            },
+          }),
+        );
+
+        // Act
+        final response = await repository
+            .transcribeAudio(
+              model: model,
+              audioBase64: audioBase64,
+              baseUrl: baseUrl,
+              prompt: prompt,
+            )
+            .first;
+
+        // Assert
+        expect(response.choices?[0].delta?.content, equals('Transcribed text'));
+        expect(response.usage?.promptTokens, 12);
+        expect(response.usage?.completionTokens, 8);
+        expect(response.usage?.totalTokens, 20);
+        expect(response.usage?.promptTokensDetails?.cachedTokens, 3);
+        expect(response.usage?.completionTokensDetails?.reasoningTokens, 2);
+      });
+
       test('throws TranscriptionException on HTTP error', () async {
         // Arrange
         stubPost(body: 'Internal Server Error', statusCode: 500);
@@ -150,6 +191,38 @@ void main() {
                   contains('Failed to transcribe audio (HTTP 500)'),
                 )
                 .having((e) => e.statusCode, 'statusCode', 500),
+          ),
+        );
+      });
+
+      test('uses structured provider error messages when available', () async {
+        // Arrange
+        stubPost(
+          body: jsonEncode({
+            'error': {'message': 'Provider quota exceeded'},
+          }),
+          statusCode: 429,
+        );
+
+        // Act
+        final stream = repository.transcribeAudio(
+          model: model,
+          audioBase64: audioBase64,
+          baseUrl: baseUrl,
+          prompt: prompt,
+        );
+
+        // Assert
+        await expectLater(
+          stream.first,
+          throwsA(
+            isA<TranscriptionException>()
+                .having(
+                  (e) => e.message,
+                  'message',
+                  contains('Provider quota exceeded'),
+                )
+                .having((e) => e.statusCode, 'statusCode', 429),
           ),
         );
       });
