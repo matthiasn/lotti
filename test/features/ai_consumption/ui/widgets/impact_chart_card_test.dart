@@ -471,5 +471,59 @@ void main() {
       expect(headerFor(1), isNot(contains('partial week')));
       expect(headerFor(2), contains('partial week'));
     });
+
+    testWidgets(
+      'weekly cumulative tooltip flags truncated edge weeks as partial',
+      (tester) async {
+        final chartData = ImpactChartData(
+          granularity: InsightsGranularity.week,
+          bucketStarts: [
+            DateTime(2024, 2),
+            DateTime(2024, 2, 5),
+            DateTime(2024, 2, 12),
+          ],
+          seriesKeys: const ['cat-a'],
+          values: const [
+            [1, 2, 3],
+          ],
+          partialFirstBucket: true,
+          partialLastBucket: true,
+        );
+        await pumpCard(tester, chartData: chartData);
+
+        await tester.tap(toggle('Running total'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+
+        final chart = tester.widget<LineChart>(find.byType(LineChart));
+        final tooltipData = chart.data.lineTouchData.touchTooltipData;
+
+        String headerFor(int index) {
+          final spots = [
+            for (
+              var barIndex = 0;
+              barIndex < chart.data.lineBarsData.length;
+              barIndex++
+            )
+              LineBarSpot(
+                chart.data.lineBarsData[barIndex],
+                barIndex,
+                chart.data.lineBarsData[barIndex].spots[index],
+              ),
+          ];
+          return tooltipData.getTooltipItems(spots).first!.text;
+        }
+
+        expect(headerFor(0), contains('Feb 1'));
+        expect(headerFor(0), contains('€1.00'));
+        expect(headerFor(0), contains('partial week'));
+        expect(headerFor(1), contains('Feb 5'));
+        expect(headerFor(1), contains('€3.00'));
+        expect(headerFor(1), isNot(contains('partial week')));
+        expect(headerFor(2), contains('Feb 12'));
+        expect(headerFor(2), contains('€6.00'));
+        expect(headerFor(2), contains('partial week'));
+      },
+    );
   });
 }

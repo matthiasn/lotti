@@ -47,7 +47,7 @@ CompletionUsage? parseCompletionUsage(Object? raw) {
   if (!hasTokenData) return null;
 
   return CompletionUsage(
-    promptTokens: promptTokens,
+    promptTokens: promptTokens ?? 0,
     completionTokens: completionTokens,
     totalTokens: totalTokens ?? (promptTokens ?? 0) + (completionTokens ?? 0),
     promptTokensDetails: cachedTokens != null

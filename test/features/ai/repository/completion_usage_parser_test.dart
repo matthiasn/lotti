@@ -44,6 +44,20 @@ void main() {
       expect(usage.completionTokensDetails?.reasoningTokens, 1);
     });
 
+    test(
+      'defaults prompt tokens when only completion-side data is reported',
+      () {
+        final usage = parseCompletionUsage({
+          'completion_tokens': 6,
+        });
+
+        expect(usage, isNotNull);
+        expect(usage!.promptTokens, 0);
+        expect(usage.completionTokens, 6);
+        expect(usage.totalTokens, 6);
+      },
+    );
+
     test('ignores non-token usage payloads', () {
       expect(parseCompletionUsage({'duration': 1.25}), isNull);
       expect(parseCompletionUsage('not a map'), isNull);
