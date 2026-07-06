@@ -5556,6 +5556,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get images => 'Images';
 
   @override
+  String get imageViewerDownloadFailed => 'Impossible d\'enregistrer l\'image';
+
+  @override
+  String imageViewerDownloadSaved(String fileName) {
+    return '$fileName enregistré dans Téléchargements/Lotti';
+  }
+
+  @override
+  String get imageViewerDownloadTooltip => 'Télécharger l\'image';
+
+  @override
+  String get imageViewerDownloadingTooltip => 'Enregistrement de l\'image';
+
+  @override
   String get inactiveLabel => 'Inactif';
 
   @override

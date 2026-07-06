@@ -5514,6 +5514,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get images => 'Obrázky';
 
   @override
+  String get imageViewerDownloadFailed => 'Obrázek se nepodařilo uložit';
+
+  @override
+  String imageViewerDownloadSaved(String fileName) {
+    return 'Uloženo $fileName do Stažené/Lotti';
+  }
+
+  @override
+  String get imageViewerDownloadTooltip => 'Stáhnout obrázek';
+
+  @override
+  String get imageViewerDownloadingTooltip => 'Ukládám obrázek';
+
+  @override
   String get inactiveLabel => 'Neaktivní';
 
   @override

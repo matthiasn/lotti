@@ -9444,6 +9444,30 @@ abstract class AppLocalizations {
   /// **'Images'**
   String get images;
 
+  /// No description provided for @imageViewerDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save image'**
+  String get imageViewerDownloadFailed;
+
+  /// No description provided for @imageViewerDownloadSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {fileName} to Downloads/Lotti'**
+  String imageViewerDownloadSaved(String fileName);
+
+  /// No description provided for @imageViewerDownloadTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Download image'**
+  String get imageViewerDownloadTooltip;
+
+  /// No description provided for @imageViewerDownloadingTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving image'**
+  String get imageViewerDownloadingTooltip;
+
   /// No description provided for @inactiveLabel.
   ///
   /// In en, this message translates to:

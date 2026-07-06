@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
@@ -15,6 +17,95 @@ import 'package:photo_view/photo_view.dart';
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+
+const _transparentPng = <int>[
+  0x89,
+  0x50,
+  0x4E,
+  0x47,
+  0x0D,
+  0x0A,
+  0x1A,
+  0x0A,
+  0x00,
+  0x00,
+  0x00,
+  0x0D,
+  0x49,
+  0x48,
+  0x44,
+  0x52,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x08,
+  0x06,
+  0x00,
+  0x00,
+  0x00,
+  0x1F,
+  0x15,
+  0xC4,
+  0x89,
+  0x00,
+  0x00,
+  0x00,
+  0x0A,
+  0x49,
+  0x44,
+  0x41,
+  0x54,
+  0x78,
+  0x9C,
+  0x63,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x05,
+  0x00,
+  0x01,
+  0x0D,
+  0x0A,
+  0x2D,
+  0xB4,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+  0x49,
+  0x45,
+  0x4E,
+  0x44,
+  0xAE,
+  0x42,
+  0x60,
+  0x82,
+];
+
+void _pressIconButton(WidgetTester tester, IconData icon) {
+  final button = tester.widget<IconButton>(
+    find.widgetWithIcon(IconButton, icon),
+  );
+  expect(button.onPressed, isNotNull);
+  button.onPressed!();
+}
+
+Future<void> _waitForFileSystem(
+  WidgetTester tester,
+  bool Function() isReady,
+) async {
+  await tester.runAsync(() async {
+    for (var i = 0; i < 250 && !isReady(); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+    }
+  });
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -172,6 +263,7 @@ void main() {
         final subject = ProviderScope(
           overrides: [createEntryControllerOverride(image)],
           child: MaterialApp(
+            theme: resolveTestTheme(),
             localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
@@ -217,8 +309,8 @@ void main() {
       tempDir = Directory.systemTemp.createTempSync(
         'hero_photo_view_test_',
       );
-      imageFile = File('${tempDir.path}/photo.jpg')
-        ..writeAsBytesSync([0xFF, 0xD8, 0xFF, 0xE0]);
+      imageFile = File('${tempDir.path}/photo.png')
+        ..writeAsBytesSync(_transparentPng);
     });
 
     tearDown(() async {
@@ -229,9 +321,37 @@ void main() {
       }
     });
 
-    Widget buildWrapper({BoxDecoration? backgroundDecoration}) {
+    Widget buildWrapper({
+      BoxDecoration? backgroundDecoration,
+      ImageViewerDownloadsDirectoryResolver? downloadsDirectoryResolver,
+      ImageViewerFileCopier? fileCopier,
+    }) {
+      final wrapper = switch ((downloadsDirectoryResolver, fileCopier)) {
+        (null, null) => HeroPhotoViewRouteWrapper(
+          file: imageFile,
+          backgroundDecoration: backgroundDecoration,
+        ),
+        (final resolver?, null) => HeroPhotoViewRouteWrapper(
+          file: imageFile,
+          backgroundDecoration: backgroundDecoration,
+          downloadsDirectoryResolver: resolver,
+        ),
+        (null, final copier?) => HeroPhotoViewRouteWrapper(
+          file: imageFile,
+          backgroundDecoration: backgroundDecoration,
+          fileCopier: copier,
+        ),
+        (final resolver?, final copier?) => HeroPhotoViewRouteWrapper(
+          file: imageFile,
+          backgroundDecoration: backgroundDecoration,
+          downloadsDirectoryResolver: resolver,
+          fileCopier: copier,
+        ),
+      };
+
       return ProviderScope(
         child: MaterialApp(
+          theme: resolveTestTheme(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -239,16 +359,13 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: HeroPhotoViewRouteWrapper(
-            file: imageFile,
-            backgroundDecoration: backgroundDecoration,
-          ),
+          home: wrapper,
         ),
       );
     }
 
     testWidgets(
-      'renders Scaffold with PhotoView and close IconButton',
+      'renders PhotoView with download, close, and zoom controls',
       (tester) async {
         await tester.pumpWidget(buildWrapper());
         await tester.pump();
@@ -261,15 +378,30 @@ void main() {
         final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
         expect(photoView.imageProvider, isA<FileImage>());
         expect(photoView.minScale, PhotoViewComputedScale.contained);
+        expect(photoView.initialScale, PhotoViewComputedScale.contained);
+        expect(photoView.maxScale, PhotoViewComputedScale.covered * 4);
+        expect(photoView.strictScale, isTrue);
+        expect(photoView.controller, isA<PhotoViewController>());
+        expect(
+          photoView.scaleStateController,
+          isA<PhotoViewScaleStateController>(),
+        );
         expect(
           photoView.heroAttributes?.tag,
           'entry_img',
         );
 
-        // Close button is rendered in the top-right Positioned widget.
-        expect(find.byType(IconButton), findsOneWidget);
-        // Two close icons: one blurred behind, one white on top.
-        expect(find.byIcon(Icons.close_rounded), findsNWidgets(2));
+        expect(find.byTooltip('Download image'), findsOneWidget);
+        expect(find.byTooltip('Close'), findsOneWidget);
+        expect(find.byTooltip('Zoom In'), findsOneWidget);
+        expect(find.byTooltip('Zoom Out'), findsOneWidget);
+        expect(find.byTooltip('Actual Size'), findsOneWidget);
+        expect(find.text('100%'), findsOneWidget);
+
+        final zoomOutButton = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.remove_rounded),
+        );
+        expect(zoomOutButton.onPressed, isNull);
       },
     );
 
@@ -288,8 +420,6 @@ void main() {
     testWidgets(
       'close button pops the route when tapped',
       (tester) async {
-        // The close IconButton has padding: EdgeInsets.all(48); use a large
-        // viewport so its hit target falls within bounds.
         tester.view.physicalSize = const Size(1200, 900);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
@@ -299,6 +429,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              theme: resolveTestTheme(),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
@@ -337,11 +468,7 @@ void main() {
         // Wrapper is visible.
         expect(find.byType(HeroPhotoViewRouteWrapper), findsOneWidget);
 
-        // Invoke the close button's onPressed callback directly to avoid
-        // off-screen hit-testing issues caused by the large 48px padding on
-        // the Positioned close button.
-        final iconButton = tester.widget<IconButton>(find.byType(IconButton));
-        iconButton.onPressed?.call();
+        _pressIconButton(tester, Icons.close_rounded);
         await tester.pump();
         await tester.pump();
 
@@ -349,6 +476,248 @@ void main() {
         expect(find.byType(HeroPhotoViewRouteWrapper), findsNothing);
         // We're back on the home screen.
         expect(find.text('Open'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'escape key pops the route',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              theme: resolveTestTheme(),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (context) {
+                  return Scaffold(
+                    body: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context, rootNavigator: true).push(
+                          PageRouteBuilder<void>(
+                            opaque: false,
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    HeroPhotoViewRouteWrapper(
+                                      file: imageFile,
+                                    ),
+                          ),
+                        );
+                      },
+                      child: const Text('Open'),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Open'));
+        await tester.pump();
+        await tester.pump();
+        expect(find.byType(HeroPhotoViewRouteWrapper), findsOneWidget);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(HeroPhotoViewRouteWrapper), findsNothing);
+        expect(find.text('Open'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'zoom controls update the visible scale and reset to actual size',
+      (tester) async {
+        await tester.pumpWidget(buildWrapper());
+        await tester.pump();
+
+        expect(find.text('100%'), findsOneWidget);
+
+        _pressIconButton(tester, Icons.add_rounded);
+        await tester.pump();
+        expect(find.text('125%'), findsOneWidget);
+
+        _pressIconButton(tester, Icons.remove_rounded);
+        await tester.pump();
+        expect(find.text('100%'), findsOneWidget);
+
+        _pressIconButton(tester, Icons.add_rounded);
+        await tester.pump();
+        expect(find.text('125%'), findsOneWidget);
+
+        await tester.tap(find.text('125%'));
+        await tester.pump();
+        expect(find.text('100%'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'download button copies the image to Downloads/Lotti with a unique name',
+      (tester) async {
+        final downloadsDir = Directory('${tempDir.path}/Downloads')
+          ..createSync();
+        final lottiDownloads = Directory('${downloadsDir.path}/Lotti')
+          ..createSync();
+        File('${lottiDownloads.path}/photo.png').writeAsBytesSync([0x01]);
+        File('${lottiDownloads.path}/photo 2.png').writeAsBytesSync([0x02]);
+
+        await tester.pumpWidget(
+          buildWrapper(
+            downloadsDirectoryResolver: () => Future.value(downloadsDir),
+            fileCopier: (sourceFile, targetFile) {
+              targetFile.writeAsBytesSync(sourceFile.readAsBytesSync());
+              return Future.value(targetFile);
+            },
+          ),
+        );
+        await tester.pump();
+
+        final copied = File('${lottiDownloads.path}/photo 3.png');
+        _pressIconButton(tester, Icons.download_rounded);
+        await tester.pump();
+        await _waitForFileSystem(tester, copied.existsSync);
+        await tester.pump();
+        await tester.pump();
+
+        expect(copied.existsSync(), isTrue);
+        expect(copied.readAsBytesSync(), _transparentPng);
+        expect(
+          find.text('Saved photo 3.png to Downloads/Lotti'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'download button uses the default copier when the file name is free',
+      (tester) async {
+        final downloadsDir = Directory('${tempDir.path}/Downloads')
+          ..createSync();
+        final lottiDownloads = Directory('${downloadsDir.path}/Lotti')
+          ..createSync();
+        final copied = File('${lottiDownloads.path}/photo.png');
+
+        await tester.pumpWidget(
+          buildWrapper(
+            downloadsDirectoryResolver: () => Future.value(downloadsDir),
+          ),
+        );
+        await tester.pump();
+
+        _pressIconButton(tester, Icons.download_rounded);
+        await tester.pump();
+        await _waitForFileSystem(tester, copied.existsSync);
+        await tester.pump();
+        await tester.pump();
+
+        expect(copied.existsSync(), isTrue);
+        expect(copied.readAsBytesSync(), _transparentPng);
+      },
+    );
+
+    testWidgets(
+      'download button disables while copying and ignores duplicate taps',
+      (tester) async {
+        final downloadsDir = Directory('${tempDir.path}/Downloads')
+          ..createSync();
+        Directory('${downloadsDir.path}/Lotti').createSync();
+        final copyCompleter = Completer<File>();
+        var copyCalls = 0;
+        late File pendingTarget;
+
+        await tester.pumpWidget(
+          buildWrapper(
+            downloadsDirectoryResolver: () => Future.value(downloadsDir),
+            fileCopier: (sourceFile, targetFile) {
+              copyCalls++;
+              pendingTarget = targetFile;
+              return copyCompleter.future;
+            },
+          ),
+        );
+        await tester.pump();
+
+        final downloadButton = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.download_rounded),
+        );
+        expect(downloadButton.onPressed, isNotNull);
+        downloadButton.onPressed!();
+        downloadButton.onPressed!();
+        await tester.pump();
+        await _waitForFileSystem(tester, () => copyCalls == 1);
+        await tester.pump();
+
+        expect(copyCalls, 1);
+        expect(find.byTooltip('Saving image'), findsOneWidget);
+        final savingButton = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.hourglass_top_rounded),
+        );
+        expect(savingButton.onPressed, isNull);
+
+        pendingTarget.writeAsBytesSync(imageFile.readAsBytesSync());
+        copyCompleter.complete(pendingTarget);
+        await tester.pump();
+
+        expect(
+          find.text('Saved photo.png to Downloads/Lotti'),
+          findsOneWidget,
+        );
+        expect(copyCalls, 1);
+      },
+    );
+
+    testWidgets(
+      'download button reports failure when downloads are unavailable',
+      (tester) async {
+        await tester.pumpWidget(
+          buildWrapper(
+            downloadsDirectoryResolver: () async => null,
+          ),
+        );
+        await tester.pump();
+
+        _pressIconButton(tester, Icons.download_rounded);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Could not save image'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'download button reports failure when copying throws',
+      (tester) async {
+        final downloadsDir = Directory('${tempDir.path}/Downloads')
+          ..createSync();
+        Directory('${downloadsDir.path}/Lotti').createSync();
+        var copyAttempted = false;
+
+        await tester.pumpWidget(
+          buildWrapper(
+            downloadsDirectoryResolver: () => Future.value(downloadsDir),
+            fileCopier: (sourceFile, targetFile) {
+              copyAttempted = true;
+              throw const FileSystemException('copy failed');
+            },
+          ),
+        );
+        await tester.pump();
+
+        _pressIconButton(tester, Icons.download_rounded);
+        await tester.pump();
+        await _waitForFileSystem(tester, () => copyAttempted);
+        await tester.pump();
+
+        expect(copyAttempted, isTrue);
+        expect(find.text('Could not save image'), findsOneWidget);
       },
     );
 

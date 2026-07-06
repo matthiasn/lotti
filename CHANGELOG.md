@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1032]
+### Added
+- **A calmer image viewer.** Tapping a journal photo now opens it over a
+  dimmed version of the app instead of a stark full-screen shell. The viewer
+  keeps a visible margin around the photo, has persistent top-right Download
+  and Close buttons, closes with Escape, and adds a bottom zoom control while
+  preserving pinch-to-zoom and panning. Download saves the original image into
+  `Downloads/Lotti` with a unique filename.
+
 ## [0.9.1031]
 ### Added
 - **See what your AI actually costs — in money, energy, and CO₂e.** Lotti now

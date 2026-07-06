@@ -1,12 +1,17 @@
+import 'dart:async';
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 
 /// Inline image for a [JournalImage] entry in the detail view.
@@ -44,10 +49,15 @@ class EntryImageWidget extends ConsumerWidget {
       onTap: () {
         focusNode.unfocus();
         Navigator.of(context, rootNavigator: true).push(
-          MaterialPageRoute<HeroPhotoViewRouteWrapper>(
-            builder: (_) => HeroPhotoViewRouteWrapper(
-              file: file,
-            ),
+          PageRouteBuilder<void>(
+            opaque: false,
+            barrierColor: Theme.of(
+              context,
+            ).colorScheme.scrim.withValues(alpha: 0.82),
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                HeroPhotoViewRouteWrapper(
+                  file: file,
+                ),
           ),
         );
       },
@@ -73,66 +83,399 @@ class EntryImageWidget extends ConsumerWidget {
   }
 }
 
+typedef ImageViewerDownloadsDirectoryResolver = Future<Directory?> Function();
+typedef ImageViewerFileCopier =
+    Future<File> Function(File sourceFile, File targetFile);
+
+Future<File> _copyImageFile(File sourceFile, File targetFile) =>
+    sourceFile.copy(targetFile.path);
+
 // from https://github.com/bluefireteam/photo_view/blob/master/example/lib/screens/examples/hero_example.dart
-class HeroPhotoViewRouteWrapper extends StatelessWidget {
+class HeroPhotoViewRouteWrapper extends StatefulWidget {
   const HeroPhotoViewRouteWrapper({
     required this.file,
     super.key,
     this.backgroundDecoration,
+    this.downloadsDirectoryResolver = getDownloadsDirectory,
+    this.fileCopier = _copyImageFile,
   });
 
   final File file;
   final BoxDecoration? backgroundDecoration;
+  final ImageViewerDownloadsDirectoryResolver downloadsDirectoryResolver;
+  final ImageViewerFileCopier fileCopier;
+
+  @override
+  State<HeroPhotoViewRouteWrapper> createState() =>
+      _HeroPhotoViewRouteWrapperState();
+}
+
+class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
+  static const double _zoomFactor = 1.25;
+  static const double _maxZoomScale = 8;
+
+  late final PhotoViewController _photoController;
+  late final PhotoViewScaleStateController _scaleStateController;
+  late final StreamSubscription<PhotoViewControllerValue> _photoSubscription;
+
+  double _scale = 1;
+  double? _minimumScale;
+  bool _isDownloading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _photoController = PhotoViewController();
+    _photoSubscription = _photoController.outputStateStream.listen(
+      _handlePhotoViewValue,
+    );
+    _scaleStateController = PhotoViewScaleStateController();
+  }
+
+  @override
+  void dispose() {
+    unawaited(_photoSubscription.cancel());
+    _photoController.dispose();
+    _scaleStateController.dispose();
+    super.dispose();
+  }
+
+  void _handlePhotoViewValue(PhotoViewControllerValue value) {
+    final nextScale = value.scale;
+    if (nextScale == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _scale = nextScale;
+      _minimumScale ??= nextScale;
+    });
+  }
+
+  void _close() => Navigator.of(context, rootNavigator: true).pop();
+
+  void _zoomIn() {
+    _setZoom(_scale * _zoomFactor);
+  }
+
+  void _zoomOut() {
+    _setZoom(_scale / _zoomFactor);
+  }
+
+  void _resetZoom() {
+    _scaleStateController.reset();
+    _photoController.updateMultiple(
+      position: Offset.zero,
+      rotation: 0,
+      scale: _minimumScale ?? _scale,
+    );
+  }
+
+  void _setZoom(double scale) {
+    final minimumScale = _minimumScale ?? _scale;
+    _minimumScale ??= minimumScale;
+    final nextScale = scale.clamp(minimumScale, _maxZoomScale).toDouble();
+    _photoController.updateMultiple(
+      position: Offset.zero,
+      scale: nextScale,
+    );
+  }
+
+  Future<void> _downloadImage() async {
+    if (_isDownloading) {
+      return;
+    }
+
+    setState(() => _isDownloading = true);
+    try {
+      final target = await _copyImageToDownloads();
+      if (!mounted) {
+        return;
+      }
+      _showSnackBar(
+        context.messages.imageViewerDownloadSaved(p.basename(target.path)),
+      );
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      _showSnackBar(context.messages.imageViewerDownloadFailed);
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloading = false);
+      }
+    }
+  }
+
+  Future<File> _copyImageToDownloads() async {
+    final downloadsDirectory = await widget.downloadsDirectoryResolver();
+    if (downloadsDirectory == null) {
+      throw const FileSystemException('Downloads directory is unavailable');
+    }
+
+    final lottiDirectory = await Directory(
+      p.join(downloadsDirectory.path, 'Lotti'),
+    ).create(recursive: true);
+    final target = _uniqueDownloadFile(
+      directory: lottiDirectory,
+      sourceFile: widget.file,
+    );
+    return widget.fileCopier(widget.file, target);
+  }
+
+  File _uniqueDownloadFile({
+    required Directory directory,
+    required File sourceFile,
+  }) {
+    final sourceName = p.basename(sourceFile.path);
+    final extension = p.extension(sourceName);
+    final baseName = p.basenameWithoutExtension(sourceName);
+    var candidate = File(p.join(directory.path, sourceName));
+    var suffix = 2;
+
+    while (candidate.existsSync()) {
+      candidate = File(
+        p.join(directory.path, '$baseName $suffix$extension'),
+      );
+      suffix++;
+    }
+
+    return candidate;
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
-    final imageProvider = FileImage(file);
+    final imageProvider = FileImage(widget.file);
+    final tokens = context.designTokens;
+    final padding = MediaQuery.paddingOf(context);
+    final edge = isMobile ? tokens.spacing.step3 : tokens.spacing.step8;
+    final top = tokens.spacing.step5;
+    final bottom = tokens.spacing.step11;
+    final minimumScale = _minimumScale ?? _scale;
+    final canZoomOut = _scale > minimumScale * 1.01;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            constraints: BoxConstraints.expand(
-              height: MediaQuery.of(context).size.height,
-            ),
-            child: PhotoView(
-              imageProvider: imageProvider,
-              backgroundDecoration: backgroundDecoration,
-              heroAttributes: const PhotoViewHeroAttributes(tag: 'entry_img'),
-              minScale: PhotoViewComputedScale.contained,
-            ),
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): _close,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(edge, top, edge, bottom),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(tokens.radii.m),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.scrim,
+                          border: Border.all(
+                            color: tokens.colors.decorative.level02,
+                          ),
+                        ),
+                        child: PhotoView(
+                          imageProvider: imageProvider,
+                          backgroundDecoration:
+                              widget.backgroundDecoration ??
+                              BoxDecoration(
+                                color: Theme.of(context).colorScheme.scrim,
+                              ),
+                          controller: _photoController,
+                          scaleStateController: _scaleStateController,
+                          heroAttributes: const PhotoViewHeroAttributes(
+                            tag: 'entry_img',
+                          ),
+                          minScale: PhotoViewComputedScale.contained,
+                          maxScale: PhotoViewComputedScale.covered * 4,
+                          initialScale: PhotoViewComputedScale.contained,
+                          strictScale: true,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: edge,
+                top: padding.top + tokens.spacing.step3,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _ImageViewerIconButton(
+                      tooltip: _isDownloading
+                          ? context.messages.imageViewerDownloadingTooltip
+                          : context.messages.imageViewerDownloadTooltip,
+                      icon: _isDownloading
+                          ? Icons.hourglass_top_rounded
+                          : Icons.download_rounded,
+                      onPressed: _isDownloading
+                          ? null
+                          : () => unawaited(_downloadImage()),
+                    ),
+                    SizedBox(width: tokens.spacing.step2),
+                    _ImageViewerIconButton(
+                      tooltip: MaterialLocalizations.of(
+                        context,
+                      ).closeButtonTooltip,
+                      icon: Icons.close_rounded,
+                      onPressed: _close,
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: padding.bottom + tokens.spacing.step4,
+                child: Center(
+                  child: _ImageViewerZoomControls(
+                    scale: _scale,
+                    canZoomOut: canZoomOut,
+                    onZoomOut: canZoomOut ? _zoomOut : null,
+                    onZoomReset: _resetZoom,
+                    onZoomIn: _zoomIn,
+                  ),
+                ),
+              ),
+            ],
           ),
-          Positioned(
-            right: 0,
-            top: 0,
-            child: IconButton(
-              padding: const EdgeInsets.all(48),
-              onPressed: () {
-                Navigator.of(context, rootNavigator: true).pop();
-              },
-              icon: Stack(
-                children: [
-                  ImageFiltered(
-                    imageFilter: ImageFilter.blur(
-                      sigmaX: 12,
-                      sigmaY: 12,
-                    ),
-                    child: const Icon(
-                      Icons.close_rounded,
-                      size: 32,
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageViewerIconButton extends StatelessWidget {
+  const _ImageViewerIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Material(
+      color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.46),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: IconButton(
+        tooltip: tooltip,
+        color: Colors.white,
+        disabledColor: Colors.white.withValues(alpha: 0.45),
+        padding: EdgeInsets.all(tokens.spacing.step3),
+        onPressed: onPressed,
+        icon: Icon(icon),
+      ),
+    );
+  }
+}
+
+class _ImageViewerZoomControls extends StatelessWidget {
+  const _ImageViewerZoomControls({
+    required this.scale,
+    required this.canZoomOut,
+    required this.onZoomOut,
+    required this.onZoomReset,
+    required this.onZoomIn,
+  });
+
+  final double scale;
+  final bool canZoomOut;
+  final VoidCallback? onZoomOut;
+  final VoidCallback onZoomReset;
+  final VoidCallback onZoomIn;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final percent = '${(scale * 100).round()}%';
+
+    return Material(
+      color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.62),
+      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step1),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ImageViewerZoomButton(
+              tooltip: context.messages.viewMenuZoomOut,
+              icon: Icons.remove_rounded,
+              onPressed: canZoomOut ? onZoomOut : null,
+            ),
+            Tooltip(
+              message: context.messages.viewMenuZoomReset,
+              child: InkWell(
+                onTap: onZoomReset,
+                borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step4,
+                    vertical: tokens.spacing.step2,
+                  ),
+                  child: Text(
+                    percent,
+                    textAlign: TextAlign.center,
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      color: Colors.white,
                     ),
                   ),
-                  const Icon(
-                    Icons.close_rounded,
-                    size: 32,
-                    color: Colors.white,
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+            _ImageViewerZoomButton(
+              tooltip: context.messages.viewMenuZoomIn,
+              icon: Icons.add_rounded,
+              onPressed: onZoomIn,
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _ImageViewerZoomButton extends StatelessWidget {
+  const _ImageViewerZoomButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return IconButton(
+      tooltip: tooltip,
+      color: Colors.white,
+      disabledColor: Colors.white.withValues(alpha: 0.45),
+      padding: EdgeInsets.all(tokens.spacing.step2),
+      constraints: BoxConstraints.tightFor(
+        width: tokens.spacing.step8,
+        height: tokens.spacing.step8,
+      ),
+      onPressed: onPressed,
+      icon: Icon(icon),
     );
   }
 }

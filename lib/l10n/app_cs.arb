@@ -2210,6 +2210,17 @@
   "imagePromptGenerationExpandTooltip": "Zobrazit celý prompt",
   "imagePromptGenerationFullPromptLabel": "Celý prompt obrázku:",
   "images": "Obrázky",
+  "imageViewerDownloadFailed": "Obrázek se nepodařilo uložit",
+  "imageViewerDownloadingTooltip": "Ukládám obrázek",
+  "imageViewerDownloadSaved": "Uloženo {fileName} do Stažené/Lotti",
+  "@imageViewerDownloadSaved": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "imageViewerDownloadTooltip": "Stáhnout obrázek",
   "inactiveLabel": "Neaktivní",
   "inactiveSwitchDescription": "Lze vybrat pro nové záznamy, když je zapnuto",
   "inferenceProfileDetailLoadError": "Profil se nepodařilo načíst: {error}",

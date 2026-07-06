@@ -114,6 +114,22 @@ It composes:
 
 That is the real boundary: the journal feature owns the page frame and the switching logic, while other features supply some of the per-type payload UI.
 
+### Image Viewer
+
+[`EntryImageWidget`](ui/widgets/entry_image_widget.dart) renders a downsampled inline `JournalImage` preview and pushes `HeroPhotoViewRouteWrapper` on tap. The route is non-opaque with a scrim barrier, so the detail page remains visible but darkened behind the viewer. `PhotoView` still owns pinch-zoom and panning; the viewer chrome drives the same `PhotoViewController` and `PhotoViewScaleStateController` for button zoom, reset, and the visible scale readout.
+
+```mermaid
+flowchart LR
+  Inline["EntryImageWidget preview"] --> Route["non-opaque image route"]
+  Route --> PhotoView["PhotoView\npinch + pan"]
+  Route --> Chrome["overlay chrome\nclose, download, zoom"]
+  Chrome --> Controller["PhotoView controllers"]
+  Chrome --> Downloads["Downloads/Lotti\nunique filename copy"]
+  Chrome --> Pop["root Navigator pop\nclose or Escape"]
+```
+
+The download action copies the original image file, not the resized preview, into the platform downloads directory under `Lotti/`. Existing filenames are preserved with a numeric suffix (`photo 2.png`, etc.) rather than overwritten.
+
 ## Entry Controller
 
 [`entry_controller.dart`](state/entry_controller.dart) is the detail-side brain for one entry.
