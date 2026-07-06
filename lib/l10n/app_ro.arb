@@ -549,6 +549,7 @@
   "aiConsumptionImpactLine": "Impact: {energy} · {carbon} CO₂e · {water} apă",
   "aiConsumptionLedgerCap": "Se afișează cele mai noi {limit} apeluri din această perioadă",
   "aiConsumptionLedgerTitle": "Apeluri recente",
+  "aiConsumptionMetricsNotReported": "Neraportat",
   "aiConsumptionTokensLabel": "{tokens} tokenuri",
   "aiConsumptionTokensLine": "Tokenuri: {input} intrare · {output} ieșire",
   "aiConsumptionTypeAgentTurn": "Tur de agent",

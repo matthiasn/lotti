@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and Close buttons, closes with Escape, and adds a bottom zoom control while
   preserving pinch-to-zoom and panning. Download saves the original image into
   `Downloads/Lotti` with a unique filename.
+- **Better AI Impact accounting for transcription.** The AI Impact dashboard
+  now has a **Running total** chart mode for cumulative cost, energy, CO₂e and
+  token usage over the selected period. Voxtral transcription records token
+  usage when the server returns it in final accounting chunks, and transcription
+  calls whose provider reports no token, cost or energy metrics are labelled
+  instead of leaving a blank ledger row.
 
 ## [0.9.1031]
 ### Added

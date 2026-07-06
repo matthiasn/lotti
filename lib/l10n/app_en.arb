@@ -774,6 +774,7 @@
     }
   },
   "aiConsumptionLedgerTitle": "Recent calls",
+  "aiConsumptionMetricsNotReported": "Not reported",
   "aiConsumptionTokensLabel": "{tokens} tokens",
   "@aiConsumptionTokensLabel": {
     "placeholders": {

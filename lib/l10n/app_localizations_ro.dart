@@ -1270,6 +1270,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiConsumptionLedgerTitle => 'Apeluri recente';
 
   @override
+  String get aiConsumptionMetricsNotReported => 'Neraportat';
+
+  @override
   String aiConsumptionTokensLabel(String tokens) {
     return '$tokens tokenuri';
   }
@@ -5563,15 +5566,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get imageViewerDownloadFailed => 'Nu s-a putut salva imaginea';
 
   @override
+  String get imageViewerDownloadingTooltip => 'Se salvează imaginea';
+
+  @override
   String imageViewerDownloadSaved(String fileName) {
     return '$fileName a fost salvat în Descărcări/Lotti';
   }
 
   @override
   String get imageViewerDownloadTooltip => 'Descărcați imaginea';
-
-  @override
-  String get imageViewerDownloadingTooltip => 'Se salvează imaginea';
 
   @override
   String get inactiveLabel => 'Inactiv';

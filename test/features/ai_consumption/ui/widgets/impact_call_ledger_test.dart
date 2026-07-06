@@ -115,6 +115,27 @@ void main() {
     expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
   });
 
+  testWidgets('labels calls whose provider did not report metrics', (
+    tester,
+  ) async {
+    stubEvents([
+      makeConsumptionEvent(
+        id: 'evt-usage-missing',
+        createdAt: DateTime(2026, 6, 4, 9, 5),
+        providerModelId: 'whisper-1',
+        responseType: AiConsumptionResponseType.audioTranscription,
+        totalTokens: null,
+        credits: null,
+        energyKwh: null,
+      ),
+    ]);
+    await pumpLedger(tester);
+
+    expect(find.text('whisper-1'), findsOneWidget);
+    expect(find.text('Not reported'), findsOneWidget);
+    expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
+  });
+
   testWidgets('maps every response type to its icon and localized label', (
     tester,
   ) async {

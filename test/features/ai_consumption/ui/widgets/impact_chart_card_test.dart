@@ -75,6 +75,8 @@ void main() {
     });
   }
 
+  Finder toggle(String label) => find.text(label).last;
+
   testWidgets('renders metric title, bucket caption, bars, and legend', (
     tester,
   ) async {
@@ -89,12 +91,60 @@ void main() {
     await pumpCard(tester, chartData: chartData);
 
     expect(find.text('Cost by category'), findsOneWidget);
-    expect(find.text('Per day'), findsOneWidget);
+    expect(find.text('Per day'), findsWidgets);
+    expect(toggle('Running total'), findsOneWidget);
     expect(find.byType(BarChart), findsOneWidget);
+    expect(find.byType(LineChart), findsNothing);
     // Legend names every series, including uncategorized.
     expect(find.text('Agents'), findsOneWidget);
     expect(find.text('Research'), findsOneWidget);
     expect(find.text('Uncategorized'), findsOneWidget);
+  });
+
+  testWidgets('toggle switches to cumulative running totals', (tester) async {
+    final chartData = buildImpactChartData(
+      bucketsWith({
+        0: {'cat-a': 2.0},
+        1: {'cat-b': 1.0},
+        2: {'cat-a': 3.0},
+      }),
+      range,
+      ConsumptionMetric.cost,
+    );
+    await pumpCard(tester, chartData: chartData);
+
+    await tester.tap(toggle('Running total'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(find.byType(LineChart), findsOneWidget);
+    expect(find.byType(BarChart), findsNothing);
+    expect(find.text('Running total over the range'), findsOneWidget);
+
+    final chart = tester.widget<LineChart>(find.byType(LineChart));
+    final tooltipData = chart.data.lineTouchData.touchTooltipData;
+    final spots = [
+      for (
+        var barIndex = 0;
+        barIndex < chart.data.lineBarsData.length;
+        barIndex++
+      )
+        LineBarSpot(
+          chart.data.lineBarsData[barIndex],
+          barIndex,
+          chart.data.lineBarsData[barIndex].spots[2],
+        ),
+    ];
+    final items = tooltipData.getTooltipItems(spots);
+    expect(items, hasLength(spots.length));
+    expect(items.skip(1), everyElement(isNull));
+    final item = items.first!;
+    expect(item.text, contains('Wed 6'));
+    expect(item.text, contains('€6.00'));
+    final rows = item.children!.map((span) => span.toPlainText()).join();
+    expect(rows, contains('Agents  €5.00'));
+    expect(rows, contains('Research  €1.00'));
+    expect(rows.indexOf('Agents'), lessThan(rows.indexOf('Research')));
   });
 
   testWidgets('title follows the selected metric', (tester) async {
@@ -184,7 +234,7 @@ void main() {
       );
       await pumpCard(tester, chartData: chartData);
 
-      expect(find.text('Per week'), findsOneWidget);
+      expect(find.text('Per week'), findsWidgets);
       expect(find.text('Per day'), findsNothing);
       // No elapsed bucket → the chart still draws the whole range.
       final chart = tester.widget<BarChart>(find.byType(BarChart));

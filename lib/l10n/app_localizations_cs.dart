@@ -1259,6 +1259,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiConsumptionLedgerTitle => 'Nedávná volání';
 
   @override
+  String get aiConsumptionMetricsNotReported => 'Nenahlášeno';
+
+  @override
   String aiConsumptionTokensLabel(String tokens) {
     return '$tokens tokenů';
   }
@@ -5517,15 +5520,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get imageViewerDownloadFailed => 'Obrázek se nepodařilo uložit';
 
   @override
+  String get imageViewerDownloadingTooltip => 'Ukládám obrázek';
+
+  @override
   String imageViewerDownloadSaved(String fileName) {
     return 'Uloženo $fileName do Stažené/Lotti';
   }
 
   @override
   String get imageViewerDownloadTooltip => 'Stáhnout obrázek';
-
-  @override
-  String get imageViewerDownloadingTooltip => 'Ukládám obrázek';
 
   @override
   String get inactiveLabel => 'Neaktivní';

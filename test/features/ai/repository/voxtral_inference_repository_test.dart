@@ -163,6 +163,51 @@ void main() {
         );
       });
 
+      test('should emit token usage from a usage-only SSE chunk', () async {
+        // Arrange - common OpenAI-compatible streaming shape: text chunks
+        // first, then final accounting with no content delta.
+        final events = [
+          createSseChunkEvent(content: 'Transcribed text.'),
+          {
+            'id': 'chatcmpl-usage',
+            'object': 'chat.completion.chunk',
+            'created': 1234567890,
+            'model': 'test-model',
+            'choices': <dynamic>[],
+            'usage': {
+              'prompt_tokens': 42,
+              'completion_tokens': 9,
+              'total_tokens': 51,
+            },
+          },
+        ];
+
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
+
+        // Act
+        final results = await repository
+            .transcribeAudio(
+              model: model,
+              audioBase64: audioBase64,
+              baseUrl: baseUrl,
+              prompt: prompt,
+            )
+            .toList();
+
+        // Assert
+        expect(results.length, 2);
+        expect(
+          results.first.choices?.first.delta?.content,
+          equals('Transcribed text.'),
+        );
+        expect(results.last.choices, isEmpty);
+        expect(results.last.usage?.promptTokens, 42);
+        expect(results.last.usage?.completionTokens, 9);
+        expect(results.last.usage?.totalTokens, 51);
+      });
+
       test('should use custom max completion tokens', () async {
         // Arrange
         final events = [
@@ -532,6 +577,7 @@ data: [DONE]
             'id': 'chatcmpl-test',
             'object': 'chat.completion',
             'created': 1234567890,
+            'model': 'test-model',
             'choices': [
               {
                 'index': 0,
@@ -542,6 +588,11 @@ data: [DONE]
                 'finish_reason': 'stop',
               },
             ],
+            'usage': {
+              'prompt_tokens': 21,
+              'completion_tokens': 7,
+              'total_tokens': 28,
+            },
           };
 
           when(
@@ -572,6 +623,9 @@ data: [DONE]
             equals('Transcribed text.'),
           );
           expect(results[0].id, equals('chatcmpl-test'));
+          expect(results[0].usage?.promptTokens, 21);
+          expect(results[0].usage?.completionTokens, 7);
+          expect(results[0].usage?.totalTokens, 28);
 
           // Verify request body has stream: false
           final captured = verify(

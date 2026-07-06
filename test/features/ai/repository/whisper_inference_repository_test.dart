@@ -127,6 +127,40 @@ void main() {
         expect(response.choices?[0].delta?.content, equals(transcribedText));
       });
 
+      test('passes through token usage when the endpoint reports it', () async {
+        // Arrange
+        stubPost(
+          body: jsonEncode({
+            'text': 'Transcribed text',
+            'usage': {
+              'prompt_tokens': 12,
+              'completion_tokens': 8,
+              'total_tokens': 20,
+              'prompt_tokens_details': {'cached_tokens': 3},
+              'completion_tokens_details': {'reasoning_tokens': 2},
+            },
+          }),
+        );
+
+        // Act
+        final response = await repository
+            .transcribeAudio(
+              model: model,
+              audioBase64: audioBase64,
+              baseUrl: baseUrl,
+              prompt: prompt,
+            )
+            .first;
+
+        // Assert
+        expect(response.choices?[0].delta?.content, equals('Transcribed text'));
+        expect(response.usage?.promptTokens, 12);
+        expect(response.usage?.completionTokens, 8);
+        expect(response.usage?.totalTokens, 20);
+        expect(response.usage?.promptTokensDetails?.cachedTokens, 3);
+        expect(response.usage?.completionTokensDetails?.reasoningTokens, 2);
+      });
+
       test('throws TranscriptionException on HTTP error', () async {
         // Arrange
         stubPost(body: 'Internal Server Error', statusCode: 500);

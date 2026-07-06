@@ -151,7 +151,7 @@ flowchart TD
   Cat[categoriesStreamProvider] -->|id → CategoryDefinition| Body
   Body --> D1[impactTotalsInRange → ImpactKpiRow]
   Body --> D2[dailyMetricTotals + rankedImpactCategoryTotals → ImpactRankedTable]
-  Body --> D3[buildImpactChartData → ImpactChartCard]
+  Body --> D3[buildImpactChartData → ImpactChartCard<br/>per-bucket / cumulative]
   Body --> D4[ImpactCallLedger<br/>range-scoped]
   LP[consumptionLedgerProvider<br/>InsightsRange family] -->|newest calls| D4
   Toggle[DsSegmentedToggle<br/>Cost · Energy · CO₂e · Tokens] -->|local state| Body
@@ -175,9 +175,13 @@ The body is the single provider consumer; the children are dumb value widgets:
   day-keyed, so a 1-day range renders one day bucket. The Y axis snaps to a
   1/2/5 × 10ⁿ nice ceiling (`impactNiceCeiling`), not the Insights hour
   ladder.
-- **Chart** — `ui/widgets/impact_chart_card.dart`: fl_chart stacked bars,
-  axis/tooltip/legend all formatted through the metric lens; elapsed-buckets
-  trimming and a quiet today-bar edge, like the Insights chart.
+- **Chart** — `ui/widgets/impact_chart_card.dart`: a stateful fl_chart card
+  with the same mode switch as Time Analysis: per-bucket stacked bars or a
+  cumulative stacked area ("Running total") over elapsed buckets. Both modes use
+  the same ranked series, "Other" rollup, axis/tooltip/legend formatting through
+  the metric lens, elapsed-buckets trimming, and quiet today-bar edge / area
+  trimming rules as the Insights chart. Cumulative mode falls back to bars until
+  at least two elapsed buckets exist, so the toggle never produces a lone point.
 - **Category identity** — reuses `InsightsCategoryResolver` +
   `chartColorFor`/`swatchColorFor`, so both dashboards speak the same
   color/label language ("Uncategorized", "Other", "Deleted category").
@@ -189,7 +193,10 @@ The body is the single provider consumer; the children are dumb value widgets:
   `ConsumptionRepository.newestEventsInRange`, capped at
   `kConsumptionLedgerLimit` = 100 with an explicit "newest N" caption — never
   a silent truncation) itself, so the body integrates it as one child.
-  Unmeasured calls simply omit the cost/energy parts of the row.
+  Calls with tokens but no Melious impact omit cost/energy; calls whose provider
+  reports no token/cost/energy metrics (for example duration-only local
+  transcription endpoints) show "Not reported" rather than leaving the trailing
+  cell blank.
 - **keepPreviousData** — the buckets provider is year-window keyed; the body
   retains the last fully-loaded generation (buckets + the selection they
   cover) so window switches and failed refetches never flash a loading
@@ -243,9 +250,9 @@ Delivered and tested: the storage schema, repository, aggregation query layer,
 full Matrix sync integration, the Melious non-streaming impact-capture mechanism
 (`MeliousCallImpact` + `InferenceImpactCollector`), the `AiConsumptionRecorder`,
 end-to-end capture on the unified inference path, the skill runner, and
-task-agent turns, and the AI Impact dashboard (KPI row, stacked metric chart,
-ranked table, period stepper). The remaining agent workflows above are the
-follow-on work.
+task-agent turns, and the AI Impact dashboard (KPI row, per-bucket/cumulative
+metric chart, ranked table, period stepper, call ledger). The remaining agent
+workflows above are the follow-on work.
 
 ## Testing
 
@@ -257,9 +264,10 @@ follow-on work.
   ceiling expectations plus Glados properties (chart columns sum to range
   totals, monotone ranking, never-hourly granularity, ceiling bounds).
 - `test/features/ai_consumption/ui/` — widget tests for the KPI row, chart
-  card, ranked table, and the full body (provider-driven: stubbed repository
-  rows → formatter-exact KPI/table figures, metric toggle, empty state,
-  first-load error).
+  card (including cumulative running-total tooltip), ranked table, ledger
+  missing-metric fallback, and the full body (provider-driven: stubbed
+  repository rows → formatter-exact KPI/table figures, metric toggle, empty
+  state, first-load error).
 - `test/features/ai/model/ai_call_impact_test.dart` — the Melious impact
   contract parsing.
 - `test/features/sync/…` — `SyncMessage.consumptionEvent` round-trip, inbound
