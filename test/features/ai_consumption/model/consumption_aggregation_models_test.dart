@@ -210,6 +210,66 @@ void main() {
     );
   });
 
+  group('ConsumptionLocationKey', () {
+    test('normalizes data center ids and infers country prefixes', () {
+      final key = ConsumptionLocationKey.fromDataCenter(' fi-hel1 ');
+
+      expect(key.countryCode, 'FI');
+      expect(key.dataCenter, 'FI-HEL1');
+      expect(key, ConsumptionLocationKey.fromDataCenter('FI-HEL1'));
+      expect(
+        key.hashCode,
+        ConsumptionLocationKey.fromDataCenter('FI-HEL1').hashCode,
+      );
+    });
+
+    test('keeps unknown data-center formats without inventing a country', () {
+      final key = ConsumptionLocationKey.fromDataCenter('stockholm');
+
+      expect(key.countryCode, isNull);
+      expect(key.dataCenter, 'STOCKHOLM');
+    });
+  });
+
+  group('ConsumptionLocationMetrics', () {
+    test('energy-weights renewable percentage when energy is available', () {
+      const a = ConsumptionLocationMetrics(
+        metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 1),
+        renewablePercentSum: 80,
+        renewableSampleCount: 1,
+        renewableEnergyKwh: 0.01,
+        renewableWeightedPercentKwh: 0.8,
+      );
+      const b = ConsumptionLocationMetrics(
+        metrics: ConsumptionMetrics(energyKwh: 0.03, carbonGCo2: 3),
+        renewablePercentSum: 100,
+        renewableSampleCount: 1,
+        renewableEnergyKwh: 0.03,
+        renewableWeightedPercentKwh: 3,
+      );
+
+      final sum = a + b;
+      expect(sum.metrics.energyKwh, closeTo(0.04, 1e-12));
+      expect(sum.metrics.carbonGCo2, 4);
+      expect(sum.renewableSampleCount, 2);
+      expect(sum.renewablePercent, closeTo(95, 1e-12));
+    });
+
+    test('falls back to sample average when energy was not reported', () {
+      const metrics = ConsumptionLocationMetrics(
+        metrics: ConsumptionMetrics.zero,
+        renewablePercentSum: 120,
+        renewableSampleCount: 2,
+      );
+
+      expect(metrics.renewablePercent, 60);
+    });
+
+    test('returns null when no renewable sample was reported', () {
+      expect(ConsumptionLocationMetrics.zero.renewablePercent, isNull);
+    });
+  });
+
   group('ConsumptionDayBuckets', () {
     test('deep structural equality across independently built nested maps', () {
       final a = _makeBuckets();
@@ -249,6 +309,17 @@ void main() {
               20500: {
                 'work': _makeMetrics(),
                 null: _makeMetrics(callCount: 2),
+              },
+            },
+          ),
+          'location day': _makeBuckets(
+            locationDays: {
+              20500: {
+                ConsumptionLocationKey.fromDataCenter(
+                  'FI',
+                ): const ConsumptionLocationMetrics(
+                  metrics: ConsumptionMetrics(energyKwh: 0.5),
+                ),
               },
             },
           ),
@@ -456,6 +527,8 @@ ConsumptionTotals _totalsFromMetrics(
 ConsumptionDayBuckets _makeBuckets({
   int windowStartDay = 20500,
   Map<int, Map<String?, ConsumptionMetrics>>? days,
+  Map<int, Map<ConsumptionLocationKey, ConsumptionLocationMetrics>>?
+  locationDays,
 }) => ConsumptionDayBuckets(
   windowStartDay: windowStartDay,
   days:
@@ -467,6 +540,7 @@ ConsumptionDayBuckets _makeBuckets({
         },
         20501: {'play': _makeMetrics(inputTokens: 99)},
       },
+  locationDays: locationDays ?? const {},
 );
 
 /// One generated (day, category, metrics) row for bucket-equality properties.

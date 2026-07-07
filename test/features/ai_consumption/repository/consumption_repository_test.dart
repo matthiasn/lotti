@@ -212,6 +212,8 @@ void main() {
             createdAt: t1,
             categoryId: 'a',
             totalTokens: 100,
+            renewablePercent: 80,
+            dataCenter: 'FI-HEL1',
           ),
         );
         await repo.upsertEvent(
@@ -246,6 +248,9 @@ void main() {
           {for (final r in rows) r.categoryId: r.metrics.totalTokens},
           {'a': 100, 'b': 40},
         );
+        final first = rows.singleWhere((row) => row.categoryId == 'a');
+        expect(first.renewablePercent, 80);
+        expect(first.dataCenter, 'FI-HEL1');
       },
     );
 
@@ -285,6 +290,8 @@ void main() {
           energyKwh: null,
           carbonGCo2: null,
           waterLiters: null,
+          renewablePercent: null,
+          dataCenter: null,
         ),
       );
       final rows = await repo.metricRowsInRange(
@@ -296,6 +303,8 @@ void main() {
       expect(metrics.totalTokens, 0);
       expect(metrics.energyKwh, 0);
       expect(metrics.callCount, 1);
+      expect(rows.single.renewablePercent, isNull);
+      expect(rows.single.dataCenter, isNull);
     });
   });
 

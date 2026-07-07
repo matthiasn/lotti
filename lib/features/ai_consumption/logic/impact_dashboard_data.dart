@@ -71,6 +71,50 @@ ConsumptionMetrics impactTotalsInRange(
   return total;
 }
 
+/// Total environmental impact by serving location across [range], descending
+/// by energy and then carbon. Only rows whose provider reported a data centre
+/// are present in [ConsumptionDayBuckets.locationDays], so token-only/local
+/// calls never create a misleading unknown-location bucket.
+List<MapEntry<ConsumptionLocationKey, ConsumptionLocationMetrics>>
+rankedImpactLocationTotals(
+  ConsumptionDayBuckets buckets,
+  InsightsRange range,
+) {
+  final totals = <ConsumptionLocationKey, ConsumptionLocationMetrics>{};
+  for (var day = range.startDay; day < range.endDayExclusive; day++) {
+    final cells = buckets.locationDays[day];
+    if (cells == null) continue;
+    cells.forEach((location, metrics) {
+      totals[location] =
+          (totals[location] ?? ConsumptionLocationMetrics.zero) + metrics;
+    });
+  }
+
+  final entries =
+      totals.entries
+          .where(
+            (e) =>
+                e.value.metrics.energyKwh > 0 || e.value.metrics.carbonGCo2 > 0,
+          )
+          .toList()
+        ..sort((a, b) {
+          final energy = b.value.metrics.energyKwh.compareTo(
+            a.value.metrics.energyKwh,
+          );
+          if (energy != 0) return energy;
+          final carbon = b.value.metrics.carbonGCo2.compareTo(
+            a.value.metrics.carbonGCo2,
+          );
+          if (carbon != 0) return carbon;
+          final country = (a.key.countryCode ?? '').compareTo(
+            b.key.countryCode ?? '',
+          );
+          if (country != 0) return country;
+          return a.key.dataCenter.compareTo(b.key.dataCenter);
+        });
+  return entries;
+}
+
 /// Builds chart-ready stacked series for [range] and [metric]: resolves
 /// granularity, aggregates weekly when needed, ranks categories, and rolls
 /// everything beyond the granularity's series cap into the Insights "Other"

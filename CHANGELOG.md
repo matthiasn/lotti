@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   usage when the server returns it in final accounting chunks, and transcription
   calls whose provider reports no token, cost or energy metrics are labelled
   instead of leaving a blank ledger row.
+- **AI Impact by serving location.** When the provider reports data-center
+  metadata, AI Impact now groups environmental impact by country/data center and
+  shows the renewable-energy share for each location.
 
 ## [0.9.1032]
 ### Added

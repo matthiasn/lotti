@@ -109,6 +109,78 @@ void main() {
     });
   });
 
+  group('rankedImpactLocationTotals', () {
+    test('folds location cells inside the range and sorts by energy', () {
+      final fi = ConsumptionLocationKey.fromDataCenter('FI-HEL1');
+      final se = ConsumptionLocationKey.fromDataCenter('SE');
+      final locationBuckets = ConsumptionDayBuckets(
+        windowStartDay: day0,
+        days: const {},
+        locationDays: {
+          day0: {
+            fi: const ConsumptionLocationMetrics(
+              metrics: ConsumptionMetrics(energyKwh: 0.02, carbonGCo2: 4),
+              renewablePercentSum: 80,
+              renewableSampleCount: 1,
+              renewableEnergyKwh: 0.02,
+              renewableWeightedPercentKwh: 1.6,
+            ),
+            se: const ConsumptionLocationMetrics(
+              metrics: ConsumptionMetrics(energyKwh: 0.05, carbonGCo2: 2),
+              renewablePercentSum: 100,
+              renewableSampleCount: 1,
+              renewableEnergyKwh: 0.05,
+              renewableWeightedPercentKwh: 5,
+            ),
+          },
+          day0 + 1: {
+            fi: const ConsumptionLocationMetrics(
+              metrics: ConsumptionMetrics(energyKwh: 0.04, carbonGCo2: 8),
+              renewablePercentSum: 100,
+              renewableSampleCount: 1,
+              renewableEnergyKwh: 0.04,
+              renewableWeightedPercentKwh: 4,
+            ),
+          },
+          day0 + 9: {
+            se: const ConsumptionLocationMetrics(
+              metrics: ConsumptionMetrics(energyKwh: 10, carbonGCo2: 10),
+            ),
+          },
+        },
+      );
+
+      final ranked = rankedImpactLocationTotals(locationBuckets, range3);
+
+      expect(ranked.map((e) => e.key).toList(), [fi, se]);
+      expect(ranked.first.value.metrics.energyKwh, closeTo(0.06, 1e-12));
+      expect(ranked.first.value.metrics.carbonGCo2, 12);
+      expect(
+        ranked.first.value.renewablePercent,
+        closeTo((1.6 + 4) / 0.06, 1e-12),
+      );
+      expect(ranked.last.value.metrics.energyKwh, 0.05);
+    });
+
+    test('drops locations that have no environmental totals', () {
+      final locationBuckets = ConsumptionDayBuckets(
+        windowStartDay: day0,
+        days: const {},
+        locationDays: {
+          day0: {
+            ConsumptionLocationKey.fromDataCenter(
+              'FI',
+            ): const ConsumptionLocationMetrics(
+              metrics: ConsumptionMetrics(totalTokens: 100),
+            ),
+          },
+        },
+      );
+
+      expect(rankedImpactLocationTotals(locationBuckets, range3), isEmpty);
+    });
+  });
+
   group('buildImpactChartData', () {
     test('a single-day range collapses hour granularity to one day bucket', () {
       final data = buildImpactChartData(

@@ -34,7 +34,7 @@
   <releases>
     <release version="0.9.1033" date="2026-07-07">
       <description>
-          <p>The AI Impact dashboard now includes a Running total chart mode for cumulative cost, energy, CO2e and token usage over the selected period. Voxtral transcription records token usage when the server returns it in final accounting chunks, and transcription calls whose provider reports no token, cost or energy metrics are labelled instead of leaving a blank ledger row.</p>
+          <p>The AI Impact dashboard now includes a Running total chart mode for cumulative cost, energy, CO2e and token usage over the selected period. Voxtral transcription records token usage when the server returns it in final accounting chunks, and transcription calls whose provider reports no token, cost or energy metrics are labelled instead of leaving a blank ledger row. When the provider reports data-center metadata, AI Impact now groups environmental impact by country/data center and shows the renewable-energy share for each location.</p>
       </description>
     </release>
     <release version="0.9.1032" date="2026-07-06">

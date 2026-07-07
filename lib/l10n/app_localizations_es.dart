@@ -1377,6 +1377,15 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudieron cargar los datos de impacto de IA';
 
   @override
+  String get aiImpactLocationColumn => 'UBICACIÓN';
+
+  @override
+  String get aiImpactLocationTitle => 'Impacto por ubicación';
+
+  @override
+  String get aiImpactLocationUnknown => 'Desconocido';
+
+  @override
   String get aiImpactMetricCarbon => 'CO₂e';
 
   @override
@@ -1387,6 +1396,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiImpactMetricTokens => 'Tokens';
+
+  @override
+  String get aiImpactRenewableColumn => 'RENOVABLE';
 
   @override
   String get aiImpactTitle => 'Impacto de IA';

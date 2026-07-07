@@ -10,6 +10,9 @@ ConsumptionMetricRow _row({
   String? categoryId,
   int totalTokens = 0,
   double energyKwh = 0,
+  double carbonGCo2 = 0,
+  String? dataCenter,
+  double? renewablePercent,
 }) {
   return ConsumptionMetricRow(
     createdAt: createdAt,
@@ -18,7 +21,10 @@ ConsumptionMetricRow _row({
       callCount: 1,
       totalTokens: totalTokens,
       energyKwh: energyKwh,
+      carbonGCo2: carbonGCo2,
     ),
+    dataCenter: dataCenter,
+    renewablePercent: renewablePercent,
   );
 }
 
@@ -100,7 +106,83 @@ void main() {
   test('empty input yields empty buckets', () {
     final buckets = bucketize([], windowStartDay: day);
     expect(buckets.days, isEmpty);
+    expect(buckets.locationDays, isEmpty);
     expect(buckets.windowStartDay, day);
+  });
+
+  test('aggregates reported data centers by day and location', () {
+    final buckets = bucketize(
+      [
+        _row(
+          createdAt: base,
+          categoryId: 'a',
+          energyKwh: 0.010,
+          carbonGCo2: 2,
+          dataCenter: 'fi-hel1',
+          renewablePercent: 80,
+        ),
+        _row(
+          createdAt: base.add(const Duration(hours: 1)),
+          categoryId: 'b',
+          energyKwh: 0.030,
+          carbonGCo2: 6,
+          dataCenter: 'FI-HEL1',
+          renewablePercent: 100,
+        ),
+        _row(
+          createdAt: base.add(const Duration(hours: 2)),
+          categoryId: 'b',
+          energyKwh: 0.900,
+          carbonGCo2: 99,
+        ),
+      ],
+      windowStartDay: day,
+    );
+
+    final location = ConsumptionLocationKey.fromDataCenter('FI-HEL1');
+    final metrics = buckets.locationDays[day]![location]!;
+
+    expect(metrics.metrics.energyKwh, closeTo(0.040, 1e-12));
+    expect(metrics.metrics.carbonGCo2, 8);
+    // Energy-weighted average: (0.010 * 80 + 0.030 * 100) / 0.040.
+    expect(metrics.renewablePercent, closeTo(95, 1e-12));
+    expect(buckets.locationDays[day], hasLength(1));
+  });
+
+  test('falls back to sample-average renewable share without energy', () {
+    final buckets = bucketize(
+      [
+        _row(createdAt: base, dataCenter: 'SE', renewablePercent: 40),
+        _row(
+          createdAt: base.add(const Duration(hours: 1)),
+          dataCenter: 'SE',
+          renewablePercent: 100,
+        ),
+      ],
+      windowStartDay: day,
+    );
+
+    final metrics = buckets
+        .locationDays[day]![ConsumptionLocationKey.fromDataCenter('SE')]!;
+    expect(metrics.renewablePercent, 70);
+  });
+
+  test('does not create location buckets for clipped or unreported rows', () {
+    final buckets = bucketize(
+      [
+        _row(
+          createdAt: base.subtract(const Duration(hours: 1)),
+          dataCenter: 'FI',
+          energyKwh: 0.01,
+        ),
+        _row(createdAt: base, energyKwh: 0.02),
+        _row(createdAt: base, dataCenter: '   ', energyKwh: 0.03),
+      ],
+      windowStartDay: day,
+    );
+
+    expect(buckets.locationDays, isEmpty);
+    expect(buckets.days[day], hasLength(1));
   });
 
   glados.Glados(

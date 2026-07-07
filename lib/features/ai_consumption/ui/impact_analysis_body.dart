@@ -8,6 +8,7 @@ import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_call_ledger.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_chart_card.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_kpi_row.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/impact_location_table.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_ranked_table.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
@@ -189,6 +190,7 @@ class _DashboardContent extends StatelessWidget {
     final isEmpty = totals == ConsumptionMetrics.zero;
     final daily = dailyMetricTotals(buckets, range, metric);
     final ranked = rankedImpactCategoryTotals(daily);
+    final locationTotals = rankedImpactLocationTotals(buckets, range);
     final chartData = buildImpactChartData(
       buckets,
       range,
@@ -265,6 +267,10 @@ class _DashboardContent extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.sectionGap),
         ImpactRankedTable(entries: ranked, resolver: resolver, metric: metric),
+        if (locationTotals.isNotEmpty) ...[
+          SizedBox(height: tokens.spacing.sectionGap),
+          ImpactLocationTable(entries: locationTotals),
+        ],
         SizedBox(height: tokens.spacing.sectionGap),
         // Per-call ledger: the newest individual calls in the same period.
         // Watches its own provider, so it rides the generation's range

@@ -2455,6 +2455,24 @@ abstract class AppLocalizations {
   /// **'Couldn\'t load AI impact data'**
   String get aiImpactLoadError;
 
+  /// No description provided for @aiImpactLocationColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'LOCATION'**
+  String get aiImpactLocationColumn;
+
+  /// No description provided for @aiImpactLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Impact by location'**
+  String get aiImpactLocationTitle;
+
+  /// No description provided for @aiImpactLocationUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get aiImpactLocationUnknown;
+
   /// No description provided for @aiImpactMetricCarbon.
   ///
   /// In en, this message translates to:
@@ -2478,6 +2496,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tokens'**
   String get aiImpactMetricTokens;
+
+  /// No description provided for @aiImpactRenewableColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'RENEWABLE'**
+  String get aiImpactRenewableColumn;
 
   /// No description provided for @aiImpactTitle.
   ///

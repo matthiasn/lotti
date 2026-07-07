@@ -1371,6 +1371,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactLoadError => 'Data o dopadu AI se nepodařilo načíst';
 
   @override
+  String get aiImpactLocationColumn => 'LOKACE';
+
+  @override
+  String get aiImpactLocationTitle => 'Dopad podle lokace';
+
+  @override
+  String get aiImpactLocationUnknown => 'Neznámé';
+
+  @override
   String get aiImpactMetricCarbon => 'CO₂e';
 
   @override
@@ -1381,6 +1390,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiImpactMetricTokens => 'Tokeny';
+
+  @override
+  String get aiImpactRenewableColumn => 'OBNOVITELNÉ';
 
   @override
   String get aiImpactTitle => 'Dopad AI';

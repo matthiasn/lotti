@@ -1385,6 +1385,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Datele despre impactul AI nu au putut fi încărcate';
 
   @override
+  String get aiImpactLocationColumn => 'LOCAȚIE';
+
+  @override
+  String get aiImpactLocationTitle => 'Impact pe locație';
+
+  @override
+  String get aiImpactLocationUnknown => 'Necunoscut';
+
+  @override
   String get aiImpactMetricCarbon => 'CO₂e';
 
   @override
@@ -1395,6 +1404,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiImpactMetricTokens => 'Tokenuri';
+
+  @override
+  String get aiImpactRenewableColumn => 'REGENERABIL';
 
   @override
   String get aiImpactTitle => 'Impact AI';

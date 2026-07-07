@@ -1385,6 +1385,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de charger les données d\'impact IA';
 
   @override
+  String get aiImpactLocationColumn => 'LIEU';
+
+  @override
+  String get aiImpactLocationTitle => 'Impact par lieu';
+
+  @override
+  String get aiImpactLocationUnknown => 'Inconnu';
+
+  @override
   String get aiImpactMetricCarbon => 'CO₂e';
 
   @override
@@ -1395,6 +1404,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiImpactMetricTokens => 'Tokens';
+
+  @override
+  String get aiImpactRenewableColumn => 'RENOUVELABLE';
 
   @override
   String get aiImpactTitle => 'Impact IA';

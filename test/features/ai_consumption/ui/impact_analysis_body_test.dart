@@ -115,6 +115,8 @@ void main() {
     double energyKwh = 0,
     double carbonGCo2 = 0,
     int totalTokens = 0,
+    String? dataCenter,
+    double? renewablePercent,
   }) => ConsumptionMetricRow(
     createdAt: DateTime(2026, 6, day, 10),
     categoryId: categoryId,
@@ -125,6 +127,8 @@ void main() {
       energyKwh: energyKwh,
       carbonGCo2: carbonGCo2,
     ),
+    dataCenter: dataCenter,
+    renewablePercent: renewablePercent,
   );
 
   // Credits picked so no table/KPI string collides with a chart axis tick:
@@ -138,6 +142,8 @@ void main() {
       energyKwh: 0.02,
       carbonGCo2: 5,
       totalTokens: 1000,
+      dataCenter: 'FI-HEL1',
+      renewablePercent: 80,
     ),
     row(
       day: 6,
@@ -146,6 +152,8 @@ void main() {
       energyKwh: 0.01,
       carbonGCo2: 2.5,
       totalTokens: 500,
+      dataCenter: 'SE',
+      renewablePercent: 100,
     ),
     row(
       day: 4,
@@ -183,6 +191,17 @@ void main() {
       expect(find.text('Uncategorized'), findsWidgets);
       expect(find.text('€0.15'), findsNWidgets(2));
       expect(find.text('25%'), findsNWidgets(2));
+
+      // Location table: rows with provider-reported data centers are folded
+      // by serving location and render energy, carbon, and renewable share.
+      expect(find.text('Impact by location'), findsOneWidget);
+      expect(find.text('FI'), findsOneWidget);
+      expect(find.text('FI-HEL1'), findsOneWidget);
+      expect(find.text('SE'), findsOneWidget);
+      expect(find.text(formatEnergyKwh(0.02)), findsWidgets);
+      expect(find.text(formatCarbonGrams(5)), findsWidgets);
+      expect(find.text('80%'), findsOneWidget);
+      expect(find.text('100%'), findsOneWidget);
     },
   );
 
