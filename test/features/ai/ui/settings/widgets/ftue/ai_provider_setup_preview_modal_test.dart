@@ -75,8 +75,9 @@ void main() {
         preset.models.map((model) => model.providerModelId),
         containsAll([
           meliousMistralSmall4119BInstructModelId,
-          meliousDeepseekV4ProModelId,
+          meliousGlm52ModelId,
           meliousFlux2Klein9BModelId,
+          meliousVoxtralSmall24B2507ModelId,
           meliousWhisperLargeV3TurboModelId,
           meliousWhisperLargeV3ModelId,
         ]),

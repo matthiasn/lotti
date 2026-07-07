@@ -885,7 +885,53 @@ void main() {
         expect(request.headers['Authorization'], 'Bearer $apiKey');
         expect(request.fields['model'], 'openai/whisper-large-v3');
         expect(request.fields['response_format'], 'json');
+        // No dictionary terms -> no bias prompt field at all.
+        expect(request.fields.containsKey('prompt'), isFalse);
         expect(request.files.single.filename, 'audio.m4a');
+      },
+    );
+
+    test(
+      'transcribeAudio forwards speech-dictionary terms as the OpenAI '
+      'prompt field, trimmed, de-blanked, and capped at 100 terms',
+      () async {
+        http.BaseRequest? captured;
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient.streaming((request, _) async {
+            captured = request;
+            return http.StreamedResponse(
+              Stream.value(utf8.encode(jsonEncode({'text': 'hallo'}))),
+              200,
+            );
+          }),
+        );
+        addTearDown(repository.close);
+
+        await repository
+            .transcribeAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              contextBiasTerms: [
+                '  Lotti ',
+                '',
+                'Voxtral',
+                for (var i = 0; i < 120; i++) 'term-$i',
+              ],
+            )
+            .toList();
+
+        final request = captured! as http.MultipartRequest;
+        final prompt = request.fields['prompt']!;
+        final terms = prompt.split(', ');
+        expect(terms.length, 100);
+        expect(terms.first, 'Lotti');
+        expect(terms[1], 'Voxtral');
+        expect(terms, isNot(contains('')));
+        expect(terms, contains('term-0'));
+        // Terms beyond the 100-term cap are dropped from the tail.
+        expect(terms, isNot(contains('term-99')));
       },
     );
 

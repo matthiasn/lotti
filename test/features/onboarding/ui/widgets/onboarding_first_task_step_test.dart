@@ -238,11 +238,12 @@ void main() {
       await tester.pump();
 
       // The created beat shows the task inside the panel — the host has not
-      // been handed anything yet.
+      // been handed anything yet. The card is title-only; the structured
+      // checklist surfaces as proposals on the task page, not here.
       expect(find.text('Your first task is ready'), findsOneWidget);
       expect(find.text('Car & health errands'), findsOneWidget);
-      expect(find.text('Call the dentist'), findsOneWidget);
-      expect(find.text('Book the car service'), findsOneWidget);
+      expect(find.text('Call the dentist'), findsNothing);
+      expect(find.text('Book the car service'), findsNothing);
       expect(created, isEmpty);
 
       // Tapping the card is the handoff.
@@ -289,8 +290,51 @@ void main() {
         audioId: null,
       ),
     ).called(1);
+    // The typed path is not a voice capture: it records typedCaptureUsed, not
+    // firstAudioCaptured, so the voice-adoption funnel metric isn't inflated.
+    verify(
+      () => metrics.recordEvent(
+        OnboardingEventName.typedCaptureUsed,
+        provider: providerName,
+      ),
+    ).called(1);
+    verifyNever(
+      () => metrics.recordEvent(
+        OnboardingEventName.firstAudioCaptured,
+        provider: any(named: 'provider'),
+      ),
+    );
     await tapCreatedCard(tester);
     expect(created, ['suggested-task']);
+  });
+
+  testWidgets('a double-tap on the created card hands off only once', (
+    tester,
+  ) async {
+    stubStructuring(realAha());
+    final created = <String>[];
+    await pumpStep(tester, onTaskCreated: created.add);
+
+    controller.emit(
+      const CaptureState(
+        phase: CapturePhase.captured,
+        transcript: transcript,
+        amplitudes: <double>[],
+        audioId: 'audio-1',
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // Two rapid taps before the host can tear the panel down — the latch means
+    // only the first reaches onTaskCreated (a second pop would tear down the
+    // route beneath the modal).
+    final card = find.text('Car & health errands');
+    await tester.tap(card, warnIfMissed: false);
+    await tester.tap(card, warnIfMissed: false);
+    await tester.pump();
+
+    expect(created, ['task-1']);
   });
 
   testWidgets('a total structuring failure (no task) finishes onboarding', (

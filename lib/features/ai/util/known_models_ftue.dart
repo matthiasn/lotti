@@ -218,8 +218,9 @@ getMistralFtueKnownModels() {
 /// Model IDs used for Melious FTUE automation.
 const String ftueMeliousThinkingModelId =
     meliousMistralSmall4119BInstructModelId;
-const String ftueMeliousAdvancedThinkingModelId = meliousDeepseekV4ProModelId;
+const String ftueMeliousAdvancedThinkingModelId = meliousGlm52ModelId;
 const String ftueMeliousImageGenerationModelId = meliousFlux2Klein9BModelId;
+const String ftueMeliousVoxtralModelId = meliousVoxtralSmall24B2507ModelId;
 const String ftueMeliousWhisperModelId = meliousWhisperLargeV3ModelId;
 const String ftueMeliousWhisperTurboModelId = meliousWhisperLargeV3TurboModelId;
 
@@ -233,13 +234,15 @@ KnownModel? findMeliousKnownModel(String providerModelId) {
 
 /// Returns the KnownModel configurations needed for Melious FTUE.
 /// - Thinking/vision model for the default Melious profile
-/// - Advanced thinking model for the high-end slot
+/// - GLM 5.2 advanced thinking model for the high-end slot
 /// - Flux image generation model for cover art
-/// - Whisper Large v3 and Turbo for speech-to-text testing
+/// - Voxtral for context-aware speech-to-text (profile default)
+/// - Whisper Large v3 and Turbo as alternative speech-to-text models
 ({
   KnownModel thinking,
   KnownModel advancedThinking,
   KnownModel imageGeneration,
+  KnownModel voxtral,
   KnownModel whisper,
   KnownModel whisperTurbo,
 })?
@@ -251,12 +254,14 @@ getMeliousFtueKnownModels() {
   final imageGeneration = findMeliousKnownModel(
     ftueMeliousImageGenerationModelId,
   );
+  final voxtral = findMeliousKnownModel(ftueMeliousVoxtralModelId);
   final whisper = findMeliousKnownModel(ftueMeliousWhisperModelId);
   final whisperTurbo = findMeliousKnownModel(ftueMeliousWhisperTurboModelId);
 
   if (thinking == null ||
       advancedThinking == null ||
       imageGeneration == null ||
+      voxtral == null ||
       whisper == null ||
       whisperTurbo == null) {
     return null;
@@ -266,6 +271,7 @@ getMeliousFtueKnownModels() {
     thinking: thinking,
     advancedThinking: advancedThinking,
     imageGeneration: imageGeneration,
+    voxtral: voxtral,
     whisper: whisper,
     whisperTurbo: whisperTurbo,
   );

@@ -37,8 +37,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// ```
 ///
 /// On reaching [CapturePhase.captured] with a non-empty transcript the step
-/// records [OnboardingEventName.firstAudioCaptured] once, then calls the
-/// orchestrator exactly once per capture (guarded so it never double-fires).
+/// records the capture modality once — [OnboardingEventName.firstAudioCaptured]
+/// for the mic path, [OnboardingEventName.typedCaptureUsed] for the tapped or
+/// typed paths — then calls the orchestrator exactly once per capture (guarded
+/// so it never double-fires).
 /// When a real task lands, the step shows the created beat *inside* the panel
 /// — the task title + checklist as a tappable card — and only when the user
 /// taps it does the step hand the task id to [onTaskCreated], so the host pops
@@ -95,6 +97,11 @@ class _OnboardingFirstTaskStepState
   /// beat. Tapping the card hands [_createdTaskId] to the host.
   OnboardingCaptureResult? _created;
   String? _createdTaskId;
+
+  /// Latches on the first created-card tap so a fast double-tap can't hand the
+  /// task off twice — the host pops the modal on handoff, and a second pop
+  /// would tear down the route beneath it.
+  bool _handedOff = false;
 
   /// The area the structured task lands in. Pre-selected to the first created
   /// area; when more than one exists the user can re-pick via the destination
@@ -167,7 +174,6 @@ class _OnboardingFirstTaskStepState
       createdHeadline: messages.onboardingFirstTaskCreatedTitle,
       createdHint: messages.onboardingFirstTaskCreatedHint,
       createdTaskTitle: _created?.title ?? '',
-      createdChecklist: _created?.checklistItems ?? const [],
       categories: widget.categories,
       selectedCategoryId: _selectedCategoryId,
       onSelectCategory: (id) => setState(() => _selectedCategoryId = id),
@@ -184,8 +190,11 @@ class _OnboardingFirstTaskStepState
   /// The created card was tapped — hand the landed task to the host, which
   /// pops the modal and opens the real task page.
   void _onOpenTask() {
+    if (_handedOff) return;
     final taskId = _createdTaskId;
-    if (taskId != null) widget.onTaskCreated(taskId);
+    if (taskId == null) return;
+    _handedOff = true;
+    widget.onTaskCreated(taskId);
   }
 
   /// The transcript surfaced under the thinking shimmer. Falls back to the
@@ -251,9 +260,16 @@ class _OnboardingFirstTaskStepState
     // Telemetry is best-effort: a metrics DB failure must never kill this
     // (unawaited) future before the orchestrator runs — that would strand the
     // user on the thinking frame with `_structuring` stuck true.
+    //
+    // Record the capture modality by the presence of audio: only the mic path
+    // carries an [audioId]; the tapped-suggestion and "Rather type?" paths
+    // arrive with none. Counting those as a voice capture would inflate the
+    // funnel's voice-adoption metric, so they log the typed-capture event.
     try {
       await _metrics?.recordEvent(
-        OnboardingEventName.firstAudioCaptured,
+        audioId != null
+            ? OnboardingEventName.firstAudioCaptured
+            : OnboardingEventName.typedCaptureUsed,
         provider: widget.providerName,
       );
     } catch (_) {

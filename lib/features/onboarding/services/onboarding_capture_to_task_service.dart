@@ -1,15 +1,20 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/ai/services/auto_checklist_service.dart';
+import 'package:lotti/features/agents/service/task_agent_service.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/change_set_builder.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_task_structuring_service.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:uuid/uuid.dart';
@@ -49,18 +54,23 @@ class OnboardingCaptureResult {
 class OnboardingCaptureToTaskService {
   OnboardingCaptureToTaskService({
     required this._structuringService,
-    required this._autoChecklistService,
     required this._metricsRepository,
+    required this._categoryRepository,
+    required this._taskAgentService,
     PersistenceLogic? persistenceLogic,
     JournalRepository? journalRepository,
     DateTime Function()? clock,
   }) : _persistenceLogic = persistenceLogic ?? getIt<PersistenceLogic>(),
+       // `journalRepositoryProvider` is itself just `JournalRepository()` (the
+       // repo is stateless and resolves its DB via getIt), so this fallback is
+       // equivalent to the injected instance — not a divergent graph.
        _journalRepository = journalRepository ?? JournalRepository(),
        _clock = clock ?? DateTime.now;
 
   final OnboardingTaskStructuringService _structuringService;
-  final AutoChecklistService _autoChecklistService;
   final OnboardingMetricsRepository _metricsRepository;
+  final CategoryRepository _categoryRepository;
+  final TaskAgentService _taskAgentService;
   final PersistenceLogic _persistenceLogic;
   final JournalRepository _journalRepository;
   final DateTime Function() _clock;
@@ -192,15 +202,28 @@ class OnboardingCaptureToTaskService {
     );
   }
 
-  /// Creates the title-only task, then attaches the checklist and links the
-  /// captured audio entry (both best effort) so a checklist or link hiccup
-  /// degrades to a bare-title task rather than failing.
+  /// Creates the title-only task, then links the captured audio entry and
+  /// assigns the category's default agent — seeding the structured checklist
+  /// as pending proposals rather than committing it (see [_assignCategoryAgent]
+  /// / [_seedChecklistProposals]). All best effort, so a hiccup in any
+  /// follow-up step degrades to a bare-title task rather than failing.
   Future<Task?> _materialize({
     required String title,
     required List<String> items,
     required String categoryId,
     required String? audioId,
   }) async {
+    // Resolved through the repository, not EntitiesCacheService: the category
+    // was created moments ago in this same flow and the cache refreshes
+    // asynchronously off the notification stream. Best effort — the task must
+    // land even without profile inheritance or an agent.
+    CategoryDefinition? category;
+    try {
+      category = await _categoryRepository.getCategoryById(categoryId);
+    } catch (_) {
+      category = null;
+    }
+
     final now = _clock();
     final task = await _persistenceLogic.createTaskEntry(
       data: TaskData(
@@ -217,31 +240,11 @@ class OnboardingCaptureToTaskService {
         dateFrom: now,
         dateTo: now,
         estimate: Duration.zero,
+        profileId: category?.defaultProfileId,
       ),
       entryText: EntryText(plainText: title, markdown: title),
       categoryId: categoryId,
     );
-
-    if (task != null && items.isNotEmpty) {
-      // Best effort: a checklist hiccup must degrade to the bare-title task
-      // (already persisted above), not fail the whole capture.
-      try {
-        await _autoChecklistService.autoCreateChecklist(
-          taskId: task.id,
-          suggestions: [
-            for (final item in items)
-              ChecklistItemData(
-                title: item,
-                isChecked: false,
-                linkedChecklists: const [],
-              ),
-          ],
-          shouldAutoCreate: true,
-        );
-      } catch (_) {
-        // Keep the title-only task.
-      }
-    }
 
     if (task != null && audioId != null) {
       // Attach the spoken capture under the task, mirroring how in-task
@@ -260,7 +263,117 @@ class OnboardingCaptureToTaskService {
         // Keep the task without the audio link/category.
       }
     }
+
+    if (task != null) {
+      await _assignCategoryAgent(
+        task: task,
+        category: category,
+        items: items,
+        audioId: audioId,
+      );
+    }
     return task;
+  }
+
+  /// Spawns the category's default agent for [task], mirroring the
+  /// auto-assign hook on the normal task-creation path (`create_entry.dart`):
+  /// gated on the category carrying a `defaultTemplateId` (e.g. Laura), with
+  /// the category's default profile.
+  ///
+  /// Unlike the normal path — which creates the agent for a *blank* task and
+  /// must wait for content — the onboarding agent is created last, after the
+  /// title and transcribed audio have landed. So no `awaitContent` gate (whose
+  /// skipped wake would be dropped, leaving the agent inert on a task that
+  /// never gets edited again): the creation wake runs the first full turn right
+  /// away, and [audioId] rides along in the wake's trigger tokens so that turn
+  /// attends to the spoken capture exactly like the `transcriptionComplete`
+  /// wake after an in-task recording.
+  ///
+  /// Once the agent exists, [items] (the structured checklist) are seeded as
+  /// pending proposals under it via [_seedChecklistProposals], so the user
+  /// lands on a task page that is already alive — the checklist waiting as
+  /// confirmable suggestions ("Confirm all"), plus Laura's summary and any
+  /// suggestions from her concurrent wake, which merge into the same card.
+  ///
+  /// Best effort: the task must land even if agent creation fails.
+  Future<void> _assignCategoryAgent({
+    required Task task,
+    required CategoryDefinition? category,
+    required List<String> items,
+    required String? audioId,
+  }) async {
+    final templateId = category?.defaultTemplateId;
+    if (category == null || templateId == null) return;
+    try {
+      final identity = await _taskAgentService.createTaskAgent(
+        taskId: task.id,
+        templateId: templateId,
+        profileId: category.defaultProfileId,
+        allowedCategoryIds: {category.id},
+        additionalWakeTokens: {?audioId},
+      );
+      await _seedChecklistProposals(
+        agentId: identity.agentId,
+        taskId: task.id,
+        items: items,
+      );
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to auto-assign agent for onboarding task ${task.id}: $e',
+        name: 'OnboardingCaptureToTaskService',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Seeds the structured checklist as **pending proposals** under [agentId] on
+  /// [taskId], so the user confirms them — individually or via "Confirm all" —
+  /// on the task page, in the same proposal card Laura's own suggestions render
+  /// in, rather than the items being silently auto-committed.
+  ///
+  /// Built with the same [ChangeSetBuilder] a wake uses: an
+  /// `add_multiple_checklist_items` batch is exploded into one pending
+  /// `add_checklist_item` proposal per line ([ChangeSetBatchExplosion]), then
+  /// persisted via the task agent's own `AgentSyncService`. Two or more items
+  /// surface the "Confirm all" button; a lone item still shows as one
+  /// confirmable row. The agent's concurrent creation wake merges any
+  /// overlapping items into this same card, so the user never sees duplicates.
+  ///
+  /// Best effort: a seeding hiccup degrades to the bare-title task the agent
+  /// still populates on its wake, never failing the capture. No-op when there
+  /// is nothing to propose.
+  Future<void> _seedChecklistProposals({
+    required String agentId,
+    required String taskId,
+    required List<String> items,
+  }) async {
+    if (items.isEmpty) return;
+    try {
+      final builder = ChangeSetBuilder(
+        agentId: agentId,
+        taskId: taskId,
+        threadId: _uuid.v4(),
+        runKey: _uuid.v4(),
+      );
+      await builder.addBatchItem(
+        toolName: TaskAgentToolNames.addMultipleChecklistItems,
+        args: {
+          'items': [
+            for (final item in items) {'title': item},
+          ],
+        },
+        summaryPrefix: 'Add',
+      );
+      await builder.build(_taskAgentService.syncService);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to seed checklist proposals for onboarding task $taskId: $e',
+        name: 'OnboardingCaptureToTaskService',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   /// Derives a usable task title from a raw transcript: the first sentence,
@@ -288,10 +401,9 @@ final onboardingCaptureToTaskServiceProvider =
     Provider<OnboardingCaptureToTaskService>(
       (ref) => OnboardingCaptureToTaskService(
         structuringService: ref.watch(onboardingTaskStructuringServiceProvider),
-        autoChecklistService: AutoChecklistService(
-          checklistRepository: ref.watch(checklistRepositoryProvider),
-        ),
         metricsRepository: getIt<OnboardingMetricsRepository>(),
+        categoryRepository: ref.watch(categoryRepositoryProvider),
+        taskAgentService: ref.watch(taskAgentServiceProvider),
         journalRepository: ref.watch(journalRepositoryProvider),
       ),
     );

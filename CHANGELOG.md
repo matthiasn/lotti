@@ -107,9 +107,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ready to talk. Your words become a structured task with a checklist, revealed
   right there in the panel as a glowing card ("Your first task is ready");
   tapping it lands you straight on that task — already in progress, in the
-  area you picked, with your original voice recording attached to it. Areas
-  you already have (like an existing "Work" category) are reused instead of
-  duplicated. A "Rather type?" path, a one-tap retry, and a soft-landing
+  area you picked, with your original voice recording attached to it, and with
+  Laura, the default task agent, already assigned and immediately at work —
+  her first pass over your words lands as a summary with suggestions for you
+  to confirm, just like after recording a voice note inside a task. Every area you pick during onboarding
+  gets Laura as its default agent, so later tasks in those areas get an agent
+  too. Areas you already have (like an existing "Work" category) are reused
+  instead of duplicated — rewired to the new provider, but keeping any agent
+  template you had chosen yourself. A "Rather type?" path, a one-tap retry, and a soft-landing
   title-only task when structuring fails keep it robust, and the whole flow
   honors reduce motion.
 - A first-class **Events** experience (behind the "Enable Events" flag in
@@ -140,8 +145,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   static list. Large live catalogs are searchable in the Available Models
   section instead of expanding into one long page. New Melious setups also seed a
   ready-to-use default profile with Mistral Small 4 119B Instruct for thinking
-  and image recognition, DeepSeek V4 Pro for advanced thinking, Flux 2 Klein 9B
-  for image generation, and Whisper Large v3 for transcription.
+  and image recognition, GLM 5.2 (a 1M-token-context reasoning model) as the
+  high-end thinking option, Flux 2 Klein 9B for image generation, and Voxtral
+  Small 24B for transcription — a speech-recognition model that takes your
+  category's speech dictionary into account, so names and domain vocabulary
+  come out right where Whisper guessed. Whisper Large v3 and Turbo are still
+  created alongside for easy switching, and existing untouched Melious
+  profiles move to the new GLM 5.2 and Voxtral defaults automatically.
+- Deleting an AI provider and reconnecting it later no longer leaves its
+  profile silently broken. The seeded profile used to keep pointing at the
+  deleted provider's model entries, so everything that resolves through it —
+  structuring your first task, transcription, and agents like Laura — failed
+  with "no inference provider configured" even after you added the provider
+  back. Broken profile entries now heal automatically: on every app start and
+  immediately after connecting a provider (in onboarding or settings), so
+  your first capture works seconds after the key step. Model choices you made
+  yourself are never touched — only pointers that lead nowhere are repaired.
 - oMLX can now be used for local Whisper Large v3 transcription on Apple
   Silicon. The oMLX model catalog includes Whisper Large v3, Whisper Large v3
   MLX, and Whisper Large v3 Turbo as audio-to-text models, and selecting one

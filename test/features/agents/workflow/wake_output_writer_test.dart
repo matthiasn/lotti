@@ -282,6 +282,40 @@ void main() {
       // No report means the head read is skipped entirely.
       verifyNever(() => repo.getReportHead(any(), any()));
     });
+
+    test('strips internal entity ids the model echoed into the report, '
+        'tldr, one-liner, and embedded content', () async {
+      when(
+        () => repo.getReportHead(_agentId, AgentReportScopes.current),
+      ).thenAnswer((_) async => null);
+
+      final result = await run(
+        reportContent:
+            '## 📌 What is left to do\n'
+            '- [ ] Ship the API (id: 6af9c4b0-7a1d-11f1-aaec-bffd4abbb1e1)',
+        reportTldr:
+            'API work remains (id: 6afd6e30-7a1d-11f1-aaec-bffd4abbb1e1)',
+        reportOneLiner: 'Ship it (id: 6b0361a0-7a1d-11f1-aaec-bffd4abbb1e1)',
+        uuid: _SequentialUuid(['report-id', 'head-id']),
+      );
+
+      final report = verify(() => sync.upsertEntity(captureAny())).captured
+          .cast<AgentDomainEntity>()
+          .whereType<AgentReportEntity>()
+          .single;
+      expect(
+        report.content,
+        '## 📌 What is left to do\n- [ ] Ship the API',
+      );
+      expect(report.tldr, 'API work remains');
+      expect(report.oneLiner, 'Ship it');
+      // The embed payload carries the sanitized text so the vector matches
+      // what the user reads.
+      expect(
+        result!.reportContent,
+        '## 📌 What is left to do\n- [ ] Ship the API',
+      );
+    });
   });
 
   group('observations', () {

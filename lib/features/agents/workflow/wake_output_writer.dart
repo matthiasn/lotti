@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:uuid/uuid.dart';
@@ -108,7 +109,19 @@ class WakeOutputWriter {
       }
 
       // 9. Extract and persist updated report (from update_report tool call).
-      if (reportContent.isNotEmpty) {
+      // Strip any internal entity ids the model echoed into the user-facing
+      // report — the task context hands it each checklist item's real id (for
+      // tool calls), and weaker models copy those into the prose. Applies to
+      // every wake regardless of the agent's baked directive, so already
+      // created agents are cleaned too.
+      final sanitizedContent = sanitizeAgentReportText(reportContent);
+      final sanitizedTldr = reportTldr == null
+          ? null
+          : sanitizeAgentReportText(reportTldr);
+      final sanitizedOneLiner = reportOneLiner == null
+          ? null
+          : sanitizeAgentReportText(reportOneLiner);
+      if (sanitizedContent.isNotEmpty) {
         final reportId = _idGen.v4();
 
         await _sync.upsertEntity(
@@ -118,9 +131,9 @@ class WakeOutputWriter {
             scope: AgentReportScopes.current,
             createdAt: now,
             vectorClock: null,
-            content: reportContent,
-            tldr: reportTldr,
-            oneLiner: reportOneLiner,
+            content: sanitizedContent,
+            tldr: sanitizedTldr,
+            oneLiner: sanitizedOneLiner,
             threadId: threadId,
           ),
         );
@@ -143,10 +156,11 @@ class WakeOutputWriter {
           ),
         );
 
-        // Capture report details for post-transaction embedding.
+        // Capture report details for post-transaction embedding. Embeds the
+        // sanitized text so the vector matches what the user actually reads.
         reportToEmbed = (
           reportId: reportId,
-          reportContent: reportContent,
+          reportContent: sanitizedContent,
           taskId: taskId,
           previousReportId: existingHead?.reportId,
         );

@@ -18,15 +18,18 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Width threshold below which the proposal row drops its explicit
-/// confirm/reject buttons. The whole row stays swipeable (right →
-/// confirm, left → dismiss); on narrow phones the chevron-style
-/// icon buttons just consume too much horizontal space and crowd the
-/// proposal text. Matches `AgentInternalsPanel.mobileBreakpoint` so
-/// the AI surface flips between compact and comfortable layouts at
-/// the same screen size.
+/// Width threshold below which the proposal row switches from chip-beside-text
+/// to stacking its kind chip above the full-width proposal text. Measured
+/// against the row's **own available width** (via a `LayoutBuilder` in
+/// [ProposalRowContent])
+/// so a narrow resizable task pane on a wide desktop stacks too — a screen-width
+/// check alone kept that pane in the cramped beside layout. [isCompactWidth]
+/// (screen width) is retained as a fallback that still flips phones and covers
+/// unbounded constraints. Matches `AgentInternalsPanel.mobileBreakpoint`.
 const double _proposalRowCompactWidth = 600;
 
+/// Screen-width compact check, kept as the fallback signal for the proposal
+/// row's adaptive layout — the primary signal is the row's own constraints.
 bool isCompactWidth(BuildContext context) =>
     MediaQuery.sizeOf(context).width < _proposalRowCompactWidth;
 
@@ -937,36 +940,50 @@ class ProposalRowContent extends StatelessWidget {
       ),
     );
 
-    if (isCompactWidth(context)) {
-      // Narrow viewports: kind chip + trailing actions on the first line, then
-      // full-width text below. The whole row also stays swipeable (right =
-      // confirm, left = dismiss) — the buttons are an additional, visible
-      // affordance so the action isn't swipe-only-and-hidden.
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              KindChip(meta: meta),
-              const Spacer(),
-              _trailing(),
-            ],
-          ),
-          SizedBox(height: tokens.spacing.step2),
-          textWidget,
-        ],
-      );
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Decide on the width actually available to the row, not the whole
+        // window: the task-detail card can sit in a narrow resizable pane on a
+        // wide desktop, where the screen check alone kept the cramped
+        // chip-beside-text layout. The screen check ([isCompactWidth]) stays as
+        // a fallback so phones still flip and unbounded constraints degrade
+        // gracefully.
+        final compact =
+            isCompactWidth(context) ||
+            constraints.maxWidth < _proposalRowCompactWidth;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        KindChip(meta: meta),
-        SizedBox(width: tokens.spacing.step3),
-        Expanded(child: textWidget),
-        SizedBox(width: tokens.spacing.step3),
-        _trailing(),
-      ],
+        if (compact) {
+          // Narrow: kind chip + trailing actions on the first line, then
+          // full-width text below. The whole row also stays swipeable (right =
+          // confirm, left = dismiss) — the buttons are an additional, visible
+          // affordance so the action isn't swipe-only-and-hidden.
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  KindChip(meta: meta),
+                  const Spacer(),
+                  _trailing(),
+                ],
+              ),
+              SizedBox(height: tokens.spacing.step2),
+              textWidget,
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            KindChip(meta: meta),
+            SizedBox(width: tokens.spacing.step3),
+            Expanded(child: textWidget),
+            SizedBox(width: tokens.spacing.step3),
+            _trailing(),
+          ],
+        );
+      },
     );
   }
 }

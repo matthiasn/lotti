@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -21,6 +22,7 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dar
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 
 /// The seeded inference profile attached to categories created for a freshly
@@ -525,11 +527,16 @@ class _OnboardingCategoryStepState
           // must land somewhere the user's task views can show), and bind the
           // just-seeded inference profile so the first-task structuring can
           // actually run — the whole point of the area the user just picked.
+          // Laura becomes the default task-agent template only when no
+          // template is bound yet: a user-chosen template must survive.
           // `private` is deliberately left untouched: flipping it would
           // expose content the user chose to hide.
           var reusable = match.copyWith(deletedAt: null, active: true);
           if (profileId != null) {
             reusable = reusable.copyWith(defaultProfileId: profileId);
+            if (reusable.defaultTemplateId == null) {
+              reusable = reusable.copyWith(defaultTemplateId: lauraTemplateId);
+            }
           }
           final reused = await repository.updateCategory(reusable);
           created.add(
@@ -537,10 +544,14 @@ class _OnboardingCategoryStepState
           );
           continue;
         }
+        // Laura rides along with the profile so the first task (and every
+        // later task in this area) gets a task agent auto-assigned — the
+        // template only makes sense with a profile that can actually run it.
         final category = await repository.createCategory(
           name: label,
           color: _palette[i % _palette.length],
           defaultProfileId: profileId,
+          defaultTemplateId: profileId != null ? lauraTemplateId : null,
         );
         created.add(
           OnboardingCaptureCategory(id: category.id, label: category.name),
@@ -562,9 +573,16 @@ class _OnboardingCategoryStepState
         // Defensive: Continue is disabled until at least one area is selected.
         widget.onDone(); // coverage:ignore-line
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
       // A category write failure must not die silently under the Continue
-      // button — surface it so the user knows to retry.
+      // button — log it so a field failure is diagnosable, and surface a toast
+      // so the user knows to retry.
+      getIt<LoggingService>().captureException(
+        error,
+        domain: 'ONBOARDING',
+        subDomain: 'OnboardingCategoryStep.createCategories',
+        stackTrace: stackTrace,
+      );
       if (mounted) {
         context.showToast(
           tone: DesignSystemToastTone.error,

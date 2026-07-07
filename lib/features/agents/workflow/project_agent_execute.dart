@@ -304,10 +304,20 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       final finalContent = _extractFinalAssistantContent(manager);
       strategy.recordFinalResponse(finalContent);
 
-      // 9. Persist all wake outputs.
-      final reportContent = strategy.extractReportContent();
-      final reportTldr = strategy.extractReportTldr();
-      final reportOneLiner = strategy.extractReportOneLiner();
+      // 9. Persist all wake outputs. Strip any internal entity ids the model
+      // echoed into the report (the project context hands it real task ids for
+      // tool calls; weaker models copy them into the prose).
+      final reportContent = sanitizeAgentReportText(
+        strategy.extractReportContent(),
+      );
+      final rawTldr = strategy.extractReportTldr();
+      final reportTldr = rawTldr == null
+          ? null
+          : sanitizeAgentReportText(rawTldr);
+      final rawOneLiner = strategy.extractReportOneLiner();
+      final reportOneLiner = rawOneLiner == null
+          ? null
+          : sanitizeAgentReportText(rawOneLiner);
       final reportHealthBand = strategy.extractReportHealthBand();
       final reportHealthRationale = strategy.extractReportHealthRationale();
       final reportHealthConfidence = strategy.extractReportHealthConfidence();

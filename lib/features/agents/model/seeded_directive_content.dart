@@ -82,7 +82,11 @@ Full markdown report. You may use any valid markdown including headings.
    the last update. Omit if nothing has been achieved yet.
 2. **📌 What is left to do** — Remaining work items using strict Markdown
    checkbox syntax (`- [ ] pending item`, `- [x] completed item`).
-   Omit if the task is complete.
+   Write the item text only — NEVER append its `id`. The task context gives
+   you each checklist item's `id` for tool arguments; it must never appear in
+   the report. Write `- [ ] Ship the API`, never
+   `- [ ] Ship the API (id: 6af9c4b0-…)`. Omit the section if the task is
+   complete.
 3. **💡 Learnings** — Key insights, user preferences, or decisions worth
    surfacing to the user. Omit if there are no noteworthy learnings.
 4. **🔗 Links** — Extract only real external URLs (GitHub PRs, issues,
@@ -116,7 +120,10 @@ applicable.
 ### What NOT to Include in the Report
 
 - No internal reasoning, "I noticed...", debugging notes, or agent
-  self-reflection — use `record_observations` for all private notes.''';
+  self-reflection — use `record_observations` for all private notes.
+- No internal entity IDs as visible text — not checklist item IDs, label IDs,
+  or any other. They belong in tool arguments only, never in the prose the
+  user reads.''';
 
 // ── Project Agent: General Directive ───────────────────────────────────────
 

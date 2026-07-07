@@ -20,9 +20,10 @@ class MeliousFtueResult extends AiFtueResult {
 extension MeliousFtueSetup on ProviderPromptSetupService {
   /// Performs FTUE setup for Melious providers.
   ///
-  /// This verifies or creates the default thinking, advanced thinking, Flux
-  /// image-generation, and Whisper transcription models, then creates the
-  /// Melious test category bound to the default Melious profile.
+  /// This verifies or creates the default thinking, GLM 5.2 advanced
+  /// thinking, Flux image-generation, and Voxtral/Whisper transcription
+  /// models, then creates the Melious test category bound to the default
+  /// Melious profile.
   Future<MeliousFtueResult?> performMeliousFtueSetup({
     required BuildContext context,
     required WidgetRef ref,
@@ -71,6 +72,7 @@ extension MeliousFtueSetup on ProviderPromptSetupService {
           known: knownModels.imageGeneration,
           id: ftueMeliousImageGenerationModelId,
         ),
+        (known: knownModels.voxtral, id: ftueMeliousVoxtralModelId),
         (known: knownModels.whisper, id: ftueMeliousWhisperModelId),
         (known: knownModels.whisperTurbo, id: ftueMeliousWhisperTurboModelId),
       ],
@@ -85,6 +87,7 @@ extension MeliousFtueSetup on ProviderPromptSetupService {
         categoryName: ftueMeliousCategoryName,
         categoryColor: ftueMeliousCategoryColor,
         defaultProfileId: profileMeliousId,
+        defaultTemplateId: lauraTemplateId,
       );
     }
 

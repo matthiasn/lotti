@@ -53,6 +53,11 @@ class TaskAgentService {
   ///
   /// Returns the created [AgentIdentityEntity].
   ///
+  /// [additionalWakeTokens] are extra entity IDs merged into the creation
+  /// wake's trigger tokens — e.g. an already-transcribed audio entry, so the
+  /// agent's first turn attends to the spoken capture the same way a
+  /// `transcriptionComplete` wake would after an in-task recording.
+  ///
   /// Throws [StateError] if a Task Agent already exists for [taskId].
   Future<AgentIdentityEntity> createTaskAgent({
     required String taskId,
@@ -61,6 +66,7 @@ class TaskAgentService {
     String? profileId,
     String? displayName,
     bool awaitContent = false,
+    Set<String> additionalWakeTokens = const {},
   }) async {
     // Resolve template: use the provided ID or fall back to the first
     // available template from the repository.
@@ -168,7 +174,7 @@ class TaskAgentService {
       ..enqueueManualWake(
         agentId: identity.agentId,
         reason: WakeReason.creation.name,
-        triggerTokens: {taskId},
+        triggerTokens: {taskId, ...additionalWakeTokens},
       );
 
     domainLogger?.log(

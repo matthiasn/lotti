@@ -63,7 +63,13 @@ class AgentTestBench {
     this._isRunningOverride,
     this.suggestionListOverride,
     this._extraOverrides = const [],
+    this.width,
   });
+
+  /// Constrains the card to a fixed width, independent of the screen size in
+  /// [_mediaQueryData] — used to render the card as it appears inside a narrow
+  /// resizable task pane on a wide desktop.
+  final double? width;
 
   static const String taskId = 'task-001';
 
@@ -151,9 +157,19 @@ class AgentTestBench {
         ttsModelRepositoryProvider.overrideWithValue(FakeTtsModelRepository()),
         ..._extraOverrides,
       ],
-      child: const SingleChildScrollView(
-        child: AiSummaryCard(taskId: taskId),
-      ),
+      child: width == null
+          ? const SingleChildScrollView(
+              child: AiSummaryCard(taskId: taskId),
+            )
+          : Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: width,
+                child: const SingleChildScrollView(
+                  child: AiSummaryCard(taskId: taskId),
+                ),
+              ),
+            ),
     );
   }
 }

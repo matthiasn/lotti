@@ -255,7 +255,8 @@ void main() {
     });
 
     test(
-      'Melious profile wires thinking, high-end, vision, Flux Klein, and Whisper',
+      'Melious profile wires thinking, GLM 5.2 high-end, vision, Flux Klein, '
+      'and Voxtral',
       () async {
         final capturedConfigs = <AiConfig>[];
         when(
@@ -280,7 +281,7 @@ void main() {
         );
         expect(
           meliousProfile.thinkingHighEndModelId,
-          meliousDeepseekV4ProModelId,
+          meliousGlm52ModelId,
         );
         expect(
           meliousProfile.imageRecognitionModelId,
@@ -288,7 +289,7 @@ void main() {
         );
         expect(
           meliousProfile.transcriptionModelId,
-          meliousWhisperLargeV3ModelId,
+          meliousVoxtralSmall24B2507ModelId,
         );
         expect(
           meliousProfile.imageGenerationModelId,

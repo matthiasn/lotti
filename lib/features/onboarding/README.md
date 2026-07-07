@@ -157,14 +157,17 @@ per category* — instead of silently creating a throwaway category. The user
 multi-selects life areas (Work / Fitness / Family / Friends, or adds their own); a
 "Why areas?" disclosure explains the per-category-provider mechanism. On continue,
 each selected area becomes a real `CategoryDefinition` bound to the just-connected
-provider's seeded inference profile (`onboardingSeededProfileId`), so every chosen
-area can actually run inference. Category names are UNIQUE across **all** rows in
-the database — including soft-deleted, private-hidden, and archived ones — so the
-duplicate check consults the unfiltered set
+provider's seeded inference profile (`onboardingSeededProfileId`) **and** to Laura
+(`lauraTemplateId`) as its default task-agent template, so every chosen area can
+actually run inference and every task created in it — the onboarding first task
+included — gets a task agent auto-assigned. Category names are UNIQUE across
+**all** rows in the database — including soft-deleted, private-hidden, and
+archived ones — so the duplicate check consults the unfiltered set
 (`getAllCategoriesIncludingHidden`) and a matched area is **reused** rather than
 re-created: the row is resurrected (`deletedAt` cleared), re-activated, and
 rebound to the just-seeded inference profile so the first-task structuring can
-run; its `private` flag is deliberately left untouched. A residual write failure
+run; Laura is bound only when the row carries no template of its own, and its
+`private` flag is deliberately left untouched. A residual write failure
 surfaces as an error toast instead of a silently dead Continue button.
 
 `OnboardingCategoryView` renders the areas as a uniform two-column grid of chips
@@ -219,10 +222,13 @@ stateDiagram-v2
 
 The step maps the controller's `CapturePhase` onto the view's
 `OnboardingFirstTaskPhase` (prompt / listening / thinking / created). On
-reaching `captured` with a non-empty transcript it records
-`firstAudioCaptured` once, then calls the orchestrator **exactly once per
-capture** (guarded against double-fire), passing along the capture's
-`CaptureState.audioId` so the spoken recording is linked under the task. When
+reaching `captured` with a non-empty transcript it records the capture
+modality once — `firstAudioCaptured` for the mic path, `typedCaptureUsed` for
+the tapped-suggestion / typed paths (keyed on whether the capture carried an
+`audioId`, so the voice-adoption metric isn't inflated by no-mic captures) —
+then calls the orchestrator **exactly once per capture** (guarded against
+double-fire), passing along the capture's `CaptureState.audioId` so the spoken
+recording is linked under the task. When
 a real task lands the step reveals the **created beat** inside the panel — the
 task title + checklist as a glowing tappable card ("Your first task is
 ready"); tapping the card (or its "Tap your task to open it" hint) hands the
@@ -247,6 +253,24 @@ id to `onTaskCreated`, and the host pops the modal and deep-links to the
   `AutoChecklistService`) and emits the funnel events (`makeTaskTapped`, `realAha`,
   `structuringFailed`, `structuringFloorUsed`). On LLM failure it **soft-lands** on
   a title-only task (tagged `floor`, never counted as the real aha).
+- **The task gets an agent that goes straight to work** — mirroring the normal
+  creation path's `autoAssignCategoryAgent` hook, the service resolves the
+  destination category (through `CategoryRepository`, not the async-refreshed
+  cache — the category was created seconds earlier) and, when it carries a
+  `defaultTemplateId` (Laura, bound by the category step), spawns a task agent
+  via `TaskAgentService.createTaskAgent` with the category's default profile,
+  on the structured and floor paths alike. Unlike the normal path (blank task,
+  `awaitContent: true`), the onboarding agent is created *after* title,
+  checklist, and transcribed audio have landed, so it is **not**
+  content-awaiting — a skipped awaiting-content wake would be dropped and the
+  never-again-edited task would leave Laura permanently inert. The creation
+  wake runs the first full turn immediately, with the audio entry in its
+  trigger tokens (`additionalWakeTokens`) the way a `transcriptionComplete`
+  wake carries `{taskId, entryId}` after an in-task recording — so the user
+  lands on a task page that is already alive: Laura's summary card plus any
+  proposals pending their confirmation. The task also inherits the category's
+  `defaultProfileId` into `TaskData.profileId`. All best-effort: no agent
+  hiccup may cost the user the task.
 - **Audio travels with the task** — the capture controller persists the spoken
   recording as a `JournalAudio` entry (transcript attached); the orchestrator
   links that entry under the created task (`PersistenceLogic.createLink`) and

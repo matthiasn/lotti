@@ -40,7 +40,6 @@ void main() {
     String selectedCategoryId = 'c1',
     bool reduceMotion = true,
     String createdTaskTitle = '',
-    List<String> createdChecklist = const [],
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -68,7 +67,6 @@ void main() {
               createdHeadline: 'Your first task is ready',
               createdHint: 'Tap your task to open it',
               createdTaskTitle: createdTaskTitle,
-              createdChecklist: createdChecklist,
               categories: categories,
               selectedCategoryId: selectedCategoryId,
               onSelectCategory: categoryPicks.add,
@@ -228,24 +226,23 @@ void main() {
 
   group('created frame', () {
     const title = 'Plan my week';
-    const checklist = ['List priorities', 'Block focus time', 'Review Friday'];
 
     testWidgets(
-      'shows the task card with title, checklist and the open hint',
+      'shows a title-only card with the open hint (checklist is not '
+      'previewed — it lands as proposals on the task page)',
       (tester) async {
         await pumpView(
           tester,
           OnboardingFirstTaskPhase.created,
           createdTaskTitle: title,
-          createdChecklist: checklist,
         );
 
         expect(find.text('Your first task is ready'), findsOneWidget);
         expect(find.text(title), findsOneWidget);
-        for (final item in checklist) {
-          expect(find.text(item), findsOneWidget);
-        }
         expect(find.text('Tap your task to open it'), findsOneWidget);
+        // No checklist preview on the card — those items surface as confirmable
+        // proposals once the user opens the task.
+        expect(find.byIcon(Icons.radio_button_unchecked), findsNothing);
         // The composing/thinking furniture is gone — the card owns the panel.
         expect(find.text('Rather type?'), findsNothing);
         expect(find.byType(VoiceOrbZone), findsNothing);
@@ -253,25 +250,11 @@ void main() {
       },
     );
 
-    testWidgets('renders a title-only card when the checklist is empty', (
-      tester,
-    ) async {
-      await pumpView(
-        tester,
-        OnboardingFirstTaskPhase.created,
-        createdTaskTitle: title,
-      );
-
-      expect(find.text(title), findsOneWidget);
-      expect(find.byIcon(Icons.radio_button_unchecked), findsNothing);
-    });
-
     testWidgets('tapping the card fires onOpenTask', (tester) async {
       await pumpView(
         tester,
         OnboardingFirstTaskPhase.created,
         createdTaskTitle: title,
-        createdChecklist: checklist,
       );
 
       await tester.tap(find.text(title), warnIfMissed: false);
@@ -288,7 +271,6 @@ void main() {
         OnboardingFirstTaskPhase.created,
         reduceMotion: false,
         createdTaskTitle: title,
-        createdChecklist: checklist,
       );
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));

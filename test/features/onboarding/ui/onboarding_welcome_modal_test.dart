@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/onboarding/repository/onboarding_metrics_reposito
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -58,10 +60,18 @@ void main() {
       idGenerator: () => 'id-${idSeq++}',
       currentPlatform: () => 'testos',
     );
+    // The category step logs a write failure via getIt<LoggingService> before
+    // toasting; production registers it at startup, so mirror that here.
+    if (!getIt.isRegistered<LoggingService>()) {
+      getIt.registerSingleton<LoggingService>(LoggingService());
+    }
   });
 
   tearDown(() async {
     await db.close();
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
   });
 
   Widget host({VoidCallback? onDismiss}) {
@@ -414,6 +424,7 @@ void main() {
         name: 'Work',
         color: any(named: 'color'),
         defaultProfileId: profileLocalId,
+        defaultTemplateId: lauraTemplateId,
       ),
     ).called(1);
     verify(
@@ -421,6 +432,7 @@ void main() {
         name: 'Hobbies',
         color: any(named: 'color'),
         defaultProfileId: profileLocalId,
+        defaultTemplateId: lauraTemplateId,
       ),
     ).called(1);
 
@@ -450,7 +462,9 @@ void main() {
     // the modal is still up until the user taps it.
     expect(find.text('Your first task is ready'), findsOneWidget);
     expect(find.text('Plan the week'), findsOneWidget);
-    expect(find.text('Monday'), findsOneWidget);
+    // The checklist is deliberately NOT previewed on the created card — it
+    // lands on the task page as confirmable proposals instead.
+    expect(find.text('Monday'), findsNothing);
     expect(beamed, isEmpty);
 
     // Tapping the hint line (part of the card's tap target) pops the modal
@@ -545,6 +559,7 @@ void main() {
         name: 'Work',
         color: any(named: 'color'),
         defaultProfileId: any(named: 'defaultProfileId'),
+        defaultTemplateId: any(named: 'defaultTemplateId'),
       ),
     );
     verify(
@@ -552,10 +567,12 @@ void main() {
         name: 'Hobbies',
         color: any(named: 'color'),
         defaultProfileId: profileLocalId,
+        defaultTemplateId: lauraTemplateId,
       ),
     ).called(1);
 
-    // …resurrected, reactivated, and rebound to the seeded profile.
+    // …resurrected, reactivated, rebound to the seeded profile, and given
+    // Laura as the default task-agent template (it had none of its own).
     final updated =
         verify(
               () => mocks.catRepo.updateCategory(captureAny()),
@@ -565,6 +582,7 @@ void main() {
     expect(updated.deletedAt, isNull);
     expect(updated.active, isTrue);
     expect(updated.defaultProfileId, profileLocalId);
+    expect(updated.defaultTemplateId, lauraTemplateId);
 
     // …and the reused category is the pre-selected destination, so the
     // structured task lands in the user's real existing area.
@@ -597,6 +615,31 @@ void main() {
         audioId: null,
       ),
     ).called(1);
+  });
+
+  testWidgets('reusing a category preserves a user-chosen default agent '
+      'template instead of overwriting it with Laura', (tester) async {
+    final mocks = await driveToFirstTaskStep(
+      tester,
+      existingCategories: [
+        CategoryTestUtils.createTestCategory(
+          id: 'existing-work',
+          name: 'work',
+          defaultTemplateId: 'template-tom-001',
+        ),
+      ],
+    );
+
+    final updated =
+        verify(
+              () => mocks.catRepo.updateCategory(captureAny()),
+            ).captured.single
+            as CategoryDefinition;
+    expect(updated.id, 'existing-work');
+    // The profile is rebound (structuring must run), but the user's own
+    // template choice survives the reuse.
+    expect(updated.defaultProfileId, profileLocalId);
+    expect(updated.defaultTemplateId, 'template-tom-001');
   });
 
   testWidgets('a category write failure surfaces an error toast and keeps '

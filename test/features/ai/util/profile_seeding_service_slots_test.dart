@@ -8,8 +8,21 @@ import 'package:mocktail/mocktail.dart';
 
 import '../test_utils.dart';
 
-List<AiConfig> _meliousDefaultModelRows({bool includeLegacyFlux = false}) {
+List<AiConfig> _meliousDefaultModelRows({
+  bool includeLegacyFlux = false,
+  bool includeGlmAndVoxtral = false,
+}) {
   return [
+    if (includeGlmAndVoxtral) ...[
+      AiTestDataFactory.createTestModel(
+        id: 'model-melious-glm-5-2',
+        providerModelId: meliousGlm52ModelId,
+      ),
+      AiTestDataFactory.createTestModel(
+        id: 'model-melious-voxtral',
+        providerModelId: meliousVoxtralSmall24B2507ModelId,
+      ),
+    ],
     AiTestDataFactory.createTestModel(
       id: 'model-melious-mistral',
       providerModelId: meliousMistralSmall4119BInstructModelId,
@@ -697,6 +710,360 @@ void main() {
         expect(upgraded.id, profileMeliousId);
         expect(upgraded.transcriptionModelId, 'model-melious-whisper');
         expect(upgraded.imageGenerationModelId, 'model-melious-flux-klein-9b');
+      },
+    );
+
+    test(
+      'heals dangling default-profile slots after the owning provider was '
+      'deleted and a fresh one recreated the model rows',
+      () async {
+        // The provider that owned the profile's model rows was deleted
+        // (cascade-deleting the rows); a reconnected provider recreated the
+        // catalog under new row IDs. Every slot must be re-pointed.
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => _meliousDefaultModelRows(includeGlmAndVoxtral: true),
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileMeliousId,
+              name: 'Melious.ai',
+              thinkingModelId: 'dead-provider_mistral_small_4_119b_instruct',
+              thinkingHighEndModelId: 'dead-provider_deepseek_v4_pro',
+              imageRecognitionModelId:
+                  'dead-provider_mistral_small_4_119b_instruct',
+              transcriptionModelId: 'dead-provider_whisper_large_v3',
+              imageGenerationModelId: 'dead-provider_flux_2_klein_9b',
+              skillAssignments: const [
+                SkillAssignment(
+                  skillId: skillTranscribeContextId,
+                  automate: true,
+                ),
+                SkillAssignment(
+                  skillId: skillImageAnalysisContextId,
+                  automate: true,
+                ),
+              ],
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        final healed = captured.single as AiConfigInferenceProfile;
+
+        expect(healed.id, profileMeliousId);
+        expect(healed.thinkingModelId, 'model-melious-mistral');
+        expect(healed.imageRecognitionModelId, 'model-melious-mistral');
+        // Dangling slots heal straight to the *current* seed defaults.
+        expect(healed.thinkingHighEndModelId, 'model-melious-glm-5-2');
+        expect(healed.transcriptionModelId, 'model-melious-voxtral');
+        expect(healed.imageGenerationModelId, 'model-melious-flux-klein-9b');
+      },
+    );
+
+    test(
+      'never heals user-authored slots that still resolve to a live row',
+      () async {
+        final rows = [
+          ..._meliousDefaultModelRows(includeGlmAndVoxtral: true),
+          AiTestDataFactory.createTestModel(
+            id: 'my-custom-row',
+            providerModelId: 'my-custom-model',
+          ),
+        ];
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => rows);
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileMeliousId,
+              name: 'Melious.ai',
+              thinkingModelId: 'my-custom-row',
+              thinkingHighEndModelId: 'model-melious-glm-5-2',
+              imageRecognitionModelId: 'model-melious-mistral',
+              transcriptionModelId: 'model-melious-voxtral',
+              imageGenerationModelId: 'model-melious-flux-klein-9b',
+              skillAssignments: const [
+                SkillAssignment(
+                  skillId: skillTranscribeContextId,
+                  automate: true,
+                ),
+                SkillAssignment(
+                  skillId: skillImageAnalysisContextId,
+                  automate: true,
+                ),
+              ],
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        verifyNever(() => mockRepo.saveConfig(any()));
+      },
+    );
+
+    test(
+      'leaves catalog-known provider-native slots alone when their provider '
+      'has no model rows yet',
+      () async {
+        // Pending, not dangling: the OpenAI profile's provider-native IDs
+        // resolve at runtime once an OpenAI provider exists. Healing them
+        // would be a pointless rewrite of identical or equivalent values.
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => _meliousDefaultModelRows(includeGlmAndVoxtral: true),
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileOpenAiId,
+              name: 'OpenAI',
+              thinkingModelId: 'gpt-5.2',
+              imageRecognitionModelId: 'gpt-5-nano',
+              transcriptionModelId: 'gpt-4o-transcribe',
+              imageGenerationModelId: 'gpt-image-1.5',
+              skillAssignments: const [
+                SkillAssignment(
+                  skillId: skillTranscribeContextId,
+                  automate: true,
+                ),
+                SkillAssignment(
+                  skillId: skillImageAnalysisContextId,
+                  automate: true,
+                ),
+              ],
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        verifyNever(() => mockRepo.saveConfig(any()));
+      },
+    );
+
+    test(
+      'does not heal dangling slots on profiles that are not seeded defaults',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => _meliousDefaultModelRows(includeGlmAndVoxtral: true),
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: 'my-own-profile-001',
+              name: 'My Profile',
+              thinkingModelId: 'dead-provider_some_model',
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        verifyNever(() => mockRepo.saveConfig(any()));
+      },
+    );
+
+    test(
+      'moves untouched Melious profiles to GLM 5.2 high-end and Voxtral '
+      'transcription once their model rows exist',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => _meliousDefaultModelRows(includeGlmAndVoxtral: true),
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileMeliousId,
+              name: 'Melious.ai',
+              thinkingModelId: 'model-melious-mistral',
+              thinkingHighEndModelId: 'model-melious-deepseek',
+              imageRecognitionModelId: 'model-melious-mistral',
+              transcriptionModelId: 'model-melious-whisper',
+              imageGenerationModelId: 'model-melious-flux-klein-9b',
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        final upgraded = captured.single as AiConfigInferenceProfile;
+
+        expect(upgraded.id, profileMeliousId);
+        expect(upgraded.thinkingHighEndModelId, 'model-melious-glm-5-2');
+        expect(upgraded.transcriptionModelId, 'model-melious-voxtral');
+        // Untouched slots keep their rows.
+        expect(upgraded.thinkingModelId, 'model-melious-mistral');
+        expect(upgraded.imageGenerationModelId, 'model-melious-flux-klein-9b');
+      },
+    );
+
+    test(
+      'chains a legacy Melious profile through Whisper, Flux, GLM, and '
+      'Voxtral in a single upgrade pass',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => _meliousDefaultModelRows(includeGlmAndVoxtral: true),
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileMeliousId,
+              name: 'Melious.ai',
+              thinkingModelId: meliousMistralSmall4119BInstructModelId,
+              thinkingHighEndModelId: meliousDeepseekV4ProModelId,
+              imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
+              transcriptionModelId: meliousWhisperLargeV3TurboModelId,
+              imageGenerationModelId: 'black-forest-labs/flux-2-dev',
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        final upgraded = captured.single as AiConfigInferenceProfile;
+
+        expect(upgraded.id, profileMeliousId);
+        expect(upgraded.thinkingHighEndModelId, 'model-melious-glm-5-2');
+        expect(upgraded.transcriptionModelId, 'model-melious-voxtral');
+        expect(upgraded.imageGenerationModelId, 'model-melious-flux-klein-9b');
+      },
+    );
+
+    test(
+      'leaves the old Melious defaults alone while the GLM and Voxtral '
+      'model rows are missing',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => _meliousDefaultModelRows());
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileMeliousId,
+              name: 'Melious.ai',
+              thinkingModelId: 'model-melious-mistral',
+              thinkingHighEndModelId: 'model-melious-deepseek',
+              imageRecognitionModelId: 'model-melious-mistral',
+              transcriptionModelId: 'model-melious-whisper',
+              imageGenerationModelId: 'model-melious-flux-klein-9b',
+              skillAssignments: const [
+                SkillAssignment(
+                  skillId: skillTranscribeContextId,
+                  automate: true,
+                ),
+                SkillAssignment(
+                  skillId: skillImageAnalysisContextId,
+                  automate: true,
+                ),
+              ],
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        verifyNever(() => mockRepo.saveConfig(any()));
+      },
+    );
+
+    test(
+      'preserves a user-edited Melious high-end slot during the GLM and '
+      'Voxtral upgrade',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            ..._meliousDefaultModelRows(includeGlmAndVoxtral: true),
+            AiTestDataFactory.createTestModel(
+              id: 'my-custom-row',
+              providerModelId: 'my-custom-model',
+            ),
+          ],
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileMeliousId,
+              name: 'Melious.ai',
+              thinkingModelId: 'model-melious-mistral',
+              // The user pointed the high-end slot at their own live model
+              // row — the profile no longer counts as untouched, so neither
+              // slot moves (and the resolvable slot is not "dangling").
+              thinkingHighEndModelId: 'my-custom-row',
+              imageRecognitionModelId: 'model-melious-mistral',
+              transcriptionModelId: 'model-melious-whisper',
+              imageGenerationModelId: 'model-melious-flux-klein-9b',
+              skillAssignments: const [
+                SkillAssignment(
+                  skillId: skillTranscribeContextId,
+                  automate: true,
+                ),
+                SkillAssignment(
+                  skillId: skillImageAnalysisContextId,
+                  automate: true,
+                ),
+              ],
+              isDefault: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        verifyNever(() => mockRepo.saveConfig(any()));
       },
     );
 

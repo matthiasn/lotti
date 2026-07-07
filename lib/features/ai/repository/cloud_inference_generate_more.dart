@@ -187,6 +187,7 @@ class CloudInferenceGenerateMore {
         audioBase64: audioBase64,
         baseUrl: baseUrl,
         apiKey: apiKey,
+        contextBiasTerms: speechDictionaryTerms,
       );
     }
 

@@ -5,8 +5,8 @@ import 'package:lotti/features/ai/util/known_models.dart';
 ///
 /// Melious exposes a larger live model catalog through `/models`, but these
 /// rows are seeded immediately when the provider is added. The set mirrors the
-/// default Melious profile: fast general thinking, high-end thinking, image
-/// recognition, Flux cover art, and Whisper transcription.
+/// default Melious profile: fast general thinking, GLM 5.2 high-end thinking,
+/// image recognition, Flux cover art, and Voxtral/Whisper transcription.
 const List<KnownModel> meliousModels = [
   KnownModel(
     providerModelId: meliousDeepseekV4ProModelId,
@@ -18,6 +18,17 @@ const List<KnownModel> meliousModels = [
     description:
         'High-end Melious-hosted DeepSeek reasoning model for advanced '
         'thinking, analysis, and complex task planning.',
+  ),
+  KnownModel(
+    providerModelId: meliousGlm52ModelId,
+    name: 'GLM 5.2',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Default Melious high-end thinking model. GLM 5.2 with a 1M-token '
+        'context window, tool calling, and structured output.',
   ),
   KnownModel(
     providerModelId: meliousGemma426bA4bModelId,
@@ -74,14 +85,25 @@ const List<KnownModel> meliousModels = [
         'model for fast, high-quality task cover art.',
   ),
   KnownModel(
+    providerModelId: meliousVoxtralSmall24B2507ModelId,
+    name: 'Voxtral Small 24B 2507',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Default Melious transcription model. Voxtral Small 24B '
+        'speech-to-text that honors context biasing, so speech-dictionary '
+        'terms improve recognition of names and domain vocabulary.',
+  ),
+  KnownModel(
     providerModelId: meliousWhisperLargeV3ModelId,
     name: 'Whisper Large v3',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description:
-        'Default Melious transcription model. Whisper Large v3 '
-        'speech-to-text through the OpenAI-compatible endpoint.',
+        'Melious-hosted Whisper Large v3 speech-to-text through the '
+        'OpenAI-compatible endpoint.',
   ),
   KnownModel(
     providerModelId: meliousWhisperLargeV3TurboModelId,

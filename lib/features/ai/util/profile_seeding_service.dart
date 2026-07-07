@@ -84,12 +84,19 @@ class ProfileSeedingService {
 
   /// Upgrades existing profiles without overwriting user-authored choices.
   ///
-  /// This migrates legacy provider-native profile slot values to
+  /// This heals dangling model slots on default profiles (rows deleted with
+  /// their provider), migrates legacy provider-native profile slot values to
   /// `AiConfigModel.id` when the match is unambiguous, migrates the untouched
   /// old Local Power seed from Ollama to oMLX, migrates untouched Melious image
   /// generation and transcription to the Flux 2 Klein 9B and Whisper Large v3
-  /// defaults, then backfills default skill
+  /// defaults, moves untouched Melious profiles to the GLM 5.2 high-end and
+  /// Voxtral transcription defaults, then backfills default skill
   /// assignments only for default profiles whose assignments are empty.
+  ///
+  /// Runs at startup (after the model backfill) and again after a provider is
+  /// created or re-verified mid-session (`runFtueSetupForType`, provider
+  /// save), so a reconnected provider heals its profile immediately instead
+  /// of on the next launch.
   Future<void> upgradeExisting() async {
     var upgradedCount = 0;
     final models = await _fetchModelRows();
@@ -99,12 +106,20 @@ class ProfileSeedingService {
     final configs = await _repo.getConfigsByType(AiConfigType.inferenceProfile);
 
     for (final config in configs.whereType<AiConfigInferenceProfile>()) {
+      final template = templatesById[config.id];
       var upgraded = _withMigratedLegacyLocalPowerSeed(config, models);
+      if (template != null && config.isDefault) {
+        upgraded = _withRepairedDanglingDefaultSlots(
+          upgraded,
+          template,
+          models,
+        );
+      }
       upgraded = _withUpgradedOmlxWhisperTranscription(upgraded, models);
       upgraded = _withUpgradedMeliousWhisperTranscription(upgraded, models);
       upgraded = _withUpgradedMeliousFluxImageGeneration(upgraded, models);
+      upgraded = _withUpgradedMeliousGlmAndVoxtralDefaults(upgraded, models);
       upgraded = _withResolvedModelConfigIds(upgraded, models);
-      final template = templatesById[config.id];
 
       // Only backfill default skill assignments for default profiles with
       // empty assignments. Non-empty assignment lists and non-default profiles
@@ -217,6 +232,148 @@ class ProfileSeedingService {
     return profile.copyWith(
       transcriptionModelId: meliousWhisperLargeV3ModelId,
     );
+  }
+
+  /// Heals model slots on seeded default profiles that point at model rows
+  /// which no longer exist.
+  ///
+  /// Deleting a provider cascade-deletes its model rows
+  /// ([AiConfigRepository.deleteInferenceProviderWithModels]), but seeded
+  /// profiles keep referencing the dead row IDs — leaving every consumer of
+  /// the profile (task structuring, transcription, agent wakes) unable to
+  /// resolve a provider, even after the user reconnects the same provider
+  /// type. Each dangling slot — a non-null value matching no live row ID or
+  /// `providerModelId`, and not a provider-native ID from the known-models
+  /// catalog (those are merely *pending* and resolve at runtime once their
+  /// provider exists) — is reset to the seed template's provider-native
+  /// default, which [_withResolvedModelConfigIds] then maps back to a live
+  /// row once backfill/FTUE/prepopulation has recreated it. Slots that still
+  /// resolve are never touched, so user-authored choices survive; only
+  /// demonstrably broken pointers are healed.
+  static AiConfigInferenceProfile _withRepairedDanglingDefaultSlots(
+    AiConfigInferenceProfile profile,
+    AiConfigInferenceProfile template,
+    List<AiConfigModel> models,
+  ) {
+    String? heal(String? current, String? seedDefault) {
+      if (current == null) return null;
+      if (_slotResolvesToModelRow(current, models)) return current;
+      if (_isKnownProviderNativeModelId(current)) return current;
+      return seedDefault;
+    }
+
+    return profile.copyWith(
+      thinkingModelId:
+          heal(profile.thinkingModelId, template.thinkingModelId) ??
+          template.thinkingModelId,
+      thinkingHighEndModelId: heal(
+        profile.thinkingHighEndModelId,
+        template.thinkingHighEndModelId,
+      ),
+      imageRecognitionModelId: heal(
+        profile.imageRecognitionModelId,
+        template.imageRecognitionModelId,
+      ),
+      transcriptionModelId: heal(
+        profile.transcriptionModelId,
+        template.transcriptionModelId,
+      ),
+      imageGenerationModelId: heal(
+        profile.imageGenerationModelId,
+        template.imageGenerationModelId,
+      ),
+    );
+  }
+
+  /// Moves an untouched Melious default profile to the current seed targets:
+  /// GLM 5.2 in the high-end thinking slot (was DeepSeek V4 Pro) and Voxtral
+  /// Small in the transcription slot (was Whisper Large v3 / Turbo). Runs
+  /// after the Whisper/Flux migrations so legacy profiles chain through all
+  /// default generations; each slot only moves when its replacement model row
+  /// exists (backfilled from `meliousModels` on startup).
+  static AiConfigInferenceProfile _withUpgradedMeliousGlmAndVoxtralDefaults(
+    AiConfigInferenceProfile profile,
+    List<AiConfigModel> models,
+  ) {
+    if (!_isUntouchedMeliousDefaultProfile(profile, models)) return profile;
+
+    var upgraded = profile;
+    if (_slotMatchesProviderModelId(
+          profile.thinkingHighEndModelId,
+          meliousDeepseekV4ProModelId,
+          models,
+        ) &&
+        _slotResolvesToModelRow(meliousGlm52ModelId, models)) {
+      upgraded = upgraded.copyWith(thinkingHighEndModelId: meliousGlm52ModelId);
+    }
+    if (_meliousTranscriptionSlotMatchesWhisperDefaultOrNull(
+          profile.transcriptionModelId,
+          models,
+        ) &&
+        _slotResolvesToModelRow(meliousVoxtralSmall24B2507ModelId, models)) {
+      upgraded = upgraded.copyWith(
+        transcriptionModelId: meliousVoxtralSmall24B2507ModelId,
+      );
+    }
+    return upgraded;
+  }
+
+  /// Whether [profile] still carries only seeded Melious defaults — every
+  /// slot matches a known default generation and no user-authored metadata
+  /// (name, description, flags, pinned host) has been changed.
+  static bool _isUntouchedMeliousDefaultProfile(
+    AiConfigInferenceProfile profile,
+    List<AiConfigModel> models,
+  ) {
+    return profile.id == profileMeliousId &&
+        profile.name == 'Melious.ai' &&
+        profile.description == null &&
+        _slotMatchesProviderModelId(
+          profile.thinkingModelId,
+          meliousMistralSmall4119BInstructModelId,
+          models,
+        ) &&
+        (_slotMatchesProviderModelId(
+              profile.thinkingHighEndModelId,
+              meliousDeepseekV4ProModelId,
+              models,
+            ) ||
+            _slotMatchesProviderModelId(
+              profile.thinkingHighEndModelId,
+              meliousGlm52ModelId,
+              models,
+            )) &&
+        _slotMatchesProviderModelId(
+          profile.imageRecognitionModelId,
+          meliousMistralSmall4119BInstructModelId,
+          models,
+        ) &&
+        (_meliousTranscriptionSlotMatchesWhisperDefaultOrNull(
+              profile.transcriptionModelId,
+              models,
+            ) ||
+            _slotMatchesProviderModelId(
+              profile.transcriptionModelId,
+              meliousVoxtralSmall24B2507ModelId,
+              models,
+            )) &&
+        _meliousImageGenerationSlotMatchesDefaultOrLegacy(
+          profile.imageGenerationModelId,
+          models,
+        ) &&
+        profile.isDefault &&
+        !profile.desktopOnly &&
+        profile.pinnedHostId == null;
+  }
+
+  /// Whether the transcription slot is unset or still points at one of the
+  /// previous Whisper defaults — the states eligible for the Voxtral upgrade.
+  static bool _meliousTranscriptionSlotMatchesWhisperDefaultOrNull(
+    String? slotValue,
+    List<AiConfigModel> models,
+  ) {
+    return slotValue == null ||
+        _meliousTranscriptionSlotMatchesDefaultOrLegacy(slotValue, models);
   }
 
   static bool _isUntouchedMeliousProfileEligibleForWhisperDefaultUpgrade(
@@ -513,6 +670,15 @@ class ProfileSeedingService {
     );
   }
 
+  /// Whether [slotValue] is a provider-native model ID from the bundled
+  /// known-models catalog — a value runtime resolution can still satisfy once
+  /// a provider of the owning type exists, and therefore not dangling.
+  static bool _isKnownProviderNativeModelId(String slotValue) {
+    return knownModelsByProvider.values.any(
+      (models) => models.any((model) => model.providerModelId == slotValue),
+    );
+  }
+
   /// The default profile definitions.
   ///
   /// Exposed as a static list for testability.
@@ -564,9 +730,9 @@ class ProfileSeedingService {
       id: profileMeliousId,
       name: 'Melious.ai',
       thinkingModelId: meliousMistralSmall4119BInstructModelId,
-      thinkingHighEndModelId: meliousDeepseekV4ProModelId,
+      thinkingHighEndModelId: meliousGlm52ModelId,
       imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
-      transcriptionModelId: meliousWhisperLargeV3ModelId,
+      transcriptionModelId: meliousVoxtralSmall24B2507ModelId,
       imageGenerationModelId: meliousFlux2Klein9BModelId,
       skillAssignments: _defaultSkillAssignments,
       isDefault: true,

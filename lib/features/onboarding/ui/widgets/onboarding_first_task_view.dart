@@ -69,7 +69,6 @@ class OnboardingFirstTaskView extends StatelessWidget {
     required this.onRatherType,
     required this.onOpenTask,
     this.createdTaskTitle = '',
-    this.createdChecklist = const [],
     this.transcript = '',
     this.amplitudes = const [],
     this.dbfs = CaptureState.defaultDbfs,
@@ -127,9 +126,6 @@ class OnboardingFirstTaskView extends StatelessWidget {
   /// The landed task's title, shown on the created card.
   final String createdTaskTitle;
 
-  /// The landed task's checklist items, previewed on the created card.
-  final List<String> createdChecklist;
-
   /// The areas created in the category step. With more than one, a destination
   /// picker appears while composing.
   final List<OnboardingCaptureCategory> categories;
@@ -170,10 +166,12 @@ class OnboardingFirstTaskView extends StatelessWidget {
     final textHigh = dsTokensDark.colors.text.highEmphasis;
     final textMedium = dsTokensDark.colors.text.mediumEmphasis;
     final panelBg = dsTokensDark.colors.background.level01;
-    // Fixed band the active element is centred in, so the recording visual
-    // and the thinking cluster share one optical anchor across phases. Sized
-    // on the token scale to fit the tallest visual (the VU meter + waveform
-    // pair): step13 + step10 + step3 = 232.
+    // Minimum height for the band the active element is centred in, so the
+    // recording visual and the thinking cluster share one optical anchor across
+    // phases. Sized on the token scale to seat the tallest visual (the modern
+    // `VoiceOrbZone` — waveform + orb + caption): step13 + step10 + step3 = 232.
+    // It is a *minimum*, not a fixed height, so the orb's caption can still grow
+    // under a large text scale instead of overflowing the band.
     final activeBandHeight =
         tokens.spacing.step13 + tokens.spacing.step10 + tokens.spacing.step3;
 
@@ -225,21 +223,20 @@ class OnboardingFirstTaskView extends StatelessWidget {
                   ),
                 ],
                 SizedBox(height: tokens.spacing.step4),
-                // The created card sits at its natural height (a checklist can
-                // be taller than the band); the other frames share the fixed
-                // band so the visual keeps one optical anchor across phases.
+                // The created card sits at its natural height; the other frames
+                // share the fixed band so the visual keeps one optical anchor
+                // across phases.
                 if (phase == OnboardingFirstTaskPhase.created)
                   _CreatedTaskCard(
                     tokens: tokens,
                     accent: accent,
                     taskTitle: createdTaskTitle,
-                    checklist: createdChecklist,
                     hint: createdHint,
                     onTap: onOpenTask,
                   )
                 else
-                  SizedBox(
-                    height: activeBandHeight,
+                  ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: activeBandHeight),
                     child: Center(child: _activeElement(tokens)),
                   ),
                 if (phase == OnboardingFirstTaskPhase.listening) ...[
@@ -574,8 +571,10 @@ class _PickerChip extends StatelessWidget {
 }
 
 /// The created beat: the landed task rendered as a glowing, tappable card —
-/// title over its checklist preview — with an invitation line underneath.
-/// The tap is the single handoff out of onboarding onto the real task page.
+/// its title over an invitation line. The checklist is deliberately *not*
+/// previewed here: it lands on the task page as confirmable proposals, so the
+/// card stays a clean one-tap handoff onto the real task rather than a preview
+/// that duplicates (and pre-empts) those suggestions.
 ///
 /// Enters with a one-shot fade + scale settle, then breathes a soft accent
 /// glow so the card reads as *the* thing to touch next. Under reduced motion
@@ -585,7 +584,6 @@ class _CreatedTaskCard extends StatefulWidget {
     required this.tokens,
     required this.accent,
     required this.taskTitle,
-    required this.checklist,
     required this.hint,
     required this.onTap,
   });
@@ -593,7 +591,6 @@ class _CreatedTaskCard extends StatefulWidget {
   final DsTokens tokens;
   final Color accent;
   final String taskTitle;
-  final List<String> checklist;
   final String hint;
   final VoidCallback onTap;
 
@@ -661,45 +658,11 @@ class _CreatedTaskCardState extends State<_CreatedTaskCard>
       },
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.step5),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              widget.taskTitle,
-              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                color: textHigh,
-              ),
-            ),
-            if (widget.checklist.isNotEmpty) ...[
-              SizedBox(height: tokens.spacing.step4),
-              for (final (i, item) in widget.checklist.indexed) ...[
-                if (i > 0) SizedBox(height: tokens.spacing.step2),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(top: tokens.spacing.step1),
-                      child: Icon(
-                        Icons.radio_button_unchecked,
-                        size: tokens.spacing.step4,
-                        color: widget.accent,
-                      ),
-                    ),
-                    SizedBox(width: tokens.spacing.step3),
-                    Expanded(
-                      child: Text(
-                        item,
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: textHigh,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ],
+        child: Text(
+          widget.taskTitle,
+          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+            color: textHigh,
+          ),
         ),
       ),
     );

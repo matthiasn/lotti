@@ -800,7 +800,10 @@ the write."
 4. sets `slots.activeTaskId`
 5. creates `agent_task` and `template_assignment` links
 6. registers a task subscription
-7. enqueues a creation wake
+7. enqueues a creation wake — callers can merge extra entity IDs into its
+   trigger tokens via `additionalWakeTokens` (the onboarding first-task flow
+   passes the already-transcribed audio entry, so the first turn attends to
+   the spoken capture like a `transcriptionComplete` wake would)
 
 ### Wake Flow
 

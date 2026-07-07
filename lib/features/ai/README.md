@@ -237,18 +237,23 @@ flowchart TD
 
 Melious also has a small curated static catalog used for immediate provider
 setup before a user installs additional live-catalog rows: `deepseek-v4-pro`,
-`gemma-4-26b-a4b`, `minimax-m2.7`, `mistral-small-4-119b-instruct`,
-`deepseek-v4-flash`, `flux-2-klein-9b`,
-`whisper-large-v3`, and `whisper-large-v3-turbo`.
+`glm-5.2`, `gemma-4-26b-a4b`, `minimax-m2.7`,
+`mistral-small-4-119b-instruct`, `deepseek-v4-flash`, `flux-2-klein-9b`,
+`voxtral-small-24b-2507`, `whisper-large-v3`, and `whisper-large-v3-turbo`.
 The default Melious profile uses `mistral-small-4-119b-instruct` for thinking
-and image recognition, `deepseek-v4-pro` for the high-end thinking slot, and
-`flux-2-klein-9b` for image generation, and `whisper-large-v3` for
-transcription. FTUE setup creates both Whisper
-rows so users can switch between the regular and Turbo variants. Existing
-untouched default Melious profiles that predate the image-generation slot, or
-still point at the legacy Flux 2 Dev default or the previous Whisper Turbo
-transcription default, move to Flux 2 Klein 9B and Whisper Large v3 during
-`upgradeExisting()` after the model backfill has created the rows.
+and image recognition, `glm-5.2` for the high-end thinking slot,
+`flux-2-klein-9b` for image generation, and `voxtral-small-24b-2507` for
+transcription — Voxtral honors the speech-dictionary bias terms that
+`MeliousInferenceRepository.transcribeAudio` forwards as the OpenAI-standard
+`prompt` form field. FTUE setup also creates both Whisper rows so users can
+switch between the regular and Turbo variants. Existing untouched default
+Melious profiles chain through the upgrade migrations during
+`upgradeExisting()` after the model backfill has created the rows: profiles
+that predate the image-generation slot, or still point at the legacy Flux 2
+Dev default or the previous Whisper Turbo transcription default, move to Flux
+2 Klein 9B and Whisper Large v3; profiles still on the DeepSeek V4 Pro
+high-end and Whisper transcription defaults then move to GLM 5.2 and Voxtral
+Small.
 
 Melious, Mistral, oMLX, Gemini, and OpenAI provider settings also use live
 catalogs (`ProviderConfig.supportsDynamicCatalog`). The provider detail page and
@@ -810,12 +815,12 @@ Operational details from the seeded definitions:
 - `Local (Ollama)` and `Local Gemma 4 (Ollama)` ship with image-analysis automation but no transcription slot
 - `Local Power (oMLX)` uses `Qwen3.6-35B-A3B-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
 - `Local Gemma 4 (oMLX)` uses `gemma-4-26B-A4B-it-QAT-MLX-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
-- `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, DeepSeek V4 Pro for high-end thinking, Flux 2 Klein 9B for image generation, and Whisper Large v3 for transcription
+- `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, GLM 5.2 for high-end thinking, Flux 2 Klein 9B for image generation, and Voxtral Small 24B for transcription
 - `Local Gemma 4 Power (Ollama)` currently ships with no default skill assignments
 
 `seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 
-`upgradeExisting()` backfills migration-safe pieces after model rows exist: legacy profile slots that still contain provider-native model IDs are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, untouched Melious profiles move to the Flux 2 Klein 9B image-generation slot and Whisper Large v3 transcription slot, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, model slots, optional slots, and non-empty assignment lists are preserved.
+`upgradeExisting()` backfills migration-safe pieces after model rows exist: dangling model slots on default profiles are healed (deleting a provider cascade-deletes its model rows, but the seeded profile kept pointing at the dead row IDs — each such slot resets to the seed template's provider-native default and re-resolves once the rows are recreated; catalog-known provider-native values are treated as pending, not dangling), legacy provider-native slot values are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, untouched Melious profiles move to the Flux 2 Klein 9B image-generation slot and Whisper Large v3 transcription slot and then on to the GLM 5.2 high-end thinking and Voxtral Small 24B transcription defaults, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, resolvable model slots, and non-empty assignment lists are preserved. Besides startup, `upgradeExisting()` also runs right after a provider is created or re-verified (`runFtueSetupForType`, provider save in the settings form), so reconnecting a provider heals its profile immediately — onboarding's first capture resolves through the profile seconds after the key step.
 
 `ModelPrepopulationService.backfillNewModels()` seeds known model rows for
 configured providers at startup. Known model identity is the

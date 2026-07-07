@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
+import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
@@ -308,10 +309,20 @@ class EventAgentWorkflow {
       );
       strategy.recordFinalResponse(finalContent);
 
-      // 7. Persist all wake outputs.
-      final reportContent = strategy.extractReportContent();
-      final reportTldr = strategy.extractReportTldr();
-      final reportOneLiner = strategy.extractReportOneLiner();
+      // 7. Persist all wake outputs. Strip any internal entity ids the model
+      // echoed into the recap (the event context hands it real linked-entity
+      // ids for tool calls; weaker models copy them into the prose).
+      final reportContent = sanitizeAgentReportText(
+        strategy.extractReportContent(),
+      );
+      final rawTldr = strategy.extractReportTldr();
+      final reportTldr = rawTldr == null
+          ? null
+          : sanitizeAgentReportText(rawTldr);
+      final rawOneLiner = strategy.extractReportOneLiner();
+      final reportOneLiner = rawOneLiner == null
+          ? null
+          : sanitizeAgentReportText(rawOneLiner);
       // A recap is the whole point of the wake. If it is still empty here, the
       // forced `update_report` retry above also produced nothing, so this wake
       // is a failure — not a no-op success.
