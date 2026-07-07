@@ -161,4 +161,53 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets(
+    'flags the model whose spend share outstrips its request share',
+    (tester) async {
+      // pricey: €10 over 2 calls; cheap: €1 over 18 calls. pricey's cost share
+      // (10/11 ≈ 91%) dwarfs its request share (2/20 = 10%) → cost-heavy.
+      final rows = [
+        MapEntry<String?, ConsumptionMetrics>(
+          'pricey',
+          m(callCount: 2, totalTokens: 4000, credits: 10),
+        ),
+        MapEntry<String?, ConsumptionMetrics>(
+          'cheap',
+          m(callCount: 18, totalTokens: 36000, credits: 1),
+        ),
+      ];
+      await pumpTable(tester, rows: rows);
+
+      // The badge appears exactly once — on the outlier.
+      expect(find.text('cost-heavy'), findsOneWidget);
+      // …and it rides the pricey row (the badge + 'pricey' share a Row).
+      final badgeRow = find
+          .ancestor(of: find.text('cost-heavy'), matching: find.byType(Row))
+          .first;
+      expect(
+        find.descendant(of: badgeRow, matching: find.text('pricey')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('shows no cost-heavy badge when spend tracks requests', (
+    tester,
+  ) async {
+    // Two identical models — cost share equals request share, no outlier.
+    final rows = [
+      MapEntry<String?, ConsumptionMetrics>(
+        'a',
+        m(callCount: 10, totalTokens: 10000, credits: 5),
+      ),
+      MapEntry<String?, ConsumptionMetrics>(
+        'b',
+        m(callCount: 10, totalTokens: 10000, credits: 5),
+      ),
+    ];
+    await pumpTable(tester, rows: rows);
+
+    expect(find.text('cost-heavy'), findsNothing);
+  });
 }
