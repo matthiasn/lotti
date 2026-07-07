@@ -623,6 +623,8 @@
   "aiImpactMetricTokens": "Tokens",
   "aiImpactModelCallsLabel": "{count} llamadas",
   "aiImpactModelColumn": "MODELO",
+  "aiImpactModelCostHeavy": "coste alto",
+  "aiImpactModelCoverageNote": "Los modelos locales se excluyen de este gráfico.",
   "aiImpactModelOther": "Otros modelos",
   "aiImpactModelRatePerMillion": "{cost}/1M tok",
   "aiImpactModelTitle": "Desglose por modelo",

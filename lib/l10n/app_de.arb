@@ -623,6 +623,8 @@
   "aiImpactMetricTokens": "Tokens",
   "aiImpactModelCallsLabel": "{count} Aufrufe",
   "aiImpactModelColumn": "MODELL",
+  "aiImpactModelCostHeavy": "kostenintensiv",
+  "aiImpactModelCoverageNote": "Lokale Modelle sind in diesem Diagramm nicht enthalten.",
   "aiImpactModelOther": "Andere Modelle",
   "aiImpactModelRatePerMillion": "{cost}/1 Mio. Tok.",
   "aiImpactModelTitle": "Modellaufschlüsselung",

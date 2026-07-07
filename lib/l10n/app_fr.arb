@@ -623,6 +623,8 @@
   "aiImpactMetricTokens": "Tokens",
   "aiImpactModelCallsLabel": "{count} appels",
   "aiImpactModelColumn": "MODÈLE",
+  "aiImpactModelCostHeavy": "coût élevé",
+  "aiImpactModelCoverageNote": "Les modèles locaux sont exclus de ce graphique.",
   "aiImpactModelOther": "Autres modèles",
   "aiImpactModelRatePerMillion": "{cost}/1M jet.",
   "aiImpactModelTitle": "Répartition par modèle",

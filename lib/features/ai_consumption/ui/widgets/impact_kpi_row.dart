@@ -86,10 +86,11 @@ class ImpactKpiRow extends StatelessWidget {
 
     Widget tile(ConsumptionMetric metric) {
       final selected = metric == selectedMetric;
-      // Only the selected tile shows a delta, and only when the prior period
-      // has a value to divide by — so it's always a real percentage, never a
-      // "brand new" placeholder competing with the four plain totals.
-      final showDelta = selected && prev != null && metric.valueOf(prev) > 0;
+      // Every tile with a comparable prior value carries a trend delta, so
+      // "is it rising, and by how much" is scannable across all five metrics
+      // at a glance; only the selected tile also spells out the named baseline
+      // and renders the delta at the heavier headline weight.
+      final showDelta = prev != null && metric.valueOf(prev) > 0;
       return _ImpactKpiTile(
         label: _label(messages, metric),
         figure: metric.formatValue(metric.valueOf(totals)),
@@ -98,7 +99,8 @@ class ImpactKpiRow extends StatelessWidget {
         current: showDelta ? metric.valueOf(totals) : null,
         previous: showDelta ? metric.valueOf(prev) : null,
         valence: _valence(metric),
-        previousLabel: previousLabel,
+        // Named baseline only on the selected tile (the others stay compact).
+        previousLabel: selected ? previousLabel : null,
       );
     }
 
@@ -147,13 +149,18 @@ class ImpactKpiRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             grid(columns),
-            SizedBox(height: tokens.spacing.step3),
-            Text(
-              messages.aiImpactCoverageNote,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.lowEmphasis,
+            // The cloud-only caveat applies only to the impact metrics; on
+            // Tokens/Requests (which include local calls) it would contradict
+            // the visible data, so it is hidden there.
+            if (selectedMetric.isCloudOnly) ...[
+              SizedBox(height: tokens.spacing.step3),
+              Text(
+                messages.aiImpactCoverageNote,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
               ),
-            ),
+            ],
           ],
         );
       },
@@ -245,6 +252,9 @@ class _ImpactKpiTile extends StatelessWidget {
                       previous: previous!,
                       valence: valence,
                       previousLabel: previousLabel,
+                      // The selected tile's delta is the page's headline signal
+                      // — render it a type step heavier than the sibling tiles.
+                      prominent: selected,
                     ),
                   ],
                 ],
@@ -265,12 +275,14 @@ class _DeltaLine extends StatelessWidget {
     required this.previous,
     required this.valence,
     required this.previousLabel,
+    required this.prominent,
   });
 
   final double current;
   final double previous;
   final InsightsTrendValence valence;
   final String? previousLabel;
+  final bool prominent;
 
   @override
   Widget build(BuildContext context) {
@@ -282,6 +294,7 @@ class _DeltaLine extends StatelessWidget {
             current: (current * _kDeltaScale).round(),
             previous: (previous * _kDeltaScale).round(),
             valence: valence,
+            prominent: prominent,
           ),
         ),
         if (previousLabel != null) ...[

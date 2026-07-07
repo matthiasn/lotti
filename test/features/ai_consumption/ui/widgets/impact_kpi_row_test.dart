@@ -149,6 +149,28 @@ void main() {
     },
   );
 
+  testWidgets('shows a delta on every tile with a prior, baseline only on '
+      'the selected one', (tester) async {
+    // Every metric has a prior value, so all five tiles carry a trend delta;
+    // the named "vs May" baseline stays on the selected (cost) tile only.
+    await pumpRow(
+      tester,
+      surface: const Size(1280, 900),
+      previousTotals: const ConsumptionMetrics(
+        callCount: 4,
+        totalTokens: 10000,
+        credits: 1,
+        energyKwh: 0.25,
+        carbonGCo2: 200,
+      ),
+      previousLabel: 'May',
+    );
+    // Five directional deltas (all metrics rose vs the smaller prior).
+    expect(find.byIcon(Icons.arrow_upward_rounded), findsNWidgets(5));
+    // The baseline label appears exactly once — on the selected cost tile.
+    expect(find.text('vs May'), findsOneWidget);
+  });
+
   testWidgets('omits the delta when there is no previous period', (
     tester,
   ) async {

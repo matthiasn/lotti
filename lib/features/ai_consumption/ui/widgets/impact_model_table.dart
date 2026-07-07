@@ -70,6 +70,42 @@ class ImpactModelTable extends StatelessWidget {
           '${messages.aiImpactModelRatePerMillion(formatCredits(perMillion))}';
     }
 
+    // The one model whose share of spend most outstrips its share of requests
+    // (≥ 8 points) — the "reconsider this one" flag that turns "52% of cost for
+    // 24% of calls" into a glanceable badge instead of mental arithmetic.
+    final totalCredits = entries.fold<double>(0, (s, e) => s + e.value.credits);
+    final totalCalls = entries.fold<int>(0, (s, e) => s + e.value.callCount);
+    var costHeavyIndex = -1;
+    if (totalCredits > 0 && totalCalls > 0) {
+      var maxExcess = 0.08;
+      for (var i = 0; i < entries.length; i++) {
+        final m = entries[i].value;
+        final excess = m.credits / totalCredits - m.callCount / totalCalls;
+        if (excess > maxExcess) {
+          maxExcess = excess;
+          costHeavyIndex = i;
+        }
+      }
+    }
+    // Clay accent, matching the caution valence the KPI deltas use.
+    final clay = brightness == Brightness.dark
+        ? tokens.colors.alert.error.hover
+        : tokens.colors.alert.error.pressed;
+    Widget costHeavyBadge() => Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        color: clay.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+      ),
+      child: Text(
+        messages.aiImpactModelCostHeavy,
+        style: tokens.typography.styles.others.caption.copyWith(color: clay),
+      ),
+    );
+
     // Interactive rows carry a low-emphasis chevron so they read as tappable
     // at rest; the header reserves the same width to keep columns aligned.
     final interactive = onToggleSeries != null;
@@ -144,14 +180,29 @@ class ImpactModelTable extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              resolver.labelFor(entries[i].key),
-                              style: tokens.typography.styles.body.bodySmall
-                                  .copyWith(
-                                    color: tokens.colors.text.highEmphasis,
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    resolver.labelFor(entries[i].key),
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .body
+                                        .bodySmall
+                                        .copyWith(
+                                          color:
+                                              tokens.colors.text.highEmphasis,
+                                        ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                                ),
+                                if (i == costHeavyIndex) ...[
+                                  SizedBox(width: tokens.spacing.step2),
+                                  costHeavyBadge(),
+                                ],
+                              ],
                             ),
                             Text(
                               metaLine(entries[i].value),
@@ -159,7 +210,9 @@ class ImpactModelTable extends StatelessWidget {
                                   .copyWith(
                                     color: tokens.colors.text.mediumEmphasis,
                                   ),
-                              maxLines: 1,
+                              // Wraps to a second line on narrow (phone) panes
+                              // so the €/1M-tok economics never truncates.
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],

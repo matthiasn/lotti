@@ -463,6 +463,8 @@
   "aiImpactMetricTokens": "Tokeny",
   "aiImpactModelCallsLabel": "{count} volání",
   "aiImpactModelColumn": "MODEL",
+  "aiImpactModelCostHeavy": "nákladné",
+  "aiImpactModelCoverageNote": "Místní modely jsou z tohoto grafu vyloučené.",
   "aiImpactModelOther": "Ostatní modely",
   "aiImpactModelRatePerMillion": "{cost}/1M tok",
   "aiImpactModelTitle": "Rozpad podle modelů",

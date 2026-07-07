@@ -1436,6 +1436,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactModelColumn => 'MODEL';
 
   @override
+  String get aiImpactModelCostHeavy => 'nákladné';
+
+  @override
+  String get aiImpactModelCoverageNote =>
+      'Místní modely jsou z tohoto grafu vyloučené.';
+
+  @override
   String get aiImpactModelOther => 'Ostatní modely';
 
   @override

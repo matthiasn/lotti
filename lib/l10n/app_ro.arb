@@ -623,6 +623,8 @@
   "aiImpactMetricTokens": "Tokenuri",
   "aiImpactModelCallsLabel": "{count} apeluri",
   "aiImpactModelColumn": "MODEL",
+  "aiImpactModelCostHeavy": "cost ridicat",
+  "aiImpactModelCoverageNote": "Modelele locale sunt excluse din acest grafic.",
   "aiImpactModelOther": "Alte modele",
   "aiImpactModelRatePerMillion": "{cost}/1M tokeni",
   "aiImpactModelTitle": "Defalcare pe model",

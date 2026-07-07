@@ -109,12 +109,19 @@ double _seriesPaletteHue(int slot) {
   return (216 + ring * step) % 360;
 }
 
+/// A small lightness offset alternating by slot parity, so two hue-adjacent
+/// neighbours (e.g. the 96°/156° green/teal) also separate on lightness — not
+/// hue alone — where they stack next to each other in an area band.
+double _slotLightnessBias(int slot) => slot.isEven ? 0.05 : -0.05;
+
 /// The saturated identity color for palette [slot] — the swatch color for a
 /// model/location series, mirroring how a category's own hex is used at small
 /// sizes. Slots beyond [kSeriesPaletteSize] wrap.
 Color seriesPaletteSwatchColor(int slot, Brightness brightness) {
-  final hue = _seriesPaletteHue(slot % kSeriesPaletteSize);
-  final lightness = brightness == Brightness.dark ? 0.62 : 0.50;
+  final s = slot % kSeriesPaletteSize;
+  final hue = _seriesPaletteHue(s);
+  final base = brightness == Brightness.dark ? 0.62 : 0.50;
+  final lightness = (base + _slotLightnessBias(s)).clamp(0.0, 1.0);
   return HSLColor.fromAHSL(1, hue, 0.62, lightness).toColor();
 }
 
@@ -128,7 +135,7 @@ Color seriesPaletteChartColor(int slot, Brightness brightness) =>
         1,
         _seriesPaletteHue(slot % kSeriesPaletteSize),
         0.7,
-        0.5,
+        (0.5 + _slotLightnessBias(slot % kSeriesPaletteSize)).clamp(0.0, 1.0),
       ).toColor(),
       brightness,
     );

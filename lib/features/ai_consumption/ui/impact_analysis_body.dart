@@ -130,11 +130,30 @@ class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
           : const Center(child: CircularProgressIndicator());
     }
 
+    // Trend baseline: the previous equal-length period. When it falls in the
+    // same loaded window we read the current buckets; when it falls in a
+    // different calendar-year window (e.g. the year view's prior year) we watch
+    // that window too, so the KPI trend deltas are never absent on the landing
+    // view — they simply fill in once the prior window resolves.
+    final prevRange = previousPeriod(data.selection.range, data.selection.unit);
+    final prevWindow = insightsWindowFor(prevRange);
+    final prevBuckets = prevWindow == insightsWindowFor(data.selection.range)
+        ? data.buckets
+        : ref.watch(consumptionBucketsProvider(prevWindow)).value;
+    final previousTotals = prevBuckets != null
+        ? impactTotalsInRange(prevBuckets, prevRange)
+        : null;
+    final previousLabel = previousTotals != null
+        ? _previousPeriodLabel(context, prevRange, data.selection.unit)
+        : null;
+
     return _DashboardContent(
       selection: selection,
       data: data,
       resolver: resolver,
       metric: _metric,
+      previousTotals: previousTotals,
+      previousLabel: previousLabel,
       ledgerBucketStart: _ledgerBucketStart,
       isolatedCategoryKey: _isolatedCategoryKey,
       isolatedModelKey: _isolatedModelKey,
@@ -216,6 +235,8 @@ class _DashboardContent extends StatelessWidget {
     required this.data,
     required this.resolver,
     required this.metric,
+    required this.previousTotals,
+    required this.previousLabel,
     required this.ledgerBucketStart,
     required this.isolatedCategoryKey,
     required this.isolatedModelKey,
@@ -243,6 +264,14 @@ class _DashboardContent extends StatelessWidget {
 
   final InsightsCategoryResolver resolver;
   final ConsumptionMetric metric;
+
+  /// Totals for the previous equal-length period (from whichever window holds
+  /// it), or null when none is loaded yet — drives the KPI trend deltas.
+  final ConsumptionMetrics? previousTotals;
+
+  /// Short calendar name of that previous period ("May" / "2025"), for the
+  /// selected tile's "vs …" baseline.
+  final String? previousLabel;
 
   /// Start of the chart bucket the ledger is drilled into, or null for the
   /// whole period. Shared by both charts.
@@ -285,18 +314,6 @@ class _DashboardContent extends StatelessWidget {
     // between the ranking and the chart builder.
     final totals = impactTotalsInRange(buckets, range);
     final isEmpty = totals == ConsumptionMetrics.zero;
-    // Trend vs the previous equal-length period, but only when that period is
-    // in the same loaded window (last month, not last year — which isn't
-    // fetched); otherwise the KPI tiles show no delta.
-    final prevRange = previousPeriod(range, data.selection.unit);
-    final hasComparablePrev =
-        insightsWindowFor(prevRange) == insightsWindowFor(range);
-    final previousTotals = hasComparablePrev
-        ? impactTotalsInRange(buckets, prevRange)
-        : null;
-    final previousLabel = hasComparablePrev
-        ? _previousPeriodLabel(context, prevRange, data.selection.unit)
-        : null;
     final daily = dailyMetricTotals(buckets, range, metric);
     final ranked = rankedImpactCategoryTotals(daily);
     final modelDaily = dailyModelMetricTotals(buckets, range, metric);
@@ -526,9 +543,10 @@ class _DashboardContent extends StatelessWidget {
             title: messages.aiImpactChartTitleModel(
               consumptionMetricLabel(messages, metric),
             ),
-            // A cloud-only metric drops local models; surface that here.
+            // A cloud-only metric drops local models from this chart; say so
+            // specifically here rather than repeating the global KPI caveat.
             coverageNote: metric.isCloudOnly
-                ? messages.aiImpactCoverageNote
+                ? messages.aiImpactModelCoverageNote
                 : null,
             selectedBucketIndex: selectedBucketIndex,
             isolatedKey: isolatedModelKey,

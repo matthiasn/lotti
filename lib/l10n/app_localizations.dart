@@ -2569,6 +2569,18 @@ abstract class AppLocalizations {
   /// **'MODEL'**
   String get aiImpactModelColumn;
 
+  /// No description provided for @aiImpactModelCostHeavy.
+  ///
+  /// In en, this message translates to:
+  /// **'cost-heavy'**
+  String get aiImpactModelCostHeavy;
+
+  /// No description provided for @aiImpactModelCoverageNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Local models are excluded from this chart.'**
+  String get aiImpactModelCoverageNote;
+
   /// No description provided for @aiImpactModelOther.
   ///
   /// In en, this message translates to:

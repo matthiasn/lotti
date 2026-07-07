@@ -1422,6 +1422,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiImpactModelColumn => 'MODEL';
 
   @override
+  String get aiImpactModelCostHeavy => 'cost-heavy';
+
+  @override
+  String get aiImpactModelCoverageNote =>
+      'Local models are excluded from this chart.';
+
+  @override
   String get aiImpactModelOther => 'Other models';
 
   @override
