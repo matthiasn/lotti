@@ -222,6 +222,72 @@ void main() {
 
       expect(rankedImpactLocationTotals(locationBuckets, range3), isEmpty);
     });
+
+    test('uses carbon, country, and data-center tie-breakers', () {
+      List<ConsumptionLocationKey> rankedKeys(
+        ConsumptionLocationKey a,
+        ConsumptionLocationMetrics aMetrics,
+        ConsumptionLocationKey b,
+        ConsumptionLocationMetrics bMetrics,
+      ) {
+        final buckets = ConsumptionDayBuckets(
+          windowStartDay: day0,
+          days: const {},
+          locationDays: {
+            day0: {a: aMetrics, b: bMetrics},
+          },
+        );
+        return [
+          for (final entry in rankedImpactLocationTotals(buckets, range3))
+            entry.key,
+        ];
+      }
+
+      final fi = ConsumptionLocationKey.fromDataCenter('FI');
+      final se = ConsumptionLocationKey.fromDataCenter('SE');
+      final fiHel = ConsumptionLocationKey.fromDataCenter('FI-HEL1');
+      final fiTmp = ConsumptionLocationKey.fromDataCenter('FI-TMP1');
+
+      expect(
+        rankedKeys(
+          fi,
+          const ConsumptionLocationMetrics(
+            metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 5),
+          ),
+          se,
+          const ConsumptionLocationMetrics(
+            metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 7),
+          ),
+        ),
+        [se, fi],
+      );
+      expect(
+        rankedKeys(
+          se,
+          const ConsumptionLocationMetrics(
+            metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 5),
+          ),
+          fi,
+          const ConsumptionLocationMetrics(
+            metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 5),
+          ),
+        ),
+        [fi, se],
+      );
+      expect(
+        rankedKeys(
+          fiTmp,
+          const ConsumptionLocationMetrics(
+            metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 5),
+          ),
+          fiHel,
+          const ConsumptionLocationMetrics(
+            metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 5),
+          ),
+        ),
+        [fiHel, fiTmp],
+      );
+    });
   });
 
   group('buildImpactChartData', () {

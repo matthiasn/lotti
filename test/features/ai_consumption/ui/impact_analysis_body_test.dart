@@ -263,8 +263,19 @@ void main() {
 
       // Location table: rows with provider-reported data centers are folded
       // by serving location and render energy, carbon, and renewable share.
-      await tester.drag(find.byType(ListView), const Offset(0, -700));
-      await tester.pump();
+      await tester.scrollUntilVisible(
+        find.text('Impact by location'),
+        300,
+        scrollable: find.descendant(
+          of: find.byType(ImpactAnalysisBody),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Scrollable &&
+                widget.axisDirection == AxisDirection.down,
+          ),
+        ),
+        maxScrolls: 20,
+      );
 
       expect(find.text('Impact by location'), findsOneWidget);
       expect(find.text('FI'), findsOneWidget);
