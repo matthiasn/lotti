@@ -524,8 +524,13 @@ class _ImpactStackedArea extends StatelessWidget {
                 for (var i = 0; i < spots.length; i++)
                   if (i == 0)
                     LineTooltipItem(
-                      '${_bucketLabel(context, data, index)}  '
-                      '${metric.formatValue(stackedTops.last[index])}',
+                      _tooltipHeader(
+                        context,
+                        data,
+                        metric,
+                        index,
+                        totalOverride: stackedTops.last[index],
+                      ),
                       style.copyWith(
                         fontWeight: tokens.typography.weight.semiBold,
                       ),
@@ -679,11 +684,12 @@ String _tooltipHeader(
   BuildContext context,
   ImpactChartData data,
   ConsumptionMetric metric,
-  int index,
-) {
+  int index, {
+  double? totalOverride,
+}) {
   final base =
       '${_bucketLabel(context, data, index)}  '
-      '${metric.formatValue(impactBucketTotal(data, index))}';
+      '${metric.formatValue(totalOverride ?? impactBucketTotal(data, index))}';
   final isPartial =
       data.granularity == InsightsGranularity.week &&
       ((index == 0 && data.partialFirstBucket) ||
