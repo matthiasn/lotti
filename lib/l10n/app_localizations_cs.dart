@@ -1402,11 +1402,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactLedgerClearFilter => 'Zobrazit vše';
 
   @override
-  String aiImpactLedgerScopedTo(String bucket) {
-    return 'Volání v období $bucket';
-  }
-
-  @override
   String get aiImpactLoadError => 'Data o dopadu AI se nepodařilo načíst';
 
   @override

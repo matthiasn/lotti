@@ -2509,12 +2509,6 @@ abstract class AppLocalizations {
   /// **'Show all'**
   String get aiImpactLedgerClearFilter;
 
-  /// No description provided for @aiImpactLedgerScopedTo.
-  ///
-  /// In en, this message translates to:
-  /// **'Calls in {bucket}'**
-  String aiImpactLedgerScopedTo(String bucket);
-
   /// No description provided for @aiImpactLoadError.
   ///
   /// In en, this message translates to:

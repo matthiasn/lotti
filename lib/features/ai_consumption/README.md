@@ -152,60 +152,110 @@ dashboard core. Two hosts embed it:
   body in a `SingleChildScrollView`. The body adapts: with bounded height it
   scrolls itself (`ListView`), with unbounded height it shrink-wraps and lets
   the host scroll. It also degrades to phone-width panes (~390 px): the period
-  stepper — a fixed intrinsic-width strip — scrolls horizontally instead of
-  overflowing, and the metric toggle switches to the design system's dense
-  fill-width `expand` mode below 480 px.
+  stepper and the five-segment metric toggle are fixed intrinsic-width strips
+  that scroll horizontally instead of overflowing, and the KPI tiles reflow to a
+  two/three-per-row grid.
 
 ```mermaid
 flowchart TD
   RC[consumptionRangeControllerProvider<br/>InsightsRangeController instance] -->|selection| Body[ImpactAnalysisBody]
   BP[consumptionBucketsProvider<br/>insightsWindowFor year window] -->|ConsumptionDayBuckets| Body
   Cat[categoriesStreamProvider] -->|id → CategoryDefinition| Body
-  Body --> D1[impactTotalsInRange → ImpactKpiRow]
-  Body --> D2[dailyMetricTotals + rankedImpactCategoryTotals → ImpactRankedTable]
-  Body --> D3[dailyModelMetricTotals + rankedImpactCategoryTotals → ImpactModelTable]
-  Body --> D4[buildImpactChartData → ImpactChartCard<br/>per-bucket / cumulative]
+  State[body state:<br/>metric · dimension ·<br/>isolatedKey · ledgerBucketStart] -->|drives| Body
+  Body --> D1[impactTotalsInRange → ImpactKpiRow<br/>5 metrics + coverage note]
+  Body --> D4[buildImpactChartData<br/>category OR model daily → ImpactChartCard<br/>per-bucket · running total · share]
+  Body --> D2[rankedImpactCategoryTotals → ImpactRankedTable]
+  Body --> D3[rankedModelMetrics → ImpactModelTable<br/>+ unit economics]
   Body --> D5[rankedImpactLocationTotals → ImpactLocationTable]
-  Body --> D6[ImpactCallLedger<br/>range-scoped]
+  Body --> D6[ImpactCallLedger<br/>range + isolated-series scope]
   LP[consumptionLedgerProvider<br/>InsightsRange family] -->|newest calls| D6
-  Toggle[DsSegmentedToggle<br/>Cost · Energy · CO₂e · Tokens] -->|local state| Body
+  D4 -.->|tap bar / legend| State
+  D2 -.->|tap row| State
+  D3 -.->|tap row| State
 ```
+
+The chart, its companion table, and the ledger all read the body's shared
+`isolatedKey` / `ledgerBucketStart`, so a tap in any of them moves the others:
+one isolate, one drill, one scope chip.
 
 The body is the single provider consumer; the children are dumb value widgets:
 
 - **Metric lens** — `model/impact_dashboard_models.dart` defines
-  `ConsumptionMetric { cost, energy, carbon, tokens }` with `valueOf`
-  (projects credits / kWh / g CO₂ / total tokens out of a
-  `ConsumptionMetrics`) and `formatValue` (delegates to the shared
-  formatters). The KPI row always shows all four totals; the segmented
-  toggle picks the one the chart + table break down.
+  `ConsumptionMetric { cost, energy, carbon, tokens, requests }` with `valueOf`
+  (projects credits / kWh / g CO₂ / total tokens / call count out of a
+  `ConsumptionMetrics`), `formatValue` (delegates to the shared formatters),
+  and `isCloudOnly` (false only for `requests`). `requests` (call count) is
+  the one metric every provider populates — cost/energy/carbon are cloud-only
+  and tokens need usage reporting — so it is the dependable lens for
+  "favorite models over time". The KPI row shows all five totals (a
+  responsive grid) plus a note that cost/energy/CO₂e are measured for cloud
+  models only; the metric toggle (a horizontally-scrolling segmented control,
+  so five labels never clip on a phone) picks the one the chart + table break
+  down.
 - **Pure derivations** — `logic/impact_dashboard_data.dart` mirrors the
   Insights `time_bucketing.dart` builders over `ConsumptionDayBuckets`:
   `dailyMetricTotals` (zero-filled per-day maps, zero values dropped),
   `dailyModelMetricTotals` (the same projection over `modelDays`),
   `rankedImpactCategoryTotals` (descending totals for nullable string keys),
-  `impactTotalsInRange` (KPI fold), `rankedImpactLocationTotals` (range-scoped
-  country/data-centre environmental totals), and `buildImpactChartData` (weekly
+  `rankedModelMetrics` (per-model **full `ConsumptionMetrics`** ranked by the
+  selected metric, so the model table can show call count + cost-per-million-
+  tokens, not just the ranked total), `impactTotalsInRange` (KPI fold),
+  `rankedImpactLocationTotals` (range-scoped country/data-centre environmental
+  totals), `shareValues` (per-bucket 100 % normalization for the Share view,
+  zero-total buckets left at zero), and `buildImpactChartData` (weekly
   aggregation via `weekStartDay`, largest-first stacking, "Other" rollup via the
-  Insights sentinel/caps).
+  Insights sentinel/caps — but a **lone** leftover series is shown by name
+  rather than folded into an anonymous "Other").
   Granularity deliberately never goes hourly: consumption cells are
   day-keyed, so a 1-day range renders one day bucket. The Y axis snaps to a
   1/2/5 × 10ⁿ nice ceiling (`impactNiceCeiling`), not the Insights hour
   ladder.
-- **Chart** — `ui/widgets/impact_chart_card.dart`: a stateful fl_chart card
-  with the same mode switch as Time Analysis: per-bucket stacked bars or a
-  cumulative stacked area ("Running total") over elapsed buckets. Both modes use
-  the same ranked series, "Other" rollup, axis/tooltip/legend formatting through
-  the metric lens, elapsed-buckets trimming, and quiet today-bar edge / area
-  trimming rules as the Insights chart. Cumulative mode falls back to bars until
-  at least two elapsed buckets exist, so the toggle never produces a lone point.
+- **Breakdown dimension** — a `Breakdown` toggle (`ImpactBreakdownDimension
+  { category, model }`) drives both the chart and its companion table, so
+  category and model share one surface instead of stacking two near-identical
+  tables. The Model dimension appears only when the period has model-attributed
+  calls. Feeding `buildImpactChartData` the model daily series gives the
+  Cursor-style "favorite models over time" chart from the same machinery.
+- **Chart** — `ui/widgets/impact_chart_card.dart` + `impact_chart_card_charts.dart`
+  (`ImpactStackedBars` / `ImpactStackedArea` / `ImpactChartLegend`): a stateful
+  fl_chart card with three modes — per-bucket stacked bars, a cumulative stacked
+  area ("Running total"), and **Share** (per-bucket 100 % composition, drawn as
+  a smooth normalized stacked area — the mix-over-time view — falling back to
+  100 % bars below two elapsed buckets). Cumulative falls back to bars until two
+  buckets have elapsed so the toggle never produces a lone point. A persistent
+  hint caption names the two chart interactions.
+- **Series identity (`SeriesResolver`)** — `ui/widgets/series_resolver.dart`
+  abstracts key → label + fill/swatch color so the same chart renders any
+  dimension. `CategorySeriesResolver` wraps `InsightsCategoryResolver` +
+  `chartColorFor`/`swatchColorFor` (category charts stay pixel-identical to
+  before). `PaletteSeriesResolver` colors model/location keys from a **derived
+  categorical palette** (`seriesPaletteChartColor`/`Swatch` in
+  `insights/logic/chart_colors.dart`): ten muted hues spread ~108° apart
+  between consecutive slots, assigned by a stable sorted-key order so a model
+  keeps one color across the chart, its legend, and the table.
+- **Interactions** — isolation and drill state live on the dashboard body and
+  are threaded into the chart, legend, table, and ledger together.
+  - *Isolate*: tapping a legend entry **or** a breakdown-table row re-baselines
+    the chart to that one series (drawn from y=0, axis rescaled), fades the
+    other legend/table rows, and scopes the "Recent calls" ledger to that
+    model/category.
+  - *Drill*: tapping a bar highlights it (accent outline, siblings dimmed) and
+    scopes the ledger to that bucket's days. Isolate + drill merge into one
+    clearable scope chip above the ledger; tapping the same target again, or
+    the chip, clears it. Any period change auto-clears both.
+  Truncated edge weeks are faded on-chart (except when isolating, so the single
+  clean series keeps its hue).
 - **Category identity** — reuses `InsightsCategoryResolver` +
   `chartColorFor`/`swatchColorFor`, so both dashboards speak the same
   color/label language ("Uncategorized", "Other", "Deleted category").
-- **Model identity** — `ui/widgets/impact_model_table.dart`
-  (`ImpactModelTable`) renders the selected metric by model id. It uses
-  provider-native model ids where available, configured model ids as fallback,
-  and an explicit "Unknown model" row for usage rows without either id.
+- **Model table** — `ui/widgets/impact_model_table.dart` (`ImpactModelTable`)
+  renders the ranked model breakdown with a palette swatch matching the chart,
+  and a per-row unit-economics line ("N calls · €X/1M tok" — dropped when a
+  model reports no tokens/cost, e.g. local transcription). Rows are tappable to
+  isolate and carry a chevron affordance; the header reserves the chevron width
+  so columns stay aligned. Model keys use provider-native ids where available,
+  configured model ids as fallback, and an explicit "Unknown model" row for
+  usage rows without either id.
 - **Serving-location identity** — `ui/widgets/impact_location_table.dart`
   (`ImpactLocationTable`) renders provider-reported data-centre impact by
   inferred country/data-center, energy, CO₂e and renewable share. It renders
@@ -276,10 +326,12 @@ Delivered and tested: the storage schema, repository, aggregation query layer,
 full Matrix sync integration, the Melious non-streaming impact-capture mechanism
 (`MeliousCallImpact` + `InferenceImpactCollector`), the `AiConsumptionRecorder`,
 end-to-end capture on the unified inference path, the skill runner, and
-task-agent turns, and the AI Impact dashboard (KPI row, per-bucket/cumulative
-metric chart, ranked table, model table, location table, period stepper, call
-ledger). The
-remaining agent workflows above are the follow-on work.
+task-agent turns, and the AI Impact dashboard (five-metric KPI row with a
+cloud-only coverage note, a category/model breakdown toggle driving a
+per-bucket / running-total / share chart, click-to-isolate and tap-to-drill
+that scope the ranked table + call ledger together, per-model unit economics,
+location table, and period stepper). The remaining agent workflows above are
+the follow-on work.
 
 ## Testing
 

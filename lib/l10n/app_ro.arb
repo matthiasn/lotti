@@ -613,7 +613,6 @@
   "aiImpactKpiRequests": "CERERI",
   "aiImpactKpiTokens": "TOKENURI",
   "aiImpactLedgerClearFilter": "Arată tot",
-  "aiImpactLedgerScopedTo": "Apeluri în {bucket}",
   "aiImpactLoadError": "Datele despre impactul AI nu au putut fi încărcate",
   "aiImpactLocationColumn": "LOCAȚIE",
   "aiImpactLocationTitle": "Impact pe locație",

@@ -862,14 +862,6 @@
   "aiImpactKpiRequests": "REQUESTS",
   "aiImpactKpiTokens": "TOKENS",
   "aiImpactLedgerClearFilter": "Show all",
-  "aiImpactLedgerScopedTo": "Calls in {bucket}",
-  "@aiImpactLedgerScopedTo": {
-    "placeholders": {
-      "bucket": {
-        "type": "String"
-      }
-    }
-  },
   "aiImpactLoadError": "Couldn't load AI impact data",
   "aiImpactLocationColumn": "LOCATION",
   "aiImpactLocationTitle": "Impact by location",

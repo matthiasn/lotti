@@ -1406,11 +1406,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiImpactLedgerClearFilter => 'Alle anzeigen';
 
   @override
-  String aiImpactLedgerScopedTo(String bucket) {
-    return 'Aufrufe in $bucket';
-  }
-
-  @override
   String get aiImpactLoadError =>
       'KI-Impact-Daten konnten nicht geladen werden';
 

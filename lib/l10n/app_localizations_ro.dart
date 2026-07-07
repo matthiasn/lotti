@@ -1415,11 +1415,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiImpactLedgerClearFilter => 'Arată tot';
 
   @override
-  String aiImpactLedgerScopedTo(String bucket) {
-    return 'Apeluri în $bucket';
-  }
-
-  @override
   String get aiImpactLoadError =>
       'Datele despre impactul AI nu au putut fi încărcate';
 

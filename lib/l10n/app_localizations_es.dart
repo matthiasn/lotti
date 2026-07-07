@@ -1407,11 +1407,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiImpactLedgerClearFilter => 'Mostrar todo';
 
   @override
-  String aiImpactLedgerScopedTo(String bucket) {
-    return 'Llamadas en $bucket';
-  }
-
-  @override
   String get aiImpactLoadError =>
       'No se pudieron cargar los datos de impacto de IA';
 

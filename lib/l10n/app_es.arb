@@ -613,7 +613,6 @@
   "aiImpactKpiRequests": "SOLICITUDES",
   "aiImpactKpiTokens": "TOKENS",
   "aiImpactLedgerClearFilter": "Mostrar todo",
-  "aiImpactLedgerScopedTo": "Llamadas en {bucket}",
   "aiImpactLoadError": "No se pudieron cargar los datos de impacto de IA",
   "aiImpactLocationColumn": "UBICACIÓN",
   "aiImpactLocationTitle": "Impacto por ubicación",

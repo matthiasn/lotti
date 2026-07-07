@@ -613,7 +613,6 @@
   "aiImpactKpiRequests": "ANFRAGEN",
   "aiImpactKpiTokens": "TOKENS",
   "aiImpactLedgerClearFilter": "Alle anzeigen",
-  "aiImpactLedgerScopedTo": "Aufrufe in {bucket}",
   "aiImpactLoadError": "KI-Impact-Daten konnten nicht geladen werden",
   "aiImpactLocationColumn": "STANDORT",
   "aiImpactLocationTitle": "Impact nach Standort",
