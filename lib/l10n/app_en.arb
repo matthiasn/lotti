@@ -834,7 +834,7 @@
   "aiImpactBreakdownCategory": "By category",
   "aiImpactBreakdownLabel": "Breakdown",
   "aiImpactBreakdownModel": "By model",
-  "aiImpactChartShareCaption": "Share of period total",
+  "aiImpactChartShareCaption": "Composition over time",
   "aiImpactChartShareSegment": "Share",
   "aiImpactChartTitle": "{metric} by category",
   "@aiImpactChartTitle": {
@@ -878,8 +878,24 @@
   "aiImpactMetricEnergy": "Energy",
   "aiImpactMetricRequests": "Requests",
   "aiImpactMetricTokens": "Tokens",
+  "aiImpactModelCallsLabel": "{count} calls",
+  "@aiImpactModelCallsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "aiImpactModelColumn": "MODEL",
   "aiImpactModelOther": "Other models",
+  "aiImpactModelRatePerMillion": "{cost}/1M tok",
+  "@aiImpactModelRatePerMillion": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
   "aiImpactModelTitle": "Model breakdown",
   "aiImpactModelUnknown": "Unknown model",
   "aiImpactRenewableColumn": "RENEWABLE",

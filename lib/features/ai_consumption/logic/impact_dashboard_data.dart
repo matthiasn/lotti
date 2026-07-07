@@ -56,6 +56,32 @@ List<Map<String?, double>> _dailyMetricTotalsFrom(
   });
 }
 
+/// Total [ConsumptionMetrics] per model across [range], sorted descending by
+/// [metric]'s value; models whose value for [metric] is zero are dropped.
+///
+/// Unlike [rankedImpactCategoryTotals] (which keeps only the metric scalar),
+/// this preserves the full bundle so the model table can show unit economics
+/// (call count, cost per million tokens) alongside the ranked total.
+List<MapEntry<String?, ConsumptionMetrics>> rankedModelMetrics(
+  ConsumptionDayBuckets buckets,
+  InsightsRange range,
+  ConsumptionMetric metric,
+) {
+  final totals = <String?, ConsumptionMetrics>{};
+  for (var day = range.startDay; day < range.endDayExclusive; day++) {
+    final cells = buckets.modelDays[day];
+    if (cells == null) continue;
+    cells.forEach((key, metrics) {
+      totals[key] = (totals[key] ?? ConsumptionMetrics.zero) + metrics;
+    });
+  }
+  final entries =
+      totals.entries.where((e) => metric.valueOf(e.value) > 0).toList()..sort(
+        (a, b) => metric.valueOf(b.value).compareTo(metric.valueOf(a.value)),
+      );
+  return entries;
+}
+
 /// Total metric value per category across all buckets, descending; zero and
 /// negative totals are dropped.
 List<MapEntry<String?, double>> rankedImpactCategoryTotals(
@@ -199,7 +225,13 @@ ImpactChartData buildImpactChartData(
   }
 
   final ranked = rankedImpactCategoryTotals(perBucket);
-  final maxSeries = maxChartSeriesFor(granularity);
+  // A lone leftover series is never worth an anonymous "Other" band: folding
+  // exactly one model/category into a mystery gray hides it (e.g. a late-
+  // surging model), so show it by name instead. Only roll up when at least
+  // two series would collapse.
+  final maxSeries = ranked.length == maxChartSeriesFor(granularity) + 1
+      ? maxChartSeriesFor(granularity) + 1
+      : maxChartSeriesFor(granularity);
   final visible = ranked.take(maxSeries).map((e) => e.key);
   final rolledUp = ranked.skip(maxSeries).map((e) => e.key).toSet();
 

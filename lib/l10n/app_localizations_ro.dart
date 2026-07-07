@@ -1366,7 +1366,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiImpactBreakdownModel => 'După model';
 
   @override
-  String get aiImpactChartShareCaption => 'Ponderea din totalul perioadei';
+  String get aiImpactChartShareCaption => 'Compoziția în timp';
 
   @override
   String get aiImpactChartShareSegment => 'Pondere';
@@ -1444,10 +1444,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiImpactMetricTokens => 'Tokenuri';
 
   @override
+  String aiImpactModelCallsLabel(String count) {
+    return '$count apeluri';
+  }
+
+  @override
   String get aiImpactModelColumn => 'MODEL';
 
   @override
   String get aiImpactModelOther => 'Alte modele';
+
+  @override
+  String aiImpactModelRatePerMillion(String cost) {
+    return '$cost/1M tok';
+  }
 
   @override
   String get aiImpactModelTitle => 'Defalcare pe model';

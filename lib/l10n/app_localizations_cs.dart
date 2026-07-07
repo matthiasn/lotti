@@ -1353,7 +1353,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactBreakdownModel => 'Podle modelu';
 
   @override
-  String get aiImpactChartShareCaption => 'Podíl na celku za období';
+  String get aiImpactChartShareCaption => 'Složení v čase';
 
   @override
   String get aiImpactChartShareSegment => 'Podíl';
@@ -1430,10 +1430,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactMetricTokens => 'Tokeny';
 
   @override
+  String aiImpactModelCallsLabel(String count) {
+    return '$count volání';
+  }
+
+  @override
   String get aiImpactModelColumn => 'MODEL';
 
   @override
   String get aiImpactModelOther => 'Ostatní modely';
+
+  @override
+  String aiImpactModelRatePerMillion(String cost) {
+    return '$cost/1M tok';
+  }
 
   @override
   String get aiImpactModelTitle => 'Rozpad podle modelů';

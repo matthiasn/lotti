@@ -2428,7 +2428,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiImpactChartShareCaption.
   ///
   /// In en, this message translates to:
-  /// **'Share of period total'**
+  /// **'Composition over time'**
   String get aiImpactChartShareCaption;
 
   /// No description provided for @aiImpactChartShareSegment.
@@ -2563,6 +2563,12 @@ abstract class AppLocalizations {
   /// **'Tokens'**
   String get aiImpactMetricTokens;
 
+  /// No description provided for @aiImpactModelCallsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} calls'**
+  String aiImpactModelCallsLabel(String count);
+
   /// No description provided for @aiImpactModelColumn.
   ///
   /// In en, this message translates to:
@@ -2574,6 +2580,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Other models'**
   String get aiImpactModelOther;
+
+  /// No description provided for @aiImpactModelRatePerMillion.
+  ///
+  /// In en, this message translates to:
+  /// **'{cost}/1M tok'**
+  String aiImpactModelRatePerMillion(String cost);
 
   /// No description provided for @aiImpactModelTitle.
   ///

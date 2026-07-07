@@ -32,6 +32,7 @@ void main() {
     WidgetTester tester, {
     bool shareMode = false,
     String? isolatedKey,
+    int? selectedBucketIndex,
     ValueChanged<int>? onBucketTap,
   }) async {
     await withClock(Clock.fixed(fixedNow), () async {
@@ -46,6 +47,7 @@ void main() {
               metric: ConsumptionMetric.cost,
               shareMode: shareMode,
               isolatedKey: isolatedKey,
+              selectedBucketIndex: selectedBucketIndex,
               onBucketTap: onBucketTap,
             ),
           ),
@@ -114,6 +116,23 @@ void main() {
       ).data.barGroups[0].barRods.single.rodStackItems;
       expect(rods[0].color?.a, 1.0);
       expect(rods[1].color?.a, 1.0);
+    });
+  });
+
+  group('drilled-bucket highlight', () {
+    testWidgets('the selected bar keeps full alpha + accent edge; others dim', (
+      tester,
+    ) async {
+      await pumpBars(tester, selectedBucketIndex: 0);
+      final groups = readChart(tester).data.barGroups;
+      // Bucket 0 selected: an accent outline and full-alpha fill.
+      expect(groups[0].barRods.single.borderSide.width, 1.5);
+      expect(groups[0].barRods.single.rodStackItems[0].color?.a, 1.0);
+      // Bucket 1 (not selected) recedes.
+      expect(
+        groups[1].barRods.single.rodStackItems[0].color?.a,
+        lessThan(1.0),
+      );
     });
   });
 

@@ -36,6 +36,7 @@ class ImpactStackedBars extends StatelessWidget {
     required this.metric,
     this.shareMode = false,
     this.isolatedKey,
+    this.selectedBucketIndex,
     this.onBucketTap,
     super.key,
   });
@@ -53,6 +54,11 @@ class ImpactStackedBars extends StatelessWidget {
   /// When set, every other series is dimmed so the isolated one stands out.
   /// The axis is left unscaled so bars keep their relative heights.
   final String? isolatedKey;
+
+  /// The drilled bucket (the ledger is scoped to it): the selected bar keeps
+  /// full opacity and gains an accent outline while its siblings dim, so the
+  /// drill has feedback at the tap site regardless of scroll position.
+  final int? selectedBucketIndex;
 
   /// Called with a bucket index when the user taps that bar — drives the
   /// drill-down into the call ledger for that period.
@@ -224,22 +230,36 @@ class ImpactStackedBars extends StatelessWidget {
                     () {
                       var from = 0.0;
                       final stack = <BarChartRodStackItem>[];
+                      // Bars other than the drilled one recede so the
+                      // selection reads at a glance.
+                      final bucketDimmed =
+                          selectedBucketIndex != null &&
+                          selectedBucketIndex != i;
                       for (var s = 0; s < data.seriesKeys.length; s++) {
                         final value = plotValues[s][i];
                         if (value <= 0) continue;
                         final key = data.seriesKeys[s];
-                        final fill = resolver.fillColor(key, brightness);
+                        var color = _dim(
+                          resolver.fillColor(key, brightness),
+                          key,
+                          isolatedKey,
+                        );
+                        if (bucketDimmed) {
+                          color = color.withValues(alpha: color.a * 0.35);
+                        }
                         stack.add(
                           BarChartRodStackItem(
                             from,
                             from + value,
-                            _dim(fill, key, isolatedKey),
+                            color,
                             borderSide: segmentEdge,
                           ),
                         );
                         from += value;
                       }
-                      // Quiet "today" cue: only today's bar gets an edge.
+                      // The drilled bar wins the edge cue; else a quiet
+                      // "today" edge on the current day's bar.
+                      final isSelected = selectedBucketIndex == i;
                       final isToday =
                           data.granularity == InsightsGranularity.day &&
                           epochDay(data.bucketStarts[i]) == today;
@@ -249,7 +269,12 @@ class ImpactStackedBars extends StatelessWidget {
                         borderRadius: BorderRadius.vertical(
                           top: Radius.circular(tokens.radii.xs / 2),
                         ),
-                        borderSide: isToday
+                        borderSide: isSelected
+                            ? BorderSide(
+                                color: tokens.colors.text.highEmphasis,
+                                width: 1.5,
+                              )
+                            : isToday
                             ? BorderSide(
                                 color: tokens.colors.text.mediumEmphasis,
                               )
@@ -267,14 +292,19 @@ class ImpactStackedBars extends StatelessWidget {
   }
 }
 
-/// Cumulative running-total area chart: draws pre-stacked category series as
-/// filled areas across elapsed buckets. The card falls back to bars when fewer
-/// than two buckets have elapsed.
+/// Stacked filled-area chart across elapsed buckets. Two flavours:
+/// - **cumulative** (default): running totals over time (each series
+///   accumulates across buckets), the "where did it add up to" view.
+/// - **share** ([shareMode]): each bucket normalized to 100% and the series
+///   stacked within it, the smooth "mix over time" crossover view.
+///
+/// The card falls back to bars when fewer than two buckets have elapsed.
 class ImpactStackedArea extends StatelessWidget {
   const ImpactStackedArea({
     required this.data,
     required this.resolver,
     required this.metric,
+    this.shareMode = false,
     this.isolatedKey,
     this.onBucketTap,
     super.key,
@@ -283,6 +313,9 @@ class ImpactStackedArea extends StatelessWidget {
   final ImpactChartData data;
   final SeriesResolver resolver;
   final ConsumptionMetric metric;
+
+  /// Per-bucket 100% composition instead of cumulative running totals.
+  final bool shareMode;
 
   /// When set, every other series is dimmed so the isolated one stands out.
   final String? isolatedKey;
@@ -301,13 +334,17 @@ class ImpactStackedArea extends StatelessWidget {
       color: tokens.colors.text.mediumEmphasis,
     );
 
-    final cumulative = _accumulateImpactValues(data.values);
+    // Share stacks per-bucket shares; cumulative stacks running totals. Both
+    // then stack across series to get each band's top edge.
+    final baseValues = shareMode
+        ? shareValues(data.values)
+        : _accumulateImpactValues(data.values);
     final stackedTops = List.generate(
       data.seriesKeys.length,
       (s) => List.generate(bucketCount, (i) {
         var top = 0.0;
         for (var j = 0; j <= s; j++) {
-          top += cumulative[j][i];
+          top += baseValues[j][i];
         }
         return top;
       }),
@@ -326,7 +363,7 @@ class ImpactStackedArea extends StatelessWidget {
       }
     }
     final niceCeiling = impactNiceCeiling(maxTop * 1.08);
-    final maxY = niceCeiling <= 0 ? 1.0 : niceCeiling;
+    final maxY = shareMode ? 1.0 : (niceCeiling <= 0 ? 1.0 : niceCeiling);
     final interval = maxY / 4;
     final labelEvery = lastDrawnBucket <= 7
         ? 1
@@ -356,7 +393,11 @@ class ImpactStackedArea extends StatelessWidget {
               getTitlesWidget: (value, meta) => SideTitleWidget(
                 meta: meta,
                 child: Text(
-                  value == 0 ? '' : metric.formatValue(value),
+                  value == 0
+                      ? ''
+                      : shareMode
+                      ? formatShare(value)
+                      : metric.formatValue(value),
                   style: axisStyle,
                 ),
               ),
@@ -425,6 +466,7 @@ class ImpactStackedArea extends StatelessWidget {
                         metric,
                         index,
                         totalOverride: stackedTops.last[index],
+                        showTotal: !shareMode,
                       ),
                       style.copyWith(
                         fontWeight: tokens.typography.weight.semiBold,
@@ -437,7 +479,8 @@ class ImpactStackedArea extends StatelessWidget {
                         index,
                         style,
                         brightness,
-                        values: cumulative,
+                        values: baseValues,
+                        valueFormat: shareMode ? formatShare : null,
                       ),
                     )
                   else

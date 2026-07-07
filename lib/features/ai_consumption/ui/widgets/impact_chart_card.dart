@@ -45,6 +45,8 @@ class ImpactChartCard extends StatefulWidget {
     required this.resolver,
     required this.metric,
     this.title,
+    this.coverageNote,
+    this.selectedBucketIndex,
     this.onBucketSelected,
     super.key,
   });
@@ -62,6 +64,14 @@ class ImpactChartCard extends StatefulWidget {
   /// Card heading. When null, defaults to the "{metric} by category" title —
   /// callers pass the model title for the model breakdown dimension.
   final String? title;
+
+  /// Optional measurement caveat shown as the per-bucket caption (e.g. that a
+  /// cloud-only metric excludes local models on the model breakdown).
+  final String? coverageNote;
+
+  /// The drilled bucket index, highlighted in the chart while the ledger is
+  /// scoped to it.
+  final int? selectedBucketIndex;
 
   /// Called with a bucket's start time when the user taps that bar/point —
   /// drives the drill-down that scopes the call ledger to that period.
@@ -91,7 +101,10 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
       ? messages.insightsChartPerWeek
       : messages.insightsChartPerDay;
 
-  String _captionText(AppLocalizations messages) {
+  /// The caption under the title, or null for none. Per-bucket mode shows
+  /// only the optional coverage note — the mode is already named by the
+  /// toggle right below, so a "Per week" caption there would be redundant.
+  String? _captionText(AppLocalizations messages) {
     if (_mode == ImpactChartMode.share) {
       return messages.aiImpactChartShareCaption;
     }
@@ -99,16 +112,23 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
     if (_mode == ImpactChartMode.cumulative) {
       return messages.insightsChartCumulativeCaption;
     }
-    return _perBucketLabel(messages);
+    return widget.coverageNote;
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final caption = _captionText(messages);
     final isShare = _mode == ImpactChartMode.share;
+    // A stacked area needs two elapsed points; a single-bucket share view
+    // falls back to a normalized bar.
+    final shareFallsBack =
+        isShare && elapsedImpactBucketCount(widget.chartData) < 2;
     final showBars =
-        _mode == ImpactChartMode.perBucket || isShare || _cumulativeFallsBack;
+        _mode == ImpactChartMode.perBucket ||
+        _cumulativeFallsBack ||
+        shareFallsBack;
     // Drop a stale isolation the moment its series leaves the chart.
     final isolatedKey = widget.chartData.seriesKeys.contains(_isolatedKey)
         ? _isolatedKey
@@ -141,14 +161,16 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
                     color: tokens.colors.text.highEmphasis,
                   ),
                 ),
-                SizedBox(height: tokens.spacing.step1),
-                Text(
-                  _captionText(messages),
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
+                if (caption != null && caption.isNotEmpty) ...[
+                  SizedBox(height: tokens.spacing.step1),
+                  Text(
+                    caption,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                ],
                 SizedBox(height: tokens.spacing.step3),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -190,14 +212,16 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
                       data: widget.chartData,
                       resolver: widget.resolver,
                       metric: widget.metric,
-                      shareMode: isShare,
+                      shareMode: shareFallsBack,
                       isolatedKey: isolatedKey,
+                      selectedBucketIndex: widget.selectedBucketIndex,
                       onBucketTap: onBucketTap,
                     )
                   : ImpactStackedArea(
                       data: widget.chartData,
                       resolver: widget.resolver,
                       metric: widget.metric,
+                      shareMode: isShare,
                       isolatedKey: isolatedKey,
                       onBucketTap: onBucketTap,
                     ),

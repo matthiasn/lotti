@@ -1358,7 +1358,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiImpactBreakdownModel => 'Por modelo';
 
   @override
-  String get aiImpactChartShareCaption => 'Proporción del total del período';
+  String get aiImpactChartShareCaption => 'Composición a lo largo del tiempo';
 
   @override
   String get aiImpactChartShareSegment => 'Proporción';
@@ -1436,10 +1436,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiImpactMetricTokens => 'Tokens';
 
   @override
+  String aiImpactModelCallsLabel(String count) {
+    return '$count llamadas';
+  }
+
+  @override
   String get aiImpactModelColumn => 'MODELO';
 
   @override
   String get aiImpactModelOther => 'Otros modelos';
+
+  @override
+  String aiImpactModelRatePerMillion(String cost) {
+    return '$cost/1M tok';
+  }
 
   @override
   String get aiImpactModelTitle => 'Desglose por modelo';

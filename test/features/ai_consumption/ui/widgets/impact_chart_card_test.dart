@@ -149,28 +149,32 @@ void main() {
     expect(rows.indexOf('Agents'), lessThan(rows.indexOf('Research')));
   });
 
-  testWidgets('share mode normalizes every bar to 100%', (tester) async {
-    final chartData = buildImpactChartData(
-      bucketsWith({
-        0: {'cat-a': 2.0, 'cat-b': 1.0},
-        2: {'cat-a': 1.0},
-      }),
-      range,
-      ConsumptionMetric.cost,
-    );
-    await pumpCard(tester, chartData: chartData);
+  testWidgets(
+    'share mode renders a normalized 0–100% stacked area (not bars)',
+    (tester) async {
+      final chartData = buildImpactChartData(
+        bucketsWith({
+          0: {'cat-a': 2.0, 'cat-b': 1.0},
+          2: {'cat-a': 1.0},
+        }),
+        range,
+        ConsumptionMetric.cost,
+      );
+      await pumpCard(tester, chartData: chartData);
 
-    await tester.tap(toggle('Share'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+      await tester.tap(toggle('Share'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
 
-    expect(find.byType(BarChart), findsOneWidget);
-    expect(find.text('Composition over time'), findsOneWidget);
-    final chart = tester.widget<BarChart>(find.byType(BarChart));
-    // Axis is a 0–100% scale; the mixed bucket 0 fills to the top.
-    expect(chart.data.maxY, 1.0);
-    expect(chart.data.barGroups.first.barRods.single.toY, closeTo(1.0, 1e-9));
-  });
+      // The mix-over-time view is a smooth stacked area, not 100% bars.
+      expect(find.byType(LineChart), findsOneWidget);
+      expect(find.byType(BarChart), findsNothing);
+      expect(find.text('Composition over time'), findsOneWidget);
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      // Axis is a 0–100% scale; the top band reaches 1.0.
+      expect(chart.data.maxY, 1.0);
+    },
+  );
 
   testWidgets('tapping a legend entry isolates it and a second tap clears it', (
     tester,

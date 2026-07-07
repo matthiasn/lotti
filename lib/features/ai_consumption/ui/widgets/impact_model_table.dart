@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
+import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_table_card.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
@@ -7,15 +9,13 @@ import 'package:lotti/features/insights/ui/widgets/insights_format.dart'
     show formatShare;
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Exhaustive per-model breakdown of the selected metric.
+/// Exhaustive per-model breakdown of the selected metric, with unit economics.
 ///
-/// Model keys are provider-native ids when available, then configured Lotti
-/// model ids, then `null` for calls that reported usage without a model. Each
-/// row carries the model's palette swatch — the same color it wears in the
-/// model chart and its legend — so a model reads consistently across chart,
-/// legend, and table. The table keeps the same value/share columns as the
-/// category breakdown and degrades columns on narrow panes instead of
-/// overflowing.
+/// Each row carries the model's palette swatch — the same color it wears in
+/// the model chart and its legend — plus a secondary line of the actionable
+/// numbers a totals column can't answer: how many calls it made and its cost
+/// per million tokens (its efficiency). The value/share columns degrade on
+/// narrow panes instead of overflowing.
 class ImpactModelTable extends StatelessWidget {
   const ImpactModelTable({
     required this.entries,
@@ -24,7 +24,9 @@ class ImpactModelTable extends StatelessWidget {
     super.key,
   });
 
-  final List<MapEntry<String?, double>> entries;
+  /// Per-model totals, ranked descending by [metric] — the output of
+  /// `rankedModelMetrics`.
+  final List<MapEntry<String?, ConsumptionMetrics>> entries;
 
   /// Resolves model keys to labels and their palette swatch color — the same
   /// resolver the model chart uses, so one model = one color everywhere.
@@ -38,7 +40,22 @@ class ImpactModelTable extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final brightness = Theme.of(context).brightness;
-    final total = entries.fold<double>(0, (sum, e) => sum + e.value);
+    final total = entries.fold<double>(
+      0,
+      (sum, e) => sum + metric.valueOf(e.value),
+    );
+
+    // "12 calls · €5.00/1M tok" — the cost-per-million is dropped when a model
+    // reports no tokens or no cost (e.g. a local transcription model).
+    String metaLine(ConsumptionMetrics m) {
+      final calls = messages.aiImpactModelCallsLabel(
+        formatCallCount(m.callCount),
+      );
+      if (m.totalTokens <= 0 || m.credits <= 0) return calls;
+      final perMillion = m.credits / m.totalTokens * 1000000;
+      return '$calls · '
+          '${messages.aiImpactModelRatePerMillion(formatCredits(perMillion))}';
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -51,10 +68,7 @@ class ImpactModelTable extends StatelessWidget {
             _ModelTableRowLayout(
               showValue: showValue,
               showShare: showShare,
-              model: Text(
-                messages.aiImpactModelColumn,
-                style: headerStyle,
-              ),
+              model: Text(messages.aiImpactModelColumn, style: headerStyle),
               value: Text(
                 messages.insightsTableTotal,
                 style: headerStyle,
@@ -72,35 +86,56 @@ class ImpactModelTable extends StatelessWidget {
                 showValue: showValue,
                 showShare: showShare,
                 model: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: tokens.spacing.step3,
-                      height: tokens.spacing.step3,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: resolver.swatchColor(entry.key, brightness),
+                    Padding(
+                      padding: EdgeInsets.only(top: tokens.spacing.step1),
+                      child: Container(
+                        width: tokens.spacing.step3,
+                        height: tokens.spacing.step3,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: resolver.swatchColor(entry.key, brightness),
+                        ),
                       ),
                     ),
                     SizedBox(width: tokens.spacing.step3),
                     Expanded(
-                      child: Text(
-                        resolver.labelFor(entry.key),
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: tokens.colors.text.highEmphasis,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            resolver.labelFor(entry.key),
+                            style: tokens.typography.styles.body.bodySmall
+                                .copyWith(
+                                  color: tokens.colors.text.highEmphasis,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            metaLine(entry.value),
+                            style: tokens.typography.styles.others.caption
+                                .copyWith(
+                                  color: tokens.colors.text.mediumEmphasis,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
                 value: Text(
-                  metric.formatValue(entry.value),
+                  metric.formatValue(metric.valueOf(entry.value)),
                   style: numberStyle,
                   textAlign: TextAlign.right,
                 ),
                 share: Text(
-                  formatShare(total > 0 ? entry.value / total : 0),
+                  formatShare(
+                    total > 0 ? metric.valueOf(entry.value) / total : 0,
+                  ),
                   style: numberStyle.copyWith(
                     color: tokens.colors.text.mediumEmphasis,
                   ),

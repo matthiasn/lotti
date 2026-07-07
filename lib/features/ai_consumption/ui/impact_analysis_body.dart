@@ -170,12 +170,6 @@ class _ImpactDashboardData {
   final ConsumptionDayBuckets buckets;
 }
 
-/// Below this content width the metric toggle switches to the design
-/// system's fill-width `expand` mode (equal-width, dense segments): the four
-/// shrink-wrapped segments have a fixed intrinsic width that overflows
-/// phone-width panes such as the Settings `ai-usage` panel (~390 px).
-const double _kMetricToggleShrinkMinWidth = 480;
-
 class _DashboardContent extends StatelessWidget {
   const _DashboardContent({
     required this.selection,
@@ -242,7 +236,7 @@ class _DashboardContent extends StatelessWidget {
     final daily = dailyMetricTotals(buckets, range, metric);
     final ranked = rankedImpactCategoryTotals(daily);
     final modelDaily = dailyModelMetricTotals(buckets, range, metric);
-    final rankedModels = rankedImpactCategoryTotals(modelDaily);
+    final rankedModels = rankedModelMetrics(buckets, range, metric);
     final locationTotals = rankedImpactLocationTotals(buckets, range);
     final categoryChart = buildImpactChartData(
       buckets,
@@ -259,8 +253,11 @@ class _DashboardContent extends StatelessWidget {
 
     // A model appears in the breakdown only when the period has
     // model-attributed calls; below that the dimension toggle is hidden and
-    // the chart stays on category.
-    final hasModelData = rankedModels.isNotEmpty;
+    // the chart stays on category. Checked metric-independently so the toggle
+    // doesn't blink away when a cloud-only metric happens to have no models.
+    final hasModelData = buckets.modelDays.values.any(
+      (cells) => cells.isNotEmpty,
+    );
     final showModel =
         dimension == ImpactBreakdownDimension.model && hasModelData;
 
@@ -279,14 +276,22 @@ class _DashboardContent extends StatelessWidget {
       otherLabel: messages.aiImpactModelOther,
     );
 
+    final activeChart = showModel ? modelChart : categoryChart;
+
     // Drill-down: a tapped chart bucket scopes the ledger to that bucket's
     // days. Ignore a stale bucket that no longer falls in the current range.
     final granularity = categoryChart.granularity;
     final drilledStart = ledgerBucketStart;
     InsightsRange? ledgerRange;
     String? ledgerFilterLabel;
+    int? selectedBucketIndex;
     if (drilledStart != null) {
       final startDay = epochDay(drilledStart);
+      // Highlight the drilled bar so the drill has feedback at the tap site.
+      final index = activeChart.bucketStarts.indexWhere(
+        (d) => epochDay(d) == startDay,
+      );
+      if (index >= 0) selectedBucketIndex = index;
       if (startDay >= range.startDay && startDay < range.endDayExclusive) {
         final span = granularity == InsightsGranularity.week ? 7 : 1;
         ledgerRange = InsightsRange(
@@ -339,26 +344,20 @@ class _DashboardContent extends StatelessWidget {
           body: messages.aiImpactEmptyBody,
         )
       else ...[
-        // Shrink-wrapped and left-aligned when there is room; on narrow
-        // panes the toggle fills the width in the design system's dense
-        // `expand` mode instead — its four shrink-wrapped segments would
-        // otherwise overflow (the control cannot compress below its
-        // intrinsic width).
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final expand = constraints.maxWidth < _kMetricToggleShrinkMinWidth;
-            final toggle = DsSegmentedToggle<ConsumptionMetric>(
-              selected: metric,
-              onChanged: onSelectMetric,
-              expand: expand,
-              segments: [
-                for (final value in ConsumptionMetric.values)
-                  DsSegment(value, consumptionMetricLabel(messages, value)),
-              ],
-            );
-            if (expand) return toggle;
-            return Align(alignment: Alignment.centerLeft, child: toggle);
-          },
+        // Five metric segments never fit five-across on a phone, so the
+        // toggle keeps its natural per-label widths and scrolls horizontally
+        // instead of clipping the last segment — the same wide-content rule
+        // the period stepper and chart-mode toggle use.
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DsSegmentedToggle<ConsumptionMetric>(
+            selected: metric,
+            onChanged: onSelectMetric,
+            segments: [
+              for (final value in ConsumptionMetric.values)
+                DsSegment(value, consumptionMetricLabel(messages, value)),
+            ],
+          ),
         ),
         SizedBox(height: tokens.spacing.sectionGap),
         ImpactKpiRow(totals: totals),
@@ -374,7 +373,7 @@ class _DashboardContent extends StatelessWidget {
           SizedBox(height: tokens.spacing.step5),
         ],
         ImpactChartCard(
-          chartData: showModel ? modelChart : categoryChart,
+          chartData: activeChart,
           resolver: showModel ? modelResolver : categorySeriesResolver,
           metric: metric,
           title: showModel
@@ -382,6 +381,12 @@ class _DashboardContent extends StatelessWidget {
                   consumptionMetricLabel(messages, metric),
                 )
               : null,
+          // On the model breakdown a cloud-only metric drops local models;
+          // surface that where they disappear.
+          coverageNote: showModel && metric.isCloudOnly
+              ? messages.aiImpactCoverageNote
+              : null,
+          selectedBucketIndex: selectedBucketIndex,
           onBucketSelected: onSelectBucket,
         ),
         SizedBox(height: tokens.spacing.sectionGap),

@@ -352,6 +352,28 @@ void main() {
       expect(data.values.last[0], 3.0);
     });
 
+    test('promotes a lone leftover series instead of an anonymous Other', () {
+      // Exactly cap + 1 series: folding one into "Other" would anonymize it
+      // (e.g. a late-surging model), so it is shown by name instead.
+      final justOverCap = ConsumptionDayBuckets(
+        windowStartDay: day0,
+        days: {
+          day0: {
+            for (var c = 1; c <= kInsightsMaxChartSeries + 1; c++)
+              'cat-$c': m(credits: c.toDouble()),
+          },
+        },
+      );
+      final data = buildImpactChartData(
+        justOverCap,
+        InsightsRange(startDay: day0, endDayExclusive: day0 + 7),
+        ConsumptionMetric.cost,
+      );
+      expect(data.rolledUpCount, 0);
+      expect(data.seriesKeys, isNot(contains(kInsightsOtherCategoryKey)));
+      expect(data.seriesKeys, hasLength(kInsightsMaxChartSeries + 1));
+    });
+
     test('long ranges aggregate to calendar weeks with partial-edge flags', () {
       // Starts on a Thursday, 140 days → weekly granularity, first week
       // truncated.
