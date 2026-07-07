@@ -211,6 +211,9 @@ class ImpactStackedBars extends StatelessWidget {
                       data,
                       metric,
                       group.x,
+                      totalOverride: isolating
+                          ? plotValues[isolatedIndex][group.x]
+                          : null,
                       showTotal: !shareMode,
                     ),
                     style.copyWith(
@@ -226,6 +229,7 @@ class ImpactStackedBars extends StatelessWidget {
                       brightness,
                       values: shareMode ? plotValues : null,
                       valueFormat: shareMode ? formatShare : null,
+                      isolatedKey: isolatedKey,
                     ),
                   );
                 },
@@ -260,11 +264,9 @@ class ImpactStackedBars extends StatelessWidget {
                         final value = plotValues[s][i];
                         if (value <= 0) continue;
                         final key = data.seriesKeys[s];
-                        var color = _dim(
-                          resolver.fillColor(key, brightness),
-                          key,
-                          isolatedKey,
-                        );
+                        // Isolation hides the other series outright (the loop
+                        // skips them above), so the fill is always full here.
+                        var color = resolver.fillColor(key, brightness);
                         if (bucketDimmed) {
                           color = color.withValues(alpha: color.a * 0.35);
                         }
@@ -508,7 +510,9 @@ class ImpactStackedArea extends StatelessWidget {
                         data,
                         metric,
                         index,
-                        totalOverride: stackedTops.last[index],
+                        totalOverride: isolating
+                            ? baseValues[isolatedIndex][index]
+                            : stackedTops.last[index],
                         showTotal: !shareMode,
                       ),
                       style.copyWith(
@@ -524,6 +528,7 @@ class ImpactStackedArea extends StatelessWidget {
                         brightness,
                         values: baseValues,
                         valueFormat: shareMode ? formatShare : null,
+                        isolatedKey: isolatedKey,
                       ),
                     )
                   else
@@ -670,13 +675,6 @@ class ImpactChartLegend extends StatelessWidget {
   }
 }
 
-/// Dims [fill] when a series is isolated and this [key] isn't it, so the
-/// selected series stands out while the rest recede (the axis stays put).
-Color _dim(Color fill, String? key, String? isolatedKey) =>
-    isolatedKey != null && key != isolatedKey
-    ? fill.withValues(alpha: 0.16)
-    : fill;
-
 /// Index of the first bucket that starts after [today] (the not-yet-elapsed
 /// tail), or the bucket count when the whole period has elapsed.
 int firstFutureBucket(ImpactChartData data, int today) {
@@ -753,12 +751,16 @@ List<TextSpan> _tooltipRows(
   Brightness brightness, {
   List<List<double>>? values,
   String Function(double value)? valueFormat,
+  String? isolatedKey,
 }) {
   final rowValues = values ?? data.values;
   final format = valueFormat ?? metric.formatValue;
+  // When a series is isolated only it is drawn, so the tooltip lists only it.
   final rows = <(String?, double)>[
     for (var s = 0; s < data.seriesKeys.length; s++)
-      if (rowValues[s][index] > 0) (data.seriesKeys[s], rowValues[s][index]),
+      if (rowValues[s][index] > 0 &&
+          (isolatedKey == null || data.seriesKeys[s] == isolatedKey))
+        (data.seriesKeys[s], rowValues[s][index]),
   ]..sort((a, b) => b.$2.compareTo(a.$2));
 
   return [

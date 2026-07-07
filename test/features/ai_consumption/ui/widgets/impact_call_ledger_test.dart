@@ -95,6 +95,29 @@ void main() {
     expect(find.text('glm-5.2'), findsNothing);
   });
 
+  testWidgets('the truncation notice survives a filter that shrinks the list', (
+    tester,
+  ) async {
+    // A full (capped) fetch of 100, half of which are the filtered model.
+    stubEvents([
+      for (var i = 0; i < 100; i++)
+        makeConsumptionEvent(
+          id: 'evt-$i',
+          createdAt: DateTime(2026, 6, 3, 12).subtract(Duration(minutes: i)),
+          providerModelId: i.isEven ? 'claude-opus-4' : 'glm-5.2',
+          totalTokens: 1000,
+        ),
+    ]);
+    await pumpLedger(tester, modelFilter: 'claude-opus-4');
+
+    // The cap notice is gated on the unfiltered fetch, so it still discloses
+    // that the underlying 100-call page was truncated.
+    expect(
+      find.textContaining('Showing the newest 100 calls'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('renders model, type, time, and full metrics for a measured '
       'call', (tester) async {
     stubEvents([

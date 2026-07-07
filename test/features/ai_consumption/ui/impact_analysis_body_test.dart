@@ -13,6 +13,9 @@ import 'package:lotti/features/ai_consumption/ui/widgets/impact_chart_card.dart'
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_model_table.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_ranked_table.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/features/insights/model/insights_models.dart'
+    show InsightsPeriodUnit;
+import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
@@ -421,6 +424,71 @@ void main() {
       });
     },
   );
+
+  testWidgets('isolating a model scopes the ledger and shows a scope chip', (
+    tester,
+  ) async {
+    stubRows(scenarioRows());
+    await pumpBody(tester, surface: const Size(1280, 2400));
+
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.tap(find.text('By model').last);
+      await tester.pump();
+
+      // Isolate glm-5.2 by tapping its model-table row.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ImpactModelTable),
+          matching: find.text('glm-5.2'),
+        ),
+      );
+      await tester.pump();
+
+      // The scope chip appears (its filter icon) labelled with the model.
+      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
+      expect(find.textContaining('glm-5.2'), findsWidgets);
+    });
+  });
+
+  testWidgets('a period change clears an active drill; period controls fire', (
+    tester,
+  ) async {
+    stubRows(scenarioRows());
+    await pumpBody(tester, surface: const Size(1280, 2400));
+
+    await withClock(Clock.fixed(fixedNow), () async {
+      final card = tester.widget<ImpactChartCard>(
+        find.byType(ImpactChartCard),
+      );
+      card.onBucketSelected!(DateTime(2026, 6, 5));
+      await tester.pump();
+      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
+
+      final stepper = tester.widget<InsightsPeriodStepper>(
+        find.byType(InsightsPeriodStepper),
+      );
+      // Stepping to the previous period clears the drill.
+      stepper.onStep(-1);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.byIcon(Icons.filter_alt_outlined), findsNothing);
+
+      // The other period controls are wired too (and also clear the drill).
+      stepper.onSelectUnit(InsightsPeriodUnit.month);
+      await tester.pump(const Duration(milliseconds: 600));
+      stepper.onSelectToDate!(InsightsPeriodUnit.year);
+      await tester.pump(const Duration(milliseconds: 600));
+
+      // Year-to-date is a weekly range; drilling it exercises the weekly
+      // date-range chip label.
+      final weeklyCard = tester.widget<ImpactChartCard>(
+        find.byType(ImpactChartCard),
+      );
+      weeklyCard.onBucketSelected!(DateTime(2026, 3, 2));
+      await tester.pump();
+      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
+    });
+  });
 
   testWidgets('shows the empty state when the range has no consumption', (
     tester,

@@ -1367,7 +1367,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiImpactChartHint =>
-      'Atinge o bară pentru apeluri · o serie pentru a o izola';
+      'Atingeți o bară pentru apeluri · o serie pentru a o izola';
 
   @override
   String get aiImpactChartShareCaption => 'Compoziția în timp';
@@ -1455,7 +1455,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String aiImpactModelRatePerMillion(String cost) {
-    return '$cost/1M tok';
+    return '$cost/1M tokeni';
   }
 
   @override

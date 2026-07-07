@@ -229,9 +229,8 @@ ImpactChartData buildImpactChartData(
   // exactly one model/category into a mystery gray hides it (e.g. a late-
   // surging model), so show it by name instead. Only roll up when at least
   // two series would collapse.
-  final maxSeries = ranked.length == maxChartSeriesFor(granularity) + 1
-      ? maxChartSeriesFor(granularity) + 1
-      : maxChartSeriesFor(granularity);
+  final seriesCap = maxChartSeriesFor(granularity);
+  final maxSeries = ranked.length == seriesCap + 1 ? seriesCap + 1 : seriesCap;
   final visible = ranked.take(maxSeries).map((e) => e.key);
   final rolledUp = ranked.skip(maxSeries).map((e) => e.key).toSet();
 

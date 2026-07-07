@@ -194,6 +194,8 @@ Widget _isolatableRow({
   required VoidCallback? onTap,
 }) {
   final row = dimmed ? Opacity(opacity: 0.4, child: child) : child;
+  // No gesture wrapper for a non-interactive row (keeps the tree shallow).
+  if (onTap == null) return row;
   return GestureDetector(
     behavior: HitTestBehavior.opaque,
     onTap: onTap,

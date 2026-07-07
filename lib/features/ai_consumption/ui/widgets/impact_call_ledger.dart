@@ -75,7 +75,10 @@ class ImpactCallLedger extends ConsumerWidget {
             ),
             SizedBox(height: tokens.spacing.cardItemSpacing),
             for (final event in events) _LedgerRow(event: event),
-            if (events.length >= kConsumptionLedgerLimit) ...[
+            // Gate the truncation notice on the unfiltered fetch: a series
+            // filter shrinks `events` but the cap was applied to `all`, so a
+            // capped-then-filtered list must still disclose the truncation.
+            if (all.length >= kConsumptionLedgerLimit) ...[
               SizedBox(height: tokens.spacing.cardItemSpacing),
               Text(
                 messages.aiConsumptionLedgerCap(kConsumptionLedgerLimit),

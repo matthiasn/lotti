@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
@@ -60,6 +61,92 @@ void main() {
   BarChart readChart(WidgetTester tester) =>
       tester.widget<BarChart>(find.byType(BarChart));
 
+  Future<void> pumpArea(
+    WidgetTester tester, {
+    bool shareMode = false,
+    String? isolatedKey,
+    ValueChanged<int>? onBucketTap,
+  }) async {
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          SizedBox(
+            width: 600,
+            height: 260,
+            child: ImpactStackedArea(
+              data: data,
+              resolver: resolver,
+              metric: ConsumptionMetric.cost,
+              shareMode: shareMode,
+              isolatedKey: isolatedKey,
+              onBucketTap: onBucketTap,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    });
+  }
+
+  LineChart readLine(WidgetTester tester) =>
+      tester.widget<LineChart>(find.byType(LineChart));
+
+  group('ImpactStackedArea', () {
+    testWidgets('cumulative draws every series stacked as filled areas', (
+      tester,
+    ) async {
+      await pumpArea(tester);
+      // Two series → two stacked line/area bands.
+      expect(readLine(tester).data.lineBarsData, hasLength(2));
+    });
+
+    testWidgets('share mode normalizes the area to a 0–100% axis', (
+      tester,
+    ) async {
+      await pumpArea(tester, shareMode: true);
+      expect(readLine(tester).data.maxY, 1.0);
+    });
+
+    testWidgets(
+      'isolating draws only that series from the baseline and rescales',
+      (tester) async {
+        await pumpArea(tester, isolatedKey: 'a');
+        final chart = readLine(tester);
+        // Only the isolated series is drawn (siblings hidden).
+        expect(chart.data.lineBarsData, hasLength(1));
+        // Axis fits the isolated series' own cumulative max (a: 2 then 3).
+        expect(chart.data.maxY, greaterThan(0));
+        // The tooltip header shows the isolated cumulative value (2), and one
+        // series row — never the grand total.
+        final barData = chart.data.lineBarsData.single;
+        final items = chart.data.lineTouchData.touchTooltipData.getTooltipItems(
+          [LineBarSpot(barData, 0, barData.spots.first)],
+        );
+        final item = items.first!;
+        expect(item.text, contains('€2.00'));
+        expect(item.children, hasLength(1));
+      },
+    );
+
+    testWidgets('a tap on the area reports its bucket index', (tester) async {
+      int? tapped;
+      await pumpArea(tester, isolatedKey: 'a', onBucketTap: (i) => tapped = i);
+      final chart = readLine(tester);
+      final bar = chart.data.lineBarsData.first;
+      // Invoke the touch callback directly (fl_chart hit-testing is flaky in
+      // widget tests) with a tap-up on bucket 0.
+      chart.data.lineTouchData.touchCallback!(
+        FlTapUpEvent(TapUpDetails(kind: PointerDeviceKind.touch)),
+        LineTouchResponse(
+          touchLocation: Offset.zero,
+          touchChartCoordinate: Offset.zero,
+          lineBarSpots: [TouchLineBarSpot(bar, 0, const FlSpot(0, 2), 0)],
+        ),
+      );
+      expect(tapped, 0);
+    });
+  });
+
   group('firstFutureBucket / elapsedImpactBucketCount', () {
     test('counts buckets that start on or before today', () {
       withClock(Clock.fixed(fixedNow), () {
@@ -91,6 +178,20 @@ void main() {
       // Bucket 0: a=2/3 sits below b=1/3 (stacked, largest first at baseline).
       final rods = chart.data.barGroups[0].barRods.single.rodStackItems;
       expect(rods.first.toY, closeTo(2 / 3, 1e-9));
+
+      // Share drops the header total (every bucket is 100%), so the tooltip
+      // header is just the bucket label — no metric figure.
+      final group = chart.data.barGroups[0];
+      final item = chart.data.barTouchData.touchTooltipData.getTooltipItem(
+        group,
+        0,
+        group.barRods.single,
+        0,
+      )!;
+      expect(item.text, isNot(contains('€')));
+      // The rows are the per-series shares (66% / 33%).
+      final rowText = item.children!.map((s) => s.toPlainText()).join();
+      expect(rowText, contains('%'));
     });
   });
 
@@ -119,6 +220,21 @@ void main() {
       expect(rods, hasLength(2));
       expect(rods[0].color?.a, 1.0);
       expect(rods[1].color?.a, 1.0);
+    });
+
+    testWidgets('the tooltip shows only the isolated series and its value', (
+      tester,
+    ) async {
+      await pumpBars(tester, isolatedKey: 'a');
+      final tooltip = readChart(tester).data.barTouchData.touchTooltipData;
+      final group = readChart(tester).data.barGroups[0];
+      final item = tooltip.getTooltipItem(group, 0, group.barRods.single, 0)!;
+      // Bucket 0: a=2, b=1. Isolated on 'a' → header shows a's €2.00, never
+      // the €3.00 grand total, and lists a single series row.
+      expect(item.text, contains('€2.00'));
+      expect(item.text, isNot(contains('€3.00')));
+      expect(item.children, hasLength(1));
+      expect(item.children!.single.toPlainText(), contains('€2.00'));
     });
   });
 

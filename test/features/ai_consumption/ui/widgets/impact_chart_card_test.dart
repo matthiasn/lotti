@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart';
@@ -148,6 +149,65 @@ void main() {
     expect(rows, contains('Research  €1.00'));
     expect(rows.indexOf('Agents'), lessThan(rows.indexOf('Research')));
   });
+
+  testWidgets(
+    'tapping a bar reports its bucket start and the interaction hint shows',
+    (tester) async {
+      DateTime? tapped;
+      final chartData = buildImpactChartData(
+        bucketsWith({
+          for (var d = 0; d < 7; d++) d: {'cat-a': 2.0},
+        }),
+        range,
+        ConsumptionMetric.cost,
+      );
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ImpactChartCard(
+              chartData: chartData,
+              resolver: CategorySeriesResolver(resolver),
+              metric: ConsumptionMetric.cost,
+              onBucketSelected: (d) => tapped = d,
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(900, 700)),
+          ),
+        );
+        await tester.pump();
+
+        // The resting hint is present because the chart is interactive.
+        expect(
+          find.textContaining('Tap a bar to scope calls'),
+          findsOneWidget,
+        );
+
+        // Invoke the bar touch callback directly (fl_chart hit-testing is
+        // flaky in widget tests) with a tap-up on bucket 0.
+        final chart = tester.widget<BarChart>(find.byType(BarChart));
+        final group = chart.data.barGroups.first;
+        chart.data.barTouchData.touchCallback!(
+          FlTapUpEvent(TapUpDetails(kind: PointerDeviceKind.touch)),
+          BarTouchResponse(
+            touchLocation: Offset.zero,
+            touchChartCoordinate: Offset.zero,
+            spot: BarTouchedSpot(
+              group,
+              0,
+              group.barRods.first,
+              0,
+              null,
+              -1,
+              const FlSpot(0, 2),
+              Offset.zero,
+            ),
+          ),
+        );
+        await tester.pump();
+      });
+      // The card maps the bucket index back to its start time.
+      expect(tapped, isNotNull);
+    },
+  );
 
   testWidgets(
     'share mode renders a normalized 0–100% stacked area (not bars)',

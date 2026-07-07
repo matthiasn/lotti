@@ -325,7 +325,9 @@ class _DashboardContent extends StatelessWidget {
         final locale = Localizations.localeOf(context).toString();
         ledgerFilterLabel = granularity == InsightsGranularity.week
             ? '${DateFormat.MMMd(locale).format(drilledStart)} – '
-                  '${DateFormat.MMMd(locale).format(drilledStart.add(const Duration(days: 6)))}'
+                  // Calendar arithmetic (not Duration) so a DST transition in
+                  // the week can't shift the end date to the wrong day.
+                  '${DateFormat.MMMd(locale).format(DateTime(drilledStart.year, drilledStart.month, drilledStart.day + 6))}'
             : DateFormat.MMMd(locale).format(drilledStart);
       }
     }

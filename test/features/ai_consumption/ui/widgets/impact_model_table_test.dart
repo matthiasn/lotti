@@ -114,6 +114,41 @@ void main() {
     expect(find.text('TOTAL'), findsNothing);
   });
 
+  testWidgets('a row is tappable to toggle isolation of that model', (
+    tester,
+  ) async {
+    String? toggled;
+    final resolver = PaletteSeriesResolver(
+      orderedKeys: const ['glm-5.2'],
+      unknownLabel: 'Unknown model',
+      otherLabel: 'Other models',
+    );
+    await tester.pumpWidget(
+      makeTestableWidget(
+        Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 900,
+            child: ImpactModelTable(
+              entries: entries,
+              resolver: resolver,
+              metric: ConsumptionMetric.cost,
+              onToggleSeries: (k) => toggled = k,
+            ),
+          ),
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(1000, 800)),
+      ),
+    );
+    await tester.pump();
+
+    // Interactive rows carry a chevron; tapping one isolates that model.
+    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+    await tester.tap(find.text('glm-5.2'));
+    await tester.pump();
+    expect(toggled, 'glm-5.2');
+  });
+
   testWidgets('renders nothing for empty model totals', (tester) async {
     await pumpTable(tester, rows: const []);
 
