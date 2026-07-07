@@ -124,11 +124,18 @@ flowchart LR
   Route --> PhotoView["PhotoView\npinch + pan"]
   Route --> Chrome["overlay chrome\nclose, download, zoom"]
   Chrome --> Controller["PhotoView controllers"]
-  Chrome --> Downloads["Downloads/Lotti\nunique filename copy"]
+  Chrome --> Exporter["ImageExporter\nplatform-aware save"]
   Chrome --> Pop["root Navigator pop\nclose or Escape"]
+  Exporter --> Gallery["mobile: photo library\n(gal)"]
+  Exporter --> Dialog["desktop: native save panel\n(file_selector)"]
 ```
 
-The download action copies the original image file, not the resized preview, into the platform downloads directory under `Lotti/`. Existing filenames are preserved with a numeric suffix (`photo 2.png`, etc.) rather than overwritten.
+The save action always copies the original image file, not the resized preview, to a platform-appropriate destination via the [`ImageExporter`](util/image_export_service.dart) typedef (`defaultImageExporter()` picks the implementation; the widget accepts an injected one for tests):
+
+- **mobile** (`saveImageToGallery`) writes to the OS photo library / camera roll through the `gal` plugin, requesting photo-add permission first and surfacing a "permission denied" message if it is refused;
+- **desktop** (`saveImageViaDialog`) opens the native save panel through `file_selector`, so the user chooses the folder and filename and the sandbox grants write access to exactly that location. Dismissing the panel is treated as a silent cancellation, not an error.
+
+The earlier `getDownloadsDirectory()` + `Downloads/Lotti` copy was desktop-only: it failed on iOS (no user-facing downloads directory) and on the sandboxed macOS build (no write access to `~/Downloads`). Any unexpected save error is logged through `LoggingService` and shown to the user as a generic failure snackbar.
 
 ## Entry Controller
 

@@ -7,11 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/util/image_export_service.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 
 /// Inline image for a [JournalImage] entry in the detail view.
@@ -83,27 +84,21 @@ class EntryImageWidget extends ConsumerWidget {
   }
 }
 
-typedef ImageViewerDownloadsDirectoryResolver = Future<Directory?> Function();
-typedef ImageViewerFileCopier =
-    Future<File> Function(File sourceFile, File targetFile);
-
-Future<File> _copyImageFile(File sourceFile, File targetFile) =>
-    sourceFile.copy(targetFile.path);
-
 // from https://github.com/bluefireteam/photo_view/blob/master/example/lib/screens/examples/hero_example.dart
 class HeroPhotoViewRouteWrapper extends StatefulWidget {
   const HeroPhotoViewRouteWrapper({
     required this.file,
     super.key,
     this.backgroundDecoration,
-    this.downloadsDirectoryResolver = getDownloadsDirectory,
-    this.fileCopier = _copyImageFile,
+    this.imageExporter,
   });
 
   final File file;
   final BoxDecoration? backgroundDecoration;
-  final ImageViewerDownloadsDirectoryResolver downloadsDirectoryResolver;
-  final ImageViewerFileCopier fileCopier;
+
+  /// Saves the image to a platform-appropriate destination. Defaults to
+  /// [defaultImageExporter]; injected in tests to avoid real platform channels.
+  final ImageExporter? imageExporter;
 
   @override
   State<HeroPhotoViewRouteWrapper> createState() =>
@@ -117,6 +112,8 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
   late final PhotoViewController _photoController;
   late final PhotoViewScaleStateController _scaleStateController;
   late final StreamSubscription<PhotoViewControllerValue> _photoSubscription;
+  late final ImageExporter _exporter =
+      widget.imageExporter ?? defaultImageExporter();
 
   double _scale = 1;
   double? _minimumScale;
@@ -189,14 +186,30 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
 
     setState(() => _isDownloading = true);
     try {
-      final target = await _copyImageToDownloads();
+      final result = await _exporter(widget.file);
       if (!mounted) {
         return;
       }
-      _showSnackBar(
-        context.messages.imageViewerDownloadSaved(p.basename(target.path)),
+      switch (result.status) {
+        case ImageExportStatus.savedToFile:
+          _showSnackBar(
+            context.messages.imageViewerDownloadSaved(result.savedName ?? ''),
+          );
+        case ImageExportStatus.savedToGallery:
+          _showSnackBar(context.messages.imageViewerDownloadSavedToGallery);
+        case ImageExportStatus.permissionDenied:
+          _showSnackBar(context.messages.imageViewerDownloadPermissionDenied);
+        case ImageExportStatus.cancelled:
+          // User dismissed the save panel; no feedback needed.
+          break;
+      }
+    } on Object catch (error, stackTrace) {
+      getIt<LoggingService>().captureException(
+        error,
+        domain: 'entry_image_widget',
+        subDomain: 'downloadImage',
+        stackTrace: stackTrace,
       );
-    } on Object {
       if (!mounted) {
         return;
       }
@@ -206,45 +219,6 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
         setState(() => _isDownloading = false);
       }
     }
-  }
-
-  Future<File> _copyImageToDownloads() async {
-    final downloadsDirectory = await widget.downloadsDirectoryResolver();
-    if (downloadsDirectory == null) {
-      throw const FileSystemException('Downloads directory is unavailable');
-    }
-
-    final lottiDirectory = await Directory(
-      p.join(downloadsDirectory.path, 'Lotti'),
-    ).create(recursive: true);
-    final target = await _uniqueDownloadFile(
-      directory: lottiDirectory,
-      sourceFile: widget.file,
-    );
-    return widget.fileCopier(widget.file, target);
-  }
-
-  Future<File> _uniqueDownloadFile({
-    required Directory directory,
-    required File sourceFile,
-  }) async {
-    final sourceName = p.basename(sourceFile.path);
-    final extension = p.extension(sourceName);
-    final baseName = p.basenameWithoutExtension(sourceName);
-    final existingNames = <String>{};
-    await for (final entity in directory.list()) {
-      existingNames.add(p.basename(entity.path));
-    }
-
-    var candidateName = sourceName;
-    var suffix = 2;
-
-    while (existingNames.contains(candidateName)) {
-      candidateName = '$baseName $suffix$extension';
-      suffix++;
-    }
-
-    return File(p.join(directory.path, candidateName));
   }
 
   void _showSnackBar(String message) {

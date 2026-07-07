@@ -5586,9 +5586,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get imageViewerDownloadingTooltip => 'Enregistrement de l\'image';
 
   @override
+  String get imageViewerDownloadPermissionDenied =>
+      'Accès aux photos refusé — active-le dans les Réglages';
+
+  @override
   String imageViewerDownloadSaved(String fileName) {
-    return '$fileName enregistré dans Téléchargements/Lotti';
+    return '$fileName enregistré';
   }
+
+  @override
+  String get imageViewerDownloadSavedToGallery => 'Enregistré dans Photos';
 
   @override
   String get imageViewerDownloadTooltip => 'Télécharger l\'image';

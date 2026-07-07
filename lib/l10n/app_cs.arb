@@ -2220,7 +2220,8 @@
   "images": "Obrázky",
   "imageViewerDownloadFailed": "Obrázek se nepodařilo uložit",
   "imageViewerDownloadingTooltip": "Ukládám obrázek",
-  "imageViewerDownloadSaved": "Uloženo {fileName} do Stažené/Lotti",
+  "imageViewerDownloadPermissionDenied": "Přístup k fotkám zamítnut – povol jej v Nastavení",
+  "imageViewerDownloadSaved": "Uloženo {fileName}",
   "@imageViewerDownloadSaved": {
     "placeholders": {
       "fileName": {
@@ -2228,6 +2229,7 @@
       }
     }
   },
+  "imageViewerDownloadSavedToGallery": "Uloženo do Fotek",
   "imageViewerDownloadTooltip": "Stáhnout obrázek",
   "inactiveLabel": "Neaktivní",
   "inactiveSwitchDescription": "Lze vybrat pro nové záznamy, když je zapnuto",

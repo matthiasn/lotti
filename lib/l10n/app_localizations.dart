@@ -9504,11 +9504,23 @@ abstract class AppLocalizations {
   /// **'Saving image'**
   String get imageViewerDownloadingTooltip;
 
+  /// No description provided for @imageViewerDownloadPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo access denied — enable it in Settings'**
+  String get imageViewerDownloadPermissionDenied;
+
   /// No description provided for @imageViewerDownloadSaved.
   ///
   /// In en, this message translates to:
-  /// **'Saved {fileName} to Downloads/Lotti'**
+  /// **'Saved {fileName}'**
   String imageViewerDownloadSaved(String fileName);
+
+  /// No description provided for @imageViewerDownloadSavedToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to Photos'**
+  String get imageViewerDownloadSavedToGallery;
 
   /// No description provided for @imageViewerDownloadTooltip.
   ///
