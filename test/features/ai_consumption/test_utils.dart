@@ -115,14 +115,26 @@ ConsumptionMetricRow makeMetricRow({
   int callCount = 1,
   int totalTokens = 100,
   double credits = 0.25,
+  double energyKwh = 0,
+  double carbonGCo2 = 0,
+  String? modelId,
+  String? providerModelId,
+  String? dataCenter,
+  double? renewablePercent,
 }) {
   return ConsumptionMetricRow(
     createdAt: createdAt ?? DateTime(2026, 6, 7, 9),
     categoryId: categoryId,
+    modelId: modelId,
+    providerModelId: providerModelId,
     metrics: ConsumptionMetrics(
       callCount: callCount,
       totalTokens: totalTokens,
       credits: credits,
+      energyKwh: energyKwh,
+      carbonGCo2: carbonGCo2,
     ),
+    dataCenter: dataCenter,
+    renewablePercent: renewablePercent,
   );
 }

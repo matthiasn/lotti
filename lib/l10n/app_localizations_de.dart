@@ -1376,6 +1376,15 @@ class AppLocalizationsDe extends AppLocalizations {
       'KI-Impact-Daten konnten nicht geladen werden';
 
   @override
+  String get aiImpactLocationColumn => 'STANDORT';
+
+  @override
+  String get aiImpactLocationTitle => 'Impact nach Standort';
+
+  @override
+  String get aiImpactLocationUnknown => 'Unbekannt';
+
+  @override
   String get aiImpactMetricCarbon => 'CO₂e';
 
   @override
@@ -1386,6 +1395,18 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiImpactMetricTokens => 'Tokens';
+
+  @override
+  String get aiImpactModelColumn => 'MODELL';
+
+  @override
+  String get aiImpactModelTitle => 'Modellaufschlüsselung';
+
+  @override
+  String get aiImpactModelUnknown => 'Unbekanntes Modell';
+
+  @override
+  String get aiImpactRenewableColumn => 'ERNEUERBAR';
 
   @override
   String get aiImpactTitle => 'KI-Impact';

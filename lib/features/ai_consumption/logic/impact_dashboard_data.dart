@@ -26,13 +26,31 @@ List<Map<String?, double>> dailyMetricTotals(
   InsightsRange range,
   ConsumptionMetric metric,
 ) {
+  return _dailyMetricTotalsFrom(buckets.days, range, metric);
+}
+
+/// The selected metric's value per model for every day of [range], using
+/// `providerModelId` first, then `modelId`, then null = unknown model.
+List<Map<String?, double>> dailyModelMetricTotals(
+  ConsumptionDayBuckets buckets,
+  InsightsRange range,
+  ConsumptionMetric metric,
+) {
+  return _dailyMetricTotalsFrom(buckets.modelDays, range, metric);
+}
+
+List<Map<String?, double>> _dailyMetricTotalsFrom(
+  Map<int, Map<String?, ConsumptionMetrics>> days,
+  InsightsRange range,
+  ConsumptionMetric metric,
+) {
   return List.generate(range.dayCount, (i) {
-    final cells = buckets.days[range.startDay + i];
+    final cells = days[range.startDay + i];
     if (cells == null) return const <String?, double>{};
     final totals = <String?, double>{};
-    cells.forEach((categoryId, metrics) {
+    cells.forEach((key, metrics) {
       final value = metric.valueOf(metrics);
-      if (value > 0) totals[categoryId] = value;
+      if (value > 0) totals[key] = value;
     });
     return totals;
   });
@@ -69,6 +87,50 @@ ConsumptionMetrics impactTotalsInRange(
     }
   }
   return total;
+}
+
+/// Total environmental impact by serving location across [range], descending
+/// by energy and then carbon. Only rows whose provider reported a data centre
+/// are present in [ConsumptionDayBuckets.locationDays], so token-only/local
+/// calls never create a misleading unknown-location bucket.
+List<MapEntry<ConsumptionLocationKey, ConsumptionLocationMetrics>>
+rankedImpactLocationTotals(
+  ConsumptionDayBuckets buckets,
+  InsightsRange range,
+) {
+  final totals = <ConsumptionLocationKey, ConsumptionLocationMetrics>{};
+  for (var day = range.startDay; day < range.endDayExclusive; day++) {
+    final cells = buckets.locationDays[day];
+    if (cells == null) continue;
+    cells.forEach((location, metrics) {
+      totals[location] =
+          (totals[location] ?? ConsumptionLocationMetrics.zero) + metrics;
+    });
+  }
+
+  final entries =
+      totals.entries
+          .where(
+            (e) =>
+                e.value.metrics.energyKwh > 0 || e.value.metrics.carbonGCo2 > 0,
+          )
+          .toList()
+        ..sort((a, b) {
+          final energy = b.value.metrics.energyKwh.compareTo(
+            a.value.metrics.energyKwh,
+          );
+          if (energy != 0) return energy;
+          final carbon = b.value.metrics.carbonGCo2.compareTo(
+            a.value.metrics.carbonGCo2,
+          );
+          if (carbon != 0) return carbon;
+          final country = (a.key.countryCode ?? '').compareTo(
+            b.key.countryCode ?? '',
+          );
+          if (country != 0) return country;
+          return a.key.dataCenter.compareTo(b.key.dataCenter);
+        });
+  return entries;
 }
 
 /// Builds chart-ready stacked series for [range] and [metric]: resolves

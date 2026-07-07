@@ -210,6 +210,142 @@ void main() {
     );
   });
 
+  group('ConsumptionLocationKey', () {
+    test('normalizes data center ids and infers country prefixes', () {
+      final key = ConsumptionLocationKey.fromDataCenter(' fi-hel1 ');
+
+      expect(key.countryCode, 'FI');
+      expect(key.dataCenter, 'FI-HEL1');
+      expect(key, ConsumptionLocationKey.fromDataCenter('FI-HEL1'));
+      expect(
+        key.hashCode,
+        ConsumptionLocationKey.fromDataCenter('FI-HEL1').hashCode,
+      );
+    });
+
+    test('keeps unknown data-center formats without inventing a country', () {
+      final key = ConsumptionLocationKey.fromDataCenter('stockholm');
+
+      expect(key.countryCode, isNull);
+      expect(key.dataCenter, 'STOCKHOLM');
+    });
+
+    test('equality rejects different country, data center, and types', () {
+      final key = ConsumptionLocationKey.fromDataCenter('FI-HEL1');
+
+      expect(key, isNot(ConsumptionLocationKey.fromDataCenter('SE')));
+      expect(key, isNot(ConsumptionLocationKey.fromDataCenter('FI-TMP1')));
+      expect(key, isNot(equals('FI-HEL1')));
+    });
+  });
+
+  group('ConsumptionLocationMetrics', () {
+    test('energy-weights renewable percentage when energy is available', () {
+      const a = ConsumptionLocationMetrics(
+        metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 1),
+        renewablePercentSum: 80,
+        renewableSampleCount: 1,
+        renewableEnergyKwh: 0.01,
+        renewableWeightedPercentKwh: 0.8,
+      );
+      const b = ConsumptionLocationMetrics(
+        metrics: ConsumptionMetrics(energyKwh: 0.03, carbonGCo2: 3),
+        renewablePercentSum: 100,
+        renewableSampleCount: 1,
+        renewableEnergyKwh: 0.03,
+        renewableWeightedPercentKwh: 3,
+      );
+
+      final sum = a + b;
+      expect(sum.metrics.energyKwh, closeTo(0.04, 1e-12));
+      expect(sum.metrics.carbonGCo2, 4);
+      expect(sum.renewableSampleCount, 2);
+      expect(sum.renewablePercent, closeTo(95, 1e-12));
+    });
+
+    test('falls back to sample average when energy was not reported', () {
+      const metrics = ConsumptionLocationMetrics(
+        metrics: ConsumptionMetrics.zero,
+        renewablePercentSum: 120,
+        renewableSampleCount: 2,
+      );
+
+      expect(metrics.renewablePercent, 60);
+    });
+
+    test('returns null when no renewable sample was reported', () {
+      expect(ConsumptionLocationMetrics.zero.renewablePercent, isNull);
+    });
+
+    test('equality and hashCode include every aggregate field', () {
+      const base = ConsumptionLocationMetrics(
+        metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 2),
+        renewablePercentSum: 80,
+        renewableSampleCount: 1,
+        renewableEnergyKwh: 0.01,
+        renewableWeightedPercentKwh: 0.8,
+      );
+      final copy = ConsumptionLocationMetrics(
+        metrics: base.metrics,
+        renewablePercentSum: 80,
+        renewableSampleCount: 1,
+        renewableEnergyKwh: 0.01,
+        renewableWeightedPercentKwh: 0.8,
+      );
+
+      expect(identical(base, copy), isFalse);
+      expect(base, copy);
+      expect(base.hashCode, copy.hashCode);
+
+      final variants = <String, ConsumptionLocationMetrics>{
+        'metrics': const ConsumptionLocationMetrics(
+          metrics: ConsumptionMetrics(energyKwh: 0.02, carbonGCo2: 2),
+          renewablePercentSum: 80,
+          renewableSampleCount: 1,
+          renewableEnergyKwh: 0.01,
+          renewableWeightedPercentKwh: 0.8,
+        ),
+        'renewablePercentSum': const ConsumptionLocationMetrics(
+          metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 2),
+          renewablePercentSum: 90,
+          renewableSampleCount: 1,
+          renewableEnergyKwh: 0.01,
+          renewableWeightedPercentKwh: 0.8,
+        ),
+        'renewableSampleCount': const ConsumptionLocationMetrics(
+          metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 2),
+          renewablePercentSum: 80,
+          renewableSampleCount: 2,
+          renewableEnergyKwh: 0.01,
+          renewableWeightedPercentKwh: 0.8,
+        ),
+        'renewableEnergyKwh': const ConsumptionLocationMetrics(
+          metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 2),
+          renewablePercentSum: 80,
+          renewableSampleCount: 1,
+          renewableEnergyKwh: 0.02,
+          renewableWeightedPercentKwh: 0.8,
+        ),
+        'renewableWeightedPercentKwh': const ConsumptionLocationMetrics(
+          metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 2),
+          renewablePercentSum: 80,
+          renewableSampleCount: 1,
+          renewableEnergyKwh: 0.01,
+          renewableWeightedPercentKwh: 0.9,
+        ),
+      };
+
+      for (final MapEntry(key: field, value: variant) in variants.entries) {
+        expect(
+          variant,
+          isNot(equals(base)),
+          reason: '$field must participate in equality',
+        );
+      }
+      expect(base, isNot(equals(Object())));
+    });
+  });
+
   group('ConsumptionDayBuckets', () {
     test('deep structural equality across independently built nested maps', () {
       final a = _makeBuckets();
@@ -252,6 +388,25 @@ void main() {
               },
             },
           ),
+          'model day': _makeBuckets(
+            modelDays: {
+              20500: {
+                'glm-5.2': _makeMetrics(callCount: 3),
+                null: _makeMetrics(totalTokens: 7),
+              },
+            },
+          ),
+          'location day': _makeBuckets(
+            locationDays: {
+              20500: {
+                ConsumptionLocationKey.fromDataCenter(
+                  'FI',
+                ): const ConsumptionLocationMetrics(
+                  metrics: ConsumptionMetrics(energyKwh: 0.5),
+                ),
+              },
+            },
+          ),
         };
         for (final MapEntry(key: difference, value: variant)
             in variants.entries) {
@@ -261,6 +416,7 @@ void main() {
             reason: 'a differing $difference must break equality',
           );
         }
+        expect(base, isNot(equals(Object())));
       },
     );
   });
@@ -456,6 +612,9 @@ ConsumptionTotals _totalsFromMetrics(
 ConsumptionDayBuckets _makeBuckets({
   int windowStartDay = 20500,
   Map<int, Map<String?, ConsumptionMetrics>>? days,
+  Map<int, Map<String?, ConsumptionMetrics>>? modelDays,
+  Map<int, Map<ConsumptionLocationKey, ConsumptionLocationMetrics>>?
+  locationDays,
 }) => ConsumptionDayBuckets(
   windowStartDay: windowStartDay,
   days:
@@ -467,6 +626,8 @@ ConsumptionDayBuckets _makeBuckets({
         },
         20501: {'play': _makeMetrics(inputTokens: 99)},
       },
+  modelDays: modelDays ?? const {},
+  locationDays: locationDays ?? const {},
 );
 
 /// One generated (day, category, metrics) row for bucket-equality properties.

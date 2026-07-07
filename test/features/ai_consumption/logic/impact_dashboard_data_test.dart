@@ -77,6 +77,49 @@ void main() {
     });
   });
 
+  group('dailyModelMetricTotals', () {
+    test('zero-fills missing days and projects model totals', () {
+      final modelBuckets = ConsumptionDayBuckets(
+        windowStartDay: day0,
+        days: const {},
+        modelDays: {
+          day0: {
+            'glm-5.2': m(credits: 2, totalTokens: 200),
+            null: m(credits: 1, totalTokens: 100),
+          },
+          day0 + 2: {
+            // Tokens-only model: dropped under cost, visible under tokens.
+            'voxtral-small-24b-2507': m(totalTokens: 500),
+          },
+          day0 + 10: {
+            'outside': m(credits: 99, totalTokens: 99),
+          },
+        },
+      );
+
+      expect(
+        dailyModelMetricTotals(
+          modelBuckets,
+          range3,
+          ConsumptionMetric.cost,
+        ),
+        [
+          {'glm-5.2': 2.0, null: 1.0},
+          <String?, double>{},
+          <String?, double>{},
+        ],
+      );
+      expect(
+        dailyModelMetricTotals(
+          modelBuckets,
+          range3,
+          ConsumptionMetric.tokens,
+        )[2],
+        {'voxtral-small-24b-2507': 500.0},
+      );
+    });
+  });
+
   group('rankedImpactCategoryTotals', () {
     test('sums across buckets, sorts descending, drops zeros', () {
       final ranked = rankedImpactCategoryTotals([
@@ -106,6 +149,144 @@ void main() {
         InsightsRange(startDay: day0 + 3, endDayExclusive: day0 + 5),
       );
       expect(totals, ConsumptionMetrics.zero);
+    });
+  });
+
+  group('rankedImpactLocationTotals', () {
+    test('folds location cells inside the range and sorts by energy', () {
+      final fi = ConsumptionLocationKey.fromDataCenter('FI-HEL1');
+      final se = ConsumptionLocationKey.fromDataCenter('SE');
+      final locationBuckets = ConsumptionDayBuckets(
+        windowStartDay: day0,
+        days: const {},
+        locationDays: {
+          day0: {
+            fi: const ConsumptionLocationMetrics(
+              metrics: ConsumptionMetrics(energyKwh: 0.02, carbonGCo2: 4),
+              renewablePercentSum: 80,
+              renewableSampleCount: 1,
+              renewableEnergyKwh: 0.02,
+              renewableWeightedPercentKwh: 1.6,
+            ),
+            se: const ConsumptionLocationMetrics(
+              metrics: ConsumptionMetrics(energyKwh: 0.05, carbonGCo2: 2),
+              renewablePercentSum: 100,
+              renewableSampleCount: 1,
+              renewableEnergyKwh: 0.05,
+              renewableWeightedPercentKwh: 5,
+            ),
+          },
+          day0 + 1: {
+            fi: const ConsumptionLocationMetrics(
+              metrics: ConsumptionMetrics(energyKwh: 0.04, carbonGCo2: 8),
+              renewablePercentSum: 100,
+              renewableSampleCount: 1,
+              renewableEnergyKwh: 0.04,
+              renewableWeightedPercentKwh: 4,
+            ),
+          },
+          day0 + 9: {
+            se: const ConsumptionLocationMetrics(
+              metrics: ConsumptionMetrics(energyKwh: 10, carbonGCo2: 10),
+            ),
+          },
+        },
+      );
+
+      final ranked = rankedImpactLocationTotals(locationBuckets, range3);
+
+      expect(ranked.map((e) => e.key).toList(), [fi, se]);
+      expect(ranked.first.value.metrics.energyKwh, closeTo(0.06, 1e-12));
+      expect(ranked.first.value.metrics.carbonGCo2, 12);
+      expect(
+        ranked.first.value.renewablePercent,
+        closeTo((1.6 + 4) / 0.06, 1e-12),
+      );
+      expect(ranked.last.value.metrics.energyKwh, 0.05);
+    });
+
+    test('drops locations that have no environmental totals', () {
+      final locationBuckets = ConsumptionDayBuckets(
+        windowStartDay: day0,
+        days: const {},
+        locationDays: {
+          day0: {
+            ConsumptionLocationKey.fromDataCenter(
+              'FI',
+            ): const ConsumptionLocationMetrics(
+              metrics: ConsumptionMetrics(totalTokens: 100),
+            ),
+          },
+        },
+      );
+
+      expect(rankedImpactLocationTotals(locationBuckets, range3), isEmpty);
+    });
+
+    test('uses carbon, country, and data-center tie-breakers', () {
+      List<ConsumptionLocationKey> rankedKeys(
+        ConsumptionLocationKey a,
+        ConsumptionLocationMetrics aMetrics,
+        ConsumptionLocationKey b,
+        ConsumptionLocationMetrics bMetrics,
+      ) {
+        final buckets = ConsumptionDayBuckets(
+          windowStartDay: day0,
+          days: const {},
+          locationDays: {
+            day0: {a: aMetrics, b: bMetrics},
+          },
+        );
+        return [
+          for (final entry in rankedImpactLocationTotals(buckets, range3))
+            entry.key,
+        ];
+      }
+
+      final fi = ConsumptionLocationKey.fromDataCenter('FI');
+      final se = ConsumptionLocationKey.fromDataCenter('SE');
+      final fiHel = ConsumptionLocationKey.fromDataCenter('FI-HEL1');
+      final fiTmp = ConsumptionLocationKey.fromDataCenter('FI-TMP1');
+
+      expect(
+        rankedKeys(
+          fi,
+          const ConsumptionLocationMetrics(
+            metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 5),
+          ),
+          se,
+          const ConsumptionLocationMetrics(
+            metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 7),
+          ),
+        ),
+        [se, fi],
+      );
+      expect(
+        rankedKeys(
+          se,
+          const ConsumptionLocationMetrics(
+            metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 5),
+          ),
+          fi,
+          const ConsumptionLocationMetrics(
+            metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 5),
+          ),
+        ),
+        [fi, se],
+      );
+      expect(
+        rankedKeys(
+          fiTmp,
+          const ConsumptionLocationMetrics(
+            metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 5),
+          ),
+          fiHel,
+          const ConsumptionLocationMetrics(
+            metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 5),
+          ),
+        ),
+        [fiHel, fiTmp],
+      );
     });
   });
 

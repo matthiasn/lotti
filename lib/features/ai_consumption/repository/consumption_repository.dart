@@ -103,9 +103,11 @@ class ConsumptionRepository {
   }) async {
     final rows = await _db
         .customSelect(
-          'SELECT created_at, category_id, input_tokens, output_tokens, '
-          'cached_input_tokens, thoughts_tokens, total_tokens, credits, '
-          'energy_kwh, carbon_g_co2, water_liters '
+          'SELECT created_at, category_id, model_id, provider_model_id, '
+          'input_tokens, output_tokens, cached_input_tokens, thoughts_tokens, '
+          'total_tokens, credits, '
+          'energy_kwh, carbon_g_co2, water_liters, renewable_percent, '
+          'data_center '
           'FROM consumption_events '
           'WHERE created_at >= ? AND created_at < ?',
           variables: [Variable<DateTime>(start), Variable<DateTime>(end)],
@@ -117,6 +119,8 @@ class ConsumptionRepository {
         ConsumptionMetricRow(
           createdAt: row.read<DateTime>('created_at'),
           categoryId: row.read<String?>('category_id'),
+          modelId: row.read<String?>('model_id'),
+          providerModelId: row.read<String?>('provider_model_id'),
           metrics: ConsumptionMetrics(
             callCount: 1,
             inputTokens: row.read<int?>('input_tokens') ?? 0,
@@ -129,6 +133,8 @@ class ConsumptionRepository {
             carbonGCo2: row.read<double?>('carbon_g_co2') ?? 0,
             waterLiters: row.read<double?>('water_liters') ?? 0,
           ),
+          renewablePercent: row.read<double?>('renewable_percent'),
+          dataCenter: row.read<String?>('data_center'),
         ),
     ];
   }

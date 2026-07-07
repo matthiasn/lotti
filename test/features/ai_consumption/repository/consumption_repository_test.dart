@@ -211,7 +211,11 @@ void main() {
             id: 'in1',
             createdAt: t1,
             categoryId: 'a',
+            modelId: 'configured-glm',
+            providerModelId: 'glm-5.2-provider',
             totalTokens: 100,
+            renewablePercent: 80,
+            dataCenter: 'FI-HEL1',
           ),
         );
         await repo.upsertEvent(
@@ -246,6 +250,11 @@ void main() {
           {for (final r in rows) r.categoryId: r.metrics.totalTokens},
           {'a': 100, 'b': 40},
         );
+        final first = rows.singleWhere((row) => row.categoryId == 'a');
+        expect(first.modelId, 'configured-glm');
+        expect(first.providerModelId, 'glm-5.2-provider');
+        expect(first.renewablePercent, 80);
+        expect(first.dataCenter, 'FI-HEL1');
       },
     );
 
@@ -276,6 +285,8 @@ void main() {
           id: 'nulls',
           createdAt: DateTime(2026, 3, 15, 8),
           categoryId: null,
+          modelId: null,
+          providerModelId: null,
           inputTokens: null,
           outputTokens: null,
           totalTokens: null,
@@ -285,6 +296,8 @@ void main() {
           energyKwh: null,
           carbonGCo2: null,
           waterLiters: null,
+          renewablePercent: null,
+          dataCenter: null,
         ),
       );
       final rows = await repo.metricRowsInRange(
@@ -293,9 +306,13 @@ void main() {
       );
       final metrics = rows.single.metrics;
       expect(rows.single.categoryId, isNull);
+      expect(rows.single.modelId, isNull);
+      expect(rows.single.providerModelId, isNull);
       expect(metrics.totalTokens, 0);
       expect(metrics.energyKwh, 0);
       expect(metrics.callCount, 1);
+      expect(rows.single.renewablePercent, isNull);
+      expect(rows.single.dataCenter, isNull);
     });
   });
 

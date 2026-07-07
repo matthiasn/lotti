@@ -1357,6 +1357,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiImpactLoadError => 'Couldn\'t load AI impact data';
 
   @override
+  String get aiImpactLocationColumn => 'LOCATION';
+
+  @override
+  String get aiImpactLocationTitle => 'Impact by location';
+
+  @override
+  String get aiImpactLocationUnknown => 'Unknown';
+
+  @override
   String get aiImpactMetricCarbon => 'CO₂e';
 
   @override
@@ -1367,6 +1376,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiImpactMetricTokens => 'Tokens';
+
+  @override
+  String get aiImpactModelColumn => 'MODEL';
+
+  @override
+  String get aiImpactModelTitle => 'Model breakdown';
+
+  @override
+  String get aiImpactModelUnknown => 'Unknown model';
+
+  @override
+  String get aiImpactRenewableColumn => 'RENEWABLE';
 
   @override
   String get aiImpactTitle => 'AI Impact';

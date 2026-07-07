@@ -173,37 +173,189 @@ class ConsumptionMetricRow {
     required this.createdAt,
     required this.categoryId,
     required this.metrics,
+    this.modelId,
+    this.providerModelId,
+    this.dataCenter,
+    this.renewablePercent,
   });
 
   final DateTime createdAt;
   final String? categoryId;
   final ConsumptionMetrics metrics;
+
+  /// Lotti's saved model id, when the call was tied to a configured model.
+  final String? modelId;
+
+  /// Provider-native model id, when reported. This is what the ledger displays
+  /// first, so model breakdowns use it ahead of [modelId].
+  final String? providerModelId;
+
+  /// Serving data-centre identifier as reported by Melious, when available.
+  /// Current responses use ISO-3166 country codes (`FI`, `SE`) and may grow
+  /// more specific suffixes later.
+  final String? dataCenter;
+
+  /// Percentage of the serving data centre's energy from renewables (0–100).
+  final double? renewablePercent;
 }
 
-/// Per-day, per-category summed consumption over a window.
+/// Normalized serving-location key for AI impact rows.
+///
+/// [countryCode] is inferred only from data-centre ids that begin with a
+/// two-letter ISO-3166-like region (`FI`, `FI-HEL1`, `SE/stockholm`). Unknown
+/// formats still keep the raw [dataCenter] so the UI can show what the provider
+/// reported without pretending to know the country.
+@immutable
+class ConsumptionLocationKey {
+  const ConsumptionLocationKey({
+    required this.countryCode,
+    required this.dataCenter,
+  });
+
+  factory ConsumptionLocationKey.fromDataCenter(String dataCenter) {
+    final normalized = dataCenter.trim().toUpperCase();
+    return ConsumptionLocationKey(
+      countryCode: _countryCodeFromDataCenter(normalized),
+      dataCenter: normalized,
+    );
+  }
+
+  final String? countryCode;
+  final String dataCenter;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ConsumptionLocationKey &&
+          other.countryCode == countryCode &&
+          other.dataCenter == dataCenter;
+
+  @override
+  int get hashCode => Object.hash(countryCode, dataCenter);
+}
+
+final _countryCodeRegExp = RegExp(r'^([A-Z]{2})(?:$|[-_:/.\s])');
+
+String? _countryCodeFromDataCenter(String dataCenter) {
+  final match = _countryCodeRegExp.firstMatch(dataCenter);
+  return match?.group(1);
+}
+
+/// Additive environmental summary for one serving location.
+///
+/// [renewablePercent] is energy-weighted when any row has positive energy:
+/// a 90% renewable 10 Wh call should dominate a 10% renewable 1 Wh call. If
+/// the provider reports renewable percentages without energy, it falls back to
+/// the arithmetic mean across reported samples so the percentage is still
+/// visible instead of silently dropped.
+@immutable
+class ConsumptionLocationMetrics {
+  const ConsumptionLocationMetrics({
+    required this.metrics,
+    this.renewablePercentSum = 0,
+    this.renewableSampleCount = 0,
+    this.renewableEnergyKwh = 0,
+    this.renewableWeightedPercentKwh = 0,
+  });
+
+  static const zero = ConsumptionLocationMetrics(
+    metrics: ConsumptionMetrics.zero,
+  );
+
+  final ConsumptionMetrics metrics;
+  final double renewablePercentSum;
+  final int renewableSampleCount;
+  final double renewableEnergyKwh;
+  final double renewableWeightedPercentKwh;
+
+  double? get renewablePercent {
+    if (renewableEnergyKwh > 0) {
+      return renewableWeightedPercentKwh / renewableEnergyKwh;
+    }
+    if (renewableSampleCount > 0) {
+      return renewablePercentSum / renewableSampleCount;
+    }
+    return null;
+  }
+
+  ConsumptionLocationMetrics operator +(
+    ConsumptionLocationMetrics other,
+  ) => ConsumptionLocationMetrics(
+    metrics: metrics + other.metrics,
+    renewablePercentSum: renewablePercentSum + other.renewablePercentSum,
+    renewableSampleCount: renewableSampleCount + other.renewableSampleCount,
+    renewableEnergyKwh: renewableEnergyKwh + other.renewableEnergyKwh,
+    renewableWeightedPercentKwh:
+        renewableWeightedPercentKwh + other.renewableWeightedPercentKwh,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ConsumptionLocationMetrics &&
+          other.metrics == metrics &&
+          other.renewablePercentSum == renewablePercentSum &&
+          other.renewableSampleCount == renewableSampleCount &&
+          other.renewableEnergyKwh == renewableEnergyKwh &&
+          other.renewableWeightedPercentKwh == renewableWeightedPercentKwh;
+
+  @override
+  int get hashCode => Object.hash(
+    metrics,
+    renewablePercentSum,
+    renewableSampleCount,
+    renewableEnergyKwh,
+    renewableWeightedPercentKwh,
+  );
+}
+
+/// Per-day summed consumption over a window, sliced by category, model, and
+/// provider-reported serving location.
 ///
 /// `days[epochDay][categoryId]` is the field-wise sum of every call in that
-/// (day, category) cell. Mirrors the Insights `InsightsDayBuckets`; the cell
-/// value is an additive scalar bundle rather than merged intervals. Deep
-/// structural equality lets a provider short-circuit an unchanged refetch.
+/// (day, category) cell; `modelDays[epochDay][modelKey]` is the same fold by
+/// model (`providerModelId` first, then `modelId`, then null = unknown).
+/// Mirrors the Insights `InsightsDayBuckets`; the cell value is an additive
+/// scalar bundle rather than merged intervals. Deep structural equality lets a
+/// provider short-circuit an unchanged refetch.
 @immutable
 class ConsumptionDayBuckets {
   const ConsumptionDayBuckets({
     required this.windowStartDay,
     required this.days,
+    this.modelDays = const {},
+    this.locationDays = const {},
   });
 
   final int windowStartDay;
   final Map<int, Map<String?, ConsumptionMetrics>> days;
+
+  /// `modelDays[epochDay][modelKey]` is the field-wise sum of every call by
+  /// model. A null key means the row had metrics but no model identifier.
+  final Map<int, Map<String?, ConsumptionMetrics>> modelDays;
+
+  /// `locationDays[epochDay][location]` is the field-wise sum of every call
+  /// whose provider reported a serving data centre.
+  final Map<int, Map<ConsumptionLocationKey, ConsumptionLocationMetrics>>
+  locationDays;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is ConsumptionDayBuckets &&
           other.windowStartDay == windowStartDay &&
-          const DeepCollectionEquality().equals(days, other.days);
+          const DeepCollectionEquality().equals(days, other.days) &&
+          const DeepCollectionEquality().equals(modelDays, other.modelDays) &&
+          const DeepCollectionEquality().equals(
+            locationDays,
+            other.locationDays,
+          );
 
   @override
-  int get hashCode =>
-      Object.hash(windowStartDay, const DeepCollectionEquality().hash(days));
+  int get hashCode => Object.hash(
+    windowStartDay,
+    const DeepCollectionEquality().hash(days),
+    const DeepCollectionEquality().hash(modelDays),
+    const DeepCollectionEquality().hash(locationDays),
+  );
 }
