@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gal/gal.dart';
 import 'package:lotti/features/journal/util/image_export_service.dart';
+import 'package:lotti/utils/platform.dart';
 
 import '../../../mocks/mocks.dart';
 
@@ -15,16 +16,21 @@ void main() {
     late Directory tempDir;
     late File sourceFile;
     late FakeFileSelectorPlatform fakeSelector;
+    late FileSelectorPlatform originalPlatform;
 
     setUp(() {
       tempDir = Directory.systemTemp.createTempSync('image_export_dialog_');
       sourceFile = File('${tempDir.path}/photo.png')
         ..writeAsBytesSync([1, 2, 3, 4]);
       fakeSelector = FakeFileSelectorPlatform();
+      // Capture the real platform so the global instance can be restored,
+      // avoiding leakage into other file_selector tests in the same process.
+      originalPlatform = FileSelectorPlatform.instance;
       FileSelectorPlatform.instance = fakeSelector;
     });
 
     tearDown(() {
+      FileSelectorPlatform.instance = originalPlatform;
       try {
         tempDir.deleteSync(recursive: true);
       } catch (_) {
@@ -153,6 +159,23 @@ void main() {
         saveImageToGallery(sourceFile),
         throwsA(isA<GalException>()),
       );
+    });
+  });
+
+  group('defaultImageExporter', () {
+    late bool originalIsMobile;
+
+    setUp(() => originalIsMobile = isMobile);
+    tearDown(() => isMobile = originalIsMobile);
+
+    test('routes to the photo library on mobile', () {
+      isMobile = true;
+      expect(defaultImageExporter(), same(saveImageToGallery));
+    });
+
+    test('routes to the native save dialog on desktop', () {
+      isMobile = false;
+      expect(defaultImageExporter(), same(saveImageViaDialog));
     });
   });
 }
