@@ -508,6 +508,41 @@ void main() {
     });
   });
 
+  group('impactNiceInterval', () {
+    test('divides a nice ceiling into round-number ticks', () {
+      // 5× ceiling → step 1× (5 ticks): 0.1/0.2/0.3/0.4/0.5, 10…50, 100…500.
+      expect(impactNiceInterval(0.5), closeTo(0.1, 1e-12));
+      expect(impactNiceInterval(50), closeTo(10, 1e-12));
+      expect(impactNiceInterval(500), closeTo(100, 1e-9));
+      // 2× ceiling → step 0.5× (4 ticks): 5/10/15/20, 0.5/1/1.5/2.
+      expect(impactNiceInterval(20), closeTo(5, 1e-12));
+      expect(impactNiceInterval(2), closeTo(0.5, 1e-12));
+      // 1× ceiling → step 0.2× (5 ticks): 0.2…1.0, 200…1000.
+      expect(impactNiceInterval(1), closeTo(0.2, 1e-12));
+      expect(impactNiceInterval(1000), closeTo(200, 1e-9));
+      // Non-positive ceiling still yields a drawable step.
+      expect(impactNiceInterval(0), 1.0);
+      expect(impactNiceInterval(-3), 1.0);
+    });
+  });
+
+  group('largestRemainderPercents', () {
+    test('apportions displayed shares to sum to exactly 100', () {
+      // Clean thirds/halves land on the floors with no leftover to hand out.
+      expect(largestRemainderPercents([0.3, 0.15, 0.15]), [50, 25, 25]);
+      // 37.8/30.8/25.7/5.7 would independently round to 38+31+26+6 = 101;
+      // Hamilton keeps the sum at 100 by denying the smallest remainder.
+      final p = largestRemainderPercents([5.58, 4.54, 3.80, 0.84]);
+      expect(p.reduce((a, b) => a + b), 100);
+      expect(p, [38, 31, 26, 5]);
+    });
+
+    test('is all-zero for a non-positive or empty total', () {
+      expect(largestRemainderPercents([0, 0, 0]), [0, 0, 0]);
+      expect(largestRemainderPercents(<double>[]), <int>[]);
+    });
+  });
+
   // ---------------------------------------------------------------------
   // Property-based tests (Glados)
   // ---------------------------------------------------------------------
@@ -589,6 +624,41 @@ void main() {
       // input when the input itself carries accumulation error.
       expect(ceiling * (1 + 1e-9), greaterThanOrEqualTo(value));
       expect(ceiling, lessThanOrEqualTo(10 * value));
+    },
+    tags: 'glados',
+  );
+
+  glados.Glados<int>(glados.any.intInRange(1, 10000000)).test(
+    'nice interval divides its ceiling into 4 or 5 round ticks',
+    (raw) {
+      final ceiling = impactNiceCeiling(raw / 100);
+      final interval = impactNiceInterval(ceiling);
+      final ticks = ceiling / interval;
+      // The step evenly divides the ceiling…
+      expect(ticks, closeTo(ticks.roundToDouble(), 1e-6));
+      // …into a legible 4 or 5 gridlines, never the awkward 12.5-style step.
+      expect(ticks.round(), anyOf(4, 5));
+    },
+    tags: 'glados',
+  );
+
+  glados.Glados<List<int>>(
+    glados.any.list(glados.any.intInRange(0, 1000)),
+  ).test(
+    'apportioned integer shares sum to 100 for any positive total',
+    (weights) {
+      final values = [for (final w in weights) w.toDouble()];
+      final percents = largestRemainderPercents(values);
+      expect(percents, hasLength(values.length));
+      for (final p in percents) {
+        expect(p, greaterThanOrEqualTo(0));
+        expect(p, lessThanOrEqualTo(100));
+      }
+      if (values.fold<double>(0, (a, b) => a + b) > 0) {
+        expect(percents.fold<int>(0, (a, b) => a + b), 100);
+      } else {
+        expect(percents.every((p) => p == 0), isTrue);
+      }
     },
     tags: 'glados',
   );

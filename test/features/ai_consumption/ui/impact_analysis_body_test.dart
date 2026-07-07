@@ -10,6 +10,7 @@ import 'package:lotti/features/ai_consumption/model/consumption_aggregation_mode
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_chart_card.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/impact_kpi_row.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_model_table.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_ranked_table.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
@@ -184,7 +185,8 @@ void main() {
     'renders KPI figures, chart, and ranked table from stubbed rows',
     (tester) async {
       stubRows(scenarioRows());
-      await pumpBody(tester);
+      // Tall so both breakdown tables mount in the lazy list without scrolling.
+      await pumpBody(tester, surface: const Size(1280, 2600));
 
       expect(find.text('AI Impact'), findsOneWidget);
 
@@ -194,9 +196,11 @@ void main() {
       expect(find.text(formatCarbonGrams(10)), findsOneWidget); // 10 g
       expect(find.text(formatTokenCount(2000)), findsOneWidget); // 2K
 
-      // Chart card for the default metric (cost), with real bars.
+      // Two always-visible charts for the default metric (cost): the category
+      // breakdown and the model breakdown (this scenario has models).
       expect(find.text('Cost by category'), findsOneWidget);
-      expect(find.byType(BarChart), findsOneWidget);
+      expect(find.text('Cost by model'), findsOneWidget);
+      expect(find.byType(BarChart), findsNWidgets(2));
 
       // Ranked table: resolved names, formatted values, shares of the
       // period total (0.3 / 0.15 / 0.15 → 50% / 25% / 25%).
@@ -234,12 +238,14 @@ void main() {
         findsNWidgets(2),
       );
 
-      // Model breakdown is gated behind the dimension toggle: the default
-      // dimension is category, so only the category table shows and the model
-      // table waits for "By model".
-      expect(find.byType(ImpactModelTable), findsNothing);
-      expect(find.text('By category'), findsWidgets);
-      expect(find.text('By model'), findsWidgets);
+      // The model breakdown table renders alongside the category one — both
+      // are always visible now, with no dimension toggle.
+      final modelTable = find.byType(ImpactModelTable);
+      expect(modelTable, findsOneWidget);
+      expect(
+        find.descendant(of: modelTable, matching: find.text('glm-5.2')),
+        findsOneWidget,
+      );
 
       // Location table: rows with provider-reported data centers are folded
       // by serving location and render energy, carbon, and renewable share.
@@ -269,24 +275,16 @@ void main() {
   );
 
   testWidgets(
-    'the By model dimension swaps the chart + table to the model breakdown',
+    'the category and model breakdowns render as two stacked charts + tables',
     (tester) async {
       stubRows(scenarioRows());
-      await pumpBody(tester);
+      // Tall so both (lazy ListView) breakdown tables mount without scrolling.
+      await pumpBody(tester, surface: const Size(1280, 2600));
 
-      // Default dimension: category chart, no model table.
+      // Both chart cards are present at once, no toggle between them.
       expect(find.text('Cost by category'), findsOneWidget);
-      expect(find.byType(ImpactModelTable), findsNothing);
-
-      await withClock(Clock.fixed(fixedNow), () async {
-        await tester.tap(find.text('By model').last);
-        await tester.pump();
-      });
-
-      // Chart + table are now the model breakdown; the category table is gone.
       expect(find.text('Cost by model'), findsOneWidget);
-      expect(find.text('Cost by category'), findsNothing);
-      expect(find.byType(ImpactRankedTable), findsNothing);
+      expect(find.byType(ImpactRankedTable), findsOneWidget);
 
       final modelTable = find.byType(ImpactModelTable);
       expect(modelTable, findsOneWidget);
@@ -335,10 +333,11 @@ void main() {
         await tester.pump();
       });
 
-      // The other category rows fade, and the chart re-baselines to the one
-      // isolated series (each drawn bar has at most one stacked segment).
+      // The other category rows fade, and the category chart (the first of the
+      // two) re-baselines to the one isolated series (each drawn bar has at
+      // most one stacked segment).
       expect(dimmedRows(), findsWidgets);
-      final chart = tester.widget<BarChart>(find.byType(BarChart));
+      final chart = tester.widget<BarChart>(find.byType(BarChart).first);
       for (final group in chart.data.barGroups) {
         expect(
           group.barRods.single.rodStackItems.length,
@@ -355,31 +354,41 @@ void main() {
     },
   );
 
-  testWidgets('metric toggle switches the chart and table to that metric', (
+  testWidgets('tapping a KPI tile switches the chart and table to that metric', (
     tester,
   ) async {
     stubRows(scenarioRows());
     await pumpBody(tester);
 
+    // Scope the cost value to the table: €0.30 is also a nice-number cost axis
+    // tick (0.10/0.20/0.30/0.40/0.50), so an unscoped match would find both.
+    Finder inCategoryTable(String text) => find.descendant(
+      of: find.byType(ImpactRankedTable),
+      matching: find.text(text),
+    );
     expect(find.text('Cost by category'), findsOneWidget);
-    expect(find.text('€0.30'), findsOneWidget);
+    expect(inCategoryTable('€0.30'), findsOneWidget);
 
     await withClock(Clock.fixed(fixedNow), () async {
-      // The segmented toggle renders each label twice (an invisible
-      // width-reserving ghost first, then the visible text) — tap the
-      // visible one so the hit test lands.
-      await tester.tap(find.text('Energy').last);
+      // The KPI tiles are the metric selector — tap the ENERGY tile (its
+      // eyebrow label; scoped to the KPI row since the location table also has
+      // an "ENERGY" column header) to drive the chart + table onto energy.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ImpactKpiRow),
+          matching: find.text('ENERGY'),
+        ),
+      );
       await tester.pump();
     });
 
     expect(find.text('Energy by category'), findsOneWidget);
     expect(find.text('Cost by category'), findsNothing);
-    // Table (and axis) now format through the energy formatter, and every
-    // euro figure outside the KPI row is gone.
+    // Table now formats through the energy formatter; the euro table value gone.
     expect(find.text(formatEnergyKwh(0.02)), findsWidgets); // 20 Wh
-    expect(find.text('€0.30'), findsNothing);
+    expect(inCategoryTable('€0.30'), findsNothing);
     // Shares are metric-relative and unchanged here (same proportions).
-    expect(find.text('50%'), findsOneWidget);
+    expect(inCategoryTable('50%'), findsOneWidget);
   });
 
   testWidgets(
@@ -399,27 +408,29 @@ void main() {
       // day inside the current June range. Keep the fixed clock so the
       // rebuild's date math stays on June 7.
       await withClock(Clock.fixed(fixedNow), () async {
+        // Drive the category (first) chart's bucket-selected callback.
         final card = tester.widget<ImpactChartCard>(
-          find.byType(ImpactChartCard),
+          find.byType(ImpactChartCard).first,
         );
         card.onBucketSelected!(DateTime(2026, 6, 5));
         await tester.pump();
         await tester.pump();
 
-        // The clearable drill chip appears in two places (under the chart and
-        // above the ledger), labelled Jun 5.
-        expect(chip, findsNWidgets(2));
+        // A pure drill (no isolation) shows one clearable chip above the
+        // ledger, labelled Jun 5 — the tapped bar's own accent outline is the
+        // in-viewport feedback, so there is no duplicate chip under the chart.
+        expect(chip, findsOneWidget);
         expect(find.textContaining('Jun 5'), findsWidgets);
         // Re-selecting the same bucket toggles the drill off.
         card.onBucketSelected!(DateTime(2026, 6, 5));
         await tester.pump();
         expect(chip, findsNothing);
 
-        // Select again, then clear via a chip's tap target.
+        // Select again, then clear via the chip's tap target.
         card.onBucketSelected!(DateTime(2026, 6, 5));
         await tester.pump();
-        expect(chip, findsNWidgets(2));
-        await tester.tap(chip.first);
+        expect(chip, findsOneWidget);
+        await tester.tap(chip);
         await tester.pump();
         expect(chip, findsNothing);
       });
@@ -430,13 +441,10 @@ void main() {
     tester,
   ) async {
     stubRows(scenarioRows());
-    await pumpBody(tester, surface: const Size(1280, 2400));
+    await pumpBody(tester, surface: const Size(1280, 2600));
 
     await withClock(Clock.fixed(fixedNow), () async {
-      await tester.tap(find.text('By model').last);
-      await tester.pump();
-
-      // Isolate glm-5.2 by tapping its model-table row.
+      // The model table is always visible — isolate glm-5.2 by tapping its row.
       await tester.tap(
         find.descendant(
           of: find.byType(ImpactModelTable),
@@ -445,7 +453,8 @@ void main() {
       );
       await tester.pump();
 
-      // The scope chip appears (its filter icon) labelled with the model.
+      // Two chips: the in-viewport one under the model chart and the combined
+      // one above the ledger, both labelled with the model.
       expect(find.byIcon(Icons.filter_alt_outlined), findsNWidgets(2));
       expect(find.textContaining('glm-5.2'), findsWidgets);
     });
@@ -459,11 +468,11 @@ void main() {
 
     await withClock(Clock.fixed(fixedNow), () async {
       final card = tester.widget<ImpactChartCard>(
-        find.byType(ImpactChartCard),
+        find.byType(ImpactChartCard).first,
       );
       card.onBucketSelected!(DateTime(2026, 6, 5));
       await tester.pump();
-      expect(find.byIcon(Icons.filter_alt_outlined), findsNWidgets(2));
+      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
 
       final stepper = tester.widget<InsightsPeriodStepper>(
         find.byType(InsightsPeriodStepper),
@@ -483,11 +492,11 @@ void main() {
       // Year-to-date is a weekly range; drilling it exercises the weekly
       // date-range chip label.
       final weeklyCard = tester.widget<ImpactChartCard>(
-        find.byType(ImpactChartCard),
+        find.byType(ImpactChartCard).first,
       );
       weeklyCard.onBucketSelected!(DateTime(2026, 3, 2));
       await tester.pump();
-      expect(find.byIcon(Icons.filter_alt_outlined), findsNWidgets(2));
+      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
     });
   });
 
@@ -514,11 +523,12 @@ void main() {
     // No RenderFlex overflow (the Settings ai-usage panel embeds this body
     // on ~390 px phone panes).
     expect(tester.takeException(), isNull);
-    // Real content still renders: title, KPI figures, chart.
+    // Real content still renders: title, KPI figures, at least the first chart
+    // (the second is below the fold in the lazy list at phone height).
     expect(find.text('AI Impact'), findsOneWidget);
     expect(find.text(formatCredits(0.6)), findsOneWidget);
     expect(find.text(formatCarbonGrams(10)), findsOneWidget);
-    expect(find.byType(BarChart), findsOneWidget);
+    expect(find.byType(BarChart), findsWidgets);
   });
 
   testWidgets('renders without overflow at phone width when empty', (

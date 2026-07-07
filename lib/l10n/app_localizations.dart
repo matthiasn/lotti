@@ -2407,24 +2407,6 @@ abstract class AppLocalizations {
   /// **'Pick an image generation model'**
   String get aiImageGenerationPickerTitle;
 
-  /// No description provided for @aiImpactBreakdownCategory.
-  ///
-  /// In en, this message translates to:
-  /// **'By category'**
-  String get aiImpactBreakdownCategory;
-
-  /// No description provided for @aiImpactBreakdownLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Breakdown'**
-  String get aiImpactBreakdownLabel;
-
-  /// No description provided for @aiImpactBreakdownModel.
-  ///
-  /// In en, this message translates to:
-  /// **'By model'**
-  String get aiImpactBreakdownModel;
-
   /// No description provided for @aiImpactCategoryTitle.
   ///
   /// In en, this message translates to:
@@ -2491,11 +2473,11 @@ abstract class AppLocalizations {
   /// **'COST'**
   String get aiImpactKpiCost;
 
-  /// No description provided for @aiImpactKpiDelta.
+  /// No description provided for @aiImpactKpiDeltaBaseline.
   ///
   /// In en, this message translates to:
-  /// **'{delta} vs prev'**
-  String aiImpactKpiDelta(String delta);
+  /// **'vs {period}'**
+  String aiImpactKpiDeltaBaseline(String period);
 
   /// No description provided for @aiImpactKpiEnergy.
   ///

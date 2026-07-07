@@ -88,6 +88,54 @@ void main() {
     });
   });
 
+  group('seriesPalette', () {
+    double circularHueGap(double a, double b) {
+      final d = (a - b).abs();
+      return d > 180 ? 360 - d : d;
+    }
+
+    test('the first six slots stay at least 60° apart in hue', () {
+      // The realistic maximum of concurrent model/location series is six, and
+      // the even/odd ring assignment guarantees they never land closer than
+      // 60° — the fix for the red-family (gpt-5 / gemini) adjacency.
+      final hues = [
+        for (var slot = 0; slot < 6; slot++)
+          HSLColor.fromColor(
+            seriesPaletteSwatchColor(slot, Brightness.dark),
+          ).hue,
+      ];
+      for (var i = 0; i < hues.length; i++) {
+        for (var j = i + 1; j < hues.length; j++) {
+          expect(
+            circularHueGap(hues[i], hues[j]),
+            greaterThan(59),
+            reason: 'slots $i and $j collide in hue',
+          );
+        }
+      }
+    });
+
+    test('slot 0 anchors on the calm blue, and slots are deterministic', () {
+      expect(
+        HSLColor.fromColor(seriesPaletteSwatchColor(0, Brightness.dark)).hue,
+        closeTo(216, 2),
+      );
+      // Same slot → same color across calls (stable per model over time).
+      expect(
+        seriesPaletteChartColor(3, Brightness.dark),
+        seriesPaletteChartColor(3, Brightness.dark),
+      );
+    });
+
+    test('wraps beyond the palette size instead of throwing', () {
+      // A rare 13th series reuses slot 0's hue rather than crashing.
+      expect(
+        seriesPaletteSwatchColor(kSeriesPaletteSize, Brightness.dark),
+        seriesPaletteSwatchColor(0, Brightness.dark),
+      );
+    });
+  });
+
   group('bandEdgeColor', () {
     test('lightens fills on dark and darkens them on light', () {
       const fill = Color(0xFF4C7EF3);

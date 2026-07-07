@@ -1349,15 +1349,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elige un modelo de generación de imágenes';
 
   @override
-  String get aiImpactBreakdownCategory => 'Por categoría';
-
-  @override
-  String get aiImpactBreakdownLabel => 'Desglose';
-
-  @override
-  String get aiImpactBreakdownModel => 'Por modelo';
-
-  @override
   String get aiImpactCategoryTitle => 'Desglose por categoría';
 
   @override
@@ -1398,8 +1389,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiImpactKpiCost => 'COSTE';
 
   @override
-  String aiImpactKpiDelta(String delta) {
-    return '$delta vs anterior';
+  String aiImpactKpiDeltaBaseline(String period) {
+    return 'vs $period';
   }
 
   @override

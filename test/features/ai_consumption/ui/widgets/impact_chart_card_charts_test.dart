@@ -239,20 +239,26 @@ void main() {
   });
 
   group('drilled-bucket highlight', () {
-    testWidgets('the selected bar keeps full alpha + accent edge; others dim', (
-      tester,
-    ) async {
-      await pumpBars(tester, selectedBucketIndex: 0);
-      final groups = readChart(tester).data.barGroups;
-      // Bucket 0 selected: an accent outline and full-alpha fill.
-      expect(groups[0].barRods.single.borderSide.width, 1.5);
-      expect(groups[0].barRods.single.rodStackItems[0].color?.a, 1.0);
-      // Bucket 1 (not selected) recedes.
-      expect(
-        groups[1].barRods.single.rodStackItems[0].color?.a,
-        lessThan(1.0),
-      );
-    });
+    testWidgets(
+      'the selected bar keeps its fill + accent edge; others recede opaquely',
+      (tester) async {
+        await pumpBars(tester, selectedBucketIndex: 0);
+        final groups = readChart(tester).data.barGroups;
+        // Both buckets stack series 'a' first, so their first segment is the
+        // same series — a clean before/after of the recede.
+        expect(groups[0].barRods.single.borderSide.width, 1.5);
+        final selectedFill = groups[0].barRods.single.rodStackItems[0].color!;
+        expect(selectedFill.a, 1.0);
+        // Bucket 1 (not selected) recedes toward the card surface: a distinct
+        // but still fully-opaque colour — the fix replaced the old drain to
+        // transparency (which was what erased the category hue) with an opaque
+        // lerp toward the surface, so the alpha stays 1.0 while the colour
+        // shifts.
+        final recededFill = groups[1].barRods.single.rodStackItems[0].color!;
+        expect(recededFill.a, 1.0);
+        expect(recededFill, isNot(selectedFill));
+      },
+    );
   });
 
   group('bucket tap', () {

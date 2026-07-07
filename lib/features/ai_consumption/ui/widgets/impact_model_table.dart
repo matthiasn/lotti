@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
+import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart'
+    show largestRemainderPercents;
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_table_card.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/insights/ui/widgets/insights_format.dart'
-    show formatShare;
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Exhaustive per-model breakdown of the selected metric, with unit economics.
@@ -48,10 +48,11 @@ class ImpactModelTable extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final brightness = Theme.of(context).brightness;
-    final total = entries.fold<double>(
-      0,
-      (sum, e) => sum + metric.valueOf(e.value),
-    );
+    // Integer shares apportioned so the column sums to exactly 100% (a per-row
+    // `value/total` round drifts to 101%). Index-aligned with entries.
+    final sharePercents = largestRemainderPercents([
+      for (final e in entries) metric.valueOf(e.value),
+    ]);
     // Dim the other rows only when the isolated model is actually in this
     // table (a stale key from another dimension shouldn't blank every row).
     final isolatingHere =
@@ -111,12 +112,12 @@ class ImpactModelTable extends StatelessWidget {
               ),
             ),
             Divider(height: 1, color: tokens.colors.decorative.level01),
-            for (final entry in entries)
+            for (var i = 0; i < entries.length; i++)
               _isolatableRow(
                 onTap: onToggleSeries == null
                     ? null
-                    : () => onToggleSeries!(entry.key),
-                dimmed: isolatingHere && entry.key != isolatedKey,
+                    : () => onToggleSeries!(entries[i].key),
+                dimmed: isolatingHere && entries[i].key != isolatedKey,
                 child: _ModelTableRowLayout(
                   showValue: showValue,
                   showShare: showShare,
@@ -131,7 +132,10 @@ class ImpactModelTable extends StatelessWidget {
                           height: tokens.spacing.step3,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: resolver.swatchColor(entry.key, brightness),
+                            color: resolver.swatchColor(
+                              entries[i].key,
+                              brightness,
+                            ),
                           ),
                         ),
                       ),
@@ -141,7 +145,7 @@ class ImpactModelTable extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              resolver.labelFor(entry.key),
+                              resolver.labelFor(entries[i].key),
                               style: tokens.typography.styles.body.bodySmall
                                   .copyWith(
                                     color: tokens.colors.text.highEmphasis,
@@ -150,7 +154,7 @@ class ImpactModelTable extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
-                              metaLine(entry.value),
+                              metaLine(entries[i].value),
                               style: tokens.typography.styles.others.caption
                                   .copyWith(
                                     color: tokens.colors.text.mediumEmphasis,
@@ -164,14 +168,17 @@ class ImpactModelTable extends StatelessWidget {
                     ],
                   ),
                   value: Text(
-                    metric.formatValue(metric.valueOf(entry.value)),
+                    metric.formatValue(metric.valueOf(entries[i].value)),
                     style: numberStyle,
                     textAlign: TextAlign.right,
                   ),
                   share: Text(
-                    formatShare(
-                      total > 0 ? metric.valueOf(entry.value) / total : 0,
-                    ),
+                    // "<1%" for a present-but-rounds-to-zero model, else the
+                    // apportioned integer; the column still totals 100.
+                    sharePercents[i] == 0 &&
+                            metric.valueOf(entries[i].value) > 0
+                        ? '<1%'
+                        : '${sharePercents[i]}%',
                     style: numberStyle.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),

@@ -1357,15 +1357,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alegeți un model pentru generarea imaginilor';
 
   @override
-  String get aiImpactBreakdownCategory => 'După categorie';
-
-  @override
-  String get aiImpactBreakdownLabel => 'Defalcare';
-
-  @override
-  String get aiImpactBreakdownModel => 'După model';
-
-  @override
   String get aiImpactCategoryTitle => 'Defalcare pe categorii';
 
   @override
@@ -1406,8 +1397,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiImpactKpiCost => 'COST';
 
   @override
-  String aiImpactKpiDelta(String delta) {
-    return '$delta față de anterior';
+  String aiImpactKpiDeltaBaseline(String period) {
+    return 'față de $period';
   }
 
   @override

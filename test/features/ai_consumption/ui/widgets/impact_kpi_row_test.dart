@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
+import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_kpi_row.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -16,11 +17,16 @@ void main() {
     waterLiters: 0.1,
   );
 
+  ConsumptionMetric? selected;
+
   Future<void> pumpRow(
     WidgetTester tester, {
     required Size surface,
+    ConsumptionMetric selectedMetric = ConsumptionMetric.cost,
     ConsumptionMetrics? previousTotals,
+    String? previousLabel,
   }) async {
+    selected = null;
     // The row's breakpoint reads real layout constraints, so the test view
     // itself must be resized — MediaQuery data alone doesn't constrain it.
     tester.view
@@ -30,7 +36,13 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       makeTestableWidget(
-        ImpactKpiRow(totals: totals, previousTotals: previousTotals),
+        ImpactKpiRow(
+          totals: totals,
+          selectedMetric: selectedMetric,
+          onSelectMetric: (m) => selected = m,
+          previousTotals: previousTotals,
+          previousLabel: previousLabel,
+        ),
         mediaQueryData: MediaQueryData(size: surface),
       ),
     );
@@ -89,36 +101,74 @@ void main() {
     expect(find.byType(IntrinsicHeight), findsNWidgets(3));
   });
 
-  testWidgets('shows a period-over-period delta when previous totals given', (
-    tester,
-  ) async {
-    // Current cost 1.23, previous 1.00 → +23%; energy 0.5 vs 1.0 → -50%.
-    await pumpRow(
-      tester,
-      surface: const Size(1280, 900),
-      previousTotals: const ConsumptionMetrics(
-        callCount: 5,
-        totalTokens: 12345,
-        credits: 1,
-        energyKwh: 1,
-      ),
-    );
-    expect(find.textContaining('▲ 23% vs prev'), findsOneWidget);
-    expect(find.textContaining('▼ 50% vs prev'), findsOneWidget);
+  testWidgets('tapping a tile selects that metric', (tester) async {
+    await pumpRow(tester, surface: const Size(1280, 900));
+    await tester.tap(find.text('ENERGY'));
+    await tester.pump();
+    expect(selected, ConsumptionMetric.energy);
   });
 
-  testWidgets('omits the delta for metrics with no prior value', (
+  testWidgets('the selected tile is marked selected for a11y, others are not', (
     tester,
   ) async {
-    // Previous carbon is 0 → its tile shows no delta.
     await pumpRow(
       tester,
       surface: const Size(1280, 900),
-      previousTotals: const ConsumptionMetrics(credits: 1),
+      selectedMetric: ConsumptionMetric.tokens,
     );
-    // Cost has a prior (+23%); carbon/tokens/requests do not.
-    expect(find.textContaining('▲ 23% vs prev'), findsOneWidget);
-    // Exactly one delta line (only cost had a prior value).
-    expect(find.textContaining('vs prev'), findsOneWidget);
+    // Exactly one tile carries selected: true — the tokens tile.
+    final selectedTiles = tester
+        .widgetList<Semantics>(find.byType(Semantics))
+        .where((s) => s.properties.selected ?? false)
+        .toList();
+    expect(selectedTiles, hasLength(1));
+    expect(
+      find.descendant(
+        of: find.byWidget(selectedTiles.first),
+        matching: find.text('TOKENS'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'shows a rising, clay-valence delta only on the selected cost tile',
+    (tester) async {
+      // Cost 1.23 vs 1.00 → +23%; only the cost tile (selected) shows it, with
+      // an up arrow (rising cost is bad → the chip paints it the caution hue).
+      await pumpRow(
+        tester,
+        surface: const Size(1280, 900),
+        previousTotals: const ConsumptionMetrics(credits: 1),
+        previousLabel: 'May',
+      );
+      expect(find.text('+23%'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
+      // The baseline is named, and appears exactly once (selected tile only).
+      expect(find.text('vs May'), findsOneWidget);
+    },
+  );
+
+  testWidgets('omits the delta when there is no previous period', (
+    tester,
+  ) async {
+    await pumpRow(tester, surface: const Size(1280, 900));
+    expect(find.textContaining('vs'), findsNothing);
+    expect(find.byIcon(Icons.arrow_upward_rounded), findsNothing);
+    expect(find.byIcon(Icons.arrow_downward_rounded), findsNothing);
+  });
+
+  testWidgets('omits the delta when the selected metric has no prior value', (
+    tester,
+  ) async {
+    // Previous energy is 0 → the selected energy tile shows no delta.
+    await pumpRow(
+      tester,
+      surface: const Size(1280, 900),
+      selectedMetric: ConsumptionMetric.energy,
+      previousTotals: const ConsumptionMetrics(credits: 1),
+      previousLabel: 'May',
+    );
+    expect(find.text('vs May'), findsNothing);
   });
 }

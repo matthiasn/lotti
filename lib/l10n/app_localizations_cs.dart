@@ -1344,15 +1344,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyber model pro generování obrázků';
 
   @override
-  String get aiImpactBreakdownCategory => 'Podle kategorie';
-
-  @override
-  String get aiImpactBreakdownLabel => 'Rozpad';
-
-  @override
-  String get aiImpactBreakdownModel => 'Podle modelu';
-
-  @override
   String get aiImpactCategoryTitle => 'Rozpad podle kategorií';
 
   @override
@@ -1393,8 +1384,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactKpiCost => 'NÁKLADY';
 
   @override
-  String aiImpactKpiDelta(String delta) {
-    return '$delta vs předchozí';
+  String aiImpactKpiDeltaBaseline(String period) {
+    return 'vs $period';
   }
 
   @override

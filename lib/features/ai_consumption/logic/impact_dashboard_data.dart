@@ -340,3 +340,54 @@ double impactNiceCeiling(double maxValue) {
   if (normalized <= 5 + epsilon) return 5 * magnitude;
   return 10 * magnitude;
 }
+
+/// The gridline/tick step for a [ceiling] produced by [impactNiceCeiling], so
+/// the labelled ticks are themselves round numbers (10/20/30/40/50) instead of
+/// the awkward `ceiling / 4` ladder (a 50 ceiling ÷ 4 = 12.5 → 13/25/38/50).
+///
+/// The step is drawn from the same 1/2/2.5/5 × 10ⁿ family as the ceiling and
+/// evenly divides it into four or five ticks: a `1×` ceiling steps by a fifth
+/// (0.2×, 5 ticks), a `2×` ceiling by a quarter (0.5×, 4 ticks), a `5×`
+/// ceiling by a tenth (1×, 5 ticks). Returns 1 for a non-positive ceiling.
+double impactNiceInterval(double ceiling) {
+  if (ceiling <= 0) return 1;
+  // Nudge before flooring so an exact power of ten (whose log underflows to
+  // n.9999…) lands on exponent n, not n-1 — else a 1000 ceiling would read as
+  // magnitude 100, lead 10, and step 100 instead of the correct 200.
+  final exponent = (math.log(ceiling) / math.ln10 + 1e-9).floor();
+  final magnitude = math.pow(10.0, exponent).toDouble();
+  final lead = (ceiling / magnitude).round(); // 1, 2, or 5 (from the ceiling)
+  if (lead >= 5) return magnitude; // 5× → step 1× → 5 ticks
+  if (lead >= 2) return magnitude / 2; // 2× → step 0.5× → 4 ticks
+  return magnitude / 5; // 1× → step 0.2× → 5 ticks
+}
+
+/// Displayed integer share percentages for [values], apportioned with the
+/// largest-remainder (Hamilton) method so they sum to **exactly 100** instead
+/// of the 101%/99% a column of independently-rounded shares drifts to.
+///
+/// Each value's exact share is floored; the leftover points (100 minus the
+/// sum of the floors) go to the entries with the largest fractional remainders,
+/// ties broken by original order. Returns all-zero for a non-positive total
+/// (an empty/zero column has no shares to show). Index `i` of the result is the
+/// percent for `values[i]`.
+List<int> largestRemainderPercents(List<double> values) {
+  final total = values.fold<double>(0, (sum, v) => sum + v);
+  if (total <= 0) return List<int>.filled(values.length, 0);
+  final exact = [for (final v in values) v / total * 100];
+  final floors = [for (final e in exact) e.floor()];
+  var remaining = 100 - floors.fold<int>(0, (sum, f) => sum + f);
+  // Hand out the leftover points to the largest remainders first; a stable
+  // original-order tie-break keeps the apportionment deterministic.
+  final order = [for (var i = 0; i < values.length; i++) i]
+    ..sort((a, b) {
+      final byRemainder = (exact[b] - floors[b]).compareTo(
+        exact[a] - floors[a],
+      );
+      return byRemainder != 0 ? byRemainder : a.compareTo(b);
+    });
+  for (var k = 0; k < order.length && remaining > 0; k++, remaining--) {
+    floors[order[k]] += 1;
+  }
+  return floors;
+}

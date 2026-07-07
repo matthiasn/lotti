@@ -831,9 +831,6 @@
   "aiImageAnalysisPickerDefaultBadge": "Default",
   "aiImageAnalysisPickerTitle": "Pick an image analysis model",
   "aiImageGenerationPickerTitle": "Pick an image generation model",
-  "aiImpactBreakdownCategory": "By category",
-  "aiImpactBreakdownLabel": "Breakdown",
-  "aiImpactBreakdownModel": "By model",
   "aiImpactCategoryTitle": "Category breakdown",
   "aiImpactChartHint": "Tap a bar to scope calls · tap a series to isolate",
   "aiImpactChartShareCaption": "Composition over time",
@@ -859,10 +856,10 @@
   "aiImpactEmptyTitle": "No AI usage in this range",
   "aiImpactKpiCarbon": "CO₂E",
   "aiImpactKpiCost": "COST",
-  "aiImpactKpiDelta": "{delta} vs prev",
-  "@aiImpactKpiDelta": {
+  "aiImpactKpiDeltaBaseline": "vs {period}",
+  "@aiImpactKpiDeltaBaseline": {
     "placeholders": {
-      "delta": {
+      "period": {
         "type": "String"
       }
     }

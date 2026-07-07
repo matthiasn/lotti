@@ -92,18 +92,22 @@ Color swatchColorFor(
 /// Size of the categorical series palette used for dimensions that carry no
 /// user-chosen color (models, serving locations). Larger than the chart's
 /// visible-series cap so simultaneously drawn series get distinct hues.
-const int kSeriesPaletteSize = 10;
+const int kSeriesPaletteSize = 12;
 
-/// Hue (degrees) for palette [slot]. The ten hues are spread evenly around
-/// the wheel, but *consecutive* slots jump three steps (~108°) — 3 is coprime
-/// with 10, so it's still a permutation of all ten hues while keeping the
-/// first-assigned (highest-rank) series well separated instead of clustering
-/// in one part of the wheel. A calm blue anchors slot 0. Derived, not
-/// hand-picked, so palette bands read as one system with the muted category
-/// fills beside them.
-double _seriesPaletteHue(int slot) =>
-    (216 + ((slot * 3) % kSeriesPaletteSize) * (360 / kSeriesPaletteSize)) %
-    360;
+/// Hue (degrees) for palette [slot]. Twelve hues sit 30° apart around the
+/// wheel, but the first half of the slots take the **even** ring positions and
+/// the second half the **odd** ones. So the first six slots — the realistic
+/// maximum of concurrent series — land a full 60° apart with *no* pair closer
+/// than 60° (killing the red-family adjacency two same-family models used to
+/// produce), and slots 7-12 interleave cleanly between them. A calm blue
+/// anchors slot 0. Derived, not hand-picked, so palette bands read as one
+/// system with the muted category fills beside them.
+double _seriesPaletteHue(int slot) {
+  const step = 360 / kSeriesPaletteSize; // 30°
+  const half = kSeriesPaletteSize ~/ 2; // 6
+  final ring = slot < half ? slot * 2 : (slot - half) * 2 + 1;
+  return (216 + ring * step) % 360;
+}
 
 /// The saturated identity color for palette [slot] — the swatch color for a
 /// model/location series, mirroring how a category's own hex is used at small

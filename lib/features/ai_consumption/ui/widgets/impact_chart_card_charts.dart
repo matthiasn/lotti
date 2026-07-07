@@ -96,18 +96,20 @@ class ImpactStackedBars extends StatelessWidget {
           : impactBucketTotal(data, i);
       if (v > maxValue) maxValue = v;
     }
-    // Nice-ceiling axis (1/2/5 × 10ⁿ) with four gridline divisions, so tick
-    // values are clean fractions of the ceiling in every metric's unit. Share
-    // keeps the 0–100% scale even when isolating a single band.
+    // Nice-ceiling axis (1/2/5 × 10ⁿ) with a nice-number tick step, so both
+    // the ceiling and every gridline land on round values in each metric's
+    // unit (e.g. 10/20/30/40/50, never 13/25/38/50). Share keeps the 0–100%
+    // scale even when isolating a single band.
     final maxY = shareMode ? 1.0 : impactNiceCeiling(maxValue);
-    final interval = maxY / 4;
+    final interval = impactNiceInterval(maxY);
     // Label every bar when there's room (≤7); thin out for longer ranges.
     final labelEvery = drawCount <= 7
         ? 1
         : (drawCount / 6).ceil().clamp(1, drawCount);
     // Hairline in the card colour cuts each stacked segment from the next,
     // a non-colour boundary so adjacent muted fills never smear together.
-    final segmentEdge = BorderSide(color: insightsCardSurface(context));
+    final cardSurface = insightsCardSurface(context);
+    final segmentEdge = BorderSide(color: cardSurface);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -143,8 +145,9 @@ class ImpactStackedBars extends StatelessWidget {
                   getTitlesWidget: (value, meta) => SideTitleWidget(
                     meta: meta,
                     child: Text(
-                      // Zero earns no ink; every other tick is a clean
-                      // quarter of the ceiling (a percentage in share mode).
+                      // Zero earns no ink; every other tick is a
+                      // nice-number step of the ceiling (a percentage in
+                      // share mode).
                       value == 0
                           ? ''
                           : shareMode
@@ -268,7 +271,12 @@ class ImpactStackedBars extends StatelessWidget {
                         // skips them above), so the fill is always full here.
                         var color = resolver.fillColor(key, brightness);
                         if (bucketDimmed) {
-                          color = color.withValues(alpha: color.a * 0.35);
+                          // Recede a non-selected bucket by lerping its fill
+                          // toward the card surface (opaque, hue preserved) —
+                          // not toward transparency, which drained the hue and
+                          // made Agents-purple vanish. The selected bar's accent
+                          // outline still carries the actual selection.
+                          color = Color.lerp(color, cardSurface, 0.62) ?? color;
                         }
                         if (isPartialWeek) {
                           color = color.withValues(alpha: color.a * 0.5);
@@ -409,7 +417,7 @@ class ImpactStackedArea extends StatelessWidget {
     }
     final niceCeiling = impactNiceCeiling(maxTop * 1.08);
     final maxY = shareMode ? 1.0 : (niceCeiling <= 0 ? 1.0 : niceCeiling);
-    final interval = maxY / 4;
+    final interval = impactNiceInterval(maxY);
     final labelEvery = lastDrawnBucket <= 7
         ? 1
         : (lastDrawnBucket / 6).ceil().clamp(1, lastDrawnBucket);

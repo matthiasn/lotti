@@ -94,6 +94,10 @@ class ImpactCallLedger extends ConsumerWidget {
   }
 }
 
+/// Below this row width the trailing metric string would squeeze the model
+/// name into an ellipsis, so the row stacks instead (model on its own line).
+const double _kLedgerStackedMaxWidth = 480;
+
 /// One call: type icon · model + type/time line · trailing metrics.
 class _LedgerRow extends StatelessWidget {
   const _LedgerRow({required this.event});
@@ -155,45 +159,81 @@ class _LedgerRow extends StatelessWidget {
     ).add_Hm().format(event.createdAt.toLocal());
     final model = event.providerModelId ?? event.modelId ?? '—';
 
+    final modelText = Text(
+      model,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: tokens.typography.styles.body.bodySmall.copyWith(
+        color: tokens.colors.text.highEmphasis,
+      ),
+    );
+    final subtitleText = Text(
+      '${_typeLabel(context)} · $time',
+      style: tokens.typography.styles.others.caption.copyWith(
+        color: tokens.colors.text.lowEmphasis,
+      ),
+    );
+    final metricsText = Text(
+      _metrics(context),
+      style: tokens.typography.styles.body.bodySmall.copyWith(
+        color: tokens.colors.text.mediumEmphasis,
+      ),
+    );
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-      child: Row(
-        children: [
-          Icon(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final icon = Icon(
             _icon,
             size: tokens.spacing.step5,
             color: tokens.colors.text.mediumEmphasis,
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          Expanded(
-            child: Column(
+          );
+
+          // Narrow: the model version owns the first line at full width, with
+          // the type/time subtitle and the metric string on the line below —
+          // so the identifying field is never the one that truncates.
+          if (constraints.maxWidth < _kLedgerStackedMaxWidth) {
+            return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  model,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                Text(
-                  '${_typeLabel(context)} · $time',
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
+                icon,
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      modelText,
+                      SizedBox(height: tokens.spacing.step1),
+                      subtitleText,
+                      SizedBox(height: tokens.spacing.step1),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: metricsText,
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          Text(
-            _metrics(context),
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-        ],
+            );
+          }
+
+          // Wide: model + subtitle on the left, metric string trailing right.
+          return Row(
+            children: [
+              icon,
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [modelText, subtitleText],
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              metricsText,
+            ],
+          );
+        },
       ),
     );
   }

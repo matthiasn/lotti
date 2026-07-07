@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart'
+    show largestRemainderPercents;
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_table_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/logic/chart_colors.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
-import 'package:lotti/features/insights/ui/widgets/insights_format.dart'
-    show formatShare;
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Exhaustive per-category breakdown of the selected metric: swatch ·
@@ -52,7 +52,11 @@ class ImpactRankedTable extends StatelessWidget {
     final brightness = Theme.of(context).brightness;
     if (entries.isEmpty) return const SizedBox.shrink();
 
-    final total = entries.fold<double>(0, (sum, e) => sum + e.value);
+    // Integer shares apportioned so the column sums to exactly 100% (a
+    // per-row `value/total` round drifts to 101%). Index-aligned with entries.
+    final sharePercents = largestRemainderPercents([
+      for (final e in entries) e.value,
+    ]);
     final isolatingHere =
         isolatedKey != null && entries.any((e) => e.key == isolatedKey);
 
@@ -103,12 +107,12 @@ class ImpactRankedTable extends StatelessWidget {
               ),
             ),
             Divider(height: 1, color: tokens.colors.decorative.level01),
-            for (final entry in entries)
+            for (var i = 0; i < entries.length; i++)
               _isolatableRow(
                 onTap: onToggleSeries == null
                     ? null
-                    : () => onToggleSeries!(entry.key),
-                dimmed: isolatingHere && entry.key != isolatedKey,
+                    : () => onToggleSeries!(entries[i].key),
+                dimmed: isolatingHere && entries[i].key != isolatedKey,
                 child: _ImpactTableRowLayout(
                   showValue: showValue,
                   showShare: showShare,
@@ -121,7 +125,7 @@ class ImpactRankedTable extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: swatchColorFor(
-                            resolver.colorHexFor(entry.key),
+                            resolver.colorHexFor(entries[i].key),
                             brightness,
                           ),
                         ),
@@ -129,7 +133,7 @@ class ImpactRankedTable extends StatelessWidget {
                       SizedBox(width: tokens.spacing.step3),
                       Expanded(
                         child: Text(
-                          resolver.labelFor(entry.key),
+                          resolver.labelFor(entries[i].key),
                           style: tokens.typography.styles.body.bodySmall
                               .copyWith(
                                 color: tokens.colors.text.highEmphasis,
@@ -140,12 +144,16 @@ class ImpactRankedTable extends StatelessWidget {
                     ],
                   ),
                   value: Text(
-                    metric.formatValue(entry.value),
+                    metric.formatValue(entries[i].value),
                     style: numberStyle,
                     textAlign: TextAlign.right,
                   ),
                   share: Text(
-                    formatShare(total > 0 ? entry.value / total : 0),
+                    // A present-but-rounds-to-zero share reads as "<1%", not a
+                    // bald 0%, while the apportioned integers still total 100.
+                    sharePercents[i] == 0 && entries[i].value > 0
+                        ? '<1%'
+                        : '${sharePercents[i]}%',
                     style: numberStyle.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),

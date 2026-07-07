@@ -1348,15 +1348,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiImageGenerationPickerTitle => 'Wähle ein Bildgenerierungsmodell';
 
   @override
-  String get aiImpactBreakdownCategory => 'Nach Kategorie';
-
-  @override
-  String get aiImpactBreakdownLabel => 'Aufschlüsselung';
-
-  @override
-  String get aiImpactBreakdownModel => 'Nach Modell';
-
-  @override
   String get aiImpactCategoryTitle => 'Aufschlüsselung nach Kategorie';
 
   @override
@@ -1397,8 +1388,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiImpactKpiCost => 'KOSTEN';
 
   @override
-  String aiImpactKpiDelta(String delta) {
-    return '$delta ggü. vorher';
+  String aiImpactKpiDeltaBaseline(String period) {
+    return 'ggü. $period';
   }
 
   @override
