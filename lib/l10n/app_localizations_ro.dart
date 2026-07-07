@@ -1357,9 +1357,33 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alegeți un model pentru generarea imaginilor';
 
   @override
+  String get aiImpactBreakdownCategory => 'După categorie';
+
+  @override
+  String get aiImpactBreakdownLabel => 'Defalcare';
+
+  @override
+  String get aiImpactBreakdownModel => 'După model';
+
+  @override
+  String get aiImpactChartShareCaption => 'Ponderea din totalul perioadei';
+
+  @override
+  String get aiImpactChartShareSegment => 'Pondere';
+
+  @override
   String aiImpactChartTitle(String metric) {
     return '$metric pe categorii';
   }
+
+  @override
+  String aiImpactChartTitleModel(String metric) {
+    return '$metric după model';
+  }
+
+  @override
+  String get aiImpactCoverageNote =>
+      'Energia, CO₂e și costul sunt măsurate doar pentru modelele din cloud.';
 
   @override
   String get aiImpactEmptyBody =>
@@ -1378,7 +1402,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiImpactKpiEnergy => 'ENERGIE';
 
   @override
+  String get aiImpactKpiRequests => 'CERERI';
+
+  @override
   String get aiImpactKpiTokens => 'TOKENURI';
+
+  @override
+  String get aiImpactLedgerClearFilter => 'Arată tot';
+
+  @override
+  String aiImpactLedgerScopedTo(String bucket) {
+    return 'Apeluri în $bucket';
+  }
 
   @override
   String get aiImpactLoadError =>
@@ -1403,10 +1438,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiImpactMetricEnergy => 'Energie';
 
   @override
+  String get aiImpactMetricRequests => 'Cereri';
+
+  @override
   String get aiImpactMetricTokens => 'Tokenuri';
 
   @override
   String get aiImpactModelColumn => 'MODEL';
+
+  @override
+  String get aiImpactModelOther => 'Alte modele';
 
   @override
   String get aiImpactModelTitle => 'Defalcare pe model';

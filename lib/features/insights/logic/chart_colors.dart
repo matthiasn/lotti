@@ -88,3 +88,34 @@ Color swatchColorFor(
   if (categoryColorHex == null) return neutral;
   return colorFromCssHex(categoryColorHex, substitute: neutral);
 }
+
+/// Size of the categorical series palette used for dimensions that carry no
+/// user-chosen color (models, serving locations). Larger than the chart's
+/// visible-series cap so simultaneously drawn series get distinct hues.
+const int kSeriesPaletteSize = 10;
+
+/// Evenly-spaced hue (degrees) for palette [slot]. Walks the wheel in equal
+/// steps from a calm blue, so the palette is a *derived* categorical set —
+/// not hand-picked brand colors — that reads as one system with the muted
+/// category fills it sits beside.
+double _seriesPaletteHue(int slot) =>
+    (216 + slot * (360 / kSeriesPaletteSize)) % 360;
+
+/// The saturated identity color for palette [slot] — the swatch color for a
+/// model/location series, mirroring how a category's own hex is used at small
+/// sizes. Slots beyond [kSeriesPaletteSize] wrap.
+Color seriesPaletteSwatchColor(int slot, Brightness brightness) {
+  final hue = _seriesPaletteHue(slot % kSeriesPaletteSize);
+  final lightness = brightness == Brightness.dark ? 0.62 : 0.50;
+  return HSLColor.fromAHSL(1, hue, 0.62, lightness).toColor();
+}
+
+/// The muted chart-fill color for palette [slot] — run through the same
+/// [mutedChartColor] pipeline as category fills so palette bands share the
+/// category fills' saturation/lightness band. Slots beyond
+/// [kSeriesPaletteSize] wrap.
+Color seriesPaletteChartColor(int slot, Brightness brightness) => mutedChartColor(
+  HSLColor.fromAHSL(1, _seriesPaletteHue(slot % kSeriesPaletteSize), 0.7, 0.5)
+      .toColor(),
+  brightness,
+);

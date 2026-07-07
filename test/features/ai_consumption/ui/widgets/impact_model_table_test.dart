@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_model_table.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -17,13 +18,22 @@ void main() {
     double width = 900,
     ConsumptionMetric metric = ConsumptionMetric.cost,
   }) async {
+    final resolver = PaletteSeriesResolver(
+      orderedKeys: rows.map((e) => e.key).whereType<String>().toList()..sort(),
+      unknownLabel: 'Unknown model',
+      otherLabel: 'Other models',
+    );
     await tester.pumpWidget(
       makeTestableWidget(
         Align(
           alignment: Alignment.topLeft,
           child: SizedBox(
             width: width,
-            child: ImpactModelTable(entries: rows, metric: metric),
+            child: ImpactModelTable(
+              entries: rows,
+              resolver: resolver,
+              metric: metric,
+            ),
           ),
         ),
         mediaQueryData: const MediaQueryData(size: Size(1000, 800)),

@@ -1349,9 +1349,33 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elige un modelo de generación de imágenes';
 
   @override
+  String get aiImpactBreakdownCategory => 'Por categoría';
+
+  @override
+  String get aiImpactBreakdownLabel => 'Desglose';
+
+  @override
+  String get aiImpactBreakdownModel => 'Por modelo';
+
+  @override
+  String get aiImpactChartShareCaption => 'Proporción del total del período';
+
+  @override
+  String get aiImpactChartShareSegment => 'Proporción';
+
+  @override
   String aiImpactChartTitle(String metric) {
     return '$metric por categoría';
   }
+
+  @override
+  String aiImpactChartTitleModel(String metric) {
+    return '$metric por modelo';
+  }
+
+  @override
+  String get aiImpactCoverageNote =>
+      'La energía, el CO₂e y el coste se miden solo para modelos en la nube.';
 
   @override
   String get aiImpactEmptyBody =>
@@ -1370,7 +1394,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiImpactKpiEnergy => 'ENERGÍA';
 
   @override
+  String get aiImpactKpiRequests => 'SOLICITUDES';
+
+  @override
   String get aiImpactKpiTokens => 'TOKENS';
+
+  @override
+  String get aiImpactLedgerClearFilter => 'Mostrar todo';
+
+  @override
+  String aiImpactLedgerScopedTo(String bucket) {
+    return 'Llamadas en $bucket';
+  }
 
   @override
   String get aiImpactLoadError =>
@@ -1395,10 +1430,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiImpactMetricEnergy => 'Energía';
 
   @override
+  String get aiImpactMetricRequests => 'Solicitudes';
+
+  @override
   String get aiImpactMetricTokens => 'Tokens';
 
   @override
   String get aiImpactModelColumn => 'MODELO';
+
+  @override
+  String get aiImpactModelOther => 'Otros modelos';
 
   @override
   String get aiImpactModelTitle => 'Desglose por modelo';

@@ -831,6 +831,11 @@
   "aiImageAnalysisPickerDefaultBadge": "Default",
   "aiImageAnalysisPickerTitle": "Pick an image analysis model",
   "aiImageGenerationPickerTitle": "Pick an image generation model",
+  "aiImpactBreakdownCategory": "By category",
+  "aiImpactBreakdownLabel": "Breakdown",
+  "aiImpactBreakdownModel": "By model",
+  "aiImpactChartShareCaption": "Share of period total",
+  "aiImpactChartShareSegment": "Share",
   "aiImpactChartTitle": "{metric} by category",
   "@aiImpactChartTitle": {
     "placeholders": {
@@ -839,12 +844,31 @@
       }
     }
   },
+  "aiImpactChartTitleModel": "{metric} by model",
+  "@aiImpactChartTitleModel": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "aiImpactCoverageNote": "Energy, CO₂e and cost are measured for cloud models only.",
   "aiImpactEmptyBody": "AI calls from your tasks and agents will show up here.",
   "aiImpactEmptyTitle": "No AI usage in this range",
   "aiImpactKpiCarbon": "CO₂E",
   "aiImpactKpiCost": "COST",
   "aiImpactKpiEnergy": "ENERGY",
+  "aiImpactKpiRequests": "REQUESTS",
   "aiImpactKpiTokens": "TOKENS",
+  "aiImpactLedgerClearFilter": "Show all",
+  "aiImpactLedgerScopedTo": "Calls in {bucket}",
+  "@aiImpactLedgerScopedTo": {
+    "placeholders": {
+      "bucket": {
+        "type": "String"
+      }
+    }
+  },
   "aiImpactLoadError": "Couldn't load AI impact data",
   "aiImpactLocationColumn": "LOCATION",
   "aiImpactLocationTitle": "Impact by location",
@@ -852,8 +876,10 @@
   "aiImpactMetricCarbon": "CO₂e",
   "aiImpactMetricCost": "Cost",
   "aiImpactMetricEnergy": "Energy",
+  "aiImpactMetricRequests": "Requests",
   "aiImpactMetricTokens": "Tokens",
   "aiImpactModelColumn": "MODEL",
+  "aiImpactModelOther": "Other models",
   "aiImpactModelTitle": "Model breakdown",
   "aiImpactModelUnknown": "Unknown model",
   "aiImpactRenewableColumn": "RENEWABLE",

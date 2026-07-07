@@ -7,11 +7,16 @@ import 'package:meta/meta.dart';
 
 const DeepCollectionEquality _deepEquality = DeepCollectionEquality();
 
-/// The four headline dimensions the impact dashboard can break AI
-/// consumption down by: money, electricity, emissions, and raw token
-/// volume. The dashboard shows all four in the KPI row and lets the user
-/// pick one for the chart + ranked table.
-enum ConsumptionMetric { cost, energy, carbon, tokens }
+/// The headline dimensions the impact dashboard can break AI consumption
+/// down by: money, electricity, emissions, raw token volume, and call count.
+/// The dashboard shows all of them in the KPI row and lets the user pick one
+/// for the chart + ranked table.
+///
+/// [requests] (raw call count) is the only metric populated for *every*
+/// provider — cost/energy/carbon are reported by cloud providers alone and
+/// tokens require usage reporting — so it is the dependable lens for
+/// "favorite models over time".
+enum ConsumptionMetric { cost, energy, carbon, tokens, requests }
 
 /// Projection + formatting lens for one [ConsumptionMetric], so chart/table
 /// code can stay metric-agnostic: pick the value with [valueOf], render it
@@ -25,6 +30,7 @@ extension ConsumptionMetricLens on ConsumptionMetric {
     ConsumptionMetric.energy => metrics.energyKwh,
     ConsumptionMetric.carbon => metrics.carbonGCo2,
     ConsumptionMetric.tokens => metrics.totalTokens.toDouble(),
+    ConsumptionMetric.requests => metrics.callCount.toDouble(),
   };
 
   /// Formats a [valueOf]-scaled value with its unit, via the shared
@@ -35,6 +41,16 @@ extension ConsumptionMetricLens on ConsumptionMetric {
     ConsumptionMetric.energy => formatEnergyKwh(value),
     ConsumptionMetric.carbon => formatCarbonGrams(value),
     ConsumptionMetric.tokens => formatTokenCount(value.round()),
+    ConsumptionMetric.requests => formatCallCount(value.round()),
+  };
+
+  /// Whether this metric is reported by every provider ([requests]) or only
+  /// by cloud providers that return billing/impact data (cost/energy/carbon)
+  /// or usage (tokens). Drives the "measured for cloud models only" coverage
+  /// note.
+  bool get isCloudOnly => switch (this) {
+    ConsumptionMetric.requests => false,
+    _ => true,
   };
 }
 

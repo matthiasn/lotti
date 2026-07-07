@@ -11,6 +11,7 @@ import 'package:lotti/features/ai_consumption/ui/widgets/impact_kpi_row.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_location_table.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_model_table.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_ranked_table.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -22,8 +23,14 @@ import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart'
 import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Host-independent core of the AI Impact dashboard: per-category,
-/// time-bucketed consumption (cost, energy, CO₂e, tokens).
+/// The dimension the breakdown chart + companion table split the selected
+/// metric by. Category is always available; model appears only when the
+/// period has model-attributed calls.
+enum ImpactBreakdownDimension { category, model }
+
+/// Host-independent core of the AI Impact dashboard: time-bucketed
+/// consumption (cost, energy, CO₂e, tokens, requests) broken down by category
+/// or model.
 ///
 /// Embedded by `ImpactAnalysisPage` (the `/dashboards/impact` route) and by the
 /// Settings `ai-usage` panel, so both navigation paths render the same
@@ -53,8 +60,11 @@ class ImpactAnalysisBody extends ConsumerStatefulWidget {
 
 class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
   /// The metric the chart + ranked table break down. The KPI row always
-  /// shows all four.
+  /// shows all of them.
   ConsumptionMetric _metric = ConsumptionMetric.cost;
+
+  /// Which dimension the breakdown chart + table split the metric by.
+  ImpactBreakdownDimension _dimension = ImpactBreakdownDimension.category;
 
   /// The most recent generation whose buckets had fully loaded — the
   /// keepPreviousData retention (see class docs). Null only before the very
@@ -113,8 +123,11 @@ class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
       data: data,
       resolver: resolver,
       metric: _metric,
+      dimension: _dimension,
       showStaleNotice: bucketsAsync.hasError,
       onSelectMetric: (metric) => setState(() => _metric = metric),
+      onSelectDimension: (dimension) =>
+          setState(() => _dimension = dimension),
       onSelectUnit: controller.selectUnit,
       onStep: controller.step,
       onSelectToDate: controller.selectToDate,
@@ -145,8 +158,10 @@ class _DashboardContent extends StatelessWidget {
     required this.data,
     required this.resolver,
     required this.metric,
+    required this.dimension,
     required this.showStaleNotice,
     required this.onSelectMetric,
+    required this.onSelectDimension,
     required this.onSelectUnit,
     required this.onStep,
     required this.onSelectToDate,
@@ -163,6 +178,7 @@ class _DashboardContent extends StatelessWidget {
 
   final InsightsCategoryResolver resolver;
   final ConsumptionMetric metric;
+  final ImpactBreakdownDimension dimension;
 
   /// Whether a window load failed while the retained generation stays on
   /// screen — surfaced as a slim, non-blocking strip instead of an error
@@ -171,6 +187,7 @@ class _DashboardContent extends StatelessWidget {
   final bool showStaleNotice;
 
   final ValueChanged<ConsumptionMetric> onSelectMetric;
+  final ValueChanged<ImpactBreakdownDimension> onSelectDimension;
   final ValueChanged<InsightsPeriodUnit> onSelectUnit;
   final ValueChanged<int> onStep;
   final ValueChanged<InsightsPeriodUnit> onSelectToDate;
@@ -194,11 +211,41 @@ class _DashboardContent extends StatelessWidget {
     final modelDaily = dailyModelMetricTotals(buckets, range, metric);
     final rankedModels = rankedImpactCategoryTotals(modelDaily);
     final locationTotals = rankedImpactLocationTotals(buckets, range);
-    final chartData = buildImpactChartData(
+    final categoryChart = buildImpactChartData(
       buckets,
       range,
       metric,
       precomputedDaily: daily,
+    );
+    final modelChart = buildImpactChartData(
+      buckets,
+      range,
+      metric,
+      precomputedDaily: modelDaily,
+    );
+
+    // A model appears in the breakdown only when the period has
+    // model-attributed calls; below that the dimension toggle is hidden and
+    // the chart stays on category.
+    final hasModelData = rankedModels.isNotEmpty;
+    final showModel =
+        dimension == ImpactBreakdownDimension.model && hasModelData;
+
+    // Palette colors are assigned by a stable, metric-independent ordering of
+    // every model in the window (sorted ids), so a model keeps its color
+    // across metric switches, across the chart/legend/table, and — within a
+    // window — across period steps.
+    final orderedModelKeys =
+        <String>{
+          for (final day in buckets.modelDays.values)
+            for (final key in day.keys) ?key,
+        }.toList()
+          ..sort();
+    final categorySeriesResolver = CategorySeriesResolver(resolver);
+    final modelResolver = PaletteSeriesResolver(
+      orderedKeys: orderedModelKeys,
+      unknownLabel: messages.aiImpactModelUnknown,
+      otherLabel: messages.aiImpactModelOther,
     );
 
     final children = <Widget>[
@@ -263,17 +310,39 @@ class _DashboardContent extends StatelessWidget {
         SizedBox(height: tokens.spacing.sectionGap),
         ImpactKpiRow(totals: totals),
         SizedBox(height: tokens.spacing.sectionGap),
+        // Breakdown section: one dimension toggle drives both the chart and
+        // its companion table, so category and model share one surface
+        // instead of stacking two near-identical tables.
+        if (hasModelData) ...[
+          _BreakdownDimensionSelector(
+            dimension: dimension,
+            onSelectDimension: onSelectDimension,
+          ),
+          SizedBox(height: tokens.spacing.step5),
+        ],
         ImpactChartCard(
-          chartData: chartData,
-          resolver: resolver,
+          chartData: showModel ? modelChart : categoryChart,
+          resolver: showModel ? modelResolver : categorySeriesResolver,
           metric: metric,
+          title: showModel
+              ? messages.aiImpactChartTitleModel(
+                  consumptionMetricLabel(messages, metric),
+                )
+              : null,
         ),
         SizedBox(height: tokens.spacing.sectionGap),
-        ImpactRankedTable(entries: ranked, resolver: resolver, metric: metric),
-        if (rankedModels.isNotEmpty) ...[
-          SizedBox(height: tokens.spacing.sectionGap),
-          ImpactModelTable(entries: rankedModels, metric: metric),
-        ],
+        if (showModel)
+          ImpactModelTable(
+            entries: rankedModels,
+            resolver: modelResolver,
+            metric: metric,
+          )
+        else
+          ImpactRankedTable(
+            entries: ranked,
+            resolver: resolver,
+            metric: metric,
+          ),
         if (locationTotals.isNotEmpty) ...[
           SizedBox(height: tokens.spacing.sectionGap),
           ImpactLocationTable(entries: locationTotals),
@@ -307,6 +376,63 @@ class _DashboardContent extends StatelessWidget {
                 children: children,
               ),
             ),
+    );
+  }
+}
+
+/// Eyebrow-labelled toggle that switches the breakdown chart + table between
+/// the category and model dimensions. Rendered only when the period has
+/// model-attributed calls.
+class _BreakdownDimensionSelector extends StatelessWidget {
+  const _BreakdownDimensionSelector({
+    required this.dimension,
+    required this.onSelectDimension,
+  });
+
+  final ImpactBreakdownDimension dimension;
+  final ValueChanged<ImpactBreakdownDimension> onSelectDimension;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          messages.aiImpactBreakdownLabel,
+          style: calmEyebrowStyle(
+            tokens,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Two short segments fit shrink-wrapped on any real pane; fill
+            // the width only on the tightest settings panel.
+            final expand = constraints.maxWidth < 360;
+            final toggle = DsSegmentedToggle<ImpactBreakdownDimension>(
+              selected: dimension,
+              onChanged: onSelectDimension,
+              expand: expand,
+              segments: [
+                DsSegment(
+                  ImpactBreakdownDimension.category,
+                  messages.aiImpactBreakdownCategory,
+                ),
+                DsSegment(
+                  ImpactBreakdownDimension.model,
+                  messages.aiImpactBreakdownModel,
+                ),
+              ],
+            );
+            if (expand) return toggle;
+            return Align(alignment: Alignment.centerLeft, child: toggle);
+          },
+        ),
+      ],
     );
   }
 }

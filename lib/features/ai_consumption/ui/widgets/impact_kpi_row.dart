@@ -7,14 +7,17 @@ import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Below this width the four KPI tiles wrap into a 2×2 grid; a single row
-/// would crush the figures on phone-width panes.
-const double _kFourAcrossMinWidth = 640;
+/// Above this width all five KPI tiles sit in one row; between the two
+/// breakpoints they wrap to three-per-row; below, two-per-row. Equal-width
+/// tiles throughout so figures never get crushed on phone-width panes.
+const double _kFiveAcrossMinWidth = 900;
+const double _kThreeAcrossMinWidth = 560;
 
 /// Headline totals for the selected period: one quiet bordered tile per
-/// consumption metric (cost, energy, CO₂e, tokens) — plain figures, no
-/// gauges, mirroring the Insights KPI idiom. All four metrics are always
-/// shown regardless of which one the chart/table toggle selects.
+/// consumption metric (cost, energy, CO₂e, tokens, requests) — plain figures,
+/// no gauges, mirroring the Insights KPI idiom. All metrics are always shown
+/// regardless of which one the chart/table toggle selects, followed by a
+/// subtle note that cost/energy/CO₂e are measured for cloud models only.
 class ImpactKpiRow extends StatelessWidget {
   const ImpactKpiRow({required this.totals, super.key});
 
@@ -27,6 +30,7 @@ class ImpactKpiRow extends StatelessWidget {
         ConsumptionMetric.energy => messages.aiImpactKpiEnergy,
         ConsumptionMetric.carbon => messages.aiImpactKpiCarbon,
         ConsumptionMetric.tokens => messages.aiImpactKpiTokens,
+        ConsumptionMetric.requests => messages.aiImpactKpiRequests,
       };
 
   @override
@@ -39,29 +43,58 @@ class ImpactKpiRow extends StatelessWidget {
       figure: metric.formatValue(metric.valueOf(totals)),
     );
 
-    Widget row(List<ConsumptionMetric> metrics) => IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    // A grid of equal-width tiles, [columns] per row, with empty flex slots
+    // padding the final row so every tile keeps the same width.
+    Widget grid(int columns) {
+      const metrics = ConsumptionMetric.values;
+      final rows = <Widget>[];
+      for (var start = 0; start < metrics.length; start += columns) {
+        rows.add(
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var c = 0; c < columns; c++) ...[
+                  if (c > 0) SizedBox(width: tokens.spacing.cardItemSpacing),
+                  Expanded(
+                    child: start + c < metrics.length
+                        ? tile(metrics[start + c])
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      }
+      return Column(
         children: [
-          for (var i = 0; i < metrics.length; i++) ...[
-            if (i > 0) SizedBox(width: tokens.spacing.cardItemSpacing),
-            Expanded(child: tile(metrics[i])),
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) SizedBox(height: tokens.spacing.cardItemSpacing),
+            rows[i],
           ],
         ],
-      ),
-    );
+      );
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth >= _kFourAcrossMinWidth) {
-          return row(ConsumptionMetric.values);
-        }
-        // Narrow panes: 2×2 so each figure keeps room to breathe.
+        final columns = constraints.maxWidth >= _kFiveAcrossMinWidth
+            ? 5
+            : constraints.maxWidth >= _kThreeAcrossMinWidth
+            ? 3
+            : 2;
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            row(const [ConsumptionMetric.cost, ConsumptionMetric.energy]),
-            SizedBox(height: tokens.spacing.cardItemSpacing),
-            row(const [ConsumptionMetric.carbon, ConsumptionMetric.tokens]),
+            grid(columns),
+            SizedBox(height: tokens.spacing.step3),
+            Text(
+              messages.aiImpactCoverageNote,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ),
           ],
         );
       },

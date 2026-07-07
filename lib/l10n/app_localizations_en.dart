@@ -1330,9 +1330,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiImageGenerationPickerTitle => 'Pick an image generation model';
 
   @override
+  String get aiImpactBreakdownCategory => 'By category';
+
+  @override
+  String get aiImpactBreakdownLabel => 'Breakdown';
+
+  @override
+  String get aiImpactBreakdownModel => 'By model';
+
+  @override
+  String get aiImpactChartShareCaption => 'Share of period total';
+
+  @override
+  String get aiImpactChartShareSegment => 'Share';
+
+  @override
   String aiImpactChartTitle(String metric) {
     return '$metric by category';
   }
+
+  @override
+  String aiImpactChartTitleModel(String metric) {
+    return '$metric by model';
+  }
+
+  @override
+  String get aiImpactCoverageNote =>
+      'Energy, CO₂e and cost are measured for cloud models only.';
 
   @override
   String get aiImpactEmptyBody =>
@@ -1351,7 +1375,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiImpactKpiEnergy => 'ENERGY';
 
   @override
+  String get aiImpactKpiRequests => 'REQUESTS';
+
+  @override
   String get aiImpactKpiTokens => 'TOKENS';
+
+  @override
+  String get aiImpactLedgerClearFilter => 'Show all';
+
+  @override
+  String aiImpactLedgerScopedTo(String bucket) {
+    return 'Calls in $bucket';
+  }
 
   @override
   String get aiImpactLoadError => 'Couldn\'t load AI impact data';
@@ -1375,10 +1410,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiImpactMetricEnergy => 'Energy';
 
   @override
+  String get aiImpactMetricRequests => 'Requests';
+
+  @override
   String get aiImpactMetricTokens => 'Tokens';
 
   @override
   String get aiImpactModelColumn => 'MODEL';
+
+  @override
+  String get aiImpactModelOther => 'Other models';
 
   @override
   String get aiImpactModelTitle => 'Model breakdown';

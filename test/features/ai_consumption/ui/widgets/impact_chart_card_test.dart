@@ -6,6 +6,7 @@ import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_chart_card.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart'
     show epochDay;
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -66,7 +67,7 @@ void main() {
         makeTestableWidget(
           ImpactChartCard(
             chartData: chartData,
-            resolver: resolver,
+            resolver: CategorySeriesResolver(resolver),
             metric: metric,
           ),
           mediaQueryData: const MediaQueryData(size: Size(900, 700)),

@@ -42,29 +42,46 @@ void main() {
     expect(formatCarbonGrams(250), '250 g');
     expect(find.text('250 g'), findsOneWidget);
     expect(find.text(formatTokenCount(12345)), findsOneWidget);
+    expect(find.text(formatCallCount(5)), findsOneWidget); // requests
 
     // Eyebrow labels name each tile.
     expect(find.text('COST'), findsOneWidget);
     expect(find.text('ENERGY'), findsOneWidget);
     expect(find.text('CO₂E'), findsOneWidget);
     expect(find.text('TOKENS'), findsOneWidget);
+    expect(find.text('REQUESTS'), findsOneWidget);
+
+    // Coverage note keeps the cloud-only measurement honest.
+    expect(
+      find.textContaining('measured for cloud models only'),
+      findsOneWidget,
+    );
   }
 
-  testWidgets('desktop width renders all four metric tiles in one row', (
+  testWidgets('desktop width renders all five metric tiles in one row', (
     tester,
   ) async {
     await pumpRow(tester, surface: const Size(1280, 900));
     expectAllFigures();
-    // Wide layout: all four tiles share one equal-height row.
+    // Wide layout (≥900): all five tiles share one equal-height row.
     expect(find.byType(IntrinsicHeight), findsOneWidget);
   });
 
-  testWidgets('narrow width wraps into a 2x2 grid with the same figures', (
+  testWidgets('medium width wraps into three-per-row with the same figures', (
+    tester,
+  ) async {
+    await pumpRow(tester, surface: const Size(720, 900));
+    expectAllFigures();
+    // 560–900: three-per-row → two equal-height rows (3 + 2).
+    expect(find.byType(IntrinsicHeight), findsNWidgets(2));
+  });
+
+  testWidgets('narrow width wraps into a two-per-row grid with same figures', (
     tester,
   ) async {
     await pumpRow(tester, surface: const Size(390, 844));
     expectAllFigures();
-    // Narrow layout: two stacked equal-height rows of two tiles.
-    expect(find.byType(IntrinsicHeight), findsNWidgets(2));
+    // Narrow (<560): two-per-row → three equal-height rows (2 + 2 + 1).
+    expect(find.byType(IntrinsicHeight), findsNWidgets(3));
   });
 }

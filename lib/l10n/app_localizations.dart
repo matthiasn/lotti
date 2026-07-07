@@ -2407,11 +2407,53 @@ abstract class AppLocalizations {
   /// **'Pick an image generation model'**
   String get aiImageGenerationPickerTitle;
 
+  /// No description provided for @aiImpactBreakdownCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'By category'**
+  String get aiImpactBreakdownCategory;
+
+  /// No description provided for @aiImpactBreakdownLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakdown'**
+  String get aiImpactBreakdownLabel;
+
+  /// No description provided for @aiImpactBreakdownModel.
+  ///
+  /// In en, this message translates to:
+  /// **'By model'**
+  String get aiImpactBreakdownModel;
+
+  /// No description provided for @aiImpactChartShareCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Share of period total'**
+  String get aiImpactChartShareCaption;
+
+  /// No description provided for @aiImpactChartShareSegment.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get aiImpactChartShareSegment;
+
   /// No description provided for @aiImpactChartTitle.
   ///
   /// In en, this message translates to:
   /// **'{metric} by category'**
   String aiImpactChartTitle(String metric);
+
+  /// No description provided for @aiImpactChartTitleModel.
+  ///
+  /// In en, this message translates to:
+  /// **'{metric} by model'**
+  String aiImpactChartTitleModel(String metric);
+
+  /// No description provided for @aiImpactCoverageNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Energy, CO₂e and cost are measured for cloud models only.'**
+  String get aiImpactCoverageNote;
 
   /// No description provided for @aiImpactEmptyBody.
   ///
@@ -2443,11 +2485,29 @@ abstract class AppLocalizations {
   /// **'ENERGY'**
   String get aiImpactKpiEnergy;
 
+  /// No description provided for @aiImpactKpiRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'REQUESTS'**
+  String get aiImpactKpiRequests;
+
   /// No description provided for @aiImpactKpiTokens.
   ///
   /// In en, this message translates to:
   /// **'TOKENS'**
   String get aiImpactKpiTokens;
+
+  /// No description provided for @aiImpactLedgerClearFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get aiImpactLedgerClearFilter;
+
+  /// No description provided for @aiImpactLedgerScopedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Calls in {bucket}'**
+  String aiImpactLedgerScopedTo(String bucket);
 
   /// No description provided for @aiImpactLoadError.
   ///
@@ -2491,6 +2551,12 @@ abstract class AppLocalizations {
   /// **'Energy'**
   String get aiImpactMetricEnergy;
 
+  /// No description provided for @aiImpactMetricRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests'**
+  String get aiImpactMetricRequests;
+
   /// No description provided for @aiImpactMetricTokens.
   ///
   /// In en, this message translates to:
@@ -2502,6 +2568,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'MODEL'**
   String get aiImpactModelColumn;
+
+  /// No description provided for @aiImpactModelOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other models'**
+  String get aiImpactModelOther;
 
   /// No description provided for @aiImpactModelTitle.
   ///

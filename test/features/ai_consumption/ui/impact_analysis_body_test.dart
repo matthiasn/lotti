@@ -230,36 +230,12 @@ void main() {
         findsNWidgets(2),
       );
 
-      // Model table: same metric, but grouped by provider model id.
-      final modelTable = find.byType(ImpactModelTable);
-      expect(modelTable, findsOneWidget);
-      expect(
-        find.descendant(of: modelTable, matching: find.text('glm-5.2')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: modelTable, matching: find.text('€0.45')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: modelTable, matching: find.text('75%')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: modelTable,
-          matching: find.text('voxtral-small-24b-2507'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: modelTable, matching: find.text('€0.15')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: modelTable, matching: find.text('25%')),
-        findsOneWidget,
-      );
+      // Model breakdown is gated behind the dimension toggle: the default
+      // dimension is category, so only the category table shows and the model
+      // table waits for "By model".
+      expect(find.byType(ImpactModelTable), findsNothing);
+      expect(find.text('By category'), findsWidgets);
+      expect(find.text('By model'), findsWidgets);
 
       // Location table: rows with provider-reported data centers are folded
       // by serving location and render energy, carbon, and renewable share.
@@ -285,6 +261,51 @@ void main() {
       expect(find.text(formatCarbonGrams(5)), findsWidgets);
       expect(find.text('80%'), findsOneWidget);
       expect(find.text('100%'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the By model dimension swaps the chart + table to the model breakdown',
+    (tester) async {
+      stubRows(scenarioRows());
+      await pumpBody(tester);
+
+      // Default dimension: category chart, no model table.
+      expect(find.text('Cost by category'), findsOneWidget);
+      expect(find.byType(ImpactModelTable), findsNothing);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.tap(find.text('By model').last);
+        await tester.pump();
+      });
+
+      // Chart + table are now the model breakdown; the category table is gone.
+      expect(find.text('Cost by model'), findsOneWidget);
+      expect(find.text('Cost by category'), findsNothing);
+      expect(find.byType(ImpactRankedTable), findsNothing);
+
+      final modelTable = find.byType(ImpactModelTable);
+      expect(modelTable, findsOneWidget);
+      // Model totals over the scenario: glm-5.2 €0.45 (75%), voxtral €0.15.
+      expect(
+        find.descendant(of: modelTable, matching: find.text('glm-5.2')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: modelTable, matching: find.text('€0.45')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: modelTable, matching: find.text('75%')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: modelTable,
+          matching: find.text('voxtral-small-24b-2507'),
+        ),
+        findsOneWidget,
+      );
     },
   );
 

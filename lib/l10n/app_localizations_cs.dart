@@ -1344,9 +1344,33 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyber model pro generování obrázků';
 
   @override
+  String get aiImpactBreakdownCategory => 'Podle kategorie';
+
+  @override
+  String get aiImpactBreakdownLabel => 'Rozpad';
+
+  @override
+  String get aiImpactBreakdownModel => 'Podle modelu';
+
+  @override
+  String get aiImpactChartShareCaption => 'Podíl na celku za období';
+
+  @override
+  String get aiImpactChartShareSegment => 'Podíl';
+
+  @override
   String aiImpactChartTitle(String metric) {
     return '$metric podle kategorie';
   }
+
+  @override
+  String aiImpactChartTitleModel(String metric) {
+    return '$metric podle modelu';
+  }
+
+  @override
+  String get aiImpactCoverageNote =>
+      'Energie, CO₂e a náklady se měří jen u cloudových modelů.';
 
   @override
   String get aiImpactEmptyBody =>
@@ -1365,7 +1389,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactKpiEnergy => 'ENERGIE';
 
   @override
+  String get aiImpactKpiRequests => 'POŽADAVKY';
+
+  @override
   String get aiImpactKpiTokens => 'TOKENY';
+
+  @override
+  String get aiImpactLedgerClearFilter => 'Zobrazit vše';
+
+  @override
+  String aiImpactLedgerScopedTo(String bucket) {
+    return 'Volání v období $bucket';
+  }
 
   @override
   String get aiImpactLoadError => 'Data o dopadu AI se nepodařilo načíst';
@@ -1389,10 +1424,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactMetricEnergy => 'Energie';
 
   @override
+  String get aiImpactMetricRequests => 'Požadavky';
+
+  @override
   String get aiImpactMetricTokens => 'Tokeny';
 
   @override
   String get aiImpactModelColumn => 'MODEL';
+
+  @override
+  String get aiImpactModelOther => 'Ostatní modely';
 
   @override
   String get aiImpactModelTitle => 'Rozpad podle modelů';

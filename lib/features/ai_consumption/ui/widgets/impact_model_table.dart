@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_table_card.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart'
     show formatShare;
@@ -9,17 +10,25 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// Exhaustive per-model breakdown of the selected metric.
 ///
 /// Model keys are provider-native ids when available, then configured Lotti
-/// model ids, then `null` for calls that reported usage without a model. The
-/// table keeps the same value/share columns as the category breakdown and
-/// degrades columns on narrow panes instead of overflowing.
+/// model ids, then `null` for calls that reported usage without a model. Each
+/// row carries the model's palette swatch — the same color it wears in the
+/// model chart and its legend — so a model reads consistently across chart,
+/// legend, and table. The table keeps the same value/share columns as the
+/// category breakdown and degrades columns on narrow panes instead of
+/// overflowing.
 class ImpactModelTable extends StatelessWidget {
   const ImpactModelTable({
     required this.entries,
+    required this.resolver,
     required this.metric,
     super.key,
   });
 
   final List<MapEntry<String?, double>> entries;
+
+  /// Resolves model keys to labels and their palette swatch color — the same
+  /// resolver the model chart uses, so one model = one color everywhere.
+  final SeriesResolver resolver;
   final ConsumptionMetric metric;
 
   @override
@@ -28,6 +37,7 @@ class ImpactModelTable extends StatelessWidget {
 
     final tokens = context.designTokens;
     final messages = context.messages;
+    final brightness = Theme.of(context).brightness;
     final total = entries.fold<double>(0, (sum, e) => sum + e.value);
 
     return LayoutBuilder(
@@ -61,13 +71,28 @@ class ImpactModelTable extends StatelessWidget {
               _ModelTableRowLayout(
                 showValue: showValue,
                 showShare: showShare,
-                model: Text(
-                  _labelForModel(messages.aiImpactModelUnknown, entry.key),
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                model: Row(
+                  children: [
+                    Container(
+                      width: tokens.spacing.step3,
+                      height: tokens.spacing.step3,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: resolver.swatchColor(entry.key, brightness),
+                      ),
+                    ),
+                    SizedBox(width: tokens.spacing.step3),
+                    Expanded(
+                      child: Text(
+                        resolver.labelFor(entry.key),
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: tokens.colors.text.highEmphasis,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
                 value: Text(
                   metric.formatValue(entry.value),
@@ -87,12 +112,6 @@ class ImpactModelTable extends StatelessWidget {
       },
     );
   }
-}
-
-String _labelForModel(String unknownLabel, String? modelId) {
-  final trimmed = modelId?.trim();
-  if (trimmed == null || trimmed.isEmpty) return unknownLabel;
-  return trimmed;
 }
 
 /// Fixed column layout shared by the header and data rows:
