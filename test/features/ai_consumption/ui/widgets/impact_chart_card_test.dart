@@ -62,6 +62,7 @@ void main() {
     required ImpactChartData chartData,
     ConsumptionMetric metric = ConsumptionMetric.cost,
     DateTime? now,
+    ValueChanged<DateTime>? onBucketSelected,
   }) async {
     await withClock(Clock.fixed(now ?? fixedNow), () async {
       await tester.pumpWidget(
@@ -70,6 +71,7 @@ void main() {
             chartData: chartData,
             resolver: CategorySeriesResolver(resolver),
             metric: metric,
+            onBucketSelected: onBucketSelected,
           ),
           mediaQueryData: const MediaQueryData(size: Size(900, 700)),
         ),
@@ -161,49 +163,37 @@ void main() {
         range,
         ConsumptionMetric.cost,
       );
-      await withClock(Clock.fixed(fixedNow), () async {
-        await tester.pumpWidget(
-          makeTestableWidget(
-            ImpactChartCard(
-              chartData: chartData,
-              resolver: CategorySeriesResolver(resolver),
-              metric: ConsumptionMetric.cost,
-              onBucketSelected: (d) => tapped = d,
-            ),
-            mediaQueryData: const MediaQueryData(size: Size(900, 700)),
-          ),
-        );
-        await tester.pump();
+      await pumpCard(
+        tester,
+        chartData: chartData,
+        onBucketSelected: (d) => tapped = d,
+      );
 
-        // The resting hint is present because the chart is interactive.
-        expect(
-          find.textContaining('Tap a bar to scope calls'),
-          findsOneWidget,
-        );
+      // The resting hint is present because the chart is interactive.
+      expect(find.textContaining('Tap a bar to scope calls'), findsOneWidget);
 
-        // Invoke the bar touch callback directly (fl_chart hit-testing is
-        // flaky in widget tests) with a tap-up on bucket 0.
-        final chart = tester.widget<BarChart>(find.byType(BarChart));
-        final group = chart.data.barGroups.first;
-        chart.data.barTouchData.touchCallback!(
-          FlTapUpEvent(TapUpDetails(kind: PointerDeviceKind.touch)),
-          BarTouchResponse(
-            touchLocation: Offset.zero,
-            touchChartCoordinate: Offset.zero,
-            spot: BarTouchedSpot(
-              group,
-              0,
-              group.barRods.first,
-              0,
-              null,
-              -1,
-              const FlSpot(0, 2),
-              Offset.zero,
-            ),
+      // Invoke the bar touch callback directly (fl_chart hit-testing is flaky
+      // in widget tests) with a tap-up on bucket 0.
+      final chart = tester.widget<BarChart>(find.byType(BarChart));
+      final group = chart.data.barGroups.first;
+      chart.data.barTouchData.touchCallback!(
+        FlTapUpEvent(TapUpDetails(kind: PointerDeviceKind.touch)),
+        BarTouchResponse(
+          touchLocation: Offset.zero,
+          touchChartCoordinate: Offset.zero,
+          spot: BarTouchedSpot(
+            group,
+            0,
+            group.barRods.first,
+            0,
+            null,
+            -1,
+            const FlSpot(0, 2),
+            Offset.zero,
           ),
-        );
-        await tester.pump();
-      });
+        ),
+      );
+      await tester.pump();
       // The card maps the bucket index back to its start time.
       expect(tapped, isNotNull);
     },

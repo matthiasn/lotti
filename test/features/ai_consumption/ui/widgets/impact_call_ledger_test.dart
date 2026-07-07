@@ -39,14 +39,21 @@ void main() {
     WidgetTester tester, {
     String? modelFilter,
     String? categoryFilter,
+    double width = 900,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
         SingleChildScrollView(
-          child: ImpactCallLedger(
-            range: range,
-            modelFilter: modelFilter,
-            categoryFilter: categoryFilter,
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: width,
+              child: ImpactCallLedger(
+                range: range,
+                modelFilter: modelFilter,
+                categoryFilter: categoryFilter,
+              ),
+            ),
           ),
         ),
         overrides: [
@@ -148,6 +155,34 @@ void main() {
     expect(
       find.textContaining('Showing the newest'),
       findsNothing,
+    );
+  });
+
+  testWidgets('stacks the row on narrow (phone) width so the model name gets '
+      'its own line above the metrics', (tester) async {
+    stubEvents([
+      makeConsumptionEvent(
+        id: 'evt-narrow',
+        createdAt: DateTime(2026, 6, 3, 14, 30),
+        providerModelId: 'a-very-long-provider-model-id-2507',
+        responseType: AiConsumptionResponseType.agentTurn,
+        totalTokens: 1500,
+        credits: 0.42,
+        energyKwh: 0.012,
+      ),
+    ]);
+    await pumpLedger(tester, width: 360);
+
+    final modelFinder = find.text('a-very-long-provider-model-id-2507');
+    final metricsFinder = find.text('1.5K tokens · €0.42 · 12 Wh');
+    expect(modelFinder, findsOneWidget);
+    expect(metricsFinder, findsOneWidget);
+    // Narrow layout stacks vertically: the metric string sits BELOW the model
+    // name rather than trailing it on the same line (which is what would
+    // truncate the name on a phone).
+    expect(
+      tester.getTopLeft(metricsFinder).dy,
+      greaterThan(tester.getTopLeft(modelFinder).dy),
     );
   });
 

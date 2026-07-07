@@ -611,4 +611,84 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets("a per-chart scope chip clears only that chart's isolation", (
+    tester,
+  ) async {
+    stubRows(scenarioRows());
+    await pumpBody(tester, surface: const Size(1280, 2600));
+
+    await withClock(Clock.fixed(fixedNow), () async {
+      Finder chips() => find.byIcon(Icons.filter_alt_outlined);
+      // Isolate a category → an in-chart chip + the combined ledger chip.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ImpactRankedTable),
+          matching: find.text('Agents'),
+        ),
+      );
+      await tester.pump();
+      expect(chips(), findsNWidgets(2));
+      // The first chip sits under the category chart; tapping it clears just
+      // that isolation (onClearCategoryIsolation), leaving no scope active.
+      await tester.tap(chips().first);
+      await tester.pump();
+      expect(chips(), findsNothing);
+
+      // Repeat for the model chart → onClearModelIsolation.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ImpactModelTable),
+          matching: find.text('glm-5.2'),
+        ),
+      );
+      await tester.pump();
+      expect(chips(), findsNWidgets(2));
+      await tester.tap(chips().first);
+      await tester.pump();
+      expect(chips(), findsNothing);
+    });
+  });
+
+  testWidgets("switching to the week unit renders that week's totals", (
+    tester,
+  ) async {
+    // Exercises the week/day branch of the trend-baseline label. The June 1–7
+    // week holds all the scenario data (days 4/5/6), so the cost total is €0.60.
+    stubRows(scenarioRows());
+    await pumpBody(tester);
+
+    await withClock(Clock.fixed(fixedNow), () async {
+      final stepper = tester.widget<InsightsPeriodStepper>(
+        find.byType(InsightsPeriodStepper),
+      );
+      stepper.onSelectUnit(InsightsPeriodUnit.week);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+
+    expect(find.text('Cost by category'), findsOneWidget);
+    expect(find.text(formatCredits(0.6)), findsOneWidget); // €0.60
+  });
+
+  testWidgets('selecting Requests titles the model chart "Requests by model"', (
+    tester,
+  ) async {
+    stubRows(scenarioRows());
+    await pumpBody(tester, surface: const Size(1280, 2600));
+
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ImpactKpiRow),
+          matching: find.text('REQUESTS'),
+        ),
+      );
+      await tester.pump();
+    });
+
+    // The model chart's title uses the Requests metric label.
+    expect(find.text('Requests by model'), findsOneWidget);
+    expect(find.text('Requests by category'), findsOneWidget);
+  });
 }

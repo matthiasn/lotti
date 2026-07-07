@@ -35,6 +35,7 @@ void main() {
     required List<MapEntry<String?, ConsumptionMetrics>> rows,
     double width = 900,
     ConsumptionMetric metric = ConsumptionMetric.cost,
+    ValueChanged<String?>? onToggleSeries,
   }) async {
     final resolver = PaletteSeriesResolver(
       orderedKeys: rows.map((e) => e.key).whereType<String>().toList()..sort(),
@@ -51,6 +52,7 @@ void main() {
               entries: rows,
               resolver: resolver,
               metric: metric,
+              onToggleSeries: onToggleSeries,
             ),
           ),
         ),
@@ -118,29 +120,11 @@ void main() {
     tester,
   ) async {
     String? toggled;
-    final resolver = PaletteSeriesResolver(
-      orderedKeys: const ['glm-5.2'],
-      unknownLabel: 'Unknown model',
-      otherLabel: 'Other models',
+    await pumpTable(
+      tester,
+      rows: entries,
+      onToggleSeries: (k) => toggled = k,
     );
-    await tester.pumpWidget(
-      makeTestableWidget(
-        Align(
-          alignment: Alignment.topLeft,
-          child: SizedBox(
-            width: 900,
-            child: ImpactModelTable(
-              entries: entries,
-              resolver: resolver,
-              metric: ConsumptionMetric.cost,
-              onToggleSeries: (k) => toggled = k,
-            ),
-          ),
-        ),
-        mediaQueryData: const MediaQueryData(size: Size(1000, 800)),
-      ),
-    );
-    await tester.pump();
 
     // Interactive rows carry a chevron; tapping one isolates that model.
     expect(find.byIcon(Icons.chevron_right), findsWidgets);
@@ -209,5 +193,56 @@ void main() {
     await pumpTable(tester, rows: rows);
 
     expect(find.text('cost-heavy'), findsNothing);
+  });
+
+  testWidgets('a present-but-rounds-to-zero share reads as <1%', (
+    tester,
+  ) async {
+    // heavy 999 / tiny 1 → the tiny model's share floors to 0% but is nonzero,
+    // so it renders "<1%" while the column still totals 100%.
+    final rows = [
+      MapEntry<String?, ConsumptionMetrics>('heavy', m(credits: 999)),
+      MapEntry<String?, ConsumptionMetrics>('tiny', m(credits: 1)),
+    ];
+    await pumpTable(tester, rows: rows);
+
+    expect(find.text('<1%'), findsOneWidget);
+    expect(find.text('100%'), findsOneWidget);
+  });
+
+  testWidgets('cost-heavy badge also renders under the light theme', (
+    tester,
+  ) async {
+    final rows = [
+      MapEntry<String?, ConsumptionMetrics>(
+        'pricey',
+        m(callCount: 2, totalTokens: 4000, credits: 10),
+      ),
+      MapEntry<String?, ConsumptionMetrics>(
+        'cheap',
+        m(callCount: 18, totalTokens: 36000, credits: 1),
+      ),
+    ];
+    final resolver = PaletteSeriesResolver(
+      orderedKeys: const ['cheap', 'pricey'],
+      unknownLabel: 'Unknown model',
+      otherLabel: 'Other models',
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        SizedBox(
+          width: 900,
+          child: ImpactModelTable(
+            entries: rows,
+            resolver: resolver,
+            metric: ConsumptionMetric.cost,
+          ),
+        ),
+        theme: ThemeData.light(useMaterial3: true),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('cost-heavy'), findsOneWidget);
   });
 }
