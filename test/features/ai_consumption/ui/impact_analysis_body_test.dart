@@ -387,8 +387,9 @@ void main() {
       // mounted without scrolling.
       await pumpBody(tester, surface: const Size(1280, 2400));
 
-      // No drill filter initially.
-      expect(find.textContaining('Calls in'), findsNothing);
+      // The scope chip is marked by its filter icon.
+      final chip = find.byIcon(Icons.filter_alt_outlined);
+      expect(chip, findsNothing);
 
       // Drive the chart's bucket-selected callback (the chart→ledger drill
       // hook; the bar hit-test itself is covered in the charts test) with a
@@ -402,20 +403,21 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // The clearable drill chip appears above the ledger.
-        expect(find.textContaining('Calls in'), findsOneWidget);
+        // The clearable drill chip appears above the ledger, labelled Jun 5.
+        expect(chip, findsOneWidget);
+        expect(find.textContaining('Jun 5'), findsWidgets);
         // Re-selecting the same bucket toggles the drill off.
         card.onBucketSelected!(DateTime(2026, 6, 5));
         await tester.pump();
-        expect(find.textContaining('Calls in'), findsNothing);
+        expect(chip, findsNothing);
 
         // Select again, then clear via the chip's tap target.
         card.onBucketSelected!(DateTime(2026, 6, 5));
         await tester.pump();
-        expect(find.textContaining('Calls in'), findsOneWidget);
-        await tester.tap(find.textContaining('Calls in'));
+        expect(chip, findsOneWidget);
+        await tester.tap(chip);
         await tester.pump();
-        expect(find.textContaining('Calls in'), findsNothing);
+        expect(chip, findsNothing);
       });
     },
   );

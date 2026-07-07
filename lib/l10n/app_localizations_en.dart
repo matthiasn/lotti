@@ -1339,6 +1339,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiImpactBreakdownModel => 'By model';
 
   @override
+  String get aiImpactChartHint =>
+      'Tap a bar to scope calls · tap a series to isolate';
+
+  @override
   String get aiImpactChartShareCaption => 'Composition over time';
 
   @override

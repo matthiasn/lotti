@@ -245,8 +245,11 @@ class ImpactStackedBars extends StatelessWidget {
                           selectedBucketIndex != null &&
                           selectedBucketIndex != i;
                       // A truncated edge week is faded so it can't be misread
-                      // as a real dip/spike (the tooltip also flags it).
+                      // as a real dip/spike (the tooltip also flags it). Not
+                      // when isolating — a single clean series shouldn't have
+                      // one bar shift hue.
                       final isPartialWeek =
+                          !isolating &&
                           data.granularity == InsightsGranularity.week &&
                           ((i == 0 && data.partialFirstBucket) ||
                               (i == data.bucketStarts.length - 1 &&

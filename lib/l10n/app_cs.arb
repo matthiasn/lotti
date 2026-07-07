@@ -432,6 +432,7 @@
   "aiImpactBreakdownCategory": "Podle kategorie",
   "aiImpactBreakdownLabel": "Rozpad",
   "aiImpactBreakdownModel": "Podle modelu",
+  "aiImpactChartHint": "Klepni na sloupec pro volání · na sérii pro izolaci",
   "aiImpactChartShareCaption": "Složení v čase",
   "aiImpactChartShareSegment": "Podíl",
   "aiImpactChartTitle": "{metric} podle kategorie",

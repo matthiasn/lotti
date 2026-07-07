@@ -592,6 +592,7 @@
   "aiImpactBreakdownCategory": "Par catégorie",
   "aiImpactBreakdownLabel": "Répartition",
   "aiImpactBreakdownModel": "Par modèle",
+  "aiImpactChartHint": "Touche une barre pour les appels · une série pour l’isoler",
   "aiImpactChartShareCaption": "Composition au fil du temps",
   "aiImpactChartShareSegment": "Part",
   "aiImpactChartTitle": "{metric} par catégorie",

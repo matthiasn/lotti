@@ -35,10 +35,20 @@ void main() {
     ).thenAnswer((_) async => events);
   }
 
-  Future<void> pumpLedger(WidgetTester tester) async {
+  Future<void> pumpLedger(
+    WidgetTester tester, {
+    String? modelFilter,
+    String? categoryFilter,
+  }) async {
     await tester.pumpWidget(
       makeTestableWidget(
-        const SingleChildScrollView(child: ImpactCallLedger(range: range)),
+        SingleChildScrollView(
+          child: ImpactCallLedger(
+            range: range,
+            modelFilter: modelFilter,
+            categoryFilter: categoryFilter,
+          ),
+        ),
         overrides: [
           consumptionRepositoryProvider.overrideWithValue(repository),
           consumptionRefetchThrottleProvider.overrideWithValue(null),
@@ -55,6 +65,34 @@ void main() {
     await pumpLedger(tester);
 
     expect(find.text('Recent calls'), findsNothing);
+  });
+
+  testWidgets('a model filter keeps only that model, following isolation', (
+    tester,
+  ) async {
+    stubEvents([
+      makeConsumptionEvent(
+        id: 'a',
+        createdAt: DateTime(2026, 6, 3, 10),
+        providerModelId: 'claude-opus-4',
+        responseType: AiConsumptionResponseType.agentTurn,
+        totalTokens: 3800,
+        credits: 0.02,
+      ),
+      makeConsumptionEvent(
+        id: 'b',
+        createdAt: DateTime(2026, 6, 3, 9),
+        providerModelId: 'glm-5.2',
+        responseType: AiConsumptionResponseType.textGeneration,
+        totalTokens: 2500,
+        credits: 0.01,
+      ),
+    ]);
+    await pumpLedger(tester, modelFilter: 'claude-opus-4');
+
+    // Only the isolated model's calls remain in the ledger.
+    expect(find.text('claude-opus-4'), findsOneWidget);
+    expect(find.text('glm-5.2'), findsNothing);
   });
 
   testWidgets('renders model, type, time, and full metrics for a measured '

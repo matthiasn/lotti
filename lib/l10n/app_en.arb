@@ -834,6 +834,7 @@
   "aiImpactBreakdownCategory": "By category",
   "aiImpactBreakdownLabel": "Breakdown",
   "aiImpactBreakdownModel": "By model",
+  "aiImpactChartHint": "Tap a bar to scope calls · tap a series to isolate",
   "aiImpactChartShareCaption": "Composition over time",
   "aiImpactChartShareSegment": "Share",
   "aiImpactChartTitle": "{metric} by category",

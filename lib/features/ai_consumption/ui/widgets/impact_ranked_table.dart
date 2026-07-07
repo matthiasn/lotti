@@ -67,6 +67,23 @@ class ImpactRankedTable extends StatelessWidget {
       color: tokens.colors.text.highEmphasis,
     );
 
+    // Interactive rows carry a low-emphasis chevron so they read as tappable
+    // at rest; the header reserves the same width to keep columns aligned.
+    final interactive = onToggleSeries != null;
+    final chevronWidth = tokens.spacing.step5;
+    Widget? headerTrailing() =>
+        interactive ? SizedBox(width: chevronWidth) : null;
+    Widget? rowChevron() => interactive
+        ? SizedBox(
+            width: chevronWidth,
+            child: Icon(
+              Icons.chevron_right,
+              size: tokens.spacing.step4,
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          )
+        : null;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         // Degrade columns gracefully on narrow panes (share → value); only
@@ -91,6 +108,7 @@ class ImpactRankedTable extends StatelessWidget {
                 _ImpactTableRowLayout(
                   showValue: showValue,
                   showShare: showShare,
+                  trailing: headerTrailing(),
                   category: Text(
                     messages.insightsTableCategory,
                     style: headerStyle,
@@ -116,6 +134,7 @@ class ImpactRankedTable extends StatelessWidget {
                     child: _ImpactTableRowLayout(
                       showValue: showValue,
                       showShare: showShare,
+                      trailing: rowChevron(),
                       category: Row(
                         children: [
                           Container(
@@ -189,6 +208,7 @@ class _ImpactTableRowLayout extends StatelessWidget {
     required this.share,
     required this.showValue,
     required this.showShare,
+    this.trailing,
   });
 
   final Widget category;
@@ -196,6 +216,10 @@ class _ImpactTableRowLayout extends StatelessWidget {
   final Widget share;
   final bool showValue;
   final bool showShare;
+
+  /// Fixed-width trailing slot (a chevron on interactive rows, empty on the
+  /// header) so the value/share columns stay aligned across all rows.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -211,6 +235,10 @@ class _ImpactTableRowLayout extends StatelessWidget {
           if (showShare) ...[
             SizedBox(width: tokens.spacing.step4),
             SizedBox(width: numberColumnWidth, child: share),
+          ],
+          if (trailing != null) ...[
+            SizedBox(width: tokens.spacing.step2),
+            trailing!,
           ],
         ],
       ),

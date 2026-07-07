@@ -592,6 +592,7 @@
   "aiImpactBreakdownCategory": "Por categoría",
   "aiImpactBreakdownLabel": "Desglose",
   "aiImpactBreakdownModel": "Por modelo",
+  "aiImpactChartHint": "Toca una barra para ver llamadas · una serie para aislarla",
   "aiImpactChartShareCaption": "Composición a lo largo del tiempo",
   "aiImpactChartShareSegment": "Proporción",
   "aiImpactChartTitle": "{metric} por categoría",

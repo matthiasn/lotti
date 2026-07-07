@@ -69,6 +69,23 @@ class ImpactModelTable extends StatelessWidget {
           '${messages.aiImpactModelRatePerMillion(formatCredits(perMillion))}';
     }
 
+    // Interactive rows carry a low-emphasis chevron so they read as tappable
+    // at rest; the header reserves the same width to keep columns aligned.
+    final interactive = onToggleSeries != null;
+    final chevronWidth = tokens.spacing.step5;
+    Widget? headerTrailing() =>
+        interactive ? SizedBox(width: chevronWidth) : null;
+    Widget? rowChevron() => interactive
+        ? SizedBox(
+            width: chevronWidth,
+            child: Icon(
+              Icons.chevron_right,
+              size: tokens.spacing.step4,
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          )
+        : null;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final showShare = constraints.maxWidth >= 280;
@@ -80,6 +97,7 @@ class ImpactModelTable extends StatelessWidget {
             _ModelTableRowLayout(
               showValue: showValue,
               showShare: showShare,
+              trailing: headerTrailing(),
               model: Text(messages.aiImpactModelColumn, style: headerStyle),
               value: Text(
                 messages.insightsTableTotal,
@@ -102,6 +120,7 @@ class ImpactModelTable extends StatelessWidget {
                 child: _ModelTableRowLayout(
                   showValue: showValue,
                   showShare: showShare,
+                  trailing: rowChevron(),
                   model: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -191,6 +210,7 @@ class _ModelTableRowLayout extends StatelessWidget {
     required this.share,
     required this.showValue,
     required this.showShare,
+    this.trailing,
   });
 
   final Widget model;
@@ -198,6 +218,10 @@ class _ModelTableRowLayout extends StatelessWidget {
   final Widget share;
   final bool showValue;
   final bool showShare;
+
+  /// Fixed-width trailing slot (a chevron on interactive rows, empty on the
+  /// header) so the value/share columns stay aligned across all rows.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -213,6 +237,10 @@ class _ModelTableRowLayout extends StatelessWidget {
           if (showShare) ...[
             SizedBox(width: tokens.spacing.step4),
             SizedBox(width: numberColumnWidth, child: share),
+          ],
+          if (trailing != null) ...[
+            SizedBox(width: tokens.spacing.step2),
+            trailing!,
           ],
         ],
       ),

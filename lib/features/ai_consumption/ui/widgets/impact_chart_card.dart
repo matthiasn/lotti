@@ -241,6 +241,31 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
                 onToggle: widget.onToggleSeries,
               ),
             ],
+            // Resting affordance: name the two chart interactions so drill and
+            // isolate are discoverable without stumbling onto them.
+            if (widget.onBucketSelected != null &&
+                !widget.chartData.isEmpty) ...[
+              SizedBox(height: tokens.spacing.step3),
+              Row(
+                children: [
+                  Icon(
+                    Icons.touch_app_outlined,
+                    size: tokens.spacing.step4,
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Flexible(
+                    child: Text(
+                      messages.aiImpactChartHint,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

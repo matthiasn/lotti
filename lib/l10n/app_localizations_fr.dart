@@ -1365,6 +1365,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiImpactBreakdownModel => 'Par modèle';
 
   @override
+  String get aiImpactChartHint =>
+      'Touche une barre pour les appels · une série pour l’isoler';
+
+  @override
   String get aiImpactChartShareCaption => 'Composition au fil du temps';
 
   @override

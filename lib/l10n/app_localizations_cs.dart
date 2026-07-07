@@ -1353,6 +1353,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactBreakdownModel => 'Podle modelu';
 
   @override
+  String get aiImpactChartHint =>
+      'Klepni na sloupec pro volání · na sérii pro izolaci';
+
+  @override
   String get aiImpactChartShareCaption => 'Složení v čase';
 
   @override

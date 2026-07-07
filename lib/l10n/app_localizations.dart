@@ -2425,6 +2425,12 @@ abstract class AppLocalizations {
   /// **'By model'**
   String get aiImpactBreakdownModel;
 
+  /// No description provided for @aiImpactChartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a bar to scope calls · tap a series to isolate'**
+  String get aiImpactChartHint;
+
   /// No description provided for @aiImpactChartShareCaption.
   ///
   /// In en, this message translates to:

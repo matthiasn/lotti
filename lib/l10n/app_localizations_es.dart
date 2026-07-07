@@ -1358,6 +1358,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiImpactBreakdownModel => 'Por modelo';
 
   @override
+  String get aiImpactChartHint =>
+      'Toca una barra para ver llamadas · una serie para aislarla';
+
+  @override
   String get aiImpactChartShareCaption => 'Composición a lo largo del tiempo';
 
   @override

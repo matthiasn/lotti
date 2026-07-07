@@ -94,12 +94,16 @@ Color swatchColorFor(
 /// visible-series cap so simultaneously drawn series get distinct hues.
 const int kSeriesPaletteSize = 10;
 
-/// Evenly-spaced hue (degrees) for palette [slot]. Walks the wheel in equal
-/// steps from a calm blue, so the palette is a *derived* categorical set —
-/// not hand-picked brand colors — that reads as one system with the muted
-/// category fills it sits beside.
+/// Hue (degrees) for palette [slot]. The ten hues are spread evenly around
+/// the wheel, but *consecutive* slots jump three steps (~108°) — 3 is coprime
+/// with 10, so it's still a permutation of all ten hues while keeping the
+/// first-assigned (highest-rank) series well separated instead of clustering
+/// in one part of the wheel. A calm blue anchors slot 0. Derived, not
+/// hand-picked, so palette bands read as one system with the muted category
+/// fills beside them.
 double _seriesPaletteHue(int slot) =>
-    (216 + slot * (360 / kSeriesPaletteSize)) % 360;
+    (216 + ((slot * 3) % kSeriesPaletteSize) * (360 / kSeriesPaletteSize)) %
+    360;
 
 /// The saturated identity color for palette [slot] — the swatch color for a
 /// model/location series, mirroring how a category's own hex is used at small
@@ -114,8 +118,13 @@ Color seriesPaletteSwatchColor(int slot, Brightness brightness) {
 /// [mutedChartColor] pipeline as category fills so palette bands share the
 /// category fills' saturation/lightness band. Slots beyond
 /// [kSeriesPaletteSize] wrap.
-Color seriesPaletteChartColor(int slot, Brightness brightness) => mutedChartColor(
-  HSLColor.fromAHSL(1, _seriesPaletteHue(slot % kSeriesPaletteSize), 0.7, 0.5)
-      .toColor(),
-  brightness,
-);
+Color seriesPaletteChartColor(int slot, Brightness brightness) =>
+    mutedChartColor(
+      HSLColor.fromAHSL(
+        1,
+        _seriesPaletteHue(slot % kSeriesPaletteSize),
+        0.7,
+        0.5,
+      ).toColor(),
+      brightness,
+    );

@@ -20,14 +20,37 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// covers that); shows an explicit "newest N" caption when the page is at the
 /// [kConsumptionLedgerLimit] cap, so truncation is never silent.
 class ImpactCallLedger extends ConsumerWidget {
-  const ImpactCallLedger({required this.range, super.key});
+  const ImpactCallLedger({
+    required this.range,
+    this.modelFilter,
+    this.categoryFilter,
+    super.key,
+  });
 
   final InsightsRange range;
 
+  /// When set, keep only calls made with this provider/model id — the ledger
+  /// follows an isolated model so "which calls drove this" is answerable.
+  final String? modelFilter;
+
+  /// When set, keep only calls attributed to this category id.
+  final String? categoryFilter;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final events = ref.watch(consumptionLedgerProvider(range)).value;
-    if (events == null || events.isEmpty) {
+    final all = ref.watch(consumptionLedgerProvider(range)).value;
+    if (all == null) return const SizedBox.shrink();
+    final events = all.where((e) {
+      if (modelFilter != null &&
+          (e.providerModelId ?? e.modelId) != modelFilter) {
+        return false;
+      }
+      if (categoryFilter != null && e.categoryId != categoryFilter) {
+        return false;
+      }
+      return true;
+    }).toList();
+    if (events.isEmpty) {
       return const SizedBox.shrink();
     }
     final tokens = context.designTokens;

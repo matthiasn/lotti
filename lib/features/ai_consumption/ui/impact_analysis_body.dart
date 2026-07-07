@@ -156,7 +156,11 @@ class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
             ? null
             : bucketStart;
       }),
-      onClearBucket: () => setState(() => _ledgerBucketStart = null),
+      onClearBucket: () => setState(() {
+        // The chip is the ledger's whole scope — clear both drill and isolate.
+        _ledgerBucketStart = null;
+        _isolatedKey = null;
+      }),
       onSelectUnit: (unit) {
         controller.selectUnit(unit);
         setState(() => _ledgerBucketStart = null);
@@ -326,6 +330,24 @@ class _DashboardContent extends StatelessWidget {
       }
     }
 
+    // Isolation scopes the ledger to the isolated series and merges into the
+    // same "Recent calls" filter chip, so isolate→calls closes the loop.
+    final canScopeSeries =
+        isolatedKey != null && isolatedKey != kInsightsOtherCategoryKey;
+    final isolatedModelFilter = showModel && canScopeSeries
+        ? isolatedKey
+        : null;
+    final isolatedCategoryFilter = !showModel && canScopeSeries
+        ? isolatedKey
+        : null;
+    final isolatedLabel = canScopeSeries
+        ? (showModel
+              ? modelResolver.labelFor(isolatedKey)
+              : categorySeriesResolver.labelFor(isolatedKey))
+        : null;
+    final chipLabel = [?isolatedLabel, ?ledgerFilterLabel].join(' · ');
+    final hasLedgerFilter = isolatedLabel != null || ledgerFilterLabel != null;
+
     final children = <Widget>[
       if (showStaleNotice) ...[
         const _StaleDataNotice(),
@@ -437,11 +459,15 @@ class _DashboardContent extends StatelessWidget {
         // or scoped to a tapped chart bucket. Watches its own provider, so it
         // rides the generation's range without threading through the retained
         // dashboard data.
-        if (ledgerFilterLabel != null) ...[
-          _LedgerFilterChip(label: ledgerFilterLabel, onClear: onClearBucket),
+        if (hasLedgerFilter) ...[
+          _LedgerFilterChip(label: chipLabel, onClear: onClearBucket),
           SizedBox(height: tokens.spacing.step3),
         ],
-        ImpactCallLedger(range: ledgerRange ?? range),
+        ImpactCallLedger(
+          range: ledgerRange ?? range,
+          modelFilter: isolatedModelFilter,
+          categoryFilter: isolatedCategoryFilter,
+        ),
       ],
       SizedBox(height: tokens.spacing.step6),
     ];
@@ -572,7 +598,7 @@ class _LedgerFilterChip extends StatelessWidget {
                   SizedBox(width: tokens.spacing.step2),
                   Flexible(
                     child: Text(
-                      messages.aiImpactLedgerScopedTo(label),
+                      label,
                       style: tokens.typography.styles.others.caption.copyWith(
                         color: tokens.colors.text.highEmphasis,
                       ),

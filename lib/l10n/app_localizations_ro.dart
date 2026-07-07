@@ -1366,6 +1366,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiImpactBreakdownModel => 'După model';
 
   @override
+  String get aiImpactChartHint =>
+      'Atinge o bară pentru apeluri · o serie pentru a o izola';
+
+  @override
   String get aiImpactChartShareCaption => 'Compoziția în timp';
 
   @override

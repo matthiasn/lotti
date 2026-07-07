@@ -1357,6 +1357,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiImpactBreakdownModel => 'Nach Modell';
 
   @override
+  String get aiImpactChartHint =>
+      'Tippe auf einen Balken für Aufrufe · auf eine Serie zum Isolieren';
+
+  @override
   String get aiImpactChartShareCaption => 'Zusammensetzung über die Zeit';
 
   @override
