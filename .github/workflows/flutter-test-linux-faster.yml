@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   test:
-    name: Unit & Widget Tests (Linux, shard ${{ matrix.shard_label }}/5)
+    name: Unit & Widget Tests (Linux, shard ${{ matrix.shard_label }}/10)
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -28,6 +28,16 @@ jobs:
             shard_label: 4
           - shard_index: 4
             shard_label: 5
+          - shard_index: 5
+            shard_label: 6
+          - shard_index: 6
+            shard_label: 7
+          - shard_index: 7
+            shard_label: 8
+          - shard_index: 8
+            shard_label: 9
+          - shard_index: 9
+            shard_label: 10
     steps:
       - uses: actions/checkout@v5
       - name: Cache Pub Packages
@@ -49,7 +59,7 @@ jobs:
       - name: Run Flutter tests (standard)
         run: |
           very_good test --coverage --exclude-tags glados -- \
-            --total-shards=5 \
+            --total-shards=10 \
             --shard-index=${{ matrix.shard_index }}
       - uses: codecov/codecov-action@v7
         with:
