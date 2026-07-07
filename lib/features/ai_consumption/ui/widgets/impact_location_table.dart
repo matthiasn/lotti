@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/impact_table_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart'
     show formatShare;
-import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Environmental impact by serving location.
@@ -25,74 +24,47 @@ class ImpactLocationTable extends StatelessWidget {
 
     final tokens = context.designTokens;
     final messages = context.messages;
-    final headerStyle = calmEyebrowStyle(
-      tokens,
-      color: tokens.colors.text.mediumEmphasis,
-    );
-    final numberStyle = monoMetaStyle(
-      tokens,
-      tokens.colors,
-      base: tokens.typography.styles.body.bodySmall,
-      color: tokens.colors.text.highEmphasis,
-    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final showCarbon = constraints.maxWidth >= 400;
         final showRenewable = constraints.maxWidth >= 300;
 
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: insightsCardSurface(context),
-            borderRadius: BorderRadius.circular(tokens.radii.m),
-            border: Border.all(color: tokens.colors.decorative.level01),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.cardPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  messages.aiImpactLocationTitle,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                SizedBox(height: tokens.spacing.cardItemSpacing),
-                _LocationTableRowLayout(
-                  showCarbon: showCarbon,
-                  showRenewable: showRenewable,
-                  location: Text(
-                    messages.aiImpactLocationColumn,
-                    style: headerStyle,
-                  ),
-                  energy: Text(
-                    messages.aiImpactKpiEnergy,
-                    style: headerStyle,
-                    textAlign: TextAlign.right,
-                  ),
-                  carbon: Text(
-                    messages.aiImpactKpiCarbon,
-                    style: headerStyle,
-                    textAlign: TextAlign.right,
-                  ),
-                  renewable: Text(
-                    messages.aiImpactRenewableColumn,
-                    style: headerStyle,
-                    textAlign: TextAlign.right,
-                  ),
-                ),
-                Divider(height: 1, color: tokens.colors.decorative.level01),
-                for (final entry in entries)
-                  _LocationRow(
-                    entry: entry,
-                    numberStyle: numberStyle,
-                    showCarbon: showCarbon,
-                    showRenewable: showRenewable,
-                  ),
-              ],
+        return ImpactTableCard(
+          title: messages.aiImpactLocationTitle,
+          childrenBuilder: (context, headerStyle, numberStyle) => [
+            _LocationTableRowLayout(
+              showCarbon: showCarbon,
+              showRenewable: showRenewable,
+              location: Text(
+                messages.aiImpactLocationColumn,
+                style: headerStyle,
+              ),
+              energy: Text(
+                messages.aiImpactKpiEnergy,
+                style: headerStyle,
+                textAlign: TextAlign.right,
+              ),
+              carbon: Text(
+                messages.aiImpactKpiCarbon,
+                style: headerStyle,
+                textAlign: TextAlign.right,
+              ),
+              renewable: Text(
+                messages.aiImpactRenewableColumn,
+                style: headerStyle,
+                textAlign: TextAlign.right,
+              ),
             ),
-          ),
+            Divider(height: 1, color: tokens.colors.decorative.level01),
+            for (final entry in entries)
+              _LocationRow(
+                entry: entry,
+                numberStyle: numberStyle,
+                showCarbon: showCarbon,
+                showRenewable: showRenewable,
+              ),
+          ],
         );
       },
     );

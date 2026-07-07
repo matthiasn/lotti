@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/impact_table_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart'
     show formatShare;
-import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Exhaustive per-model breakdown of the selected metric.
@@ -30,87 +29,60 @@ class ImpactModelTable extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final total = entries.fold<double>(0, (sum, e) => sum + e.value);
-    final headerStyle = calmEyebrowStyle(
-      tokens,
-      color: tokens.colors.text.mediumEmphasis,
-    );
-    final numberStyle = monoMetaStyle(
-      tokens,
-      tokens.colors,
-      base: tokens.typography.styles.body.bodySmall,
-      color: tokens.colors.text.highEmphasis,
-    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final showShare = constraints.maxWidth >= 280;
         final showValue = constraints.maxWidth >= 180;
 
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: insightsCardSurface(context),
-            borderRadius: BorderRadius.circular(tokens.radii.m),
-            border: Border.all(color: tokens.colors.decorative.level01),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.cardPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  messages.aiImpactModelTitle,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+        return ImpactTableCard(
+          title: messages.aiImpactModelTitle,
+          childrenBuilder: (context, headerStyle, numberStyle) => [
+            _ModelTableRowLayout(
+              showValue: showValue,
+              showShare: showShare,
+              model: Text(
+                messages.aiImpactModelColumn,
+                style: headerStyle,
+              ),
+              value: Text(
+                messages.insightsTableTotal,
+                style: headerStyle,
+                textAlign: TextAlign.right,
+              ),
+              share: Text(
+                messages.insightsTableShare,
+                style: headerStyle,
+                textAlign: TextAlign.right,
+              ),
+            ),
+            Divider(height: 1, color: tokens.colors.decorative.level01),
+            for (final entry in entries)
+              _ModelTableRowLayout(
+                showValue: showValue,
+                showShare: showShare,
+                model: Text(
+                  _labelForModel(messages.aiImpactModelUnknown, entry.key),
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
                     color: tokens.colors.text.highEmphasis,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: tokens.spacing.cardItemSpacing),
-                _ModelTableRowLayout(
-                  showValue: showValue,
-                  showShare: showShare,
-                  model: Text(
-                    messages.aiImpactModelColumn,
-                    style: headerStyle,
-                  ),
-                  value: Text(
-                    messages.insightsTableTotal,
-                    style: headerStyle,
-                    textAlign: TextAlign.right,
-                  ),
-                  share: Text(
-                    messages.insightsTableShare,
-                    style: headerStyle,
-                    textAlign: TextAlign.right,
-                  ),
+                value: Text(
+                  metric.formatValue(entry.value),
+                  style: numberStyle,
+                  textAlign: TextAlign.right,
                 ),
-                Divider(height: 1, color: tokens.colors.decorative.level01),
-                for (final entry in entries)
-                  _ModelTableRowLayout(
-                    showValue: showValue,
-                    showShare: showShare,
-                    model: Text(
-                      _labelForModel(messages.aiImpactModelUnknown, entry.key),
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    value: Text(
-                      metric.formatValue(entry.value),
-                      style: numberStyle,
-                      textAlign: TextAlign.right,
-                    ),
-                    share: Text(
-                      formatShare(total > 0 ? entry.value / total : 0),
-                      style: numberStyle.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
+                share: Text(
+                  formatShare(total > 0 ? entry.value / total : 0),
+                  style: numberStyle.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
-              ],
-            ),
-          ),
+                  textAlign: TextAlign.right,
+                ),
+              ),
+          ],
         );
       },
     );

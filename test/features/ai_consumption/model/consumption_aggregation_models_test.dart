@@ -286,7 +286,7 @@ void main() {
         renewableWeightedPercentKwh: 0.8,
       );
       final copy = ConsumptionLocationMetrics(
-        metrics: const ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 2),
+        metrics: base.metrics,
         renewablePercentSum: 80,
         renewableSampleCount: 1,
         renewableEnergyKwh: 0.01,
