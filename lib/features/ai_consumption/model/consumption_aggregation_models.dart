@@ -173,6 +173,8 @@ class ConsumptionMetricRow {
     required this.createdAt,
     required this.categoryId,
     required this.metrics,
+    this.modelId,
+    this.providerModelId,
     this.dataCenter,
     this.renewablePercent,
   });
@@ -180,6 +182,13 @@ class ConsumptionMetricRow {
   final DateTime createdAt;
   final String? categoryId;
   final ConsumptionMetrics metrics;
+
+  /// Lotti's saved model id, when the call was tied to a configured model.
+  final String? modelId;
+
+  /// Provider-native model id, when reported. This is what the ledger displays
+  /// first, so model breakdowns use it ahead of [modelId].
+  final String? providerModelId;
 
   /// Serving data-centre identifier as reported by Melious, when available.
   /// Current responses use ISO-3166 country codes (`FI`, `SE`) and may grow
@@ -225,10 +234,10 @@ class ConsumptionLocationKey {
   int get hashCode => Object.hash(countryCode, dataCenter);
 }
 
+final _countryCodeRegExp = RegExp(r'^([A-Z]{2})(?:$|[-_:/.\s])');
+
 String? _countryCodeFromDataCenter(String dataCenter) {
-  final match = RegExp(
-    r'^([A-Z]{2})(?:$|[-_:/.\s])',
-  ).firstMatch(dataCenter);
+  final match = _countryCodeRegExp.firstMatch(dataCenter);
   return match?.group(1);
 }
 
@@ -300,22 +309,30 @@ class ConsumptionLocationMetrics {
   );
 }
 
-/// Per-day, per-category summed consumption over a window.
+/// Per-day summed consumption over a window, sliced by category, model, and
+/// provider-reported serving location.
 ///
 /// `days[epochDay][categoryId]` is the field-wise sum of every call in that
-/// (day, category) cell. Mirrors the Insights `InsightsDayBuckets`; the cell
-/// value is an additive scalar bundle rather than merged intervals. Deep
-/// structural equality lets a provider short-circuit an unchanged refetch.
+/// (day, category) cell; `modelDays[epochDay][modelKey]` is the same fold by
+/// model (`providerModelId` first, then `modelId`, then null = unknown).
+/// Mirrors the Insights `InsightsDayBuckets`; the cell value is an additive
+/// scalar bundle rather than merged intervals. Deep structural equality lets a
+/// provider short-circuit an unchanged refetch.
 @immutable
 class ConsumptionDayBuckets {
   const ConsumptionDayBuckets({
     required this.windowStartDay,
     required this.days,
+    this.modelDays = const {},
     this.locationDays = const {},
   });
 
   final int windowStartDay;
   final Map<int, Map<String?, ConsumptionMetrics>> days;
+
+  /// `modelDays[epochDay][modelKey]` is the field-wise sum of every call by
+  /// model. A null key means the row had metrics but no model identifier.
+  final Map<int, Map<String?, ConsumptionMetrics>> modelDays;
 
   /// `locationDays[epochDay][location]` is the field-wise sum of every call
   /// whose provider reported a serving data centre.
@@ -328,6 +345,7 @@ class ConsumptionDayBuckets {
       other is ConsumptionDayBuckets &&
           other.windowStartDay == windowStartDay &&
           const DeepCollectionEquality().equals(days, other.days) &&
+          const DeepCollectionEquality().equals(modelDays, other.modelDays) &&
           const DeepCollectionEquality().equals(
             locationDays,
             other.locationDays,
@@ -337,6 +355,7 @@ class ConsumptionDayBuckets {
   int get hashCode => Object.hash(
     windowStartDay,
     const DeepCollectionEquality().hash(days),
+    const DeepCollectionEquality().hash(modelDays),
     const DeepCollectionEquality().hash(locationDays),
   );
 }

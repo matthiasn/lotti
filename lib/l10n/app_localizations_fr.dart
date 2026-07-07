@@ -1406,6 +1406,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiImpactMetricTokens => 'Tokens';
 
   @override
+  String get aiImpactModelColumn => 'MODÈLE';
+
+  @override
+  String get aiImpactModelTitle => 'Répartition par modèle';
+
+  @override
+  String get aiImpactModelUnknown => 'Modèle inconnu';
+
+  @override
   String get aiImpactRenewableColumn => 'RENOUVELABLE';
 
   @override

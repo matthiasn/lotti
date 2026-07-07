@@ -81,6 +81,21 @@ void main() {
     expect(find.text('8.0 g'), findsNothing);
   });
 
+  testWidgets(
+    'narrow renewable column keeps the not-reported fallback stable',
+    (
+      tester,
+    ) async {
+      await pumpTable(tester, rows: entries.skip(1).toList(), width: 300);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Unknown'), findsOneWidget);
+      expect(find.text('10 Wh'), findsOneWidget);
+      expect(find.text('Not reported'), findsOneWidget);
+      expect(find.text('CO₂E'), findsNothing);
+    },
+  );
+
   testWidgets('very narrow panes drop renewable too', (tester) async {
     await pumpTable(tester, rows: entries.take(1).toList(), width: 260);
 

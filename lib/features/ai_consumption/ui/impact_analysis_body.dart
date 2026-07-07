@@ -9,6 +9,7 @@ import 'package:lotti/features/ai_consumption/ui/widgets/impact_call_ledger.dart
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_chart_card.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_kpi_row.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_location_table.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/impact_model_table.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_ranked_table.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
@@ -24,7 +25,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// Host-independent core of the AI Impact dashboard: per-category,
 /// time-bucketed consumption (cost, energy, CO₂e, tokens).
 ///
-/// Embedded by `ImpactAnalysisPage` (the `/calendar/impact` route) and by the
+/// Embedded by `ImpactAnalysisPage` (the `/dashboards/impact` route) and by the
 /// Settings `ai-usage` panel, so both navigation paths render the same
 /// dashboard. The two hosts constrain height differently — the page gives a
 /// bounded viewport, the settings panel wraps the body in a
@@ -190,6 +191,8 @@ class _DashboardContent extends StatelessWidget {
     final isEmpty = totals == ConsumptionMetrics.zero;
     final daily = dailyMetricTotals(buckets, range, metric);
     final ranked = rankedImpactCategoryTotals(daily);
+    final modelDaily = dailyModelMetricTotals(buckets, range, metric);
+    final rankedModels = rankedImpactCategoryTotals(modelDaily);
     final locationTotals = rankedImpactLocationTotals(buckets, range);
     final chartData = buildImpactChartData(
       buckets,
@@ -267,6 +270,10 @@ class _DashboardContent extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.sectionGap),
         ImpactRankedTable(entries: ranked, resolver: resolver, metric: metric),
+        if (rankedModels.isNotEmpty) ...[
+          SizedBox(height: tokens.spacing.sectionGap),
+          ImpactModelTable(entries: rankedModels, metric: metric),
+        ],
         if (locationTotals.isNotEmpty) ...[
           SizedBox(height: tokens.spacing.sectionGap),
           ImpactLocationTable(entries: locationTotals),

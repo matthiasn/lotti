@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1033]
+## [0.9.1034]
 ### Added
 - **Better AI Impact accounting for transcription.** The AI Impact dashboard
   now has a **Running total** chart mode for cumulative cost, energy, CO₂e and
@@ -12,9 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   usage when the server returns it in final accounting chunks, and transcription
   calls whose provider reports no token, cost or energy metrics are labelled
   instead of leaving a blank ledger row.
-- **AI Impact by serving location.** When the provider reports data-center
-  metadata, AI Impact now groups environmental impact by country/data center and
-  shows the renewable-energy share for each location.
+- **AI Impact by model and serving location.** AI Impact now adds a model
+  breakdown for the selected metric, using provider-native model IDs when
+  available. When the provider reports data-center metadata, it also groups
+  environmental impact by country/data center and shows the renewable-energy
+  share for each location.
 
 ## [0.9.1032]
 ### Added

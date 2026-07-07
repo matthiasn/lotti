@@ -77,6 +77,49 @@ void main() {
     });
   });
 
+  group('dailyModelMetricTotals', () {
+    test('zero-fills missing days and projects model totals', () {
+      final modelBuckets = ConsumptionDayBuckets(
+        windowStartDay: day0,
+        days: const {},
+        modelDays: {
+          day0: {
+            'glm-5.2': m(credits: 2, totalTokens: 200),
+            null: m(credits: 1, totalTokens: 100),
+          },
+          day0 + 2: {
+            // Tokens-only model: dropped under cost, visible under tokens.
+            'voxtral-small-24b-2507': m(totalTokens: 500),
+          },
+          day0 + 10: {
+            'outside': m(credits: 99, totalTokens: 99),
+          },
+        },
+      );
+
+      expect(
+        dailyModelMetricTotals(
+          modelBuckets,
+          range3,
+          ConsumptionMetric.cost,
+        ),
+        [
+          {'glm-5.2': 2.0, null: 1.0},
+          <String?, double>{},
+          <String?, double>{},
+        ],
+      );
+      expect(
+        dailyModelMetricTotals(
+          modelBuckets,
+          range3,
+          ConsumptionMetric.tokens,
+        )[2],
+        {'voxtral-small-24b-2507': 500.0},
+      );
+    });
+  });
+
   group('rankedImpactCategoryTotals', () {
     test('sums across buckets, sorts descending, drops zeros', () {
       final ranked = rankedImpactCategoryTotals([

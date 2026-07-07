@@ -26,13 +26,31 @@ List<Map<String?, double>> dailyMetricTotals(
   InsightsRange range,
   ConsumptionMetric metric,
 ) {
+  return _dailyMetricTotalsFrom(buckets.days, range, metric);
+}
+
+/// The selected metric's value per model for every day of [range], using
+/// `providerModelId` first, then `modelId`, then null = unknown model.
+List<Map<String?, double>> dailyModelMetricTotals(
+  ConsumptionDayBuckets buckets,
+  InsightsRange range,
+  ConsumptionMetric metric,
+) {
+  return _dailyMetricTotalsFrom(buckets.modelDays, range, metric);
+}
+
+List<Map<String?, double>> _dailyMetricTotalsFrom(
+  Map<int, Map<String?, ConsumptionMetrics>> days,
+  InsightsRange range,
+  ConsumptionMetric metric,
+) {
   return List.generate(range.dayCount, (i) {
-    final cells = buckets.days[range.startDay + i];
+    final cells = days[range.startDay + i];
     if (cells == null) return const <String?, double>{};
     final totals = <String?, double>{};
-    cells.forEach((categoryId, metrics) {
+    cells.forEach((key, metrics) {
       final value = metric.valueOf(metrics);
-      if (value > 0) totals[categoryId] = value;
+      if (value > 0) totals[key] = value;
     });
     return totals;
   });

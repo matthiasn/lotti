@@ -11,12 +11,16 @@ ConsumptionMetricRow _row({
   int totalTokens = 0,
   double energyKwh = 0,
   double carbonGCo2 = 0,
+  String? modelId,
+  String? providerModelId,
   String? dataCenter,
   double? renewablePercent,
 }) {
   return ConsumptionMetricRow(
     createdAt: createdAt,
     categoryId: categoryId,
+    modelId: modelId,
+    providerModelId: providerModelId,
     metrics: ConsumptionMetrics(
       callCount: 1,
       totalTokens: totalTokens,
@@ -106,8 +110,52 @@ void main() {
   test('empty input yields empty buckets', () {
     final buckets = bucketize([], windowStartDay: day);
     expect(buckets.days, isEmpty);
+    expect(buckets.modelDays, isEmpty);
     expect(buckets.locationDays, isEmpty);
     expect(buckets.windowStartDay, day);
+  });
+
+  test('aggregates calls by provider model, model id, and unknown model', () {
+    final buckets = bucketize(
+      [
+        _row(
+          createdAt: base,
+          categoryId: 'a',
+          modelId: 'configured-glm',
+          providerModelId: 'glm-5.2',
+          totalTokens: 100,
+          energyKwh: 0.001,
+        ),
+        _row(
+          createdAt: base.add(const Duration(hours: 1)),
+          categoryId: 'b',
+          modelId: 'configured-glm',
+          providerModelId: ' glm-5.2 ',
+          totalTokens: 40,
+          energyKwh: 0.002,
+        ),
+        _row(
+          createdAt: base.add(const Duration(hours: 2)),
+          modelId: ' voxtral-small-24b-2507 ',
+          totalTokens: 20,
+        ),
+        _row(
+          createdAt: base.add(const Duration(hours: 3)),
+          modelId: '   ',
+          providerModelId: '   ',
+          totalTokens: 7,
+        ),
+      ],
+      windowStartDay: day,
+    );
+
+    final models = buckets.modelDays[day]!;
+    expect(models, hasLength(3));
+    expect(models['glm-5.2']!.callCount, 2);
+    expect(models['glm-5.2']!.totalTokens, 140);
+    expect(models['glm-5.2']!.energyKwh, closeTo(0.003, 1e-9));
+    expect(models['voxtral-small-24b-2507']!.totalTokens, 20);
+    expect(models[null]!.totalTokens, 7);
   });
 
   test('aggregates reported data centers by day and location', () {

@@ -1392,6 +1392,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactMetricTokens => 'Tokeny';
 
   @override
+  String get aiImpactModelColumn => 'MODEL';
+
+  @override
+  String get aiImpactModelTitle => 'Rozpad podle modelů';
+
+  @override
+  String get aiImpactModelUnknown => 'Neznámý model';
+
+  @override
   String get aiImpactRenewableColumn => 'OBNOVITELNÉ';
 
   @override

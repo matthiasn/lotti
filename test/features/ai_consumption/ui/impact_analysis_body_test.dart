@@ -9,6 +9,8 @@ import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart'
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/impact_model_table.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/impact_ranked_table.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/device_region.dart';
@@ -115,11 +117,15 @@ void main() {
     double energyKwh = 0,
     double carbonGCo2 = 0,
     int totalTokens = 0,
+    String? modelId,
+    String? providerModelId,
     String? dataCenter,
     double? renewablePercent,
   }) => ConsumptionMetricRow(
     createdAt: DateTime(2026, 6, day, 10),
     categoryId: categoryId,
+    modelId: modelId,
+    providerModelId: providerModelId,
     metrics: ConsumptionMetrics(
       callCount: 1,
       totalTokens: totalTokens,
@@ -142,6 +148,8 @@ void main() {
       energyKwh: 0.02,
       carbonGCo2: 5,
       totalTokens: 1000,
+      modelId: 'configured-glm',
+      providerModelId: 'glm-5.2',
       dataCenter: 'FI-HEL1',
       renewablePercent: 80,
     ),
@@ -152,6 +160,8 @@ void main() {
       energyKwh: 0.01,
       carbonGCo2: 2.5,
       totalTokens: 500,
+      modelId: 'configured-voxtral',
+      providerModelId: 'voxtral-small-24b-2507',
       dataCenter: 'SE',
       renewablePercent: 100,
     ),
@@ -161,6 +171,8 @@ void main() {
       energyKwh: 0.01,
       carbonGCo2: 2.5,
       totalTokens: 500,
+      modelId: 'configured-glm',
+      providerModelId: 'glm-5.2',
     ),
   ];
 
@@ -184,16 +196,76 @@ void main() {
 
       // Ranked table: resolved names, formatted values, shares of the
       // period total (0.3 / 0.15 / 0.15 → 50% / 25% / 25%).
-      expect(find.text('Agents'), findsWidgets);
-      expect(find.text('€0.30'), findsOneWidget);
-      expect(find.text('50%'), findsOneWidget);
-      expect(find.text('Research'), findsWidgets);
-      expect(find.text('Uncategorized'), findsWidgets);
-      expect(find.text('€0.15'), findsNWidgets(2));
-      expect(find.text('25%'), findsNWidgets(2));
+      final categoryTable = find.byType(ImpactRankedTable);
+      expect(categoryTable, findsOneWidget);
+      expect(
+        find.descendant(of: categoryTable, matching: find.text('Agents')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: categoryTable, matching: find.text('€0.30')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: categoryTable, matching: find.text('50%')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: categoryTable, matching: find.text('Research')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: categoryTable,
+          matching: find.text('Uncategorized'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: categoryTable, matching: find.text('€0.15')),
+        findsNWidgets(2),
+      );
+      expect(
+        find.descendant(of: categoryTable, matching: find.text('25%')),
+        findsNWidgets(2),
+      );
+
+      // Model table: same metric, but grouped by provider model id.
+      final modelTable = find.byType(ImpactModelTable);
+      expect(modelTable, findsOneWidget);
+      expect(
+        find.descendant(of: modelTable, matching: find.text('glm-5.2')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: modelTable, matching: find.text('€0.45')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: modelTable, matching: find.text('75%')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: modelTable,
+          matching: find.text('voxtral-small-24b-2507'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: modelTable, matching: find.text('€0.15')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: modelTable, matching: find.text('25%')),
+        findsOneWidget,
+      );
 
       // Location table: rows with provider-reported data centers are folded
       // by serving location and render energy, carbon, and renewable share.
+      await tester.drag(find.byType(ListView), const Offset(0, -700));
+      await tester.pump();
+
       expect(find.text('Impact by location'), findsOneWidget);
       expect(find.text('FI'), findsOneWidget);
       expect(find.text('FI-HEL1'), findsOneWidget);

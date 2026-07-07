@@ -18,6 +18,7 @@ ConsumptionDayBuckets bucketize(
 }) {
   final windowStart = dayStart(windowStartDay);
   final days = <int, Map<String?, ConsumptionMetrics>>{};
+  final modelDays = <int, Map<String?, ConsumptionMetrics>>{};
   final locationDays =
       <int, Map<ConsumptionLocationKey, ConsumptionLocationMetrics>>{};
 
@@ -33,6 +34,14 @@ ConsumptionDayBuckets bucketize(
     );
     cell[row.categoryId] =
         (cell[row.categoryId] ?? ConsumptionMetrics.zero) + row.metrics;
+
+    final modelKey = _modelKeyFor(row);
+    final modelCell = modelDays.putIfAbsent(
+      rowDay,
+      () => <String?, ConsumptionMetrics>{},
+    );
+    modelCell[modelKey] =
+        (modelCell[modelKey] ?? ConsumptionMetrics.zero) + row.metrics;
 
     final dataCenter = row.dataCenter?.trim();
     if (dataCenter == null || dataCenter.isEmpty) continue;
@@ -50,8 +59,23 @@ ConsumptionDayBuckets bucketize(
   return ConsumptionDayBuckets(
     windowStartDay: windowStartDay,
     days: days,
+    modelDays: modelDays,
     locationDays: locationDays,
   );
+}
+
+String? _modelKeyFor(ConsumptionMetricRow row) {
+  final providerModelId = row.providerModelId?.trim();
+  if (providerModelId != null && providerModelId.isNotEmpty) {
+    return providerModelId;
+  }
+
+  final modelId = row.modelId?.trim();
+  if (modelId != null && modelId.isNotEmpty) {
+    return modelId;
+  }
+
+  return null;
 }
 
 ConsumptionLocationMetrics _locationMetricsFor(ConsumptionMetricRow row) {

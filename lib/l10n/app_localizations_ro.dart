@@ -1406,6 +1406,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiImpactMetricTokens => 'Tokenuri';
 
   @override
+  String get aiImpactModelColumn => 'MODEL';
+
+  @override
+  String get aiImpactModelTitle => 'Defalcare pe model';
+
+  @override
+  String get aiImpactModelUnknown => 'Model necunoscut';
+
+  @override
   String get aiImpactRenewableColumn => 'REGENERABIL';
 
   @override

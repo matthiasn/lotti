@@ -312,6 +312,14 @@ void main() {
               },
             },
           ),
+          'model day': _makeBuckets(
+            modelDays: {
+              20500: {
+                'glm-5.2': _makeMetrics(callCount: 3),
+                null: _makeMetrics(totalTokens: 7),
+              },
+            },
+          ),
           'location day': _makeBuckets(
             locationDays: {
               20500: {
@@ -527,6 +535,7 @@ ConsumptionTotals _totalsFromMetrics(
 ConsumptionDayBuckets _makeBuckets({
   int windowStartDay = 20500,
   Map<int, Map<String?, ConsumptionMetrics>>? days,
+  Map<int, Map<String?, ConsumptionMetrics>>? modelDays,
   Map<int, Map<ConsumptionLocationKey, ConsumptionLocationMetrics>>?
   locationDays,
 }) => ConsumptionDayBuckets(
@@ -540,6 +549,7 @@ ConsumptionDayBuckets _makeBuckets({
         },
         20501: {'play': _makeMetrics(inputTokens: 99)},
       },
+  modelDays: modelDays ?? const {},
   locationDays: locationDays ?? const {},
 );
 

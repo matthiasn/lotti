@@ -2497,6 +2497,24 @@ abstract class AppLocalizations {
   /// **'Tokens'**
   String get aiImpactMetricTokens;
 
+  /// No description provided for @aiImpactModelColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'MODEL'**
+  String get aiImpactModelColumn;
+
+  /// No description provided for @aiImpactModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model breakdown'**
+  String get aiImpactModelTitle;
+
+  /// No description provided for @aiImpactModelUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown model'**
+  String get aiImpactModelUnknown;
+
   /// No description provided for @aiImpactRenewableColumn.
   ///
   /// In en, this message translates to:

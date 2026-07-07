@@ -84,7 +84,12 @@ class ImpactLocationTable extends StatelessWidget {
                 ),
                 Divider(height: 1, color: tokens.colors.decorative.level01),
                 for (final entry in entries)
-                  _LocationRow(entry: entry, numberStyle: numberStyle),
+                  _LocationRow(
+                    entry: entry,
+                    numberStyle: numberStyle,
+                    showCarbon: showCarbon,
+                    showRenewable: showRenewable,
+                  ),
               ],
             ),
           ),
@@ -95,10 +100,17 @@ class ImpactLocationTable extends StatelessWidget {
 }
 
 class _LocationRow extends StatelessWidget {
-  const _LocationRow({required this.entry, required this.numberStyle});
+  const _LocationRow({
+    required this.entry,
+    required this.numberStyle,
+    required this.showCarbon,
+    required this.showRenewable,
+  });
 
   final MapEntry<ConsumptionLocationKey, ConsumptionLocationMetrics> entry;
   final TextStyle numberStyle;
+  final bool showCarbon;
+  final bool showRenewable;
 
   @override
   Widget build(BuildContext context) {
@@ -108,53 +120,53 @@ class _LocationRow extends StatelessWidget {
     final dataCenter = entry.key.dataCenter;
     final renewablePercent = entry.value.renewablePercent;
 
-    return LayoutBuilder(
-      builder: (context, constraints) => _LocationTableRowLayout(
-        showCarbon: constraints.maxWidth >= 400,
-        showRenewable: constraints.maxWidth >= 300,
-        location: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return _LocationTableRowLayout(
+      showCarbon: showCarbon,
+      showRenewable: showRenewable,
+      location: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            country,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (dataCenter != country) ...[
+            SizedBox(height: tokens.spacing.step1),
             Text(
-              country,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.highEmphasis,
+              dataCenter,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            if (dataCenter != country) ...[
-              SizedBox(height: tokens.spacing.step1),
-              Text(
-                dataCenter,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
           ],
+        ],
+      ),
+      energy: Text(
+        formatEnergyKwh(entry.value.metrics.energyKwh),
+        style: numberStyle,
+        textAlign: TextAlign.right,
+      ),
+      carbon: Text(
+        formatCarbonGrams(entry.value.metrics.carbonGCo2),
+        style: numberStyle,
+        textAlign: TextAlign.right,
+      ),
+      renewable: Text(
+        renewablePercent == null
+            ? messages.aiConsumptionMetricsNotReported
+            : formatShare(renewablePercent / 100),
+        style: numberStyle.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
         ),
-        energy: Text(
-          formatEnergyKwh(entry.value.metrics.energyKwh),
-          style: numberStyle,
-          textAlign: TextAlign.right,
-        ),
-        carbon: Text(
-          formatCarbonGrams(entry.value.metrics.carbonGCo2),
-          style: numberStyle,
-          textAlign: TextAlign.right,
-        ),
-        renewable: Text(
-          renewablePercent == null
-              ? messages.aiConsumptionMetricsNotReported
-              : formatShare(renewablePercent / 100),
-          style: numberStyle.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-          textAlign: TextAlign.right,
-        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.right,
       ),
     );
   }
@@ -183,6 +195,7 @@ class _LocationTableRowLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final numberColumnWidth = tokens.spacing.step10;
+    final renewableColumnWidth = tokens.spacing.step12;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
@@ -196,7 +209,7 @@ class _LocationTableRowLayout extends StatelessWidget {
           ],
           if (showRenewable) ...[
             SizedBox(width: tokens.spacing.step4),
-            SizedBox(width: numberColumnWidth, child: renewable),
+            SizedBox(width: renewableColumnWidth, child: renewable),
           ],
         ],
       ),
