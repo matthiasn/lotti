@@ -4,12 +4,11 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
-/// Sidebar sub-entry under the Daily OS destination, directly beneath the
-/// Time Analysis entry it mirrors.
+/// Sidebar sub-entry under the Insights destination.
 ///
 /// Highlights via [NavService.desktopShowAiImpact] (written by
-/// `CalendarLocation`, so the URL stays the single source of truth) and opens
-/// the full-screen AI Impact dashboard at `/calendar/impact`.
+/// `DashboardsLocation`, so the URL stays the single source of truth) and opens
+/// the full-screen AI Impact dashboard at `/dashboards/impact`.
 class ImpactSidebarEntry extends StatelessWidget {
   const ImpactSidebarEntry({super.key});
 
@@ -26,7 +25,7 @@ class ImpactSidebarEntry extends StatelessWidget {
             color: active ? tokens.colors.surface.selected : Colors.transparent,
             borderRadius: BorderRadius.circular(tokens.radii.s),
             child: InkWell(
-              onTap: () => beamToNamed('/calendar/impact'),
+              onTap: () => beamToNamed('/dashboards/impact'),
               borderRadius: BorderRadius.circular(tokens.radii.s),
               hoverColor: tokens.colors.surface.hover,
               child: Padding(

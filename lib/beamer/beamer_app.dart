@@ -855,7 +855,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           children: [
             DailyOsSidebarCalendar(),
             InsightsSidebarEntry(),
-            ImpactSidebarEntry(),
           ],
         ),
       ),
@@ -878,6 +877,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         iconBuilder: ({required active}) => Icon(
           active ? Icons.insert_chart_rounded : Icons.insert_chart_outlined,
         ),
+        expandedChildBuilder: () => const ImpactSidebarEntry(),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.journal,
