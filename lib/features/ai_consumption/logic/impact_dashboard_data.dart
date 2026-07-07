@@ -238,6 +238,30 @@ double impactBucketTotal(ImpactChartData data, int index) {
   return total;
 }
 
+/// Per-bucket normalized shares (0..1) of [values]: each bucket's series
+/// values divided by that bucket's total, so every non-empty bucket sums to
+/// 1. Buckets whose total is zero stay all-zero (no divide-by-zero), which
+/// keeps empty and partial edge buckets from inventing composition. Series
+/// order and shape are preserved, so a normalized array plots through the
+/// same stacked-bar machinery as the absolute one.
+List<List<double>> shareValues(List<List<double>> values) {
+  if (values.isEmpty) return const [];
+  final bucketCount = values.first.length;
+  final totals = List<double>.filled(bucketCount, 0);
+  for (final row in values) {
+    for (var i = 0; i < bucketCount; i++) {
+      totals[i] += row[i];
+    }
+  }
+  return [
+    for (final row in values)
+      [
+        for (var i = 0; i < bucketCount; i++)
+          totals[i] > 0 ? row[i] / totals[i] : 0.0,
+      ],
+  ];
+}
+
 /// Smallest "nice" chart ceiling at or above [maxValue]: 1, 2, or 5 times a
 /// power of ten (…, 0.2, 0.5, 1, 2, 5, 10, 20, …). Returns 1 for
 /// non-positive input so an all-zero chart still has a drawable axis.

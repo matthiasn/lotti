@@ -149,6 +149,61 @@ void main() {
     expect(rows.indexOf('Agents'), lessThan(rows.indexOf('Research')));
   });
 
+  testWidgets('share mode normalizes every bar to 100%', (tester) async {
+    final chartData = buildImpactChartData(
+      bucketsWith({
+        0: {'cat-a': 2.0, 'cat-b': 1.0},
+        2: {'cat-a': 1.0},
+      }),
+      range,
+      ConsumptionMetric.cost,
+    );
+    await pumpCard(tester, chartData: chartData);
+
+    await tester.tap(toggle('Share'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(find.byType(BarChart), findsOneWidget);
+    expect(find.text('Composition over time'), findsOneWidget);
+    final chart = tester.widget<BarChart>(find.byType(BarChart));
+    // Axis is a 0–100% scale; the mixed bucket 0 fills to the top.
+    expect(chart.data.maxY, 1.0);
+    expect(chart.data.barGroups.first.barRods.single.toY, closeTo(1.0, 1e-9));
+  });
+
+  testWidgets('tapping a legend entry isolates it and a second tap clears it', (
+    tester,
+  ) async {
+    final chartData = buildImpactChartData(
+      bucketsWith({
+        0: {'cat-a': 2.0, 'cat-b': 1.0},
+      }),
+      range,
+      ConsumptionMetric.cost,
+    );
+    await pumpCard(tester, chartData: chartData);
+
+    List<BarChartRodStackItem> rods() => tester
+        .widget<BarChart>(find.byType(BarChart))
+        .data
+        .barGroups[0]
+        .barRods
+        .single
+        .rodStackItems;
+
+    // Isolate Agents (cat-a, the baseline series): the other series dims.
+    await tester.tap(find.text('Agents'));
+    await tester.pump();
+    expect(rods()[0].color?.a, 1.0);
+    expect(rods()[1].color?.a, closeTo(0.16, 1e-6));
+
+    // A second tap clears the isolation — everything back to full alpha.
+    await tester.tap(find.text('Agents'));
+    await tester.pump();
+    expect(rods()[1].color?.a, 1.0);
+  });
+
   testWidgets(
     'cumulative chart keeps a positive axis when elapsed totals are zero',
     (tester) async {

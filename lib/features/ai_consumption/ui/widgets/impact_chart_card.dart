@@ -14,8 +14,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// dashboards read as siblings.
 const double _chartHeight = 260;
 
-/// Chart mode: per-bucket values or running cumulative totals.
-enum ImpactChartMode { perBucket, cumulative }
+/// Chart mode: per-bucket values, running cumulative totals, or per-bucket
+/// 100%-normalized composition (share).
+enum ImpactChartMode { perBucket, cumulative, share }
 
 /// Display label for a metric — shared by the chart card title and the
 /// dashboard's metric toggle so the two always agree.
@@ -44,6 +45,7 @@ class ImpactChartCard extends StatefulWidget {
     required this.resolver,
     required this.metric,
     this.title,
+    this.onBucketSelected,
     super.key,
   });
 
@@ -61,12 +63,24 @@ class ImpactChartCard extends StatefulWidget {
   /// callers pass the model title for the model breakdown dimension.
   final String? title;
 
+  /// Called with a bucket's start time when the user taps that bar/point —
+  /// drives the drill-down that scopes the call ledger to that period.
+  final ValueChanged<DateTime>? onBucketSelected;
+
   @override
   State<ImpactChartCard> createState() => _ImpactChartCardState();
 }
 
 class _ImpactChartCardState extends State<ImpactChartCard> {
   ImpactChartMode _mode = ImpactChartMode.perBucket;
+
+  /// The series isolated via a legend tap, or null. Validated against the
+  /// current series in [build] so a metric/dimension switch that drops the
+  /// key silently clears the isolation instead of dimming everything.
+  String? _isolatedKey;
+
+  void _toggleIsolated(String? key) =>
+      setState(() => _isolatedKey = _isolatedKey == key ? null : key);
 
   bool get _cumulativeFallsBack =>
       _mode == ImpactChartMode.cumulative &&
@@ -78,6 +92,9 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
       : messages.insightsChartPerDay;
 
   String _captionText(AppLocalizations messages) {
+    if (_mode == ImpactChartMode.share) {
+      return messages.aiImpactChartShareCaption;
+    }
     if (_cumulativeFallsBack) return messages.insightsChartCumulativeShort;
     if (_mode == ImpactChartMode.cumulative) {
       return messages.insightsChartCumulativeCaption;
@@ -89,7 +106,17 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final showBars = _mode == ImpactChartMode.perBucket || _cumulativeFallsBack;
+    final isShare = _mode == ImpactChartMode.share;
+    final showBars =
+        _mode == ImpactChartMode.perBucket || isShare || _cumulativeFallsBack;
+    // Drop a stale isolation the moment its series leaves the chart.
+    final isolatedKey = widget.chartData.seriesKeys.contains(_isolatedKey)
+        ? _isolatedKey
+        : null;
+    final onBucketTap = widget.onBucketSelected == null
+        ? null
+        : (int index) =>
+              widget.onBucketSelected!(widget.chartData.bucketStarts[index]);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -137,6 +164,10 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
                         ImpactChartMode.cumulative,
                         messages.insightsChartRunningTotal,
                       ),
+                      DsSegment(
+                        ImpactChartMode.share,
+                        messages.aiImpactChartShareSegment,
+                      ),
                     ],
                   ),
                 ),
@@ -159,11 +190,16 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
                       data: widget.chartData,
                       resolver: widget.resolver,
                       metric: widget.metric,
+                      shareMode: isShare,
+                      isolatedKey: isolatedKey,
+                      onBucketTap: onBucketTap,
                     )
                   : ImpactStackedArea(
                       data: widget.chartData,
                       resolver: widget.resolver,
                       metric: widget.metric,
+                      isolatedKey: isolatedKey,
+                      onBucketTap: onBucketTap,
                     ),
             ),
             // A one-item legend restates the obvious — only render when
@@ -174,6 +210,8 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
                 seriesKeys: widget.chartData.seriesKeys,
                 rolledUpCount: widget.chartData.rolledUpCount,
                 resolver: widget.resolver,
+                isolatedKey: isolatedKey,
+                onToggle: _toggleIsolated,
               ),
             ],
           ],

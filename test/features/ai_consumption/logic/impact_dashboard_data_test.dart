@@ -399,6 +399,42 @@ void main() {
     });
   });
 
+  group('shareValues', () {
+    test('normalizes each bucket to sum to 1, series shape preserved', () {
+      final shares = shareValues([
+        [2, 1],
+        [1, 3],
+      ]);
+      // Bucket 0 total 3 → 2/3, 1/3; bucket 1 total 4 → 1/4, 3/4.
+      expect(shares[0][0], closeTo(2 / 3, 1e-12));
+      expect(shares[1][0], closeTo(1 / 3, 1e-12));
+      expect(shares[0][1], closeTo(1 / 4, 1e-12));
+      expect(shares[1][1], closeTo(3 / 4, 1e-12));
+      // Every non-empty bucket sums to exactly 1 across series.
+      for (var b = 0; b < 2; b++) {
+        expect(
+          shares.fold<double>(0, (s, row) => s + row[b]),
+          closeTo(1, 1e-12),
+        );
+      }
+    });
+
+    test('a zero-total bucket stays all-zero instead of dividing by zero', () {
+      final shares = shareValues([
+        [0, 2],
+        [0, 3],
+      ]);
+      expect(shares[0][0], 0);
+      expect(shares[1][0], 0);
+      expect(shares[0][1], closeTo(2 / 5, 1e-12));
+      expect(shares[1][1], closeTo(3 / 5, 1e-12));
+    });
+
+    test('empty input yields empty output', () {
+      expect(shareValues(const []), isEmpty);
+    });
+  });
+
   group('impactNiceCeiling', () {
     test('snaps to the 1/2/5 decade ladder', () {
       expect(impactNiceCeiling(0), 1.0);

@@ -9,6 +9,7 @@ import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart'
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/impact_chart_card.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_model_table.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_ranked_table.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
@@ -335,6 +336,47 @@ void main() {
     // Shares are metric-relative and unchanged here (same proportions).
     expect(find.text('50%'), findsOneWidget);
   });
+
+  testWidgets(
+    'selecting a chart bucket scopes the ledger and the chip clears it',
+    (tester) async {
+      stubRows(scenarioRows());
+      // Tall enough that the (lazy ListView) drill chip above the ledger is
+      // mounted without scrolling.
+      await pumpBody(tester, surface: const Size(1280, 2400));
+
+      // No drill filter initially.
+      expect(find.textContaining('Calls in'), findsNothing);
+
+      // Drive the chart's bucket-selected callback (the chart→ledger drill
+      // hook; the bar hit-test itself is covered in the charts test) with a
+      // day inside the current June range. Keep the fixed clock so the
+      // rebuild's date math stays on June 7.
+      await withClock(Clock.fixed(fixedNow), () async {
+        final card = tester.widget<ImpactChartCard>(
+          find.byType(ImpactChartCard),
+        );
+        card.onBucketSelected!(DateTime(2026, 6, 5));
+        await tester.pump();
+        await tester.pump();
+
+        // The clearable drill chip appears above the ledger.
+        expect(find.textContaining('Calls in'), findsOneWidget);
+        // Re-selecting the same bucket toggles the drill off.
+        card.onBucketSelected!(DateTime(2026, 6, 5));
+        await tester.pump();
+        expect(find.textContaining('Calls in'), findsNothing);
+
+        // Select again, then clear via the chip's tap target.
+        card.onBucketSelected!(DateTime(2026, 6, 5));
+        await tester.pump();
+        expect(find.textContaining('Calls in'), findsOneWidget);
+        await tester.tap(find.textContaining('Calls in'));
+        await tester.pump();
+        expect(find.textContaining('Calls in'), findsNothing);
+      });
+    },
+  );
 
   testWidgets('shows the empty state when the range has no consumption', (
     tester,

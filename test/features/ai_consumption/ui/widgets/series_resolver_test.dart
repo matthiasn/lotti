@@ -73,29 +73,42 @@ void main() {
         resolver.fillColor('claude-opus-4', dark),
         resolver.fillColor('gpt-5', dark),
       ];
-      expect(fills.toSet(), hasLength(3), reason: 'no two visible models share a hue');
+      expect(
+        fills.toSet(),
+        hasLength(3),
+        reason: 'no two visible models share a hue',
+      );
       // Fill comes from the palette by the key's slot (its ordered index).
-      expect(resolver.fillColor('glm-4.6', dark), seriesPaletteChartColor(0, dark));
-      expect(resolver.fillColor('gpt-5', dark), seriesPaletteChartColor(2, dark));
+      expect(
+        resolver.fillColor('glm-4.6', dark),
+        seriesPaletteChartColor(0, dark),
+      );
+      expect(
+        resolver.fillColor('gpt-5', dark),
+        seriesPaletteChartColor(2, dark),
+      );
       expect(
         resolver.swatchColor('claude-opus-4', dark),
         seriesPaletteSwatchColor(1, dark),
       );
     });
 
-    test('a key keeps its color regardless of query order (stable identity)', () {
-      // Same ordered set → same slot → same color, so a model reads the same
-      // in the chart, the legend, and the table.
-      final again = PaletteSeriesResolver(
-        orderedKeys: const ['glm-4.6', 'claude-opus-4', 'gpt-5'],
-        unknownLabel: 'Unknown model',
-        otherLabel: 'Other models',
-      );
-      expect(
-        again.fillColor('claude-opus-4', dark),
-        resolver.fillColor('claude-opus-4', dark),
-      );
-    });
+    test(
+      'a key keeps its color regardless of query order (stable identity)',
+      () {
+        // Same ordered set → same slot → same color, so a model reads the same
+        // in the chart, the legend, and the table.
+        final again = PaletteSeriesResolver(
+          orderedKeys: const ['glm-4.6', 'claude-opus-4', 'gpt-5'],
+          unknownLabel: 'Unknown model',
+          otherLabel: 'Other models',
+        );
+        expect(
+          again.fillColor('claude-opus-4', dark),
+          resolver.fillColor('claude-opus-4', dark),
+        );
+      },
+    );
 
     test('routes the sentinels to slate / neutral, not the palette', () {
       expect(

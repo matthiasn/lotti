@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
@@ -17,6 +18,8 @@ import 'package:lotti/features/design_system/components/buttons/ds_segmented_tog
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/insights/logic/range_presets.dart';
+import 'package:lotti/features/insights/logic/time_bucketing.dart'
+    show epochDay;
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
@@ -65,6 +68,11 @@ class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
 
   /// Which dimension the breakdown chart + table split the metric by.
   ImpactBreakdownDimension _dimension = ImpactBreakdownDimension.category;
+
+  /// Start of the chart bucket the call ledger is drilled into, or null when
+  /// the ledger shows the whole period. Cleared on any period change (a stale
+  /// bucket would point outside the new range).
+  DateTime? _ledgerBucketStart;
 
   /// The most recent generation whose buckets had fully loaded — the
   /// keepPreviousData retention (see class docs). Null only before the very
@@ -124,13 +132,29 @@ class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
       resolver: resolver,
       metric: _metric,
       dimension: _dimension,
+      ledgerBucketStart: _ledgerBucketStart,
       showStaleNotice: bucketsAsync.hasError,
       onSelectMetric: (metric) => setState(() => _metric = metric),
-      onSelectDimension: (dimension) =>
-          setState(() => _dimension = dimension),
-      onSelectUnit: controller.selectUnit,
-      onStep: controller.step,
-      onSelectToDate: controller.selectToDate,
+      onSelectDimension: (dimension) => setState(() => _dimension = dimension),
+      onSelectBucket: (bucketStart) => setState(() {
+        // Tapping the drilled bucket again clears the drill.
+        _ledgerBucketStart = _ledgerBucketStart == bucketStart
+            ? null
+            : bucketStart;
+      }),
+      onClearBucket: () => setState(() => _ledgerBucketStart = null),
+      onSelectUnit: (unit) {
+        controller.selectUnit(unit);
+        setState(() => _ledgerBucketStart = null);
+      },
+      onStep: (delta) {
+        controller.step(delta);
+        setState(() => _ledgerBucketStart = null);
+      },
+      onSelectToDate: (unit) {
+        controller.selectToDate(unit);
+        setState(() => _ledgerBucketStart = null);
+      },
     );
   }
 }
@@ -159,9 +183,12 @@ class _DashboardContent extends StatelessWidget {
     required this.resolver,
     required this.metric,
     required this.dimension,
+    required this.ledgerBucketStart,
     required this.showStaleNotice,
     required this.onSelectMetric,
     required this.onSelectDimension,
+    required this.onSelectBucket,
+    required this.onClearBucket,
     required this.onSelectUnit,
     required this.onStep,
     required this.onSelectToDate,
@@ -180,6 +207,10 @@ class _DashboardContent extends StatelessWidget {
   final ConsumptionMetric metric;
   final ImpactBreakdownDimension dimension;
 
+  /// Start of the chart bucket the ledger is drilled into, or null for the
+  /// whole period.
+  final DateTime? ledgerBucketStart;
+
   /// Whether a window load failed while the retained generation stays on
   /// screen — surfaced as a slim, non-blocking strip instead of an error
   /// shell, so a failed step never silently mislabels the previous
@@ -188,6 +219,8 @@ class _DashboardContent extends StatelessWidget {
 
   final ValueChanged<ConsumptionMetric> onSelectMetric;
   final ValueChanged<ImpactBreakdownDimension> onSelectDimension;
+  final ValueChanged<DateTime> onSelectBucket;
+  final VoidCallback onClearBucket;
   final ValueChanged<InsightsPeriodUnit> onSelectUnit;
   final ValueChanged<int> onStep;
   final ValueChanged<InsightsPeriodUnit> onSelectToDate;
@@ -235,18 +268,38 @@ class _DashboardContent extends StatelessWidget {
     // every model in the window (sorted ids), so a model keeps its color
     // across metric switches, across the chart/legend/table, and — within a
     // window — across period steps.
-    final orderedModelKeys =
-        <String>{
-          for (final day in buckets.modelDays.values)
-            for (final key in day.keys) ?key,
-        }.toList()
-          ..sort();
+    final orderedModelKeys = <String>{
+      for (final day in buckets.modelDays.values)
+        for (final key in day.keys) ?key,
+    }.toList()..sort();
     final categorySeriesResolver = CategorySeriesResolver(resolver);
     final modelResolver = PaletteSeriesResolver(
       orderedKeys: orderedModelKeys,
       unknownLabel: messages.aiImpactModelUnknown,
       otherLabel: messages.aiImpactModelOther,
     );
+
+    // Drill-down: a tapped chart bucket scopes the ledger to that bucket's
+    // days. Ignore a stale bucket that no longer falls in the current range.
+    final granularity = categoryChart.granularity;
+    final drilledStart = ledgerBucketStart;
+    InsightsRange? ledgerRange;
+    String? ledgerFilterLabel;
+    if (drilledStart != null) {
+      final startDay = epochDay(drilledStart);
+      if (startDay >= range.startDay && startDay < range.endDayExclusive) {
+        final span = granularity == InsightsGranularity.week ? 7 : 1;
+        ledgerRange = InsightsRange(
+          startDay: startDay,
+          endDayExclusive: startDay + span,
+        );
+        final locale = Localizations.localeOf(context).toString();
+        ledgerFilterLabel = granularity == InsightsGranularity.week
+            ? '${DateFormat.MMMd(locale).format(drilledStart)} – '
+                  '${DateFormat.MMMd(locale).format(drilledStart.add(const Duration(days: 6)))}'
+            : DateFormat.MMMd(locale).format(drilledStart);
+      }
+    }
 
     final children = <Widget>[
       if (showStaleNotice) ...[
@@ -329,6 +382,7 @@ class _DashboardContent extends StatelessWidget {
                   consumptionMetricLabel(messages, metric),
                 )
               : null,
+          onBucketSelected: onSelectBucket,
         ),
         SizedBox(height: tokens.spacing.sectionGap),
         if (showModel)
@@ -348,10 +402,15 @@ class _DashboardContent extends StatelessWidget {
           ImpactLocationTable(entries: locationTotals),
         ],
         SizedBox(height: tokens.spacing.sectionGap),
-        // Per-call ledger: the newest individual calls in the same period.
-        // Watches its own provider, so it rides the generation's range
-        // without threading through the retained dashboard data.
-        ImpactCallLedger(range: range),
+        // Per-call ledger: the newest individual calls in the same period,
+        // or scoped to a tapped chart bucket. Watches its own provider, so it
+        // rides the generation's range without threading through the retained
+        // dashboard data.
+        if (ledgerFilterLabel != null) ...[
+          _LedgerFilterChip(label: ledgerFilterLabel, onClear: onClearBucket),
+          SizedBox(height: tokens.spacing.step3),
+        ],
+        ImpactCallLedger(range: ledgerRange ?? range),
       ],
       SizedBox(height: tokens.spacing.step6),
     ];
@@ -433,6 +492,74 @@ class _BreakdownDimensionSelector extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+/// Clearable pill shown above the call ledger while it is scoped to a tapped
+/// chart bucket. Tapping it (or its close icon) restores the full-period
+/// ledger.
+class _LedgerFilterChip extends StatelessWidget {
+  const _LedgerFilterChip({required this.label, required this.onClear});
+
+  final String label;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Semantics(
+        button: true,
+        label: messages.aiImpactLedgerClearFilter,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onClear,
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            child: Container(
+              decoration: BoxDecoration(
+                color: tokens.colors.background.level02,
+                borderRadius: BorderRadius.circular(tokens.radii.m),
+                border: Border.all(color: tokens.colors.decorative.level01),
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step3,
+                vertical: tokens.spacing.step2,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.filter_alt_outlined,
+                    size: tokens.spacing.step4,
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Flexible(
+                    child: Text(
+                      messages.aiImpactLedgerScopedTo(label),
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  Icon(
+                    Icons.close_rounded,
+                    size: tokens.spacing.step4,
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
