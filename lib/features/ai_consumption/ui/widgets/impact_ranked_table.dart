@@ -24,6 +24,8 @@ class ImpactRankedTable extends StatelessWidget {
     required this.entries,
     required this.resolver,
     required this.metric,
+    this.isolatedKey,
+    this.onToggleSeries,
     super.key,
   });
 
@@ -38,6 +40,12 @@ class ImpactRankedTable extends StatelessWidget {
   /// The metric the values are measured in — drives the value formatting.
   final ConsumptionMetric metric;
 
+  /// The isolated series, shared with the chart; when set, the other rows dim.
+  final String? isolatedKey;
+
+  /// Tapping a row toggles isolation of that category (chart + legend follow).
+  final ValueChanged<String?>? onToggleSeries;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -46,6 +54,8 @@ class ImpactRankedTable extends StatelessWidget {
     if (entries.isEmpty) return const SizedBox.shrink();
 
     final total = entries.fold<double>(0, (sum, e) => sum + e.value);
+    final isolatingHere =
+        isolatedKey != null && entries.any((e) => e.key == isolatedKey);
     final headerStyle = calmEyebrowStyle(
       tokens,
       color: tokens.colors.text.mediumEmphasis,
@@ -98,46 +108,52 @@ class ImpactRankedTable extends StatelessWidget {
                 ),
                 Divider(height: 1, color: tokens.colors.decorative.level01),
                 for (final entry in entries)
-                  _ImpactTableRowLayout(
-                    showValue: showValue,
-                    showShare: showShare,
-                    category: Row(
-                      children: [
-                        Container(
-                          width: tokens.spacing.step3,
-                          height: tokens.spacing.step3,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: swatchColorFor(
-                              resolver.colorHexFor(entry.key),
-                              brightness,
+                  _isolatableRow(
+                    onTap: onToggleSeries == null
+                        ? null
+                        : () => onToggleSeries!(entry.key),
+                    dimmed: isolatingHere && entry.key != isolatedKey,
+                    child: _ImpactTableRowLayout(
+                      showValue: showValue,
+                      showShare: showShare,
+                      category: Row(
+                        children: [
+                          Container(
+                            width: tokens.spacing.step3,
+                            height: tokens.spacing.step3,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: swatchColorFor(
+                                resolver.colorHexFor(entry.key),
+                                brightness,
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(width: tokens.spacing.step3),
-                        Expanded(
-                          child: Text(
-                            resolver.labelFor(entry.key),
-                            style: tokens.typography.styles.body.bodySmall
-                                .copyWith(
-                                  color: tokens.colors.text.highEmphasis,
-                                ),
-                            overflow: TextOverflow.ellipsis,
+                          SizedBox(width: tokens.spacing.step3),
+                          Expanded(
+                            child: Text(
+                              resolver.labelFor(entry.key),
+                              style: tokens.typography.styles.body.bodySmall
+                                  .copyWith(
+                                    color: tokens.colors.text.highEmphasis,
+                                  ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    value: Text(
-                      metric.formatValue(entry.value),
-                      style: numberStyle,
-                      textAlign: TextAlign.right,
-                    ),
-                    share: Text(
-                      formatShare(total > 0 ? entry.value / total : 0),
-                      style: numberStyle.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
+                        ],
                       ),
-                      textAlign: TextAlign.right,
+                      value: Text(
+                        metric.formatValue(entry.value),
+                        style: numberStyle,
+                        textAlign: TextAlign.right,
+                      ),
+                      share: Text(
+                        formatShare(total > 0 ? entry.value / total : 0),
+                        style: numberStyle.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                        textAlign: TextAlign.right,
+                      ),
                     ),
                   ),
               ],
@@ -147,6 +163,21 @@ class ImpactRankedTable extends StatelessWidget {
       },
     );
   }
+}
+
+/// Wraps a breakdown row so tapping it toggles isolation of its series, and
+/// fades it when another series is isolated.
+Widget _isolatableRow({
+  required Widget child,
+  required bool dimmed,
+  required VoidCallback? onTap,
+}) {
+  final row = dimmed ? Opacity(opacity: 0.4, child: child) : child;
+  return GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: onTap,
+    child: row,
+  );
 }
 
 /// Fixed column layout shared by the header and data rows so everything

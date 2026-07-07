@@ -74,6 +74,12 @@ class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
   /// bucket would point outside the new range).
   DateTime? _ledgerBucketStart;
 
+  /// The isolated series (a category or model key) — shared by the chart, its
+  /// legend, and the companion table so tapping any of them moves all three.
+  /// Cleared when the breakdown dimension changes (a category key is not a
+  /// model key).
+  String? _isolatedKey;
+
   /// The most recent generation whose buckets had fully loaded — the
   /// keepPreviousData retention (see class docs). Null only before the very
   /// first load resolves.
@@ -133,9 +139,17 @@ class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
       metric: _metric,
       dimension: _dimension,
       ledgerBucketStart: _ledgerBucketStart,
+      isolatedKey: _isolatedKey,
       showStaleNotice: bucketsAsync.hasError,
       onSelectMetric: (metric) => setState(() => _metric = metric),
-      onSelectDimension: (dimension) => setState(() => _dimension = dimension),
+      onSelectDimension: (dimension) => setState(() {
+        _dimension = dimension;
+        // A category key isn't a model key — start the new dimension clean.
+        _isolatedKey = null;
+      }),
+      onToggleSeries: (key) => setState(() {
+        _isolatedKey = _isolatedKey == key ? null : key;
+      }),
       onSelectBucket: (bucketStart) => setState(() {
         // Tapping the drilled bucket again clears the drill.
         _ledgerBucketStart = _ledgerBucketStart == bucketStart
@@ -178,9 +192,11 @@ class _DashboardContent extends StatelessWidget {
     required this.metric,
     required this.dimension,
     required this.ledgerBucketStart,
+    required this.isolatedKey,
     required this.showStaleNotice,
     required this.onSelectMetric,
     required this.onSelectDimension,
+    required this.onToggleSeries,
     required this.onSelectBucket,
     required this.onClearBucket,
     required this.onSelectUnit,
@@ -205,6 +221,9 @@ class _DashboardContent extends StatelessWidget {
   /// whole period.
   final DateTime? ledgerBucketStart;
 
+  /// The isolated series (category/model key), shared across chart and table.
+  final String? isolatedKey;
+
   /// Whether a window load failed while the retained generation stays on
   /// screen — surfaced as a slim, non-blocking strip instead of an error
   /// shell, so a failed step never silently mislabels the previous
@@ -213,6 +232,7 @@ class _DashboardContent extends StatelessWidget {
 
   final ValueChanged<ConsumptionMetric> onSelectMetric;
   final ValueChanged<ImpactBreakdownDimension> onSelectDimension;
+  final ValueChanged<String?> onToggleSeries;
   final ValueChanged<DateTime> onSelectBucket;
   final VoidCallback onClearBucket;
   final ValueChanged<InsightsPeriodUnit> onSelectUnit;
@@ -387,6 +407,8 @@ class _DashboardContent extends StatelessWidget {
               ? messages.aiImpactCoverageNote
               : null,
           selectedBucketIndex: selectedBucketIndex,
+          isolatedKey: isolatedKey,
+          onToggleSeries: onToggleSeries,
           onBucketSelected: onSelectBucket,
         ),
         SizedBox(height: tokens.spacing.sectionGap),
@@ -395,12 +417,16 @@ class _DashboardContent extends StatelessWidget {
             entries: rankedModels,
             resolver: modelResolver,
             metric: metric,
+            isolatedKey: isolatedKey,
+            onToggleSeries: onToggleSeries,
           )
         else
           ImpactRankedTable(
             entries: ranked,
             resolver: resolver,
             metric: metric,
+            isolatedKey: isolatedKey,
+            onToggleSeries: onToggleSeries,
           ),
         if (locationTotals.isNotEmpty) ...[
           SizedBox(height: tokens.spacing.sectionGap),

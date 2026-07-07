@@ -94,26 +94,29 @@ void main() {
     });
   });
 
-  group('legend isolation dims the other series', () {
-    testWidgets('isolated series keeps full alpha, others are dimmed', (
+  group('legend isolation re-baselines to a single series', () {
+    testWidgets('isolating draws only that series from the baseline', (
       tester,
     ) async {
       await pumpBars(tester, isolatedKey: 'a');
-      final rods = readChart(
-        tester,
-      ).data.barGroups[0].barRods.single.rodStackItems;
-      // Stack order follows seriesKeys: a (isolated, full) then b (dimmed).
+      final chart = readChart(tester);
+      // Only the isolated series is drawn — siblings are hidden, not dimmed,
+      // so its own trajectory reads from y=0.
+      final rods = chart.data.barGroups[0].barRods.single.rodStackItems;
+      expect(rods, hasLength(1));
       expect(rods[0].color?.a, 1.0);
-      expect(rods[1].color?.a, closeTo(0.16, 1e-6));
+      // Axis rescales to the isolated series' own ceiling (a's max is 2).
+      expect(chart.data.maxY, 2.0);
     });
 
-    testWidgets('no isolation leaves every series at full alpha', (
+    testWidgets('no isolation stacks every series at full alpha', (
       tester,
     ) async {
       await pumpBars(tester);
       final rods = readChart(
         tester,
       ).data.barGroups[0].barRods.single.rodStackItems;
+      expect(rods, hasLength(2));
       expect(rods[0].color?.a, 1.0);
       expect(rods[1].color?.a, 1.0);
     });

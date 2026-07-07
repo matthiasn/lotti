@@ -310,6 +310,48 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a breakdown table row isolates that series across chart and table',
+    (tester) async {
+      stubRows(scenarioRows());
+      // Tall so the (lazy ListView) table is mounted without scrolling.
+      await pumpBody(tester, surface: const Size(1280, 2400));
+
+      Finder dimmedRows() => find.byWidgetPredicate(
+        (w) => w is Opacity && w.opacity == 0.4,
+      );
+      expect(dimmedRows(), findsNothing);
+
+      Finder agentsRow() => find.descendant(
+        of: find.byType(ImpactRankedTable),
+        matching: find.text('Agents'),
+      );
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.tap(agentsRow());
+        await tester.pump();
+      });
+
+      // The other category rows fade, and the chart re-baselines to the one
+      // isolated series (each drawn bar has at most one stacked segment).
+      expect(dimmedRows(), findsWidgets);
+      final chart = tester.widget<BarChart>(find.byType(BarChart));
+      for (final group in chart.data.barGroups) {
+        expect(
+          group.barRods.single.rodStackItems.length,
+          lessThanOrEqualTo(1),
+        );
+      }
+
+      // Tapping the same row again clears the isolation.
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.tap(agentsRow());
+        await tester.pump();
+      });
+      expect(dimmedRows(), findsNothing);
+    },
+  );
+
   testWidgets('metric toggle switches the chart and table to that metric', (
     tester,
   ) async {

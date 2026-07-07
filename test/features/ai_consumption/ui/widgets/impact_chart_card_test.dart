@@ -176,38 +176,6 @@ void main() {
     },
   );
 
-  testWidgets('tapping a legend entry isolates it and a second tap clears it', (
-    tester,
-  ) async {
-    final chartData = buildImpactChartData(
-      bucketsWith({
-        0: {'cat-a': 2.0, 'cat-b': 1.0},
-      }),
-      range,
-      ConsumptionMetric.cost,
-    );
-    await pumpCard(tester, chartData: chartData);
-
-    List<BarChartRodStackItem> rods() => tester
-        .widget<BarChart>(find.byType(BarChart))
-        .data
-        .barGroups[0]
-        .barRods
-        .single
-        .rodStackItems;
-
-    // Isolate Agents (cat-a, the baseline series): the other series dims.
-    await tester.tap(find.text('Agents'));
-    await tester.pump();
-    expect(rods()[0].color?.a, 1.0);
-    expect(rods()[1].color?.a, closeTo(0.16, 1e-6));
-
-    // A second tap clears the isolation — everything back to full alpha.
-    await tester.tap(find.text('Agents'));
-    await tester.pump();
-    expect(rods()[1].color?.a, 1.0);
-  });
-
   testWidgets(
     'cumulative chart keeps a positive axis when elapsed totals are zero',
     (tester) async {

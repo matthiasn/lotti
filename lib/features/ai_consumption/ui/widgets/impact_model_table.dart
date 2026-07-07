@@ -21,6 +21,8 @@ class ImpactModelTable extends StatelessWidget {
     required this.entries,
     required this.resolver,
     required this.metric,
+    this.isolatedKey,
+    this.onToggleSeries,
     super.key,
   });
 
@@ -33,6 +35,12 @@ class ImpactModelTable extends StatelessWidget {
   final SeriesResolver resolver;
   final ConsumptionMetric metric;
 
+  /// The isolated series, shared with the chart; when set, the other rows dim.
+  final String? isolatedKey;
+
+  /// Tapping a row toggles isolation of that model (chart + legend follow).
+  final ValueChanged<String?>? onToggleSeries;
+
   @override
   Widget build(BuildContext context) {
     if (entries.isEmpty) return const SizedBox.shrink();
@@ -44,6 +52,10 @@ class ImpactModelTable extends StatelessWidget {
       0,
       (sum, e) => sum + metric.valueOf(e.value),
     );
+    // Dim the other rows only when the isolated model is actually in this
+    // table (a stale key from another dimension shouldn't blank every row).
+    final isolatingHere =
+        isolatedKey != null && entries.any((e) => e.key == isolatedKey);
 
     // "12 calls · €5.00/1M tok" — the cost-per-million is dropped when a model
     // reports no tokens or no cost (e.g. a local transcription model).
@@ -82,64 +94,70 @@ class ImpactModelTable extends StatelessWidget {
             ),
             Divider(height: 1, color: tokens.colors.decorative.level01),
             for (final entry in entries)
-              _ModelTableRowLayout(
-                showValue: showValue,
-                showShare: showShare,
-                model: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(top: tokens.spacing.step1),
-                      child: Container(
-                        width: tokens.spacing.step3,
-                        height: tokens.spacing.step3,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: resolver.swatchColor(entry.key, brightness),
+              _isolatableRow(
+                onTap: onToggleSeries == null
+                    ? null
+                    : () => onToggleSeries!(entry.key),
+                dimmed: isolatingHere && entry.key != isolatedKey,
+                child: _ModelTableRowLayout(
+                  showValue: showValue,
+                  showShare: showShare,
+                  model: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(top: tokens.spacing.step1),
+                        child: Container(
+                          width: tokens.spacing.step3,
+                          height: tokens.spacing.step3,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: resolver.swatchColor(entry.key, brightness),
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: tokens.spacing.step3),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            resolver.labelFor(entry.key),
-                            style: tokens.typography.styles.body.bodySmall
-                                .copyWith(
-                                  color: tokens.colors.text.highEmphasis,
-                                ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            metaLine(entry.value),
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(
-                                  color: tokens.colors.text.mediumEmphasis,
-                                ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                      SizedBox(width: tokens.spacing.step3),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              resolver.labelFor(entry.key),
+                              style: tokens.typography.styles.body.bodySmall
+                                  .copyWith(
+                                    color: tokens.colors.text.highEmphasis,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              metaLine(entry.value),
+                              style: tokens.typography.styles.others.caption
+                                  .copyWith(
+                                    color: tokens.colors.text.mediumEmphasis,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
+                    ],
+                  ),
+                  value: Text(
+                    metric.formatValue(metric.valueOf(entry.value)),
+                    style: numberStyle,
+                    textAlign: TextAlign.right,
+                  ),
+                  share: Text(
+                    formatShare(
+                      total > 0 ? metric.valueOf(entry.value) / total : 0,
                     ),
-                  ],
-                ),
-                value: Text(
-                  metric.formatValue(metric.valueOf(entry.value)),
-                  style: numberStyle,
-                  textAlign: TextAlign.right,
-                ),
-                share: Text(
-                  formatShare(
-                    total > 0 ? metric.valueOf(entry.value) / total : 0,
+                    style: numberStyle.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                    textAlign: TextAlign.right,
                   ),
-                  style: numberStyle.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                  textAlign: TextAlign.right,
                 ),
               ),
           ],
@@ -147,6 +165,21 @@ class ImpactModelTable extends StatelessWidget {
       },
     );
   }
+}
+
+/// Wraps a breakdown row so tapping it toggles isolation of its series, and
+/// fades it when another series is isolated.
+Widget _isolatableRow({
+  required Widget child,
+  required bool dimmed,
+  required VoidCallback? onTap,
+}) {
+  final row = dimmed ? Opacity(opacity: 0.4, child: child) : child;
+  return GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: onTap,
+    child: row,
+  );
 }
 
 /// Fixed column layout shared by the header and data rows:

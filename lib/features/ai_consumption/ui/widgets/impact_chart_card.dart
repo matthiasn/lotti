@@ -47,6 +47,8 @@ class ImpactChartCard extends StatefulWidget {
     this.title,
     this.coverageNote,
     this.selectedBucketIndex,
+    this.isolatedKey,
+    this.onToggleSeries,
     this.onBucketSelected,
     super.key,
   });
@@ -73,6 +75,15 @@ class ImpactChartCard extends StatefulWidget {
   /// scoped to it.
   final int? selectedBucketIndex;
 
+  /// The isolated series (shared with the companion table), or null. The card
+  /// validates it against the current series so a metric/dimension switch that
+  /// drops the key silently clears the isolation.
+  final String? isolatedKey;
+
+  /// Toggles isolation of a series — the legend and the companion table both
+  /// call this so chart, legend and table move together.
+  final ValueChanged<String?>? onToggleSeries;
+
   /// Called with a bucket's start time when the user taps that bar/point —
   /// drives the drill-down that scopes the call ledger to that period.
   final ValueChanged<DateTime>? onBucketSelected;
@@ -83,14 +94,6 @@ class ImpactChartCard extends StatefulWidget {
 
 class _ImpactChartCardState extends State<ImpactChartCard> {
   ImpactChartMode _mode = ImpactChartMode.perBucket;
-
-  /// The series isolated via a legend tap, or null. Validated against the
-  /// current series in [build] so a metric/dimension switch that drops the
-  /// key silently clears the isolation instead of dimming everything.
-  String? _isolatedKey;
-
-  void _toggleIsolated(String? key) =>
-      setState(() => _isolatedKey = _isolatedKey == key ? null : key);
 
   bool get _cumulativeFallsBack =>
       _mode == ImpactChartMode.cumulative &&
@@ -130,8 +133,8 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
         _cumulativeFallsBack ||
         shareFallsBack;
     // Drop a stale isolation the moment its series leaves the chart.
-    final isolatedKey = widget.chartData.seriesKeys.contains(_isolatedKey)
-        ? _isolatedKey
+    final isolatedKey = widget.chartData.seriesKeys.contains(widget.isolatedKey)
+        ? widget.isolatedKey
         : null;
     final onBucketTap = widget.onBucketSelected == null
         ? null
@@ -235,7 +238,7 @@ class _ImpactChartCardState extends State<ImpactChartCard> {
                 rolledUpCount: widget.chartData.rolledUpCount,
                 resolver: widget.resolver,
                 isolatedKey: isolatedKey,
-                onToggle: _toggleIsolated,
+                onToggle: widget.onToggleSeries,
               ),
             ],
           ],

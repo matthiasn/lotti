@@ -83,14 +83,23 @@ class ImpactStackedBars extends StatelessWidget {
     // In share mode every non-empty bar reaches 1.0; otherwise the axis snaps
     // to a nice ceiling above the largest bucket total.
     final plotValues = shareMode ? shareValues(data.values) : data.values;
-    var maxTotal = 0.0;
+    // Isolating a series shows ONLY it, drawn from the baseline, so its
+    // week-over-week trend is readable instead of a band floating mid-stack.
+    final isolatedIndex = isolatedKey == null
+        ? -1
+        : data.seriesKeys.indexOf(isolatedKey);
+    final isolating = isolatedIndex >= 0;
+    var maxValue = 0.0;
     for (var i = 0; i < drawCount; i++) {
-      final total = impactBucketTotal(data, i);
-      if (total > maxTotal) maxTotal = total;
+      final v = isolating
+          ? plotValues[isolatedIndex][i]
+          : impactBucketTotal(data, i);
+      if (v > maxValue) maxValue = v;
     }
     // Nice-ceiling axis (1/2/5 × 10ⁿ) with four gridline divisions, so tick
-    // values are clean fractions of the ceiling in every metric's unit.
-    final maxY = shareMode ? 1.0 : impactNiceCeiling(maxTotal);
+    // values are clean fractions of the ceiling in every metric's unit. Share
+    // keeps the 0–100% scale even when isolating a single band.
+    final maxY = shareMode ? 1.0 : impactNiceCeiling(maxValue);
     final interval = maxY / 4;
     // Label every bar when there's room (≤7); thin out for longer ranges.
     final labelEvery = drawCount <= 7
@@ -235,7 +244,16 @@ class ImpactStackedBars extends StatelessWidget {
                       final bucketDimmed =
                           selectedBucketIndex != null &&
                           selectedBucketIndex != i;
+                      // A truncated edge week is faded so it can't be misread
+                      // as a real dip/spike (the tooltip also flags it).
+                      final isPartialWeek =
+                          data.granularity == InsightsGranularity.week &&
+                          ((i == 0 && data.partialFirstBucket) ||
+                              (i == data.bucketStarts.length - 1 &&
+                                  data.partialLastBucket));
                       for (var s = 0; s < data.seriesKeys.length; s++) {
+                        // When isolating, draw only that series from the base.
+                        if (isolating && s != isolatedIndex) continue;
                         final value = plotValues[s][i];
                         if (value <= 0) continue;
                         final key = data.seriesKeys[s];
@@ -246,6 +264,9 @@ class ImpactStackedBars extends StatelessWidget {
                         );
                         if (bucketDimmed) {
                           color = color.withValues(alpha: color.a * 0.35);
+                        }
+                        if (isPartialWeek) {
+                          color = color.withValues(alpha: color.a * 0.5);
                         }
                         stack.add(
                           BarChartRodStackItem(
@@ -352,14 +373,33 @@ class ImpactStackedArea extends StatelessWidget {
 
     final today = epochDay(clock.now());
     final firstFutureIndex = firstFutureBucket(data, today);
-    final lastDrawnBucket = firstFutureIndex == 0
+    var lastDrawnBucket = firstFutureIndex == 0
         ? bucketCount
         : firstFutureIndex;
+    // Share normalizes each bucket, so a trailing empty bucket (e.g. the
+    // current week before its first call) would collapse the area to a cliff
+    // at zero. Trim those so the mix ends at the last bucket with data.
+    if (shareMode) {
+      while (lastDrawnBucket > 0 &&
+          impactBucketTotal(data, lastDrawnBucket - 1) <= 0) {
+        lastDrawnBucket--;
+      }
+    }
+
+    // Isolating a series draws only it, filled from the baseline, so its own
+    // trajectory reads instead of a band floating mid-stack.
+    final isolatedIndex = isolatedKey == null
+        ? -1
+        : data.seriesKeys.indexOf(isolatedKey);
+    final isolating = isolatedIndex >= 0;
 
     var maxTop = 0.0;
     if (stackedTops.isNotEmpty) {
       for (var i = 0; i < lastDrawnBucket; i++) {
-        if (stackedTops.last[i] > maxTop) maxTop = stackedTops.last[i];
+        final top = isolating
+            ? baseValues[isolatedIndex][i]
+            : stackedTops.last[i];
+        if (top > maxTop) maxTop = top;
       }
     }
     final niceCeiling = impactNiceCeiling(maxTop * 1.08);
@@ -489,27 +529,41 @@ class ImpactStackedArea extends StatelessWidget {
             },
           ),
         ),
-        lineBarsData: [
-          for (var s = data.seriesKeys.length - 1; s >= 0; s--)
-            () {
-              final key = data.seriesKeys[s];
-              final fill = _dim(
-                resolver.fillColor(key, brightness),
-                key,
-                isolatedKey,
-              );
-              return LineChartBarData(
-                spots: [
-                  for (var i = 0; i < lastDrawnBucket; i++)
-                    FlSpot(i.toDouble(), stackedTops[s][i]),
-                ],
-                color: bandEdgeColor(fill, brightness),
-                barWidth: 1.5,
-                dotData: const FlDotData(show: false),
-                belowBarData: BarAreaData(show: true, color: fill),
-              );
-            }(),
-        ],
+        lineBarsData: isolating
+            ? [
+                // The single isolated series, filled from the baseline.
+                () {
+                  final key = data.seriesKeys[isolatedIndex];
+                  final fill = resolver.fillColor(key, brightness);
+                  return LineChartBarData(
+                    spots: [
+                      for (var i = 0; i < lastDrawnBucket; i++)
+                        FlSpot(i.toDouble(), baseValues[isolatedIndex][i]),
+                    ],
+                    color: bandEdgeColor(fill, brightness),
+                    barWidth: 1.5,
+                    dotData: const FlDotData(show: false),
+                    belowBarData: BarAreaData(show: true, color: fill),
+                  );
+                }(),
+              ]
+            : [
+                for (var s = data.seriesKeys.length - 1; s >= 0; s--)
+                  () {
+                    final key = data.seriesKeys[s];
+                    final fill = resolver.fillColor(key, brightness);
+                    return LineChartBarData(
+                      spots: [
+                        for (var i = 0; i < lastDrawnBucket; i++)
+                          FlSpot(i.toDouble(), stackedTops[s][i]),
+                      ],
+                      color: bandEdgeColor(fill, brightness),
+                      barWidth: 1.5,
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(show: true, color: fill),
+                    );
+                  }(),
+              ],
       ),
     );
   }
