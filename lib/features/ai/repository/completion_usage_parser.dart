@@ -46,10 +46,13 @@ CompletionUsage? parseCompletionUsage(Object? raw) {
       reasoningTokens != null;
   if (!hasTokenData) return null;
 
+  final promptTokenCount = promptTokens ?? 0;
+  final completionTokenCount = completionTokens ?? 0;
+
   return CompletionUsage(
-    promptTokens: promptTokens ?? 0,
-    completionTokens: completionTokens,
-    totalTokens: totalTokens ?? (promptTokens ?? 0) + (completionTokens ?? 0),
+    promptTokens: promptTokenCount,
+    completionTokens: completionTokenCount,
+    totalTokens: totalTokens ?? promptTokenCount + completionTokenCount,
     promptTokensDetails: cachedTokens != null
         ? PromptTokensDetails(cachedTokens: cachedTokens)
         : null,
