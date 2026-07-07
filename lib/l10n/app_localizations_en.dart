@@ -5466,9 +5466,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get imageViewerDownloadingTooltip => 'Saving image';
 
   @override
+  String get imageViewerDownloadPermissionDenied =>
+      'Photo access denied — enable it in Settings';
+
+  @override
   String imageViewerDownloadSaved(String fileName) {
-    return 'Saved $fileName to Downloads/Lotti';
+    return 'Saved $fileName';
   }
+
+  @override
+  String get imageViewerDownloadSavedToGallery => 'Saved to Photos';
 
   @override
   String get imageViewerDownloadTooltip => 'Download image';

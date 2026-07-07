@@ -1277,14 +1277,20 @@ class MockPathProviderPlatform extends Mock
     implements PathProviderPlatform {}
 
 /// Fake [FileSelectorPlatform] for tests that exercise the desktop file
-/// picker (`openFiles`) without hitting the native plugin. Defaults to
-/// returning no files (as if the user cancelled the dialog); set
-/// [filesToReturn] to simulate a selection.
+/// picker (`openFiles`) or save panel (`getSaveLocation`) without hitting the
+/// native plugin. Defaults to returning nothing (as if the user cancelled the
+/// dialog); set [filesToReturn] / [saveLocationToReturn] to simulate a
+/// selection.
 class FakeFileSelectorPlatform extends Fake
     with MockPlatformInterfaceMixin
     implements FileSelectorPlatform {
   List<XFile> filesToReturn = const [];
   List<XTypeGroup>? lastAcceptedTypeGroups;
+
+  /// Location returned by [getSaveLocation]; `null` simulates the user
+  /// dismissing the save panel.
+  FileSaveLocation? saveLocationToReturn;
+  String? lastSuggestedName;
 
   @override
   Future<List<XFile>> openFiles({
@@ -1294,6 +1300,16 @@ class FakeFileSelectorPlatform extends Fake
   }) async {
     lastAcceptedTypeGroups = acceptedTypeGroups;
     return filesToReturn;
+  }
+
+  @override
+  Future<FileSaveLocation?> getSaveLocation({
+    List<XTypeGroup>? acceptedTypeGroups,
+    SaveDialogOptions options = const SaveDialogOptions(),
+  }) async {
+    lastAcceptedTypeGroups = acceptedTypeGroups;
+    lastSuggestedName = options.suggestedName;
+    return saveLocationToReturn;
   }
 }
 

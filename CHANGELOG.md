@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   available. When the provider reports data-center metadata, it also groups
   environmental impact by country/data center and shows the renewable-energy
   share for each location.
+### Fixed
+- **The image viewer's save button now works everywhere.** On iPhone and
+  Android it saves the photo to your photo library; on macOS, Windows and Linux
+  it opens a native save dialog so you choose where the image goes. Previously
+  it always tried to write into `Downloads/Lotti`, which failed with an error on
+  iPhone and on the sandboxed macOS build.
 
 ## [0.9.1032]
 ### Added

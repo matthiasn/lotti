@@ -57,6 +57,8 @@
 	<string>Obtain location for journal entries</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record audio notes</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save images from your journal to your photo library</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Import photos and videos</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

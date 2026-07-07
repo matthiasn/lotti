@@ -2411,7 +2411,8 @@
   "images": "Bilder",
   "imageViewerDownloadFailed": "Bild konnte nicht gespeichert werden",
   "imageViewerDownloadingTooltip": "Bild wird gespeichert",
-  "imageViewerDownloadSaved": "{fileName} wurde in Downloads/Lotti gespeichert",
+  "imageViewerDownloadPermissionDenied": "Fotozugriff verweigert – aktiviere ihn in den Einstellungen",
+  "imageViewerDownloadSaved": "{fileName} gespeichert",
   "@imageViewerDownloadSaved": {
     "placeholders": {
       "fileName": {
@@ -2419,6 +2420,7 @@
       }
     }
   },
+  "imageViewerDownloadSavedToGallery": "In Fotos gespeichert",
   "imageViewerDownloadTooltip": "Bild herunterladen",
   "inactiveLabel": "Inaktiv",
   "inactiveSwitchDescription": "Kann für neue Einträge gewählt werden, wenn aktiv",

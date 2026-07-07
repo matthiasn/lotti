@@ -2411,7 +2411,8 @@
   "images": "Imagini",
   "imageViewerDownloadFailed": "Nu s-a putut salva imaginea",
   "imageViewerDownloadingTooltip": "Se salvează imaginea",
-  "imageViewerDownloadSaved": "{fileName} a fost salvat în Descărcări/Lotti",
+  "imageViewerDownloadPermissionDenied": "Acces la fotografii refuzat — activați-l în Setări",
+  "imageViewerDownloadSaved": "{fileName} a fost salvat",
   "@imageViewerDownloadSaved": {
     "placeholders": {
       "fileName": {
@@ -2419,6 +2420,7 @@
       }
     }
   },
+  "imageViewerDownloadSavedToGallery": "Salvat în Fotografii",
   "imageViewerDownloadTooltip": "Descărcați imaginea",
   "inactiveLabel": "Inactiv",
   "inactiveSwitchDescription": "Poate fi ales pentru intrări noi când este activ",

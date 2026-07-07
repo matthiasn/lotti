@@ -5590,9 +5590,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get imageViewerDownloadingTooltip => 'Se salvează imaginea';
 
   @override
+  String get imageViewerDownloadPermissionDenied =>
+      'Acces la fotografii refuzat — activați-l în Setări';
+
+  @override
   String imageViewerDownloadSaved(String fileName) {
-    return '$fileName a fost salvat în Descărcări/Lotti';
+    return '$fileName a fost salvat';
   }
+
+  @override
+  String get imageViewerDownloadSavedToGallery => 'Salvat în Fotografii';
 
   @override
   String get imageViewerDownloadTooltip => 'Descărcați imaginea';

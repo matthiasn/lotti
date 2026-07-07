@@ -2873,7 +2873,8 @@
   "images": "Images",
   "imageViewerDownloadFailed": "Could not save image",
   "imageViewerDownloadingTooltip": "Saving image",
-  "imageViewerDownloadSaved": "Saved {fileName} to Downloads/Lotti",
+  "imageViewerDownloadPermissionDenied": "Photo access denied — enable it in Settings",
+  "imageViewerDownloadSaved": "Saved {fileName}",
   "@imageViewerDownloadSaved": {
     "placeholders": {
       "fileName": {
@@ -2881,6 +2882,7 @@
       }
     }
   },
+  "imageViewerDownloadSavedToGallery": "Saved to Photos",
   "imageViewerDownloadTooltip": "Download image",
   "inactiveLabel": "Inactive",
   "inactiveSwitchDescription": "Can be chosen for new entries when on",

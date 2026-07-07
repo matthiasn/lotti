@@ -8,10 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
+import 'package:lotti/features/journal/util/image_export_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:photo_view/photo_view.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
@@ -94,19 +97,6 @@ void _pressIconButton(WidgetTester tester, IconData icon) {
   );
   expect(button.onPressed, isNotNull);
   button.onPressed!();
-}
-
-Future<void> _runAndWaitForFileSystem(
-  WidgetTester tester,
-  VoidCallback action,
-  bool Function() isReady,
-) async {
-  await tester.runAsync(() async {
-    action();
-    for (var i = 0; i < 250 && !isReady(); i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 1));
-    }
-  });
 }
 
 void main() {
@@ -306,6 +296,7 @@ void main() {
   group('HeroPhotoViewRouteWrapper', () {
     late Directory tempDir;
     late File imageFile;
+    late MockLoggingService mockLoggingService;
 
     setUp(() async {
       tempDir = Directory.systemTemp.createTempSync(
@@ -313,9 +304,15 @@ void main() {
       );
       imageFile = File('${tempDir.path}/photo.png')
         ..writeAsBytesSync(_transparentPng);
+      // The viewer logs a swallowed save failure through getIt; register a mock
+      // so that path can be asserted without a real logging backend.
+      mockLoggingService = MockLoggingService();
+      await getIt.reset();
+      getIt.registerSingleton<LoggingService>(mockLoggingService);
     });
 
     tearDown(() async {
+      await getIt.reset();
       try {
         tempDir.deleteSync(recursive: true);
       } catch (_) {
@@ -325,32 +322,8 @@ void main() {
 
     Widget buildWrapper({
       BoxDecoration? backgroundDecoration,
-      ImageViewerDownloadsDirectoryResolver? downloadsDirectoryResolver,
-      ImageViewerFileCopier? fileCopier,
+      ImageExporter? imageExporter,
     }) {
-      final wrapper = switch ((downloadsDirectoryResolver, fileCopier)) {
-        (null, null) => HeroPhotoViewRouteWrapper(
-          file: imageFile,
-          backgroundDecoration: backgroundDecoration,
-        ),
-        (final resolver?, null) => HeroPhotoViewRouteWrapper(
-          file: imageFile,
-          backgroundDecoration: backgroundDecoration,
-          downloadsDirectoryResolver: resolver,
-        ),
-        (null, final copier?) => HeroPhotoViewRouteWrapper(
-          file: imageFile,
-          backgroundDecoration: backgroundDecoration,
-          fileCopier: copier,
-        ),
-        (final resolver?, final copier?) => HeroPhotoViewRouteWrapper(
-          file: imageFile,
-          backgroundDecoration: backgroundDecoration,
-          downloadsDirectoryResolver: resolver,
-          fileCopier: copier,
-        ),
-      };
-
       return ProviderScope(
         child: MaterialApp(
           theme: resolveTestTheme(),
@@ -361,7 +334,11 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: wrapper,
+          home: HeroPhotoViewRouteWrapper(
+            file: imageFile,
+            backgroundDecoration: backgroundDecoration,
+            imageExporter: imageExporter,
+          ),
         ),
       );
     }
@@ -591,98 +568,105 @@ void main() {
     );
 
     testWidgets(
-      'download button copies the image to Downloads/Lotti with a unique name',
+      'download button echoes the saved file name after a desktop save',
       (tester) async {
-        final downloadsDir = Directory('${tempDir.path}/Downloads')
-          ..createSync();
-        final lottiDownloads = Directory('${downloadsDir.path}/Lotti')
-          ..createSync();
-        File('${lottiDownloads.path}/photo.png').writeAsBytesSync([0x01]);
-        File('${lottiDownloads.path}/photo 2.png').writeAsBytesSync([0x02]);
-
+        File? savedFile;
         await tester.pumpWidget(
           buildWrapper(
-            downloadsDirectoryResolver: () => Future.value(downloadsDir),
-            fileCopier: (sourceFile, targetFile) {
-              targetFile.writeAsBytesSync(sourceFile.readAsBytesSync());
-              return Future.value(targetFile);
+            imageExporter: (file) async {
+              savedFile = file;
+              return const ImageExportResult.savedToFile('photo 3.png');
             },
           ),
         );
         await tester.pump();
 
-        final copied = File('${lottiDownloads.path}/photo 3.png');
-        final downloadButton = tester.widget<IconButton>(
-          find.widgetWithIcon(IconButton, Icons.download_rounded),
-        );
-        expect(downloadButton.onPressed, isNotNull);
-        await _runAndWaitForFileSystem(
-          tester,
-          downloadButton.onPressed!,
-          copied.existsSync,
-        );
+        _pressIconButton(tester, Icons.download_rounded);
         await tester.pump();
         await tester.pump();
 
-        expect(copied.existsSync(), isTrue);
-        expect(copied.readAsBytesSync(), _transparentPng);
+        // The original file is handed to the exporter untouched.
+        expect(savedFile?.path, imageFile.path);
+        expect(find.text('Saved photo 3.png'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'download button confirms a photo-library save on mobile',
+      (tester) async {
+        await tester.pumpWidget(
+          buildWrapper(
+            imageExporter: (_) async =>
+                const ImageExportResult.savedToGallery(),
+          ),
+        );
+        await tester.pump();
+
+        _pressIconButton(tester, Icons.download_rounded);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Saved to Photos'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'download button surfaces a permission-denied message',
+      (tester) async {
+        await tester.pumpWidget(
+          buildWrapper(
+            imageExporter: (_) async =>
+                const ImageExportResult.permissionDenied(),
+          ),
+        );
+        await tester.pump();
+
+        _pressIconButton(tester, Icons.download_rounded);
+        await tester.pump();
+        await tester.pump();
+
         expect(
-          find.text('Saved photo 3.png to Downloads/Lotti'),
+          find.text('Photo access denied — enable it in Settings'),
           findsOneWidget,
         );
       },
     );
 
     testWidgets(
-      'download button uses the default copier when the file name is free',
+      'download button stays silent and re-enables when the save is cancelled',
       (tester) async {
-        final downloadsDir = Directory('${tempDir.path}/Downloads')
-          ..createSync();
-        final lottiDownloads = Directory('${downloadsDir.path}/Lotti')
-          ..createSync();
-        final copied = File('${lottiDownloads.path}/photo.png');
-
         await tester.pumpWidget(
           buildWrapper(
-            downloadsDirectoryResolver: () => Future.value(downloadsDir),
+            imageExporter: (_) async => const ImageExportResult.cancelled(),
           ),
         );
         await tester.pump();
 
+        _pressIconButton(tester, Icons.download_rounded);
+        await tester.pump();
+        await tester.pump();
+
+        // A dismissed save panel is not an error: no feedback, button ready.
+        expect(find.byType(SnackBar), findsNothing);
+        expect(find.byIcon(Icons.hourglass_top_rounded), findsNothing);
         final downloadButton = tester.widget<IconButton>(
           find.widgetWithIcon(IconButton, Icons.download_rounded),
         );
         expect(downloadButton.onPressed, isNotNull);
-        await _runAndWaitForFileSystem(
-          tester,
-          downloadButton.onPressed!,
-          copied.existsSync,
-        );
-        await tester.pump();
-        await tester.pump();
-
-        expect(copied.existsSync(), isTrue);
-        expect(copied.readAsBytesSync(), _transparentPng);
       },
     );
 
     testWidgets(
-      'download button disables while copying and ignores duplicate taps',
+      'download button disables while saving and ignores duplicate taps',
       (tester) async {
-        final downloadsDir = Directory('${tempDir.path}/Downloads')
-          ..createSync();
-        Directory('${downloadsDir.path}/Lotti').createSync();
-        final copyCompleter = Completer<File>();
-        var copyCalls = 0;
-        late File pendingTarget;
+        final completer = Completer<ImageExportResult>();
+        var calls = 0;
 
         await tester.pumpWidget(
           buildWrapper(
-            downloadsDirectoryResolver: () => Future.value(downloadsDir),
-            fileCopier: (sourceFile, targetFile) {
-              copyCalls++;
-              pendingTarget = targetFile;
-              return copyCompleter.future;
+            imageExporter: (_) {
+              calls++;
+              return completer.future;
             },
           ),
         );
@@ -692,41 +676,34 @@ void main() {
           find.widgetWithIcon(IconButton, Icons.download_rounded),
         );
         expect(downloadButton.onPressed, isNotNull);
-        await _runAndWaitForFileSystem(
-          tester,
-          () {
-            downloadButton.onPressed!();
-            downloadButton.onPressed!();
-          },
-          () => copyCalls == 1,
-        );
+        // Two taps in the same frame: the second must be ignored while saving.
+        downloadButton.onPressed!();
+        downloadButton.onPressed!();
         await tester.pump();
 
-        expect(copyCalls, 1);
+        expect(calls, 1);
         expect(find.byTooltip('Saving image'), findsOneWidget);
         final savingButton = tester.widget<IconButton>(
           find.widgetWithIcon(IconButton, Icons.hourglass_top_rounded),
         );
         expect(savingButton.onPressed, isNull);
 
-        pendingTarget.writeAsBytesSync(imageFile.readAsBytesSync());
-        copyCompleter.complete(pendingTarget);
+        completer.complete(const ImageExportResult.savedToFile('photo.png'));
+        await tester.pump();
         await tester.pump();
 
-        expect(
-          find.text('Saved photo.png to Downloads/Lotti'),
-          findsOneWidget,
-        );
-        expect(copyCalls, 1);
+        expect(calls, 1);
+        expect(find.text('Saved photo.png'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'download button reports failure when downloads are unavailable',
+      'download button reports failure and logs when the exporter throws',
       (tester) async {
         await tester.pumpWidget(
           buildWrapper(
-            downloadsDirectoryResolver: () async => null,
+            imageExporter: (_) async =>
+                throw const FileSystemException('save failed'),
           ),
         );
         await tester.pump();
@@ -736,41 +713,16 @@ void main() {
         await tester.pump();
 
         expect(find.text('Could not save image'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'download button reports failure when copying throws',
-      (tester) async {
-        final downloadsDir = Directory('${tempDir.path}/Downloads')
-          ..createSync();
-        Directory('${downloadsDir.path}/Lotti').createSync();
-        var copyAttempted = false;
-
-        await tester.pumpWidget(
-          buildWrapper(
-            downloadsDirectoryResolver: () => Future.value(downloadsDir),
-            fileCopier: (sourceFile, targetFile) {
-              copyAttempted = true;
-              throw const FileSystemException('copy failed');
-            },
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'entry_image_widget',
+            subDomain: 'downloadImage',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+            level: any(named: 'level'),
+            type: any(named: 'type'),
           ),
-        );
-        await tester.pump();
-
-        final downloadButton = tester.widget<IconButton>(
-          find.widgetWithIcon(IconButton, Icons.download_rounded),
-        );
-        expect(downloadButton.onPressed, isNotNull);
-        await _runAndWaitForFileSystem(
-          tester,
-          downloadButton.onPressed!,
-          () => copyAttempted,
-        );
-        await tester.pump();
-
-        expect(copyAttempted, isTrue);
-        expect(find.text('Could not save image'), findsOneWidget);
+        ).called(1);
       },
     );
 

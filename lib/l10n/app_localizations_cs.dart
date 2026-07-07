@@ -5544,9 +5544,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get imageViewerDownloadingTooltip => 'Ukládám obrázek';
 
   @override
+  String get imageViewerDownloadPermissionDenied =>
+      'Přístup k fotkám zamítnut – povol jej v Nastavení';
+
+  @override
   String imageViewerDownloadSaved(String fileName) {
-    return 'Uloženo $fileName do Stažené/Lotti';
+    return 'Uloženo $fileName';
   }
+
+  @override
+  String get imageViewerDownloadSavedToGallery => 'Uloženo do Fotek';
 
   @override
   String get imageViewerDownloadTooltip => 'Stáhnout obrázek';

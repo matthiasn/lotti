@@ -2411,7 +2411,8 @@
   "images": "Imágenes",
   "imageViewerDownloadFailed": "No se pudo guardar la imagen",
   "imageViewerDownloadingTooltip": "Guardando imagen",
-  "imageViewerDownloadSaved": "Se guardó {fileName} en Descargas/Lotti",
+  "imageViewerDownloadPermissionDenied": "Acceso a fotos denegado: actívalo en Ajustes",
+  "imageViewerDownloadSaved": "Se guardó {fileName}",
   "@imageViewerDownloadSaved": {
     "placeholders": {
       "fileName": {
@@ -2419,6 +2420,7 @@
       }
     }
   },
+  "imageViewerDownloadSavedToGallery": "Guardado en Fotos",
   "imageViewerDownloadTooltip": "Descargar imagen",
   "inactiveLabel": "Inactivo",
   "inactiveSwitchDescription": "Se puede elegir para nuevas entradas cuando está activo",

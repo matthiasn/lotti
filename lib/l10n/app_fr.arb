@@ -2411,7 +2411,8 @@
   "images": "Images",
   "imageViewerDownloadFailed": "Impossible d'enregistrer l'image",
   "imageViewerDownloadingTooltip": "Enregistrement de l'image",
-  "imageViewerDownloadSaved": "{fileName} enregistré dans Téléchargements/Lotti",
+  "imageViewerDownloadPermissionDenied": "Accès aux photos refusé — active-le dans les Réglages",
+  "imageViewerDownloadSaved": "{fileName} enregistré",
   "@imageViewerDownloadSaved": {
     "placeholders": {
       "fileName": {
@@ -2419,6 +2420,7 @@
       }
     }
   },
+  "imageViewerDownloadSavedToGallery": "Enregistré dans Photos",
   "imageViewerDownloadTooltip": "Télécharger l'image",
   "inactiveLabel": "Inactif",
   "inactiveSwitchDescription": "Peut être choisi pour de nouvelles entrées si actif",

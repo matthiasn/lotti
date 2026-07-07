@@ -35,6 +35,7 @@
     <release version="0.9.1034" date="2026-07-07">
       <description>
           <p>The AI Impact dashboard now includes a Running total chart mode for cumulative cost, energy, CO2e and token usage over the selected period. Voxtral transcription records token usage when the server returns it in final accounting chunks, and transcription calls whose provider reports no token, cost or energy metrics are labelled instead of leaving a blank ledger row. AI Impact also adds a model breakdown for the selected metric, using provider-native model IDs when available. When the provider reports data-center metadata, AI Impact groups environmental impact by country/data center and shows the renewable-energy share for each location.</p>
+          <p>The image viewer's save button now works on every platform: on iPhone and Android it saves the photo to your photo library, and on macOS, Windows and Linux it opens a native save dialog so you choose where the image goes. Previously it always tried to write into Downloads/Lotti, which failed with an error on iPhone and on the sandboxed macOS build.</p>
       </description>
     </release>
     <release version="0.9.1032" date="2026-07-06">
