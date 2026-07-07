@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart'
+    show formatCallCount;
 import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
@@ -17,6 +19,8 @@ import 'package:lotti/features/categories/state/categories_list_controller.dart'
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/insights/logic/period_navigation.dart'
+    show previousPeriod;
 import 'package:lotti/features/insights/logic/range_presets.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart'
     show epochDay;
@@ -257,6 +261,14 @@ class _DashboardContent extends StatelessWidget {
     // between the ranking and the chart builder.
     final totals = impactTotalsInRange(buckets, range);
     final isEmpty = totals == ConsumptionMetrics.zero;
+    // Trend vs the previous equal-length period, but only when that period is
+    // in the same loaded window (last month, not last year — which isn't
+    // fetched); otherwise the KPI tiles show no delta.
+    final prevRange = previousPeriod(range, data.selection.unit);
+    final previousTotals =
+        insightsWindowFor(prevRange) == insightsWindowFor(range)
+        ? impactTotalsInRange(buckets, prevRange)
+        : null;
     final daily = dailyMetricTotals(buckets, range, metric);
     final ranked = rankedImpactCategoryTotals(daily);
     final modelDaily = dailyModelMetricTotals(buckets, range, metric);
@@ -347,8 +359,25 @@ class _DashboardContent extends StatelessWidget {
               ? modelResolver.labelFor(isolatedKey)
               : categorySeriesResolver.labelFor(isolatedKey))
         : null;
-    final chipLabel = [?isolatedLabel, ?ledgerFilterLabel].join(' · ');
-    final hasLedgerFilter = isolatedLabel != null || ledgerFilterLabel != null;
+    final scopeParts = [?isolatedLabel, ?ledgerFilterLabel];
+    final hasLedgerFilter = scopeParts.isNotEmpty;
+    // Prefix the scope with its true call count (from the buckets, so it is the
+    // full count, not the ledger's capped/visible slice) — the in-viewport
+    // "N calls in <scope>" confirmation the chart tap otherwise lacks.
+    final scopeCount = hasLedgerFilter
+        ? scopedCallCount(
+            buckets,
+            ledgerRange ?? range,
+            isModel: showModel,
+            seriesKey: canScopeSeries ? isolatedKey : null,
+          )
+        : 0;
+    final chipLabel = hasLedgerFilter
+        ? [
+            messages.aiImpactModelCallsLabel(formatCallCount(scopeCount)),
+            ...scopeParts,
+          ].join(' · ')
+        : '';
 
     final children = <Widget>[
       if (showStaleNotice) ...[
@@ -404,7 +433,7 @@ class _DashboardContent extends StatelessWidget {
           ),
         ),
         SizedBox(height: tokens.spacing.sectionGap),
-        ImpactKpiRow(totals: totals),
+        ImpactKpiRow(totals: totals, previousTotals: previousTotals),
         SizedBox(height: tokens.spacing.sectionGap),
         // Breakdown section: one dimension toggle drives both the chart and
         // its companion table, so category and model share one surface
@@ -435,6 +464,13 @@ class _DashboardContent extends StatelessWidget {
           onToggleSeries: onToggleSeries,
           onBucketSelected: onSelectBucket,
         ),
+        // The scope's confirmation + clear affordance sit right under the
+        // chart that creates them, so a tap on a long page isn't a
+        // disappears-below-the-fold action.
+        if (hasLedgerFilter) ...[
+          SizedBox(height: tokens.spacing.step4),
+          _LedgerFilterChip(label: chipLabel, onClear: onClearBucket),
+        ],
         SizedBox(height: tokens.spacing.sectionGap),
         if (showModel)
           ImpactModelTable(

@@ -1353,6 +1353,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactBreakdownModel => 'Podle modelu';
 
   @override
+  String get aiImpactCategoryTitle => 'Rozpad podle kategorií';
+
+  @override
   String get aiImpactChartHint =>
       'Klepni na sloupec pro volání · na sérii pro izolaci';
 
@@ -1388,6 +1391,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiImpactKpiCost => 'NÁKLADY';
+
+  @override
+  String aiImpactKpiDelta(String delta) {
+    return '$delta vs předchozí';
+  }
 
   @override
   String get aiImpactKpiEnergy => 'ENERGIE';

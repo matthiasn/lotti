@@ -189,7 +189,12 @@ The body is the single provider consumer; the children are dumb value widgets:
   and tokens need usage reporting — so it is the dependable lens for
   "favorite models over time". The KPI row shows all five totals (a
   responsive grid) plus a note that cost/energy/CO₂e are measured for cloud
-  models only; the metric toggle (a horizontally-scrolling segmented control,
+  models only. When the immediately-preceding period is inside the loaded
+  window (month/quarter views — a year-to-date view has no loaded prior year),
+  each tile also carries a period-over-period trend delta ("▲/▼ N% vs prev"),
+  computed from `impactTotalsInRange(buckets, previousPeriod(range, unit))` and
+  omitted per-metric when the prior value is zero. The metric toggle (a
+  horizontally-scrolling segmented control,
   so five labels never clip on a phone) picks the one the chart + table break
   down.
 - **Pure derivations** — `logic/impact_dashboard_data.dart` mirrors the
@@ -241,8 +246,11 @@ The body is the single provider consumer; the children are dumb value widgets:
     model/category.
   - *Drill*: tapping a bar highlights it (accent outline, siblings dimmed) and
     scopes the ledger to that bucket's days. Isolate + drill merge into one
-    clearable scope chip above the ledger; tapping the same target again, or
-    the chip, clears it. Any period change auto-clears both.
+    clearable scope chip that renders in **two** places — directly under the
+    chart (an in-viewport confirmation on a long page) and again above the
+    ledger it filters. The chip is prefixed with the true scoped call count
+    (`scopedCallCount`, e.g. "423 calls · claude-opus-4"). Tapping the same
+    target again, or the chip, clears it. Any period change auto-clears both.
   Truncated edge weeks are faded on-chart (except when isolating, so the single
   clean series keeps its hue).
 - **Category identity** — reuses `InsightsCategoryResolver` +

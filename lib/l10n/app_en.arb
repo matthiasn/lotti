@@ -834,6 +834,7 @@
   "aiImpactBreakdownCategory": "By category",
   "aiImpactBreakdownLabel": "Breakdown",
   "aiImpactBreakdownModel": "By model",
+  "aiImpactCategoryTitle": "Category breakdown",
   "aiImpactChartHint": "Tap a bar to scope calls · tap a series to isolate",
   "aiImpactChartShareCaption": "Composition over time",
   "aiImpactChartShareSegment": "Share",
@@ -858,6 +859,14 @@
   "aiImpactEmptyTitle": "No AI usage in this range",
   "aiImpactKpiCarbon": "CO₂E",
   "aiImpactKpiCost": "COST",
+  "aiImpactKpiDelta": "{delta} vs prev",
+  "@aiImpactKpiDelta": {
+    "placeholders": {
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
   "aiImpactKpiEnergy": "ENERGY",
   "aiImpactKpiRequests": "REQUESTS",
   "aiImpactKpiTokens": "TOKENS",

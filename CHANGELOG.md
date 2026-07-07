@@ -13,8 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   metric and per-model unit economics (calls and cost per million tokens) join
   the KPIs. The charts are interactive: **tap a series** (in the legend or a
   breakdown-table row) to isolate its trend, and **tap a bar** to scope the
-  "Recent calls" list to that period — both shown in a clearable chip. A note
-  makes clear that cost, energy and CO₂e are measured for cloud models only.
+  "Recent calls" list to that period — both shown in a clearable chip. On month
+  and shorter periods each KPI tile also shows how it moved versus the previous
+  period (e.g. "▲ 24% vs prev"). A note makes clear that cost, energy and CO₂e
+  are measured for cloud models only.
 - **Better AI Impact accounting for transcription.** The AI Impact dashboard
   now has a **Running total** chart mode for cumulative cost, energy, CO₂e and
   token usage over the selected period. Voxtral transcription records token

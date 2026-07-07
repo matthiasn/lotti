@@ -406,19 +406,20 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // The clearable drill chip appears above the ledger, labelled Jun 5.
-        expect(chip, findsOneWidget);
+        // The clearable drill chip appears in two places (under the chart and
+        // above the ledger), labelled Jun 5.
+        expect(chip, findsNWidgets(2));
         expect(find.textContaining('Jun 5'), findsWidgets);
         // Re-selecting the same bucket toggles the drill off.
         card.onBucketSelected!(DateTime(2026, 6, 5));
         await tester.pump();
         expect(chip, findsNothing);
 
-        // Select again, then clear via the chip's tap target.
+        // Select again, then clear via a chip's tap target.
         card.onBucketSelected!(DateTime(2026, 6, 5));
         await tester.pump();
-        expect(chip, findsOneWidget);
-        await tester.tap(chip);
+        expect(chip, findsNWidgets(2));
+        await tester.tap(chip.first);
         await tester.pump();
         expect(chip, findsNothing);
       });
@@ -445,7 +446,7 @@ void main() {
       await tester.pump();
 
       // The scope chip appears (its filter icon) labelled with the model.
-      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.filter_alt_outlined), findsNWidgets(2));
       expect(find.textContaining('glm-5.2'), findsWidgets);
     });
   });
@@ -462,7 +463,7 @@ void main() {
       );
       card.onBucketSelected!(DateTime(2026, 6, 5));
       await tester.pump();
-      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.filter_alt_outlined), findsNWidgets(2));
 
       final stepper = tester.widget<InsightsPeriodStepper>(
         find.byType(InsightsPeriodStepper),
@@ -486,7 +487,7 @@ void main() {
       );
       weeklyCard.onBucketSelected!(DateTime(2026, 3, 2));
       await tester.pump();
-      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.filter_alt_outlined), findsNWidgets(2));
     });
   });
 

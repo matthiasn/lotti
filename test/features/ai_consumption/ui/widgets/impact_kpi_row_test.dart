@@ -16,7 +16,11 @@ void main() {
     waterLiters: 0.1,
   );
 
-  Future<void> pumpRow(WidgetTester tester, {required Size surface}) async {
+  Future<void> pumpRow(
+    WidgetTester tester, {
+    required Size surface,
+    ConsumptionMetrics? previousTotals,
+  }) async {
     // The row's breakpoint reads real layout constraints, so the test view
     // itself must be resized — MediaQuery data alone doesn't constrain it.
     tester.view
@@ -26,7 +30,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       makeTestableWidget(
-        const ImpactKpiRow(totals: totals),
+        ImpactKpiRow(totals: totals, previousTotals: previousTotals),
         mediaQueryData: MediaQueryData(size: surface),
       ),
     );
@@ -83,5 +87,38 @@ void main() {
     expectAllFigures();
     // Narrow (<560): two-per-row → three equal-height rows (2 + 2 + 1).
     expect(find.byType(IntrinsicHeight), findsNWidgets(3));
+  });
+
+  testWidgets('shows a period-over-period delta when previous totals given', (
+    tester,
+  ) async {
+    // Current cost 1.23, previous 1.00 → +23%; energy 0.5 vs 1.0 → -50%.
+    await pumpRow(
+      tester,
+      surface: const Size(1280, 900),
+      previousTotals: const ConsumptionMetrics(
+        callCount: 5,
+        totalTokens: 12345,
+        credits: 1,
+        energyKwh: 1,
+      ),
+    );
+    expect(find.textContaining('▲ 23% vs prev'), findsOneWidget);
+    expect(find.textContaining('▼ 50% vs prev'), findsOneWidget);
+  });
+
+  testWidgets('omits the delta for metrics with no prior value', (
+    tester,
+  ) async {
+    // Previous carbon is 0 → its tile shows no delta.
+    await pumpRow(
+      tester,
+      surface: const Size(1280, 900),
+      previousTotals: const ConsumptionMetrics(credits: 1),
+    );
+    // Cost has a prior (+23%); carbon/tokens/requests do not.
+    expect(find.textContaining('▲ 23% vs prev'), findsOneWidget);
+    // Exactly one delta line (only cost had a prior value).
+    expect(find.textContaining('vs prev'), findsOneWidget);
   });
 }

@@ -269,6 +269,33 @@ double impactBucketTotal(ImpactChartData data, int index) {
   return total;
 }
 
+/// Number of calls inside the active isolate/drill scope over [range] (the
+/// drilled bucket's days, or the whole period). [seriesKey] restricts to one
+/// category/model (null = every series); [isModel] reads model cells rather
+/// than category cells. Powers the "N calls in scope" confirmation near the
+/// chart.
+int scopedCallCount(
+  ConsumptionDayBuckets buckets,
+  InsightsRange range, {
+  bool isModel = false,
+  String? seriesKey,
+}) {
+  final days = isModel ? buckets.modelDays : buckets.days;
+  var count = 0;
+  for (var day = range.startDay; day < range.endDayExclusive; day++) {
+    final cells = days[day];
+    if (cells == null) continue;
+    if (seriesKey != null) {
+      count += cells[seriesKey]?.callCount ?? 0;
+    } else {
+      for (final metrics in cells.values) {
+        count += metrics.callCount;
+      }
+    }
+  }
+  return count;
+}
+
 /// Per-bucket normalized shares (0..1) of [values]: each bucket's series
 /// values divided by that bucket's total, so every non-empty bucket sums to
 /// 1. Buckets whose total is zero stay all-zero (no divide-by-zero), which

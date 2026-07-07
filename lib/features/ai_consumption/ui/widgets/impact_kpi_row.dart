@@ -19,10 +19,28 @@ const double _kThreeAcrossMinWidth = 560;
 /// regardless of which one the chart/table toggle selects, followed by a
 /// subtle note that cost/energy/CO₂e are measured for cloud models only.
 class ImpactKpiRow extends StatelessWidget {
-  const ImpactKpiRow({required this.totals, super.key});
+  const ImpactKpiRow({required this.totals, this.previousTotals, super.key});
 
   /// Field-wise consumption totals across the selected period.
   final ConsumptionMetrics totals;
+
+  /// Totals for the previous equal-length period, when it is in the loaded
+  /// window (e.g. last month for a month view). Drives the per-tile trend
+  /// delta; null when there is no comparable prior period to show.
+  final ConsumptionMetrics? previousTotals;
+
+  /// A signed "▲/▼ N%" trend versus [previousTotals] for [metric], or null
+  /// when there is no prior value to compare against.
+  String? _delta(ConsumptionMetric metric) {
+    final prev = previousTotals;
+    if (prev == null) return null;
+    final before = metric.valueOf(prev);
+    if (before <= 0) return null;
+    final now = metric.valueOf(totals);
+    final pct = ((now - before) / before * 100).round();
+    if (pct == 0) return '– 0%';
+    return pct > 0 ? '▲ $pct%' : '▼ ${-pct}%';
+  }
 
   String _label(AppLocalizations messages, ConsumptionMetric metric) =>
       switch (metric) {
@@ -41,6 +59,7 @@ class ImpactKpiRow extends StatelessWidget {
     Widget tile(ConsumptionMetric metric) => _ImpactKpiTile(
       label: _label(messages, metric),
       figure: metric.formatValue(metric.valueOf(totals)),
+      delta: _delta(metric),
     );
 
     // A grid of equal-width tiles, [columns] per row, with empty flex slots
@@ -102,12 +121,14 @@ class ImpactKpiRow extends StatelessWidget {
   }
 }
 
-/// One quiet bordered KPI tile: eyebrow label over the formatted figure.
+/// One quiet bordered KPI tile: eyebrow label, the formatted figure, and an
+/// optional trend delta versus the previous period.
 class _ImpactKpiTile extends StatelessWidget {
-  const _ImpactKpiTile({required this.label, required this.figure});
+  const _ImpactKpiTile({required this.label, required this.figure, this.delta});
 
   final String label;
   final String figure;
+  final String? delta;
 
   @override
   Widget build(BuildContext context) {
@@ -141,6 +162,17 @@ class _ImpactKpiTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+            if (delta != null) ...[
+              SizedBox(height: tokens.spacing.step1),
+              Text(
+                context.messages.aiImpactKpiDelta(delta!),
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ],
         ),
       ),

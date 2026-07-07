@@ -1366,6 +1366,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiImpactBreakdownModel => 'După model';
 
   @override
+  String get aiImpactCategoryTitle => 'Defalcare pe categorii';
+
+  @override
   String get aiImpactChartHint =>
       'Atingeți o bară pentru apeluri · o serie pentru a o izola';
 
@@ -1401,6 +1404,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiImpactKpiCost => 'COST';
+
+  @override
+  String aiImpactKpiDelta(String delta) {
+    return '$delta față de anterior';
+  }
 
   @override
   String get aiImpactKpiEnergy => 'ENERGIE';

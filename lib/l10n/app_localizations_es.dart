@@ -1358,6 +1358,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiImpactBreakdownModel => 'Por modelo';
 
   @override
+  String get aiImpactCategoryTitle => 'Desglose por categoría';
+
+  @override
   String get aiImpactChartHint =>
       'Toca una barra para ver llamadas · una serie para aislarla';
 
@@ -1393,6 +1396,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiImpactKpiCost => 'COSTE';
+
+  @override
+  String aiImpactKpiDelta(String delta) {
+    return '$delta vs anterior';
+  }
 
   @override
   String get aiImpactKpiEnergy => 'ENERGÍA';

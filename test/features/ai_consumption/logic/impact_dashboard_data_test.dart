@@ -457,6 +457,34 @@ void main() {
     });
   });
 
+  group('scopedCallCount', () {
+    test('counts every series, or one series, over the range', () {
+      // day0: cat-a (1 call) + null (1 call); day0+2: cat-b (1 call).
+      expect(scopedCallCount(buckets, range3), 3);
+      expect(scopedCallCount(buckets, range3, seriesKey: 'cat-a'), 1);
+      expect(scopedCallCount(buckets, range3, seriesKey: 'missing'), 0);
+    });
+
+    test('reads model cells when isModel is set', () {
+      final modelBuckets = ConsumptionDayBuckets(
+        windowStartDay: day0,
+        days: const {},
+        modelDays: {
+          day0: {'glm-5.2': m(callCount: 4)},
+        },
+      );
+      expect(
+        scopedCallCount(
+          modelBuckets,
+          range3,
+          isModel: true,
+          seriesKey: 'glm-5.2',
+        ),
+        4,
+      );
+    });
+  });
+
   group('impactNiceCeiling', () {
     test('snaps to the 1/2/5 decade ladder', () {
       expect(impactNiceCeiling(0), 1.0);

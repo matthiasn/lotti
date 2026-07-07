@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/impact_table_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/insights/logic/chart_colors.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart'
     show formatShare;
-import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Exhaustive per-category breakdown of the selected metric: swatch ·
@@ -56,16 +55,6 @@ class ImpactRankedTable extends StatelessWidget {
     final total = entries.fold<double>(0, (sum, e) => sum + e.value);
     final isolatingHere =
         isolatedKey != null && entries.any((e) => e.key == isolatedKey);
-    final headerStyle = calmEyebrowStyle(
-      tokens,
-      color: tokens.colors.text.mediumEmphasis,
-    );
-    final numberStyle = monoMetaStyle(
-      tokens,
-      tokens.colors,
-      base: tokens.typography.styles.body.bodySmall,
-      color: tokens.colors.text.highEmphasis,
-    );
 
     // Interactive rows carry a low-emphasis chevron so they read as tappable
     // at rest; the header reserves the same width to keep columns aligned.
@@ -91,93 +80,80 @@ class ImpactRankedTable extends StatelessWidget {
         final showShare = constraints.maxWidth >= 280;
         final showValue = constraints.maxWidth >= 180;
 
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: insightsCardSurface(context),
-            borderRadius: BorderRadius.circular(tokens.radii.m),
-            border: Border.all(color: tokens.colors.decorative.level01),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.cardPadding,
-              vertical: tokens.spacing.step3,
+        return ImpactTableCard(
+          title: messages.aiImpactCategoryTitle,
+          childrenBuilder: (context, headerStyle, numberStyle) => [
+            _ImpactTableRowLayout(
+              showValue: showValue,
+              showShare: showShare,
+              trailing: headerTrailing(),
+              category: Text(
+                messages.insightsTableCategory,
+                style: headerStyle,
+              ),
+              value: Text(
+                messages.insightsTableTotal,
+                style: headerStyle,
+                textAlign: TextAlign.right,
+              ),
+              share: Text(
+                messages.insightsTableShare,
+                style: headerStyle,
+                textAlign: TextAlign.right,
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ImpactTableRowLayout(
+            Divider(height: 1, color: tokens.colors.decorative.level01),
+            for (final entry in entries)
+              _isolatableRow(
+                onTap: onToggleSeries == null
+                    ? null
+                    : () => onToggleSeries!(entry.key),
+                dimmed: isolatingHere && entry.key != isolatedKey,
+                child: _ImpactTableRowLayout(
                   showValue: showValue,
                   showShare: showShare,
-                  trailing: headerTrailing(),
-                  category: Text(
-                    messages.insightsTableCategory,
-                    style: headerStyle,
+                  trailing: rowChevron(),
+                  category: Row(
+                    children: [
+                      Container(
+                        width: tokens.spacing.step3,
+                        height: tokens.spacing.step3,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: swatchColorFor(
+                            resolver.colorHexFor(entry.key),
+                            brightness,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: tokens.spacing.step3),
+                      Expanded(
+                        child: Text(
+                          resolver.labelFor(entry.key),
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                   value: Text(
-                    messages.insightsTableTotal,
-                    style: headerStyle,
+                    metric.formatValue(entry.value),
+                    style: numberStyle,
                     textAlign: TextAlign.right,
                   ),
                   share: Text(
-                    messages.insightsTableShare,
-                    style: headerStyle,
+                    formatShare(total > 0 ? entry.value / total : 0),
+                    style: numberStyle.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
                     textAlign: TextAlign.right,
                   ),
                 ),
-                Divider(height: 1, color: tokens.colors.decorative.level01),
-                for (final entry in entries)
-                  _isolatableRow(
-                    onTap: onToggleSeries == null
-                        ? null
-                        : () => onToggleSeries!(entry.key),
-                    dimmed: isolatingHere && entry.key != isolatedKey,
-                    child: _ImpactTableRowLayout(
-                      showValue: showValue,
-                      showShare: showShare,
-                      trailing: rowChevron(),
-                      category: Row(
-                        children: [
-                          Container(
-                            width: tokens.spacing.step3,
-                            height: tokens.spacing.step3,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: swatchColorFor(
-                                resolver.colorHexFor(entry.key),
-                                brightness,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: tokens.spacing.step3),
-                          Expanded(
-                            child: Text(
-                              resolver.labelFor(entry.key),
-                              style: tokens.typography.styles.body.bodySmall
-                                  .copyWith(
-                                    color: tokens.colors.text.highEmphasis,
-                                  ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      value: Text(
-                        metric.formatValue(entry.value),
-                        style: numberStyle,
-                        textAlign: TextAlign.right,
-                      ),
-                      share: Text(
-                        formatShare(total > 0 ? entry.value / total : 0),
-                        style: numberStyle.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+              ),
+          ],
         );
       },
     );
