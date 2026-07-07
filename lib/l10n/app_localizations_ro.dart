@@ -1357,9 +1357,31 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alegeți un model pentru generarea imaginilor';
 
   @override
+  String get aiImpactCategoryTitle => 'Defalcare pe categorii';
+
+  @override
+  String get aiImpactChartHint =>
+      'Atingeți o bară pentru apeluri · o serie pentru a o izola';
+
+  @override
+  String get aiImpactChartShareCaption => 'Compoziția în timp';
+
+  @override
+  String get aiImpactChartShareSegment => 'Pondere';
+
+  @override
   String aiImpactChartTitle(String metric) {
     return '$metric pe categorii';
   }
+
+  @override
+  String aiImpactChartTitleModel(String metric) {
+    return '$metric după model';
+  }
+
+  @override
+  String get aiImpactCoverageNote =>
+      'Energia, CO₂e și costul sunt măsurate doar pentru modelele din cloud.';
 
   @override
   String get aiImpactEmptyBody =>
@@ -1375,10 +1397,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiImpactKpiCost => 'COST';
 
   @override
+  String aiImpactKpiDeltaBaseline(String period) {
+    return 'față de $period';
+  }
+
+  @override
   String get aiImpactKpiEnergy => 'ENERGIE';
 
   @override
+  String get aiImpactKpiRequests => 'CERERI';
+
+  @override
   String get aiImpactKpiTokens => 'TOKENURI';
+
+  @override
+  String get aiImpactLedgerClearFilter => 'Arată tot';
 
   @override
   String get aiImpactLoadError =>
@@ -1403,10 +1436,33 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiImpactMetricEnergy => 'Energie';
 
   @override
+  String get aiImpactMetricRequests => 'Cereri';
+
+  @override
   String get aiImpactMetricTokens => 'Tokenuri';
 
   @override
+  String aiImpactModelCallsLabel(String count) {
+    return '$count apeluri';
+  }
+
+  @override
   String get aiImpactModelColumn => 'MODEL';
+
+  @override
+  String get aiImpactModelCostHeavy => 'cost ridicat';
+
+  @override
+  String get aiImpactModelCoverageNote =>
+      'Modelele locale sunt excluse din acest grafic.';
+
+  @override
+  String get aiImpactModelOther => 'Alte modele';
+
+  @override
+  String aiImpactModelRatePerMillion(String cost) {
+    return '$cost/1M tokeni';
+  }
 
   @override
   String get aiImpactModelTitle => 'Defalcare pe model';

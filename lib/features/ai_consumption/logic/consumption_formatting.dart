@@ -70,3 +70,6 @@ String formatWaterLiters(double liters) {
 
 /// Formats a token count compactly: `950`, `12.3K`, `4.5M`.
 String formatTokenCount(int tokens) => _compact.format(tokens);
+
+/// Formats a call/request count compactly: `7`, `950`, `12.3K`.
+String formatCallCount(int calls) => _compact.format(calls);

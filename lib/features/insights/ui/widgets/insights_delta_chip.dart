@@ -10,6 +10,20 @@ int? insightsDeltaPercent(int current, int previous) {
   return ((current - previous) / previous * 100).round();
 }
 
+/// Whether a rising value is good, bad, or neither — which decides the accent
+/// colour a [InsightsDeltaChip] paints the change (the arrow/sign always show
+/// the true direction regardless).
+enum InsightsTrendValence {
+  /// More is better (activity/output): up reads green, down reads clay.
+  moreIsBetter,
+
+  /// More is worse (cost, energy, carbon): up reads clay, down reads green.
+  lessIsBetter,
+
+  /// Direction carries no good/bad meaning (tokens, requests): never coloured.
+  neutral,
+}
+
 /// Current-vs-previous change indicator. Direction is encoded three ways so it
 /// never depends on color alone (color-blind / low-vision / grayscale safe):
 /// a leading arrow glyph, a +/- sign, AND a muted green-up / clay-down accent
@@ -22,6 +36,7 @@ class InsightsDeltaChip extends StatelessWidget {
     required this.current,
     required this.previous,
     this.prominent = false,
+    this.valence = InsightsTrendValence.moreIsBetter,
     super.key,
   });
 
@@ -30,6 +45,11 @@ class InsightsDeltaChip extends StatelessWidget {
 
   /// Larger type for the headline KPI use; the table keeps the compact size.
   final bool prominent;
+
+  /// Whether rising is good/bad/neither — flips or drops the accent colour
+  /// while the arrow + sign keep showing the true direction. Defaults to
+  /// [InsightsTrendValence.moreIsBetter] (the counts-are-good Insights case).
+  final InsightsTrendValence valence;
 
   @override
   Widget build(BuildContext context) {
@@ -46,12 +66,25 @@ class InsightsDeltaChip extends StatelessWidget {
     // darker green in light, the more saturated green in dark. Direction never
     // rides on color alone regardless (the arrow glyph and +/- sign remain).
     final light = Theme.of(context).brightness == Brightness.light;
-    final up = light
+    final good = light
         ? tokens.colors.alert.success.pressed
         : tokens.colors.alert.success.hover;
-    final down = light
+    final bad = light
         ? tokens.colors.alert.error.pressed
         : tokens.colors.alert.error.hover;
+    // Map the true direction to an accent through the valence: an increase is
+    // "good" only when more is better; when more is worse (cost/energy/carbon)
+    // an increase reads clay; a value-free metric stays neutral either way.
+    final up = switch (valence) {
+      InsightsTrendValence.moreIsBetter => good,
+      InsightsTrendValence.lessIsBetter => bad,
+      InsightsTrendValence.neutral => neutral,
+    };
+    final down = switch (valence) {
+      InsightsTrendValence.moreIsBetter => bad,
+      InsightsTrendValence.lessIsBetter => good,
+      InsightsTrendValence.neutral => neutral,
+    };
     // Raw (unrounded) change drives the dead-band; the rounded value is what we
     // show. previous == 0 → no baseline to divide by.
     final raw = previous == 0 ? null : (current - previous) / previous * 100;

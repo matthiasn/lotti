@@ -1,11 +1,13 @@
 import 'package:clock/clock.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_chart_card.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart'
     show epochDay;
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -60,14 +62,16 @@ void main() {
     required ImpactChartData chartData,
     ConsumptionMetric metric = ConsumptionMetric.cost,
     DateTime? now,
+    ValueChanged<DateTime>? onBucketSelected,
   }) async {
     await withClock(Clock.fixed(now ?? fixedNow), () async {
       await tester.pumpWidget(
         makeTestableWidget(
           ImpactChartCard(
             chartData: chartData,
-            resolver: resolver,
+            resolver: CategorySeriesResolver(resolver),
             metric: metric,
+            onBucketSelected: onBucketSelected,
           ),
           mediaQueryData: const MediaQueryData(size: Size(900, 700)),
         ),
@@ -147,6 +151,80 @@ void main() {
     expect(rows, contains('Research  €1.00'));
     expect(rows.indexOf('Agents'), lessThan(rows.indexOf('Research')));
   });
+
+  testWidgets(
+    'tapping a bar reports its bucket start and the interaction hint shows',
+    (tester) async {
+      DateTime? tapped;
+      final chartData = buildImpactChartData(
+        bucketsWith({
+          for (var d = 0; d < 7; d++) d: {'cat-a': 2.0},
+        }),
+        range,
+        ConsumptionMetric.cost,
+      );
+      await pumpCard(
+        tester,
+        chartData: chartData,
+        onBucketSelected: (d) => tapped = d,
+      );
+
+      // The resting hint is present because the chart is interactive.
+      expect(find.textContaining('Tap a bar to scope calls'), findsOneWidget);
+
+      // Invoke the bar touch callback directly (fl_chart hit-testing is flaky
+      // in widget tests) with a tap-up on bucket 0.
+      final chart = tester.widget<BarChart>(find.byType(BarChart));
+      final group = chart.data.barGroups.first;
+      chart.data.barTouchData.touchCallback!(
+        FlTapUpEvent(TapUpDetails(kind: PointerDeviceKind.touch)),
+        BarTouchResponse(
+          touchLocation: Offset.zero,
+          touchChartCoordinate: Offset.zero,
+          spot: BarTouchedSpot(
+            group,
+            0,
+            group.barRods.first,
+            0,
+            null,
+            -1,
+            const FlSpot(0, 2),
+            Offset.zero,
+          ),
+        ),
+      );
+      await tester.pump();
+      // The card maps the bucket index back to its start time.
+      expect(tapped, isNotNull);
+    },
+  );
+
+  testWidgets(
+    'share mode renders a normalized 0–100% stacked area (not bars)',
+    (tester) async {
+      final chartData = buildImpactChartData(
+        bucketsWith({
+          0: {'cat-a': 2.0, 'cat-b': 1.0},
+          2: {'cat-a': 1.0},
+        }),
+        range,
+        ConsumptionMetric.cost,
+      );
+      await pumpCard(tester, chartData: chartData);
+
+      await tester.tap(toggle('Share'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      // The mix-over-time view is a smooth stacked area, not 100% bars.
+      expect(find.byType(LineChart), findsOneWidget);
+      expect(find.byType(BarChart), findsNothing);
+      expect(find.text('Composition over time'), findsOneWidget);
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      // Axis is a 0–100% scale; the top band reaches 1.0.
+      expect(chart.data.maxY, 1.0);
+    },
+  );
 
   testWidgets(
     'cumulative chart keeps a positive axis when elapsed totals are zero',

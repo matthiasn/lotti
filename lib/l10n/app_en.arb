@@ -831,6 +831,10 @@
   "aiImageAnalysisPickerDefaultBadge": "Default",
   "aiImageAnalysisPickerTitle": "Pick an image analysis model",
   "aiImageGenerationPickerTitle": "Pick an image generation model",
+  "aiImpactCategoryTitle": "Category breakdown",
+  "aiImpactChartHint": "Tap a bar to scope calls · tap a series to isolate",
+  "aiImpactChartShareCaption": "Composition over time",
+  "aiImpactChartShareSegment": "Share",
   "aiImpactChartTitle": "{metric} by category",
   "@aiImpactChartTitle": {
     "placeholders": {
@@ -839,12 +843,31 @@
       }
     }
   },
+  "aiImpactChartTitleModel": "{metric} by model",
+  "@aiImpactChartTitleModel": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "aiImpactCoverageNote": "Energy, CO₂e and cost are measured for cloud models only.",
   "aiImpactEmptyBody": "AI calls from your tasks and agents will show up here.",
   "aiImpactEmptyTitle": "No AI usage in this range",
   "aiImpactKpiCarbon": "CO₂E",
   "aiImpactKpiCost": "COST",
+  "aiImpactKpiDeltaBaseline": "vs {period}",
+  "@aiImpactKpiDeltaBaseline": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
   "aiImpactKpiEnergy": "ENERGY",
+  "aiImpactKpiRequests": "REQUESTS",
   "aiImpactKpiTokens": "TOKENS",
+  "aiImpactLedgerClearFilter": "Show all",
   "aiImpactLoadError": "Couldn't load AI impact data",
   "aiImpactLocationColumn": "LOCATION",
   "aiImpactLocationTitle": "Impact by location",
@@ -852,8 +875,28 @@
   "aiImpactMetricCarbon": "CO₂e",
   "aiImpactMetricCost": "Cost",
   "aiImpactMetricEnergy": "Energy",
+  "aiImpactMetricRequests": "Requests",
   "aiImpactMetricTokens": "Tokens",
+  "aiImpactModelCallsLabel": "{count} calls",
+  "@aiImpactModelCallsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "aiImpactModelColumn": "MODEL",
+  "aiImpactModelCostHeavy": "cost-heavy",
+  "aiImpactModelCoverageNote": "Local models are excluded from this chart.",
+  "aiImpactModelOther": "Other models",
+  "aiImpactModelRatePerMillion": "{cost}/1M tok",
+  "@aiImpactModelRatePerMillion": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
   "aiImpactModelTitle": "Model breakdown",
   "aiImpactModelUnknown": "Unknown model",
   "aiImpactRenewableColumn": "RENEWABLE",

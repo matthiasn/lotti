@@ -352,6 +352,28 @@ void main() {
       expect(data.values.last[0], 3.0);
     });
 
+    test('promotes a lone leftover series instead of an anonymous Other', () {
+      // Exactly cap + 1 series: folding one into "Other" would anonymize it
+      // (e.g. a late-surging model), so it is shown by name instead.
+      final justOverCap = ConsumptionDayBuckets(
+        windowStartDay: day0,
+        days: {
+          day0: {
+            for (var c = 1; c <= kInsightsMaxChartSeries + 1; c++)
+              'cat-$c': m(credits: c.toDouble()),
+          },
+        },
+      );
+      final data = buildImpactChartData(
+        justOverCap,
+        InsightsRange(startDay: day0, endDayExclusive: day0 + 7),
+        ConsumptionMetric.cost,
+      );
+      expect(data.rolledUpCount, 0);
+      expect(data.seriesKeys, isNot(contains(kInsightsOtherCategoryKey)));
+      expect(data.seriesKeys, hasLength(kInsightsMaxChartSeries + 1));
+    });
+
     test('long ranges aggregate to calendar weeks with partial-edge flags', () {
       // Starts on a Thursday, 140 days → weekly granularity, first week
       // truncated.
@@ -399,6 +421,70 @@ void main() {
     });
   });
 
+  group('shareValues', () {
+    test('normalizes each bucket to sum to 1, series shape preserved', () {
+      final shares = shareValues([
+        [2, 1],
+        [1, 3],
+      ]);
+      // Bucket 0 total 3 → 2/3, 1/3; bucket 1 total 4 → 1/4, 3/4.
+      expect(shares[0][0], closeTo(2 / 3, 1e-12));
+      expect(shares[1][0], closeTo(1 / 3, 1e-12));
+      expect(shares[0][1], closeTo(1 / 4, 1e-12));
+      expect(shares[1][1], closeTo(3 / 4, 1e-12));
+      // Every non-empty bucket sums to exactly 1 across series.
+      for (var b = 0; b < 2; b++) {
+        expect(
+          shares.fold<double>(0, (s, row) => s + row[b]),
+          closeTo(1, 1e-12),
+        );
+      }
+    });
+
+    test('a zero-total bucket stays all-zero instead of dividing by zero', () {
+      final shares = shareValues([
+        [0, 2],
+        [0, 3],
+      ]);
+      expect(shares[0][0], 0);
+      expect(shares[1][0], 0);
+      expect(shares[0][1], closeTo(2 / 5, 1e-12));
+      expect(shares[1][1], closeTo(3 / 5, 1e-12));
+    });
+
+    test('empty input yields empty output', () {
+      expect(shareValues(const []), isEmpty);
+    });
+  });
+
+  group('scopedCallCount', () {
+    test('counts every series, or one series, over the range', () {
+      // day0: cat-a (1 call) + null (1 call); day0+2: cat-b (1 call).
+      expect(scopedCallCount(buckets, range3), 3);
+      expect(scopedCallCount(buckets, range3, seriesKey: 'cat-a'), 1);
+      expect(scopedCallCount(buckets, range3, seriesKey: 'missing'), 0);
+    });
+
+    test('reads model cells when isModel is set', () {
+      final modelBuckets = ConsumptionDayBuckets(
+        windowStartDay: day0,
+        days: const {},
+        modelDays: {
+          day0: {'glm-5.2': m(callCount: 4)},
+        },
+      );
+      expect(
+        scopedCallCount(
+          modelBuckets,
+          range3,
+          isModel: true,
+          seriesKey: 'glm-5.2',
+        ),
+        4,
+      );
+    });
+  });
+
   group('impactNiceCeiling', () {
     test('snaps to the 1/2/5 decade ladder', () {
       expect(impactNiceCeiling(0), 1.0);
@@ -419,6 +505,41 @@ void main() {
       expect(impactNiceCeiling(2.0000000000000004), 2.0);
       expect(impactNiceCeiling(5.000000000000001), 5.0);
       expect(impactNiceCeiling(0.30000000000000004), 0.5);
+    });
+  });
+
+  group('impactNiceInterval', () {
+    test('divides a nice ceiling into round-number ticks', () {
+      // 5× ceiling → step 1× (5 ticks): 0.1/0.2/0.3/0.4/0.5, 10…50, 100…500.
+      expect(impactNiceInterval(0.5), closeTo(0.1, 1e-12));
+      expect(impactNiceInterval(50), closeTo(10, 1e-12));
+      expect(impactNiceInterval(500), closeTo(100, 1e-9));
+      // 2× ceiling → step 0.5× (4 ticks): 5/10/15/20, 0.5/1/1.5/2.
+      expect(impactNiceInterval(20), closeTo(5, 1e-12));
+      expect(impactNiceInterval(2), closeTo(0.5, 1e-12));
+      // 1× ceiling → step 0.2× (5 ticks): 0.2…1.0, 200…1000.
+      expect(impactNiceInterval(1), closeTo(0.2, 1e-12));
+      expect(impactNiceInterval(1000), closeTo(200, 1e-9));
+      // Non-positive ceiling still yields a drawable step.
+      expect(impactNiceInterval(0), 1.0);
+      expect(impactNiceInterval(-3), 1.0);
+    });
+  });
+
+  group('largestRemainderPercents', () {
+    test('apportions displayed shares to sum to exactly 100', () {
+      // Clean thirds/halves land on the floors with no leftover to hand out.
+      expect(largestRemainderPercents([0.3, 0.15, 0.15]), [50, 25, 25]);
+      // 37.8/30.8/25.7/5.7 would independently round to 38+31+26+6 = 101;
+      // Hamilton keeps the sum at 100 by denying the smallest remainder.
+      final p = largestRemainderPercents([5.58, 4.54, 3.80, 0.84]);
+      expect(p.reduce((a, b) => a + b), 100);
+      expect(p, [38, 31, 26, 5]);
+    });
+
+    test('is all-zero for a non-positive or empty total', () {
+      expect(largestRemainderPercents([0, 0, 0]), [0, 0, 0]);
+      expect(largestRemainderPercents(<double>[]), <int>[]);
     });
   });
 
@@ -503,6 +624,41 @@ void main() {
       // input when the input itself carries accumulation error.
       expect(ceiling * (1 + 1e-9), greaterThanOrEqualTo(value));
       expect(ceiling, lessThanOrEqualTo(10 * value));
+    },
+    tags: 'glados',
+  );
+
+  glados.Glados<int>(glados.any.intInRange(1, 10000000)).test(
+    'nice interval divides its ceiling into 4 or 5 round ticks',
+    (raw) {
+      final ceiling = impactNiceCeiling(raw / 100);
+      final interval = impactNiceInterval(ceiling);
+      final ticks = ceiling / interval;
+      // The step evenly divides the ceiling…
+      expect(ticks, closeTo(ticks.roundToDouble(), 1e-6));
+      // …into a legible 4 or 5 gridlines, never the awkward 12.5-style step.
+      expect(ticks.round(), anyOf(4, 5));
+    },
+    tags: 'glados',
+  );
+
+  glados.Glados<List<int>>(
+    glados.any.list(glados.any.intInRange(0, 1000)),
+  ).test(
+    'apportioned integer shares sum to 100 for any positive total',
+    (weights) {
+      final values = [for (final w in weights) w.toDouble()];
+      final percents = largestRemainderPercents(values);
+      expect(percents, hasLength(values.length));
+      for (final p in percents) {
+        expect(p, greaterThanOrEqualTo(0));
+        expect(p, lessThanOrEqualTo(100));
+      }
+      if (values.fold<double>(0, (a, b) => a + b) > 0) {
+        expect(percents.fold<int>(0, (a, b) => a + b), 100);
+      } else {
+        expect(percents.every((p) => p == 0), isTrue);
+      }
     },
     tags: 'glados',
   );

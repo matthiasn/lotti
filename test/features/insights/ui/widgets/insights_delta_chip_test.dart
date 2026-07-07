@@ -26,10 +26,15 @@ void main() {
       required int current,
       required int previous,
       ThemeData? theme,
+      InsightsTrendValence valence = InsightsTrendValence.moreIsBetter,
     }) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          InsightsDeltaChip(current: current, previous: previous),
+          InsightsDeltaChip(
+            current: current,
+            previous: previous,
+            valence: valence,
+          ),
           theme: theme,
         ),
       );
@@ -133,6 +138,58 @@ void main() {
         find.byIcon(Icons.arrow_downward_rounded),
       );
       expect(darkIcon.color, dsTokensDark.colors.alert.error.hover);
+    });
+
+    // Valence flips the accent while keeping the arrow + sign truthful: for a
+    // cost/energy/carbon metric (lessIsBetter) a rise is bad, so an up arrow
+    // reads clay (error), not green.
+    testWidgets('lessIsBetter paints a rise clay and a fall green', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        current: 118,
+        previous: 100,
+        valence: InsightsTrendValence.lessIsBetter,
+        theme: ThemeData.light(useMaterial3: true),
+      );
+      expect(find.text('+18%'), findsOneWidget); // direction still up
+      final upIcon = tester.widget<Icon>(
+        find.byIcon(Icons.arrow_upward_rounded),
+      );
+      expect(upIcon.color, dsTokensLight.colors.alert.error.pressed);
+
+      await pump(
+        tester,
+        current: 88,
+        previous: 100,
+        valence: InsightsTrendValence.lessIsBetter,
+        theme: ThemeData.light(useMaterial3: true),
+      );
+      final downIcon = tester.widget<Icon>(
+        find.byIcon(Icons.arrow_downward_rounded),
+      );
+      expect(downIcon.color, dsTokensLight.colors.alert.success.pressed);
+    });
+
+    testWidgets('neutral valence keeps the arrow but drops the accent', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        current: 118,
+        previous: 100,
+        valence: InsightsTrendValence.neutral,
+        theme: ThemeData.light(useMaterial3: true),
+      );
+      expect(find.text('+18%'), findsOneWidget);
+      final icon = tester.widget<Icon>(
+        find.byIcon(Icons.arrow_upward_rounded),
+      );
+      // The medium-emphasis neutral text colour — neither green nor clay.
+      expect(icon.color, dsTokensLight.colors.text.mediumEmphasis);
+      expect(icon.color, isNot(dsTokensLight.colors.alert.success.pressed));
+      expect(icon.color, isNot(dsTokensLight.colors.alert.error.pressed));
     });
   });
 }

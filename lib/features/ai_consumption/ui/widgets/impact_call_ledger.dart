@@ -20,14 +20,37 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// covers that); shows an explicit "newest N" caption when the page is at the
 /// [kConsumptionLedgerLimit] cap, so truncation is never silent.
 class ImpactCallLedger extends ConsumerWidget {
-  const ImpactCallLedger({required this.range, super.key});
+  const ImpactCallLedger({
+    required this.range,
+    this.modelFilter,
+    this.categoryFilter,
+    super.key,
+  });
 
   final InsightsRange range;
 
+  /// When set, keep only calls made with this provider/model id — the ledger
+  /// follows an isolated model so "which calls drove this" is answerable.
+  final String? modelFilter;
+
+  /// When set, keep only calls attributed to this category id.
+  final String? categoryFilter;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final events = ref.watch(consumptionLedgerProvider(range)).value;
-    if (events == null || events.isEmpty) {
+    final all = ref.watch(consumptionLedgerProvider(range)).value;
+    if (all == null) return const SizedBox.shrink();
+    final events = all.where((e) {
+      if (modelFilter != null &&
+          (e.providerModelId ?? e.modelId) != modelFilter) {
+        return false;
+      }
+      if (categoryFilter != null && e.categoryId != categoryFilter) {
+        return false;
+      }
+      return true;
+    }).toList();
+    if (events.isEmpty) {
       return const SizedBox.shrink();
     }
     final tokens = context.designTokens;
@@ -52,7 +75,10 @@ class ImpactCallLedger extends ConsumerWidget {
             ),
             SizedBox(height: tokens.spacing.cardItemSpacing),
             for (final event in events) _LedgerRow(event: event),
-            if (events.length >= kConsumptionLedgerLimit) ...[
+            // Gate the truncation notice on the unfiltered fetch: a series
+            // filter shrinks `events` but the cap was applied to `all`, so a
+            // capped-then-filtered list must still disclose the truncation.
+            if (all.length >= kConsumptionLedgerLimit) ...[
               SizedBox(height: tokens.spacing.cardItemSpacing),
               Text(
                 messages.aiConsumptionLedgerCap(kConsumptionLedgerLimit),
@@ -67,6 +93,10 @@ class ImpactCallLedger extends ConsumerWidget {
     );
   }
 }
+
+/// Below this row width the trailing metric string would squeeze the model
+/// name into an ellipsis, so the row stacks instead (model on its own line).
+const double _kLedgerStackedMaxWidth = 480;
 
 /// One call: type icon · model + type/time line · trailing metrics.
 class _LedgerRow extends StatelessWidget {
@@ -129,45 +159,81 @@ class _LedgerRow extends StatelessWidget {
     ).add_Hm().format(event.createdAt.toLocal());
     final model = event.providerModelId ?? event.modelId ?? '—';
 
+    final modelText = Text(
+      model,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: tokens.typography.styles.body.bodySmall.copyWith(
+        color: tokens.colors.text.highEmphasis,
+      ),
+    );
+    final subtitleText = Text(
+      '${_typeLabel(context)} · $time',
+      style: tokens.typography.styles.others.caption.copyWith(
+        color: tokens.colors.text.lowEmphasis,
+      ),
+    );
+    final metricsText = Text(
+      _metrics(context),
+      style: tokens.typography.styles.body.bodySmall.copyWith(
+        color: tokens.colors.text.mediumEmphasis,
+      ),
+    );
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-      child: Row(
-        children: [
-          Icon(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final icon = Icon(
             _icon,
             size: tokens.spacing.step5,
             color: tokens.colors.text.mediumEmphasis,
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          Expanded(
-            child: Column(
+          );
+
+          // Narrow: the model version owns the first line at full width, with
+          // the type/time subtitle and the metric string on the line below —
+          // so the identifying field is never the one that truncates.
+          if (constraints.maxWidth < _kLedgerStackedMaxWidth) {
+            return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  model,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                Text(
-                  '${_typeLabel(context)} · $time',
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
+                icon,
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      modelText,
+                      SizedBox(height: tokens.spacing.step1),
+                      subtitleText,
+                      SizedBox(height: tokens.spacing.step1),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: metricsText,
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          Text(
-            _metrics(context),
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-        ],
+            );
+          }
+
+          // Wide: model + subtitle on the left, metric string trailing right.
+          return Row(
+            children: [
+              icon,
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [modelText, subtitleText],
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              metricsText,
+            ],
+          );
+        },
       ),
     );
   }

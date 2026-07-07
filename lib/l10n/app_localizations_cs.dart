@@ -1344,9 +1344,31 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyber model pro generování obrázků';
 
   @override
+  String get aiImpactCategoryTitle => 'Rozpad podle kategorií';
+
+  @override
+  String get aiImpactChartHint =>
+      'Klepni na sloupec pro volání · na sérii pro izolaci';
+
+  @override
+  String get aiImpactChartShareCaption => 'Složení v čase';
+
+  @override
+  String get aiImpactChartShareSegment => 'Podíl';
+
+  @override
   String aiImpactChartTitle(String metric) {
     return '$metric podle kategorie';
   }
+
+  @override
+  String aiImpactChartTitleModel(String metric) {
+    return '$metric podle modelu';
+  }
+
+  @override
+  String get aiImpactCoverageNote =>
+      'Energie, CO₂e a náklady se měří jen u cloudových modelů.';
 
   @override
   String get aiImpactEmptyBody =>
@@ -1362,10 +1384,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactKpiCost => 'NÁKLADY';
 
   @override
+  String aiImpactKpiDeltaBaseline(String period) {
+    return 'vs $period';
+  }
+
+  @override
   String get aiImpactKpiEnergy => 'ENERGIE';
 
   @override
+  String get aiImpactKpiRequests => 'POŽADAVKY';
+
+  @override
   String get aiImpactKpiTokens => 'TOKENY';
+
+  @override
+  String get aiImpactLedgerClearFilter => 'Zobrazit vše';
 
   @override
   String get aiImpactLoadError => 'Data o dopadu AI se nepodařilo načíst';
@@ -1389,10 +1422,33 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiImpactMetricEnergy => 'Energie';
 
   @override
+  String get aiImpactMetricRequests => 'Požadavky';
+
+  @override
   String get aiImpactMetricTokens => 'Tokeny';
 
   @override
+  String aiImpactModelCallsLabel(String count) {
+    return '$count volání';
+  }
+
+  @override
   String get aiImpactModelColumn => 'MODEL';
+
+  @override
+  String get aiImpactModelCostHeavy => 'nákladné';
+
+  @override
+  String get aiImpactModelCoverageNote =>
+      'Místní modely jsou z tohoto grafu vyloučené.';
+
+  @override
+  String get aiImpactModelOther => 'Ostatní modely';
+
+  @override
+  String aiImpactModelRatePerMillion(String cost) {
+    return '$cost/1M tok';
+  }
 
   @override
   String get aiImpactModelTitle => 'Rozpad podle modelů';

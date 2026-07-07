@@ -26,6 +26,18 @@ void main() {
       expect(ConsumptionMetric.energy.valueOf(metrics), 0.5);
       expect(ConsumptionMetric.carbon.valueOf(metrics), 12.0);
       expect(ConsumptionMetric.tokens.valueOf(metrics), 150.0);
+      expect(ConsumptionMetric.requests.valueOf(metrics), 3.0);
+    });
+  });
+
+  group('ConsumptionMetric.isCloudOnly', () {
+    test('only requests is universal; the rest are cloud-measured', () {
+      expect(ConsumptionMetric.requests.isCloudOnly, isFalse);
+      for (final metric in ConsumptionMetric.values.where(
+        (m) => m != ConsumptionMetric.requests,
+      )) {
+        expect(metric.isCloudOnly, isTrue, reason: '$metric');
+      }
     });
   });
 
@@ -44,6 +56,11 @@ void main() {
       expect(
         ConsumptionMetric.tokens.formatValue(12345.6),
         formatTokenCount(12346),
+      );
+      expect(ConsumptionMetric.requests.formatValue(7), '7');
+      expect(
+        ConsumptionMetric.requests.formatValue(7),
+        formatCallCount(7),
       );
     });
   });

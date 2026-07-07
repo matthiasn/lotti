@@ -35,10 +35,27 @@ void main() {
     ).thenAnswer((_) async => events);
   }
 
-  Future<void> pumpLedger(WidgetTester tester) async {
+  Future<void> pumpLedger(
+    WidgetTester tester, {
+    String? modelFilter,
+    String? categoryFilter,
+    double width = 900,
+  }) async {
     await tester.pumpWidget(
       makeTestableWidget(
-        const SingleChildScrollView(child: ImpactCallLedger(range: range)),
+        SingleChildScrollView(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: width,
+              child: ImpactCallLedger(
+                range: range,
+                modelFilter: modelFilter,
+                categoryFilter: categoryFilter,
+              ),
+            ),
+          ),
+        ),
         overrides: [
           consumptionRepositoryProvider.overrideWithValue(repository),
           consumptionRefetchThrottleProvider.overrideWithValue(null),
@@ -55,6 +72,57 @@ void main() {
     await pumpLedger(tester);
 
     expect(find.text('Recent calls'), findsNothing);
+  });
+
+  testWidgets('a model filter keeps only that model, following isolation', (
+    tester,
+  ) async {
+    stubEvents([
+      makeConsumptionEvent(
+        id: 'a',
+        createdAt: DateTime(2026, 6, 3, 10),
+        providerModelId: 'claude-opus-4',
+        responseType: AiConsumptionResponseType.agentTurn,
+        totalTokens: 3800,
+        credits: 0.02,
+      ),
+      makeConsumptionEvent(
+        id: 'b',
+        createdAt: DateTime(2026, 6, 3, 9),
+        providerModelId: 'glm-5.2',
+        responseType: AiConsumptionResponseType.textGeneration,
+        totalTokens: 2500,
+        credits: 0.01,
+      ),
+    ]);
+    await pumpLedger(tester, modelFilter: 'claude-opus-4');
+
+    // Only the isolated model's calls remain in the ledger.
+    expect(find.text('claude-opus-4'), findsOneWidget);
+    expect(find.text('glm-5.2'), findsNothing);
+  });
+
+  testWidgets('the truncation notice survives a filter that shrinks the list', (
+    tester,
+  ) async {
+    // A full (capped) fetch of 100, half of which are the filtered model.
+    stubEvents([
+      for (var i = 0; i < 100; i++)
+        makeConsumptionEvent(
+          id: 'evt-$i',
+          createdAt: DateTime(2026, 6, 3, 12).subtract(Duration(minutes: i)),
+          providerModelId: i.isEven ? 'claude-opus-4' : 'glm-5.2',
+          totalTokens: 1000,
+        ),
+    ]);
+    await pumpLedger(tester, modelFilter: 'claude-opus-4');
+
+    // The cap notice is gated on the unfiltered fetch, so it still discloses
+    // that the underlying 100-call page was truncated.
+    expect(
+      find.textContaining('Showing the newest 100 calls'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('renders model, type, time, and full metrics for a measured '
@@ -87,6 +155,34 @@ void main() {
     expect(
       find.textContaining('Showing the newest'),
       findsNothing,
+    );
+  });
+
+  testWidgets('stacks the row on narrow (phone) width so the model name gets '
+      'its own line above the metrics', (tester) async {
+    stubEvents([
+      makeConsumptionEvent(
+        id: 'evt-narrow',
+        createdAt: DateTime(2026, 6, 3, 14, 30),
+        providerModelId: 'a-very-long-provider-model-id-2507',
+        responseType: AiConsumptionResponseType.agentTurn,
+        totalTokens: 1500,
+        credits: 0.42,
+        energyKwh: 0.012,
+      ),
+    ]);
+    await pumpLedger(tester, width: 360);
+
+    final modelFinder = find.text('a-very-long-provider-model-id-2507');
+    final metricsFinder = find.text('1.5K tokens · €0.42 · 12 Wh');
+    expect(modelFinder, findsOneWidget);
+    expect(metricsFinder, findsOneWidget);
+    // Narrow layout stacks vertically: the metric string sits BELOW the model
+    // name rather than trailing it on the same line (which is what would
+    // truncate the name on a phone).
+    expect(
+      tester.getTopLeft(metricsFinder).dy,
+      greaterThan(tester.getTopLeft(modelFinder).dy),
     );
   });
 

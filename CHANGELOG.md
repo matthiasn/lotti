@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1034]
 ### Added
+- **Interactive AI Impact charts (favorite models over time).** The AI Impact
+  dashboard now visualizes the breakdown, not just tables. Separate **by
+  category** and **by model** charts are shown together, each with a **Share**
+  mode for how your mix shifts week over week (the model chart is the Cursor-
+  style favorite-models view). A **Requests** metric and per-model unit
+  economics (calls and cost per million tokens) join the KPIs, whose tiles are
+  now the metric selector — tap a tile to drive the charts, and the selected
+  tile shows how it moved versus the previous period (e.g. "▲ 24% vs May"), with
+  rising cost/energy/CO₂e flagged in a caution colour. The charts are
+  interactive: **tap a series** (in the legend or a breakdown-table row) to
+  isolate its trend, and **tap a bar** to scope the "Recent calls" list to that
+  period. A note makes clear that cost, energy and CO₂e are measured for cloud
+  models only.
 - **Better AI Impact accounting for transcription.** The AI Impact dashboard
   now has a **Running total** chart mode for cumulative cost, energy, CO₂e and
   token usage over the selected period. Voxtral transcription records token

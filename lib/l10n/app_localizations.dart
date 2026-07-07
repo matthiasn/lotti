@@ -2407,11 +2407,47 @@ abstract class AppLocalizations {
   /// **'Pick an image generation model'**
   String get aiImageGenerationPickerTitle;
 
+  /// No description provided for @aiImpactCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Category breakdown'**
+  String get aiImpactCategoryTitle;
+
+  /// No description provided for @aiImpactChartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a bar to scope calls · tap a series to isolate'**
+  String get aiImpactChartHint;
+
+  /// No description provided for @aiImpactChartShareCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Composition over time'**
+  String get aiImpactChartShareCaption;
+
+  /// No description provided for @aiImpactChartShareSegment.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get aiImpactChartShareSegment;
+
   /// No description provided for @aiImpactChartTitle.
   ///
   /// In en, this message translates to:
   /// **'{metric} by category'**
   String aiImpactChartTitle(String metric);
+
+  /// No description provided for @aiImpactChartTitleModel.
+  ///
+  /// In en, this message translates to:
+  /// **'{metric} by model'**
+  String aiImpactChartTitleModel(String metric);
+
+  /// No description provided for @aiImpactCoverageNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Energy, CO₂e and cost are measured for cloud models only.'**
+  String get aiImpactCoverageNote;
 
   /// No description provided for @aiImpactEmptyBody.
   ///
@@ -2437,17 +2473,35 @@ abstract class AppLocalizations {
   /// **'COST'**
   String get aiImpactKpiCost;
 
+  /// No description provided for @aiImpactKpiDeltaBaseline.
+  ///
+  /// In en, this message translates to:
+  /// **'vs {period}'**
+  String aiImpactKpiDeltaBaseline(String period);
+
   /// No description provided for @aiImpactKpiEnergy.
   ///
   /// In en, this message translates to:
   /// **'ENERGY'**
   String get aiImpactKpiEnergy;
 
+  /// No description provided for @aiImpactKpiRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'REQUESTS'**
+  String get aiImpactKpiRequests;
+
   /// No description provided for @aiImpactKpiTokens.
   ///
   /// In en, this message translates to:
   /// **'TOKENS'**
   String get aiImpactKpiTokens;
+
+  /// No description provided for @aiImpactLedgerClearFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get aiImpactLedgerClearFilter;
 
   /// No description provided for @aiImpactLoadError.
   ///
@@ -2491,17 +2545,53 @@ abstract class AppLocalizations {
   /// **'Energy'**
   String get aiImpactMetricEnergy;
 
+  /// No description provided for @aiImpactMetricRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests'**
+  String get aiImpactMetricRequests;
+
   /// No description provided for @aiImpactMetricTokens.
   ///
   /// In en, this message translates to:
   /// **'Tokens'**
   String get aiImpactMetricTokens;
 
+  /// No description provided for @aiImpactModelCallsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} calls'**
+  String aiImpactModelCallsLabel(String count);
+
   /// No description provided for @aiImpactModelColumn.
   ///
   /// In en, this message translates to:
   /// **'MODEL'**
   String get aiImpactModelColumn;
+
+  /// No description provided for @aiImpactModelCostHeavy.
+  ///
+  /// In en, this message translates to:
+  /// **'cost-heavy'**
+  String get aiImpactModelCostHeavy;
+
+  /// No description provided for @aiImpactModelCoverageNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Local models are excluded from this chart.'**
+  String get aiImpactModelCoverageNote;
+
+  /// No description provided for @aiImpactModelOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other models'**
+  String get aiImpactModelOther;
+
+  /// No description provided for @aiImpactModelRatePerMillion.
+  ///
+  /// In en, this message translates to:
+  /// **'{cost}/1M tok'**
+  String aiImpactModelRatePerMillion(String cost);
 
   /// No description provided for @aiImpactModelTitle.
   ///

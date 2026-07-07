@@ -1349,9 +1349,31 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elige un modelo de generación de imágenes';
 
   @override
+  String get aiImpactCategoryTitle => 'Desglose por categoría';
+
+  @override
+  String get aiImpactChartHint =>
+      'Toca una barra para ver llamadas · una serie para aislarla';
+
+  @override
+  String get aiImpactChartShareCaption => 'Composición a lo largo del tiempo';
+
+  @override
+  String get aiImpactChartShareSegment => 'Proporción';
+
+  @override
   String aiImpactChartTitle(String metric) {
     return '$metric por categoría';
   }
+
+  @override
+  String aiImpactChartTitleModel(String metric) {
+    return '$metric por modelo';
+  }
+
+  @override
+  String get aiImpactCoverageNote =>
+      'La energía, el CO₂e y el coste se miden solo para modelos en la nube.';
 
   @override
   String get aiImpactEmptyBody =>
@@ -1367,10 +1389,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiImpactKpiCost => 'COSTE';
 
   @override
+  String aiImpactKpiDeltaBaseline(String period) {
+    return 'vs $period';
+  }
+
+  @override
   String get aiImpactKpiEnergy => 'ENERGÍA';
 
   @override
+  String get aiImpactKpiRequests => 'SOLICITUDES';
+
+  @override
   String get aiImpactKpiTokens => 'TOKENS';
+
+  @override
+  String get aiImpactLedgerClearFilter => 'Mostrar todo';
 
   @override
   String get aiImpactLoadError =>
@@ -1395,10 +1428,33 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiImpactMetricEnergy => 'Energía';
 
   @override
+  String get aiImpactMetricRequests => 'Solicitudes';
+
+  @override
   String get aiImpactMetricTokens => 'Tokens';
 
   @override
+  String aiImpactModelCallsLabel(String count) {
+    return '$count llamadas';
+  }
+
+  @override
   String get aiImpactModelColumn => 'MODELO';
+
+  @override
+  String get aiImpactModelCostHeavy => 'coste alto';
+
+  @override
+  String get aiImpactModelCoverageNote =>
+      'Los modelos locales se excluyen de este gráfico.';
+
+  @override
+  String get aiImpactModelOther => 'Otros modelos';
+
+  @override
+  String aiImpactModelRatePerMillion(String cost) {
+    return '$cost/1M tok';
+  }
 
   @override
   String get aiImpactModelTitle => 'Desglose por modelo';

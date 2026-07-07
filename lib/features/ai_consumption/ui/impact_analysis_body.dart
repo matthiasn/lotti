@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart'
+    show formatCallCount;
 import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
@@ -11,19 +14,24 @@ import 'package:lotti/features/ai_consumption/ui/widgets/impact_kpi_row.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_location_table.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_model_table.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_ranked_table.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
-import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/insights/logic/period_navigation.dart'
+    show previousPeriod;
 import 'package:lotti/features/insights/logic/range_presets.dart';
+import 'package:lotti/features/insights/logic/time_bucketing.dart'
+    show dayStart, epochDay;
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Host-independent core of the AI Impact dashboard: per-category,
-/// time-bucketed consumption (cost, energy, CO₂e, tokens).
+/// Host-independent core of the AI Impact dashboard: time-bucketed
+/// consumption (cost, energy, CO₂e, tokens, requests) broken down by category
+/// or model.
 ///
 /// Embedded by `ImpactAnalysisPage` (the `/dashboards/impact` route) and by the
 /// Settings `ai-usage` panel, so both navigation paths render the same
@@ -52,9 +60,23 @@ class ImpactAnalysisBody extends ConsumerStatefulWidget {
 }
 
 class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
-  /// The metric the chart + ranked table break down. The KPI row always
-  /// shows all four.
+  /// The metric every chart + table breaks down. The KPI row (which is the
+  /// selector) always shows all of them.
   ConsumptionMetric _metric = ConsumptionMetric.cost;
+
+  /// Start of the chart bucket the call ledger is drilled into, or null when
+  /// the ledger shows the whole period. Shared by both charts (they bucket the
+  /// same range) and cleared on any period change (a stale bucket would point
+  /// outside the new range).
+  DateTime? _ledgerBucketStart;
+
+  /// The isolated series in the category chart (a category id, `null` =
+  /// uncategorized), independent of the model chart's isolation.
+  String? _isolatedCategoryKey;
+
+  /// The isolated series in the model chart (a model id), independent of the
+  /// category chart's isolation.
+  String? _isolatedModelKey;
 
   /// The most recent generation whose buckets had fully loaded — the
   /// keepPreviousData retention (see class docs). Null only before the very
@@ -108,16 +130,69 @@ class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
           : const Center(child: CircularProgressIndicator());
     }
 
+    // Trend baseline: the previous equal-length period. When it falls in the
+    // same loaded window we read the current buckets; when it falls in a
+    // different calendar-year window (e.g. the year view's prior year) we watch
+    // that window too, so the KPI trend deltas are never absent on the landing
+    // view — they simply fill in once the prior window resolves.
+    final prevRange = previousPeriod(data.selection.range, data.selection.unit);
+    final prevWindow = insightsWindowFor(prevRange);
+    final prevBuckets = prevWindow == insightsWindowFor(data.selection.range)
+        ? data.buckets
+        : ref.watch(consumptionBucketsProvider(prevWindow)).value;
+    final previousTotals = prevBuckets != null
+        ? impactTotalsInRange(prevBuckets, prevRange)
+        : null;
+    final previousLabel = previousTotals != null
+        ? _previousPeriodLabel(context, prevRange, data.selection.unit)
+        : null;
+
     return _DashboardContent(
       selection: selection,
       data: data,
       resolver: resolver,
       metric: _metric,
+      previousTotals: previousTotals,
+      previousLabel: previousLabel,
+      ledgerBucketStart: _ledgerBucketStart,
+      isolatedCategoryKey: _isolatedCategoryKey,
+      isolatedModelKey: _isolatedModelKey,
       showStaleNotice: bucketsAsync.hasError,
       onSelectMetric: (metric) => setState(() => _metric = metric),
-      onSelectUnit: controller.selectUnit,
-      onStep: controller.step,
-      onSelectToDate: controller.selectToDate,
+      onToggleCategorySeries: (key) => setState(() {
+        _isolatedCategoryKey = _isolatedCategoryKey == key ? null : key;
+      }),
+      onToggleModelSeries: (key) => setState(() {
+        _isolatedModelKey = _isolatedModelKey == key ? null : key;
+      }),
+      onSelectBucket: (bucketStart) => setState(() {
+        // Tapping the drilled bucket again clears the drill.
+        _ledgerBucketStart = _ledgerBucketStart == bucketStart
+            ? null
+            : bucketStart;
+      }),
+      onClearScope: () => setState(() {
+        // The ledger chip is the ledger's whole scope — clear the drill and
+        // both isolations at once.
+        _ledgerBucketStart = null;
+        _isolatedCategoryKey = null;
+        _isolatedModelKey = null;
+      }),
+      onClearCategoryIsolation: () =>
+          setState(() => _isolatedCategoryKey = null),
+      onClearModelIsolation: () => setState(() => _isolatedModelKey = null),
+      onSelectUnit: (unit) {
+        controller.selectUnit(unit);
+        setState(() => _ledgerBucketStart = null);
+      },
+      onStep: (delta) {
+        controller.step(delta);
+        setState(() => _ledgerBucketStart = null);
+      },
+      onSelectToDate: (unit) {
+        controller.selectToDate(unit);
+        setState(() => _ledgerBucketStart = null);
+      },
     );
   }
 }
@@ -133,11 +208,26 @@ class _ImpactDashboardData {
   final ConsumptionDayBuckets buckets;
 }
 
-/// Below this content width the metric toggle switches to the design
-/// system's fill-width `expand` mode (equal-width, dense segments): the four
-/// shrink-wrapped segments have a fixed intrinsic width that overflows
-/// phone-width panes such as the Settings `ai-usage` panel (~390 px).
-const double _kMetricToggleShrinkMinWidth = 480;
+/// Short calendar name of the previous period for the KPI trend baseline
+/// ("vs May" / "vs 2025" / "vs Q1" / "vs Jun 1"), so the delta discloses what
+/// it is measured against instead of a bare "vs prev". Only reached when that
+/// prior period is in the loaded window.
+String _previousPeriodLabel(
+  BuildContext context,
+  InsightsRange prevRange,
+  InsightsPeriodUnit unit,
+) {
+  final locale = Localizations.localeOf(context).toString();
+  final start = dayStart(prevRange.startDay);
+  return switch (unit) {
+    InsightsPeriodUnit.year => DateFormat.y(locale).format(start),
+    // ICU quarter pattern is locale-aware ("Q1", localized where it differs).
+    InsightsPeriodUnit.quarter => DateFormat('QQQ', locale).format(start),
+    InsightsPeriodUnit.month => DateFormat.MMM(locale).format(start),
+    InsightsPeriodUnit.week ||
+    InsightsPeriodUnit.day => DateFormat.MMMd(locale).format(start),
+  };
+}
 
 class _DashboardContent extends StatelessWidget {
   const _DashboardContent({
@@ -145,8 +235,19 @@ class _DashboardContent extends StatelessWidget {
     required this.data,
     required this.resolver,
     required this.metric,
+    required this.previousTotals,
+    required this.previousLabel,
+    required this.ledgerBucketStart,
+    required this.isolatedCategoryKey,
+    required this.isolatedModelKey,
     required this.showStaleNotice,
     required this.onSelectMetric,
+    required this.onToggleCategorySeries,
+    required this.onToggleModelSeries,
+    required this.onSelectBucket,
+    required this.onClearScope,
+    required this.onClearCategoryIsolation,
+    required this.onClearModelIsolation,
     required this.onSelectUnit,
     required this.onStep,
     required this.onSelectToDate,
@@ -164,6 +265,24 @@ class _DashboardContent extends StatelessWidget {
   final InsightsCategoryResolver resolver;
   final ConsumptionMetric metric;
 
+  /// Totals for the previous equal-length period (from whichever window holds
+  /// it), or null when none is loaded yet — drives the KPI trend deltas.
+  final ConsumptionMetrics? previousTotals;
+
+  /// Short calendar name of that previous period ("May" / "2025"), for the
+  /// selected tile's "vs …" baseline.
+  final String? previousLabel;
+
+  /// Start of the chart bucket the ledger is drilled into, or null for the
+  /// whole period. Shared by both charts.
+  final DateTime? ledgerBucketStart;
+
+  /// The isolated series of the category chart (independent of the model one).
+  final String? isolatedCategoryKey;
+
+  /// The isolated series of the model chart (independent of the category one).
+  final String? isolatedModelKey;
+
   /// Whether a window load failed while the retained generation stays on
   /// screen — surfaced as a slim, non-blocking strip instead of an error
   /// shell, so a failed step never silently mislabels the previous
@@ -171,6 +290,12 @@ class _DashboardContent extends StatelessWidget {
   final bool showStaleNotice;
 
   final ValueChanged<ConsumptionMetric> onSelectMetric;
+  final ValueChanged<String?> onToggleCategorySeries;
+  final ValueChanged<String?> onToggleModelSeries;
+  final ValueChanged<DateTime> onSelectBucket;
+  final VoidCallback onClearScope;
+  final VoidCallback onClearCategoryIsolation;
+  final VoidCallback onClearModelIsolation;
   final ValueChanged<InsightsPeriodUnit> onSelectUnit;
   final ValueChanged<int> onStep;
   final ValueChanged<InsightsPeriodUnit> onSelectToDate;
@@ -192,14 +317,141 @@ class _DashboardContent extends StatelessWidget {
     final daily = dailyMetricTotals(buckets, range, metric);
     final ranked = rankedImpactCategoryTotals(daily);
     final modelDaily = dailyModelMetricTotals(buckets, range, metric);
-    final rankedModels = rankedImpactCategoryTotals(modelDaily);
+    final rankedModels = rankedModelMetrics(buckets, range, metric);
     final locationTotals = rankedImpactLocationTotals(buckets, range);
-    final chartData = buildImpactChartData(
+    final categoryChart = buildImpactChartData(
       buckets,
       range,
       metric,
       precomputedDaily: daily,
     );
+    final modelChart = buildImpactChartData(
+      buckets,
+      range,
+      metric,
+      precomputedDaily: modelDaily,
+    );
+
+    // The model chart + table appear only when the period has at least one
+    // *identified* model — a lone "Unknown model" band is noise, not a
+    // breakdown. The category chart is always shown.
+    final hasModelData = buckets.modelDays.values.any(
+      (cells) => cells.keys.any((key) => key != null),
+    );
+
+    // Palette colors are assigned by a stable, metric-independent ordering of
+    // every model in the window (sorted ids), so a model keeps its color
+    // across metric switches, across the chart/legend/table, and — within a
+    // window — across period steps.
+    final orderedModelKeys = <String>{
+      for (final day in buckets.modelDays.values)
+        for (final key in day.keys) ?key,
+    }.toList()..sort();
+    final categorySeriesResolver = CategorySeriesResolver(resolver);
+    final modelResolver = PaletteSeriesResolver(
+      orderedKeys: orderedModelKeys,
+      unknownLabel: messages.aiImpactModelUnknown,
+      otherLabel: messages.aiImpactModelOther,
+    );
+
+    // Drill-down: a tapped bar (on either chart — both bucket the same range)
+    // scopes the ledger to that bucket's days and highlights it on both.
+    // Ignore a stale bucket that no longer falls in the current range.
+    final granularity = categoryChart.granularity;
+    final drilledStart = ledgerBucketStart;
+    InsightsRange? ledgerRange;
+    String? ledgerFilterLabel;
+    int? selectedBucketIndex;
+    if (drilledStart != null) {
+      final startDay = epochDay(drilledStart);
+      final index = categoryChart.bucketStarts.indexWhere(
+        (d) => epochDay(d) == startDay,
+      );
+      if (index >= 0) selectedBucketIndex = index;
+      if (startDay >= range.startDay && startDay < range.endDayExclusive) {
+        final span = granularity == InsightsGranularity.week ? 7 : 1;
+        ledgerRange = InsightsRange(
+          startDay: startDay,
+          endDayExclusive: startDay + span,
+        );
+        final locale = Localizations.localeOf(context).toString();
+        ledgerFilterLabel = granularity == InsightsGranularity.week
+            ? '${DateFormat.MMMd(locale).format(drilledStart)} – '
+                  // Calendar arithmetic (not Duration) so a DST transition in
+                  // the week can't shift the end date to the wrong day.
+                  '${DateFormat.MMMd(locale).format(DateTime(drilledStart.year, drilledStart.month, drilledStart.day + 6))}'
+            : DateFormat.MMMd(locale).format(drilledStart);
+      }
+    }
+    final effectiveRange = ledgerRange ?? range;
+
+    // Each chart isolates its own series independently; isolation scopes the
+    // ledger (category ∩ model ∩ drilled week) and shows an in-viewport chip
+    // under the chart it belongs to.
+    final categoryKey = isolatedCategoryKey;
+    final canScopeCategory =
+        categoryKey != null && categoryKey != kInsightsOtherCategoryKey;
+    final categoryLabel = canScopeCategory
+        ? categorySeriesResolver.labelFor(categoryKey)
+        : null;
+    final modelKey = isolatedModelKey;
+    final canScopeModel =
+        modelKey != null && modelKey != kInsightsOtherCategoryKey;
+    final modelLabel = canScopeModel ? modelResolver.labelFor(modelKey) : null;
+
+    // Counts come from the buckets (the full count, not the ledger's capped
+    // slice). "N calls · <series>" under each chart.
+    String chipFor(String label, int count) => [
+      messages.aiImpactModelCallsLabel(formatCallCount(count)),
+      label,
+    ].join(' · ');
+    final categoryChipLabel = canScopeCategory
+        ? chipFor(
+            categoryLabel!,
+            scopedCallCount(buckets, effectiveRange, seriesKey: categoryKey),
+          )
+        : '';
+    final modelChipLabel = canScopeModel
+        ? chipFor(
+            modelLabel!,
+            scopedCallCount(
+              buckets,
+              effectiveRange,
+              isModel: true,
+              seriesKey: modelKey,
+            ),
+          )
+        : '';
+
+    // The combined "Recent calls" scope chip lists every active filter. A true
+    // count is shown only when a single dimension scopes it — an intersection
+    // of two dimensions has no single bucket cell to count.
+    final scopeParts = [?categoryLabel, ?modelLabel, ?ledgerFilterLabel];
+    final hasLedgerFilter = scopeParts.isNotEmpty;
+    int? ledgerCount;
+    if (canScopeCategory && !canScopeModel) {
+      ledgerCount = scopedCallCount(
+        buckets,
+        effectiveRange,
+        seriesKey: categoryKey,
+      );
+    } else if (canScopeModel && !canScopeCategory) {
+      ledgerCount = scopedCallCount(
+        buckets,
+        effectiveRange,
+        isModel: true,
+        seriesKey: modelKey,
+      );
+    } else if (!canScopeCategory && !canScopeModel && ledgerRange != null) {
+      ledgerCount = scopedCallCount(buckets, effectiveRange);
+    }
+    final ledgerChipLabel = hasLedgerFilter
+        ? [
+            if (ledgerCount != null)
+              messages.aiImpactModelCallsLabel(formatCallCount(ledgerCount)),
+            ...scopeParts,
+          ].join(' · ')
+        : '';
 
     final children = <Widget>[
       if (showStaleNotice) ...[
@@ -239,50 +491,102 @@ class _DashboardContent extends StatelessWidget {
           body: messages.aiImpactEmptyBody,
         )
       else ...[
-        // Shrink-wrapped and left-aligned when there is room; on narrow
-        // panes the toggle fills the width in the design system's dense
-        // `expand` mode instead — its four shrink-wrapped segments would
-        // otherwise overflow (the control cannot compress below its
-        // intrinsic width).
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final expand = constraints.maxWidth < _kMetricToggleShrinkMinWidth;
-            final toggle = DsSegmentedToggle<ConsumptionMetric>(
-              selected: metric,
-              onChanged: onSelectMetric,
-              expand: expand,
-              segments: [
-                for (final value in ConsumptionMetric.values)
-                  DsSegment(value, consumptionMetricLabel(messages, value)),
-              ],
-            );
-            if (expand) return toggle;
-            return Align(alignment: Alignment.centerLeft, child: toggle);
-          },
+        // The KPI tiles are themselves the metric selector — tapping one drives
+        // the chart + breakdown table — so there is no separate segmented
+        // toggle duplicating these same five labels. The selected tile carries
+        // the trend delta against the previous period.
+        ImpactKpiRow(
+          totals: totals,
+          selectedMetric: metric,
+          onSelectMetric: onSelectMetric,
+          previousTotals: previousTotals,
+          previousLabel: previousLabel,
         ),
         SizedBox(height: tokens.spacing.sectionGap),
-        ImpactKpiRow(totals: totals),
-        SizedBox(height: tokens.spacing.sectionGap),
+        // Category breakdown: its own always-visible chart + companion table.
         ImpactChartCard(
-          chartData: chartData,
+          chartData: categoryChart,
+          resolver: categorySeriesResolver,
+          metric: metric,
+          // null → the card titles it "<Metric> by category".
+          selectedBucketIndex: selectedBucketIndex,
+          isolatedKey: isolatedCategoryKey,
+          onToggleSeries: onToggleCategorySeries,
+          onBucketSelected: onSelectBucket,
+        ),
+        // In-viewport confirmation of this chart's isolation (the ledger it
+        // also scopes can be far down a long page).
+        if (canScopeCategory) ...[
+          SizedBox(height: tokens.spacing.step4),
+          _LedgerFilterChip(
+            label: categoryChipLabel,
+            onClear: onClearCategoryIsolation,
+          ),
+        ],
+        SizedBox(height: tokens.spacing.sectionGap),
+        ImpactRankedTable(
+          entries: ranked,
           resolver: resolver,
           metric: metric,
+          isolatedKey: isolatedCategoryKey,
+          onToggleSeries: onToggleCategorySeries,
         ),
-        SizedBox(height: tokens.spacing.sectionGap),
-        ImpactRankedTable(entries: ranked, resolver: resolver, metric: metric),
-        if (rankedModels.isNotEmpty) ...[
+        // Model breakdown: a second always-visible chart + table (the
+        // "favorite models over time" view), shown only when the period has
+        // model-attributed calls.
+        if (hasModelData) ...[
           SizedBox(height: tokens.spacing.sectionGap),
-          ImpactModelTable(entries: rankedModels, metric: metric),
+          ImpactChartCard(
+            chartData: modelChart,
+            resolver: modelResolver,
+            metric: metric,
+            title: messages.aiImpactChartTitleModel(
+              consumptionMetricLabel(messages, metric),
+            ),
+            // A cloud-only metric drops local models from this chart; say so
+            // specifically here rather than repeating the global KPI caveat.
+            coverageNote: metric.isCloudOnly
+                ? messages.aiImpactModelCoverageNote
+                : null,
+            selectedBucketIndex: selectedBucketIndex,
+            isolatedKey: isolatedModelKey,
+            onToggleSeries: onToggleModelSeries,
+            onBucketSelected: onSelectBucket,
+          ),
+          if (canScopeModel) ...[
+            SizedBox(height: tokens.spacing.step4),
+            _LedgerFilterChip(
+              label: modelChipLabel,
+              onClear: onClearModelIsolation,
+            ),
+          ],
+          SizedBox(height: tokens.spacing.sectionGap),
+          ImpactModelTable(
+            entries: rankedModels,
+            resolver: modelResolver,
+            metric: metric,
+            isolatedKey: isolatedModelKey,
+            onToggleSeries: onToggleModelSeries,
+          ),
         ],
         if (locationTotals.isNotEmpty) ...[
           SizedBox(height: tokens.spacing.sectionGap),
           ImpactLocationTable(entries: locationTotals),
         ],
         SizedBox(height: tokens.spacing.sectionGap),
-        // Per-call ledger: the newest individual calls in the same period.
-        // Watches its own provider, so it rides the generation's range
-        // without threading through the retained dashboard data.
-        ImpactCallLedger(range: range),
+        // Per-call ledger: the newest individual calls in the period, scoped by
+        // the drilled bucket + either chart's isolation. Watches its own
+        // provider, so it rides the generation's range without threading
+        // through the retained dashboard data.
+        if (hasLedgerFilter) ...[
+          _LedgerFilterChip(label: ledgerChipLabel, onClear: onClearScope),
+          SizedBox(height: tokens.spacing.step3),
+        ],
+        ImpactCallLedger(
+          range: effectiveRange,
+          modelFilter: canScopeModel ? modelKey : null,
+          categoryFilter: canScopeCategory ? categoryKey : null,
+        ),
       ],
       SizedBox(height: tokens.spacing.step6),
     ];
@@ -307,6 +611,74 @@ class _DashboardContent extends StatelessWidget {
                 children: children,
               ),
             ),
+    );
+  }
+}
+
+/// Clearable pill shown above the call ledger (and under a chart) while a
+/// scope is active — a drilled bucket and/or an isolated series. Tapping it
+/// (or its close icon) clears that scope.
+class _LedgerFilterChip extends StatelessWidget {
+  const _LedgerFilterChip({required this.label, required this.onClear});
+
+  final String label;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Semantics(
+        button: true,
+        label: messages.aiImpactLedgerClearFilter,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onClear,
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            child: Container(
+              decoration: BoxDecoration(
+                color: tokens.colors.background.level02,
+                borderRadius: BorderRadius.circular(tokens.radii.m),
+                border: Border.all(color: tokens.colors.decorative.level01),
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step3,
+                vertical: tokens.spacing.step2,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.filter_alt_outlined,
+                    size: tokens.spacing.step4,
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  Icon(
+                    Icons.close_rounded,
+                    size: tokens.spacing.step4,
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

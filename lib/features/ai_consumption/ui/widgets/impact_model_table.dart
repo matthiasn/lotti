@@ -1,26 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
+import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart'
+    show largestRemainderPercents;
+import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_table_card.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/insights/ui/widgets/insights_format.dart'
-    show formatShare;
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Exhaustive per-model breakdown of the selected metric.
+/// Exhaustive per-model breakdown of the selected metric, with unit economics.
 ///
-/// Model keys are provider-native ids when available, then configured Lotti
-/// model ids, then `null` for calls that reported usage without a model. The
-/// table keeps the same value/share columns as the category breakdown and
-/// degrades columns on narrow panes instead of overflowing.
+/// Each row carries the model's palette swatch — the same color it wears in
+/// the model chart and its legend — plus a secondary line of the actionable
+/// numbers a totals column can't answer: how many calls it made and its cost
+/// per million tokens (its efficiency). The value/share columns degrade on
+/// narrow panes instead of overflowing.
 class ImpactModelTable extends StatelessWidget {
   const ImpactModelTable({
     required this.entries,
+    required this.resolver,
     required this.metric,
+    this.isolatedKey,
+    this.onToggleSeries,
     super.key,
   });
 
-  final List<MapEntry<String?, double>> entries;
+  /// Per-model totals, ranked descending by [metric] — the output of
+  /// `rankedModelMetrics`.
+  final List<MapEntry<String?, ConsumptionMetrics>> entries;
+
+  /// Resolves model keys to labels and their palette swatch color — the same
+  /// resolver the model chart uses, so one model = one color everywhere.
+  final SeriesResolver resolver;
   final ConsumptionMetric metric;
+
+  /// The isolated series, shared with the chart; when set, the other rows dim.
+  final String? isolatedKey;
+
+  /// Tapping a row toggles isolation of that model (chart + legend follow).
+  final ValueChanged<String?>? onToggleSeries;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +47,81 @@ class ImpactModelTable extends StatelessWidget {
 
     final tokens = context.designTokens;
     final messages = context.messages;
-    final total = entries.fold<double>(0, (sum, e) => sum + e.value);
+    final brightness = Theme.of(context).brightness;
+    // Integer shares apportioned so the column sums to exactly 100% (a per-row
+    // `value/total` round drifts to 101%). Index-aligned with entries.
+    final sharePercents = largestRemainderPercents([
+      for (final e in entries) metric.valueOf(e.value),
+    ]);
+    // Dim the other rows only when the isolated model is actually in this
+    // table (a stale key from another dimension shouldn't blank every row).
+    final isolatingHere =
+        isolatedKey != null && entries.any((e) => e.key == isolatedKey);
+
+    // "12 calls · €5.00/1M tok" — the cost-per-million is dropped when a model
+    // reports no tokens or no cost (e.g. a local transcription model).
+    String metaLine(ConsumptionMetrics m) {
+      final calls = messages.aiImpactModelCallsLabel(
+        formatCallCount(m.callCount),
+      );
+      if (m.totalTokens <= 0 || m.credits <= 0) return calls;
+      final perMillion = m.credits / m.totalTokens * 1000000;
+      return '$calls · '
+          '${messages.aiImpactModelRatePerMillion(formatCredits(perMillion))}';
+    }
+
+    // The one model whose share of spend most outstrips its share of requests
+    // (≥ 8 points) — the "reconsider this one" flag that turns "52% of cost for
+    // 24% of calls" into a glanceable badge instead of mental arithmetic.
+    final totalCredits = entries.fold<double>(0, (s, e) => s + e.value.credits);
+    final totalCalls = entries.fold<int>(0, (s, e) => s + e.value.callCount);
+    var costHeavyIndex = -1;
+    if (totalCredits > 0 && totalCalls > 0) {
+      var maxExcess = 0.08;
+      for (var i = 0; i < entries.length; i++) {
+        final m = entries[i].value;
+        final excess = m.credits / totalCredits - m.callCount / totalCalls;
+        if (excess > maxExcess) {
+          maxExcess = excess;
+          costHeavyIndex = i;
+        }
+      }
+    }
+    // Clay accent, matching the caution valence the KPI deltas use.
+    final clay = brightness == Brightness.dark
+        ? tokens.colors.alert.error.hover
+        : tokens.colors.alert.error.pressed;
+    Widget costHeavyBadge() => Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        color: clay.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+      ),
+      child: Text(
+        messages.aiImpactModelCostHeavy,
+        style: tokens.typography.styles.others.caption.copyWith(color: clay),
+      ),
+    );
+
+    // Interactive rows carry a low-emphasis chevron so they read as tappable
+    // at rest; the header reserves the same width to keep columns aligned.
+    final interactive = onToggleSeries != null;
+    final chevronWidth = tokens.spacing.step5;
+    Widget? headerTrailing() =>
+        interactive ? SizedBox(width: chevronWidth) : null;
+    Widget? rowChevron() => interactive
+        ? SizedBox(
+            width: chevronWidth,
+            child: Icon(
+              Icons.chevron_right,
+              size: tokens.spacing.step4,
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          )
+        : null;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -41,10 +134,8 @@ class ImpactModelTable extends StatelessWidget {
             _ModelTableRowLayout(
               showValue: showValue,
               showShare: showShare,
-              model: Text(
-                messages.aiImpactModelColumn,
-                style: headerStyle,
-              ),
+              trailing: headerTrailing(),
+              model: Text(messages.aiImpactModelColumn, style: headerStyle),
               value: Text(
                 messages.insightsTableTotal,
                 style: headerStyle,
@@ -57,29 +148,95 @@ class ImpactModelTable extends StatelessWidget {
               ),
             ),
             Divider(height: 1, color: tokens.colors.decorative.level01),
-            for (final entry in entries)
-              _ModelTableRowLayout(
-                showValue: showValue,
-                showShare: showShare,
-                model: Text(
-                  _labelForModel(messages.aiImpactModelUnknown, entry.key),
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.highEmphasis,
+            for (var i = 0; i < entries.length; i++)
+              _isolatableRow(
+                onTap: onToggleSeries == null
+                    ? null
+                    : () => onToggleSeries!(entries[i].key),
+                dimmed: isolatingHere && entries[i].key != isolatedKey,
+                child: _ModelTableRowLayout(
+                  showValue: showValue,
+                  showShare: showShare,
+                  trailing: rowChevron(),
+                  model: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(top: tokens.spacing.step1),
+                        child: Container(
+                          width: tokens.spacing.step3,
+                          height: tokens.spacing.step3,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: resolver.swatchColor(
+                              entries[i].key,
+                              brightness,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: tokens.spacing.step3),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    resolver.labelFor(entries[i].key),
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .body
+                                        .bodySmall
+                                        .copyWith(
+                                          color:
+                                              tokens.colors.text.highEmphasis,
+                                        ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (i == costHeavyIndex) ...[
+                                  SizedBox(width: tokens.spacing.step2),
+                                  costHeavyBadge(),
+                                ],
+                              ],
+                            ),
+                            Text(
+                              metaLine(entries[i].value),
+                              style: tokens.typography.styles.others.caption
+                                  .copyWith(
+                                    color: tokens.colors.text.mediumEmphasis,
+                                  ),
+                              // Wraps to a second line on narrow (phone) panes
+                              // so the €/1M-tok economics never truncates.
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                value: Text(
-                  metric.formatValue(entry.value),
-                  style: numberStyle,
-                  textAlign: TextAlign.right,
-                ),
-                share: Text(
-                  formatShare(total > 0 ? entry.value / total : 0),
-                  style: numberStyle.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
+                  value: Text(
+                    metric.formatValue(metric.valueOf(entries[i].value)),
+                    style: numberStyle,
+                    textAlign: TextAlign.right,
                   ),
-                  textAlign: TextAlign.right,
+                  share: Text(
+                    // "<1%" for a present-but-rounds-to-zero model, else the
+                    // apportioned integer; the column still totals 100.
+                    sharePercents[i] == 0 &&
+                            metric.valueOf(entries[i].value) > 0
+                        ? '<1%'
+                        : '${sharePercents[i]}%',
+                    style: numberStyle.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
                 ),
               ),
           ],
@@ -89,10 +246,21 @@ class ImpactModelTable extends StatelessWidget {
   }
 }
 
-String _labelForModel(String unknownLabel, String? modelId) {
-  final trimmed = modelId?.trim();
-  if (trimmed == null || trimmed.isEmpty) return unknownLabel;
-  return trimmed;
+/// Wraps a breakdown row so tapping it toggles isolation of its series, and
+/// fades it when another series is isolated.
+Widget _isolatableRow({
+  required Widget child,
+  required bool dimmed,
+  required VoidCallback? onTap,
+}) {
+  final row = dimmed ? Opacity(opacity: 0.4, child: child) : child;
+  // No gesture wrapper for a non-interactive row (keeps the tree shallow).
+  if (onTap == null) return row;
+  return GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: onTap,
+    child: row,
+  );
 }
 
 /// Fixed column layout shared by the header and data rows:
@@ -104,6 +272,7 @@ class _ModelTableRowLayout extends StatelessWidget {
     required this.share,
     required this.showValue,
     required this.showShare,
+    this.trailing,
   });
 
   final Widget model;
@@ -111,6 +280,10 @@ class _ModelTableRowLayout extends StatelessWidget {
   final Widget share;
   final bool showValue;
   final bool showShare;
+
+  /// Fixed-width trailing slot (a chevron on interactive rows, empty on the
+  /// header) so the value/share columns stay aligned across all rows.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +299,10 @@ class _ModelTableRowLayout extends StatelessWidget {
           if (showShare) ...[
             SizedBox(width: tokens.spacing.step4),
             SizedBox(width: numberColumnWidth, child: share),
+          ],
+          if (trailing != null) ...[
+            SizedBox(width: tokens.spacing.step2),
+            trailing!,
           ],
         ],
       ),
