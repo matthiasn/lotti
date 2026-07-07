@@ -285,8 +285,8 @@ void main() {
         renewableEnergyKwh: 0.01,
         renewableWeightedPercentKwh: 0.8,
       );
-      const copy = ConsumptionLocationMetrics(
-        metrics: ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 2),
+      final copy = ConsumptionLocationMetrics(
+        metrics: const ConsumptionMetrics(energyKwh: 0.01, carbonGCo2: 2),
         renewablePercentSum: 80,
         renewableSampleCount: 1,
         renewableEnergyKwh: 0.01,
@@ -416,6 +416,7 @@ void main() {
             reason: 'a differing $difference must break equality',
           );
         }
+        expect(base, isNot(equals(Object())));
       },
     );
   });
