@@ -50,7 +50,7 @@ void main() {
     expect(label.style?.fontWeight, isNotNull);
   });
 
-  testWidgets('beams to /calendar/impact on tap', (tester) async {
+  testWidgets('beams to /dashboards/impact on tap', (tester) async {
     final beamed = <String>[];
     beamToNamedOverride = beamed.add;
     addTearDown(() => beamToNamedOverride = null);
@@ -60,7 +60,7 @@ void main() {
 
     await tester.tap(find.text('AI Impact'));
     await tester.pump();
-    expect(beamed, ['/calendar/impact']);
+    expect(beamed, ['/dashboards/impact']);
   });
 
   testWidgets('reacts to highlight flips without a rebuild from above', (

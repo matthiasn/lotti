@@ -104,9 +104,9 @@ class NavService {
     false,
   );
 
-  /// Whether the AI Impact dashboard (`/calendar/impact`) is showing.
-  /// Written exclusively by `CalendarLocation` from the URL, mirroring
-  /// [desktopShowTimeAnalysis]; the sidebar sub-entry only reads it.
+  /// Whether the AI Impact dashboard (`/dashboards/impact`) is showing.
+  /// Written by route locations from the URL so the Insights sidebar
+  /// sub-entry only reads it for its highlight.
   final ValueNotifier<bool> desktopShowAiImpact = ValueNotifier<bool>(
     false,
   );

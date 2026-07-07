@@ -2,7 +2,6 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai_consumption/ui/impact_analysis_page.dart';
 import 'package:lotti/features/daily_os/ui/pages/daily_os_page.dart';
 import 'package:lotti/features/daily_os/ui/pages/set_time_blocks_page.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -27,7 +26,6 @@ class CalendarLocation extends BeamLocation<BeamState> {
   List<String> get pathPatterns => [
     '/calendar',
     '/calendar/time',
-    '/calendar/impact',
     '/calendar/set-time-blocks',
     '/calendar/refine/:date',
     '/calendar/commit/:date',
@@ -38,14 +36,13 @@ class CalendarLocation extends BeamLocation<BeamState> {
   List<BeamPage> buildPages(BuildContext context, BeamState state) {
     final dailyOsNextRoute = _dailyOsNextRouteFrom(state.uri);
     final isTimeAnalysis = state.uri.path == '/calendar/time';
-    final isAiImpact = state.uri.path == '/calendar/impact';
     // Single writer for the sidebar sub-entry highlights: the URL.
     // Registration-guarded for location-level tests that build pages
     // without the service locator.
     if (getIt.isRegistered<NavService>()) {
       getIt<NavService>()
         ..desktopShowTimeAnalysis.value = isTimeAnalysis
-        ..desktopShowAiImpact.value = isAiImpact;
+        ..desktopShowAiImpact.value = false;
     }
 
     final pages = [
@@ -62,17 +59,6 @@ class CalendarLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('calendar_time_analysis'),
           child: TimeAnalysisPage(),
-        ),
-      );
-    }
-
-    if (isAiImpact) {
-      // AI Impact dashboard — same full-screen push pattern as the
-      // Time Analysis surface it sits beside in the sidebar.
-      pages.add(
-        const BeamPage(
-          key: ValueKey('calendar_ai_impact'),
-          child: ImpactAnalysisPage(),
         ),
       );
     }

@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/dashboards_location.dart';
+import 'package:lotti/features/ai_consumption/ui/impact_analysis_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
 import 'package:lotti/get_it.dart';
@@ -10,27 +11,33 @@ import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../mocks/mocks.dart';
+import '../../widget_test_utils.dart';
 
 void main() {
   group('DashboardsLocation', () {
     late MockBuildContext mockBuildContext;
 
     late MockNavService mockNavService;
+    late ValueNotifier<bool> desktopShowAiImpact;
 
-    setUp(() {
+    setUp(() async {
       mockBuildContext = MockBuildContext();
       mockNavService = MockNavService();
+      desktopShowAiImpact = ValueNotifier<bool>(false);
       when(() => mockNavService.isDesktopMode).thenReturn(false);
-      if (getIt.isRegistered<NavService>()) {
-        getIt.unregister<NavService>();
-      }
-      getIt.registerSingleton<NavService>(mockNavService);
+      when(
+        () => mockNavService.desktopShowAiImpact,
+      ).thenReturn(desktopShowAiImpact);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<NavService>(mockNavService);
+        },
+      );
     });
 
-    tearDown(() {
-      if (getIt.isRegistered<NavService>()) {
-        getIt.unregister<NavService>();
-      }
+    tearDown(() async {
+      desktopShowAiImpact.dispose();
+      await tearDownTestGetIt();
     });
 
     test('pathPatterns are correct', () {
@@ -39,6 +46,7 @@ void main() {
       );
       expect(location.pathPatterns, [
         '/dashboards',
+        '/dashboards/impact',
         '/dashboards/:dashboardId',
       ]);
     });
@@ -91,6 +99,7 @@ void main() {
       () {
         final dashboardId = const Uuid().v4();
         final desktopSelectedDashboardId = ValueNotifier<String?>(null);
+        addTearDown(desktopSelectedDashboardId.dispose);
 
         when(() => mockNavService.isDesktopMode).thenReturn(true);
         when(
@@ -121,6 +130,7 @@ void main() {
       () {
         final dashboardId = const Uuid().v4();
         final desktopSelectedDashboardId = ValueNotifier<String?>(null);
+        addTearDown(desktopSelectedDashboardId.dispose);
 
         when(() => mockNavService.isDesktopMode).thenReturn(true);
         when(
@@ -142,6 +152,32 @@ void main() {
         location.buildPages(mockBuildContext, newBeamState);
 
         expect(desktopSelectedDashboardId.value, dashboardId);
+      },
+    );
+
+    test(
+      'buildPages pushes AI Impact page on /dashboards/impact and '
+      'mirrors the route into desktopShowAiImpact',
+      () {
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/dashboards/impact'),
+        );
+        final location = DashboardsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final pages = location.buildPages(mockBuildContext, beamState);
+
+        expect(pages.length, 2);
+        expect(pages[0].child, isA<DashboardsListPage>());
+        expect(pages[1].child, isA<ImpactAnalysisPage>());
+        expect(desktopShowAiImpact.value, isTrue);
+
+        final rootInformation = RouteInformation(uri: Uri.parse('/dashboards'));
+        DashboardsLocation(rootInformation).buildPages(
+          mockBuildContext,
+          BeamState.fromRouteInformation(rootInformation),
+        );
+
+        expect(desktopShowAiImpact.value, isFalse);
       },
     );
   });

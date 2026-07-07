@@ -21,6 +21,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     as ai_repo;
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
@@ -238,8 +239,8 @@ Future<void> _stubNavService(
   when(
     () => navService.desktopSelectedTaskId,
   ).thenReturn(ValueNotifier<String?>(null));
-  // The Time Analysis and AI Impact sidebar sub-entries (under the Daily
-  // OS calendar) read these for their active-route highlights.
+  // The Time Analysis and AI Impact sidebar sub-entries read these for their
+  // active-route highlights.
   when(
     () => navService.desktopShowTimeAnalysis,
   ).thenReturn(ValueNotifier<bool>(false));
@@ -1340,6 +1341,61 @@ void main() {
             .dy;
         expect(calendarY, greaterThan(dailyOsRowY));
         expect(calendarY, lessThan(habitsRowY));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'AI Impact sidebar entry renders under Insights, not Daily OS',
+      (tester) async {
+        Future<void> pumpWithActiveIndex(int index) async {
+          final mockNavService = MockNavService();
+          await _stubNavService(
+            mockNavService,
+            indexStream: Stream.value(index),
+            isProjectsEnabled: () => true,
+            isDailyOsEnabled: () => true,
+            isHabitsEnabled: () => true,
+            isDashboardsEnabled: () => true,
+          );
+          await _registerAppScreenGetIt(mockNavService);
+          addTearDown(tearDownTestGetIt);
+
+          await _pumpAppScreen(
+            tester,
+            navService: mockNavService,
+            viewportSize: _desktopViewportSize,
+          );
+        }
+
+        await pumpWithActiveIndex(1);
+        expect(find.byType(DailyOsSidebarCalendar), findsOneWidget);
+        expect(find.byType(ImpactSidebarEntry), findsNothing);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        await tearDownTestGetIt();
+
+        await pumpWithActiveIndex(4);
+        expect(find.byType(DailyOsSidebarCalendar), findsNothing);
+        expect(find.byType(ImpactSidebarEntry), findsOneWidget);
+
+        final sidebar = find.byType(DesktopNavigationSidebar);
+        final impactY = tester.getTopLeft(find.byType(ImpactSidebarEntry)).dy;
+        final insightsRowY = tester
+            .getCenter(
+              find.descendant(of: sidebar, matching: find.text('Insights')),
+            )
+            .dy;
+        final journalRowY = tester
+            .getCenter(
+              find.descendant(of: sidebar, matching: find.text('Logbook')),
+            )
+            .dy;
+
+        expect(impactY, greaterThan(insightsRowY));
+        expect(impactY, lessThan(journalRowY));
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
