@@ -225,12 +225,16 @@ The body is the single provider consumer; the children are dumb value widgets:
   1/2/5 × 10ⁿ nice ceiling (`impactNiceCeiling`) with a nice-number tick step
   (`impactNiceInterval`, so ticks read 10/20/30/40/50, never `ceiling/4`
   = 13/25/38/50), not the Insights hour ladder.
-- **Two breakdown charts** — the category and model breakdowns each render as
-  their own always-visible `ImpactChartCard` + companion table (no dimension
-  toggle): `buildImpactChartData` is fed the category daily series for one and
-  the model daily series for the other. The model chart + table appear only when
-  the period has at least one identified (non-null) model. The model chart is the
-  Cursor-style "favorite models over time" chart from the same machinery.
+- **Breakdown charts + view picker** — the category and model breakdowns each
+  render as their own `ImpactChartCard` + companion table, fed the category and
+  model daily series respectively; the model chart is the Cursor-style "favorite
+  models over time" view. A `_BreakdownViewPicker` (`ImpactBreakdownView { both,
+  category, model }`, default `both`) narrows the page to one breakdown. **`model`
+  is the screenshot-safe view** — it renders no category name anywhere, so a
+  shared image can't leak private category labels; switching views also clears
+  both isolations + the drill so a hidden filter can't linger or leak via the
+  ledger chip. The picker only appears when the period has at least one
+  identified (non-null) model to switch to.
 - **Chart** — `ui/widgets/impact_chart_card.dart` + `impact_chart_card_charts.dart`
   (`ImpactStackedBars` / `ImpactStackedArea` / `ImpactChartLegend`): a stateful
   fl_chart card with three modes — per-bucket stacked bars, a cumulative stacked

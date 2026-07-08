@@ -1330,6 +1330,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiImageGenerationPickerTitle => 'Pick an image generation model';
 
   @override
+  String get aiImpactBreakdownBoth => 'Both';
+
+  @override
+  String get aiImpactBreakdownCategory => 'By category';
+
+  @override
+  String get aiImpactBreakdownModel => 'By model';
+
+  @override
   String get aiImpactCategoryTitle => 'Category breakdown';
 
   @override

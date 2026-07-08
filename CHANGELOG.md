@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1034]
 ### Added
+- **Share AI Impact without leaking your category names.** The AI Impact
+  breakdown now has a **Both / By category / By model** picker. **By model**
+  hides every category name, so you can screenshot and share your model mix and
+  its cost without exposing what your categories are called.
 - **Interactive AI Impact charts (favorite models over time).** The AI Impact
   dashboard now visualizes the breakdown, not just tables. Separate **by
   category** and **by model** charts are shown together, each with a **Share**
