@@ -488,22 +488,35 @@ void main() {
     });
 
     group('Melious known models', () {
-      test('curated defaults include thinking, vision, and Whisper models', () {
+      test('curated defaults include thinking, vision, and speech models', () {
         final ids = meliousModels.map((model) => model.providerModelId).toSet();
 
         expect(
           ids,
           containsAll({
             meliousDeepseekV4ProModelId,
+            meliousGlm52ModelId,
             meliousGemma426bA4bModelId,
             meliousMinimaxM27ModelId,
             meliousMistralSmall4119BInstructModelId,
             meliousDeepseekV4FlashModelId,
             meliousFlux2Klein9BModelId,
+            meliousVoxtralSmall24B2507ModelId,
             meliousWhisperLargeV3ModelId,
             meliousWhisperLargeV3TurboModelId,
           }),
         );
+      });
+
+      test('GLM 5.2 default is a tool-calling reasoning model', () {
+        final glm = findMeliousKnownModel(meliousGlm52ModelId);
+
+        expect(glm, isNotNull);
+        expect(glm!.isReasoningModel, isTrue);
+        expect(glm.supportsFunctionCalling, isTrue);
+        expect(glm.inputModalities, contains(Modality.text));
+        expect(glm.outputModalities, contains(Modality.text));
+        expect(glm.name, contains('GLM 5.2'));
       });
 
       test('Flux default is a text-to-image model', () {
@@ -516,13 +529,16 @@ void main() {
         expect(flux.name, contains('Flux 2 Klein 9B'));
       });
 
-      test('Whisper defaults are audio-to-text transcription models', () {
+      test('speech defaults are audio-to-text transcription models', () {
+        final voxtral = findMeliousKnownModel(
+          meliousVoxtralSmall24B2507ModelId,
+        );
         final whisper = findMeliousKnownModel(meliousWhisperLargeV3ModelId);
         final turbo = findMeliousKnownModel(
           meliousWhisperLargeV3TurboModelId,
         );
 
-        for (final model in [whisper, turbo]) {
+        for (final model in [voxtral, whisper, turbo]) {
           expect(model, isNotNull);
           expect(model!.inputModalities, contains(Modality.audio));
           expect(model.outputModalities, contains(Modality.text));
@@ -540,11 +556,15 @@ void main() {
         );
         expect(
           models.advancedThinking.providerModelId,
-          meliousDeepseekV4ProModelId,
+          meliousGlm52ModelId,
         );
         expect(
           models.imageGeneration.providerModelId,
           meliousFlux2Klein9BModelId,
+        );
+        expect(
+          models.voxtral.providerModelId,
+          meliousVoxtralSmall24B2507ModelId,
         );
         expect(
           models.whisper.providerModelId,

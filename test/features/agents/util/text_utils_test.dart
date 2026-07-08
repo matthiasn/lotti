@@ -83,4 +83,75 @@ void main() {
       expect(truncateAgentText('hello', -3), '');
     });
   });
+
+  group('sanitizeAgentReportText', () {
+    const uuid = '6af9c4b0-7a1d-11f1-aaec-bffd4abbb1e1';
+
+    test('strips a trailing parenthesized id annotation', () {
+      expect(
+        sanitizeAgentReportText('Guide user to create first task (id: $uuid)'),
+        'Guide user to create first task',
+      );
+    });
+
+    test('strips an id annotation mid-line, leaving one clean space', () {
+      expect(
+        sanitizeAgentReportText('Ship the API (id: $uuid) before Friday'),
+        'Ship the API before Friday',
+      );
+    });
+
+    test('strips the whole "What is left to do" list from the bug report', () {
+      const input = '''
+## 📌 What is left to do
+- [ ] Guide user to create first task (id: 6af9c4b0-7a1d-11f1-aaec-bffd4abbb1e1)
+- [ ] Show assigned agents (id: 6afd6e30-7a1d-11f1-aaec-bffd4abbb1e1)
+- [ ] Generate task summary (id: 6b0361a0-7a1d-11f1-aaec-bffd4abbb1e1)''';
+      const expected = '''
+## 📌 What is left to do
+- [ ] Guide user to create first task
+- [ ] Show assigned agents
+- [ ] Generate task summary''';
+      expect(sanitizeAgentReportText(input), expected);
+    });
+
+    test('handles bracket, equals, and dash-prefixed annotation shapes', () {
+      expect(sanitizeAgentReportText('Item [id: $uuid]'), 'Item');
+      expect(sanitizeAgentReportText('Item (id=$uuid)'), 'Item');
+      expect(sanitizeAgentReportText('Item — id: $uuid'), 'Item');
+      expect(sanitizeAgentReportText('Item id: $uuid'), 'Item');
+    });
+
+    test('strips a lone parenthesized UUID', () {
+      expect(sanitizeAgentReportText('Ship the API ($uuid)'), 'Ship the API');
+    });
+
+    test('preserves a legitimate /tasks/<id> proof-of-work link', () {
+      const link = 'See [the parent task](/tasks/$uuid) for context';
+      expect(sanitizeAgentReportText(link), link);
+    });
+
+    test('leaves indentation and blank lines intact', () {
+      const input = '  - [ ] Nested item (id: $uuid)\n\n  next';
+      expect(sanitizeAgentReportText(input), '  - [ ] Nested item\n\n  next');
+    });
+
+    test('returns the input unchanged when there is no id annotation', () {
+      const input = '## TLDR\nEverything is on track. No IDs here.';
+      expect(sanitizeAgentReportText(input), same(input));
+    });
+
+    test('does not touch non-UUID parentheticals', () {
+      const input = 'Reduce latency (currently 200ms) to under 100ms.';
+      expect(sanitizeAgentReportText(input), input);
+    });
+
+    test('preserves a Markdown hard break on an untouched line while '
+        'trimming the line a removal actually touched', () {
+      // The first line carries a deliberate two-space hard break; a later line
+      // holds an id annotation. Only the annotated line should be trimmed.
+      const input = 'First line  \nShip the API ($uuid)  ';
+      expect(sanitizeAgentReportText(input), 'First line  \nShip the API');
+    });
+  });
 }

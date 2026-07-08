@@ -87,6 +87,17 @@ class CategoryRepository {
     return categoryDefinitionsStreamMapper(categories);
   }
 
+  /// One-shot fetch of every category row regardless of visibility —
+  /// including soft-deleted, private-hidden, and archived (inactive) rows.
+  ///
+  /// The `name` column is UNIQUE across *all* rows, so duplicate-name checks
+  /// (e.g. onboarding's reuse-or-create) must consult this set: the visible
+  /// [getAllCategories] misses rows that would still trip the constraint.
+  Future<List<CategoryDefinition>> getAllCategoriesIncludingHidden() async {
+    final rows = await _journalDb.select(_journalDb.categoryDefinitions).get();
+    return categoryDefinitionsStreamMapper(rows);
+  }
+
   /// Creates and persists a new category with a fresh UUID.
   ///
   /// New categories start `active: true` and `private: false`; [color] is a

@@ -554,6 +554,46 @@ void main() {
         expect(find.byIcon(Icons.close_rounded), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'stacks text under the chip in a narrow pane on a wide screen',
+      (tester) async {
+        // Wide screen (screen-width check would pick the beside layout) but the
+        // card is squeezed into a narrow resizable task pane — the row must
+        // still stack the text under the chip based on its own width.
+        final bench = AgentTestBench(
+          mediaQueryData: const MediaQueryData(
+            size: Size(1200, 800),
+            disableAnimations: true,
+          ),
+          width: 360,
+          suggestions: UnifiedSuggestionList(
+            open: [addPending()],
+            activity: const [],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final chip = find.text(chipLabel);
+        final body = find.text(bodyText);
+        expect(chip, findsOneWidget);
+        expect(body, findsOneWidget);
+
+        // Column layout despite the wide screen: text sits below the chip and
+        // is not indented to the right of it.
+        expect(
+          tester.getTopLeft(body).dy,
+          greaterThan(tester.getTopLeft(chip).dy + 10),
+        );
+        expect(
+          tester.getTopLeft(body).dx,
+          lessThanOrEqualTo(tester.getTopLeft(chip).dx),
+        );
+      },
+    );
   });
   group('AiSummaryCard – proposal row resolve badge', () {
     testWidgets(

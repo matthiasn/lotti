@@ -6758,13 +6758,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Vérification…';
 
   @override
-  String get onboardingCaptureAccept => 'C\'est parfait';
-
-  @override
   String get onboardingCaptureCategoryPrompt => 'Où ranger ça ?';
-
-  @override
-  String get onboardingCaptureEditHint => 'Touche une ligne pour la modifier';
 
   @override
   String get onboardingCaptureListening => 'J\'écoute… touche quand tu as fini';
@@ -6773,21 +6767,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingCaptureOrbLabel => 'Enregistre ta pensée';
 
   @override
-  String get onboardingCapturePrompt => 'À quoi penses-tu ?';
-
-  @override
-  String get onboardingCapturePromptHint =>
-      'Essaie : rappelle-moi d\'appeler le dentiste et de réserver la révision de la voiture';
-
-  @override
   String get onboardingCaptureRatherType => 'Plutôt écrire ?';
 
   @override
   String get onboardingCaptureReassurance =>
       'Tu pourras tout modifier ensuite.';
-
-  @override
-  String get onboardingCaptureRevealed => 'Voici ta première tâche';
 
   @override
   String get onboardingCaptureThinking => 'Je transforme tes mots en tâche…';
@@ -6864,6 +6848,34 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboardingConnectTitle => 'Choisis le cerveau IA pour tes tâches';
+
+  @override
+  String get onboardingFirstTaskCreatedHint => 'Touche ta tâche pour l\'ouvrir';
+
+  @override
+  String get onboardingFirstTaskCreatedTitle => 'Ta première tâche est prête';
+
+  @override
+  String get onboardingFirstTaskGuidance =>
+      'Appuie pour parler et dis ce que tu as à faire — Lotti en fait une vraie tâche.';
+
+  @override
+  String get onboardingFirstTaskSuggestionDentist =>
+      'Prendre un rendez-vous chez le dentiste';
+
+  @override
+  String get onboardingFirstTaskSuggestionMeeting =>
+      'Préparer la réunion de lundi';
+
+  @override
+  String get onboardingFirstTaskSuggestionPlanWeek => 'Planifier ma semaine';
+
+  @override
+  String get onboardingFirstTaskSuggestionsLabel =>
+      'Pas encore envie de parler ? Commence avec une de ces idées :';
+
+  @override
+  String get onboardingFirstTaskTitle => 'Crée ta première tâche';
 
   @override
   String get onboardingRecordingStyleAnalogue => 'Analogique — VU-mètre';

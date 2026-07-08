@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,6 +28,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_pre
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -54,7 +56,8 @@ Future<AiFtueResult?> runFtueSetupForType({
   Set<String> excludedProviderModelIds = const {},
   bool createDefaultCategory = true,
 }) async {
-  return switch (providerType) {
+  final aiConfigRepository = ref.read(aiConfigRepositoryProvider);
+  final result = await switch (providerType) {
     InferenceProviderType.alibaba => setupService.performAlibabaFtueSetup(
       context: context,
       ref: ref,
@@ -106,6 +109,27 @@ Future<AiFtueResult?> runFtueSetupForType({
     ),
     _ => null,
   };
+
+  if (result != null) {
+    // The FTUE just created or re-verified this provider's model rows. If a
+    // previous deletion of a same-type provider left seeded default profiles
+    // pointing at dead rows, heal them now — task structuring, transcription,
+    // and agent wakes resolve through the profile the moment onboarding hands
+    // the user their first capture, not on the next app launch.
+    try {
+      await ProfileSeedingService(
+        aiConfigRepository: aiConfigRepository,
+      ).upgradeExisting();
+    } catch (e, stackTrace) {
+      developer.log(
+        'Profile repair after FTUE setup failed: $e',
+        name: 'runFtueSetupForType',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+  return result;
 }
 
 /// Performs the full FTUE setup workflow: preview, setup, and result.

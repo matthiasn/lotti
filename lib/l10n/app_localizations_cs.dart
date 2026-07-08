@@ -6706,13 +6706,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Ověřuji…';
 
   @override
-  String get onboardingCaptureAccept => 'Vypadá to dobře';
-
-  @override
   String get onboardingCaptureCategoryPrompt => 'Kam to má patřit?';
-
-  @override
-  String get onboardingCaptureEditHint => 'Klepnutím na řádek jej upravíš';
 
   @override
   String get onboardingCaptureListening => 'Poslouchám… klepni, až budeš hotov';
@@ -6721,20 +6715,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingCaptureOrbLabel => 'Nahraj svou myšlenku';
 
   @override
-  String get onboardingCapturePrompt => 'Co máš na mysli?';
-
-  @override
-  String get onboardingCapturePromptHint =>
-      'Zkus: připomeň mi zavolat zubaři a objednat servis auta';
-
-  @override
   String get onboardingCaptureRatherType => 'Raději psát?';
 
   @override
   String get onboardingCaptureReassurance => 'Vše budeš moct následně upravit.';
-
-  @override
-  String get onboardingCaptureRevealed => 'Tady je tvůj první úkol';
 
   @override
   String get onboardingCaptureThinking => 'Měním tvá slova v úkol…';
@@ -6811,6 +6795,34 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get onboardingConnectTitle => 'Vyber AI mozek pro své úkoly';
+
+  @override
+  String get onboardingFirstTaskCreatedHint =>
+      'Klepni na svůj úkol a otevři ho';
+
+  @override
+  String get onboardingFirstTaskCreatedTitle => 'Tvůj první úkol je připraven';
+
+  @override
+  String get onboardingFirstTaskGuidance =>
+      'Klepni, mluv a řekni, co potřebuješ udělat — Lotti z toho udělá skutečný úkol.';
+
+  @override
+  String get onboardingFirstTaskSuggestionDentist => 'Objednat se k zubaři';
+
+  @override
+  String get onboardingFirstTaskSuggestionMeeting =>
+      'Připravit se na pondělní schůzku';
+
+  @override
+  String get onboardingFirstTaskSuggestionPlanWeek => 'Naplánovat můj týden';
+
+  @override
+  String get onboardingFirstTaskSuggestionsLabel =>
+      'Ještě se ti nechce mluvit? Začni jedním z těchto:';
+
+  @override
+  String get onboardingFirstTaskTitle => 'Vytvoř svůj první úkol';
 
   @override
   String get onboardingRecordingStyleAnalogue => 'Analogový — VU metr';

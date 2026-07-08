@@ -47,6 +47,11 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   static const _imageGenerationWidth = 1792;
   static const _imageGenerationHeight = 1008;
 
+  /// Cap on speech-dictionary terms forwarded to `/audio/transcriptions`,
+  /// mirroring the Mistral `context_bias` limit so a huge dictionary keeps
+  /// its leading (most useful) terms instead of ballooning the bias prompt.
+  static const _maxContextBiasTerms = 100;
+
   final CloudInferenceRequestHelpers _helpers;
   final MeliousChatCompletionStreamFactory _chatCompletionStreamFactory;
 
@@ -559,12 +564,18 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
   /// Transcribes audio through Melious' OpenAI-compatible
   /// `/audio/transcriptions` endpoint.
+  ///
+  /// [contextBiasTerms] are speech-dictionary words/phrases forwarded as the
+  /// OpenAI-standard `prompt` form field to bias recognition toward names and
+  /// domain vocabulary — honored by context-aware models such as Voxtral and
+  /// safely ignored by models without prompt biasing.
   Stream<CreateChatCompletionStreamResponse> transcribeAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,
     required String apiKey,
     String responseFormat = 'json',
+    List<String>? contextBiasTerms,
     Duration? timeout,
   }) {
     final normalizedBaseUrl = baseUrl.trim();
@@ -603,6 +614,15 @@ class MeliousInferenceRepository extends TranscriptionRepository {
           )
           ..fields['model'] = model
           ..fields['response_format'] = responseFormat;
+
+        final biasTerms = contextBiasTerms
+            ?.map((term) => term.trim())
+            .where((term) => term.isNotEmpty)
+            .take(_maxContextBiasTerms)
+            .toList(growable: false);
+        if (biasTerms != null && biasTerms.isNotEmpty) {
+          request.fields['prompt'] = biasTerms.join(', ');
+        }
 
         final streamedResponse = await httpClient
             .send(request)

@@ -6594,13 +6594,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Verifying…';
 
   @override
-  String get onboardingCaptureAccept => 'Looks good';
-
-  @override
   String get onboardingCaptureCategoryPrompt => 'Where should this land?';
-
-  @override
-  String get onboardingCaptureEditHint => 'Tap any line to edit';
 
   @override
   String get onboardingCaptureListening => 'Listening… tap when you\'re done';
@@ -6609,21 +6603,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingCaptureOrbLabel => 'Record your thought';
 
   @override
-  String get onboardingCapturePrompt => 'What\'s on your mind?';
-
-  @override
-  String get onboardingCapturePromptHint =>
-      'Try: remind me to call the dentist and book the car service';
-
-  @override
   String get onboardingCaptureRatherType => 'Rather type?';
 
   @override
   String get onboardingCaptureReassurance =>
       'You\'ll be able to edit everything next.';
-
-  @override
-  String get onboardingCaptureRevealed => 'Here\'s your first task';
 
   @override
   String get onboardingCaptureThinking => 'Turning your words into a task…';
@@ -6700,6 +6684,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingConnectTitle => 'Choose the AI brain for your tasks';
+
+  @override
+  String get onboardingFirstTaskCreatedHint => 'Tap your task to open it';
+
+  @override
+  String get onboardingFirstTaskCreatedTitle => 'Your first task is ready';
+
+  @override
+  String get onboardingFirstTaskGuidance =>
+      'Tap to talk and say what needs doing — Lotti turns it into a real task.';
+
+  @override
+  String get onboardingFirstTaskSuggestionDentist =>
+      'Book a dentist appointment';
+
+  @override
+  String get onboardingFirstTaskSuggestionMeeting =>
+      'Prepare for Monday\'s meeting';
+
+  @override
+  String get onboardingFirstTaskSuggestionPlanWeek => 'Plan my week';
+
+  @override
+  String get onboardingFirstTaskSuggestionsLabel =>
+      'Not ready to talk? Start with one of these:';
+
+  @override
+  String get onboardingFirstTaskTitle => 'Create your first task';
 
   @override
   String get onboardingRecordingStyleAnalogue => 'Analogue — VU meter';

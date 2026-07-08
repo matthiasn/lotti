@@ -5,52 +5,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
+import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
-import 'package:lotti/features/onboarding/ui/pages/onboarding_capture_page.dart';
+import 'package:lotti/features/onboarding/state/recording_style.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/app_prefs_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-/// Fake [CaptureController] that lets a test push [CaptureState]s directly,
-/// bypassing the real mic / realtime pipeline. `toggle()` is wired to a
-/// test-supplied callback so the page's orb-tap is observable; the rest of the
-/// public API mirrors the real controller's effect on `state`.
-class _FakeCaptureController extends CaptureController {
-  VoidCallback? onToggle;
-
-  @override
-  CaptureState build() => const CaptureState.idle();
-
-  @override
-  Future<void> toggle() async => onToggle?.call();
-
-  @override
-  void startTyping() {
-    emit(
-      const CaptureState(
-        phase: CapturePhase.captured,
-        transcript: '',
-        amplitudes: <double>[],
-      ),
-    );
-  }
-
-  @override
-  void updateTranscript(String transcript) {
-    emit(state.copyWith(transcript: transcript));
-  }
-
-  @override
-  void reset() => emit(const CaptureState.idle());
-
-  /// Test seam: push an arbitrary state through the notifier.
-  // ignore: use_setters_to_change_properties
-  void emit(CaptureState next) => state = next;
-}
+/// In-memory [AppPrefs] backing the recording-style provider, so the step's
+/// style resolution never touches SharedPreferences.
+AppPrefs _fakePrefs({Future<String?>? styleValue}) => AppPrefs(
+  getBool: (_) async => null,
+  setBool: ({required key, required value}) async => true,
+  getString: (_) => styleValue ?? Future.value(),
+  setString: ({required key, required value}) async => true,
+);
 
 void main() {
   const categoryId = 'cat-1';
@@ -58,14 +34,14 @@ void main() {
   const providerName = 'Gemini';
   const transcript = 'call the dentist and book the car service';
 
-  late _FakeCaptureController controller;
+  late FakeCaptureController controller;
   late MockOnboardingCaptureToTaskService service;
   late MockOnboardingMetricsRepository metrics;
 
   // Reduced motion so the orb breath / shimmer tickers settle.
   const mq = MediaQueryData(size: Size(390, 844), disableAnimations: true);
 
-  // A real (in-progress) task landed; `task` carries the id the page hands to
+  // A real (in-progress) task landed; `task` carries the id the step hands to
   // onTaskCreated.
   OnboardingCaptureResult realAha({String taskId = 'task-1'}) =>
       OnboardingCaptureResult(
@@ -81,12 +57,21 @@ void main() {
         transcript: any(named: 'transcript'),
         categoryId: any(named: 'categoryId'),
         providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
       ),
     ).thenAnswer((_) async => result);
   }
 
+  /// Once structuring lands, the created beat owns the panel — the task card
+  /// (titled by [realAha]) must be tapped to hand the task to the host.
+  Future<void> tapCreatedCard(WidgetTester tester) async {
+    expect(find.text('Your first task is ready'), findsOneWidget);
+    await tester.tap(find.text('Car & health errands'), warnIfMissed: false);
+    await tester.pump();
+  }
+
   setUp(() {
-    controller = _FakeCaptureController();
+    controller = FakeCaptureController();
     service = MockOnboardingCaptureToTaskService();
     metrics = MockOnboardingMetricsRepository();
     when(
@@ -113,62 +98,95 @@ void main() {
     }
   });
 
-  Future<void> pumpPage(
+  Future<void> pumpStep(
     WidgetTester tester, {
     VoidCallback? onDone,
     void Function(String taskId)? onTaskCreated,
     List<OnboardingCaptureCategory>? categories,
+    Future<String?>? styleValue,
   }) async {
-    // The full-screen page uses Spacers (needs a bounded viewport) and pins the
-    // "Rather type?" escape hatch near the bottom; size the surface to the
-    // 844-tall MediaQuery so the lower controls are on-screen and hit-testable.
-    tester.view
-      ..physicalSize = const Size(390, 1000)
-      ..devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
     await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        OnboardingCapturePage(
-          categories:
-              categories ??
-              const [
-                OnboardingCaptureCategory(id: categoryId, label: categoryLabel),
-              ],
-          providerName: providerName,
-          onDone: onDone ?? () {},
-          onTaskCreated: onTaskCreated ?? (_) {},
+      makeTestableWidget(
+        Material(
+          type: MaterialType.transparency,
+          child: SizedBox(
+            width: 390,
+            child: OnboardingFirstTaskStep(
+              categories:
+                  categories ??
+                  const [
+                    OnboardingCaptureCategory(
+                      id: categoryId,
+                      label: categoryLabel,
+                    ),
+                  ],
+              providerName: providerName,
+              onDone: onDone ?? () {},
+              onTaskCreated: onTaskCreated ?? (_) {},
+            ),
+          ),
         ),
         mediaQueryData: mq,
         overrides: [
           captureControllerProvider.overrideWith(() => controller),
           onboardingCaptureToTaskServiceProvider.overrideWithValue(service),
+          recordingStyleAppPrefsProvider.overrideWithValue(
+            _fakePrefs(styleValue: styleValue),
+          ),
         ],
       ),
     );
     await tester.pump();
   }
 
-  testWidgets('renders the prompt frame at rest', (tester) async {
-    await pumpPage(tester);
+  group('recording style resolution', () {
+    testWidgets('the persisted analogue pick drives the VU meter visual', (
+      tester,
+    ) async {
+      await pumpStep(tester, styleValue: Future.value('analogue'));
+      // Let the style preference future resolve into the provider.
+      await tester.pump();
 
-    expect(find.text("What's on your mind?"), findsOneWidget);
+      expect(find.byType(AnalogVuMeter), findsOneWidget);
+      expect(find.byType(VoiceOrbZone), findsNothing);
+    });
+
+    testWidgets('falls back to the orb while the preference is unresolved', (
+      tester,
+    ) async {
+      // A never-completing preference load: the step must not blank out — the
+      // signature orb stands in until the style resolves.
+      await pumpStep(tester, styleValue: Completer<String?>().future);
+
+      expect(find.byType(VoiceOrbZone), findsOneWidget);
+      expect(find.byType(AnalogVuMeter), findsNothing);
+    });
+  });
+
+  testWidgets('renders the prompt frame with guided suggestions at rest', (
+    tester,
+  ) async {
+    await pumpStep(tester);
+
+    expect(find.text('Create your first task'), findsOneWidget);
     expect(find.byType(VoiceOrbZone), findsOneWidget);
+    expect(find.text('Plan my week'), findsOneWidget);
+    expect(find.text('Book a dentist appointment'), findsOneWidget);
+    expect(find.text("Prepare for Monday's meeting"), findsOneWidget);
     expect(find.text('Rather type?'), findsOneWidget);
   });
 
-  testWidgets('orb tap delegates to the controller toggle', (tester) async {
+  testWidgets('record tap delegates to the controller toggle', (tester) async {
     var toggles = 0;
     controller.onToggle = () => toggles++;
-    await pumpPage(tester);
+    await pumpStep(tester);
 
     await tester.tap(find.byType(VoiceButton), warnIfMissed: false);
     expect(toggles, 1);
   });
 
   testWidgets('listening maps to the live frame', (tester) async {
-    await pumpPage(tester);
+    await pumpStep(tester);
 
     controller.emit(
       const CaptureState(
@@ -185,7 +203,8 @@ void main() {
   });
 
   testWidgets(
-    'reaching captured structures once and hands the new task to the host',
+    'reaching captured structures once, reveals the created beat, and hands '
+    'the task to the host on tap',
     (tester) async {
       final gate = Completer<OnboardingCaptureResult>();
       when(
@@ -193,17 +212,19 @@ void main() {
           transcript: any(named: 'transcript'),
           categoryId: any(named: 'categoryId'),
           providerName: any(named: 'providerName'),
+          audioId: any(named: 'audioId'),
         ),
       ).thenAnswer((_) => gate.future);
 
       final created = <String>[];
-      await pumpPage(tester, onTaskCreated: created.add);
+      await pumpStep(tester, onTaskCreated: created.add);
 
       controller.emit(
         const CaptureState(
           phase: CapturePhase.captured,
           transcript: transcript,
           amplitudes: <double>[],
+          audioId: 'audio-1',
         ),
       );
       await tester.pump();
@@ -216,13 +237,27 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // The page hands the new task's id to the host (which navigates to it).
+      // The created beat shows the task inside the panel — the host has not
+      // been handed anything yet. The card is title-only; the structured
+      // checklist surfaces as proposals on the task page, not here.
+      expect(find.text('Your first task is ready'), findsOneWidget);
+      expect(find.text('Car & health errands'), findsOneWidget);
+      expect(find.text('Call the dentist'), findsNothing);
+      expect(find.text('Book the car service'), findsNothing);
+      expect(created, isEmpty);
+
+      // Tapping the card is the handoff.
+      await tapCreatedCard(tester);
       expect(created, ['task-1']);
+
+      // The spoken capture's audio entry travelled with the transcript so the
+      // service can link it under the task.
       verify(
         () => service.createTaskFromTranscript(
           transcript: transcript,
           categoryId: categoryId,
           providerName: providerName,
+          audioId: 'audio-1',
         ),
       ).called(1);
       verify(
@@ -233,6 +268,74 @@ void main() {
       ).called(1);
     },
   );
+
+  testWidgets('a tapped suggestion rides the typed path into structuring', (
+    tester,
+  ) async {
+    stubStructuring(realAha(taskId: 'suggested-task'));
+    final created = <String>[];
+    await pumpStep(tester, onTaskCreated: created.add);
+
+    await tester.tap(find.text('Plan my week'), warnIfMissed: false);
+    await tester.pump();
+    await tester.pump();
+
+    verify(
+      () => service.createTaskFromTranscript(
+        transcript: 'Plan my week',
+        categoryId: categoryId,
+        providerName: providerName,
+        // The typed path has no recording, so no audio entry travels along.
+        // ignore: avoid_redundant_argument_values
+        audioId: null,
+      ),
+    ).called(1);
+    // The typed path is not a voice capture: it records typedCaptureUsed, not
+    // firstAudioCaptured, so the voice-adoption funnel metric isn't inflated.
+    verify(
+      () => metrics.recordEvent(
+        OnboardingEventName.typedCaptureUsed,
+        provider: providerName,
+      ),
+    ).called(1);
+    verifyNever(
+      () => metrics.recordEvent(
+        OnboardingEventName.firstAudioCaptured,
+        provider: any(named: 'provider'),
+      ),
+    );
+    await tapCreatedCard(tester);
+    expect(created, ['suggested-task']);
+  });
+
+  testWidgets('a double-tap on the created card hands off only once', (
+    tester,
+  ) async {
+    stubStructuring(realAha());
+    final created = <String>[];
+    await pumpStep(tester, onTaskCreated: created.add);
+
+    controller.emit(
+      const CaptureState(
+        phase: CapturePhase.captured,
+        transcript: transcript,
+        amplitudes: <double>[],
+        audioId: 'audio-1',
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // Two rapid taps before the host can tear the panel down — the latch means
+    // only the first reaches onTaskCreated (a second pop would tear down the
+    // route beneath the modal).
+    final card = find.text('Car & health errands');
+    await tester.tap(card, warnIfMissed: false);
+    await tester.tap(card, warnIfMissed: false);
+    await tester.pump();
+
+    expect(created, ['task-1']);
+  });
 
   testWidgets('a total structuring failure (no task) finishes onboarding', (
     tester,
@@ -247,7 +350,7 @@ void main() {
     );
     var dones = 0;
     final created = <String>[];
-    await pumpPage(
+    await pumpStep(
       tester,
       onDone: () => dones++,
       onTaskCreated: created.add,
@@ -275,11 +378,12 @@ void main() {
         transcript: any(named: 'transcript'),
         categoryId: any(named: 'categoryId'),
         providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
       ),
     ).thenThrow(Exception('structuring backend down'));
     final created = <String>[];
     var dones = 0;
-    await pumpPage(
+    await pumpStep(
       tester,
       onTaskCreated: created.add,
       onDone: () => dones++,
@@ -296,10 +400,10 @@ void main() {
     await tester.pump();
 
     // The throw is swallowed: no task handed up, onboarding not finished, and
-    // the page falls back to the prompt frame so the user can try again.
+    // the step falls back to the prompt frame so the user can try again.
     expect(created, isEmpty);
     expect(dones, 0);
-    expect(find.text("What's on your mind?"), findsOneWidget);
+    expect(find.text('Create your first task'), findsOneWidget);
     expect(find.byType(VoiceOrbZone), findsOneWidget);
 
     // A fresh capture re-runs structuring (the in-flight guard was cleared).
@@ -313,6 +417,7 @@ void main() {
     );
     await tester.pump();
     await tester.pump();
+    await tapCreatedCard(tester);
     expect(created, ['task-1']);
   });
 
@@ -320,7 +425,7 @@ void main() {
     tester,
   ) async {
     stubStructuring(realAha());
-    await pumpPage(tester);
+    await pumpStep(tester);
 
     const captured = CaptureState(
       phase: CapturePhase.captured,
@@ -339,12 +444,14 @@ void main() {
         transcript: transcript,
         categoryId: categoryId,
         providerName: providerName,
+        // ignore: avoid_redundant_argument_values
+        audioId: null,
       ),
     ).called(1);
   });
 
   testWidgets('does not structure an empty transcript', (tester) async {
-    await pumpPage(tester);
+    await pumpStep(tester);
 
     controller.emit(
       const CaptureState(
@@ -361,18 +468,131 @@ void main() {
         transcript: any(named: 'transcript'),
         categoryId: any(named: 'categoryId'),
         providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
       ),
     );
   });
 
-  testWidgets('the close affordance fires onDone (escape from any phase)', (
+  testWidgets(
+    'an empty mic capture re-arms the prompt instead of stranding thinking',
+    (tester) async {
+      await pumpStep(tester);
+
+      // Mic path: listening → transcribing → captured with an empty
+      // transcript (silence). The step must reset back to the prompt — the
+      // thinking frame has no retry affordance.
+      controller.emit(
+        const CaptureState(
+          phase: CapturePhase.listening,
+          transcript: '',
+          amplitudes: <double>[],
+        ),
+      );
+      await tester.pump();
+      controller.emit(
+        const CaptureState(
+          phase: CapturePhase.transcribing,
+          transcript: '',
+          amplitudes: <double>[],
+        ),
+      );
+      await tester.pump();
+      controller.emit(
+        const CaptureState(
+          phase: CapturePhase.captured,
+          transcript: '',
+          amplitudes: <double>[],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Create your first task'), findsOneWidget);
+      expect(find.text('Turning your words into a task…'), findsNothing);
+      verifyNever(
+        () => service.createTaskFromTranscript(
+          transcript: any(named: 'transcript'),
+          categoryId: any(named: 'categoryId'),
+          providerName: any(named: 'providerName'),
+          audioId: any(named: 'audioId'),
+        ),
+      );
+    },
+  );
+
+  testWidgets(
+    'disposal during the metrics await does not touch ref afterwards',
+    (tester) async {
+      // Gate the funnel-event write so the step is parked on the await when
+      // the modal is dismissed. Using `ref` after disposal throws in
+      // Riverpod — the step must bail out instead.
+      final gate = Completer<void>();
+      when(
+        () => metrics.recordEvent(
+          any(),
+          provider: any(named: 'provider'),
+          reason: any(named: 'reason'),
+          valueBucket: any(named: 'valueBucket'),
+        ),
+      ).thenAnswer((_) => gate.future);
+      stubStructuring(realAha());
+      await pumpStep(tester);
+
+      controller.emit(
+        const CaptureState(
+          phase: CapturePhase.captured,
+          transcript: transcript,
+          amplitudes: <double>[],
+        ),
+      );
+      await tester.pump();
+
+      // Dismiss (dispose) the step mid-await, then let the write resolve.
+      await tester.pumpWidget(const SizedBox.shrink());
+      gate.complete();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      verifyNever(
+        () => service.createTaskFromTranscript(
+          transcript: any(named: 'transcript'),
+          categoryId: any(named: 'categoryId'),
+          providerName: any(named: 'providerName'),
+          audioId: any(named: 'audioId'),
+        ),
+      );
+    },
+  );
+
+  testWidgets('a metrics write failure does not cost the user the task', (
     tester,
   ) async {
-    var done = 0;
-    await pumpPage(tester, onDone: () => done++);
+    // The funnel event write throws (e.g. metrics DB closed) — telemetry is
+    // best-effort and the capture must still structure into a real task.
+    when(
+      () => metrics.recordEvent(
+        any(),
+        provider: any(named: 'provider'),
+        reason: any(named: 'reason'),
+        valueBucket: any(named: 'valueBucket'),
+      ),
+    ).thenThrow(Exception('metrics db closed'));
+    stubStructuring(realAha());
+    final created = <String>[];
+    await pumpStep(tester, onTaskCreated: created.add);
 
-    await tester.tap(find.byIcon(Icons.close_rounded));
-    expect(done, 1);
+    controller.emit(
+      const CaptureState(
+        phase: CapturePhase.captured,
+        transcript: transcript,
+        amplitudes: <double>[],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tapCreatedCard(tester);
+    expect(created, ['task-1']);
   });
 
   testWidgets('Rather type? collects typed text and structures it', (
@@ -381,11 +601,11 @@ void main() {
     const typed = 'water the plants on the balcony';
     stubStructuring(realAha());
     final created = <String>[];
-    await pumpPage(tester, onTaskCreated: created.add);
+    await pumpStep(tester, onTaskCreated: created.add);
 
     // The orb's breath/shader tickers never settle, so step the dialog
     // route open/close with bounded pumps rather than pumpAndSettle.
-    await tester.tap(find.text('Rather type?'));
+    await tester.tap(find.text('Rather type?'), warnIfMissed: false);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -401,8 +621,11 @@ void main() {
         transcript: typed,
         categoryId: categoryId,
         providerName: providerName,
+        // ignore: avoid_redundant_argument_values
+        audioId: null,
       ),
     ).called(1);
+    await tapCreatedCard(tester);
     expect(created, ['task-1']);
   });
 
@@ -412,9 +635,9 @@ void main() {
     const typed = 'review the quarterly budget';
     stubStructuring(realAha(taskId: 'budget-task'));
     final created = <String>[];
-    await pumpPage(tester, onTaskCreated: created.add);
+    await pumpStep(tester, onTaskCreated: created.add);
 
-    await tester.tap(find.text('Rather type?'));
+    await tester.tap(find.text('Rather type?'), warnIfMissed: false);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     await tester.enterText(find.byType(TextField), typed);
@@ -427,29 +650,49 @@ void main() {
         transcript: typed,
         categoryId: categoryId,
         providerName: providerName,
+        // ignore: avoid_redundant_argument_values
+        audioId: null,
       ),
     ).called(1);
+    await tapCreatedCard(tester);
     expect(created, ['budget-task']);
+  });
+
+  testWidgets('the type dialog opens over the prompt frame, not a fake '
+      'thinking frame', (tester) async {
+    await pumpStep(tester);
+
+    await tester.tap(find.text('Rather type?'), warnIfMissed: false);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // The controller is untouched until text is submitted, so the panel
+    // behind the dialog still shows the prompt — not "Turning your words
+    // into a task…" over an empty quote.
+    expect(find.text('Type your thought'), findsOneWidget);
+    expect(find.text('Create your first task'), findsOneWidget);
+    expect(find.text('Turning your words into a task…'), findsNothing);
   });
 
   testWidgets('Rather type? cancelled resets without structuring', (
     tester,
   ) async {
-    await pumpPage(tester);
+    await pumpStep(tester);
 
-    await tester.tap(find.text('Rather type?'));
+    await tester.tap(find.text('Rather type?'), warnIfMissed: false);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     await tester.tap(find.text('Cancel'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text("What's on your mind?"), findsOneWidget);
+    expect(find.text('Create your first task'), findsOneWidget);
     verifyNever(
       () => service.createTaskFromTranscript(
         transcript: any(named: 'transcript'),
         categoryId: any(named: 'categoryId'),
         providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
       ),
     );
   });
@@ -457,7 +700,7 @@ void main() {
   testWidgets('error maps back to the prompt frame as a retry affordance', (
     tester,
   ) async {
-    await pumpPage(tester);
+    await pumpStep(tester);
 
     controller.emit(
       const CaptureState(
@@ -469,12 +712,12 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text("What's on your mind?"), findsOneWidget);
+    expect(find.text('Create your first task'), findsOneWidget);
     expect(find.byType(VoiceOrbZone), findsOneWidget);
   });
 
   testWidgets('a single area shows no destination picker', (tester) async {
-    await pumpPage(tester);
+    await pumpStep(tester);
 
     expect(find.text('Where should this land?'), findsNothing);
   });
@@ -484,7 +727,7 @@ void main() {
     (tester) async {
       stubStructuring(realAha());
       final created = <String>[];
-      await pumpPage(
+      await pumpStep(
         tester,
         onTaskCreated: created.add,
         categories: const [
@@ -497,7 +740,7 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
       expect(find.text('Family'), findsOneWidget);
 
-      await tester.tap(find.text('Family'));
+      await tester.tap(find.text('Family'), warnIfMissed: false);
       await tester.pump();
 
       controller.emit(
@@ -515,8 +758,11 @@ void main() {
           transcript: transcript,
           categoryId: 'cat-family',
           providerName: providerName,
+          // ignore: avoid_redundant_argument_values
+          audioId: null,
         ),
       ).called(1);
+      await tapCreatedCard(tester);
       expect(created, ['task-1']);
     },
   );
@@ -530,10 +776,11 @@ void main() {
         transcript: any(named: 'transcript'),
         categoryId: any(named: 'categoryId'),
         providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
       ),
     ).thenAnswer((_) => gate.future);
 
-    await pumpPage(
+    await pumpStep(
       tester,
       categories: const [
         OnboardingCaptureCategory(id: 'cat-work', label: 'Work'),

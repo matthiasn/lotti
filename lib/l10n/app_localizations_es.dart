@@ -6748,13 +6748,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingApiKeyVerifying => 'Verificando…';
 
   @override
-  String get onboardingCaptureAccept => 'Se ve bien';
-
-  @override
   String get onboardingCaptureCategoryPrompt => '¿Dónde debería ir esto?';
-
-  @override
-  String get onboardingCaptureEditHint => 'Toca cualquier línea para editarla';
 
   @override
   String get onboardingCaptureListening => 'Escuchando… toca cuando termines';
@@ -6763,21 +6757,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingCaptureOrbLabel => 'Graba tu idea';
 
   @override
-  String get onboardingCapturePrompt => '¿Qué tienes en mente?';
-
-  @override
-  String get onboardingCapturePromptHint =>
-      'Prueba: recuérdame llamar al dentista y reservar el servicio del coche';
-
-  @override
   String get onboardingCaptureRatherType => '¿Prefieres escribir?';
 
   @override
   String get onboardingCaptureReassurance =>
       'Podrás editar todo a continuación.';
-
-  @override
-  String get onboardingCaptureRevealed => 'Aquí está tu primera tarea';
 
   @override
   String get onboardingCaptureThinking =>
@@ -6855,6 +6839,34 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingConnectTitle => 'Elige el cerebro de IA para tus tareas';
+
+  @override
+  String get onboardingFirstTaskCreatedHint => 'Toca tu tarea para abrirla';
+
+  @override
+  String get onboardingFirstTaskCreatedTitle => 'Tu primera tarea está lista';
+
+  @override
+  String get onboardingFirstTaskGuidance =>
+      'Toca para hablar y di qué necesitas hacer: Lotti lo convierte en una tarea real.';
+
+  @override
+  String get onboardingFirstTaskSuggestionDentist =>
+      'Pedir cita con el dentista';
+
+  @override
+  String get onboardingFirstTaskSuggestionMeeting =>
+      'Preparar la reunión del lunes';
+
+  @override
+  String get onboardingFirstTaskSuggestionPlanWeek => 'Planificar mi semana';
+
+  @override
+  String get onboardingFirstTaskSuggestionsLabel =>
+      '¿Aún no quieres hablar? Empieza con una de estas:';
+
+  @override
+  String get onboardingFirstTaskTitle => 'Crea tu primera tarea';
 
   @override
   String get onboardingRecordingStyleAnalogue => 'Analógico — vúmetro';

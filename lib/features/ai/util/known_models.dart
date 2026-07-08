@@ -98,11 +98,13 @@ const mlxAudioDefaultTtsModelId = 'mlx-community/Qwen3-TTS-12Hz-0.6B-Base-8bit';
 /// added, so transcription and profile slots are usable before browsing the
 /// full remote catalog.
 const String meliousDeepseekV4ProModelId = 'deepseek-v4-pro';
+const String meliousGlm52ModelId = 'glm-5.2';
 const String meliousGemma426bA4bModelId = 'gemma-4-26b-a4b';
 const String meliousMinimaxM27ModelId = 'minimax-m2.7';
 const String meliousMistralSmall4119BInstructModelId =
     'mistral-small-4-119b-instruct';
 const String meliousDeepseekV4FlashModelId = 'deepseek-v4-flash';
+const String meliousVoxtralSmall24B2507ModelId = 'voxtral-small-24b-2507';
 const String meliousWhisperLargeV3ModelId = 'whisper-large-v3';
 const String meliousWhisperLargeV3TurboModelId = 'whisper-large-v3-turbo';
 const String meliousFlux2Klein9BModelId = 'flux-2-klein-9b';

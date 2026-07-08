@@ -100,6 +100,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_conte
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
+import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -657,6 +658,43 @@ class MockRealtimeTranscriptionService extends Mock
     implements RealtimeTranscriptionService {}
 
 class MockNavService extends Mock implements NavService {}
+
+/// Fake [CaptureController] that lets a test push [CaptureState]s directly,
+/// bypassing the real mic / realtime pipeline. `toggle()` is wired to a
+/// test-supplied callback so a record-tap is observable; the rest of the
+/// public API mirrors the real controller's effect on `state`.
+class FakeCaptureController extends CaptureController {
+  VoidCallback? onToggle;
+
+  @override
+  CaptureState build() => const CaptureState.idle();
+
+  @override
+  Future<void> toggle() async => onToggle?.call();
+
+  @override
+  void startTyping() {
+    emit(
+      const CaptureState(
+        phase: CapturePhase.captured,
+        transcript: '',
+        amplitudes: <double>[],
+      ),
+    );
+  }
+
+  @override
+  void updateTranscript(String transcript) {
+    emit(state.copyWith(transcript: transcript));
+  }
+
+  @override
+  void reset() => emit(const CaptureState.idle());
+
+  /// Test seam: push an arbitrary state through the notifier.
+  // ignore: use_setters_to_change_properties
+  void emit(CaptureState next) => state = next;
+}
 
 /// Recording [BeamerDelegate] for navigation tests — captures every
 /// `beamToNamed` URI instead of routing anywhere.

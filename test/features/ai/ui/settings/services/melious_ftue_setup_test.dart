@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -128,15 +129,16 @@ void main() {
       await tester.pump();
 
       expect(result, isNotNull);
-      expect(result!.modelsCreated, 5);
+      expect(result!.modelsCreated, 6);
       expect(result!.modelsVerified, 0);
       expect(result!.categoryCreated, isTrue);
       expect(
         saved.whereType<AiConfigModel>().map((model) => model.providerModelId),
         containsAll([
           meliousMistralSmall4119BInstructModelId,
-          meliousDeepseekV4ProModelId,
+          meliousGlm52ModelId,
           meliousFlux2Klein9BModelId,
+          meliousVoxtralSmall24B2507ModelId,
           meliousWhisperLargeV3ModelId,
           meliousWhisperLargeV3TurboModelId,
         ]),
@@ -146,6 +148,7 @@ void main() {
           name: ftueMeliousCategoryName,
           color: ftueMeliousCategoryColor,
           defaultProfileId: profileMeliousId,
+          defaultTemplateId: lauraTemplateId,
         ),
       ).called(1);
     });
@@ -162,8 +165,14 @@ void main() {
         ),
         AiTestDataFactory.createTestModel(
           id: 'advanced',
-          name: 'DeepSeek V4 Pro',
-          providerModelId: meliousDeepseekV4ProModelId,
+          name: 'GLM 5.2',
+          providerModelId: meliousGlm52ModelId,
+          inferenceProviderId: meliousProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'voxtral',
+          name: 'Voxtral Small 24B 2507',
+          providerModelId: meliousVoxtralSmall24B2507ModelId,
           inferenceProviderId: meliousProvider.id,
         ),
         AiTestDataFactory.createTestModel(
@@ -226,7 +235,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.modelsCreated, 0);
-      expect(result!.modelsVerified, 5);
+      expect(result!.modelsVerified, 6);
       expect(result!.categoryCreated, isFalse);
       expect(result!.categoryReused, isTrue);
       verifyNever(() => mockRepository.saveConfig(any()));

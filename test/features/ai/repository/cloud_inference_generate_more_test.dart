@@ -255,6 +255,7 @@ void main() {
               baseUrl: meliousProvider.baseUrl,
               apiKey: meliousProvider.apiKey,
               provider: meliousProvider,
+              speechDictionaryTerms: const ['Lotti', 'Voxtral'],
             )
             .toList();
 
@@ -268,6 +269,7 @@ void main() {
             audioBase64: 'melious-audio',
             baseUrl: baseUrl,
             apiKey: 'key',
+            contextBiasTerms: const ['Lotti', 'Voxtral'],
           ),
         );
       },
@@ -408,6 +410,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
           String audioBase64,
           String baseUrl,
           String apiKey,
+          List<String>? contextBiasTerms,
         })
       >[];
   final messageCalls =
@@ -437,6 +440,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     required String baseUrl,
     required String apiKey,
     String responseFormat = 'json',
+    List<String>? contextBiasTerms,
     Duration? timeout,
   }) {
     audioCalls.add(
@@ -445,6 +449,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
         audioBase64: audioBase64,
         baseUrl: baseUrl,
         apiKey: apiKey,
+        contextBiasTerms: contextBiasTerms,
       ),
     );
     return Stream.value(

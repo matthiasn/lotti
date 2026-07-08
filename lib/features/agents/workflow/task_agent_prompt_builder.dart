@@ -232,6 +232,11 @@ The report MUST NOT contain:
 - "I noticed..." or "I decided to..." commentary
 - Debugging notes, failure analysis, or retry logs
 - Agent self-reflection or meta-commentary
+- Internal entity IDs of any kind as visible text. The task context gives you
+  each checklist item's `id` so you can call the checklist tools — those IDs
+  are for tool arguments only. NEVER echo them into the report. Write
+  "Ship the API", never "Ship the API (id: 6af9c4b0-…)". This applies to
+  checklist item, label, and any other entity IDs.
 - Bare internal task IDs or shortened hashes as visible link text. When a
   provided task context includes a task ID and linking helps the user inspect
   proof of work, link the readable task title to `/tasks/<taskId>`. Keep the

@@ -26,15 +26,19 @@ flowchart TD
     AK -->|verified: provider + models + profile| SU[success beat]
     SU -->|Get started| RS[recording style · pick analogue / modern]
     RS -->|Continue · style persisted| CAT[category · pick life areas]
-    CAT -->|≥1 area created → modal pops| CAP[OnboardingCapturePage · full screen]
+    CAT -->|≥1 area created / reused| FT[first task · in-panel capture]
     CAT -->|nothing selected| DONE[done]
-    CAP -->|speak / type → structure| TASK[real in-progress TaskDetailsPage]
+    FT -->|speak / suggestion / type → structure| CARD[created beat · in-panel task card]
+    CARD -->|tap the card| TASK[real in-progress TaskDetailsPage]
 ```
 
-The welcome → category steps live inside **one transparent, barrier-dismissible
-full-screen route** (`OnboardingWelcomeModal`). The capture page is pushed as a
-**separate** full-screen route once the modal pops, because its full-bleed
-Spacer-based layout needs the whole viewport (not the modal's scroll view).
+Every step — welcome through the first-task finale — lives inside **one
+transparent, barrier-dismissible full-screen route** (`OnboardingWelcomeModal`).
+The finale deliberately stays in the same panel (the same dialogue the user has
+been in all along) instead of popping out to a full-screen takeover: when the
+task lands it is revealed *inside* the panel as a glowing tappable card, and
+only the user's tap on that card leaves the modal — landing on the **real**
+`TaskDetailsPage`.
 
 ## Phase 0 — measurement substrate
 
@@ -110,15 +114,21 @@ stateDiagram-v2
     connect --> apiKey: pick a provider
     apiKey --> connect: back
     apiKey --> success: key verified · provider + models + profile created
-    success --> category: Get started
-    category --> [*]: ≥1 area created → pop & push capture page
+    success --> recordingStyle: Get started
+    recordingStyle --> category: Continue · style persisted
+    category --> firstTask: ≥1 area created / reused
     category --> [*]: nothing selected → done
+    firstTask --> [*]: created card tapped → pop & open TaskDetailsPage
+    firstTask --> [*]: total structuring failure → done
 ```
 
 - **`OnboardingWelcomeModal.show`** opens the transparent `PageRouteBuilder`
   (`opaque: false`, `barrierDismissible: true`, dim barrier). Tapping the dim
   barrier closes it, matching the app's modal convention. It records the
-  connect-funnel events and, on success, pushes the capture page in its place.
+  connect-funnel events and, once the first-task step lands a real task, pops
+  the route and opens that task (`openOnboardingCreatedTask` — a deep link
+  through the canonical `/tasks/:id` route, which also switches to the Tasks
+  destination).
 - **Native provider creation.** Unlike a settings deep-link, the flow creates the
   provider **in place**: `OnboardingApiKeyPanel` runs the existing per-provider
   FTUE setup (`runFtueSetupForType` → `performXxxFtueSetup`), which creates the
@@ -147,8 +157,18 @@ per category* — instead of silently creating a throwaway category. The user
 multi-selects life areas (Work / Fitness / Family / Friends, or adds their own); a
 "Why areas?" disclosure explains the per-category-provider mechanism. On continue,
 each selected area becomes a real `CategoryDefinition` bound to the just-connected
-provider's seeded inference profile (`onboardingSeededProfileId`), so every chosen
-area can actually run inference.
+provider's seeded inference profile (`onboardingSeededProfileId`) **and** to Laura
+(`lauraTemplateId`) as its default task-agent template, so every chosen area can
+actually run inference and every task created in it — the onboarding first task
+included — gets a task agent auto-assigned. Category names are UNIQUE across
+**all** rows in the database — including soft-deleted, private-hidden, and
+archived ones — so the duplicate check consults the unfiltered set
+(`getAllCategoriesIncludingHidden`) and a matched area is **reused** rather than
+re-created: the row is resurrected (`deletedAt` cleared), re-activated, and
+rebound to the just-seeded inference profile so the first-task structuring can
+run; Laura is bound only when the row carries no template of its own, and its
+`private` flag is deliberately left untouched. A residual write failure
+surfaces as an error toast instead of a silently dead Continue button.
 
 `OnboardingCategoryView` renders the areas as a uniform two-column grid of chips
 over the shared alive backdrop. Unselected chips are **teal-tinted frosted glass**
@@ -161,8 +181,9 @@ reads as one glass family.
 ## Recording-style step
 
 Between the success beat and the category step, a personalization step lets the
-user pick how the mic looks during capture — and persists the choice for the real
-capture (and a future Settings toggle).
+user pick how the mic looks during capture — and persists the choice, which the
+first-task step then renders as its live recording visual (and a future
+Settings toggle will surface too).
 
 - **`OnboardingRecordingStyleStep`** (`ui/widgets/`, ConsumerStatefulWidget) hosts
   the presentational **`OnboardingRecordingStyleView`** and owns the level source:
@@ -177,30 +198,53 @@ capture (and a future Settings toggle).
 - The choice is persisted by **`recordingStyleProvider`** (`state/recording_style.dart`,
   an `AsyncNotifier` over `AppPrefs`, default `modern`).
 
-## Phase 2 — the live voice→task aha
+## Phase 2 — the live voice→task aha (the in-panel first-task step)
 
-`OnboardingCapturePage` (`ui/pages/`) hosts the presentational
-`OnboardingCaptureView` on a full-screen dark surface and wires it to the **shared**
-`captureControllerProvider` (the same mic/realtime pipeline the Daily OS capture
-screen uses — no bespoke audio wiring) and to the
-`onboardingCaptureToTaskServiceProvider` orchestrator.
+`OnboardingFirstTaskStep` (`ui/widgets/`) is the flow's **final in-panel step**
+— the finale never leaves the onboarding dialogue for a full-screen takeover.
+It hosts the presentational `OnboardingFirstTaskView` and wires it to the
+**shared** `captureControllerProvider` (the same mic/realtime pipeline the
+Daily OS capture screen uses — no bespoke audio wiring), to the persisted
+`recordingStyleProvider`, and to the `onboardingCaptureToTaskServiceProvider`
+orchestrator.
 
 ```mermaid
 stateDiagram-v2
     [*] --> prompt
-    prompt --> listening: tap orb (mic opens)
+    prompt --> listening: tap the recording visual (mic opens)
     listening --> thinking: tap to stop (captured, transcript)
+    prompt --> thinking: tap a starter suggestion (typed path)
     prompt --> prompt: mic error → re-arm on next tap
-    thinking --> [*]: structuring resolves → push real task page
+    thinking --> created: structuring lands a real task
+    created --> [*]: card tapped → pop modal · open real task page
+    thinking --> [*]: total structuring failure → done
 ```
 
-The page maps the controller's `CapturePhase` onto the view's
-`OnboardingCapturePhase` (prompt / listening / thinking). On reaching `captured`
-with a non-empty transcript it records `firstAudioCaptured` once, then calls the
-orchestrator **exactly once per capture** (guarded against double-fire). There is
-no in-page reveal: when a real task lands, the page hands its id to `onTaskCreated`
-and the host navigates to the **real `TaskDetailsPage`**.
+The step maps the controller's `CapturePhase` onto the view's
+`OnboardingFirstTaskPhase` (prompt / listening / thinking / created). On
+reaching `captured` with a non-empty transcript it records the capture
+modality once — `firstAudioCaptured` for the mic path, `typedCaptureUsed` for
+the tapped-suggestion / typed paths (keyed on whether the capture carried an
+`audioId`, so the voice-adoption metric isn't inflated by no-mic captures) —
+then calls the orchestrator **exactly once per capture** (guarded against
+double-fire), passing along the capture's `CaptureState.audioId` so the spoken
+recording is linked under the task. When
+a real task lands the step reveals the **created beat** inside the panel — the
+task title + checklist as a glowing tappable card ("Your first task is
+ready"); tapping the card (or its "Tap your task to open it" hint) hands the
+id to `onTaskCreated`, and the host pops the modal and deep-links to the
+**real `TaskDetailsPage`**.
 
+- **The style pick pays off here.** The active band renders the recording
+  visual chosen in the style step: `VoiceOrbZone` (the shared Daily OS orb) for
+  `modern`, or a tappable `AnalogVuMeter` + `LiveWaveform` pair for `analogue`
+  — both riding the same live level. While the preference is still loading the
+  orb stands in.
+- **Guided first task.** Under the prompt, three localized **starter
+  suggestions** ("Plan my week", …) give a no-mic path into the same pipeline:
+  a tap rides the controller's typed path (`startTyping` + `updateTranscript`)
+  straight into structuring, so even a user not ready to speak still watches a
+  one-liner become a structured task.
 - **Structuring** — `OnboardingTaskStructuringService` resolves the chosen
   category → profile → thinking model → provider and runs a single-shot
   `CloudInferenceRepository.generate` returning `{title, checklist[]}`.
@@ -209,19 +253,50 @@ and the host navigates to the **real `TaskDetailsPage`**.
   `AutoChecklistService`) and emits the funnel events (`makeTaskTapped`, `realAha`,
   `structuringFailed`, `structuringFloorUsed`). On LLM failure it **soft-lands** on
   a title-only task (tagged `floor`, never counted as the real aha).
-- **Real-task payoff** — the page navigates (replacing the capture route) to the
-  in-app `TaskDetailsPage` for the new task — its own animated checklist + audio
-  affordance — rather than a synthetic reveal, so the user lands on the real thing
-  they just made. (`CrystallizeHero` lives on only as the hero-gallery
+- **The task gets an agent that goes straight to work** — mirroring the normal
+  creation path's `autoAssignCategoryAgent` hook, the service resolves the
+  destination category (through `CategoryRepository`, not the async-refreshed
+  cache — the category was created seconds earlier) and, when it carries a
+  `defaultTemplateId` (Laura, bound by the category step), spawns a task agent
+  via `TaskAgentService.createTaskAgent` with the category's default profile,
+  on the structured and floor paths alike. Unlike the normal path (blank task,
+  `awaitContent: true`), the onboarding agent is created *after* title,
+  checklist, and transcribed audio have landed, so it is **not**
+  content-awaiting — a skipped awaiting-content wake would be dropped and the
+  never-again-edited task would leave Laura permanently inert. The creation
+  wake runs the first full turn immediately, with the audio entry in its
+  trigger tokens (`additionalWakeTokens`) the way a `transcriptionComplete`
+  wake carries `{taskId, entryId}` after an in-task recording — so the user
+  lands on a task page that is already alive: Laura's summary card plus any
+  proposals pending their confirmation. The task also inherits the category's
+  `defaultProfileId` into `TaskData.profileId`. All best-effort: no agent
+  hiccup may cost the user the task.
+- **Audio travels with the task** — the capture controller persists the spoken
+  recording as a `JournalAudio` entry (transcript attached); the orchestrator
+  links that entry under the created task (`PersistenceLogic.createLink`) and
+  assigns it the task's category (`JournalRepository.updateCategoryId`) —
+  both best-effort, on the structured and floor paths alike — so the task page
+  carries the original audio and the recording shows up in category-filtered
+  views instead of sitting orphaned and uncategorized in the journal. The
+  typed path has no recording and creates no link.
+- **Created beat + real-task payoff** — when the task lands, the panel shows
+  it as a tappable card (title + checklist preview) breathing a soft accent
+  glow, with "Tap your task to open it" underneath. The tap pops the modal and
+  deep-links via the canonical `/tasks/:id` route (`openOnboardingCreatedTask`),
+  which also switches to the Tasks destination — necessary because the flow
+  may have been launched from another tab (e.g. the Settings → Maintenance
+  debug entry). (`CrystallizeHero` lives on only as the hero-gallery
   `crystallize` style.)
 - **Destination picker** — when the user created more than one area, a compact
-  `_CategoryPicker` ("Where should this land?") appears above the prompt so they
+  picker ("Where should this land?") appears under the active band so they
   choose which area the task lands in. It shows only while the capture is still
-  being composed (prompt / listening); once structuring starts the destination is
-  locked and rides the resolved card.
-- **Escape hatches** — a "Rather type?" path opens a typed-capture dialog routed
-  through the same structuring pipeline, and an always-present close button
-  finishes onboarding (the user can capture later).
+  being composed (prompt / listening); once structuring starts the destination
+  is locked.
+- **Escape hatches** — a "Rather type?" path opens a typed-capture dialog
+  routed through the same structuring pipeline; tapping outside the panel
+  closes the flow like every other step (the user can capture later); and a
+  total structuring failure finishes onboarding via `onDone` rather than
+  stranding the user on the thinking frame.
 
 ## Accessibility — reduced motion
 

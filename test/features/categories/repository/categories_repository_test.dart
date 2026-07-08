@@ -354,6 +354,54 @@ void main() {
       });
     });
 
+    group('getAllCategoriesIncludingHidden', () {
+      test(
+        'returns soft-deleted, private, and archived rows the visible fetch '
+        'hides — the set the UNIQUE(name) constraint spans',
+        () async {
+          // A real in-memory db: this method reads the raw table, which a
+          // mocked JournalDb cannot express.
+          final db = JournalDb(inMemoryDatabase: true);
+          addTearDown(db.close);
+          for (final category in [
+            CategoryTestUtils.createTestCategory(id: 'v', name: 'Visible'),
+            CategoryTestUtils.createTestCategory(
+              id: 'd',
+              name: 'Deleted',
+              deletedAt: DateTime(2025),
+            ),
+            CategoryTestUtils.createTestCategory(
+              id: 'p',
+              name: 'Private',
+              private: true,
+            ),
+            CategoryTestUtils.createTestCategory(
+              id: 'a',
+              name: 'Archived',
+              active: false,
+            ),
+          ]) {
+            await db.upsertEntityDefinition(category);
+          }
+          final repo = CategoryRepository(
+            mockPersistenceLogic,
+            db,
+            mockEntitiesCacheService,
+            mockUpdateNotifications,
+          );
+
+          final all = await repo.getAllCategoriesIncludingHidden();
+          expect(all.map((c) => c.id).toSet(), {'v', 'd', 'p', 'a'});
+
+          // The visible fetch hides the deleted row and (with private mode
+          // off) the private row — exactly why duplicate-name checks must not
+          // rely on it.
+          final visible = await repo.getAllCategories();
+          expect(visible.map((c) => c.id).toSet(), {'v', 'a'});
+        },
+      );
+    });
+
     group('updateCategory', () {
       test('updates category via persistence logic', () async {
         final category = CategoryTestUtils.createTestCategory(
