@@ -25,7 +25,9 @@ void main() {
     final date = testTextEntry.meta.dateFrom;
     final dateText = dfShort.format(date); // 2022-07-07
     final timeText = hhMmFormat.format(date); // 13:00
-    final oneLine = dfShorter.format(date); // 2022-07-07 13:00
+    // Mirror the widget's own concatenation so the test can't drift from what
+    // it renders if dfShort/hhMmFormat ever change independently of dfShorter.
+    final oneLine = '$dateText $timeText'; // 2022-07-07 13:00
 
     setUpAll(() async {
       await getIt.reset();

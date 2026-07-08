@@ -91,6 +91,12 @@ class _AdaptiveDateTime extends StatelessWidget {
         // actually hands us so the decision is exact rather than a guessed
         // breakpoint. An unbounded width (e.g. the collapsed linked-entry
         // preview, which has its own Spacer) always fits, keeping one line.
+        //
+        // This is off the hot path: LayoutBuilder only re-runs its builder when
+        // the incoming width constraint changes, which does not happen on
+        // scroll (a pure paint translation) or during the collapse
+        // SizeTransition (height only), and the timestamp is static (no timer).
+        // Laying out a ~16-character line on those rare width changes is cheap.
         final painter = TextPainter(
           text: TextSpan(text: oneLine, style: style),
           textDirection: Directionality.of(context),
