@@ -6,22 +6,25 @@ D3/D7/D30 retention. The full design and phased build plan live in
 [`docs/implementation_plans/2026-06-21_ftue_onboarding.md`](../../../docs/implementation_plans/2026-06-21_ftue_onboarding.md).
 
 > **Status.** **Phase 0** (measurement substrate), **Phase 1** (welcome +
-> connect-your-brain front door) and **Phase 2** (the live voice→task aha) are
-> implemented. The **D1 return loop** (Phase 3) is forthcoming. The whole flow is
-> gated behind the `enableOnboardingFtueFlag` config flag (default **off**) while
-> it is finished — until that flag is enabled, first-run AI setup falls back to
-> the pre-FTUE `AiProviderSelectionModal`, so end users see no change yet. This
-> README documents what exists in code today and is updated as each phase lands.
+> connect-your-brain front door), **Phase 2** (the live voice→task aha), the
+> **auto-show trigger + re-show cadence**, and the top-level **Settings ›
+> Onboarding** replay entry described below are implemented. The **D1 return
+> loop** is forthcoming. The whole flow is gated behind the
+> `enableOnboardingFtueFlag` config flag (default **off**) while it is
+> finished — until that flag is enabled, first-run AI setup falls back to the
+> pre-FTUE `AiProviderSelectionModal`, so end users see no change yet. This
+> README documents what exists in code today and is updated as each phase
+> lands.
 
 ## End-to-end flow
 
 ```mermaid
 flowchart TD
-    L[First launch · no provider configured] -->|enableOnboardingFtueFlag ON| W[OnboardingWelcomeModal]
+    L[First launch · no provider configured] -->|enableOnboardingFtueFlag ON, eligible| W[OnboardingWelcomeModal]
     L -->|flag OFF| LEGACY[AiProviderSelectionModal · pre-FTUE]
     W --> WL[welcome · hero + promise + CTA]
-    WL -->|Connect your brain| CN[connect · provider tiles]
-    WL -->|Look around first| SK[skip → dismissPrompt]
+    WL -->|Choose your AI brain| CN[connect · provider tiles]
+    WL -->|Look around first| SK[skip → onDismiss · no persistence, grace period preserved]
     CN -->|pick provider| AK[apiKey · paste + verify]
     AK -->|verified: provider + models + profile| SU[success beat]
     SU -->|Get started| RS[recording style · pick analogue / modern]
@@ -39,6 +42,69 @@ been in all along) instead of popping out to a full-screen takeover: when the
 task lands it is revealed *inside* the panel as a glowing tappable card, and
 only the user's tap on that card leaves the modal — landing on the **real**
 `TaskDetailsPage`.
+
+## Auto-show trigger & re-show cadence
+
+`state/onboarding_trigger_service.dart` decides *when* the welcome auto-shows,
+independent of the "connect your brain" front door's own step logic above.
+
+| Piece | Role |
+|---|---|
+| `shouldAutoShowOnboardingProvider` | `FutureProvider.autoDispose<bool>` — mirrors `shouldAutoShowWhatsNewProvider`'s shape exactly. Read-only eligibility check. |
+| `isOnboardingWelcomeEligible` | Pure predicate the provider evaluates against — no DB/Riverpod, fully unit-testable. |
+| `OnboardingWelcomeCadence` | `AsyncNotifier<void>` — the mutation side: `recordShown()` and `markCompleted()`, persisted to `SettingsDb` under a private `welcome_*` key prefix (deliberately **not** a `ConfigFlags` row — those are public, user-toggleable; this is per-install bookkeeping the user never edits directly). |
+
+**Eligibility** (all must hold):
+- `enableOnboardingFtueFlag` is on,
+- What's New has nothing unseen left to show (sequenced behind it, exactly
+  like `AiSetupPromptService`'s own gating — the two auto-shown overlays never
+  race for the screen),
+- the welcome has not been marked `completed`,
+- the user has not yet reached the real "aha" — `OnboardingFunnelState.
+  reachedRealAha`, a structured task actually landing. This graduates on real
+  activation rather than a raw task-count, which a floor/failure path could
+  inflate,
+- it has auto-shown fewer than 4 times, and
+- once shown at least once, it is still within a 14-day grace window of the
+  first show.
+
+`BeamerApp`'s `AppScreen` sequences this after What's New, mirroring the
+`aiSetupPromptServiceProvider` chain — `whatsNewControllerProvider`'s
+unseen→seen transition invalidates *both* `aiSetupPromptServiceProvider` and
+`shouldAutoShowOnboardingProvider` so each gets a fresh eligibility check once
+the What's New modal is out of the way. `_showAiSetupPrompt` (the legacy AI
+setup path) returns early whenever the FTUE flag is on — the dedicated
+listener below owns showing the welcome instead, so the two can never stack.
+When the flag is on the legacy `AiProviderSelectionModal` is **fully
+superseded**: even once the welcome's re-show budget is exhausted it does not
+fall back to that modal — a user who never connects recovers via the top-level
+**Settings › Onboarding** replay entry (and ordinary AI settings):
+
+```mermaid
+stateDiagram-v2
+    [*] --> neverShown: fresh install
+    neverShown --> shown: shouldAutoShowOnboardingProvider(true) → recordShown() → OnboardingWelcomeModal.show
+    shown --> shown: cold start, budget remains → recordShown() (shown_count += 1)
+    shown --> shown: onDismiss (skip) [no persistence, grace period preserved]
+    shown --> retiredBudget: shown_count reaches 4
+    shown --> retiredWindow: 14 days since first show elapse
+    shown --> completed: provider connected → markCompleted() (welcome_completed)
+    shown --> activated: OnboardingFunnelState.reachedRealAha
+    retiredBudget --> [*]: gate false; no legacy fallback while flag on
+    retiredWindow --> [*]: gate false; no legacy fallback while flag on
+    completed --> [*]: gate permanently false (welcome_completed)
+    activated --> [*]: gate permanently false (reachedRealAha)
+```
+
+`markCompleted` (wired to the welcome modal's `onCompleted` callback, which
+fires once a provider is connected) persists `welcome_completed` and
+permanently retires the gate. This is what stops the welcome re-appearing after
+a user finishes setup but before any structured task has landed (so
+`reachedRealAha` is still false) — without it such a user would keep seeing the
+welcome until the shown-count/window cap ran out. A plain skip (`onDismiss`)
+persists nothing and does **not** retire the gate: the shown-count/window
+budget already implements the "show again for a while, then stop" grace
+period, and a hard block on first skip would defeat that.
 
 ## Phase 0 — measurement substrate
 

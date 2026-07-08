@@ -14539,6 +14539,12 @@ abstract class AppLocalizations {
   /// **'Unit abbreviation (optional)'**
   String get settingsMeasurableUnitLabel;
 
+  /// No description provided for @settingsOnboardingActionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen the welcome flow — connect your AI brain and create a task'**
+  String get settingsOnboardingActionSubtitle;
+
   /// No description provided for @settingsOnboardingMetricsSubtitle.
   ///
   /// In en, this message translates to:
@@ -14550,6 +14556,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Onboarding Metrics'**
   String get settingsOnboardingMetricsTitle;
+
+  /// No description provided for @settingsOnboardingReplayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay onboarding'**
+  String get settingsOnboardingReplayTitle;
+
+  /// No description provided for @settingsOnboardingStartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start onboarding'**
+  String get settingsOnboardingStartTitle;
+
+  /// No description provided for @settingsOnboardingStatusActivated.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve created your first AI task'**
+  String get settingsOnboardingStatusActivated;
+
+  /// No description provided for @settingsOnboardingStatusLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get settingsOnboardingStatusLoading;
+
+  /// No description provided for @settingsOnboardingStatusNotActivated.
+  ///
+  /// In en, this message translates to:
+  /// **'Not started yet'**
+  String get settingsOnboardingStatusNotActivated;
+
+  /// No description provided for @settingsOnboardingStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get settingsOnboardingStatusTitle;
+
+  /// No description provided for @settingsOnboardingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay the welcome flow anytime'**
+  String get settingsOnboardingSubtitle;
+
+  /// No description provided for @settingsOnboardingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding'**
+  String get settingsOnboardingTitle;
 
   /// No description provided for @settingsResetGeminiConfirm.
   ///

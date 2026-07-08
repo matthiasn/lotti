@@ -73,6 +73,7 @@ void main() {
       expect(resolve('advanced/flags').title, 'Config Flags');
       expect(resolve('advanced').title, 'Advanced Settings');
       expect(resolve('whats-new').title, "What's New");
+      expect(resolve('onboarding').title, 'Onboarding');
     });
 
     testWidgets('sync leaves with arb keys use their canonical titles', (

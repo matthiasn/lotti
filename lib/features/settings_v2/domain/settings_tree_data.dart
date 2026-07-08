@@ -29,6 +29,7 @@ List<SettingsNode> buildSettingsTree({
   required bool enableWhatsNew,
   bool enableSpeechTts = false,
   bool enableHealthImport = false,
+  bool enableOnboardingFtue = false,
 }) {
   SettingsNode leaf(
     String id,
@@ -77,6 +78,19 @@ List<SettingsNode> buildSettingsTree({
         'whats-new',
         Icons.new_releases_outlined,
         panel: 'whats-new',
+      ),
+    // Top-level entry point back to the FTUE welcome flow — gated by the
+    // same `enableOnboardingFtueFlag` that governs the auto-show cadence
+    // (see `state/onboarding_trigger_service.dart`), so a user can always
+    // find their way back to it regardless of whether the auto-show
+    // budget has been exhausted. A leaf rather than a branch: only one
+    // onboarding flow exists today. Should a second one land, this is a
+    // one-line conversion to a branch with children (see `sync`, `ai`).
+    if (enableOnboardingFtue)
+      leaf(
+        'onboarding',
+        Icons.rocket_launch_rounded,
+        panel: 'onboarding',
       ),
     branch(
       'ai',

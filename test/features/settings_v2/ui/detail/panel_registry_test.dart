@@ -17,6 +17,7 @@ import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dar
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
@@ -55,6 +56,8 @@ void main() {
       // landing panel — its provisioned-sync entry is a leaf below.
       'ai',
       'agents',
+      // Top-level entry point back to the FTUE welcome flow.
+      'onboarding',
       // Step 7 — simple leaves.
       'flags',
       'theming',
@@ -154,6 +157,14 @@ void main() {
     });
 
     test(
+      'onboarding panel is scrollable — OnboardingSettingsBody is a plain '
+      'grouped-list column, not its own scroll view',
+      () {
+        expect(panelSpecFor('onboarding')!.scrollable, isTrue);
+      },
+    );
+
+    test(
       'flags panel keeps scrollable: false because FlagsBody owns its scroll',
       () {
         // FlagsBody is `Column[fixed search, Expanded(scrollable list)]`.
@@ -198,6 +209,8 @@ void main() {
         );
 
         Widget build(String id) => kSettingsPanels[id]!.build(capturedContext);
+
+        expect(build('onboarding'), isA<OnboardingSettingsBody>());
 
         // Step 7 — simple leaves.
         expect(build('flags'), isA<FlagsBody>());

@@ -20,6 +20,7 @@ import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
@@ -107,6 +108,7 @@ void main() {
       );
       expect(location.pathPatterns, [
         '/settings',
+        '/settings/onboarding',
         '/settings/ai',
         '/settings/ai/profiles',
         // AI Settings detail surfaces — added in v4 so per-kind detail
@@ -957,6 +959,37 @@ void main() {
       expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<ThemingPage>());
     });
+
+    test('buildPages builds OnboardingSettingsPage', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/onboarding'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(mockBuildContext, beamState);
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<OnboardingSettingsPage>());
+    });
+
+    test(
+      'buildPages does NOT render OnboardingSettingsPage for the '
+      'onboarding-metrics URL — the exact-path guard must not let '
+      '`/settings/advanced/onboarding_metrics` fall through to it',
+      () {
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/settings/advanced/onboarding_metrics'),
+        );
+        final location = SettingsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final pages = location.buildPages(mockBuildContext, beamState);
+        expect(
+          pages.any((p) => p.child is OnboardingSettingsPage),
+          isFalse,
+        );
+        expect(pages.any((p) => p.child is OnboardingMetricsPage), isTrue);
+      },
+    );
 
     test('buildPages builds HealthImportPage', () {
       final routeInformation = RouteInformation(

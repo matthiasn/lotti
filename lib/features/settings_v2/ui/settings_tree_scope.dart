@@ -72,6 +72,8 @@ class SettingsTreeScopeHost extends ConsumerWidget {
         ref.watch(configFlagProvider(enableWhatsNewFlag)).value ?? false;
     final enableSpeechTts =
         ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ?? false;
+    final enableOnboardingFtue =
+        ref.watch(configFlagProvider(enableOnboardingFtueFlag)).value ?? false;
 
     final tree = buildSettingsTree(
       labels: settingsTreeLabelsFor(context),
@@ -80,6 +82,7 @@ class SettingsTreeScopeHost extends ConsumerWidget {
       enableMatrix: enableMatrix,
       enableWhatsNew: enableWhatsNew,
       enableSpeechTts: enableSpeechTts,
+      enableOnboardingFtue: enableOnboardingFtue,
     );
     final index = SettingsTreeIndex.build(tree);
 

@@ -19,6 +19,7 @@ import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
@@ -59,6 +60,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
   @override
   List<String> get pathPatterns => [
     '/settings',
+    '/settings/onboarding',
     '/settings/ai',
     '/settings/ai/profiles',
     // AI Settings detail surfaces. Each detail kind sits behind its own
@@ -568,6 +570,15 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-flags'),
           child: FlagsPage(),
+        ),
+
+      // Onboarding — top-level leaf, opens directly. Exact-path match
+      // (not `pathContains`) so it can never accidentally swallow
+      // `/settings/advanced/onboarding_metrics`.
+      if (path == '/settings/onboarding')
+        const BeamPage(
+          key: ValueKey('settings-onboarding'),
+          child: OnboardingSettingsPage(),
         ),
 
       // Theming

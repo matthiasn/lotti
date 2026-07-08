@@ -8540,11 +8540,40 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMeasurableUnitLabel => 'Zkratka jednotky (volitelné)';
 
   @override
+  String get settingsOnboardingActionSubtitle =>
+      'Znovu otevři uvítací postup — připoj svou AI a vytvoř úkol';
+
+  @override
   String get settingsOnboardingMetricsSubtitle =>
       'FTUE trychtýř — instalace, aktivace, retence (ladění)';
 
   @override
   String get settingsOnboardingMetricsTitle => 'Metriky onboardingu';
+
+  @override
+  String get settingsOnboardingReplayTitle => 'Zopakovat onboarding';
+
+  @override
+  String get settingsOnboardingStartTitle => 'Spustit onboarding';
+
+  @override
+  String get settingsOnboardingStatusActivated => 'Máš vytvořený první AI úkol';
+
+  @override
+  String get settingsOnboardingStatusLoading => 'Načítání…';
+
+  @override
+  String get settingsOnboardingStatusNotActivated => 'Zatím nezahájeno';
+
+  @override
+  String get settingsOnboardingStatusTitle => 'Stav';
+
+  @override
+  String get settingsOnboardingSubtitle =>
+      'Kdykoli si znovu spusť uvítací postup';
+
+  @override
+  String get settingsOnboardingTitle => 'Onboarding';
 
   @override
   String get settingsResetGeminiConfirm => 'Obnovit';

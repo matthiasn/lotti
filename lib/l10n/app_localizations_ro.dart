@@ -8601,11 +8601,41 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMeasurableUnitLabel => 'Unitatea abrevierii';
 
   @override
+  String get settingsOnboardingActionSubtitle =>
+      'Redeschideți fluxul de bun venit — conectați-vă creierul AI și creați o sarcină';
+
+  @override
   String get settingsOnboardingMetricsSubtitle =>
       'Pâlnie FTUE — instalare, activare, retenție (depanare)';
 
   @override
   String get settingsOnboardingMetricsTitle => 'Valori de onboarding';
+
+  @override
+  String get settingsOnboardingReplayTitle => 'Reluați onboardingul';
+
+  @override
+  String get settingsOnboardingStartTitle => 'Începeți onboardingul';
+
+  @override
+  String get settingsOnboardingStatusActivated =>
+      'Ați creat prima dvs. sarcină cu AI';
+
+  @override
+  String get settingsOnboardingStatusLoading => 'Se încarcă…';
+
+  @override
+  String get settingsOnboardingStatusNotActivated => 'Neînceput încă';
+
+  @override
+  String get settingsOnboardingStatusTitle => 'Stare';
+
+  @override
+  String get settingsOnboardingSubtitle =>
+      'Reafișați fluxul de bun venit oricând doriți';
+
+  @override
+  String get settingsOnboardingTitle => 'Onboarding';
 
   @override
   String get settingsResetGeminiConfirm => 'Resetează';

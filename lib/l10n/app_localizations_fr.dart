@@ -8617,11 +8617,41 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMeasurableUnitLabel => 'Abréviation d\'unité';
 
   @override
+  String get settingsOnboardingActionSubtitle =>
+      'Rouvre le parcours de bienvenue — connecte ton cerveau IA et crée une tâche';
+
+  @override
   String get settingsOnboardingMetricsSubtitle =>
       'Entonnoir FTUE — installation, activation, rétention (débogage)';
 
   @override
   String get settingsOnboardingMetricsTitle => 'Métriques d\'intégration';
+
+  @override
+  String get settingsOnboardingReplayTitle => 'Revoir l\'intégration';
+
+  @override
+  String get settingsOnboardingStartTitle => 'Démarrer l\'intégration';
+
+  @override
+  String get settingsOnboardingStatusActivated =>
+      'Tu as créé ta première tâche IA';
+
+  @override
+  String get settingsOnboardingStatusLoading => 'Chargement…';
+
+  @override
+  String get settingsOnboardingStatusNotActivated => 'Pas encore commencé';
+
+  @override
+  String get settingsOnboardingStatusTitle => 'Statut';
+
+  @override
+  String get settingsOnboardingSubtitle =>
+      'Revois le parcours de bienvenue quand tu veux';
+
+  @override
+  String get settingsOnboardingTitle => 'Intégration';
 
   @override
   String get settingsResetGeminiConfirm => 'Réinitialiser';

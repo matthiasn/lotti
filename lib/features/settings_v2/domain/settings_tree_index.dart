@@ -20,6 +20,7 @@ import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 /// patterns in `settings_location.dart`. Do not "normalize" the
 /// hyphen to a slash.
 const Map<String, String> settingsNodeUrls = {
+  'onboarding': '/settings/onboarding',
   'ai': '/settings/ai',
   'ai/profiles': '/settings/ai/profiles',
   'agents': '/settings/agents',

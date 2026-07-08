@@ -8501,11 +8501,41 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMeasurableUnitLabel => 'Einheitenabkürzung (optional)';
 
   @override
+  String get settingsOnboardingActionSubtitle =>
+      'Öffne den Willkommens-Ablauf erneut – verbinde dein KI-Gehirn und erstelle eine Aufgabe';
+
+  @override
   String get settingsOnboardingMetricsSubtitle =>
       'FTUE-Funnel – Installation, Aktivierung, Bindung (Debug)';
 
   @override
   String get settingsOnboardingMetricsTitle => 'Onboarding-Metriken';
+
+  @override
+  String get settingsOnboardingReplayTitle => 'Onboarding wiederholen';
+
+  @override
+  String get settingsOnboardingStartTitle => 'Onboarding starten';
+
+  @override
+  String get settingsOnboardingStatusActivated =>
+      'Du hast deine erste KI-Aufgabe erstellt';
+
+  @override
+  String get settingsOnboardingStatusLoading => 'Wird geladen…';
+
+  @override
+  String get settingsOnboardingStatusNotActivated => 'Noch nicht gestartet';
+
+  @override
+  String get settingsOnboardingStatusTitle => 'Status';
+
+  @override
+  String get settingsOnboardingSubtitle =>
+      'Den Willkommens-Ablauf jederzeit erneut anzeigen';
+
+  @override
+  String get settingsOnboardingTitle => 'Onboarding';
 
   @override
   String get settingsResetGeminiConfirm => 'Zurücksetzen';
