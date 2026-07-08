@@ -101,8 +101,9 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         // The date/category cluster takes the slack the old Spacer held, but as
         // an Expanded it also *yields* it: on narrow phones the trailing action
         // buttons (ending in the overflow `…`) keep their full width and the
-        // timestamp ellipsizes instead of the row overflowing and the `…` being
-        // clipped by the card's rounded clip.
+        // timestamp stacks the date over the time (see EntryDatetimeWidget)
+        // instead of the row overflowing and the `…` being clipped by the
+        // card's rounded clip.
         Expanded(
           child: Row(
             children: [
@@ -276,11 +277,12 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     return Row(
       children: [
         // Expanded (not a fixed widget + Spacer) so the timestamp yields space
-        // to the trailing rail on narrow phones instead of the row overflowing
-        // and clipping the overflow `…`. The Align keeps the datetime widget's
-        // tap target at its intrinsic text width — without it the Expanded
-        // would stretch the underlying GestureDetector across the empty gap and
-        // make that whitespace open the date/time picker.
+        // to the trailing rail on narrow phones (stacking date over time)
+        // instead of the row overflowing and clipping the overflow `…`. The
+        // Align keeps the datetime widget's tap target at its intrinsic text
+        // width — without it the Expanded would stretch the underlying
+        // GestureDetector across the empty gap and make that whitespace open
+        // the date/time picker.
         Expanded(
           child: Align(
             alignment: Alignment.centerLeft,

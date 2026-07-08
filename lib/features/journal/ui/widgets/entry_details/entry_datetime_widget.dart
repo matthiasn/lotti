@@ -43,21 +43,102 @@ class EntryDatetimeWidget extends ConsumerWidget {
       fontFeatures: numericBadgeFontFeatures,
     );
 
+    final date = entry.meta.dateFrom;
+    final dateText = dfShort.format(date);
+    final timeText = hhMmFormat.format(date);
+
     return GestureDetector(
       onTap: () =>
           EntryDateTimeMultiPageModal.show(entry: entry, context: context),
       child: Padding(
         padding: padding,
-        child: Text(
-          dfShorter.format(entry.meta.dateFrom),
+        child: _AdaptiveDateTime(
+          dateText: dateText,
+          timeText: timeText,
           style: style,
-          // Allow the (least-important) timestamp to ellipsize when the header
-          // is space-constrained, so it yields room instead of pushing the
-          // trailing action buttons off the edge on narrow phones.
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
       ),
+    );
+  }
+}
+
+/// Renders `date time` on one line when the header gives it enough room, and
+/// stacks the date over the time on two lines when it does not.
+///
+/// On narrow phones the trailing action cluster (star, flag, AI, overflow …)
+/// eats the horizontal space, which previously ellipsized the timestamp to
+/// something like `2026-07-08 14…`. Two short lines of metadata still clear the
+/// 40px action buttons, so stacking keeps the whole timestamp legible without
+/// growing the header row's height.
+class _AdaptiveDateTime extends StatelessWidget {
+  const _AdaptiveDateTime({
+    required this.dateText,
+    required this.timeText,
+    required this.style,
+  });
+
+  final String dateText;
+  final String timeText;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final oneLine = '$dateText $timeText';
+
+        // Measure the combined single line against the width the header
+        // actually hands us so the decision is exact rather than a guessed
+        // breakpoint. An unbounded width (e.g. the collapsed linked-entry
+        // preview, which has its own Spacer) always fits, keeping one line.
+        //
+        // This is off the hot path: LayoutBuilder only re-runs its builder when
+        // the incoming width constraint changes, which does not happen on
+        // scroll (a pure paint translation) or during the collapse
+        // SizeTransition (height only), and the timestamp is static (no timer).
+        // Laying out a ~16-character line on those rare width changes is cheap.
+        final painter = TextPainter(
+          text: TextSpan(text: oneLine, style: style),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+          maxLines: 1,
+        )..layout();
+        final fitsOnOneLine = painter.width <= constraints.maxWidth;
+        painter.dispose();
+
+        if (fitsOnOneLine) {
+          return Text(
+            oneLine,
+            style: style,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
+        }
+
+        // MergeSemantics so the two lines read as a single "date time"
+        // node to a screen reader, matching the one-line variant instead of
+        // announcing the date and time as two unrelated items.
+        return MergeSemantics(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                dateText,
+                style: style,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                timeText,
+                style: style,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

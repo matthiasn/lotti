@@ -16,10 +16,18 @@ import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
-  group('EntryDetailFooter', () {
+  group('EntryDatetimeWidget', () {
     final mockPersistenceLogic = MockPersistenceLogic();
     final mockJournalDb = MockJournalDb();
     final mockEditorStateService = MockEditorStateService();
+
+    // testTextEntry.meta.dateFrom is DateTime(2022, 7, 7, 13).
+    final date = testTextEntry.meta.dateFrom;
+    final dateText = dfShort.format(date); // 2022-07-07
+    final timeText = hhMmFormat.format(date); // 13:00
+    // Mirror the widget's own concatenation so the test can't drift from what
+    // it renders if dfShort/hhMmFormat ever change independently of dfShorter.
+    final oneLine = '$dateText $timeText'; // 2022-07-07 13:00
 
     setUpAll(() async {
       await getIt.reset();
@@ -52,19 +60,73 @@ void main() {
       await getIt.reset();
     });
 
-    testWidgets('tap entry date opens modal', (WidgetTester tester) async {
+    // Pumps the widget inside a bounded box so the adaptive one-line/two-line
+    // decision can be exercised deterministically. `width` maps straight to the
+    // horizontal space the header hands the timestamp.
+    Future<void> pumpAtWidth(WidgetTester tester, double width) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDatetimeWidget(
-            entryId: testTextEntry.meta.id,
+          SizedBox(
+            width: width,
+            child: EntryDatetimeWidget(entryId: testTextEntry.meta.id),
           ),
         ),
       );
       await tester.pumpAndSettle();
+    }
 
-      final entryDateFromFinder = find.text(
-        dfShorter.format(testTextEntry.meta.dateFrom),
-      );
+    testWidgets('renders the date and time on one line when there is room', (
+      WidgetTester tester,
+    ) async {
+      await pumpAtWidth(tester, 400);
+
+      // Wide enough: the compact combined line is shown and never split apart.
+      expect(find.text(oneLine), findsOneWidget);
+      expect(find.text(dateText), findsNothing);
+      expect(find.text(timeText), findsNothing);
+    });
+
+    testWidgets('stacks the date over the time when width is constrained', (
+      WidgetTester tester,
+    ) async {
+      await pumpAtWidth(tester, 60);
+
+      // Too narrow for one line: instead of ellipsizing the timestamp, the date
+      // and time each get their own line and the combined line is gone.
+      expect(find.text(oneLine), findsNothing);
+      expect(find.text(dateText), findsOneWidget);
+      expect(find.text(timeText), findsOneWidget);
+
+      // The date sits above the time (the natural reading order), not beside it.
+      final datePos = tester.getTopLeft(find.text(dateText));
+      final timePos = tester.getTopLeft(find.text(timeText));
+      expect(datePos.dy, lessThan(timePos.dy));
+      expect(datePos.dx, equals(timePos.dx));
+    });
+
+    testWidgets('tapping the stacked timestamp still opens the editor', (
+      WidgetTester tester,
+    ) async {
+      await pumpAtWidth(tester, 60);
+
+      await tester.tap(find.text(dateText));
+      await tester.pumpAndSettle();
+
+      // The redesigned single-page editor opened: one shared date plus the
+      // paired start/end time wheels (the date is no longer entered twice).
+      expect(find.text('Date & Time'), findsOneWidget);
+      expect(find.text('Start time'), findsOneWidget);
+      expect(find.text('End time'), findsOneWidget);
+
+      // Close modal by tapping outside.
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('tap entry date opens modal', (WidgetTester tester) async {
+      await pumpAtWidth(tester, 400);
+
+      final entryDateFromFinder = find.text(oneLine);
       expect(entryDateFromFinder, findsOneWidget);
 
       await tester.tap(entryDateFromFinder);
@@ -84,16 +146,9 @@ void main() {
     testWidgets('date text uses the shared numeric badge font features', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EntryDatetimeWidget(
-            entryId: testTextEntry.meta.id,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpAtWidth(tester, 400);
 
-      final finder = find.text(dfShorter.format(testTextEntry.meta.dateFrom));
+      final finder = find.text(oneLine);
       expect(finder, findsOneWidget);
 
       final text = tester.widget<Text>(finder);
