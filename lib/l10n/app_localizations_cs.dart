@@ -1344,6 +1344,15 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyber model pro generování obrázků';
 
   @override
+  String get aiImpactBreakdownBoth => 'Obojí';
+
+  @override
+  String get aiImpactBreakdownCategory => 'Podle kategorie';
+
+  @override
+  String get aiImpactBreakdownModel => 'Podle modelu';
+
+  @override
   String get aiImpactCategoryTitle => 'Rozpad podle kategorií';
 
   @override

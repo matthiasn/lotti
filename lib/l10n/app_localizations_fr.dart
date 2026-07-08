@@ -1356,6 +1356,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choisis un modèle de génération d\'images';
 
   @override
+  String get aiImpactBreakdownBoth => 'Les deux';
+
+  @override
+  String get aiImpactBreakdownCategory => 'Par catégorie';
+
+  @override
+  String get aiImpactBreakdownModel => 'Par modèle';
+
+  @override
   String get aiImpactCategoryTitle => 'Répartition par catégorie';
 
   @override

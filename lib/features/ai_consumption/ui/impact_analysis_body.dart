@@ -16,6 +16,7 @@ import 'package:lotti/features/ai_consumption/ui/widgets/impact_model_table.dart
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_ranked_table.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart'
@@ -28,6 +29,12 @@ import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.da
 import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// Which breakdown charts + tables the dashboard shows. `both` (the default)
+/// stacks the category and model breakdowns; `category`/`model` narrow to one.
+/// `model` is the screenshot-safe view — it never renders a category name, so a
+/// shared image can't leak private category labels.
+enum ImpactBreakdownView { both, category, model }
 
 /// Host-independent core of the AI Impact dashboard: time-bucketed
 /// consumption (cost, energy, CO₂e, tokens, requests) broken down by category
@@ -77,6 +84,10 @@ class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
   /// The isolated series in the model chart (a model id), independent of the
   /// category chart's isolation.
   String? _isolatedModelKey;
+
+  /// Which breakdown charts are shown — both (default), or narrowed to the
+  /// category or model one (Model being the screenshot-safe view).
+  ImpactBreakdownView _breakdownView = ImpactBreakdownView.both;
 
   /// The most recent generation whose buckets had fully loaded — the
   /// keepPreviousData retention (see class docs). Null only before the very
@@ -157,8 +168,18 @@ class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
       ledgerBucketStart: _ledgerBucketStart,
       isolatedCategoryKey: _isolatedCategoryKey,
       isolatedModelKey: _isolatedModelKey,
+      breakdownView: _breakdownView,
       showStaleNotice: bucketsAsync.hasError,
       onSelectMetric: (metric) => setState(() => _metric = metric),
+      onSelectBreakdownView: (view) => setState(() {
+        _breakdownView = view;
+        // Narrowing hides one dimension; drop its isolation (and the shared
+        // drill) so a hidden filter can't linger — or leak via the ledger chip
+        // when the model-only view is meant to be screenshot-safe.
+        _isolatedCategoryKey = null;
+        _isolatedModelKey = null;
+        _ledgerBucketStart = null;
+      }),
       onToggleCategorySeries: (key) => setState(() {
         _isolatedCategoryKey = _isolatedCategoryKey == key ? null : key;
       }),
@@ -240,8 +261,10 @@ class _DashboardContent extends StatelessWidget {
     required this.ledgerBucketStart,
     required this.isolatedCategoryKey,
     required this.isolatedModelKey,
+    required this.breakdownView,
     required this.showStaleNotice,
     required this.onSelectMetric,
+    required this.onSelectBreakdownView,
     required this.onToggleCategorySeries,
     required this.onToggleModelSeries,
     required this.onSelectBucket,
@@ -283,6 +306,9 @@ class _DashboardContent extends StatelessWidget {
   /// The isolated series of the model chart (independent of the category one).
   final String? isolatedModelKey;
 
+  /// Which breakdown charts + tables to show (both / category / model).
+  final ImpactBreakdownView breakdownView;
+
   /// Whether a window load failed while the retained generation stays on
   /// screen — surfaced as a slim, non-blocking strip instead of an error
   /// shell, so a failed step never silently mislabels the previous
@@ -290,6 +316,7 @@ class _DashboardContent extends StatelessWidget {
   final bool showStaleNotice;
 
   final ValueChanged<ConsumptionMetric> onSelectMetric;
+  final ValueChanged<ImpactBreakdownView> onSelectBreakdownView;
   final ValueChanged<String?> onToggleCategorySeries;
   final ValueChanged<String?> onToggleModelSeries;
   final ValueChanged<DateTime> onSelectBucket;
@@ -338,6 +365,12 @@ class _DashboardContent extends StatelessWidget {
     final hasModelData = buckets.modelDays.values.any(
       (cells) => cells.keys.any((key) => key != null),
     );
+
+    // The breakdown-view picker narrows the two charts to one. Category is
+    // shown for both/category; model for both/model when the data exists.
+    final showCategory = breakdownView != ImpactBreakdownView.model;
+    final showModel =
+        breakdownView != ImpactBreakdownView.category && hasModelData;
 
     // Palette colors are assigned by a stable, metric-independent ordering of
     // every model in the window (sorted ids), so a model keeps its color
@@ -503,39 +536,50 @@ class _DashboardContent extends StatelessWidget {
           previousLabel: previousLabel,
         ),
         SizedBox(height: tokens.spacing.sectionGap),
-        // Category breakdown: its own always-visible chart + companion table.
-        ImpactChartCard(
-          chartData: categoryChart,
-          resolver: categorySeriesResolver,
-          metric: metric,
-          // null → the card titles it "<Metric> by category".
-          selectedBucketIndex: selectedBucketIndex,
-          isolatedKey: isolatedCategoryKey,
-          onToggleSeries: onToggleCategorySeries,
-          onBucketSelected: onSelectBucket,
-        ),
-        // In-viewport confirmation of this chart's isolation (the ledger it
-        // also scopes can be far down a long page).
-        if (canScopeCategory) ...[
-          SizedBox(height: tokens.spacing.step4),
-          _LedgerFilterChip(
-            label: categoryChipLabel,
-            onClear: onClearCategoryIsolation,
+        // Breakdown-view picker — Both / By category / By model. "By model" is
+        // the screenshot-safe view (no category name is ever rendered). Only
+        // offered when there is a model breakdown to switch to.
+        if (hasModelData) ...[
+          _BreakdownViewPicker(
+            view: breakdownView,
+            onSelect: onSelectBreakdownView,
+          ),
+          SizedBox(height: tokens.spacing.sectionGap),
+        ],
+        // Category breakdown: chart + companion table (hidden in Model view).
+        if (showCategory) ...[
+          ImpactChartCard(
+            chartData: categoryChart,
+            resolver: categorySeriesResolver,
+            metric: metric,
+            // null → the card titles it "<Metric> by category".
+            selectedBucketIndex: selectedBucketIndex,
+            isolatedKey: isolatedCategoryKey,
+            onToggleSeries: onToggleCategorySeries,
+            onBucketSelected: onSelectBucket,
+          ),
+          // In-viewport confirmation of this chart's isolation (the ledger it
+          // also scopes can be far down a long page).
+          if (canScopeCategory) ...[
+            SizedBox(height: tokens.spacing.step4),
+            _LedgerFilterChip(
+              label: categoryChipLabel,
+              onClear: onClearCategoryIsolation,
+            ),
+          ],
+          SizedBox(height: tokens.spacing.sectionGap),
+          ImpactRankedTable(
+            entries: ranked,
+            resolver: resolver,
+            metric: metric,
+            isolatedKey: isolatedCategoryKey,
+            onToggleSeries: onToggleCategorySeries,
           ),
         ],
-        SizedBox(height: tokens.spacing.sectionGap),
-        ImpactRankedTable(
-          entries: ranked,
-          resolver: resolver,
-          metric: metric,
-          isolatedKey: isolatedCategoryKey,
-          onToggleSeries: onToggleCategorySeries,
-        ),
-        // Model breakdown: a second always-visible chart + table (the
-        // "favorite models over time" view), shown only when the period has
-        // model-attributed calls.
-        if (hasModelData) ...[
-          SizedBox(height: tokens.spacing.sectionGap),
+        // Model breakdown: chart + table (the "favorite models over time"
+        // view), hidden in Category view or when there are no models.
+        if (showModel) ...[
+          if (showCategory) SizedBox(height: tokens.spacing.sectionGap),
           ImpactChartCard(
             chartData: modelChart,
             resolver: modelResolver,
@@ -611,6 +655,39 @@ class _DashboardContent extends StatelessWidget {
                 children: children,
               ),
             ),
+    );
+  }
+}
+
+/// Segmented picker choosing which breakdown charts show: Both / By category /
+/// By model. "By model" hides every category name, so its screenshot is safe to
+/// share. Scrolls horizontally on tight panes (the repo's wide-content rule).
+class _BreakdownViewPicker extends StatelessWidget {
+  const _BreakdownViewPicker({required this.view, required this.onSelect});
+
+  final ImpactBreakdownView view;
+  final ValueChanged<ImpactBreakdownView> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DsSegmentedToggle<ImpactBreakdownView>(
+        selected: view,
+        onChanged: onSelect,
+        segments: [
+          DsSegment(ImpactBreakdownView.both, messages.aiImpactBreakdownBoth),
+          DsSegment(
+            ImpactBreakdownView.category,
+            messages.aiImpactBreakdownCategory,
+          ),
+          DsSegment(
+            ImpactBreakdownView.model,
+            messages.aiImpactBreakdownModel,
+          ),
+        ],
+      ),
     );
   }
 }

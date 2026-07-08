@@ -1348,6 +1348,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiImageGenerationPickerTitle => 'Wähle ein Bildgenerierungsmodell';
 
   @override
+  String get aiImpactBreakdownBoth => 'Beide';
+
+  @override
+  String get aiImpactBreakdownCategory => 'Nach Kategorie';
+
+  @override
+  String get aiImpactBreakdownModel => 'Nach Modell';
+
+  @override
   String get aiImpactCategoryTitle => 'Aufschlüsselung nach Kategorie';
 
   @override

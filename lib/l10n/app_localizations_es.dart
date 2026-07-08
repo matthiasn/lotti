@@ -1349,6 +1349,15 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elige un modelo de generación de imágenes';
 
   @override
+  String get aiImpactBreakdownBoth => 'Ambos';
+
+  @override
+  String get aiImpactBreakdownCategory => 'Por categoría';
+
+  @override
+  String get aiImpactBreakdownModel => 'Por modelo';
+
+  @override
   String get aiImpactCategoryTitle => 'Desglose por categoría';
 
   @override

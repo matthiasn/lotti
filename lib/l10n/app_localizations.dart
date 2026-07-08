@@ -2407,6 +2407,24 @@ abstract class AppLocalizations {
   /// **'Pick an image generation model'**
   String get aiImageGenerationPickerTitle;
 
+  /// No description provided for @aiImpactBreakdownBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get aiImpactBreakdownBoth;
+
+  /// No description provided for @aiImpactBreakdownCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'By category'**
+  String get aiImpactBreakdownCategory;
+
+  /// No description provided for @aiImpactBreakdownModel.
+  ///
+  /// In en, this message translates to:
+  /// **'By model'**
+  String get aiImpactBreakdownModel;
+
   /// No description provided for @aiImpactCategoryTitle.
   ///
   /// In en, this message translates to:
