@@ -92,12 +92,12 @@ class SoulSelector extends ConsumerWidget {
     SelectionModalBase.show(
       context: context,
       title: context.messages.agentSoulSelectTitle,
-      child: _SoulPickerContent(
+      builder: (modalContext) => _SoulPickerContent(
         souls: souls,
         selectedSoulId: selectedSoulId,
         onSelected: (id) {
           onSoulSelected(id);
-          Navigator.of(context).pop();
+          Navigator.of(modalContext).pop();
         },
       ),
     );

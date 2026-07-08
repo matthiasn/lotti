@@ -300,7 +300,7 @@ void main() {
                     SelectionModalBase.show(
                       context: context,
                       title: 'Dark Theme Modal',
-                      child: const SelectionModalContent(
+                      builder: (_) => const SelectionModalContent(
                         children: [Text('Dark theme content')],
                       ),
                     );

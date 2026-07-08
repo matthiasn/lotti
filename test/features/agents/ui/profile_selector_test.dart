@@ -55,6 +55,50 @@ Widget _buildSettingsField({
   );
 }
 
+/// Hosts the settings field on a NESTED navigator (mirroring the app, where
+/// the category-details page lives on a nested Beamer navigator below the root
+/// navigator). At the default phone width the selection sheet is pushed onto
+/// the root navigator, so a page-context pop would unwind this nested page
+/// instead of the sheet. The `category-details-marker` proves whether the page
+/// survived selecting a profile.
+Widget _buildNestedNavigatorSettingsField({
+  required ValueChanged<String?> onProfileSelected,
+  required List<AiConfig> profiles,
+}) {
+  return RiverpodWidgetTestBench(
+    overrides: [
+      inferenceProfileControllerProvider.overrideWith(
+        () => _FakeInferenceProfileController(profiles),
+      ),
+    ],
+    child: Navigator(
+      onGenerateInitialRoutes: (navigator, initialRoute) => [
+        MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(
+            body: Center(child: Text('settings-list-page')),
+          ),
+        ),
+        MaterialPageRoute<void>(
+          builder: (_) => Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('category-details-marker'),
+                  SettingsProfilePickerField(
+                    selectedProfileId: null,
+                    onProfileSelected: onProfileSelected,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 void main() {
   testWidgets('shows placeholder when no profile selected', (tester) async {
     final profile = testInferenceProfile();
@@ -352,5 +396,46 @@ void main() {
         findsOneWidget,
       );
     });
+  });
+
+  group('mobile nested-navigator regression', () {
+    testWidgets(
+      'selecting a profile keeps the category page and reports the callback '
+      '(does not pop the page)',
+      (tester) async {
+        final profileA = testInferenceProfile(id: 'p-a', name: 'Alpha');
+        final profileB = testInferenceProfile(id: 'p-b', name: 'Beta');
+        String? selectedId;
+
+        await tester.pumpWidget(
+          _buildNestedNavigatorSettingsField(
+            onProfileSelected: (id) => selectedId = id,
+            profiles: [profileA, profileB],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('category-details-marker'), findsOneWidget);
+
+        // Open the picker sheet (pushed onto the root navigator at phone width).
+        await tester.tap(find.byType(InkWell).first);
+        await tester.pumpAndSettle();
+        expect(find.text('Alpha'), findsOneWidget);
+        expect(find.text('Beta'), findsOneWidget);
+
+        // Select a profile.
+        await tester.tap(find.text('Beta'));
+        await tester.pumpAndSettle();
+
+        // The selection was reported …
+        expect(selectedId, 'p-b');
+        // … the sheet closed …
+        expect(find.text('Alpha'), findsNothing);
+        // … and, crucially, the category-details page is still on screen: the
+        // pop dismissed the sheet, not the page (the reported mobile bug).
+        expect(find.text('category-details-marker'), findsOneWidget);
+        expect(find.text('settings-list-page'), findsNothing);
+      },
+    );
   });
 }

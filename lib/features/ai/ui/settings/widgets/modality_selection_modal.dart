@@ -40,7 +40,7 @@ class ModalitySelectionModal extends StatefulWidget {
     SelectionModalBase.show(
       context: context,
       title: title,
-      child: ModalitySelectionModal(
+      builder: (_) => ModalitySelectionModal(
         selectedModalities: selectedModalities,
         onSave: onSave,
       ),

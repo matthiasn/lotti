@@ -118,13 +118,13 @@ class ModelSlotField extends ConsumerWidget {
     SelectionModalBase.show(
       context: context,
       title: label,
-      child: _SlotModelPickerContent(
+      builder: (modalContext) => _SlotModelPickerContent(
         models: models,
         providers: providers,
         selectedModelId: modelId,
         onSelected: (id) {
           onModelSelected(id);
-          Navigator.of(context).pop();
+          Navigator.of(modalContext).pop();
         },
       ),
     );

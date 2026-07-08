@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environmental impact by country/data center and shows the renewable-energy
   share for each location.
 ### Fixed
+- **Choosing an AI profile or model now works on phones.** On phones, tapping a
+  choice in an AI picker — a category's default inference profile, a profile
+  slot's model, or an agent template or soul — closed the whole settings page
+  instead of the picker, so your selection was never saved. The picker now
+  closes on its own and keeps your choice.
 - **The image viewer's save button now works everywhere.** On iPhone and
   Android it saves the photo to your photo library; on macOS, Windows and Linux
   it opens a native save dialog so you choose where the image goes. Previously
