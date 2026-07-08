@@ -366,9 +366,13 @@ class _DashboardContent extends StatelessWidget {
       (cells) => cells.keys.any((key) => key != null),
     );
 
-    // The breakdown-view picker narrows the two charts to one. Category is
-    // shown for both/category; model for both/model when the data exists.
-    final showCategory = breakdownView != ImpactBreakdownView.model;
+    // The breakdown-view picker narrows the two charts to one. Category shows
+    // for both/category — and always falls back on when there is no model data
+    // (else a stale `model` selection on a model-less period, where the picker
+    // is hidden, would leave nothing rendered and no way back). Model shows for
+    // both/model when the data exists.
+    final showCategory =
+        breakdownView != ImpactBreakdownView.model || !hasModelData;
     final showModel =
         breakdownView != ImpactBreakdownView.category && hasModelData;
 

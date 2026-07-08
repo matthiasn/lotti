@@ -719,6 +719,46 @@ void main() {
     expect(find.text('Cost by category'), findsOneWidget);
   });
 
+  testWidgets('a stale By-model selection falls back to category when the '
+      'period loses its models', (tester) async {
+    final notifications = MockUpdateNotifications();
+    final controller = StreamController<Set<String>>.broadcast();
+    addTearDown(controller.close);
+    when(
+      () => notifications.updateStream,
+    ).thenAnswer((_) => controller.stream);
+
+    stubRows(scenarioRows());
+    await pumpBody(
+      tester,
+      notifications: notifications,
+      surface: const Size(1280, 2600),
+    );
+
+    // Select By model — only reachable while there IS model data.
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.tap(find.text('By model').last);
+      await tester.pump();
+    });
+    expect(find.text('Cost by model'), findsOneWidget);
+
+    // The data refreshes to a model-less period. The picker vanishes, so
+    // without the fallback nothing would render and there'd be no way back —
+    // the category breakdown must take over.
+    stubRows([row(day: 5, categoryId: 'cat-a', credits: 0.3)]);
+    await withClock(Clock.fixed(fixedNow), () async {
+      controller.add({aiConsumptionNotification});
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+    });
+
+    expect(find.text('Cost by category'), findsOneWidget);
+    expect(find.text('Cost by model'), findsNothing);
+    expect(find.text('By model'), findsNothing); // picker gone
+    expect(find.text('No AI usage in this range'), findsNothing); // not empty
+  });
+
   testWidgets('selecting Requests titles the model chart "Requests by model"', (
     tester,
   ) async {
