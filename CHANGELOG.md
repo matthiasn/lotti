@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environmental impact by country/data center and shows the renewable-energy
   share for each location.
 ### Fixed
+- **Entry timestamps no longer get cut off on phones.** In a task's linked
+  entries, the header's date and time used to be truncated (e.g.
+  `2026-07-08 14…`) when the action buttons squeezed the row on a narrow phone.
+  The timestamp now stacks the date over the time on two lines when space is
+  tight, so the whole date and time stay readable.
 - **Choosing an AI profile or model now works on phones.** On phones, tapping a
   choice in an AI picker — a category's default inference profile, a profile
   slot's model, or an agent template or soul — closed the whole settings page
