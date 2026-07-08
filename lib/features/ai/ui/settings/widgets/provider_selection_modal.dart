@@ -41,7 +41,7 @@ class ProviderSelectionModal extends ConsumerWidget {
     SelectionModalBase.show(
       context: context,
       title: context.messages.aiConfigSelectProviderModalTitle,
-      child: ProviderSelectionModal(
+      builder: (_) => ProviderSelectionModal(
         onProviderSelected: onProviderSelected,
         selectedProviderId: selectedProviderId,
       ),

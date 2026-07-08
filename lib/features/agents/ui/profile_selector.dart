@@ -34,12 +34,12 @@ void _showProfilePicker({
   SelectionModalBase.show(
     context: context,
     title: context.messages.agentDefaultProfileLabel,
-    child: _ProfilePickerContent(
+    builder: (modalContext) => _ProfilePickerContent(
       profiles: profiles,
       selectedProfileId: selectedProfileId,
       onSelected: (id) {
         onProfileSelected(id);
-        Navigator.of(context).pop();
+        Navigator.of(modalContext).pop();
       },
     ),
   );

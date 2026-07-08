@@ -6,19 +6,27 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 /// Provides consistent modal structure and behavior across
 /// different selection modal types.
 abstract class SelectionModalBase {
-  /// Shows the modal with standard Wolt configuration
+  /// Shows the modal with standard Wolt configuration.
+  ///
+  /// [builder] receives the modal sheet's own [BuildContext]. Use *that*
+  /// context — not the caller's page context — whenever the content needs to
+  /// close the sheet with `Navigator.of(...).pop()`.
+  ///
+  /// This matters on mobile: `showSinglePageModal` pushes the sheet onto the
+  /// root navigator (width < `WoltModalConfig.pageBreakpoint`), while a page's
+  /// own context resolves to its nested (Beamer) navigator. Popping the latter
+  /// would dismiss the whole page instead of the sheet, discarding any pending
+  /// selection. Popping via the [builder] context always targets the sheet.
   static void show({
     required BuildContext context,
     required String title,
-    required Widget child,
+    required Widget Function(BuildContext modalContext) builder,
   }) {
     ModalUtils.showSinglePageModal<void>(
       context: context,
       title: title,
       padding: EdgeInsets.zero,
-      builder: (BuildContext _) {
-        return child;
-      },
+      builder: builder,
     );
   }
 }

@@ -90,7 +90,7 @@ void main() {
                     SelectionModalBase.show(
                       context: context,
                       title: 'Test Title',
-                      child: const Text('Test Child'),
+                      builder: (_) => const Text('Test Child'),
                     );
                   },
                   child: const Text('Open Modal'),
@@ -111,6 +111,75 @@ void main() {
         expect(find.text('Test Child'), findsOneWidget);
       });
 
+      testWidgets(
+        'closing via the modal context pops the sheet, not the caller page '
+        '(mobile nested-navigator regression)',
+        (tester) async {
+          // The default WidgetTestBench media query is phone-sized (390w),
+          // which is below WoltModalConfig.pageBreakpoint (560), so the sheet
+          // is pushed onto the ROOT navigator while the caller page lives on
+          // a nested navigator — exactly the mobile layering that made a
+          // page-context pop dismiss the whole page instead of the sheet.
+          await tester.pumpWidget(
+            WidgetTestBench(
+              child: Navigator(
+                onGenerateInitialRoutes: (navigator, initialRoute) => [
+                  MaterialPageRoute<void>(
+                    builder: (_) => const Scaffold(
+                      body: Center(child: Text('underlying-page')),
+                    ),
+                  ),
+                  MaterialPageRoute<void>(
+                    builder: (context) => Scaffold(
+                      body: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('caller-page'),
+                            ElevatedButton(
+                              onPressed: () {
+                                SelectionModalBase.show(
+                                  context: context,
+                                  title: 'Pick',
+                                  builder: (modalContext) => TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(modalContext).pop(),
+                                    child: const Text('close-from-modal'),
+                                  ),
+                                );
+                              },
+                              child: const Text('Open Modal'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('caller-page'), findsOneWidget);
+
+          await tester.tap(find.text('Open Modal'));
+          await tester.pumpAndSettle();
+          expect(find.text('close-from-modal'), findsOneWidget);
+
+          // Close the sheet using its own (modal) context.
+          await tester.tap(find.text('close-from-modal'));
+          await tester.pumpAndSettle();
+
+          // The sheet closed …
+          expect(find.text('close-from-modal'), findsNothing);
+          // … and the caller page is still mounted (it was NOT popped), which
+          // is only true when the pop targets the sheet's navigator.
+          expect(find.text('caller-page'), findsOneWidget);
+          expect(find.text('underlying-page'), findsNothing);
+        },
+      );
+
       testWidgets('modal dismisses on barrier tap', (tester) async {
         await tester.pumpWidget(
           WidgetTestBench(
@@ -121,7 +190,7 @@ void main() {
                     SelectionModalBase.show(
                       context: context,
                       title: 'Test Title',
-                      child: const Text('Dismissible Child'),
+                      builder: (_) => const Text('Dismissible Child'),
                     );
                   },
                   child: const Text('Open Modal'),
@@ -253,7 +322,7 @@ void main() {
                     SelectionModalBase.show(
                       context: context,
                       title: longTitle,
-                      child: const Text('Test'),
+                      builder: (_) => const Text('Test'),
                     );
                   },
                   child: const Text('Open Modal'),

@@ -66,9 +66,22 @@ Provides standard modal structure using Wolt Modal Sheet.
 SelectionModalBase.show(
   context: context,
   title: 'Select Options',
-  child: YourModalContent(),
+  builder: (modalContext) => YourModalContent(
+    // Close the sheet with the modal context, NOT the caller's page context.
+    onSelected: (value) {
+      onValueSelected(value);
+      Navigator.of(modalContext).pop();
+    },
+  ),
 );
 ```
+
+> **Always pop with `modalContext`.** On mobile the sheet is pushed onto the
+> root navigator while a page's own context resolves to its nested navigator,
+> so `Navigator.of(pageContext).pop()` would dismiss the whole page (losing the
+> pending selection) instead of the sheet. Content widgets that are *mounted
+> inside* the sheet (e.g. a `StatefulWidget`/`ConsumerWidget` body) may pop with
+> their own `build`/`State` context, which already resolves to the sheet.
 
 ### SelectionModalContent
 
@@ -185,7 +198,7 @@ class ColorSelectionModal extends StatefulWidget {
     SelectionModalBase.show(
       context: context,
       title: 'Select Colors',
-      child: ColorSelectionModal(
+      builder: (_) => ColorSelectionModal(
         selectedColors: selectedColors,
         onSave: onSave,
       ),

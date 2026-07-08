@@ -71,12 +71,12 @@ class TemplateSelector extends ConsumerWidget {
     SelectionModalBase.show(
       context: context,
       title: title,
-      child: _TemplatePickerContent(
+      builder: (modalContext) => _TemplatePickerContent(
         templates: templates,
         selectedTemplateId: selectedTemplateId,
         onSelected: (id) {
           onTemplateSelected(id);
-          Navigator.of(context).pop();
+          Navigator.of(modalContext).pop();
         },
       ),
     );
