@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/navigation/sidebar_subsection.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_sidebar_entry.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -50,6 +51,15 @@ void main() {
     await tester.tap(find.text('Time Analysis'));
     await tester.pump();
     expect(beamed, ['/calendar/time']);
+  });
+
+  testWidgets('uses the shared sidebar subsection surface by default', (
+    tester,
+  ) async {
+    await pumpEntry(tester);
+
+    expect(find.byType(SidebarSubsectionSurface), findsOneWidget);
+    expect(find.byType(SidebarSubsectionAction), findsOneWidget);
   });
 
   testWidgets('reflects the active route with the filled icon', (

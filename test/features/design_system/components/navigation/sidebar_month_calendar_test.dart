@@ -166,6 +166,9 @@ void main() {
         ),
       );
 
+      final tokens = tester
+          .element(find.byType(SidebarMonthCalendar))
+          .designTokens;
       // The marked day's cell stacks number + dot; compare descendant
       // DecoratedBox counts between a marked and an unmarked cell.
       Finder cellOf(String day) => find.ancestor(
@@ -189,6 +192,18 @@ void main() {
           )
           .length;
       expect(markedBoxes, unmarkedBoxes + 1);
+      expect(
+        find.descendant(
+          of: cellOf('13').first,
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is SizedBox &&
+                widget.width == tokens.spacing.step2 &&
+                widget.height == tokens.spacing.step2,
+          ),
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

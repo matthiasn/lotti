@@ -37,9 +37,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **The desktop sidebar is calmer when Tasks has lots of saved filters.**
   Saved task filters now sit in their own capped Tasks section with a More row,
-  active filters stay visible, recording/timer/agent cards carry clearer status
-  labels, agent rows can open their linked task directly, and the old tiny
-  Outbox/Inbox footer is now one compact Sync strip.
+  tapping More reveals every saved filter, active filters stay visible,
+  recording/timer/agent cards carry clearer status labels, agent rows can open
+  their linked task directly, and the old tiny Outbox/Inbox footer is now one
+  compact Sync strip. Daily OS and Insights sub-items now use the same grouped
+  sidebar surface, so Time Analysis and AI Impact read as intentional secondary
+  destinations instead of loose rows.
 - **Habit and agent-heavy screens spend less time waiting on the database.**
   Habit heatmaps now load only the latest completion per habit/day, and agent
   summary/feedback paths batch payload lookups instead of firing many

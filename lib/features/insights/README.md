@@ -289,9 +289,11 @@ full-screen `BeamPage` on top of the Daily OS root (the same pattern as
 `/calendar/set-time-blocks`) — the analytics surface gets the entire
 content area, never a split pane. The location is the single writer of
 `NavService.desktopShowTimeAnalysis`; the `InsightsSidebarEntry` rendered
-beneath the Daily OS month calendar (via the destination's
-`expandedChildBuilder`) reads it for its highlight and beams to the route
-on tap.
+beneath the Daily OS month calendar (inside `DailyOsSidebarSection`, via the
+destination's `expandedChildBuilder`) reads it for its highlight and beams to
+the route on tap. The entry uses the shared design-system
+`SidebarSubsectionAction` row so it matches the active-sidebar subsection used
+by the Insights AI Impact link.
 
 ## Testing
 

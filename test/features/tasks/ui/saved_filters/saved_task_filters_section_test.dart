@@ -130,9 +130,10 @@ void main() {
 
     expect(find.text('Filter 5'), findsOneWidget);
     expect(find.text('Filter 6'), findsOneWidget);
-    expect(find.text('Filter 7'), findsNothing);
-    expect(find.text('Filter 8'), findsNothing);
-    expect(find.text('Show fewer · 2 more saved filters'), findsOneWidget);
+    expect(find.text('Filter 7'), findsOneWidget);
+    expect(find.text('Filter 8'), findsOneWidget);
+    expect(find.text('Show fewer'), findsOneWidget);
+    expect(find.textContaining('more saved filters'), findsNothing);
 
     await tester.tap(find.byKey(SavedTaskFiltersSectionKeys.moreButton));
     await tester.pumpAndSettle();
@@ -141,7 +142,7 @@ void main() {
     expect(find.text('Filter 8'), findsNothing);
   });
 
-  testWidgets('keeps expanded saved filters bounded with overflow visible', (
+  testWidgets('expands saved filters to the full list', (
     tester,
   ) async {
     stubPersisted(makeSavedFilters(10));
@@ -151,12 +152,11 @@ void main() {
     await tester.tap(find.byKey(SavedTaskFiltersSectionKeys.moreButton));
     await tester.pumpAndSettle();
 
-    expect(find.text('Filter 6'), findsOneWidget);
-    expect(find.text('Filter 7'), findsNothing);
-    expect(find.text('Filter 8'), findsNothing);
-    expect(find.text('Filter 9'), findsNothing);
-    expect(find.text('Filter 10'), findsNothing);
-    expect(find.text('Show fewer · 4 more saved filters'), findsOneWidget);
+    for (var index = 1; index <= 10; index++) {
+      expect(find.text('Filter $index'), findsOneWidget);
+    }
+    expect(find.text('Show fewer'), findsOneWidget);
+    expect(find.textContaining('more saved filters'), findsNothing);
   });
 
   testWidgets('keeps an active saved filter visible when it is below the cap', (

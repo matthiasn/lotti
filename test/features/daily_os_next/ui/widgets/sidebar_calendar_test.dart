@@ -6,13 +6,20 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/sidebar_month_calendar.dart';
+import 'package:lotti/features/design_system/components/navigation/sidebar_subsection.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/device_region.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
   group('DailyOsSidebarCalendar', () {
     Widget wrap({
+      Widget child = const DailyOsSidebarCalendar(),
       Set<DateTime> planDays = const {},
       List<DateTime>? requestedMonths,
       int firstDayOfWeekIndex = 1,
@@ -28,11 +35,11 @@ void main() {
           ),
         ],
         child: makeTestableWidget2(
-          const Material(
+          Material(
             child: Center(
               child: SizedBox(
                 width: 280,
-                child: DailyOsSidebarCalendar(),
+                child: child,
               ),
             ),
           ),
@@ -154,5 +161,62 @@ void main() {
         );
       });
     });
+
+    testWidgets(
+      'groups the calendar and Time Analysis action in one token-backed '
+      'subsection surface',
+      (tester) async {
+        await withClock(Clock.fixed(DateTime(2026, 5, 24, 9)), () async {
+          final navService = MockNavService();
+          final showTimeAnalysis = ValueNotifier<bool>(false);
+          when(
+            () => navService.desktopShowTimeAnalysis,
+          ).thenReturn(showTimeAnalysis);
+          await setUpTestGetIt(
+            additionalSetup: () {
+              getIt.registerSingleton<NavService>(navService);
+            },
+          );
+          addTearDown(() async {
+            showTimeAnalysis.dispose();
+            await tearDownTestGetIt();
+          });
+
+          await tester.pumpWidget(
+            wrap(child: const DailyOsSidebarSection()),
+          );
+          await tester.pump();
+
+          expect(find.byKey(DailyOsSidebarSectionKeys.root), findsOneWidget);
+          expect(find.byType(SidebarSubsectionSurface), findsOneWidget);
+          expect(find.byType(SidebarSubsectionAction), findsOneWidget);
+          expect(find.byType(SidebarMonthCalendar), findsOneWidget);
+          expect(find.text('Time Analysis'), findsOneWidget);
+
+          final tokens = tester
+              .element(find.byType(DailyOsSidebarSection))
+              .designTokens;
+          final surface = tester.widget<DecoratedBox>(
+            find
+                .descendant(
+                  of: find.byType(SidebarSubsectionSurface),
+                  matching: find.byType(DecoratedBox),
+                )
+                .first,
+          );
+          final decoration = surface.decoration as BoxDecoration;
+          expect(decoration.color, tokens.colors.surface.enabled);
+          expect(decoration.border, isNull);
+
+          expect(
+            tester.getTopLeft(find.byType(SidebarMonthCalendar)).dy,
+            lessThan(tester.getTopLeft(find.text('Time Analysis')).dy),
+            reason:
+                'The calendar should read as the parent control above '
+                'the Time Analysis action.',
+          );
+        });
+      },
+    );
   });
 }

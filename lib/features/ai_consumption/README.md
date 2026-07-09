@@ -147,7 +147,9 @@ dashboard core. Two hosts embed it:
 
 - `ui/impact_analysis_page.dart` — the `/dashboards/impact` route (a thin
   `Scaffold` around the body), reached under Insights via
-  `ui/widgets/impact_sidebar_entry.dart`.
+  `ui/widgets/impact_sidebar_entry.dart`. The sidebar entry is a
+  design-system `SidebarSubsectionSurface` with a `SidebarSubsectionAction`
+  row, matching the Daily OS Time Analysis subsection.
 - The Settings `ai-usage` panel (`settings_v2` panel registry), which wraps the
   body in a `SingleChildScrollView`. The body adapts: with bounded height it
   scrolls itself (`ListView`), with unbounded height it shrink-wraps and lets

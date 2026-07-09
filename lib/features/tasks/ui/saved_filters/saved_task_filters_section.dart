@@ -23,10 +23,10 @@ class SavedTaskFiltersSectionKeys {
 /// least one filter is persisted, or a `SizedBox.shrink` otherwise. New filters
 /// are saved via the Save button in the Tasks Filter modal, not from the
 /// sidebar. The desktop rail deliberately shows only a small working set: the
-/// sidebar is navigation first, while the full saved-filter manager lives in
-/// the modal/sheet surfaces.
+/// sidebar is navigation first while collapsed, but the "more" row expands to
+/// every saved filter so it never advertises hidden items the user cannot
+/// reveal.
 const int kDesktopSavedTaskFiltersCollapsedLimit = 4;
-const int kDesktopSavedTaskFiltersExpandedLimit = 6;
 
 class SavedTaskFiltersSection extends ConsumerStatefulWidget {
   const SavedTaskFiltersSection({
@@ -154,9 +154,9 @@ class _SavedTaskFiltersSectionState
       return list;
     }
 
-    final limit = _expanded
-        ? kDesktopSavedTaskFiltersExpandedLimit
-        : kDesktopSavedTaskFiltersCollapsedLimit;
+    if (_expanded) return list;
+
+    const limit = kDesktopSavedTaskFiltersCollapsedLimit;
     final visible = list.take(limit).toList();
     final activeId = widget.activeId;
     if (activeId == null || visible.any((item) => item.id == activeId)) {
