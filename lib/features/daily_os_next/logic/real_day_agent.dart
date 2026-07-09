@@ -14,6 +14,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.da
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/util/day_arithmetic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:meta/meta.dart';
 
 part 'real_day_agent_projection.dart';
@@ -47,6 +48,7 @@ class RealDayAgent implements DayAgentInterface {
     required this.dayAgentService,
     required this.journalDb,
     required this.mockFallback,
+    this.updateStream,
   });
 
   final DayAgentCaptureService captureService;
@@ -54,6 +56,7 @@ class RealDayAgent implements DayAgentInterface {
   final DayAgentService dayAgentService;
   final JournalDb journalDb;
   final DayAgentInterface mockFallback;
+  final Stream<Set<String>>? updateStream;
 
   /// In-memory cache so the adapter does not hit the categories
   /// table once per parsed item / pending item. Cleared on adapter
@@ -236,7 +239,17 @@ class RealDayAgent implements DayAgentInterface {
           'draftDayPlan poll cancelled by caller',
         );
       }
-      await Future<void>.delayed(_draftPollInterval);
+      await _waitForRelevantUpdate(
+        fallbackDelay: _draftPollInterval,
+        deadline: deadline,
+        relevantIds: {
+          identity.agentId,
+          dailyOsPlannerAgentId,
+          agentNotification,
+          dayId,
+          dayAgentPlanEntityId(dayId),
+        },
+      );
       if (isCancelled?.call() ?? false) {
         throw const DayAgentInteractionException(
           'draftDayPlan poll cancelled by caller',
@@ -321,7 +334,17 @@ class RealDayAgent implements DayAgentInterface {
           'proposePlanDiff poll cancelled by caller',
         );
       }
-      await Future<void>.delayed(_refinePollInterval);
+      await _waitForRelevantUpdate(
+        fallbackDelay: _refinePollInterval,
+        deadline: deadline,
+        relevantIds: {
+          identity.agentId,
+          dailyOsPlannerAgentId,
+          agentNotification,
+          dayId,
+          dayAgentPlanEntityId(dayId),
+        },
+      );
       if (isCancelled?.call() ?? false) {
         throw const DayAgentInteractionException(
           'proposePlanDiff poll cancelled by caller',
@@ -498,6 +521,30 @@ class RealDayAgent implements DayAgentInterface {
   );
 
   // ───────────────────────────── Helpers ──
+
+  Future<void> _waitForRelevantUpdate({
+    required Duration fallbackDelay,
+    required DateTime deadline,
+    required Set<String> relevantIds,
+  }) async {
+    final remaining = deadline.difference(clock.now());
+    if (remaining <= Duration.zero) return;
+    final waitFor = remaining < fallbackDelay ? remaining : fallbackDelay;
+    final stream = updateStream;
+    if (stream == null) {
+      await Future<void>.delayed(waitFor);
+      return;
+    }
+
+    await Future.any<void>([
+      stream
+          .where((ids) => ids.any(relevantIds.contains))
+          .first
+          .then((_) {})
+          .catchError((_) {}),
+      Future<void>.delayed(waitFor),
+    ]);
+  }
 }
 
 /// Thrown by [RealDayAgent] when a graduated path cannot complete —

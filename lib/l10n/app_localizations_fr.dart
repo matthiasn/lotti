@@ -3872,6 +3872,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextDayWrapUpCta => 'Clore';
 
   @override
+  String get dailyOsNextDraftingBackToDecisions => 'Retour aux décisions';
+
+  @override
   String get dailyOsNextDraftingHeader => 'Préparation de ta journée…';
 
   @override
@@ -3881,7 +3884,35 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextDraftingNudgeDecline => 'Pas aujourd\'hui';
 
   @override
+  String get dailyOsNextDraftingProgressBlocks => 'Je prépare les blocs';
+
+  @override
+  String get dailyOsNextDraftingProgressMatching => 'J\'associe les tâches';
+
+  @override
+  String get dailyOsNextDraftingProgressQueued => 'En file';
+
+  @override
+  String get dailyOsNextDraftingProgressReading => 'Je lis le point du jour';
+
+  @override
+  String get dailyOsNextDraftingProgressSaving => 'J\'enregistre le plan';
+
+  @override
+  String get dailyOsNextDraftingProgressValidating => 'Je valide';
+
+  @override
   String get dailyOsNextDraftingReasoningOverline => '✦ RAISONNEMENT';
+
+  @override
+  String get dailyOsNextDraftingRecoveryBody =>
+      'Le réveil n\'a pas produit de plan. Réessaie, ou reviens ajuster les décisions avant de planifier.';
+
+  @override
+  String get dailyOsNextDraftingRecoveryTitle => 'La préparation est bloquée';
+
+  @override
+  String get dailyOsNextDraftingRetry => 'Réessayer';
 
   @override
   String get dailyOsNextDraftingStatusAfternoon => 'J\'organise l\'après-midi…';
@@ -4007,7 +4038,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileDefaultBehaviorHint =>
-      'Tes décisions ici alimentent le plan — ne rien décider signifie « laisse comme c\'est ».';
+      'Vérifie les cartes avant de construire ta journée. Les actions choisies alimentent le plan ; les cartes laissées seules restent comme elles sont.';
 
   @override
   String dailyOsNextReconcileError(String detail) {
@@ -4033,6 +4064,33 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get dailyOsNextReconcileVoiceHint =>
       'Vérifie les décisions avant de construire ta journée';
+
+  @override
+  String get dailyOsNextReviewAddBuffer => 'Ajouter du tampon';
+
+  @override
+  String get dailyOsNextReviewAddBufferPrompt =>
+      'Ajoute un tampon réaliste entre les blocs prévus, surtout autour des transitions et après un travail exigeant.';
+
+  @override
+  String get dailyOsNextReviewLooksGood => 'Ça me va';
+
+  @override
+  String get dailyOsNextReviewMoveLighter => 'Déplacer le léger';
+
+  @override
+  String get dailyOsNextReviewMoveLighterPrompt =>
+      'Déplace le travail plus léger ou moins énergivore plus tard, et garde la meilleure fenêtre de concentration pour la tâche la plus exigeante.';
+
+  @override
+  String get dailyOsNextReviewTooMuch => 'Trop chargé';
+
+  @override
+  String get dailyOsNextReviewTooMuchPrompt =>
+      'Ce plan est trop chargé pour aujourd\'hui. Réduis la charge, garde de l\'air, et conserve seulement les blocs les plus importants.';
+
+  @override
+  String get dailyOsNextReviewWhyTitle => 'Pourquoi c\'est dans le plan';
 
   @override
   String get dailyOsNextRefineAccept => 'Accepter';

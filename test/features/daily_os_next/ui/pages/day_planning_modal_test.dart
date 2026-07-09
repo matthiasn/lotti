@@ -484,7 +484,15 @@ void main() {
       final messages = _l10n(tester);
       await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
       await _tapPill(tester, messages.dailyOsNextReconcileBuildDayCta);
-      expect(find.text(messages.dailyOsNextGenericError), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextDraftingRecoveryTitle),
+        findsOneWidget,
+      );
+      expect(find.text(messages.dailyOsNextDraftingRetry), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextDraftingBackToDecisions),
+        findsOneWidget,
+      );
     });
   });
 

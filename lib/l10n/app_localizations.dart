@@ -6480,6 +6480,12 @@ abstract class AppLocalizations {
   /// **'Wrap up'**
   String get dailyOsNextDayWrapUpCta;
 
+  /// No description provided for @dailyOsNextDraftingBackToDecisions.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to decisions'**
+  String get dailyOsNextDraftingBackToDecisions;
+
   /// No description provided for @dailyOsNextDraftingHeader.
   ///
   /// In en, this message translates to:
@@ -6498,11 +6504,65 @@ abstract class AppLocalizations {
   /// **'Not today'**
   String get dailyOsNextDraftingNudgeDecline;
 
+  /// No description provided for @dailyOsNextDraftingProgressBlocks.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafting blocks'**
+  String get dailyOsNextDraftingProgressBlocks;
+
+  /// No description provided for @dailyOsNextDraftingProgressMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching tasks'**
+  String get dailyOsNextDraftingProgressMatching;
+
+  /// No description provided for @dailyOsNextDraftingProgressQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get dailyOsNextDraftingProgressQueued;
+
+  /// No description provided for @dailyOsNextDraftingProgressReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading check-in'**
+  String get dailyOsNextDraftingProgressReading;
+
+  /// No description provided for @dailyOsNextDraftingProgressSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving plan'**
+  String get dailyOsNextDraftingProgressSaving;
+
+  /// No description provided for @dailyOsNextDraftingProgressValidating.
+  ///
+  /// In en, this message translates to:
+  /// **'Validating'**
+  String get dailyOsNextDraftingProgressValidating;
+
   /// No description provided for @dailyOsNextDraftingReasoningOverline.
   ///
   /// In en, this message translates to:
   /// **'✦ REASONING'**
   String get dailyOsNextDraftingReasoningOverline;
+
+  /// No description provided for @dailyOsNextDraftingRecoveryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The wake did not produce a plan. Try again, or go back and adjust the decisions before drafting.'**
+  String get dailyOsNextDraftingRecoveryBody;
+
+  /// No description provided for @dailyOsNextDraftingRecoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafting stalled'**
+  String get dailyOsNextDraftingRecoveryTitle;
+
+  /// No description provided for @dailyOsNextDraftingRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get dailyOsNextDraftingRetry;
 
   /// No description provided for @dailyOsNextDraftingStatusAfternoon.
   ///
@@ -6717,7 +6777,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextReconcileDefaultBehaviorHint.
   ///
   /// In en, this message translates to:
-  /// **'Decisions here feed into the plan — no decision means \"leave it where it is.\"'**
+  /// **'Review the cards before building your day. Chosen actions feed into the plan; cards left alone stay as they are.'**
   String get dailyOsNextReconcileDefaultBehaviorHint;
 
   /// No description provided for @dailyOsNextReconcileError.
@@ -6761,6 +6821,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review decisions before building your day'**
   String get dailyOsNextReconcileVoiceHint;
+
+  /// No description provided for @dailyOsNextReviewAddBuffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Add buffer'**
+  String get dailyOsNextReviewAddBuffer;
+
+  /// No description provided for @dailyOsNextReviewAddBufferPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a realistic buffer between the planned blocks, especially around transitions and after demanding work.'**
+  String get dailyOsNextReviewAddBufferPrompt;
+
+  /// No description provided for @dailyOsNextReviewLooksGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks good'**
+  String get dailyOsNextReviewLooksGood;
+
+  /// No description provided for @dailyOsNextReviewMoveLighter.
+  ///
+  /// In en, this message translates to:
+  /// **'Move lighter'**
+  String get dailyOsNextReviewMoveLighter;
+
+  /// No description provided for @dailyOsNextReviewMoveLighterPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Move the lighter or lower-energy work later, and keep the strongest focus window for the most demanding task.'**
+  String get dailyOsNextReviewMoveLighterPrompt;
+
+  /// No description provided for @dailyOsNextReviewTooMuch.
+  ///
+  /// In en, this message translates to:
+  /// **'Too much'**
+  String get dailyOsNextReviewTooMuch;
+
+  /// No description provided for @dailyOsNextReviewTooMuchPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'This plan is too much for today. Reduce the load, protect breathing room, and keep only the most important blocks.'**
+  String get dailyOsNextReviewTooMuchPrompt;
+
+  /// No description provided for @dailyOsNextReviewWhyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why these made it in'**
+  String get dailyOsNextReviewWhyTitle;
 
   /// No description provided for @dailyOsNextRefineAccept.
   ///

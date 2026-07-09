@@ -311,6 +311,11 @@ void main() {
         final messages = tester.element(find.byType(DraftingPage)).messages;
         expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
         expect(find.byType(DraftingStatusTicker), findsOneWidget);
+        expect(find.byType(DraftingProgressTimeline), findsOneWidget);
+        expect(
+          find.text(messages.dailyOsNextDraftingProgressQueued),
+          findsOneWidget,
+        );
         expect(find.byType(LearningCardsColumn), findsOneWidget);
         expect(find.text('YESTERDAY'), findsOneWidget);
       },
@@ -348,6 +353,7 @@ void main() {
 
       expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
       expect(find.byType(DraftingStatusTicker), findsOneWidget);
+      expect(find.byType(DraftingProgressTimeline), findsOneWidget);
       expect(find.text('YESTERDAY'), findsOneWidget);
     });
 
@@ -365,6 +371,7 @@ void main() {
       final messages = tester.element(find.byType(DraftingPage)).messages;
       expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
       expect(find.byType(DraftingStatusTicker), findsOneWidget);
+      expect(find.byType(DraftingProgressTimeline), findsOneWidget);
       // The learning cards column either isn't built or renders no cards.
       expect(find.text('YESTERDAY'), findsNothing);
     });
@@ -376,7 +383,15 @@ void main() {
       await tester.pump();
 
       final messages = tester.element(find.byType(DraftingPage)).messages;
-      expect(find.text(messages.dailyOsNextGenericError), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextDraftingRecoveryTitle),
+        findsOneWidget,
+      );
+      expect(find.text(messages.dailyOsNextDraftingRetry), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextDraftingBackToDecisions),
+        findsOneWidget,
+      );
       expect(find.textContaining('drafting unavailable'), findsNothing);
     });
 
@@ -391,6 +406,7 @@ void main() {
 
         // Both sections rendered in vertical column.
         expect(find.byType(DraftingStatusTicker), findsOneWidget);
+        expect(find.byType(DraftingProgressTimeline), findsOneWidget);
         expect(find.byType(LearningCardsColumn), findsOneWidget);
       },
     );
@@ -499,6 +515,60 @@ void main() {
         expect(find.textContaining('drafting blew up'), findsNothing);
       },
     );
+  });
+
+  group('DraftingProgressTimeline', () {
+    Future<void> pumpTimeline(WidgetTester tester, {required bool active}) {
+      return tester.pumpWidget(
+        makeTestableWidget2(
+          Scaffold(body: DraftingProgressTimeline(active: active)),
+          mediaQueryData: const MediaQueryData(size: Size(800, 600)),
+        ),
+      );
+    }
+
+    testWidgets('advances deterministically while active', (tester) async {
+      const interval = Duration(milliseconds: 3200);
+      await pumpTimeline(tester, active: true);
+
+      final messages = tester
+          .element(find.byType(DraftingProgressTimeline))
+          .messages;
+      expect(
+        find.text(messages.dailyOsNextDraftingProgressQueued),
+        findsOneWidget,
+      );
+
+      await tester.pump(interval);
+      expect(
+        find.text(messages.dailyOsNextDraftingProgressReading),
+        findsOneWidget,
+      );
+
+      await tester.pump(interval * 10);
+      expect(
+        find.text(messages.dailyOsNextDraftingProgressSaving),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('does not advance while inactive', (tester) async {
+      await pumpTimeline(tester, active: false);
+
+      final messages = tester
+          .element(find.byType(DraftingProgressTimeline))
+          .messages;
+      expect(
+        find.text(messages.dailyOsNextDraftingProgressQueued),
+        findsOneWidget,
+      );
+
+      await tester.pump(const Duration(seconds: 10));
+      expect(
+        find.text(messages.dailyOsNextDraftingProgressQueued),
+        findsOneWidget,
+      );
+    });
   });
 
   group('DraftingStatusTicker', () {

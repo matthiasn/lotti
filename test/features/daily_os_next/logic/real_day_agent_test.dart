@@ -90,20 +90,26 @@ PlanDiff buildDiff({String id = 'diff-001'}) => PlanDiff(
 
 /// Shared five-mock + adapter scaffolding used by every group in this file.
 class _TestBench {
-  _TestBench._({required this.fallback})
+  _TestBench._({required this.fallback, this.updateStream})
     : captureService = MockDayAgentCaptureService(),
       planService = MockDayAgentPlanService(),
       dayAgentService = MockDayAgentService(),
       journalDb = MockJournalDb();
 
-  factory _TestBench.create({MockDayAgent? fallback}) =>
-      _TestBench._(fallback: fallback ?? MockDayAgent());
+  factory _TestBench.create({
+    MockDayAgent? fallback,
+    Stream<Set<String>>? updateStream,
+  }) => _TestBench._(
+    fallback: fallback ?? MockDayAgent(),
+    updateStream: updateStream,
+  );
 
   final MockDayAgentCaptureService captureService;
   final MockDayAgentPlanService planService;
   final MockDayAgentService dayAgentService;
   final MockJournalDb journalDb;
   final MockDayAgent fallback;
+  final Stream<Set<String>>? updateStream;
 
   late final RealDayAgent adapter = RealDayAgent(
     captureService: captureService,
@@ -111,6 +117,7 @@ class _TestBench {
     dayAgentService: dayAgentService,
     journalDb: journalDb,
     mockFallback: fallback,
+    updateStream: updateStream,
   );
 }
 
@@ -378,6 +385,75 @@ void main() {
             decidedCaptureItemIds: ['parsed_1'],
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'wakes immediately from persisted-state notifications before '
+      'the fallback poll interval',
+      () async {
+        const agentId = 'day-agent-001';
+        final updates = StreamController<Set<String>>.broadcast();
+        addTearDown(updates.close);
+        final bench = _TestBench.create(updateStream: updates.stream);
+        final dayId = dayAgentIdForDate(_asOf);
+        var draftPlanCalls = 0;
+
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => bench.planService.draftPlanForDay(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        ).thenAnswer((_) async {
+          draftPlanCalls++;
+          if (draftPlanCalls == 1) return null;
+          return buildDayPlan(
+            agentId: agentId,
+            dayId: dayId,
+            updatedAt: _asOf.add(const Duration(seconds: 1)),
+            blocks: [
+              PlannedBlock(
+                id: 'block_notified',
+                categoryId: 'work',
+                startTime: _asOf.add(const Duration(hours: 1)),
+                endTime: _asOf.add(const Duration(hours: 2)),
+                title: 'Notified draft',
+                reason: 'Notification woke the adapter.',
+              ),
+            ],
+          );
+        });
+        when(
+          () => bench.dayAgentService.enqueueDraftingWake(
+            dayDate: any(named: 'dayDate'),
+            captureId: any(named: 'captureId'),
+            decidedTaskIds: any(named: 'decidedTaskIds'),
+            decidedCaptureItemIds: any(named: 'decidedCaptureItemIds'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => bench.journalDb.getCategoryById(any()),
+        ).thenAnswer((_) async => null);
+
+        final future = bench.adapter.draftDayPlan(
+          captureId: const CaptureId('cap_1'),
+          decidedTaskIds: const ['t_1'],
+          dayDate: _asOf,
+        );
+        await pumpEventQueue();
+
+        updates.add({dayAgentPlanEntityId(dayId)});
+        final result = await future;
+
+        expect(result.blocks.single.title, 'Notified draft');
+        expect(draftPlanCalls, 2);
       },
     );
 
