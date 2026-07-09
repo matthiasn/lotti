@@ -14,6 +14,9 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_write
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 
+/// Newest planner day-plan rows inspected when syncing a renamed task title.
+const _taskTitleSyncPlanLimit = 120;
+
 /// Backend implementation for Daily OS day-plan drafting tools.
 ///
 /// A thin facade over four collaborators that own the actual work:
@@ -204,9 +207,13 @@ class DayAgentPlanService {
     final entities = await agentRepository.getEntitiesByAgentId(
       dailyOsPlannerAgentId,
       type: AgentEntityTypes.dayPlan,
+      limit: _taskTitleSyncPlanLimit,
     );
     final plansToUpdate = <DayPlanEntity>[];
     for (final plan in entities.whereType<DayPlanEntity>()) {
+      if (plan.deletedAt != null) {
+        continue;
+      }
       final updatedBlocks = [
         for (final block in plan.data.plannedBlocks)
           if (block.taskId?.trim() == trimmedTaskId &&

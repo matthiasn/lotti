@@ -3171,6 +3171,13 @@ void main() {
           });
 
           expect(count, 1);
+          verify(
+            () => agentRepository.getEntitiesByAgentId(
+              dailyOsPlannerAgentId,
+              type: AgentEntityTypes.dayPlan,
+              limit: 120,
+            ),
+          ).called(1);
           final updated = upsertedEntities.single as DayPlanEntity;
           final byId = {
             for (final block in updated.data.plannedBlocks) block.id: block,
@@ -3227,6 +3234,46 @@ void main() {
           expect(notifications, isEmpty);
         },
       );
+
+      test('skips soft-deleted plans without re-upserting them', () async {
+        final deletedPlan =
+            AgentDomainEntity.dayPlan(
+                  id: 'day_agent_plan:deleted',
+                  agentId: dailyOsPlannerAgentId,
+                  dayId: 'dayplan-2026-05-24',
+                  planDate: DateTime(2026, 5, 24),
+                  data: DayPlanData(
+                    planDate: DateTime(2026, 5, 24),
+                    status: const DayPlanStatus.draft(),
+                    plannedBlocks: [
+                      PlannedBlock(
+                        id: 'linked-deleted',
+                        categoryId: 'work',
+                        startTime: DateTime(2026, 5, 24, 9),
+                        endTime: DateTime(2026, 5, 24, 10),
+                        title: 'Old deleted title',
+                        taskId: 'task-1',
+                        reason: 'Deleted plan.',
+                      ),
+                    ],
+                  ),
+                  createdAt: _now,
+                  updatedAt: _now,
+                  deletedAt: _now.add(const Duration(minutes: 1)),
+                  vectorClock: null,
+                )
+                as DayPlanEntity;
+        agentEntities[deletedPlan.id] = deletedPlan;
+
+        final count = await createService().syncTaskTitle(
+          taskId: 'task-1',
+          title: 'New title',
+        );
+
+        expect(count, 0);
+        expect(upsertedEntities, isEmpty);
+        expect(notifications, isEmpty);
+      });
     });
 
     group('commitDay', () {
