@@ -252,6 +252,13 @@ CREATE INDEX idx_label_definitions_deleted_private_name ON label_definitions(
   private COLLATE BINARY ASC,
   name COLLATE NOCASE ASC
 );
+-- Companion for `allLabelDefinitions`, which filters only deleted rows and
+-- orders by `name COLLATE NOCASE`. The private-aware index above cannot stream
+-- a global name order when `private` is unconstrained.
+CREATE INDEX idx_label_definitions_deleted_name_nocase ON label_definitions(
+  deleted COLLATE BINARY ASC,
+  name COLLATE NOCASE ASC
+);
 
 CREATE TABLE dashboard_definitions (
   id TEXT NOT NULL,

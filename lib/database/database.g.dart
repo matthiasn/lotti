@@ -5653,6 +5653,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_label_definitions_deleted_private_name',
     'CREATE INDEX idx_label_definitions_deleted_private_name ON label_definitions (deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, name COLLATE NOCASE ASC)',
   );
+  late final Index idxLabelDefinitionsDeletedNameNocase = Index(
+    'idx_label_definitions_deleted_name_nocase',
+    'CREATE INDEX idx_label_definitions_deleted_name_nocase ON label_definitions (deleted COLLATE BINARY ASC, name COLLATE NOCASE ASC)',
+  );
   late final DashboardDefinitions dashboardDefinitions = DashboardDefinitions(
     this,
   );
@@ -7806,6 +7810,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxLabelDefinitionsName,
     idxLabelDefinitionsPrivate,
     idxLabelDefinitionsDeletedPrivateName,
+    idxLabelDefinitionsDeletedNameNocase,
     dashboardDefinitions,
     idxDashboardDefinitionsId,
     idxDashboardDefinitionsName,

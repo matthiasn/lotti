@@ -179,7 +179,8 @@ mixin _JournalDbMigrationRecent on _$JournalDb {
         DevLogger.log(
           name: 'JournalDb',
           message:
-              'Adding priority/date partial index for broad task-list reads',
+              'Adding indexes for broad task-list, import-flag, and '
+              'label-definition reads',
         );
         if (await _tableExists('journal') &&
             await _columnExists('journal', 'task_priority_rank')) {
@@ -197,6 +198,15 @@ mixin _JournalDbMigrationRecent on _$JournalDb {
               'CREATE INDEX ',
               'CREATE INDEX IF NOT EXISTS ',
             ),
+          );
+        }
+        if (await _tableExists('label_definitions')) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_label_definitions_deleted_name_nocase '
+            'ON label_definitions('
+            '  deleted COLLATE BINARY ASC, '
+            '  name COLLATE NOCASE ASC)',
           );
         }
         await customStatement('ANALYZE');
