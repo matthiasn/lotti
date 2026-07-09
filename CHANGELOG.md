@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1036]
 ### Added
+- **Daily OS gives better feedback while turning a spoken check-in into a
+  plan.** Drafting now shows a staged progress trail, failures offer Retry and
+  Back to decisions, the Day footer explains why blocks made it in, and quick
+  review actions let you accept the plan or ask for less, a lighter move, or
+  more buffer without re-dictating from scratch.
 - **Share AI Impact without leaking your category names.** The AI Impact
   breakdown now has a **Both / By category / By model** picker. **By model**
   hides every category name, so you can screenshot and share your model mix and

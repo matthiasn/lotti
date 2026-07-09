@@ -367,14 +367,23 @@ stateDiagram-v2
   `DraftingStatusTicker` — a deterministic ~21 s rotation of localized
   narration lines ("Reading your check-in…", "Placing deep work first…") that
   cross-fade in place — with yesterday's learning cards below as real content
-  to read while waiting. The drafting step has no sticky bar (it offers no
-  actions and auto-advances when the draft is ready).
+  to read while waiting. `DraftingProgressTimeline` adds a deterministic stage
+  trail (queued → reading → matching → blocks → validating → saving) because the
+  backend only exposes completion, not individual tool checkpoints. If draft
+  creation fails before the modal can auto-advance, `DraftingErrorRecovery`
+  keeps the user in context with Retry and Back to decisions actions. The
+  drafting step has no sticky bar while active (it offers no actions and
+  auto-advances when the draft is ready).
 - The modal's Refine step (`RefineModalContent`) runs on the same anchored
   template: idle shows the current plan (eyebrow + category-dot rows) where
   the spoken words will land, the diff rows render in the middle zone with
   inline accept/reject, and the bar carries "Revert" (enabled once a diff is
   pending) and "Looks good" (closes the modal). The standalone `RefinePage`
   keeps its two-pane timeline + side-panel layout for the route-level flow.
+  `DayPlanningAdapt` may also receive an `initialTranscript`: quick review
+  buttons on the Day surface open Refine and immediately submit that prompt
+  through the normal diff/accept/revert path, so "Too much", "Move lighter",
+  and "Add buffer" are shortcuts over the same user-gated refine machinery.
 - Agenda and Commit surfaces use the `CapacityDonut` ring (86 px on the Agenda
   stat strip, 62 px on the Commit recap): a 5 px stacked **category ring**
   whose slices mirror the legend dots (via `categoryTotalsFor`, shared by
@@ -394,6 +403,12 @@ stateDiagram-v2
   `DesignSystemGlassStrip`, the same hairline, blur, and footer gradient used
   by the task details action bar. The page-level buttons keep their own layout,
   but the background treatment stays shared through the design system component.
+- Drafted Day plans add `_PlanReviewStrip` above the Day footer actions. It
+  surfaces up to two block reasons from the persisted draft ("Why this plan"),
+  then offers "Looks good" (same commit route as Lock In) plus quick
+  refinement prompts for making the plan smaller, moving work lighter, or
+  adding buffer. Committed plans do not show the strip because their footer
+  shifts to wrap-up/shutdown behavior.
 - Agenda rows resolve live task metadata through `taskLiveDataProvider` before
   rendering. `AgendaView` keeps draft/manual block timing as the source of truth,
   then passes the task title, status, estimate, category, `coverArtId`, and
@@ -427,6 +442,11 @@ stateDiagram-v2
 - `ReconcileController` watches capture-id update notifications, so the
   "heard" column re-reads parsed items when the asynchronous parsing wake
   persists them.
+- `RealDayAgent` uses the same notification stream after enqueueing draft and
+  refine wakes: it waits for relevant planner/day-plan update ids and falls
+  back to the old short delay only when no notification arrives. The user still
+  sees the same timeout/cancellation semantics, but successful wakes can surface
+  as soon as persistence notifies instead of waiting for a fixed poll interval.
 - `create_task_from_phrase` creates a real task from a NEW capture phrase,
   returns its `taskId`, and links the parsed item when `captureItemId` is
   supplied. Drafting should use that returned `taskId` on the matching block so

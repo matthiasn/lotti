@@ -101,12 +101,14 @@ class _DraftingPageState extends ConsumerState<DraftingPage> {
             state: asyncState.requireValue,
           ),
           _ when asyncState.hasError => Center(
-            child: Text(
-              context.messages.dailyOsNextGenericError,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
+            child: Padding(
+              padding: EdgeInsets.all(tokens.spacing.step8),
+              child: DraftingErrorRecovery(
+                onRetry: () => ref.invalidate(
+                  draftingControllerProvider(params),
+                ),
+                onBack: () => Navigator.of(context).maybePop(),
               ),
-              textAlign: TextAlign.center,
             ),
           ),
           _ => const Center(child: CircularProgressIndicator()),
@@ -172,6 +174,8 @@ class DraftingModalContent extends StatelessWidget {
                 ),
                 SizedBox(height: tokens.spacing.step5),
                 DraftingStatusTicker(active: isDrafting),
+                SizedBox(height: tokens.spacing.step5),
+                DraftingProgressTimeline(active: isDrafting),
                 SizedBox(height: tokens.spacing.step8),
                 // The learning cards arrive mid-draft, after the user is
                 // already reading the status ticker. Reveal their height open
@@ -198,6 +202,228 @@ class DraftingModalContent extends StatelessWidget {
   /// Stable key on the hero thinking shader, for presence asserts.
   @visibleForTesting
   static const Key thinkingShaderKey = ValueKey('drafting-thinking-shader');
+}
+
+/// Visible wake-progress ladder for the drafting wait.
+///
+/// The backend currently exposes completion, not per-tool progress events, so
+/// this is an honest deterministic presentation of the stages the wake is
+/// expected to move through. When the agent runtime grows streamed progress,
+/// this widget is the display seam to connect to it.
+class DraftingProgressTimeline extends StatefulWidget {
+  const DraftingProgressTimeline({
+    required this.active,
+    this.interval = const Duration(milliseconds: 3200),
+    super.key,
+  });
+
+  final bool active;
+  final Duration interval;
+
+  static List<String> stagesOf(AppLocalizations messages) => [
+    messages.dailyOsNextDraftingProgressQueued,
+    messages.dailyOsNextDraftingProgressReading,
+    messages.dailyOsNextDraftingProgressMatching,
+    messages.dailyOsNextDraftingProgressBlocks,
+    messages.dailyOsNextDraftingProgressValidating,
+    messages.dailyOsNextDraftingProgressSaving,
+  ];
+
+  @override
+  State<DraftingProgressTimeline> createState() =>
+      _DraftingProgressTimelineState();
+}
+
+class _DraftingProgressTimelineState extends State<DraftingProgressTimeline> {
+  Timer? _timer;
+  int _activeIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.active) _start();
+  }
+
+  @override
+  void didUpdateWidget(DraftingProgressTimeline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active && _timer == null) {
+      _start();
+    } else if (!widget.active) {
+      _stop();
+    }
+  }
+
+  void _start() {
+    _timer = Timer.periodic(widget.interval, (_) {
+      if (!mounted) return;
+      final stageCount = DraftingProgressTimeline.stagesOf(
+        context.messages,
+      ).length;
+      setState(() {
+        _activeIndex = (_activeIndex + 1).clamp(0, stageCount - 1);
+      });
+    });
+  }
+
+  void _stop() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  @override
+  void dispose() {
+    _stop();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final stages = DraftingProgressTimeline.stagesOf(context.messages);
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: tokens.spacing.step2,
+      runSpacing: tokens.spacing.step2,
+      children: [
+        for (var i = 0; i < stages.length; i++)
+          _DraftingProgressChip(
+            label: stages[i],
+            state: i < _activeIndex
+                ? _DraftingProgressChipState.done
+                : i == _activeIndex
+                ? _DraftingProgressChipState.active
+                : _DraftingProgressChipState.pending,
+          ),
+      ],
+    );
+  }
+}
+
+enum _DraftingProgressChipState { done, active, pending }
+
+class _DraftingProgressChip extends StatelessWidget {
+  const _DraftingProgressChip({
+    required this.label,
+    required this.state,
+  });
+
+  final String label;
+  final _DraftingProgressChipState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final active = state == _DraftingProgressChipState.active;
+    final done = state == _DraftingProgressChipState.done;
+    final color = active || done
+        ? tokens.colors.interactive.enabled
+        : tokens.colors.text.lowEmphasis;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: active
+            ? tokens.colors.interactive.enabled.withValues(alpha: 0.12)
+            : tokens.colors.surface.enabled,
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+        border: Border.all(
+          color: active
+              ? tokens.colors.interactive.enabled.withValues(alpha: 0.36)
+              : tokens.colors.decorative.level01,
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step3,
+          vertical: tokens.spacing.step2,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              done ? Icons.check_rounded : Icons.circle_rounded,
+              size: tokens.spacing.step3,
+              color: color,
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            Text(
+              label,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Recovery UI for a failed drafting wake.
+class DraftingErrorRecovery extends StatelessWidget {
+  const DraftingErrorRecovery({
+    required this.onRetry,
+    required this.onBack,
+    super.key,
+  });
+
+  final VoidCallback onRetry;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: DraftingModalContent._contentMaxWidth,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            color: tokens.colors.alert.warning.defaultColor,
+            size: tokens.spacing.step9,
+          ),
+          SizedBox(height: tokens.spacing.step4),
+          Text(
+            messages.dailyOsNextDraftingRecoveryTitle,
+            textAlign: TextAlign.center,
+            style: tokens.typography.styles.heading.heading3.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          Text(
+            messages.dailyOsNextDraftingRecoveryBody,
+            textAlign: TextAlign.center,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step5),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step3,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onBack,
+                icon: const Icon(Icons.arrow_back_rounded),
+                label: Text(messages.dailyOsNextDraftingBackToDecisions),
+              ),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: Text(messages.dailyOsNextDraftingRetry),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// One-line narration of what the agent is doing, rotating through a fixed

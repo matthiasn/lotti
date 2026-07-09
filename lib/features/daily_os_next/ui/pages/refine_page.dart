@@ -32,16 +32,33 @@ part 'refine_page_widgets.dart';
 ///
 /// The host's sticky glass bar carries Start over / Looks good; diff rows
 /// keep their inline accept/reject affordances inside the zone.
-class RefineModalContent extends ConsumerWidget {
-  const RefineModalContent({required this.draft, super.key});
+class RefineModalContent extends ConsumerStatefulWidget {
+  const RefineModalContent({
+    required this.draft,
+    this.initialTranscript,
+    super.key,
+  });
 
   final DraftPlan draft;
 
+  /// Optional prompt submitted as soon as the panel opens.
+  final String? initialTranscript;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RefineModalContent> createState() => _RefineModalContentState();
+}
+
+class _RefineModalContentState extends ConsumerState<RefineModalContent> {
+  bool _submittedInitialTranscript = false;
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final state = ref.watch(refineControllerProvider(draft));
-    final notifier = ref.read(refineControllerProvider(draft).notifier);
+    final state = ref.watch(refineControllerProvider(widget.draft));
+    final notifier = ref.read(
+      refineControllerProvider(widget.draft).notifier,
+    );
+    _submitInitialTranscriptOnce(notifier);
     // Only the phase here — the orb zone below watches the meter fields
     // itself so amplitude ticks don't rebuild the plan list.
     final capturePhase = ref.watch(
@@ -51,13 +68,16 @@ class RefineModalContent extends ConsumerWidget {
 
     // Pop only on the edge INTO accepted — later emissions while already
     // accepted must not pop the route a second time.
-    ref.listen<RefineState>(refineControllerProvider(draft), (previous, next) {
-      if (previous?.phase != RefinePhase.accepted &&
-          next.phase == RefinePhase.accepted) {
-        Navigator.of(context).pop(next.currentPlan);
-      }
-    });
-    listenCaptureForRefine(ref, draft);
+    ref.listen<RefineState>(
+      refineControllerProvider(widget.draft),
+      (previous, next) {
+        if (previous?.phase != RefinePhase.accepted &&
+            next.phase == RefinePhase.accepted) {
+          Navigator.of(context).pop(next.currentPlan);
+        }
+      },
+    );
+    listenCaptureForRefine(ref, widget.draft);
 
     return Center(
       child: ConstrainedBox(
@@ -81,7 +101,7 @@ class RefineModalContent extends ConsumerWidget {
                 SizedBox(height: tokens.spacing.step4),
               ],
               Expanded(
-                child: _RefineZone(draft: draft, state: state),
+                child: _RefineZone(draft: widget.draft, state: state),
               ),
               SizedBox(height: tokens.spacing.step4),
               Consumer(
@@ -111,6 +131,20 @@ class RefineModalContent extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  void _submitInitialTranscriptOnce(RefineController notifier) {
+    final transcript = widget.initialTranscript?.trim();
+    if (_submittedInitialTranscript ||
+        transcript == null ||
+        transcript.isEmpty) {
+      return;
+    }
+    _submittedInitialTranscript = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(notifier.finishWithTranscript(transcript));
+    });
   }
 
   String _caption(BuildContext context, RefinePhase phase) {

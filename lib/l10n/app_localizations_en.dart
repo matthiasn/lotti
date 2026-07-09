@@ -3795,6 +3795,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextDayWrapUpCta => 'Wrap up';
 
   @override
+  String get dailyOsNextDraftingBackToDecisions => 'Back to decisions';
+
+  @override
   String get dailyOsNextDraftingHeader => 'Drafting your day…';
 
   @override
@@ -3804,7 +3807,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextDraftingNudgeDecline => 'Not today';
 
   @override
+  String get dailyOsNextDraftingProgressBlocks => 'Drafting blocks';
+
+  @override
+  String get dailyOsNextDraftingProgressMatching => 'Matching tasks';
+
+  @override
+  String get dailyOsNextDraftingProgressQueued => 'Queued';
+
+  @override
+  String get dailyOsNextDraftingProgressReading => 'Reading check-in';
+
+  @override
+  String get dailyOsNextDraftingProgressSaving => 'Saving plan';
+
+  @override
+  String get dailyOsNextDraftingProgressValidating => 'Validating';
+
+  @override
   String get dailyOsNextDraftingReasoningOverline => '✦ REASONING';
+
+  @override
+  String get dailyOsNextDraftingRecoveryBody =>
+      'The wake did not produce a plan. Try again, or go back and adjust the decisions before drafting.';
+
+  @override
+  String get dailyOsNextDraftingRecoveryTitle => 'Drafting stalled';
+
+  @override
+  String get dailyOsNextDraftingRetry => 'Try again';
 
   @override
   String get dailyOsNextDraftingStatusAfternoon => 'Sequencing the afternoon…';
@@ -3926,7 +3957,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileDefaultBehaviorHint =>
-      'Decisions here feed into the plan — no decision means \"leave it where it is.\"';
+      'Review the cards before building your day. Chosen actions feed into the plan; cards left alone stay as they are.';
 
   @override
   String dailyOsNextReconcileError(String detail) {
@@ -3952,6 +3983,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dailyOsNextReconcileVoiceHint =>
       'Review decisions before building your day';
+
+  @override
+  String get dailyOsNextReviewAddBuffer => 'Add buffer';
+
+  @override
+  String get dailyOsNextReviewAddBufferPrompt =>
+      'Add a realistic buffer between the planned blocks, especially around transitions and after demanding work.';
+
+  @override
+  String get dailyOsNextReviewLooksGood => 'Looks good';
+
+  @override
+  String get dailyOsNextReviewMoveLighter => 'Move lighter';
+
+  @override
+  String get dailyOsNextReviewMoveLighterPrompt =>
+      'Move the lighter or lower-energy work later, and keep the strongest focus window for the most demanding task.';
+
+  @override
+  String get dailyOsNextReviewTooMuch => 'Too much';
+
+  @override
+  String get dailyOsNextReviewTooMuchPrompt =>
+      'This plan is too much for today. Reduce the load, protect breathing room, and keep only the most important blocks.';
+
+  @override
+  String get dailyOsNextReviewWhyTitle => 'Why these made it in';
 
   @override
   String get dailyOsNextRefineAccept => 'Accept';
