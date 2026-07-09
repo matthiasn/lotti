@@ -273,6 +273,7 @@ class CloudInferenceGenerateMore {
     final terms = speechDictionaryTerms
         ?.map((term) => term.trim())
         .where((term) => term.isNotEmpty)
+        .take(100)
         .toList();
     if (terms == null || terms.isEmpty) {
       return prompt;
