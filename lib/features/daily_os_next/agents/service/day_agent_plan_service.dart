@@ -1,5 +1,7 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
@@ -9,6 +11,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_edito
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_reads.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_tool_dispatcher.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_writer.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Backend implementation for Daily OS day-plan drafting tools.
@@ -182,6 +185,64 @@ class DayAgentPlanService {
     required String dayId,
   }) => _editor.uncommitDay(agentId: agentId, dayId: dayId);
 
+  /// Updates denormalized planned-block titles for blocks linked to [taskId].
+  ///
+  /// Live Daily OS surfaces read through the task row, but persisted plan data
+  /// still carries a fallback title for snapshots, sync peers, and unavailable
+  /// task rows. This method keeps that fallback in step after task-detail title
+  /// edits without touching historical/backfill data.
+  Future<int> syncTaskTitle({
+    required String taskId,
+    required String title,
+  }) async {
+    final trimmedTaskId = taskId.trim();
+    final trimmedTitle = title.trim();
+    if (trimmedTaskId.isEmpty || trimmedTitle.isEmpty) {
+      return 0;
+    }
+
+    final entities = await agentRepository.getEntitiesByAgentId(
+      dailyOsPlannerAgentId,
+      type: AgentEntityTypes.dayPlan,
+    );
+    final plansToUpdate = <DayPlanEntity>[];
+    for (final plan in entities.whereType<DayPlanEntity>()) {
+      final updatedBlocks = [
+        for (final block in plan.data.plannedBlocks)
+          if (block.taskId?.trim() == trimmedTaskId &&
+              block.title?.trim() != trimmedTitle)
+            block.copyWith(title: trimmedTitle)
+          else
+            block,
+      ];
+      if (!_sameBlocks(plan.data.plannedBlocks, updatedBlocks)) {
+        plansToUpdate.add(
+          plan.copyWith(
+            data: plan.data.copyWith(plannedBlocks: updatedBlocks),
+            updatedAt: clock.now(),
+          ),
+        );
+      }
+    }
+
+    if (plansToUpdate.isEmpty) {
+      return 0;
+    }
+
+    await syncService.runInTransaction(() async {
+      for (final plan in plansToUpdate) {
+        await syncService.upsertEntity(plan);
+      }
+    });
+    for (final plan in plansToUpdate) {
+      onPersistedStateChanged
+        ?..call(dailyOsPlannerAgentId)
+        ..call(plan.dayId)
+        ..call(plan.id);
+    }
+    return plansToUpdate.length;
+  }
+
   /// Persist a model-emitted draft plan.
   Future<DayPlanEntity> persistDraftPlan({
     required String agentId,
@@ -215,4 +276,12 @@ class DayAgentPlanService {
     asOf: asOf,
     lookbackDays: lookbackDays,
   );
+}
+
+bool _sameBlocks(List<Object> a, List<Object> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }

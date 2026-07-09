@@ -274,6 +274,26 @@ void main() {
       expect(thumbnail.cropX, 0.25);
     });
 
+    testWidgets('shows a visible fallback when a linked task is missing', (
+      tester,
+    ) async {
+      await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+
+      await tester.pumpWidget(
+        _wrap(AgendaView(draft: _draft(taskId: 'missing-task'))),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final messages = tester.element(find.byType(AgendaView)).messages;
+      expect(
+        find.text(messages.conflictDetailEntryNotFoundTitle),
+        findsOneWidget,
+      );
+      expect(find.text('Complete client animation'), findsOneWidget);
+    });
+
     testWidgets(
       'surfaces the linked AI block reason as the why pill',
       (tester) async {

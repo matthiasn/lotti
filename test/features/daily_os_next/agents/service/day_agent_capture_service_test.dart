@@ -2030,6 +2030,9 @@ void main() {
         });
 
         expect(result.success, isTrue);
+        expect(result.output, contains('"agentAssignmentStatus": "assigned"'));
+        expect(result.output, contains('"agentAssigned": true'));
+        expect(result.output, contains('"agentId": "task-agent-1"'));
         verify(
           () => taskAgentService.createTaskAgent(
             taskId: 'created-task-1',
@@ -2079,6 +2082,8 @@ void main() {
         });
 
         expect(result.success, isTrue);
+        expect(result.output, contains('"agentAssignmentStatus": "failed"'));
+        expect(result.output, contains('"agentAssigned": false'));
         expect(createdTaskRequests.single.title, 'Run tests');
         verify(
           () => domainLogger.error(

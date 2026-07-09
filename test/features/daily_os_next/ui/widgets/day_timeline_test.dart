@@ -1159,6 +1159,47 @@ void main() {
       expect(find.text('Live task name'), findsNothing);
     });
 
+    testWidgets('task-linked plan blocks show fallback when task is missing', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 900));
+      await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: [
+                TimeBlock(
+                  id: 'linked-missing',
+                  title: 'Stale planned title',
+                  start: DateTime(2026, 5, 25, 8),
+                  end: DateTime(2026, 5, 25, 9, 30),
+                  type: TimeBlockType.ai,
+                  state: TimeBlockState.drafted,
+                  category: _work,
+                  taskId: 'missing-task',
+                  reason: 'Backed by a task.',
+                ),
+              ],
+            ),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayTimeline)).messages;
+      expect(
+        find.text(messages.conflictDetailEntryNotFoundTitle),
+        findsOneWidget,
+      );
+      expect(find.text('Stale planned title'), findsNothing);
+    });
+
     testWidgets('EnergyBand low and secondWind levels render', (tester) async {
       _setView(tester, const Size(1280, 900));
 

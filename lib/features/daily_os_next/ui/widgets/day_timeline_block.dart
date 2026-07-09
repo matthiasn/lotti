@@ -2,19 +2,16 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
-import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -103,13 +100,13 @@ class DayBlock extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final taskId = block.taskId?.trim();
-    final liveTask = taskId == null || !_canResolveLiveTaskTitles()
-        ? null
-        : ref.watch(taskLiveDataProvider(taskId)).value;
-    final liveTitle = liveTask?.data.title.trim();
-    final effectiveBlock = liveTitle == null || liveTitle.isEmpty
+    final liveTask = watchLiveTaskMetadata(ref, taskId);
+    final effectiveTitle = liveTask.missing
+        ? context.messages.conflictDetailEntryNotFoundTitle
+        : liveTask.title;
+    final effectiveBlock = effectiveTitle == null
         ? block
-        : block.copyWith(title: liveTitle);
+        : block.copyWith(title: effectiveTitle);
     final category = _categoryColor(effectiveBlock);
     final isBuffer = effectiveBlock.type == TimeBlockType.buffer;
     final isDrafted =
@@ -238,11 +235,6 @@ class DayBlock extends ConsumerWidget {
 
   Color _categoryColor(TimeBlock block) =>
       categoryColorFromHex(block.category.colorHex);
-
-  bool _canResolveLiveTaskTitles() {
-    return getIt.isRegistered<JournalDb>() &&
-        getIt.isRegistered<UpdateNotifications>();
-  }
 }
 
 String _clock(DateTime t) {

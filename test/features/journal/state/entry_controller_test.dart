@@ -15,7 +15,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -2507,6 +2509,130 @@ void main() {
       final capturedTaskData = captured[1] as TaskData;
       expect(capturedTaskData.title, newTitle);
       expect(capturedTaskData.estimate, newEstimate);
+    });
+
+    test(
+      'syncs Daily OS planned block title when task title changes',
+      () async {
+        final agentDb = AgentDatabase(inMemoryDatabase: true);
+        getIt.registerSingleton<AgentDatabase>(agentDb);
+        addTearDown(() async {
+          if (getIt.isRegistered<AgentDatabase>()) {
+            getIt.unregister<AgentDatabase>();
+          }
+          await agentDb.close();
+        });
+        final planService = MockDayAgentPlanService();
+        when(
+          () => planService.syncTaskTitle(
+            taskId: any(named: 'taskId'),
+            title: any(named: 'title'),
+          ),
+        ).thenAnswer((_) async => 1);
+        final container = makeProviderContainer(
+          overrides: [
+            dayAgentPlanServiceProvider.overrideWithValue(planService),
+          ],
+        );
+        final entryId = testTask.meta.id;
+        final testEntryProvider = entryControllerProvider(entryId);
+        final notifier = container.read(testEntryProvider.notifier);
+
+        await container.read(testEntryProvider.future);
+
+        when(
+          () => mockPersistenceLogic.updateJournalEntityText(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateTask(
+            entryText: any(named: 'entryText'),
+            journalEntityId: entryId,
+            taskData: any(named: 'taskData'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockEditorStateService.entryWasSaved(
+            id: entryId,
+            lastSaved: any(named: 'lastSaved'),
+            controller: notifier.controller,
+          ),
+        ).thenAnswer((_) async {});
+
+        await notifier.save(title: 'Renamed for Daily OS');
+
+        verify(
+          () => planService.syncTaskTitle(
+            taskId: entryId,
+            title: 'Renamed for Daily OS',
+          ),
+        ).called(1);
+      },
+    );
+
+    test('task save still completes when Daily OS title sync fails', () async {
+      final agentDb = AgentDatabase(inMemoryDatabase: true);
+      getIt.registerSingleton<AgentDatabase>(agentDb);
+      addTearDown(() async {
+        if (getIt.isRegistered<AgentDatabase>()) {
+          getIt.unregister<AgentDatabase>();
+        }
+        await agentDb.close();
+      });
+      final planService = MockDayAgentPlanService();
+      when(
+        () => planService.syncTaskTitle(
+          taskId: any(named: 'taskId'),
+          title: any(named: 'title'),
+        ),
+      ).thenThrow(StateError('sync failed'));
+      final container = makeProviderContainer(
+        overrides: [
+          dayAgentPlanServiceProvider.overrideWithValue(planService),
+        ],
+      );
+      final entryId = testTask.meta.id;
+      final testEntryProvider = entryControllerProvider(entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateJournalEntityText(any(), any(), any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockPersistenceLogic.updateTask(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockEditorStateService.entryWasSaved(
+          id: entryId,
+          lastSaved: any(named: 'lastSaved'),
+          controller: notifier.controller,
+        ),
+      ).thenAnswer((_) async {});
+
+      await notifier.save(title: 'Sync failure still saves');
+
+      verify(
+        () => mockPersistenceLogic.updateTask(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).called(1);
+      verify(
+        () => planService.syncTaskTitle(
+          taskId: entryId,
+          title: 'Sync failure still saves',
+        ),
+      ).called(1);
     });
 
     test('saves task with dueDate', () async {
