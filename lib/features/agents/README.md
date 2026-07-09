@@ -183,14 +183,15 @@ Wakes page, surfacing running wakes plus the next three scheduled wakes within
 the one-hour sidebar lookahead so the queue is visible
 without leaving whatever tab the operator is on:
 
-- a quiet sentence-case `Agents N` sublabel (Inter `caption`, low emphasis)
-  with the visible count and an open-in-new icon,
-- one row per currently running wake with a green status dot, the linked
-  task/project title, and live elapsed time,
-- up to three compact scheduled rows with a neutral status dot, the linked
-  task/project title, and a per-row ETA (`now` once due, `m:ss` inside the
-  one-hour lookahead, switching to the warning colour inside the last five
-  minutes),
+- a quiet sentence-case `Agents` sublabel (Inter `caption`, low emphasis)
+  with a summary such as `1 active · 2 queued` and an open-in-new icon,
+- the top currently running wake with a green status dot, a `Working · mm:ss`
+  status line, and the linked task/project title,
+- the next compact scheduled row with a neutral status dot, a `Queued · ETA`
+  status line (`now` once due, `m:ss` inside the one-hour lookahead), and the
+  linked task/project title,
+- a compact overflow row (`+1 active · +3 queued`, etc.) when additional
+  running or queued wakes are hidden from the inline rail,
 - the header link switches to the Settings tab and beams to
   `/settings/agents/pending-wakes` for the full list.
 
@@ -204,19 +205,26 @@ rows above. Type is the app's Inter family throughout (no monospace); elapsed
 times use tabular figures. Titles surface in full via a hover tooltip when the
 row truncates them.
 
+Rows are actionable: task-linked wakes route directly to `/tasks/<taskId>` and
+show a small open-task glyph, while unlinked or project-only wakes fall back to
+the agent instance route. The trailing cancel button remains a separate hit
+target so opening the work item and stopping the wake never compete.
+
 Rows are driven by the page-scoped `wakeCountdownTickerProvider`, so the
 sidebar shares a one-second ticker instead of spawning a timer per row. Wakes
 outside the one-hour lookahead stay out of the inline sidebar and remain
-visible on the full Wake Cycles page. The collapsed (icon-only) sidebar
-suppresses the slot because the header and rows would not fit the narrow
-column.
+visible on the full Wake Cycles page. Additional in-window wakes collapse into
+the overflow row rather than turning the navigation rail into the full wake
+manager. The collapsed (icon-only) sidebar suppresses the slot because the
+header and rows would not fit the narrow column.
 
 ```mermaid
 flowchart LR
   Provider[pendingWakeRecordsProvider]
   Provider --> WakeBlock[SidebarWakeQueue<br/>aboveSettings slot]
   Provider --> WakesPage[Pending Wakes page<br/>full list view]
-  WakeBlock -->|tap row| InstanceRoute[/settings/agents/instances/agentId/]
+  WakeBlock -->|tap task-linked row| TaskRoute[/tasks/taskId/]
+  WakeBlock -->|tap unlinked row| InstanceRoute[/settings/agents/instances/agentId/]
   WakeBlock -->|tap header| WakesPage
 ```
 

@@ -253,6 +253,11 @@ void main() {
 
       // Placement: the logo sits at the top of the sidebar, above every
       // navigation destination tile.
+      expect(
+        tester.getTopLeft(find.byType(DesignSystemBrandLogo)).dx,
+        greaterThan(0),
+        reason: 'the brand logo must not be flush with the screen edge',
+      );
       final logoBottom = tester
           .getBottomLeft(find.byType(DesignSystemBrandLogo))
           .dy;

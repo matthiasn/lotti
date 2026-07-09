@@ -8548,16 +8548,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingThemingLight => 'Light Theme';
 
   @override
+  String get sidebarActiveSectionTitle => 'Active';
+
+  @override
+  String get sidebarAudioRecordingStatusLabel => 'Recording';
+
+  @override
   String get sidebarRunningTimerLabel => 'Running timer';
 
   @override
   String get sidebarRunningTimerStopTooltip => 'Stop timer';
 
   @override
+  String get sidebarTimerStatusLabel => 'Timer';
+
+  @override
   String get sidebarToggleCollapseLabel => 'Collapse sidebar';
 
   @override
   String get sidebarToggleExpandLabel => 'Expand sidebar';
+
+  @override
+  String sidebarWakesActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active',
+      one: '1 active',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sidebarWakesCancelTooltip => 'Cancel agent';
@@ -8570,6 +8590,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sidebarWakesOpenList => 'Open list';
+
+  @override
+  String get sidebarWakesOpenTask => 'Open task';
+
+  @override
+  String sidebarWakesQueuedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count queued',
+      one: '1 queued',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sidebarWakesQueuedLabel => 'Queued';
+
+  @override
+  String get sidebarWakesWorkingLabel => 'Working';
 
   @override
   String get skillsSectionTitle => 'Skills';
@@ -8637,6 +8677,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speechVoicePreviewTooltip => 'Preview voice';
 
   @override
+  String get syncActivityIdle => 'idle';
+
+  @override
   String get syncActivityInboxLabel => 'Inbox';
 
   @override
@@ -8646,6 +8689,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncActivityOutboxLabel => 'Outbox';
+
+  @override
+  String get syncActivitySyncingTitle => 'Syncing';
+
+  @override
+  String get syncActivityTitle => 'Sync';
 
   @override
   String get syncDeleteConfigConfirm => 'YES, I\'M SURE';
@@ -9268,6 +9317,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSheetTitle => 'Saved filters';
+
+  @override
+  String get tasksSavedFiltersShowLess => 'Show fewer';
+
+  @override
+  String tasksSavedFiltersShowMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more saved filters',
+      one: '1 more saved filter',
+    );
+    return '$_temp0';
+  }
 
   @override
   String tasksSavedFiltersTaskCount(int count) {

@@ -8757,16 +8757,36 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingThemingLight => 'Tema claro';
 
   @override
+  String get sidebarActiveSectionTitle => 'Activo';
+
+  @override
+  String get sidebarAudioRecordingStatusLabel => 'Grabación';
+
+  @override
   String get sidebarRunningTimerLabel => 'Temporizador en curso';
 
   @override
   String get sidebarRunningTimerStopTooltip => 'Detener temporizador';
 
   @override
+  String get sidebarTimerStatusLabel => 'Temporizador';
+
+  @override
   String get sidebarToggleCollapseLabel => 'Contraer barra lateral';
 
   @override
   String get sidebarToggleExpandLabel => 'Expandir barra lateral';
+
+  @override
+  String sidebarWakesActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count activos',
+      one: '1 activo',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sidebarWakesCancelTooltip => 'Cancelar agente';
@@ -8779,6 +8799,26 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sidebarWakesOpenList => 'Abrir lista';
+
+  @override
+  String get sidebarWakesOpenTask => 'Abrir tarea';
+
+  @override
+  String sidebarWakesQueuedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count en cola',
+      one: '1 en cola',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sidebarWakesQueuedLabel => 'En cola';
+
+  @override
+  String get sidebarWakesWorkingLabel => 'Trabajando';
 
   @override
   String get skillsSectionTitle => 'Habilidades';
@@ -8848,6 +8888,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get speechVoicePreviewTooltip => 'Escuchar la voz';
 
   @override
+  String get syncActivityIdle => 'inactiva';
+
+  @override
   String get syncActivityInboxLabel => 'Entrada';
 
   @override
@@ -8857,6 +8900,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncActivityOutboxLabel => 'Salida';
+
+  @override
+  String get syncActivitySyncingTitle => 'Sincronizando';
+
+  @override
+  String get syncActivityTitle => 'Sync';
 
   @override
   String get syncDeleteConfigConfirm => 'SÍ, ESTOY SEGURO';
@@ -9492,6 +9541,20 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSheetTitle => 'Filtros guardados';
+
+  @override
+  String get tasksSavedFiltersShowLess => 'Mostrar menos';
+
+  @override
+  String tasksSavedFiltersShowMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filtros guardados más',
+      one: '1 filtro guardado más',
+    );
+    return '$_temp0';
+  }
 
   @override
   String tasksSavedFiltersTaskCount(int count) {

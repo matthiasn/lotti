@@ -87,67 +87,59 @@ void main() {
         // The footer grows with the text scale rather than clamping to a
         // fixed 18px-per-row height, so the label/count never clip.
         expect(height2x, greaterThan(height1x));
-        expect(find.text('Outbox'), findsOneWidget);
-        expect(find.text('1573'), findsOneWidget);
+        expect(find.text('Syncing'), findsOneWidget);
+        expect(find.text('Outbox 999+ · Inbox idle'), findsOneWidget);
       },
     );
 
-    testWidgets('renders both Outbox and Inbox channels with their counts', (
+    testWidgets('renders one compact summary with both queue counts', (
       tester,
     ) async {
       // A 4-digit outbox count proves it renders in full (the inline count
       // has no fixed-width column to clip against).
       await pumpIndicator(tester, outbox: 1573, inbox: 14);
 
-      expect(find.text('Outbox'), findsOneWidget);
-      expect(find.text('Inbox'), findsOneWidget);
-      expect(find.text('1573'), findsOneWidget);
-      expect(find.text('14'), findsOneWidget);
+      expect(find.text('Syncing'), findsOneWidget);
+      expect(find.text('Outbox 999+ · Inbox 14'), findsOneWidget);
     });
 
-    testWidgets('hides numeric values when both queues are empty', (
+    testWidgets('summarizes the idle inbox without a second channel row', (
       tester,
     ) async {
       await pumpIndicator(tester);
 
-      // Channels still render so the affordance stays clickable, but the
-      // numeric "0" is suppressed — the LEDs alone carry the idle state.
-      expect(find.text('Outbox'), findsOneWidget);
-      expect(find.text('Inbox'), findsOneWidget);
-      expect(find.text('0'), findsNothing);
+      expect(find.text('Sync'), findsOneWidget);
+      expect(find.text('Outbox 0 · Inbox idle'), findsOneWidget);
+      expect(find.text('Outbox'), findsNothing);
+      expect(find.text('Inbox'), findsNothing);
     });
 
-    testWidgets('hides only the zero numeric when one channel is non-zero', (
+    testWidgets('keeps a non-zero outbox visible while inbox is idle', (
       tester,
     ) async {
       await pumpIndicator(tester, outbox: 12);
 
-      expect(find.text('12'), findsOneWidget);
-      expect(find.text('0'), findsNothing);
+      expect(find.text('Syncing'), findsOneWidget);
+      expect(find.text('Outbox 12 · Inbox idle'), findsOneWidget);
     });
 
     testWidgets(
-      'inline count keeps the LED + label anchored as the count grows '
-      '(the count is the last element, so it never shifts the label)',
+      'summary growth keeps the title anchored as queue counts grow',
       (tester) async {
-        // Measure the label offset relative to the indicator's own left edge:
-        // that internal offset (border + padding + LED + gap) is the real
-        // invariant. The test harness centres the widget, so absolute x shifts
-        // as the content widens — but in the sidebar the footer is left-aligned.
-        double labelOffset(String label) =>
-            tester.getTopLeft(find.text(label)).dx -
+        // Measure the title offset relative to the indicator's own left edge:
+        // that internal offset (border + padding + icon + gap) is the real
+        // invariant. The summary can grow below it without shifting the title.
+        double titleOffset() =>
+            tester.getTopLeft(find.text('Syncing')).dx -
             tester.getTopLeft(find.byType(SyncActivityIndicator)).dx;
 
         await pumpIndicator(tester, outbox: 1, inbox: 1);
-        final txOffsetSmall = labelOffset('Outbox');
-        final rxOffsetSmall = labelOffset('Inbox');
+        final offsetSmall = titleOffset();
 
         await pumpIndicator(tester, outbox: 9999, inbox: 9999);
-        final txOffsetLarge = labelOffset('Outbox');
-        final rxOffsetLarge = labelOffset('Inbox');
+        final offsetLarge = titleOffset();
 
-        expect(txOffsetLarge, equals(txOffsetSmall));
-        expect(rxOffsetLarge, equals(rxOffsetSmall));
+        expect(offsetLarge, equals(offsetSmall));
       },
     );
 
@@ -324,9 +316,11 @@ void main() {
       return tester
           .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
           .firstWhere(
-            (c) =>
-                c.padding ==
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            (c) {
+              final decoration = c.decoration;
+              return decoration is BoxDecoration &&
+                  decoration.shape != BoxShape.circle;
+            },
           );
     }
 

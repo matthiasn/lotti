@@ -1216,12 +1216,32 @@ class _DesktopSidebarAboveSettings extends ConsumerWidget {
 
     return StreamBuilder<JournalEntity?>(
       stream: getIt<TimeService>().getStream(),
+      initialData: getIt<TimeService>().getCurrent(),
       builder: (context, snapshot) {
         final hasTimer = snapshot.data != null;
+        final hasActiveStatus = audioVisible || hasTimer || wakesVisible;
+        final tokens = context.designTokens;
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (hasActiveStatus) ...[
+              Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start: tokens.spacing.step1,
+                  bottom: tokens.spacing.step2,
+                ),
+                child: Text(
+                  context.messages.sidebarActiveSectionTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
             if (!_isRunningInFlatpak()) const SidebarAudioRecordingSection(),
             _gap(context, visible: audioVisible && (hasTimer || wakesVisible)),
             const SidebarTimerSection(),

@@ -166,11 +166,11 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
         ? tokens.colors.surface.selected
         : (_hover ? tokens.colors.surface.hover : Colors.transparent);
     final labelColor = widget.active
-        ? tokens.colors.text.mediumEmphasis
-        : tokens.colors.text.lowEmphasis;
+        ? tokens.colors.text.highEmphasis
+        : tokens.colors.text.mediumEmphasis;
     final countColor = widget.active
         ? tokens.colors.interactive.enabled
-        : tokens.colors.text.lowEmphasis;
+        : tokens.colors.text.mediumEmphasis;
 
     // Surface each selected category's color as a small dot left of the
     // title. Capped at three dots so the leading gutter stays compact;
@@ -274,12 +274,15 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
                                 onCommit: _commitRename,
                                 onCancel: _cancelRename,
                               )
-                            : Text(
-                                widget.view.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: tokens.typography.styles.others.caption
-                                    .copyWith(color: labelColor),
+                            : Tooltip(
+                                message: widget.view.name,
+                                child: Text(
+                                  _middleEllipsize(widget.view.name),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.clip,
+                                  style: tokens.typography.styles.others.caption
+                                      .copyWith(color: labelColor),
+                                ),
                               ),
                       ),
                       if (!_editing)
@@ -364,6 +367,14 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
       ),
     );
   }
+}
+
+String _middleEllipsize(String value, {int maxChars = 34}) {
+  if (value.length <= maxChars) return value;
+  final keep = maxChars - 1;
+  final start = (keep * 0.58).floor();
+  final end = keep - start;
+  return '${value.substring(0, start)}…${value.substring(value.length - end)}';
 }
 
 class _RenameField extends StatelessWidget {

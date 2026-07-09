@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1034]
+## [0.9.1035]
 ### Added
 - **Share AI Impact without leaking your category names.** The AI Impact
   breakdown now has a **Both / By category / By model** picker. **By model**
@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environmental impact by country/data center and shows the renewable-energy
   share for each location.
 ### Fixed
+- **The desktop sidebar is calmer when Tasks has lots of saved filters.**
+  Saved task filters now sit in their own capped Tasks section with a More row,
+  active filters stay visible, recording/timer/agent cards carry clearer status
+  labels, agent rows can open their linked task directly, and the old tiny
+  Outbox/Inbox footer is now one compact Sync strip.
 - **Entry timestamps no longer get cut off on phones.** In a task's linked
   entries, the header's date and time used to be truncated (e.g.
   `2026-07-08 14…`) when the action buttons squeezed the row on a narrow phone.
