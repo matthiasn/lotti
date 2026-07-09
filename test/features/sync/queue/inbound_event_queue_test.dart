@@ -1164,6 +1164,32 @@ void main() {
     );
 
     test(
+      'applied count uses the status index instead of the grouped ledger '
+      'pivot',
+      () async {
+        await db.customStatement('ANALYZE');
+
+        final rows = await db
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT COUNT(queue_id) AS cnt '
+              'FROM inbound_event_queue '
+              'INDEXED BY idx_inbound_event_queue_status_enqueued '
+              "WHERE status = 'applied'",
+            )
+            .get();
+        final plan = rows.map((row) => row.data.toString()).join('\n');
+
+        expect(plan, contains('idx_inbound_event_queue_status_enqueued'));
+        expect(plan, isNot(contains('GROUP BY')));
+        expect(
+          plan,
+          isNot(matches(RegExp('SCAN inbound_event_queue(?! USING)'))),
+        );
+      },
+    );
+
+    test(
       'depthChanges emits from a lightweight active-plus-abandoned snapshot',
       () async {
         final loggedEntries = <SlowQueryLogEntry>[];
