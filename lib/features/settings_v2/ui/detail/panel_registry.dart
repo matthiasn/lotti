@@ -15,6 +15,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
@@ -109,6 +110,12 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
       // detail pane empty.
       'ai': SettingsPanelSpec(build: _aiPanel),
       'agents': SettingsPanelSpec(build: _agentsPanel),
+
+      // Top-level entry point back to the FTUE welcome flow (plan §12).
+      'onboarding': SettingsPanelSpec(
+        build: _onboardingPanel,
+        scrollable: true,
+      ),
 
       // Step 7 — simple leaves.
       // FlagsBody is `Column[fixed search, Expanded(scrollable list)]`
@@ -205,6 +212,8 @@ SettingsPanelSpec? panelSpecFor(String? panelId) {
 /// surface (`DetailIdDispatch`, `AiPanelDispatch`, …) so panel swaps
 /// land on the same motion grammar as `SettingsDetailPane`.
 const Duration kSettingsPanelSwapDuration = Duration(milliseconds: 180);
+
+Widget _onboardingPanel(BuildContext context) => const OnboardingSettingsBody();
 
 // --- Step 7 builders --------------------------------------------------------
 Widget _flagsPanel(BuildContext context) => const FlagsBody();

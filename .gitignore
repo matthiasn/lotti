@@ -202,6 +202,9 @@ ENV/
 
 test/.test_optimizer.dart
 
+# Golden-test failure artifacts (diff/master/test images) written on failure
+test/failures/
+
 # Node modules & Vite cache
 **/node_modules/
 **/.vite/

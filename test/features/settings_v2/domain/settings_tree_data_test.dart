@@ -14,6 +14,7 @@ List<SettingsNode> _tree({
   bool enableWhatsNew = true,
   bool enableSpeechTts = false,
   bool enableHealthImport = false,
+  bool enableOnboardingFtue = false,
 }) => buildSettingsTree(
   labels: _labels,
   enableHabits: enableHabits,
@@ -22,6 +23,7 @@ List<SettingsNode> _tree({
   enableWhatsNew: enableWhatsNew,
   enableSpeechTts: enableSpeechTts,
   enableHealthImport: enableHealthImport,
+  enableOnboardingFtue: enableOnboardingFtue,
 );
 
 SettingsNode? _find(List<SettingsNode> nodes, String id) {
@@ -58,6 +60,37 @@ void main() {
       final enabled = _tree(enableSpeechTts: true);
       expect(_ids(enabled), contains('speech'));
       expect(_find(enabled, 'speech')?.panel, 'speech');
+    });
+  });
+
+  group('buildSettingsTree — enableOnboardingFtue', () {
+    test('omits the onboarding leaf when off (default)', () {
+      expect(_ids(_tree()), isNot(contains('onboarding')));
+    });
+
+    test('adds a top-level onboarding leaf (panel: onboarding) when on', () {
+      final enabled = _tree(enableOnboardingFtue: true);
+      expect(_ids(enabled), contains('onboarding'));
+      final node = _find(enabled, 'onboarding');
+      expect(node, isNotNull);
+      expect(node!.hasChildren, isFalse);
+      expect(node.panel, 'onboarding');
+    });
+
+    test('sits at the root, right after whats-new and before ai', () {
+      final rootIds = _tree(
+        enableOnboardingFtue: true,
+      ).map((n) => n.id).toList();
+      expect(rootIds, [
+        'whats-new',
+        'onboarding',
+        'ai',
+        'agents',
+        'sync',
+        'definitions',
+        'theming',
+        'advanced',
+      ]);
     });
   });
 

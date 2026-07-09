@@ -28,6 +28,7 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
@@ -259,6 +260,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
   bool _notLoggedInToastShown = false;
 
+  /// Guards against the FTUE welcome being shown more than once per
+  /// [AppScreen] lifetime: [shouldAutoShowOnboardingProvider] can re-emit
+  /// `data(true)` (e.g. when the What's New unseen→seen transition
+  /// invalidates it) while the welcome is already open, which would otherwise
+  /// stack a second modal and double-count the show.
+  bool _onboardingWelcomeShown = false;
+
   void _showNotLoggedInToast(BuildContext context) {
     if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -297,23 +305,57 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     if (!mounted) return;
 
     if (ftueEnabled) {
-      // The FTUE "connect your brain" welcome owns first-run provider setup,
-      // creating the provider natively and reusing the dismissal flag for skip.
-      unawaited(OnboardingWelcomeModal.show(context, onDismiss: dismiss));
-    } else {
-      unawaited(
-        AiProviderSelectionModal.show(
-          context,
-          onProviderSelected: (providerType) {
-            const AiSettingsNavigationService().navigateToCreateProvider(
-              context,
-              preselectedType: providerType,
-            );
-          },
-          onDismiss: dismiss,
-        ),
-      );
+      // The dedicated `shouldAutoShowOnboardingProvider` listener now owns
+      // showing the FTUE welcome (with its own persisted re-show cadence) --
+      // returning here (rather than opening it inline) avoids stacking that
+      // welcome on top of this legacy modal on the same cold start.
+      //
+      // Deliberate: when the FTUE flag is on, this legacy provider-selection
+      // modal is fully superseded -- even once the welcome's re-show budget is
+      // exhausted (max shows / window elapsed) it does NOT fall back to this
+      // prompt. A user who never connects a provider recovers via the
+      // top-level Settings > Onboarding replay entry (and ordinary AI
+      // settings), so onboarding is a single, coherent front door rather than
+      // two prompts competing for the first run.
+      return;
     }
+
+    unawaited(
+      AiProviderSelectionModal.show(
+        context,
+        onProviderSelected: (providerType) {
+          const AiSettingsNavigationService().navigateToCreateProvider(
+            context,
+            preselectedType: providerType,
+          );
+        },
+        onDismiss: dismiss,
+      ),
+    );
+  }
+
+  /// Shows the FTUE welcome and records the show in its persisted cadence
+  /// (see `onboarding_trigger_service.dart`) so the auto-show gate can bound
+  /// how many times -- and for how long -- it keeps re-appearing.
+  Future<void> _showOnboardingWelcome() async {
+    if (!mounted) return;
+    // `recordShown` / `markCompleted` log-and-swallow their own `SettingsDb`
+    // failures (see `OnboardingWelcomeCadence`), so a bookkeeping hiccup never
+    // surfaces here as an uncaught async error nor blocks the welcome — which
+    // matters because this whole method runs via `unawaited(...)`.
+    await ref.read(onboardingWelcomeCadenceProvider.notifier).recordShown();
+    if (!mounted) return;
+    unawaited(
+      OnboardingWelcomeModal.show(
+        context,
+        // Connecting a provider retires the welcome for good; a plain skip
+        // leaves the shown-count/window grace period to keep offering it.
+        onCompleted: () => unawaited(
+          ref.read(onboardingWelcomeCadenceProvider.notifier).markCompleted(),
+        ),
+        onDismiss: () {},
+      ),
+    );
   }
 
   @override
@@ -367,14 +409,19 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           },
         );
       })
-      // When What's New is dismissed, re-check if AI setup prompt should show
+      // When What's New is dismissed, re-check if AI setup prompt / the FTUE
+      // welcome should show
       ..listen(whatsNewControllerProvider, (prev, next) {
         final prevHasUnseen = prev?.asData?.value.hasUnseenRelease ?? true;
         final nextHasUnseen = next.asData?.value.hasUnseenRelease ?? true;
 
-        // If What's New transitioned from unseen to seen, re-check AI setup prompt
+        // If What's New transitioned from unseen to seen, re-check both --
+        // they are otherwise independent gates, but both sequence behind
+        // What's New the same way.
         if (prevHasUnseen && !nextHasUnseen) {
-          ref.invalidate(aiSetupPromptServiceProvider);
+          ref
+            ..invalidate(aiSetupPromptServiceProvider)
+            ..invalidate(shouldAutoShowOnboardingProvider);
         }
       })
       // Auto-show AI setup prompt for new users without AI providers
@@ -396,6 +443,34 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               error,
               stackTrace: stack,
               subDomain: 'aiSetupPromptService',
+            );
+          },
+        );
+      })
+      // Auto-show the FTUE welcome on first launch (and, within its
+      // persisted grace budget, subsequent launches) once What's New is out
+      // of the way. Independent of `aiSetupPromptServiceProvider` -- see
+      // `_showAiSetupPrompt`'s early return when the FTUE flag is on, which
+      // keeps the two mutually exclusive.
+      ..listen(shouldAutoShowOnboardingProvider, (prev, next) {
+        next.when(
+          data: (shouldShow) {
+            if (shouldShow && mounted && !_onboardingWelcomeShown) {
+              _onboardingWelcomeShown = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  unawaited(_showOnboardingWelcome());
+                }
+              });
+            }
+          },
+          loading: () {},
+          error: (error, stack) {
+            getIt<DomainLogger>().error(
+              LogDomain.onboarding,
+              error,
+              stackTrace: stack,
+              subDomain: 'shouldAutoShowOnboarding',
             );
           },
         );

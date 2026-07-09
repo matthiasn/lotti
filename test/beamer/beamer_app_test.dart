@@ -28,6 +28,7 @@ import 'package:lotti/features/design_system/components/navigation/desktop_navig
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.dart';
@@ -314,6 +315,9 @@ Future<void> _pumpAppScreen(
           ),
         ),
         shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
+        // FTUE welcome gate is off (matches the flag stub above), but pin it
+        // explicitly rather than relying on the flag short-circuit alone.
+        shouldAutoShowOnboardingProvider.overrideWith((ref) async => false),
         // The Tasks destination's expanded subtree (TasksSavedFiltersTree)
         // watches saved-filter providers. Override them with safe defaults so
         // this test doesn't transitively trigger the real JournalPageController
@@ -349,6 +353,8 @@ Future<void> _pumpAppScreenCustomProviders(
   required MockNavService navService,
   Size viewportSize = _phoneViewportSize,
   Future<bool> Function(Ref)? shouldAutoShowWhatsNew,
+  Future<bool> Function(Ref)? shouldAutoShowOnboarding,
+  OnboardingWelcomeCadence Function()? onboardingWelcomeCadenceOverride,
   AiSetupPromptService Function()? aiSetupPromptOverride,
   WhatsNewController Function()? whatsNewOverride,
   List<Override> extraOverrides = const [],
@@ -412,6 +418,13 @@ Future<void> _pumpAppScreenCustomProviders(
         shouldAutoShowWhatsNewProvider.overrideWith(
           shouldAutoShowWhatsNew ?? (ref) async => false,
         ),
+        shouldAutoShowOnboardingProvider.overrideWith(
+          shouldAutoShowOnboarding ?? (ref) async => false,
+        ),
+        if (onboardingWelcomeCadenceOverride != null)
+          onboardingWelcomeCadenceProvider.overrideWith(
+            onboardingWelcomeCadenceOverride,
+          ),
         if (whatsNewOverride != null)
           whatsNewControllerProvider.overrideWith(whatsNewOverride),
         savedTaskFiltersControllerProvider.overrideWith(
@@ -2243,6 +2256,9 @@ void main() {
               shouldAutoShowWhatsNewProvider.overrideWith(
                 (ref) async => false,
               ),
+              shouldAutoShowOnboardingProvider.overrideWith(
+                (ref) async => false,
+              ),
               savedTaskFiltersControllerProvider.overrideWith(
                 () => _StubSavedTaskFiltersController(const []),
               ),
@@ -2295,6 +2311,36 @@ void main() {
           navService: mockNavService,
           shouldAutoShowWhatsNew: (ref) async =>
               throw Exception('whats-new-error'),
+        );
+
+        // The error arm just logs; AppScreen continues rendering normally.
+        expect(find.text('Tasks'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'shouldAutoShowOnboardingProvider error arm does not crash AppScreen',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          shouldAutoShowOnboarding: (ref) async =>
+              throw Exception('onboarding-trigger-error'),
         );
 
         // The error arm just logs; AppScreen continues rendering normally.
@@ -2381,6 +2427,56 @@ void main() {
           greaterThan(buildsBeforeTransition),
           reason:
               'aiSetupPromptServiceProvider should rebuild after the '
+              'unseen -> seen transition invalidates it',
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'whatsNewControllerProvider unseen→seen transition invalidates '
+      'shouldAutoShowOnboardingProvider',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        // Same transition as above, but tracking
+        // `shouldAutoShowOnboardingProvider` rebuilds instead -- the two
+        // invalidations fire from the same whatsNew listener branch.
+        var onboardingBuildCount = 0;
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          whatsNewOverride: _UnseenToSeenWhatsNewController.new,
+          shouldAutoShowOnboarding: (ref) async {
+            onboardingBuildCount++;
+            return false;
+          },
+        );
+
+        await tester.pump();
+        final buildsBeforeTransition = onboardingBuildCount;
+
+        await tester.pump(const Duration(milliseconds: 1));
+        await tester.pump();
+
+        expect(find.text('Tasks'), findsOneWidget);
+        expect(
+          onboardingBuildCount,
+          greaterThan(buildsBeforeTransition),
+          reason:
+              'shouldAutoShowOnboardingProvider should rebuild after the '
               'unseen -> seen transition invalidates it',
         );
 
@@ -2480,7 +2576,8 @@ void main() {
     );
 
     testWidgets(
-      'aiSetupPrompt data(true) with the FTUE flag on opens the FTUE welcome',
+      'shouldAutoShowOnboarding data(true) with the FTUE flag on opens the '
+      'FTUE welcome instead of the legacy AI setup prompt',
       (tester) async {
         final mockNavService = MockNavService();
         await _stubNavService(
@@ -2494,13 +2591,16 @@ void main() {
         await _registerAppScreenGetIt(mockNavService);
         addTearDown(tearDownTestGetIt);
 
-        // FTUE flag on → _showAiSetupPrompt opens OnboardingWelcomeModal
+        // FTUE flag on → `_showAiSetupPrompt` returns early (it no longer
+        // shows anything itself once the flag is on) and the dedicated
+        // `shouldAutoShowOnboardingProvider` listener opens the FTUE welcome
         // instead of the legacy provider-selection modal.
         await _pumpAppScreenCustomProviders(
           tester,
           navService: mockNavService,
           aiSetupPromptOverride: _ShowAiSetupPromptService.new,
           whatsNewOverride: _StableUnseenWhatsNewController.new,
+          shouldAutoShowOnboarding: (ref) async => true,
           ftueEnabled: true,
         );
 
@@ -2511,6 +2611,142 @@ void main() {
 
         expect(find.byType(AiProviderSelectionModal), findsNothing);
         expect(find.text('Choose your AI brain'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'shouldAutoShowOnboarding data(true) shows the FTUE welcome and '
+      'records the show via recordShown',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        var recordShownCount = 0;
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          whatsNewOverride: _StableUnseenWhatsNewController.new,
+          shouldAutoShowOnboarding: (ref) async => true,
+          onboardingWelcomeCadenceOverride: () =>
+              _CountingOnboardingWelcomeCadence(
+                onRecordShown: () => recordShownCount++,
+              ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 800));
+
+        expect(find.text('Choose your AI brain'), findsOneWidget);
+        expect(
+          recordShownCount,
+          1,
+          reason:
+              '_showOnboardingWelcome must record the show before opening '
+              'the welcome',
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'FTUE welcome skip closes the welcome without marking it completed '
+      '(so the shown-count/window grace period is preserved)',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        var markCompletedCount = 0;
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          whatsNewOverride: _StableUnseenWhatsNewController.new,
+          shouldAutoShowOnboarding: (ref) async => true,
+          onboardingWelcomeCadenceOverride: () =>
+              _CountingOnboardingWelcomeCadence(
+                onMarkCompleted: () => markCompletedCount++,
+              ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 800));
+        expect(find.text('Choose your AI brain'), findsOneWidget);
+
+        // Skip out of the welcome without connecting — the modal's own
+        // "Look around first" link (the `onDismiss` path).
+        await tester.ensureVisible(find.text('Look around first'));
+        await tester.tap(find.text('Look around first'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+
+        // The welcome is gone...
+        expect(find.text('Choose your AI brain'), findsNothing);
+        // ...but skipping must NOT retire it: only connecting a provider marks
+        // it completed, so a plain skip keeps the grace period open.
+        expect(markCompletedCount, 0);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      '_showAiSetupPrompt shows nothing when the FTUE flag is on, even if '
+      'onboarding is not (yet) eligible -- avoids stacking a legacy modal '
+      'under the welcome',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          aiSetupPromptOverride: _ShowAiSetupPromptService.new,
+          whatsNewOverride: _StableUnseenWhatsNewController.new,
+          shouldAutoShowOnboarding: (ref) async => false,
+          ftueEnabled: true,
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 800));
+
+        expect(find.byType(AiProviderSelectionModal), findsNothing);
+        expect(find.text('Choose your AI brain'), findsNothing);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -2929,6 +3165,9 @@ void main() {
                 ),
               ),
               shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
+              shouldAutoShowOnboardingProvider.overrideWith(
+                (ref) async => false,
+              ),
               savedTaskFiltersControllerProvider.overrideWith(
                 () => _StubSavedTaskFiltersController(const []),
               ),
@@ -3102,6 +3341,22 @@ class _DismissCountingAiSetupPromptService extends AiSetupPromptService {
     onDismiss();
     state = const AsyncData(false);
   }
+}
+
+/// An [OnboardingWelcomeCadence] that records [recordShown] / [markCompleted]
+/// invocations instead of touching `SettingsDb`, so tests can assert
+/// `_showOnboardingWelcome`'s wiring without needing a real `SettingsDb`.
+class _CountingOnboardingWelcomeCadence extends OnboardingWelcomeCadence {
+  _CountingOnboardingWelcomeCadence({this.onRecordShown, this.onMarkCompleted});
+
+  final void Function()? onRecordShown;
+  final void Function()? onMarkCompleted;
+
+  @override
+  Future<void> recordShown() async => onRecordShown?.call();
+
+  @override
+  Future<void> markCompleted() async => onMarkCompleted?.call();
 }
 
 /// A [WhatsNewController] with no unseen releases, used so the What's New modal

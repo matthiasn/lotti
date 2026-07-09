@@ -65,6 +65,7 @@ class OnboardingWelcomeModal {
   static Future<void> show(
     BuildContext context, {
     required VoidCallback onDismiss,
+    VoidCallback? onCompleted,
     OnboardingMetricsRepository? metrics,
     OnboardingHeroStyle heroStyle = OnboardingHeroStyle.constellation,
   }) async {
@@ -135,6 +136,11 @@ class OnboardingWelcomeModal {
     );
 
     if (connectedType != null) {
+      // The user completed the essential setup (a provider + models were
+      // created), so the front-door welcome has done its job -- let the caller
+      // retire it permanently. Fires whether or not a first task then landed;
+      // the skip path below never reaches here.
+      onCompleted?.call();
       unawaited(
         repo?.recordEvent(
           OnboardingEventName.providerConnected,
@@ -313,7 +319,25 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           alignment: Alignment.topCenter,
           children: [
             for (final child in previousChildren)
-              Positioned(top: 0, left: 0, right: 0, child: child),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                // Several steps (e.g. the welcome hero and the connect
+                // page) run their own continuous particle-animation
+                // backdrop. Left running, an outgoing step's backdrop
+                // paints every frame right alongside the incoming step's —
+                // twice the continuous custom-painting cost for the
+                // duration of the crossfade, which is enough to visibly
+                // stutter on slower renderers (the iOS Simulator's Metal
+                // translation in particular). `TickerMode(enabled: false)`
+                // freezes every ticker in the subtree (all
+                // `AnimationController`s) the instant a step becomes
+                // "previous" -- it still fades out via the outer
+                // `AnimatedSwitcher`'s opacity animation, just on its last
+                // painted frame instead of a live one.
+                child: TickerMode(enabled: false, child: child),
+              ),
             ?currentChild,
           ],
         ),

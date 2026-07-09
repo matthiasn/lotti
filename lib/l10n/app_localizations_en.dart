@@ -8393,11 +8393,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMeasurableUnitLabel => 'Unit abbreviation (optional)';
 
   @override
+  String get settingsOnboardingActionSubtitle =>
+      'Reopen the welcome flow — connect your AI brain and create a task';
+
+  @override
   String get settingsOnboardingMetricsSubtitle =>
       'FTUE funnel — install, activation, retention (debug)';
 
   @override
   String get settingsOnboardingMetricsTitle => 'Onboarding Metrics';
+
+  @override
+  String get settingsOnboardingReplayTitle => 'Replay onboarding';
+
+  @override
+  String get settingsOnboardingStartTitle => 'Start onboarding';
+
+  @override
+  String get settingsOnboardingStatusActivated =>
+      'You\'ve created your first AI task';
+
+  @override
+  String get settingsOnboardingStatusLoading => 'Loading…';
+
+  @override
+  String get settingsOnboardingStatusNotActivated => 'Not started yet';
+
+  @override
+  String get settingsOnboardingStatusTitle => 'Status';
+
+  @override
+  String get settingsOnboardingSubtitle => 'Replay the welcome flow anytime';
+
+  @override
+  String get settingsOnboardingTitle => 'Onboarding';
 
   @override
   String get settingsResetGeminiConfirm => 'Reset';

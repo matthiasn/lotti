@@ -74,13 +74,14 @@ void main() {
     }
   });
 
-  Widget host({VoidCallback? onDismiss}) {
+  Widget host({VoidCallback? onDismiss, VoidCallback? onCompleted}) {
     return Builder(
       builder: (context) => ElevatedButton(
         onPressed: () => OnboardingWelcomeModal.show(
           context,
           metrics: repo,
           onDismiss: onDismiss ?? () {},
+          onCompleted: onCompleted,
         ),
         child: const Text('open'),
       ),
@@ -149,6 +150,81 @@ void main() {
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.providerModalShown), isTrue);
   });
+
+  testWidgets(
+    'swapping steps crossfades rather than snapping instantly',
+    (tester) async {
+      await openWelcome(tester);
+
+      await tester.tap(find.text('Choose your AI brain'));
+      await tester.pump(); // start the crossfade (t=0)
+      await tester.pump(const Duration(milliseconds: 200)); // mid-fade
+
+      // Mid-transition at least one child sits at a partial opacity — proof
+      // the AnimatedSwitcher is actually easing between steps rather than
+      // hard-cutting from one to the next.
+      final opacities = tester
+          .widgetList<FadeTransition>(find.byType(FadeTransition))
+          .map((f) => f.opacity.value)
+          .toList();
+      expect(
+        opacities.any((o) => o > 0.0 && o < 1.0),
+        isTrue,
+        reason: 'expected an in-progress crossfade, got $opacities',
+      );
+
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'the outgoing step freezes its animations during the crossfade (so two '
+    'animated backdrops never paint at once) and unfreezes once settled',
+    (tester) async {
+      await openWelcome(tester);
+
+      await tester.tap(find.text('Choose your AI brain'));
+      await tester.pump(); // start the crossfade
+      await tester.pump(const Duration(milliseconds: 200)); // mid-fade
+
+      // The outgoing welcome step is still mounted (fading out) and wrapped in
+      // a disabled TickerMode, halting its looping constellation controller so
+      // it stops repainting while the incoming connect backdrop animates in.
+      final outgoingWelcome = find.text('Talk. Lotti turns it into a plan.');
+      expect(outgoingWelcome, findsOneWidget);
+      expect(
+        find.ancestor(
+          of: outgoingWelcome,
+          matching: find.byWidgetPredicate(
+            (w) => w is TickerMode && !w.enabled,
+          ),
+        ),
+        findsOneWidget,
+      );
+
+      // The incoming connect step is NOT frozen — its backdrop animates.
+      final incomingConnect = find.text('Melious.ai');
+      expect(incomingConnect, findsOneWidget);
+      expect(
+        find.ancestor(
+          of: incomingConnect,
+          matching: find.byWidgetPredicate(
+            (w) => w is TickerMode && !w.enabled,
+          ),
+        ),
+        findsNothing,
+      );
+
+      // Once the transition settles the outgoing step (and its disabled
+      // TickerMode) are gone, so nothing is left frozen.
+      await tester.pumpAndSettle();
+      expect(outgoingWelcome, findsNothing);
+      expect(
+        find.byWidgetPredicate((w) => w is TickerMode && !w.enabled),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('back from connect returns to the welcome', (tester) async {
     await openWelcome(tester);
@@ -260,6 +336,7 @@ void main() {
     WidgetTester tester, {
     List<CategoryDefinition> existingCategories = const [],
     bool failCategoryWrites = false,
+    VoidCallback? onCompleted,
   }) async {
     final aiRepo = MockAiConfigRepository();
     when(() => aiRepo.saveConfig(any())).thenAnswer((_) async {});
@@ -308,7 +385,7 @@ void main() {
 
     await tester.pumpWidget(
       makeTestableWidget(
-        host(),
+        host(onCompleted: onCompleted),
         mediaQueryData: mq,
         overrides: [
           aiConfigRepositoryProvider.overrideWithValue(aiRepo),
@@ -410,7 +487,11 @@ void main() {
     beamToNamedOverride = beamed.add;
     addTearDown(() => beamToNamedOverride = null);
 
-    final mocks = await driveToFirstTaskStep(tester);
+    var completedCount = 0;
+    final mocks = await driveToFirstTaskStep(
+      tester,
+      onCompleted: () => completedCount++,
+    );
 
     // The finale renders inside the panel: guided suggestions over the same
     // modal surface, no full-screen takeover. Provider creation + FTUE setup
@@ -487,6 +568,9 @@ void main() {
         audioId: null,
       ),
     ).called(1);
+    // Connecting a provider drove the flow to completion: onCompleted fires
+    // exactly once when the modal pops, so the caller can retire the welcome.
+    expect(completedCount, 1);
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.providerConnected), isTrue);
   });

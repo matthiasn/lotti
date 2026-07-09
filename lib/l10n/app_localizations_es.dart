@@ -8592,11 +8592,41 @@ class AppLocalizationsEs extends AppLocalizations {
       'Abreviatura de la unidad (opcional)';
 
   @override
+  String get settingsOnboardingActionSubtitle =>
+      'Vuelve a abrir el flujo de bienvenida: conecta tu cerebro de IA y crea una tarea';
+
+  @override
   String get settingsOnboardingMetricsSubtitle =>
       'Embudo FTUE: instalación, activación, retención (depuración)';
 
   @override
   String get settingsOnboardingMetricsTitle => 'Métricas de onboarding';
+
+  @override
+  String get settingsOnboardingReplayTitle => 'Repetir onboarding';
+
+  @override
+  String get settingsOnboardingStartTitle => 'Iniciar onboarding';
+
+  @override
+  String get settingsOnboardingStatusActivated =>
+      'Has creado tu primera tarea con IA';
+
+  @override
+  String get settingsOnboardingStatusLoading => 'Cargando…';
+
+  @override
+  String get settingsOnboardingStatusNotActivated => 'Aún no iniciado';
+
+  @override
+  String get settingsOnboardingStatusTitle => 'Estado';
+
+  @override
+  String get settingsOnboardingSubtitle =>
+      'Vuelve a mostrar el flujo de bienvenida cuando quieras';
+
+  @override
+  String get settingsOnboardingTitle => 'Onboarding';
 
   @override
   String get settingsResetGeminiConfirm => 'Restablecer';
