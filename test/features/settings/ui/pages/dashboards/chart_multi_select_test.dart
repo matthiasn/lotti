@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
+import '../../../../../test_data/test_data.dart';
 import '../../../../../test_helper.dart';
 
 void main() {
@@ -35,6 +37,7 @@ void main() {
       expect(find.text('Add Items'), findsOneWidget);
       expect(find.byIcon(Icons.add), findsOneWidget);
       expect(find.byIcon(Icons.arrow_drop_down), findsOneWidget);
+      expect(find.bySemanticsLabel('Add items button'), findsOneWidget);
     });
 
     testWidgets('handles empty items list', (tester) async {
@@ -304,6 +307,59 @@ void main() {
       // Should show "Add" without count
       expect(find.text('Add'), findsOneWidget);
       expect(find.text('Add (1)'), findsNothing);
+    });
+  });
+
+  group('MeasurementChartMultiSelect', () {
+    testWidgets('adds selected measurements with chosen aggregation', (
+      tester,
+    ) async {
+      List<DashboardMeasurementItem>? confirmedItems;
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: MeasurementChartMultiSelect(
+            items: [measurableWater, measurableChocolate],
+            onConfirm: (items) => confirmedItems = items,
+            title: 'Measurement Charts',
+            buttonText: 'Measurement Charts',
+            semanticsLabel: 'Measurement Charts',
+            iconData: Icons.insights,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Measurement Charts'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Choose aggregation before adding.'), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(
+          DesignSystemCheckbox,
+          measurableChocolate.displayName,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.widgetWithText(
+          DesignSystemCheckbox,
+          measurableWater.displayName,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Daily maximum').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Add (2)'));
+      await tester.pumpAndSettle();
+
+      expect(confirmedItems, hasLength(2));
+      expect(confirmedItems!.first.id, measurableChocolate.id);
+      expect(confirmedItems!.last.id, measurableWater.id);
+      expect(confirmedItems!.last.aggregationType, AggregationType.dailyMax);
     });
   });
 }

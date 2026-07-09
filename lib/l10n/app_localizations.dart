@@ -7485,7 +7485,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardAddHabitButton.
   ///
   /// In en, this message translates to:
-  /// **'Habit Charts'**
+  /// **'Habits'**
   String get dashboardAddHabitButton;
 
   /// No description provided for @dashboardAddHabitTitle.
@@ -7497,7 +7497,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardAddHealthButton.
   ///
   /// In en, this message translates to:
-  /// **'Health Charts'**
+  /// **'Health'**
   String get dashboardAddHealthButton;
 
   /// No description provided for @dashboardAddHealthTitle.
@@ -7509,7 +7509,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardAddMeasurementButton.
   ///
   /// In en, this message translates to:
-  /// **'Measurement Charts'**
+  /// **'Measurements'**
   String get dashboardAddMeasurementButton;
 
   /// No description provided for @dashboardAddMeasurementTitle.
@@ -7527,7 +7527,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardAddSurveyButton.
   ///
   /// In en, this message translates to:
-  /// **'Survey Charts'**
+  /// **'Surveys'**
   String get dashboardAddSurveyButton;
 
   /// No description provided for @dashboardAddSurveyTitle.
@@ -7539,7 +7539,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardAddWorkoutButton.
   ///
   /// In en, this message translates to:
-  /// **'Workout Charts'**
+  /// **'Workouts'**
   String get dashboardAddWorkoutButton;
 
   /// No description provided for @dashboardAddWorkoutTitle.
@@ -7578,6 +7578,18 @@ abstract class AppLocalizations {
   /// **'Aggregation Type:'**
   String get dashboardAggregationLabel;
 
+  /// No description provided for @dashboardAggregationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Aggregation type'**
+  String get dashboardAggregationTitle;
+
+  /// No description provided for @dashboardAvailableChartsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add charts'**
+  String get dashboardAvailableChartsTitle;
+
   /// No description provided for @dashboardCategoryLabel.
   ///
   /// In en, this message translates to:
@@ -7590,6 +7602,12 @@ abstract class AppLocalizations {
   /// **'No data in this range'**
   String get dashboardChartNoData;
 
+  /// No description provided for @dashboardConfigurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get dashboardConfigurationTitle;
+
   /// No description provided for @dashboardCopyHint.
   ///
   /// In en, this message translates to:
@@ -7601,6 +7619,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save and copy configuration'**
   String get dashboardCopyLabel;
+
+  /// No description provided for @dashboardCurrentChartsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Current charts'**
+  String get dashboardCurrentChartsTitle;
 
   /// No description provided for @dashboardDeleteConfirm.
   ///
@@ -7644,11 +7668,35 @@ abstract class AppLocalizations {
   /// **'Systolic'**
   String get dashboardHealthSystolic;
 
+  /// No description provided for @dashboardMeasurementAggregationHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose aggregation before adding.'**
+  String get dashboardMeasurementAggregationHelp;
+
   /// No description provided for @dashboardNameLabel.
   ///
   /// In en, this message translates to:
   /// **'Dashboard name'**
   String get dashboardNameLabel;
+
+  /// No description provided for @dashboardNoChartsAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'No charts added yet. Add one below.'**
+  String get dashboardNoChartsAdded;
+
+  /// No description provided for @dashboardNoHabitsForCharts.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a habit first to add habit charts.'**
+  String get dashboardNoHabitsForCharts;
+
+  /// No description provided for @dashboardNoMeasurablesForCharts.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a measurable first to add measurement charts.'**
+  String get dashboardNoMeasurablesForCharts;
 
   /// No description provided for @dashboardNotFound.
   ///
@@ -7661,6 +7709,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Private'**
   String get dashboardPrivateLabel;
+
+  /// No description provided for @dashboardReorderChartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder chart'**
+  String get dashboardReorderChartLabel;
 
   /// No description provided for @dashboardTakeSurveyTooltip.
   ///
@@ -14604,6 +14658,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Onboarding'**
   String get settingsOnboardingTitle;
+
+  /// No description provided for @settingsOptionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Options'**
+  String get settingsOptionsTitle;
 
   /// No description provided for @settingsResetGeminiConfirm.
   ///

@@ -4432,19 +4432,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardAddChartsTitle => 'Grafy';
 
   @override
-  String get dashboardAddHabitButton => 'Návykové grafy';
+  String get dashboardAddHabitButton => 'Návyky';
 
   @override
   String get dashboardAddHabitTitle => 'Návykové grafy';
 
   @override
-  String get dashboardAddHealthButton => 'Zdravotní grafy';
+  String get dashboardAddHealthButton => 'Zdraví';
 
   @override
   String get dashboardAddHealthTitle => 'Zdravotní grafy';
 
   @override
-  String get dashboardAddMeasurementButton => 'Měřicí grafy';
+  String get dashboardAddMeasurementButton => 'Měření';
 
   @override
   String get dashboardAddMeasurementTitle => 'Měřicí grafy';
@@ -4453,13 +4453,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardAddMeasurementTooltip => 'Přidat měření';
 
   @override
-  String get dashboardAddSurveyButton => 'Grafy průzkumů';
+  String get dashboardAddSurveyButton => 'Průzkumy';
 
   @override
   String get dashboardAddSurveyTitle => 'Grafy průzkumů';
 
   @override
-  String get dashboardAddWorkoutButton => 'Grafy cvičení';
+  String get dashboardAddWorkoutButton => 'Cvičení';
 
   @override
   String get dashboardAddWorkoutTitle => 'Grafy cvičení';
@@ -4480,16 +4480,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardAggregationLabel => 'Typ agregace:';
 
   @override
+  String get dashboardAggregationTitle => 'Typ agregace';
+
+  @override
+  String get dashboardAvailableChartsTitle => 'Přidat grafy';
+
+  @override
   String get dashboardCategoryLabel => 'Kategorie';
 
   @override
   String get dashboardChartNoData => 'Žádná data v tomto rozsahu';
 
   @override
+  String get dashboardConfigurationTitle => 'Export';
+
+  @override
   String get dashboardCopyHint => 'Uložit a zkopírovat konfiguraci panelu';
 
   @override
   String get dashboardCopyLabel => 'Uložit a zkopírovat konfiguraci';
+
+  @override
+  String get dashboardCurrentChartsTitle => 'Aktuální grafy';
 
   @override
   String get dashboardDeleteConfirm => 'ANO, SMAZAT TENTO PANEL';
@@ -4514,13 +4526,31 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardHealthSystolic => 'Systolický';
 
   @override
+  String get dashboardMeasurementAggregationHelp =>
+      'Před přidáním vyber agregaci.';
+
+  @override
   String get dashboardNameLabel => 'Název dashboardu';
+
+  @override
+  String get dashboardNoChartsAdded => 'Zatím žádné grafy. Přidej jeden níže.';
+
+  @override
+  String get dashboardNoHabitsForCharts =>
+      'Nejdřív si vytvoř návyk, abys mohl/a přidat grafy návyků.';
+
+  @override
+  String get dashboardNoMeasurablesForCharts =>
+      'Nejdřív si vytvoř měřitelnou hodnotu, abys mohl/a přidat grafy měření.';
 
   @override
   String get dashboardNotFound => 'Dashboard nenalezen';
 
   @override
   String get dashboardPrivateLabel => 'Soukromý';
+
+  @override
+  String get dashboardReorderChartLabel => 'Změnit pořadí grafu';
 
   @override
   String get dashboardTakeSurveyTooltip => 'Vyplnit dotazník';
@@ -8574,6 +8604,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsOnboardingTitle => 'Onboarding';
+
+  @override
+  String get settingsOptionsTitle => 'Možnosti';
 
   @override
   String get settingsResetGeminiConfirm => 'Obnovit';

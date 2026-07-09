@@ -400,11 +400,17 @@ modal; aggregation types always render their localized names (via
 [`ui/aggregation_label.dart`](ui/aggregation_label.dart)), never raw enum
 identifiers.
 
-The dashboard editor keeps its chart machinery (`ChartMultiSelect` pickers,
-reorderable `DashboardItemCard` list with swipe-to-dismiss and an explicit
-drag handle) inside the charts section; chart rows title as
-"Name — Localized aggregation". Save-and-copy-to-clipboard lives on the
-action bar as a `DsGlassRoundButton` in the `extraActions` slot.
+The dashboard editor splits chart management into `Current charts` and
+`Add charts` sections. Current charts render as a reorderable
+`DashboardItemCard` list with swipe-to-dismiss and an explicit drag handle;
+measurement rows title as "Name — Localized aggregation". Generic chart
+sources use `ChartMultiSelect`, while measurement sources use
+`MeasurementChartMultiSelect` so aggregation is chosen before the chart is
+inserted. Empty habit/measurable sources render inline hint rows instead of
+disappearing silently. Chart selection and aggregation editing use
+design-system search, checkbox, chip, and button controls inside the shared
+modal shell. Save-and-copy-to-clipboard lives in its own Export section,
+separate from the sticky Save/Cancel action bar.
 
 ### Persistence split
 

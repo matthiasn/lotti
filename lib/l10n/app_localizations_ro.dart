@@ -4468,19 +4468,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardAddChartsTitle => 'Grafice';
 
   @override
-  String get dashboardAddHabitButton => 'Diagrame de obiceiuri';
+  String get dashboardAddHabitButton => 'Obiceiuri';
 
   @override
   String get dashboardAddHabitTitle => 'Diagrame de obiceiuri';
 
   @override
-  String get dashboardAddHealthButton => 'Bord de sănătate';
+  String get dashboardAddHealthButton => 'Sănătate';
 
   @override
   String get dashboardAddHealthTitle => 'Bord de sănătate';
 
   @override
-  String get dashboardAddMeasurementButton => 'Bord de măsurătoari';
+  String get dashboardAddMeasurementButton => 'Măsurători';
 
   @override
   String get dashboardAddMeasurementTitle => 'Bord de măsurătoari';
@@ -4489,13 +4489,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardAddMeasurementTooltip => 'Adăugați o măsurătoare';
 
   @override
-  String get dashboardAddSurveyButton => 'Diagrame de Studiu';
+  String get dashboardAddSurveyButton => 'Studii';
 
   @override
   String get dashboardAddSurveyTitle => 'Diagrame de Studiu';
 
   @override
-  String get dashboardAddWorkoutButton => 'Bord de Antrenament';
+  String get dashboardAddWorkoutButton => 'Antrenamente';
 
   @override
   String get dashboardAddWorkoutTitle => 'Bord de Antrenament';
@@ -4516,10 +4516,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardAggregationLabel => 'Agregare';
 
   @override
+  String get dashboardAggregationTitle => 'Tip de agregare';
+
+  @override
+  String get dashboardAvailableChartsTitle => 'Adăugați grafice';
+
+  @override
   String get dashboardCategoryLabel => 'Categorie';
 
   @override
   String get dashboardChartNoData => 'Nu există date în acest interval';
+
+  @override
+  String get dashboardConfigurationTitle => 'Export';
 
   @override
   String get dashboardCopyHint =>
@@ -4527,6 +4536,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dashboardCopyLabel => 'Salvare și copiere configurație';
+
+  @override
+  String get dashboardCurrentChartsTitle => 'Grafice curente';
 
   @override
   String get dashboardDeleteConfirm => 'DA, ȘTERGE ACEST TABLOU DE BORD';
@@ -4550,13 +4562,32 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardHealthSystolic => 'Sistolică';
 
   @override
+  String get dashboardMeasurementAggregationHelp =>
+      'Alegeți agregarea înainte de adăugare.';
+
+  @override
   String get dashboardNameLabel => 'Numele tabloului de bord';
+
+  @override
+  String get dashboardNoChartsAdded =>
+      'Niciun grafic deocamdată. Adăugați unul mai jos.';
+
+  @override
+  String get dashboardNoHabitsForCharts =>
+      'Creați mai întâi un obicei pentru a adăuga grafice de obiceiuri.';
+
+  @override
+  String get dashboardNoMeasurablesForCharts =>
+      'Creați mai întâi o valoare măsurabilă pentru a adăuga grafice de măsurare.';
 
   @override
   String get dashboardNotFound => 'Tablou de bord negasit';
 
   @override
   String get dashboardPrivateLabel => 'Privat';
+
+  @override
+  String get dashboardReorderChartLabel => 'Reordonați graficul';
 
   @override
   String get dashboardTakeSurveyTooltip => 'Completați chestionarul';
@@ -8636,6 +8667,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsOnboardingTitle => 'Onboarding';
+
+  @override
+  String get settingsOptionsTitle => 'Opțiuni';
 
   @override
   String get settingsResetGeminiConfirm => 'Resetează';

@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environmental impact by country/data center and shows the renewable-energy
   share for each location.
 ### Fixed
+- **Dashboard chart editing now saves when it should.** Adding measurable
+  charts in Settings → Dashboards immediately enables Save, measurable chart
+  aggregation can be chosen before adding, aggregation and reorder no-ops no
+  longer make the form look changed, and the chart sections and pickers now use
+  the shared design-system layout.
 - **Daily OS dictated plans keep task agents and titles in sync.** Tasks created
   from a spoken Daily OS plan now get the category's default task agent, and
   task-backed planned blocks on the Day timeline update when you rename the

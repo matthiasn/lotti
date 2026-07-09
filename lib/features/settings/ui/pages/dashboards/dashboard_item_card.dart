@@ -50,6 +50,7 @@ class DashboardItemCard extends StatelessWidget {
         return ItemCard(
           leadingIcon: MdiIcons.stethoscope,
           title: itemName,
+          reorderIndex: index,
         );
       case DashboardWorkoutItem(:final workoutType, :final valueType):
         final workoutKey = '$workoutType.${valueType.name}';
@@ -57,15 +58,18 @@ class DashboardItemCard extends StatelessWidget {
         return ItemCard(
           leadingIcon: Icons.sports_gymnastics,
           title: workout?.displayName ?? workoutKey,
+          reorderIndex: index,
         );
       case DashboardSurveyItem(:final surveyName):
         return ItemCard(
           leadingIcon: MdiIcons.clipboardOutline,
           title: surveyName,
+          reorderIndex: index,
         );
       case final DashboardHabitItem habitItem:
         return HabitItemCard(
           habitItem: habitItem,
+          index: index,
         );
     }
   }
@@ -118,20 +122,23 @@ class MeasurableItemCard extends StatelessWidget {
             return ItemCard(
               leadingIcon: Icons.insights,
               title: title,
+              reorderIndex: index,
               onTap: () {
-                ModalUtils.showBottomSheet<void>(
+                ModalUtils.showSinglePageModal<void>(
                   context: context,
-                  clipBehavior: Clip.antiAliasWithSaveLayer,
+                  title: context.messages.dashboardAggregationTitle,
+                  padding: EdgeInsets.all(
+                    context.designTokens.spacing.cardPadding,
+                  ),
                   builder: (BuildContext context) {
                     return DashboardItemModal(
                       item: measurement,
                       updateItemFn: updateItemFn,
-                      title: title,
                       index: index,
+                      chartTitle: title,
                     );
                   },
                 );
-                updateItemFn(measurement, index);
               },
             );
           },
@@ -144,10 +151,12 @@ class MeasurableItemCard extends StatelessWidget {
 class HabitItemCard extends StatelessWidget {
   const HabitItemCard({
     required this.habitItem,
+    required this.index,
     super.key,
   });
 
   final DashboardHabitItem habitItem;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
@@ -167,6 +176,7 @@ class HabitItemCard extends StatelessWidget {
             return ItemCard(
               leadingIcon: MdiIcons.lightningBolt,
               title: habitDefinition?.name ?? habitItem.habitId,
+              reorderIndex: index,
             );
           },
     );
@@ -183,6 +193,7 @@ class ItemCard extends StatelessWidget {
   const ItemCard({
     required this.title,
     required this.leadingIcon,
+    this.reorderIndex,
     this.onTap,
     super.key,
   });
@@ -190,6 +201,7 @@ class ItemCard extends StatelessWidget {
   final void Function()? onTap;
   final String title;
   final IconData leadingIcon;
+  final int? reorderIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -228,15 +240,44 @@ class ItemCard extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: spacing.step3),
-                Icon(
+                finalDragHandle(
                   Icons.drag_indicator,
+                  index: reorderIndex,
                   size: spacing.step5,
+                  targetSize: spacing.step8,
                   color: tokens.colors.text.lowEmphasis,
+                  semanticsLabel: context.messages.dashboardReorderChartLabel,
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget finalDragHandle(
+    IconData icon, {
+    required int? index,
+    required double size,
+    required double targetSize,
+    required Color color,
+    required String semanticsLabel,
+  }) {
+    final child = SizedBox.square(
+      dimension: targetSize,
+      child: Center(
+        child: Icon(icon, size: size, color: color),
+      ),
+    );
+    if (index == null) return child;
+
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      child: ReorderableDragStartListener(
+        index: index,
+        child: child,
       ),
     );
   }
