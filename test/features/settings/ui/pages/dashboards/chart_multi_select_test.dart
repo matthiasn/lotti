@@ -311,16 +311,15 @@ void main() {
   });
 
   group('MeasurementChartMultiSelect', () {
-    testWidgets('adds selected measurements with chosen aggregation', (
-      tester,
-    ) async {
-      List<DashboardMeasurementItem>? confirmedItems;
-
+    Future<void> pumpMeasurementSelect(
+      WidgetTester tester, {
+      required void Function(List<DashboardMeasurementItem>) onConfirm,
+    }) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: MeasurementChartMultiSelect(
             items: [measurableWater, measurableChocolate],
-            onConfirm: (items) => confirmedItems = items,
+            onConfirm: onConfirm,
             title: 'Measurement Charts',
             buttonText: 'Measurement Charts',
             semanticsLabel: 'Measurement Charts',
@@ -332,6 +331,17 @@ void main() {
 
       await tester.tap(find.text('Measurement Charts'));
       await tester.pumpAndSettle();
+    }
+
+    testWidgets('adds selected measurements with chosen aggregation', (
+      tester,
+    ) async {
+      List<DashboardMeasurementItem>? confirmedItems;
+
+      await pumpMeasurementSelect(
+        tester,
+        onConfirm: (items) => confirmedItems = items,
+      );
 
       expect(find.text('Choose aggregation before adding.'), findsOneWidget);
       await tester.tap(
@@ -360,6 +370,70 @@ void main() {
       expect(confirmedItems!.first.id, measurableChocolate.id);
       expect(confirmedItems!.last.id, measurableWater.id);
       expect(confirmedItems!.last.aggregationType, AggregationType.dailyMax);
+    });
+
+    testWidgets(
+      'search shows the measurement empty state when no item matches',
+      (
+        tester,
+      ) async {
+        await pumpMeasurementSelect(tester, onConfirm: (_) {});
+
+        await tester.enterText(find.byType(TextField), 'coffee');
+        await tester.pumpAndSettle();
+
+        expect(find.text(measurableWater.displayName), findsNothing);
+        expect(find.text(measurableChocolate.displayName), findsNothing);
+        expect(find.text('No items found'), findsOneWidget);
+      },
+    );
+
+    testWidgets('deselecting a measurement disables the add action', (
+      tester,
+    ) async {
+      await pumpMeasurementSelect(tester, onConfirm: (_) {});
+
+      final waterCheckbox = find.widgetWithText(
+        DesignSystemCheckbox,
+        measurableWater.displayName,
+      );
+
+      await tester.tap(waterCheckbox);
+      await tester.pumpAndSettle();
+      expect(
+        find.widgetWithText(DesignSystemButton, 'Add (1)'),
+        findsOneWidget,
+      );
+
+      await tester.tap(waterCheckbox);
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(DesignSystemButton, 'Add'), findsOneWidget);
+      expect(find.widgetWithText(DesignSystemButton, 'Add (1)'), findsNothing);
+    });
+
+    testWidgets('cancel closes measurement selector without confirming', (
+      tester,
+    ) async {
+      var onConfirmCalled = false;
+      await pumpMeasurementSelect(
+        tester,
+        onConfirm: (_) => onConfirmCalled = true,
+      );
+
+      await tester.tap(
+        find.widgetWithText(
+          DesignSystemCheckbox,
+          measurableWater.displayName,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(onConfirmCalled, isFalse);
+      expect(find.byIcon(Icons.search_rounded), findsNothing);
     });
   });
 }
