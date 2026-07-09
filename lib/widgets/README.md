@@ -270,12 +270,14 @@ motion.
 
 Editor surfaces that are *pushed* on top of another settings route rather
 than being routes of their own (the AI provider connect form, the agent
-template editor opened from an instance's internals, the evolution chat)
-keep the URL of the page they were pushed from, so the route-based slide
-can't see them. They instead push onto the root navigator on mobile via
-`bottomNavSafeNavigatorOf` (`lib/widgets/nav_bar/bottom_nav_safe_navigator.dart`),
-covering the whole shell — including the bar — so their bottom action bar
-or chat input stays reachable.
+template editor opened from an instance's internals, the evolution chat,
+the debug-only onboarding animation gallery reached from Settings →
+Advanced → Maintenance) keep the URL of the page they were pushed from, so
+the route-based slide can't see them. They instead push onto the root
+navigator on mobile via `bottomNavSafeNavigatorOf`
+(`lib/widgets/nav_bar/bottom_nav_safe_navigator.dart`), covering the whole
+shell — including the bar — so their bottom action bar or chat input stays
+reachable.
 
 ### showMobileNavMoreSheet / MobileNavMoreSheetItem
 `WoltModalSheet`-based overflow sheet listing the destinations without a

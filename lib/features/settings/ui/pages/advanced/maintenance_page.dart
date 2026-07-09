@@ -23,6 +23,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/debug_overlays.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
+import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
 
 /// Mobile / legacy wrapper — keeps the `SliverBoxAdapterPage` chrome
 /// and delegates content to [MaintenanceBody] so the same widget can
@@ -69,7 +70,12 @@ class MaintenanceBody extends ConsumerWidget {
             subtitle: 'Compare welcome animations + connect page live (debug)',
             icon: Icons.animation_rounded,
             onTap: () => unawaited(
-              Navigator.of(context).push(
+              // Root navigator on mobile so the gallery covers the shell's
+              // floating bottom nav instead of leaving it stacked on top —
+              // this debug screen is pushed on top of a settings route, so
+              // it can't be matched (and slid away) by the route-based
+              // `settingsRouteHidesBottomNav`. See `bottom_nav_safe_navigator.dart`.
+              bottomNavSafeNavigatorOf(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => const OnboardingAnimationGalleryPage(),
                 ),
