@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -47,6 +48,7 @@ DayAgentCaptureService dayAgentCaptureService(Ref ref) {
     fts5Db: getIt<Fts5Db>(),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    taskAgentService: ref.watch(taskAgentServiceProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }

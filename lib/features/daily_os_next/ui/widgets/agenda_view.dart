@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
-import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
@@ -135,27 +132,19 @@ class _LiveAgendaCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final taskId = item.taskId;
-    final task = taskId == null || !_canResolveLiveTaskTitles()
-        ? null
-        : ref.watch(taskLiveDataProvider(taskId)).value;
-    final liveTitle = task?.data.title.trim();
-    final coverArtId = task?.data.coverArtId?.trim();
+    final liveTask = watchLiveTaskMetadata(ref, item.taskId);
     return AgendaCard(
       index: index,
       item: item,
-      displayTitle: liveTitle == null || liveTitle.isEmpty ? null : liveTitle,
+      displayTitle: liveTask.missing
+          ? context.messages.conflictDetailEntryNotFoundTitle
+          : liveTask.title,
       whyReason: whyReason,
-      coverArtId: coverArtId == null || coverArtId.isEmpty ? null : coverArtId,
-      coverArtCropX: task?.data.coverArtCropX ?? 0.5,
+      coverArtId: liveTask.coverArtId,
+      coverArtCropX: liveTask.coverArtCropX,
       onTap: onTap,
       onRename: onRename,
     );
-  }
-
-  bool _canResolveLiveTaskTitles() {
-    return getIt.isRegistered<JournalDb>() &&
-        getIt.isRegistered<UpdateNotifications>();
   }
 }
 

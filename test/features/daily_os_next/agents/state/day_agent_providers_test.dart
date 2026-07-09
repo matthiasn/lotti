@@ -2,19 +2,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/entity_factories.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -156,6 +163,7 @@ void main() {
       final fts5Db = MockFts5Db();
       final orchestrator = MockWakeOrchestrator();
       final domainLogger = MockDomainLogger();
+      final taskAgentService = MockTaskAgentService();
       final notifications = MockUpdateNotifications();
 
       // Fts5Db is resolved through getIt rather than a Riverpod provider.
@@ -173,6 +181,7 @@ void main() {
         journalRepositoryProvider.overrideWithValue(journalRepository),
         wakeOrchestratorProvider.overrideWithValue(orchestrator),
         domainLoggerProvider.overrideWithValue(domainLogger),
+        taskAgentServiceProvider.overrideWithValue(taskAgentService),
         updateNotificationsProvider.overrideWithValue(notifications),
       ]);
 
@@ -185,6 +194,7 @@ void main() {
       expect(service.fts5Db, same(fts5Db));
       expect(service.orchestrator, same(orchestrator));
       expect(service.domainLogger, same(domainLogger));
+      expect(service.taskAgentService, same(taskAgentService));
 
       expectPersistedStateNotification(
         callback: service.onPersistedStateChanged,
@@ -192,6 +202,123 @@ void main() {
         agentId: 'capture-2026-05-25',
       );
     });
+
+    test(
+      'production provider createTaskFromPhrase assigns category default agent',
+      () async {
+        final repository = MockAgentRepository();
+        final syncService = MockAgentSyncService();
+        final journalDb = MockJournalDb();
+        final journalRepository = MockJournalRepository();
+        final fts5Db = MockFts5Db();
+        final orchestrator = MockWakeOrchestrator();
+        final domainLogger = MockDomainLogger();
+        final taskAgentService = MockTaskAgentService();
+        final notifications = MockUpdateNotifications();
+        final persistenceLogic = MockPersistenceLogic();
+
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt
+              ..registerSingleton<Fts5Db>(fts5Db)
+              ..registerSingleton<PersistenceLogic>(persistenceLogic);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
+
+        const agentId = 'day-agent-001';
+        final identity = makeTestIdentity(
+          id: agentId,
+          agentId: agentId,
+          kind: AgentKinds.dayAgent,
+          allowedCategoryIds: {'work'},
+        );
+        final category =
+            EntityDefinition.categoryDefinition(
+                  id: 'work',
+                  createdAt: DateTime(2026, 5, 25, 8),
+                  updatedAt: DateTime(2026, 5, 25, 8),
+                  name: 'Work',
+                  vectorClock: null,
+                  private: false,
+                  active: true,
+                  defaultProfileId: 'profile-work',
+                  defaultTemplateId: 'template-work',
+                )
+                as CategoryDefinition;
+        when(() => repository.getEntity(agentId)).thenAnswer(
+          (_) async => identity,
+        );
+        when(() => journalDb.getCategoryById('work')).thenAnswer(
+          (_) async => category,
+        );
+        when(
+          () => persistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((invocation) async {
+          final data = invocation.namedArguments[#data] as TaskData;
+          final entryText = invocation.namedArguments[#entryText] as EntryText;
+          final categoryId = invocation.namedArguments[#categoryId] as String?;
+          return TestTaskFactory.create(
+            id: 'created-task-001',
+            title: data.title,
+            plainText: entryText.plainText,
+            categoryId: categoryId,
+            estimate: data.estimate,
+          );
+        });
+        when(
+          () => taskAgentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'task-agent-001',
+            agentId: 'task-agent-001',
+          ),
+        );
+
+        final container = buildContainer([
+          agentRepositoryProvider.overrideWithValue(repository),
+          agentSyncServiceProvider.overrideWithValue(syncService),
+          journalDbProvider.overrideWithValue(journalDb),
+          journalRepositoryProvider.overrideWithValue(journalRepository),
+          wakeOrchestratorProvider.overrideWithValue(orchestrator),
+          domainLoggerProvider.overrideWithValue(domainLogger),
+          taskAgentServiceProvider.overrideWithValue(taskAgentService),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ]);
+
+        final result = await container
+            .read(dayAgentCaptureServiceProvider)
+            .executeTool(
+              agentId: agentId,
+              threadId: 'thread-001',
+              runKey: 'run-key-001',
+              toolName: DayAgentToolNames.createTaskFromPhrase,
+              args: const {'phrase': 'Run provider test', 'category': 'work'},
+            );
+
+        expect(result.success, isTrue);
+        expect(result.output, contains('"agentAssignmentStatus": "assigned"'));
+        expect(result.output, contains('"agentAssigned": true'));
+        expect(result.output, contains('"agentId": "task-agent-001"'));
+        verify(
+          () => taskAgentService.createTaskAgent(
+            taskId: 'created-task-001',
+            templateId: 'template-work',
+            profileId: 'profile-work',
+            allowedCategoryIds: {'work'},
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('dayAgentProvider', () {

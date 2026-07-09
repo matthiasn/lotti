@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:delta_markdown/delta_markdown.dart';
@@ -15,8 +16,10 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/state/ai_config_initialization.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -245,16 +248,21 @@ class EntryController extends AsyncNotifier<EntryState?> {
     }
     if (entry is Task) {
       final task = entry;
+      final nextTitle = title ?? task.data.title;
+      final titleChanged = nextTitle.trim() != task.data.title.trim();
 
       await _persistenceLogic.updateTask(
         entryText: entryTextFromController(controller),
         journalEntityId: id,
         taskData: task.data.copyWith(
-          title: title ?? task.data.title,
+          title: nextTitle,
           estimate: estimate ?? task.data.estimate,
           due: clearDueDate ? null : (dueDate ?? task.data.due),
         ),
       );
+      if (titleChanged) {
+        await _syncDailyOsTaskTitle(task.id, nextTitle);
+      }
     }
     if (entry is JournalEvent) {
       final event = entry;
@@ -303,6 +311,24 @@ class EntryController extends AsyncNotifier<EntryState?> {
       controller: controller,
     );
     await HapticFeedback.heavyImpact();
+  }
+
+  Future<void> _syncDailyOsTaskTitle(String taskId, String title) async {
+    if (!getIt.isRegistered<AgentDatabase>()) {
+      return;
+    }
+    try {
+      await ref
+          .read(dayAgentPlanServiceProvider)
+          .syncTaskTitle(taskId: taskId, title: title);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to sync Daily OS planned block title for task $taskId: $e',
+        name: 'EntryController',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   /// Discards unsaved edits: the inverse of [save] without persisting anything.

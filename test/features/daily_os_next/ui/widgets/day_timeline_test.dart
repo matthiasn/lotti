@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +17,9 @@ import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/entity_factories.dart';
 import '../../../../widget_test_utils.dart';
 
 const _work = DayAgentCategory(
@@ -1098,6 +1102,103 @@ void main() {
         expect(renames, [('standalone', 'Renamed block')]);
       },
     );
+
+    testWidgets('task-linked plan blocks render live task title updates', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 900));
+      final updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      final mocks = await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+      when(
+        () => mocks.updateNotifications.updateStream,
+      ).thenAnswer((_) => updates.stream);
+
+      var task = TestTaskFactory.create(id: 'task-1', title: 'Live task name');
+      when(() => mocks.journalDb.journalEntityById('task-1')).thenAnswer(
+        (_) async => task,
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: [
+                TimeBlock(
+                  id: 'linked',
+                  title: 'Stale planned title',
+                  start: DateTime(2026, 5, 25, 8),
+                  end: DateTime(2026, 5, 25, 9, 30),
+                  type: TimeBlockType.ai,
+                  state: TimeBlockState.drafted,
+                  category: _work,
+                  taskId: 'task-1',
+                  reason: 'Backed by a task.',
+                ),
+              ],
+            ),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Live task name'), findsOneWidget);
+      expect(find.text('Stale planned title'), findsNothing);
+
+      task = TestTaskFactory.create(id: 'task-1', title: 'Renamed task');
+      updates.add({'task-1'});
+      await tester.idle();
+      await tester.pump();
+      await tester.idle();
+      await tester.pump();
+
+      expect(find.text('Renamed task'), findsOneWidget);
+      expect(find.text('Live task name'), findsNothing);
+    });
+
+    testWidgets('task-linked plan blocks show fallback when task is missing', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 900));
+      await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: [
+                TimeBlock(
+                  id: 'linked-missing',
+                  title: 'Stale planned title',
+                  start: DateTime(2026, 5, 25, 8),
+                  end: DateTime(2026, 5, 25, 9, 30),
+                  type: TimeBlockType.ai,
+                  state: TimeBlockState.drafted,
+                  category: _work,
+                  taskId: 'missing-task',
+                  reason: 'Backed by a task.',
+                ),
+              ],
+            ),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayTimeline)).messages;
+      expect(
+        find.text(messages.conflictDetailEntryNotFoundTitle),
+        findsOneWidget,
+      );
+      expect(find.text('Stale planned title'), findsNothing);
+    });
 
     testWidgets('EnergyBand low and secondWind levels render', (tester) async {
       _setView(tester, const Size(1280, 900));

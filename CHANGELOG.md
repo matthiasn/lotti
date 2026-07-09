@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environmental impact by country/data center and shows the renewable-energy
   share for each location.
 ### Fixed
+- **Daily OS dictated plans keep task agents and titles in sync.** Tasks created
+  from a spoken Daily OS plan now get the category's default task agent, and
+  task-backed planned blocks on the Day timeline update when you rename the
+  task.
 - **The desktop sidebar is calmer when Tasks has lots of saved filters.**
   Saved task filters now sit in their own capped Tasks section with a More row,
   tapping More reveals every saved filter, active filters stay visible,

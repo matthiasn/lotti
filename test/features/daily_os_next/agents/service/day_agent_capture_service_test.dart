@@ -134,6 +134,7 @@ void main() {
   late MockFts5Db fts5Db;
   late MockWakeOrchestrator orchestrator;
   late MockDomainLogger domainLogger;
+  late MockTaskAgentService taskAgentService;
   late Map<String, AgentDomainEntity> agentEntities;
   late Map<String, JournalEntity> journalEntities;
   late Map<String, List<AgentLink>> linksByFromAndType;
@@ -152,6 +153,7 @@ void main() {
       orchestrator: orchestrator,
       domainLogger: domainLogger,
       taskFactory: _makeTaskFactory(journalEntities, createdTaskRequests),
+      taskAgentService: taskAgentService,
       onPersistedStateChanged: notifications.add,
     );
   }
@@ -164,6 +166,7 @@ void main() {
     fts5Db = MockFts5Db();
     orchestrator = MockWakeOrchestrator();
     domainLogger = MockDomainLogger();
+    taskAgentService = MockTaskAgentService();
     agentEntities = {
       _agentId: makeTestIdentity(
         id: _agentId,
@@ -1980,6 +1983,118 @@ void main() {
         });
 
         expect(createdTaskRequests.single.profileId, 'profile-work');
+      },
+    );
+
+    test(
+      'createTaskFromPhrase assigns category default task agent',
+      () async {
+        final category =
+            EntityDefinition.categoryDefinition(
+                  id: 'work',
+                  createdAt: _now,
+                  updatedAt: _now,
+                  name: 'Work',
+                  vectorClock: null,
+                  private: false,
+                  active: true,
+                  defaultProfileId: 'profile-work',
+                  defaultTemplateId: 'template-work',
+                )
+                as CategoryDefinition;
+        when(() => journalDb.getCategoryById('work')).thenAnswer(
+          (_) async => category,
+        );
+        when(
+          () => taskAgentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'task-agent-1',
+            agentId: 'task-agent-1',
+          ),
+        );
+
+        final result = await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.createTaskFromPhrase,
+            args: const {'phrase': 'Run tests', 'category': 'work'},
+          );
+        });
+
+        expect(result.success, isTrue);
+        expect(result.output, contains('"agentAssignmentStatus": "assigned"'));
+        expect(result.output, contains('"agentAssigned": true'));
+        expect(result.output, contains('"agentId": "task-agent-1"'));
+        verify(
+          () => taskAgentService.createTaskAgent(
+            taskId: 'created-task-1',
+            templateId: 'template-work',
+            profileId: 'profile-work',
+            allowedCategoryIds: {'work'},
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'createTaskFromPhrase still succeeds when agent assignment fails',
+      () async {
+        final category =
+            EntityDefinition.categoryDefinition(
+                  id: 'work',
+                  createdAt: _now,
+                  updatedAt: _now,
+                  name: 'Work',
+                  vectorClock: null,
+                  private: false,
+                  active: true,
+                  defaultTemplateId: 'template-work',
+                )
+                as CategoryDefinition;
+        when(() => journalDb.getCategoryById('work')).thenAnswer(
+          (_) async => category,
+        );
+        when(
+          () => taskAgentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenThrow(StateError('duplicate agent'));
+
+        final result = await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.createTaskFromPhrase,
+            args: const {'phrase': 'Run tests', 'category': 'work'},
+          );
+        });
+
+        expect(result.success, isTrue);
+        expect(result.output, contains('"agentAssignmentStatus": "failed"'));
+        expect(result.output, contains('"agentAssigned": false'));
+        expect(createdTaskRequests.single.title, 'Run tests');
+        verify(
+          () => domainLogger.error(
+            LogDomain.agentWorkflow,
+            any<Object>(),
+            message:
+                'failed to auto-assign task agent for capture-created '
+                'task',
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
       },
     );
 

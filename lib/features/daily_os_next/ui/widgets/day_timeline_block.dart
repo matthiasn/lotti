@@ -6,6 +6,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -98,10 +99,18 @@ class DayBlock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final category = _categoryColor();
-    final isBuffer = block.type == TimeBlockType.buffer;
-    final isDrafted = !tracked && block.state == TimeBlockState.drafted;
     final taskId = block.taskId?.trim();
+    final liveTask = watchLiveTaskMetadata(ref, taskId);
+    final effectiveTitle = liveTask.missing
+        ? context.messages.conflictDetailEntryNotFoundTitle
+        : liveTask.title;
+    final effectiveBlock = effectiveTitle == null
+        ? block
+        : block.copyWith(title: effectiveTitle);
+    final category = _categoryColor(effectiveBlock);
+    final isBuffer = effectiveBlock.type == TimeBlockType.buffer;
+    final isDrafted =
+        !tracked && effectiveBlock.state == TimeBlockState.drafted;
     final onTap = taskId == null || taskId.isEmpty
         ? null
         : () {
@@ -110,7 +119,7 @@ class DayBlock extends ConsumerWidget {
             // scrolls to (and highlights) that exact recording, matching
             // the old calendar behaviour. Drafted/agent blocks have no
             // backing entry, so they just open the task at the top.
-            final entryId = block.trackedEntryId;
+            final entryId = effectiveBlock.trackedEntryId;
             if (entryId != null) {
               publishTaskFocus(
                 taskId: taskId,
@@ -167,7 +176,7 @@ class DayBlock extends ConsumerWidget {
                 vertical: tokens.spacing.step2,
               ),
               child: _BlockContent(
-                block: block,
+                block: effectiveBlock,
                 tracked: tracked,
                 onRename: onRename,
               ),
@@ -192,8 +201,8 @@ class DayBlock extends ConsumerWidget {
     // blocks (whose visual content collapses to fill+stripe) an
     // accessible name at all.
     final semanticsLabel = [
-      block.title,
-      '${_clock(block.start)}–${_clock(block.end)}',
+      effectiveBlock.title,
+      '${_clock(effectiveBlock.start)}–${_clock(effectiveBlock.end)}',
       if (tracked)
         context.messages.dailyOsNextTimelineTracked
       else
@@ -224,7 +233,8 @@ class DayBlock extends ConsumerWidget {
     );
   }
 
-  Color _categoryColor() => categoryColorFromHex(block.category.colorHex);
+  Color _categoryColor(TimeBlock block) =>
+      categoryColorFromHex(block.category.colorHex);
 }
 
 String _clock(DateTime t) {

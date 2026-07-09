@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -3110,6 +3111,168 @@ void main() {
             ),
           ),
         );
+      });
+    });
+
+    group('syncTaskTitle', () {
+      test(
+        'updates denormalized titles for planner blocks linked to the task',
+        () async {
+          final plan =
+              AgentDomainEntity.dayPlan(
+                    id: 'day_agent_plan:$_dayId',
+                    agentId: dailyOsPlannerAgentId,
+                    dayId: _dayId,
+                    planDate: DateTime(2026, 5, 25),
+                    data: DayPlanData(
+                      planDate: DateTime(2026, 5, 25),
+                      status: const DayPlanStatus.draft(),
+                      plannedBlocks: [
+                        PlannedBlock(
+                          id: 'linked',
+                          categoryId: 'work',
+                          startTime: DateTime(2026, 5, 25, 9),
+                          endTime: DateTime(2026, 5, 25, 10),
+                          title: 'Old task title',
+                          taskId: 'task-1',
+                          reason: 'Morning focus.',
+                        ),
+                        PlannedBlock(
+                          id: 'other-task',
+                          categoryId: 'work',
+                          startTime: DateTime(2026, 5, 25, 10),
+                          endTime: DateTime(2026, 5, 25, 11),
+                          title: 'Other task title',
+                          taskId: 'task-2',
+                          reason: 'Separate task.',
+                        ),
+                        PlannedBlock(
+                          id: 'standalone',
+                          categoryId: 'life',
+                          startTime: DateTime(2026, 5, 25, 12),
+                          endTime: DateTime(2026, 5, 25, 13),
+                          title: 'Standalone title',
+                        ),
+                      ],
+                    ),
+                    createdAt: _now,
+                    updatedAt: _now,
+                    vectorClock: null,
+                  )
+                  as DayPlanEntity;
+          agentEntities[plan.id] = plan;
+          final later = _now.add(const Duration(hours: 2));
+
+          final count = await withClock(Clock.fixed(later), () {
+            return createService().syncTaskTitle(
+              taskId: 'task-1',
+              title: '  New task title  ',
+            );
+          });
+
+          expect(count, 1);
+          verify(
+            () => agentRepository.getEntitiesByAgentId(
+              dailyOsPlannerAgentId,
+              type: AgentEntityTypes.dayPlan,
+              limit: 120,
+            ),
+          ).called(1);
+          final updated = upsertedEntities.single as DayPlanEntity;
+          final byId = {
+            for (final block in updated.data.plannedBlocks) block.id: block,
+          };
+          expect(byId['linked']!.title, 'New task title');
+          expect(byId['other-task']!.title, 'Other task title');
+          expect(byId['standalone']!.title, 'Standalone title');
+          expect(updated.updatedAt, later);
+          expect(
+            notifications,
+            containsAll([dailyOsPlannerAgentId, _dayId, plan.id]),
+          );
+        },
+      );
+
+      test(
+        'does not write when no linked planned block title changes',
+        () async {
+          final plan =
+              AgentDomainEntity.dayPlan(
+                    id: 'day_agent_plan:$_dayId',
+                    agentId: dailyOsPlannerAgentId,
+                    dayId: _dayId,
+                    planDate: DateTime(2026, 5, 25),
+                    data: DayPlanData(
+                      planDate: DateTime(2026, 5, 25),
+                      status: const DayPlanStatus.draft(),
+                      plannedBlocks: [
+                        PlannedBlock(
+                          id: 'linked',
+                          categoryId: 'work',
+                          startTime: DateTime(2026, 5, 25, 9),
+                          endTime: DateTime(2026, 5, 25, 10),
+                          title: 'Current task title',
+                          taskId: 'task-1',
+                          reason: 'Morning focus.',
+                        ),
+                      ],
+                    ),
+                    createdAt: _now,
+                    updatedAt: _now,
+                    vectorClock: null,
+                  )
+                  as DayPlanEntity;
+          agentEntities[plan.id] = plan;
+
+          final count = await createService().syncTaskTitle(
+            taskId: 'task-1',
+            title: 'Current task title',
+          );
+
+          expect(count, 0);
+          expect(upsertedEntities, isEmpty);
+          expect(notifications, isEmpty);
+        },
+      );
+
+      test('skips soft-deleted plans without re-upserting them', () async {
+        final deletedPlan =
+            AgentDomainEntity.dayPlan(
+                  id: 'day_agent_plan:deleted',
+                  agentId: dailyOsPlannerAgentId,
+                  dayId: 'dayplan-2026-05-24',
+                  planDate: DateTime(2026, 5, 24),
+                  data: DayPlanData(
+                    planDate: DateTime(2026, 5, 24),
+                    status: const DayPlanStatus.draft(),
+                    plannedBlocks: [
+                      PlannedBlock(
+                        id: 'linked-deleted',
+                        categoryId: 'work',
+                        startTime: DateTime(2026, 5, 24, 9),
+                        endTime: DateTime(2026, 5, 24, 10),
+                        title: 'Old deleted title',
+                        taskId: 'task-1',
+                        reason: 'Deleted plan.',
+                      ),
+                    ],
+                  ),
+                  createdAt: _now,
+                  updatedAt: _now,
+                  deletedAt: _now.add(const Duration(minutes: 1)),
+                  vectorClock: null,
+                )
+                as DayPlanEntity;
+        agentEntities[deletedPlan.id] = deletedPlan;
+
+        final count = await createService().syncTaskTitle(
+          taskId: 'task-1',
+          title: 'New title',
+        );
+
+        expect(count, 0);
+        expect(upsertedEntities, isEmpty);
+        expect(notifications, isEmpty);
       });
     });
 

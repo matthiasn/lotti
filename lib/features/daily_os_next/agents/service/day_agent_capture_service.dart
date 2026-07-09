@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
@@ -23,6 +25,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_triage_ser
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/create/task_agent_assignment.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
@@ -61,6 +64,7 @@ class DayAgentCaptureService {
     required this.orchestrator,
     required this.domainLogger,
     DayAgentTaskFactory? taskFactory,
+    this.taskAgentService,
     this.onPersistedStateChanged,
   }) : _taskFactory = taskFactory ?? _defaultTaskFactory,
        _reads = DayAgentCaptureReads(agentRepository: agentRepository) {
@@ -99,6 +103,10 @@ class DayAgentCaptureService {
   final DomainLogger domainLogger;
 
   final DayAgentTaskFactory _taskFactory;
+
+  /// Optional task-agent service used to auto-assign a category default agent
+  /// when `create_task_from_phrase` materialises a real task.
+  final TaskAgentService? taskAgentService;
 
   /// Callback fired when persisted state changes.
   final void Function(String id)? onPersistedStateChanged;

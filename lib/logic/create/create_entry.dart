@@ -16,6 +16,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/create/task_agent_assignment.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -142,29 +143,22 @@ Future<void> autoAssignCategoryAgentWith(
   TaskAgentService service,
   Task task,
 ) async {
-  try {
-    final categoryId = task.meta.categoryId;
-    if (categoryId == null) return;
-
-    final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
-    if (category == null) return;
-
-    final templateId = category.defaultTemplateId;
-    if (templateId == null) return;
-
-    await service.createTaskAgent(
-      taskId: task.meta.id,
-      templateId: templateId,
-      profileId: category.defaultProfileId,
-      allowedCategoryIds: {categoryId},
-      awaitContent: true,
-    );
-  } catch (e, stackTrace) {
+  final categoryId = task.meta.categoryId;
+  final category = categoryId == null
+      ? null
+      : getIt<EntitiesCacheService>().getCategoryById(categoryId);
+  final result = await assignCategoryDefaultTaskAgent(
+    service: service,
+    task: task,
+    category: category,
+  );
+  if (result.status == TaskAgentAssignmentStatus.failed) {
     developer.log(
-      'Failed to auto-assign agent for task ${task.meta.id}: $e',
+      'Failed to auto-assign agent for task ${task.meta.id}: '
+      '${result.error}',
       name: 'autoAssignCategoryAgent',
-      error: e,
-      stackTrace: stackTrace,
+      error: result.error,
+      stackTrace: result.stackTrace,
     );
   }
 }
