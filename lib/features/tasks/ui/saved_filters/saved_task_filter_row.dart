@@ -264,9 +264,13 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
                     ),
                   ): _enterEditMode,
                   CustomSemanticsAction(
-                    label: messages.tasksSavedFiltersDeleteNamed(
-                      widget.view.name,
-                    ),
+                    label: _confirmDelete
+                        ? messages.tasksSavedFiltersDeleteConfirmNamed(
+                            widget.view.name,
+                          )
+                        : messages.tasksSavedFiltersDeleteNamed(
+                            widget.view.name,
+                          ),
                   ): _handleDeleteTap,
                   if (_confirmDelete)
                     CustomSemanticsAction(

@@ -316,6 +316,11 @@ void main() {
     final deleteId = CustomSemanticsAction.getIdentifier(
       const CustomSemanticsAction(label: 'Delete In progress · P0'),
     );
+    final confirmDeleteId = CustomSemanticsAction.getIdentifier(
+      const CustomSemanticsAction(
+        label: 'Confirm delete In progress · P0',
+      ),
+    );
 
     expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
     expect(node.flagsCollection.isButton, isTrue);
@@ -327,6 +332,24 @@ void main() {
     expect(
       node.getSemanticsData().customSemanticsActionIds,
       contains(deleteId),
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pump();
+
+    final armedNode = tester.getSemantics(
+      find.byKey(SavedTaskFilterRowKeys.root('sv-1')),
+    );
+
+    expect(
+      armedNode.getSemanticsData().customSemanticsActionIds,
+      contains(confirmDeleteId),
+    );
+    expect(
+      armedNode.getSemanticsData().customSemanticsActionIds,
+      isNot(contains(deleteId)),
     );
 
     semantics.dispose();

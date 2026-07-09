@@ -16075,6 +16075,12 @@ abstract class AppLocalizations {
   /// **'Delete the saved filter \'{name}\'? This can\'t be undone.'**
   String tasksSavedFiltersDeleteConfirmMessage(String name);
 
+  /// No description provided for @tasksSavedFiltersDeleteConfirmNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm delete {name}'**
+  String tasksSavedFiltersDeleteConfirmNamed(String name);
+
   /// No description provided for @tasksSavedFiltersDeleteNamed.
   ///
   /// In en, this message translates to:

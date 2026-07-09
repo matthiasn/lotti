@@ -336,8 +336,10 @@ void main() {
             completionType: HabitCompletionType.fail,
           );
 
-          await db!.updateJournalEntity(older);
-          await db!.updateJournalEntity(newer);
+          // Insert newest first so the query must choose by stored recency,
+          // not insertion order.
+          await db!.upsertJournalDbEntity(toDbEntity(newer));
+          await db!.upsertJournalDbEntity(toDbEntity(older));
 
           final rangeStart = DateTime(2024, 4);
           final rangeEnd = DateTime(2024, 4, 30);

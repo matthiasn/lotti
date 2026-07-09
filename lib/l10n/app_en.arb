@@ -4564,6 +4564,14 @@
       }
     }
   },
+  "tasksSavedFiltersDeleteConfirmNamed": "Confirm delete {name}",
+  "@tasksSavedFiltersDeleteConfirmNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSavedFiltersDeleteNamed": "Delete {name}",
   "@tasksSavedFiltersDeleteNamed": {
     "placeholders": {

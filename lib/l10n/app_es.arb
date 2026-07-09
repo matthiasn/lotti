@@ -3914,6 +3914,7 @@
   "tasksSavedFiltersCustom": "Personalizado",
   "tasksSavedFiltersDeleteConfirmAction": "Eliminar",
   "tasksSavedFiltersDeleteConfirmMessage": "¿Eliminar el filtro guardado «{name}»? No se puede deshacer.",
+  "tasksSavedFiltersDeleteConfirmNamed": "Confirmar eliminación de {name}",
   "tasksSavedFiltersDeleteNamed": "Eliminar {name}",
   "tasksSavedFiltersDone": "Listo",
   "tasksSavedFiltersEdit": "Editar",

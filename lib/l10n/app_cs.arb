@@ -3697,6 +3697,7 @@
   "tasksSavedFiltersCustom": "Vlastní",
   "tasksSavedFiltersDeleteConfirmAction": "Smazat",
   "tasksSavedFiltersDeleteConfirmMessage": "Smazat uložený filtr „{name}“? Tuto akci nelze vrátit zpět.",
+  "tasksSavedFiltersDeleteConfirmNamed": "Potvrdit smazání {name}",
   "tasksSavedFiltersDeleteNamed": "Smazat {name}",
   "tasksSavedFiltersDone": "Hotovo",
   "tasksSavedFiltersEdit": "Upravit",

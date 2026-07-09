@@ -9424,6 +9424,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String tasksSavedFiltersDeleteConfirmNamed(String name) {
+    return 'Potvrdit smazání $name';
+  }
+
+  @override
   String tasksSavedFiltersDeleteNamed(String name) {
     return 'Smazat $name';
   }

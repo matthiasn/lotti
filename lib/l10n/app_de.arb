@@ -3914,6 +3914,7 @@
   "tasksSavedFiltersCustom": "Eigene",
   "tasksSavedFiltersDeleteConfirmAction": "Löschen",
   "tasksSavedFiltersDeleteConfirmMessage": "Den gespeicherten Filter „{name}“ löschen? Das lässt sich nicht rückgängig machen.",
+  "tasksSavedFiltersDeleteConfirmNamed": "Löschen von {name} bestätigen",
   "tasksSavedFiltersDeleteNamed": "{name} löschen",
   "tasksSavedFiltersDone": "Fertig",
   "tasksSavedFiltersEdit": "Bearbeiten",
