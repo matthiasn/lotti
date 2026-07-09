@@ -762,7 +762,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     return normalized.contains('whisper') ||
         normalized.contains('transcribe') ||
         normalized.contains('transcription') ||
-        normalized.contains('voxtral') ||
         normalized.contains('asr') ||
         normalized.contains('stt');
   }
