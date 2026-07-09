@@ -33,9 +33,9 @@ CREATE INDEX idx_agent_entities_token_usage_since ON agent_entities(type, create
 CREATE INDEX idx_agent_entities_active_agent_type_task_created_id ON agent_entities(
   agent_id,
   type,
+  json_extract(serialized, '$.taskId'),
   created_at DESC,
-  id DESC,
-  json_extract(serialized, '$.taskId')
+  id DESC
 )
 WHERE deleted_at IS NULL
   AND json_valid(serialized);

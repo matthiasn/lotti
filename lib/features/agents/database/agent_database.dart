@@ -361,8 +361,9 @@ class AgentDatabase extends _$AgentDatabase {
           await customStatement(
             'CREATE INDEX IF NOT EXISTS '
             'idx_agent_entities_active_agent_type_task_created_id '
-            'ON agent_entities(agent_id, type, created_at DESC, id DESC, '
-            r"json_extract(serialized, '$.taskId')) "
+            'ON agent_entities(agent_id, type, '
+            r"json_extract(serialized, '$.taskId'), "
+            'created_at DESC, id DESC) '
             'WHERE deleted_at IS NULL AND json_valid(serialized)',
           );
           await customStatement('ANALYZE');

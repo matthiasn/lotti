@@ -4418,7 +4418,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   );
   late final Index idxAgentEntitiesActiveAgentTypeTaskCreatedId = Index(
     'idx_agent_entities_active_agent_type_task_created_id',
-    'CREATE INDEX idx_agent_entities_active_agent_type_task_created_id ON agent_entities (agent_id, type, created_at DESC, id DESC, json_extract(serialized, \'\$.taskId\')) WHERE deleted_at IS NULL AND json_valid(serialized)',
+    'CREATE INDEX idx_agent_entities_active_agent_type_task_created_id ON agent_entities (agent_id, type, json_extract(serialized, \'\$.taskId\'), created_at DESC, id DESC) WHERE deleted_at IS NULL AND json_valid(serialized)',
   );
   late final Index idxAgentEntitiesDueWake = Index(
     'idx_agent_entities_due_wake',

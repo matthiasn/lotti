@@ -1647,11 +1647,18 @@ void main() {
         );
 
         final indexes = await db.customSelect('''
-          SELECT name FROM sqlite_master
+          SELECT sql FROM sqlite_master
           WHERE type = 'index'
             AND name = 'idx_agent_entities_active_agent_type_task_created_id'
         ''').get();
         expect(indexes, hasLength(1));
+        expect(
+          indexes.single.read<String>('sql'),
+          contains(
+            r"agent_id, type, json_extract(serialized, '$.taskId'), "
+            'created_at DESC, id DESC',
+          ),
+        );
 
         final plan = await db.customSelect(r'''
           EXPLAIN QUERY PLAN
@@ -1661,7 +1668,7 @@ void main() {
           WHERE agent_id = 'agent-1'
             AND type = 'changeSet'
             AND json_valid(serialized)
-            AND json_extract(serialized, '\$.taskId') = 'task-1'
+            AND json_extract(serialized, '$.taskId') = 'task-1'
             AND deleted_at IS NULL
           ORDER BY created_at DESC
           LIMIT 20
@@ -2098,7 +2105,7 @@ void main() {
               WHERE agent_id = ?1
                 AND type = 'changeSet'
                 AND json_valid(serialized)
-                AND json_extract(serialized, '\$.taskId') = ?2
+                AND json_extract(serialized, '$.taskId') = ?2
                 AND deleted_at IS NULL
               ORDER BY created_at DESC
               LIMIT ?3
