@@ -55,7 +55,7 @@ class ParsedCard extends StatelessWidget {
             _MatchedTaskChip(
               title: item.matchedTaskTitle!,
               taskState: item.matchedTaskState,
-              warning: item.confidence == ParsedItemConfidence.medium,
+              warning: item.confidence != ParsedItemConfidence.high,
               onBreak: onBreakLink,
             ),
           ],
