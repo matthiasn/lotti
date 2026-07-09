@@ -134,7 +134,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select First Item
-      await tester.tap(find.widgetWithText(DesignSystemCheckbox, 'First Item'));
+      await tester.tap(find.text('First Item'));
       await tester.pumpAndSettle();
 
       // Tap Add button (should show "Add (1)")
@@ -201,7 +201,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select an item first
-      await tester.tap(find.widgetWithText(DesignSystemCheckbox, 'First Item'));
+      await tester.tap(find.text('First Item'));
       await tester.pumpAndSettle();
 
       // Tap Cancel button
@@ -296,12 +296,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select First Item
-      await tester.tap(find.widgetWithText(DesignSystemCheckbox, 'First Item'));
+      await tester.tap(find.text('First Item'));
       await tester.pumpAndSettle();
       expect(find.text('Add (1)'), findsOneWidget);
 
       // Deselect First Item
-      await tester.tap(find.widgetWithText(DesignSystemCheckbox, 'First Item'));
+      await tester.tap(find.text('First Item'));
       await tester.pumpAndSettle();
 
       // Should show "Add" without count
@@ -343,27 +343,25 @@ void main() {
         onConfirm: (items) => confirmedItems = items,
       );
 
-      expect(find.text('Choose aggregation before adding.'), findsOneWidget);
-      await tester.tap(
-        find.widgetWithText(
-          DesignSystemCheckbox,
-          measurableChocolate.displayName,
+      expect(
+        find.text(
+          'Select measurements, then choose an aggregation for each one.',
         ),
+        findsOneWidget,
       );
+      await tester.tap(find.text(measurableChocolate.displayName));
       await tester.pumpAndSettle();
 
-      await tester.tap(
-        find.widgetWithText(
-          DesignSystemCheckbox,
-          measurableWater.displayName,
-        ),
-      );
+      await tester.tap(find.text(measurableWater.displayName));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Daily maximum').first);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(DesignSystemButton, 'Add (2)'));
+      final addButton = find.widgetWithText(DesignSystemButton, 'Add (2)');
+      await tester.ensureVisible(addButton);
+      await tester.pumpAndSettle();
+      await tester.tap(addButton);
       await tester.pumpAndSettle();
 
       expect(confirmedItems, hasLength(2));
@@ -394,19 +392,16 @@ void main() {
     ) async {
       await pumpMeasurementSelect(tester, onConfirm: (_) {});
 
-      final waterCheckbox = find.widgetWithText(
-        DesignSystemCheckbox,
-        measurableWater.displayName,
-      );
+      final waterRow = find.text(measurableWater.displayName);
 
-      await tester.tap(waterCheckbox);
+      await tester.tap(waterRow);
       await tester.pumpAndSettle();
       expect(
         find.widgetWithText(DesignSystemButton, 'Add (1)'),
         findsOneWidget,
       );
 
-      await tester.tap(waterCheckbox);
+      await tester.tap(waterRow);
       await tester.pumpAndSettle();
 
       expect(find.widgetWithText(DesignSystemButton, 'Add'), findsOneWidget);
@@ -422,12 +417,7 @@ void main() {
         onConfirm: (_) => onConfirmCalled = true,
       );
 
-      await tester.tap(
-        find.widgetWithText(
-          DesignSystemCheckbox,
-          measurableWater.displayName,
-        ),
-      );
+      await tester.tap(find.text(measurableWater.displayName));
       await tester.pumpAndSettle();
 
       await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));

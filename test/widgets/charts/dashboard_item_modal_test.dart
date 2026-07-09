@@ -50,6 +50,10 @@ void main() {
       expect(find.text('Aggregation type'), findsOneWidget);
       expect(find.text('Water'), findsOneWidget);
       expect(
+        find.text('Choose a summary. Changes apply immediately.'),
+        findsOneWidget,
+      );
+      expect(
         find.byType(DesignSystemChip),
         findsNWidgets(AggregationType.values.length),
       );
@@ -69,6 +73,7 @@ void main() {
           ),
         );
         expect(chip.selected, type == AggregationType.dailySum);
+        expect(chip.size, DesignSystemChipSize.touch);
       }
     });
 

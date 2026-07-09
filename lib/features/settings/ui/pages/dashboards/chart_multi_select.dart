@@ -256,28 +256,34 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
                     ),
                   ),
                 )
-              : _HoverlessList(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _filteredItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _filteredItems[index];
-                      final isSelected = _selected.contains(item.value);
+              : _SelectableListFrame(
+                  child: _HoverlessList(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _filteredItems.length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: spacing.step1,
+                        color: tokens.colors.decorative.level01,
+                      ),
+                      itemBuilder: (context, index) {
+                        final item = _filteredItems[index];
+                        final isSelected = _selected.contains(item.value);
 
-                      return DesignSystemCheckbox(
-                        value: isSelected,
-                        label: item.label,
-                        onChanged: (checked) {
-                          setState(() {
-                            if (checked ?? false) {
-                              _selected.add(item.value);
-                            } else {
-                              _selected.remove(item.value);
-                            }
-                          });
-                        },
-                      );
-                    },
+                        return _PickerSelectRow(
+                          label: item.label,
+                          selected: isSelected,
+                          onChanged: (checked) {
+                            setState(() {
+                              if (checked) {
+                                _selected.add(item.value);
+                              } else {
+                                _selected.remove(item.value);
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ),
         ),
@@ -375,35 +381,41 @@ class _MeasurementSelectListState extends State<_MeasurementSelectList> {
                     ),
                   ),
                 )
-              : _HoverlessList(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _filteredItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _filteredItems[index];
-                      final selectedAggregation = _selected[item.id];
+              : _SelectableListFrame(
+                  child: _HoverlessList(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _filteredItems.length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: spacing.step1,
+                        color: tokens.colors.decorative.level01,
+                      ),
+                      itemBuilder: (context, index) {
+                        final item = _filteredItems[index];
+                        final selectedAggregation = _selected[item.id];
 
-                      return _MeasurementSelectRow(
-                        item: item,
-                        selectedAggregation: selectedAggregation,
-                        onSelectedChanged: (checked) {
-                          setState(() {
-                            if (checked ?? false) {
-                              _selected[item.id] =
-                                  item.aggregationType ??
-                                  AggregationType.dailySum;
-                            } else {
-                              _selected.remove(item.id);
-                            }
-                          });
-                        },
-                        onAggregationChanged: (aggregationType) {
-                          setState(() {
-                            _selected[item.id] = aggregationType;
-                          });
-                        },
-                      );
-                    },
+                        return _MeasurementSelectRow(
+                          item: item,
+                          selectedAggregation: selectedAggregation,
+                          onSelectedChanged: (checked) {
+                            setState(() {
+                              if (checked ?? false) {
+                                _selected[item.id] =
+                                    item.aggregationType ??
+                                    AggregationType.dailySum;
+                              } else {
+                                _selected.remove(item.id);
+                              }
+                            });
+                          },
+                          onAggregationChanged: (aggregationType) {
+                            setState(() {
+                              _selected[item.id] = aggregationType;
+                            });
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ),
         ),
@@ -462,61 +474,153 @@ class _MeasurementSelectRow extends StatelessWidget {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
     final selected = selectedAggregation != null;
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DesignSystemCheckbox(
-          value: selected,
-          label: item.displayName,
-          onChanged: onSelectedChanged,
-        ),
-        if (selected) ...[
-          SizedBox(height: spacing.step2),
-          Padding(
-            padding: EdgeInsetsDirectional.only(start: spacing.step7),
-            child: Wrap(
-              spacing: spacing.step2,
-              runSpacing: spacing.step2,
-              children: [
-                for (final aggregationType in AggregationType.values)
-                  DesignSystemChip(
-                    label: aggregationTypeLabel(
-                      context.messages,
-                      aggregationType,
-                    ),
-                    selected: aggregationType == selectedAggregation,
-                    onPressed: () => onAggregationChanged(aggregationType),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: spacing.step3),
+    return _PickerSelectRow(
+      label: item.displayName,
+      selected: selected,
+      onChanged: onSelectedChanged,
       child: selected
-          ? DecoratedBox(
-              decoration: BoxDecoration(
-                color: tokens.colors.background.level02,
-                borderRadius: BorderRadius.circular(tokens.radii.s),
-                border: Border.all(color: tokens.colors.decorative.level01),
+          ? Padding(
+              padding: EdgeInsetsDirectional.only(
+                start: spacing.step8,
+                top: spacing.step2,
+                end: spacing.step2,
+                bottom: spacing.step2,
               ),
-              child: Padding(
-                padding: EdgeInsets.all(spacing.step2),
-                child: content,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.messages.dashboardAggregationTitle,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+                  SizedBox(height: spacing.step2),
+                  Wrap(
+                    spacing: spacing.step2,
+                    runSpacing: spacing.step2,
+                    children: [
+                      for (final aggregationType in AggregationType.values)
+                        DesignSystemChip(
+                          label: aggregationTypeLabel(
+                            context.messages,
+                            aggregationType,
+                          ),
+                          selected: aggregationType == selectedAggregation,
+                          onPressed: () =>
+                              onAggregationChanged(aggregationType),
+                        ),
+                    ],
+                  ),
+                ],
               ),
             )
-          : content,
+          : null,
     );
   }
 }
 
-/// Strips the Material hover/splash/highlight from its subtree so the
-/// `CheckboxListTile` rows don't paint a grey hover band on desktop —
-/// the rows are passive selectables, not buttons. Scoped to the list so
-/// the modal's action buttons keep their own overlays.
+class _PickerSelectRow extends StatelessWidget {
+  const _PickerSelectRow({
+    required this.label,
+    required this.selected,
+    required this.onChanged,
+    this.child,
+  });
+
+  final String label;
+  final bool selected;
+  final ValueChanged<bool> onChanged;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: selected
+              ? tokens.colors.background.level02
+              : tokens.colors.background.level01,
+        ),
+        child: InkWell(
+          onTap: () => onChanged(!selected),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: spacing.step4,
+              vertical: spacing.step3,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DesignSystemCheckbox(
+                      value: selected,
+                      semanticsLabel: label,
+                      onChanged: (checked) => onChanged(checked ?? false),
+                    ),
+                    SizedBox(width: spacing.step2),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: spacing.step1),
+                        child: Text(
+                          label,
+                          style: tokens.typography.styles.body.bodyMedium
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                ?child,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectableListFrame extends StatelessWidget {
+  const _SelectableListFrame({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.s);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: tokens.colors.background.level01,
+          borderRadius: radius,
+          border: Border.all(color: tokens.colors.decorative.level01),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Strips the Material hover/splash/highlight from selectable rows so desktop
+/// hover doesn't paint a grey band across the framed list. Scoped to the list
+/// so the modal's action buttons keep their own overlays.
 class _HoverlessList extends StatelessWidget {
   const _HoverlessList({required this.child});
 

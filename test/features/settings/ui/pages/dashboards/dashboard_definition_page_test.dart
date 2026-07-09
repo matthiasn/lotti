@@ -448,7 +448,7 @@ void main() {
         // unlabeled icon in the action bar and not a header action.
         final copyFinder = find.byKey(const Key('dashboard_copy'));
         final copyButton = tester.widget<DesignSystemButton>(copyFinder);
-        expect(copyButton.label, 'Save and copy configuration');
+        expect(copyButton.label, 'Save and copy JSON');
         expect(
           find.ancestor(
             of: copyFinder,
@@ -618,7 +618,10 @@ void main() {
 
       // The close button (clear category) must be visible since categoryId
       // is set.
-      final clearCategoryButtonFinder = find.byIcon(Icons.close_rounded);
+      final clearCategoryButtonFinder = find.descendant(
+        of: categoryFieldFinder,
+        matching: find.byIcon(Icons.close_rounded),
+      );
       expect(
         clearCategoryButtonFinder,
         findsOneWidget,
@@ -670,10 +673,7 @@ void main() {
         await _openChartSelect<HabitDefinition>(tester);
 
         // Select habitFlossing in the modal list.
-        final habitItemFinder = find.widgetWithText(
-          DesignSystemCheckbox,
-          habitFlossing.name,
-        );
+        final habitItemFinder = find.text(habitFlossing.name);
         expect(habitItemFinder, findsOneWidget);
         await tester.tap(habitItemFinder);
         await tester.pump();
@@ -714,10 +714,7 @@ void main() {
 
         await _openMeasurementChartSelect(tester);
 
-        final measItemFinder = find.widgetWithText(
-          DesignSystemCheckbox,
-          measurableWater.displayName,
-        );
+        final measItemFinder = find.text(measurableWater.displayName);
         expect(measItemFinder, findsOneWidget);
         await tester.tap(measItemFinder);
         await tester.pump();
@@ -831,6 +828,43 @@ void main() {
         expect(find.byType(Dismissible), findsNothing);
 
         // dirty → save pill enabled.
+        expect(_pillEnabled(tester, 'Save'), isTrue);
+      },
+    );
+
+    testWidgets(
+      'remove chart button removes a dashboard item and sets dirty',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        _stubUpsertCapture(mockPersistenceLogic);
+
+        final singleItemDashboard = emptyTestDashboardConfig.copyWith(
+          items: [
+            const DashboardItem.measurement(
+              id: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+              aggregationType: AggregationType.dailySum,
+            ),
+          ],
+        );
+
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: singleItemDashboard,
+            formKey: formKey,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(Dismissible), findsOneWidget);
+        expect(_pillEnabled(tester, 'Save'), isFalse);
+
+        await tester.tap(find.byTooltip('Remove chart'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(Dismissible), findsNothing);
         expect(_pillEnabled(tester, 'Save'), isTrue);
       },
     );

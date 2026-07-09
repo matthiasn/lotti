@@ -4501,6 +4501,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardAddWorkoutTitle => 'Bord de Antrenament';
 
   @override
+  String get dashboardAggregationApplyImmediately =>
+      'Alegeți un rezumat. Modificările se aplică imediat.';
+
+  @override
   String get dashboardAggregationDailyAverage => 'Medie zilnică';
 
   @override
@@ -4519,7 +4523,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardAggregationTitle => 'Tip de agregare';
 
   @override
-  String get dashboardAvailableChartsTitle => 'Adăugați grafice';
+  String get dashboardAvailableChartsDescription =>
+      'Alegeți un tip, selectați unul sau mai multe grafice, apoi adăugați-le.';
+
+  @override
+  String get dashboardAvailableChartsTitle => 'Adăugați grafice după tip';
 
   @override
   String get dashboardCategoryLabel => 'Categorie';
@@ -4528,17 +4536,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardChartNoData => 'Nu există date în acest interval';
 
   @override
-  String get dashboardConfigurationTitle => 'Export';
+  String get dashboardConfigurationDescription =>
+      'Salvați tabloul de bord, apoi copiați configurația JSON.';
+
+  @override
+  String get dashboardConfigurationTitle => 'Export configurație';
 
   @override
   String get dashboardCopyHint =>
       'Salvează și copiază configurația tabloului de bord';
 
   @override
-  String get dashboardCopyLabel => 'Salvare și copiere configurație';
+  String get dashboardCopyLabel => 'Salvare și copiere JSON';
 
   @override
-  String get dashboardCurrentChartsTitle => 'Grafice curente';
+  String get dashboardCurrentChartsDescription =>
+      'Trageți pentru reordonare. Pentru graficele de măsurare puteți schimba agregarea.';
+
+  @override
+  String get dashboardCurrentChartsTitle => 'Grafice pe acest tablou de bord';
 
   @override
   String get dashboardDeleteConfirm => 'DA, ȘTERGE ACEST TABLOU DE BORD';
@@ -4553,6 +4569,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardDescriptionLabel => 'Descriere';
 
   @override
+  String get dashboardEditAggregationLabel => 'Editați agregarea';
+
+  @override
   String get dashboardHealthBloodPressure => 'Tensiune arterială';
 
   @override
@@ -4563,7 +4582,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dashboardMeasurementAggregationHelp =>
-      'Alegeți agregarea înainte de adăugare.';
+      'Selectați măsurătorile, apoi alegeți o agregare pentru fiecare.';
 
   @override
   String get dashboardNameLabel => 'Numele tabloului de bord';
@@ -4585,6 +4604,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dashboardPrivateLabel => 'Privat';
+
+  @override
+  String get dashboardRemoveChartLabel => 'Eliminați graficul';
 
   @override
   String get dashboardReorderChartLabel => 'Reordonați graficul';

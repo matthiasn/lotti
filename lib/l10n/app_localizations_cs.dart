@@ -4465,6 +4465,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardAddWorkoutTitle => 'Grafy cvičení';
 
   @override
+  String get dashboardAggregationApplyImmediately =>
+      'Vyber souhrn. Změny se použijí hned.';
+
+  @override
   String get dashboardAggregationDailyAverage => 'Denní průměr';
 
   @override
@@ -4483,7 +4487,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardAggregationTitle => 'Typ agregace';
 
   @override
-  String get dashboardAvailableChartsTitle => 'Přidat grafy';
+  String get dashboardAvailableChartsDescription =>
+      'Vyber typ, označ jeden nebo více grafů a přidej je.';
+
+  @override
+  String get dashboardAvailableChartsTitle => 'Přidat grafy podle typu';
 
   @override
   String get dashboardCategoryLabel => 'Kategorie';
@@ -4492,16 +4500,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardChartNoData => 'Žádná data v tomto rozsahu';
 
   @override
-  String get dashboardConfigurationTitle => 'Export';
+  String get dashboardConfigurationDescription =>
+      'Ulož dashboard a zkopíruj jeho JSON konfiguraci.';
+
+  @override
+  String get dashboardConfigurationTitle => 'Export konfigurace';
 
   @override
   String get dashboardCopyHint => 'Uložit a zkopírovat konfiguraci panelu';
 
   @override
-  String get dashboardCopyLabel => 'Uložit a zkopírovat konfiguraci';
+  String get dashboardCopyLabel => 'Uložit a zkopírovat JSON';
 
   @override
-  String get dashboardCurrentChartsTitle => 'Aktuální grafy';
+  String get dashboardCurrentChartsDescription =>
+      'Přetažením změníš pořadí. U grafů měření můžeš změnit agregaci.';
+
+  @override
+  String get dashboardCurrentChartsTitle => 'Grafy na tomto dashboardu';
 
   @override
   String get dashboardDeleteConfirm => 'ANO, SMAZAT TENTO PANEL';
@@ -4517,6 +4533,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardDescriptionLabel => 'Popis (volitelné)';
 
   @override
+  String get dashboardEditAggregationLabel => 'Upravit agregaci';
+
+  @override
   String get dashboardHealthBloodPressure => 'Krevní tlak';
 
   @override
@@ -4527,7 +4546,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dashboardMeasurementAggregationHelp =>
-      'Před přidáním vyber agregaci.';
+      'Vyber měření a pak pro každé zvol agregaci.';
 
   @override
   String get dashboardNameLabel => 'Název dashboardu';
@@ -4548,6 +4567,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dashboardPrivateLabel => 'Soukromý';
+
+  @override
+  String get dashboardRemoveChartLabel => 'Odebrat graf';
 
   @override
   String get dashboardReorderChartLabel => 'Změnit pořadí grafu';

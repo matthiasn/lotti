@@ -31,6 +31,13 @@ class DashboardItemModal extends StatelessWidget {
         Text(
           chartTitle,
           style: tokens.typography.styles.body.bodyMedium.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+        ),
+        SizedBox(height: spacing.step2),
+        Text(
+          context.messages.dashboardAggregationApplyImmediately,
+          style: tokens.typography.styles.body.bodySmall.copyWith(
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),
@@ -42,6 +49,7 @@ class DashboardItemModal extends StatelessWidget {
             return DesignSystemChip(
               label: aggregationTypeLabel(context.messages, aggregationType),
               selected: aggregationType == item.aggregationType,
+              size: DesignSystemChipSize.touch,
               onPressed: () {
                 updateItemFn(
                   item.copyWith(aggregationType: aggregationType),

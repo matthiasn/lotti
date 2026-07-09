@@ -443,6 +443,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         ),
                         SettingsFormSection(
                           title: messages.dashboardCurrentChartsTitle,
+                          description:
+                              messages.dashboardCurrentChartsDescription,
                           children: [
                             if (dashboardItems.isEmpty)
                               _DashboardEditorHintRow(
@@ -486,6 +488,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                         item: item,
                                         index: index,
                                         updateItemFn: updateItem,
+                                        removeItemFn: () => dismissItem(index),
                                       ),
                                     );
                                   },
@@ -495,6 +498,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         ),
                         SettingsFormSection(
                           title: messages.dashboardAvailableChartsTitle,
+                          description:
+                              messages.dashboardAvailableChartsDescription,
                           children: [
                             if (habitSelectItems.isEmpty)
                               _DashboardEditorHintRow(
@@ -556,6 +561,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         ),
                         SettingsFormSection(
                           title: messages.dashboardConfigurationTitle,
+                          description:
+                              messages.dashboardConfigurationDescription,
                           children: [
                             // Labeled in-form secondary action — an unlabeled
                             // icon in the primary action bar broke the shared

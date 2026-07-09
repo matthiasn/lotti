@@ -4465,6 +4465,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dashboardAddWorkoutTitle => 'Trainingsdiagramme';
 
   @override
+  String get dashboardAggregationApplyImmediately =>
+      'Wähle eine Zusammenfassung. Änderungen gelten sofort.';
+
+  @override
   String get dashboardAggregationDailyAverage => 'Tagesdurchschnitt';
 
   @override
@@ -4483,7 +4487,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dashboardAggregationTitle => 'Aggregationsart';
 
   @override
-  String get dashboardAvailableChartsTitle => 'Diagramme hinzufügen';
+  String get dashboardAvailableChartsDescription =>
+      'Wähle einen Typ, markiere ein oder mehrere Diagramme und füge sie hinzu.';
+
+  @override
+  String get dashboardAvailableChartsTitle => 'Diagramme nach Typ hinzufügen';
 
   @override
   String get dashboardCategoryLabel => 'Kategorie';
@@ -4492,17 +4500,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dashboardChartNoData => 'Keine Daten in diesem Zeitraum';
 
   @override
-  String get dashboardConfigurationTitle => 'Export';
+  String get dashboardConfigurationDescription =>
+      'Speichere das Dashboard und kopiere dann seine JSON-Konfiguration.';
+
+  @override
+  String get dashboardConfigurationTitle => 'Konfiguration exportieren';
 
   @override
   String get dashboardCopyHint =>
       'Dashboard-Konfiguration speichern & kopieren';
 
   @override
-  String get dashboardCopyLabel => 'Speichern und Konfiguration kopieren';
+  String get dashboardCopyLabel => 'Speichern und JSON kopieren';
 
   @override
-  String get dashboardCurrentChartsTitle => 'Aktuelle Diagramme';
+  String get dashboardCurrentChartsDescription =>
+      'Ziehe zum Sortieren. Bei Messdiagrammen kannst du die Aggregation ändern.';
+
+  @override
+  String get dashboardCurrentChartsTitle => 'Diagramme auf diesem Dashboard';
 
   @override
   String get dashboardDeleteConfirm => 'JA, DIESES DASHBOARD LÖSCHEN';
@@ -4517,6 +4533,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dashboardDescriptionLabel => 'Beschreibung (optional)';
 
   @override
+  String get dashboardEditAggregationLabel => 'Aggregation bearbeiten';
+
+  @override
   String get dashboardHealthBloodPressure => 'Blutdruck';
 
   @override
@@ -4527,7 +4546,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dashboardMeasurementAggregationHelp =>
-      'Wähle vor dem Hinzufügen die Aggregation.';
+      'Wähle Messwerte aus und dann für jeden die Aggregation.';
 
   @override
   String get dashboardNameLabel => 'Dashboard-Name';
@@ -4549,6 +4568,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dashboardPrivateLabel => 'Privat';
+
+  @override
+  String get dashboardRemoveChartLabel => 'Diagramm entfernen';
 
   @override
   String get dashboardReorderChartLabel => 'Diagramm neu anordnen';

@@ -7548,6 +7548,12 @@ abstract class AppLocalizations {
   /// **'Workout Charts'**
   String get dashboardAddWorkoutTitle;
 
+  /// No description provided for @dashboardAggregationApplyImmediately.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a summary. Changes apply immediately.'**
+  String get dashboardAggregationApplyImmediately;
+
   /// No description provided for @dashboardAggregationDailyAverage.
   ///
   /// In en, this message translates to:
@@ -7584,10 +7590,16 @@ abstract class AppLocalizations {
   /// **'Aggregation type'**
   String get dashboardAggregationTitle;
 
+  /// No description provided for @dashboardAvailableChartsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a type, select one or more charts, then add them.'**
+  String get dashboardAvailableChartsDescription;
+
   /// No description provided for @dashboardAvailableChartsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Add charts'**
+  /// **'Add charts by type'**
   String get dashboardAvailableChartsTitle;
 
   /// No description provided for @dashboardCategoryLabel.
@@ -7602,10 +7614,16 @@ abstract class AppLocalizations {
   /// **'No data in this range'**
   String get dashboardChartNoData;
 
+  /// No description provided for @dashboardConfigurationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the dashboard, then copy its JSON configuration.'**
+  String get dashboardConfigurationDescription;
+
   /// No description provided for @dashboardConfigurationTitle.
   ///
   /// In en, this message translates to:
-  /// **'Export'**
+  /// **'Export configuration'**
   String get dashboardConfigurationTitle;
 
   /// No description provided for @dashboardCopyHint.
@@ -7617,13 +7635,19 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardCopyLabel.
   ///
   /// In en, this message translates to:
-  /// **'Save and copy configuration'**
+  /// **'Save and copy JSON'**
   String get dashboardCopyLabel;
+
+  /// No description provided for @dashboardCurrentChartsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder. Measurement charts can be selected to change their aggregation.'**
+  String get dashboardCurrentChartsDescription;
 
   /// No description provided for @dashboardCurrentChartsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Current charts'**
+  /// **'Charts on this dashboard'**
   String get dashboardCurrentChartsTitle;
 
   /// No description provided for @dashboardDeleteConfirm.
@@ -7650,6 +7674,12 @@ abstract class AppLocalizations {
   /// **'Description (optional)'**
   String get dashboardDescriptionLabel;
 
+  /// No description provided for @dashboardEditAggregationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit aggregation'**
+  String get dashboardEditAggregationLabel;
+
   /// No description provided for @dashboardHealthBloodPressure.
   ///
   /// In en, this message translates to:
@@ -7671,7 +7701,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardMeasurementAggregationHelp.
   ///
   /// In en, this message translates to:
-  /// **'Choose aggregation before adding.'**
+  /// **'Select measurements, then choose an aggregation for each one.'**
   String get dashboardMeasurementAggregationHelp;
 
   /// No description provided for @dashboardNameLabel.
@@ -7709,6 +7739,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Private'**
   String get dashboardPrivateLabel;
+
+  /// No description provided for @dashboardRemoveChartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove chart'**
+  String get dashboardRemoveChartLabel;
 
   /// No description provided for @dashboardReorderChartLabel.
   ///

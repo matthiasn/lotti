@@ -4498,6 +4498,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardAddWorkoutTitle => 'Graphiques d\'entraînement';
 
   @override
+  String get dashboardAggregationApplyImmediately =>
+      'Choisis un résumé. Les changements s\'appliquent tout de suite.';
+
+  @override
   String get dashboardAggregationDailyAverage => 'Moyenne quotidienne';
 
   @override
@@ -4516,7 +4520,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardAggregationTitle => 'Type d\'agrégation';
 
   @override
-  String get dashboardAvailableChartsTitle => 'Ajouter des graphiques';
+  String get dashboardAvailableChartsDescription =>
+      'Choisis un type, sélectionne un ou plusieurs graphiques, puis ajoute-les.';
+
+  @override
+  String get dashboardAvailableChartsTitle => 'Ajouter des graphiques par type';
 
   @override
   String get dashboardCategoryLabel => 'Catégorie';
@@ -4525,17 +4533,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardChartNoData => 'Aucune donnée sur cette période';
 
   @override
-  String get dashboardConfigurationTitle => 'Export';
+  String get dashboardConfigurationDescription =>
+      'Enregistre le tableau de bord, puis copie sa configuration JSON.';
+
+  @override
+  String get dashboardConfigurationTitle => 'Exporter la configuration';
 
   @override
   String get dashboardCopyHint =>
       'Enregistrer et copier la configuration du tableau de bord';
 
   @override
-  String get dashboardCopyLabel => 'Enregistrer et copier la configuration';
+  String get dashboardCopyLabel => 'Enregistrer et copier le JSON';
 
   @override
-  String get dashboardCurrentChartsTitle => 'Graphiques actuels';
+  String get dashboardCurrentChartsDescription =>
+      'Fais glisser pour réordonner. Tu peux changer l\'agrégation des graphiques de mesure.';
+
+  @override
+  String get dashboardCurrentChartsTitle => 'Graphiques de ce tableau de bord';
 
   @override
   String get dashboardDeleteConfirm => 'OUI, SUPPRIMER CE TABLEAU DE BORD';
@@ -4551,6 +4567,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardDescriptionLabel => 'Description';
 
   @override
+  String get dashboardEditAggregationLabel => 'Modifier l\'agrégation';
+
+  @override
   String get dashboardHealthBloodPressure => 'Tension artérielle';
 
   @override
@@ -4561,7 +4580,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dashboardMeasurementAggregationHelp =>
-      'Choisis l\'agrégation avant d\'ajouter.';
+      'Sélectionne des mesures, puis choisis une agrégation pour chacune.';
 
   @override
   String get dashboardNameLabel => 'Nom du tableau de bord';
@@ -4583,6 +4602,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dashboardPrivateLabel => 'Privé';
+
+  @override
+  String get dashboardRemoveChartLabel => 'Retirer le graphique';
 
   @override
   String get dashboardReorderChartLabel => 'Réordonner le graphique';

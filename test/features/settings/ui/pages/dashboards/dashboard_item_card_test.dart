@@ -375,5 +375,34 @@ void main() {
       // Should not crash when tapped without onTap
       await tester.tap(find.byType(ItemCard));
     });
+
+    testWidgets('should expose edit and remove controls', (tester) async {
+      var edited = false;
+      var removed = false;
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ItemCard(
+            title: 'Test Title',
+            leadingIcon: Icons.star,
+            onTap: () => edited = true,
+            onRemove: () => removed = true,
+            editSemanticsLabel: 'Edit aggregation',
+          ),
+        ),
+      );
+
+      expect(find.byTooltip('Edit aggregation'), findsOneWidget);
+      expect(find.byTooltip('Remove chart'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Edit aggregation'));
+      await tester.pump();
+      expect(edited, isTrue);
+      expect(removed, isFalse);
+
+      await tester.tap(find.byTooltip('Remove chart'));
+      await tester.pump();
+      expect(removed, isTrue);
+    });
   });
 }
