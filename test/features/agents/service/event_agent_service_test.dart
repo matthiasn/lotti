@@ -116,6 +116,9 @@ void main() {
       ),
     ).thenReturn(null);
     when(() => mockAgentService.cancelPendingWake(any())).thenReturn(null);
+    when(
+      () => mockRepository.getAgentStatesByAgentIds(any()),
+    ).thenAnswer((_) async => const {});
 
     service = EventAgentService(
       agentService: mockAgentService,
@@ -380,12 +383,16 @@ void main() {
           makeTestAgentEventLink(fromId: 'agent-event', toId: eventId),
         ],
       );
-      when(() => mockRepository.getAgentState('agent-event')).thenAnswer(
-        (_) async => makeState(
-          agentId: 'agent-event',
-          awaitingContent: true,
-          nextWakeAt: deadline,
-        ),
+      when(
+        () => mockRepository.getAgentStatesByAgentIds(any()),
+      ).thenAnswer(
+        (_) async => {
+          'agent-event': makeState(
+            agentId: 'agent-event',
+            awaitingContent: true,
+            nextWakeAt: deadline,
+          ),
+        },
       );
 
       await service.restoreSubscriptions();
@@ -419,6 +426,13 @@ void main() {
         subscription.matchEntityIds,
         {eventId},
       );
+      final requestedAgentIds =
+          verify(
+                () => mockRepository.getAgentStatesByAgentIds(captureAny()),
+              ).captured.single
+              as List<String>;
+      expect(requestedAgentIds, ['agent-event']);
+      verifyNever(() => mockRepository.getAgentState('agent-event'));
     });
 
     test('swallows a per-agent restore failure and keeps going (logged via '

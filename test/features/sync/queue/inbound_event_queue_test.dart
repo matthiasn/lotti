@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:drift/drift.dart' show Value, Variable;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
@@ -1066,6 +1068,125 @@ void main() {
           // All rows were enqueued under the frozen clock.
           expect(stats.oldestEnqueuedAt, frozen.millisecondsSinceEpoch);
         });
+      },
+    );
+
+    test(
+      'ready-now probe uses literal peekable statuses so partial indexes '
+      'remain provable',
+      () async {
+        await queue.enqueueBatch(
+          [
+            for (var i = 0; i < 200; i++)
+              _buildSyncEvent(
+                eventId: '\$ready-plan-$i',
+                roomId: roomA,
+                originTsMs: 1000 + i,
+              ),
+          ],
+          producer: InboundEventProducer.live,
+        );
+        await db.customStatement('ANALYZE');
+
+        final rows = await db
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT COUNT(*) AS cnt FROM inbound_event_queue '
+              "WHERE status IN ('enqueued', 'retrying', 'leased') "
+              'AND next_due_at <= ? '
+              'AND lease_until <= ?',
+              variables: [
+                Variable.withInt(100000),
+                Variable.withInt(100000),
+              ],
+            )
+            .get();
+        final plan = rows.map((row) => row.data.toString()).join('\n');
+
+        expect(
+          plan,
+          anyOf(
+            contains('idx_inbound_event_queue_active_ready_at'),
+            contains('idx_inbound_event_queue_status_due_lease'),
+          ),
+          reason:
+              'literal peekable status predicates must keep ready-now probes '
+              'on queue indexes instead of the applied-ledger table scan',
+        );
+        expect(
+          plan,
+          isNot(matches(RegExp('SCAN inbound_event_queue(?! USING)'))),
+        );
+      },
+    );
+
+    test(
+      'depthChanges emits from a lightweight active-plus-abandoned snapshot',
+      () async {
+        final loggedEntries = <SlowQueryLogEntry>[];
+        SlowQueryLoggingGate.isEnabled = true;
+        addTearDown(SlowQueryLoggingGate.resetForTest);
+
+        final loggedDb = SyncDatabase.connect(
+          DatabaseConnection(
+            NativeDatabase.memory().interceptWith(
+              SlowQueryInterceptor(
+                databaseName: syncDbFileName,
+                threshold: Duration.zero,
+                superSlowThreshold: const Duration(days: 1),
+                reporter: loggedEntries.add,
+              ),
+            ),
+          ),
+        );
+        final loggedQueue = InboundQueue(
+          db: loggedDb,
+          logging: MockDomainLogger(),
+          leaseDuration: const Duration(seconds: 1),
+        );
+        addTearDown(loggedQueue.dispose);
+        addTearDown(loggedDb.close);
+
+        final emissions = <QueueDepthSignal>[];
+        final sub = loggedQueue.depthChanges.listen(emissions.add);
+        addTearDown(sub.cancel);
+
+        await loggedQueue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$depth-sql',
+            roomId: roomA,
+            originTsMs: 1000,
+          ),
+        );
+        await pumpEventQueue(times: 10);
+
+        expect(emissions, isNotEmpty);
+        final queueSelects = loggedEntries
+            .map((entry) => entry.formattedStatement)
+            .map((statement) => statement.replaceAll('"', ''))
+            .where(
+              (statement) =>
+                  statement.contains('FROM inbound_event_queue') &&
+                  statement.contains('COUNT(*) AS cnt'),
+            )
+            .toList();
+
+        expect(
+          queueSelects,
+          anyElement(
+            allOf(
+              contains(
+                "status IN ('enqueued', 'leased', 'retrying', 'abandoned')",
+              ),
+              isNot(contains("'applied'")),
+              isNot(contains('next_due_at <=')),
+            ),
+          ),
+          reason:
+              'depth signals do not expose applied or ready-now counts, so '
+              'they should not rescan the applied ledger or run the ready '
+              'probe on every queue mutation',
+        );
       },
     );
   });

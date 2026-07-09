@@ -128,7 +128,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 43);
+        expect(db.schemaVersion, 44);
 
         // v41 swapped the expression-keyed shape for a column-keyed one.
         final sql = await indexSql(db, 'idx_journal_tasks_due_open');
@@ -272,6 +272,125 @@ void main() {
 
         final detail = plan.map((row) => row.read<String>('detail')).join('\n');
         expect(detail, contains('idx_journal_tasks_due_open'));
+      },
+    );
+
+    test('v44 adds broad task-list and import-flag indexes', () async {
+      final dbFile = File(
+        p.join(testDirectory!.path, 'test_v44_task_priority_date.db'),
+      );
+      final sqlite = sqlite3.open(dbFile.path);
+      createV38Schema(sqlite);
+      sqlite.execute('PRAGMA user_version = 43');
+      sqlite.dispose();
+
+      final db = JournalDb(
+        overriddenFilename: 'test_v44_task_priority_date.db',
+      );
+      addTearDown(db.close);
+
+      final version = await db.customSelect('PRAGMA user_version').get();
+      expect(version.first.read<int>('user_version'), db.schemaVersion);
+      expect(db.schemaVersion, 44);
+
+      final sql = await indexSql(db, 'idx_journal_tasks_priority_date');
+      expect(sql, contains('task_priority_rank COLLATE BINARY ASC'));
+      expect(sql, contains('date_from COLLATE BINARY DESC'));
+      expect(sql, contains('id COLLATE BINARY ASC'));
+      expect(sql, contains("type = 'Task'"));
+      expect(sql, contains('task = 1'));
+      expect(sql, contains('deleted = FALSE'));
+
+      final flagSql = await indexSql(db, 'idx_journal_import_flag_date');
+      expect(flagSql, contains('flag COLLATE BINARY ASC'));
+      expect(flagSql, contains('date_from COLLATE BINARY DESC'));
+      expect(flagSql, contains('id COLLATE BINARY ASC'));
+      expect(flagSql, contains('WHERE deleted = FALSE'));
+    });
+
+    test(
+      'pinned multi-status task-list plan streams priority/date order without temp '
+      'sort',
+      () async {
+        final dbFile = File(
+          p.join(testDirectory!.path, 'test_v44_task_priority_plan.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+        createV38Schema(sqlite);
+        sqlite.execute('PRAGMA user_version = 38');
+        sqlite.dispose();
+
+        final db = JournalDb(
+          overriddenFilename: 'test_v44_task_priority_plan.db',
+        );
+        addTearDown(db.close);
+
+        const statuses = ['IN PROGRESS', 'OPEN', 'GROOMED', 'DONE'];
+        final categories = [
+          for (var i = 0; i < 32; i++) 'category-$i',
+        ];
+        for (var i = 0; i < 240; i++) {
+          final createdAt =
+              DateTime.utc(
+                2026,
+                6,
+              ).add(Duration(minutes: i)).millisecondsSinceEpoch ~/
+              1000;
+          final isPrivate = i.isEven;
+          await db.customStatement(
+            'INSERT INTO journal '
+            '(id, serialized, created_at, updated_at, date_from, date_to, '
+            'type, deleted, private, starred, task, task_status, '
+            'task_priority_rank, category) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+              'task-$i',
+              '{}',
+              createdAt,
+              createdAt,
+              createdAt,
+              createdAt,
+              'Task',
+              0,
+              isPrivate,
+              0,
+              1,
+              statuses[i % statuses.length],
+              i % 4,
+              categories[i % categories.length],
+            ],
+          );
+        }
+        await db.customStatement('ANALYZE');
+
+        final plan = await db
+            .customSelect(
+              '''
+              EXPLAIN QUERY PLAN
+              SELECT * FROM journal
+              INDEXED BY idx_journal_tasks_priority_date
+              WHERE type = 'Task'
+                AND deleted = FALSE
+                AND task = 1
+                AND task_status IN (?, ?, ?)
+                AND category IN (${List.filled(categories.length, '?').join(', ')})
+              ORDER BY task_priority_rank ASC, date_from DESC
+              LIMIT ? OFFSET ?
+            ''',
+              variables: [
+                Variable.withString('IN PROGRESS'),
+                Variable.withString('OPEN'),
+                Variable.withString('GROOMED'),
+                ...categories.map(Variable.withString),
+                const Variable<int>(50),
+                const Variable<int>(0),
+              ],
+            )
+            .get();
+
+        final detail = plan.map((row) => row.read<String>('detail')).join('\n');
+        expect(detail, contains('idx_journal_tasks_priority_date'));
+        expect(detail, isNot(contains('USE TEMP B-TREE')));
       },
     );
 

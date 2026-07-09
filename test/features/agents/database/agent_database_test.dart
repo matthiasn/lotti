@@ -1524,6 +1524,228 @@ void main() {
         await db.close();
       },
     );
+
+    test(
+      'v14 to v15 adds task-scoped agent entity lookup index',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        final rawDb = sqlite3.open(dbFile);
+
+        rawDb
+          ..execute('''
+            CREATE TABLE agent_entities (
+              id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              subtype TEXT,
+              thread_id TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE agent_links (
+              id TEXT NOT NULL PRIMARY KEY,
+              from_id TEXT NOT NULL,
+              to_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE wake_run_log (
+              run_key TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              reason TEXT NOT NULL,
+              reason_id TEXT,
+              thread_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              logical_change_key TEXT,
+              created_at DATETIME NOT NULL,
+              started_at DATETIME,
+              completed_at DATETIME,
+              error_message TEXT,
+              template_id TEXT,
+              template_version_id TEXT,
+              resolved_model_id TEXT,
+              soul_id TEXT,
+              soul_version_id TEXT,
+              user_rating REAL,
+              rated_at DATETIME
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE saga_log (
+              operation_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              run_key TEXT NOT NULL,
+              phase TEXT NOT NULL,
+              status TEXT NOT NULL,
+              tool_name TEXT NOT NULL,
+              last_error TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE attention_claim_index (
+              request_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              scope_kind TEXT NOT NULL,
+              visibility_start DATETIME NOT NULL,
+              visibility_end DATETIME NOT NULL,
+              deadline DATETIME,
+              next_review_at DATETIME,
+              target_id TEXT,
+              target_kind TEXT,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE standing_agreement_index (
+              agreement_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              scope TEXT NOT NULL,
+              cadence TEXT NOT NULL,
+              approval_mode TEXT NOT NULL,
+              enforcement TEXT NOT NULL,
+              active_from DATETIME NOT NULL,
+              active_until DATETIME NOT NULL,
+              priority INTEGER NOT NULL,
+              target_id TEXT,
+              target_kind TEXT,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME
+            )
+          ''')
+          ..execute('PRAGMA user_version = 14');
+        rawDb.dispose();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(
+          versionResult.first.read<int>('user_version'),
+          db.schemaVersion,
+        );
+
+        final indexes = await db.customSelect('''
+          SELECT name FROM sqlite_master
+          WHERE type = 'index'
+            AND name = 'idx_agent_entities_active_agent_type_task_created_id'
+        ''').get();
+        expect(indexes, hasLength(1));
+
+        final plan = await db.customSelect(r'''
+          EXPLAIN QUERY PLAN
+          SELECT *
+          FROM agent_entities
+            INDEXED BY idx_agent_entities_active_agent_type_task_created_id
+          WHERE agent_id = 'agent-1'
+            AND type = 'changeSet'
+            AND json_valid(serialized)
+            AND json_extract(serialized, '\$.taskId') = 'task-1'
+            AND deleted_at IS NULL
+          ORDER BY created_at DESC
+          LIMIT 20
+        ''').get();
+        final details = plan
+            .map((row) => row.read<String>('detail'))
+            .join('\n');
+        expect(
+          details,
+          contains('idx_agent_entities_active_agent_type_task_created_id'),
+        );
+        expect(details, isNot(contains('USE TEMP B-TREE')));
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v15 to latest adds pending scheduled-wake timestamp index',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        final rawDb = sqlite3.open(dbFile);
+
+        rawDb
+          ..execute('''
+            CREATE TABLE agent_entities (
+              id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              subtype TEXT,
+              thread_id TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute('PRAGMA user_version = 15');
+        rawDb.dispose();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(
+          versionResult.first.read<int>('user_version'),
+          db.schemaVersion,
+        );
+
+        final indexes = await db.customSelect('''
+          SELECT name FROM sqlite_master
+          WHERE type = 'index'
+            AND name = 'idx_agent_entities_pending_scheduled_wake_at'
+        ''').get();
+        expect(indexes, hasLength(1));
+
+        final plan = await db.customSelect(r'''
+          EXPLAIN QUERY PLAN
+          SELECT *
+          FROM agent_entities
+          WHERE type = 'scheduledWake'
+            AND deleted_at IS NULL
+            AND json_extract(serialized, '$.status') = 'pending'
+            AND json_extract(serialized, '$.scheduledAt') IS NOT NULL
+            AND json_extract(serialized, '$.scheduledAt') <= '2026-04-01T12:00:00.000'
+        ''').get();
+        final details = plan
+            .map((row) => row.read<String>('detail'))
+            .join('\n');
+        expect(
+          details,
+          contains('idx_agent_entities_pending_scheduled_wake_at'),
+        );
+
+        await db.close();
+      },
+    );
   });
 
   group('AgentDatabase fresh install', () {
@@ -1866,7 +2088,139 @@ void main() {
           .get();
       final linkDetails = linkPlan.map((r) => r.data.toString()).join('\n');
       expect(linkDetails, contains('idx_agent_links_active_to_type'));
+
+      final taskScopedPlan = await db
+          .customSelect(
+            r'''
+              EXPLAIN QUERY PLAN
+              SELECT * FROM agent_entities
+                INDEXED BY idx_agent_entities_active_agent_type_task_created_id
+              WHERE agent_id = ?1
+                AND type = 'changeSet'
+                AND json_valid(serialized)
+                AND json_extract(serialized, '\$.taskId') = ?2
+                AND deleted_at IS NULL
+              ORDER BY created_at DESC
+              LIMIT ?3
+            ''',
+            variables: [
+              const Variable<String>('agent-1'),
+              const Variable<String>('task-1'),
+              const Variable<int>(20),
+            ],
+          )
+          .get();
+      final taskScopedDetails = taskScopedPlan
+          .map((row) => row.read<String>('detail'))
+          .join('\n');
+      expect(
+        taskScopedDetails,
+        contains('idx_agent_entities_active_agent_type_task_created_id'),
+      );
+      expect(taskScopedDetails, isNot(contains('USE TEMP B-TREE')));
     });
+
+    test(
+      'pending scheduled-wake queries use the JSON timestamp index',
+      () async {
+        final db = AgentDatabase(
+          inMemoryDatabase: true,
+          background: false,
+        );
+        addTearDown(db.close);
+
+        final indexes = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'index' "
+              "AND name = 'idx_agent_entities_pending_scheduled_wake_at'",
+            )
+            .get();
+        expect(indexes, hasLength(1));
+
+        for (var i = 0; i < 80; i++) {
+          final ts =
+              DateTime(
+                2026,
+                4,
+              ).add(Duration(minutes: i)).millisecondsSinceEpoch ~/
+              1000;
+          final scheduledAt = DateTime(
+            2026,
+            4,
+            1,
+            8,
+          ).add(Duration(minutes: i)).toIso8601String();
+          final status = i % 5 == 0 ? 'cancelled' : 'pending';
+          final type = i % 7 == 0 ? 'agentState' : 'scheduledWake';
+          await db.customStatement(
+            'INSERT INTO agent_entities '
+            '(id, agent_id, type, created_at, updated_at, serialized, '
+            'schema_version) '
+            'VALUES (?, ?, ?, ?, ?, ?, 1)',
+            [
+              'scheduled-wake-$i',
+              'agent-${i % 4}',
+              type,
+              ts,
+              ts,
+              jsonEncode({
+                'runtimeType': type,
+                'status': status,
+                'scheduledAt': scheduledAt,
+              }),
+            ],
+          );
+        }
+        await db.customStatement('ANALYZE');
+
+        final duePlan = await db
+            .customSelect(
+              r'''
+              EXPLAIN QUERY PLAN
+              SELECT * FROM agent_entities
+              WHERE type = 'scheduledWake'
+                AND deleted_at IS NULL
+                AND json_extract(serialized, '$.status') = 'pending'
+                AND json_extract(serialized, '$.scheduledAt') IS NOT NULL
+                AND json_extract(serialized, '$.scheduledAt') <= ?1
+            ''',
+              variables: [
+                Variable<String>(DateTime(2026, 4, 1, 9).toIso8601String()),
+              ],
+            )
+            .get();
+        final dueDetails = duePlan
+            .map((row) => row.read<String>('detail'))
+            .join('\n');
+        expect(
+          dueDetails,
+          contains('idx_agent_entities_pending_scheduled_wake_at'),
+        );
+        expect(
+          dueDetails,
+          isNot(matches(RegExp('SCAN agent_entities(?! USING)'))),
+        );
+
+        // ignore: use_raw_strings
+        final pendingPlan = await db.customSelect('''
+        EXPLAIN QUERY PLAN
+        SELECT * FROM agent_entities
+        WHERE type = 'scheduledWake'
+          AND deleted_at IS NULL
+          AND json_extract(serialized, '\$.status') = 'pending'
+          AND json_extract(serialized, '\$.scheduledAt') IS NOT NULL
+        ORDER BY json_extract(serialized, '\$.scheduledAt') ASC
+      ''').get();
+        final pendingDetails = pendingPlan
+            .map((row) => row.read<String>('detail'))
+            .join('\n');
+        expect(
+          pendingDetails,
+          contains('idx_agent_entities_pending_scheduled_wake_at'),
+        );
+        expect(pendingDetails, isNot(contains('USE TEMP B-TREE')));
+      },
+    );
 
     test('creates idx_unique_soul_per_template index on new DB', () async {
       final db = AgentDatabase(

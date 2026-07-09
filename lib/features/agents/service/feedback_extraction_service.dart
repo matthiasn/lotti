@@ -65,20 +65,23 @@ class FeedbackExtractionService {
         .map((d) => d.changeSetId)
         .toSet();
     var changeSetMap = <String, ChangeSetEntity>{};
-    try {
-      final changeSetEntities = await Future.wait(
-        missingIds.map(agentRepository.getEntity),
-      );
-      changeSetMap = {
-        for (final entity in changeSetEntities.whereType<ChangeSetEntity>())
-          entity.id: entity,
-      };
-    } catch (e) {
-      developer.log(
-        'Failed to fetch change sets (errorType=${e.runtimeType})',
-        name: 'FeedbackExtractionService',
-        error: e.runtimeType,
-      );
+    if (missingIds.isNotEmpty) {
+      try {
+        final changeSetEntities = await agentRepository.getEntitiesByIds(
+          missingIds,
+        );
+        changeSetMap = {
+          for (final entity
+              in changeSetEntities.values.whereType<ChangeSetEntity>())
+            entity.id: entity,
+        };
+      } catch (e) {
+        developer.log(
+          'Failed to fetch change sets (errorType=${e.runtimeType})',
+          name: 'FeedbackExtractionService',
+          error: e.runtimeType,
+        );
+      }
     }
 
     var suppressedChecklistRejectionCount = 0;
@@ -128,35 +131,31 @@ class FeedbackExtractionService {
         .toList();
 
     // Bulk-fetch observation payloads for richer detail text.
-    // Per-ID error handling so one failure doesn't abort the whole run.
     final payloadIds = windowObservations
         .map((obs) => obs.contentEntryId)
         .whereType<String>()
         .toSet();
-    final payloadEntries = await Future.wait(
-      payloadIds.map((id) async {
-        try {
-          final entity = await agentRepository.getEntity(id);
-          if (entity is AgentMessagePayloadEntity) {
-            return MapEntry(id, entity);
-          }
-        } catch (e, s) {
-          developer.log(
-            'Failed to fetch payload ${DomainLogger.sanitizeId(id)}',
-            name: 'FeedbackExtractionService',
-            error: e.runtimeType,
-            stackTrace: s,
-          );
-        }
-        return null;
-      }),
-    );
-    final payloadMap = <String, AgentMessagePayloadEntity>{
-      for (final entry
-          in payloadEntries
-              .whereType<MapEntry<String, AgentMessagePayloadEntity>>())
-        entry.key: entry.value,
-    };
+    var payloadMap = <String, AgentMessagePayloadEntity>{};
+    if (payloadIds.isNotEmpty) {
+      try {
+        final entitiesById = await agentRepository.getEntitiesByIds(
+          payloadIds,
+        );
+        payloadMap = {
+          for (final entity
+              in entitiesById.values.whereType<AgentMessagePayloadEntity>())
+            entity.id: entity,
+        };
+      } catch (e, s) {
+        developer.log(
+          'Failed to fetch observation payloads '
+          '(count=${payloadIds.length}, errorType=${e.runtimeType})',
+          name: 'FeedbackExtractionService',
+          error: e.runtimeType,
+          stackTrace: s,
+        );
+      }
+    }
 
     for (final observation in windowObservations) {
       final payload = observation.contentEntryId != null
@@ -426,11 +425,11 @@ class FeedbackExtractionService {
     if (agents.isEmpty) return [];
 
     // Resolve each agent's target template ID (the template it improves).
-    final states = await Future.wait(
-      agents.map((agent) => agentRepository.getAgentState(agent.agentId)),
+    final statesByAgentId = await agentRepository.getAgentStatesByAgentIds(
+      [for (final agent in agents) agent.agentId],
     );
-    final targetTemplateIds = states
-        .map((state) => state?.slots.activeTemplateId)
+    final targetTemplateIds = statesByAgentId.values
+        .map((state) => state.slots.activeTemplateId)
         .whereType<String>()
         .toSet();
     if (targetTemplateIds.isEmpty) return [];

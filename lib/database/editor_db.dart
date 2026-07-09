@@ -158,12 +158,23 @@ class EditorDb extends _$EditorDb {
       return null;
     }
 
-    final res = await latestDraft(entryId, lastSaved).get();
-
-    if (res.isNotEmpty) {
-      return res.first;
-    } else {
-      return null;
-    }
+    final row = await customSelect(
+      '''
+      SELECT *
+      FROM editor_drafts INDEXED BY editor_drafts_latest_draft
+      WHERE entry_id = ?
+        AND last_saved = ?
+        AND status = 'DRAFT'
+      ORDER BY created_at DESC
+      LIMIT 1
+      ''',
+      variables: [
+        Variable.withString(entryId),
+        Variable.withDateTime(lastSaved),
+      ],
+      readsFrom: {editorDrafts},
+    ).getSingleOrNull();
+    if (row == null) return null;
+    return editorDrafts.mapFromRow(row);
   }
 }

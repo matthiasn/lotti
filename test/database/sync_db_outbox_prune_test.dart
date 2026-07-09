@@ -250,6 +250,34 @@ void main() {
       },
     );
 
+    test(
+      'pruneSentOutboxItemsChunked stale-row probe uses the sent updated-at '
+      'partial index',
+      () async {
+        final database = db!;
+        final cutoff = DateTime(2026, 5, 1);
+
+        final planRows = await database
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT id FROM outbox INDEXED BY idx_outbox_sent_updated_at '
+              'WHERE status = 1 AND updated_at < ? '
+              'LIMIT ?',
+              variables: [
+                Variable.withDateTime(cutoff),
+                const Variable<int>(50),
+              ],
+            )
+            .get();
+
+        final plan = planRows
+            .map((row) => row.read<String>('detail'))
+            .join('\n');
+        expect(plan, contains('idx_outbox_sent_updated_at'));
+        expect(plan, isNot(contains('SCAN outbox')));
+      },
+    );
+
     Glados(any.pruneScenario, ExploreConfig(numRuns: 80)).test(
       'pruneSentOutboxItemsChunked invariants — for any (rows, chunkSize, '
       'retention): only (sent, old) rows are deleted; live state and forensic '

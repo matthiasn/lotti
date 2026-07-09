@@ -1000,6 +1000,47 @@ void main() {
       test('returns zero when no import-flagged entries exist', () async {
         expect(await db!.getCountImportFlagEntries(), 0);
       });
+
+      test('count and list plans use the import-flag partial index', () async {
+        final base = DateTime(2024, 11, 12, 9);
+        for (var i = 0; i < 40; i++) {
+          final entry = buildJournalEntry(
+            id: 'import-flag-plan-$i',
+            timestamp: base.add(Duration(minutes: i)),
+            text: 'Entry $i',
+            flag: i.isEven ? EntryFlag.import : EntryFlag.none,
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(entry));
+        }
+        await db!.customStatement('ANALYZE');
+
+        final countPlan = await db!
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT COUNT(*) FROM journal '
+              'WHERE deleted = FALSE AND flag = 1',
+            )
+            .get();
+        final countDetail = countPlan
+            .map((row) => row.read<String>('detail'))
+            .join('\n');
+        expect(countDetail, contains('idx_journal_import_flag_date'));
+
+        final listPlan = await db!
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT * FROM journal '
+              'WHERE deleted = FALSE AND flag = 1 '
+              'ORDER BY date_from DESC '
+              'LIMIT 20',
+            )
+            .get();
+        final listDetail = listPlan
+            .map((row) => row.read<String>('detail'))
+            .join('\n');
+        expect(listDetail, contains('idx_journal_import_flag_date'));
+        expect(listDetail, isNot(contains('USE TEMP B-TREE')));
+      });
     });
 
     group('_extractEntryLinkVectorClock FormatException path -', () {

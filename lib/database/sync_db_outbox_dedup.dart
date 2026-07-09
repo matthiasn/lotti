@@ -146,12 +146,11 @@ mixin _SyncDbOutboxDedup on _$SyncDatabase {
       "SELECT strftime('%Y-%m-%d', updated_at, 'unixepoch') AS day, "
       'COALESCE(SUM(payload_size), 0) AS total_bytes, '
       'COUNT(*) AS item_count '
-      'FROM outbox '
-      'WHERE status = ? AND updated_at >= ? '
+      'FROM outbox INDEXED BY idx_outbox_sent_updated_at '
+      'WHERE status = 1 AND updated_at >= ? '
       'GROUP BY day '
       'ORDER BY day ASC',
       variables: [
-        Variable.withInt(OutboxStatus.sent.index),
         Variable.withInt(cutoffSeconds),
       ],
     ).get();
@@ -182,13 +181,13 @@ mixin _SyncDbOutboxDedup on _$SyncDatabase {
 
   /// Count of outbox items with status = sent and updatedAt >= [since].
   Future<int> getSentCountSince(DateTime since) async {
-    final query = selectOnly(outbox)
-      ..addColumns([outbox.id.count()])
-      ..where(
-        outbox.status.equals(OutboxStatus.sent.index) &
-            outbox.updatedAt.isBiggerOrEqualValue(since),
-      );
-    final result = await query.getSingle();
-    return result.read(outbox.id.count()) ?? 0;
+    final result = await customSelect(
+      'SELECT COUNT(*) AS cnt '
+      'FROM outbox INDEXED BY idx_outbox_sent_updated_at '
+      'WHERE status = 1 AND updated_at >= ?',
+      variables: [Variable.withDateTime(since)],
+      readsFrom: {outbox},
+    ).getSingle();
+    return result.read<int>('cnt');
   }
 }

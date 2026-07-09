@@ -969,8 +969,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 24', () {
-      expect(db.schemaVersion, 24);
+    test('schema version is 26', () {
+      expect(db.schemaVersion, 26);
     });
 
     test(
@@ -996,6 +996,13 @@ void main() {
               'sending must be index 3 — used as a literal in the '
               'partial-index WHERE clause and as `_outboxSendingStatus` '
               'in sync_db.dart.',
+        );
+        expect(
+          OutboxStatus.sent.index,
+          1,
+          reason:
+              'sent must be index 1 — used as a literal in the '
+              'sent-ledger updated_at partial-index WHERE clause.',
         );
       },
     );

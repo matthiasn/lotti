@@ -26,6 +26,21 @@ const _generatedChangedProfileId = 'generated-profile-updated';
 const _generatedTargetProfileId = 'generated-target-profile';
 const _generatedHeadId = 'generated-template-head';
 
+void _stubEntitiesByIds(
+  MockAgentRepository repository,
+  Map<String, AgentDomainEntity> entitiesById,
+) {
+  when(() => repository.getEntitiesByIds(any<Iterable<String>>())).thenAnswer(
+    (invocation) async {
+      final ids = invocation.positionalArguments.single as Iterable<String>;
+      return <String, AgentDomainEntity>{
+        for (final id in ids)
+          if (entitiesById[id] case final AgentDomainEntity entity) id: entity,
+      };
+    },
+  );
+}
+
 enum _GeneratedTemplateEntitySlot { present, missing, wrongType }
 
 enum _GeneratedTemplateDisplayNameSlot { omitted, same, changed }
@@ -2391,8 +2406,7 @@ void main() {
           type: 'template_assignment',
         ),
       ).thenAnswer((_) async => links);
-      when(() => mockRepo.getEntity('agent-a')).thenAnswer((_) async => agentA);
-      when(() => mockRepo.getEntity('agent-b')).thenAnswer((_) async => agentB);
+      _stubEntitiesByIds(mockRepo, {agentA.id: agentA, agentB.id: agentB});
 
       final result = await service.getAgentsForTemplate(kTestTemplateId);
 
@@ -2423,10 +2437,10 @@ void main() {
           type: 'template_assignment',
         ),
       ).thenAnswer((_) async => links);
-      // Return a template entity instead of an agent.
-      when(
-        () => mockRepo.getEntity('not-an-agent'),
-      ).thenAnswer((_) async => makeTestTemplate(id: 'not-an-agent'));
+      _stubEntitiesByIds(
+        mockRepo,
+        {'not-an-agent': makeTestTemplate(id: 'not-an-agent')},
+      );
 
       final result = await service.getAgentsForTemplate(kTestTemplateId);
 
@@ -2443,7 +2457,7 @@ void main() {
           type: 'template_assignment',
         ),
       ).thenAnswer((_) async => links);
-      when(() => mockRepo.getEntity('gone')).thenAnswer((_) async => null);
+      _stubEntitiesByIds(mockRepo, const {});
 
       final result = await service.getAgentsForTemplate(kTestTemplateId);
 
@@ -2516,11 +2530,12 @@ void main() {
           type: AgentLinkTypes.templateAssignment,
         ),
       ).thenAnswer((_) async => links);
-      for (final (index, slot) in scenario.assignmentSlots.indexed) {
-        when(
-          () => generatedRepository.getEntity('generated-delete-agent-$index'),
-        ).thenAnswer((_) async => scenario.assignmentEntity(slot, index));
-      }
+      _stubEntitiesByIds(generatedRepository, {
+        for (final (index, slot) in scenario.assignmentSlots.indexed)
+          if (scenario.assignmentEntity(slot, index)
+              case final AgentDomainEntity entity)
+            'generated-delete-agent-$index': entity,
+      });
       when(
         () => generatedRepository.getEntity(_generatedTemplateId),
       ).thenAnswer((_) async => scenario.initialTemplateEntity);
@@ -2640,9 +2655,7 @@ void main() {
           type: 'template_assignment',
         ),
       ).thenAnswer((_) async => links);
-      when(
-        () => mockRepo.getEntity('agent-a'),
-      ).thenAnswer((_) async => activeAgent);
+      _stubEntitiesByIds(mockRepo, {'agent-a': activeAgent});
 
       await expectLater(
         service.deleteTemplate(kTestTemplateId),
@@ -2666,9 +2679,7 @@ void main() {
           type: 'template_assignment',
         ),
       ).thenAnswer((_) async => links);
-      when(
-        () => mockRepo.getEntity('agent-a'),
-      ).thenAnswer((_) async => destroyedAgent);
+      _stubEntitiesByIds(mockRepo, {'agent-a': destroyedAgent});
       when(
         () => mockRepo.getTemplateHead(kTestTemplateId),
       ).thenAnswer((_) async => null);
@@ -2758,12 +2769,10 @@ void main() {
           type: 'template_assignment',
         ),
       ).thenAnswer((_) async => links);
-      when(
-        () => mockRepo.getEntity('agent-a'),
-      ).thenAnswer((_) async => activeAgent);
-      when(
-        () => mockRepo.getEntity('agent-b'),
-      ).thenAnswer((_) async => destroyedAgent);
+      _stubEntitiesByIds(
+        mockRepo,
+        {'agent-a': activeAgent, 'agent-b': destroyedAgent},
+      );
 
       await expectLater(
         service.deleteTemplate(kTestTemplateId),
@@ -3872,9 +3881,9 @@ void main() {
           type: 'template_assignment',
         ),
       ).thenAnswer((_) async => links);
-      for (final agent in agents) {
-        when(() => mockRepo.getEntity(agent.id)).thenAnswer((_) async => agent);
-      }
+      _stubEntitiesByIds(mockRepo, {
+        for (final agent in agents) agent.id: agent,
+      });
     }
 
     void stubAggregateMetrics({
@@ -4244,13 +4253,15 @@ void main() {
           type: AgentLinkTypes.templateAssignment,
         ),
       ).thenAnswer((_) async => assignmentLinks);
-      for (final (index, slot) in scenario.agentSlots.indexed) {
-        when(
-          () => generatedRepository.getEntity(
-            'generated-gather-agent-link-$index',
-          ),
-        ).thenAnswer((_) async => slot.entity(index));
-      }
+      _stubEntitiesByIds(generatedRepository, {
+        for (final (index, slot) in scenario.agentSlots.indexed)
+          if (slot.entity(index) case final AgentDomainEntity entity)
+            'generated-gather-agent-link-$index': entity,
+        for (final slot in _GeneratedGatherPayloadSlot.values)
+          if (slot.contentEntryId case final String contentEntryId)
+            if (slot.lookupEntity case final AgentDomainEntity entity)
+              contentEntryId: entity,
+      });
       when(
         () => generatedRepository.getEntitiesByAgentId(
           _generatedTemplateId,
@@ -4282,14 +4293,6 @@ void main() {
           limit: 10,
         ),
       ).thenAnswer((_) async => scenario.sessions);
-      for (final slot in _GeneratedGatherPayloadSlot.values) {
-        final contentEntryId = slot.contentEntryId;
-        if (contentEntryId != null) {
-          when(
-            () => generatedRepository.getEntity(contentEntryId),
-          ).thenAnswer((_) async => slot.lookupEntity);
-        }
-      }
       when(
         () => generatedRepository.countChangedSinceForTemplate(
           _generatedTemplateId,
@@ -4375,19 +4378,20 @@ void main() {
           limit: 5,
         ),
       ).called(1);
-      for (final slot in _GeneratedGatherPayloadSlot.values) {
-        final contentEntryId = slot.contentEntryId;
-        if (contentEntryId == null) {
-          continue;
-        }
-        final lookupCount = scenario.payloadLookupCounts[contentEntryId] ?? 0;
-        if (lookupCount == 0) {
-          verifyNever(() => generatedRepository.getEntity(contentEntryId));
-        } else {
-          verify(
-            () => generatedRepository.getEntity(contentEntryId),
-          ).called(lookupCount);
-        }
+      if (scenario.payloadLookupCounts.isNotEmpty) {
+        final entityBatchIds = verify(
+          () => generatedRepository.getEntitiesByIds(captureAny()),
+        ).captured.cast<Iterable<String>>().map((ids) => ids.toSet()).toList();
+        final expectedPayloadIds = scenario.payloadLookupCounts.keys.toSet();
+        expect(
+          entityBatchIds.any(
+            (ids) =>
+                ids.length == expectedPayloadIds.length &&
+                ids.containsAll(expectedPayloadIds),
+          ),
+          isTrue,
+          reason: '$scenario',
+        );
       }
     }, tags: 'glados');
 
@@ -4459,9 +4463,7 @@ void main() {
         final payload = makeTestMessagePayload(id: 'payload-abc');
 
         stubGatherDependencies(observations: [obs]);
-        when(
-          () => mockRepo.getEntity('payload-abc'),
-        ).thenAnswer((_) async => payload);
+        _stubEntitiesByIds(mockRepo, {'payload-abc': payload});
 
         final bundle = await service.gatherEvolutionData(kTestTemplateId);
 

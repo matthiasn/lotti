@@ -313,6 +313,10 @@ class AgentRepository {
   Future<List<AgentIdentityEntity>> getAllAgentIdentities() =>
       _evolution.getAllAgentIdentities();
 
+  Future<List<AgentIdentityEntity>> getAgentIdentitiesByLifecycle(
+    AgentLifecycle lifecycle,
+  ) => _evolution.getAgentIdentitiesByLifecycle(lifecycle);
+
   Future<List<AgentDomainEntity>> getEntitiesWithNullVectorClock() =>
       _evolution.getEntitiesWithNullVectorClock();
 

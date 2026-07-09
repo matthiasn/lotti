@@ -28,7 +28,16 @@ void main() {
         until: any(named: 'until'),
       ),
     ).thenAnswer((_) async => <WakeRunLogData>[]);
+    when(
+      () => mockRepository.getEntitiesByIds(any()),
+    ).thenAnswer((_) async => const <String, AgentDomainEntity>{});
   });
+
+  void stubEntitiesById(Map<String, AgentDomainEntity> entitiesById) {
+    when(
+      () => mockRepository.getEntitiesByIds(any()),
+    ).thenAnswer((_) async => entitiesById);
+  }
 
   ProviderContainer createContainer({
     List<WakeTokenUsageEntity> tokenRecords = const [],
@@ -276,12 +285,7 @@ void main() {
           displayName: 'Agent Beta',
         );
 
-        when(() => mockRepository.getEntity('tpl-a')).thenAnswer(
-          (_) async => templateA,
-        );
-        when(() => mockRepository.getEntity('tpl-b')).thenAnswer(
-          (_) async => templateB,
-        );
+        stubEntitiesById({'tpl-a': templateA, 'tpl-b': templateB});
 
         final container = createContainer(tokenRecords: records);
         final result = await container.read(
@@ -320,15 +324,10 @@ void main() {
           ),
         ];
 
-        for (final id in ['tpl-heavy', 'tpl-light-1', 'tpl-light-2']) {
-          when(() => mockRepository.getEntity(id)).thenAnswer(
-            (_) async => makeTestTemplate(
-              id: id,
-              agentId: id,
-              displayName: id,
-            ),
-          );
-        }
+        stubEntitiesById({
+          for (final id in ['tpl-heavy', 'tpl-light-1', 'tpl-light-2'])
+            id: makeTestTemplate(id: id, agentId: id, displayName: id),
+        });
 
         final container = createContainer(tokenRecords: records);
         final result = await container.read(
@@ -381,20 +380,15 @@ void main() {
               templateId: 'tpl-light-3',
             ),
           ];
-          for (final id in [
-            'tpl-heavy',
-            'tpl-light-1',
-            'tpl-light-2',
-            'tpl-light-3',
-          ]) {
-            when(() => mockRepository.getEntity(id)).thenAnswer(
-              (_) async => makeTestTemplate(
-                id: id,
-                agentId: id,
-                displayName: id,
-              ),
-            );
-          }
+          stubEntitiesById({
+            for (final id in [
+              'tpl-heavy',
+              'tpl-light-1',
+              'tpl-light-2',
+              'tpl-light-3',
+            ])
+              id: makeTestTemplate(id: id, agentId: id, displayName: id),
+          });
 
           // Exactly at the threshold: 625/1000 = 62.5% == 25% * 2.5.
           var container = createContainer(

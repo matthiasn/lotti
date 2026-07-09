@@ -208,6 +208,44 @@ void main() {
       expect(result2!.delta, contains('draft2'));
     });
 
+    test('returns only the newest matching draft row', () async {
+      const entryId = 'test-entry-123';
+      final lastSaved = DateTime(2024, 3, 15, 10, 30);
+      final olderCreatedAt = DateTime(2024, 3, 15, 10, 31);
+      final newerCreatedAt = DateTime(2024, 3, 15, 10, 32);
+
+      await db
+          .into(db.editorDrafts)
+          .insert(
+            EditorDraftState(
+              id: 'older-draft',
+              entryId: entryId,
+              status: 'DRAFT',
+              createdAt: olderCreatedAt,
+              lastSaved: lastSaved,
+              delta: '{"ops":[{"insert":"older"}]}',
+            ),
+          );
+      await db
+          .into(db.editorDrafts)
+          .insert(
+            EditorDraftState(
+              id: 'newer-draft',
+              entryId: entryId,
+              status: 'DRAFT',
+              createdAt: newerCreatedAt,
+              lastSaved: lastSaved,
+              delta: '{"ops":[{"insert":"newer"}]}',
+            ),
+          );
+
+      final result = await db.getLatestDraft(entryId, lastSaved: lastSaved);
+
+      expect(result, isNotNull);
+      expect(result!.id, 'newer-draft');
+      expect(result.delta, contains('newer'));
+    });
+
     test('latestDraft plan uses the composite partial index', () async {
       const entryId = 'test-entry-123';
       final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -231,10 +269,12 @@ void main() {
             '''
             EXPLAIN QUERY PLAN
             SELECT * FROM editor_drafts
+            INDEXED BY editor_drafts_latest_draft
             WHERE entry_id = ?1
               AND last_saved = ?2
               AND status = 'DRAFT'
             ORDER BY created_at DESC
+            LIMIT 1
             ''',
             variables: [
               Variable.withString(entryId),

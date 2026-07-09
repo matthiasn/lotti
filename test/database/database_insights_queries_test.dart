@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -126,6 +127,58 @@ void main() {
   }
 
   group('insightsTimeRows', () {
+    test('query plan uses the covering insights time index', () async {
+      final planRows = await db
+          .customSelect(
+            '''
+            EXPLAIN QUERY PLAN
+            WITH private_flag AS (
+              SELECT COALESCE(
+                (SELECT status FROM config_flags WHERE name = 'private'),
+                FALSE
+              ) AS visible
+            )
+            SELECT
+              j.date_from AS date_from,
+              j.date_to AS date_to,
+              COALESCE(
+                (
+                  SELECT t.category
+                  FROM linked_entries le
+                  INNER JOIN journal t ON t.id = le.from_id
+                  WHERE le.to_id = j.id
+                    AND COALESCE(le.hidden, FALSE) = FALSE
+                    AND t.type = 'Task'
+                    AND t.deleted = FALSE
+                    AND t.category != ''
+                    AND COALESCE(t.private, FALSE) IN (FALSE, pf.visible)
+                  ORDER BY t.date_from DESC, t.id
+                  LIMIT 1
+                ),
+                NULLIF(j.category, '')
+              ) AS category_id
+            FROM journal j INDEXED BY idx_journal_insights_time
+            CROSS JOIN private_flag pf
+            WHERE j.type = 'JournalEntry'
+              AND j.deleted = FALSE
+              AND j.date_to > ?
+              AND j.date_from < ?
+              AND j.date_to > j.date_from
+              AND COALESCE(j.private, FALSE) IN (FALSE, pf.visible)
+            ORDER BY j.date_from
+            ''',
+            variables: [
+              Variable<DateTime>(DateTime(2024, 3)),
+              Variable<DateTime>(DateTime(2024, 4)),
+            ],
+          )
+          .get();
+
+      final plan = planRows.map((row) => row.read<String>('detail')).join('\n');
+      expect(plan, contains('idx_journal_insights_time'));
+      expect(plan, isNot(contains('SCAN j')));
+    });
+
     test(
       'returns spans with entry-own category for unlinked entries',
       () async {

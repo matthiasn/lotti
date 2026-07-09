@@ -77,20 +77,21 @@ class AgentLogCompactor {
       for (final m in messages)
         if (m.deletedAt == null && m.contentEntryId != null) m,
     ];
-    // Load every checkpoint payload concurrently (avoids an N+1 per summary).
-    final payloads = await Future.wait(
-      live.map((m) => _repository.getEntity(m.contentEntryId!)),
+    // Load every checkpoint payload in one round-trip. The prior per-summary
+    // fan-out queued many primary-key lookups behind writer locks.
+    final payloadsById = await _repository.getEntitiesByIds(
+      live.map((m) => m.contentEntryId!),
     );
 
     final checkpoints = <SummaryCheckpoint>[];
-    for (var i = 0; i < live.length; i++) {
-      final payload = payloads[i];
+    for (final message in live) {
+      final payload = payloadsById[message.contentEntryId!];
       if (payload is! AgentMessagePayloadEntity) continue;
       final coveredRaw = payload.content['coveredSources'];
       checkpoints.add(
         SummaryCheckpoint(
-          id: live[i].id,
-          contentDigest: live[i].contentEntryId!,
+          id: message.id,
+          contentDigest: message.contentEntryId!,
           coveredSources: <String, String>{
             if (coveredRaw is Map)
               for (final entry in coveredRaw.entries)
@@ -122,6 +123,17 @@ class AgentLogCompactor {
   /// preserving event order and dropping any whose content is missing.
   Future<List<({InputEvent event, Map<String, Object?> content})>>
   _resolveEventContents(List<InputEvent> events) async {
+    final payloadIds = {
+      for (final event in events)
+        if (event.inlineContent == null &&
+            !event.deferredInline &&
+            event.contentDigest != null)
+          event.contentDigest!,
+    };
+    final payloadsById = payloadIds.isEmpty
+        ? const <String, AgentDomainEntity>{}
+        : await _repository.getEntitiesByIds(payloadIds);
+
     final resolved = await Future.wait([
       for (final event in events)
         () async {
@@ -137,7 +149,7 @@ class AgentLogCompactor {
           }
           final digest = event.contentDigest;
           if (digest == null) return null;
-          final payload = await _repository.getEntity(digest);
+          final payload = payloadsById[digest];
           return payload is AgentMessagePayloadEntity
               ? (event: event, content: payload.content)
               : null;

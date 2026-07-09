@@ -5546,6 +5546,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_journal_tab',
     'CREATE INDEX idx_journal_tab ON journal (type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC)',
   );
+  late final Index idxJournalImportFlagDate = Index(
+    'idx_journal_import_flag_date',
+    'CREATE INDEX idx_journal_import_flag_date ON journal (flag COLLATE BINARY ASC, date_from COLLATE BINARY DESC, id COLLATE BINARY ASC) WHERE deleted = FALSE',
+  );
   late final Index idxJournalBrowse = Index(
     'idx_journal_browse',
     'CREATE INDEX idx_journal_browse ON journal (deleted COLLATE BINARY ASC, type COLLATE BINARY ASC, date_from COLLATE BINARY DESC)',
@@ -5586,11 +5590,19 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_journal_tasks_status_priority_date',
     'CREATE INDEX idx_journal_tasks_status_priority_date ON journal (task_status COLLATE BINARY ASC, task_priority_rank COLLATE BINARY ASC, date_from COLLATE BINARY DESC) WHERE type = \'Task\' AND task = 1 AND deleted = FALSE',
   );
+  late final Index idxJournalTasksPriorityDate = Index(
+    'idx_journal_tasks_priority_date',
+    'CREATE INDEX idx_journal_tasks_priority_date ON journal (task_priority_rank COLLATE BINARY ASC, date_from COLLATE BINARY DESC, id COLLATE BINARY ASC) WHERE type = \'Task\' AND task = 1 AND deleted = FALSE',
+  );
   late final Index idxJournalInsightsTime = Index(
     'idx_journal_insights_time',
     'CREATE INDEX idx_journal_insights_time ON journal (date_from COLLATE BINARY ASC, date_to COLLATE BINARY ASC, category COLLATE BINARY ASC, private COLLATE BINARY ASC, id COLLATE BINARY ASC) WHERE type = \'JournalEntry\' AND deleted = FALSE',
   );
   late final Conflicts conflicts = Conflicts(this);
+  late final Index idxConflictsStatusCreatedAt = Index(
+    'idx_conflicts_status_created_at',
+    'CREATE INDEX idx_conflicts_status_created_at ON conflicts (status ASC, created_at DESC)',
+  );
   late final MeasurableTypes measurableTypes = MeasurableTypes(this);
   late final HabitDefinitions habitDefinitions = HabitDefinitions(this);
   late final Index idxHabitDefinitionsId = Index(
@@ -7764,6 +7776,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxJournalDateToAsc,
     idxJournalDateToDesc,
     idxJournalTab,
+    idxJournalImportFlagDate,
     idxJournalBrowse,
     idxJournalTasks,
     idxJournalTasksDate,
@@ -7774,8 +7787,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxJournalProjectId,
     idxJournalProjectTaskStatus,
     idxJournalTasksStatusPriorityDate,
+    idxJournalTasksPriorityDate,
     idxJournalInsightsTime,
     conflicts,
+    idxConflictsStatusCreatedAt,
     measurableTypes,
     habitDefinitions,
     idxHabitDefinitionsId,

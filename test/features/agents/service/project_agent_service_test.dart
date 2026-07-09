@@ -177,6 +177,9 @@ void main() {
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
     when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+    when(
+      () => mockRepository.getAgentStatesByAgentIds(any()),
+    ).thenAnswer((_) async => const {});
 
     service = ProjectAgentService(
       agentService: mockAgentService,
@@ -973,11 +976,13 @@ void main() {
             ),
           ).thenAnswer((_) async => [link]);
           when(
-            () => mockRepository.getAgentState('pa-1'),
+            () => mockRepository.getAgentStatesByAgentIds(any()),
           ).thenAnswer(
-            (_) async => makeState(agentId: 'pa-1').copyWith(
-              nextWakeAt: nextWakeAt,
-            ),
+            (_) async => {
+              'pa-1': makeState(agentId: 'pa-1').copyWith(
+                nextWakeAt: nextWakeAt,
+              ),
+            },
           );
 
           await service.restoreSubscriptions();
@@ -1004,6 +1009,13 @@ void main() {
               type: any(named: 'type'),
             ),
           );
+          final requestedAgentIds =
+              verify(
+                    () => mockRepository.getAgentStatesByAgentIds(captureAny()),
+                  ).captured.single
+                  as List<String>;
+          expect(requestedAgentIds, ['pa-1']);
+          verifyNever(() => mockRepository.getAgentState('pa-1'));
         },
       );
 

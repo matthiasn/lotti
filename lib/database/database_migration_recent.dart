@@ -174,5 +174,33 @@ mixin _JournalDbMigrationRecent on _$JournalDb {
         }
       }();
     }
+    if (from < 44) {
+      await () async {
+        DevLogger.log(
+          name: 'JournalDb',
+          message:
+              'Adding priority/date partial index for broad task-list reads',
+        );
+        if (await _tableExists('journal') &&
+            await _columnExists('journal', 'task_priority_rank')) {
+          await customStatement(
+            _createIdxJournalTasksPriorityDateSql.replaceFirst(
+              'CREATE INDEX ',
+              'CREATE INDEX IF NOT EXISTS ',
+            ),
+          );
+        }
+        if (await _tableExists('journal') &&
+            await _columnExists('journal', 'flag')) {
+          await customStatement(
+            _createIdxJournalImportFlagDateSql.replaceFirst(
+              'CREATE INDEX ',
+              'CREATE INDEX IF NOT EXISTS ',
+            ),
+          );
+        }
+        await customStatement('ANALYZE');
+      }();
+    }
   }
 }

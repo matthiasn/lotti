@@ -22,6 +22,9 @@ const _logSubCommit = 'queue.commit';
 const _logSubRetry = 'queue.retry';
 const _logSubSkip = 'queue.skip';
 const _logSubPrune = 'queue.prune';
+const _peekableStatusPredicate = "status IN ('enqueued', 'retrying', 'leased')";
+const _depthStatusPredicate =
+    "status IN ('enqueued', 'leased', 'retrying', 'abandoned')";
 
 /// Durable inbound queue for Matrix sync events. See §3 of
 /// `docs/sync/2026-04-21_inbound_event_queue_implementation_plan.md`.
@@ -39,7 +42,7 @@ class InboundQueue {
   final Duration _leaseDuration;
 
   late final QueueDepthEmitter _depthEmitter = QueueDepthEmitter(
-    loadStats: stats,
+    loadStats: _depthStats,
   );
   late final QueueMarkerAdvancer _markerAdvancer = QueueMarkerAdvancer(_db);
   late final InboundQueueResurrection _resurrection = InboundQueueResurrection(
@@ -249,7 +252,7 @@ class InboundQueue {
     final probe = _db.selectOnly(probeTable)
       ..addColumns([probeTable.queueId])
       ..where(
-        probeTable.status.isIn(InboundQueueStatuses.peekable) &
+        const CustomExpression<bool>(_peekableStatusPredicate) &
             probeTable.nextDueAt.isSmallerOrEqualValue(nowMs) &
             probeTable.leaseUntil.isSmallerOrEqualValue(nowMs),
       )
@@ -262,7 +265,7 @@ class InboundQueue {
       final query = _db.select(_db.inboundEventQueue)
         ..where(
           (t) =>
-              t.status.isIn(InboundQueueStatuses.peekable) &
+              const CustomExpression<bool>(_peekableStatusPredicate) &
               t.nextDueAt.isSmallerOrEqualValue(nowMs) &
               t.leaseUntil.isSmallerOrEqualValue(nowMs),
         )
@@ -547,7 +550,7 @@ class InboundQueue {
         await (_db.selectOnly(table)
               ..addColumns([countCol])
               ..where(
-                table.status.isIn(InboundQueueStatuses.peekable) &
+                const CustomExpression<bool>(_peekableStatusPredicate) &
                     table.nextDueAt.isSmallerOrEqualValue(nowMs) &
                     table.leaseUntil.isSmallerOrEqualValue(nowMs),
               ))
@@ -562,6 +565,55 @@ class InboundQueue {
       applied: applied,
       abandoned: abandoned,
       retrying: retrying,
+    );
+  }
+
+  /// Lightweight snapshot for [depthChanges]. Depth emissions do not expose
+  /// `applied`, `retrying`, or `readyNow`, so this deliberately excludes the
+  /// applied ledger and skips the ready-now probe that made every queue
+  /// mutation pay for diagnostics-only counters.
+  Future<QueueStats> _depthStats() async {
+    final rows = await _db
+        .customSelect(
+          '''
+      SELECT status, producer, COUNT(*) AS cnt, MIN(enqueued_at) AS oldest
+      FROM inbound_event_queue
+      WHERE $_depthStatusPredicate
+      GROUP BY status, producer
+      ''',
+          readsFrom: {_db.inboundEventQueue},
+        )
+        .get();
+
+    var total = 0;
+    var abandoned = 0;
+    int? oldest;
+    final byProducer = <InboundEventProducer, int>{};
+
+    for (final row in rows) {
+      final status = row.read<String>('status');
+      final cnt = row.read<int>('cnt');
+      final rowOldest = row.readNullable<int>('oldest');
+
+      if (status == InboundQueueStatuses.abandoned) {
+        abandoned += cnt;
+        continue;
+      }
+
+      total += cnt;
+      final producer = producerFromName(row.read<String>('producer'));
+      byProducer[producer] = (byProducer[producer] ?? 0) + cnt;
+      if (rowOldest != null && (oldest == null || rowOldest < oldest)) {
+        oldest = rowOldest;
+      }
+    }
+
+    return QueueStats(
+      total: total,
+      byProducer: byProducer,
+      readyNow: 0,
+      oldestEnqueuedAt: oldest,
+      abandoned: abandoned,
     );
   }
 

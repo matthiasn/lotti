@@ -27,6 +27,18 @@ CREATE INDEX idx_agent_entities_active_agent_type_sub_created_id ON agent_entiti
 CREATE INDEX idx_agent_entities_active_type_created ON agent_entities(type, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_agent_entities_active_type_sub_created_id ON agent_entities(type, subtype, created_at DESC, id DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_agent_entities_token_usage_since ON agent_entities(type, created_at DESC) WHERE type = 'wakeTokenUsage' AND deleted_at IS NULL;
+-- Supports task-scoped proposal-ledger reads. Without this expression
+-- index, ledger assembly has to fetch broad per-agent change-set and
+-- decision history before filtering `taskId` from the serialized payload.
+CREATE INDEX idx_agent_entities_active_agent_type_task_created_id ON agent_entities(
+  agent_id,
+  type,
+  created_at DESC,
+  id DESC,
+  json_extract(serialized, '$.taskId')
+)
+WHERE deleted_at IS NULL
+  AND json_valid(serialized);
 -- Expression partial for `getDueScheduledAgentStates`. The query
 -- filters `type = 'agentState' AND deleted_at IS NULL AND
 -- json_extract(serialized, '$.scheduledWakeAt') <= :nowIso` and used
@@ -41,6 +53,20 @@ CREATE INDEX idx_agent_entities_due_wake ON agent_entities(
 WHERE type = 'agentState'
   AND deleted_at IS NULL
   AND json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL;
+-- Expression partial for `getDueScheduledWakeRecords` and
+-- `getPendingScheduledWakeRecords`. These records live in the same
+-- append-only entity table as all agent artifacts, so probing pending
+-- wake rows by `type` still had to JSON-evaluate every active
+-- scheduledWake row and sort pending wakes by the extracted timestamp.
+-- Leading with the extracted `scheduledAt` value turns due probes into
+-- range scans and the pending-wake list into an in-order index walk.
+CREATE INDEX idx_agent_entities_pending_scheduled_wake_at ON agent_entities(
+  json_extract(serialized, '$.scheduledAt') ASC
+)
+WHERE type = 'scheduledWake'
+  AND deleted_at IS NULL
+  AND json_extract(serialized, '$.status') = 'pending'
+  AND json_extract(serialized, '$.scheduledAt') IS NOT NULL;
 
 CREATE TABLE agent_links (
   id TEXT NOT NULL PRIMARY KEY,

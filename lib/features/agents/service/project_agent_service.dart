@@ -226,17 +226,22 @@ class ProjectAgentService {
     final activeAgents = await agentService.listAgents(
       lifecycle: AgentLifecycle.active,
     );
+    final projectAgents = activeAgents
+        .where((agent) => agent.kind == _agentKind)
+        .toList(growable: false);
+    final statesByAgentId = await _loadStatesForRestore(projectAgents);
 
     var count = 0;
-    for (final agent in activeAgents) {
-      if (agent.kind != _agentKind) continue;
-
+    for (final agent in projectAgents) {
       try {
         final links = await repository.getLinksFrom(
           agent.agentId,
           type: AgentLinkTypes.agentProject,
         );
-        await _hydrateThrottleDeadline(agent.agentId);
+        final state = statesByAgentId == null
+            ? await repository.getAgentState(agent.agentId)
+            : statesByAgentId[agent.agentId];
+        _hydrateThrottleDeadlineFromState(agent.agentId, state);
         for (final link in links) {
           _registerProjectSubscription(agent.agentId, link.toId);
         }
@@ -280,11 +285,26 @@ class ProjectAgentService {
     );
   }
 
-  Future<void> _hydrateThrottleDeadline(String agentId) async {
-    final state = await repository.getAgentState(agentId);
+  void _hydrateThrottleDeadlineFromState(
+    String agentId,
+    AgentStateEntity? state,
+  ) {
     final deadline = state?.nextWakeAt;
     if (deadline != null) {
       orchestrator.restorePendingWake(agentId: agentId, dueAt: deadline);
+    }
+  }
+
+  Future<Map<String, AgentStateEntity>?> _loadStatesForRestore(
+    List<AgentIdentityEntity> agents,
+  ) async {
+    if (agents.isEmpty) return const {};
+    try {
+      return await repository.getAgentStatesByAgentIds([
+        for (final agent in agents) agent.agentId,
+      ]);
+    } catch (_) {
+      return null;
     }
   }
 }

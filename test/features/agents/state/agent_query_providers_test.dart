@@ -595,14 +595,24 @@ void main() {
             type: any(named: 'type'),
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockRepository.getEntity(tailDigest)).thenAnswer(
-          (_) async => AgentDomainEntity.agentMessagePayload(
-            id: tailDigest,
-            agentId: 'shared-input-content',
-            createdAt: DateTime(2024, 3, 10),
-            vectorClock: null,
-            content: tailContent,
-          ),
+        when(
+          () => mockRepository.getEntitiesByIds(any<Iterable<String>>()),
+        ).thenAnswer(
+          (invocation) async {
+            final ids =
+                invocation.positionalArguments.single as Iterable<String>;
+            final payload = AgentDomainEntity.agentMessagePayload(
+              id: tailDigest,
+              agentId: 'shared-input-content',
+              createdAt: DateTime(2024, 3, 10),
+              vectorClock: null,
+              content: tailContent,
+            );
+            return <String, AgentDomainEntity>{
+              for (final id in ids)
+                if (id == tailDigest) id: payload,
+            };
+          },
         );
 
         // The reconstructor reads through the sync service's repository.

@@ -1135,6 +1135,53 @@ void main() {
       expect(await database.watchOutboxCount().first, 1);
     });
 
+    test(
+      'watchOutboxCount uses literal actionable statuses so SQLite can '
+      'match the partial index',
+      () async {
+        final database = db!;
+        for (var i = 0; i < 200; i++) {
+          await database.addOutboxItem(
+            buildOutboxCompanion(
+              status: OutboxStatus.sent,
+              subject: 'sent-$i',
+              message: '{"i":$i}',
+              createdAt: DateTime(2024, 5, 1).add(Duration(seconds: i)),
+            ),
+          );
+        }
+        await database.addOutboxItem(
+          buildOutboxCompanion(
+            status: OutboxStatus.pending,
+            createdAt: DateTime(2024, 5, 4),
+          ),
+        );
+        await database.customStatement('ANALYZE');
+
+        final plan = await database
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT COUNT(*) AS cnt FROM outbox '
+              'INDEXED BY idx_outbox_actionable_priority_created_at '
+              'WHERE status IN (0, 3)',
+            )
+            .get();
+        final details = plan.map((row) => row.data.toString()).join('\n');
+
+        expect(
+          details,
+          contains('idx_outbox_actionable_priority_created_at'),
+          reason:
+              'literal status IN (0, 3) should imply the partial-index '
+              'predicate and count only actionable index entries',
+        );
+        expect(
+          details,
+          isNot(matches(RegExp('SCAN outbox(?! USING)'))),
+        );
+      },
+    );
+
     test('getPendingOutboxCount returns count of pending items', () async {
       final database = db!;
       await database.addOutboxItem(

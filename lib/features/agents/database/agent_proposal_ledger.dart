@@ -1,6 +1,5 @@
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
-import 'package:lotti/features/agents/database/agent_repo_internals.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart'
     show AgentRepository;
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -43,24 +42,28 @@ class AgentProposalLedger {
     int changeSetFetchLimit = 200,
     int resolvedLimit = 50,
   }) async {
-    // Three independent table scans — run in parallel to keep wall-clock
-    // bounded on cold sqlite access. The dedicated pending query is what
-    // guarantees an old-but-still-open consolidated change set is never
-    // dropped by the recent-history cap: `getChangeSetsForAgent` is
+    // Three independent task-scoped reads — run in parallel to keep
+    // wall-clock bounded on cold sqlite access. The dedicated pending query is
+    // what guarantees an old-but-still-open consolidated change set is never
+    // dropped by the recent-history cap: `getChangeSetsForAgentAndTask` is
     // newest-first and would otherwise bury a long-lived open set past
     // `changeSetFetchLimit` once enough resolved history accumulates.
     final results = await Future.wait([
       _db
-          .getPendingChangeSetsForAgent(
+          .getPendingChangeSetsForAgentAndTask(
             agentId,
-            changeSetFetchLimit * overFetchMultiplier,
+            taskId,
+            changeSetFetchLimit,
           )
           .get(),
-      _db.getChangeSetsForAgent(agentId, changeSetFetchLimit).get(),
       _db
-          .getRecentDecisionsForAgent(
+          .getChangeSetsForAgentAndTask(agentId, taskId, changeSetFetchLimit)
+          .get(),
+      _db
+          .getRecentDecisionsForAgentAndTask(
             agentId,
-            resolvedLimit * overFetchMultiplier,
+            taskId,
+            resolvedLimit,
           )
           .get(),
     ]);
@@ -71,12 +74,10 @@ class AgentProposalLedger {
     final rawPendingSets = pendingRows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<ChangeSetEntity>()
-        .where((cs) => cs.taskId == taskId)
         .toList();
     final recentSets = recentRows
         .map(AgentDbConversions.fromEntityRow)
-        .whereType<ChangeSetEntity>()
-        .where((cs) => cs.taskId == taskId);
+        .whereType<ChangeSetEntity>();
 
     final setsById = <String, ChangeSetEntity>{
       for (final cs in recentSets) cs.id: cs,
@@ -92,7 +93,6 @@ class AgentProposalLedger {
     final decisions = decisionRows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<ChangeDecisionEntity>()
-        .where((d) => d.taskId == taskId)
         .toList();
 
     final decisionByKey = <String, ChangeDecisionEntity>{};
