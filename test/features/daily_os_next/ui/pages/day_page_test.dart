@@ -619,6 +619,39 @@ void main() {
       expect(find.text(messages.dailyOsNextDayRefineCta), findsOneWidget);
     });
 
+    testWidgets(
+      'mobile committed footer stacks the coaching hint above actions',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(draft: _drafted(state: DayState.committed)),
+            mediaQueryData: phoneMediaQueryData,
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        expect(
+          find.text(messages.dailyOsNextDayRefineFooterHint),
+          findsOneWidget,
+        );
+        expect(find.text(messages.dailyOsNextDayRefineCta), findsOneWidget);
+        expect(find.text(messages.dailyOsNextDayWrapUpCta), findsOneWidget);
+        expect(
+          tester
+              .getBottomLeft(
+                find.text(messages.dailyOsNextDayRefineFooterHint),
+              )
+              .dy,
+          lessThan(
+            tester.getTopLeft(find.text(messages.dailyOsNextDayRefineCta)).dy,
+          ),
+        );
+      },
+    );
+
     testWidgets('syncs displayed agenda when the draft prop changes', (
       tester,
     ) async {
@@ -840,6 +873,46 @@ void main() {
         );
       },
     );
+
+    for (final scenario in ['move lighter', 'add buffer']) {
+      testWidgets('quick review $scenario submits its seeded prompt', (
+        tester,
+      ) async {
+        final agent = RecordingDayAgent(
+          diff: PlanDiff(
+            id: 'quick_${scenario.replaceAll(' ', '_')}_diff',
+            transcript: scenario,
+            changes: const [],
+            updatedPlan: _draftedWithReasons(),
+          ),
+        );
+        final draft = _draftedWithReasons();
+        await _pumpDayPage(tester, draft: draft, agent: agent);
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        final (label, prompt) = switch (scenario) {
+          'move lighter' => (
+            messages.dailyOsNextReviewMoveLighter,
+            messages.dailyOsNextReviewMoveLighterPrompt,
+          ),
+          'add buffer' => (
+            messages.dailyOsNextReviewAddBuffer,
+            messages.dailyOsNextReviewAddBufferPrompt,
+          ),
+          _ => throw StateError('unknown quick review scenario: $scenario'),
+        };
+
+        await tester.tap(find.text(label));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump();
+
+        expect(find.byType(DayPage), findsOneWidget);
+        expect(find.byType(RefineModalContent), findsOneWidget);
+        expect(agent.proposeCount, 1);
+        expect(agent.proposedTranscript, prompt);
+      });
+    }
 
     testWidgets('large text folds quick refinements into an Adjust menu', (
       tester,

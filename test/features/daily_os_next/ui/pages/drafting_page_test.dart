@@ -209,6 +209,8 @@ class _FakeAgent implements DayAgentInterface {
 }
 
 class _ThrowingDraftAgent extends _FakeAgent {
+  int draftCalls = 0;
+
   @override
   Future<DraftPlan> draftDayPlan({
     required CaptureId captureId,
@@ -218,6 +220,7 @@ class _ThrowingDraftAgent extends _FakeAgent {
     List<TimeBlock> calendarBlocks = const [],
     bool Function()? isCancelled,
   }) {
+    draftCalls++;
     throw StateError('drafting unavailable');
   }
 }
@@ -379,7 +382,8 @@ void main() {
     testWidgets('initial controller failure renders localized error copy', (
       tester,
     ) async {
-      await _pumpDrafting(tester, _ThrowingDraftAgent());
+      final agent = _ThrowingDraftAgent();
+      await _pumpDrafting(tester, agent);
       await tester.pump();
 
       final messages = tester.element(find.byType(DraftingPage)).messages;
@@ -393,6 +397,16 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('drafting unavailable'), findsNothing);
+      expect(agent.draftCalls, 1);
+
+      await tester.tap(find.text(messages.dailyOsNextDraftingRetry));
+      await tester.pump();
+      await tester.pump();
+      expect(agent.draftCalls, 2);
+
+      await tester.tap(find.text(messages.dailyOsNextDraftingBackToDecisions));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets(

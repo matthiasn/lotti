@@ -64,6 +64,8 @@ class _ThrowingDraftAgent extends MockDayAgent {
         summarizeLatency: Duration.zero,
       );
 
+  int draftCalls = 0;
+
   @override
   Future<DraftPlan> draftDayPlan({
     required CaptureId captureId,
@@ -73,6 +75,7 @@ class _ThrowingDraftAgent extends MockDayAgent {
     List<TimeBlock> calendarBlocks = const [],
     bool Function()? isCancelled,
   }) async {
+    draftCalls++;
     throw StateError('draft failed');
   }
 }
@@ -476,10 +479,11 @@ void main() {
     testWidgets('drafting surfaces an error when the draft fails', (
       tester,
     ) async {
+      final agent = _ThrowingDraftAgent();
       await _openCreate(
         tester,
         capture: _captured,
-        agent: _ThrowingDraftAgent(),
+        agent: agent,
       );
       final messages = _l10n(tester);
       await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
@@ -493,6 +497,11 @@ void main() {
         find.text(messages.dailyOsNextDraftingBackToDecisions),
         findsOneWidget,
       );
+      expect(agent.draftCalls, 1);
+
+      await tester.tap(find.text(messages.dailyOsNextDraftingRetry));
+      await _settle(tester);
+      expect(agent.draftCalls, 2);
     });
   });
 

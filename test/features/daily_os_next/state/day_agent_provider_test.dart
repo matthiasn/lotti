@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -58,6 +60,34 @@ void main() {
         expect(real.mockFallback, isA<MockDayAgent>());
       },
     );
+
+    test('passes UpdateNotifications.updateStream to the RealDayAgent', () {
+      final captureService = MockDayAgentCaptureService();
+      final planService = MockDayAgentPlanService();
+      final dayAgentService = MockDayAgentService();
+      final journalDb = MockJournalDb();
+      final updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      final updateStream = updates.stream;
+      final notifications = MockUpdateNotifications();
+      when(() => notifications.updateStream).thenAnswer((_) => updateStream);
+
+      final container = ProviderContainer(
+        overrides: [
+          dayAgentCaptureServiceProvider.overrideWithValue(captureService),
+          dayAgentPlanServiceProvider.overrideWithValue(planService),
+          dayAgentServiceProvider.overrideWithValue(dayAgentService),
+          journalDbProvider.overrideWithValue(journalDb),
+          maybeUpdateNotificationsProvider.overrideWithValue(notifications),
+          silenceAgentUpdates,
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final agent = container.read(dayAgentProvider);
+      expect(agent, isA<RealDayAgent>());
+      expect((agent as RealDayAgent).updateStream, same(updateStream));
+    });
   });
 
   group('currentDraftPlanProvider', () {
