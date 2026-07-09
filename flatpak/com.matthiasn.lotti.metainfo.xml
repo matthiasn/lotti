@@ -42,6 +42,7 @@
           <p>Entry timestamps no longer get cut off on phones. In a task's linked entries, the header's date and time used to be truncated when the action buttons squeezed the row on a narrow phone. The timestamp now stacks the date over the time on two lines when space is tight, so the whole date and time stay readable.</p>
           <p>The desktop sidebar is calmer when Tasks has lots of saved filters. Saved task filters now sit in their own capped Tasks section with a More row, tapping More reveals every saved filter, active filters stay visible, recording/timer/agent cards carry clearer status labels, agent rows can open their linked task directly, and the old tiny Outbox/Inbox footer is now one compact Sync strip. Daily OS and Insights sub-items now use the same grouped sidebar surface, so Time Analysis and AI Impact read as intentional secondary destinations instead of loose rows.</p>
           <p>Habit and agent-heavy screens spend less time waiting on the database. Habit heatmaps now load only the latest completion per habit/day, and agent summary/feedback paths batch payload lookups instead of firing many individual reads.</p>
+          <p>The debug-only Onboarding animation gallery (Settings → Advanced → Maintenance) no longer leaves the floating bottom navigation bar stacked on top of it on phones. It now escapes onto the root navigator the same way other pushed debug/editor surfaces already do.</p>
       </description>
     </release>
     <release version="0.9.1032" date="2026-07-06">

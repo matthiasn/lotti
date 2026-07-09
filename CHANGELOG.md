@@ -67,6 +67,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it opens a native save dialog so you choose where the image goes. Previously
   it always tried to write into `Downloads/Lotti`, which failed with an error on
   iPhone and on the sandboxed macOS build.
+- The debug-only Onboarding animation gallery (Settings → Advanced →
+  Maintenance) no longer leaves the floating bottom navigation bar stacked on
+  top of it on phones. It now escapes onto the root navigator the same way
+  other pushed debug/editor surfaces already do.
 
 ## [0.9.1032]
 ### Added

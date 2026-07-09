@@ -17,6 +17,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/debug_overlays.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -184,6 +185,82 @@ void main() {
       expect(find.text('Constellation'), findsOneWidget);
       expect(find.text('API key'), findsOneWidget);
     });
+
+    testWidgets(
+      'Onboarding animation gallery escapes onto the root navigator, not '
+      "the nested tab navigator, so it covers the shell's floating bottom "
+      'nav instead of leaving it stacked on top (bottomNavSafeNavigatorOf)',
+      (tester) async {
+        final mockNavService = MockNavService();
+        when(() => mockNavService.isDesktopMode).thenReturn(false);
+        getIt.registerSingleton<NavService>(mockNavService);
+        addTearDown(() {
+          if (getIt.isRegistered<NavService>()) {
+            getIt.unregister<NavService>();
+          }
+        });
+
+        final rootNavigatorKey = GlobalKey<NavigatorState>();
+        final nestedNavigatorKey = GlobalKey<NavigatorState>();
+
+        // Mirrors the production mobile shell (`AppScreen._buildMobileLayout`):
+        // a root MaterialApp navigator whose single page is a Stack holding
+        // both the active tab's own nested Navigator (standing in for a
+        // Beamer tab delegate — the nearest ancestor `Navigator.of(context)`
+        // would find) and a Positioned marker standing in for the floating
+        // `DesignSystemBottomNavigationBar`.
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Stack(
+              children: [
+                Navigator(
+                  key: nestedNavigatorKey,
+                  onGenerateRoute: (_) => MaterialPageRoute<void>(
+                    builder: (_) => _constrainedMaintenancePage(),
+                  ),
+                ),
+                const Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Text('BOTTOM_NAV_MARKER'),
+                ),
+              ],
+            ),
+            navigatorKey: rootNavigatorKey,
+            mediaQueryData: const MediaQueryData(
+              size: Size(800, 1200),
+              disableAnimations: true,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(rootNavigatorKey.currentState!.canPop(), isFalse);
+        expect(nestedNavigatorKey.currentState!.canPop(), isFalse);
+        expect(find.text('BOTTOM_NAV_MARKER').hitTestable(), findsOneWidget);
+
+        await tester.tap(find.text('Onboarding animation gallery'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text('Onboarding animations'), findsOneWidget);
+        // The push landed on the ROOT navigator, above the whole shell —
+        // not on the nested tab navigator, which would leave the shell's
+        // floating bottom nav bar stacked on top of the gallery.
+        expect(rootNavigatorKey.currentState!.canPop(), isTrue);
+        expect(nestedNavigatorKey.currentState!.canPop(), isFalse);
+        // The marker sits in the same root-navigator page as the nested
+        // Navigator: it's still mounted (a covered route isn't removed from
+        // the tree), but a real hit test at its location now resolves to the
+        // opaque gallery page painted on top of it instead — `hitTestable()`
+        // performs that same z-order-aware hit test, so this proves the
+        // marker is actually covered from the user's point of view, not just
+        // that some push happened somewhere.
+        expect(find.text('BOTTOM_NAV_MARKER').hitTestable(), findsNothing);
+      },
+    );
 
     testWidgets('page displays expected maintenance options', (tester) async {
       await tester.pumpWidget(
