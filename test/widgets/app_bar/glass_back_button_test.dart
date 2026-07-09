@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
@@ -138,6 +139,20 @@ void main() {
       await _pump(tester, const GlassBackButton());
 
       expect(find.byType(GlassActionButton), findsOneWidget);
+    });
+
+    testWidgets('uses localized back tooltip and semantics', (tester) async {
+      final handle = tester.ensureSemantics();
+
+      await _pump(tester, const GlassBackButton());
+
+      expect(find.byTooltip('Back'), findsOneWidget);
+      final node = tester.getSemantics(find.bySemanticsLabel('Back'));
+      expect(node.label, 'Back');
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      expect(node.flagsCollection.isButton, isTrue);
+
+      handle.dispose();
     });
   });
 }

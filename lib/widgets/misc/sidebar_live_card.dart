@@ -44,7 +44,10 @@ class SidebarLiveCard extends StatelessWidget {
   final String timeText;
 
   /// Tapped on the card body (navigates / opens the relevant surface).
-  final VoidCallback onTap;
+  ///
+  /// When null, the card is presentational and does not advertise button
+  /// semantics.
+  final VoidCallback? onTap;
 
   /// Trailing action — typically the stop button (its own colour/affordance).
   final Widget trailing;
@@ -64,7 +67,10 @@ class SidebarLiveCard extends StatelessWidget {
     return Semantics(
       container: true,
       liveRegion: liveRegion,
-      label: semanticsLabel,
+      button: onTap != null,
+      label: semanticsLabel ?? statusLabel,
+      value: '$title, $timeText',
+      onTap: onTap,
       child: Material(
         color: tokens.colors.surface.enabled,
         borderRadius: BorderRadius.circular(tokens.radii.m),

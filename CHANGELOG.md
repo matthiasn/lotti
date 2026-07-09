@@ -43,6 +43,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compact Sync strip. Daily OS and Insights sub-items now use the same grouped
   sidebar surface, so Time Analysis and AI Impact read as intentional secondary
   destinations instead of loose rows.
+- **Keyboard and screen-reader flow is clearer across shared desktop controls.**
+  Saved task-filter rows can now be focused, opened with Enter or Space,
+  renamed with F2, cancelled with Escape, and deleted with a two-step
+  Delete/Backspace flow. Screen readers announce the row as a selected button
+  with rename/delete actions, hidden delete controls stay out of the focus
+  tree, glass overlay buttons now carry proper labels/tooltips, modal Back/Close
+  controls are named, and live sidebar cards announce as actionable buttons with
+  their linked title and elapsed time.
 - **Habit and agent-heavy screens spend less time waiting on the database.**
   Habit heatmaps now load only the latest completion per habit/day, and agent
   summary/feedback paths batch payload lookups instead of firing many

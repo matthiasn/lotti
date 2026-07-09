@@ -29,10 +29,10 @@ Located in `/lib/widgets/app_bar/`
 A customizable back navigation widget for app bars.
 
 ### GlassActionButton
-Glass-styled action button for use over images. Combines `GlassIconContainer` with `Material`/`InkWell` for tap feedback; takes any child (typically an `Icon`) and an `onTap` callback.
+Glass-styled action button for use over images. Combines `GlassIconContainer` with `Material`/`InkWell` for tap feedback; takes any child (typically an `Icon`) and an `onTap` callback. Icon-only callers should pass `semanticLabel` or `tooltip`; the widget exposes button semantics and keyboard activation through the underlying `InkWell`.
 
 ### GlassBackButton
-Glass-styled back button for use over images. Wraps `GlassActionButton` with a chevron icon; defaults to `Navigator.maybePop` but accepts a custom `onPressed`.
+Glass-styled back button for use over images. Wraps `GlassActionButton` with a chevron icon; defaults to `Navigator.maybePop` but accepts a custom `onPressed`. It uses Flutter's localized Back tooltip for hover and screen-reader naming.
 
 ### GlassIconContainer
 Container with a dark, blurred glass background for overlay icons, keeping them visible over images of varying brightness.
@@ -183,6 +183,7 @@ Individual task count display component.
 Shared visual shell for the sidebar's *live* status surfaces — the running timer and an active audio recording (`lib/widgets/misc/sidebar_live_card.dart`). Each is its own accent-tinted card (`Color.alphaBlend(accent.withValues(alpha: 0.14), background.level01)` — the accent composited over the darker base so the colour reads richer and the elapsed time keeps strong parity contrast across hues; radius `m`) with a 3px accent rail, laid out as two rows: a **top row** with the leading glyph, the prominent **accent-coloured** elapsed time (`subtitle1`, tabular figures), and the trailing action pinned right; and a **second row** with the linked title (`bodySmall`) spanning the full card width so it wraps to two lines (full value via tooltip) before truncating. The accent both identifies the kind at a glance (teal = timer, red = recording) and gives the card real presence — without the old saturated alarm-red fill, glow, or reactive frame. The composer (`_DesktopSidebarAboveSettings` in `lib/beamer/beamer_app.dart`) stacks the live cards plus the quieter neutral agent-queue card in the `aboveSettings` slot, ordered live-first (audio → timer → agents), with animated gaps that appear only between cards that are both visible.
 
 - `pulse: true` overlays a small breathing record dot on the glyph (recording), and respects the platform reduce-motion setting (static when animations are disabled).
+- The card is announced as an actionable button. Its semantics label names the live state, and its value includes the linked title plus elapsed time.
 
 ### SidebarTimerSection
 Live card surfaced in the sidebar whenever a time-recording session is active (via `SidebarLiveCard`). Replaces the legacy bottom-anchored floating indicator on desktop.

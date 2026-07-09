@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -380,9 +379,15 @@ void main() {
       //   return early.
       // This exercises the newIndex > oldIndex branch (line 133) and the
       // early-return guard (line 134) without persisting anything.
-      final firstItemNode = tester.getSemantics(find.text('Alpha'));
+      final firstItemNode = tester.getSemantics(
+        find.byKey(const ValueKey('sv-1')),
+      );
       final moveDownId = CustomSemanticsAction.getIdentifier(
         const CustomSemanticsAction(label: 'Move down'),
+      );
+      expect(
+        firstItemNode.getSemanticsData().customSemanticsActionIds,
+        contains(moveDownId),
       );
       // ignore: deprecated_member_use
       tester.binding.pipelineOwner.semanticsOwner!.performAction(
@@ -418,9 +423,15 @@ void main() {
       // newIndex(0) <= oldIndex(1) → no adjustment; adjusted == 0 ≠ 1
       // so onReorder('sv-2', 'sv-1') fires and the controller persists
       // sv-2 at position 0.
-      final secondItemNode = tester.getSemantics(find.text('Bravo'));
+      final secondItemNode = tester.getSemantics(
+        find.byKey(const ValueKey('sv-2')),
+      );
       final moveUpId = CustomSemanticsAction.getIdentifier(
         const CustomSemanticsAction(label: 'Move up'),
+      );
+      expect(
+        secondItemNode.getSemanticsData().customSemanticsActionIds,
+        contains(moveUpId),
       );
       // ignore: deprecated_member_use
       tester.binding.pipelineOwner.semanticsOwner!.performAction(
@@ -448,8 +459,7 @@ void main() {
   );
 
   testWidgets(
-    'onReorderItem is a no-op when adjusted index equals oldIndex — '
-    'controller is not called',
+    'last item semantics expose upward reorder actions only',
     (tester) async {
       stubPersisted(const [
         SavedTaskFilter(id: 'sv-1', name: 'Alpha', filter: _filterA),
@@ -458,31 +468,21 @@ void main() {
 
       await _pumpSection(tester, onActivate: (_) {});
 
-      // "Move down" on the LAST item: the ReorderableListView fires
-      // onReorderItem(1, 3) — but there are only 2 items so Flutter
-      // clamps to onReorderItem(1, 2). Because newIndex(2) > oldIndex(1)
-      // the widget computes adjusted = 2 - 1 = 1 == oldIndex(1), so it
-      // returns early without calling onReorder — the controller must NOT
-      // write to settings.
-      final lastItemNode = tester.getSemantics(find.text('Bravo'));
+      final lastItemNode = tester.getSemantics(
+        find.byKey(const ValueKey('sv-2')),
+      );
+      final moveUpId = CustomSemanticsAction.getIdentifier(
+        const CustomSemanticsAction(label: 'Move up'),
+      );
       final moveDownId = CustomSemanticsAction.getIdentifier(
         const CustomSemanticsAction(label: 'Move down'),
       );
-      // ignore: deprecated_member_use
-      tester.binding.pipelineOwner.semanticsOwner!.performAction(
-        lastItemNode.id,
-        SemanticsAction.customAction,
-        moveDownId,
-      );
-      await tester.pumpAndSettle();
+      final actionIds = lastItemNode
+          .getSemanticsData()
+          .customSemanticsActionIds;
 
-      // No persistence write must occur because the reorder was a no-op.
-      verifyNever(
-        () => mocks.settingsDb.saveSettingsItem(
-          SavedTaskFiltersPersistence.storageKey,
-          any(),
-        ),
-      );
+      expect(actionIds, contains(moveUpId));
+      expect(actionIds, isNot(contains(moveDownId)));
     },
   );
 }
