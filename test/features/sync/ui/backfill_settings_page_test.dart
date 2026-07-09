@@ -542,7 +542,7 @@ void main() {
       when(() => matrixService.queueCoordinator).thenReturn(coordinator);
       when(() => coordinator.queue).thenReturn(queue);
       when(() => queue.depthChanges).thenAnswer((_) => depthCtl.stream);
-      when(() => queue.stats()).thenAnswer(
+      when(() => queue.depthSnapshot()).thenAnswer(
         (_) async => const QueueStats(
           total: 0,
           byProducer: {},
@@ -581,24 +581,27 @@ void main() {
       await pumpBody(tester);
     }
 
-    testWidgets('initial paint reads queue.stats() for inbound + skipped', (
-      tester,
-    ) async {
-      when(() => queue.stats()).thenAnswer(
-        (_) async => const QueueStats(
-          total: 4,
-          byProducer: {},
-          readyNow: 4,
-          oldestEnqueuedAt: null,
-          abandoned: 2,
-        ),
-      );
-      await pumpInScaffold(tester);
+    testWidgets(
+      'initial paint reads queue.depthSnapshot() for inbound + skipped',
+      (
+        tester,
+      ) async {
+        when(() => queue.depthSnapshot()).thenAnswer(
+          (_) async => const QueueStats(
+            total: 4,
+            byProducer: {},
+            readyNow: 0,
+            oldestEnqueuedAt: null,
+            abandoned: 2,
+          ),
+        );
+        await pumpInScaffold(tester);
 
-      // Inbound queue cell shows 4; skipped cell shows 2.
-      expect(find.text('4'), findsWidgets);
-      expect(find.text('2'), findsWidgets);
-    });
+        // Inbound queue cell shows 4; skipped cell shows 2.
+        expect(find.text('4'), findsWidgets);
+        expect(find.text('2'), findsWidgets);
+      },
+    );
 
     testWidgets('depthChanges emission updates the status row', (
       tester,
@@ -1032,7 +1035,7 @@ void main() {
       when(() => matrixService.queueCoordinator).thenReturn(coordinator);
       when(() => coordinator.queue).thenReturn(queue);
       when(() => queue.depthChanges).thenAnswer((_) => depthCtl.stream);
-      when(() => queue.stats()).thenAnswer(
+      when(() => queue.depthSnapshot()).thenAnswer(
         (_) async => const QueueStats(
           total: 0,
           byProducer: {},

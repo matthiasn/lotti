@@ -1072,6 +1072,49 @@ void main() {
     );
 
     test(
+      'depthSnapshot skips the applied ledger and ready-now probe for '
+      'depth-only surfaces',
+      () async {
+        await withClock(
+          Clock.fixed(DateTime.fromMillisecondsSinceEpoch(250000)),
+          () async {
+            Future<InboundQueueEntry> enqueueAndLease(String eventId) async {
+              await queue.enqueueLive(
+                _buildSyncEvent(
+                  eventId: eventId,
+                  roomId: roomA,
+                  originTsMs: 1,
+                ),
+              );
+              return (await queue.peekBatchReady()).single;
+            }
+
+            await queue.commitApplied(await enqueueAndLease(r'$applied'));
+            await queue.markSkipped(
+              await enqueueAndLease(r'$abandoned'),
+              reason: 'poison',
+            );
+            await queue.enqueueLive(
+              _buildSyncEvent(
+                eventId: r'$enqueued',
+                roomId: roomA,
+                originTsMs: 1,
+              ),
+            );
+
+            final snapshot = await queue.depthSnapshot();
+
+            expect(snapshot.total, 1);
+            expect(snapshot.byProducer[InboundEventProducer.live], 1);
+            expect(snapshot.abandoned, 1);
+            expect(snapshot.applied, 0);
+            expect(snapshot.readyNow, 0);
+          },
+        );
+      },
+    );
+
+    test(
       'ready-now probe uses literal peekable statuses so partial indexes '
       'remain provable',
       () async {

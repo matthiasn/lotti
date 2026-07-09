@@ -55,6 +55,14 @@ class InboundQueue {
 
   Future<void> dispose() => _depthEmitter.dispose();
 
+  /// Lightweight active-depth snapshot for UI seed values.
+  ///
+  /// Unlike [stats], this deliberately skips the applied ledger and
+  /// ready-now count. Those diagnostics require additional queue scans and
+  /// were showing up in slow-query logs when depth-only surfaces seeded their
+  /// first value.
+  Future<QueueStats> depthSnapshot() => _depthStats();
+
   /// Runs [body] inside a single `sync_db` transaction so a batch of
   /// `commitApplied` / `scheduleRetry` / `markSkipped` calls coalesce
   /// into one write transaction instead of one per entry. Drift nests
