@@ -128,6 +128,7 @@ extension _DayAgentCaptureToolHandlers on DayAgentCaptureService {
     if (task == null) {
       throw const DayAgentCaptureException('failed to create task');
     }
+    await _assignCategoryAgentForTask(task: task, category: category);
 
     final captureItemId = _optionalString(args['captureItemId']);
     ParsedItemEntity? updatedParsedItem;
@@ -178,6 +179,36 @@ extension _DayAgentCaptureToolHandlers on DayAgentCaptureService {
       'estimateMinutes': task.data.estimate?.inMinutes,
       'due': task.data.due?.toIso8601String(),
     };
+  }
+
+  Future<void> _assignCategoryAgentForTask({
+    required Task task,
+    required CategoryDefinition? category,
+  }) async {
+    final service = taskAgentService;
+    final categoryId = task.meta.categoryId;
+    final templateId = category?.defaultTemplateId;
+    if (service == null ||
+        category == null ||
+        categoryId == null ||
+        templateId == null) {
+      return;
+    }
+    try {
+      await service.createTaskAgent(
+        taskId: task.id,
+        templateId: templateId,
+        profileId: category.defaultProfileId,
+        allowedCategoryIds: {categoryId},
+      );
+    } catch (e, s) {
+      domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
+        message: 'failed to auto-assign task agent for capture-created task',
+        stackTrace: s,
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------

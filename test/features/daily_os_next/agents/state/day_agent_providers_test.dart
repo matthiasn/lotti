@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -156,6 +157,7 @@ void main() {
       final fts5Db = MockFts5Db();
       final orchestrator = MockWakeOrchestrator();
       final domainLogger = MockDomainLogger();
+      final taskAgentService = MockTaskAgentService();
       final notifications = MockUpdateNotifications();
 
       // Fts5Db is resolved through getIt rather than a Riverpod provider.
@@ -173,6 +175,7 @@ void main() {
         journalRepositoryProvider.overrideWithValue(journalRepository),
         wakeOrchestratorProvider.overrideWithValue(orchestrator),
         domainLoggerProvider.overrideWithValue(domainLogger),
+        taskAgentServiceProvider.overrideWithValue(taskAgentService),
         updateNotificationsProvider.overrideWithValue(notifications),
       ]);
 
@@ -185,6 +188,7 @@ void main() {
       expect(service.fts5Db, same(fts5Db));
       expect(service.orchestrator, same(orchestrator));
       expect(service.domainLogger, same(domainLogger));
+      expect(service.taskAgentService, same(taskAgentService));
 
       expectPersistedStateNotification(
         callback: service.onPersistedStateChanged,
