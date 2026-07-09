@@ -27,6 +27,17 @@ part of 'sync_db.dart';
   'ON outbox (priority, created_at, id) '
   'WHERE status IN (0, 3)',
 )
+// Covers `getPendingBackfillEntries`, which only needs actionable outbox rows
+// whose subject starts with `backfillRequest:`. The priority-ordered
+// actionable index above proves the status predicate but still walks every
+// pending/sending row to apply the subject filter. This subject-keyed partial
+// lets the query perform a tight prefix range scan over only queued backfill
+// requests.
+@TableIndex.sql(
+  'CREATE INDEX idx_outbox_actionable_subject '
+  'ON outbox (subject) '
+  'WHERE status IN (0, 3)',
+)
 // Covers `findPendingByEntryId` — the outbox merge-deduplication path
 // fired on every enqueue. Filter is `status = pending AND
 // outbox_entry_id = ? ORDER BY created_at DESC LIMIT 1`. Without this

@@ -27,21 +27,31 @@ mixin _SyncDbOutboxDedup on _$SyncDatabase {
   ///    `_outboxSendingStatus = 3` — the guard test in
   ///    `test/database/sync_db_test.dart` asserts the partial-index
   ///    declaration stays in sync with this assumption.
-  /// 2. `subject LIKE 'backfillRequest:%'` — `_enqueueBackfillRequest`
-  ///    sets `subject` to `'backfillRequest:batch:N'` for every backfill
-  ///    request enqueue, so the prefix is a reliable marker. Without
-  ///    this filter we materialise every actionable row and JSON-decode
-  ///    each one to find the tiny subset of backfill requests; with it,
-  ///    only the matching rows are decoded.
+  /// 2. Subject prefix range — `_enqueueBackfillRequest` sets `subject` to
+  ///    `'backfillRequest:batch:N'` for every backfill
+  ///    request enqueue, so the prefix is a reliable marker. The SQL uses
+  ///    a bounded prefix range (`>= 'backfillRequest:'` and
+  ///    `< 'backfillRequest;'`) so SQLite can range-scan
+  ///    `idx_outbox_actionable_subject` instead of walking every actionable
+  ///    row and testing `LIKE`.
   Future<Set<({String hostId, int counter})>>
   getPendingBackfillEntries() async {
-    final pendingItems =
-        await (select(outbox)..where(
-              (t) =>
-                  const CustomExpression<bool>('status IN (0, 3)') &
-                  t.subject.like('backfillRequest:%'),
-            ))
-            .get();
+    const prefix = 'backfillRequest:';
+    const upperBound = 'backfillRequest;';
+    final pendingItems = await customSelect(
+      '''
+      SELECT *
+      FROM outbox INDEXED BY idx_outbox_actionable_subject
+      WHERE status IN (0, 3)
+        AND subject >= ?
+        AND subject < ?
+      ''',
+      variables: [
+        const Variable<String>(prefix),
+        const Variable<String>(upperBound),
+      ],
+      readsFrom: {outbox},
+    ).asyncMap(outbox.mapFromRow).get();
 
     final entries = <({String hostId, int counter})>{};
 

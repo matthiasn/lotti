@@ -2945,6 +2945,10 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     'idx_outbox_actionable_priority_created_at',
     'CREATE INDEX idx_outbox_actionable_priority_created_at ON outbox (priority, created_at, id) WHERE status IN (0, 3)',
   );
+  late final Index idxOutboxActionableSubject = Index(
+    'idx_outbox_actionable_subject',
+    'CREATE INDEX idx_outbox_actionable_subject ON outbox (subject) WHERE status IN (0, 3)',
+  );
   late final Index idxOutboxPendingEntryIdCreatedAt = Index(
     'idx_outbox_pending_entry_id_created_at',
     'CREATE INDEX idx_outbox_pending_entry_id_created_at ON outbox (outbox_entry_id, created_at) WHERE status = 0 AND outbox_entry_id IS NOT NULL',
@@ -3041,6 +3045,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     queueMarkers,
     idxOutboxStatusPriorityCreatedAt,
     idxOutboxActionablePriorityCreatedAt,
+    idxOutboxActionableSubject,
     idxOutboxPendingEntryIdCreatedAt,
     idxOutboxPendingCreatedId,
     idxOutboxSendingExpiry,

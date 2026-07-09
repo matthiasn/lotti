@@ -28,6 +28,10 @@ const _createIdxOutboxSentUpdatedAt =
     'CREATE INDEX IF NOT EXISTS idx_outbox_sent_updated_at '
     'ON outbox (updated_at, id) '
     'WHERE status = 1';
+const _createIdxOutboxActionableSubject =
+    'CREATE INDEX IF NOT EXISTS idx_outbox_actionable_subject '
+    'ON outbox (subject) '
+    'WHERE status IN (0, 3)';
 
 const _createSyncSequenceWatermarks = '''
 CREATE TABLE IF NOT EXISTS sync_sequence_watermarks (
@@ -81,7 +85,7 @@ class SyncDatabase extends _$SyncDatabase
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration {
@@ -92,6 +96,7 @@ class SyncDatabase extends _$SyncDatabase
         await customStatement(_createIdxOutboxSentUpdatedAt);
         await customStatement(_createSyncSequenceWatermarks);
         await customStatement(_idxInboundEventQueueActiveStatusRoom);
+        await customStatement(_createIdxOutboxActionableSubject);
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from < 2) {
@@ -566,6 +571,22 @@ class SyncDatabase extends _$SyncDatabase
           ).getSingleOrNull();
           if (outboxExists != null) {
             await customStatement(_createIdxOutboxSentUpdatedAt);
+            await customStatement('ANALYZE');
+          }
+        }
+        if (from < 27) {
+          // `getPendingBackfillEntries` checks the outbox for queued
+          // backfillRequest messages on every automatic backfill tick. The
+          // generic actionable index can prove `status IN (0,3)`, but still
+          // has to scan every pending/sending row to apply the subject prefix.
+          // A subject-keyed partial index lets the query range-scan only
+          // `backfillRequest:` rows.
+          final outboxExists = await customSelect(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'outbox'",
+          ).getSingleOrNull();
+          if (outboxExists != null) {
+            await customStatement(_createIdxOutboxActionableSubject);
             await customStatement('ANALYZE');
           }
         }
