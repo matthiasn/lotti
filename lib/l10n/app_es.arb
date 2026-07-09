@@ -1877,6 +1877,7 @@
   "dailyOsNextRenameFailed": "No se pudo renombrar: inténtalo de nuevo.",
   "dailyOsNextReviewAddBuffer": "Añadir margen",
   "dailyOsNextReviewAddBufferPrompt": "Añade un margen realista entre los bloques planificados, sobre todo en transiciones y después de trabajo exigente.",
+  "dailyOsNextReviewAdjust": "Ajustar",
   "dailyOsNextReviewLooksGood": "Se ve bien",
   "dailyOsNextReviewMoveLighter": "Mover lo ligero",
   "dailyOsNextReviewMoveLighterPrompt": "Mueve el trabajo más ligero o de menor energía a más tarde y reserva la mejor ventana de foco para la tarea más exigente.",

@@ -1877,6 +1877,7 @@
   "dailyOsNextRenameFailed": "Impossible de renommer — réessaie.",
   "dailyOsNextReviewAddBuffer": "Ajouter du tampon",
   "dailyOsNextReviewAddBufferPrompt": "Ajoute un tampon réaliste entre les blocs prévus, surtout autour des transitions et après un travail exigeant.",
+  "dailyOsNextReviewAdjust": "Ajuster",
   "dailyOsNextReviewLooksGood": "Ça me va",
   "dailyOsNextReviewMoveLighter": "Déplacer le léger",
   "dailyOsNextReviewMoveLighterPrompt": "Déplace le travail plus léger ou moins énergivore plus tard, et garde la meilleure fenêtre de concentration pour la tâche la plus exigeante.",

@@ -3985,33 +3985,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Review decisions before building your day';
 
   @override
-  String get dailyOsNextReviewAddBuffer => 'Add buffer';
-
-  @override
-  String get dailyOsNextReviewAddBufferPrompt =>
-      'Add a realistic buffer between the planned blocks, especially around transitions and after demanding work.';
-
-  @override
-  String get dailyOsNextReviewLooksGood => 'Looks good';
-
-  @override
-  String get dailyOsNextReviewMoveLighter => 'Move lighter';
-
-  @override
-  String get dailyOsNextReviewMoveLighterPrompt =>
-      'Move the lighter or lower-energy work later, and keep the strongest focus window for the most demanding task.';
-
-  @override
-  String get dailyOsNextReviewTooMuch => 'Too much';
-
-  @override
-  String get dailyOsNextReviewTooMuchPrompt =>
-      'This plan is too much for today. Reduce the load, protect breathing room, and keep only the most important blocks.';
-
-  @override
-  String get dailyOsNextReviewWhyTitle => 'Why these made it in';
-
-  @override
   String get dailyOsNextRefineAccept => 'Accept';
 
   @override
@@ -4071,6 +4044,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextRenameFailed => 'Couldn\'t rename — try again.';
+
+  @override
+  String get dailyOsNextReviewAddBuffer => 'Add buffer';
+
+  @override
+  String get dailyOsNextReviewAddBufferPrompt =>
+      'Add a realistic buffer between the planned blocks, especially around transitions and after demanding work.';
+
+  @override
+  String get dailyOsNextReviewAdjust => 'Adjust';
+
+  @override
+  String get dailyOsNextReviewLooksGood => 'Looks good';
+
+  @override
+  String get dailyOsNextReviewMoveLighter => 'Move lighter';
+
+  @override
+  String get dailyOsNextReviewMoveLighterPrompt =>
+      'Move the lighter or lower-energy work later, and keep the strongest focus window for the most demanding task.';
+
+  @override
+  String get dailyOsNextReviewTooMuch => 'Too much';
+
+  @override
+  String get dailyOsNextReviewTooMuchPrompt =>
+      'This plan is too much for today. Reduce the load, protect breathing room, and keep only the most important blocks.';
+
+  @override
+  String get dailyOsNextReviewWhyTitle => 'Why these made it in';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Drop';

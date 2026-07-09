@@ -183,6 +183,24 @@ void main() {
       expect(find.text('HIGH ENERGY'), findsNothing);
     });
 
+    testWidgets('planned blocks expose their own reason tooltip', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 1200));
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draft(),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byTooltip('Your highest-focus window.'), findsOneWidget);
+    });
+
     testWidgets('opens task-backed timeline blocks through app navigation', (
       tester,
     ) async {
@@ -364,7 +382,7 @@ void main() {
       },
     );
 
-    testWidgets('timeline blocks never render a why affordance', (
+    testWidgets('planned timeline blocks render a quiet why affordance', (
       tester,
     ) async {
       _setView(tester, const Size(1280, 1200));
@@ -379,9 +397,9 @@ void main() {
       );
       await tester.pump();
 
-      // Placement reasons surface on the agenda's sparkle tooltip; the
-      // duration-sized timeline boxes stay text-light.
-      expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
+      // Placement reasons stay compact in the duration-sized timeline boxes.
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
+      expect(find.byTooltip('Your highest-focus window.'), findsOneWidget);
     });
 
     testWidgets('now-line renders inside the visible window', (tester) async {

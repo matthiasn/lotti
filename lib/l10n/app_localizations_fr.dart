@@ -4066,33 +4066,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Vérifie les décisions avant de construire ta journée';
 
   @override
-  String get dailyOsNextReviewAddBuffer => 'Ajouter du tampon';
-
-  @override
-  String get dailyOsNextReviewAddBufferPrompt =>
-      'Ajoute un tampon réaliste entre les blocs prévus, surtout autour des transitions et après un travail exigeant.';
-
-  @override
-  String get dailyOsNextReviewLooksGood => 'Ça me va';
-
-  @override
-  String get dailyOsNextReviewMoveLighter => 'Déplacer le léger';
-
-  @override
-  String get dailyOsNextReviewMoveLighterPrompt =>
-      'Déplace le travail plus léger ou moins énergivore plus tard, et garde la meilleure fenêtre de concentration pour la tâche la plus exigeante.';
-
-  @override
-  String get dailyOsNextReviewTooMuch => 'Trop chargé';
-
-  @override
-  String get dailyOsNextReviewTooMuchPrompt =>
-      'Ce plan est trop chargé pour aujourd\'hui. Réduis la charge, garde de l\'air, et conserve seulement les blocs les plus importants.';
-
-  @override
-  String get dailyOsNextReviewWhyTitle => 'Pourquoi c\'est dans le plan';
-
-  @override
   String get dailyOsNextRefineAccept => 'Accepter';
 
   @override
@@ -4153,6 +4126,36 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextRenameFailed => 'Impossible de renommer — réessaie.';
+
+  @override
+  String get dailyOsNextReviewAddBuffer => 'Ajouter du tampon';
+
+  @override
+  String get dailyOsNextReviewAddBufferPrompt =>
+      'Ajoute un tampon réaliste entre les blocs prévus, surtout autour des transitions et après un travail exigeant.';
+
+  @override
+  String get dailyOsNextReviewAdjust => 'Ajuster';
+
+  @override
+  String get dailyOsNextReviewLooksGood => 'Ça me va';
+
+  @override
+  String get dailyOsNextReviewMoveLighter => 'Déplacer le léger';
+
+  @override
+  String get dailyOsNextReviewMoveLighterPrompt =>
+      'Déplace le travail plus léger ou moins énergivore plus tard, et garde la meilleure fenêtre de concentration pour la tâche la plus exigeante.';
+
+  @override
+  String get dailyOsNextReviewTooMuch => 'Trop chargé';
+
+  @override
+  String get dailyOsNextReviewTooMuchPrompt =>
+      'Ce plan est trop chargé pour aujourd\'hui. Réduis la charge, garde de l\'air, et conserve seulement les blocs les plus importants.';
+
+  @override
+  String get dailyOsNextReviewWhyTitle => 'Pourquoi c\'est dans le plan';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Abandonner';

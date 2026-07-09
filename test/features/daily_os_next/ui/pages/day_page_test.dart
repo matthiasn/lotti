@@ -564,7 +564,7 @@ void main() {
       expect(find.byType(DayTimeline), findsOneWidget);
     });
 
-    testWidgets('drafted footer shows Refine + Lock In CTAs (no Wrap up)', (
+    testWidgets('drafted footer keeps Refine and commits via Looks good', (
       tester,
     ) async {
       _setSurface(tester);
@@ -574,7 +574,8 @@ void main() {
       final messages = tester.element(find.byType(DayPage)).messages;
       expect(find.byType(DesignSystemGlassStrip), findsOneWidget);
       expect(find.text(messages.dailyOsNextDayRefineCta), findsOneWidget);
-      expect(find.text(messages.dailyOsNextDayLockInCta), findsOneWidget);
+      expect(find.text(messages.dailyOsNextReviewLooksGood), findsOneWidget);
+      expect(find.text(messages.dailyOsNextDayLockInCta), findsNothing);
       expect(find.text(messages.dailyOsNextDayWrapUpCta), findsNothing);
     });
 
@@ -653,12 +654,12 @@ void main() {
         context,
       );
       final messages = context.messages;
-      final lockInBottom = tester
-          .getBottomLeft(find.text(messages.dailyOsNextDayLockInCta))
+      final looksGoodBottom = tester
+          .getBottomLeft(find.text(messages.dailyOsNextReviewLooksGood))
           .dy;
 
       expect(
-        lockInBottom,
+        looksGoodBottom,
         lessThan(phoneMediaQueryData.size.height - bottomNavHeight),
       );
       expect(
@@ -840,6 +841,50 @@ void main() {
       },
     );
 
+    testWidgets('large text folds quick refinements into an Adjust menu', (
+      tester,
+    ) async {
+      final agent = RecordingDayAgent(
+        diff: PlanDiff(
+          id: 'compact_diff',
+          transcript: 'compact',
+          changes: const [],
+          updatedPlan: _draftedWithReasons(),
+        ),
+      );
+      final mediaQueryData = phoneMediaQueryData.copyWith(
+        textScaler: const TextScaler.linear(2),
+      );
+      _setSurfaceSize(tester, mediaQueryData.size);
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(draft: _draftedWithReasons()),
+          mediaQueryData: mediaQueryData,
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayPage)).messages;
+      expect(find.text(messages.dailyOsNextReviewAdjust), findsOneWidget);
+      expect(find.text(messages.dailyOsNextReviewTooMuch), findsNothing);
+
+      await tester.tap(find.text(messages.dailyOsNextReviewAdjust));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump();
+      await tester.tap(find.text(messages.dailyOsNextReviewTooMuch));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump();
+
+      expect(agent.proposeCount, 1);
+      expect(
+        agent.proposedTranscript,
+        messages.dailyOsNextReviewTooMuchPrompt,
+      );
+    });
+
     testWidgets(
       'accepted refine modal invalidates the current draft and keeps day page',
       (tester) async {
@@ -883,27 +928,6 @@ void main() {
 
         expect(find.byType(DayPage), findsOneWidget);
         expect(find.byType(RefineModalContent), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'tapping Lock In beams to the DailyOS commit route',
-      (tester) async {
-        final agent = RecordingDayAgent();
-        String? route;
-        nav_service.beamToNamedOverride = (path) => route = path;
-        final draft = _drafted();
-        await _pumpDayPage(tester, draft: draft, agent: agent);
-
-        final messages = tester.element(find.byType(DayPage)).messages;
-        await tester.tap(find.text(messages.dailyOsNextDayLockInCta));
-        await tester.pump();
-
-        expect(
-          route,
-          dailyOsNextRoutePath(DailyOsNextRouteTarget.commit, draft.dayDate),
-        );
-        expect(find.byType(DayPage), findsOneWidget);
       },
     );
 

@@ -4069,33 +4069,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Revizuiți deciziile înainte de a vă construi ziua';
 
   @override
-  String get dailyOsNextReviewAddBuffer => 'Adăugați rezervă';
-
-  @override
-  String get dailyOsNextReviewAddBufferPrompt =>
-      'Adăugați o rezervă realistă între blocurile planificate, mai ales la tranziții și după munca solicitantă.';
-
-  @override
-  String get dailyOsNextReviewLooksGood => 'Arată bine';
-
-  @override
-  String get dailyOsNextReviewMoveLighter => 'Mutați ce e mai ușor';
-
-  @override
-  String get dailyOsNextReviewMoveLighterPrompt =>
-      'Mutați munca mai ușoară sau cu energie mai redusă mai târziu și păstrați cea mai bună fereastră de concentrare pentru sarcina cea mai solicitantă.';
-
-  @override
-  String get dailyOsNextReviewTooMuch => 'Prea mult';
-
-  @override
-  String get dailyOsNextReviewTooMuchPrompt =>
-      'Acest plan este prea mult pentru astăzi. Reduceți încărcarea, protejați spațiul de respiro și păstrați doar cele mai importante blocuri.';
-
-  @override
-  String get dailyOsNextReviewWhyTitle => 'De ce au intrat în plan';
-
-  @override
   String get dailyOsNextRefineAccept => 'Acceptă';
 
   @override
@@ -4156,6 +4129,36 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dailyOsNextRenameFailed =>
       'Redenumirea nu a reușit — încercați din nou.';
+
+  @override
+  String get dailyOsNextReviewAddBuffer => 'Adăugați rezervă';
+
+  @override
+  String get dailyOsNextReviewAddBufferPrompt =>
+      'Adăugați o rezervă realistă între blocurile planificate, mai ales la tranziții și după munca solicitantă.';
+
+  @override
+  String get dailyOsNextReviewAdjust => 'Ajustați';
+
+  @override
+  String get dailyOsNextReviewLooksGood => 'Arată bine';
+
+  @override
+  String get dailyOsNextReviewMoveLighter => 'Mutați ce e mai ușor';
+
+  @override
+  String get dailyOsNextReviewMoveLighterPrompt =>
+      'Mutați munca mai ușoară sau cu energie mai redusă mai târziu și păstrați cea mai bună fereastră de concentrare pentru sarcina cea mai solicitantă.';
+
+  @override
+  String get dailyOsNextReviewTooMuch => 'Prea mult';
+
+  @override
+  String get dailyOsNextReviewTooMuchPrompt =>
+      'Acest plan este prea mult pentru astăzi. Reduceți încărcarea, protejați spațiul de respiro și păstrați doar cele mai importante blocuri.';
+
+  @override
+  String get dailyOsNextReviewWhyTitle => 'De ce au intrat în plan';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Renunță';

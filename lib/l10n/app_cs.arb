@@ -1686,6 +1686,7 @@
   "dailyOsNextRenameFailed": "Přejmenování se nepovedlo — zkus to znovu.",
   "dailyOsNextReviewAddBuffer": "Přidat rezervu",
   "dailyOsNextReviewAddBufferPrompt": "Přidej realistickou rezervu mezi plánované bloky, hlavně kolem přechodů a po náročné práci.",
+  "dailyOsNextReviewAdjust": "Upravit",
   "dailyOsNextReviewLooksGood": "Vypadá dobře",
   "dailyOsNextReviewMoveLighter": "Lehčí později",
   "dailyOsNextReviewMoveLighterPrompt": "Přesuň lehčí nebo méně energetickou práci na později a nejsilnější soustředěné okno nech pro nejnáročnější úkol.",

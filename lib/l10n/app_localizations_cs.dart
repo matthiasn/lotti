@@ -4038,33 +4038,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zkontroluj rozhodnutí, než si poskládáš den';
 
   @override
-  String get dailyOsNextReviewAddBuffer => 'Přidat rezervu';
-
-  @override
-  String get dailyOsNextReviewAddBufferPrompt =>
-      'Přidej realistickou rezervu mezi plánované bloky, hlavně kolem přechodů a po náročné práci.';
-
-  @override
-  String get dailyOsNextReviewLooksGood => 'Vypadá dobře';
-
-  @override
-  String get dailyOsNextReviewMoveLighter => 'Lehčí později';
-
-  @override
-  String get dailyOsNextReviewMoveLighterPrompt =>
-      'Přesuň lehčí nebo méně energetickou práci na později a nejsilnější soustředěné okno nech pro nejnáročnější úkol.';
-
-  @override
-  String get dailyOsNextReviewTooMuch => 'Je toho moc';
-
-  @override
-  String get dailyOsNextReviewTooMuchPrompt =>
-      'Tenhle plán je na dnešek moc. Zmenši zátěž, chraň prostor k nadechnutí a nech jen nejdůležitější bloky.';
-
-  @override
-  String get dailyOsNextReviewWhyTitle => 'Proč se to dostalo do plánu';
-
-  @override
   String get dailyOsNextRefineAccept => 'Přijmout';
 
   @override
@@ -4125,6 +4098,36 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get dailyOsNextRenameFailed =>
       'Přejmenování se nepovedlo — zkus to znovu.';
+
+  @override
+  String get dailyOsNextReviewAddBuffer => 'Přidat rezervu';
+
+  @override
+  String get dailyOsNextReviewAddBufferPrompt =>
+      'Přidej realistickou rezervu mezi plánované bloky, hlavně kolem přechodů a po náročné práci.';
+
+  @override
+  String get dailyOsNextReviewAdjust => 'Upravit';
+
+  @override
+  String get dailyOsNextReviewLooksGood => 'Vypadá dobře';
+
+  @override
+  String get dailyOsNextReviewMoveLighter => 'Lehčí později';
+
+  @override
+  String get dailyOsNextReviewMoveLighterPrompt =>
+      'Přesuň lehčí nebo méně energetickou práci na později a nejsilnější soustředěné okno nech pro nejnáročnější úkol.';
+
+  @override
+  String get dailyOsNextReviewTooMuch => 'Je toho moc';
+
+  @override
+  String get dailyOsNextReviewTooMuchPrompt =>
+      'Tenhle plán je na dnešek moc. Zmenši zátěž, chraň prostor k nadechnutí a nech jen nejdůležitější bloky.';
+
+  @override
+  String get dailyOsNextReviewWhyTitle => 'Proč se to dostalo do plánu';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Zahodit';

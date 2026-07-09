@@ -4041,33 +4041,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Prüf die Entscheidungen, bevor du deinen Tag planst';
 
   @override
-  String get dailyOsNextReviewAddBuffer => 'Puffer hinzufügen';
-
-  @override
-  String get dailyOsNextReviewAddBufferPrompt =>
-      'Füge realistischen Puffer zwischen den geplanten Blöcken hinzu, besonders bei Übergängen und nach anspruchsvoller Arbeit.';
-
-  @override
-  String get dailyOsNextReviewLooksGood => 'Sieht gut aus';
-
-  @override
-  String get dailyOsNextReviewMoveLighter => 'Leichter verschieben';
-
-  @override
-  String get dailyOsNextReviewMoveLighterPrompt =>
-      'Verschiebe leichtere oder energieärmere Arbeit nach hinten und halte das stärkste Fokusfenster für die anspruchsvollste Aufgabe frei.';
-
-  @override
-  String get dailyOsNextReviewTooMuch => 'Zu viel';
-
-  @override
-  String get dailyOsNextReviewTooMuchPrompt =>
-      'Dieser Plan ist für heute zu viel. Reduziere die Last, schütze Atemraum und behalte nur die wichtigsten Blöcke.';
-
-  @override
-  String get dailyOsNextReviewWhyTitle => 'Warum das im Plan ist';
-
-  @override
   String get dailyOsNextRefineAccept => 'Übernehmen';
 
   @override
@@ -4128,6 +4101,36 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get dailyOsNextRenameFailed =>
       'Umbenennen fehlgeschlagen — versuch es nochmal.';
+
+  @override
+  String get dailyOsNextReviewAddBuffer => 'Puffer hinzufügen';
+
+  @override
+  String get dailyOsNextReviewAddBufferPrompt =>
+      'Füge realistischen Puffer zwischen den geplanten Blöcken hinzu, besonders bei Übergängen und nach anspruchsvoller Arbeit.';
+
+  @override
+  String get dailyOsNextReviewAdjust => 'Anpassen';
+
+  @override
+  String get dailyOsNextReviewLooksGood => 'Sieht gut aus';
+
+  @override
+  String get dailyOsNextReviewMoveLighter => 'Leichter verschieben';
+
+  @override
+  String get dailyOsNextReviewMoveLighterPrompt =>
+      'Verschiebe leichtere oder energieärmere Arbeit nach hinten und halte das stärkste Fokusfenster für die anspruchsvollste Aufgabe frei.';
+
+  @override
+  String get dailyOsNextReviewTooMuch => 'Zu viel';
+
+  @override
+  String get dailyOsNextReviewTooMuchPrompt =>
+      'Dieser Plan ist für heute zu viel. Reduziere die Last, schütze Atemraum und behalte nur die wichtigsten Blöcke.';
+
+  @override
+  String get dailyOsNextReviewWhyTitle => 'Warum das im Plan ist';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Verwerfen';

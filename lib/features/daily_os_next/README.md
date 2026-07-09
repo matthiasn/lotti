@@ -405,18 +405,22 @@ stateDiagram-v2
   but the background treatment stays shared through the design system component.
 - Drafted Day plans add `_PlanReviewStrip` above the Day footer actions. It
   surfaces up to two block reasons from the persisted draft ("Why this plan"),
-  then offers "Looks good" (same commit route as Lock In) plus quick
-  refinement prompts for making the plan smaller, moving work lighter, or
-  adding buffer. Committed plans do not show the strip because their footer
-  shifts to wrap-up/shutdown behavior.
+  then owns the commit affordance through "Looks good" plus quick refinement
+  prompts for making the plan smaller, moving work lighter, or adding buffer;
+  the lower footer keeps only the freeform Refine action while a draft is still
+  provisional. At large accessibility text sizes, the refinement prompts fold
+  into one compact "Adjust" menu so the sticky footer stays reachable. Committed
+  plans do not show the strip because their footer shifts to wrap-up/shutdown
+  behavior.
 - Agenda rows resolve live task metadata through `taskLiveDataProvider` before
   rendering. `AgendaView` keeps draft/manual block timing as the source of truth,
   then passes the task title, status, estimate, category, `coverArtId`, and
   `coverArtCropX` into `AgendaCard`. The row uses `CoverArtThumbnail` for the
   square task image when one exists and falls back to a bare order number
   when it does not, so the compact mobile list keeps a stable leading column.
-- Agenda rows use a quiet metadata grammar: a bare sparkle icon (reason in
-  the tooltip), bare clock+estimate text, a neutral "In progress" caption
+- Agenda rows and Day timeline blocks use a quiet metadata grammar: a bare
+  sparkle icon (that item's persisted reason in the tooltip), bare
+  clock+estimate text, a neutral "In progress" caption
   (amber is reserved for overdue, the one state that earns a tinted pill),
   a green check glyph for done, and a 2 px progress bar only while
   genuinely mid-flight. Task-linked rows carry the `LinkBadge`; standalone

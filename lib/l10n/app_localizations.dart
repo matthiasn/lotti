@@ -6822,54 +6822,6 @@ abstract class AppLocalizations {
   /// **'Review decisions before building your day'**
   String get dailyOsNextReconcileVoiceHint;
 
-  /// No description provided for @dailyOsNextReviewAddBuffer.
-  ///
-  /// In en, this message translates to:
-  /// **'Add buffer'**
-  String get dailyOsNextReviewAddBuffer;
-
-  /// No description provided for @dailyOsNextReviewAddBufferPrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a realistic buffer between the planned blocks, especially around transitions and after demanding work.'**
-  String get dailyOsNextReviewAddBufferPrompt;
-
-  /// No description provided for @dailyOsNextReviewLooksGood.
-  ///
-  /// In en, this message translates to:
-  /// **'Looks good'**
-  String get dailyOsNextReviewLooksGood;
-
-  /// No description provided for @dailyOsNextReviewMoveLighter.
-  ///
-  /// In en, this message translates to:
-  /// **'Move lighter'**
-  String get dailyOsNextReviewMoveLighter;
-
-  /// No description provided for @dailyOsNextReviewMoveLighterPrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'Move the lighter or lower-energy work later, and keep the strongest focus window for the most demanding task.'**
-  String get dailyOsNextReviewMoveLighterPrompt;
-
-  /// No description provided for @dailyOsNextReviewTooMuch.
-  ///
-  /// In en, this message translates to:
-  /// **'Too much'**
-  String get dailyOsNextReviewTooMuch;
-
-  /// No description provided for @dailyOsNextReviewTooMuchPrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'This plan is too much for today. Reduce the load, protect breathing room, and keep only the most important blocks.'**
-  String get dailyOsNextReviewTooMuchPrompt;
-
-  /// No description provided for @dailyOsNextReviewWhyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Why these made it in'**
-  String get dailyOsNextReviewWhyTitle;
-
   /// No description provided for @dailyOsNextRefineAccept.
   ///
   /// In en, this message translates to:
@@ -6989,6 +6941,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t rename — try again.'**
   String get dailyOsNextRenameFailed;
+
+  /// No description provided for @dailyOsNextReviewAddBuffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Add buffer'**
+  String get dailyOsNextReviewAddBuffer;
+
+  /// No description provided for @dailyOsNextReviewAddBufferPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a realistic buffer between the planned blocks, especially around transitions and after demanding work.'**
+  String get dailyOsNextReviewAddBufferPrompt;
+
+  /// No description provided for @dailyOsNextReviewAdjust.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust'**
+  String get dailyOsNextReviewAdjust;
+
+  /// No description provided for @dailyOsNextReviewLooksGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks good'**
+  String get dailyOsNextReviewLooksGood;
+
+  /// No description provided for @dailyOsNextReviewMoveLighter.
+  ///
+  /// In en, this message translates to:
+  /// **'Move lighter'**
+  String get dailyOsNextReviewMoveLighter;
+
+  /// No description provided for @dailyOsNextReviewMoveLighterPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Move the lighter or lower-energy work later, and keep the strongest focus window for the most demanding task.'**
+  String get dailyOsNextReviewMoveLighterPrompt;
+
+  /// No description provided for @dailyOsNextReviewTooMuch.
+  ///
+  /// In en, this message translates to:
+  /// **'Too much'**
+  String get dailyOsNextReviewTooMuch;
+
+  /// No description provided for @dailyOsNextReviewTooMuchPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'This plan is too much for today. Reduce the load, protect breathing room, and keep only the most important blocks.'**
+  String get dailyOsNextReviewTooMuchPrompt;
+
+  /// No description provided for @dailyOsNextReviewWhyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why these made it in'**
+  String get dailyOsNextReviewWhyTitle;
 
   /// No description provided for @dailyOsNextShutdownCarryoverDrop.
   ///

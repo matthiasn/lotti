@@ -2219,6 +2219,7 @@
   "dailyOsNextRenameFailed": "Couldn't rename — try again.",
   "dailyOsNextReviewAddBuffer": "Add buffer",
   "dailyOsNextReviewAddBufferPrompt": "Add a realistic buffer between the planned blocks, especially around transitions and after demanding work.",
+  "dailyOsNextReviewAdjust": "Adjust",
   "dailyOsNextReviewLooksGood": "Looks good",
   "dailyOsNextReviewMoveLighter": "Move lighter",
   "dailyOsNextReviewMoveLighterPrompt": "Move the lighter or lower-energy work later, and keep the strongest focus window for the most demanding task.",

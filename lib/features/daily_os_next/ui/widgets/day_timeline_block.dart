@@ -203,6 +203,8 @@ class DayBlock extends ConsumerWidget {
     final semanticsLabel = [
       effectiveBlock.title,
       '${_clock(effectiveBlock.start)}–${_clock(effectiveBlock.end)}',
+      if (!tracked && _reasonFor(effectiveBlock) != null)
+        _reasonFor(effectiveBlock)!,
       if (tracked)
         context.messages.dailyOsNextTimelineTracked
       else
@@ -243,6 +245,11 @@ String _clock(DateTime t) {
   return '$h:$m';
 }
 
+String? _reasonFor(TimeBlock block) {
+  final reason = block.reason?.trim();
+  return reason == null || reason.isEmpty ? null : reason;
+}
+
 class _BlockContent extends StatelessWidget {
   const _BlockContent({
     required this.block,
@@ -262,6 +269,7 @@ class _BlockContent extends StatelessWidget {
     final isTaskLinked =
         block.taskId != null && block.taskId!.trim().isNotEmpty;
     final isDone = block.state == TimeBlockState.completed;
+    final reason = tracked ? null : _reasonFor(block);
     // Standalone ai/manual placements are click-to-edit; everything
     // else (cal events, buffers, task-linked, tracked) is read-only.
     final editable =
@@ -372,6 +380,10 @@ class _BlockContent extends StatelessWidget {
                               softWrap: true,
                             ),
                     ),
+                    if (reason != null && !compact) ...[
+                      SizedBox(width: tokens.spacing.step1),
+                      _BlockReasonIcon(reason: reason),
+                    ],
                     if (tracked && isDone) ...[
                       SizedBox(width: tokens.spacing.step1),
                       Icon(
@@ -420,6 +432,28 @@ class _BlockContent extends StatelessWidget {
 
   String _formatRange(TimeBlock block) {
     return '${_clock(block.start)}–${_clock(block.end)}';
+  }
+}
+
+class _BlockReasonIcon extends StatelessWidget {
+  const _BlockReasonIcon({required this.reason});
+
+  final String reason;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Tooltip(
+      message: reason,
+      child: Semantics(
+        label: context.messages.dailyOsNextDayWhyChipLabel,
+        child: Icon(
+          Icons.auto_awesome_rounded,
+          size: tokens.typography.size.caption,
+          color: tokens.colors.aiCard.accent.withValues(alpha: 0.8),
+        ),
+      ),
+    );
   }
 }
 

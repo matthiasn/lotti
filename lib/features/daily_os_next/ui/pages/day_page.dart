@@ -346,7 +346,6 @@ class _DayFooter extends StatelessWidget {
       draft: draft,
       teal: teal,
       onRefine: onRefine,
-      onCommit: onCommit,
       onShutdown: onShutdown,
       expand: !isDesktop,
     );
@@ -419,6 +418,8 @@ class _PlanReviewStrip extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final reasons = _planReasons(draft);
+    final compactActions =
+        dailyOsTextScaleOf(context) >= kDailyOsHideCoachingScale;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
@@ -459,35 +460,42 @@ class _PlanReviewStrip extends StatelessWidget {
               ],
               SizedBox(height: tokens.spacing.step2),
             ],
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: tokens.spacing.step2,
-              runSpacing: tokens.spacing.step2,
-              children: [
-                FilledButton.icon(
-                  onPressed: onLooksGood,
-                  icon: const Icon(Icons.check_rounded),
-                  label: Text(messages.dailyOsNextReviewLooksGood),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => onQuickRefinement(_QuickRefinement.tooMuch),
-                  icon: const Icon(Icons.remove_circle_outline_rounded),
-                  label: Text(messages.dailyOsNextReviewTooMuch),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () =>
-                      onQuickRefinement(_QuickRefinement.moveLighter),
-                  icon: const Icon(Icons.low_priority_rounded),
-                  label: Text(messages.dailyOsNextReviewMoveLighter),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () =>
-                      onQuickRefinement(_QuickRefinement.addBuffer),
-                  icon: const Icon(Icons.add_rounded),
-                  label: Text(messages.dailyOsNextReviewAddBuffer),
-                ),
-              ],
-            ),
+            if (compactActions)
+              _CompactReviewActions(
+                onLooksGood: onLooksGood,
+                onQuickRefinement: onQuickRefinement,
+              )
+            else
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: tokens.spacing.step2,
+                runSpacing: tokens.spacing.step2,
+                children: [
+                  FilledButton.icon(
+                    onPressed: onLooksGood,
+                    icon: const Icon(Icons.check_rounded),
+                    label: Text(messages.dailyOsNextReviewLooksGood),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        onQuickRefinement(_QuickRefinement.tooMuch),
+                    icon: const Icon(Icons.remove_circle_outline_rounded),
+                    label: Text(messages.dailyOsNextReviewTooMuch),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        onQuickRefinement(_QuickRefinement.moveLighter),
+                    icon: const Icon(Icons.low_priority_rounded),
+                    label: Text(messages.dailyOsNextReviewMoveLighter),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        onQuickRefinement(_QuickRefinement.addBuffer),
+                    icon: const Icon(Icons.add_rounded),
+                    label: Text(messages.dailyOsNextReviewAddBuffer),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -507,6 +515,129 @@ class _PlanReviewStrip extends StatelessWidget {
   }
 }
 
+class _CompactReviewActions extends StatelessWidget {
+  const _CompactReviewActions({
+    required this.onLooksGood,
+    required this.onQuickRefinement,
+  });
+
+  final VoidCallback onLooksGood;
+  final ValueChanged<_QuickRefinement> onQuickRefinement;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton.icon(
+          onPressed: onLooksGood,
+          icon: const Icon(Icons.check_rounded),
+          label: Text(
+            messages.dailyOsNextReviewLooksGood,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        PopupMenuButton<_QuickRefinement>(
+          tooltip: messages.dailyOsNextReviewAdjust,
+          onSelected: onQuickRefinement,
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: _QuickRefinement.tooMuch,
+              child: _QuickReviewMenuItem(
+                icon: Icons.remove_circle_outline_rounded,
+                label: messages.dailyOsNextReviewTooMuch,
+              ),
+            ),
+            PopupMenuItem(
+              value: _QuickRefinement.moveLighter,
+              child: _QuickReviewMenuItem(
+                icon: Icons.low_priority_rounded,
+                label: messages.dailyOsNextReviewMoveLighter,
+              ),
+            ),
+            PopupMenuItem(
+              value: _QuickRefinement.addBuffer,
+              child: _QuickReviewMenuItem(
+                icon: Icons.add_rounded,
+                label: messages.dailyOsNextReviewAddBuffer,
+              ),
+            ),
+          ],
+          child: _ReviewAdjustButton(label: messages.dailyOsNextReviewAdjust),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReviewAdjustButton extends StatelessWidget {
+  const _ReviewAdjustButton({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final teal = tokens.colors.interactive.enabled;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: teal.withValues(alpha: 0.32)),
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step4,
+          vertical: tokens.spacing.step2,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.tune_rounded, size: 18, color: teal),
+            SizedBox(width: tokens.spacing.step2),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: teal,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            SizedBox(width: tokens.spacing.step1),
+            Icon(Icons.expand_more_rounded, size: 18, color: teal),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickReviewMenuItem extends StatelessWidget {
+  const _QuickReviewMenuItem({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: tokens.colors.interactive.enabled),
+        SizedBox(width: tokens.spacing.step3),
+        Flexible(child: Text(label)),
+      ],
+    );
+  }
+}
+
 /// The day footer's action row for a committed plan: refine / commit /
 /// shutdown buttons. [expand] switches between the wide side-by-side layout
 /// and a stacked layout on narrow widths.
@@ -515,7 +646,6 @@ class _DayFooterActions extends StatelessWidget {
     required this.draft,
     required this.teal,
     required this.onRefine,
-    required this.onCommit,
     required this.onShutdown,
     required this.expand,
   });
@@ -523,7 +653,6 @@ class _DayFooterActions extends StatelessWidget {
   final DraftPlan draft;
   final Color teal;
   final VoidCallback onRefine;
-  final VoidCallback onCommit;
   final VoidCallback onShutdown;
   final bool expand;
 
@@ -550,51 +679,38 @@ class _DayFooterActions extends StatelessWidget {
         ),
       ),
     );
-    final primaryButton = draft.state == DayState.drafted
-        ? FilledButton.icon(
-            onPressed: onCommit,
-            icon: const Icon(Icons.lock_outline_rounded, size: 14),
-            label: Text(
-              context.messages.dailyOsNextDayLockInCta,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: teal,
-              foregroundColor: tokens.colors.text.onInteractiveAlert,
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step4,
-                vertical: tokens.spacing.step2,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-              ),
-            ),
-          )
-        : OutlinedButton.icon(
-            onPressed: onShutdown,
-            icon: Icon(
-              Icons.nights_stay_outlined,
-              size: 14,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-            label: Text(
-              context.messages.dailyOsNextDayWrapUpCta,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: tokens.colors.text.mediumEmphasis,
-              side: BorderSide(color: tokens.colors.decorative.level01),
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step4,
-                vertical: tokens.spacing.step2,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-              ),
-            ),
-          );
+    if (draft.state == DayState.drafted) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (expand) Expanded(child: refineButton) else refineButton,
+        ],
+      );
+    }
+    final primaryButton = OutlinedButton.icon(
+      onPressed: onShutdown,
+      icon: Icon(
+        Icons.nights_stay_outlined,
+        size: 14,
+        color: tokens.colors.text.mediumEmphasis,
+      ),
+      label: Text(
+        context.messages.dailyOsNextDayWrapUpCta,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: tokens.colors.text.mediumEmphasis,
+        side: BorderSide(color: tokens.colors.decorative.level01),
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step4,
+          vertical: tokens.spacing.step2,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+        ),
+      ),
+    );
 
     return Row(
       children: [

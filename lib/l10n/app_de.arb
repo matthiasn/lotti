@@ -1877,6 +1877,7 @@
   "dailyOsNextRenameFailed": "Umbenennen fehlgeschlagen — versuch es nochmal.",
   "dailyOsNextReviewAddBuffer": "Puffer hinzufügen",
   "dailyOsNextReviewAddBufferPrompt": "Füge realistischen Puffer zwischen den geplanten Blöcken hinzu, besonders bei Übergängen und nach anspruchsvoller Arbeit.",
+  "dailyOsNextReviewAdjust": "Anpassen",
   "dailyOsNextReviewLooksGood": "Sieht gut aus",
   "dailyOsNextReviewMoveLighter": "Leichter verschieben",
   "dailyOsNextReviewMoveLighterPrompt": "Verschiebe leichtere oder energieärmere Arbeit nach hinten und halte das stärkste Fokusfenster für die anspruchsvollste Aufgabe frei.",
