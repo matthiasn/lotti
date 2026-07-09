@@ -245,16 +245,8 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
             maxHeight: maxListHeight,
           ),
           child: _filteredItems.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(spacing.step6),
-                    child: Text(
-                      context.messages.multiSelectNoItemsFound,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                    ),
-                  ),
+              ? _ModalEmptyState(
+                  message: context.messages.multiSelectNoItemsFound,
                 )
               : _SelectableListFrame(
                   child: _HoverlessList(
@@ -290,28 +282,11 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
 
         SizedBox(height: spacing.step4),
 
-        // Action buttons — design-system buttons, end-aligned (secondary
-        // then primary), mirroring the detail-page action bar language.
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            DesignSystemButton(
-              label: context.messages.cancelButton,
-              variant: DesignSystemButtonVariant.secondary,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            SizedBox(width: spacing.step3),
-            DesignSystemButton(
-              label: _selected.isEmpty
-                  ? context.messages.multiSelectAddButton
-                  : context.messages.multiSelectAddButtonWithCount(
-                      _selected.length,
-                    ),
-              onPressed: _selected.isEmpty
-                  ? null
-                  : () => widget.onConfirm(_selected.toList()),
-            ),
-          ],
+        _ModalActionRow(
+          selectedCount: _selected.length,
+          onConfirm: _selected.isEmpty
+              ? null
+              : () => widget.onConfirm(_selected.toList()),
         ),
       ],
     );
@@ -370,16 +345,8 @@ class _MeasurementSelectListState extends State<_MeasurementSelectList> {
         ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxListHeight),
           child: _filteredItems.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(spacing.step6),
-                    child: Text(
-                      context.messages.multiSelectNoItemsFound,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                    ),
-                  ),
+              ? _ModalEmptyState(
+                  message: context.messages.multiSelectNoItemsFound,
                 )
               : _SelectableListFrame(
                   child: _HoverlessList(
@@ -420,24 +387,9 @@ class _MeasurementSelectListState extends State<_MeasurementSelectList> {
                 ),
         ),
         SizedBox(height: spacing.step4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            DesignSystemButton(
-              label: context.messages.cancelButton,
-              variant: DesignSystemButtonVariant.secondary,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            SizedBox(width: spacing.step3),
-            DesignSystemButton(
-              label: _selected.isEmpty
-                  ? context.messages.multiSelectAddButton
-                  : context.messages.multiSelectAddButtonWithCount(
-                      _selected.length,
-                    ),
-              onPressed: _selected.isEmpty ? null : _confirm,
-            ),
-          ],
+        _ModalActionRow(
+          selectedCount: _selected.length,
+          onConfirm: _selected.isEmpty ? null : _confirm,
         ),
       ],
     );
@@ -588,6 +540,62 @@ class _PickerSelectRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ModalEmptyState extends StatelessWidget {
+  const _ModalEmptyState({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step6),
+        child: Text(
+          message,
+          style: tokens.typography.styles.body.bodyMedium.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModalActionRow extends StatelessWidget {
+  const _ModalActionRow({
+    required this.selectedCount,
+    required this.onConfirm,
+  });
+
+  final int selectedCount;
+  final VoidCallback? onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        DesignSystemButton(
+          label: context.messages.cancelButton,
+          variant: DesignSystemButtonVariant.secondary,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        SizedBox(width: spacing.step3),
+        DesignSystemButton(
+          label: selectedCount == 0
+              ? context.messages.multiSelectAddButton
+              : context.messages.multiSelectAddButtonWithCount(selectedCount),
+          onPressed: onConfirm,
+        ),
+      ],
     );
   }
 }
