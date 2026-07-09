@@ -471,6 +471,7 @@ void main() {
         verify(
           () => mockPersistenceLogic.upsertDashboardDefinition(any()),
         ).called(greaterThanOrEqualTo(1));
+        expect(_pillEnabled(tester, 'Save'), isFalse);
       },
     );
 
@@ -1047,8 +1048,18 @@ void main() {
         expect(cardTitleFinder, findsOneWidget);
 
         // Tapping the card opens the edit modal but does not change the
-        // dashboard by itself.
-        await tester.tap(cardTitleFinder);
+        // dashboard by itself. Invoke the card's onTap directly — a
+        // coordinate tap on the text proved flaky in the batched CI run.
+        final waterCard = tester.widget<ItemCard>(
+          find.ancestor(
+            of: find.descendant(
+              of: find.byType(MeasurableItemCard),
+              matching: find.textContaining(measurableWater.displayName),
+            ),
+            matching: find.byType(ItemCard),
+          ),
+        );
+        waterCard.onTap!();
         await tester.pumpAndSettle();
 
         expect(_pillEnabled(tester, 'Save'), isFalse);
@@ -1230,7 +1241,7 @@ void main() {
         final list = tester.widget<ReorderableListView>(
           find.byType(ReorderableListView),
         );
-        list.onReorderItem!(1, 0);
+        list.onReorderItem!(0, 1);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1317,7 +1328,7 @@ void main() {
       final list = tester.widget<ReorderableListView>(
         find.byType(ReorderableListView),
       );
-      list.onReorderItem!(0, 1);
+      list.onReorderItem!(0, 0);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

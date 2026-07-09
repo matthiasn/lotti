@@ -256,7 +256,7 @@ class ItemCard extends StatelessWidget {
     );
   }
 
-  Widget finalDragHandle(
+  static Widget finalDragHandle(
     IconData icon, {
     required int? index,
     required double size,

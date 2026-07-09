@@ -368,6 +368,7 @@ void main() {
 
       expect(confirmedItems, hasLength(2));
       expect(confirmedItems!.first.id, measurableChocolate.id);
+      expect(confirmedItems!.first.aggregationType, AggregationType.dailySum);
       expect(confirmedItems!.last.id, measurableWater.id);
       expect(confirmedItems!.last.aggregationType, AggregationType.dailyMax);
     });

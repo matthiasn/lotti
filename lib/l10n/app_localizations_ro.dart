@@ -4483,7 +4483,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardAddMeasurementButton => 'Măsurători';
 
   @override
-  String get dashboardAddMeasurementTitle => 'Bord de măsurătoari';
+  String get dashboardAddMeasurementTitle => 'Bord de măsurători';
 
   @override
   String get dashboardAddMeasurementTooltip => 'Adăugați o măsurătoare';
@@ -4492,7 +4492,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardAddSurveyButton => 'Studii';
 
   @override
-  String get dashboardAddSurveyTitle => 'Diagrame de Studiu';
+  String get dashboardAddSurveyTitle => 'Sondaje';
 
   @override
   String get dashboardAddWorkoutButton => 'Antrenamente';

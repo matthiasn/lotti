@@ -299,6 +299,10 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                     Future<void> copyDashboard() async {
                       final dashboard = await saveDashboard();
                       if (dashboard == null) return;
+                      if (!mounted) return;
+                      setState(() {
+                        dirty = false;
+                      });
 
                       final entityDefinitions = <EntityDefinition>[dashboard];
 
@@ -451,9 +455,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                 physics: const NeverScrollableScrollPhysics(),
                                 buildDefaultDragHandles: false,
                                 onReorderItem: (int oldIndex, int newIndex) {
-                                  final insertionIndex = newIndex > oldIndex
-                                      ? newIndex - 1
-                                      : newIndex;
+                                  final insertionIndex = newIndex;
                                   if (insertionIndex == oldIndex) return;
 
                                   setState(() {
