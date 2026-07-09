@@ -1221,6 +1221,9 @@ class FakeAiConfigModel extends Fake implements AiConfigModel {}
 class FakeAiConfigInferenceProvider extends Fake
     implements AiConfigInferenceProvider {}
 
+class FakeCreateChatCompletionRequest extends Fake
+    implements CreateChatCompletionRequest {}
+
 class FakeChatSession extends Fake implements ChatSession {}
 
 class FakeChecklistData extends Fake implements ChecklistData {}

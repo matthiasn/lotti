@@ -245,10 +245,12 @@ and image recognition, `glm-5.2` for the high-end thinking slot,
 `flux-2-klein-9b` for image generation, and `voxtral-small-24b-2507` for
 transcription — Voxtral runs through Melious' chat-completions audio path so
 the final response includes token usage, billing, and environmental impact
-metadata. Lotti appends the category speech dictionary to the chat-audio prompt
-for those Voxtral calls; Whisper and explicit transcription model IDs still use
-the transcription endpoint. FTUE setup also creates both Whisper rows so users
-can switch between the regular and Turbo variants. Existing untouched default
+metadata. The shared chat-audio fallback appends the category speech dictionary
+to the prompt for Voxtral, OpenAI chat-audio models, Gemini, and other providers
+that accept audio through chat completions; Whisper and explicit transcription
+model IDs still use the transcription endpoint. FTUE setup also creates both
+Whisper rows so users can switch between the regular and Turbo variants.
+Existing untouched default
 Melious profiles chain through the upgrade migrations during
 `upgradeExisting()` after the model backfill has created the rows: profiles
 that predate the image-generation slot, or still point at the legacy Flux 2
@@ -759,10 +761,10 @@ For speech dictionary support, `UnifiedAiInferenceRepository` and
 `SkillInferenceRunner` still resolve category dictionary terms through
 `PromptBuilderHelper.getSpeechDictionaryTerms()`. The MLX Audio branch forwards
 those terms across the channel with the transcription request. Qwen3-ASR uses
-that list as prompt context for post-recording transcription today. Melious
-Voxtral chat-audio requests append the same dictionary block to the user
-message, while Mistral continues to use its dedicated `context_bias` parameter.
-Decoder-level
+that list as prompt context for post-recording transcription today. Chat-audio
+requests that use the OpenAI-compatible fallback append the same dictionary
+block to the user message, while Mistral continues to use its dedicated
+`context_bias` parameter. Decoder-level
 dictionary/G2P integration remains a separate native bridge follow-up once that
 SDK surface is stable.
 

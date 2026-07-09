@@ -30,16 +30,13 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
-class _FakeCreateChatCompletionRequest extends Fake
-    implements CreateChatCompletionRequest {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
     registerFallbackValue(Uri.parse('http://example.com'));
     registerFallbackValue(FakeBaseRequest());
-    registerFallbackValue(_FakeCreateChatCompletionRequest());
+    registerFallbackValue(FakeCreateChatCompletionRequest());
     registerFallbackValue(FakeAiConfigInferenceProvider());
   });
 
@@ -487,6 +484,43 @@ void main() {
         expect(requestText, contains('IMPORTANT - SPEECH DICTIONARY'));
         expect(requestText, contains('"Lotti"'));
         expect(requestText, isNot(contains(' \n \n\nIMPORTANT')));
+      },
+    );
+
+    test(
+      'caps chat audio speech dictionary terms at 100',
+      () async {
+        final meliousProvider = providerOfType(InferenceProviderType.melious);
+        final openAiClient = MockOpenAIClient();
+
+        stubChatCompletionStream(openAiClient);
+
+        await generateMore
+            .generateWithAudio(
+              prompt,
+              model: 'voxtral-small-24b-2507',
+              audioBase64: 'melious-audio',
+              baseUrl: meliousProvider.baseUrl,
+              apiKey: meliousProvider.apiKey,
+              provider: meliousProvider,
+              overrideClient: openAiClient,
+              speechDictionaryTerms: [
+                for (var i = 0; i < 101; i++) 'Term$i',
+              ],
+            )
+            .toList();
+
+        final request =
+            verify(
+                  () => openAiClient.createChatCompletionStream(
+                    request: captureAny(named: 'request'),
+                  ),
+                ).captured.single
+                as CreateChatCompletionRequest;
+        final requestText = request.toString();
+        expect(requestText, contains('"Term0"'));
+        expect(requestText, contains('"Term99"'));
+        expect(requestText, isNot(contains('"Term100"')));
       },
     );
   });
