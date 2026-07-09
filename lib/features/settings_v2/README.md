@@ -118,7 +118,7 @@ Node gating (flag → node):
 | `definitions/dashboards` | `enableDashboards` |
 | `speech` leaf | `enableSpeechTts` (`enableAiSummaryTtsFlag`) |
 | `advanced/health-import` | `enableHealthImport` (mobile only) |
-| `ai`, `agents`, `definitions`, `theming`, `advanced` branches | always shown |
+| `ai`, `agents`, `definitions`, `recording-style`, `theming`, `advanced` branches | always shown |
 
 `enableHealthImport` is mobile-only by construction: `watchSettingsTree` passes
 `enableHealthImport: isMobile`, while the desktop scope host never enables it.

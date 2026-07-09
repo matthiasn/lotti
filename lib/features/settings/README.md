@@ -423,6 +423,17 @@ This is one of the more useful boundaries in the feature. Settings owns the edit
 
 ## Settings-Owned Utility Pages
 
+### Recording Style
+
+[`ui/pages/recording_style_settings_page.dart`](ui/pages/recording_style_settings_page.dart) lets the user pick the mic visualization used while recording — the skeuomorphic VU meter or the modern energy orb.
+
+It reuses the onboarding recording-style picker (`RecordingStyleLivePreview` + `RecordingStylePicker` in [`lib/features/onboarding/ui/widgets/`](../onboarding/ui/widgets/)) directly, so the two look identical, but:
+
+- tapping a card persists the choice immediately via `recordingStyleProvider.setStyle` — there is no "Continue" step, unlike the onboarding wizard
+- the picker's card colors are handed the ambient `context.designTokens` (not onboarding's fixed dark `dsTokensDark`), so the page follows the host's light/dark theme instead of onboarding's dedicated dark backdrop
+
+The preference is persisted in `AppPrefs`/`SharedPreferences` (`recordingStylePrefsKey`), not `SettingsDb` — a deliberate exception to the rest of this feature's `SettingsDb`-backed persistence, inherited from the onboarding-owned provider. It's read by the real recording sheet (`lib/features/speech/ui/widgets/recording/audio_recording_modal.dart`) to pick between `AnalogVuMeter` and `AiVoiceInputShader`.
+
 ### Theming
 
 [`ui/pages/theming_page.dart`](ui/pages/theming_page.dart) is a thin view over [`lib/features/theming/state/theming_controller.dart`](../theming/state/theming_controller.dart).
@@ -589,6 +600,7 @@ This is the route shape that currently matters in practice:
 - `/settings/sync/stats`
 - `/settings/sync/backfill`
 - `/settings/definitions`
+- `/settings/recording-style`
 - `/settings/theming`
 - `/settings/speech` (gated by `enableAiSummaryTtsFlag`)
 - `/settings/flags`

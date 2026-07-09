@@ -70,7 +70,15 @@ void main() {
     final tree = await _buildTree(tester, overrides: _flags());
     expect(
       tree.map((n) => n.id).toList(),
-      ['ai', 'agents', 'sync', 'definitions', 'theming', 'advanced'],
+      [
+        'ai',
+        'agents',
+        'sync',
+        'definitions',
+        'recording-style',
+        'theming',
+        'advanced',
+      ],
     );
   });
 

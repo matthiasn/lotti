@@ -36,6 +36,7 @@ import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
+import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
@@ -158,6 +159,7 @@ void main() {
         '/settings/agents/souls/:soulId/review',
         '/settings/agents/instances/:agentId',
         '/settings/flags',
+        '/settings/recording-style',
         '/settings/theming',
         '/settings/speech',
         '/settings/definitions',
@@ -943,6 +945,21 @@ void main() {
         'advanced',
       );
       expect(pages[2].child, isA<FlagsPage>());
+    });
+
+    test('buildPages builds RecordingStyleSettingsPage', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/recording-style'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<RecordingStyleSettingsPage>());
     });
 
     test('buildPages builds ThemingPage', () {

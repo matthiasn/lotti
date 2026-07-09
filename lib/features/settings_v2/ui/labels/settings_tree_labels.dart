@@ -130,6 +130,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.settingsMeasurablesTitle,
           desc: m.settingsMeasurablesSubtitle,
         );
+      case 'recording-style':
+        return (
+          title: m.settingsRecordingStyleTitle,
+          desc: m.settingsRecordingStyleSubtitle,
+        );
       case 'theming':
         return (
           title: m.settingsThemingTitle,

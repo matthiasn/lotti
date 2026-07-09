@@ -14833,6 +14833,24 @@ abstract class AppLocalizations {
   /// **'Options'**
   String get settingsOptionsTitle;
 
+  /// No description provided for @settingsRecordingStyleExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how the mic looks while you\'re recording.'**
+  String get settingsRecordingStyleExplanation;
+
+  /// No description provided for @settingsRecordingStyleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'VU meter or energy orb while recording'**
+  String get settingsRecordingStyleSubtitle;
+
+  /// No description provided for @settingsRecordingStyleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording Style'**
+  String get settingsRecordingStyleTitle;
+
   /// No description provided for @settingsResetGeminiConfirm.
   ///
   /// In en, this message translates to:

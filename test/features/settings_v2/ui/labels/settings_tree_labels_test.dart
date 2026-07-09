@@ -69,6 +69,7 @@ void main() {
       expect(resolve('sync').title, 'Sync Settings');
       expect(resolve('definitions/dashboards').title, 'Dashboards');
       expect(resolve('definitions/measurables').title, 'Measurables');
+      expect(resolve('recording-style').title, 'Recording Style');
       expect(resolve('theming').title, 'Theming');
       expect(resolve('advanced/flags').title, 'Config Flags');
       expect(resolve('advanced').title, 'Advanced Settings');

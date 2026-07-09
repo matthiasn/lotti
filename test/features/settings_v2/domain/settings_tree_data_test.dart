@@ -88,6 +88,7 @@ void main() {
         'agents',
         'sync',
         'definitions',
+        'recording-style',
         'theming',
         'advanced',
       ]);
@@ -126,13 +127,15 @@ void main() {
         'agents',
         'sync',
         'definitions',
+        'recording-style',
         'theming',
         'advanced',
       ]);
     });
 
     test(
-      'categories, labels, measurables, theming, advanced/flags always present',
+      'categories, labels, measurables, recording-style, theming, '
+      'advanced/flags always present',
       () {
         final ids = _ids(
           _tree(
@@ -149,6 +152,7 @@ void main() {
             'definitions/categories',
             'definitions/labels',
             'definitions/measurables',
+            'recording-style',
             'theming',
             'advanced/flags',
           ]),
@@ -412,6 +416,7 @@ void main() {
         'sync/matrix-maintenance': 'sync-matrix-maintenance',
         'definitions/dashboards': 'dashboards',
         'definitions/measurables': 'measurables',
+        'recording-style': 'recording-style',
         'theming': 'theming',
         'advanced/flags': 'flags',
         'advanced/animations': 'advanced-animations',
@@ -517,6 +522,7 @@ void main() {
         // Sync branch is gated by enableMatrix — flag off drops the
         // entire Sync surface, matching the mobile root list.
         'definitions',
+        'recording-style',
         'theming',
         'advanced',
       ]);

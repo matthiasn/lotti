@@ -36,6 +36,7 @@ import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
+import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
@@ -115,6 +116,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/agents/souls/:soulId/review',
     '/settings/agents/instances/:agentId',
     '/settings/flags',
+    '/settings/recording-style',
     '/settings/theming',
     '/settings/speech',
     '/settings/definitions',
@@ -579,6 +581,13 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-onboarding'),
           child: OnboardingSettingsPage(),
+        ),
+
+      // Recording style — top-level leaf, opens directly.
+      if (pathContains('recording-style'))
+        const BeamPage(
+          key: ValueKey('settings-recording-style'),
+          child: RecordingStyleSettingsPage(),
         ),
 
       // Theming

@@ -247,22 +247,40 @@ reads as one glass family.
 ## Recording-style step
 
 Between the success beat and the category step, a personalization step lets the
-user pick how the mic looks during capture — and persists the choice, which the
-first-task step then renders as its live recording visual (and a future
-Settings toggle will surface too).
+user pick how the mic looks during capture — and persists the choice. It's read
+by the first-task step below (the live recording visual it renders), by the real
+audio-recording sheet (`lib/features/speech/ui/widgets/recording/audio_recording_modal.dart`,
+which swaps its VU meter for the energy orb accordingly), and by the standalone
+**Settings › Recording Style** page (`lib/features/settings/ui/pages/recording_style_settings_page.dart`),
+which lets the choice be changed again outside onboarding.
 
-- **`OnboardingRecordingStyleStep`** (`ui/widgets/`, ConsumerStatefulWidget) hosts
-  the presentational **`OnboardingRecordingStyleView`** and owns the level source:
-  a looping **simulated** signal by default (gated off under reduced motion), or
-  the **live mic** when "Try with your voice" is on — recorded to a throwaway file
-  via `AudioRecorderRepository` (levels only, never transcribed/saved; deleted on
-  stop), falling back to the simulation if the mic can't start.
-- Two themed pairs, each a live recording visual: **Modern** (the
-  `AiVoiceInputShader` orb + a brand-tinted `LiveWaveform`) and **Analogue** (the
-  skeuomorphic `AnalogVuMeter` + a neutral `LiveWaveform`). Only the selected card
-  animates; the other rests on a calm static waveform.
+The live-preview mechanics and the two-card picker are factored out of
+onboarding so Settings can reuse them pixel-for-pixel:
+
+- **`RecordingStyleLivePreview`** (`ui/widgets/recording_style_live_preview.dart`,
+  ConsumerStatefulWidget) owns the level source shared by both surfaces: a
+  looping **simulated** signal by default (gated off under reduced motion), or
+  the **live mic** when "Try with your voice" is on — recorded to a throwaway
+  file via `AudioRecorderRepository` (levels only, never transcribed/saved;
+  deleted on stop), falling back to the simulation if the mic can't start.
+- **`RecordingStylePicker`** (`ui/widgets/recording_style_picker.dart`) renders
+  the two themed pairs off the level `RecordingStyleLivePreview` hands it:
+  **Modern** (the `AiVoiceInputShader` orb + a brand-tinted `LiveWaveform`) and
+  **Analogue** (the skeuomorphic `AnalogVuMeter` + a neutral `LiveWaveform`).
+  Only the selected card animates; the other rests on a calm static waveform.
+  Its card colors come from an injected `surfaceTokens` (`dsTokensDark` for
+  onboarding, which always sits over its own dark backdrop; the ambient
+  `context.designTokens` for Settings, which has no such backdrop and follows
+  the host theme) — the picker itself never assumes which theme it's on.
+- **`OnboardingRecordingStyleStep`** (`ui/widgets/`, ConsumerStatefulWidget)
+  composes `RecordingStyleLivePreview` + the presentational
+  **`OnboardingRecordingStyleView`** (title/explanation/Continue chrome around
+  `RecordingStylePicker`), buffers the pick locally, and only commits it via
+  `recordingStyleProvider.setStyle` on Continue.
 - The choice is persisted by **`recordingStyleProvider`** (`state/recording_style.dart`,
-  an `AsyncNotifier` over `AppPrefs`, default `modern`).
+  an `AsyncNotifier` over `AppPrefs`, default `modern`). Unlike the onboarding
+  step, the Settings page has no "Continue" step — tapping a card calls
+  `setStyle` immediately.
 
 ## Phase 2 — the live voice→task aha (the in-panel first-task step)
 
@@ -376,8 +394,9 @@ feedback** (a volume response is information, not decoration):
   frame (still tinted by the live level).
 - **`LiveWaveform`** ignores the live amplitudes and rests on a flat baseline
   (`LiveWaveformPainter.reducedMotion`), so the strip never dances.
-- **`OnboardingRecordingStyleStep`** holds its simulated previews on a static
-  frame under reduced motion.
+- **`RecordingStyleLivePreview`** holds its simulated previews on a static
+  frame under reduced motion — shared by the onboarding step and the
+  Settings › Recording Style page.
 
 The welcome hero (`NeuralConstellation`) and `CompletionCelebration` already
 carry their own reduced-motion fallbacks.

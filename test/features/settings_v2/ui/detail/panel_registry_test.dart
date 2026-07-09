@@ -28,6 +28,7 @@ import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
+import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/settings_v2/ui/detail/panel_registry.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
@@ -60,6 +61,7 @@ void main() {
       'onboarding',
       // Step 7 — simple leaves.
       'flags',
+      'recording-style',
       'theming',
       'speech',
       'advanced-about',
@@ -157,6 +159,14 @@ void main() {
     });
 
     test(
+      'recording-style panel is scrollable — RecordingStyleSettingsBody is '
+      'a plain Column, not its own scroll view',
+      () {
+        expect(panelSpecFor('recording-style')!.scrollable, isTrue);
+      },
+    );
+
+    test(
       'onboarding panel is scrollable — OnboardingSettingsBody is a plain '
       'grouped-list column, not its own scroll view',
       () {
@@ -214,6 +224,10 @@ void main() {
 
         // Step 7 — simple leaves.
         expect(build('flags'), isA<FlagsBody>());
+        expect(
+          build('recording-style'),
+          isA<RecordingStyleSettingsBody>(),
+        );
         expect(build('theming'), isA<ThemingBody>());
         expect(build('advanced-about'), isA<AboutBody>());
         expect(build('advanced-maintenance'), isA<MaintenanceBody>());

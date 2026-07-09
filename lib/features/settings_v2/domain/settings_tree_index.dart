@@ -59,6 +59,7 @@ const Map<String, String> settingsNodeUrls = {
   'sync/matrix-maintenance': '/settings/sync/matrix/maintenance',
   'definitions/dashboards': '/settings/dashboards',
   'definitions/measurables': '/settings/measurables',
+  'recording-style': '/settings/recording-style',
   'theming': '/settings/theming',
   'speech': '/settings/speech',
   // `flags` moved under the `advanced` branch in the V2 tree; its URL

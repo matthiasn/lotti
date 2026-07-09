@@ -41,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   available. When the provider reports data-center metadata, it also groups
   environmental impact by country/data center and shows the renewable-energy
   share for each location.
+- **Pick your recording look in Settings.** A new Settings → Recording Style
+  page lets you choose the VU meter or energy-orb visualization for the mic —
+  with the same live preview and "Try with your voice" toggle from onboarding —
+  and the real recording screen now honors your choice instead of always
+  showing the VU meter.
 ### Fixed
 - **Dashboard chart editing now saves when it should.** Adding measurable
   charts in Settings → Dashboards immediately enables Save, measurable chart
