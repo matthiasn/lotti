@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/helpers/prompt_placeholder_formatting.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
@@ -228,6 +229,11 @@ class CloudInferenceGenerateMore {
           )
         : null;
 
+    final promptWithDictionary = _promptWithSpeechDictionary(
+      prompt,
+      speechDictionaryTerms,
+    );
+
     return client
         .createChatCompletionStream(
           request: _helpers.createBaseRequest(
@@ -237,7 +243,9 @@ class CloudInferenceGenerateMore {
               ChatCompletionMessage.user(
                 content: ChatCompletionUserMessageContent.parts(
                   [
-                    ChatCompletionMessageContentPart.text(text: prompt),
+                    ChatCompletionMessageContentPart.text(
+                      text: promptWithDictionary,
+                    ),
                     ChatCompletionMessageContentPart.audio(
                       inputAudio: ChatCompletionMessageInputAudio(
                         data: effectiveAudioBase64,
@@ -256,6 +264,31 @@ class CloudInferenceGenerateMore {
           ),
         )
         .asBroadcastStream();
+  }
+
+  String _promptWithSpeechDictionary(
+    String prompt,
+    List<String>? speechDictionaryTerms,
+  ) {
+    final terms = speechDictionaryTerms
+        ?.map((term) => term.trim())
+        .where((term) => term.isNotEmpty)
+        .toList();
+    if (terms == null || terms.isEmpty) {
+      return prompt;
+    }
+
+    final trimmedPrompt = prompt.trim();
+    if (trimmedPrompt.toUpperCase().contains('IMPORTANT - SPEECH DICTIONARY')) {
+      return prompt;
+    }
+
+    final dictionaryPrompt = formatSpeechDictionaryPrompt(terms);
+    if (trimmedPrompt.isEmpty) {
+      return dictionaryPrompt;
+    }
+
+    return '$trimmedPrompt\n\n$dictionaryPrompt';
   }
 
   /// Generate with full conversation history for multi-turn interactions.

@@ -30,12 +30,16 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
+class _FakeCreateChatCompletionRequest extends Fake
+    implements CreateChatCompletionRequest {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
     registerFallbackValue(Uri.parse('http://example.com'));
     registerFallbackValue(FakeBaseRequest());
+    registerFallbackValue(_FakeCreateChatCompletionRequest());
     registerFallbackValue(FakeAiConfigInferenceProvider());
   });
 
@@ -86,6 +90,21 @@ void main() {
       voxtralRepository: voxtralRepo,
       openAiTranscriptionRepository: openAiTranscriptionRepo,
       helpers: const CloudInferenceRequestHelpers(),
+    );
+  }
+
+  void stubChatCompletionStream(OpenAIClient openAiClient) {
+    when(
+      () => openAiClient.createChatCompletionStream(
+        request: any(named: 'request'),
+      ),
+    ).thenAnswer(
+      (_) => Stream.value(
+        _FakeMeliousInferenceRepository._chunk(
+          id: 'melious-voxtral-chat',
+          content: 'melious voxtral chat text',
+        ),
+      ),
     );
   }
 
@@ -272,6 +291,202 @@ void main() {
             contextBiasTerms: const ['Lotti', 'Voxtral'],
           ),
         );
+      },
+    );
+
+    test(
+      'routes Melious Voxtral chat-audio models through chat completions',
+      () async {
+        final meliousRepository = _FakeMeliousInferenceRepository();
+        final meliousGenerateMore = createGenerateMore(
+          meliousRepository: meliousRepository,
+        );
+        final meliousProvider = providerOfType(InferenceProviderType.melious);
+        final openAiClient = MockOpenAIClient();
+
+        stubChatCompletionStream(openAiClient);
+
+        final chunks = await meliousGenerateMore
+            .generateWithAudio(
+              prompt,
+              model: 'voxtral-small-24b-2507',
+              audioBase64: 'melious-audio',
+              baseUrl: meliousProvider.baseUrl,
+              apiKey: meliousProvider.apiKey,
+              provider: meliousProvider,
+              overrideClient: openAiClient,
+              speechDictionaryTerms: const ['Lotti', 'Voxtral'],
+            )
+            .toList();
+
+        expect(chunks.single.id, 'melious-voxtral-chat');
+        expect(
+          chunks.single.choices?.single.delta?.content,
+          'melious voxtral chat text',
+        );
+        expect(
+          meliousRepository.audioCalls,
+          isEmpty,
+          reason:
+              'Bare Voxtral ids are Melious chat-audio models; routing them '
+              'through /audio/transcriptions drops usage and impact metadata.',
+        );
+
+        final request =
+            verify(
+                  () => openAiClient.createChatCompletionStream(
+                    request: captureAny(named: 'request'),
+                  ),
+                ).captured.single
+                as CreateChatCompletionRequest;
+        expect(request.model.toString(), contains('voxtral-small-24b-2507'));
+        expect(request.messages, hasLength(1));
+        expect(request.messages.single.role, ChatCompletionMessageRole.user);
+        expect(request.toString(), contains('melious-audio'));
+        expect(request.toString(), contains('SPEECH DICTIONARY'));
+        expect(request.toString(), contains('"Lotti"'));
+        expect(request.toString(), contains('"Voxtral"'));
+      },
+    );
+
+    test(
+      'does not add a speech dictionary to chat audio without terms',
+      () async {
+        final meliousProvider = providerOfType(InferenceProviderType.melious);
+        final openAiClient = MockOpenAIClient();
+
+        stubChatCompletionStream(openAiClient);
+
+        await generateMore
+            .generateWithAudio(
+              prompt,
+              model: 'voxtral-small-24b-2507',
+              audioBase64: 'melious-audio',
+              baseUrl: meliousProvider.baseUrl,
+              apiKey: meliousProvider.apiKey,
+              provider: meliousProvider,
+              overrideClient: openAiClient,
+            )
+            .toList();
+
+        final request =
+            verify(
+                  () => openAiClient.createChatCompletionStream(
+                    request: captureAny(named: 'request'),
+                  ),
+                ).captured.single
+                as CreateChatCompletionRequest;
+        expect(request.toString(), contains(prompt));
+        expect(request.toString(), isNot(contains('SPEECH DICTIONARY')));
+      },
+    );
+
+    test(
+      'does not duplicate an existing speech dictionary in chat audio prompts',
+      () async {
+        final meliousProvider = providerOfType(InferenceProviderType.melious);
+        final openAiClient = MockOpenAIClient();
+        const promptWithDictionary =
+            'Transcribe this.\n\nIMPORTANT - SPEECH DICTIONARY (MUST USE):\n'
+            'Required spellings: ["Existing"]';
+
+        stubChatCompletionStream(openAiClient);
+
+        await generateMore
+            .generateWithAudio(
+              promptWithDictionary,
+              model: 'voxtral-small-24b-2507',
+              audioBase64: 'melious-audio',
+              baseUrl: meliousProvider.baseUrl,
+              apiKey: meliousProvider.apiKey,
+              provider: meliousProvider,
+              overrideClient: openAiClient,
+              speechDictionaryTerms: const ['  Lotti  ', '', '  '],
+            )
+            .toList();
+
+        final request =
+            verify(
+                  () => openAiClient.createChatCompletionStream(
+                    request: captureAny(named: 'request'),
+                  ),
+                ).captured.single
+                as CreateChatCompletionRequest;
+        final requestText = request.toString();
+        expect(requestText, contains('"Existing"'));
+        expect(requestText, isNot(contains('"Lotti"')));
+      },
+    );
+
+    test(
+      'detects existing speech dictionaries case-insensitively',
+      () async {
+        final meliousProvider = providerOfType(InferenceProviderType.melious);
+        final openAiClient = MockOpenAIClient();
+        const promptWithDictionary =
+            'Transcribe this.\n\nimportant - speech dictionary (must use):\n'
+            'Required spellings: ["Existing"]';
+
+        stubChatCompletionStream(openAiClient);
+
+        await generateMore
+            .generateWithAudio(
+              promptWithDictionary,
+              model: 'voxtral-small-24b-2507',
+              audioBase64: 'melious-audio',
+              baseUrl: meliousProvider.baseUrl,
+              apiKey: meliousProvider.apiKey,
+              provider: meliousProvider,
+              overrideClient: openAiClient,
+              speechDictionaryTerms: const ['Lotti'],
+            )
+            .toList();
+
+        final request =
+            verify(
+                  () => openAiClient.createChatCompletionStream(
+                    request: captureAny(named: 'request'),
+                  ),
+                ).captured.single
+                as CreateChatCompletionRequest;
+        final requestText = request.toString();
+        expect(requestText, contains('"Existing"'));
+        expect(requestText, isNot(contains('"Lotti"')));
+      },
+    );
+
+    test(
+      'uses only the speech dictionary for blank chat audio prompts',
+      () async {
+        final meliousProvider = providerOfType(InferenceProviderType.melious);
+        final openAiClient = MockOpenAIClient();
+
+        stubChatCompletionStream(openAiClient);
+
+        await generateMore
+            .generateWithAudio(
+              ' \n ',
+              model: 'voxtral-small-24b-2507',
+              audioBase64: 'melious-audio',
+              baseUrl: meliousProvider.baseUrl,
+              apiKey: meliousProvider.apiKey,
+              provider: meliousProvider,
+              overrideClient: openAiClient,
+              speechDictionaryTerms: const ['Lotti'],
+            )
+            .toList();
+
+        final request =
+            verify(
+                  () => openAiClient.createChatCompletionStream(
+                    request: captureAny(named: 'request'),
+                  ),
+                ).captured.single
+                as CreateChatCompletionRequest;
+        final requestText = request.toString();
+        expect(requestText, contains('IMPORTANT - SPEECH DICTIONARY'));
+        expect(requestText, contains('"Lotti"'));
+        expect(requestText, isNot(contains(' \n \n\nIMPORTANT')));
       },
     );
   });

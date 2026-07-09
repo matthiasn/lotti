@@ -1367,6 +1367,15 @@ void main() {
         MeliousInferenceRepository.isMeliousTranscriptionModel(
           'mistral/voxtral-small-latest',
         ),
+        isFalse,
+        reason:
+            'Melious Voxtral catalog rows are chat models with audio input; '
+            'the chat endpoint reports usage and impact metadata.',
+      );
+      expect(
+        MeliousInferenceRepository.isMeliousTranscriptionModel(
+          'mistral/voxtral-mini-transcribe',
+        ),
         isTrue,
       );
       expect(

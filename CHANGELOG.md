@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1035]
+## [0.9.1036]
 ### Added
 - **Share AI Impact without leaking your category names.** The AI Impact
   breakdown now has a **Both / By category / By model** picker. **By model**
@@ -54,6 +54,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   slot's model, or an agent template or soul — closed the whole settings page
   instead of the picker, so your selection was never saved. The picker now
   closes on its own and keeps your choice.
+- **Melious Voxtral calls now show real AI Impact usage.** Melious-hosted
+  Voxtral audio models now use the chat audio endpoint, which reports token
+  usage, cost, and environmental impact, instead of the transcription endpoint
+  that only returns text. Category speech-dictionary terms are included in the
+  chat prompt so Voxtral still gets spelling context.
 - **The image viewer's save button now works everywhere.** On iPhone and
   Android it saves the photo to your photo library; on macOS, Windows and Linux
   it opens a native save dialog so you choose where the image goes. Previously
