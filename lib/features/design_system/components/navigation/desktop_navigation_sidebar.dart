@@ -169,7 +169,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
                       destinations[i].expandedChildBuilder!(),
                     ],
                     if (i < destinations.length - 1)
-                      SizedBox(height: tokens.spacing.step5),
+                      SizedBox(height: tokens.spacing.step4),
                   ],
                 ],
               ),
@@ -180,6 +180,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
           // Hidden in collapsed mode because the strip is too narrow
           // to display readable monospace counters.
           if (!collapsed && aboveSettings != null) ...[
+            SizedBox(height: tokens.spacing.step5),
             aboveSettings!,
             SizedBox(height: tokens.spacing.step5),
           ],
@@ -249,7 +250,10 @@ class _SidebarLogoRow extends StatelessWidget {
       height: 32,
       child: Row(
         children: [
-          const DesignSystemBrandLogo(),
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: tokens.spacing.step5),
+            child: const DesignSystemBrandLogo(),
+          ),
           const Spacer(),
           toggleIcon,
         ],

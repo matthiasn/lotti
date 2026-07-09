@@ -17,11 +17,14 @@ import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 const String kSidebarWakeQueueListRoute = '/settings/agents/pending-wakes';
 
 /// How many *scheduled* wake rows the inline sidebar block renders
-/// before collapsing the remainder into the `+N more →` affordance.
-/// Ongoing wakes are always shown in full (typically 0–1 at a time)
-/// because hiding an actively running agent behind a "more" link is
-/// confusing.
-const int kSidebarWakeQueueRowLimit = 3;
+/// before collapsing the remainder into the summary row.
+const int kSidebarWakeQueueRowLimit = 1;
+
+/// How many currently-running wake rows the inline sidebar renders before
+/// collapsing the remainder into the summary row. The sidebar is an ambient
+/// status rail, not the full wake manager; the full list remains one click
+/// away from the header / summary row.
+const int kSidebarWakeQueueOngoingRowLimit = 1;
 
 /// Maximum lookahead for scheduled wakes shown inline. Anything beyond
 /// this window still surfaces via the trailing "+N more →" affordance
@@ -58,12 +61,12 @@ bool sidebarWakeQueueHasVisibleContent(WidgetRef ref) {
 /// `aboveSettings` slot. When at least one wake is active it renders:
 ///
 /// 1. A `WAKES N ↗` header that links to the full Wake Cycles page.
-/// 2. Up to N currently *running* agents, each with the live duration
-///    since the wake started.
+/// 2. Up to [kSidebarWakeQueueOngoingRowLimit] currently *running* agents,
+///    each with the live duration since the wake started.
 /// 3. Up to [kSidebarWakeQueueRowLimit] *scheduled* wakes that fall
 ///    within [kSidebarWakeQueueScheduledLookahead]; anything farther
-///    out is intentionally invisible from the sidebar — the header
-///    link icon is the only path into the full Wake Cycles page.
+///    out is intentionally collapsed into the summary row / full Wake Cycles
+///    page.
 ///
 /// When the pre-resolve / zero-wake state holds, `build` returns
 /// [SizedBox.shrink] so the card is hidden entirely rather than
@@ -94,7 +97,12 @@ class SidebarWakeQueue extends ConsumerWidget {
     final inWindow = allScheduled
         .where((r) => !r.dueAt.isAfter(cutoff))
         .toList();
+    final visibleOngoing = ongoing
+        .take(kSidebarWakeQueueOngoingRowLimit)
+        .toList();
     final visibleScheduled = inWindow.take(kSidebarWakeQueueRowLimit).toList();
+    final hiddenActiveCount = ongoing.length - visibleOngoing.length;
+    final hiddenQueuedCount = inWindow.length - visibleScheduled.length;
 
     // Only "imminent" wakes count for the header badge — wakes scheduled
     // past the lookahead window are intentionally invisible from the
@@ -119,13 +127,21 @@ class SidebarWakeQueue extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Header(count: totalCount),
-                  if (ongoing.isNotEmpty)
-                    for (final record in ongoing)
+                  _Header(
+                    activeCount: ongoing.length,
+                    queuedCount: inWindow.length,
+                  ),
+                  if (visibleOngoing.isNotEmpty)
+                    for (final record in visibleOngoing)
                       _OngoingWakeRow(record: record),
                   if (visibleScheduled.isNotEmpty)
                     for (final record in visibleScheduled)
                       _WakeRow(record: record),
+                  if (hiddenActiveCount > 0 || hiddenQueuedCount > 0)
+                    _MoreWakesRow(
+                      hiddenActiveCount: hiddenActiveCount,
+                      hiddenQueuedCount: hiddenQueuedCount,
+                    ),
                 ],
               ),
             ),
@@ -146,9 +162,13 @@ class SidebarWakeQueue extends ConsumerWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.count});
+  const _Header({
+    required this.activeCount,
+    required this.queuedCount,
+  });
 
-  final int count;
+  final int activeCount;
+  final int queuedCount;
 
   @override
   Widget build(BuildContext context) {
@@ -163,9 +183,11 @@ class _Header extends StatelessWidget {
       color: tokens.colors.text.lowEmphasis,
     );
     final countStyle = tokens.typography.styles.others.caption.copyWith(
-      color: tokens.colors.text.lowEmphasis,
+      color: tokens.colors.text.mediumEmphasis,
       fontFeatures: numericBadgeFontFeatures,
+      fontWeight: FontWeight.w600,
     );
+    final summary = _summary(context);
 
     return InkWell(
       onTap: _openWakesList,
@@ -179,8 +201,14 @@ class _Header extends StatelessWidget {
           children: [
             Text(messages.sidebarWakesHeader, style: labelStyle),
             SizedBox(width: tokens.spacing.step2),
-            Text('$count', style: countStyle),
-            const Spacer(),
+            Expanded(
+              child: Text(
+                summary,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: countStyle,
+              ),
+            ),
             Tooltip(
               message: messages.sidebarWakesOpenList,
               child: Icon(
@@ -193,6 +221,18 @@ class _Header extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _summary(BuildContext context) {
+    final messages = context.messages;
+    if (activeCount > 0 && queuedCount > 0) {
+      return '${messages.sidebarWakesActiveCount(activeCount)} · '
+          '${messages.sidebarWakesQueuedCount(queuedCount)}';
+    }
+    if (activeCount > 0) {
+      return messages.sidebarWakesActiveCount(activeCount);
+    }
+    return messages.sidebarWakesQueuedCount(queuedCount);
   }
 }
 
@@ -239,14 +279,16 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final record = widget.record;
-    // Green dot = "running now"; the elapsed clock itself stays neutral so
-    // it reads as data, not a second green signal.
-    final accent = tokens.colors.alert.success.defaultColor;
     final titleStyle = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
+      color: tokens.colors.text.highEmphasis,
     );
     final durationStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
+      fontFeatures: numericBadgeFontFeatures,
+    );
+    final statusStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+      fontWeight: FontWeight.w600,
       fontFeatures: numericBadgeFontFeatures,
     );
 
@@ -272,6 +314,8 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
         ? liveSubjectTitle
         : record.title;
 
+    final openTaskLabel = context.messages.sidebarWakesOpenTask;
+
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step5,
@@ -280,43 +324,49 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
       child: Row(
         children: [
           Expanded(
-            child: InkWell(
-              onTap: () => _navigateToAgentRoute(
-                agentInstanceRoute(record.agentId),
-              ),
-              borderRadius: BorderRadius.circular(tokens.radii.xs),
-              child: Row(
-                children: [
-                  // 20px leading slot so the dot aligns to the same icon
-                  // column as the nav and the timer/audio glyphs.
-                  SizedBox(
-                    width: 20,
-                    child: Center(
-                      child: Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: accent,
-                          shape: BoxShape.circle,
+            child: Tooltip(
+              message: record.subjectRoute == null
+                  ? title
+                  : '$openTaskLabel: $title',
+              child: Semantics(
+                button: true,
+                label: record.subjectRoute == null
+                    ? title
+                    : '$openTaskLabel: $title',
+                child: InkWell(
+                  onTap: () => _navigateToSidebarRoute(
+                    record.subjectRoute ?? agentInstanceRoute(record.agentId),
+                  ),
+                  borderRadius: BorderRadius.circular(tokens.radii.xs),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${context.messages.sidebarWakesWorkingLabel} · '
+                              '$elapsed',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: statusStyle,
+                            ),
+                            Text(
+                              title,
+                              style: titleStyle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
-                    ),
+                      if (record.subjectRoute == null) ...[
+                        SizedBox(width: tokens.spacing.step3),
+                        Text(elapsed, style: durationStyle),
+                      ],
+                    ],
                   ),
-                  SizedBox(width: tokens.spacing.step4),
-                  Expanded(
-                    child: Tooltip(
-                      message: title,
-                      child: Text(
-                        title,
-                        style: titleStyle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Text(elapsed, style: durationStyle),
-                ],
+                ),
               ),
             ),
           ),
@@ -407,12 +457,21 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
         : tokens.colors.text.lowEmphasis;
 
     final titleStyle = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
+      color: tokens.colors.text.highEmphasis,
     );
     final etaStyle = tokens.typography.styles.others.caption.copyWith(
       color: etaColor,
       fontFeatures: numericBadgeFontFeatures,
     );
+    final statusStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+      fontWeight: FontWeight.w600,
+      fontFeatures: numericBadgeFontFeatures,
+    );
+    final taskRoute = taskId == null || taskId.isEmpty
+        ? null
+        : '/tasks/$taskId';
+    final openTaskLabel = context.messages.sidebarWakesOpenTask;
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -422,47 +481,48 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
       child: Row(
         children: [
           Expanded(
-            child: Semantics(
-              button: true,
-              label: '$title · $eta',
-              child: InkWell(
-                onTap: () => _navigateToAgentRoute(
-                  agentInstanceRoute(record.agent.agentId),
-                ),
-                borderRadius: BorderRadius.circular(tokens.radii.xs),
-                child: Row(
-                  children: [
-                    // Neutral dot in the shared 20px icon column — marks a
-                    // scheduled (not-yet-running) wake, vs the green dot the
-                    // ongoing row uses.
-                    SizedBox(
-                      width: 20,
-                      child: Center(
-                        child: Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: tokens.colors.text.lowEmphasis,
-                            shape: BoxShape.circle,
-                          ),
+            child: Tooltip(
+              message: taskRoute == null
+                  ? '$title · $eta'
+                  : '$openTaskLabel: $title · $eta',
+              child: Semantics(
+                button: true,
+                label: taskRoute == null
+                    ? '$title · $eta'
+                    : '$openTaskLabel: $title · $eta',
+                child: InkWell(
+                  onTap: () => _navigateToSidebarRoute(
+                    taskRoute ?? agentInstanceRoute(record.agent.agentId),
+                  ),
+                  borderRadius: BorderRadius.circular(tokens.radii.xs),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${context.messages.sidebarWakesQueuedLabel} · '
+                              '$eta',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: statusStyle,
+                            ),
+                            Text(
+                              title,
+                              style: titleStyle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    SizedBox(width: tokens.spacing.step4),
-                    Expanded(
-                      child: Tooltip(
-                        message: title,
-                        child: Text(
-                          title,
-                          style: titleStyle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: tokens.spacing.step3),
-                    Text(eta, style: etaStyle),
-                  ],
+                      if (taskRoute == null) ...[
+                        SizedBox(width: tokens.spacing.step3),
+                        Text(eta, style: etaStyle),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -472,6 +532,70 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
         ],
       ),
     );
+  }
+}
+
+class _MoreWakesRow extends StatelessWidget {
+  const _MoreWakesRow({
+    required this.hiddenActiveCount,
+    required this.hiddenQueuedCount,
+  });
+
+  final int hiddenActiveCount;
+  final int hiddenQueuedCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final label = _label(context);
+    final style = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+      fontWeight: FontWeight.w600,
+      fontFeatures: numericBadgeFontFeatures,
+    );
+
+    return InkWell(
+      onTap: _openWakesList,
+      borderRadius: BorderRadius.circular(tokens.radii.xs),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step5,
+          vertical: tokens.spacing.step2,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: style,
+              ),
+            ),
+            Tooltip(
+              message: context.messages.sidebarWakesOpenList,
+              child: Icon(
+                Icons.open_in_new_rounded,
+                size: 14,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _label(BuildContext context) {
+    final messages = context.messages;
+    final parts = <String>[];
+    if (hiddenActiveCount > 0) {
+      parts.add('+${messages.sidebarWakesActiveCount(hiddenActiveCount)}');
+    }
+    if (hiddenQueuedCount > 0) {
+      parts.add('+${messages.sidebarWakesQueuedCount(hiddenQueuedCount)}');
+    }
+    return parts.join(' · ');
   }
 }
 
@@ -522,7 +646,7 @@ class _CancelWakeButton extends StatelessWidget {
             height: 28,
             child: Icon(
               Icons.close_rounded,
-              size: 12,
+              size: 14,
               color: tokens.colors.text.lowEmphasis,
             ),
           ),
@@ -537,6 +661,19 @@ String agentInstanceRoute(String agentId) =>
     '/settings/agents/instances/$agentId';
 
 void _openWakesList() => _navigateToAgentRoute(kSidebarWakeQueueListRoute);
+
+void _navigateToSidebarRoute(String route) {
+  final override = SidebarWakeQueueTestHooks.navigatorOverride;
+  if (override != null) {
+    override(route);
+    return;
+  }
+  if (route.startsWith('/tasks/')) {
+    beamToNamed(route);
+    return;
+  }
+  _navigateToAgentRoute(route);
+}
 
 /// Navigate from anywhere to a Settings sub-route while preserving the
 /// in-tab Beamer history: switch to the Settings tab via `setIndex`

@@ -14809,6 +14809,18 @@ abstract class AppLocalizations {
   /// **'Light Theme'**
   String get settingThemingLight;
 
+  /// No description provided for @sidebarActiveSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get sidebarActiveSectionTitle;
+
+  /// No description provided for @sidebarAudioRecordingStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording'**
+  String get sidebarAudioRecordingStatusLabel;
+
   /// No description provided for @sidebarRunningTimerLabel.
   ///
   /// In en, this message translates to:
@@ -14821,6 +14833,12 @@ abstract class AppLocalizations {
   /// **'Stop timer'**
   String get sidebarRunningTimerStopTooltip;
 
+  /// No description provided for @sidebarTimerStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Timer'**
+  String get sidebarTimerStatusLabel;
+
   /// No description provided for @sidebarToggleCollapseLabel.
   ///
   /// In en, this message translates to:
@@ -14832,6 +14850,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Expand sidebar'**
   String get sidebarToggleExpandLabel;
+
+  /// No description provided for @sidebarWakesActiveCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 active} other{{count} active}}'**
+  String sidebarWakesActiveCount(int count);
 
   /// No description provided for @sidebarWakesCancelTooltip.
   ///
@@ -14856,6 +14880,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open list'**
   String get sidebarWakesOpenList;
+
+  /// No description provided for @sidebarWakesOpenTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Open task'**
+  String get sidebarWakesOpenTask;
+
+  /// No description provided for @sidebarWakesQueuedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 queued} other{{count} queued}}'**
+  String sidebarWakesQueuedCount(int count);
+
+  /// No description provided for @sidebarWakesQueuedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get sidebarWakesQueuedLabel;
+
+  /// No description provided for @sidebarWakesWorkingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get sidebarWakesWorkingLabel;
 
   /// No description provided for @skillsSectionTitle.
   ///
@@ -14977,6 +15025,12 @@ abstract class AppLocalizations {
   /// **'Preview voice'**
   String get speechVoicePreviewTooltip;
 
+  /// No description provided for @syncActivityIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'idle'**
+  String get syncActivityIdle;
+
   /// No description provided for @syncActivityInboxLabel.
   ///
   /// In en, this message translates to:
@@ -14994,6 +15048,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Outbox'**
   String get syncActivityOutboxLabel;
+
+  /// No description provided for @syncActivitySyncingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing'**
+  String get syncActivitySyncingTitle;
+
+  /// No description provided for @syncActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get syncActivityTitle;
 
   /// No description provided for @syncDeleteConfigConfirm.
   ///
@@ -16092,6 +16158,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved filters'**
   String get tasksSavedFiltersSheetTitle;
+
+  /// No description provided for @tasksSavedFiltersShowLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show fewer'**
+  String get tasksSavedFiltersShowLess;
+
+  /// No description provided for @tasksSavedFiltersShowMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 more saved filter} other{{count} more saved filters}}'**
+  String tasksSavedFiltersShowMore(int count);
 
   /// No description provided for @tasksSavedFiltersTaskCount.
   ///

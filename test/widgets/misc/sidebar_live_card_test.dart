@@ -32,6 +32,7 @@ void main() {
       SidebarLiveCard(
         accent: accent,
         glyph: Icons.timer_outlined,
+        statusLabel: 'Running timer',
         title: title,
         timeText: '01:35:32',
         pulse: pulse,

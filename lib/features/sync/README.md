@@ -1002,12 +1002,15 @@ The signaler is registered as a `getIt` singleton and exposed to the UI
 via `syncActivityTxPulsesProvider` / `syncActivityRxPulsesProvider`.
 The sidebar `SyncActivityIndicator` (`ui/widgets/sync_activity_indicator.dart`,
 gated behind the `show_sync_activity_indicator` config flag) listens
-to both streams to drive a 140 ms LED flash per packet, alongside live
-counts pulled from `outboxPendingCountProvider` (existing) and
-`inboundQueueDepthProvider` (new — sourced from
-`InboundQueue.depthChanges` via `MatrixService.queueCoordinator`).
-Tapping the strip beams to `/settings/sync` (Settings → Sync), where
-the outbox monitor, queue depth card, backfill, and sync stats live.
+to both streams to drive a pair of 140 ms LED flashes per packet. The desktop
+sidebar renders them as one compact status strip (`Sync` over
+`Outbox N · Inbox idle/N`) instead of separate Outbox/Inbox rows, with visible
+counts capped at `999+` so large backlogs do not dominate the rail. Exact counts
+remain in the semantics label. Counts are pulled from `outboxPendingCountProvider` (existing) and
+`inboundQueueDepthProvider` (new — sourced from `InboundQueue.depthChanges` via
+`MatrixService.queueCoordinator`). Tapping the strip beams to `/settings/sync`
+(Settings → Sync), where the outbox monitor, queue depth card, backfill, and
+sync stats live.
 
 The signaler is fire-and-forget and carries no payload; correctness
 still lives in the underlying queue/outbox state. Producers tolerate a

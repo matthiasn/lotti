@@ -163,23 +163,92 @@ void main() {
       find.text(messages.sidebarWakesHeader),
       findsOneWidget,
     );
-    // Only wakes within the 1h lookahead window count toward the
-    // header badge — Kit / Max / Tom (9h+ out) are intentionally
-    // invisible from the sidebar entirely, so the badge reads the
-    // imminent count (2), not the queue total (5).
-    expect(find.text('2'), findsOneWidget);
+    // Only wakes within the 1h lookahead window count toward the header
+    // summary — Kit / Max / Tom (9h+ out) are intentionally invisible from
+    // the sidebar entirely, so it reads the imminent count, not the queue
+    // total.
+    expect(find.text(messages.sidebarWakesQueuedCount(2)), findsOneWidget);
     expect(find.text('Laura'), findsOneWidget);
-    expect(find.text('Iris'), findsOneWidget);
+    expect(find.text('Iris'), findsNothing);
     expect(find.text('Kit'), findsNothing);
 
-    // Imminent ETA renders as mm:ss.
+    // First imminent ETA renders as mm:ss; the second imminent wake is
+    // represented by the compact overflow row so the sidebar remains an
+    // ambient rail, not the full wake manager.
     expect(find.text('00:28'), findsOneWidget);
-    expect(find.text('00:50'), findsOneWidget);
+    expect(find.text('00:50'), findsNothing);
+    expect(
+      find.text('+${messages.sidebarWakesQueuedCount(1)}'),
+      findsOneWidget,
+    );
 
-    // The header link icon is the only path into the full Wake Cycles
-    // page — there is no per-row trailing "+N more" link any more.
-    expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+    // Header and overflow row both open the full Wake Cycles page.
+    expect(find.byIcon(Icons.open_in_new_rounded), findsNWidgets(2));
   });
+
+  testWidgets(
+    'summarizes hidden active and queued wakes in one intentional overflow row',
+    (tester) async {
+      String? captured;
+      SidebarWakeQueueTestHooks.navigatorOverride = (path) => captured = path;
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            [
+              makeWake(
+                agentId: 'queued-visible',
+                displayName: 'Queued visible',
+                eta: const Duration(seconds: 28),
+              ),
+              makeWake(
+                agentId: 'queued-hidden',
+                displayName: 'Queued hidden',
+                eta: const Duration(seconds: 50),
+              ),
+            ],
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'active-visible',
+                title: 'Active visible',
+                startedAt: fixedNow.subtract(const Duration(seconds: 12)),
+              ),
+              OngoingWakeRecord(
+                agentId: 'active-hidden',
+                title: 'Active hidden',
+                startedAt: fixedNow.subtract(const Duration(seconds: 18)),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+      });
+
+      final messages = tester.element(find.byType(SidebarWakeQueue)).messages;
+      expect(
+        find.text(
+          '${messages.sidebarWakesActiveCount(2)} · '
+          '${messages.sidebarWakesQueuedCount(2)}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Active visible'), findsOneWidget);
+      expect(find.text('Active hidden'), findsNothing);
+      expect(find.text('Queued visible'), findsOneWidget);
+      expect(find.text('Queued hidden'), findsNothing);
+
+      final overflowLabel =
+          '+${messages.sidebarWakesActiveCount(1)} · '
+          '+${messages.sidebarWakesQueuedCount(1)}';
+      expect(find.text(overflowLabel), findsOneWidget);
+
+      await tester.tap(find.text(overflowLabel));
+      await tester.pump();
+
+      expect(captured, kSidebarWakeQueueListRoute);
+    },
+  );
 
   testWidgets('shows "now" when the next wake is due', (tester) async {
     await withClock(Clock.fixed(fixedNow), () async {
@@ -232,6 +301,60 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(captured, '/settings/agents/instances/agent-xyz');
+  });
+
+  testWidgets('tapping a linked-task row navigates directly to the task', (
+    tester,
+  ) async {
+    String? captured;
+    SidebarWakeQueueTestHooks.navigatorOverride = (path) => captured = path;
+    final record = PendingWakeRecord(
+      agent: makeTestIdentity(
+        agentId: 'agent-task',
+        id: 'agent-task',
+        displayName: 'Task Agent',
+      ),
+      state: makeTestState(
+        agentId: 'agent-task',
+        slots: const AgentSlots(activeTaskId: 'task-123'),
+      ),
+      type: PendingWakeType.pending,
+      dueAt: fixedNow.add(const Duration(seconds: 30)),
+    );
+
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SidebarWakeQueue(),
+          theme: DesignSystemTheme.dark(),
+          overrides: [
+            pendingWakeRecordsProvider.overrideWith((ref) async => [record]),
+            ongoingWakeRecordsProvider.overrideWith(
+              (ref) async => const <OngoingWakeRecord>[],
+            ),
+            pendingWakeTargetTitleProvider(
+              'task-123',
+            ).overrideWith((ref) async => 'Inbox triage'),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+
+    final element = tester.element(find.byType(SidebarWakeQueue));
+    expect(
+      find.byTooltip(
+        '${element.messages.sidebarWakesOpenTask}: Inbox triage · 00:30',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Inbox triage'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(captured, '/tasks/task-123');
   });
 
   testWidgets(
@@ -782,8 +905,12 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
       });
 
-      // Header includes the running wake in the count.
-      expect(find.text('1'), findsOneWidget);
+      // Header includes the running wake in the count summary.
+      final element = tester.element(find.byType(SidebarWakeQueue));
+      expect(
+        find.text(element.messages.sidebarWakesActiveCount(1)),
+        findsOneWidget,
+      );
       expect(find.text('Refine sidebar'), findsOneWidget);
       expect(find.text('00:12'), findsOneWidget);
     },
@@ -1051,6 +1178,44 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(captured, '/settings/agents/instances/agent-running');
+    },
+  );
+
+  testWidgets(
+    'tapping an ongoing wake with a subject route opens the linked task',
+    (tester) async {
+      String? captured;
+      SidebarWakeQueueTestHooks.navigatorOverride = (path) => captured = path;
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            const [],
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'agent-running',
+                title: 'Live wake',
+                subjectRoute: '/tasks/task-running',
+                startedAt: fixedNow,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+      });
+
+      final element = tester.element(find.byType(SidebarWakeQueue));
+      expect(
+        find.byTooltip('${element.messages.sidebarWakesOpenTask}: Live wake'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Live wake'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(captured, '/tasks/task-running');
     },
   );
 

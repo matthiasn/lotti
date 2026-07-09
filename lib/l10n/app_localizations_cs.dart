@@ -8700,16 +8700,37 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingThemingLight => 'Světlé téma';
 
   @override
+  String get sidebarActiveSectionTitle => 'Aktivní';
+
+  @override
+  String get sidebarAudioRecordingStatusLabel => 'Nahrávání';
+
+  @override
   String get sidebarRunningTimerLabel => 'Běžící časovač';
 
   @override
   String get sidebarRunningTimerStopTooltip => 'Zastavit časovač';
 
   @override
+  String get sidebarTimerStatusLabel => 'Časovač';
+
+  @override
   String get sidebarToggleCollapseLabel => 'Sbalit postranní panel';
 
   @override
   String get sidebarToggleExpandLabel => 'Rozbalit postranní panel';
+
+  @override
+  String sidebarWakesActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aktivních',
+      few: '$count aktivní',
+      one: '1 aktivní',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sidebarWakesCancelTooltip => 'Zrušit agenta';
@@ -8722,6 +8743,27 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get sidebarWakesOpenList => 'Otevřít seznam';
+
+  @override
+  String get sidebarWakesOpenTask => 'Otevřít úkol';
+
+  @override
+  String sidebarWakesQueuedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ve frontě',
+      few: '$count ve frontě',
+      one: '1 ve frontě',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sidebarWakesQueuedLabel => 'Ve frontě';
+
+  @override
+  String get sidebarWakesWorkingLabel => 'Pracuje';
 
   @override
   String get skillsSectionTitle => 'Dovednosti';
@@ -8790,6 +8832,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get speechVoicePreviewTooltip => 'Přehrát ukázku hlasu';
 
   @override
+  String get syncActivityIdle => 'nečinné';
+
+  @override
   String get syncActivityInboxLabel => 'Příchozí';
 
   @override
@@ -8799,6 +8844,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncActivityOutboxLabel => 'Odchozí';
+
+  @override
+  String get syncActivitySyncingTitle => 'Synchronizace';
+
+  @override
+  String get syncActivityTitle => 'Sync';
 
   @override
   String get syncDeleteConfigConfirm => 'ANO, JSEM SI JISTÝ';
@@ -9427,6 +9478,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSheetTitle => 'Uložené filtry';
+
+  @override
+  String get tasksSavedFiltersShowLess => 'Zobrazit méně';
+
+  @override
+  String tasksSavedFiltersShowMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dalších uložených filtrů',
+      few: '$count další uložené filtry',
+      one: '1 další uložený filtr',
+    );
+    return '$_temp0';
+  }
 
   @override
   String tasksSavedFiltersTaskCount(int count) {

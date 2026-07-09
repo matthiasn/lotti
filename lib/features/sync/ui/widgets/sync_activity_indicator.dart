@@ -28,10 +28,9 @@ const String kSyncOutboxRoute = '/settings/sync';
 /// packet, then fades to its idle state.
 const Duration kSyncActivityLedHold = Duration(milliseconds: 140);
 
-/// Ambient sidebar footer showing live Matrix sync traffic: two quiet
-/// Inter rows (`• Outbox` / `• Inbox`, localized) whose small LEDs flash on
-/// the brand teal accent per packet committed on the matching channel, and
-/// whose numeric count appears only when that queue is non-empty.
+/// Ambient sidebar footer showing live Matrix sync traffic as one compact
+/// status control: title (`Sync`), summary (`Outbox 0 · Inbox idle`), and two
+/// subtle LEDs that flash on tx/rx pulses.
 ///
 /// The treatment deliberately matches the rest of the sidebar — Inter
 /// type, design-system text colors, and the teal `interactive.enabled`
@@ -122,12 +121,16 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
 
     final outbox = ref.watch(outboxPendingCountProvider).value ?? 0;
     final inbox = ref.watch(inboundQueueDepthProvider).value ?? 0;
+    final hasWork = outbox > 0 || inbox > 0 || _txOn || _rxOn;
     final semanticsLabel = context.messages.syncActivityIndicatorSemantics(
       outbox,
       inbox,
     );
     final outboxLabel = context.messages.syncActivityOutboxLabel;
     final inboxLabel = context.messages.syncActivityInboxLabel;
+    final summary =
+        '$outboxLabel ${_formatQueueCount(outbox)} · $inboxLabel '
+        '${inbox == 0 ? context.messages.syncActivityIdle : _formatQueueCount(inbox)}';
 
     final tokens = context.designTokens;
     // Both channels flash on the brand teal accent and the focus ring
@@ -167,8 +170,8 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
                 // Align the LED column to the same left inset as the nav
                 // icons and the activity-well glyphs above.
                 padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step5,
-                  vertical: tokens.spacing.step2,
+                  horizontal: tokens.spacing.step4,
+                  vertical: tokens.spacing.step3,
                 ),
                 decoration: BoxDecoration(
                   color: _hovered ? hoverWash : Colors.transparent,
@@ -179,30 +182,67 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
                   // focus-in / focus-out.
                   border: Border.all(
                     color: focused ? accent : Colors.transparent,
-                    width: 2,
+                    width: tokens.spacing.step1,
                   ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  // Left-align so the Outbox/Inbox rows share one left edge.
-                  // (Their widths differ now that the labels are words and one
-                  // carries a count; the default centring indented the
-                  // narrower row.)
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    _SyncActivityChannel(
-                      label: outboxLabel,
-                      on: _txOn,
-                      color: accent,
-                      idleColor: ledIdle,
-                      value: outbox,
+                    Icon(
+                      Icons.sync_rounded,
+                      size: 18,
+                      color: tokens.colors.text.mediumEmphasis,
                     ),
-                    _SyncActivityChannel(
-                      label: inboxLabel,
-                      on: _rxOn,
-                      color: accent,
-                      idleColor: ledIdle,
-                      value: inbox,
+                    SizedBox(width: tokens.spacing.step3),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ExcludeSemantics(
+                            child: Text(
+                              hasWork
+                                  ? context.messages.syncActivitySyncingTitle
+                                  : context.messages.syncActivityTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: tokens.typography.styles.others.caption
+                                  .copyWith(
+                                    color: tokens.colors.text.mediumEmphasis,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ),
+                          ExcludeSemantics(
+                            child: Text(
+                              summary,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: tokens.typography.styles.others.caption
+                                  .copyWith(
+                                    color: tokens.colors.text.lowEmphasis,
+                                    fontFeatures: numericBadgeFontFeatures,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: tokens.spacing.step3),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _SyncActivityLed(
+                          on: _txOn,
+                          color: accent,
+                          idleColor: ledIdle,
+                        ),
+                        SizedBox(width: tokens.spacing.step2),
+                        _SyncActivityLed(
+                          on: _rxOn,
+                          color: accent,
+                          idleColor: ledIdle,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -215,57 +255,7 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
   }
 }
 
-class _SyncActivityChannel extends StatelessWidget {
-  const _SyncActivityChannel({
-    required this.label,
-    required this.on,
-    required this.color,
-    required this.idleColor,
-    required this.value,
-  });
-
-  final String label;
-  final bool on;
-  final Color color;
-  final Color idleColor;
-  final int value;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final valueStyle = tokens.typography.styles.others.caption.copyWith(
-      color: value > 0
-          ? tokens.colors.text.mediumEmphasis
-          : tokens.colors.text.lowEmphasis,
-      fontFeatures: numericBadgeFontFeatures,
-    );
-    final labelStyle = tokens.typography.styles.others.caption.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
-    );
-
-    // Min-height (not a fixed height) keeps the 1x row rhythm but lets the row
-    // grow under larger accessibility text scales instead of clipping the
-    // label/count.
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 18),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _SyncActivityLed(on: on, color: color, idleColor: idleColor),
-          const SizedBox(width: 8),
-          ExcludeSemantics(child: Text(label, style: labelStyle)),
-          // Count sits inline after the label and only when the queue is
-          // non-empty — it is the last element in the row, so it can grow to
-          // any digit count without clipping or shifting the LED + label.
-          if (value > 0) ...[
-            const SizedBox(width: 6),
-            ExcludeSemantics(child: Text('$value', style: valueStyle)),
-          ],
-        ],
-      ),
-    );
-  }
-}
+String _formatQueueCount(int value) => value > 999 ? '999+' : '$value';
 
 class _SyncActivityLed extends StatelessWidget {
   const _SyncActivityLed({

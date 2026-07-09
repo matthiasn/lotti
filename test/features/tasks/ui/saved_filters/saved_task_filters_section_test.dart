@@ -66,6 +66,17 @@ void main() {
     );
   }
 
+  List<SavedTaskFilter> makeSavedFilters(int count) {
+    return List.generate(
+      count,
+      (index) => SavedTaskFilter(
+        id: 'sv-${index + 1}',
+        name: 'Filter ${index + 1}',
+        filter: index.isEven ? _filterA : _filterB,
+      ),
+    );
+  }
+
   testWidgets(
     'renders nothing when no saved filters exist (header is hidden too)',
     (tester) async {
@@ -92,6 +103,78 @@ void main() {
     expect(find.byKey(SavedTaskFilterRowKeys.root('sv-2')), findsOneWidget);
     expect(find.text('A'), findsOneWidget);
     expect(find.text('B'), findsOneWidget);
+  });
+
+  testWidgets('caps saved filters and expands them from the More row', (
+    tester,
+  ) async {
+    stubPersisted(makeSavedFilters(8));
+
+    await _pumpSection(tester, onActivate: (_) {});
+
+    expect(find.byKey(SavedTaskFiltersSectionKeys.header), findsOneWidget);
+    expect(find.text('8'), findsOneWidget);
+    for (
+      var index = 1;
+      index <= kDesktopSavedTaskFiltersCollapsedLimit;
+      index++
+    ) {
+      expect(find.text('Filter $index'), findsOneWidget);
+    }
+    expect(find.text('Filter 5'), findsNothing);
+    expect(find.text('Filter 8'), findsNothing);
+    expect(find.text('4 more saved filters'), findsOneWidget);
+
+    await tester.tap(find.byKey(SavedTaskFiltersSectionKeys.moreButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Filter 5'), findsOneWidget);
+    expect(find.text('Filter 6'), findsOneWidget);
+    expect(find.text('Filter 7'), findsNothing);
+    expect(find.text('Filter 8'), findsNothing);
+    expect(find.text('Show fewer · 2 more saved filters'), findsOneWidget);
+
+    await tester.tap(find.byKey(SavedTaskFiltersSectionKeys.moreButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Filter 7'), findsNothing);
+    expect(find.text('Filter 8'), findsNothing);
+  });
+
+  testWidgets('keeps expanded saved filters bounded with overflow visible', (
+    tester,
+  ) async {
+    stubPersisted(makeSavedFilters(10));
+
+    await _pumpSection(tester, onActivate: (_) {});
+
+    await tester.tap(find.byKey(SavedTaskFiltersSectionKeys.moreButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Filter 6'), findsOneWidget);
+    expect(find.text('Filter 7'), findsNothing);
+    expect(find.text('Filter 8'), findsNothing);
+    expect(find.text('Filter 9'), findsNothing);
+    expect(find.text('Filter 10'), findsNothing);
+    expect(find.text('Show fewer · 4 more saved filters'), findsOneWidget);
+  });
+
+  testWidgets('keeps an active saved filter visible when it is below the cap', (
+    tester,
+  ) async {
+    stubPersisted(makeSavedFilters(8));
+
+    await _pumpSection(
+      tester,
+      onActivate: (_) {},
+      activeId: 'sv-8',
+    );
+
+    expect(find.text('Filter 1'), findsOneWidget);
+    expect(find.text('Filter 3'), findsOneWidget);
+    expect(find.text('Filter 4'), findsNothing);
+    expect(find.text('Filter 8'), findsOneWidget);
+    expect(find.text('4 more saved filters'), findsOneWidget);
   });
 
   testWidgets('forwards onActivate with the tapped saved filter', (
@@ -123,6 +206,22 @@ void main() {
 
     expect(find.text('12'), findsOneWidget);
   });
+
+  testWidgets(
+    'middle-ellipsizes long saved filter names while keeping full tooltip',
+    (tester) async {
+      const longName = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+      stubPersisted(const [
+        SavedTaskFilter(id: 'sv-1', name: longName, filter: _filterA),
+      ]);
+
+      await _pumpSection(tester, onActivate: (_) {});
+
+      expect(find.text(longName), findsNothing);
+      expect(find.text('ABCDEFGHIJKLMNOPQRS…WXYZ1234567890'), findsOneWidget);
+      expect(find.byTooltip(longName), findsOneWidget);
+    },
+  );
 
   testWidgets('onRename writes the renamed filter to settings', (
     tester,

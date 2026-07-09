@@ -182,6 +182,7 @@ class OngoingWakeRecord {
     required this.title,
     required this.startedAt,
     this.subjectId,
+    this.subjectRoute,
   });
 
   final String agentId;
@@ -192,6 +193,11 @@ class OngoingWakeRecord {
   /// so a rename of the linked entry refreshes the row title without the
   /// running set churning.
   final String? subjectId;
+
+  /// Direct route for the active subject when the row can safely open it.
+  /// Currently this is populated for task subjects (`/tasks/<id>`); other
+  /// subjects fall back to the agent instance route.
+  final String? subjectRoute;
   final DateTime startedAt;
 }
 
@@ -247,6 +253,7 @@ Future<OngoingWakeRecord> _resolveOngoingRecord(
 ) async {
   String? title;
   String? resolvedSubjectId;
+  String? resolvedSubjectRoute;
   try {
     final stateEntity = await repository.getAgentState(agentId);
     final slots = stateEntity?.mapOrNull(agentState: (s) => s.slots);
@@ -257,11 +264,12 @@ Future<OngoingWakeRecord> _resolveOngoingRecord(
     // collapsed all the way to the agent's displayName ("Task Agent").
     // Falling through to the project-title lookup recovers that path
     // without abandoning the task-first preference.
-    for (final candidate in <String?>[
-      slots?.activeTaskId,
-      slots?.activeProjectId,
+    for (final candidate in <({String? id, bool isTask})>[
+      (id: slots?.activeTaskId, isTask: true),
+      (id: slots?.activeProjectId, isTask: false),
     ]) {
-      if (candidate == null || candidate.isEmpty) continue;
+      final candidateId = candidate.id;
+      if (candidateId == null || candidateId.isEmpty) continue;
       // `ref.read(...).future` rather than `ref.watch(...)` — `watch`
       // would attempt to register a dependency after an `await`, which
       // Riverpod doesn't support inside async provider bodies. Live
@@ -269,18 +277,24 @@ Future<OngoingWakeRecord> _resolveOngoingRecord(
       // re-watching pendingWakeTargetTitleProvider for the recorded
       // subjectId.
       final candidateTitle = await ref.read(
-        pendingWakeTargetTitleProvider(candidate).future,
+        pendingWakeTargetTitleProvider(candidateId).future,
       );
       if (candidateTitle != null && candidateTitle.isNotEmpty) {
         title = candidateTitle;
-        resolvedSubjectId = candidate;
+        resolvedSubjectId = candidateId;
+        if (candidate.isTask) {
+          resolvedSubjectRoute = '/tasks/$candidateId';
+        }
         break;
       }
       // Even when a candidate ID didn't yield a usable title right now,
       // keep the first non-empty ID so the renderer can re-watch it and
       // pick up a future rename that promotes a previously-blank task
       // into a usable title.
-      resolvedSubjectId ??= candidate;
+      resolvedSubjectId ??= candidateId;
+      if (candidate.isTask) {
+        resolvedSubjectRoute ??= '/tasks/$candidateId';
+      }
     }
   } catch (_) {
     // Subject lookup is best-effort — fall through to the agent
@@ -304,6 +318,7 @@ Future<OngoingWakeRecord> _resolveOngoingRecord(
     agentId: agentId,
     title: title != null && title.isNotEmpty ? title : agentId,
     subjectId: resolvedSubjectId,
+    subjectRoute: resolvedSubjectRoute,
     startedAt: startedAt,
   );
 }

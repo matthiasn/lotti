@@ -125,6 +125,7 @@ class _SidebarTimerCard extends StatelessWidget {
     return SidebarLiveCard(
       accent: tokens.colors.interactive.enabled,
       glyph: Icons.timer_outlined,
+      statusLabel: messages.sidebarTimerStatusLabel,
       title: title,
       timeText: durationText,
       onTap: onTapBody,

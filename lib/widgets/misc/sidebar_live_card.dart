@@ -5,19 +5,18 @@ import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 /// Shared visual shell for the sidebar's *live* status surfaces — the running
 /// timer and an active audio recording.
 ///
-/// Each renders as its own accent-tinted card with a 3 px accent rail. A top
+/// Each renders as its own neutral card with a slim accent rail. A top
 /// row carries the leading glyph, the prominent accent-coloured elapsed time,
 /// and the trailing action (stop); the linked title sits on a second row
 /// spanning the full card width, so it wraps to two lines before truncating.
 /// The accent both identifies the kind at a glance (teal = timer, red =
-/// recording) and gives the card real presence — without the old saturated
-/// alarm-red fill, glow, or reactive frame. Background/scheduled surfaces (the
-/// agent queue) deliberately use a quieter neutral card instead, so the eye
-/// lands on what is live first.
+/// recording) and keeps the live state legible without competing with the
+/// selected navigation destination.
 class SidebarLiveCard extends StatelessWidget {
   const SidebarLiveCard({
     required this.accent,
     required this.glyph,
+    required this.statusLabel,
     required this.title,
     required this.timeText,
     required this.onTap,
@@ -33,6 +32,9 @@ class SidebarLiveCard extends StatelessWidget {
 
   /// Leading type glyph (stopwatch for the timer, mic for recording).
   final IconData glyph;
+
+  /// Human-readable status label ("Running timer", "Recording", ...).
+  final String statusLabel;
 
   /// Linked task/entry title — wraps to at most two lines, with the full value
   /// available via tooltip when it truncates.
@@ -64,13 +66,7 @@ class SidebarLiveCard extends StatelessWidget {
       liveRegion: liveRegion,
       label: semanticsLabel,
       child: Material(
-        // Composite the accent tint over the darker level01 base (not the
-        // lighter sidebar level02) so the card reads richer and the
-        // accent-coloured time keeps strong, parity contrast across hues.
-        color: Color.alphaBlend(
-          accent.withValues(alpha: 0.14),
-          tokens.colors.background.level01,
-        ),
+        color: tokens.colors.surface.enabled,
         borderRadius: BorderRadius.circular(tokens.radii.m),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -79,7 +75,7 @@ class SidebarLiveCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(width: 3, color: accent),
+                Container(width: tokens.spacing.step1, color: accent),
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
@@ -92,15 +88,28 @@ class SidebarLiveCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Top row: glyph + the prominent elapsed time on the
-                        // left, the stop action pinned right. Keeping these on
-                        // one line frees the full card width for the title.
+                        // Top row: glyph + explicit status copy + elapsed
+                        // time. Status text keeps the live surface
+                        // understandable without relying on accent color.
                         Row(
                           children: [
                             _Leading(
                               accent: accent,
                               glyph: glyph,
                               pulse: pulse,
+                            ),
+                            SizedBox(width: tokens.spacing.step3),
+                            Expanded(
+                              child: Text(
+                                statusLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: tokens.typography.styles.body.bodySmall
+                                    .copyWith(
+                                      color: tokens.colors.text.mediumEmphasis,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
                             ),
                             SizedBox(width: tokens.spacing.step3),
                             Text(
@@ -111,7 +120,7 @@ class SidebarLiveCard extends StatelessWidget {
                                     fontFeatures: numericBadgeFontFeatures,
                                   ),
                             ),
-                            const Spacer(),
+                            SizedBox(width: tokens.spacing.step3),
                             trailing,
                           ],
                         ),

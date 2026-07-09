@@ -8765,16 +8765,37 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingThemingLight => 'Temă luminoasă';
 
   @override
+  String get sidebarActiveSectionTitle => 'Active';
+
+  @override
+  String get sidebarAudioRecordingStatusLabel => 'Înregistrare';
+
+  @override
   String get sidebarRunningTimerLabel => 'Cronometru în execuție';
 
   @override
   String get sidebarRunningTimerStopTooltip => 'Oprește cronometrul';
 
   @override
+  String get sidebarTimerStatusLabel => 'Cronometru';
+
+  @override
   String get sidebarToggleCollapseLabel => 'Restrânge bara laterală';
 
   @override
   String get sidebarToggleExpandLabel => 'Extinde bara laterală';
+
+  @override
+  String sidebarWakesActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count activi',
+      few: '$count activi',
+      one: '1 activ',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sidebarWakesCancelTooltip => 'Anulați agentul';
@@ -8787,6 +8808,27 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get sidebarWakesOpenList => 'Deschide lista';
+
+  @override
+  String get sidebarWakesOpenTask => 'Deschide sarcina';
+
+  @override
+  String sidebarWakesQueuedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count în coadă',
+      few: '$count în coadă',
+      one: '1 în coadă',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sidebarWakesQueuedLabel => 'În coadă';
+
+  @override
+  String get sidebarWakesWorkingLabel => 'Lucrează';
 
   @override
   String get skillsSectionTitle => 'Competențe';
@@ -8855,6 +8897,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get speechVoicePreviewTooltip => 'Ascultați vocea';
 
   @override
+  String get syncActivityIdle => 'inactivă';
+
+  @override
   String get syncActivityInboxLabel => 'Intrare';
 
   @override
@@ -8864,6 +8909,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncActivityOutboxLabel => 'Ieșire';
+
+  @override
+  String get syncActivitySyncingTitle => 'Se sincronizează';
+
+  @override
+  String get syncActivityTitle => 'Sync';
 
   @override
   String get syncDeleteConfigConfirm => 'DA, SUNT SIGUR';
@@ -9496,6 +9547,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSheetTitle => 'Filtre salvate';
+
+  @override
+  String get tasksSavedFiltersShowLess => 'Afișați mai puțin';
+
+  @override
+  String tasksSavedFiltersShowMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'încă $count de filtre salvate',
+      few: 'încă $count filtre salvate',
+      one: 'încă 1 filtru salvat',
+    );
+    return '$_temp0';
+  }
 
   @override
   String tasksSavedFiltersTaskCount(int count) {

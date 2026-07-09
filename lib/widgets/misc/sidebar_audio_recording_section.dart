@@ -110,6 +110,7 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
       key: const Key('sidebar_audio_recording_card'),
       accent: errorColor,
       glyph: Icons.mic_rounded,
+      statusLabel: messages.sidebarAudioRecordingStatusLabel,
       title: title,
       timeText: durationText,
       pulse: true,
