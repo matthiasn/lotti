@@ -18,23 +18,18 @@ class SidebarSubsectionSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final radius = BorderRadius.circular(tokens.radii.m);
-
     return Padding(
       padding:
           padding ?? EdgeInsetsDirectional.only(start: tokens.spacing.step5),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: tokens.colors.surface.enabled,
-          borderRadius: radius,
+          borderRadius: BorderRadius.circular(tokens.radii.m),
         ),
-        child: ClipRRect(
-          borderRadius: radius,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: children,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
         ),
       ),
     );
@@ -67,9 +62,7 @@ class SidebarSubsectionAction extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.all(tokens.spacing.step2),
       child: Semantics(
-        button: true,
         selected: active,
-        label: label,
         child: Material(
           color: active ? tokens.colors.surface.active : Colors.transparent,
           borderRadius: rowRadius,

@@ -33,7 +33,7 @@ class DailyOsSidebarSection extends StatelessWidget {
     return SidebarSubsectionSurface(
       key: DailyOsSidebarSectionKeys.root,
       children: [
-        Padding(
+        DailyOsSidebarCalendar(
           key: DailyOsSidebarSectionKeys.calendarPadding,
           padding: EdgeInsets.fromLTRB(
             tokens.spacing.step3,
@@ -41,7 +41,6 @@ class DailyOsSidebarSection extends StatelessWidget {
             tokens.spacing.step3,
             tokens.spacing.step2,
           ),
-          child: const DailyOsSidebarCalendar(padding: EdgeInsets.zero),
         ),
         const DesignSystemDivider(),
         const InsightsSidebarEntry(wrapInSurface: false),
