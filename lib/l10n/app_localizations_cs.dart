@@ -3845,6 +3845,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDayWrapUpCta => 'Ukončit';
 
   @override
+  String get dailyOsNextDraftingBackToDecisions => 'Zpět k rozhodnutím';
+
+  @override
   String get dailyOsNextDraftingHeader => 'Připravuji tvůj den…';
 
   @override
@@ -3854,7 +3857,35 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDraftingNudgeDecline => 'Dnes ne';
 
   @override
+  String get dailyOsNextDraftingProgressBlocks => 'Skládám bloky';
+
+  @override
+  String get dailyOsNextDraftingProgressMatching => 'Páruji úkoly';
+
+  @override
+  String get dailyOsNextDraftingProgressQueued => 'Ve frontě';
+
+  @override
+  String get dailyOsNextDraftingProgressReading => 'Čtu check-in';
+
+  @override
+  String get dailyOsNextDraftingProgressSaving => 'Ukládám plán';
+
+  @override
+  String get dailyOsNextDraftingProgressValidating => 'Ověřuji';
+
+  @override
   String get dailyOsNextDraftingReasoningOverline => '✦ ÚVAHA';
+
+  @override
+  String get dailyOsNextDraftingRecoveryBody =>
+      'Probuzení nevytvořilo plán. Zkus to znovu, nebo se vrať a uprav rozhodnutí před plánováním.';
+
+  @override
+  String get dailyOsNextDraftingRecoveryTitle => 'Plánování se zaseklo';
+
+  @override
+  String get dailyOsNextDraftingRetry => 'Zkusit znovu';
 
   @override
   String get dailyOsNextDraftingStatusAfternoon => 'Skládám odpoledne…';
@@ -3979,7 +4010,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileDefaultBehaviorHint =>
-      'Tvá rozhodnutí zde plynou do plánu — žádné rozhodnutí znamená „nech to být“.';
+      'Před sestavením dne zkontroluj karty. Vybrané akce půjdou do plánu; karty bez zásahu zůstanou, jak jsou.';
 
   @override
   String dailyOsNextReconcileError(String detail) {
@@ -4067,6 +4098,36 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get dailyOsNextRenameFailed =>
       'Přejmenování se nepovedlo — zkus to znovu.';
+
+  @override
+  String get dailyOsNextReviewAddBuffer => 'Přidat rezervu';
+
+  @override
+  String get dailyOsNextReviewAddBufferPrompt =>
+      'Přidej realistickou rezervu mezi plánované bloky, hlavně kolem přechodů a po náročné práci.';
+
+  @override
+  String get dailyOsNextReviewAdjust => 'Upravit';
+
+  @override
+  String get dailyOsNextReviewLooksGood => 'Vypadá dobře';
+
+  @override
+  String get dailyOsNextReviewMoveLighter => 'Lehčí později';
+
+  @override
+  String get dailyOsNextReviewMoveLighterPrompt =>
+      'Přesuň lehčí nebo méně energetickou práci na později a nejsilnější soustředěné okno nech pro nejnáročnější úkol.';
+
+  @override
+  String get dailyOsNextReviewTooMuch => 'Je toho moc';
+
+  @override
+  String get dailyOsNextReviewTooMuchPrompt =>
+      'Tenhle plán je na dnešek moc. Zmenši zátěž, chraň prostor k nadechnutí a nech jen nejdůležitější bloky.';
+
+  @override
+  String get dailyOsNextReviewWhyTitle => 'Proč se to dostalo do plánu';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Zahodit';

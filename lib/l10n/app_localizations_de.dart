@@ -3846,6 +3846,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextDayWrapUpCta => 'Abschließen';
 
   @override
+  String get dailyOsNextDraftingBackToDecisions =>
+      'Zurück zu den Entscheidungen';
+
+  @override
   String get dailyOsNextDraftingHeader => 'Plane deinen Tag…';
 
   @override
@@ -3855,7 +3859,35 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextDraftingNudgeDecline => 'Heute nicht';
 
   @override
+  String get dailyOsNextDraftingProgressBlocks => 'Baue Blöcke';
+
+  @override
+  String get dailyOsNextDraftingProgressMatching => 'Ordne Aufgaben zu';
+
+  @override
+  String get dailyOsNextDraftingProgressQueued => 'In der Warteschlange';
+
+  @override
+  String get dailyOsNextDraftingProgressReading => 'Lese Check-in';
+
+  @override
+  String get dailyOsNextDraftingProgressSaving => 'Speichere Plan';
+
+  @override
+  String get dailyOsNextDraftingProgressValidating => 'Prüfe';
+
+  @override
   String get dailyOsNextDraftingReasoningOverline => '✦ ÜBERLEGUNG';
+
+  @override
+  String get dailyOsNextDraftingRecoveryBody =>
+      'Der Wake hat keinen Plan erzeugt. Versuch es erneut oder geh zurück und passe die Entscheidungen vor dem Planen an.';
+
+  @override
+  String get dailyOsNextDraftingRecoveryTitle => 'Planung hängt';
+
+  @override
+  String get dailyOsNextDraftingRetry => 'Erneut versuchen';
 
   @override
   String get dailyOsNextDraftingStatusAfternoon => 'Sortiere den Nachmittag…';
@@ -3981,7 +4013,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileDefaultBehaviorHint =>
-      'Deine Entscheidungen hier fließen in den Plan ein — keine Entscheidung heißt „lass es, wie es ist“.';
+      'Prüf die Karten, bevor du deinen Tag baust. Gewählte Aktionen fließen in den Plan ein; Karten ohne Aktion bleiben, wie sie sind.';
 
   @override
   String dailyOsNextReconcileError(String detail) {
@@ -4069,6 +4101,36 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get dailyOsNextRenameFailed =>
       'Umbenennen fehlgeschlagen — versuch es nochmal.';
+
+  @override
+  String get dailyOsNextReviewAddBuffer => 'Puffer hinzufügen';
+
+  @override
+  String get dailyOsNextReviewAddBufferPrompt =>
+      'Füge realistischen Puffer zwischen den geplanten Blöcken hinzu, besonders bei Übergängen und nach anspruchsvoller Arbeit.';
+
+  @override
+  String get dailyOsNextReviewAdjust => 'Anpassen';
+
+  @override
+  String get dailyOsNextReviewLooksGood => 'Sieht gut aus';
+
+  @override
+  String get dailyOsNextReviewMoveLighter => 'Leichter verschieben';
+
+  @override
+  String get dailyOsNextReviewMoveLighterPrompt =>
+      'Verschiebe leichtere oder energieärmere Arbeit nach hinten und halte das stärkste Fokusfenster für die anspruchsvollste Aufgabe frei.';
+
+  @override
+  String get dailyOsNextReviewTooMuch => 'Zu viel';
+
+  @override
+  String get dailyOsNextReviewTooMuchPrompt =>
+      'Dieser Plan ist für heute zu viel. Reduziere die Last, schütze Atemraum und behalte nur die wichtigsten Blöcke.';
+
+  @override
+  String get dailyOsNextReviewWhyTitle => 'Warum das im Plan ist';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Verwerfen';

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -109,6 +110,57 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await pumpCard(tester, item());
       expect(find.textContaining('the slides thing'), findsNothing);
+    });
+
+    testWidgets('confidence only surfaces when it is not high', (tester) async {
+      await pumpCard(tester, item());
+      expect(find.text('low confidence'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpCard(tester, item(confidence: ParsedItemConfidence.medium));
+      expect(find.text('low confidence'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpCard(tester, item(confidence: ParsedItemConfidence.low));
+      expect(find.text('low confidence'), findsOneWidget);
+    });
+
+    testWidgets('matched chip warning accent follows non-high confidence', (
+      tester,
+    ) async {
+      await pumpCard(
+        tester,
+        item(
+          kind: ParsedItemKind.matched,
+          matchedTaskTitle: 'Old task',
+        ),
+      );
+      final context = tester.element(find.byType(ParsedCard));
+      final tokens = context.designTokens;
+
+      Icon matchedTaskIcon() {
+        return tester.widgetList<Icon>(find.byIcon(Icons.link_rounded)).first;
+      }
+
+      expect(
+        matchedTaskIcon().color,
+        tokens.colors.alert.info.defaultColor,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpCard(
+        tester,
+        item(
+          kind: ParsedItemKind.matched,
+          confidence: ParsedItemConfidence.low,
+          matchedTaskTitle: 'Old task',
+        ),
+      );
+
+      expect(
+        matchedTaskIcon().color,
+        tokens.colors.alert.warning.defaultColor,
+      );
     });
   });
 }

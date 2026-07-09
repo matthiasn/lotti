@@ -28,12 +28,14 @@ import 'package:lotti/services/db_notification.dart';
 /// [MockDayAgent] so they stay deterministic + don't touch the
 /// agent layer).
 final dayAgentProvider = Provider<DayAgentInterface>((ref) {
+  final notifications = ref.watch(maybeUpdateNotificationsProvider);
   return RealDayAgent(
     captureService: ref.watch(dayAgentCaptureServiceProvider),
     planService: ref.watch(dayAgentPlanServiceProvider),
     dayAgentService: ref.watch(dayAgentServiceProvider),
     journalDb: ref.watch(journalDbProvider),
     mockFallback: MockDayAgent(),
+    updateStream: notifications?.updateStream,
   );
 });
 

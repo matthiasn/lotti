@@ -675,6 +675,37 @@ void main() {
   });
 
   group('RefineModalContent', () {
+    testWidgets('submits an initial transcript when opened with one', (
+      tester,
+    ) async {
+      final draft = _emptyPlan();
+      final agent = RecordingDayAgent(
+        diff: PlanDiff(
+          id: 'seeded_diff',
+          transcript: 'make it lighter',
+          changes: const [],
+          updatedPlan: draft,
+        ),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          Scaffold(
+            body: RefineModalContent(
+              draft: draft,
+              initialTranscript: 'make it lighter',
+            ),
+          ),
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(agent.proposeCount, 1);
+      expect(agent.proposedTranscript, 'make it lighter');
+    });
+
     testWidgets('pops with the accepted plan when a diff is resolved', (
       tester,
     ) async {

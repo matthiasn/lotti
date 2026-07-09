@@ -28,6 +28,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
+enum _QuickRefinement { tooMuch, moveLighter, addBuffer }
+
 /// Hosts the two projections of the [DraftPlan] — Agenda (intent) and
 /// Day (mechanics) — with a pill toggle at the top.
 ///
@@ -72,14 +74,28 @@ class DayPage extends ConsumerStatefulWidget {
 class _DayPageState extends ConsumerState<DayPage> {
   late PlanView _view = widget.hasPlan ? PlanView.agenda : PlanView.day;
 
-  Future<void> _openRefine() async {
+  Future<void> _openRefine({String? initialTranscript}) async {
     await showDayPlanningModal(
       context: context,
       dayDate: widget.draft.dayDate,
-      intent: DayPlanningAdapt(widget.draft),
+      intent: DayPlanningAdapt(
+        widget.draft,
+        initialTranscript: initialTranscript,
+      ),
     );
     if (!mounted) return;
     ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
+  }
+
+  void _openQuickRefinement(_QuickRefinement refinement) {
+    final messages = context.messages;
+    final transcript = switch (refinement) {
+      _QuickRefinement.tooMuch => messages.dailyOsNextReviewTooMuchPrompt,
+      _QuickRefinement.moveLighter =>
+        messages.dailyOsNextReviewMoveLighterPrompt,
+      _QuickRefinement.addBuffer => messages.dailyOsNextReviewAddBufferPrompt,
+    };
+    unawaited(_openRefine(initialTranscript: transcript));
   }
 
   void _openCommit() {
@@ -272,7 +288,8 @@ class _DayPageState extends ConsumerState<DayPage> {
                 _DayFooter(
                   draft: widget.draft,
                   showCoachHint: !prefs.dayFooterHintRetired,
-                  onRefine: _openRefine,
+                  onRefine: () => unawaited(_openRefine()),
+                  onQuickRefinement: _openQuickRefinement,
                   onCommit: _openCommit,
                   onShutdown: _openShutdown,
                 )
@@ -291,6 +308,7 @@ class _DayFooter extends StatelessWidget {
     required this.draft,
     required this.showCoachHint,
     required this.onRefine,
+    required this.onQuickRefinement,
     required this.onCommit,
     required this.onShutdown,
   });
@@ -302,6 +320,7 @@ class _DayFooter extends StatelessWidget {
   final bool showCoachHint;
 
   final VoidCallback onRefine;
+  final ValueChanged<_QuickRefinement> onQuickRefinement;
   final VoidCallback onCommit;
   final VoidCallback onShutdown;
 
@@ -315,6 +334,7 @@ class _DayFooter extends StatelessWidget {
     // lock-in.
     final showHint =
         showCoachHint &&
+        draft.state != DayState.drafted &&
         dailyOsTextScaleOf(context) < kDailyOsHideCoachingScale;
     final hint = Text(
       context.messages.dailyOsNextDayRefineFooterHint,
@@ -326,45 +346,294 @@ class _DayFooter extends StatelessWidget {
       draft: draft,
       teal: teal,
       onRefine: onRefine,
-      onCommit: onCommit,
       onShutdown: onShutdown,
       expand: !isDesktop,
     );
+    final actionLayout = isDesktop
+        // Constrained to the agenda's reading width so the commit
+        // actions belong to the content column, not the page chrome.
+        ? Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: Row(
+                children: [
+                  if (showHint) ...[
+                    Expanded(child: hint),
+                    SizedBox(width: tokens.spacing.step4),
+                  ] else
+                    const Spacer(),
+                  actions,
+                ],
+              ),
+            ),
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (showHint) ...[
+                hint,
+                SizedBox(height: tokens.spacing.step3),
+              ],
+              actions,
+            ],
+          );
     return DesignSystemGlassStrip(
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: tokens.spacing.step6,
           vertical: tokens.spacing.step4,
         ),
-        child: isDesktop
-            // Constrained to the agenda's reading width so the commit
-            // actions belong to the content column, not the page chrome.
-            ? Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
-                  child: Row(
-                    children: [
-                      if (showHint) ...[
-                        Expanded(child: hint),
-                        SizedBox(width: tokens.spacing.step4),
-                      ] else
-                        const Spacer(),
-                      actions,
-                    ],
-                  ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (draft.state == DayState.drafted) ...[
+              _PlanReviewStrip(
+                draft: draft,
+                onLooksGood: onCommit,
+                onQuickRefinement: onQuickRefinement,
+              ),
+              SizedBox(height: tokens.spacing.step4),
+            ],
+            actionLayout,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlanReviewStrip extends StatelessWidget {
+  const _PlanReviewStrip({
+    required this.draft,
+    required this.onLooksGood,
+    required this.onQuickRefinement,
+  });
+
+  final DraftPlan draft;
+  final VoidCallback onLooksGood;
+  final ValueChanged<_QuickRefinement> onQuickRefinement;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final reasons = _planReasons(draft);
+    final compactActions =
+        dailyOsTextScaleOf(context) >= kDailyOsHideCoachingScale;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (reasons.isNotEmpty) ...[
+              Text(
+                messages.dailyOsNextReviewWhyTitle,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
                 ),
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (showHint) ...[
-                    hint,
-                    SizedBox(height: tokens.spacing.step3),
+              ),
+              SizedBox(height: tokens.spacing.step2),
+              for (final reason in reasons) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      size: tokens.spacing.step4,
+                      color: tokens.colors.interactive.enabled,
+                    ),
+                    SizedBox(width: tokens.spacing.step2),
+                    Expanded(
+                      child: Text(
+                        reason,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                    ),
                   ],
-                  actions,
+                ),
+                SizedBox(height: tokens.spacing.step2),
+              ],
+              SizedBox(height: tokens.spacing.step2),
+            ],
+            if (compactActions)
+              _CompactReviewActions(
+                onLooksGood: onLooksGood,
+                onQuickRefinement: onQuickRefinement,
+              )
+            else
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: tokens.spacing.step2,
+                runSpacing: tokens.spacing.step2,
+                children: [
+                  FilledButton.icon(
+                    onPressed: onLooksGood,
+                    icon: const Icon(Icons.check_rounded),
+                    label: Text(messages.dailyOsNextReviewLooksGood),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        onQuickRefinement(_QuickRefinement.tooMuch),
+                    icon: const Icon(Icons.remove_circle_outline_rounded),
+                    label: Text(messages.dailyOsNextReviewTooMuch),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        onQuickRefinement(_QuickRefinement.moveLighter),
+                    icon: const Icon(Icons.low_priority_rounded),
+                    label: Text(messages.dailyOsNextReviewMoveLighter),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        onQuickRefinement(_QuickRefinement.addBuffer),
+                    icon: const Icon(Icons.add_rounded),
+                    label: Text(messages.dailyOsNextReviewAddBuffer),
+                  ),
                 ],
               ),
+          ],
+        ),
       ),
+    );
+  }
+
+  List<String> _planReasons(DraftPlan draft) {
+    final reasons = <String>[];
+    final seen = <String>{};
+    for (final block in draft.blocks) {
+      final reason = block.reason?.trim();
+      if (reason == null || reason.isEmpty || !seen.add(reason)) continue;
+      reasons.add(reason);
+      if (reasons.length == 2) break;
+    }
+    return reasons;
+  }
+}
+
+class _CompactReviewActions extends StatelessWidget {
+  const _CompactReviewActions({
+    required this.onLooksGood,
+    required this.onQuickRefinement,
+  });
+
+  final VoidCallback onLooksGood;
+  final ValueChanged<_QuickRefinement> onQuickRefinement;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton.icon(
+          onPressed: onLooksGood,
+          icon: const Icon(Icons.check_rounded),
+          label: Text(
+            messages.dailyOsNextReviewLooksGood,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        PopupMenuButton<_QuickRefinement>(
+          tooltip: messages.dailyOsNextReviewAdjust,
+          onSelected: onQuickRefinement,
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: _QuickRefinement.tooMuch,
+              child: _QuickReviewMenuItem(
+                icon: Icons.remove_circle_outline_rounded,
+                label: messages.dailyOsNextReviewTooMuch,
+              ),
+            ),
+            PopupMenuItem(
+              value: _QuickRefinement.moveLighter,
+              child: _QuickReviewMenuItem(
+                icon: Icons.low_priority_rounded,
+                label: messages.dailyOsNextReviewMoveLighter,
+              ),
+            ),
+            PopupMenuItem(
+              value: _QuickRefinement.addBuffer,
+              child: _QuickReviewMenuItem(
+                icon: Icons.add_rounded,
+                label: messages.dailyOsNextReviewAddBuffer,
+              ),
+            ),
+          ],
+          child: _ReviewAdjustButton(label: messages.dailyOsNextReviewAdjust),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReviewAdjustButton extends StatelessWidget {
+  const _ReviewAdjustButton({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final teal = tokens.colors.interactive.enabled;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: teal.withValues(alpha: 0.32)),
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step4,
+          vertical: tokens.spacing.step2,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.tune_rounded, size: 18, color: teal),
+            SizedBox(width: tokens.spacing.step2),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: teal,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            SizedBox(width: tokens.spacing.step1),
+            Icon(Icons.expand_more_rounded, size: 18, color: teal),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickReviewMenuItem extends StatelessWidget {
+  const _QuickReviewMenuItem({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: tokens.colors.interactive.enabled),
+        SizedBox(width: tokens.spacing.step3),
+        Flexible(child: Text(label)),
+      ],
     );
   }
 }
@@ -377,7 +646,6 @@ class _DayFooterActions extends StatelessWidget {
     required this.draft,
     required this.teal,
     required this.onRefine,
-    required this.onCommit,
     required this.onShutdown,
     required this.expand,
   });
@@ -385,7 +653,6 @@ class _DayFooterActions extends StatelessWidget {
   final DraftPlan draft;
   final Color teal;
   final VoidCallback onRefine;
-  final VoidCallback onCommit;
   final VoidCallback onShutdown;
   final bool expand;
 
@@ -412,51 +679,38 @@ class _DayFooterActions extends StatelessWidget {
         ),
       ),
     );
-    final primaryButton = draft.state == DayState.drafted
-        ? FilledButton.icon(
-            onPressed: onCommit,
-            icon: const Icon(Icons.lock_outline_rounded, size: 14),
-            label: Text(
-              context.messages.dailyOsNextDayLockInCta,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: teal,
-              foregroundColor: tokens.colors.text.onInteractiveAlert,
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step4,
-                vertical: tokens.spacing.step2,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-              ),
-            ),
-          )
-        : OutlinedButton.icon(
-            onPressed: onShutdown,
-            icon: Icon(
-              Icons.nights_stay_outlined,
-              size: 14,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-            label: Text(
-              context.messages.dailyOsNextDayWrapUpCta,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: tokens.colors.text.mediumEmphasis,
-              side: BorderSide(color: tokens.colors.decorative.level01),
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step4,
-                vertical: tokens.spacing.step2,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-              ),
-            ),
-          );
+    if (draft.state == DayState.drafted) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (expand) Expanded(child: refineButton) else refineButton,
+        ],
+      );
+    }
+    final primaryButton = OutlinedButton.icon(
+      onPressed: onShutdown,
+      icon: Icon(
+        Icons.nights_stay_outlined,
+        size: 14,
+        color: tokens.colors.text.mediumEmphasis,
+      ),
+      label: Text(
+        context.messages.dailyOsNextDayWrapUpCta,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: tokens.colors.text.mediumEmphasis,
+        side: BorderSide(color: tokens.colors.decorative.level01),
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step4,
+          vertical: tokens.spacing.step2,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+        ),
+      ),
+    );
 
     return Row(
       children: [

@@ -3876,6 +3876,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDayWrapUpCta => 'Încheie';
 
   @override
+  String get dailyOsNextDraftingBackToDecisions => 'Înapoi la decizii';
+
+  @override
   String get dailyOsNextDraftingHeader => 'Schițez ziua dvs.…';
 
   @override
@@ -3885,7 +3888,35 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDraftingNudgeDecline => 'Nu astăzi';
 
   @override
+  String get dailyOsNextDraftingProgressBlocks => 'Se schițează blocurile';
+
+  @override
+  String get dailyOsNextDraftingProgressMatching => 'Se potrivesc sarcinile';
+
+  @override
+  String get dailyOsNextDraftingProgressQueued => 'În coadă';
+
+  @override
+  String get dailyOsNextDraftingProgressReading => 'Se citește check-in-ul';
+
+  @override
+  String get dailyOsNextDraftingProgressSaving => 'Se salvează planul';
+
+  @override
+  String get dailyOsNextDraftingProgressValidating => 'Se validează';
+
+  @override
   String get dailyOsNextDraftingReasoningOverline => '✦ RAȚIONAMENT';
+
+  @override
+  String get dailyOsNextDraftingRecoveryBody =>
+      'Wake-ul nu a produs un plan. Încercați din nou sau reveniți și ajustați deciziile înainte de planificare.';
+
+  @override
+  String get dailyOsNextDraftingRecoveryTitle => 'Planificarea s-a blocat';
+
+  @override
+  String get dailyOsNextDraftingRetry => 'Încercați din nou';
 
   @override
   String get dailyOsNextDraftingStatusAfternoon => 'Se ordonează după-amiaza…';
@@ -4010,7 +4041,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileDefaultBehaviorHint =>
-      'Deciziile dvs. aici alimentează planul — nicio decizie înseamnă „lăsați-l unde este”.';
+      'Revizuiți cardurile înainte de a construi ziua. Acțiunile alese intră în plan; cardurile lăsate neatinse rămân așa cum sunt.';
 
   @override
   String dailyOsNextReconcileError(String detail) {
@@ -4098,6 +4129,36 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dailyOsNextRenameFailed =>
       'Redenumirea nu a reușit — încercați din nou.';
+
+  @override
+  String get dailyOsNextReviewAddBuffer => 'Adăugați rezervă';
+
+  @override
+  String get dailyOsNextReviewAddBufferPrompt =>
+      'Adăugați o rezervă realistă între blocurile planificate, mai ales la tranziții și după munca solicitantă.';
+
+  @override
+  String get dailyOsNextReviewAdjust => 'Ajustați';
+
+  @override
+  String get dailyOsNextReviewLooksGood => 'Arată bine';
+
+  @override
+  String get dailyOsNextReviewMoveLighter => 'Mutați ce e mai ușor';
+
+  @override
+  String get dailyOsNextReviewMoveLighterPrompt =>
+      'Mutați munca mai ușoară sau cu energie mai redusă mai târziu și păstrați cea mai bună fereastră de concentrare pentru sarcina cea mai solicitantă.';
+
+  @override
+  String get dailyOsNextReviewTooMuch => 'Prea mult';
+
+  @override
+  String get dailyOsNextReviewTooMuchPrompt =>
+      'Acest plan este prea mult pentru astăzi. Reduceți încărcarea, protejați spațiul de respiro și păstrați doar cele mai importante blocuri.';
+
+  @override
+  String get dailyOsNextReviewWhyTitle => 'De ce au intrat în plan';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Renunță';

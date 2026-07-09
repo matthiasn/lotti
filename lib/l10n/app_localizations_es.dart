@@ -3865,6 +3865,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextDayWrapUpCta => 'Cerrar día';
 
   @override
+  String get dailyOsNextDraftingBackToDecisions => 'Volver a decisiones';
+
+  @override
   String get dailyOsNextDraftingHeader => 'Preparando tu día…';
 
   @override
@@ -3874,7 +3877,35 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextDraftingNudgeDecline => 'Hoy no';
 
   @override
+  String get dailyOsNextDraftingProgressBlocks => 'Preparando bloques';
+
+  @override
+  String get dailyOsNextDraftingProgressMatching => 'Asignando tareas';
+
+  @override
+  String get dailyOsNextDraftingProgressQueued => 'En cola';
+
+  @override
+  String get dailyOsNextDraftingProgressReading => 'Leyendo registro';
+
+  @override
+  String get dailyOsNextDraftingProgressSaving => 'Guardando plan';
+
+  @override
+  String get dailyOsNextDraftingProgressValidating => 'Validando';
+
+  @override
   String get dailyOsNextDraftingReasoningOverline => '✦ RAZONAMIENTO';
+
+  @override
+  String get dailyOsNextDraftingRecoveryBody =>
+      'El agente no produjo un plan. Inténtalo de nuevo o vuelve y ajusta las decisiones antes de planificar.';
+
+  @override
+  String get dailyOsNextDraftingRecoveryTitle => 'La planificación se atascó';
+
+  @override
+  String get dailyOsNextDraftingRetry => 'Intentar de nuevo';
 
   @override
   String get dailyOsNextDraftingStatusAfternoon => 'Ordenando la tarde…';
@@ -3998,7 +4029,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileDefaultBehaviorHint =>
-      'Tus decisiones aquí alimentan el plan — no decidir significa «déjalo donde está».';
+      'Revisa las tarjetas antes de construir tu día. Las acciones elegidas pasan al plan; las tarjetas sin tocar se quedan como están.';
 
   @override
   String dailyOsNextReconcileError(String detail) {
@@ -4086,6 +4117,36 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get dailyOsNextRenameFailed =>
       'No se pudo renombrar: inténtalo de nuevo.';
+
+  @override
+  String get dailyOsNextReviewAddBuffer => 'Añadir margen';
+
+  @override
+  String get dailyOsNextReviewAddBufferPrompt =>
+      'Añade un margen realista entre los bloques planificados, sobre todo en transiciones y después de trabajo exigente.';
+
+  @override
+  String get dailyOsNextReviewAdjust => 'Ajustar';
+
+  @override
+  String get dailyOsNextReviewLooksGood => 'Se ve bien';
+
+  @override
+  String get dailyOsNextReviewMoveLighter => 'Mover lo ligero';
+
+  @override
+  String get dailyOsNextReviewMoveLighterPrompt =>
+      'Mueve el trabajo más ligero o de menor energía a más tarde y reserva la mejor ventana de foco para la tarea más exigente.';
+
+  @override
+  String get dailyOsNextReviewTooMuch => 'Demasiado';
+
+  @override
+  String get dailyOsNextReviewTooMuchPrompt =>
+      'Este plan es demasiado para hoy. Reduce la carga, protege espacio para respirar y conserva solo los bloques más importantes.';
+
+  @override
+  String get dailyOsNextReviewWhyTitle => 'Por qué entró en el plan';
 
   @override
   String get dailyOsNextShutdownCarryoverDrop => 'Descartar';

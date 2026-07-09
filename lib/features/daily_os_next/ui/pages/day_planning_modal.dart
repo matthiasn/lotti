@@ -38,9 +38,15 @@ class DayPlanningCreate extends DayPlanningIntent {
 
 /// Adapt an existing plan via the voice-driven Refine step.
 class DayPlanningAdapt extends DayPlanningIntent {
-  const DayPlanningAdapt(this.draft);
+  const DayPlanningAdapt(this.draft, {this.initialTranscript});
 
   final DraftPlan draft;
+
+  /// Optional transcript submitted immediately when the Refine panel opens.
+  ///
+  /// Used by one-tap review actions on the Day surface so quick nudges still
+  /// flow through the normal Refine diff/accept/revert path.
+  final String? initialTranscript;
 }
 
 /// Opens the day-planning interaction as a full-height modal layer that
@@ -78,7 +84,12 @@ Future<void> showDayPlanningModal({
     pageListBuilder: (modalContext) => [
       switch (intent) {
         DayPlanningCreate() => _captureStepPage(modalContext, day),
-        DayPlanningAdapt(:final draft) => _refineStepPage(modalContext, draft),
+        DayPlanningAdapt(:final draft, :final initialTranscript) =>
+          _refineStepPage(
+            modalContext,
+            draft,
+            initialTranscript: initialTranscript,
+          ),
       },
     ],
   );
@@ -504,7 +515,11 @@ SliverWoltModalSheetPage _draftingStepPage(
       SliverToBoxAdapter(
         child: SizedBox(
           height: _stepViewportHeight(context, hasBar: false),
-          child: _DraftingStepContent(params: params, day: day),
+          child: _DraftingStepContent(
+            params: params,
+            day: day,
+            onBack: onBack,
+          ),
         ),
       ),
     ],
@@ -512,10 +527,15 @@ SliverWoltModalSheetPage _draftingStepPage(
 }
 
 class _DraftingStepContent extends ConsumerStatefulWidget {
-  const _DraftingStepContent({required this.params, required this.day});
+  const _DraftingStepContent({
+    required this.params,
+    required this.day,
+    required this.onBack,
+  });
 
   final DraftingParams params;
   final DateTime day;
+  final VoidCallback onBack;
 
   @override
   ConsumerState<_DraftingStepContent> createState() =>
@@ -560,12 +580,11 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
       _ when asyncState.hasError => Center(
         child: Padding(
           padding: EdgeInsets.all(tokens.spacing.step8),
-          child: Text(
-            context.messages.dailyOsNextGenericError,
-            textAlign: TextAlign.center,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+          child: DraftingErrorRecovery(
+            onRetry: () => ref.invalidate(
+              draftingControllerProvider(widget.params),
             ),
+            onBack: widget.onBack,
           ),
         ),
       ),
@@ -578,8 +597,9 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
 
 SliverWoltModalSheetPage _refineStepPage(
   BuildContext context,
-  DraftPlan draft,
-) {
+  DraftPlan draft, {
+  String? initialTranscript,
+}) {
   // No top-bar title: like the other steps, the conversational body
   // headline ("What should change?") is the only title — a second label in
   // the nav bar reads as a double header.
@@ -591,7 +611,10 @@ SliverWoltModalSheetPage _refineStepPage(
       SliverToBoxAdapter(
         child: SizedBox(
           height: _stepViewportHeight(context),
-          child: RefineModalContent(draft: draft),
+          child: RefineModalContent(
+            draft: draft,
+            initialTranscript: initialTranscript,
+          ),
         ),
       ),
     ],
