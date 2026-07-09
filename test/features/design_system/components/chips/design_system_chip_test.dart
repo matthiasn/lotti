@@ -245,6 +245,43 @@ void main() {
       expect(squareSlots.length, 2);
     });
 
+    testWidgets('renders the touch size with a larger tokenized hit target', (
+      tester,
+    ) async {
+      var tapCount = 0;
+
+      await _pumpChip(
+        tester,
+        DesignSystemChip(
+          label: 'Touch',
+          size: DesignSystemChipSize.touch,
+          onPressed: () => tapCount++,
+        ),
+      );
+
+      final richText = _findTextNode(tester, 'Touch');
+
+      expect(_chipSize(tester).height, dsTokensLight.spacing.step9);
+      expect(
+        _chipDecoration(tester).shape,
+        isA<RoundedRectangleBorder>().having(
+          (shape) => shape.borderRadius,
+          'borderRadius',
+          BorderRadius.circular(dsTokensLight.radii.l),
+        ),
+      );
+      expectTextStyle(
+        richText.text.style!,
+        dsTokensLight.typography.styles.body.bodyMedium,
+        dsTokensLight.colors.text.highEmphasis,
+      );
+
+      await tester.tap(find.byType(DesignSystemChip));
+      await tester.pump();
+
+      expect(tapCount, 1);
+    });
+
     testWidgets('renders an avatar chip and clips the avatar to a circle', (
       tester,
     ) async {

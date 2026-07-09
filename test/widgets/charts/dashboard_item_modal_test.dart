@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 import '../../widget_test_utils.dart';
 
@@ -20,13 +22,14 @@ void main() {
         Scaffold(
           body: Builder(
             builder: (context) => TextButton(
-              onPressed: () => showModalBottomSheet<void>(
+              onPressed: () => ModalUtils.showSinglePageModal<void>(
                 context: context,
+                title: 'Aggregation type',
                 builder: (_) => DashboardItemModal(
                   index: 3,
                   item: item,
                   updateItemFn: updateItemFn,
-                  title: 'Water',
+                  chartTitle: 'Water',
                 ),
               ),
               child: const Text('open'),
@@ -44,10 +47,14 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Aggregation type'), findsOneWidget);
       expect(find.text('Water'), findsOneWidget);
-      expect(find.text('Aggregation Type:'), findsOneWidget);
       expect(
-        find.byType(ChoiceChip),
+        find.text('Choose a summary. Changes apply immediately.'),
+        findsOneWidget,
+      );
+      expect(
+        find.byType(DesignSystemChip),
         findsNWidgets(AggregationType.values.length),
       );
 
@@ -59,13 +66,14 @@ void main() {
         AggregationType.hourlySum: 'Hourly sum',
       };
       for (final type in AggregationType.values) {
-        final chip = tester.widget<ChoiceChip>(
+        final chip = tester.widget<DesignSystemChip>(
           find.ancestor(
             of: find.text(localizedLabels[type]!),
-            matching: find.byType(ChoiceChip),
+            matching: find.byType(DesignSystemChip),
           ),
         );
         expect(chip.selected, type == AggregationType.dailySum);
+        expect(chip.size, DesignSystemChipSize.touch);
       }
     });
 

@@ -10,6 +10,7 @@ import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.dart';
 import 'package:lotti/features/settings/ui/widgets/dashboards/dashboard_category.dart';
@@ -87,21 +88,13 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
     categoryId = widget.dashboard.categoryId;
   }
 
-  void onConfirmAddMeasurement(List<MeasurableDataType?> selection) {
-    for (final selected in selection) {
-      if (selected != null) {
-        setState(() {
-          dashboardItems.add(
-            DashboardItem.measurement(
-              id: selected.id,
-              aggregationType:
-                  selected.aggregationType ?? AggregationType.dailySum,
-            ),
-          );
-          dirty = true;
-        });
-      }
-    }
+  void onConfirmAddMeasurement(List<DashboardMeasurementItem> selection) {
+    if (selection.isEmpty) return;
+
+    setState(() {
+      dashboardItems.addAll(selection);
+      dirty = true;
+    });
   }
 
   void onConfirmAddHabit(List<HabitDefinition?> selection) {
@@ -156,6 +149,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
   }
 
   void updateItem(DashboardItem item, int index) {
+    if (dashboardItems[index] == item) return;
+
     setState(() {
       dashboardItems[index] = item;
       dirty = true;
@@ -221,15 +216,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                     AsyncSnapshot<List<MeasurableDataType>> snapshot,
                   ) {
                     final measurableDataTypes = snapshot.data ?? [];
-
-                    final measurableSelectItems = [
-                      ...measurableDataTypes.map(
-                        (item) => MultiSelectItem<MeasurableDataType>(
-                          item,
-                          item.displayName,
-                        ),
-                      ),
-                    ];
 
                     final healthSelectItems = healthTypes.keys.map((
                       String typeName,
@@ -311,8 +297,13 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                     }
 
                     Future<void> copyDashboard() async {
-                      final dashboard =
-                          await saveDashboard() ?? widget.dashboard;
+                      final dashboard = await saveDashboard();
+                      if (dashboard == null) return;
+                      if (!mounted) return;
+                      setState(() {
+                        dirty = false;
+                      });
+
                       final entityDefinitions = <EntityDefinition>[dashboard];
 
                       for (final item in dashboard.items) {
@@ -428,7 +419,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                 ],
                               ),
                               SettingsFormSection(
-                                title: messages.habitSectionOptionsTitle,
+                                title: messages.settingsOptionsTitle,
                                 children: [
                                   FormSwitch(
                                     name: 'private',
@@ -451,26 +442,33 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           ),
                         ),
                         SettingsFormSection(
-                          title: messages.dashboardAddChartsTitle,
+                          title: messages.dashboardCurrentChartsTitle,
+                          description:
+                              messages.dashboardCurrentChartsDescription,
                           children: [
-                            if (dashboardItems.isNotEmpty)
+                            if (dashboardItems.isEmpty)
+                              _DashboardEditorHintRow(
+                                icon: Icons.insights,
+                                text: messages.dashboardNoChartsAdded,
+                              )
+                            else
                               ReorderableListView(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
+                                buildDefaultDragHandles: false,
                                 onReorderItem: (int oldIndex, int newIndex) {
-                                  setState(() {
-                                    dirty = true;
+                                  final insertionIndex = newIndex;
+                                  if (insertionIndex == oldIndex) return;
 
+                                  setState(() {
                                     final movedItem = dashboardItems.removeAt(
                                       oldIndex,
                                     );
-                                    final insertionIndex = newIndex > oldIndex
-                                        ? newIndex - 1
-                                        : newIndex;
                                     dashboardItems.insert(
                                       insertionIndex,
                                       movedItem,
                                     );
+                                    dirty = true;
                                   });
                                 },
                                 children: List.generate(
@@ -490,12 +488,25 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                         item: item,
                                         index: index,
                                         updateItemFn: updateItem,
+                                        removeItemFn: () => dismissItem(index),
                                       ),
                                     );
                                   },
                                 ),
                               ),
-                            if (habitSelectItems.isNotEmpty)
+                          ],
+                        ),
+                        SettingsFormSection(
+                          title: messages.dashboardAvailableChartsTitle,
+                          description:
+                              messages.dashboardAvailableChartsDescription,
+                          children: [
+                            if (habitSelectItems.isEmpty)
+                              _DashboardEditorHintRow(
+                                icon: MdiIcons.lightningBolt,
+                                text: messages.dashboardNoHabitsForCharts,
+                              )
+                            else
                               ChartMultiSelect<HabitDefinition>(
                                 multiSelectItems: habitSelectItems,
                                 onConfirm: onConfirmAddHabit,
@@ -505,9 +516,14 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     messages.dashboardAddHabitButton,
                                 iconData: Icons.insights,
                               ),
-                            if (measurableSelectItems.isNotEmpty)
-                              ChartMultiSelect<MeasurableDataType>(
-                                multiSelectItems: measurableSelectItems,
+                            if (measurableDataTypes.isEmpty)
+                              _DashboardEditorHintRow(
+                                icon: Icons.insights,
+                                text: messages.dashboardNoMeasurablesForCharts,
+                              )
+                            else
+                              MeasurementChartMultiSelect(
+                                items: measurableDataTypes,
                                 onConfirm: onConfirmAddMeasurement,
                                 title: messages.dashboardAddMeasurementTitle,
                                 buttonText:
@@ -543,24 +559,80 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             ),
                           ],
                         ),
-                        // Labeled in-form secondary action — an unlabeled
-                        // icon in the primary action bar broke the shared
-                        // bar contract.
-                        Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: DesignSystemButton(
-                            key: const Key('dashboard_copy'),
-                            label: messages.dashboardCopyLabel,
-                            leadingIcon: Icons.copy_rounded,
-                            variant: DesignSystemButtonVariant.secondary,
-                            onPressed: copyDashboard,
-                          ),
+                        SettingsFormSection(
+                          title: messages.dashboardConfigurationTitle,
+                          description:
+                              messages.dashboardConfigurationDescription,
+                          children: [
+                            // Labeled in-form secondary action — an unlabeled
+                            // icon in the primary action bar broke the shared
+                            // bar contract.
+                            Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: DesignSystemButton(
+                                key: const Key('dashboard_copy'),
+                                label: messages.dashboardCopyLabel,
+                                leadingIcon: Icons.copy_rounded,
+                                variant: DesignSystemButtonVariant.secondary,
+                                onPressed: copyDashboard,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     );
                   },
             );
           },
+    );
+  }
+}
+
+class _DashboardEditorHintRow extends StatelessWidget {
+  const _DashboardEditorHintRow({
+    required this.icon,
+    required this.text,
+  });
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final radius = BorderRadius.circular(tokens.radii.s);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level01,
+        borderRadius: radius,
+        border: Border.all(color: tokens.colors.decorative.level02),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: spacing.step4,
+          vertical: spacing.step3,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: tokens.colors.text.mediumEmphasis,
+              size: spacing.step6,
+            ),
+            SizedBox(width: spacing.step3),
+            Expanded(
+              child: Text(
+                text,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

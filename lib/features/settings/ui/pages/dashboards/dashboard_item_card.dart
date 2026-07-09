@@ -27,6 +27,7 @@ class DashboardItemCard extends StatelessWidget {
     required this.index,
     required this.item,
     required this.updateItemFn,
+    this.removeItemFn,
     super.key,
   });
 
@@ -34,6 +35,7 @@ class DashboardItemCard extends StatelessWidget {
   final int index;
 
   final void Function(DashboardItem item, int index) updateItemFn;
+  final VoidCallback? removeItemFn;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +45,7 @@ class DashboardItemCard extends StatelessWidget {
           measurement: measurement,
           updateItemFn: updateItemFn,
           index: index,
+          onRemove: removeItemFn,
         );
       case DashboardHealthItem(:final healthType):
         final type = healthType;
@@ -50,6 +53,8 @@ class DashboardItemCard extends StatelessWidget {
         return ItemCard(
           leadingIcon: MdiIcons.stethoscope,
           title: itemName,
+          reorderIndex: index,
+          onRemove: removeItemFn,
         );
       case DashboardWorkoutItem(:final workoutType, :final valueType):
         final workoutKey = '$workoutType.${valueType.name}';
@@ -57,15 +62,21 @@ class DashboardItemCard extends StatelessWidget {
         return ItemCard(
           leadingIcon: Icons.sports_gymnastics,
           title: workout?.displayName ?? workoutKey,
+          reorderIndex: index,
+          onRemove: removeItemFn,
         );
       case DashboardSurveyItem(:final surveyName):
         return ItemCard(
           leadingIcon: MdiIcons.clipboardOutline,
           title: surveyName,
+          reorderIndex: index,
+          onRemove: removeItemFn,
         );
       case final DashboardHabitItem habitItem:
         return HabitItemCard(
           habitItem: habitItem,
+          index: index,
+          onRemove: removeItemFn,
         );
     }
   }
@@ -80,12 +91,14 @@ class MeasurableItemCard extends StatelessWidget {
     required this.measurement,
     required this.updateItemFn,
     required this.index,
+    this.onRemove,
     super.key,
   });
 
   final DashboardMeasurementItem measurement;
   final void Function(DashboardItem item, int index) updateItemFn;
   final int index;
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -118,20 +131,26 @@ class MeasurableItemCard extends StatelessWidget {
             return ItemCard(
               leadingIcon: Icons.insights,
               title: title,
+              reorderIndex: index,
+              onRemove: onRemove,
+              editSemanticsLabel:
+                  context.messages.dashboardEditAggregationLabel,
               onTap: () {
-                ModalUtils.showBottomSheet<void>(
+                ModalUtils.showSinglePageModal<void>(
                   context: context,
-                  clipBehavior: Clip.antiAliasWithSaveLayer,
+                  title: context.messages.dashboardAggregationTitle,
+                  padding: EdgeInsets.all(
+                    context.designTokens.spacing.cardPadding,
+                  ),
                   builder: (BuildContext context) {
                     return DashboardItemModal(
                       item: measurement,
                       updateItemFn: updateItemFn,
-                      title: title,
                       index: index,
+                      chartTitle: title,
                     );
                   },
                 );
-                updateItemFn(measurement, index);
               },
             );
           },
@@ -144,10 +163,14 @@ class MeasurableItemCard extends StatelessWidget {
 class HabitItemCard extends StatelessWidget {
   const HabitItemCard({
     required this.habitItem,
+    required this.index,
+    this.onRemove,
     super.key,
   });
 
   final DashboardHabitItem habitItem;
+  final int index;
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -167,6 +190,8 @@ class HabitItemCard extends StatelessWidget {
             return ItemCard(
               leadingIcon: MdiIcons.lightningBolt,
               title: habitDefinition?.name ?? habitItem.habitId,
+              reorderIndex: index,
+              onRemove: onRemove,
             );
           },
     );
@@ -183,13 +208,19 @@ class ItemCard extends StatelessWidget {
   const ItemCard({
     required this.title,
     required this.leadingIcon,
+    this.reorderIndex,
     this.onTap,
+    this.onRemove,
+    this.editSemanticsLabel,
     super.key,
   });
 
   final void Function()? onTap;
+  final VoidCallback? onRemove;
   final String title;
   final IconData leadingIcon;
+  final int? reorderIndex;
+  final String? editSemanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -228,15 +259,94 @@ class ItemCard extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: spacing.step3),
-                Icon(
+                if (onTap != null) ...[
+                  _ChartRowIconButton(
+                    icon: Icons.tune_rounded,
+                    color: tokens.colors.text.mediumEmphasis,
+                    tooltip:
+                        editSemanticsLabel ??
+                        context.messages.dashboardAggregationTitle,
+                    onPressed: onTap!,
+                  ),
+                  SizedBox(width: spacing.step2),
+                ],
+                if (onRemove != null) ...[
+                  _ChartRowIconButton(
+                    icon: Icons.close_rounded,
+                    color: tokens.colors.alert.error.defaultColor,
+                    tooltip: context.messages.dashboardRemoveChartLabel,
+                    onPressed: onRemove!,
+                  ),
+                  SizedBox(width: spacing.step2),
+                ],
+                finalDragHandle(
                   Icons.drag_indicator,
+                  index: reorderIndex,
                   size: spacing.step5,
-                  color: tokens.colors.text.lowEmphasis,
+                  targetSize: spacing.step8,
+                  color: tokens.colors.text.mediumEmphasis,
+                  semanticsLabel: context.messages.dashboardReorderChartLabel,
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  static Widget finalDragHandle(
+    IconData icon, {
+    required int? index,
+    required double size,
+    required double targetSize,
+    required Color color,
+    required String semanticsLabel,
+  }) {
+    final child = SizedBox.square(
+      dimension: targetSize,
+      child: Center(
+        child: Icon(icon, size: size, color: color),
+      ),
+    );
+    if (index == null) return child;
+
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      child: ReorderableDragStartListener(
+        index: index,
+        child: child,
+      ),
+    );
+  }
+}
+
+class _ChartRowIconButton extends StatelessWidget {
+  const _ChartRowIconButton({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+
+    return IconButton(
+      icon: Icon(icon, color: color, size: spacing.step5),
+      tooltip: tooltip,
+      onPressed: onPressed,
+      padding: EdgeInsets.zero,
+      constraints: BoxConstraints(
+        minWidth: spacing.step8,
+        minHeight: spacing.step8,
       ),
     );
   }

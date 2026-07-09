@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/ui/aggregation_label.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -33,9 +36,11 @@ class ChartMultiSelect<T> extends StatelessWidget {
   final IconData iconData;
 
   Future<void> _showModal(BuildContext context) async {
+    final tokens = context.designTokens;
     final selected = await ModalUtils.showSinglePageModal<List<T?>>(
       context: context,
       title: title,
+      padding: EdgeInsets.all(tokens.spacing.cardPadding),
       builder: (modalContext) {
         return _MultiSelectList<T>(
           items: multiSelectItems,
@@ -51,35 +56,135 @@ class ChartMultiSelect<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _ChartSelectTrigger(
+      buttonText: buttonText,
+      semanticsLabel: semanticsLabel,
+      iconData: iconData,
+      onTap: () => _showModal(context),
+    );
+  }
+}
+
+class MeasurementChartMultiSelect extends StatelessWidget {
+  const MeasurementChartMultiSelect({
+    required this.items,
+    required this.onConfirm,
+    required this.title,
+    required this.buttonText,
+    required this.semanticsLabel,
+    required this.iconData,
+    super.key,
+  });
+
+  final List<MeasurableDataType> items;
+  final void Function(List<DashboardMeasurementItem>) onConfirm;
+  final String title;
+  final String buttonText;
+  final String semanticsLabel;
+  final IconData iconData;
+
+  Future<void> _showModal(BuildContext context) async {
+    final tokens = context.designTokens;
+    final selected =
+        await ModalUtils.showSinglePageModal<List<DashboardMeasurementItem>>(
+          context: context,
+          title: title,
+          padding: EdgeInsets.all(tokens.spacing.cardPadding),
+          builder: (modalContext) {
+            return _MeasurementSelectList(
+              items: items,
+              onConfirm: (values) => Navigator.of(modalContext).pop(values),
+            );
+          },
+        );
+
+    if (selected != null && selected.isNotEmpty) {
+      onConfirm(selected);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _ChartSelectTrigger(
+      buttonText: buttonText,
+      semanticsLabel: semanticsLabel,
+      iconData: iconData,
+      onTap: () => _showModal(context),
+    );
+  }
+}
+
+class _ChartSelectTrigger extends StatelessWidget {
+  const _ChartSelectTrigger({
+    required this.buttonText,
+    required this.semanticsLabel,
+    required this.iconData,
+    required this.onTap,
+  });
+
+  final String buttonText;
+  final String semanticsLabel;
+  final IconData iconData;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final radius = BorderRadius.circular(tokens.radii.s);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: InkWell(
-        onTap: () => _showModal(context),
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      padding: EdgeInsets.symmetric(vertical: spacing.step2),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: Ink(
           decoration: BoxDecoration(
-            borderRadius: const BorderRadius.all(Radius.circular(10)),
-            border: Border.all(color: context.colorScheme.outline),
+            color: tokens.colors.background.level01,
+            borderRadius: radius,
+            border: Border.all(color: tokens.colors.decorative.level02),
           ),
-          child: Row(
-            children: [
-              Icon(iconData, color: context.colorScheme.onSurfaceVariant),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Text(
-                  buttonText,
-                  semanticsLabel: semanticsLabel,
-                  style: context.textTheme.titleMedium,
-                  overflow: TextOverflow.ellipsis,
+          child: Semantics(
+            button: true,
+            enabled: true,
+            label: semanticsLabel,
+            excludeSemantics: true,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: radius,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: spacing.step4,
+                  vertical: spacing.step3,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      iconData,
+                      color: tokens.colors.text.mediumEmphasis,
+                      size: spacing.step6,
+                    ),
+                    SizedBox(width: spacing.step3),
+                    Flexible(
+                      child: Text(
+                        buttonText,
+                        style: tokens.typography.styles.body.bodyLarge.copyWith(
+                          color: tokens.colors.text.highEmphasis,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(width: spacing.step2),
+                    Icon(
+                      Icons.arrow_drop_down,
+                      color: tokens.colors.text.mediumEmphasis,
+                      size: spacing.step6,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.arrow_drop_down,
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -117,9 +222,9 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-    // Calculate max height: screen height minus safe areas and modal chrome
-    final maxListHeight = MediaQuery.of(context).size.height * 0.4;
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final maxListHeight = MediaQuery.sizeOf(context).height * 0.4;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -133,85 +238,397 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
           onChanged: (value) => setState(() => _searchQuery = value),
         ),
 
-        const SizedBox(height: 16),
+        SizedBox(height: spacing.step4),
 
-        // Item list with constrained height
         ConstrainedBox(
           constraints: BoxConstraints(
             maxHeight: maxListHeight,
           ),
           child: _filteredItems.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      context.messages.multiSelectNoItemsFound,
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
+              ? _ModalEmptyState(
+                  message: context.messages.multiSelectNoItemsFound,
                 )
-              : _HoverlessList(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _filteredItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _filteredItems[index];
-                      final isSelected = _selected.contains(item.value);
+              : _SelectableListFrame(
+                  child: _HoverlessList(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _filteredItems.length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: spacing.step1,
+                        color: tokens.colors.decorative.level01,
+                      ),
+                      itemBuilder: (context, index) {
+                        final item = _filteredItems[index];
+                        final isSelected = _selected.contains(item.value);
 
-                      return DesignSystemCheckbox(
-                        value: isSelected,
-                        label: item.label,
-                        onChanged: (checked) {
-                          setState(() {
-                            if (checked ?? false) {
-                              _selected.add(item.value);
-                            } else {
-                              _selected.remove(item.value);
-                            }
-                          });
-                        },
-                      );
-                    },
+                        return _PickerSelectRow(
+                          label: item.label,
+                          selected: isSelected,
+                          onChanged: (checked) {
+                            setState(() {
+                              if (checked) {
+                                _selected.add(item.value);
+                              } else {
+                                _selected.remove(item.value);
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ),
         ),
 
-        const SizedBox(height: 16),
+        SizedBox(height: spacing.step4),
 
-        // Action buttons — design-system buttons, end-aligned (secondary
-        // then primary), mirroring the detail-page action bar language.
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            DesignSystemButton(
-              label: context.messages.cancelButton,
-              variant: DesignSystemButtonVariant.secondary,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            const SizedBox(width: 12),
-            DesignSystemButton(
-              label: _selected.isEmpty
-                  ? context.messages.multiSelectAddButton
-                  : context.messages.multiSelectAddButtonWithCount(
-                      _selected.length,
-                    ),
-              onPressed: _selected.isEmpty
-                  ? null
-                  : () => widget.onConfirm(_selected.toList()),
-            ),
-          ],
+        _ModalActionRow(
+          selectedCount: _selected.length,
+          onConfirm: _selected.isEmpty
+              ? null
+              : () => widget.onConfirm(_selected.toList()),
         ),
       ],
     );
   }
 }
 
-/// Strips the Material hover/splash/highlight from its subtree so the
-/// `CheckboxListTile` rows don't paint a grey hover band on desktop —
-/// the rows are passive selectables, not buttons. Scoped to the list so
-/// the modal's action buttons keep their own overlays.
+class _MeasurementSelectList extends StatefulWidget {
+  const _MeasurementSelectList({
+    required this.items,
+    required this.onConfirm,
+  });
+
+  final List<MeasurableDataType> items;
+  final void Function(List<DashboardMeasurementItem>) onConfirm;
+
+  @override
+  State<_MeasurementSelectList> createState() => _MeasurementSelectListState();
+}
+
+class _MeasurementSelectListState extends State<_MeasurementSelectList> {
+  final Map<String, AggregationType> _selected = {};
+  String _searchQuery = '';
+
+  List<MeasurableDataType> get _filteredItems {
+    if (_searchQuery.isEmpty) return widget.items;
+    final lowerCaseQuery = _searchQuery.toLowerCase();
+    return widget.items
+        .where(
+          (item) => item.displayName.toLowerCase().contains(lowerCaseQuery),
+        )
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final maxListHeight = MediaQuery.sizeOf(context).height * 0.48;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          context.messages.dashboardMeasurementAggregationHelp,
+          style: tokens.typography.styles.body.bodyMedium.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+        SizedBox(height: spacing.step4),
+        DesignSystemSearch(
+          hintText: context.messages.searchHint,
+          onChanged: (value) => setState(() => _searchQuery = value),
+        ),
+        SizedBox(height: spacing.step4),
+        ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxListHeight),
+          child: _filteredItems.isEmpty
+              ? _ModalEmptyState(
+                  message: context.messages.multiSelectNoItemsFound,
+                )
+              : _SelectableListFrame(
+                  child: _HoverlessList(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _filteredItems.length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: spacing.step1,
+                        color: tokens.colors.decorative.level01,
+                      ),
+                      itemBuilder: (context, index) {
+                        final item = _filteredItems[index];
+                        final selectedAggregation = _selected[item.id];
+
+                        return _MeasurementSelectRow(
+                          item: item,
+                          selectedAggregation: selectedAggregation,
+                          onSelectedChanged: (checked) {
+                            setState(() {
+                              if (checked ?? false) {
+                                _selected[item.id] =
+                                    item.aggregationType ??
+                                    AggregationType.dailySum;
+                              } else {
+                                _selected.remove(item.id);
+                              }
+                            });
+                          },
+                          onAggregationChanged: (aggregationType) {
+                            setState(() {
+                              _selected[item.id] = aggregationType;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+        ),
+        SizedBox(height: spacing.step4),
+        _ModalActionRow(
+          selectedCount: _selected.length,
+          onConfirm: _selected.isEmpty ? null : _confirm,
+        ),
+      ],
+    );
+  }
+
+  void _confirm() {
+    widget.onConfirm(
+      [
+        for (final entry in _selected.entries)
+          DashboardMeasurementItem(
+            id: entry.key,
+            aggregationType: entry.value,
+          ),
+      ],
+    );
+  }
+}
+
+class _MeasurementSelectRow extends StatelessWidget {
+  const _MeasurementSelectRow({
+    required this.item,
+    required this.selectedAggregation,
+    required this.onSelectedChanged,
+    required this.onAggregationChanged,
+  });
+
+  final MeasurableDataType item;
+  final AggregationType? selectedAggregation;
+  final ValueChanged<bool?> onSelectedChanged;
+  final ValueChanged<AggregationType> onAggregationChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final selected = selectedAggregation != null;
+
+    return _PickerSelectRow(
+      label: item.displayName,
+      selected: selected,
+      onChanged: onSelectedChanged,
+      child: selected
+          ? Padding(
+              padding: EdgeInsetsDirectional.only(
+                start: spacing.step8,
+                top: spacing.step2,
+                end: spacing.step2,
+                bottom: spacing.step2,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.messages.dashboardAggregationTitle,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+                  SizedBox(height: spacing.step2),
+                  Wrap(
+                    spacing: spacing.step2,
+                    runSpacing: spacing.step2,
+                    children: [
+                      for (final aggregationType in AggregationType.values)
+                        DesignSystemChip(
+                          label: aggregationTypeLabel(
+                            context.messages,
+                            aggregationType,
+                          ),
+                          selected: aggregationType == selectedAggregation,
+                          onPressed: () =>
+                              onAggregationChanged(aggregationType),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+class _PickerSelectRow extends StatelessWidget {
+  const _PickerSelectRow({
+    required this.label,
+    required this.selected,
+    required this.onChanged,
+    this.child,
+  });
+
+  final String label;
+  final bool selected;
+  final ValueChanged<bool> onChanged;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: selected
+              ? tokens.colors.background.level02
+              : tokens.colors.background.level01,
+        ),
+        child: InkWell(
+          onTap: () => onChanged(!selected),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: spacing.step4,
+              vertical: spacing.step3,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DesignSystemCheckbox(
+                      value: selected,
+                      semanticsLabel: label,
+                      onChanged: (checked) => onChanged(checked ?? false),
+                    ),
+                    SizedBox(width: spacing.step2),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: spacing.step1),
+                        child: Text(
+                          label,
+                          style: tokens.typography.styles.body.bodyMedium
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                ?child,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModalEmptyState extends StatelessWidget {
+  const _ModalEmptyState({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step6),
+        child: Text(
+          message,
+          style: tokens.typography.styles.body.bodyMedium.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModalActionRow extends StatelessWidget {
+  const _ModalActionRow({
+    required this.selectedCount,
+    required this.onConfirm,
+  });
+
+  final int selectedCount;
+  final VoidCallback? onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        DesignSystemButton(
+          label: context.messages.cancelButton,
+          variant: DesignSystemButtonVariant.secondary,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        SizedBox(width: spacing.step3),
+        DesignSystemButton(
+          label: selectedCount == 0
+              ? context.messages.multiSelectAddButton
+              : context.messages.multiSelectAddButtonWithCount(selectedCount),
+          onPressed: onConfirm,
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectableListFrame extends StatelessWidget {
+  const _SelectableListFrame({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.s);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: tokens.colors.background.level01,
+          borderRadius: radius,
+          border: Border.all(color: tokens.colors.decorative.level01),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Strips the Material hover/splash/highlight from selectable rows so desktop
+/// hover doesn't paint a grey band across the framed list. Scoped to the list
+/// so the modal's action buttons keep their own overlays.
 class _HoverlessList extends StatelessWidget {
   const _HoverlessList({required this.child});
 

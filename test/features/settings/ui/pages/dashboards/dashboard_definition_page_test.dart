@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -96,6 +95,17 @@ Future<void> _openChartSelect<T>(WidgetTester tester) async {
   final inkWell = tester.widget<InkWell>(
     find.descendant(
       of: find.byWidgetPredicate((w) => w is ChartMultiSelect<T>),
+      matching: find.byType(InkWell),
+    ),
+  );
+  inkWell.onTap!();
+  await tester.pumpAndSettle();
+}
+
+Future<void> _openMeasurementChartSelect(WidgetTester tester) async {
+  final inkWell = tester.widget<InkWell>(
+    find.descendant(
+      of: find.byType(MeasurementChartMultiSelect),
       matching: find.byType(InkWell),
     ),
   );
@@ -392,13 +402,13 @@ void main() {
         // Modal open is a route transition — settle until fully mounted.
         await tester.pumpAndSettle();
 
-        // Tapping the measurement opens the DashboardItemModal with one
-        // ChoiceChip per aggregation type.
+        // Tapping the measurement opens the DashboardItemModal with a
+        // design-system chip for each aggregation type.
         final context = tester.element(
           find.byType(DashboardDefinitionPage),
         );
         expect(
-          find.text(context.messages.dashboardAggregationLabel),
+          find.text(context.messages.dashboardAggregationTitle),
           findsOneWidget,
         );
 
@@ -438,7 +448,7 @@ void main() {
         // unlabeled icon in the action bar and not a header action.
         final copyFinder = find.byKey(const Key('dashboard_copy'));
         final copyButton = tester.widget<DesignSystemButton>(copyFinder);
-        expect(copyButton.label, 'Save and copy configuration');
+        expect(copyButton.label, 'Save and copy JSON');
         expect(
           find.ancestor(
             of: copyFinder,
@@ -461,6 +471,7 @@ void main() {
         verify(
           () => mockPersistenceLogic.upsertDashboardDefinition(any()),
         ).called(greaterThanOrEqualTo(1));
+        expect(_pillEnabled(tester, 'Save'), isFalse);
       },
     );
 
@@ -607,7 +618,10 @@ void main() {
 
       // The close button (clear category) must be visible since categoryId
       // is set.
-      final clearCategoryButtonFinder = find.byIcon(Icons.close_rounded);
+      final clearCategoryButtonFinder = find.descendant(
+        of: categoryFieldFinder,
+        matching: find.byIcon(Icons.close_rounded),
+      );
       expect(
         clearCategoryButtonFinder,
         findsOneWidget,
@@ -659,10 +673,7 @@ void main() {
         await _openChartSelect<HabitDefinition>(tester);
 
         // Select habitFlossing in the modal list.
-        final habitItemFinder = find.widgetWithText(
-          DesignSystemCheckbox,
-          habitFlossing.name,
-        );
+        final habitItemFinder = find.text(habitFlossing.name);
         expect(habitItemFinder, findsOneWidget);
         await tester.tap(habitItemFinder);
         await tester.pump();
@@ -689,7 +700,7 @@ void main() {
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
-        _stubUpsertCapture(mockPersistenceLogic);
+        final capture = _stubUpsertCapture(mockPersistenceLogic);
 
         await _pumpPage(
           tester,
@@ -701,15 +712,17 @@ void main() {
 
         expect(_pillEnabled(tester, 'Save'), isFalse);
 
-        await _openChartSelect<MeasurableDataType>(tester);
+        await _openMeasurementChartSelect(tester);
 
-        // Select the first measurable (Water).
-        final measItemFinder = find.widgetWithText(
-          DesignSystemCheckbox,
-          measurableWater.displayName,
-        );
+        final measItemFinder = find.text(measurableWater.displayName);
         expect(measItemFinder, findsOneWidget);
         await tester.tap(measItemFinder);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Choose aggregation before insertion, instead of adding first and
+        // reopening the chart row.
+        await tester.tap(find.text('Daily maximum'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -723,6 +736,20 @@ void main() {
 
         // Item was added → dirty → save pill enabled.
         expect(_pillEnabled(tester, 'Save'), isTrue);
+
+        await tester.tap(_pill('Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final measurementItems = capture.saved!.items
+            .whereType<DashboardMeasurementItem>()
+            .toList();
+        expect(measurementItems, hasLength(1));
+        expect(measurementItems.first.id, measurableWater.id);
+        expect(
+          measurementItems.first.aggregationType,
+          AggregationType.dailyMax,
+        );
       },
     );
 
@@ -801,6 +828,43 @@ void main() {
         expect(find.byType(Dismissible), findsNothing);
 
         // dirty → save pill enabled.
+        expect(_pillEnabled(tester, 'Save'), isTrue);
+      },
+    );
+
+    testWidgets(
+      'remove chart button removes a dashboard item and sets dirty',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        _stubUpsertCapture(mockPersistenceLogic);
+
+        final singleItemDashboard = emptyTestDashboardConfig.copyWith(
+          items: [
+            const DashboardItem.measurement(
+              id: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+              aggregationType: AggregationType.dailySum,
+            ),
+          ],
+        );
+
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: singleItemDashboard,
+            formKey: formKey,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(Dismissible), findsOneWidget);
+        expect(_pillEnabled(tester, 'Save'), isFalse);
+
+        await tester.tap(find.byTooltip('Remove chart'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(Dismissible), findsNothing);
         expect(_pillEnabled(tester, 'Save'), isTrue);
       },
     );
@@ -981,7 +1045,8 @@ void main() {
     );
 
     testWidgets(
-      'tapping a measurable item card invokes updateItem and marks dirty',
+      'tapping a measurable item card opens aggregation options without '
+      'marking dirty until a value changes',
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
@@ -1016,12 +1081,30 @@ void main() {
         );
         expect(cardTitleFinder, findsOneWidget);
 
-        // Tapping the card fires updateItemFn (updateItem), which also
-        // opens the edit modal. updateItem sets dirty = true.
-        await tester.tap(cardTitleFinder);
-        await tester.pump();
+        // Tapping the card opens the edit modal but does not change the
+        // dashboard by itself. Invoke the card's onTap directly — a
+        // coordinate tap on the text proved flaky in the batched CI run.
+        final waterCard = tester.widget<ItemCard>(
+          find.ancestor(
+            of: find.descendant(
+              of: find.byType(MeasurableItemCard),
+              matching: find.textContaining(measurableWater.displayName),
+            ),
+            matching: find.byType(ItemCard),
+          ),
+        );
+        waterCard.onTap!();
+        await tester.pumpAndSettle();
 
-        // updateItem marked the page dirty → save pill enabled.
+        expect(_pillEnabled(tester, 'Save'), isFalse);
+
+        await tester.tap(find.text('Daily maximum'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('${measurableWater.displayName} — Daily maximum'),
+          findsOneWidget,
+        );
         expect(_pillEnabled(tester, 'Save'), isTrue);
       },
     );
@@ -1162,14 +1245,12 @@ void main() {
     }
 
     testWidgets(
-      'reordering items via semantics reorders dashboardItems and persists',
+      'reordering items reorders dashboardItems and persists',
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
         final capture = _stubUpsertCapture(mockPersistenceLogic);
 
-        // Two health items render their titles synchronously from the
-        // healthTypes map (no DB dependency), giving stable reorder targets.
         final twoHealthDashboard = testDashboardConfig.copyWith(
           items: const [
             DashboardHealthItem(
@@ -1191,48 +1272,19 @@ void main() {
           ),
         );
 
-        final handle = tester.ensureSemantics();
-
-        // The ReorderableListView attaches the "Move up" custom action to an
-        // ancestor of the item's title text node. Walk up from the text node
-        // to find the node that actually carries the action.
-        final moveUpId = CustomSemanticsAction.getIdentifier(
-          const CustomSemanticsAction(label: 'Move up'),
+        final list = tester.widget<ReorderableListView>(
+          find.byType(ReorderableListView),
         );
-        SemanticsNode? node = tester.getSemantics(
-          find.text('Body Fat Percentage'),
-        );
-        while (node != null &&
-            !(node.getSemanticsData().customSemanticsActionIds ?? const [])
-                .contains(moveUpId)) {
-          node = node.parent;
-        }
-        expect(
-          node,
-          isNotNull,
-          reason: 'A reorderable node must expose the "Move up" action',
-        );
-
-        // "Move up" on the second item → onReorderItem(1, 0). The handler
-        // moves "Body Fat Percentage" ahead of "Weight".
-        // ignore: deprecated_member_use
-        tester.binding.pipelineOwner.semanticsOwner!.performAction(
-          node!.id,
-          SemanticsAction.customAction,
-          moveUpId,
-        );
+        list.onReorderItem!(0, 1);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Reorder set dirty → save pill enabled.
         expect(_pillEnabled(tester, 'Save'), isTrue);
 
         await tester.tap(_pill('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The persisted item order reflects the reorder: Body Fat Percentage
-        // (BODY_FAT_PERCENTAGE) now precedes Weight (WEIGHT).
         final healthItems = capture.saved!.items
             .whereType<DashboardHealthItem>()
             .toList();
@@ -1242,94 +1294,82 @@ void main() {
           'HealthDataType.BODY_FAT_PERCENTAGE',
         );
         expect(healthItems.last.healthType, 'HealthDataType.WEIGHT');
-
-        handle.dispose();
       },
     );
 
     testWidgets(
-      'moving the first item down hits the newIndex > oldIndex reorder branch',
+      'chart rows expose localized custom drag handles when default handles '
+      'are disabled',
       (tester) async {
-        final formKey = GlobalKey<FormBuilderState>();
-
-        final capture = _stubUpsertCapture(mockPersistenceLogic);
-
-        // Two health items render their titles synchronously from the
-        // healthTypes map (no DB dependency), giving stable reorder targets.
-        final twoHealthDashboard = testDashboardConfig.copyWith(
-          items: const [
-            DashboardHealthItem(
-              color: '#0000FF',
-              healthType: 'HealthDataType.WEIGHT',
-            ),
-            DashboardHealthItem(
-              color: '#0000FF',
-              healthType: 'HealthDataType.BODY_FAT_PERCENTAGE',
-            ),
-          ],
-        );
-
         await _pumpPage(
           tester,
-          DashboardDefinitionPage(
-            dashboard: twoHealthDashboard,
-            formKey: formKey,
-          ),
+          DashboardDefinitionPage(dashboard: testDashboardConfig),
         );
 
-        final handle = tester.ensureSemantics();
-
-        // Walk up from the first item's title text node to the reorderable
-        // node that actually carries the "Move down" custom action.
-        final moveDownId = CustomSemanticsAction.getIdentifier(
-          const CustomSemanticsAction(label: 'Move down'),
+        final reorderableList = tester.widget<ReorderableListView>(
+          find.byType(ReorderableListView),
         );
-        SemanticsNode? node = tester.getSemantics(find.text('Weight'));
-        while (node != null &&
-            !(node.getSemanticsData().customSemanticsActionIds ?? const [])
-                .contains(moveDownId)) {
-          node = node.parent;
-        }
-        expect(
-          node,
-          isNotNull,
-          reason: 'A reorderable node must expose the "Move down" action',
-        );
+        expect(reorderableList.buildDefaultDragHandles, isFalse);
 
-        // "Move down" on the first item makes Flutter call
-        // onReorderItem(0, 1): newIndex(1) > oldIndex(0), so the handler
-        // takes the `newIndex - 1` branch (insertionIndex = 0) and the order
-        // is unchanged, but the previously-uncovered branch is exercised.
-        // ignore: deprecated_member_use
-        tester.binding.pipelineOwner.semanticsOwner!.performAction(
-          node!.id,
-          SemanticsAction.customAction,
-          moveDownId,
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Reorder set dirty → save pill enabled.
-        expect(_pillEnabled(tester, 'Save'), isTrue);
-
-        await tester.tap(_pill('Save'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Moving the first item down by one with the newIndex - 1 adjustment
-        // is an identity reorder: order is preserved but the branch ran.
-        final healthItems = capture.saved!.items
-            .whereType<DashboardHealthItem>()
+        final handles = tester
+            .widgetList<ReorderableDragStartListener>(
+              find.byType(ReorderableDragStartListener),
+            )
             .toList();
-        expect(healthItems, hasLength(2));
-        expect(healthItems.first.healthType, 'HealthDataType.WEIGHT');
-        expect(
-          healthItems.last.healthType,
-          'HealthDataType.BODY_FAT_PERCENTAGE',
-        );
+        expect(handles, hasLength(testDashboardConfig.items.length));
+        expect(handles.map((handle) => handle.index), [
+          for (var i = 0; i < testDashboardConfig.items.length; i++) i,
+        ]);
 
-        handle.dispose();
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics &&
+                widget.properties.button == true &&
+                widget.properties.label == 'Reorder chart',
+          ),
+          findsNWidgets(testDashboardConfig.items.length),
+        );
       },
     );
+
+    testWidgets('identity reorder keeps the form pristine', (tester) async {
+      final formKey = GlobalKey<FormBuilderState>();
+
+      _stubUpsertCapture(mockPersistenceLogic);
+
+      final twoHealthDashboard = testDashboardConfig.copyWith(
+        items: const [
+          DashboardHealthItem(
+            color: '#0000FF',
+            healthType: 'HealthDataType.WEIGHT',
+          ),
+          DashboardHealthItem(
+            color: '#0000FF',
+            healthType: 'HealthDataType.BODY_FAT_PERCENTAGE',
+          ),
+        ],
+      );
+
+      await _pumpPage(
+        tester,
+        DashboardDefinitionPage(
+          dashboard: twoHealthDashboard,
+          formKey: formKey,
+        ),
+      );
+
+      final list = tester.widget<ReorderableListView>(
+        find.byType(ReorderableListView),
+      );
+      list.onReorderItem!(0, 0);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(_pillEnabled(tester, 'Save'), isFalse);
+      verifyNever(
+        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+      );
+    });
   });
 }

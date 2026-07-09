@@ -4372,19 +4372,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardAddChartsTitle => 'Charts';
 
   @override
-  String get dashboardAddHabitButton => 'Habit Charts';
+  String get dashboardAddHabitButton => 'Habits';
 
   @override
   String get dashboardAddHabitTitle => 'Habit Charts';
 
   @override
-  String get dashboardAddHealthButton => 'Health Charts';
+  String get dashboardAddHealthButton => 'Health';
 
   @override
   String get dashboardAddHealthTitle => 'Health Charts';
 
   @override
-  String get dashboardAddMeasurementButton => 'Measurement Charts';
+  String get dashboardAddMeasurementButton => 'Measurements';
 
   @override
   String get dashboardAddMeasurementTitle => 'Measurement Charts';
@@ -4393,16 +4393,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardAddMeasurementTooltip => 'Add measurement';
 
   @override
-  String get dashboardAddSurveyButton => 'Survey Charts';
+  String get dashboardAddSurveyButton => 'Surveys';
 
   @override
   String get dashboardAddSurveyTitle => 'Survey Charts';
 
   @override
-  String get dashboardAddWorkoutButton => 'Workout Charts';
+  String get dashboardAddWorkoutButton => 'Workouts';
 
   @override
   String get dashboardAddWorkoutTitle => 'Workout Charts';
+
+  @override
+  String get dashboardAggregationApplyImmediately =>
+      'Choose a summary. Changes apply immediately.';
 
   @override
   String get dashboardAggregationDailyAverage => 'Daily average';
@@ -4420,16 +4424,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardAggregationLabel => 'Aggregation Type:';
 
   @override
+  String get dashboardAggregationTitle => 'Aggregation type';
+
+  @override
+  String get dashboardAvailableChartsDescription =>
+      'Choose a type, select one or more charts, then add them.';
+
+  @override
+  String get dashboardAvailableChartsTitle => 'Add charts by type';
+
+  @override
   String get dashboardCategoryLabel => 'Category';
 
   @override
   String get dashboardChartNoData => 'No data in this range';
 
   @override
+  String get dashboardConfigurationDescription =>
+      'Save the dashboard, then copy its JSON configuration.';
+
+  @override
+  String get dashboardConfigurationTitle => 'Export configuration';
+
+  @override
   String get dashboardCopyHint => 'Save & Copy dashboard config';
 
   @override
-  String get dashboardCopyLabel => 'Save and copy configuration';
+  String get dashboardCopyLabel => 'Save and copy JSON';
+
+  @override
+  String get dashboardCurrentChartsDescription =>
+      'Drag to reorder. Measurement charts can be selected to change their aggregation.';
+
+  @override
+  String get dashboardCurrentChartsTitle => 'Charts on this dashboard';
 
   @override
   String get dashboardDeleteConfirm => 'YES, DELETE THIS DASHBOARD';
@@ -4444,6 +4472,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardDescriptionLabel => 'Description (optional)';
 
   @override
+  String get dashboardEditAggregationLabel => 'Edit aggregation';
+
+  @override
   String get dashboardHealthBloodPressure => 'Blood Pressure';
 
   @override
@@ -4453,13 +4484,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardHealthSystolic => 'Systolic';
 
   @override
+  String get dashboardMeasurementAggregationHelp =>
+      'Select measurements, then choose an aggregation for each one.';
+
+  @override
   String get dashboardNameLabel => 'Dashboard name';
+
+  @override
+  String get dashboardNoChartsAdded => 'No charts added yet. Add one below.';
+
+  @override
+  String get dashboardNoHabitsForCharts =>
+      'Create a habit first to add habit charts.';
+
+  @override
+  String get dashboardNoMeasurablesForCharts =>
+      'Create a measurable first to add measurement charts.';
 
   @override
   String get dashboardNotFound => 'Dashboard not found';
 
   @override
   String get dashboardPrivateLabel => 'Private';
+
+  @override
+  String get dashboardRemoveChartLabel => 'Remove chart';
+
+  @override
+  String get dashboardReorderChartLabel => 'Reorder chart';
 
   @override
   String get dashboardTakeSurveyTooltip => 'Take survey';
@@ -8427,6 +8479,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsOnboardingTitle => 'Onboarding';
+
+  @override
+  String get settingsOptionsTitle => 'Options';
 
   @override
   String get settingsResetGeminiConfirm => 'Reset';

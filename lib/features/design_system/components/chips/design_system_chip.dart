@@ -10,6 +10,11 @@ enum DesignSystemChipVisualState {
   activated,
 }
 
+enum DesignSystemChipSize {
+  compact,
+  touch,
+}
+
 /// The design-system's interactive chip — a rounded, tappable token with an
 /// optional leading glyph and removable affordance.
 ///
@@ -27,6 +32,7 @@ class DesignSystemChip extends StatefulWidget {
     this.avatar,
     this.showRemove = false,
     this.selected = false,
+    this.size = DesignSystemChipSize.compact,
     this.semanticsLabel,
     this.forcedState,
     super.key,
@@ -50,6 +56,11 @@ class DesignSystemChip extends StatefulWidget {
   /// as selected; a tap still shows the pressed feedback. [forcedState] still
   /// wins for widgetbook/tests.
   final bool selected;
+
+  /// Visual/tap-target size. Defaults to the compact chip used in dense filter
+  /// rows; `touch` is for primary picker choices inside modal sheets.
+  final DesignSystemChipSize size;
+
   final String? semanticsLabel;
   final DesignSystemChipVisualState? forcedState;
 
@@ -80,7 +91,7 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
     final tokens = context.designTokens;
     final enabled = widget.onPressed != null;
     final visualState = _resolveVisualState();
-    final sizeSpec = _ChipSizeSpec.fromTokens(tokens);
+    final sizeSpec = _ChipSizeSpec.fromTokens(tokens, widget.size);
     final variantSpec = _ChipVariantSpec.fromTokens(
       tokens: tokens,
       visualState: visualState,
@@ -105,40 +116,45 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
           onHighlightChanged: widget.forcedState == null && enabled
               ? (value) => setState(() => _pressed = value)
               : null,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: sizeSpec.horizontalPadding,
-              vertical: sizeSpec.verticalPadding,
-            ),
-            child: DefaultTextStyle.merge(
-              style: sizeSpec.labelStyle.copyWith(
-                color: variantSpec.labelColor,
+          child: ConstrainedBox(
+            constraints: sizeSpec.minHeight == null
+                ? const BoxConstraints()
+                : BoxConstraints(minHeight: sizeSpec.minHeight!),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: sizeSpec.horizontalPadding,
+                vertical: sizeSpec.verticalPadding,
               ),
-              child: IconTheme.merge(
-                data: IconThemeData(
-                  color: variantSpec.accessoryColor,
-                  size: sizeSpec.accessoryIconSize,
+              child: DefaultTextStyle.merge(
+                style: sizeSpec.labelStyle.copyWith(
+                  color: variantSpec.labelColor,
                 ),
-                child: Semantics(
-                  button: true,
-                  enabled: enabled,
-                  // Selection is a logical state, independent of the transient
-                  // pressed/hover visuals: a selected chip pressed during a tap
-                  // resolves to `pressed`, but assistive tech must still hear it
-                  // as selected. `forcedState: activated` covers widgetbook/tests
-                  // that pin the activated look without the runtime flag.
-                  selected:
-                      widget.selected ||
-                      widget.forcedState ==
-                          DesignSystemChipVisualState.activated,
-                  label: widget.semanticsLabel ?? widget.label,
-                  child: _ChipContent(
-                    label: widget.label,
-                    leadingIcon: widget.leadingIcon,
-                    avatar: widget.avatar,
-                    showRemove: widget.showRemove,
-                    gap: sizeSpec.itemGap,
-                    accessoryBoxSize: sizeSpec.accessoryBoxSize,
+                child: IconTheme.merge(
+                  data: IconThemeData(
+                    color: variantSpec.accessoryColor,
+                    size: sizeSpec.accessoryIconSize,
+                  ),
+                  child: Semantics(
+                    button: true,
+                    enabled: enabled,
+                    // Selection is a logical state, independent of the transient
+                    // pressed/hover visuals: a selected chip pressed during a tap
+                    // resolves to `pressed`, but assistive tech must still hear it
+                    // as selected. `forcedState: activated` covers widgetbook/tests
+                    // that pin the activated look without the runtime flag.
+                    selected:
+                        widget.selected ||
+                        widget.forcedState ==
+                            DesignSystemChipVisualState.activated,
+                    label: widget.semanticsLabel ?? widget.label,
+                    child: _ChipContent(
+                      label: widget.label,
+                      leadingIcon: widget.leadingIcon,
+                      avatar: widget.avatar,
+                      showRemove: widget.showRemove,
+                      gap: sizeSpec.itemGap,
+                      accessoryBoxSize: sizeSpec.accessoryBoxSize,
+                    ),
                   ),
                 ),
               ),
@@ -251,18 +267,35 @@ class _ChipSizeSpec {
     required this.cornerRadius,
     required this.accessoryBoxSize,
     required this.accessoryIconSize,
+    required this.minHeight,
   });
 
-  factory _ChipSizeSpec.fromTokens(DsTokens tokens) {
-    return _ChipSizeSpec(
-      labelStyle: tokens.typography.styles.body.bodySmall,
-      horizontalPadding: tokens.spacing.step3,
-      verticalPadding: tokens.spacing.step1,
-      itemGap: tokens.spacing.step2,
-      cornerRadius: tokens.radii.s,
-      accessoryBoxSize: tokens.typography.lineHeight.bodySmall,
-      accessoryIconSize: tokens.typography.lineHeight.caption,
-    );
+  factory _ChipSizeSpec.fromTokens(
+    DsTokens tokens,
+    DesignSystemChipSize size,
+  ) {
+    return switch (size) {
+      DesignSystemChipSize.compact => _ChipSizeSpec(
+        labelStyle: tokens.typography.styles.body.bodySmall,
+        horizontalPadding: tokens.spacing.step3,
+        verticalPadding: tokens.spacing.step1,
+        itemGap: tokens.spacing.step2,
+        cornerRadius: tokens.radii.s,
+        accessoryBoxSize: tokens.typography.lineHeight.bodySmall,
+        accessoryIconSize: tokens.typography.lineHeight.caption,
+        minHeight: null,
+      ),
+      DesignSystemChipSize.touch => _ChipSizeSpec(
+        labelStyle: tokens.typography.styles.body.bodyMedium,
+        horizontalPadding: tokens.spacing.step4,
+        verticalPadding: tokens.spacing.step3,
+        itemGap: tokens.spacing.step2,
+        cornerRadius: tokens.radii.l,
+        accessoryBoxSize: tokens.typography.lineHeight.bodyMedium,
+        accessoryIconSize: tokens.typography.lineHeight.bodySmall,
+        minHeight: tokens.spacing.step9,
+      ),
+    };
   }
 
   final TextStyle labelStyle;
@@ -272,6 +305,7 @@ class _ChipSizeSpec {
   final double cornerRadius;
   final double accessoryBoxSize;
   final double accessoryIconSize;
+  final double? minHeight;
 }
 
 class _ChipVariantSpec {

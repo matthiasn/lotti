@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
+import '../../../../../test_data/test_data.dart';
 import '../../../../../test_helper.dart';
 
 void main() {
@@ -35,6 +37,7 @@ void main() {
       expect(find.text('Add Items'), findsOneWidget);
       expect(find.byIcon(Icons.add), findsOneWidget);
       expect(find.byIcon(Icons.arrow_drop_down), findsOneWidget);
+      expect(find.bySemanticsLabel('Add items button'), findsOneWidget);
     });
 
     testWidgets('handles empty items list', (tester) async {
@@ -131,7 +134,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select First Item
-      await tester.tap(find.widgetWithText(DesignSystemCheckbox, 'First Item'));
+      await tester.tap(find.text('First Item'));
       await tester.pumpAndSettle();
 
       // Tap Add button (should show "Add (1)")
@@ -198,7 +201,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select an item first
-      await tester.tap(find.widgetWithText(DesignSystemCheckbox, 'First Item'));
+      await tester.tap(find.text('First Item'));
       await tester.pumpAndSettle();
 
       // Tap Cancel button
@@ -293,17 +296,135 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select First Item
-      await tester.tap(find.widgetWithText(DesignSystemCheckbox, 'First Item'));
+      await tester.tap(find.text('First Item'));
       await tester.pumpAndSettle();
       expect(find.text('Add (1)'), findsOneWidget);
 
       // Deselect First Item
-      await tester.tap(find.widgetWithText(DesignSystemCheckbox, 'First Item'));
+      await tester.tap(find.text('First Item'));
       await tester.pumpAndSettle();
 
       // Should show "Add" without count
       expect(find.text('Add'), findsOneWidget);
       expect(find.text('Add (1)'), findsNothing);
+    });
+  });
+
+  group('MeasurementChartMultiSelect', () {
+    Future<void> pumpMeasurementSelect(
+      WidgetTester tester, {
+      required void Function(List<DashboardMeasurementItem>) onConfirm,
+    }) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: MeasurementChartMultiSelect(
+            items: [measurableWater, measurableChocolate],
+            onConfirm: onConfirm,
+            title: 'Measurement Charts',
+            buttonText: 'Measurement Charts',
+            semanticsLabel: 'Measurement Charts',
+            iconData: Icons.insights,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Measurement Charts'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('adds selected measurements with chosen aggregation', (
+      tester,
+    ) async {
+      List<DashboardMeasurementItem>? confirmedItems;
+
+      await pumpMeasurementSelect(
+        tester,
+        onConfirm: (items) => confirmedItems = items,
+      );
+
+      expect(
+        find.text(
+          'Select measurements, then choose an aggregation for each one.',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text(measurableChocolate.displayName));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(measurableWater.displayName));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Daily maximum').first);
+      await tester.pumpAndSettle();
+
+      final addButton = find.widgetWithText(DesignSystemButton, 'Add (2)');
+      await tester.ensureVisible(addButton);
+      await tester.pumpAndSettle();
+      await tester.tap(addButton);
+      await tester.pumpAndSettle();
+
+      expect(confirmedItems, hasLength(2));
+      expect(confirmedItems!.first.id, measurableChocolate.id);
+      expect(confirmedItems!.first.aggregationType, AggregationType.dailySum);
+      expect(confirmedItems!.last.id, measurableWater.id);
+      expect(confirmedItems!.last.aggregationType, AggregationType.dailyMax);
+    });
+
+    testWidgets(
+      'search shows the measurement empty state when no item matches',
+      (
+        tester,
+      ) async {
+        await pumpMeasurementSelect(tester, onConfirm: (_) {});
+
+        await tester.enterText(find.byType(TextField), 'coffee');
+        await tester.pumpAndSettle();
+
+        expect(find.text(measurableWater.displayName), findsNothing);
+        expect(find.text(measurableChocolate.displayName), findsNothing);
+        expect(find.text('No items found'), findsOneWidget);
+      },
+    );
+
+    testWidgets('deselecting a measurement disables the add action', (
+      tester,
+    ) async {
+      await pumpMeasurementSelect(tester, onConfirm: (_) {});
+
+      final waterRow = find.text(measurableWater.displayName);
+
+      await tester.tap(waterRow);
+      await tester.pumpAndSettle();
+      expect(
+        find.widgetWithText(DesignSystemButton, 'Add (1)'),
+        findsOneWidget,
+      );
+
+      await tester.tap(waterRow);
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(DesignSystemButton, 'Add'), findsOneWidget);
+      expect(find.widgetWithText(DesignSystemButton, 'Add (1)'), findsNothing);
+    });
+
+    testWidgets('cancel closes measurement selector without confirming', (
+      tester,
+    ) async {
+      var onConfirmCalled = false;
+      await pumpMeasurementSelect(
+        tester,
+        onConfirm: (_) => onConfirmCalled = true,
+      );
+
+      await tester.tap(find.text(measurableWater.displayName));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(onConfirmCalled, isFalse);
+      expect(find.byIcon(Icons.search_rounded), findsNothing);
     });
   });
 }
