@@ -224,7 +224,7 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
-    final maxListHeight = MediaQuery.of(context).size.height * 0.4;
+    final maxListHeight = MediaQuery.sizeOf(context).height * 0.4;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -343,7 +343,7 @@ class _MeasurementSelectListState extends State<_MeasurementSelectList> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
-    final maxListHeight = MediaQuery.of(context).size.height * 0.48;
+    final maxListHeight = MediaQuery.sizeOf(context).height * 0.48;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
