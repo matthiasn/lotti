@@ -510,29 +510,30 @@ void main() {
         verify(() => mockRepository.getAllAgentIdentities()).called(1);
       });
 
-      test('filters by lifecycle when provided', () async {
+      test('delegates lifecycle-filtered reads to the repository', () async {
         final activeAgent = makeTestIdentity(
           id: 'a1',
           agentId: 'a1',
           displayName: 'Active',
         );
-        final dormantAgent = makeTestIdentity(
-          id: 'a2',
-          agentId: 'a2',
-          displayName: 'Dormant',
-          lifecycle: AgentLifecycle.dormant,
-        );
 
         when(
-          () => mockRepository.getAllAgentIdentities(),
-        ).thenAnswer((_) async => [activeAgent, dormantAgent]);
+          () => mockRepository.getAgentIdentitiesByLifecycle(
+            AgentLifecycle.active,
+          ),
+        ).thenAnswer((_) async => [activeAgent]);
 
         final result = await service.listAgents(
           lifecycle: AgentLifecycle.active,
         );
 
-        expect(result, hasLength(1));
-        expect(result.first.id, 'a1');
+        expect(result.map((agent) => agent.id), ['a1']);
+        verifyNever(() => mockRepository.getAllAgentIdentities());
+        verify(
+          () => mockRepository.getAgentIdentitiesByLifecycle(
+            AgentLifecycle.active,
+          ),
+        ).called(1);
       });
     });
 

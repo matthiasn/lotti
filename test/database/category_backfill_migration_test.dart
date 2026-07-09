@@ -138,7 +138,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 43);
+        expect(db.schemaVersion, 44);
 
         final rows = await db
             .customSelect('SELECT id, category FROM journal ORDER BY id')

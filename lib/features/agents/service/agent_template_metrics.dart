@@ -173,10 +173,11 @@ class AgentTemplateMetrics {
     // Second batch: depends on first batch results.
     final payloadIds = observations
         .map((obs) => obs.contentEntryId)
-        .whereType<String>();
-    final payloadEntitiesFuture = Future.wait(
-      payloadIds.map(repository.getEntity),
-    );
+        .whereType<String>()
+        .toSet();
+    final payloadEntitiesFuture = payloadIds.isEmpty
+        ? Future.value(const <String, AgentDomainEntity>{})
+        : repository.getEntitiesByIds(payloadIds);
 
     final lastSessionDate = sessions.isNotEmpty
         ? sessions.first.createdAt
@@ -187,7 +188,7 @@ class AgentTemplateMetrics {
 
     final observationPayloads = <String, AgentMessagePayloadEntity>{
       for (final entity
-          in batchResults.$1.whereType<AgentMessagePayloadEntity>())
+          in batchResults.$1.values.whereType<AgentMessagePayloadEntity>())
         entity.id: entity,
     };
 

@@ -213,27 +213,28 @@ Future<Map<String, _SourceInfo>> _resolveSourceInfo(
   AgentRepository repository,
   Set<String> ids,
 ) async {
-  final entries = await Future.wait(
-    ids.map((id) async {
-      try {
-        final entity = await repository.getEntity(id);
-        final info = switch (entity) {
-          AgentTemplateEntity(:final displayName) => (
-            name: displayName,
-            isTemplate: true,
-          ),
-          AgentIdentityEntity(:final displayName) => (
-            name: displayName,
-            isTemplate: false,
-          ),
-          _ => null,
-        };
-        return info != null ? MapEntry(id, info) : null;
-      } on Exception {
-        return null;
-      }
-    }),
-  );
+  if (ids.isEmpty) return const {};
+  Map<String, AgentDomainEntity> entitiesById;
+  try {
+    entitiesById = await repository.getEntitiesByIds(ids);
+  } on Exception {
+    return const {};
+  }
+
+  final entries = entitiesById.entries.map((entry) {
+    final info = switch (entry.value) {
+      AgentTemplateEntity(:final displayName) => (
+        name: displayName,
+        isTemplate: true,
+      ),
+      AgentIdentityEntity(:final displayName) => (
+        name: displayName,
+        isTemplate: false,
+      ),
+      _ => null,
+    };
+    return info != null ? MapEntry(entry.key, info) : null;
+  });
   return Map.fromEntries(entries.nonNulls);
 }
 

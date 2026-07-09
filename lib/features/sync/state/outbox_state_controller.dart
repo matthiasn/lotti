@@ -137,11 +137,11 @@ Stream<int> inboundQueueDepthStream(InboundQueue queue) async* {
   //     that fires during the snapshot computation is dropped and the
   //     UI shows a stale count until the next packet.
   //
-  // (2) The `stats()` snapshot we just awaited is older than any live
-  //     signal that arrived during the await, so emitting `stats.total`
+  // (2) The depth snapshot we just awaited is older than any live
+  //     signal that arrived during the await, so emitting `snapshot.total`
   //     unconditionally and then replaying buffered live values would
   //     step the consumer backwards (e.g. `2 → 1 → 2`). The fix: buffer
-  //     live values until `stats()` resolves, emit the snapshot ONLY
+  //     live values until the snapshot resolves, emit the snapshot ONLY
   //     when the buffer is still empty, otherwise drop the stale
   //     snapshot and emit the buffered live sequence in arrival order
   //     before switching to forwarding the live tail.
@@ -164,7 +164,7 @@ Stream<int> inboundQueueDepthStream(InboundQueue queue) async* {
   try {
     int? snapshot;
     try {
-      final stats = await queue.stats();
+      final stats = await queue.depthSnapshot();
       snapshot = stats.total;
     } catch (_) {
       // Initial paint failures are non-fatal; the live signal below

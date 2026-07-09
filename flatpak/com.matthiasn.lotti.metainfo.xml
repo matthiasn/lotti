@@ -40,6 +40,7 @@
           <p>Choosing an AI profile or model now works on phones. Tapping a choice in an AI picker — a category's default inference profile, a profile slot's model, or an agent template or soul — used to close the whole settings page instead of the picker, so your selection was never saved. The picker now closes on its own and keeps your choice.</p>
           <p>Entry timestamps no longer get cut off on phones. In a task's linked entries, the header's date and time used to be truncated when the action buttons squeezed the row on a narrow phone. The timestamp now stacks the date over the time on two lines when space is tight, so the whole date and time stay readable.</p>
           <p>The desktop sidebar is calmer when Tasks has lots of saved filters. Saved task filters now sit in their own capped Tasks section with a More row, active filters stay visible, recording/timer/agent cards carry clearer status labels, agent rows can open their linked task directly, and the old tiny Outbox/Inbox footer is now one compact Sync strip.</p>
+          <p>Habit and agent-heavy screens spend less time waiting on the database. Habit heatmaps now load only the latest completion per habit/day, and agent summary/feedback paths batch payload lookups instead of firing many individual reads.</p>
       </description>
     </release>
     <release version="0.9.1032" date="2026-07-06">

@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repo_links.dart';
@@ -42,6 +43,69 @@ void main() {
       final from = await links.getLinksFrom('from-1');
       expect(to.map((l) => l.id), ['l1']);
       expect(from.map((l) => l.id), ['l1']);
+    });
+
+    test('typed direction reads use active partial indexes', () async {
+      await links.upsertLink(
+        makeTestAgentTaskLink(
+          id: 'lt-index',
+          fromId: 'agent-index',
+          toId: 'task-index',
+          createdAt: testDate,
+          updatedAt: testDate,
+        ),
+      );
+
+      final from = await links.getLinksFrom(
+        'agent-index',
+        type: AgentLinkTypes.agentTask,
+      );
+      final to = await links.getLinksTo(
+        'task-index',
+        type: AgentLinkTypes.agentTask,
+      );
+      expect(from.map((link) => link.id), ['lt-index']);
+      expect(to.map((link) => link.id), ['lt-index']);
+
+      final fromPlan = await db
+          .customSelect(
+            '''
+              EXPLAIN QUERY PLAN
+              SELECT * FROM agent_links
+                INDEXED BY idx_agent_links_active_from_type_to
+              WHERE from_id = ? AND type = ? AND deleted_at IS NULL
+            ''',
+            variables: [
+              Variable.withString('agent-index'),
+              Variable.withString(AgentLinkTypes.agentTask),
+            ],
+            readsFrom: {db.agentLinks},
+          )
+          .get();
+      final fromDetails = fromPlan
+          .map((row) => row.read<String>('detail'))
+          .join('\n');
+      expect(fromDetails, contains('idx_agent_links_active_from_type_to'));
+
+      final toPlan = await db
+          .customSelect(
+            '''
+              EXPLAIN QUERY PLAN
+              SELECT * FROM agent_links
+                INDEXED BY idx_agent_links_active_to_type
+              WHERE to_id = ? AND type = ? AND deleted_at IS NULL
+            ''',
+            variables: [
+              Variable.withString('task-index'),
+              Variable.withString(AgentLinkTypes.agentTask),
+            ],
+            readsFrom: {db.agentLinks},
+          )
+          .get();
+      final toDetails = toPlan
+          .map((row) => row.read<String>('detail'))
+          .join('\n');
+      expect(toDetails, contains('idx_agent_links_active_to_type'));
     });
 
     test(

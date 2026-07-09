@@ -270,6 +270,19 @@ void main() {
     ).thenAnswer((_) async => const []);
   }
 
+  void stubEntitiesByIds(Map<String, AgentDomainEntity> entitiesById) {
+    when(() => repository.getEntitiesByIds(any<Iterable<String>>())).thenAnswer(
+      (invocation) async {
+        final ids = invocation.positionalArguments.single as Iterable<String>;
+        return <String, AgentDomainEntity>{
+          for (final id in ids)
+            if (entitiesById[id] case final AgentDomainEntity entity)
+              id: entity,
+        };
+      },
+    );
+  }
+
   setUp(() {
     repository = MockAgentRepository();
     aiConfigRepository = MockAiConfigRepository();
@@ -899,20 +912,14 @@ void main() {
             obs('obs-c', DateTime.utc(2026, 5, 22)),
           ],
         );
-        when(
-          () => repository.getEntity('pl-obs-a'),
-        ).thenAnswer((_) async => payload('obs-a', 'old gym plan'));
-        when(() => repository.getEntity('pl-obs-b')).thenAnswer(
-          (_) async => payload(
+        stubEntitiesByIds({
+          'pl-obs-a': payload('obs-a', 'old gym plan'),
+          'pl-obs-b': payload(
             'obs-b',
             'new gym plan [[supersedes:obs-a]] [[relates:ghost]]',
           ),
-        );
-        when(
-          () => repository.getEntity('pl-obs-c'),
-        ).thenAnswer(
-          (_) async => payload('obs-c', 'gym recap [[relates:obs-a]]'),
-        );
+          'pl-obs-c': payload('obs-c', 'gym recap [[relates:obs-a]]'),
+        });
 
         conversationRepository.toolCalls = [
           _toolCall(
@@ -992,8 +999,8 @@ void main() {
                 as AgentMessageEntity,
           ],
         );
-        when(() => repository.getEntity('pl-obs')).thenAnswer(
-          (_) async =>
+        stubEntitiesByIds({
+          'pl-obs':
               AgentDomainEntity.agentMessagePayload(
                     id: 'pl-obs',
                     agentId: agentId,
@@ -1002,7 +1009,7 @@ void main() {
                     content: const {'text': 'topic map [[relates:deep-work]]'},
                   )
                   as AgentMessagePayloadEntity,
-        );
+        });
 
         conversationRepository.toolCalls = [
           _toolCall(
@@ -1212,15 +1219,15 @@ void main() {
         () =>
             repository.getMessagesByKind(agentId, AgentMessageKind.observation),
       ).thenAnswer((_) async => [obs as AgentMessageEntity]);
-      when(() => repository.getEntity('obs-payload-1')).thenAnswer(
-        (_) async => AgentDomainEntity.agentMessagePayload(
+      stubEntitiesByIds({
+        'obs-payload-1': AgentDomainEntity.agentMessagePayload(
           id: 'obs-payload-1',
           agentId: agentId,
           createdAt: DateTime.utc(2026, 5, 25, 8),
           vectorClock: null,
           content: const {'text': 'a day observation'},
         ),
-      );
+      });
 
       final sut = DayAgentWorkflow(
         agentRepository: repository,

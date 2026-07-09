@@ -32,12 +32,12 @@ mixin _SyncDbOutboxPrune on _$SyncDatabase {
   }) {
     final effectiveNow = now ?? DateTime.now();
     final cutoff = effectiveNow.subtract(retention);
-    return (delete(outbox)..where(
-          (t) =>
-              t.status.equals(OutboxStatus.sent.index) &
-              t.updatedAt.isSmallerThanValue(cutoff),
-        ))
-        .go();
+    return customUpdate(
+      'DELETE FROM outbox '
+      'WHERE status = 1 AND updated_at < ?',
+      variables: [Variable.withDateTime(cutoff)],
+      updates: {outbox},
+    );
   }
 
   /// Same retention semantics as [pruneSentOutboxItems], but deletes in
@@ -78,21 +78,18 @@ mixin _SyncDbOutboxPrune on _$SyncDatabase {
     if (chunkSize <= 0) return 0;
     final effectiveNow = now ?? DateTime.now();
     final cutoff = effectiveNow.subtract(retention);
-    final sentStatus = OutboxStatus.sent.index;
     var total = 0;
     while (true) {
       // Subquery on `id` lets us bound a single statement's row count via
       // LIMIT — drift's `delete(...).where(...)` does not expose LIMIT
-      // directly. The inner SELECT walks
-      // `idx_outbox_status_priority_created_at` (status leading column) so
-      // it is index-bounded, not a scan.
+      // directly. The inner SELECT walks the sent-ledger partial index by
+      // `updated_at`, so each pass touches only eligible stale sent rows.
       final n = await customUpdate(
         'DELETE FROM outbox WHERE id IN '
-        '(SELECT id FROM outbox '
-        'WHERE status = ? AND updated_at < ? '
+        '(SELECT id FROM outbox INDEXED BY idx_outbox_sent_updated_at '
+        'WHERE status = 1 AND updated_at < ? '
         'LIMIT ?)',
         variables: [
-          Variable.withInt(sentStatus),
           Variable.withDateTime(cutoff),
           Variable.withInt(chunkSize),
         ],

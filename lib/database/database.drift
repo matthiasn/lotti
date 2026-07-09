@@ -37,6 +37,16 @@ CREATE INDEX idx_journal_date_to_asc ON journal (date_to ASC);
 CREATE INDEX idx_journal_date_to_desc ON journal (date_to DESC);
 
 CREATE INDEX idx_journal_tab ON journal(type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
+-- Supports the import-flag maintenance views: `countImportFlagEntries` filters
+-- by `flag = 1`, while `entriesFlaggedImport` needs the same subset ordered by
+-- newest entry first. The broad tab index leads with type/starred and cannot
+-- serve either shape when no type filter is present.
+CREATE INDEX idx_journal_import_flag_date ON journal(
+  flag COLLATE BINARY ASC,
+  date_from COLLATE BINARY DESC,
+  id COLLATE BINARY ASC
+)
+WHERE deleted = FALSE;
 CREATE INDEX idx_journal_browse ON journal(
   deleted COLLATE BINARY ASC,
   type COLLATE BINARY ASC,
@@ -129,6 +139,20 @@ CREATE INDEX idx_journal_tasks_status_priority_date ON journal(
 WHERE type = 'Task'
   AND task = 1
   AND deleted = FALSE;
+-- Covers broad task lists where the UI selects multiple task statuses and many
+-- categories. The status-leading index above is efficient for single-status
+-- reads, but it cannot satisfy the global `ORDER BY task_priority_rank ASC,
+-- date_from DESC` across several status partitions; this priority-leading
+-- partial lets SQLite stream the UI order directly and apply status/category
+-- filters as residual predicates until LIMIT is satisfied.
+CREATE INDEX idx_journal_tasks_priority_date ON journal(
+  task_priority_rank COLLATE BINARY ASC,
+  date_from COLLATE BINARY DESC,
+  id COLLATE BINARY ASC
+)
+WHERE type = 'Task'
+  AND task = 1
+  AND deleted = FALSE;
 
 -- Partial covering index for the Insights time-analysis query (v43 in
 -- migrations). Only `date_from < :end` can be a seek bound — the
@@ -155,6 +179,9 @@ CREATE TABLE conflicts (
   status INTEGER NOT NULL,
   PRIMARY KEY (id)
 );
+
+CREATE INDEX idx_conflicts_status_created_at
+ON conflicts(status ASC, created_at DESC);
 
 CREATE TABLE measurable_types (
   id TEXT NOT NULL,
@@ -223,6 +250,13 @@ CREATE INDEX idx_label_definitions_private ON label_definitions (private);
 CREATE INDEX idx_label_definitions_deleted_private_name ON label_definitions(
   deleted COLLATE BINARY ASC,
   private COLLATE BINARY ASC,
+  name COLLATE NOCASE ASC
+);
+-- Companion for `allLabelDefinitions`, which filters only deleted rows and
+-- orders by `name COLLATE NOCASE`. The private-aware index above cannot stream
+-- a global name order when `private` is unconstrained.
+CREATE INDEX idx_label_definitions_deleted_name_nocase ON label_definitions(
+  deleted COLLATE BINARY ASC,
   name COLLATE NOCASE ASC
 );
 

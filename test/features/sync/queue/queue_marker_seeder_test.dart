@@ -188,6 +188,22 @@ void main() {
     expect(secondRun, isFalse);
   });
 
+  test('caches seeded rooms after the first successful seed', () async {
+    when(
+      () => settingsDb.itemByKey(lastReadMatrixEventId),
+    ).thenAnswer((_) async => r'$anchor');
+    when(
+      () => settingsDb.itemByKey(lastReadMatrixEventTs),
+    ).thenAnswer((_) async => '5000');
+    final seeder = newSeeder();
+
+    expect(await seeder.seedIfAbsent(roomId), isTrue);
+    expect(await seeder.seedIfAbsent(roomId), isFalse);
+
+    verify(() => settingsDb.itemByKey(lastReadMatrixEventId)).called(1);
+    verify(() => settingsDb.itemByKey(lastReadMatrixEventTs)).called(1);
+  });
+
   test('returns false when no legacy marker is stored', () async {
     when(
       () => settingsDb.itemByKey(lastReadMatrixEventId),
@@ -202,6 +218,26 @@ void main() {
         .get()
         .then((rows) => rows.length);
     expect(count, 0);
+  });
+
+  test('does not cache missing legacy marker state', () async {
+    var legacyIdCalls = 0;
+    when(() => settingsDb.itemByKey(lastReadMatrixEventId)).thenAnswer((_) {
+      legacyIdCalls++;
+      return Future.value(legacyIdCalls == 1 ? null : r'$late-anchor');
+    });
+    when(
+      () => settingsDb.itemByKey(lastReadMatrixEventTs),
+    ).thenAnswer((_) async => null);
+    final seeder = newSeeder();
+
+    expect(await seeder.seedIfAbsent(roomId), isFalse);
+    expect(await seeder.seedIfAbsent(roomId), isTrue);
+
+    final marker = await (syncDb.select(
+      syncDb.queueMarkers,
+    )..where((t) => t.roomId.equals(roomId))).getSingle();
+    expect(marker.lastAppliedEventId, r'$late-anchor');
   });
 
   test('does not overwrite an existing queue_markers row', () async {

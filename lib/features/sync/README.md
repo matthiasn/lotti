@@ -963,7 +963,7 @@ stored marker.
 ### UI (`backfill_settings_page.dart`)
 
 - `_QueueDepthScope` (inside `BackfillSettingsBody`) — subscribes to
-  `InboundQueue.depthChanges` (with a one-shot `queue.stats()` seed) and
+  `InboundQueue.depthChanges` (with a one-shot `queue.depthSnapshot()` seed) and
   rebuilds `StatusRow` with the latest total / per-producer breakdown /
   abandoned count.
 - `_AdvancedRecoveryGroup` (`backfill_settings_recovery.dart`) — manual

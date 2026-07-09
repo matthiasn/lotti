@@ -88,6 +88,42 @@ void main() {
 
         expect(await db!.getLabelDefinitionById('nonexistent'), isNull);
       });
+
+      test(
+        'allLabelDefinitions streams name order from the deleted/name index',
+        () async {
+          for (final name in ['Zulu', 'alpha', 'Beta']) {
+            await db!.upsertLabelDefinition(
+              LabelDefinition(
+                id: 'label-plan-${name.toLowerCase()}',
+                createdAt: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                name: name,
+                color: '#FF0000',
+                vectorClock: null,
+              ),
+            );
+          }
+          await db!.customStatement('ANALYZE');
+
+          final plan = await db!
+              .customSelect(
+                'EXPLAIN QUERY PLAN '
+                'SELECT * FROM label_definitions '
+                'WHERE deleted = FALSE '
+                'ORDER BY name COLLATE NOCASE',
+              )
+              .get();
+          final detail = plan
+              .map((row) => row.read<String>('detail'))
+              .join('\n');
+          expect(
+            detail,
+            contains('idx_label_definitions_deleted_name_nocase'),
+          );
+          expect(detail, isNot(contains('USE TEMP B-TREE')));
+        },
+      );
     });
 
     group('Upsert helpers -', () {

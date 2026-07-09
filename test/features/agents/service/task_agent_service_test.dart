@@ -244,6 +244,9 @@ void main() {
     when(
       () => mockRepository.getEntity(kTestTemplateId),
     ).thenAnswer((_) async => makeTestTemplate());
+    when(
+      () => mockRepository.getAgentStatesByAgentIds(any()),
+    ).thenAnswer((_) async => const {});
 
     service = TaskAgentService(
       agentService: mockAgentService,

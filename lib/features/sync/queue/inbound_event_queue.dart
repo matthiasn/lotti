@@ -22,6 +22,9 @@ const _logSubCommit = 'queue.commit';
 const _logSubRetry = 'queue.retry';
 const _logSubSkip = 'queue.skip';
 const _logSubPrune = 'queue.prune';
+const _peekableStatusPredicate = "status IN ('enqueued', 'retrying', 'leased')";
+const _depthStatusPredicate =
+    "status IN ('enqueued', 'leased', 'retrying', 'abandoned')";
 
 /// Durable inbound queue for Matrix sync events. See §3 of
 /// `docs/sync/2026-04-21_inbound_event_queue_implementation_plan.md`.
@@ -39,7 +42,7 @@ class InboundQueue {
   final Duration _leaseDuration;
 
   late final QueueDepthEmitter _depthEmitter = QueueDepthEmitter(
-    loadStats: stats,
+    loadStats: _depthStats,
   );
   late final QueueMarkerAdvancer _markerAdvancer = QueueMarkerAdvancer(_db);
   late final InboundQueueResurrection _resurrection = InboundQueueResurrection(
@@ -51,6 +54,14 @@ class InboundQueue {
   Stream<QueueDepthSignal> get depthChanges => _depthEmitter.changes;
 
   Future<void> dispose() => _depthEmitter.dispose();
+
+  /// Lightweight active-depth snapshot for UI seed values.
+  ///
+  /// Unlike [stats], this deliberately skips the applied ledger and
+  /// ready-now count. Those diagnostics require additional queue scans and
+  /// were showing up in slow-query logs when depth-only surfaces seeded their
+  /// first value.
+  Future<QueueStats> depthSnapshot() => _depthStats();
 
   /// Runs [body] inside a single `sync_db` transaction so a batch of
   /// `commitApplied` / `scheduleRetry` / `markSkipped` calls coalesce
@@ -249,7 +260,7 @@ class InboundQueue {
     final probe = _db.selectOnly(probeTable)
       ..addColumns([probeTable.queueId])
       ..where(
-        probeTable.status.isIn(InboundQueueStatuses.peekable) &
+        const CustomExpression<bool>(_peekableStatusPredicate) &
             probeTable.nextDueAt.isSmallerOrEqualValue(nowMs) &
             probeTable.leaseUntil.isSmallerOrEqualValue(nowMs),
       )
@@ -262,7 +273,7 @@ class InboundQueue {
       final query = _db.select(_db.inboundEventQueue)
         ..where(
           (t) =>
-              t.status.isIn(InboundQueueStatuses.peekable) &
+              const CustomExpression<bool>(_peekableStatusPredicate) &
               t.nextDueAt.isSmallerOrEqualValue(nowMs) &
               t.leaseUntil.isSmallerOrEqualValue(nowMs),
         )
@@ -475,67 +486,29 @@ class InboundQueue {
   /// depth (drainable rows); `applied` / `abandoned` / `retrying`
   /// carry the ledger breakdown for UI + diagnostics.
   ///
-  /// Implementation note: a single `GROUP BY status, producer`
-  /// aggregate replaces the prior four selectOnly aggregates. The
-  /// previous shape did three full-table scans plus a TEMP B-TREE on
-  /// every poll because no index covered `(status, producer)` —
-  /// production slow-query log captured 1014 ms / 2244 ms hits at
-  /// depth-emit cadence. The v20 partial index
-  /// `idx_inbound_event_queue_status_producer_enqueued` makes the
-  /// pivot index-only over a tight key range, and Dart pivots the
-  /// (≤ statuses × producers) result rows into the existing
-  /// `QueueStats` shape.
+  /// Implementation note: the active/abandoned/retrying pivot is
+  /// deliberately bounded to the statuses that need producer and oldest-row
+  /// breakdowns. The applied ledger can grow without bound and does not need
+  /// producer bucketing, so it is counted separately through the status index
+  /// instead of participating in the `GROUP BY status, producer` aggregate
+  /// that appeared in the slow-query logs.
   Future<QueueStats> stats() async {
     final nowMs = clock.now().millisecondsSinceEpoch;
     final table = _db.inboundEventQueue;
     final countCol = table.queueId.count();
-    final oldestCol = table.enqueuedAt.min();
 
-    // One aggregate scan: per (status, producer), get COUNT and
-    // MIN(enqueued_at). Pivots into total/byProducer/oldest plus
-    // applied/abandoned/retrying counts on the Dart side.
-    final pivotRows =
-        await (_db.selectOnly(table)
-              ..addColumns([
-                table.status,
-                table.producer,
-                countCol,
-                oldestCol,
-              ])
-              ..groupBy([table.status, table.producer]))
-            .get();
+    final depth = await _depthStats();
 
-    var total = 0;
-    var applied = 0;
-    var abandoned = 0;
-    var retrying = 0;
-    int? oldest;
-    final byProducer = <InboundEventProducer, int>{};
-
-    for (final row in pivotRows) {
-      final status = row.read(table.status);
-      final producerName = row.read(table.producer);
-      final cnt = row.read(countCol) ?? 0;
-      if (cnt <= 0 || status == null || producerName == null) continue;
-      final rowOldest = row.read(oldestCol);
-
-      if (InboundQueueStatuses.active.contains(status)) {
-        total += cnt;
-        final p = producerFromName(producerName);
-        byProducer[p] = (byProducer[p] ?? 0) + cnt;
-        if (rowOldest != null && (oldest == null || rowOldest < oldest)) {
-          oldest = rowOldest;
-        }
-      }
-      switch (status) {
-        case InboundQueueStatuses.applied:
-          applied += cnt;
-        case InboundQueueStatuses.abandoned:
-          abandoned += cnt;
-        case InboundQueueStatuses.retrying:
-          retrying += cnt;
-      }
-    }
+    final appliedRow = await _db
+        .customSelect(
+          'SELECT COUNT(queue_id) AS cnt '
+          'FROM inbound_event_queue '
+          'INDEXED BY idx_inbound_event_queue_status_enqueued '
+          "WHERE status = 'applied'",
+          readsFrom: {_db.inboundEventQueue},
+        )
+        .getSingle();
+    final applied = appliedRow.read<int>('cnt');
 
     // Ready-now keeps its own probe: the predicate is
     // `status IN InboundQueueStatuses.peekable AND next_due_at <= now
@@ -547,7 +520,7 @@ class InboundQueue {
         await (_db.selectOnly(table)
               ..addColumns([countCol])
               ..where(
-                table.status.isIn(InboundQueueStatuses.peekable) &
+                const CustomExpression<bool>(_peekableStatusPredicate) &
                     table.nextDueAt.isSmallerOrEqualValue(nowMs) &
                     table.leaseUntil.isSmallerOrEqualValue(nowMs),
               ))
@@ -555,11 +528,66 @@ class InboundQueue {
     final readyNow = readyRow.read(countCol) ?? 0;
 
     return QueueStats(
+      total: depth.total,
+      byProducer: depth.byProducer,
+      readyNow: readyNow,
+      oldestEnqueuedAt: depth.oldestEnqueuedAt,
+      applied: applied,
+      abandoned: depth.abandoned,
+      retrying: depth.retrying,
+    );
+  }
+
+  /// Lightweight active/abandoned/retrying pivot shared by [depthChanges] and
+  /// [stats]. Depth emissions expose only active depth, producer breakdown,
+  /// oldest active enqueue time, and abandoned count, but [stats] reuses the
+  /// retrying count from the same bounded aggregate. The applied ledger and
+  /// ready-now probe stay out of this path.
+  Future<QueueStats> _depthStats() async {
+    final rows = await _db
+        .customSelect(
+          '''
+      SELECT status, producer, COUNT(*) AS cnt, MIN(enqueued_at) AS oldest
+      FROM inbound_event_queue
+      WHERE $_depthStatusPredicate
+      GROUP BY status, producer
+      ''',
+          readsFrom: {_db.inboundEventQueue},
+        )
+        .get();
+
+    var total = 0;
+    var abandoned = 0;
+    var retrying = 0;
+    int? oldest;
+    final byProducer = <InboundEventProducer, int>{};
+
+    for (final row in rows) {
+      final status = row.read<String>('status');
+      final cnt = row.read<int>('cnt');
+      final rowOldest = row.readNullable<int>('oldest');
+
+      if (status == InboundQueueStatuses.abandoned) {
+        abandoned += cnt;
+        continue;
+      }
+      if (status == InboundQueueStatuses.retrying) {
+        retrying += cnt;
+      }
+
+      total += cnt;
+      final producer = producerFromName(row.read<String>('producer'));
+      byProducer[producer] = (byProducer[producer] ?? 0) + cnt;
+      if (rowOldest != null && (oldest == null || rowOldest < oldest)) {
+        oldest = rowOldest;
+      }
+    }
+
+    return QueueStats(
       total: total,
       byProducer: byProducer,
-      readyNow: readyNow,
+      readyNow: 0,
       oldestEnqueuedAt: oldest,
-      applied: applied,
       abandoned: abandoned,
       retrying: retrying,
     );

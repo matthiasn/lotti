@@ -72,7 +72,7 @@ void main() {
 
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 43);
+      expect(db.schemaVersion, 44);
 
       final indexes = await db.customSelect('''
         SELECT name, sql FROM sqlite_master
@@ -80,13 +80,14 @@ void main() {
           AND name IN (
             'idx_habit_definitions_deleted_private',
             'idx_label_definitions_deleted_private_name',
+            'idx_label_definitions_deleted_name_nocase',
             'idx_dashboard_definitions_deleted_private_name',
             'idx_linked_entries_from_id_hidden_created_at_desc'
           )
         ORDER BY name
       ''').get();
 
-      expect(indexes, hasLength(4));
+      expect(indexes, hasLength(5));
 
       final byName = {
         for (final row in indexes)
@@ -99,6 +100,14 @@ void main() {
       );
       expect(
         byName['idx_label_definitions_deleted_private_name'],
+        contains('name COLLATE NOCASE ASC'),
+      );
+      expect(
+        byName['idx_label_definitions_deleted_name_nocase'],
+        contains('deleted COLLATE BINARY ASC'),
+      );
+      expect(
+        byName['idx_label_definitions_deleted_name_nocase'],
         contains('name COLLATE NOCASE ASC'),
       );
       expect(

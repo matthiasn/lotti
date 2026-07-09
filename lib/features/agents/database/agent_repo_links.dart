@@ -137,7 +137,19 @@ class AgentRepoLinks {
   }) async {
     final List<AgentLink> rows;
     if (type != null) {
-      rows = await _db.getAgentLinksByFromIdAndType(fromId, type).get();
+      rows = await _db
+          .customSelect(
+            'SELECT * FROM agent_links '
+            'INDEXED BY idx_agent_links_active_from_type_to '
+            'WHERE from_id = ? AND type = ? AND deleted_at IS NULL',
+            variables: [
+              Variable.withString(fromId),
+              Variable.withString(type),
+            ],
+            readsFrom: {_db.agentLinks},
+          )
+          .asyncMap(_db.agentLinks.mapFromRow)
+          .get();
     } else {
       rows = await _db.getAgentLinksByFromId(fromId).get();
     }
@@ -152,7 +164,19 @@ class AgentRepoLinks {
   }) async {
     final List<AgentLink> rows;
     if (type != null) {
-      rows = await _db.getAgentLinksByToIdAndType(toId, type).get();
+      rows = await _db
+          .customSelect(
+            'SELECT * FROM agent_links '
+            'INDEXED BY idx_agent_links_active_to_type '
+            'WHERE to_id = ? AND type = ? AND deleted_at IS NULL',
+            variables: [
+              Variable.withString(toId),
+              Variable.withString(type),
+            ],
+            readsFrom: {_db.agentLinks},
+          )
+          .asyncMap(_db.agentLinks.mapFromRow)
+          .get();
     } else {
       rows = await _db.getAgentLinksByToId(toId).get();
     }

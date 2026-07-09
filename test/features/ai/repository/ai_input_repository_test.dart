@@ -2425,13 +2425,12 @@ void main() {
       'when AgentDatabase is registered',
       () async {
         // AgentDatabase IS registered -> provider must construct a real
-        // AgentRepository (line 612 branch). We observe this by checking that
-        // a project-context lookup reaches the underlying AgentDatabase query.
+        // AgentRepository. The optimized link path now goes through a custom
+        // indexed query, which touches the registered database's agent_links
+        // table instead of the older generated getAgentLinksByToIdAndType
+        // method.
         final mockAgentDb = MockAgentDatabase();
         getIt.registerSingleton<AgentDatabase>(mockAgentDb);
-        when(
-          () => mockAgentDb.getAgentLinksByToIdAndType(any(), any()),
-        ).thenReturn(MockSelectable<AgentLink>([]));
 
         final repository = buildContainer().read(aiInputRepositoryProvider);
         final result = await repository.buildProjectContextJsonForTask('t-1');
@@ -2439,9 +2438,7 @@ void main() {
         // No links -> no current report -> compact empty context.
         expect(result, equals('{}'));
         // The wired AgentRepository delegated down to the registered DB.
-        verify(
-          () => mockAgentDb.getAgentLinksByToIdAndType('project-123', any()),
-        ).called(1);
+        verify(() => mockAgentDb.agentLinks).called(1);
       },
     );
 

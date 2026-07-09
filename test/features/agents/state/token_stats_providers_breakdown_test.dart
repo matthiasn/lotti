@@ -30,7 +30,16 @@ void main() {
         until: any(named: 'until'),
       ),
     ).thenAnswer((_) async => <WakeRunLogData>[]);
+    when(
+      () => mockRepository.getEntitiesByIds(any()),
+    ).thenAnswer((_) async => const <String, AgentDomainEntity>{});
   });
+
+  void stubEntitiesById(Map<String, AgentDomainEntity> entitiesById) {
+    when(
+      () => mockRepository.getEntitiesByIds(any()),
+    ).thenAnswer((_) async => entitiesById);
+  }
 
   ProviderContainer createContainer({
     List<WakeTokenUsageEntity> tokenRecords = const [],
@@ -231,13 +240,13 @@ void main() {
               ),
             ];
 
-            when(() => mockRepository.getEntity('tpl-x')).thenAnswer(
-              (_) async => makeTestTemplate(
+            stubEntitiesById({
+              'tpl-x': makeTestTemplate(
                 id: 'tpl-x',
                 agentId: 'tpl-x',
                 displayName: 'Agent X',
               ),
-            );
+            });
 
             final container = createContainer(
               tokenRecords: records,
@@ -276,13 +285,13 @@ void main() {
             ),
           ];
 
-          when(() => mockRepository.getEntity('tpl-y')).thenAnswer(
-            (_) async => makeTestTemplate(
+          stubEntitiesById({
+            'tpl-y': makeTestTemplate(
               id: 'tpl-y',
               agentId: 'tpl-y',
               displayName: 'Agent Y',
             ),
-          );
+          });
 
           final container = createContainer(
             tokenRecords: records,
@@ -325,9 +334,7 @@ void main() {
               displayName: 'Identity Agent',
             );
 
-            when(() => mockRepository.getEntity('agent-identity-1')).thenAnswer(
-              (_) async => identity,
-            );
+            stubEntitiesById({'agent-identity-1': identity});
 
             final container = createContainer(tokenRecords: [record]);
             final result = await container.read(
@@ -363,8 +370,8 @@ void main() {
                   )
                   as WakeTokenUsageEntity;
 
-          // Simulate a repository exception for this agent id.
-          when(() => mockRepository.getEntity('agent-err-1')).thenThrow(
+          // Simulate a repository exception for source hydration.
+          when(() => mockRepository.getEntitiesByIds(any())).thenThrow(
             Exception('entity not found'),
           );
 
@@ -392,13 +399,13 @@ void main() {
             ),
           ];
 
-          when(() => mockRepository.getEntity('tpl-only')).thenAnswer(
-            (_) async => makeTestTemplate(
+          stubEntitiesById({
+            'tpl-only': makeTestTemplate(
               id: 'tpl-only',
               agentId: 'tpl-only',
               displayName: 'Only Source',
             ),
-          );
+          });
 
           final container = createContainer(tokenRecords: records);
           final result = await container.read(

@@ -78,11 +78,14 @@ class AgentInputCaptureService {
     );
     if (delta.isEmpty) return delta;
 
+    final existingPayloads = await _repository.getEntitiesByIds(
+      delta.newPayloads.map((payload) => payload.contentDigest),
+    );
     await _sync.runInTransaction(() async {
       for (final payload in delta.newPayloads) {
         // The payload id is its content digest, so a present row is
         // byte-identical — skip the redundant write and its sync echo.
-        if (await _repository.getEntity(payload.contentDigest) != null) {
+        if (existingPayloads.containsKey(payload.contentDigest)) {
           continue;
         }
         await _sync.upsertEntity(

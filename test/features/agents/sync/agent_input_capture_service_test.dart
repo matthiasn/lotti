@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
@@ -84,6 +85,39 @@ void main() {
       });
     },
   );
+
+  test('batch-checks payload existence before writing new captures', () async {
+    final countingRepo = _PayloadReadCountingRepository()
+      ..seed([makeTestState(agentId: _agentId)]);
+    final vc = MockVectorClockService();
+    var counter = 0;
+    when(
+      () => vc.getNextVectorClock(previous: any(named: 'previous')),
+    ).thenAnswer((_) async => VectorClock({'h1': ++counter}));
+    final outbox = MockOutboxService();
+    when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+    final localCapture = AgentInputCaptureService(
+      syncService: AgentSyncService(
+        repository: countingRepo,
+        outboxService: outbox,
+        vectorClockService: vc,
+      ),
+    );
+
+    final delta = await localCapture.captureWakeInputs(
+      agentId: _agentId,
+      sources: [
+        source('e1', 'alpha'),
+        source('e2', 'beta'),
+      ],
+      at: DateTime.utc(2024, 3, 10),
+    );
+
+    expect(delta.newPayloads, hasLength(2));
+    expect(countingRepo.getEntitiesByIdsCalls, 1);
+    expect(countingRepo.getEntityCalls, 0);
+    expect(countingRepo.payloads, hasLength(2));
+  });
 
   test(
     'content payloads are owned by the shared sentinel, not the agent',
@@ -273,5 +307,24 @@ class _TransactionCountingRepository extends InMemoryAgentRepository {
   Future<T> runInTransaction<T>(Future<T> Function() action) {
     transactionCount++;
     return super.runInTransaction(action);
+  }
+}
+
+class _PayloadReadCountingRepository extends InMemoryAgentRepository {
+  int getEntityCalls = 0;
+  int getEntitiesByIdsCalls = 0;
+
+  @override
+  Future<AgentDomainEntity?> getEntity(String id) {
+    getEntityCalls++;
+    return super.getEntity(id);
+  }
+
+  @override
+  Future<Map<String, AgentDomainEntity>> getEntitiesByIds(
+    Iterable<String> ids,
+  ) {
+    getEntitiesByIdsCalls++;
+    return super.getEntitiesByIds(ids);
   }
 }

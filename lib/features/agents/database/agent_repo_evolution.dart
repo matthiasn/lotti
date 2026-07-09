@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart'
     show AgentRepository;
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 
@@ -84,6 +85,44 @@ class AgentRepoEvolution {
         .map(AgentDbConversions.fromEntityRow)
         .whereType<AgentIdentityEntity>()
         .toList();
+  }
+
+  /// Fetch agent identities filtered by lifecycle in SQL.
+  ///
+  /// Startup restore paths ask for active agents repeatedly. Keeping that
+  /// predicate in SQLite avoids decoding dormant/destroyed identity rows in
+  /// every service that calls `AgentService.listAgents(lifecycle: active)`.
+  Future<List<AgentIdentityEntity>> getAgentIdentitiesByLifecycle(
+    AgentLifecycle lifecycle,
+  ) async {
+    final rows = await _db
+        .customSelect(
+          r'''
+            SELECT *
+            FROM agent_entities INDEXED BY idx_agent_entities_active_type_created
+            WHERE type = ?
+              AND deleted_at IS NULL
+              AND json_extract(serialized, '$.lifecycle') = ?
+            ORDER BY created_at DESC
+          ''',
+          variables: [
+            Variable.withString('agent'),
+            Variable.withString(lifecycle.name),
+          ],
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+
+    final identities = <AgentIdentityEntity>[];
+    for (final row in rows) {
+      final entity = AgentDbConversions.fromEntityRow(
+        await _db.agentEntities.mapFromRow(row),
+      );
+      if (entity case final AgentIdentityEntity identity) {
+        identities.add(identity);
+      }
+    }
+    return identities;
   }
 
   /// Fetch agent entities (including soft-deleted) whose serialized
@@ -274,29 +313,24 @@ class AgentRepoEvolution {
   /// The persisted field is historically named `taskId`, but stores the target
   /// entity ID for both task-scoped and project-scoped proposals.
   ///
-  /// Returns newest-first, capped at [limit]. The [taskId] filter is applied
-  /// in Dart because it lives inside the serialized JSON data column, not in a
-  /// dedicated indexed column. At current volumes (single agent, limit ≤ 20)
-  /// this is adequate; a dedicated column + DB-level filter is a future
-  /// optimization if query counts grow.
+  /// Returns newest-first, capped at [limit]. The [taskId] filter is backed by
+  /// an expression index over the serialized payload so task-scoped suggestion
+  /// views do not need to over-fetch broad per-agent change-set history.
   Future<List<ChangeSetEntity>> getPendingChangeSets(
     String agentId, {
     String? taskId,
     int limit = 20,
   }) async {
-    // When filtering by taskId in Dart, over-fetch from DB to compensate for
-    // rows that will be discarded. Without a dedicated taskId column we cannot
-    // filter at the SQL level.
-    final dbLimit = taskId != null ? limit * overFetchMultiplier : limit;
-    final rows = await _db.getPendingChangeSetsForAgent(agentId, dbLimit).get();
-    var results = rows
+    final rows = taskId == null
+        ? await _db.getPendingChangeSetsForAgent(agentId, limit).get()
+        : await _db
+              .getPendingChangeSetsForAgentAndTask(agentId, taskId, limit)
+              .get();
+    final results = rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<ChangeSetEntity>()
         .toList();
-    if (taskId != null) {
-      results = results.where((cs) => cs.taskId == taskId).toList();
-    }
-    return results.take(limit).toList();
+    return results;
   }
 
   /// Fetch recent change decisions for [agentId], optionally filtered by

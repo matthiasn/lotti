@@ -182,6 +182,22 @@ mixin _JournalDbTaskQueriesBuilders on _$JournalDb, _JournalDbConfigFlags {
     final filterByPriorities = selectedPriorities.isNotEmpty;
     final dbSelectedPriorities = selectedPriorities.cast<String?>();
 
+    if (!sortByDate &&
+        ids == null &&
+        !filterByLabels &&
+        !filterByPriorities &&
+        taskStatuses.length > 1 &&
+        categoryIds.length > 8) {
+      return _selectBroadPriorityOrderedTasks(
+        starredStatuses: starredStatuses,
+        privateStatuses: privateStatuses,
+        taskStatuses: taskStatuses,
+        categoryIds: categoryIds,
+        limit: limit,
+        offset: offset,
+      );
+    }
+
     if (ids == null && matchesAllPrivateStates && matchesAllStarredStates) {
       if (!filterByLabels) {
         if (sortByDate) {
@@ -380,5 +396,54 @@ mixin _JournalDbTaskQueriesBuilders on _$JournalDb, _JournalDbConfigFlags {
               offset,
             );
     }
+  }
+
+  Selectable<JournalDbEntity> _selectBroadPriorityOrderedTasks({
+    required List<bool> starredStatuses,
+    required List<bool> privateStatuses,
+    required List<String> taskStatuses,
+    required List<String> categoryIds,
+    required int limit,
+    required int offset,
+  }) {
+    if (starredStatuses.isEmpty || privateStatuses.isEmpty) {
+      return emptyJournalSelection();
+    }
+
+    final variables = <Variable<Object>>[];
+    final buf = StringBuffer()
+      ..write('SELECT * FROM journal ')
+      ..write('INDEXED BY idx_journal_tasks_priority_date ')
+      ..write("WHERE type = 'Task' AND deleted = FALSE AND task = 1 ");
+
+    void addInClause<T extends Object>(String column, Iterable<T> values) {
+      buf.write('AND $column IN (');
+      var index = 0;
+      for (final value in values) {
+        if (index > 0) buf.write(', ');
+        variables.add(Variable<T>(value));
+        buf.write('?${variables.length}');
+        index++;
+      }
+      buf.write(') ');
+    }
+
+    addInClause<String>('task_status', taskStatuses);
+    addInClause<String>('category', categoryIds);
+    addInClause<bool>('private', privateStatuses);
+    addInClause<bool>('starred', starredStatuses);
+
+    buf
+      ..write('ORDER BY task_priority_rank ASC, date_from DESC ')
+      ..write('LIMIT ')
+      ..write(limit)
+      ..write(' OFFSET ')
+      ..write(offset);
+
+    return customSelect(
+      buf.toString(),
+      variables: variables,
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 }

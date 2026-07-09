@@ -222,16 +222,21 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
   Future<List<int>> burnPendingSequenceCountersForHost({
     required String hostId,
   }) async {
-    final rows =
-        await (select(syncSequenceLog)
-              ..where(
-                (t) =>
-                    t.hostId.equals(hostId) &
-                    t.status.equals(SyncSequenceStatus.burnPending.index),
-              )
-              ..orderBy([(t) => OrderingTerm(expression: t.counter)]))
-            .get();
-    return [for (final row in rows) row.counter];
+    final rows = await customSelect(
+      '''
+      SELECT counter
+      FROM sync_sequence_log INDEXED BY idx_sync_sequence_log_host_status
+      WHERE host_id = ?
+        AND status = ?
+      ORDER BY counter
+      ''',
+      variables: [
+        Variable.withString(hostId),
+        Variable.withInt(SyncSequenceStatus.burnPending.index),
+      ],
+      readsFrom: {syncSequenceLog},
+    ).get();
+    return [for (final row in rows) row.read<int>('counter')];
   }
 
   /// Update the status of a sequence log entry.

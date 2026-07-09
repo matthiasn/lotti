@@ -30,7 +30,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration {
@@ -357,8 +357,98 @@ class AgentDatabase extends _$AgentDatabase {
           );
           await customStatement('ANALYZE');
         }
+        if (from < 15) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_agent_entities_active_agent_type_task_created_id '
+            'ON agent_entities(agent_id, type, '
+            r"json_extract(serialized, '$.taskId'), "
+            'created_at DESC, id DESC) '
+            'WHERE deleted_at IS NULL AND json_valid(serialized)',
+          );
+          await customStatement('ANALYZE');
+        }
+        if (from < 16) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_agent_entities_pending_scheduled_wake_at '
+            r"ON agent_entities(json_extract(serialized, '$.scheduledAt') ASC) "
+            "WHERE type = 'scheduledWake' "
+            'AND deleted_at IS NULL '
+            r"AND json_extract(serialized, '$.status') = 'pending' "
+            r"AND json_extract(serialized, '$.scheduledAt') IS NOT NULL",
+          );
+          await customStatement('ANALYZE');
+        }
       },
     );
+  }
+
+  static const _taskIdJsonExpression = r"json_extract(serialized, '$.taskId')";
+
+  Selectable<AgentEntity> getChangeSetsForAgentAndTask(
+    String agentId,
+    String taskId,
+    int limit,
+  ) => _agentEntitiesByTask(
+    agentId: agentId,
+    entityType: 'changeSet',
+    taskId: taskId,
+    limit: limit,
+  );
+
+  Selectable<AgentEntity> getPendingChangeSetsForAgentAndTask(
+    String agentId,
+    String taskId,
+    int limit,
+  ) => _agentEntitiesByTask(
+    agentId: agentId,
+    entityType: 'changeSet',
+    taskId: taskId,
+    limit: limit,
+    extraPredicate: "AND subtype IN ('pending', 'partiallyResolved')",
+  );
+
+  Selectable<AgentEntity> getRecentDecisionsForAgentAndTask(
+    String agentId,
+    String taskId,
+    int limit,
+  ) => _agentEntitiesByTask(
+    agentId: agentId,
+    entityType: 'changeDecision',
+    taskId: taskId,
+    limit: limit,
+  );
+
+  Selectable<AgentEntity> _agentEntitiesByTask({
+    required String agentId,
+    required String entityType,
+    required String taskId,
+    required int limit,
+    String extraPredicate = '',
+  }) {
+    return customSelect(
+      '''
+        SELECT *
+        FROM agent_entities
+          INDEXED BY idx_agent_entities_active_agent_type_task_created_id
+        WHERE agent_id = ?1
+          AND type = ?2
+          AND json_valid(serialized)
+          AND $_taskIdJsonExpression = ?3
+          AND deleted_at IS NULL
+          $extraPredicate
+        ORDER BY created_at DESC
+        LIMIT ?4
+      ''',
+      variables: [
+        Variable<String>(agentId),
+        Variable<String>(entityType),
+        Variable<String>(taskId),
+        Variable<int>(limit),
+      ],
+      readsFrom: {agentEntities},
+    ).asyncMap(agentEntities.mapFromRow);
   }
 
   /// Stream agent entities with their vector clocks for populating the

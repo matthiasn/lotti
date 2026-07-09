@@ -170,7 +170,7 @@ class _QueueDepthScopeState extends State<_QueueDepthScope> {
 
   Future<void> _loadInitial(InboundQueue queue) async {
     try {
-      final stats = await queue.stats();
+      final stats = await queue.depthSnapshot();
       if (!mounted) return;
       // A live emission while the one-shot read was in flight wins —
       // do not overwrite it with the stale snapshot. Also bail if we

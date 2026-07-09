@@ -124,11 +124,10 @@ class AgentService {
   Future<List<AgentIdentityEntity>> listAgents({
     AgentLifecycle? lifecycle,
   }) async {
-    final agents = await repository.getAllAgentIdentities();
     if (lifecycle != null) {
-      return agents.where((a) => a.lifecycle == lifecycle).toList();
+      return repository.getAgentIdentitiesByLifecycle(lifecycle);
     }
-    return agents;
+    return repository.getAllAgentIdentities();
   }
 
   /// Get the latest report for [agentId] in [scope]

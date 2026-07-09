@@ -425,10 +425,19 @@ void main() {
     ).thenAnswer((_) async => []);
     // Default: no entity found for payload lookups.
     when(() => mockRepo.getEntity(any())).thenAnswer((_) async => null);
+    when(
+      () => mockRepo.getEntitiesByIds(any()),
+    ).thenAnswer((_) async => const <String, AgentDomainEntity>{});
     // Template kind check: null → not an improver, skips evolution feedback.
     when(
       () => mockTemplateService.getTemplate(any()),
     ).thenAnswer((_) async => null);
+  }
+
+  void stubEntitiesById(Map<String, AgentDomainEntity> entitiesById) {
+    when(
+      () => mockRepo.getEntitiesByIds(any()),
+    ).thenAnswer((_) async => entitiesById);
   }
 
   /// Stubs decisions for decision classification tests.
@@ -866,6 +875,7 @@ void main() {
         }
         stubDecisions(decisions);
 
+        final changeSets = <String, AgentDomainEntity>{};
         for (var index = 0; index < scenario.decisions.length; index += 1) {
           final changeSet = scenario.decisions[index].changeSet(
             index: index,
@@ -875,10 +885,11 @@ void main() {
           if (changeSet == null) {
             continue;
           }
-          when(() => mockRepo.getEntity(changeSet.id)).thenAnswer(
-            (_) async => changeSet,
-          );
+          changeSets[changeSet.id] = changeSet;
         }
+        when(() => mockRepo.getEntitiesByIds(any())).thenAnswer(
+          (_) async => changeSets,
+        );
 
         final expected = scenario.expectedModel(
           since: windowStart,
@@ -992,9 +1003,7 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(
-        () => mockRepo.getEntity('payload-grievance'),
-      ).thenAnswer((_) async => payload);
+      stubEntitiesById({'payload-grievance': payload});
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -1032,9 +1041,7 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(
-        () => mockRepo.getEntity('payload-excellence'),
-      ).thenAnswer((_) async => payload);
+      stubEntitiesById({'payload-excellence': payload});
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -1076,9 +1083,7 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(
-        () => mockRepo.getEntity('payload-improvement'),
-      ).thenAnswer((_) async => payload);
+      stubEntitiesById({'payload-improvement': payload});
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -1121,9 +1126,7 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(
-        () => mockRepo.getEntity('payload-critical-operational'),
-      ).thenAnswer((_) async => payload);
+      stubEntitiesById({'payload-critical-operational': payload});
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -1167,9 +1170,7 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(
-        () => mockRepo.getEntity('payload-critical-op-positive'),
-      ).thenAnswer((_) async => payload);
+      stubEntitiesById({'payload-critical-op-positive': payload});
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -1203,9 +1204,7 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(
-        () => mockRepo.getEntity('payload-routine'),
-      ).thenAnswer((_) async => payload);
+      stubEntitiesById({'payload-routine': payload});
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -1238,9 +1237,7 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(
-        () => mockRepo.getEntity('payload-enrich-1'),
-      ).thenAnswer((_) async => payload);
+      stubEntitiesById({'payload-enrich-1': payload});
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -1273,9 +1270,7 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(
-        () => mockRepo.getEntity('payload-long'),
-      ).thenAnswer((_) async => payload);
+      stubEntitiesById({'payload-long': payload});
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -1306,9 +1301,7 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observation]);
-      when(
-        () => mockRepo.getEntity('payload-empty'),
-      ).thenAnswer((_) async => payload);
+      stubEntitiesById({'payload-empty': payload});
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -1364,9 +1357,7 @@ void main() {
             limit: any(named: 'limit'),
           ),
         ).thenAnswer((_) async => [observation]);
-        when(
-          () => mockRepo.getEntity('payload-sentiment'),
-        ).thenAnswer((_) async => payload);
+        stubEntitiesById({'payload-sentiment': payload});
 
         final result = await service.extract(
           templateId: kTestTemplateId,
@@ -1411,8 +1402,10 @@ void main() {
         toolName: 'fallback_tool',
       );
       stubDecisions([decision]);
-      when(() => mockRepo.getEntity('cs-summary')).thenAnswer(
-        (_) async => makeTestChangeSet(id: 'cs-summary'),
+      when(() => mockRepo.getEntitiesByIds(any())).thenAnswer(
+        (_) async => {
+          'cs-summary': makeTestChangeSet(id: 'cs-summary'),
+        },
       );
 
       final result = await service.extract(
@@ -1460,7 +1453,9 @@ void main() {
         toolName: 'safe_fallback_tool',
       );
       stubDecisions([decision]);
-      when(() => mockRepo.getEntity('cs-fail')).thenThrow(Exception('db down'));
+      when(() => mockRepo.getEntitiesByIds(any())).thenThrow(
+        Exception('db down'),
+      );
 
       final result = await service.extract(
         templateId: kTestTemplateId,
@@ -1486,7 +1481,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [observation]);
       when(
-        () => mockRepo.getEntity('payload-fail'),
+        () => mockRepo.getEntitiesByIds(any()),
       ).thenThrow(Exception('payload read failed'));
 
       final result = await service.extract(
@@ -1700,11 +1695,13 @@ void main() {
           ),
         ],
       );
-      when(() => mockRepo.getAgentState(agentId)).thenAnswer(
-        (_) async => makeTestState(
-          agentId: agentId,
-          slots: AgentSlots(activeTemplateId: activeTemplateId),
-        ),
+      when(() => mockRepo.getAgentStatesByAgentIds(any())).thenAnswer(
+        (_) async => {
+          agentId: makeTestState(
+            agentId: agentId,
+            slots: AgentSlots(activeTemplateId: activeTemplateId),
+          ),
+        },
       );
     }
 
@@ -2001,8 +1998,10 @@ void main() {
           ),
         ],
       );
-      when(() => mockRepo.getAgentState('agent-no-target')).thenAnswer(
-        (_) async => makeTestState(agentId: 'agent-no-target'),
+      when(() => mockRepo.getAgentStatesByAgentIds(any())).thenAnswer(
+        (_) async => {
+          'agent-no-target': makeTestState(agentId: 'agent-no-target'),
+        },
       );
 
       final result = await service.extract(

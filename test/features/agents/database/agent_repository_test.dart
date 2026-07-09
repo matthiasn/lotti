@@ -2567,6 +2567,56 @@ void main() {
 
       expect(identities, isEmpty);
     });
+
+    test('filters agent identities by lifecycle in SQL', () async {
+      final active = makeAgent(id: 'agent-active', agentId: 'a-001').copyWith(
+        createdAt: DateTime(2026, 2, 22),
+      );
+      final olderActive =
+          makeAgent(
+            id: 'agent-active-older',
+            agentId: 'a-002',
+          ).copyWith(
+            createdAt: DateTime(2026, 2, 21),
+          );
+      final dormant =
+          makeAgent(
+            id: 'agent-dormant',
+            agentId: 'a-003',
+          ).copyWith(
+            lifecycle: AgentLifecycle.dormant,
+          );
+      final destroyed =
+          makeAgent(
+            id: 'agent-destroyed',
+            agentId: 'a-004',
+          ).copyWith(
+            lifecycle: AgentLifecycle.destroyed,
+          );
+      final deletedActive =
+          makeAgent(
+            id: 'agent-deleted',
+            agentId: 'a-005',
+          ).copyWith(
+            deletedAt: DateTime(2026, 2, 23),
+          );
+
+      await repo.upsertEntity(active);
+      await repo.upsertEntity(olderActive);
+      await repo.upsertEntity(dormant);
+      await repo.upsertEntity(destroyed);
+      await repo.upsertEntity(deletedActive);
+      await repo.upsertEntity(makeAgentState());
+
+      final identities = await repo.getAgentIdentitiesByLifecycle(
+        AgentLifecycle.active,
+      );
+
+      expect(
+        identities.map((identity) => identity.id),
+        ['agent-active', 'agent-active-older'],
+      );
+    });
   });
 
   // ── Link CRUD ───────────────────────────────────────────────────────────────

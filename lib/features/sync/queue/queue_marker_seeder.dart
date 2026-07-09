@@ -26,14 +26,25 @@ class QueueMarkerSeeder {
   final SyncDatabase _syncDb;
   final SettingsDb _settingsDb;
   final DomainLogger _logging;
+  final Set<String> _knownSeededRooms = <String>{};
 
   /// Returns `true` if a new row was seeded, `false` if a row already
   /// existed (or no legacy marker was stored).
   Future<bool> seedIfAbsent(String roomId) async {
+    if (_knownSeededRooms.contains(roomId)) {
+      _logging.log(
+        LogDomain.sync,
+        'queue.markerSeed.skip roomId=$roomId reason=alreadySeededCached',
+        subDomain: _logSub,
+      );
+      return false;
+    }
+
     final existing = await (_syncDb.select(
       _syncDb.queueMarkers,
     )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
     if (existing != null) {
+      _knownSeededRooms.add(roomId);
       _logging.log(
         LogDomain.sync,
         'queue.markerSeed.skip roomId=$roomId reason=alreadySeeded',
@@ -68,6 +79,7 @@ class QueueMarkerSeeder {
           mode: InsertMode.insertOrIgnore,
         );
 
+    _knownSeededRooms.add(roomId);
     _logging.log(
       LogDomain.sync,
       'queue.markerSeed.done roomId=$roomId '

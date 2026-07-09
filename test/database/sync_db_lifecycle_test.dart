@@ -1205,6 +1205,65 @@ void main() {
     );
 
     test(
+      'burnPendingSequenceCountersForHost uses the host/status index before '
+      'ordering counters',
+      () async {
+        final database = SyncDatabase(inMemoryDatabase: true);
+        addTearDown(database.close);
+        const hostId = 'burn-plan-host';
+        final createdAt = DateTime(2026, 5, 24, 11);
+
+        for (var counter = 1; counter <= 200; counter++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(counter),
+              status: Value(
+                counter.isEven
+                    ? SyncSequenceStatus.burnPending.index
+                    : SyncSequenceStatus.received.index,
+              ),
+              createdAt: Value(createdAt.add(Duration(seconds: counter))),
+              updatedAt: Value(createdAt.add(Duration(seconds: counter))),
+            ),
+          );
+        }
+        await database.customStatement('ANALYZE');
+
+        final counters = await database.burnPendingSequenceCountersForHost(
+          hostId: hostId,
+        );
+        expect(counters.take(3), [2, 4, 6]);
+
+        final plan = await database
+            .customSelect(
+              '''
+              EXPLAIN QUERY PLAN
+              SELECT counter
+              FROM sync_sequence_log INDEXED BY idx_sync_sequence_log_host_status
+              WHERE host_id = ?
+                AND status = ?
+              ORDER BY counter
+              ''',
+              variables: [
+                Variable.withString(hostId),
+                Variable.withInt(SyncSequenceStatus.burnPending.index),
+              ],
+            )
+            .get();
+        final details = plan.map((row) => row.data.toString()).join('\n');
+
+        expect(
+          details,
+          contains('idx_sync_sequence_log_host_status'),
+          reason:
+              'startup burn reconciliation should seek the burn-pending '
+              'status partition instead of scanning every counter for host',
+        );
+      },
+    );
+
+    test(
       'recordOwnUnresolvableSequenceCounter inserts absent counters as '
       'burned with no payload mapping',
       () async {

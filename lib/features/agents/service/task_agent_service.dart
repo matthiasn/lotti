@@ -303,6 +303,13 @@ class TaskAgentService {
   /// restarts.
   Future<void> _hydrateThrottleDeadline(String agentId) async {
     final state = await repository.getAgentState(agentId);
+    _hydrateThrottleDeadlineFromState(agentId, state);
+  }
+
+  void _hydrateThrottleDeadlineFromState(
+    String agentId,
+    AgentStateEntity? state,
+  ) {
     final deadline = state?.nextWakeAt;
     if (deadline != null) {
       orchestrator.restorePendingWake(agentId: agentId, dueAt: deadline);
@@ -316,6 +323,19 @@ class TaskAgentService {
     // deferred drain timer for this agent (between _registerTaskSubscription
     // and this async call). Calling clearThrottle would cancel that timer
     // and leave the queued job permanently stuck.
+  }
+
+  Future<Map<String, AgentStateEntity>?> _loadStatesForRestore(
+    List<AgentIdentityEntity> agents,
+  ) async {
+    if (agents.isEmpty) return const {};
+    try {
+      return await repository.getAgentStatesByAgentIds([
+        for (final agent in agents) agent.agentId,
+      ]);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Returns the ID of the best default template, or `null` if none exist.
@@ -349,11 +369,13 @@ class TaskAgentService {
     final activeAgents = await agentService.listAgents(
       lifecycle: AgentLifecycle.active,
     );
+    final taskAgents = activeAgents
+        .where((agent) => agent.kind == _agentKind)
+        .toList(growable: false);
+    final statesByAgentId = await _loadStatesForRestore(taskAgents);
 
     var count = 0;
-    for (final agent in activeAgents) {
-      if (agent.kind != _agentKind) continue;
-
+    for (final agent in taskAgents) {
       try {
         final links = await repository.getLinksFrom(
           agent.agentId,
@@ -367,7 +389,10 @@ class TaskAgentService {
 
         // Restore persisted deferred wake work so due deadlines survive app
         // restarts and backgrounding.
-        await _hydrateThrottleDeadline(agent.agentId);
+        final state = statesByAgentId == null
+            ? await repository.getAgentState(agent.agentId)
+            : statesByAgentId[agent.agentId];
+        _hydrateThrottleDeadlineFromState(agent.agentId, state);
       } catch (e, s) {
         final msg =
             'failed to restore subscriptions '

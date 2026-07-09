@@ -58,6 +58,20 @@ class InMemoryAgentRepository extends MockAgentRepository {
   Future<AgentDomainEntity?> getEntity(String id) async => _entities[id];
 
   @override
+  Future<Map<String, AgentDomainEntity>> getEntitiesByIds(
+    Iterable<String> ids,
+  ) async {
+    final result = <String, AgentDomainEntity>{};
+    for (final id in ids) {
+      final entity = _entities[id];
+      if (entity != null) {
+        result[id] = entity;
+      }
+    }
+    return result;
+  }
+
+  @override
   Future<AgentStateEntity?> getAgentState(String agentId) async {
     final states = _entities.values
         .whereType<AgentStateEntity>()

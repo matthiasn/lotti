@@ -361,6 +361,61 @@ void main() {
         },
       );
 
+      test(
+        'getHabitCompletionsInRange preserves write-recency tie breakers',
+        () async {
+          final habitId = habitFlossing.id;
+          final day = DateTime(2024, 4, 16, 21);
+          final updatedAt = DateTime(2024, 4, 16, 23);
+          final earlierCreatedAt = JournalEntity.habitCompletion(
+            meta: Metadata(
+              id: 'habit-created-earlier',
+              createdAt: DateTime(2024, 4, 16, 21),
+              updatedAt: updatedAt,
+              dateFrom: day,
+              dateTo: DateTime(2024, 4, 16, 21),
+              private: false,
+            ),
+            data: HabitCompletionData(
+              habitId: habitId,
+              dateFrom: day,
+              dateTo: DateTime(2024, 4, 16, 21),
+              completionType: HabitCompletionType.success,
+            ),
+          );
+          final laterCreatedAt = JournalEntity.habitCompletion(
+            meta: Metadata(
+              id: 'habit-created-later',
+              createdAt: DateTime(2024, 4, 16, 22),
+              updatedAt: updatedAt,
+              dateFrom: day,
+              dateTo: DateTime(2024, 4, 16, 21),
+              private: false,
+            ),
+            data: HabitCompletionData(
+              habitId: habitId,
+              dateFrom: day,
+              dateTo: DateTime(2024, 4, 16, 21),
+              completionType: HabitCompletionType.fail,
+            ),
+          );
+
+          await db!.updateJournalEntity(earlierCreatedAt);
+          await db!.updateJournalEntity(laterCreatedAt);
+
+          final result = await db!.getHabitCompletionsInRange(
+            rangeStart: DateTime(2024, 4),
+          );
+
+          expect(result, hasLength(1));
+          expect(result.single.meta.id, 'habit-created-later');
+          expect(
+            (result.single as HabitCompletionEntry).data.completionType,
+            HabitCompletionType.fail,
+          );
+        },
+      );
+
       test('getQuantitativeByType filters correctly', () async {
         final weightEntry = buildQuantitativeEntry(
           id: 'weight-1',

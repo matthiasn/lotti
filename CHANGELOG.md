@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   active filters stay visible, recording/timer/agent cards carry clearer status
   labels, agent rows can open their linked task directly, and the old tiny
   Outbox/Inbox footer is now one compact Sync strip.
+- **Habit and agent-heavy screens spend less time waiting on the database.**
+  Habit heatmaps now load only the latest completion per habit/day, and agent
+  summary/feedback paths batch payload lookups instead of firing many
+  individual reads.
 - **Entry timestamps no longer get cut off on phones.** In a task's linked
   entries, the header's date and time used to be truncated (e.g.
   `2026-07-08 14…`) when the action buttons squeezed the row on a narrow phone.

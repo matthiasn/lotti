@@ -450,7 +450,7 @@ abstract class _$EditorDb extends GeneratedDatabase {
 
   Selectable<EditorDraftState> latestDraft(String entryId, DateTime lastSaved) {
     return customSelect(
-      'SELECT * FROM editor_drafts WHERE entry_id = ?1 AND last_saved = ?2 AND status = \'DRAFT\' ORDER BY created_at DESC',
+      'SELECT * FROM editor_drafts WHERE entry_id = ?1 AND last_saved = ?2 AND status = \'DRAFT\' ORDER BY created_at DESC LIMIT 1',
       variables: [Variable<String>(entryId), Variable<DateTime>(lastSaved)],
       readsFrom: {editorDrafts},
     ).asyncMap(editorDrafts.mapFromRow);

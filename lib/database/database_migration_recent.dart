@@ -174,5 +174,43 @@ mixin _JournalDbMigrationRecent on _$JournalDb {
         }
       }();
     }
+    if (from < 44) {
+      await () async {
+        DevLogger.log(
+          name: 'JournalDb',
+          message:
+              'Adding indexes for broad task-list, import-flag, and '
+              'label-definition reads',
+        );
+        if (await _tableExists('journal') &&
+            await _columnExists('journal', 'task_priority_rank')) {
+          await customStatement(
+            _createIdxJournalTasksPriorityDateSql.replaceFirst(
+              'CREATE INDEX ',
+              'CREATE INDEX IF NOT EXISTS ',
+            ),
+          );
+        }
+        if (await _tableExists('journal') &&
+            await _columnExists('journal', 'flag')) {
+          await customStatement(
+            _createIdxJournalImportFlagDateSql.replaceFirst(
+              'CREATE INDEX ',
+              'CREATE INDEX IF NOT EXISTS ',
+            ),
+          );
+        }
+        if (await _tableExists('label_definitions')) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_label_definitions_deleted_name_nocase '
+            'ON label_definitions('
+            '  deleted COLLATE BINARY ASC, '
+            '  name COLLATE NOCASE ASC)',
+          );
+        }
+        await customStatement('ANALYZE');
+      }();
+    }
   }
 }

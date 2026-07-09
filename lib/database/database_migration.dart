@@ -19,6 +19,9 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
         if (await _tableExists('journal')) {
           await customStatement(_createIdxJournalQuantLatestSql);
         }
+        if (await _tableExists('conflicts')) {
+          await customStatement(_createIdxConflictsStatusCreatedSql);
+        }
       },
       onCreate: (Migrator m) async {
         return m.createAll();

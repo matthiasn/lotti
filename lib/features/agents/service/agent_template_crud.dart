@@ -310,14 +310,15 @@ class AgentTemplateCrud {
       templateId,
       type: AgentLinkTypes.templateAssignment,
     );
-    final agents = <AgentIdentityEntity>[];
-    for (final link in links) {
-      final entity = await repository.getEntity(link.toId);
-      if (entity is AgentIdentityEntity) {
-        agents.add(entity);
-      }
-    }
-    return agents;
+    if (links.isEmpty) return const [];
+
+    final entitiesById = await repository.getEntitiesByIds(
+      links.map((link) => link.toId),
+    );
+    return [
+      for (final link in links)
+        if (entitiesById[link.toId] case final AgentIdentityEntity agent) agent,
+    ];
   }
 
   /// List templates whose category IDs contain [categoryId].

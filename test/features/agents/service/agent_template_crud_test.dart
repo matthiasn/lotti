@@ -165,13 +165,67 @@ void main() {
         ],
       );
       when(
-        () => mockRepo.getEntity(agent.id),
-      ).thenAnswer((_) async => agent);
+        () => mockRepo.getEntitiesByIds(any()),
+      ).thenAnswer((_) async => {agent.id: agent});
 
       await expectLater(
         () => crud.deleteTemplate(kTestTemplateId),
         throwsA(isA<TemplateInUseException>()),
       );
+      verifyNever(() => mockSync.upsertEntity(any()));
+    });
+
+    test('batch-loads linked agents when checking template usage', () async {
+      final activeAgent = makeTestIdentity(id: 'agent-1', agentId: 'agent-1');
+      final destroyedAgent = makeTestIdentity(
+        id: 'agent-2',
+        agentId: 'agent-2',
+        lifecycle: AgentLifecycle.destroyed,
+      );
+      when(
+        () => mockRepo.getLinksFrom(
+          kTestTemplateId,
+          type: AgentLinkTypes.templateAssignment,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          makeTestTemplateAssignmentLink(
+            fromId: kTestTemplateId,
+            toId: activeAgent.id,
+          ),
+          makeTestTemplateAssignmentLink(
+            fromId: kTestTemplateId,
+            toId: destroyedAgent.id,
+          ),
+          makeTestTemplateAssignmentLink(
+            fromId: kTestTemplateId,
+            toId: 'missing-agent',
+          ),
+        ],
+      );
+      when(
+        () => mockRepo.getEntitiesByIds(any()),
+      ).thenAnswer(
+        (_) async => {
+          activeAgent.id: activeAgent,
+          destroyedAgent.id: destroyedAgent,
+        },
+      );
+
+      await expectLater(
+        () => crud.deleteTemplate(kTestTemplateId),
+        throwsA(isA<TemplateInUseException>()),
+      );
+
+      final captured =
+          verify(
+                () => mockRepo.getEntitiesByIds(captureAny()),
+              ).captured.single
+              as Iterable<String>;
+      expect(captured, ['agent-1', 'agent-2', 'missing-agent']);
+      verifyNever(() => mockRepo.getEntity('agent-1'));
+      verifyNever(() => mockRepo.getEntity('agent-2'));
+      verifyNever(() => mockRepo.getEntity('missing-agent'));
       verifyNever(() => mockSync.upsertEntity(any()));
     });
 

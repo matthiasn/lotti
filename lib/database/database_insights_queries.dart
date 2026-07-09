@@ -48,6 +48,12 @@ mixin _JournalDbInsightsQueries on _$JournalDb {
   }) async {
     final rows = await customSelect(
       '''
+        WITH private_flag AS (
+          SELECT COALESCE(
+            (SELECT status FROM config_flags WHERE name = 'private'),
+            FALSE
+          ) AS visible
+        )
         SELECT
           j.date_from AS date_from,
           j.date_to AS date_to,
@@ -61,22 +67,20 @@ mixin _JournalDbInsightsQueries on _$JournalDb {
                 AND t.type = 'Task'
                 AND t.deleted = FALSE
                 AND t.category != ''
-                AND COALESCE(t.private, FALSE) IN
-                  (FALSE, (SELECT status FROM config_flags
-                           WHERE name = 'private'))
+                AND COALESCE(t.private, FALSE) IN (FALSE, pf.visible)
               ORDER BY t.date_from DESC, t.id
               LIMIT 1
             ),
             NULLIF(j.category, '')
           ) AS category_id
-        FROM journal j
+        FROM journal j INDEXED BY idx_journal_insights_time
+        CROSS JOIN private_flag pf
         WHERE j.type = 'JournalEntry'
           AND j.deleted = FALSE
           AND j.date_to > ?
           AND j.date_from < ?
           AND j.date_to > j.date_from
-          AND COALESCE(j.private, FALSE) IN
-            (FALSE, (SELECT status FROM config_flags WHERE name = 'private'))
+          AND COALESCE(j.private, FALSE) IN (FALSE, pf.visible)
         ORDER BY j.date_from
       ''',
       variables: [Variable<DateTime>(start), Variable<DateTime>(end)],

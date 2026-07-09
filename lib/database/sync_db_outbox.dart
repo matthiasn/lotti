@@ -256,12 +256,9 @@ mixin _SyncDbOutbox on _$SyncDatabase {
   /// Used by the badge to show how many items still need to be sent.
   Stream<int> watchOutboxCount() {
     return customSelect(
-      'SELECT COUNT(id) AS cnt FROM outbox '
-      'WHERE status IN (?, ?)',
-      variables: [
-        Variable.withInt(OutboxStatus.pending.index),
-        Variable.withInt(_outboxSendingStatus),
-      ],
+      'SELECT COUNT(*) AS cnt '
+      'FROM outbox INDEXED BY idx_outbox_actionable_priority_created_at '
+      'WHERE status IN (0, 3)',
       readsFrom: {outbox},
     ).watchSingle().map((row) => row.read<int>('cnt'));
   }

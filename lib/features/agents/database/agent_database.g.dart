@@ -4416,9 +4416,17 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_agent_entities_token_usage_since',
     'CREATE INDEX idx_agent_entities_token_usage_since ON agent_entities (type, created_at DESC) WHERE type = \'wakeTokenUsage\' AND deleted_at IS NULL',
   );
+  late final Index idxAgentEntitiesActiveAgentTypeTaskCreatedId = Index(
+    'idx_agent_entities_active_agent_type_task_created_id',
+    'CREATE INDEX idx_agent_entities_active_agent_type_task_created_id ON agent_entities (agent_id, type, json_extract(serialized, \'\$.taskId\'), created_at DESC, id DESC) WHERE deleted_at IS NULL AND json_valid(serialized)',
+  );
   late final Index idxAgentEntitiesDueWake = Index(
     'idx_agent_entities_due_wake',
     'CREATE INDEX idx_agent_entities_due_wake ON agent_entities (json_extract(serialized, \'\$.scheduledWakeAt\') ASC) WHERE type = \'agentState\' AND deleted_at IS NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') IS NOT NULL',
+  );
+  late final Index idxAgentEntitiesPendingScheduledWakeAt = Index(
+    'idx_agent_entities_pending_scheduled_wake_at',
+    'CREATE INDEX idx_agent_entities_pending_scheduled_wake_at ON agent_entities (json_extract(serialized, \'\$.scheduledAt\') ASC) WHERE type = \'scheduledWake\' AND deleted_at IS NULL AND json_extract(serialized, \'\$.status\') = \'pending\' AND json_extract(serialized, \'\$.scheduledAt\') IS NOT NULL',
   );
   late final AgentLinks agentLinks = AgentLinks(this);
   late final Index idxAgentLinksFrom = Index(
@@ -5127,7 +5135,9 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxAgentEntitiesActiveTypeCreated,
     idxAgentEntitiesActiveTypeSubCreatedId,
     idxAgentEntitiesTokenUsageSince,
+    idxAgentEntitiesActiveAgentTypeTaskCreatedId,
     idxAgentEntitiesDueWake,
+    idxAgentEntitiesPendingScheduledWakeAt,
     agentLinks,
     idxAgentLinksFrom,
     idxAgentLinksTo,

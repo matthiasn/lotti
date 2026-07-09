@@ -14,6 +14,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_data/constants.dart';
 import '../test_data/entity_factories.dart';
+import '../test_data/evolution_factories.dart';
 import '../test_data/link_factories.dart';
 import '../test_data/template_factories.dart';
 
@@ -53,9 +54,16 @@ void main() {
     when(
       () => mockRepo.getLinksFrom(kTestTemplateId, type: 'template_assignment'),
     ).thenAnswer((_) async => links);
-    for (final agent in agents) {
-      when(() => mockRepo.getEntity(agent.id)).thenAnswer((_) async => agent);
-    }
+    when(() => mockRepo.getEntitiesByIds(any<Iterable<String>>())).thenAnswer(
+      (invocation) async {
+        final ids = invocation.positionalArguments.single as Iterable<String>;
+        final agentsById = {for (final agent in agents) agent.id: agent};
+        return <String, AgentDomainEntity>{
+          for (final id in ids)
+            if (agentsById[id] case final AgentIdentityEntity agent) id: agent,
+        };
+      },
+    );
   }
 
   group('computeMetrics', () {
@@ -122,6 +130,95 @@ void main() {
         expect(result.activeInstanceCount, 0);
       },
     );
+  });
+
+  group('gatherEvolutionData', () {
+    test('batch-fetches observation payloads by id', () async {
+      final observationA = makeTestMessage(
+        id: 'obs-a',
+        kind: AgentMessageKind.observation,
+        contentEntryId: 'payload-a',
+      );
+      final observationB = makeTestMessage(
+        id: 'obs-b',
+        kind: AgentMessageKind.observation,
+        contentEntryId: 'payload-b',
+      );
+      final payloadA = makeTestMessagePayload(id: 'payload-a');
+      final payloadB = makeTestMessagePayload(id: 'payload-b');
+
+      when(
+        () => mockRepo.aggregateWakeRunMetrics(kTestTemplateId),
+      ).thenAnswer(
+        (_) async => AggregateWakeRunMetricsByTemplateIdResult(
+          successCount: 0,
+          failureCount: 0,
+          durationSumMs: null,
+          durationCount: 0,
+          firstWakeAt: null,
+          lastWakeAt: null,
+        ),
+      );
+      when(
+        () => mockRepo.countWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => 0);
+      when(
+        () =>
+            mockRepo.getLinksFrom(kTestTemplateId, type: 'template_assignment'),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <AgentDomainEntity>[]);
+      when(
+        () => mockRepo.getRecentReportsByTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <AgentReportEntity>[]);
+      when(
+        () => mockRepo.getRecentObservationsByTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observationA, observationB]);
+      when(
+        () => mockRepo.getEvolutionNotes(kTestTemplateId, limit: 30),
+      ).thenAnswer((_) async => [makeTestEvolutionNote()]);
+      when(
+        () => mockRepo.getEvolutionSessions(kTestTemplateId),
+      ).thenAnswer((_) async => [makeTestEvolutionSession()]);
+      when(
+        () => mockRepo.getEntitiesByIds(any()),
+      ).thenAnswer(
+        (_) async => {
+          payloadA.id: payloadA,
+          payloadB.id: payloadB,
+        },
+      );
+      when(
+        () => mockRepo.countChangedSinceForTemplate(
+          kTestTemplateId,
+          any(),
+        ),
+      ).thenAnswer((_) async => 7);
+
+      final result = await metrics.gatherEvolutionData(kTestTemplateId);
+
+      expect(result.observationPayloads.keys, {'payload-a', 'payload-b'});
+      expect(result.changesSinceLastSession, 7);
+      final capturedIds =
+          verify(
+                () => mockRepo.getEntitiesByIds(captureAny()),
+              ).captured.single
+              as Iterable<String>;
+      expect(capturedIds.toSet(), {'payload-a', 'payload-b'});
+      verifyNever(() => mockRepo.getEntity('payload-a'));
+      verifyNever(() => mockRepo.getEntity('payload-b'));
+    });
   });
 
   group('profileInUse', () {

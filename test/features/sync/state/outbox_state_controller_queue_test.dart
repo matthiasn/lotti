@@ -112,12 +112,12 @@ void main() {
     });
 
     test(
-      'seeds with the snapshot from queue.stats() — covers the '
+      'seeds with the snapshot from queue.depthSnapshot() — covers the '
       'subscribe-before-await ordering that prevents signals from being '
       'dropped during the initial snapshot computation',
       () async {
         const roomId = '!room:example.org';
-        // Insert one active row so stats().total reports 1 on seed.
+        // Insert one active row so depthSnapshot().total reports 1 on seed.
         await db
             .into(db.inboundEventQueue)
             .insert(
@@ -280,18 +280,18 @@ void main() {
   });
 
   // Deterministic coverage for the buffer/replay/error branches of
-  // `inboundQueueDepthStream`. The real in-memory `InboundQueue.stats()`
+  // `inboundQueueDepthStream`. The real in-memory `InboundQueue.depthSnapshot()`
   // resolves too fast to reliably land a `depthChanges` signal inside the
-  // generator's `stats()` await, so these tests drive a `MockInboundQueue`
-  // with a manually-controlled `stats()` completer and a hand-fed
+  // generator's snapshot await, so these tests drive a `MockInboundQueue`
+  // with a manually-controlled snapshot completer and a hand-fed
   // `depthChanges` controller. That lets us force the exact interleaving
   // where a live signal arrives BEFORE the consumer subscribes to the
   // internal relay (`relay.hasListener == false`) so the value is captured
-  // in the `buffered` list and replayed once `stats()` resolves.
+  // in the `buffered` list and replayed once the snapshot resolves.
   group('inboundQueueDepthStream — buffered/error branches (mocked queue)', () {
     late MockInboundQueue queue;
     late StreamController<QueueDepthSignal> depthCtl;
-    late Completer<QueueStats> statsCompleter;
+    late Completer<QueueStats> snapshotCompleter;
 
     QueueDepthSignal signal(int total) => QueueDepthSignal(
       total: total,
@@ -313,9 +313,9 @@ void main() {
     setUp(() {
       queue = MockInboundQueue();
       depthCtl = StreamController<QueueDepthSignal>.broadcast();
-      statsCompleter = Completer<QueueStats>();
+      snapshotCompleter = Completer<QueueStats>();
       when(() => queue.depthChanges).thenAnswer((_) => depthCtl.stream);
-      when(queue.stats).thenAnswer((_) => statsCompleter.future);
+      when(queue.depthSnapshot).thenAnswer((_) => snapshotCompleter.future);
     });
 
     tearDown(() async {
@@ -338,13 +338,13 @@ void main() {
         addTearDown(sub.cancel);
 
         // Let the generator subscribe to depthChanges and park on the
-        // (still-pending) stats() future. At this point the consumer has
+        // (still-pending) snapshot future. At this point the consumer has
         // not yet reached `yield* relay.stream`, so `relay.hasListener`
         // is false and any depth signal is captured into `buffered`.
         await Future<void>.value();
         await Future<void>.value();
 
-        // Two live signals arrive DURING the stats() await -> buffered.add
+        // Two live signals arrive DURING the snapshot await -> buffered.add
         // is hit twice (covers line 131).
         depthCtl
           ..add(signal(7))
@@ -356,7 +356,7 @@ void main() {
         // generator takes the else branch: it replays the buffered values
         // in arrival order (the for-loop) and then clears the buffer
         // (covers lines 154 + 157) instead of yielding the stale snapshot.
-        statsCompleter.complete(stats(99));
+        snapshotCompleter.complete(stats(99));
 
         await firstTwo.future.timeout(
           // In-memory SQLite resolves in <5 ms; 200 ms is hang-failure
@@ -388,10 +388,10 @@ void main() {
         );
         addTearDown(sub.cancel);
 
-        // Resolve stats() with an empty snapshot. With no buffered values
+        // Resolve the depth snapshot. With no buffered values
         // the generator yields the snapshot (0) and then enters
         // `yield* relay.stream`, so the relay now HAS a listener.
-        statsCompleter.complete(stats(0));
+        snapshotCompleter.complete(stats(0));
         await Future<void>.value();
         await Future<void>.value();
         expect(received, [0]);

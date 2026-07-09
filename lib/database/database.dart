@@ -63,10 +63,28 @@ const String _createIdxJournalTaskStatusPrivateSql =
     'private COLLATE BINARY ASC) '
     "WHERE type = 'Task' AND task = 1 AND deleted = FALSE";
 
+const String _createIdxJournalTasksPriorityDateSql =
+    'CREATE INDEX idx_journal_tasks_priority_date '
+    'ON journal(task_priority_rank COLLATE BINARY ASC, '
+    'date_from COLLATE BINARY DESC, '
+    'id COLLATE BINARY ASC) '
+    "WHERE type = 'Task' AND task = 1 AND deleted = FALSE";
+
+const String _createIdxJournalImportFlagDateSql =
+    'CREATE INDEX idx_journal_import_flag_date '
+    'ON journal(flag COLLATE BINARY ASC, '
+    'date_from COLLATE BINARY DESC, '
+    'id COLLATE BINARY ASC) '
+    'WHERE deleted = FALSE';
+
 const String _createIdxJournalQuantLatestSql =
     'CREATE INDEX IF NOT EXISTS idx_journal_quant_latest '
     'ON journal(subtype COLLATE BINARY ASC, date_from COLLATE BINARY DESC) '
     "WHERE type = 'QuantitativeEntry' AND deleted = FALSE";
+
+const String _createIdxConflictsStatusCreatedSql =
+    'CREATE INDEX IF NOT EXISTS idx_conflicts_status_created_at '
+    'ON conflicts(status ASC, created_at DESC)';
 
 /// SQL subquery that resolves the most-recent active ProjectLink for a task.
 /// Used both during migration back-fill and in [JournalDb.upsertJournalDbEntity]
@@ -128,7 +146,7 @@ class JournalDb extends _$JournalDb
   final Directory? _documentsDirectory;
 
   @override
-  int get schemaVersion => 43;
+  int get schemaVersion => 44;
 
   // Check whether a column exists in a given table to make migrations safer
   @override

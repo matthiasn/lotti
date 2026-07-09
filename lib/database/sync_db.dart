@@ -24,6 +24,14 @@ const syncDbFileName = 'sync.sqlite';
 
 const _dropIdxOutboxSendingExpiry =
     'DROP INDEX IF EXISTS idx_outbox_sending_expiry';
+const _createIdxOutboxSentUpdatedAt =
+    'CREATE INDEX IF NOT EXISTS idx_outbox_sent_updated_at '
+    'ON outbox (updated_at, id) '
+    'WHERE status = 1';
+const _createIdxOutboxActionableSubject =
+    'CREATE INDEX IF NOT EXISTS idx_outbox_actionable_subject '
+    'ON outbox (subject) '
+    'WHERE status IN (0, 3)';
 
 const _createSyncSequenceWatermarks = '''
 CREATE TABLE IF NOT EXISTS sync_sequence_watermarks (
@@ -77,7 +85,7 @@ class SyncDatabase extends _$SyncDatabase
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration {
@@ -85,8 +93,10 @@ class SyncDatabase extends _$SyncDatabase
       onCreate: (Migrator m) async {
         await m.createAll();
         await customStatement(_dropIdxOutboxSendingExpiry);
+        await customStatement(_createIdxOutboxSentUpdatedAt);
         await customStatement(_createSyncSequenceWatermarks);
         await customStatement(_idxInboundEventQueueActiveStatusRoom);
+        await customStatement(_createIdxOutboxActionableSubject);
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from < 2) {
@@ -526,6 +536,59 @@ class SyncDatabase extends _$SyncDatabase
             'WHERE status IN (0, 3, 4, 5, 8)',
           );
           await customStatement('ANALYZE');
+        }
+        if (from < 25) {
+          // `oldestOutboxItems` and both `claimNextOutboxBatch` branches order
+          // by `(priority, created_at, id)`. The previous actionable partial
+          // index omitted `id`, which left the planner free to sort the final
+          // tie-breaker term under high outbox churn. Rebuild it with the full
+          // ordering tuple while keeping the public index name stable.
+          final outboxExists = await customSelect(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'outbox'",
+          ).getSingleOrNull();
+          if (outboxExists != null) {
+            await customStatement(
+              'DROP INDEX IF EXISTS idx_outbox_actionable_priority_created_at',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS '
+              'idx_outbox_actionable_priority_created_at '
+              'ON outbox (priority, created_at, id) '
+              'WHERE status IN (0, 3)',
+            );
+            await customStatement('ANALYZE');
+          }
+        }
+        if (from < 26) {
+          // `pruneSentOutboxItemsChunked`, `getSentCountSince`, and daily
+          // outbox volume all filter sent rows by updated_at. The older
+          // status/priority/created index keeps them status-bounded but still
+          // walks large sent ledgers to apply the updated_at range.
+          final outboxExists = await customSelect(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'outbox'",
+          ).getSingleOrNull();
+          if (outboxExists != null) {
+            await customStatement(_createIdxOutboxSentUpdatedAt);
+            await customStatement('ANALYZE');
+          }
+        }
+        if (from < 27) {
+          // `getPendingBackfillEntries` checks the outbox for queued
+          // backfillRequest messages on every automatic backfill tick. The
+          // generic actionable index can prove `status IN (0,3)`, but still
+          // has to scan every pending/sending row to apply the subject prefix.
+          // A subject-keyed partial index lets the query range-scan only
+          // `backfillRequest:` rows.
+          final outboxExists = await customSelect(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'outbox'",
+          ).getSingleOrNull();
+          if (outboxExists != null) {
+            await customStatement(_createIdxOutboxActionableSubject);
+            await customStatement('ANALYZE');
+          }
         }
       },
     );

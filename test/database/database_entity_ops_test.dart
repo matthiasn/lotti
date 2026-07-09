@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -327,6 +328,56 @@ void main() {
           ConflictStatus.resolved.index,
         );
       });
+
+      test(
+        'conflictsByStatus uses the status/created_at index for newest-first '
+        'lists',
+        () async {
+          final now = DateTime(2024, 9, 3);
+          for (var i = 0; i < 20; i++) {
+            await db!.addConflict(
+              Conflict(
+                id: 'indexed-conflict-$i',
+                createdAt: now.add(Duration(minutes: i)),
+                updatedAt: now.add(Duration(minutes: i)),
+                serialized: jsonEncode(
+                  buildJournalEntry(
+                    id: 'indexed-conflict-entry-$i',
+                    timestamp: now,
+                    text: 'Conflict $i',
+                  ).toJson(),
+                ),
+                schemaVersion: db!.schemaVersion,
+                status: i.isEven
+                    ? ConflictStatus.unresolved.index
+                    : ConflictStatus.resolved.index,
+              ),
+            );
+          }
+          await db!.customStatement('ANALYZE');
+
+          final rows = await db!
+              .customSelect(
+                '''
+                EXPLAIN QUERY PLAN
+                SELECT *
+                FROM conflicts
+                WHERE status = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                ''',
+                variables: [
+                  Variable.withInt(ConflictStatus.unresolved.index),
+                  Variable.withInt(10),
+                ],
+              )
+              .get();
+          final details = rows.map((row) => row.data.toString()).join('\n');
+
+          expect(details, contains('idx_conflicts_status_created_at'));
+          expect(details, isNot(contains('USE TEMP B-TREE FOR ORDER BY')));
+        },
+      );
     });
 
     group('purgeDeletedFiles -', () {

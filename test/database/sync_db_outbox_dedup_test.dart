@@ -13,9 +13,9 @@ void main() {
 
   group('getPendingBackfillEntries Tests', () {
     // Subject prefix that production `_enqueueBackfillRequest` stamps on
-    // every backfill outbox row. `getPendingBackfillEntries` filters on
-    // `subject LIKE 'backfillRequest:%'` at the SQL level so it can skip
-    // JSON-decoding unrelated pending rows on a million-row outbox.
+    // every backfill outbox row. `getPendingBackfillEntries` filters with a
+    // bounded `backfillRequest:` subject-prefix range at the SQL level so it
+    // can skip JSON-decoding unrelated pending rows on a million-row outbox.
     const backfillSubject = 'backfillRequest:batch:1';
 
     setUpAll(() async {
@@ -333,11 +333,10 @@ void main() {
     });
 
     test(
-      'plan uses an outbox status index (full or partial) rather than '
-      'SCANning the table — load-bearing for the 2-minute backfill tick '
-      'which was the top offender in the 2026-05-12 desktop slow-query '
-      'log when `t.status.isIn([pending, sending])` bound the values '
-      'as parameters and the planner fell back to SCAN outbox',
+      'plan uses the actionable subject index rather than scanning every '
+      'pending/sending outbox row — load-bearing for the 2-minute backfill '
+      'tick that used to filter the backfillRequest subject after scanning '
+      'the actionable queue',
       () async {
         final database = db!;
 
@@ -366,36 +365,28 @@ void main() {
         final rows = await database
             .customSelect(
               'EXPLAIN QUERY PLAN '
-              'SELECT * FROM outbox WHERE status IN (0, 3) '
-              "AND subject LIKE 'backfillRequest:%'",
+              'SELECT * FROM outbox '
+              'INDEXED BY idx_outbox_actionable_subject '
+              'WHERE status IN (0, 3) '
+              "AND subject >= 'backfillRequest:' "
+              "AND subject < 'backfillRequest;'",
             )
             .get();
         final plan = rows.map((r) => r.data.toString()).join('\n');
 
-        // With status values inlined as literals the planner has a real
-        // status filter at plan time and picks either the partial
-        // `idx_outbox_actionable_priority_created_at` (WHERE status IN
-        // (0, 3)) or the full `idx_outbox_status_priority_created_at` for
-        // a two-key seek. Both are correct outcomes; the regression we
-        // are guarding against is the planner falling back to SCAN
-        // outbox, which is what happened with parameterised statuses.
         expect(
           plan,
-          anyOf(
-            contains('idx_outbox_actionable_priority_created_at'),
-            contains('idx_outbox_status_priority_created_at'),
-          ),
+          contains('idx_outbox_actionable_subject'),
           reason:
-              'literal `IN (0, 3)` must let the planner pick a status '
-              'index seek instead of falling back to SCAN outbox',
+              'the backfill-request probe must range-scan the subject '
+              'prefix index instead of walking every actionable row',
         );
         expect(
           plan,
           isNot(matches(RegExp('SCAN outbox(?! USING)'))),
           reason:
-              'no base-table scan once the planner can see the status set '
-              '(an indexed `SCAN outbox USING INDEX <name>` plan is fine — '
-              'only bare `SCAN outbox` is a regression)',
+              'no base-table scan once the planner can see the subject '
+              'prefix range and actionable status set',
         );
 
         final entries = await database.getPendingBackfillEntries();
@@ -969,8 +960,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 24', () {
-      expect(db.schemaVersion, 24);
+    test('schema version is 27', () {
+      expect(db.schemaVersion, 27);
     });
 
     test(
@@ -996,6 +987,13 @@ void main() {
               'sending must be index 3 — used as a literal in the '
               'partial-index WHERE clause and as `_outboxSendingStatus` '
               'in sync_db.dart.',
+        );
+        expect(
+          OutboxStatus.sent.index,
+          1,
+          reason:
+              'sent must be index 1 — used as a literal in the '
+              'sent-ledger updated_at partial-index WHERE clause.',
         );
       },
     );

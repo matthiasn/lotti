@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -929,6 +930,100 @@ void main() {
           ['newest-urgent', 'newer-high', 'older-low'],
         );
       });
+
+      test(
+        'getTasks broad multi-status category fan-out keeps priority/date '
+        'ordering',
+        () async {
+          final base = DateTime(2024, 7, 5, 12);
+          final categories = [
+            for (var i = 0; i < 12; i++) 'broad-cat-$i',
+          ];
+          final tasks = [
+            (
+              id: 'broad-p2-newer',
+              status: TaskStatus.groomed(
+                id: 'status-groomed',
+                createdAt: base,
+                utcOffset: base.timeZoneOffset.inMinutes,
+              ),
+              category: categories[2],
+              rank: 2,
+              minutes: 3,
+            ),
+            (
+              id: 'broad-p0-older',
+              status: TaskStatus.open(
+                id: 'status-open',
+                createdAt: base,
+                utcOffset: base.timeZoneOffset.inMinutes,
+              ),
+              category: categories[0],
+              rank: 0,
+              minutes: 1,
+            ),
+            (
+              id: 'broad-p1-newer',
+              status: TaskStatus.inProgress(
+                id: 'status-progress',
+                createdAt: base,
+                utcOffset: base.timeZoneOffset.inMinutes,
+              ),
+              category: categories[1],
+              rank: 1,
+              minutes: 4,
+            ),
+            (
+              id: 'broad-p0-newer',
+              status: TaskStatus.groomed(
+                id: 'status-groomed-newer',
+                createdAt: base,
+                utcOffset: base.timeZoneOffset.inMinutes,
+              ),
+              category: categories[3],
+              rank: 0,
+              minutes: 5,
+            ),
+          ];
+
+          for (final task in tasks) {
+            final timestamp = base.add(Duration(minutes: task.minutes));
+            await db!.upsertJournalDbEntity(
+              toDbEntity(
+                buildTaskEntry(
+                  id: task.id,
+                  timestamp: timestamp,
+                  status: task.status,
+                  categoryId: task.category,
+                ),
+              ),
+            );
+            await db!.customUpdate(
+              'UPDATE journal SET task_priority_rank = ? WHERE id = ?',
+              variables: [
+                Variable<int>(task.rank),
+                Variable<String>(task.id),
+              ],
+            );
+          }
+
+          final results = await db!.getTasks(
+            starredStatuses: const [true, false],
+            taskStatuses: const ['OPEN', 'IN PROGRESS', 'GROOMED'],
+            categoryIds: categories,
+          );
+
+          expect(
+            results.map((e) => e.meta.id).toList(),
+            [
+              'broad-p0-newer',
+              'broad-p0-older',
+              'broad-p1-newer',
+              'broad-p2-newer',
+            ],
+          );
+        },
+      );
 
       test('getTasks with sortByDate orders by date_from desc only', () async {
         final base = DateTime(2024, 7, 5, 12);

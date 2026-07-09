@@ -33,14 +33,47 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
 
   /// Returns habit completions from [rangeStart] to now.
   ///
-  /// Raw database rows are converted to journal entities and collapsed with
-  /// [latestHabitCompletionsByDay], so callers get one latest write per
-  /// habit/day instead of every stored completion row.
+  /// The SQL ranks writes by the same last-write-wins contract as
+  /// [latestHabitCompletionsByDay] and returns only the winning row per
+  /// habit/day. This keeps the heatmap path from materialising every historic
+  /// habit write when only one row per day can affect the result.
   Future<List<JournalEntity>> getHabitCompletionsInRange({
     required DateTime rangeStart,
   }) async {
-    final res = await habitCompletionsInRange(rangeStart).get();
-    return latestHabitCompletionsByDay(res.map(fromDbEntity));
+    final rows = await customSelect(
+      r'''
+        SELECT *
+        FROM (
+          SELECT
+            journal.*,
+            ROW_NUMBER() OVER (
+              PARTITION BY
+                json_extract(serialized, '$.data.habitId'),
+                date(date_from, 'unixepoch', 'localtime')
+              ORDER BY
+                updated_at DESC,
+                created_at DESC,
+                date_to DESC,
+                id DESC
+            ) AS rn
+          FROM journal
+          WHERE type = 'HabitCompletionEntry'
+            AND private IN (
+              0,
+              (SELECT status FROM config_flags WHERE name = 'private')
+            )
+            AND date_from >= ?
+            AND deleted = FALSE
+        )
+        WHERE rn = 1
+        ORDER BY date_from ASC,
+          json_extract(serialized, '$.data.habitId') ASC
+      ''',
+      variables: [Variable<DateTime>(rangeStart)],
+      readsFrom: {journal, configFlags},
+    ).get();
+
+    return rows.map((row) => fromDbEntity(journal.map(row.data))).toList();
   }
 
   Future<DayPlanEntry?> getDayPlanById(String id) async {

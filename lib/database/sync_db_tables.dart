@@ -24,7 +24,18 @@ part of 'sync_db.dart';
 // indexing the wrong rows.
 @TableIndex.sql(
   'CREATE INDEX idx_outbox_actionable_priority_created_at '
-  'ON outbox (priority, created_at) '
+  'ON outbox (priority, created_at, id) '
+  'WHERE status IN (0, 3)',
+)
+// Covers `getPendingBackfillEntries`, which only needs actionable outbox rows
+// whose subject starts with `backfillRequest:`. The priority-ordered
+// actionable index above proves the status predicate but still walks every
+// pending/sending row to apply the subject filter. This subject-keyed partial
+// lets the query perform a tight prefix range scan over only queued backfill
+// requests.
+@TableIndex.sql(
+  'CREATE INDEX idx_outbox_actionable_subject '
+  'ON outbox (subject) '
   'WHERE status IN (0, 3)',
 )
 // Covers `findPendingByEntryId` — the outbox merge-deduplication path
@@ -61,6 +72,15 @@ part of 'sync_db.dart';
   'CREATE INDEX idx_outbox_sending_expiry '
   'ON outbox (created_at, id, updated_at) '
   'WHERE status = 3',
+)
+// Sent-ledger retention and volume queries filter by send time
+// (`updated_at`) after `status = sent`. The generic status/priority index
+// cannot bound the updated-at range, so large sent ledgers still make prune
+// and recent-volume reads walk many irrelevant rows.
+@TableIndex.sql(
+  'CREATE INDEX idx_outbox_sent_updated_at '
+  'ON outbox (updated_at, id) '
+  'WHERE status = 1',
 )
 class Outbox extends Table {
   IntColumn get id => integer().autoIncrement()();
