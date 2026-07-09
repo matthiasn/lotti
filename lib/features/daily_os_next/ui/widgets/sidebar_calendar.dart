@@ -11,9 +11,7 @@ import 'package:lotti/features/insights/ui/widgets/insights_sidebar_entry.dart';
 import 'package:lotti/utils/device_region.dart';
 
 @visibleForTesting
-class DailyOsSidebarSectionKeys {
-  const DailyOsSidebarSectionKeys._();
-
+abstract final class DailyOsSidebarSectionKeys {
   static const Key root = Key('daily-os-sidebar-section');
   static const Key calendarPadding = Key('daily-os-sidebar-calendar-padding');
 }
