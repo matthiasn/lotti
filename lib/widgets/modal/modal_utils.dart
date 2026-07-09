@@ -61,6 +61,7 @@ class ModalUtils {
     Widget? leadingNavBarWidget,
   }) {
     final colorScheme = context.colorScheme;
+    final materialLocalizations = MaterialLocalizations.of(context);
 
     return WoltModalSheetPage(
       stickyActionBar: stickyActionBar,
@@ -82,6 +83,7 @@ class ModalUtils {
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       leadingNavBarWidget: onTapBack != null
           ? IconButton(
+              tooltip: materialLocalizations.backButtonTooltip,
               padding: const EdgeInsets.all(12),
               icon: Container(
                 padding: const EdgeInsets.all(8),
@@ -102,6 +104,7 @@ class ModalUtils {
           : leadingNavBarWidget,
       trailingNavBarWidget: showCloseButton
           ? IconButton(
+              tooltip: materialLocalizations.closeButtonTooltip,
               padding: const EdgeInsets.all(12),
               icon: Container(
                 padding: const EdgeInsets.all(8),
@@ -241,6 +244,7 @@ class ModalUtils {
     double? navBarHeight,
   }) {
     final colorScheme = context.colorScheme;
+    final materialLocalizations = MaterialLocalizations.of(context);
 
     return SliverWoltModalSheetPage(
       scrollController: scrollController,
@@ -264,6 +268,7 @@ class ModalUtils {
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       leadingNavBarWidget: onTapBack != null
           ? IconButton(
+              tooltip: materialLocalizations.backButtonTooltip,
               padding: const EdgeInsets.all(12),
               icon: Container(
                 padding: const EdgeInsets.all(8),
@@ -284,6 +289,7 @@ class ModalUtils {
           : null,
       trailingNavBarWidget: showCloseButton
           ? IconButton(
+              tooltip: materialLocalizations.closeButtonTooltip,
               padding: const EdgeInsets.all(12),
               icon: Container(
                 padding: const EdgeInsets.all(8),

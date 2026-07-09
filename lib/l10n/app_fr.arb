@@ -3914,6 +3914,7 @@
   "tasksSavedFiltersCustom": "Personnalisé",
   "tasksSavedFiltersDeleteConfirmAction": "Supprimer",
   "tasksSavedFiltersDeleteConfirmMessage": "Supprimer le filtre enregistré « {name} » ? Cette action est irréversible.",
+  "tasksSavedFiltersDeleteConfirmNamed": "Confirmer la suppression de {name}",
   "tasksSavedFiltersDeleteNamed": "Supprimer {name}",
   "tasksSavedFiltersDone": "Terminé",
   "tasksSavedFiltersEdit": "Modifier",

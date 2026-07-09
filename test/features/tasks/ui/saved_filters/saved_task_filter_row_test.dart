@@ -1,7 +1,9 @@
 import 'dart:math';
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -86,6 +88,271 @@ void main() {
     await tester.pump(_afterDoubleTapTimeout);
 
     expect(activatedCount, 1);
+  });
+
+  testWidgets('keyboard focus activates the row with Enter', (tester) async {
+    var activatedCount = 0;
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        SavedTaskFilterRow(
+          view: _view,
+          active: false,
+          onActivate: () => activatedCount++,
+          onRename: (_) {},
+          onDelete: () {},
+        ),
+      ),
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump(_afterDoubleTapTimeout);
+
+    expect(activatedCount, 1);
+  });
+
+  testWidgets('F2 starts rename and Escape cancels from the text field', (
+    tester,
+  ) async {
+    var renameInvocations = 0;
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        SavedTaskFilterRow(
+          view: _view,
+          active: false,
+          onActivate: () {},
+          onRename: (_) => renameInvocations++,
+          onDelete: () {},
+        ),
+      ),
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.f2);
+    await tester.pump();
+
+    final renameField = find.byKey(SavedTaskFilterRowKeys.renameField('sv-1'));
+    expect(renameField, findsOneWidget);
+    expect(tester.binding.focusManager.primaryFocus?.context, isNotNull);
+
+    await tester.enterText(renameField, 'Keyboard rename');
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+
+    expect(renameInvocations, 0);
+    expect(renameField, findsNothing);
+    expect(find.text('In progress · P0'), findsOneWidget);
+  });
+
+  testWidgets('Delete key arms, Escape cancels, and second Delete commits', (
+    tester,
+  ) async {
+    var deletes = 0;
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        SavedTaskFilterRow(
+          view: _view,
+          active: false,
+          onActivate: () {},
+          onRename: (_) {},
+          onDelete: () => deletes++,
+        ),
+      ),
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pump();
+    expect(deletes, 0);
+    expect(find.byTooltip('Tap again to delete'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    expect(find.byTooltip('Delete saved filter'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pump();
+
+    expect(deletes, 1);
+  });
+
+  testWidgets('Escape bubbles to ancestors when delete is not armed', (
+    tester,
+  ) async {
+    var escapeCount = 0;
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Shortcuts(
+          shortcuts: const <ShortcutActivator, Intent>{
+            SingleActivator(LogicalKeyboardKey.escape): _TestEscapeIntent(),
+          },
+          child: Actions(
+            actions: <Type, Action<Intent>>{
+              _TestEscapeIntent: CallbackAction<_TestEscapeIntent>(
+                onInvoke: (_) {
+                  escapeCount++;
+                  return null;
+                },
+              ),
+            },
+            child: SavedTaskFilterRow(
+              view: _view,
+              active: false,
+              onActivate: () {},
+              onRename: (_) {},
+              onDelete: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+
+    expect(escapeCount, 1);
+  });
+
+  testWidgets('visible delete affordance is skipped by keyboard focus', (
+    tester,
+  ) async {
+    final nextFocus = FocusNode();
+    addTearDown(nextFocus.dispose);
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Column(
+          children: [
+            SavedTaskFilterRow(
+              view: _view,
+              active: false,
+              onActivate: () {},
+              onRename: (_) {},
+              onDelete: () {},
+            ),
+            TextButton(
+              focusNode: nextFocus,
+              onPressed: () {},
+              child: const Text('Next control'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pump();
+    expect(find.byTooltip('Tap again to delete'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+
+    expect(nextFocus.hasFocus, isTrue);
+  });
+
+  testWidgets(
+    'visible delete affordance stays out of screen-reader semantics',
+    (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SavedTaskFilterRow(
+            view: _view,
+            active: false,
+            onActivate: () {},
+            onRename: (_) {},
+            onDelete: () {},
+          ),
+        ),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+      await tester.pump();
+
+      expect(find.byTooltip('Tap again to delete'), findsOneWidget);
+      expect(find.bySemanticsLabel('Tap again to delete'), findsNothing);
+
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('semantics expose tap plus rename and delete actions', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        SavedTaskFilterRow(
+          view: _view,
+          active: true,
+          onActivate: () {},
+          onRename: (_) {},
+          onDelete: () {},
+        ),
+      ),
+    );
+
+    final node = tester.getSemantics(
+      find.byKey(SavedTaskFilterRowKeys.root('sv-1')),
+    );
+    final renameId = CustomSemanticsAction.getIdentifier(
+      const CustomSemanticsAction(label: 'Rename In progress · P0'),
+    );
+    final deleteId = CustomSemanticsAction.getIdentifier(
+      const CustomSemanticsAction(label: 'Delete In progress · P0'),
+    );
+    final confirmDeleteId = CustomSemanticsAction.getIdentifier(
+      const CustomSemanticsAction(
+        label: 'Confirm delete In progress · P0',
+      ),
+    );
+
+    expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+    expect(node.flagsCollection.isButton, isTrue);
+    expect(node.flagsCollection.isSelected, Tristate.isTrue);
+    expect(
+      node.getSemanticsData().customSemanticsActionIds,
+      contains(renameId),
+    );
+    expect(
+      node.getSemanticsData().customSemanticsActionIds,
+      contains(deleteId),
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pump();
+
+    final armedNode = tester.getSemantics(
+      find.byKey(SavedTaskFilterRowKeys.root('sv-1')),
+    );
+
+    expect(
+      armedNode.getSemanticsData().customSemanticsActionIds,
+      contains(confirmDeleteId),
+    );
+    expect(
+      armedNode.getSemanticsData().customSemanticsActionIds,
+      isNot(contains(deleteId)),
+    );
+
+    semantics.dispose();
   });
 
   testWidgets('renders both label and count when active', (tester) async {
@@ -770,4 +1037,8 @@ void main() {
       },
     );
   });
+}
+
+class _TestEscapeIntent extends Intent {
+  const _TestEscapeIntent();
 }

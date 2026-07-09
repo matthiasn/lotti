@@ -255,6 +255,7 @@ void main() {
         );
 
         expect(leading, isA<IconButton>());
+        expect((leading! as IconButton).tooltip, 'Back');
 
         // The back button must actually invoke the supplied callback.
         await tester.tap(find.byType(IconButton));
@@ -273,6 +274,7 @@ void main() {
 
         expect(page.trailingNavBarWidget, isNotNull);
         expect(page.trailingNavBarWidget, isA<IconButton>());
+        expect((page.trailingNavBarWidget! as IconButton).tooltip, 'Close');
       });
 
       testWidgets('creates page with sticky action bar', (tester) async {
@@ -731,6 +733,7 @@ void main() {
         );
 
         expect(leading, isA<IconButton>());
+        expect((leading! as IconButton).tooltip, 'Back');
 
         // The back button must actually invoke the supplied callback.
         await tester.tap(find.byType(IconButton));
@@ -750,6 +753,7 @@ void main() {
 
         expect(page.trailingNavBarWidget, isNotNull);
         expect(page.trailingNavBarWidget, isA<IconButton>());
+        expect((page.trailingNavBarWidget! as IconButton).tooltip, 'Close');
       });
 
       testWidgets('creates sliver page without close button', (tester) async {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/widgets/misc/sidebar_live_card.dart';
 
@@ -27,6 +29,7 @@ void main() {
     required bool pulse,
     VoidCallback? onTap,
     bool reduceMotion = false,
+    bool actionable = true,
   }) {
     return makeTestableWidgetWithScaffold(
       SidebarLiveCard(
@@ -36,7 +39,7 @@ void main() {
         title: title,
         timeText: '01:35:32',
         pulse: pulse,
-        onTap: onTap ?? () {},
+        onTap: actionable ? (onTap ?? () {}) : null,
         trailing: const Icon(Icons.stop_rounded),
         semanticsLabel: 'Running timer',
       ),
@@ -73,6 +76,19 @@ void main() {
     expect(taps, 1);
   });
 
+  testWidgets('keyboard focus activates the card body', (tester) async {
+    var taps = 0;
+    await tester.pumpWidget(build(pulse: false, onTap: () => taps++));
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+
+    expect(taps, 1);
+  });
+
   testWidgets('pulse=false shows no record dot', (tester) async {
     await tester.pumpWidget(build(pulse: false));
     await tester.pump();
@@ -103,13 +119,32 @@ void main() {
     expect(pulseFade(), findsNothing);
   });
 
-  testWidgets('exposes the semantics label', (tester) async {
+  testWidgets('exposes actionable card semantics', (tester) async {
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(build(pulse: false));
     await tester.pump();
 
     final node = tester.getSemantics(find.byType(SidebarLiveCard));
     expect(node.label, contains('Running timer'));
+    expect(node.value, contains(title));
+    expect(node.value, contains('01:35:32'));
+    expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+    expect(node.flagsCollection.isButton, isTrue);
+    handle.dispose();
+  });
+
+  testWidgets('presentational card does not expose button semantics', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(build(pulse: false, actionable: false));
+    await tester.pump();
+
+    final node = tester.getSemantics(find.byType(SidebarLiveCard));
+    expect(node.label, contains('Running timer'));
+    expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
+    expect(node.flagsCollection.isButton, isFalse);
+
     handle.dispose();
   });
 }

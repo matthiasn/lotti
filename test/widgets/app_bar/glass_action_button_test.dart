@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
@@ -39,6 +41,49 @@ void main() {
       await tester.pump();
 
       expect(tapped, isTrue);
+    });
+
+    testWidgets('activates from keyboard focus', (tester) async {
+      var tapped = false;
+
+      await _pump(
+        tester,
+        GlassActionButton(
+          semanticLabel: 'Open menu',
+          onTap: () => tapped = true,
+          child: const Icon(Icons.menu),
+        ),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('exposes button semantics and optional tooltip', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+
+      await _pump(
+        tester,
+        GlassActionButton(
+          semanticLabel: 'Open menu',
+          onTap: () {},
+          child: const Icon(Icons.menu),
+        ),
+      );
+
+      expect(find.byTooltip('Open menu'), findsOneWidget);
+      final node = tester.getSemantics(find.bySemanticsLabel('Open menu'));
+      expect(node.label, 'Open menu');
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      expect(node.flagsCollection.isButton, isTrue);
+
+      handle.dispose();
     });
 
     testWidgets('contains GlassIconContainer', (tester) async {

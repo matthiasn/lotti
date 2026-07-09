@@ -9487,6 +9487,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String tasksSavedFiltersDeleteConfirmNamed(String name) {
+    return 'Confirmar eliminación de $name';
+  }
+
+  @override
   String tasksSavedFiltersDeleteNamed(String name) {
     return 'Eliminar $name';
   }

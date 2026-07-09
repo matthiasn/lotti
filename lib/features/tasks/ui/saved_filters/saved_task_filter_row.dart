@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -74,6 +75,7 @@ class SavedTaskFilterRow extends StatefulWidget {
 
 class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
   bool _hover = false;
+  bool _focused = false;
   bool _editing = false;
   bool _confirmDelete = false;
 
@@ -101,6 +103,14 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
     if (_hover == value) return;
     setState(() {
       _hover = value;
+      if (!value) _confirmDelete = false;
+    });
+  }
+
+  void _setFocused(bool value) {
+    if (_focused == value) return;
+    setState(() {
+      _focused = value;
       if (!value) _confirmDelete = false;
     });
   }
@@ -145,6 +155,11 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
     setState(() => _confirmDelete = true);
   }
 
+  void _cancelDeleteConfirmation() {
+    if (!_confirmDelete) return;
+    setState(() => _confirmDelete = false);
+  }
+
   /// Resolves the color stored on the `CategoryDefinition` keyed by [id], or
   /// `null` when the category has been deleted or carries no color string.
   Color? _categoryColor(String id) {
@@ -157,7 +172,8 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final showDeleteAffordance = _hover && !_editing;
+    final showDeleteAffordance =
+        (_hover || _focused || _confirmDelete) && !_editing;
     // Drag handle is hidden until the row is hovered — desktop-native pattern,
     // matches macOS list affordances (no persistent grip on the active row).
     final showDragHandle = _hover && widget.dragHandle != null;
@@ -187,180 +203,263 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
     return MouseRegion(
       onEnter: (_) => _setHover(true),
       onExit: (_) => _setHover(false),
-      child: Semantics(
-        button: true,
-        selected: widget.active,
-        label: widget.view.name,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
+      child: FocusableActionDetector(
+        enabled: !_editing,
+        shortcuts: _editing
+            ? const <ShortcutActivator, Intent>{}
+            : <ShortcutActivator, Intent>{
+                const SingleActivator(LogicalKeyboardKey.enter):
+                    const ActivateIntent(),
+                const SingleActivator(LogicalKeyboardKey.space):
+                    const ActivateIntent(),
+                const SingleActivator(LogicalKeyboardKey.f2):
+                    const _RenameIntent(),
+                const SingleActivator(LogicalKeyboardKey.delete):
+                    const _DeleteIntent(),
+                const SingleActivator(LogicalKeyboardKey.backspace):
+                    const _DeleteIntent(),
+                if (_confirmDelete)
+                  const SingleActivator(LogicalKeyboardKey.escape):
+                      const _CancelDeleteIntent(),
+              },
+        actions: _editing
+            ? const <Type, Action<Intent>>{}
+            : <Type, Action<Intent>>{
+                ActivateIntent: CallbackAction<ActivateIntent>(
+                  onInvoke: (_) {
+                    widget.onActivate();
+                    return null;
+                  },
+                ),
+                _RenameIntent: CallbackAction<_RenameIntent>(
+                  onInvoke: (_) {
+                    _enterEditMode();
+                    return null;
+                  },
+                ),
+                _DeleteIntent: CallbackAction<_DeleteIntent>(
+                  onInvoke: (_) {
+                    _handleDeleteTap();
+                    return null;
+                  },
+                ),
+                _CancelDeleteIntent: CallbackAction<_CancelDeleteIntent>(
+                  onInvoke: (_) {
+                    _cancelDeleteConfirmation();
+                    return null;
+                  },
+                ),
+              },
+        onFocusChange: _setFocused,
+        child: Semantics(
+          button: !_editing,
+          selected: widget.active,
           onTap: _editing ? null : widget.onActivate,
-          onDoubleTap: _editing ? null : _enterEditMode,
-          child: Container(
-            key: SavedTaskFilterRowKeys.root(widget.view.id),
-            margin: EdgeInsetsDirectional.only(start: tokens.spacing.step2),
-            constraints: BoxConstraints(
-              // step6 + step1 → 26: same row min-height as before.
-              minHeight: tokens.spacing.step6 + tokens.spacing.step1,
-            ),
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: BorderRadius.circular(tokens.radii.m),
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Padding(
-                  // start: step5 + step2 + step1 → 22 (restored to the
-                  // pre-refactor pill geometry the user signed off on).
-                  padding: EdgeInsetsDirectional.only(
-                    start:
-                        tokens.spacing.step5 +
-                        tokens.spacing.step2 +
-                        tokens.spacing.step1,
-                    end: tokens.spacing.step3,
-                    top: tokens.spacing.step2,
-                    bottom: tokens.spacing.step2,
-                  ),
-                  child: Row(
-                    children: [
-                      // Reserve the dot column even when absent so the
-                      // label stays vertically aligned across rows. Each
-                      // dot is step3 (8) with a step1 (2) gap between
-                      // them; the column expands when multiple categories
-                      // are selected, which is the desired behaviour
-                      // (more dots = wider gutter).
-                      if (categoryDotColors.isEmpty || _editing)
-                        SizedBox(
-                          width: tokens.spacing.step3,
-                          height: tokens.spacing.step3,
-                        )
-                      else
-                        SizedBox(
-                          height: tokens.spacing.step3,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              for (
-                                var i = 0;
-                                i < categoryDotColors.length;
-                                i++
-                              ) ...[
-                                if (i > 0)
-                                  SizedBox(width: tokens.spacing.step1),
-                                Container(
-                                  width: tokens.spacing.step3,
-                                  height: tokens.spacing.step3,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: categoryDotColors[i],
-                                  ),
-                                ),
-                              ],
-                            ],
+          customSemanticsActions: _editing
+              ? null
+              : <CustomSemanticsAction, VoidCallback>{
+                  CustomSemanticsAction(
+                    label: messages.tasksSavedFiltersRenameNamed(
+                      widget.view.name,
+                    ),
+                  ): _enterEditMode,
+                  CustomSemanticsAction(
+                    label: _confirmDelete
+                        ? messages.tasksSavedFiltersDeleteConfirmNamed(
+                            widget.view.name,
+                          )
+                        : messages.tasksSavedFiltersDeleteNamed(
+                            widget.view.name,
                           ),
-                        ),
-                      SizedBox(width: tokens.spacing.step3),
-                      Expanded(
-                        child: _editing
-                            ? _RenameField(
-                                key: SavedTaskFilterRowKeys.renameField(
-                                  widget.view.id,
-                                ),
-                                controller: _nameController,
-                                focusNode: _nameFocus,
-                                tokens: tokens,
-                                semanticLabel:
-                                    messages.tasksSavedFilterRenameSemantics,
-                                onCommit: _commitRename,
-                                onCancel: _cancelRename,
-                              )
-                            : Tooltip(
-                                message: widget.view.name,
-                                child: Text(
-                                  _middleEllipsize(widget.view.name),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.clip,
-                                  style: tokens.typography.styles.others.caption
-                                      .copyWith(color: labelColor),
-                                ),
-                              ),
-                      ),
-                      if (!_editing)
-                        Stack(
-                          alignment: Alignment.centerRight,
-                          children: [
-                            // Count is rendered when present and the row is not
-                            // showing the delete affordance.
-                            if (widget.count != null)
-                              AnimatedOpacity(
-                                opacity: showDeleteAffordance ? 0 : 1,
-                                duration: const Duration(milliseconds: 120),
-                                child: Padding(
-                                  padding: EdgeInsetsDirectional.only(
-                                    start: tokens.spacing.step2,
+                  ): _handleDeleteTap,
+                  if (_confirmDelete)
+                    CustomSemanticsAction(
+                      label: messages.tasksSavedFiltersSavePopupCancel,
+                    ): _cancelDeleteConfirmation,
+                },
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            excludeFromSemantics: true,
+            onTap: _editing ? null : widget.onActivate,
+            onDoubleTap: _editing ? null : _enterEditMode,
+            child: Container(
+              key: SavedTaskFilterRowKeys.root(widget.view.id),
+              margin: EdgeInsetsDirectional.only(start: tokens.spacing.step2),
+              constraints: BoxConstraints(
+                // step6 + step1 → 26: same row min-height as before.
+                minHeight: tokens.spacing.step6 + tokens.spacing.step1,
+              ),
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(tokens.radii.m),
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Padding(
+                    // start: step5 + step2 + step1 → 22 (restored to the
+                    // pre-refactor pill geometry the user signed off on).
+                    padding: EdgeInsetsDirectional.only(
+                      start:
+                          tokens.spacing.step5 +
+                          tokens.spacing.step2 +
+                          tokens.spacing.step1,
+                      end: tokens.spacing.step3,
+                      top: tokens.spacing.step2,
+                      bottom: tokens.spacing.step2,
+                    ),
+                    child: Row(
+                      children: [
+                        // Reserve the dot column even when absent so the
+                        // label stays vertically aligned across rows. Each
+                        // dot is step3 (8) with a step1 (2) gap between
+                        // them; the column expands when multiple categories
+                        // are selected, which is the desired behaviour
+                        // (more dots = wider gutter).
+                        if (categoryDotColors.isEmpty || _editing)
+                          SizedBox(
+                            width: tokens.spacing.step3,
+                            height: tokens.spacing.step3,
+                          )
+                        else
+                          SizedBox(
+                            height: tokens.spacing.step3,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                for (
+                                  var i = 0;
+                                  i < categoryDotColors.length;
+                                  i++
+                                ) ...[
+                                  if (i > 0)
+                                    SizedBox(width: tokens.spacing.step1),
+                                  Container(
+                                    width: tokens.spacing.step3,
+                                    height: tokens.spacing.step3,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: categoryDotColors[i],
+                                    ),
                                   ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        SizedBox(width: tokens.spacing.step3),
+                        Expanded(
+                          child: _editing
+                              ? _RenameField(
+                                  key: SavedTaskFilterRowKeys.renameField(
+                                    widget.view.id,
+                                  ),
+                                  controller: _nameController,
+                                  focusNode: _nameFocus,
+                                  tokens: tokens,
+                                  semanticLabel:
+                                      messages.tasksSavedFilterRenameSemantics,
+                                  onCommit: _commitRename,
+                                  onCancel: _cancelRename,
+                                )
+                              : Tooltip(
+                                  message: widget.view.name,
                                   child: Text(
-                                    '${widget.count}',
-                                    textAlign: TextAlign.end,
+                                    _middleEllipsize(widget.view.name),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.clip,
                                     style: tokens
                                         .typography
                                         .styles
-                                        .body
-                                        .bodySmall
-                                        .copyWith(
-                                          color: countColor,
-                                          fontWeight: FontWeight.w600,
-                                          fontFeatures: const [
-                                            FontFeature.tabularFigures(),
-                                          ],
-                                        ),
+                                        .others
+                                        .caption
+                                        .copyWith(color: labelColor),
+                                  ),
+                                ),
+                        ),
+                        if (!_editing)
+                          Stack(
+                            alignment: Alignment.centerRight,
+                            children: [
+                              // Count is rendered when present and the row is not
+                              // showing the delete affordance.
+                              if (widget.count != null)
+                                AnimatedOpacity(
+                                  opacity: showDeleteAffordance ? 0 : 1,
+                                  duration: const Duration(milliseconds: 120),
+                                  child: Padding(
+                                    padding: EdgeInsetsDirectional.only(
+                                      start: tokens.spacing.step2,
+                                    ),
+                                    child: Text(
+                                      '${widget.count}',
+                                      textAlign: TextAlign.end,
+                                      style: tokens
+                                          .typography
+                                          .styles
+                                          .body
+                                          .bodySmall
+                                          .copyWith(
+                                            color: countColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontFeatures: const [
+                                              FontFeature.tabularFigures(),
+                                            ],
+                                          ),
+                                    ),
+                                  ),
+                                ),
+                              // Delete affordance: present when hovered. Always
+                              // rendered (with opacity 0) so it can be looked up
+                              // and exercised in tests; hit-testing is gated on
+                              // hover so users can't tap a hidden button.
+                              AnimatedOpacity(
+                                opacity: showDeleteAffordance ? 1 : 0,
+                                duration: const Duration(milliseconds: 120),
+                                child: ExcludeFocus(
+                                  child: ExcludeSemantics(
+                                    child: IgnorePointer(
+                                      ignoring: !showDeleteAffordance,
+                                      child: _DeleteButton(
+                                        id: widget.view.id,
+                                        confirmed: _confirmDelete,
+                                        tokens: tokens,
+                                        tooltip: _confirmDelete
+                                            ? messages
+                                                  .tasksSavedFilterDeleteConfirmTooltip
+                                            : messages
+                                                  .tasksSavedFilterDeleteTooltip,
+                                        onTap: _handleDeleteTap,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            // Delete affordance: present when hovered. Always
-                            // rendered (with opacity 0) so it can be looked up
-                            // and exercised in tests; hit-testing is gated on
-                            // hover so users can't tap a hidden button.
-                            AnimatedOpacity(
-                              opacity: showDeleteAffordance ? 1 : 0,
-                              duration: const Duration(milliseconds: 120),
-                              child: IgnorePointer(
-                                ignoring: !showDeleteAffordance,
-                                child: _DeleteButton(
-                                  id: widget.view.id,
-                                  confirmed: _confirmDelete,
-                                  tokens: tokens,
-                                  tooltip: _confirmDelete
-                                      ? messages
-                                            .tasksSavedFilterDeleteConfirmTooltip
-                                      : messages.tasksSavedFilterDeleteTooltip,
-                                  onTap: _handleDeleteTap,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-                if (showDragHandle)
-                  Positioned.directional(
-                    textDirection: Directionality.of(context),
-                    start: tokens.spacing.step1,
-                    top: 0,
-                    bottom: 0,
-                    // Bound the handle to its own narrow column so it never
-                    // visually creeps into the dot's space (dot starts at
-                    // step5 + step2 + step1 = 22 from the row's left edge).
-                    width: tokens.spacing.step5,
-                    child: Center(
-                      child: KeyedSubtree(
-                        key: SavedTaskFilterRowKeys.dragHandle(widget.view.id),
-                        child: widget.dragHandle!,
-                      ),
+                            ],
+                          ),
+                      ],
                     ),
                   ),
-              ],
+                  if (showDragHandle)
+                    Positioned.directional(
+                      textDirection: Directionality.of(context),
+                      start: tokens.spacing.step1,
+                      top: 0,
+                      bottom: 0,
+                      // Bound the handle to its own narrow column so it never
+                      // visually creeps into the dot's space (dot starts at
+                      // step5 + step2 + step1 = 22 from the row's left edge).
+                      width: tokens.spacing.step5,
+                      child: Center(
+                        child: KeyedSubtree(
+                          key: SavedTaskFilterRowKeys.dragHandle(
+                            widget.view.id,
+                          ),
+                          child: widget.dragHandle!,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -375,6 +474,18 @@ String _middleEllipsize(String value, {int maxChars = 34}) {
   final start = (keep * 0.58).floor();
   final end = keep - start;
   return '${value.substring(0, start)}…${value.substring(value.length - end)}';
+}
+
+class _RenameIntent extends Intent {
+  const _RenameIntent();
+}
+
+class _DeleteIntent extends Intent {
+  const _DeleteIntent();
+}
+
+class _CancelDeleteIntent extends Intent {
+  const _CancelDeleteIntent();
 }
 
 class _RenameField extends StatelessWidget {

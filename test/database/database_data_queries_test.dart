@@ -336,8 +336,10 @@ void main() {
             completionType: HabitCompletionType.fail,
           );
 
-          await db!.updateJournalEntity(newer);
-          await db!.updateJournalEntity(older);
+          // Insert newest first so the query must choose by stored recency,
+          // not insertion order.
+          await db!.upsertJournalDbEntity(toDbEntity(newer));
+          await db!.upsertJournalDbEntity(toDbEntity(older));
 
           final rangeStart = DateTime(2024, 4);
           final rangeEnd = DateTime(2024, 4, 30);
@@ -350,14 +352,19 @@ void main() {
             rangeStart: rangeStart,
           );
 
-          for (final results in [byHabit, inRange]) {
-            expect(results, hasLength(1));
-            expect(results.single.meta.id, 'habit-complete-newer-fail');
-            expect(
-              (results.single as HabitCompletionEntry).data.completionType,
-              HabitCompletionType.fail,
-            );
-          }
+          expect(byHabit, hasLength(1));
+          expect(byHabit.single.meta.id, 'habit-complete-newer-fail');
+          expect(
+            (byHabit.single as HabitCompletionEntry).data.completionType,
+            HabitCompletionType.fail,
+          );
+
+          expect(inRange, hasLength(1));
+          expect(inRange.single.meta.id, 'habit-complete-newer-fail');
+          expect(
+            (inRange.single as HabitCompletionEntry).data.completionType,
+            HabitCompletionType.fail,
+          );
         },
       );
 

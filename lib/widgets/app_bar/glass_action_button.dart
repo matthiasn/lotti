@@ -10,6 +10,8 @@ class GlassActionButton extends StatelessWidget {
     required this.child,
     required this.onTap,
     this.size = 40,
+    this.semanticLabel,
+    this.tooltip,
     super.key,
   });
 
@@ -22,19 +24,40 @@ class GlassActionButton extends StatelessWidget {
   /// Size of the glass container. Defaults to 40.
   final double size;
 
+  /// Accessible label for icon-only glass actions.
+  final String? semanticLabel;
+
+  /// Optional hover tooltip. When omitted, [semanticLabel] is used.
+  final String? tooltip;
+
   @override
   Widget build(BuildContext context) {
-    return Material(
-      type: MaterialType.transparency,
-      clipBehavior: Clip.hardEdge,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onTap,
-        child: GlassIconContainer(
-          size: size,
-          child: child,
+    final label = semanticLabel ?? tooltip;
+    final button = Semantics(
+      container: true,
+      button: true,
+      label: label,
+      child: Material(
+        type: MaterialType.transparency,
+        clipBehavior: Clip.hardEdge,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onTap,
+          child: GlassIconContainer(
+            size: size,
+            child: child,
+          ),
         ),
       ),
+    );
+
+    final tooltipMessage = tooltip ?? semanticLabel;
+    if (tooltipMessage == null) return button;
+
+    return Tooltip(
+      message: tooltipMessage,
+      excludeFromSemantics: true,
+      child: button,
     );
   }
 }

@@ -30,9 +30,12 @@ class GlassBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tooltip = MaterialLocalizations.of(context).backButtonTooltip;
     return GlassActionButton(
       onTap: onPressed ?? () => Navigator.of(context).maybePop(),
       size: containerSize,
+      semanticLabel: tooltip,
+      tooltip: tooltip,
       child: Icon(
         Icons.chevron_left,
         size: iconSize,

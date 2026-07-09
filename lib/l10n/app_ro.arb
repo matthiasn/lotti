@@ -3914,6 +3914,7 @@
   "tasksSavedFiltersCustom": "Personalizat",
   "tasksSavedFiltersDeleteConfirmAction": "Șterge",
   "tasksSavedFiltersDeleteConfirmMessage": "Ștergeți filtrul salvat „{name}”? Această acțiune nu poate fi anulată.",
+  "tasksSavedFiltersDeleteConfirmNamed": "Confirmați ștergerea {name}",
   "tasksSavedFiltersDeleteNamed": "Șterge {name}",
   "tasksSavedFiltersDone": "Gata",
   "tasksSavedFiltersEdit": "Editează",
