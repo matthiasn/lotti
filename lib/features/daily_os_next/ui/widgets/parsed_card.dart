@@ -3,18 +3,17 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/category_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// One row of the Reconcile screen's left column ("Here's what I heard").
 ///
 /// Surfaces a single [ParsedItem] with:
-/// - Kind badge (NEW / MATCHED / UPDATE) in the top-left.
-/// - Title (Inter 600 / 15) underneath.
-/// - For MATCHED + UPDATE: the spoken phrase in italic + the linked
-///   task on an info-tinted pill with a one-tap `×` to break the link.
-/// - Foot row: category chip · estimate · time-anchor warning (when
-///   present) · "low confidence" warning tag.
+/// - Title first, so the interpreted task is the primary scan target.
+/// - Optional spoken phrase below the title, italicised for auditability.
+/// - For MATCHED + UPDATE: the linked task as an inline chip with a one-tap
+///   `×` to break the link.
+/// - Foot row: kind · category · estimate · time-anchor · confidence when
+///   confidence is not high.
 class ParsedCard extends StatelessWidget {
   const ParsedCard({
     required this.item,
@@ -30,29 +29,30 @@ class ParsedCard extends StatelessWidget {
     final tokens = context.designTokens;
     return Container(
       decoration: BoxDecoration(
-        color: tokens.colors.surface.enabled,
+        color: tokens.colors.background.level02,
         borderRadius: BorderRadius.circular(tokens.radii.l),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
-      padding: EdgeInsets.all(tokens.spacing.step5),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step4,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _KindBadge(kind: item.kind),
-          SizedBox(height: tokens.spacing.step3),
-          if (item.spokenPhrase != null) ...[
-            _SpokenPhraseLine(phrase: item.spokenPhrase!),
-            SizedBox(height: tokens.spacing.step2),
-          ],
           Text(
             item.title,
             style: tokens.typography.styles.subtitle.subtitle1.copyWith(
               color: tokens.colors.text.highEmphasis,
             ),
           ),
+          if (item.spokenPhrase != null) ...[
+            SizedBox(height: tokens.spacing.step2),
+            _SpokenPhraseLine(phrase: item.spokenPhrase!),
+          ],
           if (item.matchedTaskTitle != null) ...[
             SizedBox(height: tokens.spacing.step3),
-            _MatchedTaskPill(
+            _MatchedTaskChip(
               title: item.matchedTaskTitle!,
               taskState: item.matchedTaskState,
               warning: item.confidence == ParsedItemConfidence.medium,
@@ -63,7 +63,7 @@ class ParsedCard extends StatelessWidget {
             SizedBox(height: tokens.spacing.step3),
             _ProposedUpdateLine(update: item.proposedUpdate!),
           ],
-          SizedBox(height: tokens.spacing.step4),
+          SizedBox(height: tokens.spacing.step3),
           _FootRow(item: item),
         ],
       ),
@@ -98,21 +98,23 @@ class _KindBadge extends StatelessWidget {
     };
     return Container(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step3,
+        horizontal: tokens.spacing.step2,
         vertical: tokens.spacing.step1,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
-          SizedBox(width: tokens.spacing.step2),
+          Icon(icon, size: tokens.spacing.step3, color: color),
+          SizedBox(width: tokens.spacing.step1),
           Text(
             label,
-            style: calmEyebrowStyle(tokens, color: color),
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: color,
+            ),
           ),
         ],
       ),
@@ -138,8 +140,8 @@ class _SpokenPhraseLine extends StatelessWidget {
   }
 }
 
-class _MatchedTaskPill extends StatelessWidget {
-  const _MatchedTaskPill({
+class _MatchedTaskChip extends StatelessWidget {
+  const _MatchedTaskChip({
     required this.title,
     required this.warning,
     required this.onBreak,
@@ -159,33 +161,33 @@ class _MatchedTaskPill extends StatelessWidget {
         : tokens.colors.alert.info.defaultColor;
     return Container(
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border.all(color: accent.withValues(alpha: 0.32)),
+        color: accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
       ),
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step3,
-        vertical: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.arrow_forward_rounded, size: 14, color: accent),
+          Icon(Icons.link_rounded, size: tokens.spacing.step3, color: accent),
           SizedBox(width: tokens.spacing.step2),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Flexible(
+            child: Wrap(
+              spacing: tokens.spacing.step2,
+              runSpacing: tokens.spacing.step1,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   title,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                  style: tokens.typography.styles.others.caption.copyWith(
                     color: tokens.colors.text.highEmphasis,
                   ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (taskState != null) ...[
-                  SizedBox(height: tokens.spacing.step1),
+                if (taskState != null)
                   Text(
                     taskState!,
                     style: tokens.typography.styles.others.caption.copyWith(
@@ -194,21 +196,20 @@ class _MatchedTaskPill extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ],
               ],
             ),
           ),
-          SizedBox(width: tokens.spacing.step2),
+          SizedBox(width: tokens.spacing.step1),
           Tooltip(
             message: context.messages.dailyOsNextParsedCardBreakLinkTooltip,
             child: InkWell(
               onTap: onBreak,
-              borderRadius: BorderRadius.circular(tokens.radii.s),
+              borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
               child: Padding(
                 padding: EdgeInsets.all(tokens.spacing.step1),
                 child: Icon(
                   Icons.close_rounded,
-                  size: 14,
+                  size: tokens.spacing.step3,
                   color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
@@ -231,7 +232,11 @@ class _ProposedUpdateLine extends StatelessWidget {
     final success = tokens.colors.alert.success.defaultColor;
     return Row(
       children: [
-        Icon(Icons.check_circle_outline_rounded, size: 14, color: success),
+        Icon(
+          Icons.check_circle_outline_rounded,
+          size: tokens.spacing.step3,
+          color: success,
+        ),
         SizedBox(width: tokens.spacing.step2),
         Expanded(
           child: Text(
@@ -259,11 +264,12 @@ class _FootRow extends StatelessWidget {
       runSpacing: tokens.spacing.step2,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        _KindBadge(kind: item.kind),
         CategoryChip(category: item.category),
         if (item.estimateMinutes != null)
           _EstimateChip(minutes: item.estimateMinutes!),
         if (item.timeAnchor != null) _TimeAnchorChip(anchor: item.timeAnchor!),
-        if (item.confidence == ParsedItemConfidence.medium)
+        if (item.confidence != ParsedItemConfidence.high)
           const _LowConfidenceTag(),
       ],
     );
@@ -283,7 +289,7 @@ class _EstimateChip extends StatelessWidget {
       children: [
         Icon(
           Icons.schedule_rounded,
-          size: 12,
+          size: tokens.spacing.step3,
           color: tokens.colors.text.lowEmphasis,
         ),
         SizedBox(width: tokens.spacing.step1),
@@ -317,7 +323,7 @@ class _TimeAnchorChip extends StatelessWidget {
       children: [
         Icon(
           Icons.outlined_flag_rounded,
-          size: 12,
+          size: tokens.spacing.step3,
           color: tokens.colors.text.mediumEmphasis,
         ),
         SizedBox(width: tokens.spacing.step1),
@@ -342,7 +348,11 @@ class _LowConfidenceTag extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.warning_amber_rounded, size: 12, color: warning),
+        Icon(
+          Icons.warning_amber_rounded,
+          size: tokens.spacing.step3,
+          color: warning,
+        ),
         SizedBox(width: tokens.spacing.step1),
         Text(
           context.messages.dailyOsNextReconcileLowConfidence,

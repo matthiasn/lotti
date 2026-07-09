@@ -443,6 +443,11 @@ stateDiagram-v2
   a strong match only when the capture phrase clearly refers to that task; when
   the evidence is ambiguous, it should emit a low-confidence match or NEW item
   so Reconcile can surface the choice.
+- Reconcile "heard" rows use a quiet title-first hierarchy in `ParsedCard`:
+  the interpreted task title is primary, the spoken phrase is secondary, linked
+  tasks render as compact inline chips with a break-link affordance, and the
+  footer carries kind/category/estimate/time-anchor metadata. Confidence is
+  shown only when the parse is not high confidence.
 - `ReconcileController` watches capture-id update notifications, so the
   "heard" column re-reads parsed items when the asynchronous parsing wake
   persists them.

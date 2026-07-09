@@ -110,5 +110,18 @@ void main() {
       await pumpCard(tester, item());
       expect(find.textContaining('the slides thing'), findsNothing);
     });
+
+    testWidgets('confidence only surfaces when it is not high', (tester) async {
+      await pumpCard(tester, item());
+      expect(find.text('low confidence'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpCard(tester, item(confidence: ParsedItemConfidence.medium));
+      expect(find.text('low confidence'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpCard(tester, item(confidence: ParsedItemConfidence.low));
+      expect(find.text('low confidence'), findsOneWidget);
+    });
   });
 }
