@@ -690,15 +690,16 @@ flowchart LR
   Actual --> Tracked["tracked block treatment + TimeSpentCard"]
 ```
 
-While the Daily OS tab is active, its desktop sidebar row expands into a
-month calendar (`SidebarMonthCalendar` in the design system, wrapped by
-`DailyOsSidebarCalendar` and mounted through the destination's
-`expandedChildBuilder` — the same slot the Tasks row uses for saved
-filters): today is highlighted teal, days with a persisted plan carry a
-dot (`dailyOsPlanDaysProvider` — one batched `getEntitiesByIds` lookup
-over the month's deterministic `day_agent_plan:<dayId>` ids), and tapping
-a day selects it via `dailyOsNextSelectedDateProvider`, which the already
-visible Daily OS surface reacts to directly.
+While the Daily OS tab is active, its desktop sidebar row expands into
+`DailyOsSidebarSection`: a design-system `SidebarSubsectionSurface` containing
+the month calendar plus the Time Analysis action. The calendar itself is
+`SidebarMonthCalendar` wrapped by `DailyOsSidebarCalendar` and mounted through
+the destination's `expandedChildBuilder` — the same slot the Tasks row uses for
+saved filters. Today is highlighted teal, days with a persisted plan carry a
+dot (`dailyOsPlanDaysProvider` — one batched `getEntitiesByIds` lookup over the
+month's deterministic `day_agent_plan:<dayId>` ids), and tapping a day selects
+it via `dailyOsNextSelectedDateProvider`, which the already visible Daily OS
+surface reacts to directly.
 
 ## Testing Strategy
 

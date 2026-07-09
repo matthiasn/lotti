@@ -3,9 +3,49 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/navigation/sidebar_month_calendar.dart';
+import 'package:lotti/features/design_system/components/navigation/sidebar_subsection.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_sidebar_entry.dart';
 import 'package:lotti/utils/device_region.dart';
+
+@visibleForTesting
+abstract final class DailyOsSidebarSectionKeys {
+  static const Key root = Key('daily-os-sidebar-section');
+  static const Key calendarPadding = Key('daily-os-sidebar-calendar-padding');
+}
+
+/// Active Daily OS sidebar subsection.
+///
+/// Groups the month picker and Time Analysis action into one intentional
+/// surface instead of letting the active destination expand into unrelated
+/// floating controls.
+class DailyOsSidebarSection extends StatelessWidget {
+  const DailyOsSidebarSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return SidebarSubsectionSurface(
+      key: DailyOsSidebarSectionKeys.root,
+      children: [
+        DailyOsSidebarCalendar(
+          key: DailyOsSidebarSectionKeys.calendarPadding,
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step3,
+            tokens.spacing.step3,
+            tokens.spacing.step3,
+            tokens.spacing.step2,
+          ),
+        ),
+        const DesignSystemDivider(),
+        const InsightsSidebarEntry(wrapInSurface: false),
+      ],
+    );
+  }
+}
 
 /// Desktop-sidebar month calendar wired to the Daily OS Next state:
 /// plan-day dots come from [dailyOsPlanDaysProvider]; tapping a day
@@ -15,7 +55,12 @@ import 'package:lotti/utils/device_region.dart';
 /// so it only exists while Daily OS is the active tab — the already
 /// visible Daily OS surface reacts to the selection directly.
 class DailyOsSidebarCalendar extends ConsumerStatefulWidget {
-  const DailyOsSidebarCalendar({super.key});
+  const DailyOsSidebarCalendar({
+    this.padding,
+    super.key,
+  });
+
+  final EdgeInsetsGeometry? padding;
 
   @override
   ConsumerState<DailyOsSidebarCalendar> createState() =>
@@ -65,12 +110,14 @@ class _DailyOsSidebarCalendarState
     // breathing room below the active DailyOS row.
     final tokens = context.designTokens;
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        tokens.spacing.step5,
-        tokens.spacing.step4,
-        tokens.spacing.step5,
-        0,
-      ),
+      padding:
+          widget.padding ??
+          EdgeInsets.fromLTRB(
+            tokens.spacing.step5,
+            tokens.spacing.step4,
+            tokens.spacing.step5,
+            0,
+          ),
       child: SidebarMonthCalendar(
         month: _month,
         today: clock.now(),

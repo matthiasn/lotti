@@ -241,7 +241,7 @@ class _DayCell extends StatelessWidget {
                         : teal,
                     shape: BoxShape.circle,
                   ),
-                  child: SizedBox.square(dimension: tokens.spacing.step1),
+                  child: SizedBox.square(dimension: tokens.spacing.step2),
                 ),
               ),
           ],

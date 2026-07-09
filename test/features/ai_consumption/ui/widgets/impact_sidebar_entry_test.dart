@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
+import 'package:lotti/features/design_system/components/navigation/sidebar_subsection.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -36,6 +37,8 @@ void main() {
     expect(find.text('AI Impact'), findsOneWidget);
     expect(find.byIcon(Icons.eco_outlined), findsOneWidget);
     expect(find.byIcon(Icons.eco_rounded), findsNothing);
+    expect(find.byType(SidebarSubsectionSurface), findsOneWidget);
+    expect(find.byType(SidebarSubsectionAction), findsOneWidget);
   });
 
   testWidgets('switches to the active icon and bold label when the impact '
