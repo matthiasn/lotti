@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -536,14 +538,15 @@ class RealDayAgent implements DayAgentInterface {
       return;
     }
 
-    await Future.any<void>([
-      stream
+    try {
+      await stream
           .where((ids) => ids.any(relevantIds.contains))
-          .first
-          .then((_) {})
-          .catchError((_) {}),
-      Future<void>.delayed(waitFor),
-    ]);
+          .timeout(waitFor)
+          .first;
+    } on Object {
+      // Ignore timeouts and stream errors; the caller will fall back to
+      // polling until the deadline expires.
+    }
   }
 }
 

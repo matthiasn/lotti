@@ -569,6 +569,33 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('restarts only after being deactivated', (tester) async {
+      const interval = Duration(milliseconds: 3200);
+      await pumpTimeline(tester, active: true);
+
+      final messages = tester
+          .element(find.byType(DraftingProgressTimeline))
+          .messages;
+      await tester.pump(interval * 10);
+      expect(
+        find.text(messages.dailyOsNextDraftingProgressSaving),
+        findsOneWidget,
+      );
+
+      await pumpTimeline(tester, active: true);
+      expect(
+        find.text(messages.dailyOsNextDraftingProgressSaving),
+        findsOneWidget,
+      );
+
+      await pumpTimeline(tester, active: false);
+      await pumpTimeline(tester, active: true);
+      expect(
+        find.text(messages.dailyOsNextDraftingProgressQueued),
+        findsOneWidget,
+      );
+    });
   });
 
   group('DraftingStatusTicker', () {

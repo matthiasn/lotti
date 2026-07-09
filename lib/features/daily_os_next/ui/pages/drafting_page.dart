@@ -247,7 +247,7 @@ class _DraftingProgressTimelineState extends State<DraftingProgressTimeline> {
   @override
   void didUpdateWidget(DraftingProgressTimeline oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.active && _timer == null) {
+    if (widget.active && !oldWidget.active) {
       _start();
     } else if (!widget.active) {
       _stop();
@@ -255,13 +255,18 @@ class _DraftingProgressTimelineState extends State<DraftingProgressTimeline> {
   }
 
   void _start() {
+    _activeIndex = 0;
     _timer = Timer.periodic(widget.interval, (_) {
       if (!mounted) return;
       final stageCount = DraftingProgressTimeline.stagesOf(
         context.messages,
       ).length;
+      if (_activeIndex >= stageCount - 1) {
+        _stop();
+        return;
+      }
       setState(() {
-        _activeIndex = (_activeIndex + 1).clamp(0, stageCount - 1);
+        _activeIndex++;
       });
     });
   }

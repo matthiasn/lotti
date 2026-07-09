@@ -49,7 +49,20 @@ class RefineModalContent extends ConsumerStatefulWidget {
 }
 
 class _RefineModalContentState extends ConsumerState<RefineModalContent> {
-  bool _submittedInitialTranscript = false;
+  @override
+  void initState() {
+    super.initState();
+    final transcript = widget.initialTranscript?.trim();
+    if (transcript == null || transcript.isEmpty) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final notifier = ref.read(
+        refineControllerProvider(widget.draft).notifier,
+      );
+      unawaited(notifier.finishWithTranscript(transcript));
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +71,6 @@ class _RefineModalContentState extends ConsumerState<RefineModalContent> {
     final notifier = ref.read(
       refineControllerProvider(widget.draft).notifier,
     );
-    _submitInitialTranscriptOnce(notifier);
     // Only the phase here — the orb zone below watches the meter fields
     // itself so amplitude ticks don't rebuild the plan list.
     final capturePhase = ref.watch(
@@ -131,20 +143,6 @@ class _RefineModalContentState extends ConsumerState<RefineModalContent> {
         ),
       ),
     );
-  }
-
-  void _submitInitialTranscriptOnce(RefineController notifier) {
-    final transcript = widget.initialTranscript?.trim();
-    if (_submittedInitialTranscript ||
-        transcript == null ||
-        transcript.isEmpty) {
-      return;
-    }
-    _submittedInitialTranscript = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      unawaited(notifier.finishWithTranscript(transcript));
-    });
   }
 
   String _caption(BuildContext context, RefinePhase phase) {
