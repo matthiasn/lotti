@@ -8,7 +8,7 @@ void main() {
     final messages = AppLocalizationsEn();
 
     const expectedLabels = <AggregationType, String>{
-      AggregationType.none: 'None',
+      AggregationType.none: 'Raw values',
       AggregationType.dailySum: 'Daily sum',
       AggregationType.dailyMax: 'Daily maximum',
       AggregationType.dailyAvg: 'Daily average',

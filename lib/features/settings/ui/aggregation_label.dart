@@ -6,7 +6,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 /// Settings surfaces (the measurables editor's aggregation picker, the
 /// dashboard charts list) must never leak raw enum identifiers like
 /// `dailySum` into the UI; this maps every aggregation type onto its
-/// l10n label ("Daily sum", "None", ...).
+/// l10n label ("Daily sum", "Raw values", ...).
 String aggregationTypeLabel(
   AppLocalizations messages,
   AggregationType aggregationType,

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -79,7 +78,8 @@ void main() {
 
       // Modal should be open - verify by checking for modal content
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(find.byType(DesignSystemCheckbox), findsWidgets);
+      expect(find.text('First Item'), findsOneWidget);
+      expect(find.text('Second Item'), findsOneWidget);
     });
 
     testWidgets('modal displays search field and items', (tester) async {
@@ -345,20 +345,23 @@ void main() {
 
       expect(
         find.text(
-          'Select measurements, then choose an aggregation for each one.',
+          'Select measurements, then choose how each chart summarizes '
+          'its values.',
         ),
         findsOneWidget,
       );
       await tester.tap(find.text(measurableChocolate.displayName));
       await tester.pumpAndSettle();
+      expect(find.text('1 chart will be added'), findsOneWidget);
 
       await tester.tap(find.text(measurableWater.displayName));
       await tester.pumpAndSettle();
+      expect(find.text('2 charts will be added'), findsOneWidget);
 
       await tester.tap(find.text('Daily maximum').first);
       await tester.pumpAndSettle();
 
-      final addButton = find.widgetWithText(DesignSystemButton, 'Add (2)');
+      final addButton = find.widgetWithText(DesignSystemButton, 'Add 2 charts');
       await tester.ensureVisible(addButton);
       await tester.pumpAndSettle();
       await tester.tap(addButton);
@@ -397,7 +400,7 @@ void main() {
       await tester.tap(waterRow);
       await tester.pumpAndSettle();
       expect(
-        find.widgetWithText(DesignSystemButton, 'Add (1)'),
+        find.widgetWithText(DesignSystemButton, 'Add 1 chart'),
         findsOneWidget,
       );
 
@@ -405,7 +408,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.widgetWithText(DesignSystemButton, 'Add'), findsOneWidget);
-      expect(find.widgetWithText(DesignSystemButton, 'Add (1)'), findsNothing);
+      expect(
+        find.widgetWithText(DesignSystemButton, 'Add 1 chart'),
+        findsNothing,
+      );
     });
 
     testWidgets('cancel closes measurement selector without confirming', (

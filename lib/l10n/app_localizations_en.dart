@@ -1119,7 +1119,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aggregationHourlySum => 'Hourly sum';
 
   @override
-  String get aggregationNone => 'None';
+  String get aggregationNone => 'Raw values';
 
   @override
   String get aiAssistantTitle => 'Generate…';
@@ -4448,7 +4448,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardAddMeasurementButton => 'Measurements';
 
   @override
-  String get dashboardAddMeasurementTitle => 'Measurement Charts';
+  String get dashboardAddMeasurementTitle => 'Add Measurement Charts';
 
   @override
   String get dashboardAddMeasurementTooltip => 'Add measurement';
@@ -4545,8 +4545,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardHealthSystolic => 'Systolic';
 
   @override
+  String dashboardMeasurementAddButtonWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Add $count charts',
+      one: 'Add 1 chart',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dashboardMeasurementAggregationFor(String name) {
+    return 'Summarize $name by';
+  }
+
+  @override
   String get dashboardMeasurementAggregationHelp =>
-      'Select measurements, then choose an aggregation for each one.';
+      'Select measurements, then choose how each chart summarizes its values.';
+
+  @override
+  String dashboardMeasurementSelectedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count charts will be added',
+      one: '1 chart will be added',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dashboardNameLabel => 'Dashboard name';
@@ -9734,9 +9761,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get dashboardAddMeasurementButton => 'Measurement Charts';
-
-  @override
-  String get dashboardAddMeasurementTitle => 'Measurement Charts';
 
   @override
   String get dashboardAddSurveyButton => 'Survey Charts';

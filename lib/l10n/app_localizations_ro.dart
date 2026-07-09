@@ -1139,7 +1139,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aggregationHourlySum => 'Sumă orară';
 
   @override
-  String get aggregationNone => 'Niciuna';
+  String get aggregationNone => 'Valori brute';
 
   @override
   String get aiAssistantTitle => 'Generează…';
@@ -4544,7 +4544,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardAddMeasurementButton => 'Măsurători';
 
   @override
-  String get dashboardAddMeasurementTitle => 'Bord de măsurători';
+  String get dashboardAddMeasurementTitle => 'Adăugați diagrame de măsurători';
 
   @override
   String get dashboardAddMeasurementTooltip => 'Adăugați o măsurătoare';
@@ -4642,8 +4642,37 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardHealthSystolic => 'Sistolică';
 
   @override
+  String dashboardMeasurementAddButtonWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Adăugați $count de diagrame',
+      few: 'Adăugați $count diagrame',
+      one: 'Adăugați 1 diagramă',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dashboardMeasurementAggregationFor(String name) {
+    return 'Rezumați $name după';
+  }
+
+  @override
   String get dashboardMeasurementAggregationHelp =>
-      'Selectați măsurătorile, apoi alegeți o agregare pentru fiecare.';
+      'Selectați măsurători și alegeți cum rezumă fiecare diagramă valorile sale.';
+
+  @override
+  String dashboardMeasurementSelectedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de diagrame vor fi adăugate',
+      few: '$count diagrame vor fi adăugate',
+      one: '1 diagramă va fi adăugată',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dashboardNameLabel => 'Numele tabloului de bord';
