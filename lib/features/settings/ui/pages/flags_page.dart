@@ -115,6 +115,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableSyncedAlertsFlag,
     enableWhatsNewFlag,
     enableOnboardingFtueFlag,
+    dailyOsOnboardingEnabledFlag,
     showSyncActivityIndicatorFlag,
     showSidebarWakeQueueFlag,
     enableForkHealingFlag,
@@ -183,6 +184,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.new_releases_outlined;
       case enableOnboardingFtueFlag:
         return Icons.auto_awesome_motion_rounded;
+      case dailyOsOnboardingEnabledFlag:
+        return Icons.tips_and_updates_outlined;
       case showSyncActivityIndicatorFlag:
         return Icons.network_check_rounded;
       case showSidebarWakeQueueFlag:
@@ -242,6 +245,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableWhatsNewDescription;
       case enableOnboardingFtueFlag:
         return context.messages.configFlagEnableOnboardingFtueDescription;
+      case dailyOsOnboardingEnabledFlag:
+        return context.messages.configFlagDailyOsOnboardingEnabledDescription;
       case showSyncActivityIndicatorFlag:
         return context.messages.configFlagShowSyncActivityIndicatorDescription;
       case showSidebarWakeQueueFlag:
@@ -299,6 +304,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableWhatsNew;
       case enableOnboardingFtueFlag:
         return context.messages.configFlagEnableOnboardingFtue;
+      case dailyOsOnboardingEnabledFlag:
+        return context.messages.configFlagDailyOsOnboardingEnabled;
       case showSyncActivityIndicatorFlag:
         return context.messages.configFlagShowSyncActivityIndicator;
       case showSidebarWakeQueueFlag:

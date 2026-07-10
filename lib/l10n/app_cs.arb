@@ -1160,6 +1160,8 @@
   "completeHabitSkipButton": "Přeskočit",
   "completeHabitSuccessButton": "Úspěch",
   "configFlagAttemptEmbeddingDescription": "Pokud je povoleno, aplikace se pokusí generovat vektory pro vaše položky, aby zlepšila vyhledávání a návrhy souvisejícího obsahu.",
+  "configFlagDailyOsOnboardingEnabled": "Průvodce Daily OS",
+  "configFlagDailyOsOnboardingEnabledDescription": "Proveď nové uživatele Daily OS skutečným check-inem, který promění řeč v úkol a plán dne. Vyžaduje stránku DailyOS.",
   "configFlagEnableAiStreaming": "Povolit AI streamování pro akce úkolů",
   "configFlagEnableAiStreamingDescription": "Streamujte AI odpovědi pro akce související s úkoly. Vypněte, pokud chcete odpovědi bufferovat a udržet plynulejší rozhraní.",
   "configFlagEnableAiSummaryTts": "Přehrávání AI souhrnů",

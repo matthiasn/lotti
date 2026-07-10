@@ -6255,6 +6255,46 @@ void main() {
     });
   });
 
+  // ── countEntitiesByAgentAndType (facade delegation) ───────────────────────
+
+  group('countEntitiesByAgentAndType', () {
+    const plannerAgentId = 'daily_os_planner';
+
+    test('delegates and counts active + soft-deleted rows for the '
+        'agent/type', () async {
+      await repo.upsertEntity(
+        makeTestDayPlan(
+          id: 'day_agent_plan:active',
+          agentId: plannerAgentId,
+          dayId: 'active',
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestDayPlan(
+          id: 'day_agent_plan:tombstone',
+          agentId: plannerAgentId,
+          dayId: 'tombstone',
+        ).copyWith(deletedAt: DateTime(2026, 3, 16)),
+      );
+
+      final count = await repo.countEntitiesByAgentAndType(
+        agentId: plannerAgentId,
+        type: AgentEntityTypes.dayPlan,
+      );
+
+      expect(count, 2);
+    });
+
+    test('returns 0 when the agent has no rows of the type', () async {
+      final count = await repo.countEntitiesByAgentAndType(
+        agentId: plannerAgentId,
+        type: AgentEntityTypes.dayPlan,
+      );
+
+      expect(count, 0);
+    });
+  });
+
   // ── getEvolutionSessionRecaps / getEvolutionSessionRecap ──────────────────
 
   group('getEvolutionSessionRecaps', () {

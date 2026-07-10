@@ -2986,6 +2986,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use the new onboarding flow for first-run AI setup instead of the provider picker.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Daily OS walkthrough';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan. Requires the next-gen agentic DailyOS.';
+
+  @override
   String get configFlagEnableProjects => 'Enable Projects';
 
   @override

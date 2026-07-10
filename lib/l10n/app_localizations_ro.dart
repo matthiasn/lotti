@@ -3048,6 +3048,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Folosiți noul flux de onboarding pentru configurarea inițială AI în loc de selectorul de furnizor.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Ghid Daily OS';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Ghidați utilizatorii noi Daily OS printr-un check-in real care transformă vocea într-o sarcină și un plan de zi. Necesită noul DailyOS agentic.';
+
+  @override
   String get configFlagEnableProjects => 'Activează proiectele';
 
   @override

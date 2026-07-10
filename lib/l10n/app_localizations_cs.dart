@@ -3030,6 +3030,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Použij nový onboarding pro první nastavení AI místo výběru poskytovatele.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Průvodce Daily OS';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Proveď nové uživatele Daily OS skutečným check-inem, který promění řeč v úkol a plán dne. Vyžaduje nové agentní DailyOS.';
+
+  @override
   String get configFlagEnableProjects => 'Povolit projekty';
 
   @override

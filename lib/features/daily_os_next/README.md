@@ -731,6 +731,40 @@ month's deterministic `day_agent_plan:<dayId>` ids), and tapping a day selects
 it via `dailyOsNextSelectedDateProvider`, which the already visible Daily OS
 surface reacts to directly.
 
+## Onboarding walkthrough — Phase 0 substrate
+
+A first-time Daily OS user lands on a real but unexplained empty `DayPage`
+(`hasPlan: false`, one "Speak a check-in" CTA). The onboarding walkthrough
+teaches that real `DayPlanningCreate` ritual in place; the full design lives in
+[`docs/implementation_plans/2026-07-09_daily_os_onboarding.md`](../../../docs/implementation_plans/2026-07-09_daily_os_onboarding.md).
+
+> **Status.** Only the **Phase 0 substrate** below is implemented — the
+> eligibility gate, cadence bookkeeping, plan-existence query, and metrics
+> vocabulary. There is **no walkthrough UI yet**, and the whole thing is inert:
+> it is gated behind the off-by-default `dailyOsOnboardingEnabledFlag`, and
+> `dailyOsOnboardingProviderReadyProvider` (the seam for the real planning-flow
+> readiness signal) defaults to `false` until a later phase wires it, so
+> `shouldAutoShowDailyOsOnboardingProvider` never resolves `true` in a shipped
+> build. This section documents what exists in code today.
+
+| Piece | File | Role |
+|---|---|---|
+| `isDailyOsOnboardingEligible` | `state/daily_os_onboarding_trigger_service.dart` | Pure candidate-eligibility predicate over already-resolved inputs — fully unit-testable across every branch. |
+| `shouldAutoShowDailyOsOnboardingProvider` | same | Read-only async check that resolves the predicate's inputs (both flags, selected-date-is-today, today's/ever plan existence, readiness seam, cadence bookkeeping). |
+| `DailyOsOnboardingCadence` | same | Mutation side: `recordShown()` / `markCompleted()`, persisted under a private `daily_os_onboarding_` `SettingsDb` key prefix (four shows within fourteen days), mirroring the general FTUE cadence. |
+| `AgentRepository.countEntitiesByAgentAndType` | `features/agents/database/agent_repo_evolution.dart` | The "has a plan ever existed for `daily_os_planner`" query. Deliberately **includes soft-deleted tombstones** (unlike `getEntitiesByIds`), so a returning user who deleted their only plan is not mistaken for a new user. |
+| Daily OS event vocabulary + `DailyOsOnboardingFunnelState` | `features/onboarding/model/onboarding_event.dart` | Six `dailyOs*` events reuse the shared `OnboardingMetricsDb`, but the two funnel derivations are **partitioned by vocabulary** so Daily OS events never shift the general FTUE active-day or activation metrics. |
+
+Eligibility (all must hold): both `dailyOsOnboardingEnabledFlag` and
+`enableDailyOsPageFlag` on; the selected date is local today; today has no
+active plan (so the real CTA exists); no plan has ever existed for the planner
+(soft-deleted included); the planning flow reports a usable provider/profile;
+the walkthrough is not completed; it has shown fewer than four times; and it is
+still within fourteen days of the first show. The predicate establishes
+*candidate* eligibility only — a later phase's app-level coordinator grants the
+actual auto-show slot so Daily OS onboarding never races What's New or the
+general FTUE.
+
 ## Testing Strategy
 
 Pure day-plan and day-agent logic should use Glados property tests whenever an

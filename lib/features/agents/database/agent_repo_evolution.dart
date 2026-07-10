@@ -174,6 +174,20 @@ class AgentRepoEvolution {
     return _db.countAgentEntitiesInInterval(start, end).getSingle();
   }
 
+  /// Counts agent entities of [type] owned by [agentId], including
+  /// soft-deleted ones.
+  ///
+  /// Used by eligibility gates that must know whether an agent has EVER
+  /// produced an entity of a given type, not merely whether one currently
+  /// exists (e.g. the Daily OS onboarding walkthrough must not re-offer
+  /// itself to a user whose only day plan was later deleted).
+  Future<int> countEntitiesByAgentAndType({
+    required String agentId,
+    required String type,
+  }) {
+    return _db.countAgentEntitiesByAgentAndType(agentId, type).getSingle();
+  }
+
   // ── Evolution queries ──────────────────────────────────────────────────────
 
   /// Fetch the N most recent reports from all instances assigned to

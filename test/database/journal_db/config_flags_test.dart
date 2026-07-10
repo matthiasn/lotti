@@ -87,6 +87,7 @@ void main() {
         enableVectorSearchFlag: false,
         enableWhatsNewFlag: false,
         enableOnboardingFtueFlag: false,
+        dailyOsOnboardingEnabledFlag: false,
         showSyncActivityIndicatorFlag: false,
         showSidebarWakeQueueFlag: false,
       };
