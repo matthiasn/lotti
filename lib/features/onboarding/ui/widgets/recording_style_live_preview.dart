@@ -104,6 +104,8 @@ class _RecordingStyleLivePreviewState
     // Finish any in-flight transition before stopping the recorder, then
     // delete its throwaway file only after the recorder releases it.
     _disposing = true;
+    unawaited(_ampSub?.cancel());
+    _ampSub = null;
     unawaited(_shutdownLive());
     _sim.dispose();
     super.dispose();
