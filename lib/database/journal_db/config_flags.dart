@@ -205,6 +205,17 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: dailyOsOnboardingEnabledFlag,
+      // Off by default: the Daily OS onboarding walkthrough is still being
+      // built. It also requires `enableDailyOsPageFlag` at runtime -- there
+      // is no point coaching a surface the user can't reach.
+      description: 'Enable the Daily OS onboarding walkthrough?',
+      status: false,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: showSyncActivityIndicatorFlag,
       description: 'Show live sync activity in the sidebar.',
       status: false,

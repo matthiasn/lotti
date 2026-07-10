@@ -3039,6 +3039,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Utilise le nouveau parcours d\'accueil pour la configuration initiale de l\'IA au lieu du sélecteur de fournisseur.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Découverte de Daily OS';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Accompagne les nouveaux utilisateurs de Daily OS dans un vrai check-in qui transforme ta voix en tâche et en plan de journée. Nécessite le nouveau DailyOS agentique.';
+
+  @override
   String get configFlagEnableProjects => 'Activer les projets';
 
   @override

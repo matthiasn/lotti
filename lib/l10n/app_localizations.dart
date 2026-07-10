@@ -5161,6 +5161,18 @@ abstract class AppLocalizations {
   /// **'Use the new onboarding flow for first-run AI setup instead of the provider picker.'**
   String get configFlagEnableOnboardingFtueDescription;
 
+  /// No description provided for @configFlagDailyOsOnboardingEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS walkthrough'**
+  String get configFlagDailyOsOnboardingEnabled;
+
+  /// No description provided for @configFlagDailyOsOnboardingEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan. Requires the next-gen agentic DailyOS.'**
+  String get configFlagDailyOsOnboardingEnabledDescription;
+
   /// No description provided for @configFlagEnableProjects.
   ///
   /// In en, this message translates to:

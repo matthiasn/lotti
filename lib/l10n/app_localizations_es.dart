@@ -3033,6 +3033,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Usa el nuevo flujo de onboarding para la configuración inicial de IA en vez del selector de proveedor.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Guía de Daily OS';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Guía a los nuevos usuarios de Daily OS por un check-in real que convierte tu voz en una tarea y un plan del día. Requiere el nuevo DailyOS agéntico.';
+
+  @override
   String get configFlagEnableProjects => 'Activar proyectos';
 
   @override

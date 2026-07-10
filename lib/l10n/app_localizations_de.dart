@@ -3018,6 +3018,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nutze den neuen Onboarding-Ablauf für die erste KI-Einrichtung statt der Anbieterauswahl.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Daily-OS-Einführung';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Führe neue Daily-OS-Nutzer durch ein echtes Check-in, das Sprache in eine Aufgabe und einen Tagesplan verwandelt. Erfordert das neue agentische DailyOS.';
+
+  @override
   String get configFlagEnableProjects => 'Projekte aktivieren';
 
   @override

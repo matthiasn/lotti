@@ -343,6 +343,11 @@ class AgentRepository {
     required DateTime end,
   }) => _evolution.countEntitiesInInterval(start: start, end: end);
 
+  Future<int> countEntitiesByAgentAndType({
+    required String agentId,
+    required String type,
+  }) => _evolution.countEntitiesByAgentAndType(agentId: agentId, type: type);
+
   Future<List<AgentReportEntity>> getRecentReportsByTemplate(
     String templateId, {
     int limit = 10,

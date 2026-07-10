@@ -20,7 +20,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-const _displayedFlagCount = 15;
+const _displayedFlagCount = 16;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -98,6 +98,11 @@ void main() {
           const ConfigFlag(
             name: enableOnboardingFtueFlag,
             description: 'Enable the new onboarding (FTUE) flow?',
+            status: false,
+          ),
+          const ConfigFlag(
+            name: dailyOsOnboardingEnabledFlag,
+            description: 'Enable the Daily OS onboarding walkthrough?',
             status: false,
           ),
           const ConfigFlag(
@@ -399,6 +404,17 @@ void main() {
             expectedToggle: const ConfigFlag(
               name: enableOnboardingFtueFlag,
               description: 'Enable the new onboarding (FTUE) flow?',
+              status: true,
+            ),
+          ),
+          (
+            name: 'daily-os-onboarding',
+            title: (m) => m.configFlagDailyOsOnboardingEnabled,
+            description: (m) => m.configFlagDailyOsOnboardingEnabledDescription,
+            icon: Icons.tips_and_updates_outlined,
+            expectedToggle: const ConfigFlag(
+              name: dailyOsOnboardingEnabledFlag,
+              description: 'Enable the Daily OS onboarding walkthrough?',
               status: true,
             ),
           ),

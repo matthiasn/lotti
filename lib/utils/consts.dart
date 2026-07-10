@@ -24,6 +24,7 @@ const enableSyncedAlertsFlag = 'enable_synced_alerts';
 
 const enableWhatsNewFlag = 'enable_whats_new';
 const enableOnboardingFtueFlag = 'enable_onboarding_ftue';
+const dailyOsOnboardingEnabledFlag = 'daily_os_onboarding_enabled';
 const showSyncActivityIndicatorFlag = 'show_sync_activity_indicator';
 const showSidebarWakeQueueFlag = 'show_sidebar_wake_queue';
 const enableForkHealingFlag = 'enable_fork_healing';
