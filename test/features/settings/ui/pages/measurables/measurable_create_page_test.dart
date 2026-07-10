@@ -73,7 +73,7 @@ void main() {
 
         // An unset aggregation type renders the localized hint, never a
         // raw enum identifier.
-        expect(find.text('None'), findsOneWidget);
+        expect(find.text('Raw values'), findsOneWidget);
 
         final createFinder = find.widgetWithText(DsGlassPill, 'Create');
         expect(tester.widget<DsGlassPill>(createFinder).enabled, isFalse);

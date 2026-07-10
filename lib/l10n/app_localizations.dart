@@ -2044,7 +2044,7 @@ abstract class AppLocalizations {
   /// No description provided for @aggregationNone.
   ///
   /// In en, this message translates to:
-  /// **'None'**
+  /// **'Raw values'**
   String get aggregationNone;
 
   /// No description provided for @aiAssistantTitle.
@@ -7629,7 +7629,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardAddMeasurementTitle.
   ///
   /// In en, this message translates to:
-  /// **'Measurement Charts'**
+  /// **'Add Measurement Charts'**
   String get dashboardAddMeasurementTitle;
 
   /// No description provided for @dashboardAddMeasurementTooltip.
@@ -7812,11 +7812,29 @@ abstract class AppLocalizations {
   /// **'Systolic'**
   String get dashboardHealthSystolic;
 
+  /// No description provided for @dashboardMeasurementAddButtonWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Add 1 chart} other{Add {count} charts}}'**
+  String dashboardMeasurementAddButtonWithCount(int count);
+
+  /// No description provided for @dashboardMeasurementAggregationFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize {name} by'**
+  String dashboardMeasurementAggregationFor(String name);
+
   /// No description provided for @dashboardMeasurementAggregationHelp.
   ///
   /// In en, this message translates to:
-  /// **'Select measurements, then choose an aggregation for each one.'**
+  /// **'Select measurements, then choose how each chart summarizes its values.'**
   String get dashboardMeasurementAggregationHelp;
+
+  /// No description provided for @dashboardMeasurementSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 chart will be added} other{{count} charts will be added}}'**
+  String dashboardMeasurementSelectedCount(int count);
 
   /// No description provided for @dashboardNameLabel.
   ///

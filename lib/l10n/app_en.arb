@@ -692,7 +692,7 @@
   "aggregationDailyMax": "Daily maximum",
   "aggregationDailySum": "Daily sum",
   "aggregationHourlySum": "Hourly sum",
-  "aggregationNone": "None",
+  "aggregationNone": "Raw values",
   "aiAssistantTitle": "Generate…",
   "aiBatchToggleTooltip": "Switch to standard recording",
   "aiCapabilityChipImageGeneration": "Image generation",
@@ -2423,7 +2423,7 @@
   "dashboardAddHealthButton": "Health",
   "dashboardAddHealthTitle": "Health Charts",
   "dashboardAddMeasurementButton": "Measurements",
-  "dashboardAddMeasurementTitle": "Measurement Charts",
+  "dashboardAddMeasurementTitle": "Add Measurement Charts",
   "dashboardAddMeasurementTooltip": "Add measurement",
   "dashboardAddSurveyButton": "Surveys",
   "dashboardAddSurveyTitle": "Survey Charts",
@@ -2454,7 +2454,31 @@
   "dashboardHealthBloodPressure": "Blood Pressure",
   "dashboardHealthDiastolic": "Diastolic",
   "dashboardHealthSystolic": "Systolic",
-  "dashboardMeasurementAggregationHelp": "Select measurements, then choose an aggregation for each one.",
+  "dashboardMeasurementAddButtonWithCount": "{count, plural, =1{Add 1 chart} other{Add {count} charts}}",
+  "@dashboardMeasurementAddButtonWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardMeasurementAggregationFor": "Summarize {name} by",
+  "@dashboardMeasurementAggregationFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardMeasurementAggregationHelp": "Select measurements, then choose how each chart summarizes its values.",
+  "dashboardMeasurementSelectedCount": "{count, plural, =1{1 chart will be added} other{{count} charts will be added}}",
+  "@dashboardMeasurementSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dashboardNameLabel": "Dashboard name",
   "dashboardNoChartsAdded": "No charts added yet. Add one below.",
   "dashboardNoHabitsForCharts": "Create a habit first to add habit charts.",

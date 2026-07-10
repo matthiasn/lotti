@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -336,12 +335,23 @@ class _MeasurementSelectListState extends State<_MeasurementSelectList> {
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),
-        SizedBox(height: spacing.step4),
+        if (_selected.isNotEmpty) ...[
+          SizedBox(height: spacing.step2),
+          Text(
+            context.messages.dashboardMeasurementSelectedCount(
+              _selected.length,
+            ),
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.interactive.enabled,
+            ),
+          ),
+        ],
+        SizedBox(height: spacing.step3),
         DesignSystemSearch(
           hintText: context.messages.searchHint,
           onChanged: (value) => setState(() => _searchQuery = value),
         ),
-        SizedBox(height: spacing.step4),
+        SizedBox(height: spacing.step3),
         ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxListHeight),
           child: _filteredItems.isEmpty
@@ -390,6 +400,11 @@ class _MeasurementSelectListState extends State<_MeasurementSelectList> {
         _ModalActionRow(
           selectedCount: _selected.length,
           onConfirm: _selected.isEmpty ? null : _confirm,
+          addButtonLabel: _selected.isEmpty
+              ? null
+              : context.messages.dashboardMeasurementAddButtonWithCount(
+                  _selected.length,
+                ),
         ),
       ],
     );
@@ -434,21 +449,22 @@ class _MeasurementSelectRow extends StatelessWidget {
       child: selected
           ? Padding(
               padding: EdgeInsetsDirectional.only(
-                start: spacing.step8,
-                top: spacing.step2,
-                end: spacing.step2,
-                bottom: spacing.step2,
+                top: spacing.step3,
+                end: spacing.step3,
+                bottom: spacing.step3,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    context.messages.dashboardAggregationTitle,
+                    context.messages.dashboardMeasurementAggregationFor(
+                      item.displayName,
+                    ),
                     style: tokens.typography.styles.others.caption.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),
                   ),
-                  SizedBox(height: spacing.step2),
+                  SizedBox(height: spacing.step3),
                   Wrap(
                     spacing: spacing.step2,
                     runSpacing: spacing.step2,
@@ -490,6 +506,7 @@ class _PickerSelectRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
+    final trailingContent = child;
 
     return Material(
       color: Colors.transparent,
@@ -498,47 +515,92 @@ class _PickerSelectRow extends StatelessWidget {
           color: selected
               ? tokens.colors.background.level02
               : tokens.colors.background.level01,
+          border: selected
+              ? BorderDirectional(
+                  start: BorderSide(
+                    color: tokens.colors.interactive.enabled,
+                    width: spacing.step1,
+                  ),
+                )
+              : null,
         ),
         child: InkWell(
           onTap: () => onChanged(!selected),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: spacing.step4,
-              vertical: spacing.step3,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DesignSystemCheckbox(
-                      value: selected,
-                      semanticsLabel: label,
-                      onChanged: (checked) => onChanged(checked ?? false),
-                    ),
-                    SizedBox(width: spacing.step2),
-                    Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(top: spacing.step1),
-                        child: Text(
-                          label,
-                          style: tokens.typography.styles.body.bodyMedium
-                              .copyWith(
-                                color: tokens.colors.text.highEmphasis,
-                              ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+          child: Semantics(
+            button: true,
+            explicitChildNodes: true,
+            selected: selected,
+            label: label,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: spacing.step4,
+                vertical: spacing.step3,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ExcludeSemantics(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            label,
+                            style: tokens.typography.styles.body.bodyMedium
+                                .copyWith(
+                                  color: tokens.colors.text.highEmphasis,
+                                ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
+                        SizedBox(width: spacing.step3),
+                        _PickerSelectionIndicator(selected: selected),
+                      ],
                     ),
-                  ],
-                ),
-                ?child,
-              ],
+                  ),
+                  ?trailingContent,
+                ],
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PickerSelectionIndicator extends StatelessWidget {
+  const _PickerSelectionIndicator({required this.selected});
+
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final size = spacing.step5;
+
+    return SizedBox.square(
+      dimension: size,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: selected
+              ? tokens.colors.interactive.enabled
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          border: Border.all(
+            color: selected
+                ? tokens.colors.interactive.enabled
+                : tokens.colors.decorative.level01,
+          ),
+        ),
+        child: selected
+            ? Icon(
+                Icons.check_rounded,
+                color: tokens.colors.text.onInteractiveAlert,
+                size: spacing.step4,
+              )
+            : null,
       ),
     );
   }
@@ -571,10 +633,12 @@ class _ModalActionRow extends StatelessWidget {
   const _ModalActionRow({
     required this.selectedCount,
     required this.onConfirm,
+    this.addButtonLabel,
   });
 
   final int selectedCount;
   final VoidCallback? onConfirm;
+  final String? addButtonLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -590,9 +654,13 @@ class _ModalActionRow extends StatelessWidget {
         ),
         SizedBox(width: spacing.step3),
         DesignSystemButton(
-          label: selectedCount == 0
-              ? context.messages.multiSelectAddButton
-              : context.messages.multiSelectAddButtonWithCount(selectedCount),
+          label:
+              addButtonLabel ??
+              (selectedCount == 0
+                  ? context.messages.multiSelectAddButton
+                  : context.messages.multiSelectAddButtonWithCount(
+                      selectedCount,
+                    )),
           onPressed: onConfirm,
         ),
       ],

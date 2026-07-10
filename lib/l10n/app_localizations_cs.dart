@@ -1129,7 +1129,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aggregationHourlySum => 'Hodinový součet';
 
   @override
-  String get aggregationNone => 'Žádná';
+  String get aggregationNone => 'Surové hodnoty';
 
   @override
   String get aiAssistantTitle => 'Generovat…';
@@ -4508,7 +4508,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardAddMeasurementButton => 'Měření';
 
   @override
-  String get dashboardAddMeasurementTitle => 'Měřicí grafy';
+  String get dashboardAddMeasurementTitle => 'Přidat grafy měření';
 
   @override
   String get dashboardAddMeasurementTooltip => 'Přidat měření';
@@ -4606,8 +4606,37 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardHealthSystolic => 'Systolický';
 
   @override
+  String dashboardMeasurementAddButtonWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Přidat $count grafů',
+      few: 'Přidat $count grafy',
+      one: 'Přidat 1 graf',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dashboardMeasurementAggregationFor(String name) {
+    return 'Shrnout $name jako';
+  }
+
+  @override
   String get dashboardMeasurementAggregationHelp =>
-      'Vyber měření a pak pro každé zvol agregaci.';
+      'Vyber měření a zvol, jak má každý graf shrnout své hodnoty.';
+
+  @override
+  String dashboardMeasurementSelectedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bude přidáno $count grafů',
+      few: 'Budou přidány $count grafy',
+      one: 'Bude přidán 1 graf',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dashboardNameLabel => 'Název dashboardu';

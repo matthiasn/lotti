@@ -7,7 +7,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
@@ -728,7 +727,7 @@ void main() {
 
         final addButtonFinder = find.widgetWithText(
           DesignSystemButton,
-          'Add (1)',
+          'Add 1 chart',
         );
         expect(addButtonFinder, findsOneWidget);
         await tester.tap(addButtonFinder);
@@ -773,8 +772,7 @@ void main() {
         await _openChartSelect<DashboardSurveyItem>(tester);
 
         // Pick the first survey item in the modal.
-        final firstSurveyItem = find.byType(DesignSystemCheckbox).first;
-        await tester.tap(firstSurveyItem);
+        await tester.tap(find.text('PANAS'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

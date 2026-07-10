@@ -59,7 +59,7 @@ void main() {
       );
 
       const localizedLabels = {
-        AggregationType.none: 'None',
+        AggregationType.none: 'Raw values',
         AggregationType.dailySum: 'Daily sum',
         AggregationType.dailyMax: 'Daily maximum',
         AggregationType.dailyAvg: 'Daily average',

@@ -1140,7 +1140,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aggregationHourlySum => 'Somme horaire';
 
   @override
-  String get aggregationNone => 'Aucune';
+  String get aggregationNone => 'Valeurs brutes';
 
   @override
   String get aiAssistantTitle => 'Générer…';
@@ -4541,7 +4541,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardAddMeasurementButton => 'Mesures';
 
   @override
-  String get dashboardAddMeasurementTitle => 'Graphiques de mesures';
+  String get dashboardAddMeasurementTitle => 'Ajouter des graphiques de mesure';
 
   @override
   String get dashboardAddMeasurementTooltip => 'Ajouter une mesure';
@@ -4640,8 +4640,35 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardHealthSystolic => 'Systolique';
 
   @override
+  String dashboardMeasurementAddButtonWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ajouter $count graphiques',
+      one: 'Ajouter 1 graphique',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dashboardMeasurementAggregationFor(String name) {
+    return 'Résumer $name par';
+  }
+
+  @override
   String get dashboardMeasurementAggregationHelp =>
-      'Sélectionne des mesures, puis choisis une agrégation pour chacune.';
+      'Sélectionne des mesures, puis choisis comment chaque graphique résume ses valeurs.';
+
+  @override
+  String dashboardMeasurementSelectedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count graphiques seront ajoutés',
+      one: '1 graphique sera ajouté',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dashboardNameLabel => 'Nom du tableau de bord';
