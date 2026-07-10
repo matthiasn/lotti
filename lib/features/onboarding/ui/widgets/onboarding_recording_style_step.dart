@@ -27,6 +27,7 @@ class _OnboardingRecordingStyleStepState
     extends ConsumerState<OnboardingRecordingStyleStep> {
   late final ColorScheme _darkScheme = DesignSystemTheme.dark().colorScheme;
   RecordingStyle _selected = RecordingStyle.modern;
+  bool _selectionEdited = false;
 
   @override
   void initState() {
@@ -49,7 +50,7 @@ class _OnboardingRecordingStyleStepState
       final resolved = next.asData?.value;
       final wasUnresolved =
           previous == null || previous is AsyncLoading<RecordingStyle>;
-      if (resolved != null && wasUnresolved) {
+      if (resolved != null && wasUnresolved && !_selectionEdited) {
         setState(() => _selected = resolved);
       }
     });
@@ -66,7 +67,12 @@ class _OnboardingRecordingStyleStepState
           tryWithVoiceLabel: messages.onboardingRecordingStyleTryVoice,
           continueLabel: messages.onboardingRecordingStyleContinue,
           selected: _selected,
-          onSelect: (style) => setState(() => _selected = style),
+          onSelect: (style) {
+            setState(() {
+              _selectionEdited = true;
+              _selected = style;
+            });
+          },
           tryingWithVoice: state.tryingWithVoice,
           onToggleTryWithVoice: state.onToggleTryWithVoice,
           onContinue: () async {

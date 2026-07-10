@@ -136,16 +136,16 @@ void main() {
     final repo = MockAudioRecorderRepository();
     final amps = StreamController<Amplitude>.broadcast();
     addTearDown(amps.close);
-    when(repo.startRecording).thenAnswer(
-      (_) async => AudioNote(
-        createdAt: DateTime(2024, 3, 15),
-        audioFile: 'tryout.m4a',
-        audioDirectory: '/audio/2024-03-15/',
-        duration: Duration.zero,
-      ),
+    final note = AudioNote(
+      createdAt: DateTime(2024, 3, 15),
+      audioFile: 'tryout.m4a',
+      audioDirectory: '/audio/2024-03-15/',
+      duration: Duration.zero,
     );
+    when(repo.startRecording).thenAnswer((_) async => note);
     when(() => repo.amplitudeStream).thenAnswer((_) => amps.stream);
     when(repo.stopRecording).thenAnswer((_) async {});
+    when(() => repo.deleteRecording(note)).thenAnswer((_) async {});
 
     await pumpPage(tester, repo: repo);
 

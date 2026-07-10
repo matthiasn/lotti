@@ -262,7 +262,24 @@ onboarding so Settings can reuse them pixel-for-pixel:
   looping **simulated** signal by default (gated off under reduced motion), or
   the **live mic** when "Try with your voice" is on — recorded to a throwaway
   file via `AudioRecorderRepository` (levels only, never transcribed/saved;
-  deleted on stop), falling back to the simulation if the mic can't start.
+  deleted after the recorder stops), falling back to the simulation if the mic
+  can't start. Toggle changes are reconciled serially, so rapid input never
+  overlaps recorder starts/stops or lets a stale transition claim the current
+  preview.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Simulated
+    Simulated --> Starting: Try with your voice on
+    Starting --> Live: start succeeds and mic still desired
+    Starting --> Stopping: start succeeds after toggle off or disposal
+    Starting --> Simulated: start fails
+    Live --> Stopping: toggle off or surface disposed
+    Stopping --> Simulated: stop and delete complete
+    Stopping --> Starting: toggle returns on after cleanup
+    Stopping --> [*]: disposed after cleanup
+```
+
 - **`RecordingStylePicker`** (`ui/widgets/recording_style_picker.dart`) renders
   the two themed pairs off the level `RecordingStyleLivePreview` hands it:
   **Modern** (the `AiVoiceInputShader` orb + a brand-tinted `LiveWaveform`) and

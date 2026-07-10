@@ -1,12 +1,9 @@
 import 'dart:async';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/onboarding/ui/widgets/recording_style_live_preview.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
-import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' show Amplitude;
 
@@ -27,9 +24,11 @@ void _stubLiveRecording(
   MockAudioRecorderRepository repo,
   StreamController<Amplitude> amps,
 ) {
-  when(repo.startRecording).thenAnswer((_) async => _throwawayNote());
+  final note = _throwawayNote();
+  when(repo.startRecording).thenAnswer((_) async => note);
   when(() => repo.amplitudeStream).thenAnswer((_) => amps.stream);
   when(repo.stopRecording).thenAnswer((_) async {});
+  when(() => repo.deleteRecording(note)).thenAnswer((_) async {});
 }
 
 void main() {
@@ -158,6 +157,9 @@ void main() {
       final startCompleter = Completer<AudioNote?>();
       when(repo.startRecording).thenAnswer((_) => startCompleter.future);
       when(repo.stopRecording).thenAnswer((_) async {});
+      when(
+        () => repo.deleteRecording(_throwawayNote()),
+      ).thenAnswer((_) async {});
 
       final states = <RecordingStyleLivePreviewState>[];
       await pumpPreview(tester, states: states, repo: repo);
@@ -173,6 +175,42 @@ void main() {
 
       verify(repo.stopRecording).called(1);
       expect(states.last.tryingWithVoice, isFalse);
+    },
+  );
+
+  testWidgets(
+    'on-off-on while startup is pending keeps a single recorder transition',
+    (tester) async {
+      final repo = MockAudioRecorderRepository();
+      final amps = StreamController<Amplitude>.broadcast();
+      addTearDown(amps.close);
+      final startCompleter = Completer<AudioNote?>();
+      final note = _throwawayNote();
+      when(repo.startRecording).thenAnswer((_) => startCompleter.future);
+      when(() => repo.amplitudeStream).thenAnswer((_) => amps.stream);
+      when(repo.stopRecording).thenAnswer((_) async {});
+      when(() => repo.deleteRecording(note)).thenAnswer((_) async {});
+
+      final states = <RecordingStyleLivePreviewState>[];
+      await pumpPreview(tester, states: states, repo: repo);
+
+      await tester.tap(find.byType(Switch)); // on: start remains pending
+      await tester.pump();
+      await tester.tap(find.byType(Switch)); // off
+      await tester.pump();
+      await tester.tap(find.byType(Switch)); // on again
+      await tester.pump();
+
+      startCompleter.complete(note);
+      await tester.pump();
+      await tester.pump();
+
+      expect(states.last.tryingWithVoice, isTrue);
+      verifyNever(repo.stopRecording);
+      verify(repo.startRecording).called(1);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     },
   );
 
@@ -223,16 +261,12 @@ void main() {
     final repo = MockAudioRecorderRepository();
     final amps = StreamController<Amplitude>.broadcast();
     addTearDown(amps.close);
-    _stubLiveRecording(repo, amps);
-
-    // getDocumentsDirectory() (used by _deleteLiveFile) reads getIt<Directory>.
-    final dir = Directory.systemTemp.createTempSync('recording_style_test');
-    addTearDown(() {
-      if (dir.existsSync()) dir.deleteSync(recursive: true);
-    });
-    if (getIt.isRegistered<Directory>()) getIt.unregister<Directory>();
-    getIt.registerSingleton<Directory>(dir);
-    addTearDown(() => getIt.unregister<Directory>());
+    final note = _throwawayNote();
+    final stopCompleter = Completer<void>();
+    when(repo.startRecording).thenAnswer((_) async => note);
+    when(() => repo.amplitudeStream).thenAnswer((_) => amps.stream);
+    when(repo.stopRecording).thenAnswer((_) => stopCompleter.future);
+    when(() => repo.deleteRecording(note)).thenAnswer((_) async {});
 
     final states = <RecordingStyleLivePreviewState>[];
     await pumpPreview(tester, states: states, repo: repo);
@@ -246,6 +280,13 @@ void main() {
     await tester.pump();
 
     verify(repo.stopRecording).called(1);
+    verifyNever(() => repo.deleteRecording(note));
+
+    stopCompleter.complete();
+    await tester.pump();
+    await tester.pump();
+
+    verify(() => repo.deleteRecording(note)).called(1);
   });
 
   testWidgets(
@@ -261,6 +302,9 @@ void main() {
       final startCompleter = Completer<AudioNote?>();
       when(repo.startRecording).thenAnswer((_) => startCompleter.future);
       when(repo.stopRecording).thenAnswer((_) async {});
+      when(
+        () => repo.deleteRecording(_throwawayNote()),
+      ).thenAnswer((_) async {});
 
       final states = <RecordingStyleLivePreviewState>[];
       await pumpPreview(tester, states: states, repo: repo);

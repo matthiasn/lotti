@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -7,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/daily_os_next/state/capture_dbfs.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart' show Amplitude;
 
 /// Live level fed to a recording-style preview: VU dB, instantaneous dBFS,
@@ -73,6 +71,8 @@ class _RecordingStyleLivePreviewState
   AudioNote? _liveNote;
   double _liveDbfs = _restDbfs;
   List<double> _liveAmps = const [];
+  Future<void>? _reconcileFuture;
+  bool _disposing = false;
 
   static const _bars = 28;
   static const _restDbfs = -80.0;
@@ -101,13 +101,10 @@ class _RecordingStyleLivePreviewState
 
   @override
   void dispose() {
-    // Best-effort teardown of any in-flight tryout (cancel stream, stop the
-    // recorder, drop the throwaway file) without awaiting in dispose.
-    _ampSub?.cancel();
-    if (_liveNote != null) {
-      unawaited(_liveRepo?.stopRecording() ?? Future<void>.value());
-      unawaited(_deleteLiveFile(_liveNote));
-    }
+    // Finish any in-flight transition before stopping the recorder, then
+    // delete its throwaway file only after the recorder releases it.
+    _disposing = true;
+    unawaited(_shutdownLive());
     _sim.dispose();
     super.dispose();
   }
@@ -116,29 +113,23 @@ class _RecordingStyleLivePreviewState
     final repo = ref.read(audioRecorderRepositoryProvider);
     _liveRepo = repo;
     final note = await repo.startRecording();
-    if (!mounted) {
+    if (_disposing || !mounted) {
       // The widget was disposed while the start was still pending —
       // `dispose()` couldn't stop it (this recorder wasn't known yet), so
       // stop it now or the mic keeps recording after the screen is gone.
       if (note != null) {
-        await repo.stopRecording();
-        await _deleteLiveFile(note);
+        await _stopAndDelete(repo, note);
       }
       return;
     }
     if (note == null) {
       // Permission denied / start failed — fall back to the simulation.
-      setState(() => _tryingWithVoice = false);
+      if (_tryingWithVoice) {
+        setState(() => _tryingWithVoice = false);
+      }
       return;
     }
-    if (!_tryingWithVoice) {
-      // The user toggled back off while the recorder was still starting —
-      // discard immediately so we never leave a recording running.
-      _liveNote = note;
-      unawaited(_stopLive());
-      return;
-    }
-    _liveNote = note;
+    setState(() => _liveNote = note);
     _ampSub = repo.amplitudeStream.listen((amp) {
       if (!mounted) return;
       setState(() {
@@ -152,36 +143,103 @@ class _RecordingStyleLivePreviewState
   }
 
   Future<void> _stopLive() async {
-    unawaited(_ampSub?.cancel());
+    final subscription = _ampSub;
     _ampSub = null;
-    final note = _liveNote;
-    if (note != null) {
-      await _liveRepo?.stopRecording();
-      await _deleteLiveFile(note);
+    Future<void>? cancellation;
+    try {
+      cancellation = subscription?.cancel();
+    } catch (_) {
+      // Recorder shutdown must continue even if stream cancellation fails.
     }
-    if (!mounted) return;
-    setState(() {
+
+    final note = _liveNote;
+    final repo = _liveRepo;
+    if (note != null && repo != null) {
+      await repo.stopRecording();
+      await repo.deleteRecording(note);
+      try {
+        await cancellation;
+      } catch (_) {
+        // Recording cleanup already completed; ignore cancellation failure.
+      }
+    } else {
+      try {
+        await cancellation;
+      } catch (_) {
+        // No active recording remains to clean up.
+      }
+    }
+
+    void resetLiveState() {
       _liveNote = null;
       _liveAmps = const [];
       _liveDbfs = _restDbfs;
-    });
+    }
+
+    if (!_disposing && mounted) {
+      setState(resetLiveState);
+    } else {
+      resetLiveState();
+    }
   }
 
-  Future<void> _deleteLiveFile(AudioNote? note) async {
-    if (note == null) return;
-    try {
-      final path =
-          '${getDocumentsDirectory().path}${note.audioDirectory}${note.audioFile}';
-      final file = File(path);
-      if (file.existsSync()) await file.delete();
-    } catch (_) {
-      // A leftover throwaway file is harmless (never a journal entry); ignore.
+  Future<void> _stopAndDelete(
+    AudioRecorderRepository repo,
+    AudioNote note,
+  ) async {
+    await repo.stopRecording();
+    await repo.deleteRecording(note);
+  }
+
+  Future<void> _shutdownLive() async {
+    final transition = _reconcileFuture;
+    if (transition != null) {
+      await transition;
     }
+    await _stopLive();
+  }
+
+  Future<void> _reconcileLiveState() async {
+    try {
+      while (!_disposing && mounted) {
+        final live = _liveNote != null;
+        if (live == _tryingWithVoice) return;
+
+        if (_tryingWithVoice) {
+          await _startLive();
+        } else {
+          await _stopLive();
+        }
+      }
+    } catch (_) {
+      // A preview failure must never leave the toggle on or the recorder
+      // running. Recorder repository operations already log their failures.
+      if (!_disposing && mounted) {
+        setState(() => _tryingWithVoice = false);
+      }
+      await _stopLive();
+    }
+  }
+
+  void _scheduleLiveStateReconcile() {
+    if (_disposing || _reconcileFuture != null) return;
+
+    final transition = _reconcileLiveState();
+    _reconcileFuture = transition;
+    unawaited(
+      transition.whenComplete(() {
+        _reconcileFuture = null;
+        final live = _liveNote != null;
+        if (!_disposing && mounted && live != _tryingWithVoice) {
+          _scheduleLiveStateReconcile();
+        }
+      }),
+    );
   }
 
   void _onToggleTryWithVoice(bool value) {
     setState(() => _tryingWithVoice = value);
-    unawaited(value ? _startLive() : _stopLive());
+    _scheduleLiveStateReconcile();
   }
 
   /// A lively but bounded synthetic "speech" level from the looping controller
