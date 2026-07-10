@@ -8784,6 +8784,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsOptionsTitle => 'Opțiuni';
 
   @override
+  String get settingsRecordingStyleExplanation =>
+      'Alegeți cum arată microfonul în timp ce înregistrați.';
+
+  @override
+  String get settingsRecordingStyleSubtitle =>
+      'VU-metru sau orb de energie în timpul înregistrării';
+
+  @override
+  String get settingsRecordingStyleTitle => 'Stil de înregistrare';
+
+  @override
   String get settingsResetGeminiConfirm => 'Resetează';
 
   @override

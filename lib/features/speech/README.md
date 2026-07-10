@@ -79,8 +79,11 @@ Standard recording goes through `AudioRecorderRepository`, which wraps the
 - VU calculation from dBFS samples via the standalone
   [`VuMeter`](./state/vu_meter.dart) (a self-contained sliding-window RMS→VU
   unit, unit-tested directly in `vu_meter_test.dart`)
-- live dBFS exposure for the modal VU meter and the mobile recording pill
-  (the desktop sidebar row no longer visualizes dBFS — see below)
+- live dBFS exposure for the modal's level visualizer and the mobile recording
+  pill (the desktop sidebar row no longer visualizes dBFS — see below). The
+  modal itself renders the skeuomorphic VU meter or the energy orb depending
+  on `recordingStyleProvider` (`lib/features/onboarding/state/recording_style.dart`,
+  settable in Settings › Recording Style) — same dBFS feed either way.
 - linked-entry and category context
 - coordination with app-wide playback
 - persistence through `SpeechRepository`
@@ -158,7 +161,7 @@ sequenceDiagram
   Ctl->>Repo: startRecording()
   Repo-->>Ctl: AudioNote + amplitude stream
   Ctl->>Ctl: update dBFS, RMS-based VU, progress
-  Ctl-->>Modal: VU meter + elapsed time
+  Ctl-->>Modal: level (VU meter or energy orb, per recordingStyleProvider) + elapsed time
   Ctl-->>Sidebar: red accent card + pulsing record dot + elapsed time (no dBFS reaction)
   User->>Modal: tap stop
   Modal->>Ctl: stop()
@@ -193,7 +196,7 @@ post-recording transcription with dictionary/context biasing.
 - resolves realtime configuration through `RealtimeTranscriptionService`
 - prefers a configured Mistral realtime model/provider pair, falling back to a
   local MLX-audio model/provider pair when only that is wired up
-- subscribes to the realtime amplitude stream for the same VU meter
+- subscribes to the realtime amplitude stream for the same level visualizer
 - accumulates transcript deltas into `partialTranscript`
 
 The realtime toggle in `AudioRecordingModal` is only shown when

@@ -8683,6 +8683,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsOptionsTitle => 'Optionen';
 
   @override
+  String get settingsRecordingStyleExplanation =>
+      'Wähle, wie das Mikro beim Aufnehmen aussehen soll.';
+
+  @override
+  String get settingsRecordingStyleSubtitle =>
+      'VU-Meter oder Energie-Orb bei der Aufnahme';
+
+  @override
+  String get settingsRecordingStyleTitle => 'Aufnahme-Stil';
+
+  @override
   String get settingsResetGeminiConfirm => 'Zurücksetzen';
 
   @override

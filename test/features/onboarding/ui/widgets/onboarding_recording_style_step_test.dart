@@ -1,34 +1,42 @@
 import 'dart:async';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_recording_style_step.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' show Amplitude;
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
-
-AppPrefs _fakePrefs(Map<String, String> store) => AppPrefs(
-  getBool: (_) async => null,
-  setBool: ({required key, required value}) async => true,
-  getString: (key) async => store[key],
-  setString: ({required key, required value}) async {
-    store[key] = value;
-    return true;
-  },
-);
+import '../../state/recording_style_test_utils.dart';
 
 void main() {
+  AudioNote throwawayNote() => AudioNote(
+    createdAt: DateTime(2024, 3, 15),
+    audioFile: 'tryout.m4a',
+    audioDirectory: '/audio/2024-03-15/',
+    duration: Duration.zero,
+  );
+
+  void stubLiveRecording(
+    MockAudioRecorderRepository repo,
+    StreamController<Amplitude> amps,
+  ) {
+    final note = throwawayNote();
+    when(repo.startRecording).thenAnswer((_) async => note);
+    when(() => repo.amplitudeStream).thenAnswer((_) => amps.stream);
+    when(repo.stopRecording).thenAnswer((_) async {});
+    when(() => repo.deleteRecording(note)).thenAnswer((_) async {});
+  }
+
   Future<void> pumpStep(
     WidgetTester tester, {
     Map<String, String>? store,
+    AppPrefs? prefs,
     AudioRecorderRepository? repo,
     VoidCallback? onContinue,
     bool reduceMotion = true,
@@ -59,7 +67,7 @@ void main() {
         ),
         overrides: [
           recordingStyleAppPrefsProvider.overrideWithValue(
-            _fakePrefs(store ?? {}),
+            prefs ?? fakeRecordingStylePrefs(store ?? {}),
           ),
           if (repo != null)
             audioRecorderRepositoryProvider.overrideWithValue(repo),
@@ -86,21 +94,157 @@ void main() {
   });
 
   testWidgets(
+    'seeds the initial selection once the provider resolves after a cold '
+    'mount',
+    (tester) async {
+      // Regression: on a cold mount `recordingStyleProvider` is still
+      // `AsyncLoading` when `initState` runs, so `_selected` starts at the
+      // hardcoded `modern` default even though 'analogue' is saved. The
+      // `ref.listen` in `build` must catch the loading→data transition and
+      // update `_selected` once the pref finishes loading, without the
+      // caller having to pre-warm the provider first (unlike the test
+      // below).
+      final store = {recordingStylePrefsKey: 'analogue'};
+      await pumpStep(tester, store: store);
+
+      final row = find.ancestor(
+        of: find.text('Analogue — VU meter'),
+        matching: find.byType(Row),
+      );
+      expect(
+        find.descendant(
+          of: row.first,
+          matching: find.byIcon(Icons.radio_button_checked_rounded),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'does not replace a user selection when the initial preference resolves',
+    (tester) async {
+      final initialPreference = Completer<String?>();
+      final store = <String, String>{};
+      final prefs = AppPrefs(
+        getBool: (_) async => null,
+        setBool: ({required key, required value}) async => true,
+        getString: (_) => initialPreference.future,
+        setString: ({required key, required value}) async {
+          store[key] = value;
+          return true;
+        },
+      );
+      var continues = 0;
+      await pumpStep(
+        tester,
+        prefs: prefs,
+        onContinue: () => continues++,
+      );
+
+      await tester.tap(find.text('Analogue — VU meter'));
+      await tester.pump();
+
+      initialPreference.complete('modern');
+      await tester.pump();
+      await tester.pump();
+
+      final row = find.ancestor(
+        of: find.text('Analogue — VU meter'),
+        matching: find.byType(Row),
+      );
+      expect(
+        find.descendant(
+          of: row.first,
+          matching: find.byIcon(Icons.radio_button_checked_rounded),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Continue'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(store[recordingStylePrefsKey], 'analogue');
+      expect(continues, 1);
+    },
+  );
+
+  testWidgets(
+    'seeds the initial selection from an already-resolved provider',
+    (tester) async {
+      // Warm `recordingStyleProvider` (resolve it to AsyncData) in the same
+      // container *before* the step mounts, so `initState` reads a non-null
+      // `current` — the branch that otherwise never fires on a cold mount,
+      // where the provider is still `AsyncLoading` at `initState` time.
+      final store = {recordingStylePrefsKey: 'analogue'};
+      var showStep = false;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          StatefulBuilder(
+            builder: (context, setState) {
+              if (!showStep) {
+                return Consumer(
+                  builder: (context, ref, _) {
+                    ref.watch(recordingStyleProvider);
+                    return ElevatedButton(
+                      onPressed: () => setState(() => showStep = true),
+                      child: const Text('warm'),
+                    );
+                  },
+                );
+              }
+              return Material(
+                type: MaterialType.transparency,
+                child: SizedBox(
+                  width: 390,
+                  height: 1080,
+                  child: OnboardingRecordingStyleStep(onContinue: () {}),
+                ),
+              );
+            },
+          ),
+          mediaQueryData: const MediaQueryData(
+            size: Size(390, 1100),
+            disableAnimations: true,
+          ),
+          overrides: [
+            recordingStyleAppPrefsProvider.overrideWithValue(
+              fakeRecordingStylePrefs(store),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(); // resolves the AppPrefs.getString future
+
+      await tester.tap(find.text('warm'));
+      await tester.pump();
+      await tester.pump();
+
+      // `_selected` was seeded from the already-resolved 'analogue' value,
+      // not the AsyncNotifier's own `modern` default.
+      final row = find.ancestor(
+        of: find.text('Analogue — VU meter'),
+        matching: find.byType(Row),
+      );
+      expect(
+        find.descendant(
+          of: row.first,
+          matching: find.byIcon(Icons.radio_button_checked_rounded),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
     'Try with your voice starts the mic, streams levels, and stops on toggle off',
     (tester) async {
       final repo = MockAudioRecorderRepository();
       final amps = StreamController<Amplitude>.broadcast();
       addTearDown(amps.close);
-      when(repo.startRecording).thenAnswer(
-        (_) async => AudioNote(
-          createdAt: DateTime(2024, 3, 15),
-          audioFile: 'tryout.m4a',
-          audioDirectory: '/audio/2024-03-15/',
-          duration: Duration.zero,
-        ),
-      );
-      when(() => repo.amplitudeStream).thenAnswer((_) => amps.stream);
-      when(repo.stopRecording).thenAnswer((_) async {});
+      stubLiveRecording(repo, amps);
 
       await pumpStep(tester, repo: repo);
 
@@ -158,16 +302,7 @@ void main() {
     final repo = MockAudioRecorderRepository();
     final amps = StreamController<Amplitude>.broadcast();
     addTearDown(amps.close);
-    when(repo.startRecording).thenAnswer(
-      (_) async => AudioNote(
-        createdAt: DateTime(2024, 3, 15),
-        audioFile: 'tryout.m4a',
-        audioDirectory: '/audio/2024-03-15/',
-        duration: Duration.zero,
-      ),
-    );
-    when(() => repo.amplitudeStream).thenAnswer((_) => amps.stream);
-    when(repo.stopRecording).thenAnswer((_) async {});
+    stubLiveRecording(repo, amps);
 
     await pumpStep(tester, repo: repo);
     await tester.tap(find.byType(Switch));
@@ -189,25 +324,7 @@ void main() {
     final repo = MockAudioRecorderRepository();
     final amps = StreamController<Amplitude>.broadcast();
     addTearDown(amps.close);
-    when(repo.startRecording).thenAnswer(
-      (_) async => AudioNote(
-        createdAt: DateTime(2024, 3, 15),
-        audioFile: 'tryout.m4a',
-        audioDirectory: '/audio/2024-03-15/',
-        duration: Duration.zero,
-      ),
-    );
-    when(() => repo.amplitudeStream).thenAnswer((_) => amps.stream);
-    when(repo.stopRecording).thenAnswer((_) async {});
-
-    // getDocumentsDirectory() (used by _deleteLiveFile) reads getIt<Directory>.
-    final dir = Directory.systemTemp.createTempSync('onb_style_test');
-    addTearDown(() {
-      if (dir.existsSync()) dir.deleteSync(recursive: true);
-    });
-    if (getIt.isRegistered<Directory>()) getIt.unregister<Directory>();
-    getIt.registerSingleton<Directory>(dir);
-    addTearDown(() => getIt.unregister<Directory>());
+    stubLiveRecording(repo, amps);
 
     await pumpStep(tester, repo: repo);
     await tester.tap(find.byType(Switch));

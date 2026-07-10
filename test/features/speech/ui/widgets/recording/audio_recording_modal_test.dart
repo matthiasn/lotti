@@ -12,22 +12,26 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -129,6 +133,24 @@ class TestAudioRecorderController extends AudioRecorderController {
   @override
   AudioRecorderState build() => fixedState;
 }
+
+/// Fake [AppPrefs] pre-seeded with a [RecordingStyle] preference, for
+/// asserting how [AudioRecordingModalContent] picks its visualizer.
+AppPrefs _fakeRecordingStylePrefs(String style) => AppPrefs(
+  getBool: (_) async => null,
+  setBool: ({required key, required value}) async => true,
+  getString: (key) async => key == recordingStylePrefsKey ? style : null,
+  setString: ({required key, required value}) async => true,
+);
+
+/// A [AppPrefs.getString] that never resolves, so the recording style stays
+/// in its loading state for the duration of a test.
+AppPrefs _neverResolvingRecordingStylePrefs() => AppPrefs(
+  getBool: (_) async => null,
+  setBool: ({required key, required value}) async => true,
+  getString: (_) => Completer<String?>().future,
+  setString: ({required key, required value}) async => true,
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -1251,6 +1273,123 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(Switch), findsNothing);
+      });
+    });
+
+    group('AudioRecordingModal - Recording Style Visualizer', () {
+      final restingState = AudioRecorderState(
+        status: AudioRecorderStatus.initializing,
+        progress: Duration.zero,
+        vu: -20,
+        dBFS: -34,
+        showIndicator: false,
+        modalVisible: true,
+      );
+
+      testWidgets('renders the orb (not the VU meter) for modern style', (
+        tester,
+      ) async {
+        stubCategory();
+        await pumpModalContent(
+          tester,
+          extraOverrides: [
+            realtimeAvailableProvider.overrideWith((_) async => false),
+            audioRecorderControllerProvider.overrideWith(
+              () => TestAudioRecorderController(restingState),
+            ),
+            recordingStyleAppPrefsProvider.overrideWithValue(
+              _fakeRecordingStylePrefs('modern'),
+            ),
+          ],
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(AiVoiceInputShader), findsOneWidget);
+        expect(find.byType(AnalogVuMeter), findsNothing);
+      });
+
+      testWidgets('renders the VU meter (not the orb) for analogue style', (
+        tester,
+      ) async {
+        stubCategory();
+        await pumpModalContent(
+          tester,
+          extraOverrides: [
+            realtimeAvailableProvider.overrideWith((_) async => false),
+            audioRecorderControllerProvider.overrideWith(
+              () => TestAudioRecorderController(restingState),
+            ),
+            recordingStyleAppPrefsProvider.overrideWithValue(
+              _fakeRecordingStylePrefs('analogue'),
+            ),
+          ],
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(AnalogVuMeter), findsOneWidget);
+        expect(find.byType(AiVoiceInputShader), findsNothing);
+      });
+
+      testWidgets(
+        'falls back to the VU meter while the style preference is still '
+        'loading',
+        (tester) async {
+          stubCategory();
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              realtimeAvailableProvider.overrideWith((_) async => false),
+              audioRecorderControllerProvider.overrideWith(
+                () => TestAudioRecorderController(restingState),
+              ),
+              recordingStyleAppPrefsProvider.overrideWithValue(
+                _neverResolvingRecordingStylePrefs(),
+              ),
+            ],
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(AnalogVuMeter), findsOneWidget);
+          expect(find.byType(AiVoiceInputShader), findsNothing);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets('the recorder dBFS flows through to the orb shader', (
+        tester,
+      ) async {
+        stubCategory();
+        final loudState = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          progress: const Duration(seconds: 2),
+          vu: 1,
+          dBFS: -7,
+          showIndicator: false,
+          modalVisible: true,
+        );
+
+        await pumpModalContent(
+          tester,
+          extraOverrides: [
+            realtimeAvailableProvider.overrideWith((_) async => false),
+            audioRecorderControllerProvider.overrideWith(
+              () => TestAudioRecorderController(loudState),
+            ),
+            recordingStyleAppPrefsProvider.overrideWithValue(
+              _fakeRecordingStylePrefs('modern'),
+            ),
+          ],
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final shader = tester.widget<AiVoiceInputShader>(
+          find.byType(AiVoiceInputShader),
+        );
+        expect(shader.dbfs, -7);
       });
     });
   });

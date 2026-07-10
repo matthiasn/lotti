@@ -118,19 +118,20 @@ void main() {
       (tester) async {
         // With every flag off the root list is the always-on set
         // declared in `buildSettingsTree`: ai, agents, definitions,
-        // theming, advanced. Sync is gated on enableMatrix so it
-        // drops out when the flag is off. A depth-0
+        // recording-style, theming, advanced. Sync is gated on
+        // enableMatrix so it drops out when the flag is off. A depth-0
         // `SettingsTreeNodeWidget` per root proves every entry
         // rendered through the widget, not a raw row.
         await _pumpView(tester);
         final rootNodeFinder = find.byWidgetPredicate(
           (w) => w is SettingsTreeNodeWidget && w.depth == 0,
         );
-        expect(rootNodeFinder, findsNWidgets(5));
+        expect(rootNodeFinder, findsNWidgets(6));
         for (final title in const [
           'AI Settings',
           'Agents',
           'Definitions',
+          'Recording Style',
           'Theming',
           'Advanced Settings',
         ]) {

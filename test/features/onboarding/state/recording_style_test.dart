@@ -1,24 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
-import 'package:lotti/services/app_prefs_service.dart';
 
-/// In-memory [AppPrefs] backed by [store] so the provider can be exercised
-/// without SharedPreferences.
-AppPrefs _fakePrefs(Map<String, String> store) => AppPrefs(
-  getBool: (_) async => null,
-  setBool: ({required key, required value}) async => true,
-  getString: (key) async => store[key],
-  setString: ({required key, required value}) async {
-    store[key] = value;
-    return true;
-  },
-);
+import 'recording_style_test_utils.dart';
 
 ProviderContainer _container(Map<String, String> store) {
   final container = ProviderContainer(
     overrides: [
-      recordingStyleAppPrefsProvider.overrideWithValue(_fakePrefs(store)),
+      recordingStyleAppPrefsProvider.overrideWithValue(
+        fakeRecordingStylePrefs(store),
+      ),
     ],
   );
   addTearDown(container.dispose);

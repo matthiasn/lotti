@@ -32,7 +32,7 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.1036" date="2026-07-09">
+    <release version="0.9.1037" date="2026-07-10">
       <description>
           <p>Dashboard chart editing now saves when it should. Adding measurable charts in Settings → Dashboards immediately enables Save, measurable chart aggregation can be chosen before adding, aggregation and reorder no-ops no longer make the form look changed, chart rows expose clearer edit/remove and reorder affordances, and the chart sections and pickers now use the shared design-system layout.</p>
           <p>Daily OS dictated plans keep task agents and titles in sync. Tasks created from a spoken Daily OS plan now get the category's default task agent, and task-backed planned blocks on the Day timeline update when you rename the task.</p>
@@ -47,6 +47,7 @@
           <p>Keyboard and screen-reader flow is clearer across shared desktop controls. Saved task-filter rows can now be focused, opened with Enter or Space, renamed with F2, cancelled with Escape, and deleted with a two-step Delete/Backspace flow. Screen readers announce the row as a selected button with rename/delete actions, hidden delete controls stay out of the focus tree, glass overlay buttons now carry proper labels/tooltips, modal Back/Close controls are named, and live sidebar cards announce as actionable buttons with their linked title and elapsed time.</p>
           <p>Habit and agent-heavy screens spend less time waiting on the database. Habit heatmaps now load only the latest completion per habit/day, and agent summary/feedback paths batch payload lookups instead of firing many individual reads.</p>
           <p>The debug-only Onboarding animation gallery (Settings → Advanced → Maintenance) no longer leaves the floating bottom navigation bar stacked on top of it on phones. It now escapes onto the root navigator the same way other pushed debug/editor surfaces already do.</p>
+          <p>A new Settings → Recording Style page lets you choose the VU meter or energy-orb visualization for the mic — with the same live preview and "Try with your voice" toggle from onboarding — and the real recording screen now honors your choice instead of always showing the VU meter.</p>
       </description>
     </release>
     <release version="0.9.1032" date="2026-07-06">

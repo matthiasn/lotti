@@ -8721,6 +8721,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsOptionsTitle => 'Možnosti';
 
   @override
+  String get settingsRecordingStyleExplanation =>
+      'Vyber, jak má mikrofon vypadat při nahrávání.';
+
+  @override
+  String get settingsRecordingStyleSubtitle =>
+      'VU metr nebo energetická koule při nahrávání';
+
+  @override
+  String get settingsRecordingStyleTitle => 'Styl nahrávání';
+
+  @override
   String get settingsResetGeminiConfirm => 'Obnovit';
 
   @override

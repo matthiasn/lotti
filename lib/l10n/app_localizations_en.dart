@@ -8572,6 +8572,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsOptionsTitle => 'Options';
 
   @override
+  String get settingsRecordingStyleExplanation =>
+      'Choose how the mic looks while you\'re recording.';
+
+  @override
+  String get settingsRecordingStyleSubtitle =>
+      'VU meter or energy orb while recording';
+
+  @override
+  String get settingsRecordingStyleTitle => 'Recording Style';
+
+  @override
   String get settingsResetGeminiConfirm => 'Reset';
 
   @override

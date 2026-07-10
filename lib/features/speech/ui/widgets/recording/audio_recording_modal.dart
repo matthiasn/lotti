@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -113,6 +115,7 @@ class _AudioRecordingModalContentState
     final controller = ref.read(audioRecorderControllerProvider.notifier);
     final realtimeAvailable =
         ref.watch(realtimeAvailableProvider).value ?? false;
+    final recordingStyle = ref.watch(recordingStyleProvider).asData?.value;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -120,12 +123,7 @@ class _AudioRecordingModalContentState
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnalogVuMeter(
-              vu: state.vu,
-              dBFS: state.dBFS,
-              size: 400,
-              colorScheme: theme.colorScheme,
-            ),
+            _buildVisualizer(state, recordingStyle, theme),
 
             // Duration display
             Text(
@@ -171,6 +169,37 @@ class _AudioRecordingModalContentState
           ],
         ),
       ],
+    );
+  }
+
+  /// Picks the primary level visualizer per [RecordingStyleController]'s
+  /// persisted preference: [AiVoiceInputShader] (the orb) for
+  /// [RecordingStyle.modern], the skeuomorphic [AnalogVuMeter] otherwise —
+  /// including while the preference is still loading (`null`), so the meter
+  /// never flashes to the orb and back on first frame.
+  ///
+  /// Unlike the onboarding preview, [AudioRecorderState] has no amplitude
+  /// history, so only the primary visualizer swaps — the onboarding
+  /// meter/orb + waveform "pair" isn't reproduced here.
+  Widget _buildVisualizer(
+    AudioRecorderState state,
+    RecordingStyle? style,
+    ThemeData theme,
+  ) {
+    if (style == RecordingStyle.modern) {
+      return AiVoiceInputShader(
+        dbfs: state.dBFS,
+        size: 220,
+        primaryColor: theme.colorScheme.primary,
+        secondaryColor: theme.colorScheme.onSurface,
+        backgroundColor: Colors.transparent,
+      );
+    }
+    return AnalogVuMeter(
+      vu: state.vu,
+      dBFS: state.dBFS,
+      size: 400,
+      colorScheme: theme.colorScheme,
     );
   }
 

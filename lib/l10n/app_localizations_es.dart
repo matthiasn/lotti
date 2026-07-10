@@ -8772,6 +8772,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsOptionsTitle => 'Opciones';
 
   @override
+  String get settingsRecordingStyleExplanation =>
+      'Elige cómo se ve el micrófono mientras grabas.';
+
+  @override
+  String get settingsRecordingStyleSubtitle =>
+      'Vúmetro u orbe de energía durante la grabación';
+
+  @override
+  String get settingsRecordingStyleTitle => 'Estilo de grabación';
+
+  @override
   String get settingsResetGeminiConfirm => 'Restablecer';
 
   @override

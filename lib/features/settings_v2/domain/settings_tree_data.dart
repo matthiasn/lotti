@@ -240,6 +240,11 @@ List<SettingsNode> buildSettingsTree({
         ),
       ],
     ),
+    leaf(
+      'recording-style',
+      Icons.graphic_eq_rounded,
+      panel: 'recording-style',
+    ),
     leaf('theming', Icons.palette_outlined, panel: 'theming'),
     if (enableSpeechTts)
       leaf('speech', Icons.record_voice_over_outlined, panel: 'speech'),
