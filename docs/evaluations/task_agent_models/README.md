@@ -1,8 +1,12 @@
 # Task-Agent Model Evaluation
 
-This directory stores reproducible model-comparison artifacts for Lotti's Task
-Agent. The harness evaluates behavior that users see: proposed task mutations,
-checklist extraction, and the report shown on task and project surfaces.
+This directory documents Lotti's reproducible Task Agent model evaluation. The
+harness evaluates behavior that users see: proposed task mutations, checklist
+extraction, and the report shown on task and project surfaces. Generated run
+outputs are intentionally not committed to the application repository;
+maintainers archive durable runs in the private
+[`matthiasn/lotti-ai-evals`](https://github.com/matthiasn/lotti-ai-evals)
+repository.
 
 ## Runtime Flow
 
@@ -19,10 +23,10 @@ sequenceDiagram
   Conversation->>Candidate: OpenAI-compatible multi-turn requests
   Candidate-->>Conversation: tool calls and report
   Conversation-->>Eval: captured calls, content, tokens, latency
-  Eval-->>Script: latest.json and latest.md
+  Eval-->>Script: candidate-results.json and candidate-results.md
   Script->>Judge: synthetic context and captured output
   Judge-->>Script: rubric scores, findings, and judge accounting
-  Script-->>Script: judged.json and judged.md
+  Script-->>Script: judgments.json and judgments.md
 ```
 
 Candidate calls use Lotti's production `ConversationRepository`, continuation
@@ -33,8 +37,8 @@ Melious adapter. The model IDs and endpoint are still Melious values.
 
 The independent judge uses non-streaming HTTP outside Flutter's test process,
 so its token, credit, and environmental accounting is retained. This accounting
-describes judge calls only; candidate artifacts currently record tokens and
-latency but not Melious energy metadata.
+describes judge calls only; archived candidate artifacts currently record tokens
+and latency but not Melious energy metadata.
 
 ## Scenarios
 
@@ -67,7 +71,7 @@ production defaults. Missing initial reports receive the same forced,
 report-only retry as the real task workflow; artifacts record this separately
 from native one-pass success.
 
-Some preserved early artifacts use the synthetic task title “Validate local
+Some archived early artifacts use the synthetic task title “Validate local
 Gemma fallback.” That wording referred only to the candidate in the fixture; it
 never represented a runtime model fallback or routing path. The current fixture
 uses model-neutral candidate/reference wording, while historical model outputs
@@ -86,6 +90,20 @@ Set `LOTTI_MELIOUS_ENV_FILE` or `MELIOUS_API_KEY` for another environment. Use
 Set `LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE=twoPass` to reproduce the rejected
 two-pass orchestration experiment described below. The default is
 `singlePass`.
+
+Each invocation writes to a unique
+`build/task_agent_model_eval/<UTC timestamp>_<Lotti commit>/` directory by
+default. To write directly into a local clone of the private archive, set the
+output root rather than reusing a mutable directory:
+
+```bash
+LOCAL_TASK_AGENT_EVAL_OUTPUT_ROOT=../lotti-ai-evals/task-agent/runs \
+  ./tool/melious_task_agent_model_eval.sh
+```
+
+`LOCAL_TASK_AGENT_EVAL_OUTPUT_DIR` remains available when an exact run directory
+is required. Durable archived runs must be synthetic or reviewed and sanitized,
+and must include a provenance manifest before they are committed.
 
 ## Findings from 2026-07-10
 
@@ -149,7 +167,8 @@ judge-rated prose improved, but deterministic task completion fell from 10/11
 to 8/11: required owners, blockers, or dates were omitted. Mistral also emitted
 `update_report` even though that tool was not advertised in the mutation pass,
 then emitted it again in the forced pass. The raw and judged outputs are
-preserved under `two_pass/`.
+preserved in the private archive under
+`task-agent/runs/2026-07-10_pr-3439/two-pass/`.
 
 The synthetic matrix now exposes a more important limitation: it scores the
 single-pass Mistral summaries at 93%, which does not match the observed product

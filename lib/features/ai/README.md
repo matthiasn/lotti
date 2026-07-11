@@ -395,10 +395,13 @@ synthetic context and captured tool calls to an independent judge model
 (`qwen3.5-122b-a10b` by default). The judge rates grounding, coverage,
 checklist quality, summary quality, and format compliance. Its findings are a
 review aid rather than a release gate; deterministic failures remain the
-high-confidence signal. Raw and judged JSON/Markdown artifacts are written to
-`docs/evaluations/task_agent_models/`. The optional `qualityFocused` prompt
-variant adds a report-quality gate for targeted comparisons; it is not a
-production default. Additional Melious candidates can be
+high-confidence signal. Raw and judged JSON/Markdown artifacts are written to a
+unique run directory under `build/task_agent_model_eval/` by default. Set
+`LOCAL_TASK_AGENT_EVAL_OUTPUT_ROOT` to a local clone of the private evaluation
+archive when a run should be retained; generated reports are not committed to
+the application repository. The optional `qualityFocused` prompt variant adds a
+report-quality gate for targeted comparisons; it is not a production default.
+Additional Melious candidates can be
 supplied through `LOCAL_TASK_AGENT_EVAL_PROFILES=name=model,...`, and individual
 scenario IDs through `LOCAL_TASK_AGENT_EVAL_SCENARIOS`. Prompt variants are
 selected with `LOCAL_TASK_AGENT_EVAL_PROMPT_VARIANTS`. The evaluator also has
@@ -427,8 +430,9 @@ flowchart LR
   Conversation --> Tools["Production task-agent tool schema"]
   Tools --> Deterministic["Tool + report checks"]
   Tools --> Judge["Independent rubric judge"]
-  Deterministic --> Artifacts["JSON + Markdown artifacts"]
+  Deterministic --> Artifacts["Unique local run directory"]
   Judge --> Artifacts
+  Artifacts --> Archive["Optional private archive"]
 ```
 
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine

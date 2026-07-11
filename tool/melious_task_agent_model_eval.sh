@@ -18,8 +18,16 @@ if [[ -z "$api_key" ]]; then
   exit 2
 fi
 
-output_dir="${LOCAL_TASK_AGENT_EVAL_OUTPUT_DIR:-$repo_root/docs/evaluations/task_agent_models}"
+source_commit="$(git -C "$repo_root" rev-parse --short=9 HEAD)"
+run_id="${LOCAL_TASK_AGENT_EVAL_RUN_ID:-$(date -u +%Y-%m-%dT%H%M%SZ)_$source_commit}"
+output_root="${LOCAL_TASK_AGENT_EVAL_OUTPUT_ROOT:-$repo_root/build/task_agent_model_eval}"
+output_dir="${LOCAL_TASK_AGENT_EVAL_OUTPUT_DIR:-$output_root/$run_id}"
 mkdir -p "$output_dir"
+
+candidate_json="$output_dir/candidate-results.json"
+candidate_markdown="$output_dir/candidate-results.md"
+judgments_json="${LOCAL_TASK_AGENT_EVAL_JUDGMENTS_JSON:-$output_dir/judgments.json}"
+judgments_markdown="${LOCAL_TASK_AGENT_EVAL_JUDGMENTS_MARKDOWN:-$output_dir/judgments.md}"
 
 export LOTTI_LOCAL_TASK_AGENT_EVAL_LIVE=1
 export LOCAL_TASK_AGENT_EVAL_PROVIDER_TYPE=genericOpenAi
@@ -27,8 +35,10 @@ export LOCAL_TASK_AGENT_EVAL_MATRIX=melious
 export LOCAL_TASK_AGENT_EVAL_BASE_URL="$base_url"
 export LOCAL_TASK_AGENT_EVAL_API_KEY="$api_key"
 export LOCAL_TASK_AGENT_EVAL_TEMPERATURE="${LOCAL_TASK_AGENT_EVAL_TEMPERATURE:-0}"
-export LOCAL_TASK_AGENT_EVAL_JSON="${LOCAL_TASK_AGENT_EVAL_JSON:-$output_dir/latest.json}"
-export LOCAL_TASK_AGENT_EVAL_MARKDOWN="${LOCAL_TASK_AGENT_EVAL_MARKDOWN:-$output_dir/latest.md}"
+export LOCAL_TASK_AGENT_EVAL_JSON="${LOCAL_TASK_AGENT_EVAL_JSON:-$candidate_json}"
+export LOCAL_TASK_AGENT_EVAL_MARKDOWN="${LOCAL_TASK_AGENT_EVAL_MARKDOWN:-$candidate_markdown}"
+
+printf 'Task-agent eval output: %s\n' "$output_dir"
 
 cd "$repo_root"
 fvm flutter test test/features/ai/eval/local_task_agent_inference_eval_live_test.dart "$@"
@@ -36,6 +46,6 @@ fvm flutter test test/features/ai/eval/local_task_agent_inference_eval_live_test
 if [[ "${LOCAL_TASK_AGENT_EVAL_JUDGE:-1}" == "1" ]]; then
   python3 tool/task_agent_model_eval_judge.py \
     "$LOCAL_TASK_AGENT_EVAL_JSON" \
-    --json "$output_dir/judged.json" \
-    --markdown "$output_dir/judged.md"
+    --json "$judgments_json" \
+    --markdown "$judgments_markdown"
 fi
