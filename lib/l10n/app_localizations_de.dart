@@ -4619,23 +4619,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String dashboardMeasurementAggregationFor(String name) {
-    return '$name zusammenfassen als';
+    return 'Diagrammmodus für $name';
   }
 
   @override
   String get dashboardMeasurementAggregationHelp =>
-      'Wähle Messwerte aus und lege fest, wie jedes Diagramm seine Werte zusammenfasst.';
-
-  @override
-  String dashboardMeasurementSelectedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count Diagramme werden hinzugefügt',
-      one: '1 Diagramm wird hinzugefügt',
-    );
-    return '$_temp0';
-  }
+      'Wähle Messdiagramme aus. Passe den Diagrammmodus in ausgewählten Zeilen vor dem Hinzufügen an.';
 
   @override
   String get dashboardNameLabel => 'Dashboard-Name';

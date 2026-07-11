@@ -345,21 +345,31 @@ void main() {
 
       expect(
         find.text(
-          'Select measurements, then choose how each chart summarizes '
-          'its values.',
+          'Select measurement charts. Adjust chart mode on selected rows '
+          'before adding.',
         ),
         findsOneWidget,
       );
       await tester.tap(find.text(measurableChocolate.displayName));
       await tester.pumpAndSettle();
-      expect(find.text('1 chart will be added'), findsOneWidget);
+      expect(
+        find.widgetWithText(DesignSystemButton, 'Add 1 chart'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text(measurableWater.displayName));
       await tester.pumpAndSettle();
-      expect(find.text('2 charts will be added'), findsOneWidget);
+      expect(
+        find.widgetWithText(DesignSystemButton, 'Add 2 charts'),
+        findsOneWidget,
+      );
+      expect(find.text('Daily sum'), findsNWidgets(2));
 
-      await tester.tap(find.text('Daily maximum').first);
+      await tester.tap(find.text('Daily sum').first);
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Daily maximum').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Daily maximum'), findsOneWidget);
 
       final addButton = find.widgetWithText(DesignSystemButton, 'Add 2 charts');
       await tester.ensureVisible(addButton);
@@ -395,7 +405,7 @@ void main() {
     ) async {
       await pumpMeasurementSelect(tester, onConfirm: (_) {});
 
-      final waterRow = find.text(measurableWater.displayName);
+      final waterRow = find.text(measurableWater.displayName).first;
 
       await tester.tap(waterRow);
       await tester.pumpAndSettle();

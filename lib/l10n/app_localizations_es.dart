@@ -4639,23 +4639,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String dashboardMeasurementAggregationFor(String name) {
-    return 'Resumir $name por';
+    return 'Modo de gráfico para $name';
   }
 
   @override
   String get dashboardMeasurementAggregationHelp =>
-      'Selecciona mediciones y elige cómo resume sus valores cada gráfico.';
-
-  @override
-  String dashboardMeasurementSelectedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Se añadirán $count gráficos',
-      one: 'Se añadirá 1 gráfico',
-    );
-    return '$_temp0';
-  }
+      'Selecciona gráficos de medición. Ajusta el modo de gráfico en las filas seleccionadas antes de añadirlos.';
 
   @override
   String get dashboardNameLabel => 'Nombre del panel';

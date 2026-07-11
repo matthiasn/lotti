@@ -2462,7 +2462,7 @@
       }
     }
   },
-  "dashboardMeasurementAggregationFor": "Summarize {name} by",
+  "dashboardMeasurementAggregationFor": "Chart mode for {name}",
   "@dashboardMeasurementAggregationFor": {
     "placeholders": {
       "name": {
@@ -2470,15 +2470,7 @@
       }
     }
   },
-  "dashboardMeasurementAggregationHelp": "Select measurements, then choose how each chart summarizes its values.",
-  "dashboardMeasurementSelectedCount": "{count, plural, =1{1 chart will be added} other{{count} charts will be added}}",
-  "@dashboardMeasurementSelectedCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "dashboardMeasurementAggregationHelp": "Select measurement charts. Adjust chart mode on selected rows before adding.",
   "dashboardNameLabel": "Dashboard name",
   "dashboardNoChartsAdded": "No charts added yet. Add one below.",
   "dashboardNoHabitsForCharts": "Create a habit first to add habit charts.",
