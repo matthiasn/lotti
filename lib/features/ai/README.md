@@ -415,7 +415,10 @@ from 89% to 93%, summary quality from 93% to 95%, and format compliance from 84%
 to 98%, while reducing tokens by 17% and latency by 19%. It is not used in the
 main mutation wake because changing that shared prompt also caused a missed
 checklist mutation. The opt-in `enable_task_agent_report_polishing` flag applies
-the contract in a separate report-only conversation instead. A validator keeps
+a conservative version of the contract in a separate report-only conversation.
+A local policy skips clean drafts and sends only the draft, language code, and
+objective warnings — never the full task context — when a copy-edit is needed.
+The editor preserves free-form Markdown and the agent's voice. A validator keeps
 the original draft when the rewrite is incomplete, oversized, leaks an internal
 ID, or drops a URL or numeric fact.
 

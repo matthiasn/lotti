@@ -169,10 +169,13 @@ backend/model output is not fully deterministic.
 
 The implemented follow-up architecture is therefore draft-and-polish, not a
 modified main wake: the opt-in `enable_task_agent_report_polishing` flag keeps
-the current mutation workflow and its draft report unchanged, rewrites only the
-draft in an isolated report-only request, validates the rewrite, and retains the
-original draft whenever validation fails. This preserves task mutation behavior
-while applying the measured concise-report improvement.
+the current mutation workflow and its draft report unchanged. A local policy
+skips clean drafts. When it detects an objective warning, an isolated
+report-only request receives the draft, language code, and warning list rather
+than the full task context. The editor performs a minimal copy-edit while
+preserving free-form Markdown; validation retains the original draft whenever
+the edit is unsafe. This preserves task mutation behavior while applying the
+measured concise-report findings only where they address a concrete defect.
 
 These numbers are directional rather than release thresholds. They are based on
 one deterministic sample per case and synthetic replay data. Repeated runs and

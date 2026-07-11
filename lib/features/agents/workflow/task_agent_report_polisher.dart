@@ -38,11 +38,13 @@ class TaskAgentReportPolishAttempt {
     required this.usage,
     this.report,
     this.rejectionReason,
+    this.skipped = false,
   });
 
   final TaskAgentReportDraft? report;
   final InferenceUsage? usage;
   final String? rejectionReason;
+  final bool skipped;
 }
 
 /// Validates that a polished report remains a safe projection of its draft.
@@ -57,6 +59,7 @@ class TaskAgentReportPolishValidator {
     if (!candidate.isComplete) return 'missing report fields';
 
     final candidateText = _combinedText(candidate);
+    final sourceIds = _protectedSourceIds(sourceContext);
     final candidateContentLength = candidate.content.trim().length;
     final draftContentLength = draft.content.trim().length;
     if (candidateContentLength < 40) return 'report content is too short';
@@ -64,8 +67,8 @@ class TaskAgentReportPolishValidator {
       return 'report content grew beyond the allowed limit';
     }
 
-    for (final id in _sourceIds(sourceContext)) {
-      if (id.length >= 6 && candidateText.contains(id)) {
+    for (final id in sourceIds) {
+      if (candidateText.contains(id)) {
         return 'report exposes an internal ID';
       }
     }
@@ -75,7 +78,11 @@ class TaskAgentReportPolishValidator {
     }
 
     final candidateNumbers = _numbers(candidateText);
-    for (final number in _numbers(_combinedText(draft))) {
+    var draftFactsText = _combinedText(draft);
+    for (final id in sourceIds) {
+      draftFactsText = draftFactsText.replaceAll(id, '');
+    }
+    for (final number in _numbers(draftFactsText)) {
       if (!candidateNumbers.contains(number)) return 'report dropped a number';
     }
 
@@ -102,6 +109,10 @@ class TaskAgentReportPolishValidator {
     return ids;
   }
 
+  static Set<String> _protectedSourceIds(String sourceContext) => _sourceIds(
+    sourceContext,
+  ).where((id) => id.length >= 6).toSet();
+
   static Set<String> _urls(String text) => RegExp(
     r'https?://[^\s)\]"]+',
   ).allMatches(text).map((match) => match.group(0)!).toSet();
@@ -111,17 +122,187 @@ class TaskAgentReportPolishValidator {
   ).allMatches(text).map((match) => match.group(0)!).toSet();
 }
 
+/// Objective signals that justify spending another inference call on a draft.
+enum TaskAgentReportPolishWarning {
+  /// A source identifier is visible in the user-facing draft.
+  internalId('remove visible internal identifiers'),
+
+  /// A Markdown section has no content.
+  emptySection('remove empty Markdown sections'),
+
+  /// The same bullet appears more than once.
+  duplicateBullet('remove duplicate bullet items'),
+
+  /// The draft describes internal tool or agent mechanics.
+  processNarration('remove agent or tool-process narration'),
+
+  /// The draft repeats an idea only to explain that it was excluded.
+  excludedIdeaNarration(
+    'remove rejected or deferred ideas that are mentioned only as exclusions',
+  ),
+
+  /// The compact card tagline has become sentence-like prose.
+  longOneLiner('shorten the one-liner while preserving its specific meaning'),
+
+  /// The collapsed summary is too long to scan.
+  longTldr('shorten the TLDR while preserving its material facts'),
+
+  /// The expanded report has grown beyond a useful copy-editing budget.
+  longContent('remove repetition from the report body');
+
+  const TaskAgentReportPolishWarning(this.instruction);
+
+  /// Focus instruction sent to the isolated copy-editing turn.
+  final String instruction;
+}
+
+/// Decides whether a completed draft has an objective copy-editing need.
+class TaskAgentReportPolishPolicy {
+  const TaskAgentReportPolishPolicy();
+
+  static const maxOneLinerWords = 16;
+  static const maxTldrWords = 60;
+  static const maxContentCharacters = 2400;
+
+  Set<TaskAgentReportPolishWarning> warnings({
+    required TaskAgentReportDraft draft,
+    required String sourceContext,
+  }) {
+    final warnings = <TaskAgentReportPolishWarning>{};
+    final draftText = TaskAgentReportPolishValidator._combinedText(draft);
+
+    if (TaskAgentReportPolishValidator._protectedSourceIds(
+      sourceContext,
+    ).any(draftText.contains)) {
+      warnings.add(TaskAgentReportPolishWarning.internalId);
+    }
+    if (_hasEmptyMarkdownSection(draft.content)) {
+      warnings.add(TaskAgentReportPolishWarning.emptySection);
+    }
+    if (_hasDuplicateBullet(draft.content)) {
+      warnings.add(TaskAgentReportPolishWarning.duplicateBullet);
+    }
+    if (_processNarrationPattern.hasMatch(draftText)) {
+      warnings.add(TaskAgentReportPolishWarning.processNarration);
+    }
+    if (_excludedIdeaPattern.hasMatch(draftText)) {
+      warnings.add(TaskAgentReportPolishWarning.excludedIdeaNarration);
+    }
+    if (_wordCount(draft.oneLiner) > maxOneLinerWords) {
+      warnings.add(TaskAgentReportPolishWarning.longOneLiner);
+    }
+    if (_wordCount(draft.tldr) > maxTldrWords) {
+      warnings.add(TaskAgentReportPolishWarning.longTldr);
+    }
+    if (draft.content.length > maxContentCharacters) {
+      warnings.add(TaskAgentReportPolishWarning.longContent);
+    }
+
+    return warnings;
+  }
+
+  static final _processNarrationPattern = RegExp(
+    r'(?:(?:\b(?:called|invoked|used|ran)|\b(?:via|through))\s+'
+    '`?(?:update_report|record_observations)`?'
+    r'|\b(?:tool|function)[ -]calls?\b'
+    r'|\bas (?:an ai|the task agent)\b'
+    r'|\b(?:internal|private) reasoning\b)',
+    caseSensitive: false,
+  );
+
+  static final _excludedIdeaPattern = RegExp(
+    r'(?:\b(?:explicitly|deliberately) not (?:included|added)\b'
+    r'|\b(?:was|were) (?:explicitly )?not (?:included|added)\b'
+    r'|\bnoch nicht aufnehmen\b'
+    r'|\bnicht aufgenommen\b'
+    r'|\bno (?:incluir|se incluyo)\b'
+    r'|\bne pas inclure\b'
+    r'|\bnu (?:include|a fost inclus)\b'
+    r'|\bnezahrnovat\b)',
+    caseSensitive: false,
+  );
+
+  static bool _hasEmptyMarkdownSection(String content) {
+    var inCodeFence = false;
+    var insideSection = false;
+    var sectionHasContent = false;
+    int? sectionLevel;
+
+    for (final line in const LineSplitter().convert(content)) {
+      final trimmed = line.trim();
+      if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+        if (insideSection) sectionHasContent = true;
+        inCodeFence = !inCodeFence;
+        continue;
+      }
+      if (inCodeFence) continue;
+
+      final headingMatch = _sectionHeadingPattern.firstMatch(trimmed);
+      if (headingMatch != null) {
+        final nextLevel = headingMatch.group(1)!.length;
+        if (insideSection && !sectionHasContent && nextLevel <= sectionLevel!) {
+          return true;
+        }
+        insideSection = true;
+        sectionHasContent = false;
+        sectionLevel = nextLevel;
+      } else if (insideSection && trimmed.isNotEmpty) {
+        sectionHasContent = true;
+      }
+    }
+
+    return insideSection && !sectionHasContent;
+  }
+
+  static bool _hasDuplicateBullet(String content) {
+    final seen = <String>{};
+    var inCodeFence = false;
+    final bulletPattern = RegExp(
+      r'^\s*(?:[-+*]|\d+[.)])\s+(?:\[[ xX]\]\s+)?(.+?)\s*$',
+    );
+
+    for (final line in const LineSplitter().convert(content)) {
+      final trimmed = line.trim();
+      if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+        inCodeFence = !inCodeFence;
+        continue;
+      }
+      if (inCodeFence) continue;
+
+      final match = bulletPattern.firstMatch(line);
+      if (match == null) continue;
+      final normalized = match
+          .group(1)!
+          .toLowerCase()
+          .replaceAll(
+            RegExp(r'\s+'),
+            ' ',
+          );
+      if (!seen.add(normalized)) return true;
+    }
+
+    return false;
+  }
+
+  static int _wordCount(String text) =>
+      text.trim().split(RegExp(r'\s+')).where((word) => word.isNotEmpty).length;
+
+  static final _sectionHeadingPattern = RegExp(r'^(#{2,6})\s+\S');
+}
+
 /// Rewrites a completed task-agent report in an isolated report-only call.
 class TaskAgentReportPolisher {
   TaskAgentReportPolisher({
     required this.conversationRepository,
     required this.inferenceRepository,
     this.validator = const TaskAgentReportPolishValidator(),
+    this.policy = const TaskAgentReportPolishPolicy(),
   });
 
   final ConversationRepository conversationRepository;
   final InferenceRepositoryInterface inferenceRepository;
   final TaskAgentReportPolishValidator validator;
+  final TaskAgentReportPolishPolicy policy;
 
   Future<TaskAgentReportPolishAttempt> polish({
     required TaskAgentReportDraft draft,
@@ -139,6 +320,19 @@ class TaskAgentReportPolisher {
       return const TaskAgentReportPolishAttempt(
         usage: null,
         rejectionReason: 'draft report is incomplete',
+        skipped: true,
+      );
+    }
+
+    final warnings = policy.warnings(
+      draft: draft,
+      sourceContext: sourceContext,
+    );
+    if (warnings.isEmpty) {
+      return const TaskAgentReportPolishAttempt(
+        usage: null,
+        rejectionReason: 'draft has no copy-editing warnings',
+        skipped: true,
       );
     }
 
@@ -150,7 +344,11 @@ class TaskAgentReportPolisher {
     try {
       final usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
-        message: _polishMessage(draft: draft, sourceContext: sourceContext),
+        message: _polishMessage(
+          draft: draft,
+          warnings: warnings,
+          languageCode: _sourceLanguageCode(sourceContext),
+        ),
         model: model,
         provider: provider,
         inferenceRepo: inferenceRepository,
@@ -195,22 +393,27 @@ class TaskAgentReportPolisher {
 
   static String _polishMessage({
     required TaskAgentReportDraft draft,
-    required String sourceContext,
+    required Set<TaskAgentReportPolishWarning> warnings,
+    required String? languageCode,
   }) =>
       '''
-## Task context
-
-$sourceContext
-
 ## Draft report
 
 ```json
 ${jsonEncode(draft.toJson())}
 ```
 
-Rewrite only the draft report. Preserve every factual number, deadline, owner,
-and external URL. Call `update_report` now.
+${languageCode == null ? '' : 'Task language: `$languageCode`.\n\n'}## Copy-edit focus
+
+${warnings.map((warning) => '- ${warning.instruction}').join('\n')}
+
+Make the smallest useful edit. Preserve every factual number, deadline, owner,
+external URL, and intentional Markdown choice. Call `update_report` now.
 ''';
+
+  static String? _sourceLanguageCode(String sourceContext) => RegExp(
+    r'"(?:languageCode|language_code)"\s*:\s*"([^"]+)"',
+  ).firstMatch(sourceContext)?.group(1);
 }
 
 /// Captures the single report tool call returned by an isolated polish turn.
@@ -253,21 +456,16 @@ class TaskAgentReportPolishStrategy extends ConversationStrategy {
 }
 
 const _polishSystemPrompt = '''
-You edit an existing task report. You cannot change the task, checklist, or
-metadata. Your only output is one `update_report` tool call.
+You minimally copy-edit an existing task report. You cannot change the task,
+checklist, or metadata. Your only output is one `update_report` tool call.
 
-Write the report in the task's language. Keep it concise and factual. Do not add
-a title, emojis, empty sections, internal IDs, private reasoning, rejected or
-deferred ideas, invented work, or descriptions of agent/tool activity.
+Preserve the draft's language, voice, Markdown structure, headings, emojis, and
+choice of useful sections unless a listed warning requires a local change. Any
+useful Markdown structure is valid; never impose a standard template or add a
+section merely to fit one.
 
-Use only useful, non-empty sections:
-- `## Progress` for meaningful completed outcomes.
-- `## Next actions` for the few pending actions that matter now.
-- `## Blockers` for active blockers or delivery risks.
-- `## Decisions` for durable deadlines, owners, or constraints.
-- `## Links` for real external URLs using descriptive Markdown links.
-
-The `oneLiner` is a specific current-state tagline of at most 12 words. The
-`tldr` is one or two sentences covering the current outcome and most important
-next action, deadline, or blocker. Do not repeat the one-liner.
+Change only what is needed to address the listed warnings. Keep all material
+facts, deadlines, owners, decisions, and links. Do not invent work, expose
+internal IDs or private reasoning, describe agent/tool activity, or repeat a
+rejected or deferred idea merely to explain that it was excluded.
 ''';

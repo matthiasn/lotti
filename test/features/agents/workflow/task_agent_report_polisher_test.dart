@@ -20,6 +20,14 @@ void main() {
         '## Blockers\nLegal review blocks release 42 until July 14.\n\n'
         '## Links\n[Review](https://example.com/review/42)',
   );
+  const draftNeedingPolish = TaskAgentReportDraft(
+    oneLiner: 'Release blocked on review',
+    tldr: 'Release 42 is blocked until July 14.',
+    content:
+        '## Blockers\nLegal review blocks release 42 until July 14.\n\n'
+        '## Links\n[Review](https://example.com/review/42)\n\n'
+        '## Notes',
+  );
   const sourceContext = '''
 {"id":"task-internal-42","itemId":"check-secret","languageCode":"en"}
 ''';
@@ -191,6 +199,197 @@ void main() {
         );
       }
     });
+
+    test('allows numeric source IDs to be removed completely', () {
+      const unsafeDraft = TaskAgentReportDraft(
+        oneLiner: 'Internal task-internal-42 remains visible',
+        tldr: 'The internal identifier should not be shown.',
+        content:
+            '## Status\nThe task-internal-42 identifier is visible and must be removed.',
+      );
+      const safeCandidate = TaskAgentReportDraft(
+        oneLiner: 'Legal review remains pending',
+        tldr: 'The internal identifier is no longer shown.',
+        content:
+            '## Status\nLegal review remains pending before the release can continue.',
+      );
+
+      expect(
+        validator.rejectionReason(
+          draft: unsafeDraft,
+          candidate: safeCandidate,
+          sourceContext: sourceContext,
+        ),
+        isNull,
+      );
+    });
+
+    test('still protects numbers that happen to equal a short ID', () {
+      const numberedDraft = TaskAgentReportDraft(
+        oneLiner: 'Release 42 remains blocked',
+        tldr: 'Release 42 remains blocked on review.',
+        content:
+            '## Status\nRelease 42 remains blocked until review is complete.',
+      );
+      const missingNumber = TaskAgentReportDraft(
+        oneLiner: 'Release remains blocked',
+        tldr: 'The release remains blocked on review.',
+        content:
+            '## Status\nThe release remains blocked until review is complete.',
+      );
+
+      expect(
+        validator.rejectionReason(
+          draft: numberedDraft,
+          candidate: missingNumber,
+          sourceContext: '{"id":"42"}',
+        ),
+        'report dropped a number',
+      );
+    });
+  });
+
+  group('TaskAgentReportPolishPolicy', () {
+    const policy = TaskAgentReportPolishPolicy();
+
+    test('keeps expressive Markdown and fenced examples untouched', () {
+      const expressiveDraft = TaskAgentReportDraft(
+        oneLiner: 'Release pulse 🚀',
+        tldr: 'Review is moving and the release remains on course.',
+        content: '''
+# Release pulse 🚀
+
+> Legal review is moving.
+
+## Working notes
+
+### Review detail
+
+Legal review is moving.
+
+```markdown
+## Example heading
+- Example item
+- Example item
+```
+''',
+      );
+
+      expect(
+        policy.warnings(
+          draft: expressiveDraft,
+          sourceContext: sourceContext,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('ignores short IDs and legitimate tool-name subject matter', () {
+      const implementationDraft = TaskAgentReportDraft(
+        oneLiner: 'Improve update_report validation',
+        tldr: 'The update_report validator needs stronger coverage.',
+        content:
+            '## Current work\nImplement `update_report` validation for pending reports.',
+      );
+
+      expect(
+        policy.warnings(
+          draft: implementationDraft,
+          sourceContext: '{"id":"en"}',
+        ),
+        isEmpty,
+      );
+    });
+
+    test('reports every objective copy-editing warning', () {
+      final cases =
+          <
+            ({
+              TaskAgentReportDraft candidate,
+              TaskAgentReportPolishWarning warning,
+            })
+          >[
+            (
+              candidate: const TaskAgentReportDraft(
+                oneLiner: 'Internal task-internal-42 is blocked',
+                tldr: 'Legal review remains pending.',
+                content: '## Status\nLegal review remains pending.',
+              ),
+              warning: TaskAgentReportPolishWarning.internalId,
+            ),
+            (
+              candidate: const TaskAgentReportDraft(
+                oneLiner: 'Review remains pending',
+                tldr: 'Legal review remains pending.',
+                content: '## Empty\n\n## Status\nLegal review remains pending.',
+              ),
+              warning: TaskAgentReportPolishWarning.emptySection,
+            ),
+            (
+              candidate: const TaskAgentReportDraft(
+                oneLiner: 'Review remains pending',
+                tldr: 'Legal review remains pending.',
+                content:
+                    '## Next\n- Ask legal for approval\n- Ask legal for approval',
+              ),
+              warning: TaskAgentReportPolishWarning.duplicateBullet,
+            ),
+            (
+              candidate: const TaskAgentReportDraft(
+                oneLiner: 'Review remains pending',
+                tldr: 'Legal review remains pending.',
+                content:
+                    '## Notes\nCalled `update_report` after the tool call.',
+              ),
+              warning: TaskAgentReportPolishWarning.processNarration,
+            ),
+            (
+              candidate: const TaskAgentReportDraft(
+                oneLiner: 'CSV repair remains active',
+                tldr: 'The repair remains active.',
+                content:
+                    '## Notes\nDer Newsletter wurde als "noch nicht aufnehmen" markiert.',
+              ),
+              warning: TaskAgentReportPolishWarning.excludedIdeaNarration,
+            ),
+            (
+              candidate: TaskAgentReportDraft(
+                oneLiner: List.filled(17, 'word').join(' '),
+                tldr: 'Legal review remains pending.',
+                content: '## Status\nLegal review remains pending.',
+              ),
+              warning: TaskAgentReportPolishWarning.longOneLiner,
+            ),
+            (
+              candidate: TaskAgentReportDraft(
+                oneLiner: 'Review remains pending',
+                tldr: List.filled(61, 'word').join(' '),
+                content: '## Status\nLegal review remains pending.',
+              ),
+              warning: TaskAgentReportPolishWarning.longTldr,
+            ),
+            (
+              candidate: TaskAgentReportDraft(
+                oneLiner: 'Review remains pending',
+                tldr: 'Legal review remains pending.',
+                content:
+                    '## Status\n${'x' * (TaskAgentReportPolishPolicy.maxContentCharacters + 1)}',
+              ),
+              warning: TaskAgentReportPolishWarning.longContent,
+            ),
+          ];
+
+      for (final testCase in cases) {
+        expect(
+          policy.warnings(
+            draft: testCase.candidate,
+            sourceContext: sourceContext,
+          ),
+          contains(testCase.warning),
+          reason: testCase.warning.name,
+        );
+      }
+    });
   });
 
   group('TaskAgentReportPolisher', () {
@@ -213,8 +412,31 @@ void main() {
       expect(attempt.report, isNull);
       expect(attempt.usage, isNull);
       expect(attempt.rejectionReason, 'draft report is incomplete');
+      expect(attempt.skipped, isTrue);
       expect(inference.requests, isEmpty);
     });
+
+    test(
+      'skips inference when the draft has no copy-editing warnings',
+      () async {
+        final inference = _RecordingInferenceRepository(const []);
+        final polisher = _polisher(inference);
+
+        final attempt = await polisher.polish(
+          draft: draft,
+          sourceContext: sourceContext,
+          model: 'test-model',
+          provider: provider,
+          reportTool: reportTool,
+        );
+
+        expect(attempt.report, isNull);
+        expect(attempt.usage, isNull);
+        expect(attempt.rejectionReason, 'draft has no copy-editing warnings');
+        expect(attempt.skipped, isTrue);
+        expect(inference.requests, isEmpty);
+      },
+    );
 
     test(
       'accepts a valid report-only response and constrains the request',
@@ -234,7 +456,7 @@ void main() {
         final polisher = _polisher(inference);
 
         final attempt = await polisher.polish(
-          draft: draft,
+          draft: draftNeedingPolish,
           sourceContext: sourceContext,
           model: 'test-model',
           provider: provider,
@@ -248,6 +470,7 @@ void main() {
 
         expect(attempt.report?.oneLiner, 'Review blocks release 42');
         expect(attempt.rejectionReason, isNull);
+        expect(attempt.skipped, isFalse);
         expect(inference.requests, hasLength(1));
         expect(inference.requests.single.model, 'test-model');
         expect(inference.requests.single.toolNames, [
@@ -267,10 +490,54 @@ void main() {
         );
         expect(
           inference.requests.single.messages.last.content.toString(),
-          contains('task-internal-42'),
+          isNot(contains('task-internal-42')),
+        );
+        expect(
+          inference.requests.single.messages.last.content.toString(),
+          allOf(
+            contains('Task language: `en`'),
+            contains('remove empty Markdown sections'),
+          ),
+        );
+        expect(
+          inference.requests.single.messages.first.content.toString(),
+          allOf(
+            contains('useful Markdown structure is valid'),
+            isNot(contains('Use only useful')),
+            isNot(contains('Do not add a title')),
+          ),
         );
       },
     );
+
+    test('omits task context when no language code is available', () async {
+      final inference = _RecordingInferenceRepository([
+        _toolResponse(
+          name: TaskAgentToolNames.updateReport,
+          arguments: {
+            'oneLiner': 'Review blocks release 42',
+            'tldr': 'Legal review blocks release 42 until July 14.',
+            'content':
+                '## Blockers\nLegal review blocks release 42 until July 14.\n\n'
+                '## Links\n[Legal review](https://example.com/review/42)',
+          },
+        ),
+      ]);
+
+      final attempt = await _polisher(inference).polish(
+        draft: draftNeedingPolish,
+        sourceContext: '{"id":"task-internal-42"}',
+        model: 'test-model',
+        provider: provider,
+        reportTool: reportTool,
+      );
+
+      expect(attempt.report, isNotNull);
+      final message = inference.requests.single.messages.last.content
+          .toString();
+      expect(message, isNot(contains('Task language:')));
+      expect(message, isNot(contains('task-internal-42')));
+    });
 
     test('falls back when the model omits or returns an unsafe report', () async {
       final responses = [
@@ -291,7 +558,7 @@ void main() {
             await _polisher(
               _RecordingInferenceRepository([response]),
             ).polish(
-              draft: draft,
+              draft: draftNeedingPolish,
               sourceContext: sourceContext,
               model: 'test-model',
               provider: provider,

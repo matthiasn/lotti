@@ -551,6 +551,11 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               reportTldr = polished.tldr;
               reportOneLiner = polished.oneLiner;
               _log('report polish accepted', subDomain: 'execute');
+            } else if (attempt.skipped) {
+              _log(
+                'report polish skipped: ${attempt.rejectionReason}',
+                subDomain: 'execute',
+              );
             } else {
               _log(
                 'report polish rejected: ${attempt.rejectionReason}',

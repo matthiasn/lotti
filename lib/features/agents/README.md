@@ -530,14 +530,18 @@ when the report would materially change (the first report is still forced via
 a retry). A wake with nothing report-worthy ends with a plain-text note.
 
 When `enable_task_agent_report_polishing` is enabled, a completed draft report
-goes through an isolated editor pass before persistence. The main wake retains
-exclusive ownership of task and checklist tools; the editor receives the same
-task context, the draft, and only `update_report`. Its concise contract removes
-decorative headings, emojis, empty sections, and agent-process narration. A
-deterministic validator rejects incomplete or oversized rewrites, internal-ID
-leaks, and dropped URLs or numeric facts. Rejection, inference failure, or an
-exception preserves the main wake's draft verbatim. Accepted polish usage is
-merged into the wake's token accounting.
+is checked locally before persistence. Clean drafts skip the extra inference
+call. Drafts with objective warnings — such as an internal-ID leak, empty
+section, duplicate bullet, explicit tool narration, excluded-idea narration,
+or runaway field length — go through an isolated copy-editing pass. The main
+wake retains exclusive ownership of task and checklist tools; the editor sees
+only the draft, its language code, the detected warnings, and `update_report`.
+It preserves the draft's voice, headings, emojis, Markdown structure, and
+choice of useful sections rather than imposing a template. A deterministic
+validator rejects incomplete or oversized rewrites, internal-ID leaks, and
+dropped URLs or numeric facts. Rejection, inference failure, or an exception
+preserves the main wake's draft verbatim. Accepted polish usage is merged into
+the wake's token accounting.
 
 ```mermaid
 flowchart LR
@@ -545,7 +549,9 @@ flowchart LR
   Mutations --> Draft[Draft report]
   Draft --> Enabled{Report polishing enabled?}
   Enabled -->|No| Persist[Persist original draft]
-  Enabled -->|Yes| Polish[Isolated report-only call]
+  Enabled -->|Yes| Warnings{Objective copy-edit warnings?}
+  Warnings -->|No| Persist
+  Warnings -->|Yes| Polish[Isolated report-only call]
   Polish --> Validate{Deterministic validation}
   Validate -->|Accept| PersistPolished[Persist polished report]
   Validate -->|Reject or error| Persist

@@ -2288,7 +2288,8 @@ void main() {
                         name: TaskAgentStrategy.reportToolName,
                         arguments: jsonEncode({
                           'content':
-                              '## Status\nOriginal report remains available after failure.',
+                              '## Status\nOriginal report remains available after failure.\n\n'
+                              '## Notes\nGenerated through `update_report`.',
                           'oneLiner': 'Original report',
                           'tldr': 'Original report remains available.',
                         }),
@@ -2465,7 +2466,8 @@ void main() {
                         name: TaskAgentStrategy.reportToolName,
                         arguments: jsonEncode({
                           'content': isMainPass
-                              ? '## Status\nThe release remains blocked on legal review.'
+                              ? '## Status\nThe release remains blocked on legal review.\n\n'
+                                    '## Notes'
                               : '## Blockers\nLegal review still blocks the release.\n\n'
                                     '## Next actions\nObtain legal approval.',
                           'oneLiner': isMainPass
@@ -2506,6 +2508,70 @@ void main() {
         expect(usage.outputTokens, 60);
       });
 
+      test('skips polishing when an enabled draft has no warnings', () async {
+        when(
+          () => mockJournalDb.getConfigFlag(
+            enableTaskAgentReportPolishingFlag,
+          ),
+        ).thenAnswer((_) async => true);
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy is TaskAgentStrategy) {
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    ChatCompletionMessageToolCall(
+                      id: 'clean-report',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: TaskAgentStrategy.reportToolName,
+                        arguments: jsonEncode({
+                          'content':
+                              '## Current state\nLegal review remains active and the release is ready otherwise.',
+                          'oneLiner': 'Release awaits legal review',
+                          'tldr': 'Legal review is the only remaining blocker.',
+                        }),
+                      ),
+                    ),
+                  ],
+                  manager: mockConversationManager,
+                );
+              }
+              return const InferenceUsage(
+                inputTokens: 100,
+                outputTokens: 40,
+              );
+            };
+        when(() => mockConversationManager.messages).thenReturn([]);
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        expect(mockConversationRepository.sendMessageDelegateCallCount, 1);
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final report = captured.whereType<AgentReportEntity>().single;
+        expect(report.oneLiner, 'Release awaits legal review');
+        final usage = captured.whereType<WakeTokenUsageEntity>().single;
+        expect(usage.inputTokens, 100);
+        expect(usage.outputTokens, 40);
+      });
+
       test('retains the draft when report polishing is rejected', () async {
         when(
           () => mockJournalDb.getConfigFlag(
@@ -2536,7 +2602,8 @@ void main() {
                         name: TaskAgentStrategy.reportToolName,
                         arguments: jsonEncode({
                           'content': isMainPass
-                              ? '## Status\nThe release remains blocked on legal review.'
+                              ? '## Status\nThe release remains blocked on legal review.\n\n'
+                                    '## Notes'
                               : 'Too short',
                           'oneLiner': 'Release remains blocked',
                           'tldr':
@@ -2565,7 +2632,8 @@ void main() {
         final report = captured.whereType<AgentReportEntity>().single;
         expect(
           report.content,
-          '## Status\nThe release remains blocked on legal review.',
+          '## Status\nThe release remains blocked on legal review.\n\n'
+          '## Notes',
         );
       });
 

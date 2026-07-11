@@ -7,10 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.1038]
 ### Added
 - **Optional cleaner task-agent reports for smaller models.** A new advanced
-  flag runs completed task-agent reports through an isolated report-only edit
-  pass. It removes repetitive decoration and agent-process narration without
-  exposing checklist or task mutation tools, validates the rewrite, and keeps
-  the original report automatically when polishing is incomplete or unsafe.
+  flag checks completed reports for objective quality warnings and, only when
+  needed, runs a minimal isolated copy-edit without exposing checklist or task
+  mutation tools. The edit preserves each agent's Markdown structure and voice;
+  unsafe or incomplete edits automatically keep the original report.
 ### Fixed
 - **Melious task agents now continue reliably after calling tools.** Follow-up
   requests now preserve the OpenAI-compatible assistant message shape expected
