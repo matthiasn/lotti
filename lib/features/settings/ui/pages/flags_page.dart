@@ -114,6 +114,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     showSyncActivityIndicatorFlag,
     showSidebarWakeQueueFlag,
     enableForkHealingFlag,
+    enableTaskAgentReportPolishingFlag,
   ];
 
   @override
@@ -179,6 +180,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.alarm_rounded;
       case enableForkHealingFlag:
         return Icons.call_merge_rounded;
+      case enableTaskAgentReportPolishingFlag:
+        return Icons.auto_fix_high_rounded;
       default:
         return Icons.settings;
     }
@@ -234,6 +237,10 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagShowSidebarWakeQueueDescription;
       case enableForkHealingFlag:
         return context.messages.configFlagEnableForkHealingDescription;
+      case enableTaskAgentReportPolishingFlag:
+        return context
+            .messages
+            .configFlagEnableTaskAgentReportPolishingDescription;
       default:
         return flag.description;
     }
@@ -289,6 +296,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagShowSidebarWakeQueue;
       case enableForkHealingFlag:
         return context.messages.configFlagEnableForkHealing;
+      case enableTaskAgentReportPolishingFlag:
+        return context.messages.configFlagEnableTaskAgentReportPolishing;
       default:
         return flag.name;
     }

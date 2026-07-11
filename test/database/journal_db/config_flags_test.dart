@@ -88,6 +88,7 @@ void main() {
         enableOnboardingFtueFlag: false,
         showSyncActivityIndicatorFlag: false,
         showSidebarWakeQueueFlag: false,
+        enableTaskAgentReportPolishingFlag: false,
       };
 
       for (final entry in defaults.entries) {

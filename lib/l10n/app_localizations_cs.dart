@@ -3045,6 +3045,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Synchronizuj upozornění od AI a úkolů mezi zařízeními a dovol jim plánovat místní systémová oznámení.';
 
   @override
+  String get configFlagEnableTaskAgentReportPolishing =>
+      'Vylepšit zprávy agenta úkolů';
+
+  @override
+  String get configFlagEnableTaskAgentReportPolishingDescription =>
+      'Přepíše dokončené zprávy agenta úkolů v izolovaném průchodu pouze pro zprávu, aniž by změnil úkol.';
+
+  @override
   String get configFlagEnableTooltip => 'Povolit nápovědy';
 
   @override

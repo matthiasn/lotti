@@ -497,6 +497,76 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         }
       }
 
+      // Capture the final assistant response from the conversation manager.
+      final manager = conversationRepository.getConversation(conversationId);
+      final finalContent = _extractFinalAssistantContent(manager);
+      strategy.recordFinalResponse(finalContent);
+
+      var reportContent = strategy.extractReportContent();
+      var reportTldr = strategy.extractReportTldr();
+      var reportOneLiner = strategy.extractReportOneLiner();
+
+      // 7c. Optional isolated report polishing. The completed main wake keeps
+      // sole ownership of task mutations; this second conversation sees only
+      // update_report, and any inference or validation failure retains the
+      // original draft verbatim.
+      if (reportContent.isNotEmpty &&
+          reportTldr != null &&
+          reportOneLiner != null) {
+        try {
+          final polishReport = await journalDb.getConfigFlag(
+            enableTaskAgentReportPolishingFlag,
+          );
+          if (polishReport) {
+            final reportTool = tools.singleWhere(
+              (tool) => tool.function.name == TaskAgentStrategy.reportToolName,
+            );
+            final attempt =
+                await TaskAgentReportPolisher(
+                  conversationRepository: conversationRepository,
+                  inferenceRepository: inferenceRepo,
+                ).polish(
+                  draft: TaskAgentReportDraft(
+                    oneLiner: reportOneLiner,
+                    tldr: reportTldr,
+                    content: reportContent,
+                  ),
+                  sourceContext: userMessage,
+                  model: modelId,
+                  provider: provider,
+                  reportTool: reportTool,
+                  consumptionAgentId: recordConsumption ? agentId : null,
+                  consumptionTaskId: recordConsumption ? taskId : null,
+                  consumptionCategoryId: consumptionCategoryId,
+                  consumptionWakeRunKey: recordConsumption ? runKey : null,
+                  consumptionThreadId: recordConsumption ? threadId : null,
+                );
+            final polishUsage = attempt.usage;
+            if (polishUsage != null) {
+              usage = usage == null ? polishUsage : usage.merge(polishUsage);
+            }
+            final polished = attempt.report;
+            if (polished != null) {
+              reportContent = polished.content;
+              reportTldr = polished.tldr;
+              reportOneLiner = polished.oneLiner;
+              _log('report polish accepted', subDomain: 'execute');
+            } else {
+              _log(
+                'report polish rejected: ${attempt.rejectionReason}',
+                subDomain: 'execute',
+              );
+            }
+          }
+        } catch (error, stackTrace) {
+          _logError(
+            'report polish failed — retaining original draft',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+
       // Persist token usage as a synced entity (non-fatal on failure).
       await _persistTokenUsage(
         usage: usage,
@@ -508,17 +578,9 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         now: now,
       );
 
-      // Capture the final assistant response from the conversation manager.
-      final manager = conversationRepository.getConversation(conversationId);
-      final finalContent = _extractFinalAssistantContent(manager);
-      strategy.recordFinalResponse(finalContent);
-
       // 7–11. Persist all wake outputs atomically. Wrapping in a transaction
       // ensures the state revision is only bumped if all outputs (thought,
       // report, observations) are successfully written.
-      final reportContent = strategy.extractReportContent();
-      final reportTldr = strategy.extractReportTldr();
-      final reportOneLiner = strategy.extractReportOneLiner();
       if (reportContent.isEmpty && lastReport == null) {
         // Only the FIRST report is mandatory; afterwards an empty report
         // means "nothing materially changed" and the prior one stands.

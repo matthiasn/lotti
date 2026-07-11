@@ -1665,6 +1665,8 @@
   "configFlagEnableSessionRatingsDescription": "Prompt for a quick session rating when you stop a timer.",
   "configFlagEnableSyncedAlerts": "Synced alerts",
   "configFlagEnableSyncedAlertsDescription": "Sync AI and task alerts across devices and allow them to schedule local OS notifications.",
+  "configFlagEnableTaskAgentReportPolishing": "Polish task-agent reports",
+  "configFlagEnableTaskAgentReportPolishingDescription": "Rewrite completed task-agent reports in an isolated report-only pass while keeping task changes untouched.",
   "configFlagEnableTooltip": "Enable tooltips",
   "configFlagEnableTooltipDescription": "Show helpful tooltips throughout the app to guide you through features.",
   "configFlagEnableVectorSearch": "Vector Search",

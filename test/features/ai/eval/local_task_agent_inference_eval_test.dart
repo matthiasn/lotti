@@ -4,11 +4,13 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/eval/local_task_agent_inference_eval.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -48,6 +50,20 @@ void main() {
           TaskAgentToolNames.updateTaskDueDate,
           TaskAgentToolNames.updateTaskPriority,
         ]),
+      );
+    },
+  );
+
+  test(
+    'execution mode parser accepts known modes and rejects unknown input',
+    () {
+      expect(
+        parseLocalTaskAgentEvalExecutionMode('twoPass'),
+        LocalTaskAgentEvalExecutionMode.twoPass,
+      );
+      expect(
+        () => parseLocalTaskAgentEvalExecutionMode('parallel'),
+        throwsFormatException,
       );
     },
   );
@@ -122,7 +138,7 @@ void main() {
     expect(invalidToolCall.toJson()['argumentsJsonValid'], isFalse);
 
     final json = report.toJson();
-    expect(json['schemaVersion'], 1);
+    expect(json['schemaVersion'], 2);
     expect(json['kind'], localTaskAgentEvalKind);
     expect(
       jsonDecode(report.toPrettyJson()),
@@ -150,6 +166,148 @@ void main() {
     expect(markdown, contains('invalidToolArguments'));
   });
 
+  test('Melious matrix covers every configured prompt variant', () {
+    final defaultScenarios = defaultMeliousTaskAgentEvalScenarios();
+    final scenarios = defaultMeliousTaskAgentEvalScenarios(
+      variants: LocalTaskAgentEvalPromptVariant.values,
+    );
+
+    expect(defaultMeliousTaskAgentEvalProfiles.map((profile) => profile.name), [
+      'mistral-small-4-baseline',
+      'glm-5.2-reference',
+    ]);
+    expect(defaultScenarios, hasLength(11));
+    expect(
+      defaultScenarios.map((scenario) => scenario.promptVariant).toSet(),
+      {LocalTaskAgentEvalPromptVariant.production},
+    );
+    expect(
+      scenarios,
+      hasLength(11 * LocalTaskAgentEvalPromptVariant.values.length),
+    );
+    expect(
+      scenarios.map((scenario) => scenario.promptVariant).toSet(),
+      LocalTaskAgentEvalPromptVariant.values.toSet(),
+    );
+    expect(
+      scenarios.map((scenario) => scenario.id),
+      containsAll([
+        'metadata_explicit_production',
+        'german_voice_plan_production',
+        'progress_update_production',
+        'metadata_explicit_compactModel',
+        'german_voice_plan_compactModel',
+        'progress_update_compactModel',
+        'no_op_background_refresh_production',
+        'duplicate_checklist_reconciliation_production',
+        'stale_deadline_user_override_production',
+        'messy_german_transcript_production',
+        'user_completed_item_resurfaced_production',
+        'spanish_mixed_context_production',
+        'external_link_and_completion_production',
+        'latest_deadline_wins_production',
+        'messy_german_transcript_qualityFocused',
+        'latest_deadline_wins_qualityFocused',
+      ]),
+    );
+    final compact = scenarios.firstWhere(
+      (scenario) =>
+          scenario.promptVariant ==
+          LocalTaskAgentEvalPromptVariant.compactModel,
+    );
+    expect(compact.systemPrompt, contains('Compact-Model Execution Protocol'));
+    expect(compact.systemPrompt, contains('MANDATORY FINAL TOOL CALL'));
+    final qualityFocused = scenarios.firstWhere(
+      (scenario) =>
+          scenario.promptVariant ==
+          LocalTaskAgentEvalPromptVariant.qualityFocused,
+    );
+    expect(qualityFocused.systemPrompt, contains('Report Quality Gate'));
+    expect(qualityFocused.systemPrompt, contains('Omit empty sections'));
+  });
+
+  test(
+    'prompt variant parser accepts known names and rejects unknown ones',
+    () {
+      expect(
+        parseLocalTaskAgentEvalPromptVariant(' production '),
+        LocalTaskAgentEvalPromptVariant.production,
+      );
+      expect(
+        parseLocalTaskAgentEvalPromptVariant('compactModel'),
+        LocalTaskAgentEvalPromptVariant.compactModel,
+      );
+      expect(
+        parseLocalTaskAgentEvalPromptVariant('qualityFocused'),
+        LocalTaskAgentEvalPromptVariant.qualityFocused,
+      );
+      expect(
+        parseLocalTaskAgentEvalPromptVariant('conciseReport'),
+        LocalTaskAgentEvalPromptVariant.conciseReport,
+      );
+      expect(
+        () => parseLocalTaskAgentEvalPromptVariant('compact'),
+        throwsFormatException,
+      );
+    },
+  );
+
+  test('concise report variant replaces the decorative report contract', () {
+    final scenario = defaultMeliousTaskAgentEvalScenarios(
+      variants: const [LocalTaskAgentEvalPromptVariant.conciseReport],
+    ).first;
+
+    expect(scenario.systemPrompt, contains('specific current-state tagline'));
+    expect(scenario.systemPrompt, contains('Omit empty sections'));
+    expect(scenario.systemPrompt, isNot(contains('slightly motivational')));
+    expect(scenario.systemPrompt, isNot(contains('1-2 relevant emojis')));
+  });
+
+  test('scenario selection rejects unknown IDs', () {
+    final scenarios = defaultMeliousTaskAgentEvalScenarios();
+
+    expect(
+      selectLocalTaskAgentEvalScenarios(scenarios, const [
+        'german_voice_plan_production',
+      ]).single.id,
+      'german_voice_plan_production',
+    );
+    expect(
+      () => selectLocalTaskAgentEvalScenarios(scenarios, const ['missing']),
+      throwsArgumentError,
+    );
+  });
+
+  test('quality scoring checks report facts, IDs, and tool arguments', () {
+    final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+      (scenario) => scenario.id.startsWith('german_voice_plan'),
+    );
+    final result = LocalTaskAgentEvalCaseResult(
+      profile: profile,
+      scenario: scenario,
+      provider: provider,
+      latencyMs: 10,
+      toolCalls: const [
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.addMultipleChecklistItems,
+          argumentsJson:
+              '{"items":[{"title":"API-Umfang mit Ben klaeren"},{"title":"Figma-Prototyp fertigstellen"},{"title":"Anmeldung implementieren"},{"title":"Lea um Security-Review bitten"}]}',
+        ),
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.updateReport,
+          argumentsJson:
+              '{"oneLiner":"Beta bis 30. September","tldr":"Ben klaert den API-Umfang; Figma, Anmeldung und Leas Security-Review folgen.","content":"Alle konkreten Schritte sind erfasst."}',
+        ),
+      ],
+      failureCategory: LocalTaskAgentEvalFailureCategory.none,
+    );
+
+    expect(result.qualityCheckCount, 11);
+    expect(result.passedQualityCheckCount, 11);
+    expect(result.qualityScore, 1);
+    expect(result.reportToolCall?.name, TaskAgentToolNames.updateReport);
+  });
+
   test(
     'parseLocalTaskAgentEvalProfile trims and validates name=model pairs',
     () {
@@ -172,6 +330,12 @@ void main() {
         () => parseLocalTaskAgentEvalProfile('name='),
         throwsFormatException,
       );
+      for (final value in [' =model', 'name= ']) {
+        expect(
+          () => parseLocalTaskAgentEvalProfile(value),
+          throwsFormatException,
+        );
+      }
     },
   );
 
@@ -350,6 +514,7 @@ void main() {
     final runner = _createRunner(
       provider: provider,
       inferenceRepository: fakeInference,
+      forceReportRetry: false,
     );
 
     final report = await runner.run(
@@ -364,7 +529,7 @@ void main() {
     );
     expect(
       report.results.first.finalContent,
-      contains('Inference failed'),
+      'Bad state: connection refused',
     );
     expect(
       report.results.last.failureCategory,
@@ -375,6 +540,107 @@ void main() {
       equals(['local-model-id', 'second-local-model-id']),
     );
   });
+
+  test(
+    'runner converts conversation creation failures into case results',
+    () async {
+      final conversationRepository = _ThrowingConversationRepository(
+        _ConversationFailurePoint.create,
+      );
+      addTearDown(conversationRepository.disposeManager);
+      final runner = LocalTaskAgentInferenceEvalRunner(
+        provider: provider,
+        conversationRepository: conversationRepository,
+        inferenceRepository: _QueuedInferenceRepository(const []),
+      );
+
+      final report = await runner.run(
+        profiles: const [profile],
+        scenarios: [defaultLocalTaskAgentWakeScenario()],
+      );
+
+      final result = report.results.single;
+      expect(
+        result.failureCategory,
+        LocalTaskAgentEvalFailureCategory.inferenceFailed,
+      );
+      expect(result.errorMessage, 'Bad state: create failed');
+      expect(result.finalContent, contains('create failed'));
+      expect(conversationRepository.deleteCount, 0);
+    },
+  );
+
+  test('runner converts send failures and deletes the conversation', () async {
+    final conversationRepository = _ThrowingConversationRepository(
+      _ConversationFailurePoint.send,
+    );
+    addTearDown(conversationRepository.disposeManager);
+    final runner = LocalTaskAgentInferenceEvalRunner(
+      provider: provider,
+      conversationRepository: conversationRepository,
+      inferenceRepository: _QueuedInferenceRepository(const []),
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultLocalTaskAgentWakeScenario()],
+    );
+
+    final result = report.results.single;
+    expect(
+      result.failureCategory,
+      LocalTaskAgentEvalFailureCategory.inferenceFailed,
+    );
+    expect(result.errorMessage, 'Bad state: send failed');
+    expect(result.finalContent, contains('send failed'));
+    expect(conversationRepository.deleteCount, 1);
+  });
+
+  test(
+    'runner recovers a missing first report with report-only tools',
+    () async {
+      final fakeInference = _QueuedInferenceRepository([
+        [
+          _toolCalls(_expectedMetadataToolCalls()),
+        ],
+        [_content('The requested task fields are updated.')],
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Validate local Gemma fallback',
+                'tldr': 'P1, due July 4, with a 150 minute estimate.',
+                'content': 'Compare the local fallback against Qwen.',
+              }),
+            ),
+          ]),
+          _usage(inputTokens: 25, outputTokens: 8),
+        ],
+      ]);
+      final runner = _createRunner(
+        provider: provider,
+        inferenceRepository: fakeInference,
+      );
+
+      final report = await runner.run(
+        profiles: const [profile],
+        scenarios: [defaultLocalTaskAgentWakeScenario()],
+      );
+
+      expect(
+        report.results.single.failureCategory,
+        LocalTaskAgentEvalFailureCategory.none,
+      );
+      expect(report.results.single.usedForcedReportRetry, isTrue);
+      expect(report.results.single.inputTokens, 25);
+      expect(report.results.single.outputTokens, 8);
+      expect(fakeInference.requests, hasLength(3));
+      expect(fakeInference.requests.last.toolNames, [
+        TaskAgentToolNames.updateReport,
+      ]);
+    },
+  );
 
   test(
     'runner fails simple tool smoke output when final report is missing',
@@ -469,6 +735,236 @@ void main() {
       LocalTaskAgentEvalFailureCategory.unexpectedToolCall,
     );
   });
+
+  test('runner flags missing required report facts', () async {
+    final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+      (scenario) => scenario.id.startsWith('german_voice_plan'),
+    );
+    final runner = _createRunner(
+      provider: provider,
+      inferenceRepository: _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.addMultipleChecklistItems,
+              argumentsJson: jsonEncode({
+                'items': [
+                  {'title': 'API-Umfang mit Ben klaeren'},
+                  {'title': 'Figma-Prototyp fertigstellen'},
+                  {'title': 'Anmeldung implementieren'},
+                  {'title': 'Lea um Security-Review bitten'},
+                ],
+              }),
+            ),
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Beta-Plan steht',
+                'tldr': 'Ben, Figma, Anmeldung und Leas Security-Review.',
+                'content': 'Alle vier Schritte sind geplant.',
+              }),
+            ),
+          ]),
+        ],
+      ]),
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [scenario],
+    );
+
+    expect(
+      report.results.single.failureCategory,
+      LocalTaskAgentEvalFailureCategory.missingRequiredContent,
+    );
+  });
+
+  test('runner flags internal IDs leaked into the report', () async {
+    final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+      (scenario) => scenario.id.startsWith('metadata_explicit'),
+    );
+    final runner = _createRunner(
+      provider: provider,
+      inferenceRepository: _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            ..._expectedMetadataToolCalls(),
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Validate local Gemma fallback',
+                'tldr': 'P1, due July 4, with a 150 minute estimate.',
+                'content':
+                    'Compare against Qwen and complete check-1 before 2026-07-04.',
+              }),
+            ),
+          ]),
+        ],
+      ]),
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [scenario],
+    );
+
+    expect(
+      report.results.single.failureCategory,
+      LocalTaskAgentEvalFailureCategory.forbiddenReportContent,
+    );
+  });
+
+  test(
+    'runner rewards a no-op note and rejects unnecessary report churn',
+    () async {
+      final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+        (scenario) => scenario.id.startsWith('no_op_background_refresh'),
+      );
+      final passingRunner = _createRunner(
+        provider: provider,
+        inferenceRepository: _QueuedInferenceRepository([
+          [_content('No task or report changes were needed.')],
+        ]),
+      );
+
+      final passing = await passingRunner.run(
+        profiles: const [profile],
+        scenarios: [scenario],
+      );
+
+      expect(
+        passing.results.single.failureCategory,
+        LocalTaskAgentEvalFailureCategory.none,
+      );
+      expect(passing.results.single.qualityScore, 1);
+
+      final failingRunner = _createRunner(
+        provider: provider,
+        inferenceRepository: _QueuedInferenceRepository([
+          [
+            _toolCalls([
+              (
+                name: TaskAgentToolNames.updateReport,
+                argumentsJson: jsonEncode({
+                  'oneLiner': 'Tax return remains complete',
+                  'tldr': 'Nothing changed.',
+                  'content': 'The return remains complete.',
+                }),
+              ),
+            ]),
+          ],
+        ]),
+      );
+
+      final failing = await failingRunner.run(
+        profiles: const [profile],
+        scenarios: [scenario],
+      );
+
+      expect(
+        failing.results.single.failureCategory,
+        LocalTaskAgentEvalFailureCategory.forbiddenToolCall,
+      );
+    },
+  );
+
+  test(
+    'two-pass runner isolates mutation tools from the report tool',
+    () async {
+      final inferenceRepository = _QueuedInferenceRepository([
+        [
+          _content('Mutation analysis complete.'),
+          _usage(inputTokens: 100, outputTokens: 20),
+        ],
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Local model evaluation planned',
+                'tldr': 'The evaluation is ready to run.',
+                'content':
+                    'Validate local Gemma fallback at P1 by July 4, 2026. '
+                    'The estimate is 150 minutes and Qwen is the baseline.',
+              }),
+            ),
+          ]),
+          _usage(inputTokens: 40, outputTokens: 10),
+        ],
+      ]);
+      final runner = _createRunner(
+        provider: provider,
+        inferenceRepository: inferenceRepository,
+        executionMode: LocalTaskAgentEvalExecutionMode.twoPass,
+      );
+
+      final report = await runner.run(
+        profiles: const [profile],
+        scenarios: [defaultLocalTaskAgentWakeScenario()],
+      );
+
+      expect(report.results.single.usedForcedReportRetry, isTrue);
+      expect(report.results.single.inputTokens, 140);
+      expect(report.results.single.outputTokens, 30);
+      expect(inferenceRepository.requests, hasLength(2));
+      expect(
+        inferenceRepository.requests.first.toolNames,
+        isNot(contains(TaskAgentToolNames.updateReport)),
+      );
+      expect(inferenceRepository.requests.last.toolNames, [
+        TaskAgentToolNames.updateReport,
+      ]);
+    },
+  );
+
+  test('runner rejects speculative content in checklist arguments', () async {
+    final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+      (scenario) => scenario.id.startsWith('messy_german_transcript'),
+    );
+    final runner = _createRunner(
+      provider: provider,
+      inferenceRepository: _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.addMultipleChecklistItems,
+              argumentsJson: jsonEncode({
+                'items': [
+                  {'title': 'CSV-Export reparieren'},
+                  {'title': 'Sam nach Testdaten fragen'},
+                  {'title': 'Regressionstest ausfuehren'},
+                  {'title': 'Newsletter vorbereiten'},
+                ],
+              }),
+            ),
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Export-Reparatur geplant',
+                'tldr':
+                    'Export, Testdaten von Sam und Regressionstest stehen an.',
+                'content': 'Die drei verbindlichen Schritte sind erfasst.',
+              }),
+            ),
+          ]),
+        ],
+      ]),
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [scenario],
+    );
+
+    final result = report.results.single;
+    expect(
+      result.failureCategory,
+      LocalTaskAgentEvalFailureCategory.forbiddenToolArguments,
+    );
+    expect(result.qualityCheckCount, greaterThan(0));
+    expect(result.passedQualityCheckCount, lessThan(result.qualityCheckCount));
+  });
 }
 
 Future<LocalTaskAgentEvalFailureCategory> _runSingleFailureScenario({
@@ -492,6 +988,9 @@ Future<LocalTaskAgentEvalFailureCategory> _runSingleFailureScenario({
 LocalTaskAgentInferenceEvalRunner _createRunner({
   required AiConfigInferenceProvider provider,
   required InferenceRepositoryInterface inferenceRepository,
+  bool forceReportRetry = true,
+  LocalTaskAgentEvalExecutionMode executionMode =
+      LocalTaskAgentEvalExecutionMode.singlePass,
 }) {
   final container = ProviderContainer();
   addTearDown(container.dispose);
@@ -501,6 +1000,8 @@ LocalTaskAgentInferenceEvalRunner _createRunner({
       conversationRepositoryProvider.notifier,
     ),
     inferenceRepository: inferenceRepository,
+    forceReportRetry: forceReportRetry,
+    executionMode: executionMode,
   );
 }
 
@@ -537,6 +1038,58 @@ class _RecordedRequest {
   final List<ChatCompletionMessage> messages;
   final List<String> toolNames;
   final String model;
+}
+
+enum _ConversationFailurePoint { create, send }
+
+class _ThrowingConversationRepository extends ConversationRepository {
+  _ThrowingConversationRepository(this.failurePoint);
+
+  final _ConversationFailurePoint failurePoint;
+  final _manager = ConversationManager(
+    conversationId: 'throwing-conversation',
+    maxTurns: 2,
+  );
+  int deleteCount = 0;
+
+  void disposeManager() => _manager.dispose();
+
+  @override
+  String createConversation({String? systemMessage, int maxTurns = 20}) {
+    if (failurePoint == _ConversationFailurePoint.create) {
+      throw StateError('create failed');
+    }
+    _manager.initialize(systemMessage: systemMessage);
+    return 'throwing-conversation';
+  }
+
+  @override
+  ConversationManager? getConversation(String conversationId) => _manager;
+
+  @override
+  Future<InferenceUsage?> sendMessage({
+    required String conversationId,
+    required String message,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required InferenceRepositoryInterface inferenceRepo,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    double temperature = 0.7,
+    ConversationStrategy? strategy,
+    String? consumptionAgentId,
+    String? consumptionTaskId,
+    String? consumptionCategoryId,
+    String? consumptionWakeRunKey,
+    String? consumptionThreadId,
+  }) {
+    throw StateError('send failed');
+  }
+
+  @override
+  void deleteConversation(String conversationId) {
+    deleteCount++;
+  }
 }
 
 class _QueuedInferenceRepository extends InferenceRepositoryInterface {
@@ -644,6 +1197,23 @@ CreateChatCompletionStreamResponse _content(String text) {
     ],
     object: 'chat.completion.chunk',
     created: 0,
+  );
+}
+
+CreateChatCompletionStreamResponse _usage({
+  required int inputTokens,
+  required int outputTokens,
+}) {
+  return CreateChatCompletionStreamResponse(
+    id: 'usage',
+    choices: const [],
+    object: 'chat.completion.chunk',
+    created: 0,
+    usage: CompletionUsage(
+      promptTokens: inputTokens,
+      completionTokens: outputTokens,
+      totalTokens: inputTokens + outputTokens,
+    ),
   );
 }
 

@@ -238,6 +238,9 @@ class LoggingService {
     for (final stem in _pendingFileLinesByStem.keys.toList()) {
       await _flushPendingLines(stem, forceFlush: true);
     }
+    // A timer callback may already have moved its lines into an active drain.
+    // Wait for those writes as well so shutdown cannot return before disk IO.
+    await Future.wait(List<Future<void>>.of(_fileDrains.values));
   }
 
   /// Test-only alias for [flush]. Kept for backwards compatibility with

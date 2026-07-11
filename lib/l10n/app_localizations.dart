@@ -5197,6 +5197,18 @@ abstract class AppLocalizations {
   /// **'Sync AI and task alerts across devices and allow them to schedule local OS notifications.'**
   String get configFlagEnableSyncedAlertsDescription;
 
+  /// No description provided for @configFlagEnableTaskAgentReportPolishing.
+  ///
+  /// In en, this message translates to:
+  /// **'Polish task-agent reports'**
+  String get configFlagEnableTaskAgentReportPolishing;
+
+  /// No description provided for @configFlagEnableTaskAgentReportPolishingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Rewrite completed task-agent reports in an isolated report-only pass while keeping task changes untouched.'**
+  String get configFlagEnableTaskAgentReportPolishingDescription;
+
   /// No description provided for @configFlagEnableTooltip.
   ///
   /// In en, this message translates to:

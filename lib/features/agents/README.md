@@ -529,6 +529,28 @@ feedback loop), and `update_report` is conditional: the agent publishes only
 when the report would materially change (the first report is still forced via
 a retry). A wake with nothing report-worthy ends with a plain-text note.
 
+When `enable_task_agent_report_polishing` is enabled, a completed draft report
+goes through an isolated editor pass before persistence. The main wake retains
+exclusive ownership of task and checklist tools; the editor receives the same
+task context, the draft, and only `update_report`. Its concise contract removes
+decorative headings, emojis, empty sections, and agent-process narration. A
+deterministic validator rejects incomplete or oversized rewrites, internal-ID
+leaks, and dropped URLs or numeric facts. Rejection, inference failure, or an
+exception preserves the main wake's draft verbatim. Accepted polish usage is
+merged into the wake's token accounting.
+
+```mermaid
+flowchart LR
+  Wake[Main task-agent wake] --> Mutations[Task and checklist proposals]
+  Mutations --> Draft[Draft report]
+  Draft --> Enabled{Report polishing enabled?}
+  Enabled -->|No| Persist[Persist original draft]
+  Enabled -->|Yes| Polish[Isolated report-only call]
+  Polish --> Validate{Deterministic validation}
+  Validate -->|Accept| PersistPolished[Persist polished report]
+  Validate -->|Reject or error| Persist
+```
+
 **Prompt persistence stores only what isn't derivable (v2 prompt records).**
 A compacted wake no longer persists its full rendered prompt: the embedded
 log block is a pure function of the synced event log, so the payload stores
@@ -827,10 +849,12 @@ the write."
 8. build the system prompt and user message
 9. create a conversation and persist the user message into the agent log
 10. run the conversation with `TaskAgentStrategy`
-11. persist wake token usage
-12. persist the final thought, report, observations, change set, and updated
+11. optionally polish and validate the completed report in an isolated
+    report-only conversation
+12. persist combined wake token usage
+13. persist the final thought, report, observations, change set, and updated
     agent state
-13. optionally embed the persisted report when both embedding dependencies are
+14. optionally embed the persisted report when both embedding dependencies are
     available
 
 The task wake prompt is assembled from:

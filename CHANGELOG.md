@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1037]
 ### Added
+- **Optional cleaner task-agent reports for smaller models.** A new advanced
+  flag runs completed task-agent reports through an isolated report-only edit
+  pass. It removes repetitive decoration and agent-process narration without
+  exposing checklist or task mutation tools, validates the rewrite, and keeps
+  the original report automatically when polishing is incomplete or unsafe.
 - **Daily OS gives better feedback while turning a spoken check-in into a
   plan.** Drafting now shows a staged progress trail, failures offer Retry and
   Back to decisions, the Day footer explains why blocks made it in, each block
@@ -61,6 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   up (or have since been deleted) are cleaned up on the next launch; any
   profile you renamed, described, or rewired to another provider is kept.
 ### Fixed
+- **Melious task agents now continue reliably after calling tools.** Follow-up
+  requests now preserve the OpenAI-compatible assistant message shape expected
+  by strict providers, so checklist updates and the final report are no longer
+  interrupted after an otherwise successful tool call.
 - **Dashboard chart editing now saves when it should.** Adding measurable
   charts in Settings → Dashboards immediately enables Save, measurable chart
   aggregation can be chosen before adding, aggregation and reorder no-ops no

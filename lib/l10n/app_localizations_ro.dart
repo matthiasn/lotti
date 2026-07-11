@@ -3064,6 +3064,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sincronizați alertele AI și de sarcini între dispozitivele dvs. și permiteți programarea notificărilor locale de sistem.';
 
   @override
+  String get configFlagEnableTaskAgentReportPolishing =>
+      'Rafinați rapoartele agentului de sarcini';
+
+  @override
+  String get configFlagEnableTaskAgentReportPolishingDescription =>
+      'Rescrie rapoartele finalizate ale agentului de sarcini într-o etapă izolată doar pentru raport, fără a modifica schimbările sarcinii.';
+
+  @override
   String get configFlagEnableTooltip => 'Activează sfaturile';
 
   @override

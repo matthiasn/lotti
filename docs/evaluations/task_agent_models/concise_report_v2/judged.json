@@ -1,0 +1,525 @@
+{
+  "schemaVersion": 1,
+  "kind": "lotti.taskAgentModelEvalJudgments",
+  "judgeModel": "qwen3.5-122b-a10b",
+  "source": "docs/evaluations/task_agent_models/concise_report_v2/latest.json",
+  "results": [
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "metadata_explicit_conciseReport",
+      "promptVariant": "conciseReport",
+      "caseFingerprint": "863613abbf6199e0d7a56ffdf1d75e4f5ab1f9257f2a15186841628f59713448",
+      "deterministicFailure": "none",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 4,
+        "checklistQuality": 3,
+        "summaryQuality": 3,
+        "formatCompliance": 4,
+        "overall": 3,
+        "verdict": "good",
+        "findings": [
+          "All user-requested metadata changes (title, P1, July 4, 2.5h) correctly applied",
+          "All five required term groups present in report content",
+          "Next actions section copies original checklist without adding owners or specificity",
+          "Progress section redundantly restates tool call results rather than synthesizing state",
+          "Format meets all compliance requirements (no internal IDs, proper structure)"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 1563,
+          "completion_tokens": 1406,
+          "total_tokens": 2969,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0009191789536736905,
+          "carbon_g_co2": 0.11030147444084286,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "5.781000",
+          "credits": "0.0005781000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "german_voice_plan_conciseReport",
+      "promptVariant": "conciseReport",
+      "caseFingerprint": "135db2e03f30603b14ace98ad91b854c56c1f678275275ab80370c7dd698f175",
+      "deterministicFailure": "none",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 4,
+        "checklistQuality": 4,
+        "summaryQuality": 4,
+        "formatCompliance": 4,
+        "overall": 4,
+        "verdict": "excellent",
+        "findings": [
+          "All required entities (Ben, Lea, dates, Figma, security) properly captured",
+          "Checklist items are concrete, verb-first, with owners retained",
+          "Report structure includes useful oneLiner/tldr/content sections",
+          "Both tool calls executed correctly per requirements",
+          "German language maintained consistently throughout"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 1028,
+          "completion_tokens": 854,
+          "total_tokens": 1882,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0005537800193764268,
+          "carbon_g_co2": 0.06645360232517122,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "3.590000",
+          "credits": "0.0003590000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "progress_update_conciseReport",
+      "promptVariant": "conciseReport",
+      "caseFingerprint": "e76c79f03a2485064974dadc6e3918653e48837ced19b54bf0b313e7e0823892",
+      "deterministicFailure": "none",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 4,
+        "checklistQuality": 4,
+        "summaryQuality": 4,
+        "formatCompliance": 3,
+        "overall": 3,
+        "verdict": "good",
+        "findings": [
+          "Correctly updated checklist and due date per requirements",
+          "Report includes all required entities (interviews, Dana, legal, deadline)",
+          "No forbidden internal IDs appear in report content",
+          "Final message doesn't surface report content to user",
+          "Action items are concrete with clear owners"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 1061,
+          "completion_tokens": 1552,
+          "total_tokens": 2613,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0010034480083733796,
+          "carbon_g_co2": 0.12041376100480555,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "5.717000",
+          "credits": "0.0005717000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "no_op_background_refresh_conciseReport",
+      "promptVariant": "conciseReport",
+      "caseFingerprint": "edbc68a376d752ad82df4690a01ac988c858c0be3847c98d7d7ade1a51ad4fe2",
+      "deterministicFailure": "none",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 4,
+        "checklistQuality": 4,
+        "summaryQuality": 4,
+        "formatCompliance": 4,
+        "overall": 4,
+        "verdict": "excellent",
+        "findings": [
+          "Correctly determined no action/report update needed despite label change.",
+          "Adhered to 'Do not republish unchanged content' instruction.",
+          "Provided concise plain-text completion instead of unnecessary report structure.",
+          "No tool calls executed, matching expected behavior.",
+          "Clear reasoning provided for maintaining current state."
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 727,
+          "completion_tokens": 2258,
+          "total_tokens": 2985,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0014526682871393861,
+          "carbon_g_co2": 0.17432019445672634,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "7.501000",
+          "credits": "0.0007501000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "duplicate_checklist_reconciliation_conciseReport",
+      "promptVariant": "conciseReport",
+      "caseFingerprint": "1df7aaef4ddab2f7eac9e9a321baa99665d5687a045fe342f9001c69523a9670",
+      "deterministicFailure": "missingExpectedToolCall",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 2,
+        "requiredCoverage": 2,
+        "checklistQuality": 1,
+        "summaryQuality": 3,
+        "formatCompliance": 3,
+        "overall": 2,
+        "verdict": "weak",
+        "findings": [
+          "Missing expected tool call to add 'Submit the expense report by Friday' checklist item",
+          "Incorrectly reasoned submission shouldn't be a checklist item despite explicit user request",
+          "Report contains all required term groups (submit, friday, receipt, reconcile)",
+          "Unnecessary reasoning text included before report output",
+          "Failed to follow explicit instruction to add genuinely missing checklist work"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 940,
+          "completion_tokens": 1219,
+          "total_tokens": 2159,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0007875241451896726,
+          "carbon_g_co2": 0.09450289742276072,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "4.597000",
+          "credits": "0.0004597000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "stale_deadline_user_override_conciseReport",
+      "promptVariant": "conciseReport",
+      "caseFingerprint": "97ab39dfb58b3b2c8bad9519a45dbb132d3c93313e2288d43f79d9c1a8c7aecb",
+      "deterministicFailure": "none",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 4,
+        "checklistQuality": 4,
+        "summaryQuality": 3,
+        "formatCompliance": 4,
+        "overall": 3,
+        "verdict": "good",
+        "findings": [
+          "Correctly avoided calling update_report despite new log entry.",
+          "Accurately reflected manual deadline override in text.",
+          "Response includes internal reasoning ('task context shows') instead of direct user statement.",
+          "Adhered to forbidden tool constraints.",
+          "Provided clear status confirmation without unnecessary churn."
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 946,
+          "completion_tokens": 3941,
+          "total_tokens": 4887,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.002522622458077967,
+          "carbon_g_co2": 0.39352910346016284,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "12.769000",
+          "credits": "0.0012769000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "messy_german_transcript_conciseReport",
+      "promptVariant": "conciseReport",
+      "caseFingerprint": "1b176974596392b8a668324212089af04e5e9ddc6e64135eec332c2bf1eddb65",
+      "deterministicFailure": "missingExpectedToolCall",
+      "deterministicScore": 0.6,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 4,
+        "checklistQuality": 2,
+        "summaryQuality": 4,
+        "formatCompliance": 4,
+        "overall": 3,
+        "verdict": "good",
+        "findings": [
+          "Correctly extracted all three committed tasks from transcript",
+          "Properly excluded newsletter per explicit instruction",
+          "Used update_report instead of expected add_multiple_checklist_items tool",
+          "Report content well-structured in German with oneLiner/tldr/content",
+          "Final assistant message contains unnecessary meta-explanation"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 889,
+          "completion_tokens": 985,
+          "total_tokens": 1874,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0006401159131899476,
+          "carbon_g_co2": 0.07681390958279372,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "3.844000",
+          "credits": "0.0003844000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "user_completed_item_resurfaced_conciseReport",
+      "promptVariant": "conciseReport",
+      "caseFingerprint": "f16dda24e05c9d6fc6530dd05904a4f4a199359e593d3e20a835583db95bd8da",
+      "deterministicFailure": "forbiddenToolCall",
+      "deterministicScore": 0.8,
+      "judge": {
+        "factualGrounding": 2,
+        "requiredCoverage": 3,
+        "checklistQuality": 2,
+        "summaryQuality": 2,
+        "formatCompliance": 1,
+        "overall": 1,
+        "verdict": "failed",
+        "findings": [
+          "Used forbidden tool update_checklist_items despite explicit prohibition",
+          "Overrode user's checked state without authorization",
+          "Report content correctly surfaces sync recurrence and investigation needs",
+          "Required term groups present in report (sync, reappeared, blocker)",
+          "Deterministic failure triggered by forbidden tool call"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 1029,
+          "completion_tokens": 934,
+          "total_tokens": 1963,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0006073036409914493,
+          "carbon_g_co2": 0.07287643691897391,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "3.831000",
+          "credits": "0.0003831000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "spanish_mixed_context_conciseReport",
+      "promptVariant": "conciseReport",
+      "caseFingerprint": "d9da8aa2774c8677d36b1918662a563064df4fca353bcdb2359d2bacdabf0056",
+      "deterministicFailure": "none",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 2,
+        "checklistQuality": 4,
+        "summaryQuality": 2,
+        "formatCompliance": 1,
+        "overall": 2,
+        "verdict": "weak",
+        "findings": [
+          "Report generated via tool but not displayed in finalAssistantContent",
+          "Final output only states intent instead of showing actual report",
+          "User cannot see the requested Spanish report content",
+          "Tool calls correct but user-facing delivery incomplete",
+          "Missing actual report violates requiresReport=true expectation"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 998,
+          "completion_tokens": 1136,
+          "total_tokens": 2134,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0007357063310220838,
+          "carbon_g_co2": 0.08828475972265006,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "4.406000",
+          "credits": "0.0004406000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "external_link_and_completion_conciseReport",
+      "promptVariant": "conciseReport",
+      "caseFingerprint": "dcc15eaff258c3ce9f30683657da4f8b9729063d8d36bd94a2c00fa5450ec6b5",
+      "deterministicFailure": "none",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 4,
+        "checklistQuality": 4,
+        "summaryQuality": 4,
+        "formatCompliance": 4,
+        "overall": 4,
+        "verdict": "excellent",
+        "findings": [
+          "All required terms present (merged, URL, migration)",
+          "Internal IDs properly excluded from user-facing content",
+          "Checklist correctly updated via tool call",
+          "Report structure follows expected format with oneLiner/tldr/content",
+          "Brief final message avoids unnecessary verbosity"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 844,
+          "completion_tokens": 839,
+          "total_tokens": 1683,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0005444406298920512,
+          "carbon_g_co2": 0.06533287558704613,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "3.361000",
+          "credits": "0.0003361000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "latest_deadline_wins_conciseReport",
+      "promptVariant": "conciseReport",
+      "caseFingerprint": "1504abf5a8e839f3c70f616aaebbd3dcaeab64689ac565e7ca8039822add5c4e",
+      "deterministicFailure": "none",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 4,
+        "checklistQuality": 4,
+        "summaryQuality": 4,
+        "formatCompliance": 4,
+        "overall": 4,
+        "verdict": "excellent",
+        "findings": [
+          "Accurately updated due date to 2026-11-20 based on final log decision.",
+          "Report includes all mandatory term groups (date, conference, procurement).",
+          "Content synthesizes status without exposing raw log timestamps.",
+          "Action items are verb-first and clearly defined.",
+          "Report structure avoids redundant titles and uses appropriate markdown hierarchy."
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 1030,
+          "completion_tokens": 2403,
+          "total_tokens": 3433,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0015396944076754152,
+          "carbon_g_co2": 0.18476332892104982,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "8.239000",
+          "credits": "0.0008239000",
+          "paid_with": "credits"
+        }
+      }
+    }
+  ]
+}

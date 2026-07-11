@@ -109,6 +109,12 @@ void main() {
             status: false,
           ),
           const ConfigFlag(
+            name: enableTaskAgentReportPolishingFlag,
+            description:
+                'Polish task-agent reports in an isolated second pass?',
+            status: false,
+          ),
+          const ConfigFlag(
             name: enableKnowledgeGraphFlag,
             description: 'Enable Knowledge Graph?',
             status: false,
@@ -145,8 +151,8 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 14 flags in the mock data.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(14));
+      // 15 flags in the mock data.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(15));
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -155,7 +161,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(SettingsIcon), findsNWidgets(14));
+      expect(find.byType(SettingsIcon), findsNWidgets(15));
     });
 
     testWidgets('shows correct title and description for private flag', (
@@ -323,6 +329,19 @@ void main() {
             description: (m) => m.configFlagEnableForkHealingDescription,
             icon: Icons.call_merge_rounded,
             expectedToggle: null,
+          ),
+          (
+            name: 'task-agent-report-polishing',
+            title: (m) => m.configFlagEnableTaskAgentReportPolishing,
+            description: (m) =>
+                m.configFlagEnableTaskAgentReportPolishingDescription,
+            icon: Icons.auto_fix_high_rounded,
+            expectedToggle: const ConfigFlag(
+              name: enableTaskAgentReportPolishingFlag,
+              description:
+                  'Polish task-agent reports in an isolated second pass?',
+              status: true,
+            ),
           ),
           (
             name: 'ai-summary-tts',
@@ -559,7 +578,7 @@ void main() {
         await tester.tap(clearIcon);
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.byType(DesignSystemListItem), findsNWidgets(14));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(15));
       },
     );
 
@@ -580,7 +599,7 @@ void main() {
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.byType(DesignSystemListItem), findsNWidgets(14));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(15));
       },
     );
 
@@ -597,7 +616,7 @@ void main() {
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
-        expect(find.byType(DesignSystemListItem), findsNWidgets(14));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(15));
       },
     );
   });

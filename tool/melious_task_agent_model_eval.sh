@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+env_file="${LOTTI_MELIOUS_ENV_FILE:-$repo_root/../greifswald/service/.env}"
+
+if [[ -f "$env_file" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$env_file"
+  set +a
+fi
+
+api_key="${MELIOUS_API_KEY:-${UP_UPSTREAM_API_KEY:-}}"
+base_url="${MELIOUS_BASE_URL:-${UP_UPSTREAM_BASE_URL:-https://api.melious.ai/v1}}"
+if [[ -z "$api_key" ]]; then
+  printf 'Missing Melious API key. Set MELIOUS_API_KEY or LOTTI_MELIOUS_ENV_FILE.\n' >&2
+  exit 2
+fi
+
+output_dir="${LOCAL_TASK_AGENT_EVAL_OUTPUT_DIR:-$repo_root/docs/evaluations/task_agent_models}"
+mkdir -p "$output_dir"
+
+export LOTTI_LOCAL_TASK_AGENT_EVAL_LIVE=1
+export LOCAL_TASK_AGENT_EVAL_PROVIDER_TYPE=genericOpenAi
+export LOCAL_TASK_AGENT_EVAL_MATRIX=melious
+export LOCAL_TASK_AGENT_EVAL_BASE_URL="$base_url"
+export LOCAL_TASK_AGENT_EVAL_API_KEY="$api_key"
+export LOCAL_TASK_AGENT_EVAL_TEMPERATURE="${LOCAL_TASK_AGENT_EVAL_TEMPERATURE:-0}"
+export LOCAL_TASK_AGENT_EVAL_JSON="${LOCAL_TASK_AGENT_EVAL_JSON:-$output_dir/latest.json}"
+export LOCAL_TASK_AGENT_EVAL_MARKDOWN="${LOCAL_TASK_AGENT_EVAL_MARKDOWN:-$output_dir/latest.md}"
+
+cd "$repo_root"
+fvm flutter test test/features/ai/eval/local_task_agent_inference_eval_live_test.dart "$@"
+
+if [[ "${LOCAL_TASK_AGENT_EVAL_JUDGE:-1}" == "1" ]]; then
+  python3 tool/task_agent_model_eval_judge.py \
+    "$LOCAL_TASK_AGENT_EVAL_JSON" \
+    --json "$output_dir/judged.json" \
+    --markdown "$output_dir/judged.md"
+fi

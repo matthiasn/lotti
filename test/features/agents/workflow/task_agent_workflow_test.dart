@@ -35,6 +35,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -158,6 +159,12 @@ void main() {
     mockChecklistRepository = MockChecklistRepository();
     mockLabelsRepository = MockLabelsRepository();
     mockTemplateService = MockAgentTemplateService();
+
+    when(
+      () => mockJournalDb.getConfigFlag(
+        enableTaskAgentReportPolishingFlag,
+      ),
+    ).thenAnswer((_) async => false);
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
     stubAppendMilestone(mockSyncService);
@@ -2251,6 +2258,50 @@ void main() {
         );
       });
 
+      void stubOriginalReport({bool throwOnPolish = false}) {
+        mockConversationRepository
+          ..maxDelegateCalls = throwOnPolish ? 2 : 1
+          ..sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy is! TaskAgentStrategy) {
+                  if (throwOnPolish) {
+                    throw StateError('polisher unavailable');
+                  }
+                  return null;
+                }
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    ChatCompletionMessageToolCall(
+                      id: 'draft-report',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: TaskAgentStrategy.reportToolName,
+                        arguments: jsonEncode({
+                          'content':
+                              '## Status\nOriginal report remains available after failure.',
+                          'oneLiner': 'Original report',
+                          'tldr': 'Original report remains available.',
+                        }),
+                      ),
+                    ),
+                  ],
+                  manager: mockConversationManager,
+                );
+                return null;
+              };
+        when(() => mockConversationManager.messages).thenReturn([]);
+      }
+
       test(
         'persists report and report head when strategy produces report',
         () async {
@@ -2382,6 +2433,191 @@ void main() {
         expect(report.content, '# Detailed Report\nFull analysis.');
         expect(report.tldr, 'Brief summary.');
         expect(report.oneLiner, 'Implementation done, release next');
+      });
+
+      test('persists an accepted polished report and merges its usage', () async {
+        when(
+          () => mockJournalDb.getConfigFlag(
+            enableTaskAgentReportPolishingFlag,
+          ),
+        ).thenAnswer((_) async => true);
+        mockConversationRepository
+          ..maxDelegateCalls = 2
+          ..sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                final isMainPass = strategy is TaskAgentStrategy;
+                await strategy!.processToolCalls(
+                  toolCalls: [
+                    ChatCompletionMessageToolCall(
+                      id: isMainPass ? 'draft-report' : 'polished-report',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: TaskAgentStrategy.reportToolName,
+                        arguments: jsonEncode({
+                          'content': isMainPass
+                              ? '## Status\nThe release remains blocked on legal review.'
+                              : '## Blockers\nLegal review still blocks the release.\n\n'
+                                    '## Next actions\nObtain legal approval.',
+                          'oneLiner': isMainPass
+                              ? 'Release remains blocked'
+                              : 'Legal review blocks release',
+                          'tldr': isMainPass
+                              ? 'The release remains blocked on legal review.'
+                              : 'Obtain legal approval before releasing.',
+                        }),
+                      ),
+                    ),
+                  ],
+                  manager: mockConversationManager,
+                );
+                return isMainPass
+                    ? const InferenceUsage(inputTokens: 100, outputTokens: 40)
+                    : const InferenceUsage(inputTokens: 30, outputTokens: 20);
+              };
+        when(() => mockConversationManager.messages).thenReturn([]);
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final report = captured.whereType<AgentReportEntity>().single;
+        expect(report.oneLiner, 'Legal review blocks release');
+        expect(report.tldr, 'Obtain legal approval before releasing.');
+        expect(report.content, contains('## Next actions'));
+        final usage = captured.whereType<WakeTokenUsageEntity>().single;
+        expect(usage.inputTokens, 130);
+        expect(usage.outputTokens, 60);
+      });
+
+      test('retains the draft when report polishing is rejected', () async {
+        when(
+          () => mockJournalDb.getConfigFlag(
+            enableTaskAgentReportPolishingFlag,
+          ),
+        ).thenAnswer((_) async => true);
+        mockConversationRepository
+          ..maxDelegateCalls = 2
+          ..sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                final isMainPass = strategy is TaskAgentStrategy;
+                await strategy!.processToolCalls(
+                  toolCalls: [
+                    ChatCompletionMessageToolCall(
+                      id: isMainPass ? 'draft-report' : 'unsafe-report',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: TaskAgentStrategy.reportToolName,
+                        arguments: jsonEncode({
+                          'content': isMainPass
+                              ? '## Status\nThe release remains blocked on legal review.'
+                              : 'Too short',
+                          'oneLiner': 'Release remains blocked',
+                          'tldr':
+                              'The release remains blocked on legal review.',
+                        }),
+                      ),
+                    ),
+                  ],
+                  manager: mockConversationManager,
+                );
+                return null;
+              };
+        when(() => mockConversationManager.messages).thenReturn([]);
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final report = captured.whereType<AgentReportEntity>().single;
+        expect(
+          report.content,
+          '## Status\nThe release remains blocked on legal review.',
+        );
+      });
+
+      test('retains the draft when report polishing throws', () async {
+        when(
+          () => mockJournalDb.getConfigFlag(
+            enableTaskAgentReportPolishingFlag,
+          ),
+        ).thenAnswer((_) async => true);
+        stubOriginalReport(throwOnPolish: true);
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        expect(
+          captured.whereType<AgentReportEntity>().single.oneLiner,
+          'Original report',
+        );
+      });
+
+      test('retains the draft when the polish flag lookup throws', () async {
+        when(
+          () => mockJournalDb.getConfigFlag(
+            enableTaskAgentReportPolishingFlag,
+          ),
+        ).thenThrow(StateError('flag lookup unavailable'));
+        stubOriginalReport();
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        expect(
+          captured.whereType<AgentReportEntity>().single.oneLiner,
+          'Original report',
+        );
+        expect(mockConversationRepository.sendMessageDelegateCallCount, 1);
       });
 
       test('persists thought message when LLM produces final text', () async {

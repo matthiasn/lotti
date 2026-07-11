@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Builds a deterministic title/subtitle map from a list of
 /// `(flagName, title, subtitle)` triples and returns the matching
@@ -190,6 +191,13 @@ void main() {
       // The FTUE gate must be toggleable from settings so it can be
       // flipped on once the flow is complete.
       expect(FlagsBody.displayedItems, contains('enable_onboarding_ftue'));
+    });
+
+    test('includes task-agent report polishing', () {
+      expect(
+        FlagsBody.displayedItems,
+        contains(enableTaskAgentReportPolishingFlag),
+      );
     });
 
     test('every entry is a non-empty unique string', () {

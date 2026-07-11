@@ -1380,6 +1380,8 @@
   "configFlagEnableSessionRatingsDescription": "Proposer une évaluation rapide de session à l'arrêt d'un minuteur.",
   "configFlagEnableSyncedAlerts": "Alertes synchronisées",
   "configFlagEnableSyncedAlertsDescription": "Synchronise les alertes d'IA et de tâches entre tes appareils et autorise-les à programmer des notifications système locales.",
+  "configFlagEnableTaskAgentReportPolishing": "Peaufiner les rapports de l’agent de tâche",
+  "configFlagEnableTaskAgentReportPolishingDescription": "Réécrit les rapports terminés de l’agent de tâche dans une passe isolée réservée au rapport, sans toucher aux modifications de la tâche.",
   "configFlagEnableTooltip": "Activer les info-bulles",
   "configFlagEnableTooltipDescription": "Afficher des info-bulles utiles dans toute l'application pour te guider à travers les fonctionnalités.",
   "configFlagEnableVectorSearch": "Recherche vectorielle",

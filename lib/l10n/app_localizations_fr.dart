@@ -3061,6 +3061,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Synchronise les alertes d\'IA et de tâches entre tes appareils et autorise-les à programmer des notifications système locales.';
 
   @override
+  String get configFlagEnableTaskAgentReportPolishing =>
+      'Peaufiner les rapports de l’agent de tâche';
+
+  @override
+  String get configFlagEnableTaskAgentReportPolishingDescription =>
+      'Réécrit les rapports terminés de l’agent de tâche dans une passe isolée réservée au rapport, sans toucher aux modifications de la tâche.';
+
+  @override
   String get configFlagEnableTooltip => 'Activer les info-bulles';
 
   @override

@@ -376,6 +376,60 @@ or real-user-database replay, but it exercises the same workflow, strategy,
 change-set, report-writing, and forced-report retry mechanics that an in-app wake
 uses.
 
+`tool/melious_task_agent_model_eval.sh` runs the conversation-level task-agent
+evaluator as a Melious model and prompt matrix. The built-in candidates are
+Mistral Small 4 119B Instruct and GLM 5.2. The default production-prompt suite
+contains eleven synthetic but app-shaped wakes covering explicit mutations,
+noisy multilingual transcripts, prior reports, no-op background refreshes,
+stale evidence, user overrides, checklist deduplication, external links, and
+long timelines. Deterministic checks validate required mutations and report
+facts as well as forbidden tools, speculative checklist content, report churn,
+and internal-ID leakage. Missing first reports go through the same report-only
+forced retry used by `TaskAgentWorkflow`, and each result records whether that
+recovery was needed. The live test is deliberately
+non-gating unless `LOCAL_TASK_AGENT_EVAL_STRICT=1`, because a comparison run must
+persist weak outputs instead of aborting before the other candidates run.
+
+After candidate generation, `tool/task_agent_model_eval_judge.py` sends the
+synthetic context and captured tool calls to an independent judge model
+(`qwen3.5-122b-a10b` by default). The judge rates grounding, coverage,
+checklist quality, summary quality, and format compliance. Its findings are a
+review aid rather than a release gate; deterministic failures remain the
+high-confidence signal. Raw and judged JSON/Markdown artifacts are written to
+`docs/evaluations/task_agent_models/`. The optional `qualityFocused` prompt
+variant adds a report-quality gate for targeted comparisons; it is not a
+production default. Additional Melious candidates can be
+supplied through `LOCAL_TASK_AGENT_EVAL_PROFILES=name=model,...`, and individual
+scenario IDs through `LOCAL_TASK_AGENT_EVAL_SCENARIOS`. Prompt variants are
+selected with `LOCAL_TASK_AGENT_EVAL_PROMPT_VARIANTS`. The evaluator also has
+an orchestration-only `twoPass` mode selected with
+`LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE`; it removes `update_report` from the
+advertised mutation-pass tools and follows with a forced report-only pass. The
+measured Mistral run reduced summary quality from 93% to 82% while increasing
+tokens by 28%, so this mode is retained only to reproduce the rejected
+experiment and is not used by production task agents.
+
+The `conciseReport` prompt variant replaces, rather than extends, the production
+report directive. In the full Mistral matrix it improved judge overall quality
+from 89% to 93%, summary quality from 93% to 95%, and format compliance from 84%
+to 98%, while reducing tokens by 17% and latency by 19%. It is not used in the
+main mutation wake because changing that shared prompt also caused a missed
+checklist mutation. The opt-in `enable_task_agent_report_polishing` flag applies
+the contract in a separate report-only conversation instead. A validator keeps
+the original draft when the rewrite is incomplete, oversized, leaks an internal
+ID, or drops a URL or numeric fact.
+
+```mermaid
+flowchart LR
+  Fixtures["Synthetic Lotti wakes"] --> Matrix["Model x prompt matrix"]
+  Matrix --> Conversation["ConversationRepository"]
+  Conversation --> Tools["Production task-agent tool schema"]
+  Tools --> Deterministic["Tool + report checks"]
+  Tools --> Judge["Independent rubric judge"]
+  Deterministic --> Artifacts["JSON + Markdown artifacts"]
+  Judge --> Artifacts
+```
+
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine
 prefers Mistral's non-realtime Voxtral transcription model over MLX Qwen when
 both are configured, then falls back to MLX Qwen, Gemini Flash, or the first
