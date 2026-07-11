@@ -559,45 +559,49 @@ class _ChartModePill extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: true,
+      expanded: expanded,
       label: semanticsLabel,
+      onTap: onTap,
       value: semanticsValue,
-      child: Material(
-        color: colors.surface.enabled,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: InkWell(
+      child: ExcludeSemantics(
+        child: Material(
+          color: colors.surface.enabled,
           borderRadius: BorderRadius.circular(tokens.radii.s),
-          onTap: onTap,
-          child: Padding(
-            padding: EdgeInsetsDirectional.symmetric(
-              horizontal: spacing.step3,
-              vertical: spacing.step2,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    label,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: expanded
-                          ? colors.interactive.enabled
-                          : colors.text.highEmphasis,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(tokens.radii.s),
+            onTap: onTap,
+            child: Padding(
+              padding: EdgeInsetsDirectional.symmetric(
+                horizontal: spacing.step3,
+                vertical: spacing.step2,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: expanded
+                            ? colors.interactive.enabled
+                            : colors.text.highEmphasis,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                SizedBox(width: spacing.step2),
-                Icon(
-                  expanded
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                  size: spacing.step4,
-                  color: expanded
-                      ? colors.interactive.enabled
-                      : colors.text.mediumEmphasis,
-                ),
-              ],
+                  SizedBox(width: spacing.step2),
+                  Icon(
+                    expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    size: spacing.step4,
+                    color: expanded
+                        ? colors.interactive.enabled
+                        : colors.text.mediumEmphasis,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -652,7 +656,8 @@ class _PickerSelectRow extends StatelessWidget {
                   ),
                   SizedBox(width: spacing.step3),
                   Expanded(
-                    child: ExcludeSemantics(
+                    child: Semantics(
+                      selected: selected,
                       child: Text(
                         label,
                         style: tokens.typography.styles.body.bodyMedium

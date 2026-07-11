@@ -424,6 +424,80 @@ void main() {
       );
     });
 
+    testWidgets('selected rows expose labels and chart mode expanded state', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await pumpMeasurementSelect(tester, onConfirm: (_) {});
+
+      await tester.tap(find.text(measurableWater.displayName));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.text(measurableWater.displayName).first),
+        matchesSemantics(
+          label: measurableWater.displayName,
+          hasSelectedState: true,
+          isSelected: true,
+        ),
+      );
+
+      final chartModeLabel = 'Chart mode for ${measurableWater.displayName}';
+      final waterChartMode = find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == chartModeLabel,
+      );
+      expect(waterChartMode, findsOneWidget);
+      expect(
+        tester.getSemantics(waterChartMode),
+        matchesSemantics(
+          label: chartModeLabel,
+          value: 'Daily sum',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasExpandedState: true,
+          hasTapAction: true,
+        ),
+      );
+
+      await tester.tap(waterChartMode);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(waterChartMode),
+        matchesSemantics(
+          label: chartModeLabel,
+          value: 'Daily sum',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasExpandedState: true,
+          isExpanded: true,
+          hasTapAction: true,
+        ),
+      );
+
+      await tester.tap(waterChartMode);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(waterChartMode),
+        matchesSemantics(
+          label: chartModeLabel,
+          value: 'Daily sum',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasExpandedState: true,
+          hasTapAction: true,
+        ),
+      );
+
+      semantics.dispose();
+    });
+
     testWidgets('cancel closes measurement selector without confirming', (
       tester,
     ) async {
