@@ -329,10 +329,6 @@ This is why the flags page is not just a developer toy:
 - toggling `enableHabitsPageFlag` or `enableDashboardsPageFlag` changes both Settings tiles and top-level navigation behavior
 - toggling `enableMatrixFlag` changes visibility of Sync surfaces and also affects the Sync feature gate
 - toggling `enableAiSummaryTtsFlag` shows or hides the local MLX Audio TTS button on task AI summaries
-- toggling `enableTaskAgentReportPolishingFlag` enables the task agent's
-  conditional report-only copy-edit pass; clean drafts skip inference, task and
-  checklist mutations remain in the main wake, and rejected edits retain the
-  original report
 - logging flags influence subdomain logging pages under Advanced
 - toggling a flag through Settings enqueues a `configFlag` sync message with the
   new boolean status; startup flag seeding does not enqueue anything, so devices

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import time
@@ -32,6 +33,11 @@ Also return `overall` as a number from 0 to 4, `verdict` as excellent/good/weak/
 failed, and `findings` as at most five concise strings. A missing update_report
 is failed only when the scenario has `requiresReport: true`. When it is false,
 reward a brief plain-text completion and penalize unnecessary report churn.
+
+Treat `productReport` as the user-visible report. A model may emit more than one
+`update_report` call; score the final valid report rather than an earlier draft.
+A forbidden or deferred term in the product report is a violation even when the
+report says the term was excluded, deferred, or not added.
 """.strip()
 
 
@@ -78,11 +84,37 @@ def _valid_judgment(judgment: dict) -> bool:
         "formatCompliance",
         "overall",
     )
+    scores = [judgment.get(key) for key in score_keys]
+    findings = judgment.get("findings")
     return (
-        all(isinstance(judgment.get(key), (int, float)) for key in score_keys)
+        all(
+            isinstance(score, (int, float))
+            and not isinstance(score, bool)
+            and math.isfinite(float(score))
+            and 0 <= score <= 4
+            for score in scores
+        )
         and judgment.get("verdict") in {"excellent", "good", "weak", "failed"}
-        and isinstance(judgment.get("findings"), list)
+        and isinstance(findings, list)
+        and len(findings) <= 5
+        and all(isinstance(finding, str) for finding in findings)
     )
+
+
+def _product_report(result: dict) -> dict | None:
+    for call in reversed(result.get("toolCalls", [])):
+        if call.get("name") != "update_report":
+            continue
+        try:
+            arguments = json.loads(call.get("argumentsJson", ""))
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if isinstance(arguments, dict) and all(
+            isinstance(arguments.get(field), str) and arguments[field].strip()
+            for field in ("oneLiner", "tldr", "content")
+        ):
+            return arguments
+    return None
 
 
 def _scenario_by_id(report: dict) -> dict[str, dict]:
@@ -91,6 +123,7 @@ def _scenario_by_id(report: dict) -> dict[str, dict]:
 
 def _case_fingerprint(scenario: dict, result: dict) -> str:
     relevant = {
+        "judgePrompt": SYSTEM_PROMPT,
         "scenario": scenario,
         "toolCalls": result["toolCalls"],
         "failureCategory": result["failureCategory"],
@@ -107,7 +140,9 @@ def _display_path(path: Path) -> str:
         return str(path)
 
 
-def _judge_case(base_url: str, key: str, model: str, scenario: dict, result: dict) -> tuple[dict, dict]:
+def _judge_case(
+    base_url: str, key: str, model: str, scenario: dict, result: dict
+) -> tuple[dict, dict]:
     payload = {
         "scenarioId": scenario["id"],
         "promptVariant": scenario["promptVariant"],
@@ -120,6 +155,7 @@ def _judge_case(base_url: str, key: str, model: str, scenario: dict, result: dic
         "forbiddenReportTerms": scenario["forbiddenReportTerms"],
         "forbiddenToolArgumentTerms": scenario["forbiddenToolArgumentTerms"],
         "capturedToolCalls": result["toolCalls"],
+        "productReport": _product_report(result),
         "finalAssistantContent": result.get("finalContent"),
         "deterministicFailure": result["failureCategory"],
     }
@@ -199,7 +235,15 @@ def main() -> None:
     parser.add_argument("input", type=Path)
     parser.add_argument("--json", type=Path, required=True)
     parser.add_argument("--markdown", type=Path, required=True)
-    parser.add_argument("--judge-model", default=os.getenv("TASK_AGENT_EVAL_JUDGE_MODEL", DEFAULT_JUDGE_MODEL))
+    parser.add_argument(
+        "--judge-model",
+        default=os.getenv("TASK_AGENT_EVAL_JUDGE_MODEL", DEFAULT_JUDGE_MODEL),
+    )
+    parser.add_argument(
+        "--allow-errors",
+        action="store_true",
+        help="Write parse-error cases without failing the command.",
+    )
     args = parser.parse_args()
 
     key = os.getenv("MELIOUS_API_KEY") or os.getenv("UP_UPSTREAM_API_KEY")
@@ -220,6 +264,7 @@ def main() -> None:
                 if _valid_judgment(case.get("judge", {}))
             }
     judged_results = []
+    judge_errors = []
     for result in report["results"]:
         scenario = scenarios[result["scenarioId"]]
         case_key = (result["profileName"], result["scenarioId"])
@@ -234,14 +279,22 @@ def main() -> None:
                 {**previous_case, "caseFingerprint": fingerprint}
             )
             continue
-        print(f"Judging {result['profileName']} / {result['scenarioId']}...", flush=True)
+        print(
+            f"Judging {result['profileName']} / {result['scenarioId']}...",
+            flush=True,
+        )
         try:
             judgment, accounting = _judge_case(
                 base_url, key, args.judge_model, scenario, result
             )
         except Exception as error:  # Preserve the rest of a comparison matrix.
-            judgment = {"verdict": "parse_error", "overall": 0, "findings": [str(error)]}
+            judgment = {
+                "verdict": "parse_error",
+                "overall": 0,
+                "findings": [str(error)],
+            }
             accounting = {}
+            judge_errors.append(f"{case_key[0]} / {case_key[1]}: {error}")
         judged_results.append(
             {
                 "profileName": result["profileName"],
@@ -264,8 +317,16 @@ def main() -> None:
     }
     args.json.parent.mkdir(parents=True, exist_ok=True)
     args.markdown.parent.mkdir(parents=True, exist_ok=True)
-    args.json.write_text(json.dumps(judged, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.json.write_text(
+        json.dumps(judged, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     _write_markdown(args.markdown, judged)
+    if judge_errors and not args.allow_errors:
+        raise SystemExit(
+            f"{len(judge_errors)} judge case(s) failed; artifacts were written:\n"
+            + "\n".join(judge_errors)
+        )
 
 
 if __name__ == "__main__":

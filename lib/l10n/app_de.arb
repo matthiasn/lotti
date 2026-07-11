@@ -1380,8 +1380,6 @@
   "configFlagEnableSessionRatingsDescription": "Nach dem Stoppen eines Timers eine schnelle Sitzungsbewertung anzeigen.",
   "configFlagEnableSyncedAlerts": "Synchronisierte Hinweise",
   "configFlagEnableSyncedAlertsDescription": "Synchronisiere KI- und Aufgabenhinweise zwischen deinen Geräten und erlaube ihnen, lokale Systemmitteilungen zu planen.",
-  "configFlagEnableTaskAgentReportPolishing": "Aufgaben-Agentenberichte überarbeiten",
-  "configFlagEnableTaskAgentReportPolishingDescription": "Überarbeitet fertige Aufgaben-Agentenberichte in einem isolierten Durchlauf nur für den Bericht, ohne Aufgabenänderungen anzutasten.",
   "configFlagEnableTooltip": "Tooltips aktivieren",
   "configFlagEnableTooltipDescription": "Zeigt hilfreiche Tooltips in der gesamten App an, um dich durch die Funktionen zu führen.",
   "configFlagEnableVectorSearch": "Vektorsuche",

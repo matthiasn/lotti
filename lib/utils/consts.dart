@@ -25,7 +25,6 @@ const enableOnboardingFtueFlag = 'enable_onboarding_ftue';
 const showSyncActivityIndicatorFlag = 'show_sync_activity_indicator';
 const showSidebarWakeQueueFlag = 'show_sidebar_wake_queue';
 const enableForkHealingFlag = 'enable_fork_healing';
-const enableTaskAgentReportPolishingFlag = 'enable_task_agent_report_polishing';
 
 const logSlowQueriesFlag = 'log_slow_queries';
 

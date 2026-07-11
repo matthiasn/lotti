@@ -27,7 +27,6 @@ import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
-import 'package:lotti/features/agents/workflow/task_agent_report_polisher.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
@@ -54,7 +53,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 

@@ -67,6 +67,12 @@ production defaults. Missing initial reports receive the same forced,
 report-only retry as the real task workflow; artifacts record this separately
 from native one-pass success.
 
+Some preserved early artifacts use the synthetic task title “Validate local
+Gemma fallback.” That wording referred only to the candidate in the fixture; it
+never represented a runtime model fallback or routing path. The current fixture
+uses model-neutral candidate/reference wording, while historical model outputs
+remain verbatim.
+
 ## Running
 
 ```bash
@@ -90,6 +96,12 @@ temperature 0:
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Mistral Small 4 119B | 10/11 | 99% | 89% | 93% | 95% |
 | GLM 5.2 | 6/11 | 89% | 86% | 86% | 89% |
+
+This table is not accepted as a model ranking. Its single synthetic sample
+conflicts with repeated in-app observation that GLM 5.2 is materially more
+reliable for both reports and tool use. It therefore does not establish that
+Mistral outperforms GLM; the matrix is useful for reproducing failure modes and
+testing interventions, not for selecting a default model by aggregate score.
 
 The largest improvement did not come from prompting. The initial realistic run
 exposed that assistant messages containing tool calls were serialized without a
@@ -115,9 +127,9 @@ the transport fix. Compared with the production prompt on the same cases:
 
 The added quality gate is therefore not suitable for promotion. It caused the
 model to write checklist-shaped prose without calling the checklist tool and
-omitted required facts in another case. A cleaner next experiment is a
-two-stage workflow with mutation tools first and a dedicated report-only pass,
-not more instructions in the shared system prompt.
+omitted required facts in another case. That result prompted the two-stage
+workflow experiment below: mutation tools first, followed by a dedicated
+report-only pass.
 
 ### Two-pass orchestration experiment
 
@@ -129,14 +141,15 @@ forced report-only pass over the same conversation.
 | Mistral execution | Passing scenarios | Deterministic quality | Judge overall | Summary quality | Tokens | Latency |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Single pass | 10/11 | 99% | 89% | 93% | 88,860 | 31.0 s |
-| Two pass | 8/11 | 97% | 81% | 82% | 113,661 | 45.3 s |
+| Two pass | 8/11 | 96% | 90% | 98% | 135,147 | 39.6 s |
 
-The two-pass design is rejected in this form. It used 28% more tokens and took
-46% longer while reducing report quality. Mistral sometimes emitted
+The two-pass design is rejected in this form. The corrected temperature-0 rerun
+used 52% more tokens and took 28% longer than the single-pass baseline. Its
+judge-rated prose improved, but deterministic task completion fell from 10/11
+to 8/11: required owners, blockers, or dates were omitted. Mistral also emitted
 `update_report` even though that tool was not advertised in the mutation pass,
-then emitted it again in the forced pass. Other regressions omitted required
-owners, blockers, or dates and increased agent-process narration. The raw and
-judged outputs are preserved under `two_pass/`.
+then emitted it again in the forced pass. The raw and judged outputs are
+preserved under `two_pass/`.
 
 The synthetic matrix now exposes a more important limitation: it scores the
 single-pass Mistral summaries at 93%, which does not match the observed product
@@ -167,15 +180,15 @@ extra mutation reminder produced different tool errors despite temperature 0,
 confirming that report-prompt changes can perturb task mutations and that the
 backend/model output is not fully deterministic.
 
-The implemented follow-up architecture is therefore draft-and-polish, not a
-modified main wake: the opt-in `enable_task_agent_report_polishing` flag keeps
-the current mutation workflow and its draft report unchanged. A local policy
-skips clean drafts. When it detects an objective warning, an isolated
-report-only request receives the draft, language code, and warning list rather
-than the full task context. The editor performs a minimal copy-edit while
-preserving free-form Markdown; validation retains the original draft whenever
-the edit is unsafe. This preserves task mutation behavior while applying the
-measured concise-report findings only where they address a concrete defect.
+A draft-and-polish follow-up was prototyped after this result: an isolated
+report-only request received the draft and objective warning list without task
+or checklist mutation tools. Focused Mistral probes on the two German scenarios
+still returned reports with process narration, so both rewrites were rejected.
+That is not evidence of a quality improvement, and the extra inference pass is
+therefore not shipped. The production change from this work is limited to the
+OpenAI-compatible continuation fix; model and prompt experiments remain in the
+evaluation harness until a measured configuration beats the baseline on task
+completion, report quality, and token use together.
 
 These numbers are directional rather than release thresholds. They are based on
 one deterministic sample per case and synthetic replay data. Repeated runs and

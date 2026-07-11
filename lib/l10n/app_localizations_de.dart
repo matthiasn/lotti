@@ -3039,14 +3039,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Synchronisiere KI- und Aufgabenhinweise zwischen deinen Geräten und erlaube ihnen, lokale Systemmitteilungen zu planen.';
 
   @override
-  String get configFlagEnableTaskAgentReportPolishing =>
-      'Aufgaben-Agentenberichte überarbeiten';
-
-  @override
-  String get configFlagEnableTaskAgentReportPolishingDescription =>
-      'Überarbeitet fertige Aufgaben-Agentenberichte in einem isolierten Durchlauf nur für den Bericht, ohne Aufgabenänderungen anzutasten.';
-
-  @override
   String get configFlagEnableTooltip => 'Tooltips aktivieren';
 
   @override

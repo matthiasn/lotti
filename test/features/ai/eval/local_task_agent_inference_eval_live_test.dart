@@ -18,6 +18,11 @@ void main() {
     () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
+      final conversationSubscription = container.listen(
+        conversationRepositoryProvider,
+        (_, _) {},
+      );
+      addTearDown(conversationSubscription.close);
 
       final providerType = _providerType(
         Platform.environment['LOCAL_TASK_AGENT_EVAL_PROVIDER_TYPE'],

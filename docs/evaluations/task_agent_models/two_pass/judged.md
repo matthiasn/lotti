@@ -1,97 +1,97 @@
 # Task-Agent Model Eval with Independent Judge
 
 Judge: `qwen3.5-122b-a10b`
-Judge accounting: 27087 tokens, 0.0055323 credits, 0.009117 kWh, 1.094 g CO2.
+Judge accounting: 29660 tokens, 0.0058286 credits, 0.009219 kWh, 3.052 g CO2.
 
 | Model | Scenario | Prompt | Deterministic | Judge | Verdict |
 | --- | --- | --- | ---: | ---: | --- |
 | mistral-small-4-baseline | metadata_explicit_production | production | 100% | 4.0/4 | excellent |
-| mistral-small-4-baseline | german_voice_plan_production | production | 91% | 2.0/4 | weak |
-| mistral-small-4-baseline | progress_update_production | production | 100% | 3.0/4 | good |
+| mistral-small-4-baseline | german_voice_plan_production | production | 91% | 3.0/4 | good |
+| mistral-small-4-baseline | progress_update_production | production | 86% | 2.6/4 | good |
 | mistral-small-4-baseline | no_op_background_refresh_production | production | 100% | 4.0/4 | excellent |
-| mistral-small-4-baseline | duplicate_checklist_reconciliation_production | production | 100% | 3.0/4 | good |
+| mistral-small-4-baseline | duplicate_checklist_reconciliation_production | production | 100% | 4.0/4 | excellent |
 | mistral-small-4-baseline | stale_deadline_user_override_production | production | 100% | 4.0/4 | excellent |
-| mistral-small-4-baseline | messy_german_transcript_production | production | 100% | 3.6/4 | good |
-| mistral-small-4-baseline | user_completed_item_resurfaced_production | production | 80% | 2.0/4 | weak |
-| mistral-small-4-baseline | spanish_mixed_context_production | production | 100% | 3.0/4 | good |
-| mistral-small-4-baseline | external_link_and_completion_production | production | 100% | 3.0/4 | good |
-| mistral-small-4-baseline | latest_deadline_wins_production | production | 100% | 4.0/4 | excellent |
+| mistral-small-4-baseline | messy_german_transcript_production | production | 100% | 4.0/4 | excellent |
+| mistral-small-4-baseline | user_completed_item_resurfaced_production | production | 80% | 3.0/4 | weak |
+| mistral-small-4-baseline | spanish_mixed_context_production | production | 100% | 4.0/4 | excellent |
+| mistral-small-4-baseline | external_link_and_completion_production | production | 100% | 4.0/4 | excellent |
+| mistral-small-4-baseline | latest_deadline_wins_production | production | 100% | 3.0/4 | good |
 
 ## Findings
 
 ### mistral-small-4-baseline / metadata_explicit_production
-- All four required tool calls executed with correct parameters matching user request
-- Report contains all required term groups (title, P1, July 4, 150 min, Qwen)
-- No forbidden terms present (check-1, check-2 IDs excluded from report)
-- Report structure follows oneLiner/tldr/content pattern with useful sections
-- Final inference failure is system error unrelated to successful task configuration
+- All four required tool calls executed correctly with proper arguments
+- Product report contains all required term groups without forbidden terms
+- No internal IDs (check-1, check-2) leaked into user-facing content
+- Report synthesizes current state rather than logging tool calls
+- Checklist items are verb-first, distinct actions with clear owners retained
 
 ### mistral-small-4-baseline / german_voice_plan_production
-- Final assistant content does not display the report despite update_report tool calls being made
-- Redundant second update_report call without clear added value
-- Required coverage terms exist in tool arguments but not in final user-facing output
-- Checklist items are well-structured with clear verbs and owners (Ben, Lea)
-- Report structure exists in tool calls but never surfaced to user
+- Missing required date reference (30. September/due date) in product report
+- All four checklist items correctly extracted from voice note with proper owners
+- Report structure is clean with Achieved/What's Left/Learnings sections
+- No forbidden terms present; all required people (Ben, Lea) mentioned
+- Technical term 'auth' missing though 'Anmeldung' provides semantic coverage
 
 ### mistral-small-4-baseline / progress_update_production
-- Correctly executed both required tool calls (checklist + due date)
-- Report includes all required terms (interviews, Dana, legal, Oct 15) without forbidden IDs
-- Redundant second update_report tool call wastes resources
-- Assistant preamble adds unnecessary verbosity before tool execution
-- Checklist has minor redundancy between 'left to do' and 'blockers' sections
+- Due date (Oct 15, 2026) applied via tool but missing from report content despite being a required term
+- Empty 'Links' section violates no-empty-sections requirement
+- Learnings section redundantly repeats the legal blocker already stated in 'What is left to do'
+- Core status updates (interviews complete, legal blocked by Dana) accurately captured
+- Report uses user-facing language without exposing internal IDs
 
 ### mistral-small-4-baseline / no_op_background_refresh_production
-- Correctly identified no action needed despite label sync signal.
-- Adhered to 'requiresReport: false' by using plain text instead of report structure.
-- No forbidden tool calls used, matching expectedToolCalls.
-- Factual consistency maintained with provided task JSON.
-- Concise reasoning provided for inaction without hallucination.
+- Accurately assessed task completion status against context.
+- Correctly prioritized task state over sync signal for actionability.
+- Adhered to constraints forbidding report updates.
+- Delivered concise plain-text explanation instead of unnecessary report structure.
+- Avoided exposure of internal task identifiers in final output.
 
 ### mistral-small-4-baseline / duplicate_checklist_reconciliation_production
-- Correctly added missing 'Submit by Friday' checklist item while preserving existing items
-- All required terms present (submit, friday, receipt, reconcile) without forbidden internal IDs
-- Duplicate update_report tool calls created unnecessary redundancy
-- Checklist items use clear verb-first format with distinct actions
-- Report provides useful current-state synthesis rather than raw tool log
+- Correctly added only the missing Friday submission item without duplicating existing checklist entries
+- Report contains all required term groups (submit, friday, receipt, reconcile) while avoiding forbidden internal IDs
+- Clear distinction between achieved work and remaining tasks in structured format
+- Concise oneLiner and tldr effectively summarize task status without tool log verbosity
+- Two update_report calls reflect normal production workflow (main + reportPass phases)
 
 ### mistral-small-4-baseline / stale_deadline_user_override_production
-- Correctly avoided forbidden update_report tool per requiresReport: false
-- Accurately preserved user-overridden due date (Oct 31) in summary
-- Provided concise plain-text justification instead of unnecessary report churn
-- Accurately assessed new log entry as non-actionable for status updates
-- Maintained factual integrity regarding task status and pending items
+- Correctly suppressed report generation per requiresReport: false
+- Accurately reflected manual deadline override without modification
+- Avoided forbidden tool calls and unnecessary churn
+- Provided clear rationale for no action in user-facing language
+- Concise plain-text completion aligned with scenario constraints
 
 ### mistral-small-4-baseline / messy_german_transcript_production
-- All three required actions correctly extracted from transcript
-- Newsletter explicitly excluded as instructed
-- Duplicate update_report tool call creates unnecessary redundancy
-- Report structure follows required format with proper sections
-- Minor verbosity in final assistant message could be tightened
+- All three committed actions correctly extracted from transcript without speculation
+- Newsletter explicitly excluded as instructed (forbidden term not in report)
+- Required terms (export, sam, testdaten, regression) all present in report
+- Checklist items are verb-first, concrete, and retain owner references
+- Empty 'Links' section slightly violates no-empty-sections requirement
 
 ### mistral-small-4-baseline / user_completed_item_resurfaced_production
-- Missing required 'blocked/blocker/risk' terminology in report content
-- finalAssistantContent is null - no user-facing response provided
-- Duplicate update_report tool calls create unnecessary redundancy
-- Report correctly surfaces QA findings and investigation needs
-- Accurately reflects task state without inventing facts
+- Missing required 'blocked/blocker/risk' terminology in report
+- Accurately surfaces QA note about reappeared sync issue
+- Checklist items are concrete and action-oriented
+- Report structure follows expected format well
+- 'Achieved' section may be premature given issue resurfaced
 
 ### mistral-small-4-baseline / spanish_mixed_context_production
-- Duplicate update_report tool calls create unnecessary redundancy
-- Final assistant content is meta-commentary instead of displaying the actual report
-- All required terms present (Marta, proveedor, bloqueado)
-- Checklist items correctly created per log instructions with verb-first format
-- Report structure well-organized with appropriate sections
+- Checklist items correctly implement both requested actions from the log
+- Report written entirely in Spanish as required by languageCode
+- All required terms present: Marta, proveedor, bloqueado, pendiente
+- Forbidden term 'waiting for the vendor' not used in report
+- Clear structure with oneLiner, tldr, and organized content sections
 
 ### mistral-small-4-baseline / external_link_and_completion_production
-- update_report called twice redundantly with identical content
-- finalAssistantContent is tool-log style rather than user-facing completion message
 - All required terms present (merged, PR URL, migration)
-- Checklist completion and deployment status correctly preserved
-- No forbidden internal IDs exposed in report content
+- No forbidden internal IDs exposed in product report
+- Checklist item correctly updated based on log evidence
+- Clear distinction between achieved and pending work
+- Deployment blocker and timing clearly communicated
 
 ### mistral-small-4-baseline / latest_deadline_wins_production
-- Correctly updated due date to November 20, 2026 per latest log entry
-- All required term groups present (date, customer conference, procurement)
-- Clear distinction between completed items and remaining demo script work
-- Duplicate update_report tool call is unnecessary redundancy
-- Timeline history appropriately summarized without excessive detail
+- Due date correctly updated to November 20, 2026 per latest log decision
+- All required terms present: November 20, customer conference, procurement
+- Empty 'Links' section violates no-empty-sections format requirement
+- Remaining action lacks explicit owner assignment
+- Clear structure with achieved/left/learnings sections provides good synthesis

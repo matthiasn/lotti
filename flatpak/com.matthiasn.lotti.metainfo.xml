@@ -34,7 +34,6 @@
   <releases>
     <release version="0.9.1038" date="2026-07-11">
       <description>
-          <p>An optional advanced flag checks completed task-agent reports for objective quality warnings and only then runs a minimal isolated copy-edit without checklist or task mutation tools. The edit preserves each agent's Markdown structure and voice; unsafe or incomplete edits automatically keep the original report.</p>
           <p>Melious task agents now continue reliably after calling tools. Follow-up requests preserve the OpenAI-compatible assistant message shape expected by strict providers, so checklist updates and the final report are no longer interrupted after an otherwise successful tool call.</p>
       </description>
     </release>

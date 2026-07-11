@@ -139,11 +139,6 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: enableTaskAgentReportPolishingFlag,
-    description: 'Polish task-agent reports in an isolated second pass?',
-    status: false,
-  ),
-  const ConfigFlag(
     name: showSyncActivityIndicatorFlag,
     description: 'Show live sync activity in the sidebar.',
     status: false,

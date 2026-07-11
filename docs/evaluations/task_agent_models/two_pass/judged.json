@@ -9,8 +9,8 @@
       "providerModelId": "mistral-small-4-119b-instruct",
       "scenarioId": "metadata_explicit_production",
       "promptVariant": "production",
-      "caseFingerprint": "15866b5b8a90e3d9f9bcc120769c511be1a64b3f7c331da23b375dc78e752a2b",
-      "deterministicFailure": "inferenceFailed",
+      "caseFingerprint": "3bf04d61672637f6d6be206ed2493d9d4dfcad09f6fe364394f664494f11acbf",
+      "deterministicFailure": "none",
       "deterministicScore": 1.0,
       "judge": {
         "factualGrounding": 4,
@@ -21,23 +21,23 @@
         "overall": 4,
         "verdict": "excellent",
         "findings": [
-          "All four required tool calls executed with correct parameters matching user request",
-          "Report contains all required term groups (title, P1, July 4, 150 min, Qwen)",
-          "No forbidden terms present (check-1, check-2 IDs excluded from report)",
-          "Report structure follows oneLiner/tldr/content pattern with useful sections",
-          "Final inference failure is system error unrelated to successful task configuration"
+          "All four required tool calls executed correctly with proper arguments",
+          "Product report contains all required term groups without forbidden terms",
+          "No internal IDs (check-1, check-2) leaked into user-facing content",
+          "Report synthesizes current state rather than logging tool calls",
+          "Checklist items are verb-first, distinct actions with clear owners retained"
         ]
       },
       "judgeAccounting": {
         "usage": {
-          "prompt_tokens": 1581,
-          "completion_tokens": 1207,
-          "total_tokens": 2788,
+          "prompt_tokens": 2009,
+          "completion_tokens": 774,
+          "total_tokens": 2783,
           "cached_tokens": 0
         },
         "environmentImpact": {
-          "energy_kwh": 0.0007835167261771857,
-          "carbon_g_co2": 0.09402200714126228,
+          "energy_kwh": 0.0005057061369530857,
+          "carbon_g_co2": 0.16738873133147136,
           "water_liters": 0.0,
           "renewable_percent": 100,
           "pue": 1.2,
@@ -45,8 +45,8 @@
           "location": "IT"
         },
         "billingCost": {
-          "energy": "5.202000",
-          "credits": "0.0005202000",
+          "energy": "4.331000",
+          "credits": "0.0004331000",
           "paid_with": "credits"
         }
       }
@@ -56,35 +56,35 @@
       "providerModelId": "mistral-small-4-119b-instruct",
       "scenarioId": "german_voice_plan_production",
       "promptVariant": "production",
-      "caseFingerprint": "3392bc059ea51d191104b868b6b576ae7dd15eb946d5cdd5406ed78e7b29001c",
+      "caseFingerprint": "944673642493d5f3be9e1b1ac47649604119414d31f61848aa6e531c9993cf45",
       "deterministicFailure": "missingRequiredContent",
       "deterministicScore": 0.9090909090909091,
       "judge": {
-        "factualGrounding": 3,
+        "factualGrounding": 4,
         "requiredCoverage": 2,
         "checklistQuality": 4,
-        "summaryQuality": 1,
-        "formatCompliance": 2,
-        "overall": 2,
-        "verdict": "weak",
+        "summaryQuality": 4,
+        "formatCompliance": 4,
+        "overall": 3,
+        "verdict": "good",
         "findings": [
-          "Final assistant content does not display the report despite update_report tool calls being made",
-          "Redundant second update_report call without clear added value",
-          "Required coverage terms exist in tool arguments but not in final user-facing output",
-          "Checklist items are well-structured with clear verbs and owners (Ben, Lea)",
-          "Report structure exists in tool calls but never surfaced to user"
+          "Missing required date reference (30. September/due date) in product report",
+          "All four checklist items correctly extracted from voice note with proper owners",
+          "Report structure is clean with Achieved/What's Left/Learnings sections",
+          "No forbidden terms present; all required people (Ben, Lea) mentioned",
+          "Technical term 'auth' missing though 'Anmeldung' provides semantic coverage"
         ]
       },
       "judgeAccounting": {
         "usage": {
-          "prompt_tokens": 1209,
-          "completion_tokens": 1174,
-          "total_tokens": 2383,
+          "prompt_tokens": 1436,
+          "completion_tokens": 885,
+          "total_tokens": 2321,
           "cached_tokens": 0
         },
         "environmentImpact": {
-          "energy_kwh": 0.0007583822580054402,
-          "carbon_g_co2": 0.09100587096065282,
+          "energy_kwh": 0.0005730038887821138,
+          "carbon_g_co2": 0.18966428718687967,
           "water_liters": 0.0,
           "renewable_percent": 100,
           "pue": 1.2,
@@ -92,8 +92,8 @@
           "location": "IT"
         },
         "billingCost": {
-          "energy": "4.731000",
-          "credits": "0.0004731000",
+          "energy": "4.091000",
+          "credits": "0.0004091000",
           "paid_with": "credits"
         }
       }
@@ -103,35 +103,35 @@
       "providerModelId": "mistral-small-4-119b-instruct",
       "scenarioId": "progress_update_production",
       "promptVariant": "production",
-      "caseFingerprint": "a37228597d4e3af505ef6481e1f990ff0f8f11f2b0ebef905c79d3640b6e73e4",
-      "deterministicFailure": "none",
-      "deterministicScore": 1.0,
+      "caseFingerprint": "3966cfd1c87111636fb3637f54b09fd7981dda3e80a192c17aae15046815d3ee",
+      "deterministicFailure": "missingRequiredContent",
+      "deterministicScore": 0.8571428571428571,
       "judge": {
-        "factualGrounding": 4,
-        "requiredCoverage": 4,
+        "factualGrounding": 3,
+        "requiredCoverage": 2,
         "checklistQuality": 3,
-        "summaryQuality": 4,
-        "formatCompliance": 3,
-        "overall": 3,
+        "summaryQuality": 3,
+        "formatCompliance": 2,
+        "overall": 2.6,
         "verdict": "good",
         "findings": [
-          "Correctly executed both required tool calls (checklist + due date)",
-          "Report includes all required terms (interviews, Dana, legal, Oct 15) without forbidden IDs",
-          "Redundant second update_report tool call wastes resources",
-          "Assistant preamble adds unnecessary verbosity before tool execution",
-          "Checklist has minor redundancy between 'left to do' and 'blockers' sections"
+          "Due date (Oct 15, 2026) applied via tool but missing from report content despite being a required term",
+          "Empty 'Links' section violates no-empty-sections requirement",
+          "Learnings section redundantly repeats the legal blocker already stated in 'What is left to do'",
+          "Core status updates (interviews complete, legal blocked by Dana) accurately captured",
+          "Report uses user-facing language without exposing internal IDs"
         ]
       },
       "judgeAccounting": {
         "usage": {
-          "prompt_tokens": 1279,
-          "completion_tokens": 1057,
-          "total_tokens": 2336,
+          "prompt_tokens": 1430,
+          "completion_tokens": 1491,
+          "total_tokens": 2921,
           "cached_tokens": 0
         },
         "environmentImpact": {
-          "energy_kwh": 0.0006841253056190907,
-          "carbon_g_co2": 0.08209503667429088,
+          "energy_kwh": 0.0009580449651926756,
+          "carbon_g_co2": 0.31711288347877564,
           "water_liters": 0.0,
           "renewable_percent": 100,
           "pue": 1.2,
@@ -139,8 +139,8 @@
           "location": "IT"
         },
         "billingCost": {
-          "energy": "4.450000",
-          "credits": "0.0004450000",
+          "energy": "5.903000",
+          "credits": "0.0005903000",
           "paid_with": "credits"
         }
       }
@@ -150,7 +150,7 @@
       "providerModelId": "mistral-small-4-119b-instruct",
       "scenarioId": "no_op_background_refresh_production",
       "promptVariant": "production",
-      "caseFingerprint": "3a5431c0ffbb0b12c6fdb5aaf2e4e6f4251c90149d170f51b495301ac7e2b408",
+      "caseFingerprint": "bdd5e0d4e1979fde59823b1a9e3d84f2986ed75d9c03efbf0b3f011c61bc0a81",
       "deterministicFailure": "none",
       "deterministicScore": 1.0,
       "judge": {
@@ -162,23 +162,23 @@
         "overall": 4,
         "verdict": "excellent",
         "findings": [
-          "Correctly identified no action needed despite label sync signal.",
-          "Adhered to 'requiresReport: false' by using plain text instead of report structure.",
-          "No forbidden tool calls used, matching expectedToolCalls.",
-          "Factual consistency maintained with provided task JSON.",
-          "Concise reasoning provided for inaction without hallucination."
+          "Accurately assessed task completion status against context.",
+          "Correctly prioritized task state over sync signal for actionability.",
+          "Adhered to constraints forbidding report updates.",
+          "Delivered concise plain-text explanation instead of unnecessary report structure.",
+          "Avoided exposure of internal task identifiers in final output."
         ]
       },
       "judgeAccounting": {
         "usage": {
-          "prompt_tokens": 753,
-          "completion_tokens": 2216,
-          "total_tokens": 2969,
+          "prompt_tokens": 816,
+          "completion_tokens": 2438,
+          "total_tokens": 3254,
           "cached_tokens": 0
         },
         "environmentImpact": {
-          "energy_kwh": 0.0014226909089833499,
-          "carbon_g_co2": 0.17072290907800197,
+          "energy_kwh": 0.0015576320508494971,
+          "carbon_g_co2": 0.5155762088311836,
           "water_liters": 0.0,
           "renewable_percent": 100,
           "pue": 1.2,
@@ -186,8 +186,8 @@
           "location": "IT"
         },
         "billingCost": {
-          "energy": "7.401000",
-          "credits": "0.0007401000",
+          "energy": "8.130000",
+          "credits": "0.0008130000",
           "paid_with": "credits"
         }
       }
@@ -197,54 +197,7 @@
       "providerModelId": "mistral-small-4-119b-instruct",
       "scenarioId": "duplicate_checklist_reconciliation_production",
       "promptVariant": "production",
-      "caseFingerprint": "1da813913187bbff106c37685a19b6692c9dde71ff453885d05cefb8dff43b17",
-      "deterministicFailure": "none",
-      "deterministicScore": 1.0,
-      "judge": {
-        "factualGrounding": 3,
-        "requiredCoverage": 4,
-        "checklistQuality": 4,
-        "summaryQuality": 3,
-        "formatCompliance": 3,
-        "overall": 3,
-        "verdict": "good",
-        "findings": [
-          "Correctly added missing 'Submit by Friday' checklist item while preserving existing items",
-          "All required terms present (submit, friday, receipt, reconcile) without forbidden internal IDs",
-          "Duplicate update_report tool calls created unnecessary redundancy",
-          "Checklist items use clear verb-first format with distinct actions",
-          "Report provides useful current-state synthesis rather than raw tool log"
-        ]
-      },
-      "judgeAccounting": {
-        "usage": {
-          "prompt_tokens": 1104,
-          "completion_tokens": 896,
-          "total_tokens": 2000,
-          "cached_tokens": 0
-        },
-        "environmentImpact": {
-          "energy_kwh": 0.0005816733077168464,
-          "carbon_g_co2": 0.06980079692602156,
-          "water_liters": 0.0,
-          "renewable_percent": 100,
-          "pue": 1.2,
-          "provider_id": "regolo",
-          "location": "IT"
-        },
-        "billingCost": {
-          "energy": "3.792000",
-          "credits": "0.0003792000",
-          "paid_with": "credits"
-        }
-      }
-    },
-    {
-      "profileName": "mistral-small-4-baseline",
-      "providerModelId": "mistral-small-4-119b-instruct",
-      "scenarioId": "stale_deadline_user_override_production",
-      "promptVariant": "production",
-      "caseFingerprint": "ce6f26b40bcae5a9dad3056cafc5152deb92b4b0f0c6706b32608dd54cdffdc5",
+      "caseFingerprint": "85301c4f033ba40efee052cac4d31a9250499e7a0ce139b1305abce3eed881e1",
       "deterministicFailure": "none",
       "deterministicScore": 1.0,
       "judge": {
@@ -256,23 +209,23 @@
         "overall": 4,
         "verdict": "excellent",
         "findings": [
-          "Correctly avoided forbidden update_report tool per requiresReport: false",
-          "Accurately preserved user-overridden due date (Oct 31) in summary",
-          "Provided concise plain-text justification instead of unnecessary report churn",
-          "Accurately assessed new log entry as non-actionable for status updates",
-          "Maintained factual integrity regarding task status and pending items"
+          "Correctly added only the missing Friday submission item without duplicating existing checklist entries",
+          "Report contains all required term groups (submit, friday, receipt, reconcile) while avoiding forbidden internal IDs",
+          "Clear distinction between achieved work and remaining tasks in structured format",
+          "Concise oneLiner and tldr effectively summarize task status without tool log verbosity",
+          "Two update_report calls reflect normal production workflow (main + reportPass phases)"
         ]
       },
       "judgeAccounting": {
         "usage": {
-          "prompt_tokens": 863,
-          "completion_tokens": 2045,
-          "total_tokens": 2908,
+          "prompt_tokens": 1339,
+          "completion_tokens": 890,
+          "total_tokens": 2229,
           "cached_tokens": 0
         },
         "environmentImpact": {
-          "energy_kwh": 0.0013109462147578596,
-          "carbon_g_co2": 0.15731354577094314,
+          "energy_kwh": 0.0005752887714654207,
+          "carbon_g_co2": 0.19042058335505424,
           "water_liters": 0.0,
           "renewable_percent": 100,
           "pue": 1.2,
@@ -280,8 +233,55 @@
           "location": "IT"
         },
         "billingCost": {
-          "energy": "6.998000",
-          "credits": "0.0006998000",
+          "energy": "4.009000",
+          "credits": "0.0004009000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "stale_deadline_user_override_production",
+      "promptVariant": "production",
+      "caseFingerprint": "028e57826d2465677949b58faa22defd271384c21c62ee816c37a46fdc4e9c35",
+      "deterministicFailure": "none",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 4,
+        "checklistQuality": 4,
+        "summaryQuality": 4,
+        "formatCompliance": 4,
+        "overall": 4,
+        "verdict": "excellent",
+        "findings": [
+          "Correctly suppressed report generation per requiresReport: false",
+          "Accurately reflected manual deadline override without modification",
+          "Avoided forbidden tool calls and unnecessary churn",
+          "Provided clear rationale for no action in user-facing language",
+          "Concise plain-text completion aligned with scenario constraints"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 926,
+          "completion_tokens": 2224,
+          "total_tokens": 3150,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0014222539480775592,
+          "carbon_g_co2": 0.4707660568136721,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "7.598000",
+          "credits": "0.0007598000",
           "paid_with": "credits"
         }
       }
@@ -291,195 +291,7 @@
       "providerModelId": "mistral-small-4-119b-instruct",
       "scenarioId": "messy_german_transcript_production",
       "promptVariant": "production",
-      "caseFingerprint": "d3b9c4506c0fa21d9d5a80b9dc82a8010ff5e8f3510f7f33f62100b4aee3e187",
-      "deterministicFailure": "none",
-      "deterministicScore": 1.0,
-      "judge": {
-        "factualGrounding": 4,
-        "requiredCoverage": 4,
-        "checklistQuality": 4,
-        "summaryQuality": 3,
-        "formatCompliance": 3,
-        "overall": 3.6,
-        "verdict": "good",
-        "findings": [
-          "All three required actions correctly extracted from transcript",
-          "Newsletter explicitly excluded as instructed",
-          "Duplicate update_report tool call creates unnecessary redundancy",
-          "Report structure follows required format with proper sections",
-          "Minor verbosity in final assistant message could be tightened"
-        ]
-      },
-      "judgeAccounting": {
-        "usage": {
-          "prompt_tokens": 1280,
-          "completion_tokens": 1176,
-          "total_tokens": 2456,
-          "cached_tokens": 0
-        },
-        "environmentImpact": {
-          "energy_kwh": 0.0007588431010954081,
-          "carbon_g_co2": 0.09106117213144897,
-          "water_liters": 0.0,
-          "renewable_percent": 100,
-          "pue": 1.2,
-          "provider_id": "regolo",
-          "location": "IT"
-        },
-        "billingCost": {
-          "energy": "4.808000",
-          "credits": "0.0004808000",
-          "paid_with": "credits"
-        }
-      }
-    },
-    {
-      "profileName": "mistral-small-4-baseline",
-      "providerModelId": "mistral-small-4-119b-instruct",
-      "scenarioId": "user_completed_item_resurfaced_production",
-      "promptVariant": "production",
-      "caseFingerprint": "9411e8cc0851f95af170605f882c8700e85d4e848ab4d0e695c7b1a16162e8e6",
-      "deterministicFailure": "missingRequiredContent",
-      "deterministicScore": 0.8,
-      "judge": {
-        "factualGrounding": 4,
-        "requiredCoverage": 2,
-        "checklistQuality": 3,
-        "summaryQuality": 3,
-        "formatCompliance": 1,
-        "overall": 2,
-        "verdict": "weak",
-        "findings": [
-          "Missing required 'blocked/blocker/risk' terminology in report content",
-          "finalAssistantContent is null - no user-facing response provided",
-          "Duplicate update_report tool calls create unnecessary redundancy",
-          "Report correctly surfaces QA findings and investigation needs",
-          "Accurately reflects task state without inventing facts"
-        ]
-      },
-      "judgeAccounting": {
-        "usage": {
-          "prompt_tokens": 1212,
-          "completion_tokens": 1074,
-          "total_tokens": 2286,
-          "cached_tokens": 0
-        },
-        "environmentImpact": {
-          "energy_kwh": 0.0006940285534597933,
-          "carbon_g_co2": 0.0832834264151752,
-          "water_liters": 0.0,
-          "renewable_percent": 100,
-          "pue": 1.2,
-          "provider_id": "regolo",
-          "location": "IT"
-        },
-        "billingCost": {
-          "energy": "4.434000",
-          "credits": "0.0004434000",
-          "paid_with": "credits"
-        }
-      }
-    },
-    {
-      "profileName": "mistral-small-4-baseline",
-      "providerModelId": "mistral-small-4-119b-instruct",
-      "scenarioId": "spanish_mixed_context_production",
-      "promptVariant": "production",
-      "caseFingerprint": "698809b5ec4c8b68ce0652508a1f8b6466fb42712de76366d40661484e5a53d2",
-      "deterministicFailure": "none",
-      "deterministicScore": 1.0,
-      "judge": {
-        "factualGrounding": 4,
-        "requiredCoverage": 4,
-        "checklistQuality": 4,
-        "summaryQuality": 3,
-        "formatCompliance": 3,
-        "overall": 3,
-        "verdict": "good",
-        "findings": [
-          "Duplicate update_report tool calls create unnecessary redundancy",
-          "Final assistant content is meta-commentary instead of displaying the actual report",
-          "All required terms present (Marta, proveedor, bloqueado)",
-          "Checklist items correctly created per log instructions with verb-first format",
-          "Report structure well-organized with appropriate sections"
-        ]
-      },
-      "judgeAccounting": {
-        "usage": {
-          "prompt_tokens": 1278,
-          "completion_tokens": 1275,
-          "total_tokens": 2553,
-          "cached_tokens": 0
-        },
-        "environmentImpact": {
-          "energy_kwh": 0.0008227386437356471,
-          "carbon_g_co2": 0.09872863724827766,
-          "water_liters": 0.0,
-          "renewable_percent": 100,
-          "pue": 1.2,
-          "provider_id": "regolo",
-          "location": "IT"
-        },
-        "billingCost": {
-          "energy": "5.103000",
-          "credits": "0.0005103000",
-          "paid_with": "credits"
-        }
-      }
-    },
-    {
-      "profileName": "mistral-small-4-baseline",
-      "providerModelId": "mistral-small-4-119b-instruct",
-      "scenarioId": "external_link_and_completion_production",
-      "promptVariant": "production",
-      "caseFingerprint": "9d826935697487ba54a4322f98c7e2cb15187b038bb1b665a10f3e49362a80fb",
-      "deterministicFailure": "none",
-      "deterministicScore": 1.0,
-      "judge": {
-        "factualGrounding": 4,
-        "requiredCoverage": 4,
-        "checklistQuality": 3,
-        "summaryQuality": 3,
-        "formatCompliance": 2,
-        "overall": 3,
-        "verdict": "good",
-        "findings": [
-          "update_report called twice redundantly with identical content",
-          "finalAssistantContent is tool-log style rather than user-facing completion message",
-          "All required terms present (merged, PR URL, migration)",
-          "Checklist completion and deployment status correctly preserved",
-          "No forbidden internal IDs exposed in report content"
-        ]
-      },
-      "judgeAccounting": {
-        "usage": {
-          "prompt_tokens": 1091,
-          "completion_tokens": 948,
-          "total_tokens": 2039,
-          "cached_tokens": 0
-        },
-        "environmentImpact": {
-          "energy_kwh": 0.0006149244012311101,
-          "carbon_g_co2": 0.0737909281477332,
-          "water_liters": 0.0,
-          "renewable_percent": 100,
-          "pue": 1.2,
-          "provider_id": "regolo",
-          "location": "IT"
-        },
-        "billingCost": {
-          "energy": "3.935000",
-          "credits": "0.0003935000",
-          "paid_with": "credits"
-        }
-      }
-    },
-    {
-      "profileName": "mistral-small-4-baseline",
-      "providerModelId": "mistral-small-4-119b-instruct",
-      "scenarioId": "latest_deadline_wins_production",
-      "promptVariant": "production",
-      "caseFingerprint": "9a614a8c1dc255f6be2403d46925e16ecbac6b5adb7c404a410ab49c52102ed3",
+      "caseFingerprint": "0319dd3e9b9a2943c12e9b566225b2943ae311ab578afa763ca7e8ce6c87b0e1",
       "deterministicFailure": "none",
       "deterministicScore": 1.0,
       "judge": {
@@ -491,23 +303,23 @@
         "overall": 4,
         "verdict": "excellent",
         "findings": [
-          "Correctly updated due date to November 20, 2026 per latest log entry",
-          "All required term groups present (date, customer conference, procurement)",
-          "Clear distinction between completed items and remaining demo script work",
-          "Duplicate update_report tool call is unnecessary redundancy",
-          "Timeline history appropriately summarized without excessive detail"
+          "All three committed actions correctly extracted from transcript without speculation",
+          "Newsletter explicitly excluded as instructed (forbidden term not in report)",
+          "Required terms (export, sam, testdaten, regression) all present in report",
+          "Checklist items are verb-first, concrete, and retain owner references",
+          "Empty 'Links' section slightly violates no-empty-sections requirement"
         ]
       },
       "judgeAccounting": {
         "usage": {
-          "prompt_tokens": 1319,
-          "completion_tokens": 1050,
-          "total_tokens": 2369,
+          "prompt_tokens": 1544,
+          "completion_tokens": 1012,
+          "total_tokens": 2556,
           "cached_tokens": 0
         },
         "environmentImpact": {
-          "energy_kwh": 0.0006852647327817976,
-          "carbon_g_co2": 0.0822317679338157,
+          "energy_kwh": 0.0006559360132552683,
+          "carbon_g_co2": 0.2171148203874938,
           "water_liters": 0.0,
           "renewable_percent": 100,
           "pue": 1.2,
@@ -515,8 +327,196 @@
           "location": "IT"
         },
         "billingCost": {
-          "energy": "4.469000",
-          "credits": "0.0004469000",
+          "energy": "4.580000",
+          "credits": "0.0004580000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "user_completed_item_resurfaced_production",
+      "promptVariant": "production",
+      "caseFingerprint": "d53995a81ac948e74a8cd86e7fbab91d53843e85b1698f0a9c263e026422c317",
+      "deterministicFailure": "missingRequiredContent",
+      "deterministicScore": 0.8,
+      "judge": {
+        "factualGrounding": 3,
+        "requiredCoverage": 2,
+        "checklistQuality": 3,
+        "summaryQuality": 4,
+        "formatCompliance": 4,
+        "overall": 3,
+        "verdict": "weak",
+        "findings": [
+          "Missing required 'blocked/blocker/risk' terminology in report",
+          "Accurately surfaces QA note about reappeared sync issue",
+          "Checklist items are concrete and action-oriented",
+          "Report structure follows expected format well",
+          "'Achieved' section may be premature given issue resurfaced"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 1456,
+          "completion_tokens": 1330,
+          "total_tokens": 2786,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0008572843428701161,
+          "carbon_g_co2": 0.28376111749000843,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "5.446000",
+          "credits": "0.0005446000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "spanish_mixed_context_production",
+      "promptVariant": "production",
+      "caseFingerprint": "f05aab07a3a2967396fb2c357010b477db6c20caa924233258806bcb8f9e5dca",
+      "deterministicFailure": "none",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 4,
+        "checklistQuality": 4,
+        "summaryQuality": 4,
+        "formatCompliance": 4,
+        "overall": 4,
+        "verdict": "excellent",
+        "findings": [
+          "Checklist items correctly implement both requested actions from the log",
+          "Report written entirely in Spanish as required by languageCode",
+          "All required terms present: Marta, proveedor, bloqueado, pendiente",
+          "Forbidden term 'waiting for the vendor' not used in report",
+          "Clear structure with oneLiner, tldr, and organized content sections"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 1522,
+          "completion_tokens": 1090,
+          "total_tokens": 2612,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0007030568054877221,
+          "carbon_g_co2": 0.232711802616436,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "4.792000",
+          "credits": "0.0004792000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "external_link_and_completion_production",
+      "promptVariant": "production",
+      "caseFingerprint": "4fa64d258a3e6097f684231cb419368ca30fe64f39d1d4990c3958fc2d20ed1f",
+      "deterministicFailure": "none",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 4,
+        "checklistQuality": 4,
+        "summaryQuality": 4,
+        "formatCompliance": 4,
+        "overall": 4,
+        "verdict": "excellent",
+        "findings": [
+          "All required terms present (merged, PR URL, migration)",
+          "No forbidden internal IDs exposed in product report",
+          "Checklist item correctly updated based on log evidence",
+          "Clear distinction between achieved and pending work",
+          "Deployment blocker and timing clearly communicated"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 1290,
+          "completion_tokens": 904,
+          "total_tokens": 2194,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.0005878498933278025,
+          "carbon_g_co2": 0.1945783146915026,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "4.002000",
+          "credits": "0.0004002000",
+          "paid_with": "credits"
+        }
+      }
+    },
+    {
+      "profileName": "mistral-small-4-baseline",
+      "providerModelId": "mistral-small-4-119b-instruct",
+      "scenarioId": "latest_deadline_wins_production",
+      "promptVariant": "production",
+      "caseFingerprint": "52ce152f7792d0732868284ff748f21b220a99c6d3529b80acfb57f2e533b8df",
+      "deterministicFailure": "none",
+      "deterministicScore": 1.0,
+      "judge": {
+        "factualGrounding": 4,
+        "requiredCoverage": 4,
+        "checklistQuality": 3,
+        "summaryQuality": 4,
+        "formatCompliance": 3,
+        "overall": 3,
+        "verdict": "good",
+        "findings": [
+          "Due date correctly updated to November 20, 2026 per latest log decision",
+          "All required terms present: November 20, customer conference, procurement",
+          "Empty 'Links' section violates no-empty-sections format requirement",
+          "Remaining action lacks explicit owner assignment",
+          "Clear structure with achieved/left/learnings sections provides good synthesis"
+        ]
+      },
+      "judgeAccounting": {
+        "usage": {
+          "prompt_tokens": 1579,
+          "completion_tokens": 1275,
+          "total_tokens": 2854,
+          "cached_tokens": 0
+        },
+        "environmentImpact": {
+          "energy_kwh": 0.000822985123936087,
+          "carbon_g_co2": 0.2724080760228448,
+          "water_liters": 0.0,
+          "renewable_percent": 100,
+          "pue": 1.2,
+          "provider_id": "regolo",
+          "location": "IT"
+        },
+        "billingCost": {
+          "energy": "5.404000",
+          "credits": "0.0005404000",
           "paid_with": "credits"
         }
       }

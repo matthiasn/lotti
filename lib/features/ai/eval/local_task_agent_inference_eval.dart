@@ -288,7 +288,9 @@ LocalTaskAgentEvalScenario defaultLocalTaskAgentWakeScenario() {
     expectedToolCalls: const [
       LocalTaskAgentExpectedToolCall(
         name: TaskAgentToolNames.setTaskTitle,
-        expectedArgumentsSubset: {'title': 'Validate local Gemma fallback'},
+        expectedArgumentsSubset: {
+          'title': 'Validate efficient task-agent model',
+        },
       ),
       LocalTaskAgentExpectedToolCall(
         name: TaskAgentToolNames.updateTaskEstimate,
@@ -317,11 +319,11 @@ LocalTaskAgentEvalScenario _metadataScenario(
     expectedToolCalls: base.expectedToolCalls,
     promptVariant: variant,
     requiredReportTermGroups: const [
-      ['validate local gemma fallback'],
+      ['validate efficient task-agent model'],
       ['p1'],
       ['2026-07-04', 'july 4'],
       ['150', '2.5', 'two and a half'],
-      ['qwen'],
+      ['reference'],
     ],
     forbiddenReportTerms: const ['check-1', 'check-2'],
   );
@@ -1042,15 +1044,15 @@ const _defaultProductionWakeUserMessage = '''
   "estimate": null,
   "dueDate": null,
   "languageCode": "en",
-  "description": "Evaluate whether a downloaded local Gemma oMLX model is usable in Lotti.",
+  "description": "Evaluate whether an efficient task-agent model is usable in Lotti.",
   "checklist": [
     {"id": "check-1", "title": "Run a meaningful local app eval", "isChecked": false},
-    {"id": "check-2", "title": "Compare Gemma against Qwen on task-agent behavior", "isChecked": false}
+    {"id": "check-2", "title": "Compare the candidate against the reference model", "isChecked": false}
   ],
   "log": [
     {
       "timestamp": "2026-06-21T09:00:00Z",
-      "text": "User asked: title this task Validate local Gemma fallback, make it P1, due July 4 2026, and estimate two and a half hours."
+      "text": "User asked: title this task Validate efficient task-agent model, make it P1, due July 4 2026, and estimate two and a half hours."
     },
     {
       "timestamp": "2026-06-21T09:05:00Z",
@@ -1066,7 +1068,7 @@ const _defaultProductionWakeUserMessage = '''
   "id": "project-local-inference",
   "title": "Local inference reliability",
   "latestProjectAgentReport": {
-    "tldr": "Qwen is the current local default. Gemma needs stronger validation before it is trusted.",
+    "tldr": "The current reference model is reliable. The candidate needs stronger validation before it is trusted.",
     "content": "Focus on runtime behavior that affects the Lotti task-agent workflow, not generic benchmark scores."
   }
 }
@@ -1078,11 +1080,11 @@ const _defaultProductionWakeUserMessage = '''
   "linked_from": [],
   "linked_to": [
     {
-      "id": "task-qwen-baseline",
-      "title": "Qwen 3.6 local baseline",
+      "id": "task-reference-baseline",
+      "title": "Reference model baseline",
       "summaryStatus": "present",
-      "latestTaskAgentReportOneLiner": "Qwen passes app-shaped local task-agent checks",
-      "latestTaskAgentReportTldr": "Qwen can emit task metadata tools and a final report through oMLX."
+      "latestTaskAgentReportOneLiner": "Reference model passes app-shaped task-agent checks",
+      "latestTaskAgentReportTldr": "The reference model emits task metadata tools and a final report reliably."
     }
   ]
 }
@@ -1130,14 +1132,18 @@ double? parseLocalTaskAgentEvalTemperature(
   return parsed;
 }
 
+enum LocalTaskAgentEvalToolCallPhase { main, reportPass }
+
 class LocalTaskAgentEvalToolCall {
   const LocalTaskAgentEvalToolCall({
     required this.name,
     required this.argumentsJson,
+    this.phase = LocalTaskAgentEvalToolCallPhase.main,
   });
 
   final String name;
   final String argumentsJson;
+  final LocalTaskAgentEvalToolCallPhase phase;
 
   Map<String, dynamic>? get jsonObjectArguments {
     try {
@@ -1161,6 +1167,7 @@ class LocalTaskAgentEvalToolCall {
       'name': name,
       'argumentsJson': argumentsJson,
       'argumentsJsonValid': hasJsonObjectArguments,
+      'phase': phase.name,
     };
   }
 }
@@ -1293,19 +1300,25 @@ class LocalTaskAgentEvalReport {
     required this.profiles,
     required this.scenarios,
     required this.results,
+    required this.temperature,
+    required this.executionMode,
   });
 
   final AiConfigInferenceProvider provider;
   final List<LocalTaskAgentEvalProfile> profiles;
   final List<LocalTaskAgentEvalScenario> scenarios;
   final List<LocalTaskAgentEvalCaseResult> results;
+  final double temperature;
+  final LocalTaskAgentEvalExecutionMode executionMode;
 
   String toPrettyJson() => const JsonEncoder.withIndent('  ').convert(toJson());
 
   Map<String, Object?> toJson() {
     return {
-      'schemaVersion': 2,
+      'schemaVersion': 3,
       'kind': localTaskAgentEvalKind,
+      'temperature': temperature,
+      'executionMode': executionMode.name,
       'provider': {
         'id': provider.id,
         'name': provider.name,
@@ -1325,6 +1338,9 @@ class LocalTaskAgentEvalReport {
       ..writeln(
         'Provider: `${provider.name}` (${provider.inferenceProviderType.name}) '
         'at `${provider.baseUrl}`',
+      )
+      ..writeln(
+        'Execution: `${executionMode.name}` at temperature `$temperature`',
       )
       ..writeln()
       ..writeln(
@@ -1373,7 +1389,7 @@ class LocalTaskAgentEvalReport {
       for (final call in result.toolCalls) {
         buffer
           ..writeln()
-          ..writeln('`${call.name}`')
+          ..writeln('`${call.phase.name}` / `${call.name}`')
           ..writeln()
           ..writeln('```json')
           ..writeln(call.argumentsJson)
@@ -1442,6 +1458,8 @@ class LocalTaskAgentInferenceEvalRunner {
       profiles: profiles,
       scenarios: scenarios,
       results: results,
+      temperature: temperature,
+      executionMode: executionMode,
     );
   }
 
@@ -1492,6 +1510,7 @@ class LocalTaskAgentInferenceEvalRunner {
             !strategy.hasReport;
         if (plannedReportPass || recoverMissingInitialReport) {
           usedForcedReportRetry = true;
+          strategy.beginReportPass();
           final retryUsage = await conversationRepository.sendMessage(
             conversationId: conversationId,
             message: plannedReportPass
@@ -1524,13 +1543,14 @@ class LocalTaskAgentInferenceEvalRunner {
                 ),
               ),
             ),
-            temperature: 0.3,
+            temperature: temperature,
             strategy: strategy,
           );
           if (retryUsage != null) {
             usage = usage == null ? retryUsage : usage.merge(retryUsage);
           }
         }
+
         stopwatch.stop();
 
         var finalContent = _extractFinalAssistantContent(manager);
@@ -1608,10 +1628,15 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
 
   final LocalTaskAgentEvalScenario scenario;
   final _toolCalls = <LocalTaskAgentEvalToolCall>[];
+  LocalTaskAgentEvalToolCallPhase _phase = LocalTaskAgentEvalToolCallPhase.main;
   bool hasReport = false;
 
   List<LocalTaskAgentEvalToolCall> get toolCalls =>
       List.unmodifiable(_toolCalls);
+
+  void beginReportPass() {
+    _phase = LocalTaskAgentEvalToolCallPhase.reportPass;
+  }
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -1622,6 +1647,7 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
       final recorded = LocalTaskAgentEvalToolCall(
         name: call.function.name,
         argumentsJson: call.function.arguments,
+        phase: _phase,
       );
       _toolCalls.add(recorded);
 
@@ -1647,8 +1673,12 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
         : ConversationAction.continueConversation;
   }
 
+  // ConversationRepository enforces the turn limit directly and does not call
+  // this legacy strategy hook.
+  // coverage:ignore-start
   @override
   bool shouldContinue(ConversationManager manager) => manager.canContinue();
+  // coverage:ignore-end
 
   @override
   String? getContinuationPrompt(ConversationManager manager) {
@@ -1709,11 +1739,8 @@ LocalTaskAgentEvalFailureCategory _classifyResult({
     return LocalTaskAgentEvalFailureCategory.missingReport;
   }
 
-  final reportText = toolCalls
-      .where((call) => call.name == TaskAgentToolNames.updateReport)
-      .map((call) => call.argumentsJson)
-      .join('\n')
-      .toLowerCase();
+  final reportText =
+      _latestReportCall(toolCalls)?.argumentsJson.toLowerCase() ?? '';
   if (scenario.requiredReportTermGroups.any(
     (group) => !_containsAnyTerm(reportText, group),
   )) {
@@ -1750,6 +1777,15 @@ LocalTaskAgentEvalFailureCategory _classifyResult({
 
 bool _containsAnyTerm(String normalizedText, List<String> terms) {
   return terms.any((term) => normalizedText.contains(term.toLowerCase()));
+}
+
+LocalTaskAgentEvalToolCall? _latestReportCall(
+  List<LocalTaskAgentEvalToolCall> toolCalls,
+) {
+  for (final call in toolCalls.reversed) {
+    if (call.name == TaskAgentToolNames.updateReport) return call;
+  }
+  return null;
 }
 
 bool _hasAssistantMessage(ConversationManager? manager) {

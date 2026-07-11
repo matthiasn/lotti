@@ -5,12 +5,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1038]
-### Added
-- **Optional cleaner task-agent reports for smaller models.** A new advanced
-  flag checks completed reports for objective quality warnings and, only when
-  needed, runs a minimal isolated copy-edit without exposing checklist or task
-  mutation tools. The edit preserves each agent's Markdown structure and voice;
-  unsafe or incomplete edits automatically keep the original report.
 ### Fixed
 - **Melious task agents now continue reliably after calling tools.** Follow-up
   requests now preserve the OpenAI-compatible assistant message shape expected

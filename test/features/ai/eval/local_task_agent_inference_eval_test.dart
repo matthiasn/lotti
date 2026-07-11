@@ -90,7 +90,7 @@ void main() {
     const nestedToolCall = LocalTaskAgentEvalToolCall(
       name: TaskAgentToolNames.setTaskTitle,
       argumentsJson:
-          '{"title":"Validate local Gemma fallback","nested":{"items":[1,{"ok":true}]}}',
+          '{"title":"Validate efficient task-agent model","nested":{"items":[1,{"ok":true}]}}',
     );
     const invalidToolCall = LocalTaskAgentEvalToolCall(
       name: TaskAgentToolNames.updateTaskEstimate,
@@ -112,6 +112,8 @@ void main() {
       profiles: const [profile],
       scenarios: [scenario],
       results: [result],
+      temperature: 0.3,
+      executionMode: LocalTaskAgentEvalExecutionMode.singlePass,
     );
 
     expect(profile.toJson(), {
@@ -138,8 +140,10 @@ void main() {
     expect(invalidToolCall.toJson()['argumentsJsonValid'], isFalse);
 
     final json = report.toJson();
-    expect(json['schemaVersion'], 2);
+    expect(json['schemaVersion'], 3);
     expect(json['kind'], localTaskAgentEvalKind);
+    expect(json['temperature'], 0.3);
+    expect(json['executionMode'], 'singlePass');
     expect(
       jsonDecode(report.toPrettyJson()),
       isA<Map<String, Object?>>().having(
@@ -152,6 +156,7 @@ void main() {
       (json['scenarios']! as List<Object?>).single,
       containsPair('maxTurns', scenario.maxTurns),
     );
+    expect(nestedToolCall.toJson()['phase'], 'main');
     expect(
       result.toJson()['toolCallNames']! as List<Object?>,
       equals([
@@ -442,7 +447,7 @@ void main() {
           _toolCalls([
             (
               name: TaskAgentToolNames.setTaskTitle,
-              argumentsJson: '{"title":"Validate local Gemma fallback"}',
+              argumentsJson: '{"title":"Validate efficient task-agent model"}',
             ),
             (
               name: TaskAgentToolNames.updateTaskEstimate,
@@ -463,7 +468,7 @@ void main() {
             (
               name: TaskAgentToolNames.updateReport,
               argumentsJson: jsonEncode({
-                'oneLiner': 'Local Gemma fallback is being validated',
+                'oneLiner': 'Efficient task-agent model is being validated',
                 'tldr': 'The local model eval now exercises a real wake shape.',
                 'content': '## TLDR\nThe stronger local eval passed.',
               }),
@@ -609,9 +614,9 @@ void main() {
             (
               name: TaskAgentToolNames.updateReport,
               argumentsJson: jsonEncode({
-                'oneLiner': 'Validate local Gemma fallback',
+                'oneLiner': 'Validate efficient task-agent model',
                 'tldr': 'P1, due July 4, with a 150 minute estimate.',
-                'content': 'Compare the local fallback against Qwen.',
+                'content': 'Compare the candidate against the reference model.',
               }),
             ),
           ]),
@@ -650,7 +655,7 @@ void main() {
           _toolCalls([
             (
               name: TaskAgentToolNames.setTaskTitle,
-              argumentsJson: '{"title":"Validate local Gemma fallback"}',
+              argumentsJson: '{"title":"Validate efficient task-agent model"}',
             ),
             (
               name: TaskAgentToolNames.updateTaskEstimate,
@@ -691,7 +696,7 @@ void main() {
         _toolCalls([
           (
             name: TaskAgentToolNames.setTaskTitle,
-            argumentsJson: '{"title":"Validate local Gemma fallback"}',
+            argumentsJson: '{"title":"Validate efficient task-agent model"}',
           ),
           (
             name: TaskAgentToolNames.updateTaskEstimate,
@@ -793,10 +798,10 @@ void main() {
             (
               name: TaskAgentToolNames.updateReport,
               argumentsJson: jsonEncode({
-                'oneLiner': 'Validate local Gemma fallback',
+                'oneLiner': 'Validate efficient task-agent model',
                 'tldr': 'P1, due July 4, with a 150 minute estimate.',
                 'content':
-                    'Compare against Qwen and complete check-1 before 2026-07-04.',
+                    'Compare against the reference and complete check-1 before 2026-07-04.',
               }),
             ),
           ]),
@@ -885,8 +890,8 @@ void main() {
                 'oneLiner': 'Local model evaluation planned',
                 'tldr': 'The evaluation is ready to run.',
                 'content':
-                    'Validate local Gemma fallback at P1 by July 4, 2026. '
-                    'The estimate is 150 minutes and Qwen is the baseline.',
+                    'Validate efficient task-agent model at P1 by July 4, 2026. '
+                    'The estimate is 150 minutes and the reference is the baseline.',
               }),
             ),
           ]),
@@ -897,6 +902,7 @@ void main() {
         provider: provider,
         inferenceRepository: inferenceRepository,
         executionMode: LocalTaskAgentEvalExecutionMode.twoPass,
+        temperature: 0,
       );
 
       final report = await runner.run(
@@ -915,6 +921,10 @@ void main() {
       expect(inferenceRepository.requests.last.toolNames, [
         TaskAgentToolNames.updateReport,
       ]);
+      expect(
+        inferenceRepository.requests.map((request) => request.temperature),
+        everyElement(0),
+      );
     },
   );
 
@@ -989,6 +999,7 @@ LocalTaskAgentInferenceEvalRunner _createRunner({
   required AiConfigInferenceProvider provider,
   required InferenceRepositoryInterface inferenceRepository,
   bool forceReportRetry = true,
+  double temperature = 0.3,
   LocalTaskAgentEvalExecutionMode executionMode =
       LocalTaskAgentEvalExecutionMode.singlePass,
 }) {
@@ -1000,13 +1011,14 @@ LocalTaskAgentInferenceEvalRunner _createRunner({
       conversationRepositoryProvider.notifier,
     ),
     inferenceRepository: inferenceRepository,
+    temperature: temperature,
     forceReportRetry: forceReportRetry,
     executionMode: executionMode,
   );
 }
 
 List<({String name, String argumentsJson})> _expectedMetadataToolCalls({
-  String title = 'Validate local Gemma fallback',
+  String title = 'Validate efficient task-agent model',
 }) {
   return [
     (
@@ -1033,11 +1045,13 @@ class _RecordedRequest {
     required this.messages,
     required this.toolNames,
     required this.model,
+    required this.temperature,
   });
 
   final List<ChatCompletionMessage> messages;
   final List<String> toolNames;
   final String model;
+  final double temperature;
 }
 
 enum _ConversationFailurePoint { create, send }
@@ -1118,6 +1132,7 @@ class _QueuedInferenceRepository extends InferenceRepositoryInterface {
         messages: messages,
         toolNames: tools?.map((tool) => tool.function.name).toList() ?? [],
         model: model,
+        temperature: temperature,
       ),
     );
     final responses = _requestIndex < responsesByRequest.length
@@ -1150,6 +1165,7 @@ class _FailThenSucceedInferenceRepository extends InferenceRepositoryInterface {
         messages: messages,
         toolNames: tools?.map((tool) => tool.function.name).toList() ?? [],
         model: model,
+        temperature: temperature,
       ),
     );
     if (requests.length == 1) {
@@ -1159,7 +1175,7 @@ class _FailThenSucceedInferenceRepository extends InferenceRepositoryInterface {
       _toolCalls([
         (
           name: TaskAgentToolNames.setTaskTitle,
-          argumentsJson: '{"title":"Validate local Gemma fallback"}',
+          argumentsJson: '{"title":"Validate efficient task-agent model"}',
         ),
         (
           name: TaskAgentToolNames.updateTaskEstimate,

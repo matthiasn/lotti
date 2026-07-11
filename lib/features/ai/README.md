@@ -405,8 +405,9 @@ selected with `LOCAL_TASK_AGENT_EVAL_PROMPT_VARIANTS`. The evaluator also has
 an orchestration-only `twoPass` mode selected with
 `LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE`; it removes `update_report` from the
 advertised mutation-pass tools and follows with a forced report-only pass. The
-measured Mistral run reduced summary quality from 93% to 82% while increasing
-tokens by 28%, so this mode is retained only to reproduce the rejected
+corrected temperature-0 Mistral rerun improved judge-rated summary prose but
+passed only 8 of 11 scenarios and used 135,147 candidate tokens, 52% above the
+single-pass baseline. The mode is retained only to reproduce the rejected
 experiment and is not used by production task agents.
 
 The `conciseReport` prompt variant replaces, rather than extends, the production
@@ -414,13 +415,10 @@ report directive. In the full Mistral matrix it improved judge overall quality
 from 89% to 93%, summary quality from 93% to 95%, and format compliance from 84%
 to 98%, while reducing tokens by 17% and latency by 19%. It is not used in the
 main mutation wake because changing that shared prompt also caused a missed
-checklist mutation. The opt-in `enable_task_agent_report_polishing` flag applies
-a conservative version of the contract in a separate report-only conversation.
-A local policy skips clean drafts and sends only the draft, language code, and
-objective warnings — never the full task context — when a copy-edit is needed.
-The editor preserves free-form Markdown and the agent's voice. A validator keeps
-the original draft when the rewrite is incomplete, oversized, leaks an internal
-ID, or drops a URL or numeric fact.
+checklist mutation. A separate report-only copy-edit pass was also prototyped,
+but focused Mistral probes did not clear the same process-narration defects.
+Because the eval showed cost without a reliable quality gain, that mechanism is
+not part of the production workflow.
 
 ```mermaid
 flowchart LR
