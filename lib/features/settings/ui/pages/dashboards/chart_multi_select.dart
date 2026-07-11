@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/aggregation_label.dart';
@@ -331,24 +330,14 @@ class _MeasurementSelectListState extends State<_MeasurementSelectList> {
       children: [
         Text(
           context.messages.dashboardMeasurementAggregationHelp,
-          style: tokens.typography.styles.body.bodyMedium.copyWith(
+          style: tokens.typography.styles.others.caption.copyWith(
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),
-        if (_selected.isNotEmpty) ...[
-          SizedBox(height: spacing.step2),
-          Text(
-            context.messages.dashboardMeasurementSelectedCount(
-              _selected.length,
-            ),
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.interactive.enabled,
-            ),
-          ),
-        ],
         SizedBox(height: spacing.step3),
         DesignSystemSearch(
           hintText: context.messages.searchHint,
+          size: DesignSystemSearchSize.small,
           onChanged: (value) => setState(() => _searchQuery = value),
         ),
         SizedBox(height: spacing.step3),
@@ -438,53 +427,185 @@ class _MeasurementSelectRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final spacing = tokens.spacing;
-    final selected = selectedAggregation != null;
+    final aggregation = selectedAggregation;
+    final selected = aggregation != null;
 
     return _PickerSelectRow(
       label: item.displayName,
       selected: selected,
       onChanged: onSelectedChanged,
-      child: selected
-          ? Padding(
-              padding: EdgeInsetsDirectional.only(
-                top: spacing.step3,
-                end: spacing.step3,
-                bottom: spacing.step3,
+      trailing: aggregation != null
+          ? _ChartModeSelector(
+              label: context.messages.dashboardMeasurementAggregationFor(
+                item.displayName,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              selectedAggregation: aggregation,
+              onAggregationChanged: onAggregationChanged,
+            )
+          : null,
+    );
+  }
+}
+
+class _ChartModeSelector extends StatelessWidget {
+  const _ChartModeSelector({
+    required this.label,
+    required this.selectedAggregation,
+    required this.onAggregationChanged,
+  });
+
+  final String label;
+  final AggregationType selectedAggregation;
+  final ValueChanged<AggregationType> onAggregationChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final colors = tokens.colors;
+    final selectedLabel = aggregationTypeLabel(
+      context.messages,
+      selectedAggregation,
+    );
+
+    return MenuAnchor(
+      style: MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(colors.background.level01),
+        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+        elevation: const WidgetStatePropertyAll(0),
+        padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(tokens.radii.s),
+            side: BorderSide(color: colors.decorative.level02),
+          ),
+        ),
+      ),
+      menuChildren: [
+        for (final aggregationType in AggregationType.values)
+          MenuItemButton(
+            onPressed: () => onAggregationChanged(aggregationType),
+            leadingIcon: aggregationType == selectedAggregation
+                ? Icon(
+                    Icons.check_rounded,
+                    color: colors.interactive.enabled,
+                    size: spacing.step5,
+                  )
+                : SizedBox.square(dimension: spacing.step5),
+            style: ButtonStyle(
+              foregroundColor: WidgetStatePropertyAll(
+                colors.text.highEmphasis,
+              ),
+              textStyle: WidgetStatePropertyAll(
+                tokens.typography.styles.body.bodySmall,
+              ),
+              padding: WidgetStatePropertyAll(
+                EdgeInsetsDirectional.symmetric(
+                  horizontal: spacing.step3,
+                  vertical: spacing.step2,
+                ),
+              ),
+              minimumSize: WidgetStatePropertyAll(
+                Size.fromHeight(
+                  tokens.typography.lineHeight.bodySmall + spacing.step4,
+                ),
+              ),
+            ),
+            child: Text(
+              aggregationTypeLabel(context.messages, aggregationType),
+            ),
+          ),
+      ],
+      builder: (context, controller, child) {
+        return _ChartModePill(
+          label: selectedLabel,
+          semanticsLabel: label,
+          semanticsValue: selectedLabel,
+          expanded: controller.isOpen,
+          onTap: () {
+            if (controller.isOpen) {
+              controller.close();
+            } else {
+              controller.open();
+            }
+          },
+        );
+      },
+    );
+  }
+}
+
+class _ChartModePill extends StatelessWidget {
+  const _ChartModePill({
+    required this.label,
+    required this.semanticsLabel,
+    required this.semanticsValue,
+    required this.expanded,
+    this.onTap,
+  });
+
+  final String label;
+  final String semanticsLabel;
+  final String semanticsValue;
+  final bool expanded;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final colors = tokens.colors;
+
+    return Semantics(
+      button: true,
+      enabled: true,
+      expanded: expanded,
+      label: semanticsLabel,
+      onTap: onTap,
+      value: semanticsValue,
+      child: ExcludeSemantics(
+        child: Material(
+          color: colors.surface.enabled,
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(tokens.radii.s),
+            onTap: onTap,
+            child: Padding(
+              padding: EdgeInsetsDirectional.symmetric(
+                horizontal: spacing.step3,
+                vertical: spacing.step2,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    context.messages.dashboardMeasurementAggregationFor(
-                      item.displayName,
-                    ),
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: expanded
+                            ? colors.interactive.enabled
+                            : colors.text.highEmphasis,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  SizedBox(height: spacing.step3),
-                  Wrap(
-                    spacing: spacing.step2,
-                    runSpacing: spacing.step2,
-                    children: [
-                      for (final aggregationType in AggregationType.values)
-                        DesignSystemChip(
-                          label: aggregationTypeLabel(
-                            context.messages,
-                            aggregationType,
-                          ),
-                          selected: aggregationType == selectedAggregation,
-                          onPressed: () =>
-                              onAggregationChanged(aggregationType),
-                        ),
-                    ],
+                  SizedBox(width: spacing.step2),
+                  Icon(
+                    expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    size: spacing.step4,
+                    color: expanded
+                        ? colors.interactive.enabled
+                        : colors.text.mediumEmphasis,
                   ),
                 ],
               ),
-            )
-          : null,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -494,35 +615,27 @@ class _PickerSelectRow extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onChanged,
-    this.child,
+    this.trailing,
   });
 
   final String label;
   final bool selected;
   final ValueChanged<bool> onChanged;
-  final Widget? child;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
-    final trailingContent = child;
+    final trailingContent = trailing;
 
     return Material(
       color: Colors.transparent,
       child: Ink(
         decoration: BoxDecoration(
           color: selected
-              ? tokens.colors.background.level02
+              ? tokens.colors.surface.selected
               : tokens.colors.background.level01,
-          border: selected
-              ? BorderDirectional(
-                  start: BorderSide(
-                    color: tokens.colors.interactive.enabled,
-                    width: spacing.step1,
-                  ),
-                )
-              : null,
         ),
         child: InkWell(
           onTap: () => onChanged(!selected),
@@ -536,29 +649,30 @@ class _PickerSelectRow extends StatelessWidget {
                 horizontal: spacing.step4,
                 vertical: spacing.step3,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: Row(
                 children: [
                   ExcludeSemantics(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            label,
-                            style: tokens.typography.styles.body.bodyMedium
-                                .copyWith(
-                                  color: tokens.colors.text.highEmphasis,
-                                ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        SizedBox(width: spacing.step3),
-                        _PickerSelectionIndicator(selected: selected),
-                      ],
+                    child: _PickerSelectionIndicator(selected: selected),
+                  ),
+                  SizedBox(width: spacing.step3),
+                  Expanded(
+                    child: Semantics(
+                      selected: selected,
+                      child: Text(
+                        label,
+                        style: tokens.typography.styles.body.bodyMedium
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                            ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
-                  ?trailingContent,
+                  if (trailingContent != null) ...[
+                    SizedBox(width: spacing.step3),
+                    Flexible(child: trailingContent),
+                  ],
                 ],
               ),
             ),
@@ -578,26 +692,25 @@ class _PickerSelectionIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
+    final colors = tokens.colors;
     final size = spacing.step5;
 
     return SizedBox.square(
       dimension: size,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: selected
-              ? tokens.colors.interactive.enabled
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(tokens.radii.s),
+          color: selected ? colors.interactive.enabled : colors.surface.enabled,
+          borderRadius: BorderRadius.circular(tokens.radii.xs),
           border: Border.all(
             color: selected
-                ? tokens.colors.interactive.enabled
-                : tokens.colors.decorative.level01,
+                ? colors.interactive.enabled
+                : colors.text.mediumEmphasis,
           ),
         ),
         child: selected
             ? Icon(
                 Icons.check_rounded,
-                color: tokens.colors.text.onInteractiveAlert,
+                color: colors.text.onInteractiveAlert,
                 size: spacing.step4,
               )
             : null,
@@ -642,28 +755,32 @@ class _ModalActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spacing = context.designTokens.spacing;
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        DesignSystemButton(
-          label: context.messages.cancelButton,
-          variant: DesignSystemButtonVariant.secondary,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        SizedBox(width: spacing.step3),
-        DesignSystemButton(
-          label:
-              addButtonLabel ??
-              (selectedCount == 0
-                  ? context.messages.multiSelectAddButton
-                  : context.messages.multiSelectAddButtonWithCount(
-                      selectedCount,
-                    )),
-          onPressed: onConfirm,
-        ),
-      ],
+    return Padding(
+      padding: EdgeInsets.only(bottom: spacing.step6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          DesignSystemButton(
+            label: context.messages.cancelButton,
+            variant: DesignSystemButtonVariant.secondary,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          SizedBox(width: spacing.step5),
+          DesignSystemButton(
+            label:
+                addButtonLabel ??
+                (selectedCount == 0
+                    ? context.messages.multiSelectAddButton
+                    : context.messages.multiSelectAddButtonWithCount(
+                        selectedCount,
+                      )),
+            onPressed: onConfirm,
+          ),
+        ],
+      ),
     );
   }
 }

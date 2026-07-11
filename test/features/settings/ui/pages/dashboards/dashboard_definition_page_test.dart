@@ -721,7 +721,10 @@ void main() {
 
         // Choose aggregation before insertion, instead of adding first and
         // reopening the chart row.
-        await tester.tap(find.text('Daily maximum'));
+        await tester.tap(find.text('Daily sum').first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Daily maximum').last);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

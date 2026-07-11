@@ -4619,24 +4619,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String dashboardMeasurementAggregationFor(String name) {
-    return 'Shrnout $name jako';
+    return 'Režim grafu pro $name';
   }
 
   @override
   String get dashboardMeasurementAggregationHelp =>
-      'Vyber měření a zvol, jak má každý graf shrnout své hodnoty.';
-
-  @override
-  String dashboardMeasurementSelectedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Bude přidáno $count grafů',
-      few: 'Budou přidány $count grafy',
-      one: 'Bude přidán 1 graf',
-    );
-    return '$_temp0';
-  }
+      'Vyber grafy měření. Před přidáním uprav režim grafu na vybraných řádcích.';
 
   @override
   String get dashboardNameLabel => 'Název dashboardu';

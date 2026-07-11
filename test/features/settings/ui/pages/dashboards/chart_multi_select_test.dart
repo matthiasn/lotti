@@ -345,21 +345,31 @@ void main() {
 
       expect(
         find.text(
-          'Select measurements, then choose how each chart summarizes '
-          'its values.',
+          'Select measurement charts. Adjust chart mode on selected rows '
+          'before adding.',
         ),
         findsOneWidget,
       );
       await tester.tap(find.text(measurableChocolate.displayName));
       await tester.pumpAndSettle();
-      expect(find.text('1 chart will be added'), findsOneWidget);
+      expect(
+        find.widgetWithText(DesignSystemButton, 'Add 1 chart'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text(measurableWater.displayName));
       await tester.pumpAndSettle();
-      expect(find.text('2 charts will be added'), findsOneWidget);
+      expect(
+        find.widgetWithText(DesignSystemButton, 'Add 2 charts'),
+        findsOneWidget,
+      );
+      expect(find.text('Daily sum'), findsNWidgets(2));
 
-      await tester.tap(find.text('Daily maximum').first);
+      await tester.tap(find.text('Daily sum').first);
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Daily maximum').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Daily maximum'), findsOneWidget);
 
       final addButton = find.widgetWithText(DesignSystemButton, 'Add 2 charts');
       await tester.ensureVisible(addButton);
@@ -395,7 +405,7 @@ void main() {
     ) async {
       await pumpMeasurementSelect(tester, onConfirm: (_) {});
 
-      final waterRow = find.text(measurableWater.displayName);
+      final waterRow = find.text(measurableWater.displayName).first;
 
       await tester.tap(waterRow);
       await tester.pumpAndSettle();
@@ -412,6 +422,80 @@ void main() {
         find.widgetWithText(DesignSystemButton, 'Add 1 chart'),
         findsNothing,
       );
+    });
+
+    testWidgets('selected rows expose labels and chart mode expanded state', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await pumpMeasurementSelect(tester, onConfirm: (_) {});
+
+      await tester.tap(find.text(measurableWater.displayName));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.text(measurableWater.displayName).first),
+        matchesSemantics(
+          label: measurableWater.displayName,
+          hasSelectedState: true,
+          isSelected: true,
+        ),
+      );
+
+      final chartModeLabel = 'Chart mode for ${measurableWater.displayName}';
+      final waterChartMode = find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == chartModeLabel,
+      );
+      expect(waterChartMode, findsOneWidget);
+      expect(
+        tester.getSemantics(waterChartMode),
+        matchesSemantics(
+          label: chartModeLabel,
+          value: 'Daily sum',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasExpandedState: true,
+          hasTapAction: true,
+        ),
+      );
+
+      await tester.tap(waterChartMode);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(waterChartMode),
+        matchesSemantics(
+          label: chartModeLabel,
+          value: 'Daily sum',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasExpandedState: true,
+          isExpanded: true,
+          hasTapAction: true,
+        ),
+      );
+
+      await tester.tap(waterChartMode);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(waterChartMode),
+        matchesSemantics(
+          label: chartModeLabel,
+          value: 'Daily sum',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasExpandedState: true,
+          hasTapAction: true,
+        ),
+      );
+
+      semantics.dispose();
     });
 
     testWidgets('cancel closes measurement selector without confirming', (

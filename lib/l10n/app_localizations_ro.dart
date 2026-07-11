@@ -4655,24 +4655,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String dashboardMeasurementAggregationFor(String name) {
-    return 'Rezumați $name după';
+    return 'Mod diagramă pentru $name';
   }
 
   @override
   String get dashboardMeasurementAggregationHelp =>
-      'Selectați măsurători și alegeți cum rezumă fiecare diagramă valorile sale.';
-
-  @override
-  String dashboardMeasurementSelectedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de diagrame vor fi adăugate',
-      few: '$count diagrame vor fi adăugate',
-      one: '1 diagramă va fi adăugată',
-    );
-    return '$_temp0';
-  }
+      'Selectați diagrame de măsurare. Ajustați modul diagramei pe rândurile selectate înainte de adăugare.';
 
   @override
   String get dashboardNameLabel => 'Numele tabloului de bord';

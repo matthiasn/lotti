@@ -4557,23 +4557,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dashboardMeasurementAggregationFor(String name) {
-    return 'Summarize $name by';
+    return 'Chart mode for $name';
   }
 
   @override
   String get dashboardMeasurementAggregationHelp =>
-      'Select measurements, then choose how each chart summarizes its values.';
-
-  @override
-  String dashboardMeasurementSelectedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count charts will be added',
-      one: '1 chart will be added',
-    );
-    return '$_temp0';
-  }
+      'Select measurement charts. Adjust chart mode on selected rows before adding.';
 
   @override
   String get dashboardNameLabel => 'Dashboard name';

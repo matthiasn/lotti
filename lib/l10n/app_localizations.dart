@@ -7821,20 +7821,14 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardMeasurementAggregationFor.
   ///
   /// In en, this message translates to:
-  /// **'Summarize {name} by'**
+  /// **'Chart mode for {name}'**
   String dashboardMeasurementAggregationFor(String name);
 
   /// No description provided for @dashboardMeasurementAggregationHelp.
   ///
   /// In en, this message translates to:
-  /// **'Select measurements, then choose how each chart summarizes its values.'**
+  /// **'Select measurement charts. Adjust chart mode on selected rows before adding.'**
   String get dashboardMeasurementAggregationHelp;
-
-  /// No description provided for @dashboardMeasurementSelectedCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 chart will be added} other{{count} charts will be added}}'**
-  String dashboardMeasurementSelectedCount(int count);
 
   /// No description provided for @dashboardNameLabel.
   ///
