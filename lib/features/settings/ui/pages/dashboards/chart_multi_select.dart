@@ -434,7 +434,7 @@ class _MeasurementSelectRow extends StatelessWidget {
       label: item.displayName,
       selected: selected,
       onChanged: onSelectedChanged,
-      trailing: selected
+      trailing: aggregation != null
           ? _ChartModeSelector(
               label: context.messages.dashboardMeasurementAggregationFor(
                 item.displayName,
