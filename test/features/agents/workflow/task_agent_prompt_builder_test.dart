@@ -244,9 +244,14 @@ Use the task language and omit empty sections.
       );
       expect(mistralPrompt, isNot(contains('A wake ends in exactly')));
       expect(mistralPrompt, contains('Examples of the boundary:'));
+      expect(mistralPrompt, contains('date appears only in prose'));
       expect(
         mistralPrompt,
         contains('A committed multi-step plan is mutation intent'),
+      );
+      expect(
+        mistralPrompt,
+        contains('Only an explicit request to transition status'),
       );
       expect(mistralPrompt, contains('Include only sections that'));
       expect(qwenPrompt, isNot(contains('Maybe revisit catering later')));
@@ -254,6 +259,8 @@ Use the task language and omit empty sections.
       expect(qwenPrompt, contains('## Scope Erasure'));
       expect(qwenPrompt, contains('## Direct Report Grounding'));
       expect(qwenPrompt, contains('invent a root cause'));
+      expect(qwenPrompt, contains('"underway"'));
+      expect(qwenPrompt, contains('investigation is needed'));
       expect(qwenPrompt, contains('Omit absent'));
     });
 

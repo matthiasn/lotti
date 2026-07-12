@@ -169,6 +169,8 @@ void main() {
         expect(tool.description, contains('status'));
         expect(tool.description, contains('DONE'));
         expect(tool.description, contains('user-only'));
+        expect(tool.description, contains('explicitly asks'));
+        expect(tool.description, contains('blocker or gate'));
       });
 
       test('requires status parameter with enum of allowed values', () {

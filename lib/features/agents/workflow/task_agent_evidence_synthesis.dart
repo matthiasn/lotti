@@ -146,6 +146,10 @@ and what it is for, estimates or quantities, dependencies, adopted commitments,
 and useful external links. Preserve material qualifiers in checklist titles as
 well as the report.
 
+Before `update_report`, scan the newest direct evidence once more for the latest
+explicit deadline. If that date appears only in prose rather than a task field,
+it is still a required report anchor; include the date and what it is for.
+
 Omit rejected, deferred, speculative, and out-of-scope concepts completely. Do
 not name them to explain that they were omitted. Also omit source JSON IDs,
 agent or tool operations, unsupported progress, and empty sections.
@@ -196,6 +200,13 @@ release into deployment, or say work is awaiting/ready for implementation. A
 pending action proves only that the action remains to be done. Omit absent
 metadata completely: never report that no estimate, due date, priority, owner,
 link, blocker, or decision has been set.
+
+Words such as "underway", "in progress", "started", "active", "applied", and
+"implemented" require explicit source evidence of real-world progress. A task
+status, action list, or user checkmark is not that evidence. When the source says
+an investigation is needed, required, or next, report it as pending; never say
+the investigation is underway. Never say a checkmark-only fix addressed the
+symptom or was applied.
 ''';
 
   /// Returns the common contract plus the empirically matched family profile.

@@ -766,6 +766,7 @@ turn task metadata or a checklist edit into an accomplishment.
       'Six workflow items queued from implementation to release.',
       'Six workflow items identified from implementation to release.',
       'The implementation through release workflow is ready.',
+      'Production certificate rotation is underway.',
     ]) {
       expect(
         TaskAgentReportEditor.validateRevision(
@@ -791,6 +792,23 @@ turn task metadata or a checklist edit into an accomplishment.
         reason: 'phrase=$phrase',
       );
     }
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'en',
+        materialTaskState: const {},
+        draftReport: const {
+          'oneLiner': 'Investigate duplicate sync events',
+          'tldr': 'Investigation is needed.',
+          'content': 'Investigate the recurrence.',
+        },
+        candidateReport: const {
+          'oneLiner': 'Investigation underway',
+          'tldr': 'Investigation is needed to find the root cause.',
+          'content': 'The investigation is underway.',
+        },
+      ),
+      [TaskAgentReportRevisionIssue.processNarration],
+    );
     expect(
       TaskAgentReportEditor.validateRevision(
         languageCode: 'en',
@@ -1068,6 +1086,8 @@ turn task metadata or a checklist edit into an accomplishment.
       );
       expect(messages, contains('requiredCorrections'));
       expect(messages, contains('processNarration'));
+      expect(messages, contains('Pending work is never underway'));
+      expect(messages, contains('investigation is needed'));
       expect(messages, contains('rejectedReport'));
     },
   );

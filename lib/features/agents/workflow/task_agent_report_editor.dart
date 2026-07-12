@@ -59,8 +59,10 @@ enum TaskAgentReportRevisionIssue {
     'Remove every reference to the checklist itself, including saying it '
     'has, contains, includes, received, queued, identified, extracted, or '
     'created items; present the actions directly without counting workflow '
-    'items. '
-    'Do not turn an unperformed request into waiting for its result.',
+    'items. Pending work is never underway, in progress, started, established, '
+    'or active without explicit source evidence. When the source says an '
+    'investigation is needed, keep it pending. Do not turn an unperformed '
+    'request into waiting for its result.',
   ),
   checkmarkCausality(
     'State a user-marked-complete item neutrally. Remove causal claims and '
@@ -527,10 +529,19 @@ class TaskAgentReportEditor {
     final describesNewActionsAsProgress =
         hasNewChecklistItems &&
         RegExp(
-          r'\b(work(?:ing)?|task|arbeit(?:en)?|aufgabe|trabajo|tarea|travail|'
-          r'tâche|muncă|sarcin)\b.{0,50}\b(underway|in progress|'
+          r'\b(work(?:ing)?|task|plan|workflow|actions?|steps?|implementation|'
+          'investigation|rotation|migration|deployment|release|evaluation|'
+          'cleanup|fix|arbeit(?:en)?|aufgabe|trabajo|tarea|travail|tâche|'
+          r'muncă|sarcin)\b.{0,50}\b(underway|in progress|'
           'currently active|läuft(?: aktuell)?|in bearbeitung|en curso|'
           r'en progrès|în curs|probíhá)\b',
+        ).hasMatch(normalizedCandidate);
+    final describesPendingInvestigationAsProgress =
+        RegExp(
+          r'\binvestigat\w*\b.{0,30}\b(underway|in progress|active)\b',
+        ).hasMatch(normalizedCandidate) &&
+        RegExp(
+          r'\binvestigat\w*\b.{0,45}\b(needed|required|pending|next)\b',
         ).hasMatch(normalizedCandidate);
     final narratesNewActionsAsQueued =
         hasNewChecklistItems &&
@@ -557,6 +568,7 @@ class TaskAgentReportEditor {
         assignsProgressToNewActions ||
         describesNewActionsAsSetup ||
         describesNewActionsAsProgress ||
+        describesPendingInvestigationAsProgress ||
         narratesNewActionsAsQueued ||
         narratesNewActionsAsReady ||
         (candidateAddsWaitingState && !draftGroundsWaitingState)) {
@@ -1003,6 +1015,10 @@ or internal label is not a link.
 A user-marked-complete item does not establish that a fix was applied or that
 it caused, prevented, failed to prevent, or resolved a later event. State the
 facts separately; never explain this evidence rule in the report.
+Pending work is never underway, in progress, started, established, or active
+without explicit source evidence. An instruction that an investigation is
+needed means the investigation remains pending. Never say a checkmark-only fix
+addressed the symptom or was applied.
 
 The request contains the active template's `reportDirective`. Treat it as
 authoritative for voice, structure, emphasis, level of detail, required or
