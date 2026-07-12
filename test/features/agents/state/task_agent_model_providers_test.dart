@@ -4,7 +4,9 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -120,4 +122,42 @@ void main() {
       expect(options.providers, isEmpty);
     },
   );
+
+  test('resolved setup delegates complete agent context to resolver', () async {
+    final identity = makeTestIdentity();
+    final template = makeTestTemplate();
+    final version = makeTestTemplateVersion(agentId: template.id);
+    final resolver = MockProfileResolver();
+    const expected = ResolvedAgentSetup(
+      status: AgentSetupResolutionStatus.disabled,
+    );
+    when(
+      () => resolver.resolveDetailed(
+        agentConfig: identity.config,
+        template: template,
+        version: version,
+      ),
+    ).thenAnswer((_) async => expected);
+    final container = ProviderContainer(
+      overrides: [
+        agentIdentityProvider.overrideWith((ref, id) async => identity),
+        templateForAgentProvider.overrideWith((ref, id) async => template),
+        activeTemplateVersionProvider.overrideWith((ref, id) async => version),
+        profileResolverProvider.overrideWithValue(resolver),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    expect(
+      await container.read(taskAgentResolvedSetupProvider('agent').future),
+      expected,
+    );
+    verify(
+      () => resolver.resolveDetailed(
+        agentConfig: identity.config,
+        template: template,
+        version: version,
+      ),
+    ).called(1);
+  });
 }

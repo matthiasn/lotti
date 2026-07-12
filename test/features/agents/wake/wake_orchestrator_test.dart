@@ -1621,6 +1621,37 @@ void main() {
         },
       );
 
+      test(
+        'repository policy lookup failure does not abort the wake',
+        () async {
+          when(
+            () => mockRepository.getEntity('agent-1'),
+          ).thenThrow(StateError('temporary read failure'));
+          var executions = 0;
+          orchestrator.wakeExecutor = (_, _, _, _) async {
+            executions++;
+            return null;
+          };
+          queue.enqueue(
+            WakeJob(
+              runKey: 'policy-read-failure',
+              agentId: 'agent-1',
+              reason: WakeReason.reanalysis.name,
+              initiator: WakeInitiator.user,
+              triggerTokens: const {},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+
+          await orchestrator.processNext();
+
+          expect(executions, 1);
+          verify(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).called(1);
+        },
+      );
+
       test('disabled setup drops user task-agent wake too', () async {
         when(() => mockRepository.getEntity('agent-1')).thenAnswer(
           (_) async => makeTestIdentity(

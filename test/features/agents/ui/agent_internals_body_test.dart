@@ -204,4 +204,43 @@ void main() {
     expect(find.text('Agent setup'), findsWidgets);
     expect(find.text('You chose this for this agent'), findsOneWidget);
   });
+
+  testWidgets('setup row distinguishes a broken setup from no selection', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, agentId) async => makeTestIdentity(),
+          ),
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+          templateForAgentProvider.overrideWith((ref, agentId) async => null),
+          taskAgentResolvedSetupProvider.overrideWith(
+            (ref, agentId) async => const ResolvedAgentSetup(
+              status: AgentSetupResolutionStatus.broken,
+              brokenSelectionId: 'missing-profile',
+            ),
+          ),
+        ],
+        child: const SingleChildScrollView(
+          child: AgentInternalsBody(
+            agentId: 'agent-001',
+            lifecycle: AgentLifecycle.active,
+            stateAsync: AsyncValue.data(null),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Selected AI setup is unavailable').first,
+      200,
+      scrollable: find.byType(Scrollable).at(1),
+    );
+    expect(find.text('Selected AI setup is unavailable'), findsNWidgets(2));
+    expect(find.text('No AI setup'), findsNothing);
+  });
 }
