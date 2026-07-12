@@ -1,5 +1,20 @@
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 
+/// Sink for a Daily OS onboarding event.
+///
+/// Mirrors the optional `reason` / `valueBucket` columns of
+/// `OnboardingMetricsRepository.recordEvent` so stage events that carry
+/// attributes are forwarded intact rather than flattened to a bare name. In
+/// particular `dailyOsTaskMaterialized` is documented to carry a 1–5 count
+/// bucket; keeping those parameters on the seam means the wiring layer that
+/// binds this to the real recorder cannot silently drop them.
+typedef DailyOsOnboardingEventSink =
+    void Function(
+      OnboardingEventName event, {
+      String? reason,
+      int? valueBucket,
+    });
+
 /// Where a Daily OS onboarding walkthrough session came from.
 enum DailyOsOnboardingOrigin {
   /// Auto-shown to an eligible new user via the auto-show gate.
@@ -22,12 +37,14 @@ enum DailyOsOnboardingOrigin {
 /// Emission is injected via an `onEvent` callback rather than reaching for the
 /// metrics repository directly, so the contract is testable in isolation. A
 /// later phase wires `onEvent` to `OnboardingMetricsRepository.recordEvent` and
-/// has the modal pages call [recordStageOnce] as the real flow advances.
+/// has the modal pages call [recordStageOnce] as the real flow advances. The
+/// callback carries `reason` / `valueBucket` (see [DailyOsOnboardingEventSink])
+/// so attribute-bearing events survive that wiring intact.
 class DailyOsOnboardingSession {
   DailyOsOnboardingSession({
     required this.sessionId,
     required this.origin,
-    void Function(OnboardingEventName event)? onEvent,
+    DailyOsOnboardingEventSink? onEvent,
     bool tipsVisible = true,
   }) : // Private field, public param: an initializing formal would force a
        // private named parameter, which Dart forbids.
@@ -42,7 +59,7 @@ class DailyOsOnboardingSession {
   /// Whether this run was auto-shown or replayed.
   final DailyOsOnboardingOrigin origin;
 
-  final void Function(OnboardingEventName event)? _onEvent;
+  final DailyOsOnboardingEventSink? _onEvent;
   final Set<OnboardingEventName> _recordedStages = {};
   bool _tipsVisible;
   bool _skipRecorded = false;
@@ -64,9 +81,18 @@ class DailyOsOnboardingSession {
 
   /// Records a stage event at most once per session. Repeat calls for an event
   /// already recorded are no-ops, so a rebuilt page cannot double-count.
-  void recordStageOnce(OnboardingEventName event) {
+  ///
+  /// [reason] / [valueBucket] are forwarded to the sink unchanged -- e.g.
+  /// `dailyOsTaskMaterialized` passes the 1–5 materialized-task count as
+  /// [valueBucket]. The once-guard keys on [event] alone, so the attributes of
+  /// the first recorded call are the ones that land.
+  void recordStageOnce(
+    OnboardingEventName event, {
+    String? reason,
+    int? valueBucket,
+  }) {
     if (!_recordedStages.add(event)) return;
-    _onEvent?.call(event);
+    _onEvent?.call(event, reason: reason, valueBucket: valueBucket);
   }
 
   /// Records the session-level `dailyOsWalkthroughSkipped` at most once --

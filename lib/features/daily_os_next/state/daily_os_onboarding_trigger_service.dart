@@ -90,9 +90,16 @@ bool isDailyOsOnboardingEligible({
   return true;
 }
 
-/// Whether two [DateTime]s fall on the same local calendar day.
-bool _isSameLocalDay(DateTime a, DateTime b) =>
-    a.year == b.year && a.month == b.month && a.day == b.day;
+/// Whether two [DateTime]s fall on the same local calendar day. Both are
+/// normalized to local time first so a UTC/local mix cannot cross a day
+/// boundary spuriously.
+bool _isSameLocalDay(DateTime a, DateTime b) {
+  final localA = a.toLocal();
+  final localB = b.toLocal();
+  return localA.year == localB.year &&
+      localA.month == localB.month &&
+      localA.day == localB.day;
+}
 
 /// Seam for the real planning-flow provider/profile readiness signal.
 ///
@@ -121,7 +128,18 @@ final FutureProvider<bool> shouldAutoShowDailyOsOnboardingProvider =
     );
 
 Future<bool> shouldAutoShowDailyOsOnboarding(Ref ref) async {
+  // Watch every provider synchronously up front: ref.watch after an await gap
+  // escapes Riverpod's synchronous subscription tracking, so establish all
+  // subscriptions here and only await the resolved futures below.
   final db = ref.watch(journalDbProvider);
+  final selectedDate = ref.watch(dailyOsNextSelectedDateProvider);
+  final agentRepository = ref.watch(agentRepositoryProvider);
+  final todayPlanFuture = ref.watch(
+    currentDraftPlanProvider(selectedDate).future,
+  );
+  final providerReadyFuture = ref.watch(
+    dailyOsOnboardingProviderReadyProvider.future,
+  );
 
   final onboardingEnabled = await db.getConfigFlag(
     dailyOsOnboardingEnabledFlag,
@@ -131,23 +149,17 @@ Future<bool> shouldAutoShowDailyOsOnboarding(Ref ref) async {
   if (!pageEnabled) return false;
 
   final now = clock.now();
-  final selectedDate = ref.watch(dailyOsNextSelectedDateProvider);
   final selectedDateIsToday = _isSameLocalDay(selectedDate, now);
 
   // Resolve the plan-existence signals. The "ever" count includes
   // soft-deleted tombstones; the "today" read reflects the active plan only.
-  final agentRepository = ref.watch(agentRepositoryProvider);
   final everPlanCount = await agentRepository.countEntitiesByAgentAndType(
     agentId: dailyOsPlannerAgentId,
     type: AgentEntityTypes.dayPlan,
   );
-  final todayPlan = await ref.watch(
-    currentDraftPlanProvider(selectedDate).future,
-  );
+  final todayPlan = await todayPlanFuture;
 
-  final providerReady = await ref.watch(
-    dailyOsOnboardingProviderReadyProvider.future,
-  );
+  final providerReady = await providerReadyFuture;
 
   final settingsDb = getIt<SettingsDb>();
   final stored = await settingsDb.itemsByKeys(const [

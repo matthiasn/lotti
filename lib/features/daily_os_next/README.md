@@ -739,10 +739,12 @@ teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 [`docs/implementation_plans/2026-07-09_daily_os_onboarding.md`](../../../docs/implementation_plans/2026-07-09_daily_os_onboarding.md).
 
 > **Status.** The **Phase 0 substrate** (eligibility gate, cadence bookkeeping,
-> plan-existence query, metrics vocabulary) and the **Phase 1 contracts** (typed
-> modal result + onboarding session) below are implemented. There is still **no
-> walkthrough UI** (spotlight / coach strips / auto-show wiring — Phase 2+), and
-> the auto-show path is inert: it is gated behind the off-by-default
+> plan-existence query, metrics vocabulary), the **Phase 1 contracts** (typed
+> modal result + onboarding session), and the **Phase 2a presentational
+> widgets** (spotlight + coach strip) below are implemented. What is still
+> missing is the **wiring** (Phase 2b/2c): the widgets are not yet mounted on
+> the Day surface or the modal pages, and no auto-show listener exists. The
+> auto-show path stays inert regardless: it is gated behind the off-by-default
 > `dailyOsOnboardingEnabledFlag`, and `dailyOsOnboardingProviderReadyProvider`
 > (the seam for the real planning-flow readiness signal) defaults to `false`
 > until a later phase wires it, so `shouldAutoShowDailyOsOnboardingProvider`
@@ -757,7 +759,9 @@ teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 | `AgentRepository.countEntitiesByAgentAndType` | `features/agents/database/agent_repo_evolution.dart` | The "has a plan ever existed for `daily_os_planner`" query. Deliberately **includes soft-deleted tombstones** (unlike `getEntitiesByIds`), so a returning user who deleted their only plan is not mistaken for a new user. |
 | Daily OS event vocabulary + `DailyOsOnboardingFunnelState` | `features/onboarding/model/onboarding_event.dart` | Six `dailyOs*` events reuse the shared `OnboardingMetricsDb`, but the two funnel derivations are **partitioned by vocabulary** so Daily OS events never shift the general FTUE active-day or activation metrics. |
 | `DayPlanningResult` + `attributeCreatedTaskIds` | `ui/pages/day_planning_result.dart` | `showDayPlanningModal` now resolves to a typed result instead of `Future<void>`: `DayPlanningCreated` (drafted plan + task ids newly materialized from approved capture items), `DayPlanningAdapted` (Refine result), or `null` on dismissal. Attribution reconstructs the created task ids from `ParsedItem.matchedTaskId` transitions on the approved capture items — best-effort, empty when it can't be established. |
-| `DailyOsOnboardingSession` | `state/daily_os_onboarding_session.dart` | Walkthrough session contract: stable id, `auto`/`replay` origin, tips-visible state, and exactly-once guards for the stage and skip events (emission injected via a callback so it is testable in isolation). Consumed by Phase 2's coach strips; the modal does not thread it yet. |
+| `DailyOsOnboardingSession` | `state/daily_os_onboarding_session.dart` | Walkthrough session contract: stable id, `auto`/`replay` origin, tips-visible state, and exactly-once guards for the stage and skip events (emission injected via a callback so it is testable in isolation). Consumed by the coach strips; the modal does not thread it yet (Phase 2b). |
+| `DailyOsOnboardingSpotlight` | `ui/widgets/daily_os_onboarding_spotlight.dart` | Presentational full-screen coaching overlay: dims the surface, cuts a highlight hole around a measured target rect (the check-in CTA), and floats a glass card with one primary action. Tap-inside-target and the card's action both proceed; scrim taps dismiss. Attention ring pulses under normal motion, static under `MediaQuery.disableAnimationsOf`. Copy/callbacks/rect all injected — the wiring layer (Phase 2b) measures the CTA and inserts it into an `Overlay`. |
+| `DailyOsOnboardingCoachStrip` | `ui/widgets/daily_os_onboarding_coach_strip.dart` | Presentational static glass banner narrating one modal beat, with an optional injected "hide tips" affordance. No motion, no session/metrics logic of its own. |
 
 Eligibility (all must hold): both `dailyOsOnboardingEnabledFlag` and
 `enableDailyOsPageFlag` on; the selected date is local today; today has no
