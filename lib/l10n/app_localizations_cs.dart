@@ -2936,6 +2936,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Pokud je povoleno, aplikace se pokusí generovat vektory pro vaše položky, aby zlepšila vyhledávání a návrhy souvisejícího obsahu.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Průvodce Daily OS';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Proveď nové uživatele Daily OS skutečným check-inem, který promění řeč v úkol a plán dne. Vyžaduje stránku DailyOS.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Povolit AI streamování pro akce úkolů';
 
@@ -3022,13 +3029,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagEnableOnboardingFtueDescription =>
       'Použij nový onboarding pro první nastavení AI místo výběru poskytovatele.';
-
-  @override
-  String get configFlagDailyOsOnboardingEnabled => 'Průvodce Daily OS';
-
-  @override
-  String get configFlagDailyOsOnboardingEnabledDescription =>
-      'Proveď nové uživatele Daily OS skutečným check-inem, který promění řeč v úkol a plán dne. Vyžaduje nové agentní DailyOS.';
 
   @override
   String get configFlagEnableProjects => 'Povolit projekty';
