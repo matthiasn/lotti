@@ -36,7 +36,7 @@ const MediaQueryData desktopMediaQueryData = MediaQueryData(
   size: Size(900, 800),
 );
 
-final _defaultResolvedSetup = ResolvedAgentSetup(
+final defaultResolvedSetup = ResolvedAgentSetup(
   status: AgentSetupResolutionStatus.resolved,
   profile: ResolvedProfile(
     thinkingModelId: 'test-model',
@@ -149,7 +149,7 @@ class AgentTestBench {
         ),
         taskAgentProvider.overrideWith((ref, id) async => identity),
         taskAgentResolvedSetupProvider.overrideWith(
-          (ref, id) async => _resolvedSetup ?? _defaultResolvedSetup,
+          (ref, id) async => _resolvedSetup ?? defaultResolvedSetup,
         ),
         agentReportProvider.overrideWith((ref, agentId) async => _report),
         templateForAgentProvider.overrideWith(
