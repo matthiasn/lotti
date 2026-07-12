@@ -550,9 +550,11 @@ class TaskAgentReportEditor {
         RegExp(
           r'\b(work(?:ing)?|task|plan|workflow|actions?|steps?|implementation|'
           'investigation|rotation|migration|deployment|release|evaluation|'
-          'cleanup|fix|arbeit(?:en)?|aufgabe|trabajo|tarea|travail|tâche|'
+          r'cleanup|fix|stabilisier\w*|export|arbeit(?:en)?|aufgabe|trabajo|'
+          'tarea|travail|tâche|'
           r'muncă|sarcin)\b.{0,50}\b(underway|in progress|'
-          'currently active|läuft(?: aktuell)?|in bearbeitung|en curso|'
+          'currently active|wurde aufgenommen|läuft(?: aktuell)?|'
+          'in bearbeitung|en curso|'
           r'en progrès|în curs|probíhá)\b',
         ).hasMatch(normalizedCandidate);
     final describesPendingInvestigationAsProgress =
@@ -779,6 +781,7 @@ class TaskAgentReportEditor {
     'scoped[- ]out|do not include|must not be included|'
     'leave (?:it|that|this) out|'
     'zurückgestellt|nicht.{0,60}aufgenommen|nicht.{0,40}aufnehmen|'
+    r'nicht.{0,40}bearbeit\w*|'
     'ausgeschlossen|pospuest|aplazad|fuera de alcance|no incluir|'
     'différ|reporté|hors périmètre|ne pas inclure|amânat|'
     r'în afara domeniului|nu include|odložen|mimo rozsah|nezahrnovat)\b',

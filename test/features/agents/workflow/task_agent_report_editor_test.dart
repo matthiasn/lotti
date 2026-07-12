@@ -590,6 +590,25 @@ turn task metadata or a checklist edit into an accomplishment.
       ),
       contains(TaskAgentReportRevisionIssue.deferredScopeLeak),
     );
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'de',
+        materialTaskState: const {},
+        draftReport: const {
+          'oneLiner': 'CSV-Export reparieren',
+          'tldr': 'Drei konkrete Schritte stehen an.',
+          'content':
+              'Ein Newsletter wurde als zukünftige Idee erwähnt, soll aber '
+              'aktuell nicht bearbeitet werden.',
+        },
+        candidateReport: const {
+          'oneLiner': 'CSV-Export reparieren',
+          'tldr': 'Drei konkrete Schritte stehen an.',
+          'content': 'Newsletter später bearbeiten und CSV-Export reparieren.',
+        },
+      ),
+      contains(TaskAgentReportRevisionIssue.deferredScopeLeak),
+    );
     const germanDeferredDraft = {
       'oneLiner': 'CSV-Export reparieren',
       'tldr': 'Drei konkrete Schritte stehen an.',
@@ -799,6 +818,28 @@ turn task metadata or a checklist edit into an accomplishment.
           'oneLiner': 'CSV-Export reparieren',
           'tldr': 'Du hast diese Punkte bereits markiert.',
           'content': 'CSV-Export reparieren und Testdaten bei Sam anfragen.',
+        },
+      ),
+      [TaskAgentReportRevisionIssue.processNarration],
+    );
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'de',
+        materialTaskState: const {
+          'newChecklistItems': [
+            'CSV-Export reparieren',
+            'Testdaten anfragen',
+          ],
+        },
+        draftReport: const {
+          'oneLiner': 'CSV-Export reparieren',
+          'tldr': 'Drei konkrete Schritte stehen an.',
+          'content': 'Export reparieren, Testdaten anfragen, Tests ausführen.',
+        },
+        candidateReport: const {
+          'oneLiner': 'CSV-Export stabilisieren',
+          'tldr': 'Die Stabilisierung des CSV-Exports läuft.',
+          'content': 'Die Arbeit wurde aufgenommen.',
         },
       ),
       [TaskAgentReportRevisionIssue.processNarration],
