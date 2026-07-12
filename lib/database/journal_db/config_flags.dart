@@ -101,14 +101,6 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: dailyOsNextEnabledFlag,
-      description: 'Use the next-generation agentic DailyOS surface?',
-      status: false,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: enableSessionRatingsFlag,
       description: 'Enable session ratings?',
       status: false,

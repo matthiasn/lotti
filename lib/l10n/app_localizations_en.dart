@@ -2892,13 +2892,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.';
 
   @override
-  String get configFlagDailyOsNextEnabled => 'Use next-gen agentic DailyOS';
-
-  @override
-  String get configFlagDailyOsNextEnabledDescription =>
-      'Replace the current DailyOS surface with the new voice-first, agent-led capture and reconcile flow. Early preview — backend logic is mocked.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Enable AI streaming for task actions';
 
@@ -3402,107 +3395,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customColor => 'Custom Color';
 
   @override
-  String get dailyOsActual => 'Actual';
-
-  @override
-  String get dailyOsAddBlock => 'Add Block';
-
-  @override
-  String get dailyOsAddBudget => 'Add Budget';
-
-  @override
-  String get dailyOsAddNote => 'Add a note...';
-
-  @override
-  String get dailyOsAgreeToPlan => 'Agree to Plan';
-
-  @override
-  String get dailyOsCancel => 'Cancel';
-
-  @override
-  String get dailyOsCategory => 'Category';
-
-  @override
-  String get dailyOsChooseCategory => 'Choose a category...';
-
-  @override
   String get dailyOsDayPlan => 'Day Plan';
-
-  @override
-  String get dailyOsDaySummary => 'Day Summary';
-
-  @override
-  String get dailyOsDelete => 'Delete';
-
-  @override
-  String get dailyOsDeletePlannedBlock => 'Delete Block?';
-
-  @override
-  String get dailyOsDeletePlannedBlockConfirm =>
-      'This will remove the planned block from your timeline.';
-
-  @override
-  String get dailyOsDraftMessage => 'Plan is in draft. Agree to lock it in.';
-
-  @override
-  String get dailyOsDueToday => 'Due today';
-
-  @override
-  String get dailyOsDueTodayShort => 'Due';
-
-  @override
-  String dailyOsDurationHours(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count hours',
-      one: '1 hour',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String dailyOsDurationHoursMinutes(int hours, int minutes) {
-    return '${hours}h ${minutes}m';
-  }
-
-  @override
-  String dailyOsDurationMinutes(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count minutes',
-      one: '1 minute',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get dailyOsEditPlannedBlock => 'Edit Planned Block';
-
-  @override
-  String get dailyOsEndTime => 'End';
-
-  @override
-  String get dailyOsExpandToMove => 'Expand timeline to drag this block';
-
-  @override
-  String get dailyOsExpandToMoveMore => 'Expand timeline to move further';
-
-  @override
-  String get dailyOsFailedToLoadBudgets => 'Failed to load budgets';
-
-  @override
-  String get dailyOsFailedToLoadTimeline => 'Failed to load timeline';
-
-  @override
-  String get dailyOsFold => 'Fold';
-
-  @override
-  String get dailyOsInvalidTimeRange => 'Invalid time range';
-
-  @override
-  String get dailyOsNearLimit => 'Near limit';
 
   @override
   String get dailyOsNextAgendaCapacityComfortable => 'Comfortable';
@@ -4290,138 +4183,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextTriageToday => 'Today';
 
   @override
-  String get dailyOsNoBudgets => 'No time budgets';
-
-  @override
-  String get dailyOsNoBudgetsHint =>
-      'Add budgets to track how you spend your time across categories.';
-
-  @override
-  String get dailyOsNoBudgetWarning => 'No time budgeted';
-
-  @override
-  String get dailyOsNote => 'Note';
-
-  @override
-  String get dailyOsNoTimeline => 'No timeline entries';
-
-  @override
-  String get dailyOsNoTimelineHint =>
-      'Start a timer or add planned blocks to see your day.';
-
-  @override
-  String get dailyOsOnTrack => 'On track';
-
-  @override
-  String get dailyOsOver => 'Over';
-
-  @override
-  String get dailyOsOverallProgress => 'Overall Progress';
-
-  @override
-  String get dailyOsOverBudget => 'Over budget';
-
-  @override
-  String get dailyOsOverdue => 'Overdue';
-
-  @override
-  String get dailyOsOverdueShort => 'Late';
-
-  @override
-  String get dailyOsPlan => 'Plan';
-
-  @override
-  String get dailyOsPlanCreated => 'Plan created successfully';
-
-  @override
-  String get dailyOsPlanCreatedDescription =>
-      'Your time blocks have been saved. You can start tracking your tasks.';
-
-  @override
-  String get dailyOsPlanned => 'Planned';
-
-  @override
-  String get dailyOsPlanWithoutVoice => 'Plan without voice';
-
-  @override
-  String get dailyOsQuickCreateTask => 'Create task for this budget';
-
-  @override
-  String get dailyOsReAgree => 'Re-agree';
-
-  @override
-  String get dailyOsRecorded => 'Recorded';
-
-  @override
-  String get dailyOsRemaining => 'Remaining';
-
-  @override
-  String get dailyOsReviewMessage => 'Changes detected. Review your plan.';
-
-  @override
-  String get dailyOsSave => 'Save';
-
-  @override
-  String get dailyOsSaveError => 'Could not save plan';
-
-  @override
-  String get dailyOsSaveErrorDescription =>
-      'Something went wrong. Please try again.';
-
-  @override
-  String get dailyOsSavePlan => 'Save plan';
-
-  @override
-  String get dailyOsSelectCategory => 'Select Category';
-
-  @override
-  String get dailyOsSetTimeBlocks => 'Set time blocks';
-
-  @override
-  String get dailyOsSetTimeBlocksAddNew => 'Add new time block';
-
-  @override
-  String get dailyOsSetTimeBlocksFavourites => 'Favourites';
-
-  @override
-  String get dailyOsSetTimeBlocksOther => 'Other categories';
-
-  @override
-  String get dailyOsSetTimeBlocksTapHint => 'Tap to add time block';
-
-  @override
-  String get dailyOsStartTime => 'Start';
-
-  @override
-  String get dailyOsTasks => 'Tasks';
-
-  @override
-  String get dailyOsTimeBudgets => 'Time Budgets';
-
-  @override
-  String dailyOsTimeLeft(String time) {
-    return '$time left';
-  }
-
-  @override
-  String get dailyOsTimeline => 'Timeline';
-
-  @override
-  String dailyOsTimeOver(String time) {
-    return '+$time over';
-  }
-
-  @override
-  String get dailyOsTimeRange => 'Time Range';
-
-  @override
-  String get dailyOsTimesUp => 'Time\'s up';
-
-  @override
   String get dailyOsTodayButton => 'Today';
-
-  @override
-  String get dailyOsUncategorized => 'Uncategorized';
 
   @override
   String get dashboardActiveLabel => 'Active';
@@ -4872,38 +4634,6 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return '${hours}h ${minutes}m';
   }
-
-  @override
-  String get designSystemMyDailyEditPlanLabel => 'Edit plan';
-
-  @override
-  String get designSystemMyDailyGreetingMorning => 'Good morning.';
-
-  @override
-  String designSystemMyDailyGreetingWithName(String name) {
-    return 'Hi, $name';
-  }
-
-  @override
-  String get designSystemMyDailyHikeWithDanielaTitle => 'Hiking with Daniela';
-
-  @override
-  String get designSystemMyDailyLunchBreakTitle => 'Lunch break';
-
-  @override
-  String get designSystemMyDailyMeetingsLabel => 'Meetings';
-
-  @override
-  String get designSystemMyDailyMeetingWithDannyTitle => 'Meeting with Danny';
-
-  @override
-  String get designSystemMyDailyProfileActionLabel => 'Profile';
-
-  @override
-  String get designSystemMyDailySkiWithMattTitle => 'Go skiing with Matt';
-
-  @override
-  String get designSystemMyDailyTapToExpandLabel => 'Tap to expand';
 
   @override
   String get designSystemNavigationCollapsedLabel => 'Collapsed';
@@ -9737,9 +9467,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get customColor => 'Custom Colour';
-
-  @override
-  String get dailyOsUncategorized => 'Uncategorised';
 
   @override
   String get dashboardActiveLabel => 'Active';

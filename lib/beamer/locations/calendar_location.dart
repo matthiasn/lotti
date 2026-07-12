@@ -1,9 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/features/daily_os/ui/pages/daily_os_page.dart';
-import 'package:lotti/features/daily_os/ui/pages/set_time_blocks_page.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
@@ -17,7 +14,6 @@ import 'package:lotti/features/insights/ui/time_analysis_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/consts.dart';
 
 class CalendarLocation extends BeamLocation<BeamState> {
   CalendarLocation(RouteInformation super.routeInformation);
@@ -26,7 +22,6 @@ class CalendarLocation extends BeamLocation<BeamState> {
   List<String> get pathPatterns => [
     '/calendar',
     '/calendar/time',
-    '/calendar/set-time-blocks',
     '/calendar/refine/:date',
     '/calendar/commit/:date',
     '/calendar/shutdown/:date',
@@ -53,8 +48,7 @@ class CalendarLocation extends BeamLocation<BeamState> {
     ];
 
     if (isTimeAnalysis) {
-      // Full-screen analytics surface — same push pattern as
-      // set-time-blocks, deliberately NOT a split pane.
+      // Full-screen analytics surface, deliberately NOT a split pane.
       pages.add(
         const BeamPage(
           key: ValueKey('calendar_time_analysis'),
@@ -63,14 +57,6 @@ class CalendarLocation extends BeamLocation<BeamState> {
       );
     }
 
-    if (state.uri.path == '/calendar/set-time-blocks') {
-      pages.add(
-        const BeamPage(
-          key: ValueKey('set_time_blocks_page'),
-          child: SetTimeBlocksPage(),
-        ),
-      );
-    }
     if (dailyOsNextRoute != null) {
       pages.add(
         BeamPage(
@@ -194,36 +180,17 @@ class _DailyOsNextRouteErrorPage extends StatelessWidget {
   }
 }
 
-/// Branches between the current Daily OS surface and the next-gen
-/// agentic Capture flow based on [dailyOsNextEnabledFlag].
+/// The calendar tab's root surface: the agentic DailyOS.
 ///
-/// Kept as a thin wrapper so the [BeamPage] key stays stable across
-/// flag flips — pushing/popping inside Capture / Reconcile doesn't
-/// blow away the calendar tab's navigation history.
+/// Kept as a thin wrapper so the [BeamPage] key stays stable —
+/// pushing/popping inside Capture / Reconcile doesn't blow away the
+/// calendar tab's navigation history.
 @visibleForTesting
-class CalendarRoot extends StatefulWidget {
+class CalendarRoot extends StatelessWidget {
   const CalendarRoot({super.key});
 
   @override
-  State<CalendarRoot> createState() => _CalendarRootState();
-}
-
-class _CalendarRootState extends State<CalendarRoot> {
-  // Cached once so the StreamBuilder doesn't re-subscribe to a fresh
-  // `watchConfigFlag` query on every rebuild of the tab.
-  late final Stream<bool> _flagStream = getIt<JournalDb>().watchConfigFlag(
-    dailyOsNextEnabledFlag,
-  );
-
-  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<bool>(
-      stream: _flagStream,
-      initialData: false,
-      builder: (context, snapshot) {
-        final useNext = snapshot.data ?? false;
-        return useNext ? const DailyOsNextRoot() : const DailyOsPage();
-      },
-    );
+    return const DailyOsNextRoot();
   }
 }

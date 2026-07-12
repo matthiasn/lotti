@@ -285,9 +285,8 @@ stateDiagram-v2
 ## Navigation
 
 `/calendar/time` is a dedicated pattern in `CalendarLocation`, pushed as a
-full-screen `BeamPage` on top of the Daily OS root (the same pattern as
-`/calendar/set-time-blocks`) — the analytics surface gets the entire
-content area, never a split pane. The location is the single writer of
+full-screen `BeamPage` on top of the Daily OS root — the analytics surface
+gets the entire content area, never a split pane. The location is the single writer of
 `NavService.desktopShowTimeAnalysis`; the `InsightsSidebarEntry` rendered
 beneath the Daily OS month calendar (inside `DailyOsSidebarSection`, via the
 destination's `expandedChildBuilder`) reads it for its highlight and beams to

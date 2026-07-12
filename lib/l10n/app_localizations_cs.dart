@@ -2936,13 +2936,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Pokud je povoleno, aplikace se pokusí generovat vektory pro vaše položky, aby zlepšila vyhledávání a návrhy souvisejícího obsahu.';
 
   @override
-  String get configFlagDailyOsNextEnabled => 'Použít nové agentní DailyOS';
-
-  @override
-  String get configFlagDailyOsNextEnabledDescription =>
-      'Nahradí stávající rozhraní DailyOS novým hlasově řízeným tokem zachycení a smíření vedeným agentem. Raná ukázka — logika backendu je simulovaná.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Povolit AI streamování pro akce úkolů';
 
@@ -3455,103 +3448,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get customColor => 'Vlastní barva';
 
   @override
-  String get dailyOsActual => 'Skutečný';
-
-  @override
-  String get dailyOsAddBlock => 'Přidat blok';
-
-  @override
-  String get dailyOsAddBudget => 'Přidat rozpočet';
-
-  @override
-  String get dailyOsAddNote => 'Přidat poznámku...';
-
-  @override
-  String get dailyOsAgreeToPlan => 'Souhlasím s plánem';
-
-  @override
-  String get dailyOsCancel => 'Zrušit';
-
-  @override
-  String get dailyOsCategory => 'Kategorie';
-
-  @override
-  String get dailyOsChooseCategory => 'Vyberte kategorii...';
-
-  @override
   String get dailyOsDayPlan => 'Plán dne';
-
-  @override
-  String get dailyOsDaySummary => 'Souhrn dne';
-
-  @override
-  String get dailyOsDelete => 'Smazat';
-
-  @override
-  String get dailyOsDeletePlannedBlock => 'Smazat blok?';
-
-  @override
-  String get dailyOsDeletePlannedBlockConfirm =>
-      'Tímto se odebere plánovaný blok z vaší časové osy.';
-
-  @override
-  String get dailyOsDraftMessage =>
-      'Plán je ve stavu konceptu. Souhlasíte s jeho uzamčením.';
-
-  @override
-  String get dailyOsDueToday => 'Termín dnes';
-
-  @override
-  String get dailyOsDueTodayShort => 'Dnes';
-
-  @override
-  String dailyOsDurationHours(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count hodin',
-      one: '1 hodina',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String dailyOsDurationHoursMinutes(int hours, int minutes) {
-    return '${hours}h ${minutes}m';
-  }
-
-  @override
-  String dailyOsDurationMinutes(int count) {
-    return '$count minut';
-  }
-
-  @override
-  String get dailyOsEditPlannedBlock => 'Upravit plánovaný blok';
-
-  @override
-  String get dailyOsEndTime => 'Konec';
-
-  @override
-  String get dailyOsExpandToMove =>
-      'Rozbalte časovou osu pro přetažení tohoto bloku';
-
-  @override
-  String get dailyOsExpandToMoveMore => 'Rozbalte časovou osu pro další přesun';
-
-  @override
-  String get dailyOsFailedToLoadBudgets => 'Nepodařilo se načíst rozpočty';
-
-  @override
-  String get dailyOsFailedToLoadTimeline => 'Nepodařilo se načíst časovou osu';
-
-  @override
-  String get dailyOsFold => 'Složit';
-
-  @override
-  String get dailyOsInvalidTimeRange => 'Neplatný časový rozsah';
-
-  @override
-  String get dailyOsNearLimit => 'Blízko limitu';
 
   @override
   String get dailyOsNextAgendaCapacityComfortable => 'Pohodové';
@@ -4349,138 +4246,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextTriageToday => 'Dnes';
 
   @override
-  String get dailyOsNoBudgets => 'Žádné časové rozpočty';
-
-  @override
-  String get dailyOsNoBudgetsHint =>
-      'Přidejte rozpočty pro sledování, jak trávíte čas napříč kategoriemi.';
-
-  @override
-  String get dailyOsNoBudgetWarning => 'Žádný časový rozpočet';
-
-  @override
-  String get dailyOsNote => 'Poznámka';
-
-  @override
-  String get dailyOsNoTimeline => 'Žádné záznamy v časové ose';
-
-  @override
-  String get dailyOsNoTimelineHint =>
-      'Spustit časovač nebo přidat plánované bloky, abyste viděli svůj den.';
-
-  @override
-  String get dailyOsOnTrack => 'Na správné cestě';
-
-  @override
-  String get dailyOsOver => 'Překročeno';
-
-  @override
-  String get dailyOsOverallProgress => 'Celkový pokrok';
-
-  @override
-  String get dailyOsOverBudget => 'Překročení rozpočtu';
-
-  @override
-  String get dailyOsOverdue => 'Zpožděné';
-
-  @override
-  String get dailyOsOverdueShort => 'Pozdě';
-
-  @override
-  String get dailyOsPlan => 'Plán';
-
-  @override
-  String get dailyOsPlanCreated => 'Plán úspěšně vytvořen';
-
-  @override
-  String get dailyOsPlanCreatedDescription =>
-      'Tvé časové bloky byly uloženy. Můžeš začít sledovat své úkoly.';
-
-  @override
-  String get dailyOsPlanned => 'Naplánováno';
-
-  @override
-  String get dailyOsPlanWithoutVoice => 'Plánovat bez hlasu';
-
-  @override
-  String get dailyOsQuickCreateTask => 'Vytvořit úkol pro tento rozpočet';
-
-  @override
-  String get dailyOsReAgree => 'Znovu souhlasit';
-
-  @override
-  String get dailyOsRecorded => 'Zaznamenáno';
-
-  @override
-  String get dailyOsRemaining => 'Zbývá';
-
-  @override
-  String get dailyOsReviewMessage => 'Zjištěny změny. Zkontrolujte svůj plán.';
-
-  @override
-  String get dailyOsSave => 'Uložit';
-
-  @override
-  String get dailyOsSaveError => 'Plán se nepodařilo uložit';
-
-  @override
-  String get dailyOsSaveErrorDescription =>
-      'Něco se pokazilo. Zkus to prosím znovu.';
-
-  @override
-  String get dailyOsSavePlan => 'Uložit plán';
-
-  @override
-  String get dailyOsSelectCategory => 'Vyberte kategorii';
-
-  @override
-  String get dailyOsSetTimeBlocks => 'Nastavit časové bloky';
-
-  @override
-  String get dailyOsSetTimeBlocksAddNew => 'Přidat nový časový blok';
-
-  @override
-  String get dailyOsSetTimeBlocksFavourites => 'Oblíbené';
-
-  @override
-  String get dailyOsSetTimeBlocksOther => 'Další kategorie';
-
-  @override
-  String get dailyOsSetTimeBlocksTapHint => 'Klepni pro přidání časového bloku';
-
-  @override
-  String get dailyOsStartTime => 'Začátek';
-
-  @override
-  String get dailyOsTasks => 'Úkoly';
-
-  @override
-  String get dailyOsTimeBudgets => 'Časové rozpočty';
-
-  @override
-  String dailyOsTimeLeft(String time) {
-    return 'Zbývá $time';
-  }
-
-  @override
-  String get dailyOsTimeline => 'Časová osa';
-
-  @override
-  String dailyOsTimeOver(String time) {
-    return '+$time navíc';
-  }
-
-  @override
-  String get dailyOsTimeRange => 'Časový rozsah';
-
-  @override
-  String get dailyOsTimesUp => 'Čas vypršel';
-
-  @override
   String get dailyOsTodayButton => 'Dnes';
-
-  @override
-  String get dailyOsUncategorized => 'Nezařazeno';
 
   @override
   String get dashboardActiveLabel => 'Aktivní';
@@ -4935,38 +4701,6 @@ class AppLocalizationsCs extends AppLocalizations {
   ) {
     return '${hours}h ${minutes}m';
   }
-
-  @override
-  String get designSystemMyDailyEditPlanLabel => 'Upravit plán';
-
-  @override
-  String get designSystemMyDailyGreetingMorning => 'Dobré ráno.';
-
-  @override
-  String designSystemMyDailyGreetingWithName(String name) {
-    return 'Ahoj, $name';
-  }
-
-  @override
-  String get designSystemMyDailyHikeWithDanielaTitle => 'Túra s Danielou';
-
-  @override
-  String get designSystemMyDailyLunchBreakTitle => 'Obědová pauza';
-
-  @override
-  String get designSystemMyDailyMeetingsLabel => 'Schůzky';
-
-  @override
-  String get designSystemMyDailyMeetingWithDannyTitle => 'Schůzka s Dannym';
-
-  @override
-  String get designSystemMyDailyProfileActionLabel => 'Profil';
-
-  @override
-  String get designSystemMyDailySkiWithMattTitle => 'Jet lyžovat s Mattem';
-
-  @override
-  String get designSystemMyDailyTapToExpandLabel => 'Klepni pro rozbalení';
 
   @override
   String get designSystemNavigationCollapsedLabel => 'Sbalené';

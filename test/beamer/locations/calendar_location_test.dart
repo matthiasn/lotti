@@ -9,11 +9,6 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/beamer/locations/calendar_location.dart';
-import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
-import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
-import 'package:lotti/features/daily_os/state/time_history_header_controller.dart';
-import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
-import 'package:lotti/features/daily_os/ui/pages/daily_os_page.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
@@ -29,11 +24,8 @@ import 'package:lotti/features/insights/ui/time_analysis_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../features/daily_os/ui/widgets/time_history_header/test_helpers.dart'
-    as daily_os;
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
@@ -165,7 +157,6 @@ void main() {
       expect(location.pathPatterns, [
         '/calendar',
         '/calendar/time',
-        '/calendar/set-time-blocks',
         '/calendar/refine/:date',
         '/calendar/commit/:date',
         '/calendar/shutdown/:date',
@@ -226,21 +217,8 @@ void main() {
       final pages = location.buildPages(mockBuildContext, beamState);
       expect(pages.length, 1);
       expect(pages[0].key, isA<ValueKey<String>>());
-      // The child branches between the current and next-gen Daily OS
-      // surfaces at runtime — see [CalendarRoot] for the flag wiring.
-      // Widget-level branching is covered separately in the
-      // CalendarRoot widget test.
-      expect(pages[0].child, isA<CalendarRoot>());
-    });
-
-    test('pushes the set-time-blocks page on the nested route', () {
-      final routeInformation = RouteInformation(
-        uri: Uri.parse('/calendar/set-time-blocks'),
-      );
-      final location = CalendarLocation(routeInformation);
-      final beamState = BeamState.fromRouteInformation(routeInformation);
-      final pages = location.buildPages(mockBuildContext, beamState);
-      expect(pages.length, 2);
+      // The DailyOsNextRoot mount itself is covered in the
+      // CalendarRoot widget test below.
       expect(pages[0].child, isA<CalendarRoot>());
     });
 
@@ -453,134 +431,33 @@ void main() {
     });
   });
 
-  group('CalendarRoot flag branching', () {
-    late MockJournalDb mockJournalDb;
-
+  group('CalendarRoot', () {
     setUp(() async {
-      final mocks = await setUpTestGetIt();
-      mockJournalDb = mocks.journalDb;
-      // Registers EntitiesCacheService + theming services so the legacy
-      // DailyOsPage subtree can build on the `false` branch.
-      daily_os.setUpEntitiesCacheService();
+      await setUpTestGetIt();
     });
 
-    tearDown(() async {
-      daily_os.tearDownEntitiesCacheService();
-      await tearDownTestGetIt();
-    });
+    tearDown(tearDownTestGetIt);
 
-    // Overrides the legacy DailyOsPage data providers so its full widget
-    // tree renders without hitting the database. Mirrors the override set
-    // used by the dedicated DailyOsPage widget test.
-    List<Override> dailyOsPageOverrides() => [
-      dailyOsSelectedDateProvider.overrideWith(
-        () => daily_os.TestDailyOsSelectedDate(daily_os.testDate),
-      ),
-      timeHistoryHeaderControllerProvider.overrideWith(
-        () => daily_os.TestTimeHistoryController(
-          daily_os.createTestHistoryData(),
-        ),
-      ),
-      unifiedDailyOsDataControllerProvider(daily_os.testDate).overrideWith(
-        () => daily_os.TestUnifiedController(daily_os.createUnifiedData()),
-      ),
-      dayBudgetStatsProvider(daily_os.testDate).overrideWith(
-        (ref) async => const DayBudgetStats(
-          totalPlanned: Duration.zero,
-          totalRecorded: Duration.zero,
-          budgetCount: 0,
-          overBudgetCount: 0,
-        ),
-      ),
-      activeFocusCategoryIdProvider.overrideWith((ref) => Stream.value(null)),
-      runningTimerCategoryIdProvider.overrideWithBuild((_, _) => null),
-    ];
-
-    Future<void> pumpCalendarRoot(
-      WidgetTester tester, {
-      required Stream<bool> flagStream,
-      List<Override> overrides = const [],
-    }) async {
-      when(
-        () => mockJournalDb.watchConfigFlag(dailyOsNextEnabledFlag),
-      ).thenAnswer((_) => flagStream);
-
+    testWidgets('mounts the agentic DailyOS surface', (tester) async {
+      // Keep the next-gen surface on its lightweight loading shell so the
+      // assertion targets the mount, not DayPage's data deps.
+      final pendingPlan = Completer<DraftPlan?>();
       await withClock(Clock.fixed(DateTime(2026, 1, 15)), () async {
         await tester.pumpWidget(
           ProviderScope(
-            overrides: overrides,
+            overrides: [
+              currentDraftPlanProvider.overrideWith(
+                (ref, date) => pendingPlan.future,
+              ),
+            ],
             child: makeTestableWidget2(const CalendarRoot()),
           ),
         );
       });
-    }
-
-    testWidgets(
-      'renders the legacy DailyOsPage when the next flag is disabled',
-      (tester) async {
-        await pumpCalendarRoot(
-          tester,
-          // Never emits, so the StreamBuilder stays on initialData == false.
-          flagStream: const Stream<bool>.empty(),
-          overrides: dailyOsPageOverrides(),
-        );
-        await tester.pump();
-
-        expect(find.byType(DailyOsPage), findsOneWidget);
-        expect(find.byType(DailyOsNextRoot), findsNothing);
-      },
-    );
-
-    testWidgets('switches to DailyOsNextRoot when the next flag is enabled', (
-      tester,
-    ) async {
-      // Keep the next-gen surface on its lightweight loading shell so the
-      // assertion targets the branch selection, not DayPage's data deps.
-      final pendingPlan = Completer<DraftPlan?>();
-      await pumpCalendarRoot(
-        tester,
-        flagStream: Stream<bool>.value(true),
-        overrides: [
-          currentDraftPlanProvider.overrideWith(
-            (ref, date) => pendingPlan.future,
-          ),
-        ],
-      );
-      // Let the StreamBuilder receive the `true` value.
       await tester.pump();
 
       expect(find.byType(DailyOsNextRoot), findsOneWidget);
-      expect(find.byType(DailyOsPage), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    });
-
-    testWidgets('re-evaluates the branch when the flag stream emits', (
-      tester,
-    ) async {
-      final controller = StreamController<bool>();
-      addTearDown(controller.close);
-      final pendingPlan = Completer<DraftPlan?>();
-      await pumpCalendarRoot(
-        tester,
-        flagStream: controller.stream,
-        overrides: [
-          ...dailyOsPageOverrides(),
-          currentDraftPlanProvider.overrideWith(
-            (ref, date) => pendingPlan.future,
-          ),
-        ],
-      );
-      await tester.pump();
-
-      // initialData == false -> legacy surface.
-      expect(find.byType(DailyOsPage), findsOneWidget);
-      expect(find.byType(DailyOsNextRoot), findsNothing);
-
-      controller.add(true);
-      await tester.pump();
-
-      expect(find.byType(DailyOsNextRoot), findsOneWidget);
-      expect(find.byType(DailyOsPage), findsNothing);
     });
   });
 }

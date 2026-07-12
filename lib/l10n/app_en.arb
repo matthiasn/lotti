@@ -1634,8 +1634,6 @@
   "completeHabitSkipButton": "Skip",
   "completeHabitSuccessButton": "Success",
   "configFlagAttemptEmbeddingDescription": "When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.",
-  "configFlagDailyOsNextEnabled": "Use next-gen agentic DailyOS",
-  "configFlagDailyOsNextEnabledDescription": "Replace the current DailyOS surface with the new voice-first, agent-led capture and reconcile flow. Early preview — backend logic is mocked.",
   "configFlagEnableAiStreaming": "Enable AI streaming for task actions",
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
   "configFlagEnableAiSummaryTts": "AI summary playback",
@@ -1899,58 +1897,7 @@
   "createEntryTitle": "Add",
   "createNewLinkedTask": "Create new linked task...",
   "customColor": "Custom Color",
-  "dailyOsActual": "Actual",
-  "dailyOsAddBlock": "Add Block",
-  "dailyOsAddBudget": "Add Budget",
-  "dailyOsAddNote": "Add a note...",
-  "dailyOsAgreeToPlan": "Agree to Plan",
-  "dailyOsCancel": "Cancel",
-  "dailyOsCategory": "Category",
-  "dailyOsChooseCategory": "Choose a category...",
   "dailyOsDayPlan": "Day Plan",
-  "dailyOsDaySummary": "Day Summary",
-  "dailyOsDelete": "Delete",
-  "dailyOsDeletePlannedBlock": "Delete Block?",
-  "dailyOsDeletePlannedBlockConfirm": "This will remove the planned block from your timeline.",
-  "dailyOsDraftMessage": "Plan is in draft. Agree to lock it in.",
-  "dailyOsDueToday": "Due today",
-  "dailyOsDueTodayShort": "Due",
-  "dailyOsDurationHours": "{count, plural, =1{1 hour} other{{count} hours}}",
-  "@dailyOsDurationHours": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsDurationHoursMinutes": "{hours}h {minutes}m",
-  "@dailyOsDurationHoursMinutes": {
-    "placeholders": {
-      "hours": {
-        "type": "int"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsDurationMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
-  "@dailyOsDurationMinutes": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsEditPlannedBlock": "Edit Planned Block",
-  "dailyOsEndTime": "End",
-  "dailyOsExpandToMove": "Expand timeline to drag this block",
-  "dailyOsExpandToMoveMore": "Expand timeline to move further",
-  "dailyOsFailedToLoadBudgets": "Failed to load budgets",
-  "dailyOsFailedToLoadTimeline": "Failed to load timeline",
-  "dailyOsFold": "Fold",
-  "dailyOsInvalidTimeRange": "Invalid time range",
-  "dailyOsNearLimit": "Near limit",
   "dailyOsNextAgendaCapacityComfortable": "Comfortable",
   "dailyOsNextAgendaCapacityNearFull": "Near full",
   "dailyOsNextAgendaCapacityNoPlan": "No plan yet",
@@ -2359,62 +2306,7 @@
   "dailyOsNextTriageDoNow": "Do now",
   "dailyOsNextTriageDrop": "Drop",
   "dailyOsNextTriageToday": "Today",
-  "dailyOsNoBudgets": "No time budgets",
-  "dailyOsNoBudgetsHint": "Add budgets to track how you spend your time across categories.",
-  "dailyOsNoBudgetWarning": "No time budgeted",
-  "dailyOsNote": "Note",
-  "dailyOsNoTimeline": "No timeline entries",
-  "dailyOsNoTimelineHint": "Start a timer or add planned blocks to see your day.",
-  "dailyOsOnTrack": "On track",
-  "dailyOsOver": "Over",
-  "dailyOsOverallProgress": "Overall Progress",
-  "dailyOsOverBudget": "Over budget",
-  "dailyOsOverdue": "Overdue",
-  "dailyOsOverdueShort": "Late",
-  "dailyOsPlan": "Plan",
-  "dailyOsPlanCreated": "Plan created successfully",
-  "dailyOsPlanCreatedDescription": "Your time blocks have been saved. You can start tracking your tasks.",
-  "dailyOsPlanned": "Planned",
-  "dailyOsPlanWithoutVoice": "Plan without voice",
-  "dailyOsQuickCreateTask": "Create task for this budget",
-  "dailyOsReAgree": "Re-agree",
-  "dailyOsRecorded": "Recorded",
-  "dailyOsRemaining": "Remaining",
-  "dailyOsReviewMessage": "Changes detected. Review your plan.",
-  "dailyOsSave": "Save",
-  "dailyOsSaveError": "Could not save plan",
-  "dailyOsSaveErrorDescription": "Something went wrong. Please try again.",
-  "dailyOsSavePlan": "Save plan",
-  "dailyOsSelectCategory": "Select Category",
-  "dailyOsSetTimeBlocks": "Set time blocks",
-  "dailyOsSetTimeBlocksAddNew": "Add new time block",
-  "dailyOsSetTimeBlocksFavourites": "Favourites",
-  "dailyOsSetTimeBlocksOther": "Other categories",
-  "dailyOsSetTimeBlocksTapHint": "Tap to add time block",
-  "dailyOsStartTime": "Start",
-  "dailyOsTasks": "Tasks",
-  "dailyOsTimeBudgets": "Time Budgets",
-  "dailyOsTimeLeft": "{time} left",
-  "@dailyOsTimeLeft": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "dailyOsTimeline": "Timeline",
-  "dailyOsTimeOver": "+{time} over",
-  "@dailyOsTimeOver": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "dailyOsTimeRange": "Time Range",
-  "dailyOsTimesUp": "Time's up",
   "dailyOsTodayButton": "Today",
-  "dailyOsUncategorized": "Uncategorized",
   "dashboardActiveLabel": "Active",
   "dashboardActiveSwitchDescription": "Shown in the dashboards list",
   "dashboardAddChartsTitle": "Charts",
@@ -2581,23 +2473,6 @@
       }
     }
   },
-  "designSystemMyDailyEditPlanLabel": "Edit plan",
-  "designSystemMyDailyGreetingMorning": "Good morning.",
-  "designSystemMyDailyGreetingWithName": "Hi, {name}",
-  "@designSystemMyDailyGreetingWithName": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "designSystemMyDailyHikeWithDanielaTitle": "Hiking with Daniela",
-  "designSystemMyDailyLunchBreakTitle": "Lunch break",
-  "designSystemMyDailyMeetingsLabel": "Meetings",
-  "designSystemMyDailyMeetingWithDannyTitle": "Meeting with Danny",
-  "designSystemMyDailyProfileActionLabel": "Profile",
-  "designSystemMyDailySkiWithMattTitle": "Go skiing with Matt",
-  "designSystemMyDailyTapToExpandLabel": "Tap to expand",
   "designSystemNavigationCollapsedLabel": "Collapsed",
   "designSystemNavigationDailyFilterSectionTitle": "Daily Filter",
   "designSystemNavigationExpandedLabel": "Expanded",

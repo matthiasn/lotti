@@ -859,11 +859,6 @@ void main() {
               status: false,
             ),
             const ConfigFlag(
-              name: dailyOsNextEnabledFlag,
-              description: 'Use next-gen DailyOS?',
-              status: false,
-            ),
-            const ConfigFlag(
               name: enableSessionRatingsFlag,
               description: 'Enable Session Ratings?',
               status: false,
@@ -930,12 +925,6 @@ void main() {
         icon: Icons.dashboard_rounded,
       ),
       (
-        name: dailyOsNextEnabledFlag,
-        description: 'Use next-gen DailyOS?',
-        status: false,
-        icon: Icons.auto_awesome_rounded,
-      ),
-      (
         name: enableSessionRatingsFlag,
         description: 'Enable Session Ratings?',
         status: false,
@@ -999,10 +988,6 @@ void main() {
             enableDashboardsPageFlag => (
               context.messages.configFlagEnableDashboardsPage,
               context.messages.configFlagEnableDashboardsPageDescription,
-            ),
-            dailyOsNextEnabledFlag => (
-              context.messages.configFlagDailyOsNextEnabled,
-              context.messages.configFlagDailyOsNextEnabledDescription,
             ),
             enableSessionRatingsFlag => (
               context.messages.configFlagEnableSessionRatings,

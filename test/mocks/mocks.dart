@@ -91,7 +91,6 @@ import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorde
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
-import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
@@ -1109,8 +1108,6 @@ class MockChatRepository extends Mock implements ChatRepository {}
 class MockTaskSummaryRepository extends Mock implements TaskSummaryRepository {}
 
 class MockTaskSummaryResolver extends Mock implements TaskSummaryResolver {}
-
-class MockDayPlanRepository extends Mock implements DayPlanRepository {}
 
 class MockHabitsRepository extends Mock implements HabitsRepository {}
 

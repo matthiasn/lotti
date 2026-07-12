@@ -1158,8 +1158,6 @@
   "completeHabitSkipButton": "Přeskočit",
   "completeHabitSuccessButton": "Úspěch",
   "configFlagAttemptEmbeddingDescription": "Pokud je povoleno, aplikace se pokusí generovat vektory pro vaše položky, aby zlepšila vyhledávání a návrhy souvisejícího obsahu.",
-  "configFlagDailyOsNextEnabled": "Použít nové agentní DailyOS",
-  "configFlagDailyOsNextEnabledDescription": "Nahradí stávající rozhraní DailyOS novým hlasově řízeným tokem zachycení a smíření vedeným agentem. Raná ukázka — logika backendu je simulovaná.",
   "configFlagEnableAiStreaming": "Povolit AI streamování pro akce úkolů",
   "configFlagEnableAiStreamingDescription": "Streamujte AI odpovědi pro akce související s úkoly. Vypněte, pokud chcete odpovědi bufferovat a udržet plynulejší rozhraní.",
   "configFlagEnableAiSummaryTts": "Přehrávání AI souhrnů",
@@ -1407,58 +1405,7 @@
   "createEntryTitle": "Přidat",
   "createNewLinkedTask": "Vytvořit nový propojený úkol...",
   "customColor": "Vlastní barva",
-  "dailyOsActual": "Skutečný",
-  "dailyOsAddBlock": "Přidat blok",
-  "dailyOsAddBudget": "Přidat rozpočet",
-  "dailyOsAddNote": "Přidat poznámku...",
-  "dailyOsAgreeToPlan": "Souhlasím s plánem",
-  "dailyOsCancel": "Zrušit",
-  "dailyOsCategory": "Kategorie",
-  "dailyOsChooseCategory": "Vyberte kategorii...",
   "dailyOsDayPlan": "Plán dne",
-  "dailyOsDaySummary": "Souhrn dne",
-  "dailyOsDelete": "Smazat",
-  "dailyOsDeletePlannedBlock": "Smazat blok?",
-  "dailyOsDeletePlannedBlockConfirm": "Tímto se odebere plánovaný blok z vaší časové osy.",
-  "dailyOsDraftMessage": "Plán je ve stavu konceptu. Souhlasíte s jeho uzamčením.",
-  "dailyOsDueToday": "Termín dnes",
-  "dailyOsDueTodayShort": "Dnes",
-  "dailyOsDurationHours": "{count, plural, =1{1 hodina} other{{count} hodin}}",
-  "@dailyOsDurationHours": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsDurationHoursMinutes": "{hours}h {minutes}m",
-  "@dailyOsDurationHoursMinutes": {
-    "placeholders": {
-      "hours": {
-        "type": "int"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsDurationMinutes": "{count} minut",
-  "@dailyOsDurationMinutes": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsEditPlannedBlock": "Upravit plánovaný blok",
-  "dailyOsEndTime": "Konec",
-  "dailyOsExpandToMove": "Rozbalte časovou osu pro přetažení tohoto bloku",
-  "dailyOsExpandToMoveMore": "Rozbalte časovou osu pro další přesun",
-  "dailyOsFailedToLoadBudgets": "Nepodařilo se načíst rozpočty",
-  "dailyOsFailedToLoadTimeline": "Nepodařilo se načíst časovou osu",
-  "dailyOsFold": "Složit",
-  "dailyOsInvalidTimeRange": "Neplatný časový rozsah",
-  "dailyOsNearLimit": "Blízko limitu",
   "dailyOsNextAgendaCapacityComfortable": "Pohodové",
   "dailyOsNextAgendaCapacityNearFull": "Téměř plné",
   "dailyOsNextAgendaCapacityNoPlan": "Zatím žádný plán",
@@ -1798,62 +1745,7 @@
   "dailyOsNextTriageDoNow": "Udělat teď",
   "dailyOsNextTriageDrop": "Zahodit",
   "dailyOsNextTriageToday": "Dnes",
-  "dailyOsNoBudgets": "Žádné časové rozpočty",
-  "dailyOsNoBudgetsHint": "Přidejte rozpočty pro sledování, jak trávíte čas napříč kategoriemi.",
-  "dailyOsNoBudgetWarning": "Žádný časový rozpočet",
-  "dailyOsNote": "Poznámka",
-  "dailyOsNoTimeline": "Žádné záznamy v časové ose",
-  "dailyOsNoTimelineHint": "Spustit časovač nebo přidat plánované bloky, abyste viděli svůj den.",
-  "dailyOsOnTrack": "Na správné cestě",
-  "dailyOsOver": "Překročeno",
-  "dailyOsOverallProgress": "Celkový pokrok",
-  "dailyOsOverBudget": "Překročení rozpočtu",
-  "dailyOsOverdue": "Zpožděné",
-  "dailyOsOverdueShort": "Pozdě",
-  "dailyOsPlan": "Plán",
-  "dailyOsPlanCreated": "Plán úspěšně vytvořen",
-  "dailyOsPlanCreatedDescription": "Tvé časové bloky byly uloženy. Můžeš začít sledovat své úkoly.",
-  "dailyOsPlanned": "Naplánováno",
-  "dailyOsPlanWithoutVoice": "Plánovat bez hlasu",
-  "dailyOsQuickCreateTask": "Vytvořit úkol pro tento rozpočet",
-  "dailyOsReAgree": "Znovu souhlasit",
-  "dailyOsRecorded": "Zaznamenáno",
-  "dailyOsRemaining": "Zbývá",
-  "dailyOsReviewMessage": "Zjištěny změny. Zkontrolujte svůj plán.",
-  "dailyOsSave": "Uložit",
-  "dailyOsSaveError": "Plán se nepodařilo uložit",
-  "dailyOsSaveErrorDescription": "Něco se pokazilo. Zkus to prosím znovu.",
-  "dailyOsSavePlan": "Uložit plán",
-  "dailyOsSelectCategory": "Vyberte kategorii",
-  "dailyOsSetTimeBlocks": "Nastavit časové bloky",
-  "dailyOsSetTimeBlocksAddNew": "Přidat nový časový blok",
-  "dailyOsSetTimeBlocksFavourites": "Oblíbené",
-  "dailyOsSetTimeBlocksOther": "Další kategorie",
-  "dailyOsSetTimeBlocksTapHint": "Klepni pro přidání časového bloku",
-  "dailyOsStartTime": "Začátek",
-  "dailyOsTasks": "Úkoly",
-  "dailyOsTimeBudgets": "Časové rozpočty",
-  "dailyOsTimeLeft": "Zbývá {time}",
-  "@dailyOsTimeLeft": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "dailyOsTimeline": "Časová osa",
-  "dailyOsTimeOver": "+{time} navíc",
-  "@dailyOsTimeOver": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "dailyOsTimeRange": "Časový rozsah",
-  "dailyOsTimesUp": "Čas vypršel",
   "dailyOsTodayButton": "Dnes",
-  "dailyOsUncategorized": "Nezařazeno",
   "dashboardActiveLabel": "Aktivní",
   "dashboardActiveSwitchDescription": "Zobrazuje se v seznamu panelů",
   "dashboardAddChartsTitle": "Grafy",
@@ -2006,23 +1898,6 @@
       }
     }
   },
-  "designSystemMyDailyEditPlanLabel": "Upravit plán",
-  "designSystemMyDailyGreetingMorning": "Dobré ráno.",
-  "designSystemMyDailyGreetingWithName": "Ahoj, {name}",
-  "@designSystemMyDailyGreetingWithName": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "designSystemMyDailyHikeWithDanielaTitle": "Túra s Danielou",
-  "designSystemMyDailyLunchBreakTitle": "Obědová pauza",
-  "designSystemMyDailyMeetingsLabel": "Schůzky",
-  "designSystemMyDailyMeetingWithDannyTitle": "Schůzka s Dannym",
-  "designSystemMyDailyProfileActionLabel": "Profil",
-  "designSystemMyDailySkiWithMattTitle": "Jet lyžovat s Mattem",
-  "designSystemMyDailyTapToExpandLabel": "Klepni pro rozbalení",
   "designSystemNavigationCollapsedLabel": "Sbalené",
   "designSystemNavigationDailyFilterSectionTitle": "Denní filtr",
   "designSystemNavigationExpandedLabel": "Rozbalené",
