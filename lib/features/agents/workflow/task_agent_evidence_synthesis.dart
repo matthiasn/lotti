@@ -180,6 +180,22 @@ Never create a Scope, Exclusions, Note, or "not doing" section. A concept that
 is only rejected, deferred, speculative, future, or outside the active task
 must leave zero visible trace in `oneLiner`, `tldr`, and `content`. Do not name
 it to prove that you filtered it.
+
+## Direct Report Grounding
+
+Describe the actual situation and pending actions directly. Never say that
+steps, workflow items, actions, or checklist entries were identified, queued,
+captured, extracted, created, or prepared. Do not count them as a substitute
+for stating what matters. In the TLDR, name the immediate action and the
+downstream review, decision, deadline, or delivery endpoint that matters; never
+summarize a pending plan as a number of sequential steps or tracked items.
+
+Do not add explanations that are absent from the source. In particular, do not
+invent a root cause, classify a reviewer as automated or human, turn creating a
+release into deployment, or say work is awaiting/ready for implementation. A
+pending action proves only that the action remains to be done. Omit absent
+metadata completely: never report that no estimate, due date, priority, owner,
+link, blocker, or decision has been set.
 ''';
 
   /// Returns the common contract plus the empirically matched family profile.

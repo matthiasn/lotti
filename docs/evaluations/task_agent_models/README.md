@@ -237,7 +237,7 @@ model.
 ## Findings from 2026-07-12
 
 The production evidence-first contract was replicated with Qwen3.5 122B A10B
-as the direct executor three times across the expanded 13-scenario suite:
+as the direct executor three times across the then-current 13-scenario suite:
 
 | Measure | Result |
 | --- | ---: |
@@ -312,3 +312,64 @@ operational and still somewhat formulaic; the result establishes a viable
 default-off release candidate, not parity with GLM 5.2 or proof on unsanitized
 real task histories. Raw artifacts and the review are archived under
 `2026-07-12_release-candidate-8413b6320` in the private evaluation repository.
+
+### Evolved directives and implicit-plan reproduction
+
+The directive-aware route was subsequently rerun on commit `f9ee86f37` with
+seven synthetic report contracts representative of evolution output. All seven
+cases passed all 78 deterministic checks. The Mistral executor used 108,132
+input and 9,038 output tokens; the isolated Qwen editor needed eight attempts
+across seven reports. A same-commit regression of the original suite passed all
+13 cases and all 94 checks with 175,229 input and 12,379 output tokens.
+
+Live product testing then exposed a missing scenario: the user stated a
+committed six-step workflow without saying "create a checklist". The original
+agent required an explicit follow-up request. A focused held-out reproduction
+now uses that natural wording and requires one batch containing implementation,
+pull request, Gemini review, code review, merge, and multi-platform release.
+The Mistral executor created all six actions on the first wake; Qwen replaced
+its process-oriented draft with a grounded action report. The case passed all
+15 checks using 16,044 input and 1,628 output tokens in 13.912 seconds. Its
+artifact is archived locally under
+`2026-07-12_live-repro-implicit-workflow-r2` pending final release archival.
+
+This focused result proves first-wake behavior for the reproduced wording. It
+does not by itself establish convergence across arbitrary real histories. The
+production workflow therefore also enforces report freshness after successful
+mutations and persists the editor-route outcome in agent internals, while AI
+consumption tests require distinct per-model events under the shared wake key.
+
+### Production-workflow reproduction
+
+The inference-only fixture still did not cover production orchestration,
+deferred checklist persistence, agent-internals routing, or AI Impact records.
+The real `TaskAgentWorkflow` harness was therefore generalized for Melious and
+changed to replay the screenshot-derived task text verbatim. It holds the
+Riverpod inference repositories alive, captures persisted agent entities, and
+records each `AiConsumptionEvent` generated at the conversation boundary.
+
+Prompt-only Qwen iterations removed unsupported root-cause, reviewer-type, and
+deployment claims but continued to emit process narration and absent-metadata
+filler. Further prompt accretion was stopped. Direct Qwen reports now receive a
+local deterministic preflight; clean drafts stay single-pass, while invalid
+drafts receive an isolated Qwen repair with exact correction codes. This is not
+model self-rating: acceptance remains deterministic code.
+
+The final held-out app-path runs both created the six requested actions without
+an explicit checklist request and passed content checks that reject checklist
+or workflow narration, unsupported readiness, invented explanations, and empty
+metadata commentary:
+
+| Route | Result | Calls | Input | Output | Latency |
+| --- | ---: | --- | ---: | ---: | ---: |
+| Mistral executor + Qwen editor | pass | 2 Mistral + 2 Qwen | 17,786 | 2,337 | 28.370 s |
+| Qwen direct + conditional Qwen repair | pass | 3 Qwen | 16,806 | 1,621 | 12.018 s |
+
+Every call has a distinct consumption UUID with its own provider model ID,
+tokens, credits, and energy. The persisted route outcomes were
+`qwen_report_editor_accepted` and
+`qwen_report_editor_direct_qwen_repaired`. Final reports named the concrete
+seeding fix, pull request, both review passes, merge, and all-platform release
+without claiming that work had started. The retained artifacts are
+`2026-07-12_app-path-implicit-workflow-mistral-final3` and
+`2026-07-12_app-path-implicit-workflow-qwen-r4` in the private archive clone.

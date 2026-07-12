@@ -333,6 +333,7 @@ class TaskAgentWorkflow {
         consumptionCategoryId: consumptionCategoryId,
         consumptionWakeRunKey: consumptionWakeRunKey,
         consumptionThreadId: consumptionThreadId,
+        rethrowInferenceErrors: true,
       );
     } catch (e, s) {
       _logError(

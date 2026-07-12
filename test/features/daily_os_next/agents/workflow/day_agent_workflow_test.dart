@@ -4170,6 +4170,7 @@ class _ConversationHarness extends ConversationRepository {
     String? consumptionCategoryId,
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
+    bool rethrowInferenceErrors = false,
   }) async {
     final thrown = errorToThrow;
     if (thrown != null) throw thrown;

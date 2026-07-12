@@ -526,8 +526,11 @@ provider prefix cache for every byte after it.
 **The report is a projection, not memory.** The prior report's prose is never
 injected into the prompt (re-reading its own stale conclusions creates a
 feedback loop), and `update_report` is conditional: the agent publishes only
-when the report would materially change (the first report is still forced via
-a retry). A wake with nothing report-worthy ends with a plain-text note.
+when the report would materially change. The first report is forced via a
+retry. A wake that successfully mutates task state also forces a report retry
+when the executor omits one, preventing an older projection from remaining
+visible after the change. A wake with no successful mutation and nothing
+report-worthy keeps the existing report and ends with a plain-text note.
 
 **Prompt persistence stores only what isn't derivable (v2 prompt records).**
 A compacted wake no longer persists its full rendered prompt: the embedded
@@ -849,18 +852,25 @@ When enabled, the task-agent path changes four common inputs together:
 - `TaskAgentPromptBuilder` replaces only the seeded/default report directive
   with the evaluated compact directive and appends the evidence-synthesis
   protocol. An explicitly customized template directive remains authoritative.
+- the compact execution contract treats a concrete, committed multi-step plan
+  as checklist intent even if the user never says "create a checklist"; it
+  does not treat speculation or a description of current state as authority
 - `TaskAgentContextBuilder` adds evidence requirements to the existing
   `update_report` tool description without changing its parameter schema.
 - the main conversation and forced-report retry both use temperature `0.0`
   instead of the standard `0.3`
+- a required report omitted after a successful mutation receives a forced
+  report call; a true no-op wake does not
 - model reasoning remains profile/provider driven; the flag does not force a
   separate high-effort mode
 
 The resolved inference profile remains the executor selector. Melious
 backfills both evaluated efficient choices into the model picker:
 
-- choose `qwen3.5-122b-a10b` for an experimental single-pass Qwen task agent
-  using the tuned Qwen prompt profile
+- choose `qwen3.5-122b-a10b` for an experimental direct Qwen task agent using
+  the tuned Qwen prompt profile. A clean report stays single-pass; a report
+  that fails deterministic grounding checks receives a compact isolated Qwen
+  repair before persistence
 - choose `mistral-small-4-119b-instruct` for Mistral task mutations plus the
   exact-match isolated Qwen report editor described below
 
@@ -884,11 +894,17 @@ also enables the report-editor path:
   active risks, locale register, fake link sections, checklist/process
   narration, unsupported priority claims, and causal claims inferred from a
   user checkmark
+- the same local validator checks direct Qwen reports. It does not ask Qwen to
+  rate its own work: code identifies exact violations, and only invalid drafts
+  receive an isolated Qwen rewrite with those correction codes
 - up to two repair attempts receive the rejected candidate and exact failed
   checks; after three invalid attempts, or any editor failure, the original
   Mistral draft remains the report
 - executor and editor usage are persisted separately, so model-level cost and
   token accounting stays accurate
+- agent internals persist the route outcome as direct Qwen, repaired direct
+  Qwen, accepted, rejected, failed, not needed, or not eligible. An ineligible
+  Mistral route includes the resolved provider type and model ID
 
 Other providers and executor models keep the common evidence-first prompt path
 without an extra inference pass. This routing is deliberately exact at the
@@ -907,9 +923,12 @@ flowchart TD
   Prompt --> Executor["Primary conversation"]
   Tools --> Executor
   Sampling --> Executor
-  Executor --> Gate{"Melious Mistral + new draft?"}
-  Gate -->|no: Qwen direct or other route| Persist["Persist executor report"]
-  Gate -->|yes| Facts["ID-free successful mutation facts"]
+  Executor --> Route{"Executor route"}
+  Route -->|other model| Persist["Persist executor report"]
+  Route -->|Mistral| Facts["ID-free successful mutation facts"]
+  Route -->|Qwen direct| DirectValidate{"Deterministic checks pass?"}
+  DirectValidate -->|yes| Persist
+  DirectValidate -->|no| Facts
   Custom --> Editor
   Facts --> Editor["Directive-aware forced Qwen update_report"]
   Editor --> Validate{"Deterministic checks pass?"}

@@ -404,14 +404,14 @@ void main() {
       'deepseek-v4-flash-candidate',
       'glm-5.2-reference',
     ]);
-    expect(defaultScenarios, hasLength(13));
+    expect(defaultScenarios, hasLength(14));
     expect(
       defaultScenarios.map((scenario) => scenario.promptVariant).toSet(),
       {LocalTaskAgentEvalPromptVariant.production},
     );
     expect(
       scenarios,
-      hasLength(13 * LocalTaskAgentEvalPromptVariant.values.length),
+      hasLength(14 * LocalTaskAgentEvalPromptVariant.values.length),
     );
     expect(
       scenarios.map((scenario) => scenario.promptVariant).toSet(),
@@ -1431,7 +1431,13 @@ void main() {
 
     final report = await runner.run(
       profiles: const [profile],
-      scenarios: [defaultLocalTaskAgentWakeScenario()],
+      scenarios: [
+        defaultMeliousTaskAgentEvalScenarios(
+          variants: const [
+            LocalTaskAgentEvalPromptVariant.evidenceSynthesis,
+          ],
+        ).firstWhere((scenario) => scenario.id.startsWith('metadata_explicit')),
+      ],
     );
 
     final result = report.results.single;
@@ -1831,6 +1837,7 @@ class _ThrowingConversationRepository extends ConversationRepository {
     String? consumptionCategoryId,
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
+    bool rethrowInferenceErrors = false,
   }) {
     throw StateError('send failed');
   }

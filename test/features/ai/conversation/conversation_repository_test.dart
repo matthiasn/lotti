@@ -1750,6 +1750,30 @@ void main() {
         expect(usage.cachedInputTokens, 50);
       });
 
+      test('rethrows inference errors when orchestration requests it', () {
+        _stubGenerateText(mockOllamaRepo).thenAnswer(
+          (_) => Stream.error(StateError('provider unavailable')),
+        );
+
+        expect(
+          () => repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Run the wake',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+            rethrowInferenceErrors: true,
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              'provider unavailable',
+            ),
+          ),
+        );
+      });
+
       group('per-turn consumption recording', () {
         /// Stubs `generateTextWithMessages` with a single content chunk whose
         /// final response carries [usage], optionally writing [impact] into
@@ -1866,6 +1890,85 @@ void main() {
             expect(event.pue, 1.2);
             expect(event.dataCenter, 'FI');
             expect(event.upstreamProviderId, 'upstream-x');
+          },
+        );
+
+        test(
+          'records executor and editor models as separate consumption events '
+          'under one wake',
+          () async {
+            final recorder = _registerConsumptionRecorder();
+            _stubGenerateText(mockOllamaRepo).thenAnswer((invocation) {
+              final model = invocation.namedArguments[#model] as String;
+              final isEditor = model == 'qwen3.5-122b-a10b';
+              (invocation.namedArguments[#impactCollector]
+                      as InferenceImpactCollector?)
+                  ?.impact = MeliousCallImpact(
+                costCredits: isEditor ? 0.2 : 0.5,
+                energyKwh: isEditor ? 0.001 : 0.003,
+              );
+              return Stream.fromIterable([
+                CreateChatCompletionStreamResponse(
+                  id: 'response-$model',
+                  choices: const [
+                    ChatCompletionStreamResponseChoice(
+                      index: 0,
+                      delta: ChatCompletionStreamResponseDelta(content: 'Hi'),
+                    ),
+                  ],
+                  object: 'chat.completion.chunk',
+                  created: 1710500000,
+                  usage: CompletionUsage(
+                    promptTokens: isEditor ? 40 : 100,
+                    completionTokens: isEditor ? 10 : 20,
+                    totalTokens: isEditor ? 50 : 120,
+                  ),
+                ),
+              ]);
+            });
+
+            Future<void> send({
+              required String conversationId,
+              required String model,
+            }) async {
+              await repository.sendMessage(
+                conversationId: conversationId,
+                message: 'Run $model',
+                model: model,
+                provider: provider,
+                inferenceRepo: mockOllamaRepo,
+                consumptionAgentId: 'agent-1',
+                consumptionTaskId: 'task-1',
+                consumptionCategoryId: 'cat-1',
+                consumptionWakeRunKey: 'wake-1',
+                consumptionThreadId: 'thread-1',
+              );
+            }
+
+            await send(
+              conversationId: conversationId,
+              model: 'mistral-small-4-119b-instruct',
+            );
+            final editorConversationId = repository.createConversation(
+              systemMessage: 'Edit the report.',
+            );
+            await send(
+              conversationId: editorConversationId,
+              model: 'qwen3.5-122b-a10b',
+            );
+
+            final events = verify(
+              () => recorder.record(captureAny()),
+            ).captured.cast<AiConsumptionEvent>();
+            expect(events, hasLength(2));
+            expect(events.map((event) => event.id).toSet(), hasLength(2));
+            expect(events.map((event) => event.wakeRunKey).toSet(), {'wake-1'});
+            expect(events.map((event) => event.providerModelId), [
+              'mistral-small-4-119b-instruct',
+              'qwen3.5-122b-a10b',
+            ]);
+            expect(events.map((event) => event.credits), [0.5, 0.2]);
+            expect(events.map((event) => event.energyKwh), [0.003, 0.001]);
           },
         );
 

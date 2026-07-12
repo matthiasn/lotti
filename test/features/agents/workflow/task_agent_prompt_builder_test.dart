@@ -244,10 +244,17 @@ Use the task language and omit empty sections.
       );
       expect(mistralPrompt, isNot(contains('A wake ends in exactly')));
       expect(mistralPrompt, contains('Examples of the boundary:'));
+      expect(
+        mistralPrompt,
+        contains('A committed multi-step plan is mutation intent'),
+      );
       expect(mistralPrompt, contains('Include only sections that'));
       expect(qwenPrompt, isNot(contains('Maybe revisit catering later')));
       expect(qwenPrompt, contains('Write free-form Markdown'));
       expect(qwenPrompt, contains('## Scope Erasure'));
+      expect(qwenPrompt, contains('## Direct Report Grounding'));
+      expect(qwenPrompt, contains('invent a root cause'));
+      expect(qwenPrompt, contains('Omit absent'));
     });
 
     test('compact scaffold preserves soul and custom directives', () {

@@ -474,12 +474,18 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         consumptionCategoryId: consumptionCategoryId,
         consumptionWakeRunKey: recordConsumption ? runKey : null,
         consumptionThreadId: recordConsumption ? threadId : null,
+        rethrowInferenceErrors: true,
       );
 
-      // 7b. Forced-report retry — only to bootstrap the FIRST report. Once a
-      // report exists, skipping `update_report` is a legitimate "nothing
-      // materially changed" outcome, not a contract violation.
-      if (lastReport == null && strategy.extractReportContent().isEmpty) {
+      // 7b. Forced-report retry. A first wake needs an initial report, and a
+      // wake that successfully changed task state needs a fresh report. With
+      // no successful mutation, an existing report remains authoritative and
+      // avoiding a retry preserves the no-op wake path.
+      final reportMissing = strategy.extractReportContent().isEmpty;
+      final hasSuccessfulMutations = strategy
+          .extractSuccessfulMutations()
+          .isNotEmpty;
+      if (reportMissing && (lastReport == null || hasSuccessfulMutations)) {
         final retryUsage = await _forceUpdateReportIfMissing(
           conversationId: conversationId,
           modelId: modelId,
@@ -505,19 +511,71 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         'content': strategy.extractReportContent(),
       });
       InferenceUsage? reportEditorUsage;
-      if (effectiveReport != null &&
-          TaskAgentReportEditor.supports(
-            enabled: evidenceSynthesisEnabled,
-            executorModelId: modelId,
-            providerType: provider.inferenceProviderType,
-          )) {
-        final materialTaskState = TaskAgentReportEditor.buildMaterialTaskState(
-          strategy.extractSuccessfulMutations(),
+      final mistralReportEditorEligible = TaskAgentReportEditor.supports(
+        enabled: evidenceSynthesisEnabled,
+        executorModelId: modelId,
+        providerType: provider.inferenceProviderType,
+      );
+      final normalizedExecutorModelId = modelId.toLowerCase();
+      final isMeliousProvider =
+          provider.inferenceProviderType == InferenceProviderType.melious;
+      final isDirectQwenModel =
+          normalizedExecutorModelId == meliousQwen35122BA10BModelId;
+      final isDirectQwenExecutor =
+          evidenceSynthesisEnabled && isMeliousProvider && isDirectQwenModel;
+      final isMistralEditorCandidate = normalizedExecutorModelId.contains(
+        'mistral-small-4',
+      );
+      final isReportEditorCandidate =
+          isMistralEditorCandidate || isDirectQwenModel;
+      final reportEditorRouteEligible =
+          mistralReportEditorEligible || isDirectQwenExecutor;
+      final materialTaskState =
+          reportEditorRouteEligible && effectiveReport != null
+          ? TaskAgentReportEditor.buildMaterialTaskState(
+              strategy.extractSuccessfulMutations(),
+            )
+          : null;
+      final languageCode = materialTaskState == null
+          ? null
+          : materialTaskState['languageCode'] as String? ??
+                taskAttentionContext.task?.data.languageCode ??
+                'en';
+      final directQwenIssues = isDirectQwenExecutor && effectiveReport != null
+          ? TaskAgentReportEditor.validateRevision(
+              languageCode: languageCode!,
+              materialTaskState: materialTaskState!,
+              draftReport: effectiveReport.toJson(),
+              candidateReport: effectiveReport.toJson(),
+            ).toSet()
+          : const <TaskAgentReportRevisionIssue>{};
+      final shouldRunReportEditor =
+          mistralReportEditorEligible || directQwenIssues.isNotEmpty;
+      if (evidenceSynthesisEnabled &&
+          !reportEditorRouteEligible &&
+          isReportEditorCandidate) {
+        await strategy.recordWorkflowResult(
+          toolName: '${TaskAgentReportEditor.auditToolPrefix}_not_eligible',
+          errorMessage:
+              'providerType=${provider.inferenceProviderType.name};'
+              'executorModelId=$modelId',
         );
-        final languageCode =
-            materialTaskState['languageCode'] as String? ??
-            taskAttentionContext.task?.data.languageCode ??
-            'en';
+      }
+      if (reportEditorRouteEligible && effectiveReport == null) {
+        final reportWasRequired = lastReport == null || hasSuccessfulMutations;
+        await strategy.recordWorkflowResult(
+          toolName: reportWasRequired
+              ? '${TaskAgentReportEditor.auditToolPrefix}_failed'
+              : '${TaskAgentReportEditor.auditToolPrefix}_not_needed',
+          errorMessage: reportWasRequired
+              ? 'executor_missing_required_report'
+              : null,
+        );
+      } else if (isDirectQwenExecutor && directQwenIssues.isEmpty) {
+        await strategy.recordWorkflowResult(
+          toolName: '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen',
+        );
+      } else if (shouldRunReportEditor && effectiveReport != null) {
         try {
           final editResult =
               await TaskAgentReportEditor(
@@ -526,8 +584,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
                 provider: provider,
               ).edit(
                 draft: effectiveReport,
-                languageCode: languageCode,
-                materialTaskState: materialTaskState,
+                languageCode: languageCode!,
+                materialTaskState: materialTaskState!,
                 reportDirective:
                     TaskAgentPromptBuilder.effectiveReportDirective(
                       version: templateCtx.version,
@@ -539,10 +597,15 @@ extension TaskAgentExecute on TaskAgentWorkflow {
                 consumptionCategoryId: consumptionCategoryId,
                 consumptionWakeRunKey: recordConsumption ? runKey : null,
                 consumptionThreadId: recordConsumption ? threadId : null,
+                initialValidationIssues: directQwenIssues,
               );
           reportEditorUsage = editResult.usage;
           final revision = editResult.revision;
           if (editResult.error != null) {
+            await strategy.recordWorkflowResult(
+              toolName: '${TaskAgentReportEditor.auditToolPrefix}_failed',
+              errorMessage: editResult.error.runtimeType.toString(),
+            );
             _logError(
               'report editor failed; preserving executor report',
               error: editResult.error,
@@ -550,12 +613,23 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             );
           } else if (revision != null) {
             effectiveReport = revision;
+            await strategy.recordWorkflowResult(
+              toolName: isDirectQwenExecutor
+                  ? '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen_repaired'
+                  : '${TaskAgentReportEditor.auditToolPrefix}_accepted',
+            );
             _log(
               'accepted report editor revision after '
               '${editResult.attempts} attempt(s)',
               subDomain: 'reportEditor',
             );
           } else {
+            await strategy.recordWorkflowResult(
+              toolName: '${TaskAgentReportEditor.auditToolPrefix}_rejected',
+              errorMessage: editResult.validationIssues
+                  .map((issue) => issue.name)
+                  .join(','),
+            );
             _log(
               'rejected report editor revision after '
               '${editResult.attempts} attempt(s): '
@@ -564,6 +638,10 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             );
           }
         } catch (e, s) {
+          await strategy.recordWorkflowResult(
+            toolName: '${TaskAgentReportEditor.auditToolPrefix}_failed',
+            errorMessage: e.runtimeType.toString(),
+          );
           _logError(
             'report editor failed; preserving executor report',
             error: e,
@@ -605,11 +683,13 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       final reportTldr = effectiveReport?.tldr ?? strategy.extractReportTldr();
       final reportOneLiner =
           effectiveReport?.oneLiner ?? strategy.extractReportOneLiner();
-      if (reportContent.isEmpty && lastReport == null) {
-        // Only the FIRST report is mandatory; afterwards an empty report
-        // means "nothing materially changed" and the prior one stands.
+      if (reportContent.isEmpty &&
+          (lastReport == null || hasSuccessfulMutations)) {
+        // Initial wakes and successful mutations require a current report.
+        // An empty report is valid only when an existing projection remains
+        // authoritative because the wake applied no material change.
         _log(
-          'no initial report published despite forced retry',
+          'no required report published despite forced retry',
           subDomain: 'execute',
         );
       }

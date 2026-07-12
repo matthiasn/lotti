@@ -224,6 +224,10 @@ class ConversationRepository extends Notifier<void> {
   ///
   /// Returns the accumulated [InferenceUsage] across all turns, or `null`
   /// if no usage data was reported by the inference provider.
+  ///
+  /// Set [rethrowInferenceErrors] for orchestration that owns retry/failure
+  /// state. Interactive callers keep the default behavior, which emits the
+  /// error through the conversation manager and ends the conversation.
   Future<InferenceUsage?> sendMessage({
     required String conversationId,
     required String message,
@@ -242,6 +246,7 @@ class ConversationRepository extends Notifier<void> {
     String? consumptionCategoryId,
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
+    bool rethrowInferenceErrors = false,
   }) async {
     final manager = _conversations[conversationId];
     if (manager == null) {
@@ -444,6 +449,9 @@ class ConversationRepository extends Notifier<void> {
           manager.emitError(errorMessage);
         } catch (_) {
           // Ignore errors when emitting error events
+        }
+        if (rethrowInferenceErrors) {
+          rethrow;
         }
         shouldContinue = false;
       }

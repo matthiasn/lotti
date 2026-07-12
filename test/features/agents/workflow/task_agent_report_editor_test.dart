@@ -762,6 +762,35 @@ turn task metadata or a checklist edit into an accomplishment.
   });
 
   test('validation removes setup filler and evidence disclaimers', () {
+    for (final phrase in [
+      'Six workflow items queued from implementation to release.',
+      'Six workflow items identified from implementation to release.',
+      'The implementation through release workflow is ready.',
+    ]) {
+      expect(
+        TaskAgentReportEditor.validateRevision(
+          languageCode: 'en',
+          materialTaskState: const {
+            'newChecklistItems': [
+              'Fix inference profile seeding',
+              'Create pull request',
+            ],
+          },
+          draftReport: const {
+            'oneLiner': 'Fix inference profile seeding',
+            'tldr': 'Fix seeding, then create and review the pull request.',
+            'content': 'Fix inference profile seeding and create the PR.',
+          },
+          candidateReport: {
+            'oneLiner': 'Fix inference profile seeding',
+            'tldr': phrase,
+            'content': 'Fix inference profile seeding and create the PR.',
+          },
+        ),
+        [TaskAgentReportRevisionIssue.processNarration],
+        reason: 'phrase=$phrase',
+      );
+    }
     expect(
       TaskAgentReportEditor.validateRevision(
         languageCode: 'en',
@@ -989,6 +1018,59 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(repairMessages, contains('deferredScopeLeak'));
     expect(repairMessages, isNot(contains('newsletter')));
   });
+
+  test(
+    'editor applies deterministic issues on its first isolated call',
+    () async {
+      final inferenceRepository = _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Fix inference profile seeding',
+                'tldr':
+                    'Fix seeding first, then complete review, merge, and release.',
+                'content':
+                    'Fix inference profile seeding, create the pull request, '
+                    'complete both reviews, merge, and release.',
+              }),
+            ),
+          ]),
+        ],
+      ]);
+
+      final result =
+          await _createEditor(
+            provider: provider,
+            inferenceRepository: inferenceRepository,
+          ).edit(
+            draft: draft,
+            languageCode: 'en',
+            materialTaskState: const {
+              'newChecklistItems': [
+                'Fix inference profile seeding',
+                'Create pull request',
+              ],
+            },
+            reportDirective: evolvedReportDirective,
+            initialValidationIssues: const {
+              TaskAgentReportRevisionIssue.processNarration,
+            },
+          );
+
+      expect(result.revision, isNotNull);
+      expect(result.attempts, 1);
+      final messages = jsonEncode(
+        inferenceRepository.requests.single.messages
+            .map((message) => message.toJson())
+            .toList(),
+      );
+      expect(messages, contains('requiredCorrections'));
+      expect(messages, contains('processNarration'));
+      expect(messages, contains('rejectedReport'));
+    },
+  );
 
   test('editor retries with exact issues and merges usage', () async {
     final inferenceRepository = _QueuedInferenceRepository([
@@ -1340,6 +1422,7 @@ class _ThrowingConversationRepository extends ConversationRepository {
     String? consumptionCategoryId,
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
+    bool rethrowInferenceErrors = false,
   }) async {
     sendCount++;
     if (sendCount == throwOnCall) {

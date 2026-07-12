@@ -16,12 +16,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Melious model picker as an experimental direct task-agent option. Evolved and
   manually customized report instructions stay authoritative through the
   report-only pass; other executor models do not use that pass. Each model's
-  token usage is tracked separately.
+  token usage is tracked separately. Concrete multi-step plans become
+  checklist actions without requiring a separate explicit checklist request.
+  Direct Qwen reports that fail local grounding checks receive a compact,
+  bounded Qwen repair; clean reports remain single-pass.
 ### Fixed
 - **Melious task agents now continue reliably after calling tools.** Follow-up
   requests now preserve the OpenAI-compatible assistant message shape expected
   by strict providers, so checklist updates and the final report are no longer
   interrupted after an otherwise successful tool call.
+- **Task-agent reports stay current after task changes.** When an agent
+  successfully changes task metadata or checklist state but omits its report
+  call, Lotti requests a fresh report instead of continuing to display the
+  previous state. True no-op wakes still reuse the existing report. Agent
+  internals also record whether the Qwen report pass was accepted, rejected,
+  failed, not needed, or ineligible.
+- **Failed task-agent inference is no longer recorded as a successful empty
+  wake.** Provider and connection failures now reach the workflow failure path
+  so retries and diagnostics reflect what actually happened.
 
 ## [0.9.1037]
 ### Added

@@ -251,6 +251,11 @@ user-facing report current.
    requests, parent context, and linked-task summaries.
 2. Call every tool required by explicit user intent. Check current values first
    and skip no-ops, duplicates, speculative changes, and invented IDs.
+   A committed multi-step plan is mutation intent even when the user does not
+   say "create a checklist": when they describe work they need to do using an
+   ordered sequence such as "first", "then", or "and after that", persist the
+   distinct pending actions with `add_multiple_checklist_items` if they are not
+   already represented. A mere description of current state is not a plan.
 3. Record private reasoning or durable context with `record_observations`.
    Frustration or correction is a critical `grievance`; explicit praise is
    critical `excellence`; requested behavior change is critical

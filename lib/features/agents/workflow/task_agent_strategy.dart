@@ -470,6 +470,19 @@ class TaskAgentStrategy extends ConversationStrategy {
   List<TaskAgentMutationRecord> extractSuccessfulMutations() =>
       List.unmodifiable(_successfulMutations);
 
+  /// Persists a workflow-owned internal result in the wake conversation log.
+  ///
+  /// This is used for orchestration steps that happen outside the executor's
+  /// conversation, such as the isolated report editor. It does not become an
+  /// observation, enter future prompts, or appear in the public report.
+  Future<void> recordWorkflowResult({
+    required String toolName,
+    String? errorMessage,
+  }) => _recordToolResultMessage(
+    toolName: toolName,
+    errorMessage: errorMessage,
+  );
+
   /// Returns the retractions staged via `retract_suggestions` during this wake.
   ///
   /// The workflow applies these at the end of the wake (inside the change-set

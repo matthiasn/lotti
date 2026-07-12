@@ -258,6 +258,7 @@ List<LocalTaskAgentEvalScenario> defaultMeliousTaskAgentEvalScenarios({
   return [
     for (final variant in variants) ...[
       _metadataScenario(variant),
+      _implicitWorkflowPlanScenario(variant),
       _germanPlanningScenario(variant),
       _progressUpdateScenario(variant),
       _noOpRefreshScenario(variant),
@@ -272,6 +273,45 @@ List<LocalTaskAgentEvalScenario> defaultMeliousTaskAgentEvalScenarios({
       _latestDeadlineWinsScenario(variant),
     ],
   ];
+}
+
+LocalTaskAgentEvalScenario _implicitWorkflowPlanScenario(
+  LocalTaskAgentEvalPromptVariant variant,
+) {
+  return LocalTaskAgentEvalScenario(
+    id: 'implicit_workflow_plan_${variant.name}',
+    systemPrompt: _buildEvalSystemPrompt(variant),
+    userMessage: _implicitWorkflowPlanUserMessage,
+    expectedToolCalls: const [
+      LocalTaskAgentExpectedToolCall(
+        name: TaskAgentToolNames.addMultipleChecklistItems,
+      ),
+    ],
+    promptVariant: variant,
+    requiredReportTermGroups: const [
+      ['profile seeding'],
+      ['pull request', 'pr'],
+      ['review'],
+      ['release'],
+    ],
+    forbiddenReportTerms: const [
+      'implementation in progress',
+      'working on',
+      'checklist created',
+      'all checklist items ready',
+    ],
+    requiredToolArgumentTermGroups: const {
+      TaskAgentToolNames.addMultipleChecklistItems: [
+        ['profile seeding'],
+        ['implement'],
+        ['pull request', 'pr'],
+        ['gemini'],
+        ['code review'],
+        ['merge'],
+        ['release'],
+      ],
+    },
+  );
 }
 
 /// Synthetic scenarios with representative report directives produced by an
@@ -1102,6 +1142,34 @@ contain useful, evidence-backed information:
 Omit empty sections. Use human-readable labels instead of internal IDs. Every
 claim must be evidence-backed and describe the current active task state.
 Preserve user-completed work and user-set task fields.
+''';
+
+const _implicitWorkflowPlanUserMessage = '''
+## Current Task Context
+```json
+{
+  "id": "task-inference-profile-cleanup",
+  "title": "Inference profile cleanup",
+  "status": "IN PROGRESS",
+  "priority": "P2",
+  "languageCode": "en",
+  "description": "Clean up inference profile seeding so empty profiles are no longer selectable.",
+  "checklist": [],
+  "log": [
+    {
+      "timestamp": "2026-07-12T10:09:00Z",
+      "text": "In this task I need to clean up the inference profile seeding because there are too many empty profiles I can still choose from. Let's fix this and do the implementation, create a pull request, address the Gemini review comments, address the code review comments, merge the pull request, and then create a release on all platforms."
+    }
+  ]
+}
+```
+
+## First Wake - No prior report exists. Produce an initial report.
+
+## Changed Since Last Wake
+The following entity IDs changed: task-inference-profile-cleanup
+
+Analyze the current state and follow the wake protocol.
 ''';
 
 const _germanPlanningUserMessage = '''

@@ -106,6 +106,7 @@ class MockConversationRepository extends ConversationRepository {
     String? consumptionCategoryId,
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
+    bool rethrowInferenceErrors = false,
   }) async {
     lastConsumptionAgentId = consumptionAgentId;
     lastConsumptionTaskId = consumptionTaskId;

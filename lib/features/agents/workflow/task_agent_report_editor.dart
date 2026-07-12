@@ -57,7 +57,9 @@ enum TaskAgentReportRevisionIssue {
   processNarration(
     'Remove task setup, transcription, readiness, and waiting narration. '
     'Remove every reference to the checklist itself, including saying it '
-    'has, contains, includes, or received items; present the actions directly. '
+    'has, contains, includes, received, queued, identified, extracted, or '
+    'created items; present the actions directly without counting workflow '
+    'items. '
     'Do not turn an unperformed request into waiting for its result.',
   ),
   checkmarkCausality(
@@ -143,6 +145,9 @@ class TaskAgentReportEditor {
   /// Production bound: one initial candidate and at most two repairs.
   static const productionMaxAttempts = 3;
 
+  /// Prefix used for persisted, internal editor-route outcomes.
+  static const auditToolPrefix = 'qwen_report_editor';
+
   final ConversationRepository conversationRepository;
   final InferenceRepositoryInterface inferenceRepository;
   final AiConfigInferenceProvider provider;
@@ -174,6 +179,7 @@ class TaskAgentReportEditor {
     required String languageCode,
     required Map<String, Object?> materialTaskState,
     required String reportDirective,
+    Set<TaskAgentReportRevisionIssue> initialValidationIssues = const {},
     String? consumptionAgentId,
     String? consumptionTaskId,
     String? consumptionCategoryId,
@@ -187,12 +193,12 @@ class TaskAgentReportEditor {
         : _withoutExcludedDraftScope(draftJson);
     var attempts = 0;
     var hadRevision = false;
-    var validationIssues = <TaskAgentReportRevisionIssue>[];
-    TaskAgentReportDraft? rejectedReport;
+    var validationIssues = initialValidationIssues.toList(growable: false);
+    var rejectedReport = initialValidationIssues.isEmpty ? null : draft;
     InferenceUsage? usage;
 
     while (attempts < maxAttempts) {
-      final isRepair = attempts > 0;
+      final isRepair = validationIssues.isNotEmpty;
       final conversationId = conversationRepository.createConversation(
         systemMessage: isRepair
             ? '$_systemPrompt\n\n'
@@ -246,6 +252,7 @@ class TaskAgentReportEditor {
           consumptionCategoryId: consumptionCategoryId,
           consumptionWakeRunKey: consumptionWakeRunKey,
           consumptionThreadId: consumptionThreadId,
+          rethrowInferenceErrors: true,
         );
         if (attemptUsage != null) {
           usage = usage == null ? attemptUsage : usage.merge(attemptUsage);
@@ -460,6 +467,8 @@ class TaskAgentReportEditor {
       'none identified',
       'none at this time',
       'none currently',
+      'no estimate',
+      'no due date',
       'no decision needed',
       'keine entscheidung erforderlich',
       'ninguna decisión necesaria',
@@ -523,6 +532,19 @@ class TaskAgentReportEditor {
           'currently active|läuft(?: aktuell)?|in bearbeitung|en curso|'
           r'en progrès|în curs|probíhá)\b',
         ).hasMatch(normalizedCandidate);
+    final narratesNewActionsAsQueued =
+        hasNewChecklistItems &&
+        RegExp(
+          r'\b(workflow\s+items?|actions?|tasks?|steps?|items?)\b.{0,30}'
+          r'\b(queued|queue|listed|captured|prepared|identified|extracted|'
+          r'defined|recorded|created|added|assembled|tracked)\b',
+        ).hasMatch(normalizedCandidate);
+    final narratesNewActionsAsReady =
+        hasNewChecklistItems &&
+        RegExp(
+          r'\b(workflow|plan|actions?|tasks?|steps?|work)\b.{0,35}'
+          r'\b(?:is|are|looks?|seems?)?\s*ready\b',
+        ).hasMatch(normalizedCandidate);
     final candidateAddsWaitingState = RegExp(
       r'\b(await\w*|wait\w*|wart\w*|esper\w*|attend\w*|aștept\w*|ček\w*)\b',
     ).hasMatch(normalizedCandidate);
@@ -535,6 +557,8 @@ class TaskAgentReportEditor {
         assignsProgressToNewActions ||
         describesNewActionsAsSetup ||
         describesNewActionsAsProgress ||
+        narratesNewActionsAsQueued ||
+        narratesNewActionsAsReady ||
         (candidateAddsWaitingState && !draftGroundsWaitingState)) {
       issues.add(TaskAgentReportRevisionIssue.processNarration);
     }
