@@ -104,6 +104,16 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     );
     final resolvedProfile = resolvedSetup.profile;
     if (resolvedProfile == null) {
+      if (agentIdentity.config.inferenceSetup != null) {
+        _log(
+          'typed inference setup is ${resolvedSetup.status.name} — aborting wake',
+          subDomain: 'execute',
+        );
+        return WakeResult(
+          success: false,
+          error: 'Inference setup is ${resolvedSetup.status.name}',
+        );
+      }
       final modelId =
           templateCtx.version.modelId ?? templateCtx.template.modelId;
       _log(

@@ -472,6 +472,38 @@ void main() {
         expect(result.error, 'No inference provider configured');
       });
 
+      test(
+        'typed disabled setup does not fall back to template model',
+        () async {
+          stubPreExecuteDefaults(
+            mockAgentRepository: mockAgentRepository,
+            mockAiInputRepository: mockAiInputRepository,
+            testAgentState: testAgentState,
+            agentId: agentId,
+            taskId: taskId,
+          );
+
+          final typedDisabledIdentity = testAgentIdentity.copyWith(
+            config: const AgentConfig(
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.disabled,
+                origin: AgentInferenceSetupOrigin.user,
+              ),
+            ),
+          );
+
+          final result = await workflow.execute(
+            agentIdentity: typedDisabledIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, 'Inference setup is disabled');
+        },
+      );
+
       test('when template exists but no active version', () async {
         stubPreExecuteDefaults(
           mockAgentRepository: mockAgentRepository,
