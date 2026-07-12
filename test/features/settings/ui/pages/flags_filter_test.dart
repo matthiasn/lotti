@@ -174,22 +174,35 @@ void main() {
     });
   });
 
-  group('FlagsBody.displayedItems — registered flag set', () {
+  group('FlagsBody.defaultDisplayedItems — registered flag set', () {
     test('includes the AI summary TTS flag', () {
-      expect(FlagsBody.displayedItems, contains('enable_ai_summary_tts'));
+      expect(
+        FlagsBody.defaultDisplayedItems,
+        contains('enable_ai_summary_tts'),
+      );
+    });
+
+    test('includes the evidence-first task-agent flag', () {
+      expect(
+        FlagsBody.defaultDisplayedItems,
+        contains('enable_task_agent_evidence_synthesis'),
+      );
     });
 
     test('includes the new enable_whats_new flag', () {
       // Locks the wiring contract — the canonical render order must
       // carry `enable_whats_new` so the in-page list and the search
       // filter both see it.
-      expect(FlagsBody.displayedItems, contains('enable_whats_new'));
+      expect(FlagsBody.defaultDisplayedItems, contains('enable_whats_new'));
     });
 
     test('includes the onboarding FTUE flag', () {
       // The FTUE gate must be toggleable from settings so it can be
       // flipped on once the flow is complete.
-      expect(FlagsBody.displayedItems, contains('enable_onboarding_ftue'));
+      expect(
+        FlagsBody.defaultDisplayedItems,
+        contains('enable_onboarding_ftue'),
+      );
     });
 
     test('every entry is a non-empty unique string', () {
@@ -197,10 +210,10 @@ void main() {
       // flag twice (the lookup map keeps the last entry but the
       // ordered list still iterates twice).
       expect(
-        FlagsBody.displayedItems.toSet().length,
-        FlagsBody.displayedItems.length,
+        FlagsBody.defaultDisplayedItems.toSet().length,
+        FlagsBody.defaultDisplayedItems.length,
       );
-      for (final id in FlagsBody.displayedItems) {
+      for (final id in FlagsBody.defaultDisplayedItems) {
         expect(id, isNotEmpty);
       }
     });

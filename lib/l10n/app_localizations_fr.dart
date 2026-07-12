@@ -3061,6 +3061,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Synchronise les alertes d\'IA et de tâches entre tes appareils et autorise-les à programmer des notifications système locales.';
 
   @override
+  String get configFlagEnableTaskAgentEvidenceSynthesis =>
+      'Agent de tâches fondé sur les faits';
+
+  @override
+  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
+      'Utilise des consignes fondées sur les faits pour les agents de tâches avec les modèles Melious efficaces. Le profil Melious par défaut utilise directement Qwen 3.5 ; si tu choisis Mistral Small 4, un passage Qwen isolé est ajouté pour le rapport, avec un léger supplément de latence et d’utilisation.';
+
+  @override
   String get configFlagEnableTooltip => 'Activer les info-bulles';
 
   @override

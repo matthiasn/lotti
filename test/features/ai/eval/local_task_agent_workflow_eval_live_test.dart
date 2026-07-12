@@ -24,7 +24,8 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -42,33 +43,59 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   test(
-    'executes the real task-agent workflow against local oMLX',
+    'executes the real task-agent workflow against the configured provider',
     () async {
+      final consumptionEvents = <AiConsumptionEvent>[];
+      final consumptionRecorder = MockAiConsumptionRecorder();
+      when(() => consumptionRecorder.record(any())).thenAnswer((invocation) {
+        consumptionEvents.add(
+          invocation.positionalArguments.single as AiConsumptionEvent,
+        );
+        return Future<void>.value();
+      });
       await setUpTestGetIt(
         additionalSetup: () {
           getIt
             ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-            ..registerSingleton<TimeService>(TimeService());
+            ..registerSingleton<TimeService>(TimeService())
+            ..registerSingleton<AiConsumptionRecorder>(consumptionRecorder);
         },
       );
       addTearDown(tearDownTestGetIt);
 
       final container = ProviderContainer();
       addTearDown(container.dispose);
+      final conversationSubscription = container.listen(
+        conversationRepositoryProvider,
+        (_, _) {},
+      );
+      addTearDown(conversationSubscription.close);
+      final cloudRepositorySubscription = container.listen(
+        cloudInferenceRepositoryProvider,
+        (_, _) {},
+      );
+      addTearDown(cloudRepositorySubscription.close);
 
-      const providerType = InferenceProviderType.omlx;
+      final providerType = _providerType(
+        Platform.environment['LOCAL_TASK_AGENT_WORKFLOW_EVAL_PROVIDER_TYPE'],
+      );
+      final evidenceSynthesisEnabled =
+          Platform.environment['LOCAL_TASK_AGENT_WORKFLOW_EVAL_EVIDENCE'] ==
+          '1';
       final provider =
           AiConfig.inferenceProvider(
-                id: 'local-task-agent-workflow-omlx',
-                name: 'Local oMLX',
+                id: 'task-agent-workflow-${providerType.name}',
+                name: 'Task-agent workflow ${providerType.name}',
                 baseUrl:
                     Platform
                         .environment['LOCAL_TASK_AGENT_WORKFLOW_EVAL_BASE_URL'] ??
                     Platform.environment['OMLX_BASE_URL'] ??
+                    Platform.environment['MELIOUS_BASE_URL'] ??
                     ProviderConfig.defaultBaseUrls[providerType]!,
                 apiKey:
                     Platform
                         .environment['LOCAL_TASK_AGENT_WORKFLOW_EVAL_API_KEY'] ??
+                    Platform.environment['MELIOUS_API_KEY'] ??
                     Platform.environment['OMLX_API_KEY'] ??
                     '',
                 inferenceProviderType: providerType,
@@ -82,7 +109,7 @@ void main() {
                 providerModelId:
                     Platform
                         .environment['LOCAL_TASK_AGENT_WORKFLOW_EVAL_MODEL'] ??
-                    omlxGemma426BA4BItQatMlx4BitModelId,
+                    _defaultModelId(providerType),
                 inferenceProviderId: provider.id,
                 createdAt: DateTime(2026, 6, 21),
                 inputModalities: const [Modality.text, Modality.image],
@@ -93,8 +120,8 @@ void main() {
               )
               as AiConfigModel;
       final profile = AiConfigInferenceProfile(
-        id: profileLocalGemmaOmlxId,
-        name: 'Local Gemma 4 (oMLX)',
+        id: 'task-agent-workflow-profile',
+        name: 'Task-agent workflow eval',
         thinkingModelId: model.providerModelId,
         imageRecognitionModelId: model.providerModelId,
         createdAt: DateTime(2026, 6, 21),
@@ -152,6 +179,7 @@ void main() {
         labelsRepository: mocks.labelsRepository,
         syncService: mocks.syncService,
         templateService: mocks.templateService,
+        evidenceSynthesisEnabled: evidenceSynthesisEnabled,
         domainLogger: DomainLogger(loggingService: LoggingService())
           ..enabledDomains.add(LogDomain.agentWorkflow),
       );
@@ -171,22 +199,44 @@ void main() {
         result: result,
         latencyMs: stopwatch.elapsedMilliseconds,
         captured: captured,
+        consumptionEvents: consumptionEvents,
       );
       _writeReport(report);
 
       expect(result.success, isTrue, reason: result.error);
       expect(
         report.changeSetToolNames,
-        containsAll([
-          TaskAgentToolNames.setTaskTitle,
-          TaskAgentToolNames.updateTaskEstimate,
-          TaskAgentToolNames.updateTaskDueDate,
-          TaskAgentToolNames.updateTaskPriority,
-        ]),
+        contains(TaskAgentToolNames.addChecklistItem),
         reason:
-            'The real workflow did not persist the expected suggestions. '
+            'The real workflow did not persist checklist suggestions. '
             'See ${report.markdownPath}.',
       );
+      expect(
+        report.checklistActionTitles,
+        hasLength(6),
+        reason:
+            'The implicit workflow was not materialized into six actions. '
+            'See ${report.markdownPath}.',
+      );
+      for (final terms in const [
+        ['profile', 'seeding'],
+        ['pull request'],
+        ['gemini', 'review'],
+        ['code', 'review'],
+        ['merge'],
+        ['release', 'platform'],
+      ]) {
+        expect(
+          report.checklistActionTitles.any((title) {
+            final normalized = title.toLowerCase();
+            return terms.every(normalized.contains);
+          }),
+          isTrue,
+          reason:
+              'Missing checklist action containing ${terms.join(' + ')}. '
+              'See ${report.markdownPath}.',
+        );
+      }
       expect(
         report.agentReportCount,
         greaterThanOrEqualTo(1),
@@ -204,11 +254,71 @@ void main() {
         greaterThan(1000),
         reason: 'The workflow did not persist a real user prompt payload.',
       );
+      final normalizedReport = report.reportText.toLowerCase();
+      expect(normalizedReport, contains('profile seeding'));
+      expect(normalizedReport, contains('pull request'));
+      expect(normalizedReport, contains('review'));
+      expect(normalizedReport, contains('merge'));
+      expect(normalizedReport, contains('release'));
+      expect(normalizedReport, isNot(contains('workflow item')));
+      expect(normalizedReport, isNot(contains('checklist')));
+      expect(normalizedReport, isNot(contains('identified')));
+      expect(normalizedReport, isNot(contains('root cause')));
+      expect(normalizedReport, isNot(contains('automated review')));
+      expect(normalizedReport, isNot(contains('human reviewer')));
+      expect(normalizedReport, isNot(contains('deploy the fix')));
+      expect(normalizedReport, isNot(contains('awaits implementation')));
+      expect(normalizedReport, isNot(contains('workflow is ready')));
+      expect(normalizedReport, isNot(contains('sequential steps')));
+      expect(normalizedReport, isNot(contains('are tracked')));
+      expect(normalizedReport, isNot(contains('no estimate')));
+      expect(normalizedReport, isNot(contains('no due date')));
+      if (evidenceSynthesisEnabled &&
+          providerType == InferenceProviderType.melious &&
+          model.providerModelId == meliousMistralSmall4119BInstructModelId) {
+        expect(
+          report.consumptionModelIds,
+          containsAll([
+            meliousMistralSmall4119BInstructModelId,
+            meliousQwen35122BA10BModelId,
+          ]),
+          reason:
+              'The production mixed-model route did not record both model '
+              'calls. See ${report.markdownPath}.',
+        );
+        expect(
+          report.editorRouteOutcomes,
+          contains('qwen_report_editor_accepted'),
+          reason:
+              'The production mixed-model route did not accept a Qwen '
+              'revision. See ${report.markdownPath}.',
+        );
+        expect(
+          consumptionEvents.map((event) => event.id).toSet(),
+          hasLength(consumptionEvents.length),
+        );
+      }
+      if (evidenceSynthesisEnabled &&
+          providerType == InferenceProviderType.melious &&
+          model.providerModelId == meliousQwen35122BA10BModelId) {
+        expect(
+          report.editorRouteOutcomes,
+          contains('qwen_report_editor_direct_qwen_repaired'),
+        );
+        expect(
+          report.consumptionModelIds,
+          isNotEmpty,
+        );
+        expect(
+          report.consumptionModelIds,
+          everyElement(meliousQwen35122BA10BModelId),
+        );
+      }
     },
     skip:
         Platform.environment['LOTTI_LOCAL_TASK_AGENT_WORKFLOW_EVAL_LIVE'] == '1'
         ? null
-        : 'Set LOTTI_LOCAL_TASK_AGENT_WORKFLOW_EVAL_LIVE=1 to run the app-path local oMLX eval.',
+        : 'Set LOTTI_LOCAL_TASK_AGENT_WORKFLOW_EVAL_LIVE=1 to run the app-path workflow eval.',
     timeout: const Timeout(Duration(minutes: 10)),
   );
 }
@@ -443,17 +553,19 @@ Task _evalTask({
         utcOffset: 0,
       ),
       statusHistory: const [],
-      title: 'Evaluate local model fallback',
+      title: 'Inference profile cleanup',
       dateFrom: now,
       dateTo: now,
       languageCode: 'en',
     ),
     entryText: const EntryText(
       plainText:
-          'User asked: rename this task to Validate local Gemma fallback, '
-          'make it P1, due July 4 2026, and estimate two and a half hours. '
-          'The user is skeptical of shallow tool-call smoke reports and wants '
-          'a real app-shaped local eval.',
+          'In this task I need to clean up the inference profile seeding '
+          'because there are too many empty profiles I can still choose from. '
+          "Let's fix this and do the implementation, create a pull request, "
+          'address the Gemini review comments, address the code review '
+          'comments, merge the pull request, and then create a release on all '
+          'platforms.',
     ),
   );
 }
@@ -468,30 +580,11 @@ String _taskDetailsJson(Task task) {
     'dueDate': null,
     'languageCode': task.data.languageCode,
     'description': task.entryText?.plainText,
-    'checklist': [
-      {
-        'id': 'check-1',
-        'title': 'Run a meaningful local app eval',
-        'isChecked': false,
-      },
-      {
-        'id': 'check-2',
-        'title': 'Compare Gemma against Qwen on task-agent behavior',
-        'isChecked': false,
-      },
-    ],
+    'checklist': <Object?>[],
     'log': [
       {
         'timestamp': '2026-06-21T09:00:00Z',
-        'text':
-            'User asked: rename this task to Validate local Gemma fallback, '
-            'make it P1, due July 4 2026, and estimate two and a half hours.',
-      },
-      {
-        'timestamp': '2026-06-21T09:05:00Z',
-        'text':
-            'The user reported that local Gemma went on and on in-app and '
-            'produced no useful suggestions or summary.',
+        'text': task.entryText?.plainText,
       },
     ],
   });
@@ -515,8 +608,8 @@ const _projectContextJson = '''
   "id": "project-local-inference",
   "title": "Local inference reliability",
   "latestProjectAgentReport": {
-    "tldr": "Qwen is the current local default. Gemma needs stronger validation before it is trusted.",
-    "content": "Focus on runtime behavior that affects the Lotti task-agent workflow, not generic benchmark scores."
+    "tldr": "Keep inference profiles usable and release changes through the normal review workflow.",
+    "content": "The task owns its implementation, review, merge, and release sequence."
   }
 }
 ''';
@@ -530,7 +623,13 @@ class _WorkflowEvalReport {
     required this.systemPromptChars,
     required this.userPromptChars,
     required this.changeSetToolNames,
+    required this.checklistActionTitles,
     required this.agentReportCount,
+    required this.reportOneLiner,
+    required this.reportTldr,
+    required this.reportContent,
+    required this.editorRouteOutcomes,
+    required this.consumptionEvents,
     required this.markdownPath,
     required this.jsonPath,
   });
@@ -541,6 +640,7 @@ class _WorkflowEvalReport {
     required WakeResult result,
     required int latencyMs,
     required List<AgentDomainEntity> captured,
+    required List<AiConsumptionEvent> consumptionEvents,
   }) {
     final payloads = captured.whereType<AgentMessagePayloadEntity>();
     final systemPrompt = payloads
@@ -559,6 +659,22 @@ class _WorkflowEvalReport {
         .expand((changeSet) => changeSet.items)
         .map((item) => item.toolName)
         .toList(growable: false);
+    final checklistActionTitles = changeSets
+        .expand((changeSet) => changeSet.items)
+        .where(
+          (item) => item.toolName == TaskAgentToolNames.addChecklistItem,
+        )
+        .map((item) => item.args['title'])
+        .whereType<String>()
+        .toList(growable: false);
+    final reports = captured.whereType<AgentReportEntity>().toList();
+    final latestReport = reports.lastOrNull;
+    final editorRouteOutcomes = captured
+        .whereType<AgentMessageEntity>()
+        .map((message) => message.metadata.toolName)
+        .whereType<String>()
+        .where((toolName) => toolName.startsWith('qwen_report_editor_'))
+        .toList(growable: false);
     final tempDir = Directory.systemTemp.path;
     return _WorkflowEvalReport(
       provider: provider,
@@ -568,7 +684,13 @@ class _WorkflowEvalReport {
       systemPromptChars: systemPrompt?.length ?? 0,
       userPromptChars: userPrompt?.length ?? 0,
       changeSetToolNames: toolNames,
-      agentReportCount: captured.whereType<AgentReportEntity>().length,
+      checklistActionTitles: checklistActionTitles,
+      agentReportCount: reports.length,
+      reportOneLiner: latestReport?.oneLiner,
+      reportTldr: latestReport?.tldr,
+      reportContent: latestReport?.content,
+      editorRouteOutcomes: editorRouteOutcomes,
+      consumptionEvents: List.unmodifiable(consumptionEvents),
       markdownPath:
           Platform.environment['LOCAL_TASK_AGENT_WORKFLOW_EVAL_MARKDOWN'] ??
           '$tempDir/lotti-local-task-agent-workflow-eval.md',
@@ -585,7 +707,22 @@ class _WorkflowEvalReport {
   final int systemPromptChars;
   final int userPromptChars;
   final List<String> changeSetToolNames;
+  final List<String> checklistActionTitles;
   final int agentReportCount;
+  final String? reportOneLiner;
+  final String? reportTldr;
+  final String? reportContent;
+  String get reportText => [
+    reportOneLiner,
+    reportTldr,
+    reportContent,
+  ].whereType<String>().join('\n');
+  final List<String> editorRouteOutcomes;
+  final List<AiConsumptionEvent> consumptionEvents;
+  List<String> get consumptionModelIds => consumptionEvents
+      .map((event) => event.providerModelId)
+      .whereType<String>()
+      .toList(growable: false);
   final String markdownPath;
   final String jsonPath;
 
@@ -611,7 +748,26 @@ class _WorkflowEvalReport {
       'systemPromptChars': systemPromptChars,
       'userPromptChars': userPromptChars,
       'changeSetToolNames': changeSetToolNames,
+      'checklistActionTitles': checklistActionTitles,
       'agentReportCount': agentReportCount,
+      'report': {
+        'oneLiner': reportOneLiner,
+        'tldr': reportTldr,
+        'content': reportContent,
+      },
+      'editorRouteOutcomes': editorRouteOutcomes,
+      'consumptionEvents': consumptionEvents
+          .map(
+            (event) => {
+              'id': event.id,
+              'providerModelId': event.providerModelId,
+              'inputTokens': event.inputTokens,
+              'outputTokens': event.outputTokens,
+              'credits': event.credits,
+              'energyKwh': event.energyKwh,
+            },
+          )
+          .toList(growable: false),
     };
   }
 
@@ -624,6 +780,22 @@ Provider: `${provider.name}` (${provider.inferenceProviderType.name}) at `${prov
 | Model | Wake success | Latency | System prompt chars | User prompt chars | Change-set tools | Reports |
 | --- | ---: | ---: | ---: | ---: | --- | ---: |
 | `${model.providerModelId}` | ${result.success ? 'yes' : 'no'} | $latencyMs ms | $systemPromptChars | $userPromptChars | ${changeSetToolNames.isEmpty ? '-' : changeSetToolNames.join(', ')} | $agentReportCount |
+
+Editor route: ${editorRouteOutcomes.isEmpty ? 'none' : editorRouteOutcomes.join(', ')}
+
+Consumption models: ${consumptionModelIds.isEmpty ? 'none' : consumptionModelIds.map((model) => '`$model`').join(', ')}
+
+## Checklist actions
+
+${checklistActionTitles.isEmpty ? 'None.' : checklistActionTitles.map((title) => '- $title').join('\n')}
+
+## Final report
+
+One-liner: ${reportOneLiner ?? 'none'}
+
+TLDR: ${reportTldr ?? 'none'}
+
+${reportContent ?? 'No report.'}
 
 ${result.error == null ? '' : 'Error: `${result.error}`\n'}
 ''';
@@ -650,4 +822,24 @@ void _writeReport(_WorkflowEvalReport report) {
   (File(
     report.markdownPath,
   )..parent.createSync(recursive: true)).writeAsStringSync(report.toMarkdown());
+}
+
+InferenceProviderType _providerType(String? name) {
+  final normalized = name?.trim();
+  if (normalized == null || normalized.isEmpty) {
+    return InferenceProviderType.omlx;
+  }
+  return InferenceProviderType.values.firstWhere(
+    (type) => type.name == normalized,
+    orElse: () => throw FormatException(
+      'Unknown task-agent workflow provider type "$name".',
+      name,
+    ),
+  );
+}
+
+String _defaultModelId(InferenceProviderType providerType) {
+  return providerType == InferenceProviderType.melious
+      ? meliousMistralSmall4119BInstructModelId
+      : omlxGemma426BA4BItQatMlx4BitModelId;
 }

@@ -90,6 +90,7 @@ class _TestConversationRepository extends ConversationRepository {
     String? consumptionCategoryId,
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
+    bool rethrowInferenceErrors = false,
   }) async {
     lastConsumptionAgentId = consumptionAgentId;
     lastConsumptionThreadId = consumptionThreadId;

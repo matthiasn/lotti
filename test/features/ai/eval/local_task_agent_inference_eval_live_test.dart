@@ -18,11 +18,23 @@ void main() {
     () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
+      final conversationSubscription = container.listen(
+        conversationRepositoryProvider,
+        (_, _) {},
+      );
+      addTearDown(conversationSubscription.close);
+      final cloudRepositorySubscription = container.listen(
+        cloudInferenceRepositoryProvider,
+        (_, _) {},
+      );
+      addTearDown(cloudRepositorySubscription.close);
 
-      const providerType = InferenceProviderType.omlx;
+      final providerType = _providerType(
+        Platform.environment['LOCAL_TASK_AGENT_EVAL_PROVIDER_TYPE'],
+      );
       final provider = AiConfigInferenceProvider(
-        id: 'local-task-agent-omlx',
-        name: 'Local oMLX',
+        id: 'task-agent-eval-${providerType.name}',
+        name: 'Task Agent Eval (${providerType.name})',
         baseUrl:
             Platform.environment['LOCAL_TASK_AGENT_EVAL_BASE_URL'] ??
             Platform.environment['OMLX_BASE_URL'] ??
@@ -37,6 +49,30 @@ void main() {
       final profiles = _envList(
         'LOCAL_TASK_AGENT_EVAL_PROFILES',
       ).map(parseLocalTaskAgentEvalProfile).toList(growable: false);
+      final isMeliousMatrix =
+          Platform.environment['LOCAL_TASK_AGENT_EVAL_MATRIX'] == 'melious';
+      final requestedVariants = _envList(
+        'LOCAL_TASK_AGENT_EVAL_PROMPT_VARIANTS',
+      ).map(parseLocalTaskAgentEvalPromptVariant).toList(growable: false);
+      final useEvolvedDirectiveSuite =
+          Platform.environment['LOCAL_TASK_AGENT_EVAL_EVOLVED_DIRECTIVES'] ==
+          '1';
+      final defaultScenarios = isMeliousMatrix
+          ? useEvolvedDirectiveSuite
+                ? evolvedReportDirectiveTaskAgentEvalScenarios()
+                : defaultMeliousTaskAgentEvalScenarios(
+                    variants: requestedVariants.isEmpty
+                        ? const [LocalTaskAgentEvalPromptVariant.production]
+                        : requestedVariants,
+                  )
+          : [defaultLocalTaskAgentWakeScenario()];
+      final scenarios = selectLocalTaskAgentEvalScenarios(
+        defaultScenarios,
+        _envList('LOCAL_TASK_AGENT_EVAL_SCENARIOS'),
+      );
+      final reasoningEffort = parseLocalTaskAgentEvalReasoningEffort(
+        Platform.environment['LOCAL_TASK_AGENT_EVAL_REASONING_EFFORT'],
+      );
 
       final runner = LocalTaskAgentInferenceEvalRunner(
         provider: provider,
@@ -45,15 +81,28 @@ void main() {
         ),
         inferenceRepository: CloudInferenceWrapper(
           cloudRepository: container.read(cloudInferenceRepositoryProvider),
+          reasoningEffort: reasoningEffort,
         ),
         temperature: _envDouble('LOCAL_TASK_AGENT_EVAL_TEMPERATURE') ?? 0.3,
+        reasoningEffort: reasoningEffort,
+        executionMode: parseLocalTaskAgentEvalExecutionMode(
+          Platform.environment['LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE'] ??
+              LocalTaskAgentEvalExecutionMode.singlePass.name,
+        ),
+        reportEditorModelId:
+            Platform.environment['LOCAL_TASK_AGENT_EVAL_REPORT_EDITOR_MODEL'],
+        reportEditorMaxAttempts: parseLocalTaskAgentEvalReportEditorAttempts(
+          Platform.environment['LOCAL_TASK_AGENT_EVAL_REPORT_EDITOR_ATTEMPTS'],
+        ),
       );
 
       final report = await runner.run(
         profiles: profiles.isEmpty
-            ? defaultLocalTaskAgentEvalProfiles
+            ? isMeliousMatrix
+                  ? defaultMeliousTaskAgentEvalProfiles
+                  : defaultLocalTaskAgentEvalProfiles
             : profiles,
-        scenarios: [defaultLocalTaskAgentWakeScenario()],
+        scenarios: scenarios,
       );
 
       final tempDir = Directory.systemTemp.path;
@@ -69,18 +118,30 @@ void main() {
       expect(report.results, isNotEmpty);
       expect(File(jsonPath).existsSync(), isTrue);
       expect(File(markdownPath).existsSync(), isTrue);
-      expect(
-        report.results.where((result) => !result.passed).toList(),
-        isEmpty,
-        reason:
-            'Local task-agent eval failures were reported. '
-            'See $markdownPath.',
-      );
+      if (Platform.environment['LOCAL_TASK_AGENT_EVAL_STRICT'] == '1') {
+        expect(
+          report.results.where((result) => !result.passed).toList(),
+          isEmpty,
+          reason: 'Task-agent eval failures were reported. See $markdownPath.',
+        );
+      }
     },
     skip: Platform.environment['LOTTI_LOCAL_TASK_AGENT_EVAL_LIVE'] == '1'
         ? null
         : 'Set LOTTI_LOCAL_TASK_AGENT_EVAL_LIVE=1 to run local oMLX inference.',
     timeout: const Timeout(Duration(minutes: 10)),
+  );
+}
+
+InferenceProviderType _providerType(String? name) {
+  if (name == null || name.trim().isEmpty) {
+    return InferenceProviderType.omlx;
+  }
+  return InferenceProviderType.values.firstWhere(
+    (value) => value.name == name.trim(),
+    orElse: () => throw FormatException(
+      'Unknown LOCAL_TASK_AGENT_EVAL_PROVIDER_TYPE "$name".',
+    ),
   );
 }
 

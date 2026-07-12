@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
+import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -234,6 +235,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
     final messages = [
@@ -253,6 +255,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        reasoningEffort: reasoningEffort,
         impactCollector: impactCollector,
       );
     }
@@ -266,6 +269,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        reasoningEffort: reasoningEffort,
       ),
     );
 
@@ -283,6 +287,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
     if (impactCollector != null) {
@@ -295,6 +300,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        reasoningEffort: reasoningEffort,
         impactCollector: impactCollector,
       );
     }
@@ -308,6 +314,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        reasoningEffort: reasoningEffort,
       ),
     );
 
@@ -399,6 +406,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    ReasoningEffort? reasoningEffort,
   }) async* {
     final result = await _postChatCompletion(
       baseUrl: baseUrl,
@@ -410,6 +418,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        reasoningEffort: reasoningEffort,
         stream: false,
       ),
     );
@@ -493,7 +502,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       return _MeliousChatResult(
         content: content is String ? content : '',
         toolCalls: _parseToolCalls(messageMap['tool_calls']),
-        usage: _parseUsage(decoded['usage']),
+        usage: parseCompletionUsage(decoded['usage']),
         impact: MeliousCallImpact.fromResponseJson(decoded),
       );
     } on MeliousInferenceException {
@@ -542,24 +551,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       );
     }
     return out;
-  }
-
-  static CompletionUsage? _parseUsage(Object? raw) {
-    if (raw is! Map) return null;
-    final map = raw.cast<String, dynamic>();
-    final prompt = _integerValue(map['prompt_tokens']);
-    final completion = _integerValue(map['completion_tokens']);
-    final cached = _integerValue(map['cached_tokens']);
-    return CompletionUsage(
-      promptTokens: prompt,
-      completionTokens: completion,
-      totalTokens:
-          _integerValue(map['total_tokens']) ??
-          (prompt ?? 0) + (completion ?? 0),
-      promptTokensDetails: cached != null
-          ? PromptTokensDetails(cachedTokens: cached)
-          : null,
-    );
   }
 
   /// Transcribes audio through Melious' OpenAI-compatible

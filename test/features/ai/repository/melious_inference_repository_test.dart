@@ -1523,6 +1523,7 @@ void main() {
       MeliousInferenceRepository repository,
       InferenceImpactCollector collector, {
       String model = 'glm-5.2',
+      ReasoningEffort? reasoningEffort,
     }) {
       return repository
           .generateTextWithMessages(
@@ -1534,6 +1535,7 @@ void main() {
             model: model,
             baseUrl: baseUrl,
             apiKey: apiKey,
+            reasoningEffort: reasoningEffort,
             impactCollector: collector,
           )
           .toList();
@@ -1583,6 +1585,7 @@ void main() {
                 'completion_tokens': 500,
                 'total_tokens': 1500,
                 'cached_tokens': 100,
+                'completion_tokens_details': {'reasoning_tokens': 250},
               },
               'environment_impact': {
                 'energy_kwh': 0.0003,
@@ -1601,14 +1604,17 @@ void main() {
         });
 
         final collector = InferenceImpactCollector();
-        final chunks = await collectChat(repo, collector);
+        final chunks = await collectChat(
+          repo,
+          collector,
+          reasoningEffort: ReasoningEffort.high,
+        );
 
         // A non-streaming POST to /chat/completions was issued.
         expect(captured.url.path, endsWith('/chat/completions'));
-        expect(
-          (jsonDecode(captured.body) as Map<String, dynamic>)['stream'],
-          false,
-        );
+        final requestBody = jsonDecode(captured.body) as Map<String, dynamic>;
+        expect(requestBody['stream'], false);
+        expect(requestBody['reasoning_effort'], 'high');
 
         // Content is assembled from the delta; usage rides the trailing chunk.
         expect(contentOf(chunks), 'Hello world');
@@ -1616,6 +1622,7 @@ void main() {
         expect(usage.promptTokens, 1000);
         expect(usage.completionTokens, 500);
         expect(usage.promptTokensDetails?.cachedTokens, 100);
+        expect(usage.completionTokensDetails?.reasoningTokens, 250);
 
         // Impact surfaced via the side-channel.
         expect(collector.impact, isNotNull);

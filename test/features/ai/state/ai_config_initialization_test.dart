@@ -129,13 +129,13 @@ void main() {
       },
     );
 
-    test('completes normally when provider reads throw — the profile '
-        'upgrade pass still runs', () async {
+    test('completes normally and attempts every phase when provider reads '
+        'throw', () async {
       when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
       when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
-      // Backfill, the seeding gate, and the orphan cleanup all read the
-      // inference-provider configs; make that throw. Each step is isolated,
-      // so the upgrade pass (models + profiles only) must still run.
+      // Every initialization phase reads the inference-provider configs.
+      // Make that shared dependency throw so the test can verify that each
+      // guarded phase is still attempted.
       when(
         () => repo.getConfigsByType(AiConfigType.inferenceProvider),
       ).thenThrow(Exception('db unavailable'));
@@ -151,10 +151,11 @@ void main() {
 
       verifyNever(() => repo.saveConfig(any()));
 
-      // The upgrade pass ran: it reads the existing inference profiles.
+      // Backfill, seeding, upgrade, and orphan cleanup each reached their
+      // provider read instead of an earlier failure aborting initialization.
       verify(
-        () => repo.getConfigsByType(AiConfigType.inferenceProfile),
-      ).called(1);
+        () => repo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).called(4);
     });
 
     test('completes normally and still seeds profiles when the profile '

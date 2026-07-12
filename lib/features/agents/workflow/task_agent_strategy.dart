@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -157,6 +158,7 @@ class TaskAgentStrategy extends ConversationStrategy {
   String? _reportOneLiner;
   String? _finalResponse;
   final _observations = <ObservationRecord>[];
+  final _successfulMutations = <TaskAgentMutationRecord>[];
   TaskMetadataSnapshot? _cachedTaskMetadata;
   bool _taskMetadataResolved = false;
 
@@ -302,6 +304,7 @@ class TaskAgentStrategy extends ConversationStrategy {
           final response = await _addToChangeSet(csBuilder, toolName, args);
           if (csBuilder.items.length > itemCountBefore) {
             _usedDeferredTools.add(toolName);
+            _recordSuccessfulChangeSetMutations(csBuilder, itemCountBefore);
           }
           manager.addToolResponse(toolCallId: call.id, response: response);
           await _recordToolResultMessage(toolName: toolName);
@@ -317,6 +320,7 @@ class TaskAgentStrategy extends ConversationStrategy {
           _usedDeferredTools.add(toolName);
           _taskMetadataResolved = false;
           _cachedTaskMetadata = null;
+          _recordSuccessfulMutation(toolName, args);
         }
         continue;
       }
@@ -357,8 +361,11 @@ class TaskAgentStrategy extends ConversationStrategy {
         // Only mark as used when an item was actually queued. If metadata
         // redundancy or dedup skipped it, allow the model to retry with
         // different args.
-        if (isSingleUse && csBuilder.items.length > itemCountBefore) {
-          _usedDeferredTools.add(toolName);
+        if (csBuilder.items.length > itemCountBefore) {
+          if (isSingleUse) {
+            _usedDeferredTools.add(toolName);
+          }
+          _recordSuccessfulChangeSetMutations(csBuilder, itemCountBefore);
         }
         manager.addToolResponse(
           toolCallId: call.id,
@@ -384,6 +391,9 @@ class TaskAgentStrategy extends ConversationStrategy {
         toolCallId: call.id,
         response: result.output,
       );
+      if (result.success) {
+        _recordSuccessfulMutation(toolName, args);
+      }
     }
 
     // After processing all tool calls, let the conversation loop continue
@@ -452,6 +462,27 @@ class TaskAgentStrategy extends ConversationStrategy {
   List<ObservationRecord> extractObservations() =>
       List.unmodifiable(_observations);
 
+  /// Returns task mutations that applied or were successfully queued.
+  ///
+  /// Failed, policy-denied, redundant, and duplicate calls are excluded so a
+  /// report editor receives only applied changes and proposals the user will
+  /// actually see.
+  List<TaskAgentMutationRecord> extractSuccessfulMutations() =>
+      List.unmodifiable(_successfulMutations);
+
+  /// Persists a workflow-owned internal result in the wake conversation log.
+  ///
+  /// This is used for orchestration steps that happen outside the executor's
+  /// conversation, such as the isolated report editor. It does not become an
+  /// observation, enter future prompts, or appear in the public report.
+  Future<void> recordWorkflowResult({
+    required String toolName,
+    String? errorMessage,
+  }) => _recordToolResultMessage(
+    toolName: toolName,
+    errorMessage: errorMessage,
+  );
+
   /// Returns the retractions staged via `retract_suggestions` during this wake.
   ///
   /// The workflow applies these at the end of the wake (inside the change-set
@@ -473,6 +504,25 @@ class TaskAgentStrategy extends ConversationStrategy {
     String toolName,
     Map<String, dynamic> args,
   ) => TaskAgentChangeHandlers._generateHumanSummary(toolName, args);
+
+  void _recordSuccessfulMutation(
+    String toolName,
+    Map<String, dynamic> arguments,
+  ) {
+    _successfulMutations.add((
+      toolName: toolName,
+      arguments: Map<String, dynamic>.unmodifiable(arguments),
+    ));
+  }
+
+  void _recordSuccessfulChangeSetMutations(
+    ChangeSetBuilder builder,
+    int itemCountBefore,
+  ) {
+    for (final item in builder.items.skip(itemCountBefore)) {
+      _recordSuccessfulMutation(item.toolName, item.args);
+    }
+  }
 
   /// Parses tool call arguments from raw JSON, with resilience for common
   /// local model quirks (markdown fencing, trailing text, etc.).

@@ -20,7 +20,15 @@ class _FakeCreateChatCompletionRequest extends Fake
 class _FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
 class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
-  final textCalls = <({String prompt, String model, String baseUrl})>[];
+  final textCalls =
+      <
+        ({
+          String prompt,
+          String model,
+          String baseUrl,
+          ReasoningEffort? reasoningEffort,
+        })
+      >[];
   final imageCalls =
       <({String prompt, String model, String baseUrl, List<String> images})>[];
 
@@ -35,9 +43,15 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
-    textCalls.add((prompt: prompt, model: model, baseUrl: baseUrl));
+    textCalls.add((
+      prompt: prompt,
+      model: model,
+      baseUrl: baseUrl,
+      reasoningEffort: reasoningEffort,
+    ));
     return Stream.value(_chunk('melious text'));
   }
 
@@ -75,6 +89,32 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
       object: 'chat.completion.chunk',
       created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
     );
+  }
+}
+
+class _FakeMistralInferenceRepository extends MistralInferenceRepository {
+  final textCalls =
+      <({String prompt, String model, ReasoningEffort? reasoningEffort})>[];
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateText({
+    required String prompt,
+    required String model,
+    required String baseUrl,
+    required String apiKey,
+    String? systemMessage,
+    double? temperature,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    ReasoningEffort? reasoningEffort,
+  }) {
+    textCalls.add((
+      prompt: prompt,
+      model: model,
+      reasoningEffort: reasoningEffort,
+    ));
+    return Stream.value(_FakeMeliousInferenceRepository._chunk('mistral text'));
   }
 }
 
@@ -292,6 +332,7 @@ void main() {
             provider: meliousProvider,
             systemMessage: 'be brief',
             maxCompletionTokens: 512,
+            reasoningEffort: ReasoningEffort.high,
           )
           .toList();
 
@@ -300,6 +341,10 @@ void main() {
       expect(fakeMeliousRepo.textCalls.single.prompt, prompt);
       expect(fakeMeliousRepo.textCalls.single.model, 'qwen/qwen3-vl-plus');
       expect(
+        fakeMeliousRepo.textCalls.single.reasoningEffort,
+        ReasoningEffort.high,
+      );
+      expect(
         fakeMeliousRepo.textCalls.single.baseUrl,
         'https://api.melious.ai/v1',
       );
@@ -307,6 +352,39 @@ void main() {
         () => client.createChatCompletionStream(
           request: any(named: 'request'),
         ),
+      );
+    });
+
+    test('routes reasoning effort to the Mistral repository', () async {
+      final fakeMistralRepo = _FakeMistralInferenceRepository();
+      addTearDown(fakeMistralRepo.close);
+      generate = CloudInferenceGenerate(
+        ollamaRepository: ollamaRepo,
+        geminiRepository: geminiRepo,
+        meliousRepository: meliousRepo,
+        mistralRepository: fakeMistralRepo,
+        mistralOcrRepository: mistralOcrRepo,
+        helpers: const CloudInferenceRequestHelpers(),
+      );
+
+      final chunks = await generate
+          .generate(
+            prompt,
+            model: 'mistral-small-latest',
+            temperature: 0.2,
+            baseUrl: 'https://api.mistral.ai/v1',
+            apiKey: 'sk-mistral-test',
+            provider: providerOfType(InferenceProviderType.mistral),
+            reasoningEffort: ReasoningEffort.high,
+          )
+          .toList();
+
+      expect(chunks.single.choices?.single.delta?.content, 'mistral text');
+      expect(fakeMistralRepo.textCalls, hasLength(1));
+      expect(fakeMistralRepo.textCalls.single.prompt, prompt);
+      expect(
+        fakeMistralRepo.textCalls.single.reasoningEffort,
+        ReasoningEffort.high,
       );
     });
   });

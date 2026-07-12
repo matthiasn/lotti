@@ -5197,6 +5197,18 @@ abstract class AppLocalizations {
   /// **'Sync AI and task alerts across devices and allow them to schedule local OS notifications.'**
   String get configFlagEnableSyncedAlertsDescription;
 
+  /// No description provided for @configFlagEnableTaskAgentEvidenceSynthesis.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence-first task agent'**
+  String get configFlagEnableTaskAgentEvidenceSynthesis;
+
+  /// No description provided for @configFlagEnableTaskAgentEvidenceSynthesisDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use evidence-grounded task-agent prompting for efficient Melious models. The default Melious profile uses Qwen 3.5 directly; choosing Mistral Small 4 adds an isolated Qwen report pass and a small amount of latency and usage.'**
+  String get configFlagEnableTaskAgentEvidenceSynthesisDescription;
+
   /// No description provided for @configFlagEnableTooltip.
   ///
   /// In en, this message translates to:

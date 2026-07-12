@@ -222,6 +222,10 @@ The request path stays OpenAI-compatible for chat and vision chat; Whisper-class
 IDs (`whisper`, `transcribe`, `voxtral`, `asr`, or `stt`) route to
 `POST /audio/transcriptions`; image-output models route to
 `POST /images/generations` and decode the returned `b64_json` image bytes.
+Chat callers may opt into an OpenAI-compatible `reasoning_effort`; leaving it
+unset preserves the provider's model default. The dedicated Melious path
+forwards the same value for streaming and measured non-streaming calls, and the
+shared usage parser retains nested reasoning-token counts.
 Melious currently documents text-to-image generation there, so reference-image
 generation is rejected explicitly rather than silently ignored.
 
@@ -239,7 +243,8 @@ flowchart TD
 Melious also has a small curated static catalog used for immediate provider
 setup before a user installs additional live-catalog rows: `deepseek-v4-pro`,
 `glm-5.2`, `gemma-4-26b-a4b`, `minimax-m2.7`,
-`mistral-small-4-119b-instruct`, `deepseek-v4-flash`, `flux-2-klein-9b`,
+`mistral-small-4-119b-instruct`, `qwen3.5-122b-a10b`,
+`deepseek-v4-flash`, `flux-2-klein-9b`,
 `voxtral-small-24b-2507`, `whisper-large-v3`, and `whisper-large-v3-turbo`.
 The default Melious profile uses `mistral-small-4-119b-instruct` for thinking
 and image recognition, `glm-5.2` for the high-end thinking slot,
@@ -375,6 +380,136 @@ doubles with deterministic task/project context, so this is still not a live UI
 or real-user-database replay, but it exercises the same workflow, strategy,
 change-set, report-writing, and forced-report retry mechanics that an in-app wake
 uses.
+
+`tool/melious_task_agent_model_eval.sh` runs the conversation-level task-agent
+evaluator as a Melious model and prompt matrix. The built-in candidates are
+Mistral Small 4 119B Instruct, Qwen3.5 122B A10B, DeepSeek V4 Flash, and GLM
+5.2. The runner defaults to the dedicated Melious provider path so live evals
+exercise the same request and impact-accounting implementation as the app. The
+default production-prompt suite contains fourteen synthetic but app-shaped
+wakes: twelve core scenarios cover explicit and implicit-plan mutations, noisy
+multilingual transcripts, prior reports, no-op background refreshes, stale
+evidence, user overrides, checklist deduplication, external links, and long
+timelines; two additional held-out scenarios cover deferred scope and active
+deployment constraints.
+Deterministic checks validate required mutations and report
+facts as well as forbidden tools, speculative checklist content, report churn,
+and internal-ID leakage. Missing first reports go through the same report-only
+forced retry used by `TaskAgentWorkflow`, and each result records whether that
+recovery was needed. The live test is deliberately
+non-gating unless `LOCAL_TASK_AGENT_EVAL_STRICT=1`, because a comparison run must
+persist weak outputs instead of aborting before the other candidates run.
+
+After candidate generation, `tool/task_agent_model_eval_judge.py` can send the
+synthetic context and captured tool calls to a separate rubric pass
+(`qwen3.5-122b-a10b` by default). It rates grounding, coverage, checklist
+quality, summary quality, and format compliance. This automated score is a
+diagnostic only: it is not an acceptance signal, and a candidate is not accepted
+from a score produced by the same model family. Deterministic checks establish
+mutation safety, while report-quality decisions require direct review of the
+candidate text. Malformed judge JSON gets one bounded repair turn, and the
+artifact retains and aggregates accounting for every paid attempt. Raw and
+judged JSON/Markdown artifacts are written to a
+unique run directory under `build/task_agent_model_eval/` by default. Set
+`LOCAL_TASK_AGENT_EVAL_OUTPUT_ROOT` to a local clone of the private evaluation
+archive when a run should be retained; generated reports are not committed to
+the application repository. The optional `qualityFocused` prompt variant adds a
+report-quality gate for targeted comparisons; it is not a production default.
+Additional Melious candidates can be
+supplied through `LOCAL_TASK_AGENT_EVAL_PROFILES=name=model,...`, and individual
+scenario IDs through `LOCAL_TASK_AGENT_EVAL_SCENARIOS`. Prompt variants are
+selected with `LOCAL_TASK_AGENT_EVAL_PROMPT_VARIANTS`. The evaluator also has
+orchestration modes selected with
+`LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE`. `twoPass` removes `update_report` from
+the advertised mutation-pass tools and follows with a forced report-only pass;
+`reportRevision` asks the same model to revise its first report against the
+source context. `reportEditing` always sends a draft through the configured
+editor and remains a historical orchestration control. `productionRouting`
+mirrors the shipped Melious path: Mistral always uses the isolated Qwen editor,
+clean direct-Qwen reports remain single-pass, and reports matching the narrow
+known-regression detector receive a bounded Qwen repair. The production route
+resolves the Qwen editor and three-attempt bound automatically. Scenario
+metadata supplies existing material due dates, estimates, and priorities to
+the editor just as the production workflow supplies current task anchors. The
+optional `LOCAL_TASK_AGENT_EVAL_REASONING_EFFORT` accepts the OpenAI-compatible
+`minimal`, `low`, `medium`, or `high` values. The generated JSON and Markdown
+record the selected effort; leaving it empty records and uses the model default.
+The corrected temperature-0 Mistral two-pass rerun improved automated
+judge-rated summary prose but passed only 8 of 11 scenarios and used 135,147
+candidate tokens, 52% above the single-pass baseline. Neither multi-pass mode
+is used by production task agents.
+
+An explicit Mistral `reasoning_effort=high` experiment also failed to justify a
+production default. In the matched four-scenario screen, model-default and high
+effort both passed 3/4 cases while high effort was 13-15% slower. The full
+high-effort run at Mistral's recommended temperature `0.7` passed 7/11 cases,
+versus 10/11 in the archived provider-default production run, and was 56%
+slower with nearly identical output-token volume. Melious returned no separate
+reasoning-token counts for these calls. DeepSeek V4 Flash did not advance past
+the same screen: it passed 2/4 cases, made an unauthorized status change, used
+2.6x the input tokens, and took about twice as long as the Mistral baseline.
+These are one-sample synthetic comparisons, so the artifacts are retained for
+reproduction rather than treated as universal model rankings.
+
+The production `evidenceSynthesis` prompt was replicated with Qwen3.5 122B A10B
+across repeated synthetic suites at temperature `0.0`. Early direct runs showed
+strong mutation handling but recurring report defects: pending work described
+as underway, checklist-process narration, deferred-scope leakage, and causal
+claims inferred from user checkmarks. Prompt additions alone did not remove
+those classes reliably. Production therefore runs a narrow local detector for
+these captured regressions. A clean Qwen draft remains single-pass; a matching
+draft receives a bounded isolated Qwen repair. Standalone directive-controlled
+headings and words such as `Goal`, `Checklist`, and `No blockers` are not
+failures. This detector does not establish semantic correctness, score prose
+quality, or enforce arbitrary custom report structure.
+
+`qwen3.5-122b-a10b` is part of the curated Melious catalog and is the seeded
+Melious thinking default. Existing untouched Melious profiles migrate from
+Mistral thinking to Qwen when the provider-owned Qwen model row exists. The
+profile stores the applied seed generation, so this migration runs once and a
+later deliberate switch back to Mistral is preserved. Foreign providers with a
+matching provider model ID cannot satisfy or capture the migration. Mistral
+remains in the image-recognition slot because this Qwen endpoint is text-only,
+and the resolved profile remains the runtime model selector.
+
+Qwen exposes thinking as an on/off capability rather than distinct native
+effort tiers. In one matched state-classifier probe, requesting
+OpenAI-compatible `high` effort left the same three failures while adding 11%
+input tokens, 6% output tokens, and 6% latency. In the final shared-contract
+screen it passed 4/6 rather than 3/6, but retained the same two core grounding
+failures and cost differences were within run noise. Production therefore
+leaves reasoning at the model or profile default. The enabled-by-default
+`enable_task_agent_evidence_synthesis` flag supplies the evaluated prompt,
+extends the tool descriptions, and selects temperature `0.0` only for the
+exact evaluated Melious Mistral Small 4 and Qwen3.5 122B model IDs. It
+replaces the report directive only when the template still uses the seeded
+default, so evolved and manually customized report structure remains
+authoritative.
+
+The final matched production-routing run on commit `8d34a3088` covered 14
+scenarios per route. Direct Qwen and Mistral plus the isolated Qwen editor each
+passed 14/14 scenarios and 112/112 deterministic scenario checks. Mistral used
+232,322 total tokens and 145.458 seconds; direct Qwen used 233,490 total tokens
+and 157.180 seconds. Of twelve direct-Qwen report cases, five passed local
+preflight and seven received repair; one repair used all three allowed attempts.
+Direct review found Qwen's final reports richer and more natural, while the
+Mistral route remained more compact and conservative. These results support the
+Qwen default and retain Mistral as a selectable alternative; they do not prove
+GLM 5.2 parity or unrestricted reliability on arbitrary user histories.
+
+```mermaid
+flowchart LR
+  Fixtures["Synthetic Lotti wakes"] --> Matrix["Model x prompt matrix"]
+  Matrix --> Conversation["ConversationRepository"]
+  Conversation --> Tools["Production task-agent tool schema"]
+  Tools --> Deterministic["Tool + report checks"]
+  Tools --> Judge["Optional rubric diagnostic"]
+  Tools --> Review["Direct report-quality review"]
+  Deterministic --> Artifacts["Unique local run directory"]
+  Judge --> Artifacts
+  Review --> Artifacts
+  Artifacts --> Archive["Optional private archive"]
+```
 
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine
 prefers Mistral's non-realtime Voxtral transcription model over MLX Qwen when
@@ -626,11 +761,11 @@ It is now a thin **facade**: every public method delegates to one of two collabo
 
 | Operation | Dedicated branches | Fallback |
 | --- | --- | --- |
-| `generate()` | Ollama, Gemini, Mistral | OpenAI-compatible chat streaming |
+| `generate()` | Ollama, Gemini, Mistral, Melious | OpenAI-compatible chat streaming; explicit reasoning effort is forwarded where supported, but omitted from Mistral requests |
 | `generateWithImages()` | Ollama, Melious, Mistral OCR (`/v1/ocr` for `mistral-ocr-*`) | OpenAI-compatible multimodal chat; Gemini receives `reasoning_effort` for its thinking mode |
 | `generateWithAudio()` | Whisper, Voxtral, MLX Audio native bridge, oMLX transcription endpoint, OpenAI transcription endpoint, Mistral transcription endpoint, Melious transcription endpoint | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` for its thinking mode |
-| `generateWithMessages()` | Gemini, Ollama, Mistral | OpenAI-compatible full-history chat |
-| `generateImage()` | Gemini, Alibaba DashScope | Unsupported for all other provider types |
+| `generateWithMessages()` | Gemini, Ollama, Mistral, Melious | OpenAI-compatible full-history chat; explicit reasoning effort is forwarded where supported, but omitted from Mistral requests |
+| `generateImage()` | Gemini, Alibaba DashScope, Melious | Unsupported for all other provider types |
 
 This routing is implemented in code, not inferred from documentation. If a provider type is not branched explicitly for an operation, it falls through to the compatibility client or throws `UnsupportedError`.
 
@@ -822,12 +957,12 @@ Operational details from the seeded definitions:
 - `Local (Ollama)` and `Local Gemma 4 (Ollama)` ship with image-analysis automation but no transcription slot
 - `Local Power (oMLX)` uses `Qwen3.6-35B-A3B-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
 - `Local Gemma 4 (oMLX)` uses `gemma-4-26B-A4B-it-QAT-MLX-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
-- `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, GLM 5.2 for high-end thinking, Flux 2 Klein 9B for image generation, and Voxtral Small 24B for transcription
+- `Melious.ai` uses Qwen3.5 122B A10B for thinking, Mistral Small 4 119B Instruct for image recognition, GLM 5.2 for high-end thinking, Flux 2 Klein 9B for image generation, and Voxtral Small 24B for transcription
 - `Local Gemma 4 Power (Ollama)` currently ships with no default skill assignments
 
 `seedDefaults()` is **strictly seed-on-create**: it looks up each gated-in profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 
-`upgradeExisting()` backfills migration-safe pieces after model rows exist: dangling model slots on default profiles are healed (deleting a provider cascade-deletes its model rows, but the seeded profile kept pointing at the dead row IDs — each such slot resets to the seed template's provider-native default and re-resolves once the rows are recreated; catalog-known provider-native values are treated as pending, not dangling), legacy provider-native slot values are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, untouched Melious profiles move to the Flux 2 Klein 9B image-generation slot and Whisper Large v3 transcription slot and then on to the GLM 5.2 high-end thinking and Voxtral Small 24B transcription defaults, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, resolvable model slots, and non-empty assignment lists are preserved. Besides startup, `upgradeExisting()` also runs right after a provider is created or re-verified (`runFtueSetupForType`, provider save in the settings form), so reconnecting a provider heals its profile immediately — onboarding's first capture resolves through the profile seconds after the key step.
+`upgradeExisting()` backfills migration-safe pieces after model rows exist: dangling model slots on default profiles are healed (deleting a provider cascade-deletes its model rows, but the seeded profile kept pointing at the dead row IDs — each such slot resets to the seed template's provider-native default and re-resolves once the rows are recreated; catalog-known provider-native values are treated as pending, not dangling), legacy provider-native slot values are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, and legacy Melious seeds move through the Qwen thinking, GLM 5.2 high-end thinking, Flux 2 Klein 9B image-generation, and Voxtral Small 24B transcription defaults. Melious stores a seed generation after that one-shot migration; later user model choices are never reclassified as legacy defaults, and provider-native slots resolve only against Melious-owned rows. Default `skillAssignments` are added only to existing default profiles whose assignments are still empty. User-edited names, resolvable model slots outside recognized seed generations, and non-empty assignment lists are preserved. Besides startup, `upgradeExisting()` also runs right after a provider is created or re-verified (`runFtueSetupForType`, provider save in the settings form), so reconnecting a provider heals its profile immediately — onboarding's first capture resolves through the profile seconds after the key step.
 
 `ModelPrepopulationService.backfillNewModels()` seeds known model rows for
 configured providers at startup. Known model identity is the

@@ -3001,6 +3001,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sync AI and task alerts across devices and allow them to schedule local OS notifications.';
 
   @override
+  String get configFlagEnableTaskAgentEvidenceSynthesis =>
+      'Evidence-first task agent';
+
+  @override
+  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
+      'Use evidence-grounded task-agent prompting for efficient Melious models. The default Melious profile uses Qwen 3.5 directly; choosing Mistral Small 4 adds an isolated Qwen report pass and a small amount of latency and usage.';
+
+  @override
   String get configFlagEnableTooltip => 'Enable tooltips';
 
   @override

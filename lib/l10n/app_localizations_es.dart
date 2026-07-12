@@ -3055,6 +3055,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sincroniza alertas de IA y tareas entre tus dispositivos y permite que programen notificaciones locales del sistema.';
 
   @override
+  String get configFlagEnableTaskAgentEvidenceSynthesis =>
+      'Agente de tareas basado en evidencias';
+
+  @override
+  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
+      'Usa indicaciones basadas en evidencias para los agentes de tareas con modelos eficientes de Melious. El perfil predeterminado de Melious usa Qwen 3.5 directamente; si eliges Mistral Small 4, se añade una pasada aislada de Qwen para el informe, con un pequeño aumento de latencia y uso.';
+
+  @override
   String get configFlagEnableTooltip =>
       'Habilitar información sobre herramientas';
 

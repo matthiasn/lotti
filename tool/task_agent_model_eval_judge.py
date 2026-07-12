@@ -1,0 +1,447 @@
+#!/usr/bin/env python3
+"""Judge task-agent eval artifacts with an independent Melious model."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+import os
+import re
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from decimal import Decimal
+from pathlib import Path
+
+DEFAULT_JUDGE_MODEL = "qwen3.5-122b-a10b"
+DEFAULT_JUDGE_BASE_URL = "https://api.melious.ai/v1"
+DEFAULT_ALLOWED_JUDGE_HOSTS = frozenset({"api.melious.ai"})
+ALLOWED_JUDGE_HOSTS_ENV = "TASK_AGENT_EVAL_ALLOWED_JUDGE_HOSTS"
+JUDGE_PIPELINE_VERSION = 2
+JUDGE_RESPONSE_ATTEMPTS = 2
+REPAIR_PROMPT = """
+Your previous response was not a valid judgment object. Return only one JSON
+object with every required rubric score, verdict, and findings field. Do not
+wrap it in Markdown and do not include commentary outside the JSON object.
+""".strip()
+SYSTEM_PROMPT = """
+You are an independent evaluator of a personal task-management agent. Judge
+only the supplied synthetic task context and captured model output. Do not
+reward verbosity. Tool calls are proposed changes, not proof that work outside
+the app was completed.
+
+Return one JSON object with integer scores from 0 to 4 for:
+- factualGrounding: no invented facts or falsely completed work
+- requiredCoverage: material people, blockers, dates, and requested changes
+- checklistQuality: concrete, distinct, verb-first actions with owners retained
+- summaryQuality: concise, useful current-state synthesis rather than a tool log
+- formatCompliance: user-facing language, no internal IDs, no empty sections,
+  no redundant H1 title, and a useful oneLiner/tldr/content shape
+
+Also return `overall` as a number from 0 to 4, `verdict` as excellent/good/weak/
+failed, and `findings` as at most five concise strings. A missing update_report
+is failed only when the scenario has `requiresReport: true`. When it is false,
+reward a brief plain-text completion and penalize unnecessary report churn.
+
+Treat `productReport` as the user-visible report. A model may emit more than one
+`update_report` call; score the final valid report rather than an earlier draft.
+A forbidden or deferred term in the product report is a violation even when the
+report says the term was excluded, deferred, or not added.
+""".strip()
+
+
+def _allowed_judge_hosts() -> frozenset[str]:
+    configured = os.getenv(ALLOWED_JUDGE_HOSTS_ENV, "")
+    return DEFAULT_ALLOWED_JUDGE_HOSTS | frozenset(
+        host.strip().lower() for host in configured.split(",") if host.strip()
+    )
+
+
+def _validate_judge_url(url: str) -> str:
+    try:
+        parsed = urllib.parse.urlparse(url)
+        hostname = parsed.hostname
+    except (TypeError, ValueError) as error:
+        raise ValueError("Judge URL must be a valid HTTP(S) URL") from error
+    if parsed.scheme not in {"http", "https"} or not hostname:
+        raise ValueError("Judge URL must be a valid HTTP(S) URL")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("Judge URL must not contain credentials")
+    if hostname.lower() not in _allowed_judge_hosts():
+        raise ValueError(f"Judge URL host is not allowed: {hostname}")
+    return url
+
+
+def _post(url: str, key: str, body: dict) -> dict:
+    validated_url = _validate_judge_url(url)
+    for attempt in range(3):
+        request = urllib.request.Request(
+            validated_url,
+            data=json.dumps(body).encode(),
+            headers={
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=300) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as error:
+            if error.code < 500 or attempt == 2:
+                raise
+        except urllib.error.URLError:
+            if attempt == 2:
+                raise
+        time.sleep(2**attempt)
+    raise AssertionError("unreachable")
+
+
+def _json_object(text: str) -> dict:
+    cleaned = re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.MULTILINE)
+    start = cleaned.find("{")
+    if start < 0:
+        raise ValueError("judge response contained no JSON object")
+    result, _ = json.JSONDecoder().raw_decode(cleaned[start:])
+    if not isinstance(result, dict):
+        raise ValueError("judge response was not a JSON object")
+    return result
+
+
+def _valid_judgment(judgment: dict) -> bool:
+    rubric_keys = (
+        "factualGrounding",
+        "requiredCoverage",
+        "checklistQuality",
+        "summaryQuality",
+        "formatCompliance",
+    )
+    rubric_scores = [judgment.get(key) for key in rubric_keys]
+    overall = judgment.get("overall")
+    findings = judgment.get("findings")
+    return (
+        all(
+            isinstance(score, int)
+            and not isinstance(score, bool)
+            and 0 <= score <= 4
+            for score in rubric_scores
+        )
+        and isinstance(overall, (int, float))
+        and not isinstance(overall, bool)
+        and math.isfinite(float(overall))
+        and 0 <= overall <= 4
+        and judgment.get("verdict") in {"excellent", "good", "weak", "failed"}
+        and isinstance(findings, list)
+        and len(findings) <= 5
+        and all(isinstance(finding, str) for finding in findings)
+    )
+
+
+def _product_report(result: dict) -> dict | None:
+    for call in reversed(result.get("toolCalls", [])):
+        if call.get("name") != "update_report":
+            continue
+        try:
+            arguments = json.loads(call.get("argumentsJson", ""))
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if isinstance(arguments, dict) and all(
+            isinstance(arguments.get(field), str) and arguments[field].strip()
+            for field in ("oneLiner", "tldr", "content")
+        ):
+            return arguments
+    return None
+
+
+def _scenario_by_id(report: dict) -> dict[str, dict]:
+    return {scenario["id"]: scenario for scenario in report["scenarios"]}
+
+
+def _case_fingerprint(scenario: dict, result: dict) -> str:
+    relevant = {
+        "judgePipelineVersion": JUDGE_PIPELINE_VERSION,
+        "judgePrompt": SYSTEM_PROMPT,
+        "judgeRepairPrompt": REPAIR_PROMPT,
+        "scenario": scenario,
+        "toolCalls": result["toolCalls"],
+        "failureCategory": result["failureCategory"],
+        "finalContent": result.get("finalContent"),
+    }
+    encoded = json.dumps(relevant, ensure_ascii=False, sort_keys=True).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _display_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return str(path)
+
+
+def _response_accounting(response: dict) -> dict:
+    return {
+        "usage": response.get("usage", {}),
+        "environmentImpact": response.get("environment_impact", {}),
+        "billingCost": response.get("billing_cost", {}),
+    }
+
+
+def _aggregate_accounting(attempts: list[dict]) -> dict:
+    usage_keys = (
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "cached_tokens",
+        "reasoning_tokens",
+    )
+    impact_keys = ("energy_kwh", "carbon_g_co2", "water_liters")
+    usage = {
+        key: sum(int(item.get("usage", {}).get(key, 0) or 0) for item in attempts)
+        for key in usage_keys
+        if any(item.get("usage", {}).get(key) is not None for item in attempts)
+    }
+    impact = {
+        key: sum(
+            float(item.get("environmentImpact", {}).get(key, 0) or 0)
+            for item in attempts
+        )
+        for key in impact_keys
+        if any(
+            item.get("environmentImpact", {}).get(key) is not None
+            for item in attempts
+        )
+    }
+    billing = {
+        key: str(
+            sum(
+                Decimal(str(item.get("billingCost", {}).get(key, 0) or 0))
+                for item in attempts
+            )
+        )
+        for key in ("energy", "credits")
+        if any(item.get("billingCost", {}).get(key) is not None for item in attempts)
+    }
+    payment_methods = {
+        item.get("billingCost", {}).get("paid_with")
+        for item in attempts
+        if item.get("billingCost", {}).get("paid_with")
+    }
+    if len(payment_methods) == 1:
+        billing["paid_with"] = payment_methods.pop()
+    return {
+        "attemptCount": len(attempts),
+        "attempts": attempts,
+        "usage": usage,
+        "environmentImpact": impact,
+        "billingCost": billing,
+    }
+
+
+def _judge_case(
+    base_url: str, key: str, model: str, scenario: dict, result: dict
+) -> tuple[dict, dict]:
+    payload = {
+        "scenarioId": scenario["id"],
+        "promptVariant": scenario["promptVariant"],
+        "taskContext": scenario["userMessage"],
+        "expectedToolCalls": scenario["expectedToolCalls"],
+        "requiresReport": scenario["requiresReport"],
+        "isFirstWake": scenario["isFirstWake"],
+        "forbiddenToolNames": scenario["forbiddenToolNames"],
+        "requiredReportTermGroups": scenario["requiredReportTermGroups"],
+        "forbiddenReportTerms": scenario["forbiddenReportTerms"],
+        "forbiddenToolArgumentTerms": scenario["forbiddenToolArgumentTerms"],
+        "capturedToolCalls": result["toolCalls"],
+        "productReport": _product_report(result),
+        "finalAssistantContent": result.get("finalContent"),
+        "deterministicFailure": result["failureCategory"],
+    }
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+    ]
+    accounting_attempts = []
+    for attempt in range(JUDGE_RESPONSE_ATTEMPTS):
+        response = _post(
+            f"{base_url.rstrip('/')}/chat/completions",
+            key,
+            {
+                "model": model,
+                "messages": messages,
+                "temperature": 0,
+                "max_tokens": 4000,
+                "response_format": {"type": "json_object"},
+                "stream": False,
+            },
+        )
+        accounting_attempts.append(_response_accounting(response))
+        content = response["choices"][0]["message"]["content"]
+        try:
+            judgment = _json_object(content)
+            if not _valid_judgment(judgment):
+                raise ValueError("judge response omitted required rubric fields")
+        except (IndexError, KeyError, TypeError, ValueError):
+            if attempt + 1 == JUDGE_RESPONSE_ATTEMPTS:
+                raise
+            messages = [
+                *messages,
+                {"role": "assistant", "content": content},
+                {"role": "user", "content": REPAIR_PROMPT},
+            ]
+            continue
+        return judgment, _aggregate_accounting(accounting_attempts)
+    raise AssertionError("unreachable")
+
+
+def _write_markdown(path: Path, judged: dict) -> None:
+    accounting = [case.get("judgeAccounting", {}) for case in judged["results"]]
+    credits = sum(
+        float(item.get("billingCost", {}).get("credits", 0) or 0)
+        for item in accounting
+    )
+    energy = sum(
+        float(item.get("environmentImpact", {}).get("energy_kwh", 0) or 0)
+        for item in accounting
+    )
+    carbon = sum(
+        float(item.get("environmentImpact", {}).get("carbon_g_co2", 0) or 0)
+        for item in accounting
+    )
+    tokens = sum(
+        int(item.get("usage", {}).get("total_tokens", 0) or 0)
+        for item in accounting
+    )
+    lines = [
+        "# Task-Agent Model Eval with Independent Judge",
+        "",
+        f"Judge: `{judged['judgeModel']}`",
+        f"Judge accounting: {tokens} tokens, {credits:.7f} credits, "
+        f"{energy:.6f} kWh, {carbon:.3f} g CO2.",
+        "",
+        "| Model | Scenario | Prompt | Deterministic | Judge | Verdict |",
+        "| --- | --- | --- | ---: | ---: | --- |",
+    ]
+    for case in judged["results"]:
+        score = case["judge"].get("overall", 0)
+        lines.append(
+            f"| {case['profileName']} | {case['scenarioId']} | {case['promptVariant']} | "
+            f"{case['deterministicScore'] * 100:.0f}% | {score:.1f}/4 | "
+            f"{case['judge'].get('verdict', 'parse_error')} |"
+        )
+    lines += ["", "## Findings"]
+    for case in judged["results"]:
+        lines += ["", f"### {case['profileName']} / {case['scenarioId']}"]
+        findings = case["judge"].get("findings", [])
+        lines.extend(f"- {finding}" for finding in findings)
+        if not findings:
+            lines.append("- No judge findings.")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input", type=Path)
+    parser.add_argument("--json", type=Path, required=True)
+    parser.add_argument("--markdown", type=Path, required=True)
+    parser.add_argument(
+        "--judge-model",
+        default=os.getenv("TASK_AGENT_EVAL_JUDGE_MODEL", DEFAULT_JUDGE_MODEL),
+    )
+    parser.add_argument(
+        "--allow-errors",
+        action="store_true",
+        help="Write parse-error cases without failing the command.",
+    )
+    args = parser.parse_args()
+
+    key = os.getenv("MELIOUS_API_KEY") or os.getenv("UP_UPSTREAM_API_KEY")
+    if not key:
+        raise SystemExit("Missing MELIOUS_API_KEY or UP_UPSTREAM_API_KEY")
+    configured_base_url = os.getenv("MELIOUS_BASE_URL") or os.getenv(
+        "UP_UPSTREAM_BASE_URL", DEFAULT_JUDGE_BASE_URL
+    )
+    try:
+        base_url = _validate_judge_url(configured_base_url)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
+    report = json.loads(args.input.read_text(encoding="utf-8"))
+    scenarios = _scenario_by_id(report)
+    previous_by_case = {}
+    if args.json.is_file():
+        previous = json.loads(args.json.read_text(encoding="utf-8"))
+        if previous.get("judgeModel") == args.judge_model:
+            previous_by_case = {
+                (case["profileName"], case["scenarioId"]): case
+                for case in previous.get("results", [])
+                if _valid_judgment(case.get("judge", {}))
+            }
+    judged_results = []
+    judge_errors = []
+    for result in report["results"]:
+        scenario = scenarios[result["scenarioId"]]
+        case_key = (result["profileName"], result["scenarioId"])
+        fingerprint = _case_fingerprint(scenario, result)
+        previous_case = previous_by_case.get(case_key)
+        if (
+            previous_case is not None
+            and previous_case.get("caseFingerprint") == fingerprint
+        ):
+            print(f"Reusing {case_key[0]} / {case_key[1]}", flush=True)
+            judged_results.append(
+                {**previous_case, "caseFingerprint": fingerprint}
+            )
+            continue
+        print(
+            f"Judging {result['profileName']} / {result['scenarioId']}...",
+            flush=True,
+        )
+        try:
+            judgment, accounting = _judge_case(
+                base_url, key, args.judge_model, scenario, result
+            )
+        except Exception as error:  # Preserve the rest of a comparison matrix.
+            judgment = {
+                "verdict": "parse_error",
+                "overall": 0,
+                "findings": [str(error)],
+            }
+            accounting = {}
+            judge_errors.append(f"{case_key[0]} / {case_key[1]}: {error}")
+        judged_results.append(
+            {
+                "profileName": result["profileName"],
+                "providerModelId": result["providerModelId"],
+                "scenarioId": result["scenarioId"],
+                "promptVariant": scenario["promptVariant"],
+                "caseFingerprint": fingerprint,
+                "deterministicFailure": result["failureCategory"],
+                "deterministicScore": result["qualityScore"],
+                "judge": judgment,
+                "judgeAccounting": accounting,
+            }
+        )
+    judged = {
+        "schemaVersion": 1,
+        "kind": "lotti.taskAgentModelEvalJudgments",
+        "judgeModel": args.judge_model,
+        "source": _display_path(args.input),
+        "results": judged_results,
+    }
+    args.json.parent.mkdir(parents=True, exist_ok=True)
+    args.markdown.parent.mkdir(parents=True, exist_ok=True)
+    args.json.write_text(
+        json.dumps(judged, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    _write_markdown(args.markdown, judged)
+    if judge_errors and not args.allow_errors:
+        raise SystemExit(
+            f"{len(judge_errors)} judge case(s) failed; artifacts were written:\n"
+            + "\n".join(judge_errors)
+        )
+
+
+if __name__ == "__main__":
+    main()

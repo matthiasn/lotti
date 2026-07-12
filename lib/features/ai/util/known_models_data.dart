@@ -4,9 +4,9 @@ import 'package:lotti/features/ai/util/known_models.dart';
 /// Curated Melious.ai defaults.
 ///
 /// Melious exposes a larger live model catalog through `/models`, but these
-/// rows are seeded immediately when the provider is added. The set mirrors the
-/// default Melious profile: fast general thinking, GLM 5.2 high-end thinking,
-/// image recognition, Flux cover art, and Voxtral/Whisper transcription.
+/// rows are seeded immediately when the provider is added. The set contains
+/// the default Melious profile models plus evaluated alternatives such as Qwen
+/// 3.5 122B A10B for direct task-agent execution.
 const List<KnownModel> meliousModels = [
   KnownModel(
     providerModelId: meliousDeepseekV4ProModelId,
@@ -60,8 +60,20 @@ const List<KnownModel> meliousModels = [
     isReasoningModel: true,
     supportsFunctionCalling: true,
     description:
-        'Default Melious thinking and image-recognition model. Multimodal '
-        'Mistral Small 4 119B Instruct hosted on Melious infrastructure.',
+        'Default Melious image-recognition model and an alternative task-agent '
+        'executor. Multimodal Mistral Small 4 119B Instruct hosted on Melious '
+        'infrastructure.',
+  ),
+  KnownModel(
+    providerModelId: meliousQwen35122BA10BModelId,
+    name: 'Qwen3.5 122B A10B',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Default Melious thinking model. Qwen3.5 122B A10B provides direct '
+        'task-agent execution with evidence-first reporting.',
   ),
   KnownModel(
     providerModelId: meliousDeepseekV4FlashModelId,

@@ -20,6 +20,7 @@ import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -27,6 +28,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -497,6 +499,255 @@ void main() {
     });
 
     group('successful execute', () {
+      void stubMeliousTaskAgentModel({
+        required String providerId,
+        required String modelConfigId,
+        required String modelName,
+        required String providerModelId,
+        AgentTemplateVersionEntity? templateVersion,
+        InferenceProviderType providerType = InferenceProviderType.melious,
+      }) {
+        final provider =
+            AiConfig.inferenceProvider(
+                  id: providerId,
+                  baseUrl: 'https://api.melious.ai/v1',
+                  apiKey: 'test-key',
+                  name: 'Melious',
+                  createdAt: DateTime(2024),
+                  inferenceProviderType: providerType,
+                )
+                as AiConfigInferenceProvider;
+        final model =
+            AiConfig.model(
+                  id: modelConfigId,
+                  name: modelName,
+                  providerModelId: providerModelId,
+                  inferenceProviderId: provider.id,
+                  createdAt: DateTime(2024),
+                  inputModalities: const [Modality.text],
+                  outputModalities: const [Modality.text],
+                  isReasoningModel: true,
+                  supportsFunctionCalling: true,
+                )
+                as AiConfigModel;
+        final template = makeTestTemplate(modelId: providerModelId);
+        when(
+          () => mockTemplateService.getTemplateForAgent(agentId),
+        ).thenAnswer((_) async => template);
+        when(
+          () => mockTemplateService.getActiveVersion(template.id),
+        ).thenAnswer((_) async => templateVersion ?? testTemplateVersion);
+        when(
+          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [model]);
+        when(
+          () => mockAiConfigRepository.getConfigById(provider.id),
+        ).thenAnswer((_) async => provider);
+      }
+
+      Future<({WakeResult result, List<dynamic> captured})>
+      runMistralReportEditorSafetyCase({
+        required List<String> editorArguments,
+        bool throwOnEditor = false,
+        bool throwOnEditorCreate = false,
+        String? reportDirective,
+        String? taskLanguageCode,
+        DateTime? taskDue,
+      }) async {
+        stubMeliousTaskAgentModel(
+          providerId: 'melious-provider-safety',
+          modelConfigId: 'mistral-model-safety',
+          modelName: 'Mistral Small 4 119B',
+          providerModelId: meliousMistralSmall4119BInstructModelId,
+          templateVersion: reportDirective == null
+              ? null
+              : makeTestTemplateVersion(reportDirective: reportDirective),
+        );
+        if (taskLanguageCode != null || taskDue != null) {
+          when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
+            (_) async => _makeTask(
+              taskId,
+              languageCode: taskLanguageCode,
+              due: taskDue,
+            ),
+          );
+        }
+
+        var callIndex = 0;
+        var conversationCount = 0;
+        final safetyRepo =
+            MockConversationRepository(
+                mockConversationManager,
+                onSystemMessage: (_) {
+                  conversationCount++;
+                  if (throwOnEditorCreate && conversationCount == 2) {
+                    throw StateError('editor conversation unavailable');
+                  }
+                },
+              )
+              ..maxDelegateCalls = throwOnEditor
+                  ? 2
+                  : 1 + editorArguments.length
+              ..sendMessageDelegate =
+                  ({
+                    required conversationId,
+                    required message,
+                    required model,
+                    required provider,
+                    required inferenceRepo,
+                    tools,
+                    toolChoice,
+                    temperature = 0.7,
+                    strategy,
+                  }) async {
+                    callIndex++;
+                    if (callIndex == 1 && strategy is TaskAgentStrategy) {
+                      await strategy.processToolCalls(
+                        toolCalls: [
+                          const ChatCompletionMessageToolCall(
+                            id: 'priority-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.updateTaskPriority,
+                              arguments: '{"priority":"P1"}',
+                            ),
+                          ),
+                          ChatCompletionMessageToolCall(
+                            id: 'draft-report-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.updateReport,
+                              arguments: jsonEncode({
+                                'oneLiner': 'Task configured',
+                                'tldr': 'Priority updated. Ready to begin.',
+                                'content': '## Progress\nTask configured.',
+                              }),
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                      return const InferenceUsage(
+                        inputTokens: 100,
+                        outputTokens: 20,
+                      );
+                    }
+                    if (throwOnEditor) {
+                      throw StateError('editor unavailable');
+                    }
+                    await strategy!.processToolCalls(
+                      toolCalls: [
+                        ChatCompletionMessageToolCall(
+                          id: 'editor-call-$callIndex',
+                          type: ChatCompletionMessageToolCallType.function,
+                          function: ChatCompletionMessageFunctionCall(
+                            name: TaskAgentToolNames.updateReport,
+                            arguments: editorArguments[callIndex - 2],
+                          ),
+                        ),
+                      ],
+                      manager: mockConversationManager,
+                    );
+                    return const InferenceUsage(
+                      inputTokens: 5,
+                      outputTokens: 2,
+                    );
+                  };
+        final safetyWorkflow = createTestWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: safetyRepo,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          evidenceSynthesisEnabled: true,
+        );
+
+        final result = await safetyWorkflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        return (result: result, captured: captured);
+      }
+
+      Future<
+        ({
+          WakeResult result,
+          List<dynamic> captured,
+          List<String> models,
+        })
+      >
+      runMistralWithoutDraft({
+        required AgentReportEntity? previousReport,
+      }) async {
+        stubMeliousTaskAgentModel(
+          providerId: 'melious-provider-no-draft',
+          modelConfigId: 'mistral-model-no-draft',
+          modelName: 'Mistral Small 4 119B',
+          providerModelId: meliousMistralSmall4119BInstructModelId,
+        );
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => previousReport);
+
+        final models = <String>[];
+        final noDraftRepo = MockConversationRepository(mockConversationManager)
+          ..maxDelegateCalls = previousReport == null ? 2 : 1
+          ..sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                models.add(model);
+                return const InferenceUsage(
+                  inputTokens: 10,
+                  outputTokens: 2,
+                );
+              };
+        final noDraftWorkflow = createTestWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: noDraftRepo,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          evidenceSynthesisEnabled: true,
+        );
+
+        final result = await noDraftWorkflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        return (result: result, captured: captured, models: models);
+      }
+
       setUp(() {
         stubFullExecutePath(
           mockAgentRepository: mockAgentRepository,
@@ -991,6 +1242,905 @@ void main() {
           // geminiModel fixture relies on AiConfigModel.geminiThinkingMode's
           // default value (low), which the workflow forwards to the wrapper.
           expect(wrapper.geminiThinkingMode, GeminiThinkingMode.low);
+        },
+      );
+
+      test(
+        'evidence synthesis keeps default temperature for unevaluated models',
+        () async {
+          String? systemMessage;
+          double? capturedTemperature;
+          List<ChatCompletionTool>? capturedTools;
+          final capturingRepo =
+              MockConversationRepository(
+                  mockConversationManager,
+                  onSystemMessage: (message) => systemMessage = message,
+                )
+                ..sendMessageDelegate =
+                    ({
+                      required conversationId,
+                      required message,
+                      required model,
+                      required provider,
+                      required inferenceRepo,
+                      tools,
+                      toolChoice,
+                      temperature = 0.7,
+                      strategy,
+                    }) async {
+                      capturedTemperature = temperature;
+                      capturedTools = tools;
+                      if (strategy is TaskAgentStrategy) {
+                        await strategy.processToolCalls(
+                          toolCalls: const [
+                            ChatCompletionMessageToolCall(
+                              id: 'report-call',
+                              type: ChatCompletionMessageToolCallType.function,
+                              function: ChatCompletionMessageFunctionCall(
+                                name: TaskAgentToolNames.updateReport,
+                                arguments:
+                                    '{"oneLiner":"Next action","tldr":"Critical path","content":"Current state"}',
+                              ),
+                            ),
+                          ],
+                          manager: mockConversationManager,
+                        );
+                      }
+                      return null;
+                    };
+          final optimizedWorkflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            evidenceSynthesisEnabled: true,
+          );
+
+          final result = await optimizedWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          final reportTool = capturedTools!.singleWhere(
+            (tool) => tool.function.name == TaskAgentToolNames.updateReport,
+          );
+          final properties =
+              reportTool.function.parameters!['properties']!
+                  as Map<String, dynamic>;
+          expect(result.success, isTrue);
+          expect(optimizedWorkflow.evidenceSynthesisEnabled, isTrue);
+          expect(capturedTemperature, 0.3);
+          expect(
+            systemMessage,
+            contains('## Evidence-First Synthesis Protocol'),
+          );
+          expect(
+            reportTool.function.description,
+            contains('stale report claims'),
+          );
+          expect(
+            (properties['tldr']! as Map)['description'],
+            contains('checked item means only user-marked complete'),
+          );
+          expect(
+            (properties['tldr']! as Map)['description'],
+            isNot(contains('include 1-2 relevant emojis')),
+          );
+        },
+      );
+
+      test(
+        'Qwen evidence mode uses its tuned direct-executor path without an '
+        'editor pass',
+        () async {
+          stubMeliousTaskAgentModel(
+            providerId: 'melious-provider-qwen',
+            modelConfigId: 'qwen-model-config',
+            modelName: 'Qwen3.5 122B A10B',
+            providerModelId: meliousQwen35122BA10BModelId,
+          );
+
+          String? systemMessage;
+          double? capturedTemperature;
+          final models = <String>[];
+          final capturingRepo =
+              MockConversationRepository(
+                  mockConversationManager,
+                  onSystemMessage: (message) => systemMessage = message,
+                )
+                ..maxDelegateCalls = 1
+                ..sendMessageDelegate =
+                    ({
+                      required conversationId,
+                      required message,
+                      required model,
+                      required provider,
+                      required inferenceRepo,
+                      tools,
+                      toolChoice,
+                      temperature = 0.7,
+                      strategy,
+                    }) async {
+                      models.add(model);
+                      capturedTemperature = temperature;
+                      await strategy!.processToolCalls(
+                        toolCalls: const [
+                          ChatCompletionMessageToolCall(
+                            id: 'qwen-report-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.updateReport,
+                              arguments:
+                                  '{"oneLiner":"Review the active risk","tldr":"Approval remains pending.","content":"Marta must approve deployment."}',
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                      return const InferenceUsage(
+                        inputTokens: 90,
+                        outputTokens: 15,
+                      );
+                    };
+          final qwenWorkflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            evidenceSynthesisEnabled: true,
+          );
+
+          final result = await qwenWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(models, [meliousQwen35122BA10BModelId]);
+          expect(capturedTemperature, 0);
+          expect(systemMessage, contains('## Scope Erasure'));
+          expect(systemMessage, contains('Write free-form Markdown'));
+          expect(systemMessage, isNot(contains('Examples of the boundary:')));
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final editorAudit =
+              capturedEntitiesOfType<AgentMessageEntity>(
+                captured,
+              ).singleWhere(
+                (message) =>
+                    message.metadata.toolName ==
+                    '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen',
+              );
+          expect(editorAudit.metadata.errorMessage, isNull);
+        },
+      );
+
+      for (final testCase in const [
+        (
+          modelName: 'Mistral Small 4 119B',
+          modelId: meliousMistralSmall4119BInstructModelId,
+        ),
+        (
+          modelName: 'Qwen3.5 122B A10B',
+          modelId: meliousQwen35122BA10BModelId,
+        ),
+      ]) {
+        test(
+          '${testCase.modelName} evidence mode records the resolved route '
+          'when its provider is not eligible for Qwen editing',
+          () async {
+            stubMeliousTaskAgentModel(
+              providerId: 'compatible-provider-${testCase.modelId}',
+              modelConfigId: 'compatible-model-${testCase.modelId}',
+              modelName: testCase.modelName,
+              providerModelId: testCase.modelId,
+              providerType: InferenceProviderType.openAi,
+            );
+            final models = <String>[];
+            final capturingRepo =
+                MockConversationRepository(mockConversationManager)
+                  ..maxDelegateCalls = 1
+                  ..sendMessageDelegate =
+                      ({
+                        required conversationId,
+                        required message,
+                        required model,
+                        required provider,
+                        required inferenceRepo,
+                        tools,
+                        toolChoice,
+                        temperature = 0.7,
+                        strategy,
+                      }) async {
+                        models.add(model);
+                        await strategy!.processToolCalls(
+                          toolCalls: const [
+                            ChatCompletionMessageToolCall(
+                              id: 'executor-report-call',
+                              type: ChatCompletionMessageToolCallType.function,
+                              function: ChatCompletionMessageFunctionCall(
+                                name: TaskAgentToolNames.updateReport,
+                                arguments:
+                                    '{"oneLiner":"Review next","tldr":"Review the current task.","content":"Review the current task."}',
+                              ),
+                            ),
+                          ],
+                          manager: mockConversationManager,
+                        );
+                        return const InferenceUsage(
+                          inputTokens: 20,
+                          outputTokens: 5,
+                        );
+                      };
+            final workflow = createTestWorkflow(
+              agentRepository: mockAgentRepository,
+              conversationRepository: capturingRepo,
+              aiInputRepository: mockAiInputRepository,
+              aiConfigRepository: mockAiConfigRepository,
+              journalDb: mockJournalDb,
+              cloudInferenceRepository: mockCloudInferenceRepository,
+              journalRepository: mockJournalRepository,
+              checklistRepository: mockChecklistRepository,
+              labelsRepository: mockLabelsRepository,
+              syncService: mockSyncService,
+              templateService: mockTemplateService,
+              evidenceSynthesisEnabled: true,
+            );
+
+            final result = await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'entity-a'},
+              threadId: threadId,
+            );
+
+            expect(result.success, isTrue);
+            expect(models, [testCase.modelId]);
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+            expect(
+              capturedEntitiesOfType<AgentMessageEntity>(captured).where(
+                (message) =>
+                    message.metadata.toolName?.startsWith(
+                      TaskAgentReportEditor.auditToolPrefix,
+                    ) ??
+                    false,
+              ),
+              isEmpty,
+            );
+          },
+        );
+      }
+
+      test(
+        'Qwen evidence mode repairs a known direct-report regression and '
+        'logs its issue code',
+        () async {
+          stubMeliousTaskAgentModel(
+            providerId: 'melious-provider-qwen-repair',
+            modelConfigId: 'qwen-model-repair',
+            modelName: 'Qwen3.5 122B A10B',
+            providerModelId: meliousQwen35122BA10BModelId,
+          );
+
+          final models = <String>[];
+          final messages = <String>[];
+          final domainLogger = MockDomainLogger();
+          when(
+            () => domainLogger.log(
+              any(),
+              any(),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).thenReturn(null);
+          final capturingRepo =
+              MockConversationRepository(mockConversationManager)
+                ..maxDelegateCalls = 2
+                ..sendMessageDelegate =
+                    ({
+                      required conversationId,
+                      required message,
+                      required model,
+                      required provider,
+                      required inferenceRepo,
+                      tools,
+                      toolChoice,
+                      temperature = 0.7,
+                      strategy,
+                    }) async {
+                      models.add(model);
+                      messages.add(message);
+                      if (strategy is TaskAgentStrategy) {
+                        await strategy.processToolCalls(
+                          toolCalls: [
+                            const ChatCompletionMessageToolCall(
+                              id: 'qwen-action-call',
+                              type: ChatCompletionMessageToolCallType.function,
+                              function: ChatCompletionMessageFunctionCall(
+                                name: TaskAgentToolNames
+                                    .addMultipleChecklistItems,
+                                arguments:
+                                    '{"items":[{"title":"Fix profile seeding"}]}',
+                              ),
+                            ),
+                            ChatCompletionMessageToolCall(
+                              id: 'qwen-draft-report-call',
+                              type: ChatCompletionMessageToolCallType.function,
+                              function: ChatCompletionMessageFunctionCall(
+                                name: TaskAgentToolNames.updateReport,
+                                arguments: jsonEncode({
+                                  'oneLiner': 'Fix profile seeding',
+                                  'tldr':
+                                      'Task is ready to begin. No estimate or '
+                                      'due date is set.',
+                                  'content':
+                                      'One workflow item was identified: fix '
+                                      'profile seeding.',
+                                }),
+                              ),
+                            ),
+                          ],
+                          manager: mockConversationManager,
+                        );
+                        return const InferenceUsage(
+                          inputTokens: 100,
+                          outputTokens: 20,
+                        );
+                      }
+                      await strategy!.processToolCalls(
+                        toolCalls: [
+                          ChatCompletionMessageToolCall(
+                            id: 'qwen-repaired-report-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.updateReport,
+                              arguments: jsonEncode({
+                                'oneLiner': 'Fix profile seeding',
+                                'tldr': 'Fix profile seeding next.',
+                                'content': 'Fix profile seeding.',
+                              }),
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                      return const InferenceUsage(
+                        inputTokens: 30,
+                        outputTokens: 8,
+                      );
+                    };
+          final qwenWorkflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            domainLogger: domainLogger,
+            evidenceSynthesisEnabled: true,
+          );
+
+          final result = await qwenWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(models, [
+            meliousQwen35122BA10BModelId,
+            meliousQwen35122BA10BModelId,
+          ]);
+          expect(messages.last, contains('requiredCorrections'));
+          expect(messages.last, contains('processNarration'));
+          verify(
+            () => domainLogger.log(
+              LogDomain.agentWorkflow,
+              'direct Qwen regression detector matched: processNarration',
+              subDomain: 'reportEditor',
+            ),
+          ).called(1);
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          expect(
+            capturedEntitiesOfType<AgentReportEntity>(captured).single.content,
+            'Fix profile seeding.',
+          );
+          final editorAudit =
+              capturedEntitiesOfType<AgentMessageEntity>(
+                captured,
+              ).singleWhere(
+                (message) =>
+                    message.metadata.toolName ==
+                    '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen_repaired',
+              );
+          expect(editorAudit.metadata.errorMessage, isNull);
+          final usage = capturedTokenUsageEntities(captured);
+          expect(usage, hasLength(2));
+          expect(
+            usage.map((entry) => entry.modelId),
+            everyElement(meliousQwen35122BA10BModelId),
+          );
+        },
+      );
+
+      test(
+        'Mistral evidence mode accepts a grounded Qwen report revision and '
+        'attributes usage to both models',
+        () async {
+          stubMeliousTaskAgentModel(
+            providerId: 'melious-provider-001',
+            modelConfigId: 'mistral-model-config',
+            modelName: 'Mistral Small 4 119B',
+            providerModelId: meliousMistralSmall4119BInstructModelId,
+          );
+
+          final models = <String>[];
+          final messages = <String>[];
+          final toolNames = <List<String>>[];
+          final toolChoices = <ChatCompletionToolChoiceOption?>[];
+          final capturingRepo =
+              MockConversationRepository(
+                  mockConversationManager,
+                )
+                ..maxDelegateCalls = 2
+                ..sendMessageDelegate =
+                    ({
+                      required conversationId,
+                      required message,
+                      required model,
+                      required provider,
+                      required inferenceRepo,
+                      tools,
+                      toolChoice,
+                      temperature = 0.7,
+                      strategy,
+                    }) async {
+                      models.add(model);
+                      messages.add(message);
+                      toolNames.add(
+                        tools?.map((tool) => tool.function.name).toList() ?? [],
+                      );
+                      toolChoices.add(toolChoice);
+                      if (strategy is TaskAgentStrategy) {
+                        await strategy.processToolCalls(
+                          toolCalls: [
+                            const ChatCompletionMessageToolCall(
+                              id: 'priority-call',
+                              type: ChatCompletionMessageToolCallType.function,
+                              function: ChatCompletionMessageFunctionCall(
+                                name: TaskAgentToolNames.updateTaskPriority,
+                                arguments: '{"priority":"P1"}',
+                              ),
+                            ),
+                            ChatCompletionMessageToolCall(
+                              id: 'draft-report-call',
+                              type: ChatCompletionMessageToolCallType.function,
+                              function: ChatCompletionMessageFunctionCall(
+                                name: TaskAgentToolNames.updateReport,
+                                arguments: jsonEncode({
+                                  'oneLiner': 'Task configured',
+                                  'tldr': 'Priority updated. Ready to begin.',
+                                  'content': '## Progress\nTask configured.',
+                                }),
+                              ),
+                            ),
+                          ],
+                          manager: mockConversationManager,
+                        );
+                        return const InferenceUsage(
+                          inputTokens: 100,
+                          outputTokens: 20,
+                        );
+                      }
+                      await strategy!.processToolCalls(
+                        toolCalls: [
+                          ChatCompletionMessageToolCall(
+                            id: 'edited-report-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.updateReport,
+                              arguments: jsonEncode({
+                                'oneLiner': 'Validate the P1 model candidate',
+                                'tldr':
+                                    'The P1 validation is ready for its two '
+                                    'remaining actions.',
+                                'content':
+                                    'Run the local evaluation, then compare the '
+                                    'candidate with the reference.',
+                              }),
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                      return const InferenceUsage(
+                        inputTokens: 50,
+                        outputTokens: 10,
+                      );
+                    };
+          final optimizedWorkflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            evidenceSynthesisEnabled: true,
+          );
+
+          final result = await optimizedWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(models, [
+            meliousMistralSmall4119BInstructModelId,
+            meliousQwen35122BA10BModelId,
+          ]);
+          expect(toolNames.first, contains(TaskAgentToolNames.updateReport));
+          expect(toolNames.last, [TaskAgentToolNames.updateReport]);
+          expect(toolChoices.first, isNull);
+          expect(toolChoices.last, isNotNull);
+          expect(messages.last, contains('materialTaskState'));
+          expect(messages.last, contains('"priority":"P1"'));
+          expect(messages.last, isNot(contains('## Current Task Context')));
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final editorAudit =
+              capturedEntitiesOfType<AgentMessageEntity>(
+                captured,
+              ).singleWhere(
+                (message) =>
+                    message.metadata.toolName ==
+                    '${TaskAgentReportEditor.auditToolPrefix}_accepted',
+              );
+          expect(editorAudit.kind, AgentMessageKind.toolResult);
+          expect(editorAudit.metadata.errorMessage, isNull);
+          final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
+          expect(reports, hasLength(1));
+          expect(
+            reports.single.content,
+            contains('compare the candidate with the reference'),
+          );
+          final usage = capturedTokenUsageEntities(captured);
+          expect(usage, hasLength(2));
+          expect(
+            usage.map((entry) => entry.modelId),
+            containsAll([
+              meliousMistralSmall4119BInstructModelId,
+              meliousQwen35122BA10BModelId,
+            ]),
+          );
+          expect(
+            usage
+                .singleWhere(
+                  (entry) =>
+                      entry.modelId == meliousMistralSmall4119BInstructModelId,
+                )
+                .inputTokens,
+            100,
+          );
+          expect(
+            usage
+                .singleWhere(
+                  (entry) => entry.modelId == meliousQwen35122BA10BModelId,
+                )
+                .inputTokens,
+            50,
+          );
+        },
+      );
+
+      test(
+        'Mistral evidence mode records not_needed when an unchanged wake has '
+        'no new report',
+        () async {
+          final previousReport =
+              AgentDomainEntity.agentReport(
+                    id: 'previous-report',
+                    agentId: agentId,
+                    scope: 'current',
+                    createdAt: testDate,
+                    vectorClock: null,
+                    content: 'Current report.',
+                    tldr: 'Current report.',
+                    oneLiner: 'Current report',
+                  )
+                  as AgentReportEntity;
+          final (:result, :captured, :models) = await runMistralWithoutDraft(
+            previousReport: previousReport,
+          );
+
+          expect(result.success, isTrue);
+          expect(models, [meliousMistralSmall4119BInstructModelId]);
+          final editorAudit =
+              capturedEntitiesOfType<AgentMessageEntity>(
+                captured,
+              ).singleWhere(
+                (message) =>
+                    message.metadata.toolName ==
+                    '${TaskAgentReportEditor.auditToolPrefix}_not_needed',
+              );
+          expect(editorAudit.metadata.errorMessage, isNull);
+          expect(capturedTokenUsageEntities(captured), hasLength(1));
+        },
+      );
+
+      test(
+        'Mistral evidence mode records failure when the required report retry '
+        'still produces no draft',
+        () async {
+          final (:result, :captured, :models) = await runMistralWithoutDraft(
+            previousReport: null,
+          );
+
+          expect(result.success, isTrue);
+          expect(models, [
+            meliousMistralSmall4119BInstructModelId,
+            meliousMistralSmall4119BInstructModelId,
+          ]);
+          final editorAudit =
+              capturedEntitiesOfType<AgentMessageEntity>(
+                captured,
+              ).singleWhere(
+                (message) =>
+                    message.metadata.toolName ==
+                    '${TaskAgentReportEditor.auditToolPrefix}_failed',
+              );
+          expect(
+            editorAudit.metadata.errorMessage,
+            'executor_missing_required_report',
+          );
+          expect(
+            capturedTokenUsageEntities(captured).map((entry) => entry.modelId),
+            everyElement(meliousMistralSmall4119BInstructModelId),
+          );
+        },
+      );
+
+      test(
+        'Mistral evidence mode preserves its draft after invalid editor '
+        'candidates',
+        () async {
+          final (:result, :captured) = await runMistralReportEditorSafetyCase(
+            editorArguments: [
+              jsonEncode({
+                'oneLiner': 'Run evaluation',
+                'tldr': 'No blockers.',
+                'content': 'Checklist created.',
+              }),
+              jsonEncode({
+                'oneLiner': 'Run evaluation',
+                'tldr': 'Ready to begin.',
+                'content': 'The checklist contains two items.',
+              }),
+              jsonEncode({
+                'oneLiner': 'Run evaluation',
+                'tldr': 'No recorded outcomes.',
+                'content': 'Checklist items added.',
+              }),
+            ],
+          );
+
+          expect(result.success, isTrue);
+          final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
+          expect(reports, hasLength(1));
+          expect(reports.single.content, '## Progress\nTask configured.');
+          final usage = capturedTokenUsageEntities(captured);
+          expect(usage, hasLength(2));
+          final editorUsage = usage.singleWhere(
+            (entry) => entry.modelId == meliousQwen35122BA10BModelId,
+          );
+          expect(editorUsage.inputTokens, 15);
+          expect(editorUsage.outputTokens, 6);
+          final editorAudit =
+              capturedEntitiesOfType<AgentMessageEntity>(
+                captured,
+              ).singleWhere(
+                (message) =>
+                    message.metadata.toolName ==
+                    '${TaskAgentReportEditor.auditToolPrefix}_rejected',
+              );
+          expect(
+            editorAudit.metadata.errorMessage,
+            contains('processNarration'),
+          );
+        },
+      );
+
+      test(
+        'Mistral evidence mode preserves its draft when the editor fails',
+        () async {
+          final (:result, :captured) = await runMistralReportEditorSafetyCase(
+            editorArguments: const [],
+            throwOnEditor: true,
+          );
+
+          expect(result.success, isTrue);
+          final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
+          expect(reports, hasLength(1));
+          expect(reports.single.content, '## Progress\nTask configured.');
+          final usage = capturedTokenUsageEntities(captured);
+          expect(usage, hasLength(1));
+          expect(
+            usage.single.modelId,
+            meliousMistralSmall4119BInstructModelId,
+          );
+          final editorAudit =
+              capturedEntitiesOfType<AgentMessageEntity>(
+                captured,
+              ).singleWhere(
+                (message) =>
+                    message.metadata.toolName ==
+                    '${TaskAgentReportEditor.auditToolPrefix}_failed',
+              );
+          expect(editorAudit.metadata.errorMessage, 'StateError');
+        },
+      );
+
+      test(
+        'Mistral evidence mode preserves its draft when editor conversation '
+        'creation fails',
+        () async {
+          final (:result, :captured) = await runMistralReportEditorSafetyCase(
+            editorArguments: const [],
+            throwOnEditorCreate: true,
+          );
+
+          expect(result.success, isTrue);
+          final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
+          expect(reports.single.content, '## Progress\nTask configured.');
+          expect(capturedTokenUsageEntities(captured), hasLength(1));
+          final editorAudit =
+              capturedEntitiesOfType<AgentMessageEntity>(
+                captured,
+              ).singleWhere(
+                (message) =>
+                    message.metadata.toolName ==
+                    '${TaskAgentReportEditor.auditToolPrefix}_failed',
+              );
+          expect(editorAudit.metadata.errorMessage, 'StateError');
+        },
+      );
+
+      test(
+        'Mistral evidence mode validates the editor against the task language',
+        () async {
+          final (:result, :captured) = await runMistralReportEditorSafetyCase(
+            taskLanguageCode: 'de',
+            editorArguments: [
+              jsonEncode({
+                'oneLiner': 'P1-Aufgabe prüfen',
+                'tldr': 'Die P1-Prüfung bleibt offen.',
+                'content':
+                    '## Nächster Schritt\nPrüfen Sie den Modellkandidaten.',
+              }),
+            ],
+          );
+
+          expect(result.success, isTrue);
+          final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
+          expect(reports.single.content, '## Progress\nTask configured.');
+          final usage = capturedTokenUsageEntities(captured);
+          expect(
+            usage
+                .singleWhere(
+                  (entry) => entry.modelId == meliousQwen35122BA10BModelId,
+                )
+                .inputTokens,
+            5,
+          );
+        },
+      );
+
+      test(
+        'Mistral evidence mode restores an existing task deadline',
+        () async {
+          final (:result, :captured) = await runMistralReportEditorSafetyCase(
+            taskLanguageCode: 'de',
+            taskDue: DateTime(2026, 9, 30),
+            editorArguments: [
+              jsonEncode({
+                'oneLiner': 'P1-Beta vorbereiten',
+                'tldr': 'Die P1-Beta hat vier offene Aktionen.',
+                'content': '## Nächster Schritt\nAPI-Umfang mit Ben klären.',
+              }),
+              jsonEncode({
+                'oneLiner': 'P1-Beta bis 30. September 2026 vorbereiten',
+                'tldr':
+                    'Die P1-Beta ist bis zum 30. September 2026 '
+                    'vorzubereiten.',
+                'content':
+                    '## Nächster Schritt\nAPI-Umfang mit Ben bis zur Beta am '
+                    '30. September 2026 klären.',
+              }),
+            ],
+          );
+
+          expect(result.success, isTrue);
+          final report = capturedEntitiesOfType<AgentReportEntity>(
+            captured,
+          ).single;
+          expect(report.content, contains('30. September 2026'));
+          final editorUsage = capturedTokenUsageEntities(captured).singleWhere(
+            (entry) => entry.modelId == meliousQwen35122BA10BModelId,
+          );
+          expect(editorUsage.inputTokens, 10);
+        },
+      );
+
+      test(
+        'Mistral evidence mode edits reports under custom directives',
+        () async {
+          final (:result, :captured) = await runMistralReportEditorSafetyCase(
+            reportDirective: '''
+Write a compact release decision memo. Start with `## Recommendation`, then
+use `## Next moves` for concrete pending actions. Omit empty sections and do
+not describe task configuration or tool activity as progress.
+''',
+            editorArguments: [
+              jsonEncode({
+                'oneLiner': 'P1 evaluation is the immediate release priority',
+                'tldr': 'The P1 evaluation remains the next release action.',
+                'content':
+                    '## Recommendation\nRun the P1 evaluation.\n\n'
+                    '## Next moves\n- Complete the evaluation.',
+              }),
+            ],
+          );
+
+          expect(result.success, isTrue);
+          final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
+          expect(reports, hasLength(1));
+          expect(reports.single.content, contains('## Recommendation'));
+          expect(reports.single.content, contains('## Next moves'));
+          final usage = capturedTokenUsageEntities(captured);
+          expect(usage, hasLength(2));
+          expect(
+            usage.map((entry) => entry.modelId),
+            containsAll([
+              meliousMistralSmall4119BInstructModelId,
+              meliousQwen35122BA10BModelId,
+            ]),
+          );
         },
       );
 
@@ -1873,13 +3023,14 @@ void main() {
 
       test(
         'issues a second sendMessage with toolChoice forced to update_report '
-        'when the strategy ended without a report',
+        'at the model default when evidence synthesis has no report',
         () async {
           final calls =
               <
                 ({
                   String message,
                   ChatCompletionToolChoiceOption? toolChoice,
+                  double temperature,
                 })
               >[];
 
@@ -1899,11 +3050,29 @@ void main() {
                   temperature = 0.7,
                   strategy,
                 }) async {
-                  calls.add((message: message, toolChoice: toolChoice));
+                  calls.add((
+                    message: message,
+                    toolChoice: toolChoice,
+                    temperature: temperature,
+                  ));
                   return null;
                 };
 
-          final result = await workflow.execute(
+          final evidenceWorkflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            evidenceSynthesisEnabled: true,
+          );
+          final result = await evidenceWorkflow.execute(
             agentIdentity: testAgentIdentity,
             runKey: runKey,
             triggerTokens: {'entity-a'},
@@ -1912,6 +3081,7 @@ void main() {
 
           expect(result.success, isTrue);
           expect(calls, hasLength(2));
+          expect(calls.map((call) => call.temperature), [0.3, 0.3]);
 
           // First call: normal wake, no forced tool choice.
           expect(calls[0].toolChoice, isNull);
@@ -1932,6 +3102,177 @@ void main() {
             calls[1].message,
             contains('You did not call `update_report`'),
           );
+        },
+      );
+
+      test(
+        'forces update_report after a successful mutation when a prior report '
+        'exists',
+        () async {
+          final previousReport =
+              AgentDomainEntity.agentReport(
+                    id: 'previous-report',
+                    agentId: agentId,
+                    scope: 'current',
+                    createdAt: testDate,
+                    vectorClock: null,
+                    content: 'Old report without the new checklist action.',
+                    tldr: 'Old report.',
+                    oneLiner: 'Old state',
+                  )
+                  as AgentReportEntity;
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => previousReport);
+
+          final calls = <ChatCompletionToolChoiceOption?>[];
+          mockConversationRepository
+            ..maxDelegateCalls = 2
+            ..sendMessageDelegate =
+                ({
+                  required conversationId,
+                  required message,
+                  required model,
+                  required provider,
+                  required inferenceRepo,
+                  tools,
+                  toolChoice,
+                  temperature = 0.7,
+                  strategy,
+                }) async {
+                  calls.add(toolChoice);
+                  if (strategy is! TaskAgentStrategy) return null;
+                  if (toolChoice == null) {
+                    await strategy.processToolCalls(
+                      toolCalls: const [
+                        ChatCompletionMessageToolCall(
+                          id: 'add-action',
+                          type: ChatCompletionMessageToolCallType.function,
+                          function: ChatCompletionMessageFunctionCall(
+                            name: TaskAgentToolNames.addMultipleChecklistItems,
+                            arguments: '{"items":[{"title":"Run release QA"}]}',
+                          ),
+                        ),
+                      ],
+                      manager: mockConversationManager,
+                    );
+                  } else {
+                    await strategy.processToolCalls(
+                      toolCalls: const [
+                        ChatCompletionMessageToolCall(
+                          id: 'fresh-report',
+                          type: ChatCompletionMessageToolCallType.function,
+                          function: ChatCompletionMessageFunctionCall(
+                            name: TaskAgentToolNames.updateReport,
+                            arguments:
+                                r'''{"oneLiner":"Release QA is next","tldr":"Run release QA next.","content":"## Next action\nRun release QA."}''',
+                          ),
+                        ),
+                      ],
+                      manager: mockConversationManager,
+                    );
+                  }
+                  return null;
+                };
+
+          final evidenceWorkflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            evidenceSynthesisEnabled: true,
+          );
+
+          final result = await evidenceWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(calls, hasLength(2));
+          expect(calls.first, isNull);
+          expect(calls.last, isNotNull);
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          expect(
+            capturedEntitiesOfType<AgentReportEntity>(captured).single.content,
+            contains('Run release QA'),
+          );
+        },
+      );
+
+      test(
+        'keeps the prior report without retrying when no mutation succeeds',
+        () async {
+          final previousReport =
+              AgentDomainEntity.agentReport(
+                    id: 'previous-report',
+                    agentId: agentId,
+                    scope: 'current',
+                    createdAt: testDate,
+                    vectorClock: null,
+                    content: 'Current report.',
+                    tldr: 'Current state.',
+                    oneLiner: 'Current state',
+                  )
+                  as AgentReportEntity;
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => previousReport);
+
+          final calls = <ChatCompletionToolChoiceOption?>[];
+          mockConversationRepository
+            ..maxDelegateCalls = 2
+            ..sendMessageDelegate =
+                ({
+                  required conversationId,
+                  required message,
+                  required model,
+                  required provider,
+                  required inferenceRepo,
+                  tools,
+                  toolChoice,
+                  temperature = 0.7,
+                  strategy,
+                }) async {
+                  calls.add(toolChoice);
+                  return null;
+                };
+
+          final evidenceWorkflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            evidenceSynthesisEnabled: true,
+          );
+
+          final result = await evidenceWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(calls, [isNull]);
         },
       );
 
@@ -7524,7 +8865,7 @@ int _countOccurrences(String haystack, String needle) {
   return count;
 }
 
-Task _makeTask(String id) {
+Task _makeTask(String id, {String? languageCode, DateTime? due}) {
   return Task(
     meta: Metadata(
       id: id,
@@ -7543,6 +8884,8 @@ Task _makeTask(String id) {
       dateTo: DateTime(2024, 6),
       statusHistory: [],
       title: 'Linked task',
+      due: due,
+      languageCode: languageCode,
     ),
   );
 }

@@ -84,18 +84,22 @@ bool _flagMatchesQuery(
 /// without the surrounding `SliverBoxAdapterPage` chrome. Hosts the
 /// keyword search bar plus the filtered flag list.
 class FlagsBody extends ConsumerStatefulWidget {
-  const FlagsBody({super.key});
+  const FlagsBody({
+    super.key,
+    this.displayedItems = defaultDisplayedItems,
+  });
 
   /// Canonical render order for the flag list. Adding a flag here
   /// also requires icon + title + subtitle wiring below; the
   /// modular flag tests assert each end of that chain.
-  static const List<String> displayedItems = [
+  static const List<String> defaultDisplayedItems = [
     privateFlag,
     enableNotificationsFlag,
     recordLocationFlag,
     enableTooltipFlag,
     enableAiStreamingFlag,
     enableAiSummaryTtsFlag,
+    enableTaskAgentEvidenceSynthesisFlag,
     enableLoggingFlag,
     enableMatrixFlag,
     resendAttachments,
@@ -115,6 +119,10 @@ class FlagsBody extends ConsumerStatefulWidget {
     showSidebarWakeQueueFlag,
     enableForkHealingFlag,
   ];
+
+  /// Flag names to render, in display order.
+  @visibleForTesting
+  final List<String> displayedItems;
 
   @override
   ConsumerState<FlagsBody> createState() => _FlagsBodyState();
@@ -143,6 +151,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.bolt_rounded;
       case enableAiSummaryTtsFlag:
         return Icons.volume_up_rounded;
+      case enableTaskAgentEvidenceSynthesisFlag:
+        return Icons.fact_check_outlined;
       case enableLoggingFlag:
         return Icons.bug_report_rounded;
       case enableMatrixFlag:
@@ -198,6 +208,10 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableAiStreamingDescription;
       case enableAiSummaryTtsFlag:
         return context.messages.configFlagEnableAiSummaryTtsDescription;
+      case enableTaskAgentEvidenceSynthesisFlag:
+        return context
+            .messages
+            .configFlagEnableTaskAgentEvidenceSynthesisDescription;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLoggingDescription;
       case enableMatrixFlag:
@@ -253,6 +267,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableAiStreaming;
       case enableAiSummaryTtsFlag:
         return context.messages.configFlagEnableAiSummaryTts;
+      case enableTaskAgentEvidenceSynthesisFlag:
+        return context.messages.configFlagEnableTaskAgentEvidenceSynthesis;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLogging;
       case enableMatrixFlag:
@@ -328,7 +344,7 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
                 for (final flag in snapshot.data ?? <ConfigFlag>{})
                   flag.name: flag,
               };
-              final orderedFlags = FlagsBody.displayedItems
+              final orderedFlags = widget.displayedItems
                   .map((name) => flagLookup[name])
                   .nonNulls
                   .toList();

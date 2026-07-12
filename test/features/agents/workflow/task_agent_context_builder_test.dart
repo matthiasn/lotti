@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:mocktail/mocktail.dart';
@@ -302,6 +303,87 @@ void main() {
       }
       final names = tools.map((t) => t.function.name).toSet();
       expect(names, contains('update_report'));
+    });
+
+    test('tightens report and mutation authority only in evidence mode', () {
+      final baseline = builder.buildToolDefinitions();
+      final optimized = builder.buildToolDefinitions(evidenceSynthesis: true);
+      final baselineByName = {
+        for (final tool in baseline) tool.function.name: tool.function,
+      };
+      final optimizedByName = {
+        for (final tool in optimized) tool.function.name: tool.function,
+      };
+      final optimizedReport = optimizedByName['update_report']!;
+
+      expect(
+        baselineByName[TaskAgentToolNames.addMultipleChecklistItems]!
+            .description,
+        isNot(contains('concrete multi-step plan')),
+      );
+      expect(
+        optimizedByName[TaskAgentToolNames.addMultipleChecklistItems]!
+            .description,
+        contains('concrete multi-step plan'),
+      );
+      expect(
+        baselineByName[TaskAgentToolNames.updateTaskDueDate]!.description,
+        isNot(contains('explicitly asks')),
+      );
+      expect(
+        optimizedByName[TaskAgentToolNames.updateTaskDueDate]!.description,
+        contains('explicitly asks'),
+      );
+      expect(
+        baselineByName[TaskAgentToolNames.setTaskStatus]!.description,
+        isNot(contains('explicitly requests')),
+      );
+      expect(
+        optimizedByName[TaskAgentToolNames.setTaskStatus]!.description,
+        contains('explicitly requests'),
+      );
+
+      expect(
+        optimizedReport.description,
+        contains('matching successful'),
+      );
+      expect(
+        optimizedReport.description,
+        contains('stale report claims'),
+      );
+      final baselineReport = baselineByName['update_report']!;
+      final optimizedParameters = optimizedReport.parameters!;
+      final baselineParameters = baselineReport.parameters!;
+      expect(
+        optimizedParameters['required'],
+        baselineParameters['required'],
+      );
+      expect(
+        optimizedParameters['additionalProperties'],
+        baselineParameters['additionalProperties'],
+      );
+      final optimizedProperties =
+          optimizedParameters['properties']! as Map<String, dynamic>;
+      final baselineProperties =
+          baselineParameters['properties']! as Map<String, dynamic>;
+      expect(optimizedProperties.keys, baselineProperties.keys);
+      expect(
+        (optimizedProperties['content']! as Map<String, dynamic>)['type'],
+        (baselineProperties['content']! as Map<String, dynamic>)['type'],
+      );
+      expect(
+        (optimizedProperties['content']!
+            as Map<String, dynamic>)['description'],
+        contains('free-form Markdown'),
+      );
+      expect(
+        optimizedByName['set_task_title']!.description,
+        baselineByName['set_task_title']!.description,
+      );
+      expect(
+        optimizedByName['set_task_title']!.parameters,
+        equals(baselineByName['set_task_title']!.parameters),
+      );
     });
   });
 

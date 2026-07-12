@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/tools/correction_examples_builder.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart'
     show LogErrorCallback;
+import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/services/time_service.dart';
@@ -404,16 +405,29 @@ class TaskAgentContextBuilder {
 
   /// Converts [AgentToolRegistry.taskAgentTools] to OpenAI-compatible
   /// [ChatCompletionTool] objects.
-  List<ChatCompletionTool> buildToolDefinitions() {
+  List<ChatCompletionTool> buildToolDefinitions({
+    bool evidenceSynthesis = false,
+  }) {
     return AgentToolRegistry.taskAgentTools.where((def) => def.enabled).map((
       def,
     ) {
+      final optimizeReport =
+          evidenceSynthesis && def.name == TaskAgentToolNames.updateReport;
       return ChatCompletionTool(
         type: ChatCompletionToolType.function,
         function: FunctionObject(
           name: def.name,
-          description: def.description,
-          parameters: def.parameters,
+          description: evidenceSynthesis
+              ? TaskAgentEvidenceSynthesis.toolDescription(
+                  def.name,
+                  def.description,
+                )
+              : def.description,
+          parameters: optimizeReport
+              ? TaskAgentEvidenceSynthesis.updateReportParameters(
+                  def.parameters,
+                )
+              : def.parameters,
         ),
       );
     }).toList();

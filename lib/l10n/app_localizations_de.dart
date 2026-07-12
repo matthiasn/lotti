@@ -3039,6 +3039,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Synchronisiere KI- und Aufgabenhinweise zwischen deinen Geräten und erlaube ihnen, lokale Systemmitteilungen zu planen.';
 
   @override
+  String get configFlagEnableTaskAgentEvidenceSynthesis =>
+      'Belegorientierter Aufgabenagent';
+
+  @override
+  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
+      'Verwendet belegorientierte Prompts für Aufgabenagenten mit effizienten Melious-Modellen. Im Melious-Standardprofil arbeitet Qwen 3.5 direkt; wenn du Mistral Small 4 auswählst, kommt ein isolierter Qwen-Durchlauf für den Bericht hinzu, der Laufzeit und Verbrauch geringfügig erhöht.';
+
+  @override
   String get configFlagEnableTooltip => 'Tooltips aktivieren';
 
   @override

@@ -1189,6 +1189,8 @@
   "configFlagEnableSessionRatingsDescription": "Po zastavení časovače zobrazit rychlé hodnocení relace.",
   "configFlagEnableSyncedAlerts": "Synchronizovaná upozornění",
   "configFlagEnableSyncedAlertsDescription": "Synchronizuj upozornění od AI a úkolů mezi zařízeními a dovol jim plánovat místní systémová oznámení.",
+  "configFlagEnableTaskAgentEvidenceSynthesis": "Úkolový agent založený na důkazech",
+  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Používá pro úsporné modely Melious zadání úkolových agentů založené na důkazech. Výchozí profil Melious používá Qwen 3.5 přímo; při volbě Mistral Small 4 se pro report přidá izolovaný průchod Qwen, který mírně zvýší latenci a spotřebu.",
   "configFlagEnableTooltip": "Povolit nápovědy",
   "configFlagEnableTooltipDescription": "Zobrazit užitečné nápovědy v celé aplikaci, které vás provedou funkcemi.",
   "configFlagEnableVectorSearch": "Vektorové vyhledávání",

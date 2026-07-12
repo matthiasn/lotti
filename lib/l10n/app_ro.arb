@@ -1380,6 +1380,8 @@
   "configFlagEnableSessionRatingsDescription": "Solicită o evaluare rapidă a sesiunii la oprirea unui cronometru.",
   "configFlagEnableSyncedAlerts": "Alerte sincronizate",
   "configFlagEnableSyncedAlertsDescription": "Sincronizați alertele AI și de sarcini între dispozitivele dvs. și permiteți programarea notificărilor locale de sistem.",
+  "configFlagEnableTaskAgentEvidenceSynthesis": "Agent de sarcini bazat pe dovezi",
+  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Utilizează instrucțiuni bazate pe dovezi pentru agenții de sarcini cu modelele Melious eficiente. Profilul Melious implicit folosește direct Qwen 3.5; dacă alegeți Mistral Small 4, se adaugă o etapă Qwen izolată pentru raport, cu o ușoară creștere a latenței și consumului.",
   "configFlagEnableTooltip": "Activează sfaturile",
   "configFlagEnableTooltipDescription": "Afișează sfaturi utile în întreaga aplicație pentru a vă ghida prin funcții.",
   "configFlagEnableVectorSearch": "Căutare vectorială",

@@ -23,6 +23,9 @@ const profileLocalGemmaOmlxId = 'profile-local-gemma-omlx-001';
 const profileLocalGemmaId = 'profile-local-gemma-001';
 const profileLocalGemmaPowerId = 'profile-local-gemma-power-001';
 
+/// Current bundled-default generation for the Melious inference profile.
+const meliousProfileSeedGeneration = 1;
+
 const _logTag = 'ProfileSeedingService';
 const _localPowerName = 'Local Power (oMLX)';
 const _legacyLocalPowerName = 'Local Power (Ollama)';
@@ -104,7 +107,12 @@ class ProfileSeedingService {
   Future<void> seedDefaults() async {
     var seededCount = 0;
     final models = await _fetchModelRows();
-    final usableTypes = await _fetchUsableProviderTypes();
+    final usableProviders = (await _fetchProviderRows())
+        .where((provider) => provider.isUsable)
+        .toList(growable: false);
+    final usableTypes = {
+      for (final provider in usableProviders) provider.inferenceProviderType,
+    };
 
     for (final template in defaultProfiles) {
       if (!usableTypes.contains(providerTypeByProfileId[template.id])) {
@@ -112,7 +120,14 @@ class ProfileSeedingService {
       }
       final existing = await _repo.getConfigById(template.id);
       if (existing != null) continue;
-      final profile = _withResolvedModelConfigIds(template, models);
+      final profile = _withResolvedModelConfigIds(
+        template,
+        models,
+        preferredProviderIds: _providerIdsForProfile(
+          template.id,
+          usableProviders,
+        ),
+      );
       await _repo.saveConfig(profile);
       seededCount++;
     }
@@ -198,9 +213,9 @@ class ProfileSeedingService {
   /// `AiConfigModel.id` when the match is unambiguous, migrates the untouched
   /// old Local Power seed from Ollama to oMLX, migrates untouched Melious image
   /// generation and transcription to the Flux 2 Klein 9B and Whisper Large v3
-  /// defaults, moves untouched Melious profiles to the GLM 5.2 high-end and
-  /// Voxtral transcription defaults, then backfills default skill
-  /// assignments only for default profiles whose assignments are empty.
+  /// defaults, moves untouched Melious profiles to Qwen thinking, GLM 5.2
+  /// high-end, and Voxtral transcription defaults, then backfills default
+  /// skill assignments only for default profiles whose assignments are empty.
   ///
   /// Runs at startup (after the model backfill) and again after a provider is
   /// created or re-verified mid-session (`runFtueSetupForType`, provider
@@ -209,6 +224,17 @@ class ProfileSeedingService {
   Future<void> upgradeExisting() async {
     var upgradedCount = 0;
     final models = await _fetchModelRows();
+    final providers = await _fetchProviderRows();
+    final meliousProviderIds = {
+      for (final provider in providers)
+        if (provider.inferenceProviderType == InferenceProviderType.melious)
+          provider.id,
+    };
+    final meliousModels = models
+        .where(
+          (model) => meliousProviderIds.contains(model.inferenceProviderId),
+        )
+        .toList(growable: false);
     final templatesById = {
       for (final template in defaultProfiles) template.id: template,
     };
@@ -225,10 +251,22 @@ class ProfileSeedingService {
         );
       }
       upgraded = _withUpgradedOmlxWhisperTranscription(upgraded, models);
-      upgraded = _withUpgradedMeliousWhisperTranscription(upgraded, models);
-      upgraded = _withUpgradedMeliousFluxImageGeneration(upgraded, models);
-      upgraded = _withUpgradedMeliousGlmAndVoxtralDefaults(upgraded, models);
-      upgraded = _withResolvedModelConfigIds(upgraded, models);
+      upgraded = _withUpgradedMeliousWhisperTranscription(
+        upgraded,
+        meliousModels,
+      );
+      upgraded = _withUpgradedMeliousFluxImageGeneration(
+        upgraded,
+        meliousModels,
+      );
+      upgraded = _withUpgradedMeliousDefaults(upgraded, meliousModels);
+      upgraded = _withResolvedModelConfigIds(
+        upgraded,
+        models,
+        preferredProviderIds: upgraded.id == profileMeliousId
+            ? meliousProviderIds
+            : null,
+      );
 
       // Only backfill default skill assignments for default profiles with
       // empty assignments. Non-empty assignment lists and non-default profiles
@@ -395,18 +433,42 @@ class ProfileSeedingService {
   }
 
   /// Moves an untouched Melious default profile to the current seed targets:
-  /// GLM 5.2 in the high-end thinking slot (was DeepSeek V4 Pro) and Voxtral
-  /// Small in the transcription slot (was Whisper Large v3 / Turbo). Runs
-  /// after the Whisper/Flux migrations so legacy profiles chain through all
-  /// default generations; each slot only moves when its replacement model row
-  /// exists (backfilled from `meliousModels` on startup).
-  static AiConfigInferenceProfile _withUpgradedMeliousGlmAndVoxtralDefaults(
+  /// Qwen in the thinking slot (was Mistral Small 4), GLM 5.2 in the high-end
+  /// thinking slot (was DeepSeek V4 Pro), and Voxtral Small in the transcription
+  /// slot (was Whisper Large v3 / Turbo). Mistral remains in the vision slot
+  /// because the curated Qwen endpoint is text-only. Runs after the
+  /// Whisper/Flux migrations so legacy profiles chain through every default
+  /// generation; each slot only moves when its replacement model row exists.
+  static AiConfigInferenceProfile _withUpgradedMeliousDefaults(
     AiConfigInferenceProfile profile,
     List<AiConfigModel> models,
   ) {
-    if (!_isUntouchedMeliousDefaultProfile(profile, models)) return profile;
+    if (profile.id != profileMeliousId ||
+        profile.seedGeneration >= meliousProfileSeedGeneration) {
+      return profile;
+    }
+    if (!_isUntouchedMeliousDefaultProfile(profile, models)) {
+      return profile.copyWith(seedGeneration: meliousProfileSeedGeneration);
+    }
+
+    final currentTargetsAvailable = [
+      meliousQwen35122BA10BModelId,
+      meliousGlm52ModelId,
+      meliousVoxtralSmall24B2507ModelId,
+      meliousFlux2Klein9BModelId,
+    ].every((modelId) => _slotResolvesToModelRow(modelId, models));
 
     var upgraded = profile;
+    if (_slotMatchesProviderModelId(
+          profile.thinkingModelId,
+          meliousMistralSmall4119BInstructModelId,
+          models,
+        ) &&
+        _slotResolvesToModelRow(meliousQwen35122BA10BModelId, models)) {
+      upgraded = upgraded.copyWith(
+        thinkingModelId: meliousQwen35122BA10BModelId,
+      );
+    }
     if (_slotMatchesProviderModelId(
           profile.thinkingHighEndModelId,
           meliousDeepseekV4ProModelId,
@@ -424,7 +486,9 @@ class ProfileSeedingService {
         transcriptionModelId: meliousVoxtralSmall24B2507ModelId,
       );
     }
-    return upgraded;
+    return currentTargetsAvailable
+        ? upgraded.copyWith(seedGeneration: meliousProfileSeedGeneration)
+        : upgraded;
   }
 
   /// Whether [profile] still carries only seeded Melious defaults — every
@@ -435,11 +499,11 @@ class ProfileSeedingService {
     List<AiConfigModel> models,
   ) {
     return profile.id == profileMeliousId &&
+        profile.seedGeneration < meliousProfileSeedGeneration &&
         profile.name == 'Melious.ai' &&
         profile.description == null &&
-        _slotMatchesProviderModelId(
+        _meliousThinkingSlotMatchesDefaultOrLegacy(
           profile.thinkingModelId,
-          meliousMistralSmall4119BInstructModelId,
           models,
         ) &&
         (_slotMatchesProviderModelId(
@@ -475,6 +539,22 @@ class ProfileSeedingService {
         profile.pinnedHostId == null;
   }
 
+  static bool _meliousThinkingSlotMatchesDefaultOrLegacy(
+    String? slotValue,
+    List<AiConfigModel> models,
+  ) {
+    return _slotMatchesProviderModelId(
+          slotValue,
+          meliousQwen35122BA10BModelId,
+          models,
+        ) ||
+        _slotMatchesProviderModelId(
+          slotValue,
+          meliousMistralSmall4119BInstructModelId,
+          models,
+        );
+  }
+
   /// Whether the transcription slot is unset or still points at one of the
   /// previous Whisper defaults — the states eligible for the Voxtral upgrade.
   static bool _meliousTranscriptionSlotMatchesWhisperDefaultOrNull(
@@ -489,35 +569,11 @@ class ProfileSeedingService {
     AiConfigInferenceProfile profile,
     List<AiConfigModel> models,
   ) {
-    return profile.id == profileMeliousId &&
-        profile.name == 'Melious.ai' &&
-        profile.description == null &&
-        _slotMatchesProviderModelId(
-          profile.thinkingModelId,
-          meliousMistralSmall4119BInstructModelId,
-          models,
-        ) &&
-        _slotMatchesProviderModelId(
-          profile.thinkingHighEndModelId,
-          meliousDeepseekV4ProModelId,
-          models,
-        ) &&
-        _slotMatchesProviderModelId(
-          profile.imageRecognitionModelId,
-          meliousMistralSmall4119BInstructModelId,
-          models,
-        ) &&
+    return _isUntouchedMeliousDefaultProfile(profile, models) &&
         _meliousTranscriptionSlotNeedsUpgrade(
           profile.transcriptionModelId,
           models,
         ) &&
-        _meliousImageGenerationSlotMatchesDefaultOrLegacy(
-          profile.imageGenerationModelId,
-          models,
-        ) &&
-        profile.isDefault &&
-        !profile.desktopOnly &&
-        profile.pinnedHostId == null &&
         _slotResolvesToModelRow(meliousWhisperLargeV3ModelId, models);
   }
 
@@ -525,35 +581,11 @@ class ProfileSeedingService {
     AiConfigInferenceProfile profile,
     List<AiConfigModel> models,
   ) {
-    return profile.id == profileMeliousId &&
-        profile.name == 'Melious.ai' &&
-        profile.description == null &&
-        _slotMatchesProviderModelId(
-          profile.thinkingModelId,
-          meliousMistralSmall4119BInstructModelId,
-          models,
-        ) &&
-        _slotMatchesProviderModelId(
-          profile.thinkingHighEndModelId,
-          meliousDeepseekV4ProModelId,
-          models,
-        ) &&
-        _slotMatchesProviderModelId(
-          profile.imageRecognitionModelId,
-          meliousMistralSmall4119BInstructModelId,
-          models,
-        ) &&
-        _meliousTranscriptionSlotMatchesDefaultOrLegacy(
-          profile.transcriptionModelId,
-          models,
-        ) &&
+    return _isUntouchedMeliousDefaultProfile(profile, models) &&
         _meliousImageGenerationSlotNeedsUpgrade(
           profile.imageGenerationModelId,
           models,
         ) &&
-        profile.isDefault &&
-        !profile.desktopOnly &&
-        profile.pinnedHostId == null &&
         _slotResolvesToModelRow(meliousFlux2Klein9BModelId, models);
   }
 
@@ -686,14 +718,6 @@ class ProfileSeedingService {
     );
   }
 
-  Future<Set<InferenceProviderType>> _fetchUsableProviderTypes() async {
-    final providers = await _fetchProviderRows();
-    return {
-      for (final provider in providers)
-        if (provider.isUsable) provider.inferenceProviderType,
-    };
-  }
-
   /// Whether [profile] is still an untouched default seed that no usable
   /// provider can serve — the only state [removeOrphanedDefaultSeeds] is
   /// allowed to delete.
@@ -732,45 +756,65 @@ class ProfileSeedingService {
 
   static AiConfigInferenceProfile _withResolvedModelConfigIds(
     AiConfigInferenceProfile profile,
-    List<AiConfigModel> models,
-  ) {
+    List<AiConfigModel> models, {
+    Set<String>? preferredProviderIds,
+  }) {
     return profile.copyWith(
-      thinkingModelId: _resolveModelSlot(profile.thinkingModelId, models),
+      thinkingModelId: _resolveModelSlot(
+        profile.thinkingModelId,
+        models,
+        preferredProviderIds: preferredProviderIds,
+      ),
       thinkingHighEndModelId: _resolveOptionalModelSlot(
         profile.thinkingHighEndModelId,
         models,
+        preferredProviderIds: preferredProviderIds,
       ),
       imageRecognitionModelId: _resolveOptionalModelSlot(
         profile.imageRecognitionModelId,
         models,
+        preferredProviderIds: preferredProviderIds,
       ),
       transcriptionModelId: _resolveOptionalModelSlot(
         profile.transcriptionModelId,
         models,
+        preferredProviderIds: preferredProviderIds,
       ),
       imageGenerationModelId: _resolveOptionalModelSlot(
         profile.imageGenerationModelId,
         models,
+        preferredProviderIds: preferredProviderIds,
       ),
     );
   }
 
   static String? _resolveOptionalModelSlot(
     String? slotValue,
-    List<AiConfigModel> models,
-  ) {
+    List<AiConfigModel> models, {
+    Set<String>? preferredProviderIds,
+  }) {
     if (slotValue == null) return null;
-    return _resolveModelSlot(slotValue, models);
+    return _resolveModelSlot(
+      slotValue,
+      models,
+      preferredProviderIds: preferredProviderIds,
+    );
   }
 
   static String _resolveModelSlot(
     String slotValue,
-    List<AiConfigModel> models,
-  ) {
+    List<AiConfigModel> models, {
+    Set<String>? preferredProviderIds,
+  }) {
     if (models.any((model) => model.id == slotValue)) return slotValue;
 
     final matches = models
-        .where((model) => model.providerModelId == slotValue)
+        .where(
+          (model) =>
+              model.providerModelId == slotValue &&
+              (preferredProviderIds == null ||
+                  preferredProviderIds.contains(model.inferenceProviderId)),
+        )
         .toList(growable: false);
     if (matches.length == 1) return matches.single.id;
     return slotValue;
@@ -832,6 +876,18 @@ class ProfileSeedingService {
     );
   }
 
+  static Set<String>? _providerIdsForProfile(
+    String profileId,
+    List<AiConfigInferenceProvider> providers,
+  ) {
+    final providerType = providerTypeByProfileId[profileId];
+    if (providerType == null) return null;
+    return {
+      for (final provider in providers)
+        if (provider.inferenceProviderType == providerType) provider.id,
+    };
+  }
+
   /// Whether [slotValue] is a provider-native model ID from the bundled
   /// known-models catalog — a value runtime resolution can still satisfy once
   /// a provider of the owning type exists, and therefore not dangling.
@@ -891,13 +947,14 @@ class ProfileSeedingService {
     AiConfigInferenceProfile(
       id: profileMeliousId,
       name: 'Melious.ai',
-      thinkingModelId: meliousMistralSmall4119BInstructModelId,
+      thinkingModelId: meliousQwen35122BA10BModelId,
       thinkingHighEndModelId: meliousGlm52ModelId,
       imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
       transcriptionModelId: meliousVoxtralSmall24B2507ModelId,
       imageGenerationModelId: meliousFlux2Klein9BModelId,
       skillAssignments: _defaultSkillAssignments,
       isDefault: true,
+      seedGeneration: meliousProfileSeedGeneration,
       createdAt: DateTime(2026),
     ),
     AiConfigInferenceProfile(

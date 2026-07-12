@@ -1101,6 +1101,38 @@ void main() {
         expect((reqMessages[1] as Map)['content'], equals('Hello'));
       });
 
+      test('serializes reasoning effort for supported models', () async {
+        final events = [
+          createSseChunkEvent(content: 'Response'),
+          createSseFinalEvent(),
+        ];
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
+
+        final stream = repository.generateTextWithMessages(
+          messages: const [
+            ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.string('Hello'),
+            ),
+          ],
+          model: model,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          reasoningEffort: ReasoningEffort.high,
+        );
+
+        await stream.toList();
+
+        final request =
+            verify(
+                  () => mockHttpClient.send(captureAny()),
+                ).captured.single
+                as http.Request;
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(requestBody, isNot(contains('reasoning_effort')));
+      });
+
       test('should convert assistant messages with tool calls', () async {
         // Arrange
         final events = [
@@ -1669,6 +1701,32 @@ void main() {
         expect(results[0].choices?.first.delta?.content, equals('Chunk 1'));
         expect(results[1].choices?.first.delta?.content, equals('Chunk 2'));
         expect(results[2].choices?.first.delta?.content, equals('Chunk 3'));
+      });
+
+      test('buffers an SSE event split across transport chunks', () async {
+        final event =
+            'data: ${jsonEncode(createSseChunkEvent(content: 'Split chunk'))}\n\n';
+        final splitAt = event.length ~/ 2;
+        final stream = Stream.fromIterable([
+          utf8.encode(event.substring(0, splitAt)),
+          utf8.encode(event.substring(splitAt)),
+          utf8.encode('data: [DONE]\n\n'),
+        ]);
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => http.StreamedResponse(stream, 200),
+        );
+
+        final results = await repository
+            .generateText(
+              prompt: 'Hi',
+              model: model,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            )
+            .toList();
+
+        expect(results, hasLength(1));
+        expect(results.single.choices?.single.delta?.content, 'Split chunk');
       });
 
       test('should handle malformed SSE data gracefully', () async {

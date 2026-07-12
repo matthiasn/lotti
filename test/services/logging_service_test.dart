@@ -803,11 +803,10 @@ void main() {
           reason: 'the 500 ms flush timer should have fired its callback',
         );
         productionFlushCallback!();
-        // Deterministically drain the genuine async file write the callback
-        // kicked off. `pumpEventQueue()` runs the real event loop until it is
-        // idle — no fixed sleep, no wall-clock polling — so the timer-initiated
-        // write has landed once it returns.
-        await pumpEventQueue();
+        // Await the service's shutdown contract. The callback has already
+        // moved the buffered line into an active drain, which flush must wait
+        // for before returning.
+        await bufferedLogging.flushAllForTest();
 
         final file = findGeneralLog();
         expect(

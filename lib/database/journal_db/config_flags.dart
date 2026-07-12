@@ -43,6 +43,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableTaskAgentEvidenceSynthesisFlag,
+      description: 'Enable evidence-first task-agent inference?',
+      status: true,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: recordLocationFlag,
       description: 'Record geolocation?',
       status: false,

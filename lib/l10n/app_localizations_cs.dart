@@ -3045,6 +3045,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Synchronizuj upozornění od AI a úkolů mezi zařízeními a dovol jim plánovat místní systémová oznámení.';
 
   @override
+  String get configFlagEnableTaskAgentEvidenceSynthesis =>
+      'Úkolový agent založený na důkazech';
+
+  @override
+  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
+      'Používá pro úsporné modely Melious zadání úkolových agentů založené na důkazech. Výchozí profil Melious používá Qwen 3.5 přímo; při volbě Mistral Small 4 se pro report přidá izolovaný průchod Qwen, který mírně zvýší latenci a spotřebu.';
+
+  @override
   String get configFlagEnableTooltip => 'Povolit nápovědy';
 
   @override

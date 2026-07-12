@@ -526,8 +526,11 @@ provider prefix cache for every byte after it.
 **The report is a projection, not memory.** The prior report's prose is never
 injected into the prompt (re-reading its own stale conclusions creates a
 feedback loop), and `update_report` is conditional: the agent publishes only
-when the report would materially change (the first report is still forced via
-a retry). A wake with nothing report-worthy ends with a plain-text note.
+when the report would materially change. The first report is forced via a
+retry. A wake that successfully mutates task state also forces a report retry
+when the executor omits one, preventing an older projection from remaining
+visible after the change. A wake with no successful mutation and nothing
+report-worthy keeps the existing report and ends with a plain-text note.
 
 **Prompt persistence stores only what isn't derivable (v2 prompt records).**
 A compacted wake no longer persists its full rendered prompt: the embedded
@@ -827,11 +830,129 @@ the write."
 8. build the system prompt and user message
 9. create a conversation and persist the user message into the agent log
 10. run the conversation with `TaskAgentStrategy`
-11. persist wake token usage
-12. persist the final thought, report, observations, change set, and updated
+11. when a supported report route applies, scan the new report for known
+    regressions and conditionally rewrite it from compact current-task anchors
+    plus successful-mutation facts
+12. persist executor and editor token usage under their respective model IDs
+13. persist the final thought, report, observations, change set, and updated
     agent state
-13. optionally embed the persisted report when both embedding dependencies are
+14. optionally embed the persisted report when both embedding dependencies are
     available
+
+### Evidence-First Inference
+
+The `enable_task_agent_evidence_synthesis` config flag enables the evaluated
+execution mode for efficient task-agent models. It is enabled when first seeded
+and remains configurable under `Settings > Advanced > Flags`.
+`agentWorkflowProvider` watches the flag, so changing it rebuilds the workflow
+without changing any saved template or inference profile.
+
+When enabled, the task-agent path changes four common inputs together:
+
+- `TaskAgentPromptBuilder` replaces only the seeded/default report directive
+  with the evaluated compact directive and appends the evidence-synthesis
+  protocol. An explicitly customized template directive remains authoritative.
+- the compact execution contract treats a concrete, committed multi-step plan
+  as checklist intent even if the user never says "create a checklist"; it
+  does not treat speculation or a description of current state as authority
+- owners and dates inside an action stay in that checklist item; they do not
+  authorize owner or task-due-date field mutations without an explicit request
+- `TaskAgentContextBuilder` adds evidence requirements to `update_report` and
+  explicit authority boundaries to checklist, due-date, and status mutation
+  descriptions. With the flag off, the shared scaffold and tool descriptions
+  remain unchanged
+- the exact evaluated Melious Mistral Small 4 and Qwen3.5 122B routes use
+  temperature `0.0`; unevaluated providers and model families retain `0.3`
+- a required report omitted after a successful mutation receives a forced
+  report call; a true no-op wake does not
+- model reasoning remains profile/provider driven; the flag does not force a
+  separate high-effort mode
+
+The resolved inference profile remains the executor selector. Melious
+backfills both evaluated efficient choices into the model picker:
+
+- the seeded Melious profile chooses `qwen3.5-122b-a10b` for direct Qwen task
+  execution with the tuned prompt profile. A clean report stays single-pass; a
+  report that matches a known regression receives a compact isolated Qwen
+  repair before persistence
+- choose `mistral-small-4-119b-instruct` for Mistral task mutations plus the
+  exact-match isolated Qwen report editor described below
+
+Compact scaffolds and model-specific directives are selected only for those
+two exact provider model IDs. Other Mistral or Qwen models keep the common
+scaffold and sampling defaults until they are evaluated explicitly.
+
+For the exact Melious `mistral-small-4-119b-instruct` executor, the same flag
+also enables the report-editor path:
+
+- Mistral remains the only model allowed to inspect task context and call task
+  mutation tools.
+- `TaskAgentStrategy` records only mutations that applied successfully or were
+  successfully queued. Failed, denied, duplicate, and redundant calls do not
+  become report facts.
+- a fresh, report-only Qwen 3.5 122B A10B conversation receives the active
+  report directive, the Mistral draft, and ID-free material facts: the current
+  due date, estimate, and urgent/high priority plus successful title, language,
+  priority, due-date, estimate, and newly added-action mutations. Mutations
+  override current anchors because they describe the post-wake state
+- Qwen is forced to call only `update_report`; it never receives journal IDs,
+  the full task prompt, or mutation tools
+- evolved and manually customized report directives remain authoritative for
+  voice, structure, emphasis, detail, and Markdown presentation; grounding,
+  privacy, and successful-mutation constraints still take precedence
+- editor candidates are checked against the original draft and material task
+  anchors for lost dates or estimates, active-risk loss, locale register, fake
+  link sections, process narration, unsupported priority claims, and causal
+  claims inferred from a user checkmark
+- direct Qwen uses a separate, narrower detector derived from captured
+  regressions. It checks required material anchors, evidence-contradicting
+  progress on newly created actions, recurrence/checkmark causal inventions,
+  informal locale register, and explicit deferred-scope leakage. Standalone
+  words or headings such as `Goal`, `Checklist`, and `No blockers` do not
+  trigger it. It is not a semantic validator, quality score, or parser for
+  arbitrary evolved directives
+- direct Qwen does not rate its own work: a local rule match triggers an
+  isolated Qwen rewrite with specific correction codes. The matched codes are
+  written to the `reportEditor` domain log without report text or task data
+- up to two repair attempts receive the sanitized rejected candidate and exact
+  failed checks; a candidate that leaks deferred scope is withheld entirely.
+  After three invalid attempts, or any editor failure, the original Mistral
+  draft remains the report
+- executor and editor usage are persisted separately, so model-level cost and
+  token accounting stays accurate
+- agent internals persist the route outcome as direct Qwen, repaired direct
+  Qwen, accepted, rejected, failed, not needed, or not eligible. An ineligible
+  Mistral route includes the resolved provider type and model ID
+
+Other providers and executor models keep the common evidence-first prompt path
+without an extra inference pass. This routing is deliberately exact at the
+model/provider boundary: only the supported Melious Mistral executor invokes
+the isolated Qwen editor.
+
+```mermaid
+flowchart TD
+  Flag["Evidence-synthesis flag"] --> Provider["agentWorkflowProvider"]
+  Provider --> Workflow["TaskAgentWorkflow"]
+  Profile["Inference profile: Qwen or Mistral"] --> Workflow
+  Workflow --> Prompt["Active directive + evidence protocol"]
+  Workflow --> Tools["Evidence-aware update_report description"]
+  Workflow --> Sampling["Temperature 0.0"]
+  Custom["Custom report directive"] -->|preserved| Prompt
+  Prompt --> Executor["Primary conversation"]
+  Tools --> Executor
+  Sampling --> Executor
+  Executor --> Route{"Executor route"}
+  Route -->|other model| Persist["Persist executor report"]
+  Route -->|Mistral| Facts["ID-free current anchors + successful mutations"]
+  Route -->|Qwen direct| DirectValidate{"Known regressions found?"}
+  DirectValidate -->|no| Persist
+  DirectValidate -->|yes| Facts
+  Custom --> Editor
+  Facts --> Editor["Directive-aware forced Qwen update_report"]
+  Editor --> Validate{"Known regressions found?"}
+  Validate -->|no| PersistEdited["Persist edited report"]
+  Validate -->|yes, max 2 repairs| Persist
+```
 
 The task wake prompt is assembled from:
 

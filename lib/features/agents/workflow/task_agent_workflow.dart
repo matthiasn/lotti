@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -26,7 +27,9 @@ import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
+import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
@@ -43,6 +46,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -76,11 +80,13 @@ part 'task_agent_execute.dart';
 /// 7. Persist the user message as an [AgentMessageKind.user] entity for
 ///    inspectability (non-fatal if it fails).
 /// 8. Invoke the LLM and execute tool calls via [AgentToolExecutor].
-/// 9. Persist the final assistant response as a thought message.
-/// 10. Extract and persist the updated report (from `update_report` tool call).
-/// 11. Persist new observation notes (agentJournal entries).
-/// 12. Persist updated agent state (revision, wake counter, failure count).
-/// 13. Clean up the in-memory conversation in a `finally` block.
+/// 9. Optionally revise a new Mistral report under the active report directive
+///    through the isolated, validated [TaskAgentReportEditor].
+/// 10. Persist per-model token usage and the final assistant response.
+/// 11. Extract and persist the accepted report (from `update_report`).
+/// 12. Persist new observation notes (agentJournal entries).
+/// 13. Persist updated agent state (revision, wake counter, failure count).
+/// 14. Clean up the in-memory conversation in a `finally` block.
 class TaskAgentWorkflow {
   TaskAgentWorkflow({
     required this.agentRepository,
@@ -103,6 +109,7 @@ class TaskAgentWorkflow {
     this.changeSetNotificationService,
     this.inputCaptureService,
     this.logSummarizer,
+    this.evidenceSynthesisEnabled = false,
     this.compactionTailBudgetTokens = 50000,
     this.compactionTailRetainTokens = 20000,
   });
@@ -122,6 +129,13 @@ class TaskAgentWorkflow {
   final LabelsRepository labelsRepository;
   final AgentTemplateService templateService;
   final SoulDocumentService? soulDocumentService;
+
+  /// Whether to use the experimentally validated low-variance task-agent path.
+  ///
+  /// This enables the compact prompt/tool contract for efficient models and,
+  /// for the exact supported Melious Mistral route, the isolated validated
+  /// Qwen report editor under the active template report directive.
+  final bool evidenceSynthesisEnabled;
 
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
@@ -277,6 +291,7 @@ class TaskAgentWorkflow {
     required CloudInferenceWrapper inferenceRepo,
     required List<ChatCompletionTool> tools,
     required TaskAgentStrategy strategy,
+    required double temperature,
     String? consumptionAgentId,
     String? consumptionTaskId,
     String? consumptionCategoryId,
@@ -313,13 +328,14 @@ class TaskAgentWorkflow {
         inferenceRepo: inferenceRepo,
         tools: reportOnlyTools,
         toolChoice: forcedToolChoice,
-        temperature: 0.3,
+        temperature: temperature,
         strategy: strategy,
         consumptionAgentId: consumptionAgentId,
         consumptionTaskId: consumptionTaskId,
         consumptionCategoryId: consumptionCategoryId,
         consumptionWakeRunKey: consumptionWakeRunKey,
         consumptionThreadId: consumptionThreadId,
+        rethrowInferenceErrors: true,
       );
     } catch (e, s) {
       _logError(
@@ -386,10 +402,12 @@ class TaskAgentWorkflow {
     task: task,
   );
 
-  String _buildSystemPrompt(_TemplateContext ctx) =>
+  String _buildSystemPrompt(_TemplateContext ctx, {required String modelId}) =>
       TaskAgentPromptBuilder.buildSystemPrompt(
         version: ctx.version,
         soulVersion: ctx.soulVersion,
+        evidenceSynthesis: evidenceSynthesisEnabled,
+        evidenceSynthesisModelId: modelId,
       );
 
   Future<({String text, int? logStart, int? logEnd})> _buildUserMessage({
@@ -423,7 +441,9 @@ class TaskAgentWorkflow {
   );
 
   List<ChatCompletionTool> _buildToolDefinitions() =>
-      _contextBuilder.buildToolDefinitions();
+      _contextBuilder.buildToolDefinitions(
+        evidenceSynthesis: evidenceSynthesisEnabled,
+      );
 
   String? _extractFinalAssistantContent(ConversationManager? manager) =>
       _contextBuilder.extractFinalAssistantContent(manager);

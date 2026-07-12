@@ -15,7 +15,7 @@ import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/get_it.dart';
 import 'package:meta/meta.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:openai_dart/openai_dart.dart' hide Error;
 import 'package:uuid/uuid.dart';
 
 /// Matches `<think>...</think>` and `<thinking>...</thinking>` blocks
@@ -224,6 +224,10 @@ class ConversationRepository extends Notifier<void> {
   ///
   /// Returns the accumulated [InferenceUsage] across all turns, or `null`
   /// if no usage data was reported by the inference provider.
+  ///
+  /// Set [rethrowInferenceErrors] for orchestration that owns retry/failure
+  /// state. Interactive callers keep the default behavior, which emits the
+  /// error through the conversation manager and ends the conversation.
   Future<InferenceUsage?> sendMessage({
     required String conversationId,
     required String message,
@@ -242,14 +246,17 @@ class ConversationRepository extends Notifier<void> {
     String? consumptionCategoryId,
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
+    bool rethrowInferenceErrors = false,
   }) async {
     final manager = _conversations[conversationId];
     if (manager == null) {
       throw ArgumentError('Conversation $conversationId not found');
     }
 
-    // Add user message
-    manager.addUserMessage(message);
+    // Clear the prior request state before adding this user turn.
+    manager
+      ..clearLastError()
+      ..addUserMessage(message);
 
     // Check if we can continue
     if (!manager.canContinue()) {
@@ -284,22 +291,6 @@ class ConversationRepository extends Notifier<void> {
         final turnStart = clock.now();
         final turnIndex = manager.turnCount;
 
-        // Make API call with full conversation history
-        // Pass previous signatures and collector for new ones
-        // turnCount provides unique tool call IDs across conversation turns
-        final stream = inferenceRepo.generateTextWithMessages(
-          messages: messages,
-          model: model,
-          provider: provider,
-          tools: tools,
-          toolChoice: toolChoice,
-          temperature: effectiveTemperature,
-          thoughtSignatures: manager.thoughtSignatures,
-          signatureCollector: signatureCollector,
-          turnIndex: turnIndex,
-          impactCollector: impactCollector,
-        );
-
         // Collect response
         final toolCalls = <ChatCompletionMessageToolCall>[];
         final contentBuffer = StringBuffer();
@@ -308,43 +299,71 @@ class ConversationRepository extends Notifier<void> {
         final toolCallArgumentBuffers = <String, StringBuffer>{};
         InferenceUsage? turnUsage;
 
-        await for (final response in stream) {
-          // Capture usage from the response (typically on the final chunk).
-          if (response.usage != null) {
-            final u = response.usage!;
-            turnUsage = InferenceUsage(
-              inputTokens: u.promptTokens,
-              outputTokens: u.completionTokens,
-              thoughtsTokens: u.completionTokensDetails?.reasoningTokens,
-              cachedInputTokens: u.promptTokensDetails?.cachedTokens,
-            );
-          }
-          if (response.choices?.isNotEmpty ?? false) {
-            final delta = response.choices!.first.delta;
+        try {
+          // Make the provider call with full conversation history. The
+          // rethrow contract is intentionally scoped to this stream only;
+          // post-inference telemetry and tool handling degrade gracefully.
+          final stream = inferenceRepo.generateTextWithMessages(
+            messages: messages,
+            model: model,
+            provider: provider,
+            tools: tools,
+            toolChoice: toolChoice,
+            temperature: effectiveTemperature,
+            thoughtSignatures: manager.thoughtSignatures,
+            signatureCollector: signatureCollector,
+            turnIndex: turnIndex,
+            impactCollector: impactCollector,
+          );
 
-            // Collect content
-            if (delta?.content != null) {
-              contentBuffer.write(delta!.content);
+          await for (final response in stream) {
+            // Capture usage from the response (typically on the final chunk).
+            if (response.usage != null) {
+              final u = response.usage!;
+              turnUsage = InferenceUsage(
+                inputTokens: u.promptTokens,
+                outputTokens: u.completionTokens,
+                thoughtsTokens: u.completionTokensDetails?.reasoningTokens,
+                cachedInputTokens: u.promptTokensDetails?.cachedTokens,
+              );
             }
+            if (response.choices?.isNotEmpty ?? false) {
+              final delta = response.choices!.first.delta;
 
-            // Collect tool calls
-            if (delta?.toolCalls != null) {
-              final chunks = delta!.toolCalls!;
-              if (isGeminiStyleToolCallDelta(chunks)) {
-                appendGeminiToolCalls(
-                  toolCalls: toolCalls,
-                  chunks: chunks,
-                  turn: manager.turnCount,
-                );
-              } else {
-                accumulateOpenAiToolCallChunks(
-                  toolCalls: toolCalls,
-                  argumentBuffers: toolCallArgumentBuffers,
-                  chunks: chunks,
-                );
+              // Collect content
+              if (delta?.content != null) {
+                contentBuffer.write(delta!.content);
+              }
+
+              // Collect tool calls
+              if (delta?.toolCalls != null) {
+                final chunks = delta!.toolCalls!;
+                if (isGeminiStyleToolCallDelta(chunks)) {
+                  appendGeminiToolCalls(
+                    toolCalls: toolCalls,
+                    chunks: chunks,
+                    turn: manager.turnCount,
+                  );
+                } else {
+                  accumulateOpenAiToolCallChunks(
+                    toolCalls: toolCalls,
+                    argumentBuffers: toolCallArgumentBuffers,
+                    chunks: chunks,
+                  );
+                }
               }
             }
           }
+        } catch (e, stackTrace) {
+          if (turnUsage != null) {
+            accumulated = accumulated.merge(turnUsage);
+          }
+          _emitTurnError(manager, e, stackTrace);
+          if (rethrowInferenceErrors) {
+            throw _RethrownInferenceError(e, stackTrace);
+          }
+          shouldContinue = false;
+          continue;
         }
 
         // Accumulate token usage from this turn.
@@ -353,19 +372,28 @@ class ConversationRepository extends Notifier<void> {
         }
 
         // Record one consumption event for this turn (per-turn granularity).
-        await _recordTurnConsumption(
-          agentId: consumptionAgentId,
-          taskId: consumptionTaskId,
-          categoryId: consumptionCategoryId,
-          wakeRunKey: consumptionWakeRunKey,
-          threadId: consumptionThreadId,
-          turnIndex: turnIndex,
-          model: model,
-          provider: provider,
-          usage: turnUsage,
-          impact: impactCollector.impact,
-          start: turnStart,
-        );
+        try {
+          await _recordTurnConsumption(
+            agentId: consumptionAgentId,
+            taskId: consumptionTaskId,
+            categoryId: consumptionCategoryId,
+            wakeRunKey: consumptionWakeRunKey,
+            threadId: consumptionThreadId,
+            turnIndex: turnIndex,
+            model: model,
+            provider: provider,
+            usage: turnUsage,
+            impact: impactCollector.impact,
+            start: turnStart,
+          );
+        } catch (e, stackTrace) {
+          developer.log(
+            'Failed to record conversation turn consumption',
+            name: 'ConversationRepository',
+            error: e,
+            stackTrace: stackTrace,
+          );
+        }
 
         // Add assistant message.
         //
@@ -432,24 +460,34 @@ class ConversationRepository extends Notifier<void> {
           shouldContinue = false;
         }
       } catch (e, stackTrace) {
-        // Log full error details for debugging
-        final errorMessage = e.toString();
-        developer.log(
-          'Error during conversation turn:\n$errorMessage',
-          name: 'ConversationRepository',
-          error: e,
-          stackTrace: stackTrace,
-        );
-        try {
-          manager.emitError(errorMessage);
-        } catch (_) {
-          // Ignore errors when emitting error events
+        if (e is _RethrownInferenceError) {
+          Error.throwWithStackTrace(e.error, e.stackTrace);
         }
+        _emitTurnError(manager, e, stackTrace);
         shouldContinue = false;
       }
     }
 
     return accumulated.hasData ? accumulated : null;
+  }
+
+  void _emitTurnError(
+    ConversationManager manager,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    final errorMessage = error.toString();
+    developer.log(
+      'Error during conversation turn:\n$errorMessage',
+      name: 'ConversationRepository',
+      error: error,
+      stackTrace: stackTrace,
+    );
+    try {
+      manager.emitError(errorMessage);
+    } catch (_) {
+      // Ignore errors when emitting error events.
+    }
   }
 
   /// Delete a conversation
@@ -512,6 +550,13 @@ class ConversationRepository extends Notifier<void> {
       ),
     );
   }
+}
+
+class _RethrownInferenceError implements Exception {
+  const _RethrownInferenceError(this.error, this.stackTrace);
+
+  final Object error;
+  final StackTrace stackTrace;
 }
 
 /// Provider for accessing conversation events

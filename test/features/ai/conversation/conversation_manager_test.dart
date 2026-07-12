@@ -542,6 +542,7 @@ void main() {
           final errorEvent = events.first as ConversationErrorEvent;
           expect(errorEvent.message, 'Test error message');
           expect(errorEvent.turnNumber, 0);
+          expect(manager.lastError, 'Test error message');
         });
       });
 
@@ -689,6 +690,8 @@ void main() {
           );
         expect(manager.messages.length, 3);
         expect(manager.thoughtSignatures, isNotEmpty);
+        manager.emitError('Previous inference failed');
+        expect(manager.lastError, isNotNull);
 
         // Initialize with system message
         manager.initialize(systemMessage: 'New system message');
@@ -699,6 +702,7 @@ void main() {
         expect(manager.messages.first.role, ChatCompletionMessageRole.system);
         expect(manager.messages.first.content, 'New system message');
         expect(manager.thoughtSignatures, isEmpty);
+        expect(manager.lastError, isNull);
       });
 
       test('initialize without system message', () {
@@ -783,6 +787,46 @@ void main() {
         // But contain the same data
         expect(messages1.length, messages2.length);
         expect(messages1.first.content, messages2.first.content);
+      });
+
+      test('adds empty content to assistant tool calls for strict APIs', () {
+        const toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'tool-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_report',
+              arguments: '{}',
+            ),
+          ),
+        ];
+        manager.addAssistantMessage(toolCalls: toolCalls);
+
+        expect(manager.messages.single.content, isNull);
+
+        final requestMessage = manager.getMessagesForRequest().single;
+        expect(requestMessage.content, '');
+        expect(
+          requestMessage.mapOrNull(
+            assistant: (assistant) => assistant.toolCalls,
+          ),
+          toolCalls,
+        );
+      });
+
+      test('adds empty content to thinking-only assistant turns', () {
+        manager.addAssistantMessage();
+
+        expect(manager.messages.single.content, isNull);
+
+        final requestMessage = manager.getMessagesForRequest().single;
+        expect(requestMessage.content, '');
+        expect(
+          requestMessage.mapOrNull(
+            assistant: (assistant) => assistant.toolCalls,
+          ),
+          isNull,
+        );
       });
     });
 

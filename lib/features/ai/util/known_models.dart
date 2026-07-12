@@ -104,6 +104,7 @@ const String meliousMinimaxM27ModelId = 'minimax-m2.7';
 const String meliousMistralSmall4119BInstructModelId =
     'mistral-small-4-119b-instruct';
 const String meliousDeepseekV4FlashModelId = 'deepseek-v4-flash';
+const String meliousQwen35122BA10BModelId = 'qwen3.5-122b-a10b';
 const String meliousVoxtralSmall24B2507ModelId = 'voxtral-small-24b-2507';
 const String meliousWhisperLargeV3ModelId = 'whisper-large-v3';
 const String meliousWhisperLargeV3TurboModelId = 'whisper-large-v3-turbo';

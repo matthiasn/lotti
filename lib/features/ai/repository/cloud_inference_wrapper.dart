@@ -20,10 +20,12 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
   CloudInferenceWrapper({
     required this.cloudRepository,
     this.geminiThinkingMode,
+    this.reasoningEffort,
   });
 
   final CloudInferenceRepository cloudRepository;
   final GeminiThinkingMode? geminiThinkingMode;
+  final ReasoningEffort? reasoningEffort;
 
   @override
   Stream<CreateChatCompletionStreamResponse> generateText({
@@ -49,6 +51,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       tools: tools,
       toolChoice: toolChoice,
       geminiThinkingMode: geminiThinkingMode,
+      reasoningEffort: reasoningEffort,
     );
   }
 
@@ -89,6 +92,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       signatureCollector: signatureCollector,
       turnIndex: turnIndex,
       geminiThinkingMode: geminiThinkingMode,
+      reasoningEffort: reasoningEffort,
       impactCollector: impactCollector,
     );
 

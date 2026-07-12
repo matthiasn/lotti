@@ -72,6 +72,7 @@ void main() {
 
   CloudInferenceGenerateMore createGenerateMore({
     MeliousInferenceRepository? meliousRepository,
+    MistralInferenceRepository? mistralRepository,
     OmlxTranscriptionRepository? omlxRepository,
   }) {
     return CloudInferenceGenerateMore(
@@ -79,7 +80,7 @@ void main() {
       ollamaRepository: ollamaRepo,
       geminiRepository: geminiRepo,
       dashScopeRepository: dashScopeRepo,
-      mistralRepository: mistralRepo,
+      mistralRepository: mistralRepository ?? mistralRepo,
       meliousRepository: meliousRepository ?? meliousRepo,
       mistralTranscriptionRepository: mistralTranscriptionRepo,
       whisperRepository: whisperRepo,
@@ -526,6 +527,38 @@ void main() {
   });
 
   group('generateWithMessages routing', () {
+    test('routes reasoning effort to the Mistral repository', () async {
+      final fakeMistralRepository = _FakeMistralInferenceRepository();
+      addTearDown(fakeMistralRepository.close);
+      final mistralGenerateMore = createGenerateMore(
+        mistralRepository: fakeMistralRepository,
+      );
+      final mistralProvider = providerOfType(InferenceProviderType.mistral);
+      const messages = [
+        ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('hello'),
+        ),
+      ];
+
+      final chunks = await mistralGenerateMore
+          .generateWithMessages(
+            messages: messages,
+            model: 'mistral-small-latest',
+            temperature: 0.2,
+            provider: mistralProvider,
+            reasoningEffort: ReasoningEffort.high,
+          )
+          .toList();
+
+      expect(chunks.single.id, 'mistral-messages');
+      expect(fakeMistralRepository.messageCalls, hasLength(1));
+      expect(fakeMistralRepository.messageCalls.single.messages, messages);
+      expect(
+        fakeMistralRepository.messageCalls.single.reasoningEffort,
+        ReasoningEffort.high,
+      );
+    });
+
     test('routes Melious provider to the Melious repository', () async {
       final meliousRepository = _FakeMeliousInferenceRepository();
       final meliousGenerateMore = createGenerateMore(
@@ -546,6 +579,7 @@ void main() {
             temperature: 0.2,
             provider: meliousProvider,
             maxCompletionTokens: 256,
+            reasoningEffort: ReasoningEffort.high,
           )
           .toList();
 
@@ -559,6 +593,7 @@ void main() {
       expect(call.apiKey, 'key');
       expect(call.temperature, 0.2);
       expect(call.maxCompletionTokens, 256);
+      expect(call.reasoningEffort, ReasoningEffort.high);
     });
   });
 
@@ -651,6 +686,40 @@ void main() {
   });
 }
 
+class _FakeMistralInferenceRepository extends MistralInferenceRepository {
+  final messageCalls =
+      <
+        ({
+          List<ChatCompletionMessage> messages,
+          ReasoningEffort? reasoningEffort,
+        })
+      >[];
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required String baseUrl,
+    required String apiKey,
+    double? temperature,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    ReasoningEffort? reasoningEffort,
+  }) {
+    messageCalls.add((
+      messages: messages,
+      reasoningEffort: reasoningEffort,
+    ));
+    return Stream.value(
+      _FakeMeliousInferenceRepository._chunk(
+        id: 'mistral-messages',
+        content: 'mistral messages',
+      ),
+    );
+  }
+}
+
 class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
   final audioCalls =
       <
@@ -671,6 +740,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
           String apiKey,
           double? temperature,
           int? maxCompletionTokens,
+          ReasoningEffort? reasoningEffort,
         })
       >[];
   final imageCalls =
@@ -716,6 +786,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
     messageCalls.add(
@@ -726,6 +797,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
         apiKey: apiKey,
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
+        reasoningEffort: reasoningEffort,
       ),
     );
     return Stream.value(

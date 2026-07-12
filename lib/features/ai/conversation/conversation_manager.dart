@@ -26,6 +26,7 @@ class ConversationManager {
 
   final List<ChatCompletionMessage> _messages = [];
   final _eventController = StreamController<ConversationEvent>.broadcast();
+  String? _lastError;
 
   /// Thought signatures from Gemini 3 models, keyed by tool call ID.
   /// Required for multi-turn function calling to maintain reasoning context.
@@ -33,6 +34,12 @@ class ConversationManager {
 
   Stream<ConversationEvent> get events => _eventController.stream;
   List<ChatCompletionMessage> get messages => List.unmodifiable(_messages);
+
+  /// Most recent inference error emitted for this conversation, if any.
+  String? get lastError => _lastError;
+
+  /// Clears the previous request's error before a new request begins.
+  void clearLastError() => _lastError = null;
 
   /// Get all thought signatures for building subsequent Gemini requests.
   Map<String, String> get thoughtSignatures =>
@@ -45,6 +52,7 @@ class ConversationManager {
   void initialize({String? systemMessage}) {
     _messages.clear();
     _thoughtSignatures.clear(); // Clear signatures from previous conversation
+    _lastError = null;
 
     if (systemMessage != null) {
       _messages.add(ChatCompletionMessage.system(content: systemMessage));
@@ -148,11 +156,24 @@ class ConversationManager {
 
   /// Get messages formatted for API request
   List<ChatCompletionMessage> getMessagesForRequest() {
-    return List.from(_messages);
+    return _messages
+        .map((message) {
+          final normalized = message.mapOrNull(
+            assistant: (assistant) {
+              if (assistant.content == null) {
+                return assistant.copyWith(content: '');
+              }
+              return null;
+            },
+          );
+          return normalized ?? message;
+        })
+        .toList(growable: false);
   }
 
   /// Emit an error event
   void emitError(String error) {
+    _lastError = error;
     if (!_eventController.isClosed) {
       _eventController.add(
         ConversationEvent.error(

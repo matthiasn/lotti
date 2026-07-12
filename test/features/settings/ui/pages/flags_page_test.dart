@@ -20,6 +20,8 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
+const _displayedFlagCount = 15;
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late MockJournalDb mockDb;
@@ -71,6 +73,11 @@ void main() {
           const ConfigFlag(
             name: enableAiSummaryTtsFlag,
             description: 'Enable local AI summary playback?',
+            status: false,
+          ),
+          const ConfigFlag(
+            name: enableTaskAgentEvidenceSynthesisFlag,
+            description: 'Enable evidence-first task-agent inference?',
             status: false,
           ),
           const ConfigFlag(
@@ -146,7 +153,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // 14 flags in the mock data.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(14));
+      expect(
+        find.byType(DesignSystemListItem),
+        findsNWidgets(_displayedFlagCount),
+      );
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -155,7 +165,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(SettingsIcon), findsNWidgets(14));
+      expect(find.byType(SettingsIcon), findsNWidgets(_displayedFlagCount));
     });
 
     testWidgets('shows correct title and description for private flag', (
@@ -332,6 +342,18 @@ void main() {
             expectedToggle: const ConfigFlag(
               name: enableAiSummaryTtsFlag,
               description: 'Enable local AI summary playback?',
+              status: true,
+            ),
+          ),
+          (
+            name: 'task-agent-evidence-synthesis',
+            title: (m) => m.configFlagEnableTaskAgentEvidenceSynthesis,
+            description: (m) =>
+                m.configFlagEnableTaskAgentEvidenceSynthesisDescription,
+            icon: Icons.fact_check_outlined,
+            expectedToggle: const ConfigFlag(
+              name: enableTaskAgentEvidenceSynthesisFlag,
+              description: 'Enable evidence-first task-agent inference?',
               status: true,
             ),
           ),
@@ -559,7 +581,10 @@ void main() {
         await tester.tap(clearIcon);
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.byType(DesignSystemListItem), findsNWidgets(14));
+        expect(
+          find.byType(DesignSystemListItem),
+          findsNWidgets(_displayedFlagCount),
+        );
       },
     );
 
@@ -580,7 +605,10 @@ void main() {
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.byType(DesignSystemListItem), findsNWidgets(14));
+        expect(
+          find.byType(DesignSystemListItem),
+          findsNWidgets(_displayedFlagCount),
+        );
       },
     );
 
@@ -597,7 +625,10 @@ void main() {
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
-        expect(find.byType(DesignSystemListItem), findsNWidgets(14));
+        expect(
+          find.byType(DesignSystemListItem),
+          findsNWidgets(_displayedFlagCount),
+        );
       },
     );
   });
@@ -759,9 +790,8 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('FlagsPage — previously uncovered flags (parameterized)', () {
-    // The setUp above already stubs watchConfigFlags() for 12 flags.
-    // We add the missing 11 flags here so the stream covers all 23 flags
-    // declared in FlagsBody.displayedItems.
+    // This setup supplies the rows exercised below plus representative rows
+    // already covered above. Remaining defaults are covered by flagRowCases.
     setUp(() {
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
@@ -1066,8 +1096,7 @@ void main() {
   });
 
   group('FlagsPage — default / unknown flag branch', () {
-    // Exercises the `default` arm in both _subtitleForFlag (line 227) and
-    // _titleForFlag (line 278) by feeding a flag whose name is not in any
+    // Exercises the fallback presentation for a flag whose name is not in any
     // named case.
     testWidgets(
       'renders an unknown flag using its raw name and description as '
@@ -1089,14 +1118,20 @@ void main() {
         );
 
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
+          makeTestableWidgetWithScaffold(
+            const FlagsBody(displayedItems: [unknownFlagName]),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        // The flag does not appear in FlagsBody.displayedItems, so
-        // `orderedFlags` will be empty → the widget returns SizedBox.shrink.
-        // The page should render without error and show zero list items.
-        expect(find.byType(DesignSystemListItem), findsNothing);
+        final row = find.byType(DesignSystemListItem);
+        expect(row, findsOneWidget);
+        expect(find.text(unknownFlagName), findsOneWidget);
+        expect(find.text(unknownFlagDesc), findsOneWidget);
+        expect(
+          find.descendant(of: row, matching: find.byIcon(Icons.settings)),
+          findsOneWidget,
+        );
       },
     );
 
@@ -1128,7 +1163,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Only the private flag is in displayedItems → exactly one row.
+        // Only the private flag is in the default display order.
         expect(find.byType(DesignSystemListItem), findsOneWidget);
       },
     );

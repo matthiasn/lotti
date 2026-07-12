@@ -32,6 +32,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1039" date="2026-07-12">
+      <description>
+          <p>Task agents now use evidence-first inference by default with efficient models. The mode remains configurable in Settings → Advanced → Flags and uses an evaluated low-variance, temperature-zero path. The default Melious profile uses Qwen 3.5 122B A10B directly for task reasoning and keeps Mistral Small 4 119B for image recognition. Existing untouched Melious profiles move to Qwen automatically, while customized model choices remain unchanged. Qwen reports that match known harmful regression patterns receive a compact, bounded Qwen repair; clean reports remain single-pass. Selecting Mistral instead keeps Mistral responsible for task and checklist changes and adds an isolated Qwen report pass. Evolved and manually customized report instructions remain authoritative, each model call is tracked separately, and concrete multi-step plans become checklist actions without requiring a separate explicit checklist request.</p>
+          <p>Melious task agents now continue reliably after calling tools. Follow-up requests preserve the OpenAI-compatible assistant message shape expected by strict providers, so checklist updates and the final report are no longer interrupted after an otherwise successful tool call.</p>
+          <p>Task-agent reports now stay current after task changes. When an agent successfully changes task metadata or checklist state but omits its report call, Lotti requests a fresh report instead of continuing to display the previous state. True no-op wakes still reuse the existing report. Agent internals record whether the Qwen report pass was accepted, rejected, failed, not needed, or ineligible.</p>
+          <p>Failed task-agent inference is no longer recorded as a successful empty wake. Provider and connection failures reach the workflow failure path so retries and diagnostics reflect what actually happened.</p>
+      </description>
+    </release>
     <release version="0.9.1037" date="2026-07-10">
       <description>
           <p>Dashboard chart editing now saves when it should. Adding measurable charts in Settings → Dashboards immediately enables Save, measurable chart aggregation can be chosen before adding, aggregation and reorder no-ops no longer make the form look changed, chart rows expose clearer edit/remove and reorder affordances, and the chart sections and pickers now use the shared design-system layout.</p>

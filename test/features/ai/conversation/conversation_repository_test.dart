@@ -1750,6 +1750,139 @@ void main() {
         expect(usage.cachedInputTokens, 50);
       });
 
+      test('rethrows inference errors when orchestration requests it', () {
+        _stubGenerateText(mockOllamaRepo).thenAnswer(
+          (_) => Stream.error(StateError('provider unavailable')),
+        );
+
+        expect(
+          () => repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Run the wake',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+            rethrowInferenceErrors: true,
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              'provider unavailable',
+            ),
+          ),
+        );
+      });
+
+      test(
+        'clears the previous inference error before the next request',
+        () async {
+          var callCount = 0;
+          _stubGenerateText(mockOllamaRepo).thenAnswer((_) {
+            callCount++;
+            if (callCount == 1) {
+              return Stream.error(StateError('temporary provider error'));
+            }
+            return Stream.value(
+              const CreateChatCompletionStreamResponse(
+                id: 'recovered',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(content: 'Done'),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: 1710500000,
+              ),
+            );
+          });
+
+          await repository.sendMessage(
+            conversationId: conversationId,
+            message: 'First attempt',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+          );
+          final manager = repository.getConversation(conversationId)!;
+          expect(manager.lastError, contains('temporary provider error'));
+
+          await repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Second attempt',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+          );
+
+          expect(manager.lastError, isNull);
+          expect(manager.messages.last.content, 'Done');
+        },
+      );
+
+      test(
+        'does not rethrow tool-processing errors after successful inference',
+        () async {
+          _stubGenerateText(mockOllamaRepo).thenAnswer(
+            (_) => Stream.value(
+              const CreateChatCompletionStreamResponse(
+                id: 'tool-response',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(
+                      toolCalls: [
+                        ChatCompletionStreamMessageToolCallChunk(
+                          index: 0,
+                          id: 'tool-1',
+                          type: ChatCompletionStreamMessageToolCallChunkType
+                              .function,
+                          function: ChatCompletionStreamMessageFunctionCall(
+                            name: 'test_function',
+                            arguments: '{}',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: 1710500000,
+                usage: CompletionUsage(
+                  promptTokens: 30,
+                  completionTokens: 10,
+                  totalTokens: 40,
+                ),
+              ),
+            ),
+          );
+          when(
+            () => mockStrategy.processToolCalls(
+              toolCalls: any(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            ),
+          ).thenThrow(StateError('strategy failed'));
+
+          final usage = await repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Use the tool',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+            strategy: mockStrategy,
+            rethrowInferenceErrors: true,
+          );
+
+          expect(usage?.inputTokens, 30);
+          expect(usage?.outputTokens, 10);
+          expect(
+            repository.getConversation(conversationId)!.lastError,
+            contains('strategy failed'),
+          );
+        },
+      );
+
       group('per-turn consumption recording', () {
         /// Stubs `generateTextWithMessages` with a single content chunk whose
         /// final response carries [usage], optionally writing [impact] into
@@ -1866,6 +1999,85 @@ void main() {
             expect(event.pue, 1.2);
             expect(event.dataCenter, 'FI');
             expect(event.upstreamProviderId, 'upstream-x');
+          },
+        );
+
+        test(
+          'records executor and editor models as separate consumption events '
+          'under one wake',
+          () async {
+            final recorder = _registerConsumptionRecorder();
+            _stubGenerateText(mockOllamaRepo).thenAnswer((invocation) {
+              final model = invocation.namedArguments[#model] as String;
+              final isEditor = model == 'qwen3.5-122b-a10b';
+              (invocation.namedArguments[#impactCollector]
+                      as InferenceImpactCollector?)
+                  ?.impact = MeliousCallImpact(
+                costCredits: isEditor ? 0.2 : 0.5,
+                energyKwh: isEditor ? 0.001 : 0.003,
+              );
+              return Stream.fromIterable([
+                CreateChatCompletionStreamResponse(
+                  id: 'response-$model',
+                  choices: const [
+                    ChatCompletionStreamResponseChoice(
+                      index: 0,
+                      delta: ChatCompletionStreamResponseDelta(content: 'Hi'),
+                    ),
+                  ],
+                  object: 'chat.completion.chunk',
+                  created: 1710500000,
+                  usage: CompletionUsage(
+                    promptTokens: isEditor ? 40 : 100,
+                    completionTokens: isEditor ? 10 : 20,
+                    totalTokens: isEditor ? 50 : 120,
+                  ),
+                ),
+              ]);
+            });
+
+            Future<void> send({
+              required String conversationId,
+              required String model,
+            }) async {
+              await repository.sendMessage(
+                conversationId: conversationId,
+                message: 'Run $model',
+                model: model,
+                provider: provider,
+                inferenceRepo: mockOllamaRepo,
+                consumptionAgentId: 'agent-1',
+                consumptionTaskId: 'task-1',
+                consumptionCategoryId: 'cat-1',
+                consumptionWakeRunKey: 'wake-1',
+                consumptionThreadId: 'thread-1',
+              );
+            }
+
+            await send(
+              conversationId: conversationId,
+              model: 'mistral-small-4-119b-instruct',
+            );
+            final editorConversationId = repository.createConversation(
+              systemMessage: 'Edit the report.',
+            );
+            await send(
+              conversationId: editorConversationId,
+              model: 'qwen3.5-122b-a10b',
+            );
+
+            final events = verify(
+              () => recorder.record(captureAny()),
+            ).captured.cast<AiConsumptionEvent>();
+            expect(events, hasLength(2));
+            expect(events.map((event) => event.id).toSet(), hasLength(2));
+            expect(events.map((event) => event.wakeRunKey).toSet(), {'wake-1'});
+            expect(events.map((event) => event.providerModelId), [
+              'mistral-small-4-119b-instruct',
+              'qwen3.5-122b-a10b',
+            ]);
+            expect(events.map((event) => event.credits), [0.5, 0.2]);
+            expect(events.map((event) => event.energyKwh), [0.003, 0.001]);
           },
         );
 
@@ -2030,6 +2242,40 @@ void main() {
             expect(
               manager.messages.last.role,
               ChatCompletionMessageRole.assistant,
+            );
+          },
+        );
+
+        test(
+          'returns usage when consumption recording fails',
+          () async {
+            final recorder = _registerConsumptionRecorder();
+            when(
+              () => recorder.record(any()),
+            ).thenThrow(StateError('telemetry write failed'));
+            stubTurnWithUsage(
+              usage: const CompletionUsage(
+                promptTokens: 100,
+                completionTokens: 40,
+                totalTokens: 140,
+              ),
+            );
+
+            final usage = await repository.sendMessage(
+              conversationId: conversationId,
+              message: 'Hello',
+              model: 'test-model',
+              provider: provider,
+              inferenceRepo: mockOllamaRepo,
+              consumptionAgentId: 'agent-1',
+              rethrowInferenceErrors: true,
+            );
+
+            expect(usage?.inputTokens, 100);
+            expect(usage?.outputTokens, 40);
+            expect(
+              repository.getConversation(conversationId)!.lastError,
+              isNull,
             );
           },
         );

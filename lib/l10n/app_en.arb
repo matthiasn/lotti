@@ -1665,6 +1665,8 @@
   "configFlagEnableSessionRatingsDescription": "Prompt for a quick session rating when you stop a timer.",
   "configFlagEnableSyncedAlerts": "Synced alerts",
   "configFlagEnableSyncedAlertsDescription": "Sync AI and task alerts across devices and allow them to schedule local OS notifications.",
+  "configFlagEnableTaskAgentEvidenceSynthesis": "Evidence-first task agent",
+  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Use evidence-grounded task-agent prompting for efficient Melious models. The default Melious profile uses Qwen 3.5 directly; choosing Mistral Small 4 adds an isolated Qwen report pass and a small amount of latency and usage.",
   "configFlagEnableTooltip": "Enable tooltips",
   "configFlagEnableTooltipDescription": "Show helpful tooltips throughout the app to guide you through features.",
   "configFlagEnableVectorSearch": "Vector Search",

@@ -41,6 +41,41 @@ void main() {
     }
 
     group('prepopulateModelsForProvider', () {
+      test(
+        'backfills Qwen as a selectable Melious task-agent model',
+        () async {
+          final provider = AiConfigInferenceProvider(
+            id: 'melious-provider-id',
+            baseUrl: 'https://api.melious.ai/v1',
+            apiKey: 'test-key',
+            name: 'Melious',
+            createdAt: DateTime(2026, 3, 15),
+            inferenceProviderType: InferenceProviderType.melious,
+          );
+          final savedModels = <AiConfigModel>[];
+          stubRepo(providers: [provider]);
+          when(() => mockRepository.saveConfig(any())).thenAnswer((
+            invocation,
+          ) async {
+            savedModels.add(
+              invocation.positionalArguments.single as AiConfigModel,
+            );
+          });
+
+          final result = await service.prepopulateModelsForProvider(provider);
+
+          expect(result, meliousModels.length);
+          final qwen = savedModels.singleWhere(
+            (model) => model.providerModelId == meliousQwen35122BA10BModelId,
+          );
+          expect(qwen.inferenceProviderId, provider.id);
+          expect(qwen.isReasoningModel, isTrue);
+          expect(qwen.supportsFunctionCalling, isTrue);
+          expect(qwen.inputModalities, contains(Modality.text));
+          expect(qwen.outputModalities, contains(Modality.text));
+        },
+      );
+
       test('should skip existing models and only create new ones', () async {
         // Arrange
         const providerId = 'gemini-provider-id';

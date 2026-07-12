@@ -3064,6 +3064,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sincronizați alertele AI și de sarcini între dispozitivele dvs. și permiteți programarea notificărilor locale de sistem.';
 
   @override
+  String get configFlagEnableTaskAgentEvidenceSynthesis =>
+      'Agent de sarcini bazat pe dovezi';
+
+  @override
+  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
+      'Utilizează instrucțiuni bazate pe dovezi pentru agenții de sarcini cu modelele Melious eficiente. Profilul Melious implicit folosește direct Qwen 3.5; dacă alegeți Mistral Small 4, se adaugă o etapă Qwen izolată pentru raport, cu o ușoară creștere a latenței și consumului.';
+
+  @override
   String get configFlagEnableTooltip => 'Activează sfaturile';
 
   @override
