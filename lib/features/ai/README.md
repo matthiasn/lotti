@@ -481,6 +481,16 @@ editor call, and each of the eleven report cases accepted its first candidate.
 This exact route remains default-off and does not imply that Mistral alone
 matches a larger model.
 
+A fresh release-candidate run on commit `8413b6320` reproduced the Mistral route
+at 13/13 scenarios and 94/94 checks. Three of the eleven report cases needed one
+bounded repair, while both no-op cases still avoided the editor. The matched
+Qwen-direct run passed 10/13 scenarios and 90/94 checks: every requested
+mutation remained correct, but three reports leaked deferred scope or invented
+progress or deployment history. Focused prompt and same-model revision probes
+did not repair those classes reliably. Qwen therefore remains an explicit
+experimental selector; the Mistral-to-Qwen route is the supported release
+candidate under the default-off flag.
+
 The older `conciseReport` variant remains available for reproduction. In the
 full Mistral matrix it improved automated judge scores and reduced tokens, but
 changing that directive also caused a missed checklist mutation. Focused

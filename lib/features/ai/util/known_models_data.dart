@@ -71,8 +71,8 @@ const List<KnownModel> meliousModels = [
     isReasoningModel: true,
     supportsFunctionCalling: true,
     description:
-        'Melious-hosted Qwen3.5 122B A10B reasoning model. Evaluated as a '
-        'direct task-agent executor with the evidence-first mode.',
+        'Melious-hosted Qwen3.5 122B A10B reasoning model. Available for '
+        'experimental direct task-agent execution with evidence-first mode.',
   ),
   KnownModel(
     providerModelId: meliousDeepseekV4FlashModelId,

@@ -859,8 +859,8 @@ When enabled, the task-agent path changes four common inputs together:
 The resolved inference profile remains the executor selector. Melious
 backfills both evaluated efficient choices into the model picker:
 
-- choose `qwen3.5-122b-a10b` for a single-pass Qwen task agent using the tuned
-  Qwen prompt profile
+- choose `qwen3.5-122b-a10b` for an experimental single-pass Qwen task agent
+  using the tuned Qwen prompt profile
 - choose `mistral-small-4-119b-instruct` for Mistral task mutations plus the
   exact-match isolated Qwen report editor described below
 

@@ -277,3 +277,30 @@ custom report directives, and does not claim parity on unsanitized real user
 histories. Full artifacts and the GPT-5.6 Sol simulated expert review are kept
 in the private evaluation archive under `2026-07-12_qwen35` and
 `2026-07-12_qwen-gated-editor-v31`.
+
+### Release-candidate reproduction
+
+The exact tree at commit `8413b6320` was rerun after Qwen became selectable in
+the curated Melious catalog:
+
+| Route | Scenarios | Checks | Input tokens | Output tokens | Latency |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Qwen direct | 10 / 13 | 90 / 94 | 164,822 | 11,862 | 86.714 s |
+| Mistral executor + Qwen editor | 13 / 13 | 94 / 94 | 172,443 | 12,923 | 96.801 s |
+
+Qwen still made every required mutation and no unauthorized mutation. Its three
+failures were public-report grounding defects: a deferred newsletter remained
+visible, an untouched certificate rotation was called underway, and a
+resurfaced issue acquired unsupported deployment history. A focused prompt
+addition passed 0/3 and was removed. Isolated Qwen and Mistral edits of Qwen's
+drafts passed 1/3 and 2/3 respectively, so neither route was promoted.
+
+The Mistral route again passed the full suite. Eleven scenarios produced
+reports, two no-op scenarios made no editor call, and three reports required
+one bounded repair. Direct GPT-5.6 Sol review through simulated product,
+reliability, and editorial roles found the final reports concise, actionable,
+and materially clearer than the Mistral drafts. The prose is intentionally
+operational and still somewhat formulaic; the result establishes a viable
+default-off release candidate, not parity with GLM 5.2 or proof on unsanitized
+real task histories. Raw artifacts and the review are archived under
+`2026-07-12_release-candidate-8413b6320` in the private evaluation repository.

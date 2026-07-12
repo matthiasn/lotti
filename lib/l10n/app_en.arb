@@ -1666,7 +1666,7 @@
   "configFlagEnableSyncedAlerts": "Synced alerts",
   "configFlagEnableSyncedAlertsDescription": "Sync AI and task alerts across devices and allow them to schedule local OS notifications.",
   "configFlagEnableTaskAgentEvidenceSynthesis": "Evidence-first task agent",
-  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Tune task agents for efficient Melious models. Qwen 3.5 can run the agent directly; with Mistral Small 4, an additional isolated Qwen pass improves reports and adds a small amount of latency and usage.",
+  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Tune task agents for efficient Melious models. Qwen 3.5 is available as an experimental direct option; with Mistral Small 4, an additional isolated Qwen pass improves reports and adds a small amount of latency and usage.",
   "configFlagEnableTooltip": "Enable tooltips",
   "configFlagEnableTooltipDescription": "Show helpful tooltips throughout the app to guide you through features.",
   "configFlagEnableVectorSearch": "Vector Search",
