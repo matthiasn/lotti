@@ -466,6 +466,10 @@ class TaskAgentReportEditor {
       'checklist includes',
       'from the transcript',
       'extracted from',
+      'configuration is complete',
+      'configuration complete',
+      'task configured',
+      'metadata updated',
       'ready to begin',
       'ready for execution',
       'awaiting execution',
@@ -476,6 +480,8 @@ class TaskAgentReportEditor {
       'aus der transkription',
       'als checkliste angelegt',
       'checkliste enthält',
+      'aufgabe konfiguriert',
+      'konfiguration abgeschlossen',
     ];
     final hasProcessFragment =
         processFragments.any(normalizedCandidate.contains) ||
@@ -503,6 +509,14 @@ class TaskAgentReportEditor {
           r'\b(points?|punkte|items?|actions?|aktionen|acciones)\b.{0,50}'
           r'\b(ready|ahead|pending|zur bearbeitung|pendientes?)\b',
         ).hasMatch(normalizedCandidate);
+    final describesNewActionsAsProgress =
+        hasNewChecklistItems &&
+        RegExp(
+          r'\b(work(?:ing)?|task|arbeit(?:en)?|aufgabe|trabajo|tarea|travail|'
+          r'tâche|muncă|sarcin)\b.{0,50}\b(underway|in progress|'
+          'currently active|läuft(?: aktuell)?|in bearbeitung|en curso|'
+          r'en progrès|în curs|probíhá)\b',
+        ).hasMatch(normalizedCandidate);
     final candidateAddsWaitingState = RegExp(
       r'\b(await\w*|wait\w*|wart\w*|esper\w*|attend\w*|aștept\w*|ček\w*)\b',
     ).hasMatch(normalizedCandidate);
@@ -514,6 +528,7 @@ class TaskAgentReportEditor {
         hasGermanChecklistNarration ||
         assignsProgressToNewActions ||
         describesNewActionsAsSetup ||
+        describesNewActionsAsProgress ||
         (candidateAddsWaitingState && !draftGroundsWaitingState)) {
       issues.add(TaskAgentReportRevisionIssue.processNarration);
     }

@@ -680,6 +680,30 @@ turn task metadata or a checklist edit into an accomplishment.
       ),
       [TaskAgentReportRevisionIssue.processNarration],
     );
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'de',
+        materialTaskState: const {
+          'newChecklistItems': [
+            'CSV-Export reparieren',
+            'Testdaten anfragen',
+          ],
+        },
+        draftReport: const {
+          'oneLiner': 'CSV-Export reparieren',
+          'tldr': 'Drei konkrete Schritte stehen an.',
+          'content': 'Export reparieren, Testdaten anfragen, Tests ausführen.',
+        },
+        candidateReport: const {
+          'oneLiner': 'CSV-Export stabilisieren',
+          'tldr': 'Drei konkrete Schritte stehen an.',
+          'content':
+              'Die Arbeit am CSV-Export läuft aktuell. Export reparieren, '
+              'Testdaten anfragen und Tests ausführen.',
+        },
+      ),
+      [TaskAgentReportRevisionIssue.processNarration],
+    );
   });
 
   test('validation preserves grounded completed-item wording', () {
@@ -721,6 +745,23 @@ turn task metadata or a checklist edit into an accomplishment.
   });
 
   test('validation removes setup filler and evidence disclaimers', () {
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'en',
+        materialTaskState: const {},
+        draftReport: const {
+          'oneLiner': 'Run the evaluation',
+          'tldr': 'Compare the candidate with the reference.',
+          'content': 'Run the evaluation and compare the models.',
+        },
+        candidateReport: const {
+          'oneLiner': 'Run the evaluation',
+          'tldr': 'Configuration is complete; begin the evaluation.',
+          'content': 'Run the evaluation and compare the models.',
+        },
+      ),
+      [TaskAgentReportRevisionIssue.processNarration],
+    );
     expect(
       TaskAgentReportEditor.validateRevision(
         languageCode: 'de',
