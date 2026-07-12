@@ -73,6 +73,10 @@ enum TaskAgentReportRevisionIssue {
     'Remove Links or Reference sections that contain no HTTP or HTTPS URL.',
   ),
   formalRegister('Use the configured informal language register.'),
+  deferredScopeLeak(
+    'Remove every mention of explicitly deferred, rejected, omitted, or '
+    'out-of-scope concepts, including explanations that they were excluded.',
+  ),
   missingActiveRisk(
     'Restore the active constraint, risk, blocker, or root-cause investigation.',
   );
@@ -176,6 +180,7 @@ class TaskAgentReportEditor {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
   }) async {
+    final excludedDraftTerms = _extractExcludedDraftTerms(draft.toJson());
     var attempts = 0;
     var hadRevision = false;
     var validationIssues = <TaskAgentReportRevisionIssue>[];
@@ -200,6 +205,8 @@ class TaskAgentReportEditor {
         'materialTaskState': materialTaskState,
         'draftReport': draft.toJson(),
         'reportDirective': reportDirective.trim(),
+        if (excludedDraftTerms.isNotEmpty)
+          'excludedDraftTerms': excludedDraftTerms,
         if (isRepair) ...{
           'rejectedReport': rejectedReport?.toJson(),
           'requiredCorrections': [
@@ -589,7 +596,29 @@ class TaskAgentReportEditor {
       issues.add(TaskAgentReportRevisionIssue.missingActiveRisk);
     }
 
+    final excludedDraftTerms = _extractExcludedDraftTerms(draftReport);
+    if (excludedDraftTerms.any(normalizedCandidate.contains)) {
+      issues.add(TaskAgentReportRevisionIssue.deferredScopeLeak);
+    }
+
     return issues.toList(growable: false);
+  }
+
+  static List<String> _extractExcludedDraftTerms(
+    Map<String, dynamic> draftReport,
+  ) {
+    final draftText = _reportFieldText(draftReport);
+    final terms = <String>{};
+    for (final segment in draftText.split(_sentenceBoundary)) {
+      if (!_excludedScopeMarker.hasMatch(segment)) continue;
+      for (final match in _distinctiveWord.allMatches(segment.toLowerCase())) {
+        final term = match.group(0)!;
+        if (!_excludedScopeStopWords.contains(term)) {
+          terms.add(term);
+        }
+      }
+    }
+    return terms.toList(growable: false)..sort();
   }
 
   static bool _containsNearbyPatterns(
@@ -602,6 +631,48 @@ class TaskAgentReportEditor {
       '(?:$secondPattern).{0,100}(?:$firstPattern)',
     ).hasMatch(text);
   }
+
+  static final _sentenceBoundary = RegExp(r'[.!?;\n]+', unicode: true);
+  static final _distinctiveWord = RegExp(
+    r'[\p{L}\p{N}]{7,}',
+    unicode: true,
+  );
+  static final _excludedScopeMarker = RegExp(
+    r'\b(?:deferred|rejected|omitted|out[- ]of[- ]scope|outside scope|'
+    'do not include|must not be included|leave (?:it|that|this) out|'
+    'zurückgestellt|nicht.{0,60}aufgenommen|nicht.{0,40}aufnehmen|'
+    'ausgeschlossen|pospuest|aplazad|fuera de alcance|no incluir|'
+    'différ|reporté|hors périmètre|ne pas inclure|amânat|'
+    r'în afara domeniului|nu include|odložen|mimo rozsah|nezahrnovat)\b',
+    caseSensitive: false,
+    unicode: true,
+  );
+  static const _excludedScopeStopWords = <String>{
+    'because',
+    'concept',
+    'concepts',
+    'current',
+    'deferred',
+    'explicitly',
+    'included',
+    'include',
+    'mentioned',
+    'omitted',
+    'outside',
+    'rejected',
+    'report',
+    'someday',
+    'zurückgestellt',
+    'aufgenommen',
+    'aufnehmen',
+    'ausgeschlossen',
+    'bewusst',
+    'erstellung',
+    'erwähnt',
+    'möglicher',
+    'vorerst',
+    'zukünftiger',
+  };
 
   static const _causalFragmentsByLanguage = <String, List<String>>{
     'en': [
@@ -848,6 +919,8 @@ analysis, transcription, readiness, waiting filler, internal IDs, rejected or
 deferred scope, empty sections, and claims that no blocker, link, or outcome
 exists. Never restate the task status as real-world progress or label a user
 checkmark as applied, implemented, fixed, or achieved.
+If `excludedDraftTerms` is present, none of those terms may appear anywhere in
+the revision, even to explain that a concept was deferred or excluded.
 Do not mention the checklist itself; present its real actions directly.
 Links and reference sections require a real HTTP or HTTPS URL; a date, title,
 or internal label is not a link.

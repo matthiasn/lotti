@@ -503,6 +503,38 @@ turn task metadata or a checklist edit into an accomplishment.
     );
   });
 
+  test('validation rejects explicitly deferred draft scope', () {
+    const draftReport = {
+      'oneLiner': 'Repair the CSV export',
+      'tldr': 'Three committed actions remain.',
+      'content':
+          'Repair the export. The newsletter idea is explicitly deferred and '
+          'must not be included.',
+    };
+
+    List<TaskAgentReportRevisionIssue> validate(String content) {
+      return TaskAgentReportEditor.validateRevision(
+        languageCode: 'en',
+        materialTaskState: const {},
+        draftReport: draftReport,
+        candidateReport: {
+          'oneLiner': 'Repair the CSV export',
+          'tldr': 'Three committed actions remain.',
+          'content': content,
+        },
+      );
+    }
+
+    expect(
+      validate('Repair the export; the newsletter remains outside scope.'),
+      contains(TaskAgentReportRevisionIssue.deferredScopeLeak),
+    );
+    expect(
+      validate('Repair the export, request test data, then run regression.'),
+      isNot(contains(TaskAgentReportRevisionIssue.deferredScopeLeak)),
+    );
+  });
+
   test('validation accepts localized equivalent anchors', () {
     final issues = TaskAgentReportEditor.validateRevision(
       languageCode: 'de',
@@ -779,6 +811,13 @@ turn task metadata or a checklist edit into an accomplishment.
   });
 
   test('editor returns a valid isolated revision and usage', () async {
+    const draftWithDeferredScope = TaskAgentReportDraft(
+      oneLiner: 'Task configured for model validation',
+      tldr: 'P1, due July 4, 2026, estimated 150 minutes.',
+      content:
+          'Run eval and compare the reference. A newsletter idea is deferred '
+          'and must not be included.',
+    );
     final inferenceRepository = _QueuedInferenceRepository([
       [
         _toolCalls([
@@ -799,7 +838,7 @@ turn task metadata or a checklist edit into an accomplishment.
           provider: provider,
           inferenceRepository: inferenceRepository,
         ).edit(
-          draft: draft,
+          draft: draftWithDeferredScope,
           languageCode: 'en',
           materialTaskState: materialState,
           reportDirective: evolvedReportDirective,
@@ -830,6 +869,8 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(serializedMessages, contains('pragmatic project partner'));
     expect(serializedMessages, contains('## Next moves'));
     expect(serializedMessages, contains('## Decisions needed'));
+    expect(serializedMessages, contains('excludedDraftTerms'));
+    expect(serializedMessages, contains('newsletter'));
     expect(serializedMessages, isNot(contains('private-id')));
   });
 
