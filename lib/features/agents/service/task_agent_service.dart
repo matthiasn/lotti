@@ -326,21 +326,27 @@ class TaskAgentService {
     required String agentId,
     required bool enabled,
   }) async {
-    final identity = await agentService.getAgent(agentId);
-    if (identity == null) {
-      throw StateError('Agent $agentId not found');
-    }
-    if (enabled &&
-        identity.config.inferenceSetup?.mode ==
-            AgentInferenceSetupMode.disabled) {
-      throw StateError('Choose an inference setup before enabling automation');
-    }
+    late AgentIdentityEntity identity;
+    await syncService.runInTransaction(() async {
+      final current = await agentService.getAgent(agentId);
+      if (current == null) {
+        throw StateError('Agent $agentId not found');
+      }
+      identity = current;
+      if (enabled &&
+          identity.config.inferenceSetup?.mode ==
+              AgentInferenceSetupMode.disabled) {
+        throw StateError(
+          'Choose an inference setup before enabling automation',
+        );
+      }
 
-    final updated = identity.copyWith(
-      config: identity.config.copyWith(automaticUpdatesEnabled: enabled),
-      updatedAt: clock.now(),
-    );
-    await syncService.upsertEntity(updated);
+      final updated = identity.copyWith(
+        config: identity.config.copyWith(automaticUpdatesEnabled: enabled),
+        updatedAt: clock.now(),
+      );
+      await syncService.upsertEntity(updated);
+    });
 
     if (enabled && identity.lifecycle == AgentLifecycle.active) {
       orchestrator.enableAutomaticUpdatesRuntime(agentId);

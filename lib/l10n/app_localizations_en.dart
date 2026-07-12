@@ -8850,6 +8850,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentRunNowTooltip => 'Run now';
 
   @override
+  String get taskAgentRouteVia => 'via';
+
+  @override
   String taskAgentSetupAndReportSemantics(String identity) {
     return 'This report and current setup use $identity. Activate to change setup.';
   }

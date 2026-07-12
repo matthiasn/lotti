@@ -481,6 +481,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     });
 
     final showCountdown =
+        inferenceAvailable &&
         automaticUpdatesEnabled &&
         !isRunning &&
         remainingSeconds > 0 &&

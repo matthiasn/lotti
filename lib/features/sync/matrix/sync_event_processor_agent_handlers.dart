@@ -215,13 +215,20 @@ extension _AgentHandlers on SyncEventProcessor {
       if (wakeOrchestrator != null &&
           appliedIdentity != null &&
           appliedIdentity.lifecycle == AgentLifecycle.active &&
-          appliedIdentity.kind == 'task_agent' &&
           appliedIdentity.config.automaticUpdatesEnabledEffective &&
           appliedIdentity.config.inferenceSetup?.mode !=
               AgentInferenceSetupMode.disabled) {
         wakeOrchestrator!.enableAutomaticUpdatesRuntime(
           appliedIdentity.agentId,
         );
+      }
+      if (wakeOrchestrator != null &&
+          appliedIdentity != null &&
+          appliedIdentity.lifecycle == AgentLifecycle.active &&
+          appliedIdentity.kind == 'task_agent' &&
+          appliedIdentity.config.automaticUpdatesEnabledEffective &&
+          appliedIdentity.config.inferenceSetup?.mode !=
+              AgentInferenceSetupMode.disabled) {
         final links = await agentRepository!.getLinksFrom(
           appliedIdentity.agentId,
           type: 'agent_task',

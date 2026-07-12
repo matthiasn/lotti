@@ -9076,6 +9076,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentRunNowTooltip => 'Rulează acum';
 
   @override
+  String get taskAgentRouteVia => 'prin';
+
+  @override
   String taskAgentSetupAndReportSemantics(String identity) {
     return 'Acest raport și configurarea curentă folosesc $identity. Activați pentru a modifica configurarea.';
   }

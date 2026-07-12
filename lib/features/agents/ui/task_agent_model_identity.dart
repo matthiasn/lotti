@@ -83,11 +83,14 @@ class TaskAgentModelIdentityViewData {
 }
 
 /// Human-readable model publisher and serving-provider identity.
-String formatInferenceRouteIdentity(InferenceRouteSnapshot route) {
+String formatInferenceRouteIdentity(
+  InferenceRouteSnapshot route, {
+  required String viaLabel,
+}) {
   final parts = <String>[
     route.modelName,
     if (route.publisherName?.trim().isNotEmpty ?? false)
       route.publisherName!.trim(),
   ];
-  return '${parts.join(' · ')} · via ${route.servingProviderName}';
+  return '${parts.join(' · ')} · $viaLabel ${route.servingProviderName}';
 }

@@ -179,6 +179,7 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
         servingProviderName: provider.name,
         runtimeSettings: const {},
       ),
+      viaLabel: context.messages.taskAgentRouteVia,
     );
   }
 
@@ -260,6 +261,7 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
         ? null
         : formatInferenceRouteIdentity(
             InferenceRouteSnapshot.fromResolvedProfile(setup!.profile!),
+            viaLabel: context.messages.taskAgentRouteVia,
           );
     final config = identity?.config;
     final currentProfile = options?.profiles

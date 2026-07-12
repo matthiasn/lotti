@@ -76,10 +76,13 @@ class ProfileResolver {
     return _buildResolvedProfile(config);
   }
 
-  Future<ResolvedProfile?> _resolveFromProfile(String profileId) async {
+  Future<ResolvedProfile?> _resolveFromProfile(
+    String profileId, {
+    ResolvedInferenceProvider? thinkingOverride,
+  }) async {
     final config = await _fetchProfile(profileId);
     if (config == null) return null;
-    return _buildResolvedProfile(config);
+    return _buildResolvedProfile(config, thinkingOverride: thinkingOverride);
   }
 
   Future<ResolvedAgentSetup> _resolveTypedSetup(
@@ -92,9 +95,6 @@ class ProfileResolver {
       );
     }
 
-    final baseProfile = setup.baseProfileId == null
-        ? null
-        : await _resolveFromProfile(setup.baseProfileId!);
     final overrideId = setup.thinkingModelOverrideId;
     final override = overrideId == null
         ? null
@@ -102,6 +102,12 @@ class ProfileResolver {
             modelConfigId: overrideId,
             aiConfigRepository: _aiConfigRepository,
             logTag: _logTag,
+          );
+    final baseProfile = setup.baseProfileId == null
+        ? null
+        : await _resolveFromProfile(
+            setup.baseProfileId!,
+            thinkingOverride: override,
           );
 
     if (override != null) {
@@ -220,14 +226,17 @@ class ProfileResolver {
   }
 
   Future<ResolvedProfile?> _buildResolvedProfile(
-    AiConfigInferenceProfile config,
-  ) async {
+    AiConfigInferenceProfile config, {
+    ResolvedInferenceProvider? thinkingOverride,
+  }) async {
     // Resolve thinking slot (fatal if missing).
-    final thinkingSlot = await resolveInferenceProviderForProfileSlot(
-      modelId: config.thinkingModelId,
-      aiConfigRepository: _aiConfigRepository,
-      logTag: _logTag,
-    );
+    final thinkingSlot =
+        thinkingOverride ??
+        await resolveInferenceProviderForProfileSlot(
+          modelId: config.thinkingModelId,
+          aiConfigRepository: _aiConfigRepository,
+          logTag: _logTag,
+        );
     if (thinkingSlot == null) {
       developer.log(
         'Cannot resolve thinking model ${config.thinkingModelId} '

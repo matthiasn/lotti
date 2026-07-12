@@ -42,7 +42,7 @@ void main() {
     'formats model, publisher, and serving provider as separate concepts',
     () {
       expect(
-        formatInferenceRouteIdentity(route),
+        formatInferenceRouteIdentity(route, viaLabel: 'via'),
         'Qwen 3.5 Plus · Alibaba · via Melious.ai',
       );
       expect(
@@ -54,6 +54,7 @@ void main() {
             servingProviderName: 'OpenRouter',
             runtimeSettings: const {},
           ),
+          viaLabel: 'via',
         ),
         'Custom Model · via OpenRouter',
       );

@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../categories/test_utils.dart';
 import '../../projects/test_utils.dart';
 import '../test_data/entity_factories.dart';
 
@@ -268,7 +269,9 @@ void main() {
     ).thenAnswer((_) async => task);
     when(
       () => journalDb.getCategoryById('category-1'),
-    ).thenAnswer((_) async => null);
+    ).thenAnswer(
+      (_) async => CategoryTestUtils.createTestCategory(id: 'category-1'),
+    );
     await openSheet(tester);
 
     await tester.tap(find.text('Copy category default'));

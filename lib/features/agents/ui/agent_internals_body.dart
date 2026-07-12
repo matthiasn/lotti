@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_token_usage_section.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -308,7 +309,15 @@ class _ProfileSection extends ConsumerWidget {
         ? null
         : formatInferenceRouteIdentity(
             InferenceRouteSnapshot.fromResolvedProfile(setup!.profile!),
+            viaLabel: context.messages.taskAgentRouteVia,
           );
+    final setupIsBroken = setup?.status == AgentSetupResolutionStatus.broken;
+    final setupTitle = setupIsBroken
+        ? context.messages.taskAgentSetupBroken
+        : context.messages.taskAgentNoProfileSelected;
+    final setupSubtitle = setupIsBroken
+        ? context.messages.taskAgentSetupBroken
+        : context.messages.taskAgentNoProfileSelectedDescription;
     final taskId = state?.slots.activeTaskId;
 
     return Padding(
@@ -325,9 +334,9 @@ class _ProfileSection extends ConsumerWidget {
           ),
           SizedBox(height: tokens.spacing.step3),
           DesignSystemListItem(
-            title: route ?? context.messages.taskAgentNoProfileSelected,
+            title: route ?? setupTitle,
             subtitle: route == null
-                ? context.messages.taskAgentNoProfileSelectedDescription
+                ? setupSubtitle
                 : context.messages.taskAgentCurrentSetupLabel,
             subtitleMaxLines: null,
             leading: Icon(

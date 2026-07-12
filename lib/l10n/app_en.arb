@@ -4319,6 +4319,7 @@
   "taskAgentNoProfileSelectedDescription": "Choose a saved setup or thinking model before this agent can run.",
   "taskAgentProfileDefaultBadge": "Profile default",
   "taskAgentRunNowTooltip": "Run now",
+  "taskAgentRouteVia": "via",
   "taskAgentSetupAndReportSemantics": "This report and current setup use {identity}. Activate to change setup.",
   "@taskAgentSetupAndReportSemantics": {
     "placeholders": {

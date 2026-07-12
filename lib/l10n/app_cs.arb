@@ -3446,6 +3446,7 @@
   "taskAgentNoProfileSelectedDescription": "Než agenta spustíš, vyber uložené nastavení nebo model.",
   "taskAgentProfileDefaultBadge": "Výchozí model profilu",
   "taskAgentRunNowTooltip": "Spustit nyní",
+  "taskAgentRouteVia": "přes",
   "taskAgentSetupAndReportSemantics": "Tato zpráva i aktuální nastavení používají {identity}. Aktivuj pro změnu nastavení.",
   "taskAgentSetupBroken": "Vybrané nastavení AI není dostupné",
   "taskAgentSetupChangedToast": "Pro všechny budoucí aktualizace se bude používat {model}, dokud ho nezměníš.",

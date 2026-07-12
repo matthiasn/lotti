@@ -161,7 +161,17 @@ extension WakeDrainEngine on WakeOrchestrator {
   }
 
   Future<bool> _wakeAllowedByCurrentPolicy(WakeJob job) async {
-    final entity = await repository.getEntity(job.agentId);
+    late final AgentDomainEntity? entity;
+    try {
+      entity = await repository.getEntity(job.agentId);
+    } catch (error, stackTrace) {
+      _logError(
+        'failed to load agent policy; allowing wake to proceed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return true;
+    }
     if (entity is! AgentIdentityEntity || entity.kind != AgentKinds.taskAgent) {
       return true;
     }

@@ -101,4 +101,35 @@ void main() {
     );
     expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
   });
+
+  testWidgets('broken setup keeps historical report attribution visible', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidget(
+        TaskAgentIdentityRegion(
+          data: const TaskAgentModelIdentityViewData(
+            presentation: TaskAgentIdentityPresentation.broken,
+            reportRoute: route,
+          ),
+          automaticUpdatesEnabled: true,
+          onSetupTap: () {},
+        ),
+      ),
+    );
+
+    expect(find.text('Current setup'), findsOneWidget);
+    expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
+    expect(find.text('This report'), findsOneWidget);
+    expect(
+      find.text('Qwen 3.5 Plus · Alibaba · via Melious.ai'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Current setup. Selected AI setup is unavailable',
+      ),
+      findsOneWidget,
+    );
+  });
 }

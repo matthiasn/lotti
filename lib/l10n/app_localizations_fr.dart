@@ -9083,6 +9083,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskAgentRunNowTooltip => 'Exécuter maintenant';
 
   @override
+  String get taskAgentRouteVia => 'via';
+
+  @override
   String taskAgentSetupAndReportSemantics(String identity) {
     return 'Ce rapport et la configuration actuelle utilisent $identity. Active pour la modifier.';
   }

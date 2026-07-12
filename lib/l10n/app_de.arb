@@ -3662,6 +3662,7 @@
   "taskAgentNoProfileSelectedDescription": "Wähle eine gespeicherte Einrichtung oder ein Denkmodell, bevor der Agent laufen kann.",
   "taskAgentProfileDefaultBadge": "Profilstandard",
   "taskAgentRunNowTooltip": "Jetzt ausführen",
+  "taskAgentRouteVia": "über",
   "taskAgentSetupAndReportSemantics": "Dieser Bericht und die aktuelle Einrichtung verwenden {identity}. Aktivieren, um die Einrichtung zu ändern.",
   "taskAgentSetupBroken": "Die ausgewählte KI-Einrichtung ist nicht verfügbar",
   "taskAgentSetupChangedToast": "{model} wird für jedes zukünftige Agent-Update verwendet, bis du es änderst.",

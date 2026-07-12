@@ -547,7 +547,7 @@ class WakeOrchestrator {
       triggerTokens: triggerTokens,
       workspaceKey: workspaceKey,
       createdAt: now,
-      initiator: initiator,
+      initiator: initiator ?? WakeInitiator.user,
     );
 
     queue.enqueue(job);

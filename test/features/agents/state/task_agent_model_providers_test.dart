@@ -1,6 +1,15 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
+import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
+import '../test_data/entity_factories.dart';
+import '../test_data/template_factories.dart';
 
 void main() {
   AiConfigModel model({
@@ -33,4 +42,82 @@ void main() {
       isFalse,
     );
   });
+
+  test(
+    'resolved setup returns null when identity, template, or version is absent',
+    () async {
+      final identityMissing = ProviderContainer(
+        overrides: [
+          agentIdentityProvider.overrideWith((ref, id) async => null),
+        ],
+      );
+      addTearDown(identityMissing.dispose);
+      expect(
+        await identityMissing.read(
+          taskAgentResolvedSetupProvider('agent').future,
+        ),
+        isNull,
+      );
+
+      final identity = makeTestIdentity();
+      final templateMissing = ProviderContainer(
+        overrides: [
+          agentIdentityProvider.overrideWith((ref, id) async => identity),
+          templateForAgentProvider.overrideWith((ref, id) async => null),
+        ],
+      );
+      addTearDown(templateMissing.dispose);
+      expect(
+        await templateMissing.read(
+          taskAgentResolvedSetupProvider('agent').future,
+        ),
+        isNull,
+      );
+
+      final template = makeTestTemplate();
+      final versionMissing = ProviderContainer(
+        overrides: [
+          agentIdentityProvider.overrideWith((ref, id) async => identity),
+          templateForAgentProvider.overrideWith((ref, id) async => template),
+          activeTemplateVersionProvider.overrideWith((ref, id) async => null),
+        ],
+      );
+      addTearDown(versionMissing.dispose);
+      expect(
+        await versionMissing.read(
+          taskAgentResolvedSetupProvider('agent').future,
+        ),
+        isNull,
+      );
+    },
+  );
+
+  test(
+    'setup options filters models to task-agent thinking capabilities',
+    () async {
+      final repository = MockAiConfigRepository();
+      final capable = model();
+      final incapable = model(tools: false);
+      when(
+        () => repository.getConfigsByType(AiConfigType.inferenceProfile),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => repository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [capable, incapable]);
+      when(
+        () => repository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => const []);
+      final container = ProviderContainer(
+        overrides: [aiConfigRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final options = await container.read(
+        taskAgentSetupOptionsProvider.future,
+      );
+      expect(options.models, [capable]);
+      expect(options.profiles, isEmpty);
+      expect(options.providers, isEmpty);
+    },
+  );
 }

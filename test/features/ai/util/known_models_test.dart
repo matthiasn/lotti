@@ -1380,6 +1380,8 @@ void main() {
         expect(publisherForCuratedModel('meta-llama/Llama-3.3'), 'Meta');
         expect(publisherForCuratedModel('mistral-small-4'), 'Mistral AI');
         expect(publisherForCuratedModel('glm-5.2'), 'Zhipu AI');
+        expect(publisherForCuratedModel('openai/gpt-4.1'), 'OpenAI');
+        expect(publisherForCuratedModel('openai/o4-mini'), 'OpenAI');
         expect(publisherForCuratedModel('custom-model'), isNull);
       });
 

@@ -9013,6 +9013,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentRunNowTooltip => 'Spustit nyní';
 
   @override
+  String get taskAgentRouteVia => 'přes';
+
+  @override
   String taskAgentSetupAndReportSemantics(String identity) {
     return 'Tato zpráva i aktuální nastavení používají $identity. Aktivuj pro změnu nastavení.';
   }

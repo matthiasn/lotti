@@ -70,6 +70,7 @@ class KnownModel {
 /// a publisher from a mutable display name.
 String? publisherForCuratedModel(String providerModelId) {
   final id = providerModelId.toLowerCase();
+  final modelId = id.split('/').last;
   if (id.contains('gemini') || id.contains('gemma')) return 'Google';
   if (id.contains('qwen') || id.contains('wan')) return 'Alibaba';
   if (id.contains('llama')) return 'Meta';
@@ -84,10 +85,10 @@ String? publisherForCuratedModel(String providerModelId) {
   if (id.contains('minimax')) return 'MiniMax';
   if (id.contains('flux')) return 'Black Forest Labs';
   if (id.contains('whisper') ||
-      id.startsWith('gpt-') ||
-      id.startsWith('o1') ||
-      id.startsWith('o3') ||
-      id.startsWith('o4')) {
+      modelId.startsWith('gpt-') ||
+      modelId.startsWith('o1') ||
+      modelId.startsWith('o3') ||
+      modelId.startsWith('o4')) {
     return 'OpenAI';
   }
   return null;

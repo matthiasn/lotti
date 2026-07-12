@@ -21,15 +21,24 @@ class TaskAgentIdentityRegion extends StatelessWidget {
     final messages = context.messages;
     final currentIdentity = data.currentRoute == null
         ? null
-        : formatInferenceRouteIdentity(data.currentRoute!);
+        : formatInferenceRouteIdentity(
+            data.currentRoute!,
+            viaLabel: messages.taskAgentRouteVia,
+          );
     final combined =
         data.presentation == TaskAgentIdentityPresentation.combined;
-    final semanticsLabel = currentIdentity == null
-        ? '${messages.taskAgentNoProfileSelected}. '
-              '${messages.taskAgentNoProfileSelectedDescription}'
-        : combined
-        ? messages.taskAgentSetupAndReportSemantics(currentIdentity)
-        : messages.taskAgentSetupSemantics(currentIdentity);
+    final semanticsLabel = switch (data.presentation) {
+      TaskAgentIdentityPresentation.broken =>
+        '${messages.taskAgentCurrentSetupHeader}. '
+            '${messages.taskAgentSetupBroken}',
+      _ when currentIdentity == null =>
+        '${messages.taskAgentNoProfileSelected}. '
+            '${messages.taskAgentNoProfileSelectedDescription}',
+      _ when combined => messages.taskAgentSetupAndReportSemantics(
+        currentIdentity,
+      ),
+      _ => messages.taskAgentSetupSemantics(currentIdentity),
+    };
 
     final rows = <Widget>[
       if (data.presentation == TaskAgentIdentityPresentation.disabled)
@@ -57,14 +66,19 @@ class TaskAgentIdentityRegion extends StatelessWidget {
           onTap: onSetupTap,
           semanticsLabel: semanticsLabel,
         ),
-      if (data.presentation == TaskAgentIdentityPresentation.split)
+      if (data.presentation == TaskAgentIdentityPresentation.split ||
+          ((data.presentation == TaskAgentIdentityPresentation.broken ||
+                  data.presentation ==
+                      TaskAgentIdentityPresentation.disabled) &&
+              (data.reportRoute != null || data.reportAttributionUnavailable)))
         _ReportIdentityRow(
           label: messages.taskAgentThisReportHeader,
-          value: data.reportAttributionUnavailable
+          value: (data.reportAttributionUnavailable || data.reportRoute == null)
               ? messages.taskAgentAttributionUnavailable
-              : data.reportRoute == null
-              ? messages.taskAgentAttributionUnavailable
-              : formatInferenceRouteIdentity(data.reportRoute!),
+              : formatInferenceRouteIdentity(
+                  data.reportRoute!,
+                  viaLabel: messages.taskAgentRouteVia,
+                ),
         ),
       if (!automaticUpdatesEnabled)
         Padding(

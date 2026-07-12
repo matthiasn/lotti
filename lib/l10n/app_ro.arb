@@ -3662,6 +3662,7 @@
   "taskAgentNoProfileSelectedDescription": "Alegeți o configurare salvată sau un model înainte ca agentul să poată rula.",
   "taskAgentProfileDefaultBadge": "Modelul implicit al profilului",
   "taskAgentRunNowTooltip": "Rulează acum",
+  "taskAgentRouteVia": "prin",
   "taskAgentSetupAndReportSemantics": "Acest raport și configurarea curentă folosesc {identity}. Activați pentru a modifica configurarea.",
   "taskAgentSetupBroken": "Configurarea AI selectată nu este disponibilă",
   "taskAgentSetupChangedToast": "{model} va fi folosit pentru toate actualizările viitoare până când îl schimbați.",

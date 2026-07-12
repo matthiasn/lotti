@@ -144,17 +144,12 @@ void main() {
     test('typed direct model replaces only the base thinking slot', () async {
       final profile = testInferenceProfile(
         id: 'base-profile',
-        thinkingModelId: 'base-thinking',
+        thinkingModelId: 'missing-base-thinking',
         transcriptionModelId: 'transcription',
       );
       stubProfile(profile);
       when(() => mockAiConfig.getConfigsByType(AiConfigType.model)).thenAnswer(
         (_) async => [
-          testAiModel(
-            id: 'base-model',
-            providerModelId: 'base-thinking',
-            inferenceProviderId: 'base-provider',
-          ),
           testAiModel(
             id: 'transcription-model',
             providerModelId: 'transcription',

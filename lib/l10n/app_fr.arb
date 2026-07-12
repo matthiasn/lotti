@@ -3662,6 +3662,7 @@
   "taskAgentNoProfileSelectedDescription": "Choisis une configuration enregistrée ou un modèle avant de lancer l’agent.",
   "taskAgentProfileDefaultBadge": "Réglage du profil",
   "taskAgentRunNowTooltip": "Exécuter maintenant",
+  "taskAgentRouteVia": "via",
   "taskAgentSetupAndReportSemantics": "Ce rapport et la configuration actuelle utilisent {identity}. Active pour la modifier.",
   "taskAgentSetupBroken": "La configuration IA sélectionnée est indisponible",
   "taskAgentSetupChangedToast": "{model} sera utilisé pour chaque future mise à jour jusqu’à ce que tu le changes.",

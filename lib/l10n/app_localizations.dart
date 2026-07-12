@@ -15325,6 +15325,12 @@ abstract class AppLocalizations {
   /// **'Run now'**
   String get taskAgentRunNowTooltip;
 
+  /// No description provided for @taskAgentRouteVia.
+  ///
+  /// In en, this message translates to:
+  /// **'via'**
+  String get taskAgentRouteVia;
+
   /// No description provided for @taskAgentSetupAndReportSemantics.
   ///
   /// In en, this message translates to:
