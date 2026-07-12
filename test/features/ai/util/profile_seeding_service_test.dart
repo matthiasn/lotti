@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
@@ -7,6 +8,19 @@ import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils.dart';
+
+/// Usable provider rows for [types] — non-blank API key for cloud types,
+/// non-blank base URL for keyless local types — so the seeding gate is open
+/// for exactly those provider types.
+List<AiConfig> _usableProvidersFor(Iterable<InferenceProviderType> types) => [
+  for (final type in types)
+    AiTestDataFactory.createTestProvider(
+      id: 'provider-${type.name}',
+      type: type,
+      apiKey: ProviderConfig.requiresApiKey(type) ? 'test-api-key' : '',
+      baseUrl: 'http://localhost:1234',
+    ),
+];
 
 void main() {
   late MockAiConfigRepository mockRepo;
@@ -35,7 +49,17 @@ void main() {
     when(
       () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
     ).thenAnswer((_) async => const <AiConfig>[]);
+    // Default: a usable provider exists for every mapped provider type, so
+    // the seeding gate is open for the whole catalog unless a test narrows it.
+    when(
+      () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+    ).thenAnswer(
+      (_) async => _usableProvidersFor(
+        ProfileSeedingService.providerTypeByProfileId.values.toSet(),
+      ),
+    );
     when(() => mockRepo.saveConfig(any())).thenAnswer((_) async {});
+    when(() => mockRepo.deleteConfig(any())).thenAnswer((_) async {});
   });
 
   group('ProfileSeedingService', () {
@@ -469,6 +493,249 @@ void main() {
         localProfile.skillAssignments.first.skillId,
         skillImageAnalysisContextId,
       );
+    });
+  });
+
+  group('provider-gated seeding', () {
+    test('seeds nothing when no providers exist', () async {
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => const <AiConfig>[]);
+
+      await service.seedDefaults();
+
+      verifyNever(() => mockRepo.saveConfig(any()));
+    });
+
+    test('seeds only the profile of the one usable provider type', () async {
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer(
+        (_) async => _usableProvidersFor([InferenceProviderType.melious]),
+      );
+      final captured = <AiConfig>[];
+      when(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).thenAnswer((invocation) async {
+        captured.add(invocation.positionalArguments.first as AiConfig);
+      });
+
+      await service.seedDefaults();
+
+      expect(captured.map((c) => c.id), [profileMeliousId]);
+    });
+
+    test(
+      'a draft provider without an API key does not open the gate',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestProvider(
+              id: 'melious-draft',
+              type: InferenceProviderType.melious,
+              apiKey: '',
+            ),
+          ],
+        );
+
+        await service.seedDefaults();
+
+        verifyNever(() => mockRepo.saveConfig(any()));
+      },
+    );
+
+    test(
+      'a keyless local provider with a base URL opens the Ollama gate',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer(
+          (_) async => _usableProvidersFor([InferenceProviderType.ollama]),
+        );
+        final captured = <AiConfig>[];
+        when(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).thenAnswer((invocation) async {
+          captured.add(invocation.positionalArguments.first as AiConfig);
+        });
+
+        await service.seedDefaults();
+
+        expect(captured.map((c) => c.id).toSet(), {
+          profileLocalId,
+          profileLocalGemmaId,
+          profileLocalGemmaPowerId,
+        });
+      },
+    );
+
+    test('every default profile template has a provider-type mapping', () {
+      expect(
+        ProfileSeedingService.providerTypeByProfileId.keys.toSet(),
+        ProfileSeedingService.defaultProfiles.map((p) => p.id).toSet(),
+      );
+    });
+  });
+
+  group('removeOrphanedDefaultSeeds', () {
+    AiConfigInferenceProfile templateFor(String id) =>
+        ProfileSeedingService.defaultProfiles.firstWhere((p) => p.id == id);
+
+    test(
+      'removes an untouched seed whose provider type has no usable provider',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer(
+          (_) async => _usableProvidersFor([InferenceProviderType.gemini]),
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer((_) async => [templateFor(profileMeliousId)]);
+
+        await service.removeOrphanedDefaultSeeds();
+
+        verify(() => mockRepo.deleteConfig(profileMeliousId)).called(1);
+      },
+    );
+
+    test('keeps the seed while a usable same-type provider exists', () async {
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer(
+        (_) async => _usableProvidersFor([InferenceProviderType.melious]),
+      );
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+      ).thenAnswer((_) async => [templateFor(profileMeliousId)]);
+
+      await service.removeOrphanedDefaultSeeds();
+
+      verifyNever(() => mockRepo.deleteConfig(any()));
+    });
+
+    test(
+      'keeps a renamed seed — user-touched rows are never removed',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => const <AiConfig>[]);
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            templateFor(profileMeliousId).copyWith(name: 'My cloud profile'),
+          ],
+        );
+
+        await service.removeOrphanedDefaultSeeds();
+
+        verifyNever(() => mockRepo.deleteConfig(any()));
+      },
+    );
+
+    test(
+      'keeps a seed rewired to a usable provider of another type',
+      () async {
+        // Anthropic has no usable provider, but the user pointed the
+        // transcription slot at a model row owned by a usable Gemini
+        // provider — the profile can still serve requests, so it stays.
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer(
+          (_) async => _usableProvidersFor([InferenceProviderType.gemini]),
+        );
+        when(() => mockRepo.getConfigsByType(AiConfigType.model)).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestModel(
+              id: 'gemini-flash-row',
+              providerModelId: 'models/gemini-3-flash-preview',
+              inferenceProviderId: 'provider-gemini',
+            ),
+          ],
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            templateFor(
+              profileAnthropicId,
+            ).copyWith(transcriptionModelId: 'gemini-flash-row'),
+          ],
+        );
+
+        await service.removeOrphanedDefaultSeeds();
+
+        verifyNever(() => mockRepo.deleteConfig(any()));
+      },
+    );
+
+    test(
+      'removes the legacy-named Local Power seed when oMLX is gone',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => const <AiConfig>[]);
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            templateFor(
+              profileLocalPowerId,
+            ).copyWith(name: 'Local Power (Ollama)'),
+          ],
+        );
+
+        await service.removeOrphanedDefaultSeeds();
+
+        verify(() => mockRepo.deleteConfig(profileLocalPowerId)).called(1);
+      },
+    );
+
+    test('keeps seeds with any user-touched metadata', () async {
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => const <AiConfig>[]);
+      final template = templateFor(profileMeliousId);
+      final touchedVariants = <String, AiConfigInferenceProfile>{
+        'description': template.copyWith(description: 'my notes'),
+        'pinnedHostId': template.copyWith(pinnedHostId: 'host-1'),
+        'isDefault': template.copyWith(isDefault: false),
+        'desktopOnly': template.copyWith(desktopOnly: true),
+      };
+
+      for (final entry in touchedVariants.entries) {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer((_) async => [entry.value]);
+
+        await service.removeOrphanedDefaultSeeds();
+
+        verifyNever(() => mockRepo.deleteConfig(any()));
+      }
+    });
+
+    test('never touches user-created (non-template) profiles', () async {
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => const <AiConfig>[]);
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+      ).thenAnswer(
+        (_) async => [
+          AiTestDataFactory.createTestProfile(
+            id: 'user-profile',
+            name: 'Mine',
+            description: null,
+          ),
+        ],
+      );
+
+      await service.removeOrphanedDefaultSeeds();
+
+      verifyNever(() => mockRepo.deleteConfig(any()));
     });
   });
 

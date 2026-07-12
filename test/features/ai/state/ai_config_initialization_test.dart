@@ -16,6 +16,7 @@ void main() {
   setUp(() {
     repo = MockAiConfigRepository();
     when(() => repo.saveConfig(any())).thenAnswer((_) async {});
+    when(() => repo.deleteConfig(any())).thenAnswer((_) async {});
   });
 
   ProviderContainer createContainer() {
@@ -35,55 +36,22 @@ void main() {
   }
 
   group('aiConfigInitialization', () {
-    test('seeds every default profile on first run and queries providers '
-        'for model backfill', () async {
-      // First run: nothing exists yet, so every profile is missing.
+    test('seeds no profiles on first run when no providers exist', () async {
       when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
-      // No providers configured -> backfill saves no models.
+      // No providers configured -> backfill saves no models and the
+      // usable-provider gate keeps every default profile unseeded.
       when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
 
       final container = createContainer();
       await container.read(aiConfigInitializationProvider.future);
 
-      // Each default profile was looked up by ID...
-      for (final profile in ProfileSeedingService.defaultProfiles) {
-        verify(() => repo.getConfigById(profile.id)).called(1);
-      }
-
-      // ...and persisted exactly once, with no extra writes (no providers
-      // means model backfill creates nothing).
-      final saved = savedConfigs();
-      expect(saved, hasLength(ProfileSeedingService.defaultProfiles.length));
-      final savedIds = saved.map((c) => c.id).toSet();
-      expect(
-        savedIds,
-        equals(ProfileSeedingService.defaultProfiles.map((p) => p.id).toSet()),
-      );
-
-      // Backfill consulted the inference-provider configs.
-      verify(
-        () => repo.getConfigsByType(AiConfigType.inferenceProvider),
-      ).called(1);
-    });
-
-    test('skips seeding when every default profile already exists', () async {
-      // Every profile ID already resolves to an existing config.
-      when(() => repo.getConfigById(any())).thenAnswer((invocation) async {
-        final id = invocation.positionalArguments.first as String;
-        return AiTestDataFactory.createTestProfile(id: id);
-      });
-      when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
-
-      final container = createContainer();
-      await container.read(aiConfigInitializationProvider.future);
-
-      // No profile is overwritten — saveConfig is never called by seeding,
-      // and with no providers the backfill writes nothing either.
       verifyNever(() => repo.saveConfig(any()));
+      verifyNever(() => repo.deleteConfig(any()));
     });
 
     test(
-      'backfills models for an existing provider with known models',
+      'seeds only the profiles of an existing usable provider and '
+      'backfills its known models',
       () async {
         when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
 
@@ -95,6 +63,9 @@ void main() {
         when(
           () => repo.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => []);
+        when(
+          () => repo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer((_) async => []);
 
         final container = createContainer();
         await container.read(aiConfigInitializationProvider.future);
@@ -102,14 +73,14 @@ void main() {
         final saved = savedConfigs();
         final seededProfiles = saved
             .whereType<AiConfigInferenceProfile>()
-            .length;
+            .toList();
         final backfilledModels = saved.whereType<AiConfigModel>().toList();
 
-        // All default profiles seeded plus newly created models, all attached
-        // to the existing provider.
+        // The default anthropic test provider gates in exactly the Anthropic
+        // profile; the rest of the catalog stays unseeded.
         expect(
-          seededProfiles,
-          ProfileSeedingService.defaultProfiles.length,
+          seededProfiles.map((p) => p.id),
+          [profileAnthropicId],
         );
         expect(backfilledModels, isNotEmpty);
         expect(
@@ -119,43 +90,81 @@ void main() {
       },
     );
 
-    test('completes normally and still seeds profiles when model backfill '
-        'throws', () async {
+    test('skips seeding when the gated profile already exists', () async {
+      // The Anthropic profile ID already resolves to an existing config.
+      when(() => repo.getConfigById(any())).thenAnswer((invocation) async {
+        final id = invocation.positionalArguments.first as String;
+        return AiTestDataFactory.createTestProfile(id: id);
+      });
+      when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
+      when(
+        () => repo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [AiTestDataFactory.createTestProvider()]);
+
+      final container = createContainer();
+      await container.read(aiConfigInitializationProvider.future);
+
+      // No profile is written — seed-on-create leaves the existing row alone
+      // (model backfill still writes the provider's known models).
+      expect(savedConfigs().whereType<AiConfigInferenceProfile>(), isEmpty);
+    });
+
+    test(
+      'removes an orphaned untouched default seed when its provider '
+      'type has no usable provider',
+      () async {
+        when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
+        when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
+        final meliousSeed = ProfileSeedingService.defaultProfiles.firstWhere(
+          (p) => p.id == profileMeliousId,
+        );
+        when(
+          () => repo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer((_) async => [meliousSeed]);
+
+        final container = createContainer();
+        await container.read(aiConfigInitializationProvider.future);
+
+        verify(() => repo.deleteConfig(profileMeliousId)).called(1);
+      },
+    );
+
+    test('completes normally when provider reads throw — the profile '
+        'upgrade pass still runs', () async {
       when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
       when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
-      // Backfill reads inference-provider configs first; make that throw.
-      // Seeding and upgrading read model/profile configs, which stay stubbed
-      // above, so they must still run after the backfill failure.
+      // Backfill, the seeding gate, and the orphan cleanup all read the
+      // inference-provider configs; make that throw. Each step is isolated,
+      // so the upgrade pass (models + profiles only) must still run.
       when(
         () => repo.getConfigsByType(AiConfigType.inferenceProvider),
       ).thenThrow(Exception('db unavailable'));
 
       final container = createContainer();
 
-      // The provider future resolves without surfacing the backfill error
-      // (it is caught and logged).
+      // The provider future resolves without surfacing the errors
+      // (they are caught and logged step by step).
       await expectLater(
         container.read(aiConfigInitializationProvider.future),
         completes,
       );
 
-      // Profile seeding ran to completion despite the backfill failure.
-      expect(
-        savedConfigs(),
-        hasLength(ProfileSeedingService.defaultProfiles.length),
-      );
+      verifyNever(() => repo.saveConfig(any()));
 
-      // The upgrade pass also ran: it reads the existing inference profiles.
+      // The upgrade pass ran: it reads the existing inference profiles.
       verify(
         () => repo.getConfigsByType(AiConfigType.inferenceProfile),
       ).called(1);
     });
 
-    test('completes normally and still backfills models when profile '
+    test('completes normally and still seeds profiles when the profile '
         'upgrade throws', () async {
       when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
       when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
-      // upgradeExisting() is the only step reading inference profiles.
+      when(
+        () => repo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [AiTestDataFactory.createTestProvider()]);
+      // upgradeExisting() and the orphan cleanup read inference profiles.
       when(
         () => repo.getConfigsByType(AiConfigType.inferenceProfile),
       ).thenThrow(Exception('db unavailable'));
@@ -167,13 +176,10 @@ void main() {
         completes,
       );
 
-      // Backfill and seeding both completed before the upgrade failure.
-      verify(
-        () => repo.getConfigsByType(AiConfigType.inferenceProvider),
-      ).called(1);
+      // Backfill and gated seeding both completed before the upgrade failure.
       expect(
-        savedConfigs(),
-        hasLength(ProfileSeedingService.defaultProfiles.length),
+        savedConfigs().whereType<AiConfigInferenceProfile>().map((p) => p.id),
+        [profileAnthropicId],
       );
     });
   });

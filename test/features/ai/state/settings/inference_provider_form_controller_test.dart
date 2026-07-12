@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/settings/inference_provider_form_controller.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -293,6 +294,11 @@ void main() {
         (_) async => testConfig,
       );
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      // Provider updates re-run the gated profile seeding + upgrade pass;
+      // no providers/models/profiles exist, so no extra writes happen.
+      when(
+        () => mockRepository.getConfigsByType(any()),
+      ).thenAnswer((_) async => []);
 
       // Load the existing config first
       final controller = container.read(
@@ -1203,12 +1209,96 @@ void main() {
       await controller.addConfig(geminiConfig);
 
       // Assert - should save provider and check for existing models.
-      // Two reads: the model prepopulation pass and the subsequent
-      // profile upgrade pass each fetch the model rows.
+      // Three reads: the model prepopulation pass, the gated profile
+      // seeding, and the profile upgrade pass each fetch the model rows.
       verify(() => mockRepository.saveConfig(geminiConfig)).called(1);
       verify(
         () => mockRepository.getConfigsByType(AiConfigType.model),
-      ).called(2);
+      ).called(3);
+    });
+
+    test('seeds the gated default profiles after adding a usable '
+        'provider', () async {
+      // Arrange
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(
+        () => mockRepository.getConfigsByType(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigById(any()),
+      ).thenAnswer((_) async => null);
+
+      final geminiConfig = AiConfig.inferenceProvider(
+        id: 'gemini-provider-id',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'test-gemini-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024, 3, 15),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [geminiConfig]);
+
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+
+      // Act
+      await controller.addConfig(geminiConfig);
+
+      // Assert — the Gemini profiles (and only those) got seeded alongside
+      // the provider save and the prepopulated model rows.
+      final savedProfileIds = verify(
+        () => mockRepository.saveConfig(captureAny()),
+      ).captured.whereType<AiConfigInferenceProfile>().map((p) => p.id);
+      expect(
+        savedProfileIds.toSet(),
+        {profileGeminiFlashId, profileGeminiProId},
+      );
+    });
+
+    test('seeds the gated default profile when a provider update makes it '
+        'usable', () async {
+      // Arrange — editing an existing draft (e.g. pasting the API key).
+      when(() => mockRepository.getConfigById('test-id')).thenAnswer(
+        (_) async => testConfig,
+      );
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(
+        () => mockRepository.getConfigsByType(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigById(profileMeliousId),
+      ).thenAnswer((_) async => null);
+
+      final meliousConfig = AiConfig.inferenceProvider(
+        id: 'test-id',
+        baseUrl: 'https://api.melious.ai/v1',
+        apiKey: 'fresh-key',
+        name: 'Melious.ai',
+        createdAt: DateTime(2024, 3, 15),
+        inferenceProviderType: InferenceProviderType.melious,
+      );
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [meliousConfig]);
+
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: 'test-id').notifier,
+      );
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: 'test-id').future,
+      );
+
+      // Act
+      await controller.updateConfig(meliousConfig);
+
+      // Assert — exactly the Melious profile appears with the update.
+      final savedProfileIds = verify(
+        () => mockRepository.saveConfig(captureAny()),
+      ).captured.whereType<AiConfigInferenceProfile>().map((p) => p.id);
+      expect(savedProfileIds, [profileMeliousId]);
     });
   });
 

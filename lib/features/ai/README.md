@@ -6,7 +6,7 @@ The `ai` feature contains the shared AI plumbing used by manual prompts, skill-d
 
 Two startup paths shape the feature:
 
-- `aiConfigInitialization` always runs and seeds default inference profiles plus known models.
+- `aiConfigInitialization` always runs and seeds known models plus the default inference profiles whose provider type has a usable provider, then removes orphaned default seeds.
 - `agentInitialization` also always runs (it is not gated by any flag); it seeds templates and upgrades default profiles with skill assignments.
 
 Skills do **not** participate in seeding — they live as code in `skills/built_in_skills.dart` and are read from `skillRegistryProvider` at runtime. The DB-backed `SkillSeedingService` was removed; a future skill-management feature will introduce a separate per-user override layer rather than re-introducing seeding.
@@ -15,8 +15,9 @@ Skills do **not** participate in seeding — they live as code in `skills/built_
 flowchart TD
   Start["App start"] --> AIInit["aiConfigInitialization"]
   AIInit --> BackfillModels["ModelPrepopulationService.backfillNewModels()"]
-  AIInit --> SeedProfiles["ProfileSeedingService.seedDefaults()"]
+  AIInit --> SeedProfiles["ProfileSeedingService.seedDefaults()<br/>(gated on usable providers)"]
   AIInit --> UpgradeProfilesAI["ProfileSeedingService.upgradeExisting()"]
+  AIInit --> RemoveOrphans["ProfileSeedingService.removeOrphanedDefaultSeeds()"]
 
   Start --> AgentInit["agentInitialization"]
   AgentInit --> SeedTemplates["AgentTemplateService.seedDefaults()"]
@@ -800,20 +801,20 @@ Grounded implementation notes:
 
 ## Seeded Defaults
 
-`ProfileSeedingService.seedDefaults()` currently seeds these profiles:
+`ProfileSeedingService.seedDefaults()` knows these default profile templates, each gated on a provider type (`ProfileSeedingService.providerTypeByProfileId`):
 
-- `Gemini Flash`
-- `Gemini Pro`
-- `OpenAI`
-- `Mistral (EU)`
-- `Melious.ai`
-- `Chinese AI Profile`
-- `Anthropic Claude`
-- `Local (Ollama)`
-- `Local Power (oMLX)`
-- `Local Gemma 4 (oMLX)`
-- `Local Gemma 4 (Ollama)`
-- `Local Gemma 4 Power (Ollama)`
+- `Gemini Flash`, `Gemini Pro` — gated on a Gemini provider
+- `OpenAI` — gated on an OpenAI provider
+- `Mistral (EU)` — gated on a Mistral provider
+- `Melious.ai` — gated on a Melious provider
+- `Chinese AI Profile` — gated on an Alibaba provider
+- `Anthropic Claude` — gated on an Anthropic provider
+- `Local (Ollama)`, `Local Gemma 4 (Ollama)`, `Local Gemma 4 Power (Ollama)` — gated on an Ollama provider
+- `Local Power (oMLX)`, `Local Gemma 4 (oMLX)` — gated on an oMLX provider
+
+A template is only seeded once a **usable** provider of its gate type exists (`isUsable`: non-blank API key, or — for keyless local types — a non-blank base URL). A fresh install therefore starts with zero inference profiles; connecting a provider seeds exactly its own profile(s). Seeding runs at startup and again right after a provider is created (`addConfig`), updated (`updateConfig`, e.g. adding the API key to a draft), or finishes FTUE setup (`runFtueSetupForType`), so onboarding can bind categories to the profile immediately after the key step.
+
+The retroactive counterpart is `removeOrphanedDefaultSeeds()` (startup only, after `upgradeExisting()`): it deletes default seeds whose gate type has no usable provider — installs that seeded the full catalog before the gate existed, and providers deleted since the last launch. It is deliberately conservative: a profile is only removed while it still looks like an untouched seed (template name — or the legacy `Local Power (Ollama)` name — no description, no pinned host, template flags) and none of its model slots resolve to a model row owned by a usable provider. Renamed, described, pinned, or rewired profiles always survive.
 
 Operational details from the seeded definitions:
 
@@ -824,7 +825,7 @@ Operational details from the seeded definitions:
 - `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, GLM 5.2 for high-end thinking, Flux 2 Klein 9B for image generation, and Voxtral Small 24B for transcription
 - `Local Gemma 4 Power (Ollama)` currently ships with no default skill assignments
 
-`seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
+`seedDefaults()` is **strictly seed-on-create**: it looks up each gated-in profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 
 `upgradeExisting()` backfills migration-safe pieces after model rows exist: dangling model slots on default profiles are healed (deleting a provider cascade-deletes its model rows, but the seeded profile kept pointing at the dead row IDs — each such slot resets to the seed template's provider-native default and re-resolves once the rows are recreated; catalog-known provider-native values are treated as pending, not dangling), legacy provider-native slot values are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, untouched Melious profiles move to the Flux 2 Klein 9B image-generation slot and Whisper Large v3 transcription slot and then on to the GLM 5.2 high-end thinking and Voxtral Small 24B transcription defaults, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, resolvable model slots, and non-empty assignment lists are preserved. Besides startup, `upgradeExisting()` also runs right after a provider is created or re-verified (`runFtueSetupForType`, provider save in the settings form), so reconnecting a provider heals its profile immediately — onboarding's first capture resolves through the profile seconds after the key step.
 

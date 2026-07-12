@@ -46,6 +46,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with the same live preview and "Try with your voice" toggle from onboarding —
   and the real recording screen now honors your choice instead of always
   showing the VU meter.
+### Changed
+- **AI profile pickers only show profiles you can actually use.** Default
+  inference profiles are no longer seeded for providers you haven't set up:
+  each bundled profile (Gemini, OpenAI, Mistral, Melious.ai, Chinese AI,
+  Anthropic, Ollama, oMLX) now appears only once a working provider of its
+  type exists — connect Melious.ai and you get exactly the Melious profile,
+  nothing more. Untouched leftover profiles for providers that were never set
+  up (or have since been deleted) are cleaned up on the next launch; any
+  profile you renamed, described, or rewired to another provider is kept.
 ### Fixed
 - **Dashboard chart editing now saves when it should.** Adding measurable
   charts in Settings → Dashboards immediately enables Save, measurable chart

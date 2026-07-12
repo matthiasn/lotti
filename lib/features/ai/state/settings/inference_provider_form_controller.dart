@@ -277,9 +277,14 @@ class InferenceProviderFormController
         );
       }
 
-      await ProfileSeedingService(
+      // Seed the profile(s) this provider unlocks before healing existing
+      // ones — profile seeding is gated on a usable provider of the matching
+      // type, so this save may be the moment the profile becomes eligible.
+      final seedingService = ProfileSeedingService(
         aiConfigRepository: repository,
-      ).upgradeExisting();
+      );
+      await seedingService.seedDefaults();
+      await seedingService.upgradeExisting();
     }
   }
 
@@ -293,5 +298,16 @@ class InferenceProviderFormController
         updatedAt: DateTime.now(),
       ),
     );
+
+    // Editing a provider can flip it usable (e.g. adding the API key to a
+    // draft) — seed its gated default profile(s) now and heal existing ones
+    // so the profile appears immediately, not on the next app launch.
+    if (config is AiConfigInferenceProvider) {
+      final seedingService = ProfileSeedingService(
+        aiConfigRepository: repository,
+      );
+      await seedingService.seedDefaults();
+      await seedingService.upgradeExisting();
+    }
   }
 }
