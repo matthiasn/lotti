@@ -3,9 +3,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/repository/linked_task_context_builder.dart';
-import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
+import 'package:lotti/features/tasks/util/time_range_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';

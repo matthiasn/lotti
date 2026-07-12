@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:glados/glados.dart';
-import 'package:lotti/features/daily_os/util/time_range_utils.dart';
+import 'package:lotti/features/tasks/util/time_range_utils.dart';
 
 final _baseDate = DateTime(2024, 1, 15);
 const int _minutesPerDay = 24 * 60;

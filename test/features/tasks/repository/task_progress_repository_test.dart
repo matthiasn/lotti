@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
+import 'package:lotti/features/tasks/util/time_range_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 

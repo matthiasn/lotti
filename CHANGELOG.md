@@ -47,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the real recording screen now honors your choice instead of always
   showing the VU meter.
 ### Changed
+- **The next-gen agentic DailyOS is now the only DailyOS.** The
+  "Use next-gen agentic DailyOS" toggle under Settings → Advanced → Config
+  Flags is gone: the calendar tab always opens the voice-first, agent-led
+  capture and reconcile flow, and the previous DailyOS surface (including its
+  Set Time Blocks screen) has been removed.
 - **AI profile pickers only show profiles you can actually use.** Default
   inference profiles are no longer seeded for providers you haven't set up:
   each bundled profile (Gemini, OpenAI, Mistral, Melious.ai, Chinese AI,

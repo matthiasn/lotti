@@ -1,8 +1,9 @@
 # Daily OS Next
 
-Daily OS Next is the clean-room home for the next Daily OS runtime. New agentic
-planning code lives here so it can evolve without depending on the current
-`features/daily_os` implementation.
+Daily OS Next is the home of the Daily OS runtime and the only Daily OS
+surface: `CalendarRoot` (the `/calendar` tab root in `CalendarLocation`)
+mounts `DailyOsNextRoot` directly. The legacy `features/daily_os`
+implementation has been removed.
 
 The exception is the shared day-plan aggregate in `lib/classes/day_plan.dart`.
 That model is already the durable representation of a day, so Daily OS Next
@@ -654,8 +655,8 @@ stateDiagram-v2
   history — the deliberate cross-day learning the single identity enables. It
   does not persist new state.
 - Future Daily OS Next agenda and shutdown tools should be added under this
-  feature without importing `features/daily_os` (commit/uncommit already ship —
-  see the `DayAgentPlanService` notes above).
+  feature (commit/uncommit already ship — see the `DayAgentPlanService` notes
+  above).
 - **Shutdown is still mock-backed.** `ShutdownController` and every Shutdown
   method (`surfaceShutdownData`, `generateTomorrowNote`, `recordReflection`,
   `recordCarryoverDecision`) route through `MockDayAgent` — the entire Shutdown

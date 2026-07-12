@@ -1349,8 +1349,6 @@
   "completeHabitSkipButton": "Überspringen",
   "completeHabitSuccessButton": "Erfolgreich",
   "configFlagAttemptEmbeddingDescription": "Wenn aktiviert, versucht die App, Einbettungen für deine Einträge zu generieren, um die Suche und Vorschläge für verwandte Inhalte zu verbessern.",
-  "configFlagDailyOsNextEnabled": "Neue agentische DailyOS-Oberfläche",
-  "configFlagDailyOsNextEnabledDescription": "Ersetzt die bisherige DailyOS-Oberfläche durch den neuen sprachgeführten, agentischen Capture- und Reconcile-Ablauf. Frühe Vorschau — die Backend-Logik ist noch gemockt.",
   "configFlagEnableAiStreaming": "AI-Streaming für Aufgabenaktionen aktivieren",
   "configFlagEnableAiStreamingDescription": "Streame AI-Antworten für aufgabenbezogene Aktionen. Deaktivieren, um Antworten zu puffern und die UI flüssiger zu halten.",
   "configFlagEnableAiSummaryTts": "AI-Zusammenfassung vorlesen",
@@ -1598,58 +1596,7 @@
   "createEntryTitle": "Hinzufügen",
   "createNewLinkedTask": "Neue verknüpfte Aufgabe erstellen...",
   "customColor": "Benutzerdefinierte Farbe",
-  "dailyOsActual": "Tatsächlich",
-  "dailyOsAddBlock": "Block hinzufügen",
-  "dailyOsAddBudget": "Budget hinzufügen",
-  "dailyOsAddNote": "Notiz hinzufügen...",
-  "dailyOsAgreeToPlan": "Plan bestätigen",
-  "dailyOsCancel": "Abbrechen",
-  "dailyOsCategory": "Kategorie",
-  "dailyOsChooseCategory": "Kategorie auswählen...",
   "dailyOsDayPlan": "Tagesplan",
-  "dailyOsDaySummary": "Tageszusammenfassung",
-  "dailyOsDelete": "Löschen",
-  "dailyOsDeletePlannedBlock": "Block löschen?",
-  "dailyOsDeletePlannedBlockConfirm": "Dies entfernt den geplanten Block aus deiner Zeitleiste.",
-  "dailyOsDraftMessage": "Plan ist ein Entwurf. Bestätige, um ihn festzulegen.",
-  "dailyOsDueToday": "Heute fällig",
-  "dailyOsDueTodayShort": "Fällig",
-  "dailyOsDurationHours": "{count, plural, =1{1 Stunde} other{{count} Stunden}}",
-  "@dailyOsDurationHours": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsDurationHoursMinutes": "{hours} Std. {minutes} Min.",
-  "@dailyOsDurationHoursMinutes": {
-    "placeholders": {
-      "hours": {
-        "type": "int"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsDurationMinutes": "{count, plural, =1{1 Minute} other{{count} Minuten}}",
-  "@dailyOsDurationMinutes": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsEditPlannedBlock": "Geplanten Block bearbeiten",
-  "dailyOsEndTime": "Ende",
-  "dailyOsExpandToMove": "Zeitleiste erweitern, um diesen Block zu verschieben",
-  "dailyOsExpandToMoveMore": "Zeitleiste erweitern, um weiter zu verschieben",
-  "dailyOsFailedToLoadBudgets": "Budgets konnten nicht geladen werden",
-  "dailyOsFailedToLoadTimeline": "Zeitleiste konnte nicht geladen werden",
-  "dailyOsFold": "Einklappen",
-  "dailyOsInvalidTimeRange": "Ungültiger Zeitbereich",
-  "dailyOsNearLimit": "Fast am Limit",
   "dailyOsNextAgendaCapacityComfortable": "Entspannt",
   "dailyOsNextAgendaCapacityNearFull": "Fast voll",
   "dailyOsNextAgendaCapacityNoPlan": "Noch kein Plan",
@@ -1989,62 +1936,7 @@
   "dailyOsNextTriageDoNow": "Jetzt machen",
   "dailyOsNextTriageDrop": "Verwerfen",
   "dailyOsNextTriageToday": "Heute",
-  "dailyOsNoBudgets": "Keine Zeitbudgets",
-  "dailyOsNoBudgetsHint": "Füge Budgets hinzu, um zu verfolgen, wie du deine Zeit auf Kategorien verteilst.",
-  "dailyOsNoBudgetWarning": "Keine Zeit eingeplant",
-  "dailyOsNote": "Notiz",
-  "dailyOsNoTimeline": "Keine Zeitleisteneinträge",
-  "dailyOsNoTimelineHint": "Starte einen Timer oder füge geplante Blöcke hinzu, um deinen Tag zu sehen.",
-  "dailyOsOnTrack": "Im Plan",
-  "dailyOsOver": "Über",
-  "dailyOsOverallProgress": "Gesamtfortschritt",
-  "dailyOsOverBudget": "Über Budget",
-  "dailyOsOverdue": "Überfällig",
-  "dailyOsOverdueShort": "Spät",
-  "dailyOsPlan": "Plan",
-  "dailyOsPlanCreated": "Plan erfolgreich erstellt",
-  "dailyOsPlanCreatedDescription": "Deine Zeitblöcke wurden gespeichert. Du kannst jetzt deine Aufgaben verfolgen.",
-  "dailyOsPlanned": "Geplant",
-  "dailyOsPlanWithoutVoice": "Ohne Sprache planen",
-  "dailyOsQuickCreateTask": "Aufgabe für dieses Budget erstellen",
-  "dailyOsReAgree": "Erneut bestätigen",
-  "dailyOsRecorded": "Erfasst",
-  "dailyOsRemaining": "Verbleibend",
-  "dailyOsReviewMessage": "Änderungen erkannt. Überprüfe deinen Plan.",
-  "dailyOsSave": "Speichern",
-  "dailyOsSaveError": "Plan konnte nicht gespeichert werden",
-  "dailyOsSaveErrorDescription": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
-  "dailyOsSavePlan": "Plan speichern",
-  "dailyOsSelectCategory": "Kategorie auswählen",
-  "dailyOsSetTimeBlocks": "Zeitblöcke festlegen",
-  "dailyOsSetTimeBlocksAddNew": "Neuen Zeitblock hinzufügen",
-  "dailyOsSetTimeBlocksFavourites": "Favoriten",
-  "dailyOsSetTimeBlocksOther": "Andere Kategorien",
-  "dailyOsSetTimeBlocksTapHint": "Tippe, um einen Zeitblock hinzuzufügen",
-  "dailyOsStartTime": "Start",
-  "dailyOsTasks": "Aufgaben",
-  "dailyOsTimeBudgets": "Zeitbudgets",
-  "dailyOsTimeLeft": "{time} verbleibend",
-  "@dailyOsTimeLeft": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "dailyOsTimeline": "Zeitleiste",
-  "dailyOsTimeOver": "+{time} darüber",
-  "@dailyOsTimeOver": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "dailyOsTimeRange": "Zeitbereich",
-  "dailyOsTimesUp": "Zeit abgelaufen",
   "dailyOsTodayButton": "Heute",
-  "dailyOsUncategorized": "Unkategorisiert",
   "dashboardActiveLabel": "Aktiv",
   "dashboardActiveSwitchDescription": "Wird in der Dashboard-Liste angezeigt",
   "dashboardAddChartsTitle": "Diagramme",
@@ -2197,23 +2089,6 @@
       }
     }
   },
-  "designSystemMyDailyEditPlanLabel": "Plan bearbeiten",
-  "designSystemMyDailyGreetingMorning": "Guten Morgen.",
-  "designSystemMyDailyGreetingWithName": "Hi, {name}",
-  "@designSystemMyDailyGreetingWithName": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "designSystemMyDailyHikeWithDanielaTitle": "Wandern mit Daniela",
-  "designSystemMyDailyLunchBreakTitle": "Mittagspause",
-  "designSystemMyDailyMeetingsLabel": "Meetings",
-  "designSystemMyDailyMeetingWithDannyTitle": "Meeting mit Danny",
-  "designSystemMyDailyProfileActionLabel": "Profil",
-  "designSystemMyDailySkiWithMattTitle": "Mit Matt Ski fahren",
-  "designSystemMyDailyTapToExpandLabel": "Zum Aufklappen tippen",
   "designSystemNavigationCollapsedLabel": "Eingeklappt",
   "designSystemNavigationDailyFilterSectionTitle": "Tagesfilter",
   "designSystemNavigationExpandedLabel": "Ausgeklappt",

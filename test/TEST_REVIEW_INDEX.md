@@ -192,16 +192,14 @@ usually be higher-leverage than file-by-file fixes.
 | U39 | journal/repository | test/features/journal/repository/TEST_REVIEW.md | ✅ |
 | — | **journal feature index** | test/features/journal/TEST_REVIEW.md | ✅ |
 
-### daily_os / daily_os_next
+### daily_os_next
 | Unit | Scope | Report | Status |
 |------|-------|--------|--------|
-| U40 | daily_os/ui/widgets | test/features/daily_os/ui/widgets/TEST_REVIEW.md | ✅ |
-| U41 | daily_os/ui {pages} + util + repository + widgetbook | per-subdir TEST_REVIEW.md | ✅ |
-| U42 | daily_os/state | test/features/daily_os/state/TEST_REVIEW.md | ✅ |
+| U40–U42 | legacy daily_os (feature removed alongside the `daily_os_next_enabled` flag) | — | removed |
 | U43 | daily_os_next/agents | per-subdir TEST_REVIEW.md (service/workflow/domain/state/tools) | ✅ |
 | U44 | daily_os_next/ui | test/features/daily_os_next/ui/{,pages,widgets}/TEST_REVIEW.md | ✅ |
 | U45 | daily_os_next/state + logic | per-subdir TEST_REVIEW.md | ✅ |
-| — | **daily_os + daily_os_next feature indexes** | test/features/daily_os{,_next}/TEST_REVIEW.md | ✅ |
+| — | **daily_os_next feature index** | test/features/daily_os_next/TEST_REVIEW.md | ✅ |
 
 ### design_system / projects / ai_chat
 | Unit | Scope | Report | Status |

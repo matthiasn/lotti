@@ -1349,8 +1349,6 @@
   "completeHabitSkipButton": "Omitir",
   "completeHabitSuccessButton": "Éxito",
   "configFlagAttemptEmbeddingDescription": "Cuando está habilitado, la aplicación intentará generar incrustaciones para tus entradas para mejorar la búsqueda y las sugerencias de contenido relacionado.",
-  "configFlagDailyOsNextEnabled": "Usar el nuevo DailyOS agéntico",
-  "configFlagDailyOsNextEnabledDescription": "Reemplaza la superficie actual de DailyOS por el nuevo flujo de captura y reconciliación con voz dirigido por agente. Vista previa temprana — la lógica del backend está simulada.",
   "configFlagEnableAiStreaming": "Habilitar streaming de IA para acciones de tareas",
   "configFlagEnableAiStreamingDescription": "Transmitir respuestas de IA para acciones relacionadas con tareas. Desactívelo para almacenar respuestas en búfer y mantener la interfaz más fluida.",
   "configFlagEnableAiSummaryTts": "Reproducción de resúmenes de IA",
@@ -1598,58 +1596,7 @@
   "createEntryTitle": "Añadir",
   "createNewLinkedTask": "Crear nueva tarea vinculada...",
   "customColor": "Color personalizado",
-  "dailyOsActual": "Real",
-  "dailyOsAddBlock": "Añadir bloque",
-  "dailyOsAddBudget": "Añadir presupuesto",
-  "dailyOsAddNote": "Añadir una nota...",
-  "dailyOsAgreeToPlan": "Aceptar plan",
-  "dailyOsCancel": "Cancelar",
-  "dailyOsCategory": "Categoría",
-  "dailyOsChooseCategory": "Elegir una categoría...",
   "dailyOsDayPlan": "Plan del día",
-  "dailyOsDaySummary": "Resumen del día",
-  "dailyOsDelete": "Eliminar",
-  "dailyOsDeletePlannedBlock": "¿Eliminar bloque?",
-  "dailyOsDeletePlannedBlockConfirm": "Esto eliminará el bloque planificado de tu línea de tiempo.",
-  "dailyOsDraftMessage": "El plan es un borrador. Acepte para confirmarlo.",
-  "dailyOsDueToday": "Vence hoy",
-  "dailyOsDueTodayShort": "Hoy",
-  "dailyOsDurationHours": "{count, plural, =1{1 hora} other{{count} horas}}",
-  "@dailyOsDurationHours": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsDurationHoursMinutes": "{hours}h {minutes}m",
-  "@dailyOsDurationHoursMinutes": {
-    "placeholders": {
-      "hours": {
-        "type": "int"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsDurationMinutes": "{count, plural, =1{1 minuto} other{{count} minutos}}",
-  "@dailyOsDurationMinutes": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsEditPlannedBlock": "Editar bloque planificado",
-  "dailyOsEndTime": "Fin",
-  "dailyOsExpandToMove": "Expandir línea de tiempo para arrastrar este bloque",
-  "dailyOsExpandToMoveMore": "Expandir línea de tiempo para mover más",
-  "dailyOsFailedToLoadBudgets": "Error al cargar presupuestos",
-  "dailyOsFailedToLoadTimeline": "Error al cargar la línea de tiempo",
-  "dailyOsFold": "Contraer",
-  "dailyOsInvalidTimeRange": "Rango de tiempo no válido",
-  "dailyOsNearLimit": "Cerca del límite",
   "dailyOsNextAgendaCapacityComfortable": "Cómodo",
   "dailyOsNextAgendaCapacityNearFull": "Casi lleno",
   "dailyOsNextAgendaCapacityNoPlan": "Aún sin plan",
@@ -1989,62 +1936,7 @@
   "dailyOsNextTriageDoNow": "Hacer ahora",
   "dailyOsNextTriageDrop": "Descartar",
   "dailyOsNextTriageToday": "Hoy",
-  "dailyOsNoBudgets": "Sin presupuestos de tiempo",
-  "dailyOsNoBudgetsHint": "Añade presupuestos para rastrear cómo distribuyes tu tiempo entre categorías.",
-  "dailyOsNoBudgetWarning": "Sin tiempo planificado",
-  "dailyOsNote": "Nota",
-  "dailyOsNoTimeline": "Sin entradas en la línea de tiempo",
-  "dailyOsNoTimelineHint": "Inicia un temporizador o añade bloques planificados para ver tu día.",
-  "dailyOsOnTrack": "En camino",
-  "dailyOsOver": "Excedido",
-  "dailyOsOverallProgress": "Progreso general",
-  "dailyOsOverBudget": "Presupuesto excedido",
-  "dailyOsOverdue": "Vencido",
-  "dailyOsOverdueShort": "Tarde",
-  "dailyOsPlan": "Plan",
-  "dailyOsPlanCreated": "Plan creado con éxito",
-  "dailyOsPlanCreatedDescription": "Tus bloques de tiempo se han guardado. Puedes empezar a registrar tus tareas.",
-  "dailyOsPlanned": "Planificado",
-  "dailyOsPlanWithoutVoice": "Planificar sin voz",
-  "dailyOsQuickCreateTask": "Crear tarea para este presupuesto",
-  "dailyOsReAgree": "Volver a aceptar",
-  "dailyOsRecorded": "Registrado",
-  "dailyOsRemaining": "Restante",
-  "dailyOsReviewMessage": "Se detectaron cambios. Revisa tu plan.",
-  "dailyOsSave": "Guardar",
-  "dailyOsSaveError": "No se pudo guardar el plan",
-  "dailyOsSaveErrorDescription": "Algo salió mal. Por favor, inténtalo de nuevo.",
-  "dailyOsSavePlan": "Guardar plan",
-  "dailyOsSelectCategory": "Seleccionar categoría",
-  "dailyOsSetTimeBlocks": "Configurar bloques de tiempo",
-  "dailyOsSetTimeBlocksAddNew": "Añadir nuevo bloque de tiempo",
-  "dailyOsSetTimeBlocksFavourites": "Favoritos",
-  "dailyOsSetTimeBlocksOther": "Otras categorías",
-  "dailyOsSetTimeBlocksTapHint": "Toca para añadir un bloque de tiempo",
-  "dailyOsStartTime": "Inicio",
-  "dailyOsTasks": "Tareas",
-  "dailyOsTimeBudgets": "Presupuestos de tiempo",
-  "dailyOsTimeLeft": "{time} restante",
-  "@dailyOsTimeLeft": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "dailyOsTimeline": "Línea de tiempo",
-  "dailyOsTimeOver": "+{time} excedido",
-  "@dailyOsTimeOver": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "dailyOsTimeRange": "Rango de tiempo",
-  "dailyOsTimesUp": "Tiempo agotado",
   "dailyOsTodayButton": "Hoy",
-  "dailyOsUncategorized": "Sin categoría",
   "dashboardActiveLabel": "Activo",
   "dashboardActiveSwitchDescription": "Se muestra en la lista de paneles",
   "dashboardAddChartsTitle": "Gráficos",
@@ -2197,23 +2089,6 @@
       }
     }
   },
-  "designSystemMyDailyEditPlanLabel": "Editar plan",
-  "designSystemMyDailyGreetingMorning": "Buenos días.",
-  "designSystemMyDailyGreetingWithName": "Hola, {name}",
-  "@designSystemMyDailyGreetingWithName": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "designSystemMyDailyHikeWithDanielaTitle": "Senderismo con Daniela",
-  "designSystemMyDailyLunchBreakTitle": "Pausa para comer",
-  "designSystemMyDailyMeetingsLabel": "Reuniones",
-  "designSystemMyDailyMeetingWithDannyTitle": "Reunión con Danny",
-  "designSystemMyDailyProfileActionLabel": "Perfil",
-  "designSystemMyDailySkiWithMattTitle": "Ir a esquiar con Matt",
-  "designSystemMyDailyTapToExpandLabel": "Toca para expandir",
   "designSystemNavigationCollapsedLabel": "Contraída",
   "designSystemNavigationDailyFilterSectionTitle": "Filtro diario",
   "designSystemNavigationExpandedLabel": "Expandida",

@@ -1349,8 +1349,6 @@
   "completeHabitSkipButton": "Sari peste",
   "completeHabitSuccessButton": "Succes",
   "configFlagAttemptEmbeddingDescription": "Când este activată, aplicația va încerca să genereze încorporări pentru intrările dvs. pentru a îmbunătăți căutarea și sugestiile de conținut corelat.",
-  "configFlagDailyOsNextEnabled": "Activează noul DailyOS agentic",
-  "configFlagDailyOsNextEnabledDescription": "Înlocuiește interfața DailyOS actuală cu noul flux vocal de captură și reconciliere coordonat de agent. Previzualizare timpurie — logica de backend este simulată.",
   "configFlagEnableAiStreaming": "Activează streamingul AI pentru acțiunile legate de sarcini",
   "configFlagEnableAiStreamingDescription": "Transmite răspunsurile AI pentru acțiunile legate de sarcini. Dezactivați pentru a stoca răspunsurile în buffer și a menține interfața mai fluidă.",
   "configFlagEnableAiSummaryTts": "Redare rezumate AI",
@@ -1598,58 +1596,7 @@
   "createEntryTitle": "Adaugă",
   "createNewLinkedTask": "Creează o nouă sarcină legată...",
   "customColor": "Culoare personalizată",
-  "dailyOsActual": "Real",
-  "dailyOsAddBlock": "Adaugă bloc",
-  "dailyOsAddBudget": "Adaugă buget",
-  "dailyOsAddNote": "Adaugă o notă...",
-  "dailyOsAgreeToPlan": "Acceptă planul",
-  "dailyOsCancel": "Anulează",
-  "dailyOsCategory": "Categorie",
-  "dailyOsChooseCategory": "Alegeți o categorie...",
   "dailyOsDayPlan": "Planul zilei",
-  "dailyOsDaySummary": "Rezumatul zilei",
-  "dailyOsDelete": "Șterge",
-  "dailyOsDeletePlannedBlock": "Ștergeți blocul?",
-  "dailyOsDeletePlannedBlockConfirm": "Aceasta va elimina blocul planificat din cronologie.",
-  "dailyOsDraftMessage": "Planul este ciornă. Acceptați pentru a-l confirma.",
-  "dailyOsDueToday": "Scadent azi",
-  "dailyOsDueTodayShort": "Azi",
-  "dailyOsDurationHours": "{count, plural, =1{1 oră} other{{count} ore}}",
-  "@dailyOsDurationHours": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsDurationHoursMinutes": "{hours}h {minutes}m",
-  "@dailyOsDurationHoursMinutes": {
-    "placeholders": {
-      "hours": {
-        "type": "int"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsDurationMinutes": "{count, plural, =1{1 minut} other{{count} minute}}",
-  "@dailyOsDurationMinutes": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsEditPlannedBlock": "Editează blocul planificat",
-  "dailyOsEndTime": "Sfârșit",
-  "dailyOsExpandToMove": "Extinde cronologia pentru a trage acest bloc",
-  "dailyOsExpandToMoveMore": "Extinde cronologia pentru a muta mai departe",
-  "dailyOsFailedToLoadBudgets": "Eșec la încărcarea bugetelor",
-  "dailyOsFailedToLoadTimeline": "Eșec la încărcarea cronologiei",
-  "dailyOsFold": "Restrânge",
-  "dailyOsInvalidTimeRange": "Interval de timp invalid",
-  "dailyOsNearLimit": "Aproape de limită",
   "dailyOsNextAgendaCapacityComfortable": "Confortabil",
   "dailyOsNextAgendaCapacityNearFull": "Aproape plin",
   "dailyOsNextAgendaCapacityNoPlan": "Încă fără plan",
@@ -1989,62 +1936,7 @@
   "dailyOsNextTriageDoNow": "Fă acum",
   "dailyOsNextTriageDrop": "Renunță",
   "dailyOsNextTriageToday": "Astăzi",
-  "dailyOsNoBudgets": "Fără bugete de timp",
-  "dailyOsNoBudgetsHint": "Adăugați bugete pentru a urmări cum vă distribuiți timpul pe categorii.",
-  "dailyOsNoBudgetWarning": "Niciun timp planificat",
-  "dailyOsNote": "Notă",
-  "dailyOsNoTimeline": "Fără intrări în cronologie",
-  "dailyOsNoTimelineHint": "Porniți un cronometru sau adăugați blocuri planificate pentru a vedea ziua dvs.",
-  "dailyOsOnTrack": "Pe drumul cel bun",
-  "dailyOsOver": "Depășit",
-  "dailyOsOverallProgress": "Progres general",
-  "dailyOsOverBudget": "Buget depășit",
-  "dailyOsOverdue": "Întârziat",
-  "dailyOsOverdueShort": "Târziu",
-  "dailyOsPlan": "Plan",
-  "dailyOsPlanCreated": "Plan creat cu succes",
-  "dailyOsPlanCreatedDescription": "Blocurile dvs. de timp au fost salvate. Puteți începe să vă urmăriți sarcinile.",
-  "dailyOsPlanned": "Planificat",
-  "dailyOsPlanWithoutVoice": "Planificați fără voce",
-  "dailyOsQuickCreateTask": "Creează sarcină pentru acest buget",
-  "dailyOsReAgree": "Acceptă din nou",
-  "dailyOsRecorded": "Înregistrat",
-  "dailyOsRemaining": "Rămas",
-  "dailyOsReviewMessage": "Modificări detectate. Revizuiți planul.",
-  "dailyOsSave": "Salvează",
-  "dailyOsSaveError": "Planul nu a putut fi salvat",
-  "dailyOsSaveErrorDescription": "Ceva nu a funcționat corect. Vă rugăm să încercați din nou.",
-  "dailyOsSavePlan": "Salvați planul",
-  "dailyOsSelectCategory": "Selectează categoria",
-  "dailyOsSetTimeBlocks": "Setați blocuri de timp",
-  "dailyOsSetTimeBlocksAddNew": "Adăugați un bloc de timp nou",
-  "dailyOsSetTimeBlocksFavourites": "Favorite",
-  "dailyOsSetTimeBlocksOther": "Alte categorii",
-  "dailyOsSetTimeBlocksTapHint": "Atingeți pentru a adăuga un bloc de timp",
-  "dailyOsStartTime": "Început",
-  "dailyOsTasks": "Sarcini",
-  "dailyOsTimeBudgets": "Bugete de timp",
-  "dailyOsTimeLeft": "{time} rămas",
-  "@dailyOsTimeLeft": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "dailyOsTimeline": "Cronologie",
-  "dailyOsTimeOver": "+{time} depășit",
-  "@dailyOsTimeOver": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "dailyOsTimeRange": "Interval de timp",
-  "dailyOsTimesUp": "Timpul a expirat",
   "dailyOsTodayButton": "Astăzi",
-  "dailyOsUncategorized": "Necategorizat",
   "dashboardActiveLabel": "Activ",
   "dashboardActiveSwitchDescription": "Afișat în lista panourilor de bord",
   "dashboardAddChartsTitle": "Grafice",
@@ -2197,23 +2089,6 @@
       }
     }
   },
-  "designSystemMyDailyEditPlanLabel": "Editează planul",
-  "designSystemMyDailyGreetingMorning": "Bună dimineața.",
-  "designSystemMyDailyGreetingWithName": "Bună, {name}",
-  "@designSystemMyDailyGreetingWithName": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "designSystemMyDailyHikeWithDanielaTitle": "Drumeție cu Daniela",
-  "designSystemMyDailyLunchBreakTitle": "Pauză de prânz",
-  "designSystemMyDailyMeetingsLabel": "Întâlniri",
-  "designSystemMyDailyMeetingWithDannyTitle": "Întâlnire cu Danny",
-  "designSystemMyDailyProfileActionLabel": "Profil",
-  "designSystemMyDailySkiWithMattTitle": "Mergi la schi cu Matt",
-  "designSystemMyDailyTapToExpandLabel": "Apasă pentru extindere",
   "designSystemNavigationCollapsedLabel": "Restrâns",
   "designSystemNavigationDailyFilterSectionTitle": "Filtru zilnic",
   "designSystemNavigationExpandedLabel": "Extins",
