@@ -700,14 +700,29 @@ class TaskAgentReportEditor {
       final segment = match.group(0)!;
       final markerMatch = _excludedScopeMarker.firstMatch(segment);
       if (markerMatch == null) continue;
-      final beforeMarker = _distinctiveScopeTerms(
-        segment.substring(0, markerMatch.start),
+      final beforeMarkerText = segment.substring(0, markerMatch.start);
+      final lastComma = beforeMarkerText.lastIndexOf(',');
+      final nearbyBeforeText = lastComma == -1
+          ? beforeMarkerText
+          : beforeMarkerText.substring(lastComma + 1);
+      final nearbyBefore = _distinctiveScopeTerms(nearbyBeforeText);
+      final afterMarker = _distinctiveScopeTerms(
+        segment.substring(markerMatch.end),
       );
-      terms.addAll(
-        beforeMarker.isNotEmpty
-            ? beforeMarker
-            : _distinctiveScopeTerms(segment.substring(markerMatch.end)),
-      );
+      if (nearbyBefore.isNotEmpty) {
+        terms.addAll(nearbyBefore);
+      } else if (afterMarker.isNotEmpty) {
+        terms.addAll(afterMarker);
+      } else if (lastComma != -1) {
+        final previousComma = beforeMarkerText
+            .substring(0, lastComma)
+            .lastIndexOf(',');
+        terms.addAll(
+          _distinctiveScopeTerms(
+            beforeMarkerText.substring(previousComma + 1, lastComma),
+          ),
+        );
+      }
     }
     return terms.toList(growable: false)..sort();
   }
@@ -752,7 +767,7 @@ class TaskAgentReportEditor {
   }
 
   static final _scopeClause = RegExp(
-    r'[^.!?;,\n]+(?:[.!?;,\n]+|$)',
+    r'[^.!?;\n]+(?:[.!?;\n]+|$)',
     unicode: true,
   );
   static final _distinctiveWord = RegExp(
@@ -789,20 +804,27 @@ class TaskAgentReportEditor {
     'aufgenommen',
     'aufnehmen',
     'ausgeschlossen',
+    'aktuell',
     'bewusst',
     'erstellung',
     'erwähnt',
     'möglicher',
     'vorerst',
     'zukünftiger',
+    'zukünftige',
+    'zukünftigen',
+    'zukünftig',
   };
 
   static const _causalFragmentsByLanguage = <String, List<String>>{
     'en': [
       'did not prevent',
+      'did not fully resolve',
       'failed to prevent',
+      'fix was applied',
       'fix failed',
       'fix reverted',
+      'addressed the symptom',
       'issue persists',
       'problem persists',
       'does not confirm',

@@ -333,6 +333,12 @@ turn task metadata or a checklist edit into an accomplishment.
             'The prior fix was user-marked complete, so the issue is resolved.',
       ),
       (
+        languageCode: 'en',
+        text:
+            'The initial fix was applied but did not fully resolve the issue; '
+            'it addressed the symptom rather than the root cause.',
+      ),
+      (
         languageCode: 'de',
         text:
             'Der Nutzer hat den Fix als erledigt markiert, daher ist das '
@@ -580,6 +586,41 @@ turn task metadata or a checklist edit into an accomplishment.
           'oneLiner': 'Request the production certificate',
           'tldr': 'Three certificate actions remain.',
           'content': 'The analytics dashboard remains scoped out.',
+        },
+      ),
+      contains(TaskAgentReportRevisionIssue.deferredScopeLeak),
+    );
+    const germanDeferredDraft = {
+      'oneLiner': 'CSV-Export reparieren',
+      'tldr': 'Drei konkrete Schritte stehen an.',
+      'content':
+          'Ein Newsletter wurde als zukünftige Idee erwähnt, soll aber '
+          'aktuell nicht aufgenommen werden.',
+    };
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'de',
+        materialTaskState: const {},
+        draftReport: germanDeferredDraft,
+        candidateReport: const {
+          'oneLiner': 'CSV-Export reparieren',
+          'tldr': 'Drei konkrete Schritte stehen an.',
+          'content':
+              '## Aktueller Stand\nCSV-Export reparieren, Testdaten anfragen '
+              'und Regressionstest ausführen.',
+        },
+      ),
+      isNot(contains(TaskAgentReportRevisionIssue.deferredScopeLeak)),
+    );
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'de',
+        materialTaskState: const {},
+        draftReport: germanDeferredDraft,
+        candidateReport: const {
+          'oneLiner': 'CSV-Export reparieren',
+          'tldr': 'Drei konkrete Schritte stehen an.',
+          'content': 'Newsletter später aufnehmen und CSV-Export reparieren.',
         },
       ),
       contains(TaskAgentReportRevisionIssue.deferredScopeLeak),
