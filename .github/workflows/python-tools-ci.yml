@@ -8,10 +8,16 @@ on:
     branches: ["**"]
     paths:
       - "tools/matrix_provisioner/**"
+      - "tool/task_agent_model_eval_judge.py"
+      - "tool/task_agent_model_eval_judge_test.py"
+      - ".github/workflows/python-tools-ci.yml"
   pull_request:
     branches: [main]
     paths:
       - "tools/matrix_provisioner/**"
+      - "tool/task_agent_model_eval_judge.py"
+      - "tool/task_agent_model_eval_judge_test.py"
+      - ".github/workflows/python-tools-ci.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -51,3 +57,21 @@ jobs:
 
       - name: Test with coverage
         run: make test-cov
+
+  task-agent-eval-judge:
+    name: Task Agent Eval Judge (test)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Test
+        run: python -m unittest tool/task_agent_model_eval_judge_test.py

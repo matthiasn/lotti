@@ -38,6 +38,9 @@ class ConversationManager {
   /// Most recent inference error emitted for this conversation, if any.
   String? get lastError => _lastError;
 
+  /// Clears the previous request's error before a new request begins.
+  void clearLastError() => _lastError = null;
+
   /// Get all thought signatures for building subsequent Gemini requests.
   Map<String, String> get thoughtSignatures =>
       Map.unmodifiable(_thoughtSignatures);
@@ -157,8 +160,7 @@ class ConversationManager {
         .map((message) {
           final normalized = message.mapOrNull(
             assistant: (assistant) {
-              final toolCalls = assistant.toolCalls;
-              if (assistant.content == null && toolCalls?.isNotEmpty == true) {
+              if (assistant.content == null) {
                 return assistant.copyWith(content: '');
               }
               return null;

@@ -465,6 +465,22 @@ void main() {
     expect(qualityFocused.systemPrompt, contains('Omit empty sections'));
   });
 
+  test('every scenario embeds valid current-task JSON', () {
+    final contextPattern = RegExp(
+      r'## Current Task Context\s*```json\s*([\s\S]*?)\s*```',
+    );
+
+    for (final scenario in defaultMeliousTaskAgentEvalScenarios()) {
+      final match = contextPattern.firstMatch(scenario.userMessage);
+      expect(match, isNotNull, reason: scenario.id);
+      expect(
+        () => jsonDecode(match!.group(1)!),
+        returnsNormally,
+        reason: scenario.id,
+      );
+    }
+  });
+
   test(
     'prompt variant parser accepts known names and rejects unknown ones',
     () {
@@ -1538,6 +1554,47 @@ void main() {
         report.reportEditorMaxAttempts,
         TaskAgentReportEditor.productionMaxAttempts,
       );
+    },
+  );
+
+  test(
+    'production routing classifies malformed report after a valid report',
+    () async {
+      final inferenceRepository = _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            ..._metadataCallsWithReport(),
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: '{"oneLiner":',
+            ),
+          ]),
+        ],
+      ]);
+      final runner = _createRunner(
+        provider: _meliousProvider(),
+        inferenceRepository: inferenceRepository,
+        executionMode: LocalTaskAgentEvalExecutionMode.productionRouting,
+        temperature: 0,
+      );
+
+      final report = await runner.run(
+        profiles: const [
+          LocalTaskAgentEvalProfile(
+            name: 'qwen-production',
+            providerModelId: meliousQwen35122BA10BModelId,
+            modelClass: 'qwen',
+          ),
+        ],
+        scenarios: [defaultLocalTaskAgentWakeScenario()],
+      );
+
+      expect(
+        report.results.single.failureCategory,
+        LocalTaskAgentEvalFailureCategory.invalidToolArguments,
+      );
+      expect(report.results.single.errorMessage, isNull);
+      expect(inferenceRepository.requests, hasLength(1));
     },
   );
 

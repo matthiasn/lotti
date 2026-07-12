@@ -465,10 +465,12 @@ quality, or enforce arbitrary custom report structure.
 
 `qwen3.5-122b-a10b` is part of the curated Melious catalog and is the seeded
 Melious thinking default. Existing untouched Melious profiles migrate from
-Mistral thinking to Qwen when the Qwen model row exists. Mistral remains in the
-image-recognition slot because this Qwen endpoint is text-only. User-customized
-profile slots remain unchanged, and the resolved profile remains the runtime
-model selector.
+Mistral thinking to Qwen when the provider-owned Qwen model row exists. The
+profile stores the applied seed generation, so this migration runs once and a
+later deliberate switch back to Mistral is preserved. Foreign providers with a
+matching provider model ID cannot satisfy or capture the migration. Mistral
+remains in the image-recognition slot because this Qwen endpoint is text-only,
+and the resolved profile remains the runtime model selector.
 
 Qwen exposes thinking as an on/off capability rather than distinct native
 effort tiers. In one matched state-classifier probe, requesting
@@ -478,7 +480,8 @@ screen it passed 4/6 rather than 3/6, but retained the same two core grounding
 failures and cost differences were within run noise. Production therefore
 leaves reasoning at the model or profile default. The enabled-by-default
 `enable_task_agent_evidence_synthesis` flag supplies the evaluated prompt,
-extends the `update_report` description, and selects temperature `0.0`. It
+extends the tool descriptions, and selects temperature `0.0` only for the
+exact evaluated Melious Mistral Small 4 and Qwen3.5 122B model IDs. It
 replaces the report directive only when the template still uses the seeded
 default, so evolved and manually customized report structure remains
 authoritative.
@@ -758,10 +761,10 @@ It is now a thin **facade**: every public method delegates to one of two collabo
 
 | Operation | Dedicated branches | Fallback |
 | --- | --- | --- |
-| `generate()` | Ollama, Gemini, Mistral, Melious | OpenAI-compatible chat streaming; explicit reasoning effort is forwarded |
+| `generate()` | Ollama, Gemini, Mistral, Melious | OpenAI-compatible chat streaming; explicit reasoning effort is forwarded where supported, but omitted from Mistral requests |
 | `generateWithImages()` | Ollama, Melious, Mistral OCR (`/v1/ocr` for `mistral-ocr-*`) | OpenAI-compatible multimodal chat; Gemini receives `reasoning_effort` for its thinking mode |
 | `generateWithAudio()` | Whisper, Voxtral, MLX Audio native bridge, oMLX transcription endpoint, OpenAI transcription endpoint, Mistral transcription endpoint, Melious transcription endpoint | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` for its thinking mode |
-| `generateWithMessages()` | Gemini, Ollama, Mistral, Melious | OpenAI-compatible full-history chat; explicit reasoning effort is forwarded |
+| `generateWithMessages()` | Gemini, Ollama, Mistral, Melious | OpenAI-compatible full-history chat; explicit reasoning effort is forwarded where supported, but omitted from Mistral requests |
 | `generateImage()` | Gemini, Alibaba DashScope, Melious | Unsupported for all other provider types |
 
 This routing is implemented in code, not inferred from documentation. If a provider type is not branched explicitly for an operation, it falls through to the compatibility client or throws `UnsupportedError`.
@@ -959,7 +962,7 @@ Operational details from the seeded definitions:
 
 `seedDefaults()` is **strictly seed-on-create**: it looks up each gated-in profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 
-`upgradeExisting()` backfills migration-safe pieces after model rows exist: dangling model slots on default profiles are healed (deleting a provider cascade-deletes its model rows, but the seeded profile kept pointing at the dead row IDs — each such slot resets to the seed template's provider-native default and re-resolves once the rows are recreated; catalog-known provider-native values are treated as pending, not dangling), legacy provider-native slot values are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, and untouched Melious profiles move through the Qwen thinking, GLM 5.2 high-end thinking, Flux 2 Klein 9B image-generation, and Voxtral Small 24B transcription defaults. Default `skillAssignments` are added only to existing default profiles whose assignments are still empty. User-edited names, resolvable model slots outside recognized seed generations, and non-empty assignment lists are preserved. Besides startup, `upgradeExisting()` also runs right after a provider is created or re-verified (`runFtueSetupForType`, provider save in the settings form), so reconnecting a provider heals its profile immediately — onboarding's first capture resolves through the profile seconds after the key step.
+`upgradeExisting()` backfills migration-safe pieces after model rows exist: dangling model slots on default profiles are healed (deleting a provider cascade-deletes its model rows, but the seeded profile kept pointing at the dead row IDs — each such slot resets to the seed template's provider-native default and re-resolves once the rows are recreated; catalog-known provider-native values are treated as pending, not dangling), legacy provider-native slot values are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, and legacy Melious seeds move through the Qwen thinking, GLM 5.2 high-end thinking, Flux 2 Klein 9B image-generation, and Voxtral Small 24B transcription defaults. Melious stores a seed generation after that one-shot migration; later user model choices are never reclassified as legacy defaults, and provider-native slots resolve only against Melious-owned rows. Default `skillAssignments` are added only to existing default profiles whose assignments are still empty. User-edited names, resolvable model slots outside recognized seed generations, and non-empty assignment lists are preserved. Besides startup, `upgradeExisting()` also runs right after a provider is created or re-verified (`runFtueSetupForType`, provider save in the settings form), so reconnecting a provider heals its profile immediately — onboarding's first capture resolves through the profile seconds after the key step.
 
 `ModelPrepopulationService.backfillNewModels()` seeds known model rows for
 configured providers at startup. Known model identity is the

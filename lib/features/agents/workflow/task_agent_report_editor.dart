@@ -227,7 +227,13 @@ class TaskAgentReportEditor {
             'rejectedReport': _withoutExcludedDraftScope(rejectedReportJson),
           'requiredCorrections': [
             for (final issue in validationIssues)
-              {'code': issue.name, 'instruction': issue.correction},
+              {
+                'code': issue.name,
+                'instruction': _repairInstruction(
+                  issue,
+                  materialTaskState,
+                ),
+              },
           ],
         },
       };
@@ -479,9 +485,13 @@ class TaskAgentReportEditor {
           _ => false,
         };
     if (_hasKnownProcessNarration(
-      normalizedCandidate: normalizedReport,
-      hasNewChecklistItems: hasNewChecklistItems,
-    )) {
+          normalizedCandidate: normalizedReport,
+          hasNewChecklistItems: hasNewChecklistItems,
+        ) ||
+        _inventsWaitingFromUnperformedRequest(
+          materialTaskState: materialTaskState,
+          normalizedCandidate: normalizedReport,
+        )) {
       issues.add(TaskAgentReportRevisionIssue.processNarration);
     }
 
@@ -588,10 +598,15 @@ class TaskAgentReportEditor {
       r'\b(await\w*|wait\w*|pending|blocked|until|cannot proceed|wart\w*|'
       r'esper\w*|attend\w*|aștept\w*|ček\w*|bloquead\w*|pendiente\w*)\b',
     ).hasMatch(normalizedDraft);
+    final waitingInventedFromRequest = _inventsWaitingFromUnperformedRequest(
+      materialTaskState: materialTaskState,
+      normalizedCandidate: normalizedCandidate,
+    );
     if (hasProcessFragment ||
         hasGermanChecklistNarration ||
         hasKnownProcessNarration ||
-        (candidateAddsWaitingState && !draftGroundsWaitingState)) {
+        (candidateAddsWaitingState &&
+            (!draftGroundsWaitingState || waitingInventedFromRequest))) {
       issues.add(TaskAgentReportRevisionIssue.processNarration);
     }
 
@@ -704,10 +719,10 @@ class TaskAgentReportEditor {
           r'\b(work(?:ing)?|task|plan|workflow|actions?|steps?|implementation|'
           'investigation|rotation|migration|deployment|release|evaluation|'
           r'cleanup|fix|stabilisier\w*|export|arbeit(?:en)?|aufgabe|trabajo|'
-          'tarea|travail|tâche|'
+          r'auftrag\w*|vorbereit\w*|activaci(?:ó|o)n\w*|tarea|travail|tâche|'
           r'muncă|sarcin)\b.{0,50}\b(underway|in progress|'
           'currently active|wurde aufgenommen|l(?:ä|ae)uft(?: aktuell)?|'
-          'in bearbeitung|en curso|'
+          'in bearbeitung|en curso|en progreso|'
           r'en progrès|în curs|probíhá)\b',
         ).hasMatch(normalizedCandidate);
     final describesPendingInvestigationAsProgress =
@@ -770,7 +785,13 @@ class TaskAgentReportEditor {
 
   static bool _usesFormalRegister(String languageCode, String reportText) {
     return switch (languageCode) {
-      'de' => RegExp(r'\b(Sie|Ihr(?:e|en|er|em|es)?)\b').hasMatch(reportText),
+      'de' =>
+        RegExp(r'\bIhr(?:e|en|er|em|es)?\b').hasMatch(reportText) ||
+            RegExp(r'\bSie\b')
+                .allMatches(reportText)
+                .any(
+                  (match) => !_isSentenceInitial(reportText, match.start),
+                ),
       'es' => RegExp(
         r'\b(usted|ustedes)\b',
         caseSensitive: false,
@@ -817,6 +838,53 @@ class TaskAgentReportEditor {
       }
     }
     return terms.toList(growable: false)..sort();
+  }
+
+  static String _repairInstruction(
+    TaskAgentReportRevisionIssue issue,
+    Map<String, Object?> materialTaskState,
+  ) {
+    if (issue == TaskAgentReportRevisionIssue.missingPriority) {
+      final priority = materialTaskState['priority'];
+      if (priority is String && priority.trim().isNotEmpty) {
+        return 'Include the exact current task priority `${priority.trim()}` '
+            'in the report.';
+      }
+    }
+    return issue.correction;
+  }
+
+  static bool _inventsWaitingFromUnperformedRequest({
+    required Map<String, Object?> materialTaskState,
+    required String normalizedCandidate,
+  }) {
+    final candidateAddsWaitingState = RegExp(
+      r'\b(await\w*|wait\w*|wart\w*|esper\w*|attend\w*|aștept\w*|ček\w*)\b',
+    ).hasMatch(normalizedCandidate);
+    if (!candidateAddsWaitingState) return false;
+
+    final checklistItems = switch (materialTaskState['newChecklistItems']) {
+      final List<dynamic> items => items.whereType<String>(),
+      _ => const Iterable<String>.empty(),
+    };
+    for (final item in checklistItems) {
+      final normalizedItem = item.trim().toLowerCase();
+      if (!_requestActionPrefix.hasMatch(normalizedItem)) continue;
+      final subjectTerms = _distinctiveWord
+          .allMatches(normalizedItem)
+          .map((match) => match.group(0)!)
+          .where((term) => !_requestActionStopWords.contains(term));
+      if (subjectTerms.any(normalizedCandidate.contains)) return true;
+    }
+    return false;
+  }
+
+  static bool _isSentenceInitial(String text, int wordStart) {
+    var index = wordStart - 1;
+    while (index >= 0 && (text[index] == ' ' || text[index] == '\t')) {
+      index--;
+    }
+    return index < 0 || '.!?\n\r'.contains(text[index]);
   }
 
   static List<String> _distinctiveScopeTerms(String text) {
@@ -867,17 +935,37 @@ class TaskAgentReportEditor {
     unicode: true,
   );
   static final _excludedScopeMarker = RegExp(
-    r'\b(?:deferred|rejected|omitted|out[- ]of[- ]scope|outside scope|'
+    r'\b(?:rejected|omitted|out[- ]of[- ]scope|outside scope|'
     'scoped[- ]out|do not include|must not be included|'
     'leave (?:it|that|this) out|'
     'zurückgestellt|nicht.{0,60}aufgenommen|nicht.{0,40}aufnehmen|'
     r'nicht.{0,40}bearbeit\w*|'
-    'ausgeschlossen|pospuest|aplazad|fuera de alcance|no incluir|'
-    'différ|reporté|hors périmètre|ne pas inclure|amânat|'
+    r'(?:erst\s+)?später.{0,40}(?:betrachtet|berücksichtigt|bearbeitet|angegangen)|'
+    'ausgeschlossen|fuera de alcance|no incluir|'
+    'hors périmètre|ne pas inclure|'
     r'în afara domeniului|nu include|odložen|mimo rozsah|nezahrnovat)\b',
     caseSensitive: false,
     unicode: true,
   );
+  static final _requestActionPrefix = RegExp(
+    '^(?:request|ask|contact|anfordern|beantragen|solicitar|pedir|contactar|'
+    r'demander|contacter|solicita|contactează|požádat|kontaktovat)\b',
+    unicode: true,
+  );
+  static const _requestActionStopWords = <String>{
+    'request',
+    'contact',
+    'anfordern',
+    'beantragen',
+    'solicitar',
+    'contactar',
+    'demander',
+    'contacter',
+    'solicita',
+    'contactează',
+    'požádat',
+    'kontaktovat',
+  };
   static const _excludedScopeStopWords = <String>{
     'because',
     'concept',

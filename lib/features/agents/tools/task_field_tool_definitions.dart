@@ -49,10 +49,7 @@ const taskFieldTools = <AgentToolDefinition>[
     name: TaskAgentToolNames.updateTaskDueDate,
     description:
         'Update the due date for the task. '
-        'Only call when the user explicitly asks to set, move, or CHANGE the '
-        'task due date to a different value. A date or deadline inside an '
-        'action or checklist item remains an item qualifier and does not '
-        'authorize changing the task due date. '
+        'Only call when you want to CHANGE the due date to a different value. '
         'Do NOT call if the task already has the correct due date — check the '
         'current dueDate in the task context first.',
     parameters: {
@@ -150,15 +147,13 @@ const taskFieldTools = <AgentToolDefinition>[
     name: TaskAgentToolNames.setTaskStatus,
     description:
         'Transition the task to a new status. '
-        'Only call when the user explicitly asks to CHANGE or transition the '
-        'status to a DIFFERENT value. A description that work is blocked, in '
-        'progress, or on hold, or that it has a blocker or gate, is report '
-        'evidence and does not authorize this mutation. '
+        'Only call when you want to CHANGE the status to a DIFFERENT value. '
         'Do NOT call if the task is already at the target status — check the '
         'current status in the task context first. '
         'Valid statuses: OPEN, IN PROGRESS, GROOMED, BLOCKED, ON HOLD. '
         'BLOCKED and ON HOLD require a reason. '
-        'DONE and REJECTED are user-only and cannot be set by the agent.',
+        'DONE and REJECTED are user-only and cannot be set by the agent. '
+        'Only change status when there is clear evidence in the task context.',
     parameters: {
       'type': 'object',
       'properties': {

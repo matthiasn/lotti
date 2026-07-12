@@ -1566,7 +1566,7 @@ const _latestDeadlineWinsUserMessage = '''
     {"timestamp": "2026-04-12T09:00:00Z", "text": "Tentatively moved to October 15 while procurement reviews scope."},
     {"timestamp": "2026-06-02T09:00:00Z", "text": "Demo dataset is ready."},
     {"timestamp": "2026-07-08T13:00:00Z", "text": "Procurement confirmed the customer conference slot."},
-    {"timestamp": "2026-07-10T13:15:00Z", "text": "Final decision: the customer conference demo is November 20, 2026. Move this task to that date. Procurement is confirmed; the demo script is the remaining work."
+    {"timestamp": "2026-07-10T13:15:00Z", "text": "Final decision: the customer conference demo is November 20, 2026. Move this task to that date. Procurement is confirmed; the demo script is the remaining work."}
   ]
 }
 ```
@@ -2410,7 +2410,13 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
   Map<String, dynamic>? get latestReportArguments {
     for (final call in _toolCalls.reversed) {
       if (call.name == TaskAgentToolNames.updateReport) {
-        return call.jsonObjectArguments;
+        final arguments = call.jsonObjectArguments;
+        if (arguments != null &&
+            _hasNonEmptyString(arguments, 'oneLiner') &&
+            _hasNonEmptyString(arguments, 'tldr') &&
+            _hasNonEmptyString(arguments, 'content')) {
+          return arguments;
+        }
       }
     }
     return null;

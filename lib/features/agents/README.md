@@ -857,10 +857,12 @@ When enabled, the task-agent path changes four common inputs together:
   does not treat speculation or a description of current state as authority
 - owners and dates inside an action stay in that checklist item; they do not
   authorize owner or task-due-date field mutations without an explicit request
-- `TaskAgentContextBuilder` adds evidence requirements to the existing
-  `update_report` tool description without changing its parameter schema.
-- the main conversation and forced-report retry both use temperature `0.0`
-  instead of the standard `0.3`
+- `TaskAgentContextBuilder` adds evidence requirements to `update_report` and
+  explicit authority boundaries to checklist, due-date, and status mutation
+  descriptions. With the flag off, the shared scaffold and tool descriptions
+  remain unchanged
+- the exact evaluated Melious Mistral Small 4 and Qwen3.5 122B routes use
+  temperature `0.0`; unevaluated providers and model families retain `0.3`
 - a required report omitted after a successful mutation receives a forced
   report call; a true no-op wake does not
 - model reasoning remains profile/provider driven; the flag does not force a
@@ -875,6 +877,10 @@ backfills both evaluated efficient choices into the model picker:
   repair before persistence
 - choose `mistral-small-4-119b-instruct` for Mistral task mutations plus the
   exact-match isolated Qwen report editor described below
+
+Compact scaffolds and model-specific directives are selected only for those
+two exact provider model IDs. Other Mistral or Qwen models keep the common
+scaffold and sampling defaults until they are evaluated explicitly.
 
 For the exact Melious `mistral-small-4-119b-instruct` executor, the same flag
 also enables the report-editor path:

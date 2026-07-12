@@ -121,6 +121,7 @@ class FlagsBody extends ConsumerStatefulWidget {
   ];
 
   /// Flag names to render, in display order.
+  @visibleForTesting
   final List<String> displayedItems;
 
   @override

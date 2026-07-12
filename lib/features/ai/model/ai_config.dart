@@ -146,6 +146,13 @@ sealed class AiConfig with _$AiConfig {
     /// Whether this profile requires a desktop environment (e.g. Ollama).
     @Default(false) bool desktopOnly,
 
+    /// Version of the bundled seed defaults already applied to this profile.
+    ///
+    /// Persisting the generation makes default migrations one-shot. Once a
+    /// profile has been migrated, later user changes to its model slots are
+    /// never mistaken for an older bundled default on startup.
+    @Default(0) int seedGeneration,
+
     /// Skills assigned to this profile.
     @Default([]) List<SkillAssignment> skillAssignments,
 

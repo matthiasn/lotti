@@ -211,6 +211,7 @@ AiConfigInferenceProfile _$AiConfigInferenceProfileFromJson(
   imageGenerationModelId: json['imageGenerationModelId'] as String?,
   isDefault: json['isDefault'] as bool? ?? false,
   desktopOnly: json['desktopOnly'] as bool? ?? false,
+  seedGeneration: (json['seedGeneration'] as num?)?.toInt() ?? 0,
   skillAssignments:
       (json['skillAssignments'] as List<dynamic>?)
           ?.map((e) => SkillAssignment.fromJson(e as Map<String, dynamic>))
@@ -237,6 +238,7 @@ Map<String, dynamic> _$AiConfigInferenceProfileToJson(
   'imageGenerationModelId': instance.imageGenerationModelId,
   'isDefault': instance.isDefault,
   'desktopOnly': instance.desktopOnly,
+  'seedGeneration': instance.seedGeneration,
   'skillAssignments': instance.skillAssignments,
   'pinnedHostId': instance.pinnedHostId,
   'updatedAt': instance.updatedAt?.toIso8601String(),

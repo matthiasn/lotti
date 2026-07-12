@@ -1246,8 +1246,7 @@ void main() {
       );
 
       test(
-        'evidence synthesis uses the aligned prompt, report tool, and zero '
-        'temperature',
+        'evidence synthesis keeps default temperature for unevaluated models',
         () async {
           String? systemMessage;
           double? capturedTemperature;
@@ -1319,7 +1318,7 @@ void main() {
                   as Map<String, dynamic>;
           expect(result.success, isTrue);
           expect(optimizedWorkflow.evidenceSynthesisEnabled, isTrue);
-          expect(capturedTemperature, 0);
+          expect(capturedTemperature, 0.3);
           expect(
             systemMessage,
             contains('## Evidence-First Synthesis Protocol'),
@@ -1519,18 +1518,15 @@ void main() {
             final captured = verify(
               () => mockSyncService.upsertEntity(captureAny()),
             ).captured;
-            final editorAudit =
-                capturedEntitiesOfType<AgentMessageEntity>(
-                  captured,
-                ).singleWhere(
-                  (message) =>
-                      message.metadata.toolName ==
-                      '${TaskAgentReportEditor.auditToolPrefix}_not_eligible',
-                );
             expect(
-              editorAudit.metadata.errorMessage,
-              'providerType=openAi;'
-              'executorModelId=${testCase.modelId}',
+              capturedEntitiesOfType<AgentMessageEntity>(captured).where(
+                (message) =>
+                    message.metadata.toolName?.startsWith(
+                      TaskAgentReportEditor.auditToolPrefix,
+                    ) ??
+                    false,
+              ),
+              isEmpty,
             );
           },
         );
@@ -3027,7 +3023,7 @@ not describe task configuration or tool activity as progress.
 
       test(
         'issues a second sendMessage with toolChoice forced to update_report '
-        'at zero temperature when evidence synthesis has no report',
+        'at the model default when evidence synthesis has no report',
         () async {
           final calls =
               <
@@ -3085,7 +3081,7 @@ not describe task configuration or tool activity as progress.
 
           expect(result.success, isTrue);
           expect(calls, hasLength(2));
-          expect(calls.map((call) => call.temperature), [0, 0]);
+          expect(calls.map((call) => call.temperature), [0.3, 0.3]);
 
           // First call: normal wake, no forced tool choice.
           expect(calls[0].toolChoice, isNull);

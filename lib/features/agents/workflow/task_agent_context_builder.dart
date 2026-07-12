@@ -417,8 +417,9 @@ class TaskAgentContextBuilder {
         type: ChatCompletionToolType.function,
         function: FunctionObject(
           name: def.name,
-          description: optimizeReport
-              ? TaskAgentEvidenceSynthesis.updateReportDescription(
+          description: evidenceSynthesis
+              ? TaskAgentEvidenceSynthesis.toolDescription(
+                  def.name,
                   def.description,
                 )
               : def.description,

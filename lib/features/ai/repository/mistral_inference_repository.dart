@@ -402,7 +402,8 @@ class MistralInferenceRepository {
   ///   tools: Optional list of tools for function calling
   ///   toolChoice: Optional tool-selection override (`auto`, required, none,
   ///     or a specific function).
-  ///   reasoningEffort: Optional reasoning level for supported models.
+  ///   reasoningEffort: Accepted for interface compatibility but not sent;
+  ///     Mistral's chat-completions API does not document this parameter.
   ///
   /// Returns:
   ///   Stream of chat completion responses
@@ -430,7 +431,6 @@ class MistralInferenceRepository {
       maxCompletionTokens: maxCompletionTokens,
       tools: tools,
       toolChoice: toolChoice,
-      reasoningEffort: reasoningEffort,
     );
   }
 
@@ -458,7 +458,6 @@ class MistralInferenceRepository {
       maxCompletionTokens: maxCompletionTokens,
       tools: tools,
       toolChoice: toolChoice,
-      reasoningEffort: reasoningEffort,
     );
   }
 
@@ -574,7 +573,6 @@ class MistralInferenceRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
   }) async* {
     final requestBody = <String, dynamic>{
       'model': model,
@@ -582,7 +580,6 @@ class MistralInferenceRepository {
       'stream': true,
       'temperature': ?temperature,
       'max_tokens': ?maxCompletionTokens,
-      if (reasoningEffort != null) 'reasoning_effort': reasoningEffort.name,
     };
 
     // Add tools if provided

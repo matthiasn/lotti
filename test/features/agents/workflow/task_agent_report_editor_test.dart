@@ -324,7 +324,8 @@ turn task metadata or a checklist edit into an accomplishment.
         },
         report: <String, dynamic>{
           'oneLiner':
-              'Beta-Vorbereitung läuft mit vier Schritten bis 30. September',
+              'Beta-Vorbereitung läuft mit vier Schritten bis '
+              '30. September 2026',
           'tldr': 'Vier konkrete Arbeitsschritte warten auf Bearbeitung.',
           'content':
               'Der Auftrag ist priorisiert (P1) und bereits in Bearbeitung.',
@@ -567,6 +568,32 @@ turn task metadata or a checklist edit into an accomplishment.
     }
   });
 
+  test('German sentence-initial Sie is not treated as formal register', () {
+    const report = {
+      'oneLiner': 'Die Berichte sind erstellt',
+      'tldr': 'Sie werden morgen geprüft.',
+      'content': 'Die Berichte sind erstellt. Sie werden morgen geprüft.',
+    };
+
+    expect(
+      TaskAgentReportEditor.detectDirectQwenRegressions(
+        languageCode: 'de',
+        materialTaskState: const {},
+        report: report,
+      ),
+      isNot(contains(TaskAgentReportRevisionIssue.formalRegister)),
+    );
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'de',
+        materialTaskState: const {},
+        draftReport: report,
+        candidateReport: report,
+      ),
+      isNot(contains(TaskAgentReportRevisionIssue.formalRegister)),
+    );
+  });
+
   test('validation rejects localized resolution claims from checkmarks', () {
     const cases = [
       (
@@ -779,6 +806,32 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(
       validate('The pull request is merged.'),
       contains(TaskAgentReportRevisionIssue.missingActiveRisk),
+    );
+  });
+
+  test('bare deferred scheduling does not look like excluded scope', () {
+    const report = {
+      'oneLiner': 'Deployment deferred until Friday',
+      'tldr': 'Deployment waits for the Friday maintenance window.',
+      'content': 'Deployment deferred until the Friday maintenance window.',
+    };
+
+    expect(
+      TaskAgentReportEditor.detectDirectQwenRegressions(
+        languageCode: 'en',
+        materialTaskState: const {},
+        report: report,
+      ),
+      isNot(contains(TaskAgentReportRevisionIssue.deferredScopeLeak)),
+    );
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'en',
+        materialTaskState: const {},
+        draftReport: report,
+        candidateReport: report,
+      ),
+      isNot(contains(TaskAgentReportRevisionIssue.deferredScopeLeak)),
     );
   });
 
@@ -1187,24 +1240,34 @@ turn task metadata or a checklist edit into an accomplishment.
   });
 
   test('validation rejects waiting invented from an unperformed request', () {
+    const materialTaskState = {
+      'newChecklistItems': ['Request replacement certificate from Security'],
+    };
+    const candidateReport = {
+      'oneLiner': 'Awaiting replacement certificate from Security',
+      'tldr': 'Three actions remain pending.',
+      'content': 'The certificate must arrive before rotation can proceed.',
+    };
     final issues = TaskAgentReportEditor.validateRevision(
       languageCode: 'en',
-      materialTaskState: const {
-        'newChecklistItems': ['Request replacement certificate from Security'],
-      },
+      materialTaskState: materialTaskState,
       draftReport: const {
         'oneLiner': 'Awaiting replacement certificate from Security',
         'tldr': 'Request the replacement certificate next.',
         'content': 'Request the certificate, then rotate it.',
       },
-      candidateReport: const {
-        'oneLiner': 'Awaiting replacement certificate from Security',
-        'tldr': 'Three actions remain pending.',
-        'content': 'The certificate must arrive before rotation can proceed.',
-      },
+      candidateReport: candidateReport,
     );
 
     expect(issues, [TaskAgentReportRevisionIssue.processNarration]);
+    expect(
+      TaskAgentReportEditor.detectDirectQwenRegressions(
+        languageCode: 'en',
+        materialTaskState: materialTaskState,
+        report: candidateReport,
+      ),
+      [TaskAgentReportRevisionIssue.processNarration],
+    );
   });
 
   test('validation removes setup filler and evidence disclaimers', () {

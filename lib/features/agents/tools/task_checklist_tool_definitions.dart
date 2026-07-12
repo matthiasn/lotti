@@ -6,12 +6,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 const taskChecklistTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: TaskAgentToolNames.addMultipleChecklistItems,
-    description:
-        'Add multiple checklist items to the task. Use this proactively when '
-        'the user commits to a concrete multi-step plan (for example, "I need '
-        'to fix this, then open a PR, review it, and release"), even if they '
-        'do not explicitly ask for a checklist. Do not convert speculation or '
-        'a description of current state into checklist items.',
+    description: 'Add multiple checklist items to the task.',
     parameters: {
       'type': 'object',
       'properties': {

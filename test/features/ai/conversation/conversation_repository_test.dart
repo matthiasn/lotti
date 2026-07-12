@@ -1774,6 +1774,115 @@ void main() {
         );
       });
 
+      test(
+        'clears the previous inference error before the next request',
+        () async {
+          var callCount = 0;
+          _stubGenerateText(mockOllamaRepo).thenAnswer((_) {
+            callCount++;
+            if (callCount == 1) {
+              return Stream.error(StateError('temporary provider error'));
+            }
+            return Stream.value(
+              const CreateChatCompletionStreamResponse(
+                id: 'recovered',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(content: 'Done'),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: 1710500000,
+              ),
+            );
+          });
+
+          await repository.sendMessage(
+            conversationId: conversationId,
+            message: 'First attempt',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+          );
+          final manager = repository.getConversation(conversationId)!;
+          expect(manager.lastError, contains('temporary provider error'));
+
+          await repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Second attempt',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+          );
+
+          expect(manager.lastError, isNull);
+          expect(manager.messages.last.content, 'Done');
+        },
+      );
+
+      test(
+        'does not rethrow tool-processing errors after successful inference',
+        () async {
+          _stubGenerateText(mockOllamaRepo).thenAnswer(
+            (_) => Stream.value(
+              const CreateChatCompletionStreamResponse(
+                id: 'tool-response',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(
+                      toolCalls: [
+                        ChatCompletionStreamMessageToolCallChunk(
+                          index: 0,
+                          id: 'tool-1',
+                          type: ChatCompletionStreamMessageToolCallChunkType
+                              .function,
+                          function: ChatCompletionStreamMessageFunctionCall(
+                            name: 'test_function',
+                            arguments: '{}',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: 1710500000,
+                usage: CompletionUsage(
+                  promptTokens: 30,
+                  completionTokens: 10,
+                  totalTokens: 40,
+                ),
+              ),
+            ),
+          );
+          when(
+            () => mockStrategy.processToolCalls(
+              toolCalls: any(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            ),
+          ).thenThrow(StateError('strategy failed'));
+
+          final usage = await repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Use the tool',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+            strategy: mockStrategy,
+            rethrowInferenceErrors: true,
+          );
+
+          expect(usage?.inputTokens, 30);
+          expect(usage?.outputTokens, 10);
+          expect(
+            repository.getConversation(conversationId)!.lastError,
+            contains('strategy failed'),
+          );
+        },
+      );
+
       group('per-turn consumption recording', () {
         /// Stubs `generateTextWithMessages` with a single content chunk whose
         /// final response carries [usage], optionally writing [impact] into
@@ -2133,6 +2242,40 @@ void main() {
             expect(
               manager.messages.last.role,
               ChatCompletionMessageRole.assistant,
+            );
+          },
+        );
+
+        test(
+          'returns usage when consumption recording fails',
+          () async {
+            final recorder = _registerConsumptionRecorder();
+            when(
+              () => recorder.record(any()),
+            ).thenThrow(StateError('telemetry write failed'));
+            stubTurnWithUsage(
+              usage: const CompletionUsage(
+                promptTokens: 100,
+                completionTokens: 40,
+                totalTokens: 140,
+              ),
+            );
+
+            final usage = await repository.sendMessage(
+              conversationId: conversationId,
+              message: 'Hello',
+              model: 'test-model',
+              provider: provider,
+              inferenceRepo: mockOllamaRepo,
+              consumptionAgentId: 'agent-1',
+              rethrowInferenceErrors: true,
+            );
+
+            expect(usage?.inputTokens, 100);
+            expect(usage?.outputTokens, 40);
+            expect(
+              repository.getConversation(conversationId)!.lastError,
+              isNull,
             );
           },
         );

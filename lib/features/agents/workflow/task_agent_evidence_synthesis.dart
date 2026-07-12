@@ -1,3 +1,6 @@
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
+
 /// Shared prompt and tool-description adjustments for the validated
 /// evidence-first task-agent configuration.
 abstract final class TaskAgentEvidenceSynthesis {
@@ -81,7 +84,7 @@ date or deadline, include it and state what it is for.
   /// Selects report guidance without changing custom template directives.
   static String reportDirectiveForModel(String? modelId) {
     final normalizedModelId = modelId?.toLowerCase() ?? '';
-    return normalizedModelId.contains('mistral')
+    return normalizedModelId == meliousMistralSmall4119BInstructModelId
         ? mistralReportDirective
         : reportDirective;
   }
@@ -215,10 +218,10 @@ after a pending investigation.
   /// Returns the common contract plus the empirically matched family profile.
   static String systemDirectiveForModel(String? modelId) {
     final normalizedModelId = modelId?.toLowerCase() ?? '';
-    if (normalizedModelId.contains('mistral')) {
+    if (normalizedModelId == meliousMistralSmall4119BInstructModelId) {
       return mistralSystemDirective;
     }
-    if (normalizedModelId.contains('qwen')) {
+    if (normalizedModelId == meliousQwen35122BA10BModelId) {
       return '$systemDirective$qwenSystemDirective';
     }
     return systemDirective;
@@ -227,8 +230,31 @@ after a pending investigation.
   /// Whether the opt-in should use the compact task-agent scaffold.
   static bool usesCompactScaffold(String? modelId) {
     final normalizedModelId = modelId?.toLowerCase() ?? '';
-    return normalizedModelId.contains('mistral') ||
-        normalizedModelId.contains('qwen');
+    return normalizedModelId == meliousMistralSmall4119BInstructModelId ||
+        normalizedModelId == meliousQwen35122BA10BModelId;
+  }
+
+  /// Applies flag-gated authority guidance to mutation tool descriptions.
+  static String toolDescription(String toolName, String baseDescription) {
+    return switch (toolName) {
+      TaskAgentToolNames.addMultipleChecklistItems =>
+        '$baseDescription Use this proactively when the user commits to a '
+            'concrete multi-step plan, even without saying "create a '
+            'checklist". Do not convert speculation or current-state '
+            'description into checklist items.',
+      TaskAgentToolNames.updateTaskDueDate =>
+        '$baseDescription Only call when the user explicitly asks to set or '
+            'move the task due date. A date inside an action remains an item '
+            'qualifier and does not authorize changing the task due date.',
+      TaskAgentToolNames.setTaskStatus =>
+        '$baseDescription Only call when the user explicitly requests a '
+            'status transition. Describing work as blocked, in progress, or '
+            'on hold is report evidence, not mutation authority.',
+      TaskAgentToolNames.updateReport => updateReportDescription(
+        baseDescription,
+      ),
+      _ => baseDescription,
+    };
   }
 
   /// Scope contract added directly to the `update_report` tool description.

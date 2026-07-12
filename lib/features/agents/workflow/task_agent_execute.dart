@@ -459,7 +459,11 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           : null;
 
       // 7. Invoke the LLM and execute tool calls via AgentToolExecutor.
-      final inferenceTemperature = evidenceSynthesisEnabled ? 0.0 : 0.3;
+      final inferenceTemperature =
+          evidenceSynthesisEnabled &&
+              TaskAgentEvidenceSynthesis.usesCompactScaffold(modelId)
+          ? 0.0
+          : 0.3;
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -523,9 +527,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           normalizedExecutorModelId == meliousQwen35122BA10BModelId;
       final isDirectQwenExecutor =
           evidenceSynthesisEnabled && isMeliousProvider && isDirectQwenModel;
-      final isMistralEditorCandidate = normalizedExecutorModelId.contains(
-        'mistral-small-4',
-      );
+      final isMistralEditorCandidate =
+          normalizedExecutorModelId == meliousMistralSmall4119BInstructModelId;
       final isReportEditorCandidate =
           isMistralEditorCandidate || isDirectQwenModel;
       final reportEditorRouteEligible =
@@ -574,11 +577,11 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       if (evidenceSynthesisEnabled &&
           !reportEditorRouteEligible &&
           isReportEditorCandidate) {
-        await strategy.recordWorkflowResult(
-          toolName: '${TaskAgentReportEditor.auditToolPrefix}_not_eligible',
-          errorMessage:
-              'providerType=${provider.inferenceProviderType.name};'
-              'executorModelId=$modelId',
+        _log(
+          'report editor route not eligible: '
+          'providerType=${provider.inferenceProviderType.name};'
+          'executorModelId=$modelId',
+          subDomain: 'reportEditor',
         );
       }
       if (reportEditorRouteEligible && effectiveReport == null) {

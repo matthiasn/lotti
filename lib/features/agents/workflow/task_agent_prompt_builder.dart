@@ -538,10 +538,11 @@ linked task's own agent does not push updates to you.
   Do not retroactively adjust estimates based on time already spent
   unless specifically asked to do so.
 - **Status**: Do NOT call `set_task_status` if the task is already at the
-  target status. Only transition when the user explicitly requests a status
-  change. A description of work as blocked, in progress, or paused is report
-  evidence, not mutation authority. When an authorized transition targets
-  BLOCKED or ON HOLD, always provide the stated reason.
+  target status. Only transition when there is clear evidence of a change:
+  - Set "IN PROGRESS" when time is being logged on the task (especially
+    combined with checklist items being checked off).
+  - Set "BLOCKED" when the user mentions a blocker (always provide a reason).
+  - Set "ON HOLD" when work is intentionally paused (always provide a reason).
   - DONE and REJECTED are user-only — never set these.
   - Do NOT set status speculatively or based on assumptions.
 - **Language**: Always write your report and TLDR in the language specified by

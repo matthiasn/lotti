@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:mocktail/mocktail.dart';
@@ -304,7 +305,7 @@ void main() {
       expect(names, contains('update_report'));
     });
 
-    test('tightens only update_report for evidence synthesis', () {
+    test('tightens report and mutation authority only in evidence mode', () {
       final baseline = builder.buildToolDefinitions();
       final optimized = builder.buildToolDefinitions(evidenceSynthesis: true);
       final baselineByName = {
@@ -314,6 +315,33 @@ void main() {
         for (final tool in optimized) tool.function.name: tool.function,
       };
       final optimizedReport = optimizedByName['update_report']!;
+
+      expect(
+        baselineByName[TaskAgentToolNames.addMultipleChecklistItems]!
+            .description,
+        isNot(contains('concrete multi-step plan')),
+      );
+      expect(
+        optimizedByName[TaskAgentToolNames.addMultipleChecklistItems]!
+            .description,
+        contains('concrete multi-step plan'),
+      );
+      expect(
+        baselineByName[TaskAgentToolNames.updateTaskDueDate]!.description,
+        isNot(contains('explicitly asks')),
+      );
+      expect(
+        optimizedByName[TaskAgentToolNames.updateTaskDueDate]!.description,
+        contains('explicitly asks'),
+      );
+      expect(
+        baselineByName[TaskAgentToolNames.setTaskStatus]!.description,
+        isNot(contains('explicitly requests')),
+      );
+      expect(
+        optimizedByName[TaskAgentToolNames.setTaskStatus]!.description,
+        contains('explicitly requests'),
+      );
 
       expect(
         optimizedReport.description,

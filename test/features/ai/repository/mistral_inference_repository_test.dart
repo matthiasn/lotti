@@ -1130,7 +1130,7 @@ void main() {
                 ).captured.single
                 as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
-        expect(requestBody['reasoning_effort'], 'high');
+        expect(requestBody, isNot(contains('reasoning_effort')));
       });
 
       test('should convert assistant messages with tool calls', () async {

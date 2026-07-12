@@ -102,7 +102,7 @@ void main() {
       );
     });
 
-    test('selects only the matching model-family examples', () {
+    test('selects only the exact evaluated model profiles', () {
       final mistral = TaskAgentEvidenceSynthesis.systemDirectiveForModel(
         'mistral-small-4-119b-instruct',
       );
@@ -132,6 +132,16 @@ void main() {
       expect(
         TaskAgentEvidenceSynthesis.usesCompactScaffold('glm-5.2'),
         isFalse,
+      );
+      expect(
+        TaskAgentEvidenceSynthesis.usesCompactScaffold('qwen3.6:35b-a3b'),
+        isFalse,
+      );
+      expect(
+        TaskAgentEvidenceSynthesis.systemDirectiveForModel(
+          'mistral-medium-latest',
+        ),
+        TaskAgentEvidenceSynthesis.systemDirective,
       );
     });
 

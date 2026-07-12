@@ -813,6 +813,21 @@ void main() {
           toolCalls,
         );
       });
+
+      test('adds empty content to thinking-only assistant turns', () {
+        manager.addAssistantMessage();
+
+        expect(manager.messages.single.content, isNull);
+
+        final requestMessage = manager.getMessagesForRequest().single;
+        expect(requestMessage.content, '');
+        expect(
+          requestMessage.mapOrNull(
+            assistant: (assistant) => assistant.toolCalls,
+          ),
+          isNull,
+        );
+      });
     });
 
     group('Edge Cases', () {

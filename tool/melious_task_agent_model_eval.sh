@@ -5,10 +5,18 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 env_file="${LOTTI_MELIOUS_ENV_FILE:-$repo_root/../greifswald/service/.env}"
 
 if [[ -f "$env_file" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$env_file"
-  set +a
+  # Source the private file in a subshell and import only the values used by
+  # this script. Unrelated credentials never enter the eval process environment.
+  eval "$(
+    (
+      # shellcheck disable=SC1090
+      source "$env_file"
+      printf 'MELIOUS_API_KEY=%q\n' "${MELIOUS_API_KEY:-}"
+      printf 'UP_UPSTREAM_API_KEY=%q\n' "${UP_UPSTREAM_API_KEY:-}"
+      printf 'MELIOUS_BASE_URL=%q\n' "${MELIOUS_BASE_URL:-}"
+      printf 'UP_UPSTREAM_BASE_URL=%q\n' "${UP_UPSTREAM_BASE_URL:-}"
+    )
+  )"
 fi
 
 api_key="${MELIOUS_API_KEY:-${UP_UPSTREAM_API_KEY:-}}"
