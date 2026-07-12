@@ -1542,7 +1542,7 @@ void main() {
   );
 
   test(
-    'production routing repairs direct Qwen from deterministic issues',
+    'production routing repairs direct Qwen from known regressions',
     () async {
       final inferenceRepository = _QueuedInferenceRepository([
         [_toolCalls(_metadataCallsWithReport(processNarration: true))],
@@ -2122,10 +2122,11 @@ List<({String name, String argumentsJson})> _metadataCallsWithReport({
         argumentsJson: jsonEncode({
           'oneLiner': 'Run the P1 candidate evaluation by July 4, 2026',
           'tldr':
-              'The 150-minute candidate evaluation has no blockers and is '
-              'ready to begin.',
+              'The P1 candidate evaluation is due July 4, 2026 and has a '
+              '150-minute estimate.',
           'content':
-              'Checklist created for the candidate and reference comparison.',
+              'Compare the candidate and reference models. Additional fixes '
+              'can be applied and validated afterward.',
         }),
       )
     else

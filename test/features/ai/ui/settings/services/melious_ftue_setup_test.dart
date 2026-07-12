@@ -78,7 +78,7 @@ void main() {
       expect(result, isNull);
     });
 
-    testWidgets('creates default thinking and Whisper models', (tester) async {
+    testWidgets('creates Qwen and Mistral defaults', (tester) async {
       final saved = <AiConfig>[];
       when(
         () => mockRepository.getConfigsByType(AiConfigType.model),
@@ -129,12 +129,15 @@ void main() {
       await tester.pump();
 
       expect(result, isNotNull);
-      expect(result!.modelsCreated, 6);
+      expect(result!.modelsCreated, 7);
       expect(result!.modelsVerified, 0);
       expect(result!.categoryCreated, isTrue);
       expect(
-        saved.whereType<AiConfigModel>().map((model) => model.providerModelId),
+        saved.whereType<AiConfigModel>().map(
+          (model) => model.providerModelId,
+        ),
         containsAll([
+          meliousQwen35122BA10BModelId,
           meliousMistralSmall4119BInstructModelId,
           meliousGlm52ModelId,
           meliousFlux2Klein9BModelId,
@@ -159,6 +162,12 @@ void main() {
       final existingModels = [
         AiTestDataFactory.createTestModel(
           id: 'thinking',
+          name: 'Qwen3.5 122B A10B',
+          providerModelId: meliousQwen35122BA10BModelId,
+          inferenceProviderId: meliousProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'vision',
           name: 'Mistral Small 4 119B Instruct',
           providerModelId: meliousMistralSmall4119BInstructModelId,
           inferenceProviderId: meliousProvider.id,
@@ -235,7 +244,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.modelsCreated, 0);
-      expect(result!.modelsVerified, 6);
+      expect(result!.modelsVerified, 7);
       expect(result!.categoryCreated, isFalse);
       expect(result!.categoryReused, isTrue);
       verifyNever(() => mockRepository.saveConfig(any()));

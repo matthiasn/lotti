@@ -60,8 +60,9 @@ const List<KnownModel> meliousModels = [
     isReasoningModel: true,
     supportsFunctionCalling: true,
     description:
-        'Default Melious thinking and image-recognition model. Multimodal '
-        'Mistral Small 4 119B Instruct hosted on Melious infrastructure.',
+        'Default Melious image-recognition model and an alternative task-agent '
+        'executor. Multimodal Mistral Small 4 119B Instruct hosted on Melious '
+        'infrastructure.',
   ),
   KnownModel(
     providerModelId: meliousQwen35122BA10BModelId,
@@ -71,8 +72,8 @@ const List<KnownModel> meliousModels = [
     isReasoningModel: true,
     supportsFunctionCalling: true,
     description:
-        'Melious-hosted Qwen3.5 122B A10B reasoning model. Available for '
-        'experimental direct task-agent execution with evidence-first mode.',
+        'Default Melious thinking model. Qwen3.5 122B A10B provides direct '
+        'task-agent execution with evidence-first reporting.',
   ),
   KnownModel(
     providerModelId: meliousDeepseekV4FlashModelId,

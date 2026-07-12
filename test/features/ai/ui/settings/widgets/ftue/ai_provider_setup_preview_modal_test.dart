@@ -74,6 +74,7 @@ void main() {
       expect(
         preset.models.map((model) => model.providerModelId),
         containsAll([
+          meliousQwen35122BA10BModelId,
           meliousMistralSmall4119BInstructModelId,
           meliousGlm52ModelId,
           meliousFlux2Klein9BModelId,
@@ -82,6 +83,7 @@ void main() {
           meliousWhisperLargeV3ModelId,
         ]),
       );
+      expect(preset.models, hasLength(7));
     });
 
     test('returns models for Alibaba', () {

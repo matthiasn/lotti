@@ -216,8 +216,8 @@ getMistralFtueKnownModels() {
 // =============================================================================
 
 /// Model IDs used for Melious FTUE automation.
-const String ftueMeliousThinkingModelId =
-    meliousMistralSmall4119BInstructModelId;
+const String ftueMeliousThinkingModelId = meliousQwen35122BA10BModelId;
+const String ftueMeliousVisionModelId = meliousMistralSmall4119BInstructModelId;
 const String ftueMeliousAdvancedThinkingModelId = meliousGlm52ModelId;
 const String ftueMeliousImageGenerationModelId = meliousFlux2Klein9BModelId;
 const String ftueMeliousVoxtralModelId = meliousVoxtralSmall24B2507ModelId;
@@ -233,13 +233,15 @@ KnownModel? findMeliousKnownModel(String providerModelId) {
 }
 
 /// Returns the KnownModel configurations needed for Melious FTUE.
-/// - Thinking/vision model for the default Melious profile
+/// - Qwen thinking model for the default Melious profile
+/// - Mistral multimodal model for the profile's vision slot
 /// - GLM 5.2 advanced thinking model for the high-end slot
 /// - Flux image generation model for cover art
 /// - Voxtral for context-aware speech-to-text (profile default)
 /// - Whisper Large v3 and Turbo as alternative speech-to-text models
 ({
   KnownModel thinking,
+  KnownModel vision,
   KnownModel advancedThinking,
   KnownModel imageGeneration,
   KnownModel voxtral,
@@ -248,6 +250,7 @@ KnownModel? findMeliousKnownModel(String providerModelId) {
 })?
 getMeliousFtueKnownModels() {
   final thinking = findMeliousKnownModel(ftueMeliousThinkingModelId);
+  final vision = findMeliousKnownModel(ftueMeliousVisionModelId);
   final advancedThinking = findMeliousKnownModel(
     ftueMeliousAdvancedThinkingModelId,
   );
@@ -259,6 +262,7 @@ getMeliousFtueKnownModels() {
   final whisperTurbo = findMeliousKnownModel(ftueMeliousWhisperTurboModelId);
 
   if (thinking == null ||
+      vision == null ||
       advancedThinking == null ||
       imageGeneration == null ||
       voxtral == null ||
@@ -269,6 +273,7 @@ getMeliousFtueKnownModels() {
 
   return (
     thinking: thinking,
+    vision: vision,
     advancedThinking: advancedThinking,
     imageGeneration: imageGeneration,
     voxtral: voxtral,

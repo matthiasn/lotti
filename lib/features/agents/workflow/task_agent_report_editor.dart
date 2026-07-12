@@ -40,7 +40,7 @@ class TaskAgentReportDraft {
   final String tldr;
   final String content;
 
-  /// Serializes the draft for the compact editor request and validator.
+  /// Serializes the draft for the compact editor request and regression checks.
   Map<String, dynamic> toJson() => {
     'oneLiner': oneLiner,
     'tldr': tldr,
@@ -48,7 +48,7 @@ class TaskAgentReportDraft {
   };
 }
 
-/// Deterministic report defects that the bounded repair pass can correct.
+/// Known report defects that the bounded repair pass can correct.
 enum TaskAgentReportRevisionIssue {
   invalidShape('Return non-empty oneLiner, tldr, and content fields.'),
   missingPriority('Restore the current task priority.'),
@@ -126,7 +126,7 @@ class TaskAgentReportEditResult {
   final StackTrace? stackTrace;
 }
 
-/// Isolated, bounded report editor for the opt-in efficient task-agent path.
+/// Isolated, bounded report editor for the efficient task-agent routes.
 class TaskAgentReportEditor {
   TaskAgentReportEditor({
     required this.conversationRepository,
@@ -205,7 +205,7 @@ class TaskAgentReportEditor {
       final conversationId = conversationRepository.createConversation(
         systemMessage: isRepair
             ? '$_systemPrompt\n\n'
-                  'The previous candidate failed deterministic quality checks. '
+                  'The previous candidate matched known regression checks. '
                   'Rewrite it again from the sanitized draft, material task '
                   'state, and report directive. Fix every listed violation. '
                   'Do not defend the candidate or mention the corrections.'
@@ -452,7 +452,64 @@ class TaskAgentReportEditor {
     return state;
   }
 
-  /// Checks a candidate against material facts and known report regressions.
+  /// Detects the narrow, observed regression set on a direct Qwen report.
+  ///
+  /// This is deliberately not a semantic validator or a parser for the active
+  /// report directive. In particular, headings and standalone words such as
+  /// `Goal`, `Checklist`, or `No blockers` do not trigger a rewrite.
+  static List<TaskAgentReportRevisionIssue> detectDirectQwenRegressions({
+    required String languageCode,
+    required Map<String, Object?> materialTaskState,
+    required Map<String, dynamic> report,
+  }) {
+    final issues = <TaskAgentReportRevisionIssue>{};
+    final reportText = _reportFieldText(report);
+    final normalizedReport = reportText.toLowerCase();
+
+    _addShapeAndAnchorIssues(
+      issues: issues,
+      materialTaskState: materialTaskState,
+      candidateReport: report,
+      normalizedCandidate: normalizedReport,
+    );
+
+    final hasNewChecklistItems =
+        switch (materialTaskState['newChecklistItems']) {
+          final List<dynamic> items => items.isNotEmpty,
+          _ => false,
+        };
+    if (_hasKnownProcessNarration(
+      normalizedCandidate: normalizedReport,
+      hasNewChecklistItems: hasNewChecklistItems,
+    )) {
+      issues.add(TaskAgentReportRevisionIssue.processNarration);
+    }
+
+    final activeRiskTerms = <String>{
+      ..._activeRiskTermsByLanguage['en']!,
+      ...?_activeRiskTermsByLanguage[languageCode],
+    };
+    if (activeRiskTerms.any(normalizedReport.contains) &&
+        _hasCheckmarkCausality(
+          languageCode: languageCode,
+          normalizedCandidate: normalizedReport,
+        )) {
+      issues.add(TaskAgentReportRevisionIssue.checkmarkCausality);
+    }
+
+    if (_usesFormalRegister(languageCode, reportText)) {
+      issues.add(TaskAgentReportRevisionIssue.formalRegister);
+    }
+
+    final excludedTerms = _extractExcludedDraftTerms(report);
+    if (excludedTerms.any(normalizedReport.contains)) {
+      issues.add(TaskAgentReportRevisionIssue.deferredScopeLeak);
+    }
+
+    return issues.toList(growable: false);
+  }
+
+  /// Checks an editor candidate against material facts and known regressions.
   static List<TaskAgentReportRevisionIssue> validateRevision({
     required String languageCode,
     required Map<String, Object?> materialTaskState,
@@ -464,23 +521,12 @@ class TaskAgentReportEditor {
     final normalizedCandidate = candidateText.toLowerCase();
     final normalizedDraft = _reportFieldText(draftReport).toLowerCase();
 
-    if (TaskAgentReportDraft.fromJson(candidateReport) == null) {
-      issues.add(TaskAgentReportRevisionIssue.invalidShape);
-    }
-
-    if (materialTaskState['priority'] case final String priority
-        when priority.trim().isNotEmpty &&
-            !normalizedCandidate.contains(priority.toLowerCase())) {
-      issues.add(TaskAgentReportRevisionIssue.missingPriority);
-    }
-    if (materialTaskState['dueDate'] case final String dueDate
-        when !_containsReportDate(normalizedCandidate, dueDate)) {
-      issues.add(TaskAgentReportRevisionIssue.missingDueDate);
-    }
-    if (materialTaskState['estimateMinutes'] case final num minutes
-        when !_containsReportEstimate(normalizedCandidate, minutes)) {
-      issues.add(TaskAgentReportRevisionIssue.missingEstimate);
-    }
+    _addShapeAndAnchorIssues(
+      issues: issues,
+      materialTaskState: materialTaskState,
+      candidateReport: candidateReport,
+      normalizedCandidate: normalizedCandidate,
+    );
 
     const processFragments = [
       'no blockers',
@@ -531,57 +577,10 @@ class TaskAgentReportEditor {
           final List<dynamic> items => items.isNotEmpty,
           _ => false,
         };
-    final assignsProgressToNewActions =
-        hasNewChecklistItems &&
-        RegExp(
-          r'\b(these|those|diese[nmrs]?|estos?|estas?|ces)\b.{0,60}'
-          r'\b(already\s+|bereits\s+)?'
-          r'(marked|markiert|marcad\w*|coch\w*|označ\w*|bifat\w*)\b',
-        ).hasMatch(normalizedCandidate);
-    final describesNewActionsAsSetup =
-        hasNewChecklistItems &&
-        RegExp(
-          r'\b(these|those|diese[nmrs]?|estos?|estas?|ces)\b.{0,30}'
-          r'\b(points?|punkte|items?|actions?|aktionen|acciones)\b.{0,50}'
-          r'\b(ready|ahead|pending|zur bearbeitung|pendientes?)\b',
-        ).hasMatch(normalizedCandidate);
-    final describesNewActionsAsProgress =
-        hasNewChecklistItems &&
-        RegExp(
-          r'\b(work(?:ing)?|task|plan|workflow|actions?|steps?|implementation|'
-          'investigation|rotation|migration|deployment|release|evaluation|'
-          r'cleanup|fix|stabilisier\w*|export|arbeit(?:en)?|aufgabe|trabajo|'
-          'tarea|travail|tâche|'
-          r'muncă|sarcin)\b.{0,50}\b(underway|in progress|'
-          'currently active|wurde aufgenommen|läuft(?: aktuell)?|'
-          'in bearbeitung|en curso|'
-          r'en progrès|în curs|probíhá)\b',
-        ).hasMatch(normalizedCandidate);
-    final describesPendingInvestigationAsProgress =
-        RegExp(
-          r'\binvestigat\w*\b.{0,30}\b(underway|in progress|active)\b',
-        ).hasMatch(normalizedCandidate) &&
-        RegExp(
-          r'\binvestigat\w*\b.{0,45}\b(needed|required|pending|next)\b',
-        ).hasMatch(normalizedCandidate);
-    final inventsGenericDownstreamFix = RegExp(
-      r'\b(additional|further|more)\s+fix(?:es)?\b.{0,50}\b'
-      r'(can|could|may|might|will|would)\s+be\s+'
-      r'(applied|implemented|validated|deployed)\b',
-    ).hasMatch(normalizedCandidate);
-    final narratesNewActionsAsQueued =
-        hasNewChecklistItems &&
-        RegExp(
-          r'\b(workflow\s+items?|actions?|tasks?|steps?|items?)\b.{0,30}'
-          r'\b(queued|queue|listed|captured|prepared|identified|extracted|'
-          r'defined|recorded|created|added|assembled|tracked)\b',
-        ).hasMatch(normalizedCandidate);
-    final narratesNewActionsAsReady =
-        hasNewChecklistItems &&
-        RegExp(
-          r'\b(workflow|plan|actions?|tasks?|steps?|work)\b.{0,35}'
-          r'\b(?:is|are|looks?|seems?)?\s*ready\b',
-        ).hasMatch(normalizedCandidate);
+    final hasKnownProcessNarration = _hasKnownProcessNarration(
+      normalizedCandidate: normalizedCandidate,
+      hasNewChecklistItems: hasNewChecklistItems,
+    );
     final candidateAddsWaitingState = RegExp(
       r'\b(await\w*|wait\w*|wart\w*|esper\w*|attend\w*|aștept\w*|ček\w*)\b',
     ).hasMatch(normalizedCandidate);
@@ -591,37 +590,15 @@ class TaskAgentReportEditor {
     ).hasMatch(normalizedDraft);
     if (hasProcessFragment ||
         hasGermanChecklistNarration ||
-        assignsProgressToNewActions ||
-        describesNewActionsAsSetup ||
-        describesNewActionsAsProgress ||
-        describesPendingInvestigationAsProgress ||
-        inventsGenericDownstreamFix ||
-        narratesNewActionsAsQueued ||
-        narratesNewActionsAsReady ||
+        hasKnownProcessNarration ||
         (candidateAddsWaitingState && !draftGroundsWaitingState)) {
       issues.add(TaskAgentReportRevisionIssue.processNarration);
     }
 
-    final causalFragments = <String>{
-      ..._causalFragmentsByLanguage['en']!,
-      ...?_causalFragmentsByLanguage[languageCode],
-    };
-    if (causalFragments.any(normalizedCandidate.contains)) {
-      issues.add(TaskAgentReportRevisionIssue.checkmarkCausality);
-    }
-    final localizedCheckmarkPattern = _checkmarkCausalityPatterns[languageCode];
-    final checkmarkPatterns = <({String resolution, String checkmark})>{
-      _checkmarkCausalityPatterns['en']!,
-      ?localizedCheckmarkPattern,
-    };
-    final claimsResolutionFromCheckmark = checkmarkPatterns.any(
-      (patterns) => _containsNearbyPatterns(
-        normalizedCandidate,
-        patterns.resolution,
-        patterns.checkmark,
-      ),
-    );
-    if (claimsResolutionFromCheckmark) {
+    if (_hasCheckmarkCausality(
+      languageCode: languageCode,
+      normalizedCandidate: normalizedCandidate,
+    )) {
       issues.add(TaskAgentReportRevisionIssue.checkmarkCausality);
     }
 
@@ -654,21 +631,7 @@ class TaskAgentReportEditor {
       issues.add(TaskAgentReportRevisionIssue.fakeLinkSection);
     }
 
-    final usesFormalRegister = switch (languageCode) {
-      'de' => RegExp(
-        r'\b(Sie|Ihr(?:e|en|er|em|es)?)\b',
-      ).hasMatch(candidateText),
-      'es' => RegExp(
-        r'\b(usted|ustedes)\b',
-        caseSensitive: false,
-      ).hasMatch(candidateText),
-      'fr' => RegExp(
-        r'\b(vous|votre|vos)\b',
-        caseSensitive: false,
-      ).hasMatch(candidateText),
-      _ => false,
-    };
-    if (usesFormalRegister) {
+    if (_usesFormalRegister(languageCode, candidateText)) {
       issues.add(TaskAgentReportRevisionIssue.formalRegister);
     }
 
@@ -691,6 +654,133 @@ class TaskAgentReportEditor {
     }
 
     return issues.toList(growable: false);
+  }
+
+  static void _addShapeAndAnchorIssues({
+    required Set<TaskAgentReportRevisionIssue> issues,
+    required Map<String, Object?> materialTaskState,
+    required Map<String, dynamic> candidateReport,
+    required String normalizedCandidate,
+  }) {
+    if (TaskAgentReportDraft.fromJson(candidateReport) == null) {
+      issues.add(TaskAgentReportRevisionIssue.invalidShape);
+    }
+    if (materialTaskState['priority'] case final String priority
+        when priority.trim().isNotEmpty &&
+            !normalizedCandidate.contains(priority.toLowerCase())) {
+      issues.add(TaskAgentReportRevisionIssue.missingPriority);
+    }
+    if (materialTaskState['dueDate'] case final String dueDate
+        when !_containsReportDate(normalizedCandidate, dueDate)) {
+      issues.add(TaskAgentReportRevisionIssue.missingDueDate);
+    }
+    if (materialTaskState['estimateMinutes'] case final num minutes
+        when !_containsReportEstimate(normalizedCandidate, minutes)) {
+      issues.add(TaskAgentReportRevisionIssue.missingEstimate);
+    }
+  }
+
+  static bool _hasKnownProcessNarration({
+    required String normalizedCandidate,
+    required bool hasNewChecklistItems,
+  }) {
+    final assignsProgressToNewActions =
+        hasNewChecklistItems &&
+        RegExp(
+          r'\b(these|those|diese[nmrs]?|estos?|estas?|ces)\b.{0,60}'
+          r'\b(already\s+|bereits\s+)?'
+          r'(marked|markiert|marcad\w*|coch\w*|označ\w*|bifat\w*)\b',
+        ).hasMatch(normalizedCandidate);
+    final describesNewActionsAsSetup =
+        hasNewChecklistItems &&
+        RegExp(
+          r'\b(these|those|diese[nmrs]?|estos?|estas?|ces)\b.{0,30}'
+          r'\b(points?|punkte|items?|actions?|aktionen|acciones)\b.{0,50}'
+          r'\b(ready|ahead|pending|zur bearbeitung|pendientes?)\b',
+        ).hasMatch(normalizedCandidate);
+    final describesNewActionsAsProgress =
+        hasNewChecklistItems &&
+        RegExp(
+          r'\b(work(?:ing)?|task|plan|workflow|actions?|steps?|implementation|'
+          'investigation|rotation|migration|deployment|release|evaluation|'
+          r'cleanup|fix|stabilisier\w*|export|arbeit(?:en)?|aufgabe|trabajo|'
+          'tarea|travail|tâche|'
+          r'muncă|sarcin)\b.{0,50}\b(underway|in progress|'
+          'currently active|wurde aufgenommen|l(?:ä|ae)uft(?: aktuell)?|'
+          'in bearbeitung|en curso|'
+          r'en progrès|în curs|probíhá)\b',
+        ).hasMatch(normalizedCandidate);
+    final describesPendingInvestigationAsProgress =
+        RegExp(
+          r'\binvestigat\w*\b.{0,30}\b(underway|in progress|active)\b',
+        ).hasMatch(normalizedCandidate) &&
+        RegExp(
+          r'\binvestigat\w*\b.{0,45}\b(needed|required|pending|next)\b',
+        ).hasMatch(normalizedCandidate);
+    final inventsGenericDownstreamFix = RegExp(
+      r'\b(additional|further|more)\s+fix(?:es)?\b.{0,50}\b'
+      r'(can|could|may|might|will|would)\s+be\s+'
+      r'(applied|implemented|validated|deployed)\b',
+    ).hasMatch(normalizedCandidate);
+    final narratesNewActionsAsQueued =
+        hasNewChecklistItems &&
+        RegExp(
+          r'\b(workflow\s+items?|actions?|tasks?|steps?|items?)\b.{0,30}'
+          r'\b(queued|queue|listed|captured|prepared|identified|extracted|'
+          r'defined|recorded|created|added|assembled|tracked)\b',
+        ).hasMatch(normalizedCandidate);
+    final narratesNewActionsAsReady =
+        hasNewChecklistItems &&
+        RegExp(
+          r'\b(workflow|plan|actions?|tasks?|steps?|work)\b.{0,35}'
+          r'\b(?:is|are|looks?|seems?)?\s*ready\b',
+        ).hasMatch(normalizedCandidate);
+    return assignsProgressToNewActions ||
+        describesNewActionsAsSetup ||
+        describesNewActionsAsProgress ||
+        describesPendingInvestigationAsProgress ||
+        inventsGenericDownstreamFix ||
+        narratesNewActionsAsQueued ||
+        narratesNewActionsAsReady;
+  }
+
+  static bool _hasCheckmarkCausality({
+    required String languageCode,
+    required String normalizedCandidate,
+  }) {
+    final causalFragments = <String>{
+      ..._causalFragmentsByLanguage['en']!,
+      ...?_causalFragmentsByLanguage[languageCode],
+    };
+    if (causalFragments.any(normalizedCandidate.contains)) return true;
+
+    final localizedCheckmarkPattern = _checkmarkCausalityPatterns[languageCode];
+    final checkmarkPatterns = <({String resolution, String checkmark})>{
+      _checkmarkCausalityPatterns['en']!,
+      ?localizedCheckmarkPattern,
+    };
+    return checkmarkPatterns.any(
+      (patterns) => _containsNearbyPatterns(
+        normalizedCandidate,
+        patterns.resolution,
+        patterns.checkmark,
+      ),
+    );
+  }
+
+  static bool _usesFormalRegister(String languageCode, String reportText) {
+    return switch (languageCode) {
+      'de' => RegExp(r'\b(Sie|Ihr(?:e|en|er|em|es)?)\b').hasMatch(reportText),
+      'es' => RegExp(
+        r'\b(usted|ustedes)\b',
+        caseSensitive: false,
+      ).hasMatch(reportText),
+      'fr' => RegExp(
+        r'\b(vous|votre|vos)\b',
+        caseSensitive: false,
+      ).hasMatch(reportText),
+      _ => false,
+    };
   }
 
   static List<String> _extractExcludedDraftTerms(

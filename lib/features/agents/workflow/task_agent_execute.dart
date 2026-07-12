@@ -555,13 +555,20 @@ extension TaskAgentExecute on TaskAgentWorkflow {
                 taskAttentionContext.task?.data.languageCode ??
                 'en';
       final directQwenIssues = isDirectQwenExecutor && effectiveReport != null
-          ? TaskAgentReportEditor.validateRevision(
+          ? TaskAgentReportEditor.detectDirectQwenRegressions(
               languageCode: languageCode!,
               materialTaskState: materialTaskState!,
-              draftReport: effectiveReport.toJson(),
-              candidateReport: effectiveReport.toJson(),
+              report: effectiveReport.toJson(),
             ).toSet()
           : const <TaskAgentReportRevisionIssue>{};
+      if (directQwenIssues.isNotEmpty) {
+        final issueCodes = directQwenIssues.map((issue) => issue.name).toList()
+          ..sort();
+        _log(
+          'direct Qwen regression detector matched: ${issueCodes.join(',')}',
+          subDomain: 'reportEditor',
+        );
+      }
       final shouldRunReportEditor =
           mistralReportEditorEligible || directQwenIssues.isNotEmpty;
       if (evidenceSynthesisEnabled &&

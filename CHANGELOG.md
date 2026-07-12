@@ -6,22 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1039]
 ### Added
-- **Try an evidence-first task-agent mode with efficient models.** Enable the
-  experimental option in Settings → Advanced → Flags to use an evaluated
-  low-variance, temperature-zero inference path. On Melious, Mistral Small 4
-  119B now keeps responsibility for task and checklist changes while a compact
-  Qwen report-only pass improves the user-facing summary. Reports that fail
-  grounded quality checks are retried up to twice and otherwise leave the
-  original Mistral report untouched. Qwen 3.5 122B A10B is also included in the
-  Melious model picker as an experimental direct task-agent option. Evolved and
-  manually customized report instructions stay authoritative through the
-  report-only pass; other executor models do not use that pass. Each model's
-  token usage is tracked separately. Concrete multi-step plans become
-  checklist actions without requiring a separate explicit checklist request.
-  Direct Qwen reports that fail local grounding checks receive a compact,
-  bounded Qwen repair; clean reports remain single-pass. The report pass keeps
-  existing deadlines, estimates, and urgent priorities visible, and deferred
-  ideas remain stripped from every repair attempt.
+- **Task agents now use evidence-first inference by default with efficient
+  models.** The mode remains configurable in Settings → Advanced → Flags and
+  uses an evaluated low-variance, temperature-zero path. The default Melious
+  profile now uses Qwen 3.5 122B A10B directly for task reasoning and keeps
+  Mistral Small 4 119B for image recognition. Existing untouched Melious
+  profiles move to Qwen automatically, while customized model choices remain
+  unchanged. Qwen reports that match known harmful regression patterns receive
+  a compact, bounded Qwen repair; clean reports remain single-pass. Selecting
+  Mistral instead keeps Mistral responsible for task and checklist changes and
+  adds an isolated Qwen report pass. Evolved and manually customized report
+  instructions remain authoritative, each model call is tracked separately,
+  and concrete multi-step plans become checklist actions without requiring a
+  separate explicit checklist request.
 ### Fixed
 - **Melious task agents now continue reliably after calling tools.** Follow-up
   requests now preserve the OpenAI-compatible assistant message shape expected

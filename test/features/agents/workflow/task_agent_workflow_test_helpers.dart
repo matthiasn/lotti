@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -228,6 +229,7 @@ TaskAgentWorkflow createTestWorkflow({
   MockSoulDocumentService? soulDocumentService,
   AgentInputCaptureService? inputCaptureService,
   AgentLogLlmSummarizer? logSummarizer,
+  DomainLogger? domainLogger,
   bool evidenceSynthesisEnabled = false,
   int compactionTailBudgetTokens = 50000,
   int compactionTailRetainTokens = 20000,
@@ -247,6 +249,7 @@ TaskAgentWorkflow createTestWorkflow({
     soulDocumentService: soulDocumentService,
     inputCaptureService: inputCaptureService,
     logSummarizer: logSummarizer,
+    domainLogger: domainLogger,
     evidenceSynthesisEnabled: evidenceSynthesisEnabled,
     compactionTailBudgetTokens: compactionTailBudgetTokens,
     compactionTailRetainTokens: compactionTailRetainTokens,

@@ -71,7 +71,7 @@ turn task metadata or a checklist edit into an accomplishment.
     }
   });
 
-  test('editor support is limited to the validated opt-in route', () {
+  test('editor support is limited to the validated Melious route', () {
     expect(
       TaskAgentReportEditor.supports(
         enabled: true,
@@ -278,6 +278,197 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(issues, contains(TaskAgentReportRevisionIssue.formalRegister));
     expect(issues, contains(TaskAgentReportRevisionIssue.missingActiveRisk));
     expect(issues.map((issue) => issue.correction), everyElement(isNotEmpty));
+  });
+
+  test('direct Qwen detector catches paired release-run regressions', () {
+    const cases = [
+      (
+        name: 'implicit workflow false progress',
+        languageCode: 'en',
+        materialTaskState: <String, Object?>{
+          'newChecklistItems': ['Fix profile seeding'],
+        },
+        report: <String, dynamic>{
+          'oneLiner': 'Fix inference profile seeding',
+          'tldr': 'Implementation work is underway.',
+          'content': 'The work is in progress. Fix profile seeding next.',
+        },
+        expected: <TaskAgentReportRevisionIssue>{
+          TaskAgentReportRevisionIssue.processNarration,
+        },
+      ),
+      (
+        name: 'German plan false progress',
+        languageCode: 'de',
+        materialTaskState: <String, Object?>{
+          'priority': 'P1',
+          'dueDate': '2026-09-30',
+          'newChecklistItems': ['API-Umfang klaeren'],
+        },
+        report: <String, dynamic>{
+          'oneLiner': 'Beta-Vorbereitung laeuft bis 30. September 2026',
+          'tldr': 'Die Aufgabe mit Prioritaet P1 laeuft bereits.',
+          'content': 'Die Arbeit laeuft bereits. API-Umfang klaeren.',
+        },
+        expected: <TaskAgentReportRevisionIssue>{
+          TaskAgentReportRevisionIssue.processNarration,
+        },
+      ),
+      (
+        name: 'recorded priority omission',
+        languageCode: 'en',
+        materialTaskState: <String, Object?>{
+          'priority': 'P1',
+          'dueDate': '2026-10-15',
+        },
+        report: <String, dynamic>{
+          'oneLiner': 'Customer interviews complete',
+          'tldr': 'Legal review remains blocked.',
+          'content': 'Launch deadline: October 15, 2026.',
+        },
+        expected: <TaskAgentReportRevisionIssue>{
+          TaskAgentReportRevisionIssue.missingPriority,
+        },
+      ),
+      (
+        name: 'duplicate reconciliation false progress',
+        languageCode: 'en',
+        materialTaskState: <String, Object?>{
+          'newChecklistItems': ['Submit the expense report'],
+        },
+        report: <String, dynamic>{
+          'oneLiner': 'Three pending actions',
+          'tldr': 'Expense report preparation is underway.',
+          'content': 'Task is in progress. Submit the report by Friday.',
+        },
+        expected: <TaskAgentReportRevisionIssue>{
+          TaskAgentReportRevisionIssue.processNarration,
+        },
+      ),
+      (
+        name: 'German deferred-scope leak',
+        languageCode: 'de',
+        materialTaskState: <String, Object?>{
+          'newChecklistItems': ['CSV-Export reparieren'],
+        },
+        report: <String, dynamic>{
+          'oneLiner': 'CSV-Export-Reparatur geplant',
+          'tldr': 'Die Stabilisierung des CSV-Exports läuft.',
+          'content':
+              'CSV-Export reparieren. Ein Newsletter wurde bewusst '
+              'zurückgestellt und gehört nicht zum aktuellen Scope.',
+        },
+        expected: <TaskAgentReportRevisionIssue>{
+          TaskAgentReportRevisionIssue.processNarration,
+          TaskAgentReportRevisionIssue.deferredScopeLeak,
+        },
+      ),
+      (
+        name: 'certificate deferred-scope leak',
+        languageCode: 'en',
+        materialTaskState: <String, Object?>{
+          'newChecklistItems': ['Request replacement certificate'],
+        },
+        report: <String, dynamic>{
+          'oneLiner': 'Production certificate rotation underway',
+          'tldr': 'Request the replacement certificate next.',
+          'content':
+              'Certificate rotation is underway. Administrator analytics '
+              'dashboard work is scoped out for now.',
+        },
+        expected: <TaskAgentReportRevisionIssue>{
+          TaskAgentReportRevisionIssue.processNarration,
+          TaskAgentReportRevisionIssue.deferredScopeLeak,
+        },
+      ),
+      (
+        name: 'resurfaced issue causal invention',
+        languageCode: 'en',
+        materialTaskState: <String, Object?>{},
+        report: <String, dynamic>{
+          'oneLiner': 'Duplicate sync issue resurfaced',
+          'tldr': 'The duplicate sync fix did not fully resolve the issue.',
+          'content':
+              'Duplicate events reappeared. The current fix addressed the '
+              'symptom. Investigate the root cause.',
+        },
+        expected: <TaskAgentReportRevisionIssue>{
+          TaskAgentReportRevisionIssue.checkmarkCausality,
+        },
+      ),
+    ];
+
+    for (final testCase in cases) {
+      expect(
+        TaskAgentReportEditor.detectDirectQwenRegressions(
+          languageCode: testCase.languageCode,
+          materialTaskState: testCase.materialTaskState,
+          report: testCase.report,
+        ),
+        unorderedEquals(testCase.expected),
+        reason: testCase.name,
+      );
+    }
+  });
+
+  test('direct Qwen detector preserves directive-controlled free text', () {
+    const reports = [
+      <String, dynamic>{
+        'oneLiner': 'Fix profile seeding',
+        'tldr': 'The checklist remains the clearest view of pending work.',
+        'content':
+            '## Checklist\n- Fix profile seeding\n\n## Goal\nShip safely.',
+      },
+      <String, dynamic>{
+        'oneLiner': 'Fix profile seeding',
+        'tldr': 'No blockers.',
+        'content': 'Fix profile seeding next.',
+      },
+      <String, dynamic>{
+        'oneLiner': 'Monitor the deployed fix',
+        'tldr': 'The release log records that the fix was applied.',
+        'content': 'Monitor the rollout for new evidence.',
+      },
+    ];
+
+    for (final report in reports) {
+      expect(
+        TaskAgentReportEditor.detectDirectQwenRegressions(
+          languageCode: 'en',
+          materialTaskState: const {
+            'newChecklistItems': ['Fix profile seeding'],
+          },
+          report: report,
+        ),
+        isEmpty,
+        reason: '$report',
+      );
+    }
+  });
+
+  test('direct Qwen detector catches shape, anchors, and formal register', () {
+    final issues = TaskAgentReportEditor.detectDirectQwenRegressions(
+      languageCode: 'fr',
+      materialTaskState: const {
+        'priority': 'P1',
+        'dueDate': '2026-09-30',
+        'estimateMinutes': 150,
+      },
+      report: const {
+        'content': 'Vous pouvez commencer.',
+      },
+    );
+
+    expect(
+      issues,
+      unorderedEquals({
+        TaskAgentReportRevisionIssue.invalidShape,
+        TaskAgentReportRevisionIssue.missingPriority,
+        TaskAgentReportRevisionIssue.missingDueDate,
+        TaskAgentReportRevisionIssue.missingEstimate,
+        TaskAgentReportRevisionIssue.formalRegister,
+      }),
+    );
   });
 
   test('validation rejects missing report fields', () {

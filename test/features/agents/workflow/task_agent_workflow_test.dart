@@ -1537,8 +1537,8 @@ void main() {
       }
 
       test(
-        'Qwen evidence mode repairs a direct report that fails deterministic '
-        'grounding checks',
+        'Qwen evidence mode repairs a known direct-report regression and '
+        'logs its issue code',
         () async {
           stubMeliousTaskAgentModel(
             providerId: 'melious-provider-qwen-repair',
@@ -1549,6 +1549,14 @@ void main() {
 
           final models = <String>[];
           final messages = <String>[];
+          final domainLogger = MockDomainLogger();
+          when(
+            () => domainLogger.log(
+              any(),
+              any(),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).thenReturn(null);
           final capturingRepo =
               MockConversationRepository(mockConversationManager)
                 ..maxDelegateCalls = 2
@@ -1637,6 +1645,7 @@ void main() {
             labelsRepository: mockLabelsRepository,
             syncService: mockSyncService,
             templateService: mockTemplateService,
+            domainLogger: domainLogger,
             evidenceSynthesisEnabled: true,
           );
 
@@ -1654,6 +1663,13 @@ void main() {
           ]);
           expect(messages.last, contains('requiredCorrections'));
           expect(messages.last, contains('processNarration'));
+          verify(
+            () => domainLogger.log(
+              LogDomain.agentWorkflow,
+              'direct Qwen regression detector matched: processNarration',
+              subDomain: 'reportEditor',
+            ),
+          ).called(1);
           final captured = verify(
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;

@@ -279,8 +279,8 @@ void main() {
     });
 
     test(
-      'Melious profile wires thinking, GLM 5.2 high-end, vision, Flux Klein, '
-      'and Voxtral',
+      'Melious profile wires Qwen thinking, GLM 5.2 high-end, Mistral vision, '
+      'Flux Klein, and Voxtral',
       () async {
         final capturedConfigs = <AiConfig>[];
         when(
@@ -301,7 +301,7 @@ void main() {
         expect(meliousProfile.name, 'Melious.ai');
         expect(
           meliousProfile.thinkingModelId,
-          meliousMistralSmall4119BInstructModelId,
+          meliousQwen35122BA10BModelId,
         );
         expect(
           meliousProfile.thinkingHighEndModelId,

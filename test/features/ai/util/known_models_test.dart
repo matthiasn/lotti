@@ -564,6 +564,10 @@ void main() {
         expect(models, isNotNull);
         expect(
           models!.thinking.providerModelId,
+          meliousQwen35122BA10BModelId,
+        );
+        expect(
+          models.vision.providerModelId,
           meliousMistralSmall4119BInstructModelId,
         );
         expect(

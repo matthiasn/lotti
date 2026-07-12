@@ -16,6 +16,7 @@ final Set<String> expectedActiveFlagNames = {
   privateFlag,
   enableTooltipFlag,
   enableAiStreamingFlag,
+  enableTaskAgentEvidenceSynthesisFlag,
   for (final domain in LogDomain.values)
     if (domain.defaultEnabled) domain.flagName,
 };
@@ -55,7 +56,7 @@ final expectedFlags = <ConfigFlag>{
   const ConfigFlag(
     name: enableTaskAgentEvidenceSynthesisFlag,
     description: 'Enable evidence-first task-agent inference?',
-    status: false,
+    status: true,
   ),
   const ConfigFlag(
     name: resendAttachments,

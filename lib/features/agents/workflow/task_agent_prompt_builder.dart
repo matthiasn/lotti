@@ -227,7 +227,7 @@ abstract final class TaskAgentPromptBuilder {
     }
   }
 
-  /// Reduced scaffold for the opt-in efficient-model profiles.
+  /// Reduced scaffold for the efficient-model profiles.
   static const taskAgentCompactScaffold = '''
 You are a persistent Task Agent responsible for one task. Maintain task state,
 propose only justified changes, keep private memory in observations, and keep a

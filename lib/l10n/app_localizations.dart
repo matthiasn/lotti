@@ -5206,7 +5206,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagEnableTaskAgentEvidenceSynthesisDescription.
   ///
   /// In en, this message translates to:
-  /// **'Tune task agents for efficient Melious models. Qwen 3.5 is available as an experimental direct option; with Mistral Small 4, an additional isolated Qwen pass improves reports and adds a small amount of latency and usage.'**
+  /// **'Use evidence-grounded task-agent prompting for efficient Melious models. The default Melious profile uses Qwen 3.5 directly; choosing Mistral Small 4 adds an isolated Qwen report pass and a small amount of latency and usage.'**
   String get configFlagEnableTaskAgentEvidenceSynthesisDescription;
 
   /// No description provided for @configFlagEnableTooltip.

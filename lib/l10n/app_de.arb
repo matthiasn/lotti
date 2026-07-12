@@ -1381,7 +1381,7 @@
   "configFlagEnableSyncedAlerts": "Synchronisierte Hinweise",
   "configFlagEnableSyncedAlertsDescription": "Synchronisiere KI- und Aufgabenhinweise zwischen deinen Geräten und erlaube ihnen, lokale Systemmitteilungen zu planen.",
   "configFlagEnableTaskAgentEvidenceSynthesis": "Belegorientierter Aufgabenagent",
-  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Optimiert Aufgabenagenten für effiziente Melious-Modelle. Qwen 3.5 ist als experimentelle Direktoption verfügbar; bei Mistral Small 4 verbessert ein zusätzlicher isolierter Qwen-Durchlauf die Berichte und erhöht Laufzeit und Verbrauch geringfügig.",
+  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Verwendet belegorientierte Prompts für Aufgabenagenten mit effizienten Melious-Modellen. Im Melious-Standardprofil arbeitet Qwen 3.5 direkt; wenn du Mistral Small 4 auswählst, kommt ein isolierter Qwen-Durchlauf für den Bericht hinzu, der Laufzeit und Verbrauch geringfügig erhöht.",
   "configFlagEnableTooltip": "Tooltips aktivieren",
   "configFlagEnableTooltipDescription": "Zeigt hilfreiche Tooltips in der gesamten App an, um dich durch die Funktionen zu führen.",
   "configFlagEnableVectorSearch": "Vektorsuche",

@@ -3050,7 +3050,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
-      'Optimalizuje úkolové agenty pro úsporné modely Melious. Qwen 3.5 je k dispozici jako experimentální přímá volba; s Mistral Small 4 zlepší dodatečný izolovaný průchod modelem Qwen reporty a přidá malé množství latence a spotřeby.';
+      'Používá pro úsporné modely Melious zadání úkolových agentů založené na důkazech. Výchozí profil Melious používá Qwen 3.5 přímo; při volbě Mistral Small 4 se pro report přidá izolovaný průchod Qwen, který mírně zvýší latenci a spotřebu.';
 
   @override
   String get configFlagEnableTooltip => 'Povolit nápovědy';

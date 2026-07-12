@@ -830,9 +830,9 @@ the write."
 8. build the system prompt and user message
 9. create a conversation and persist the user message into the agent log
 10. run the conversation with `TaskAgentStrategy`
-11. when an opt-in report route applies, validate or rewrite the new report
-    from compact current-task anchors plus successful-mutation facts, and
-    accept it only if deterministic quality checks pass
+11. when a supported report route applies, scan the new report for known
+    regressions and conditionally rewrite it from compact current-task anchors
+    plus successful-mutation facts
 12. persist executor and editor token usage under their respective model IDs
 13. persist the final thought, report, observations, change set, and updated
     agent state
@@ -841,11 +841,11 @@ the write."
 
 ### Evidence-First Inference
 
-The `enable_task_agent_evidence_synthesis` config flag is an experimental,
-default-off execution mode for efficient task-agent models. The settings row is
-exposed under `Settings > Advanced > Flags`. `agentWorkflowProvider` watches the
-flag, so changing it rebuilds the workflow without changing any saved template
-or inference profile.
+The `enable_task_agent_evidence_synthesis` config flag enables the evaluated
+execution mode for efficient task-agent models. It is enabled when first seeded
+and remains configurable under `Settings > Advanced > Flags`.
+`agentWorkflowProvider` watches the flag, so changing it rebuilds the workflow
+without changing any saved template or inference profile.
 
 When enabled, the task-agent path changes four common inputs together:
 
@@ -869,9 +869,9 @@ When enabled, the task-agent path changes four common inputs together:
 The resolved inference profile remains the executor selector. Melious
 backfills both evaluated efficient choices into the model picker:
 
-- choose `qwen3.5-122b-a10b` for an experimental direct Qwen task agent using
-  the tuned Qwen prompt profile. A clean report stays single-pass; a report
-  that fails deterministic grounding checks receives a compact isolated Qwen
+- the seeded Melious profile chooses `qwen3.5-122b-a10b` for direct Qwen task
+  execution with the tuned prompt profile. A clean report stays single-pass; a
+  report that matches a known regression receives a compact isolated Qwen
   repair before persistence
 - choose `mistral-small-4-119b-instruct` for Mistral task mutations plus the
   exact-match isolated Qwen report editor described below
@@ -894,13 +894,20 @@ also enables the report-editor path:
 - evolved and manually customized report directives remain authoritative for
   voice, structure, emphasis, detail, and Markdown presentation; grounding,
   privacy, and successful-mutation constraints still take precedence
-- deterministic validation checks required metadata, dates and estimates,
-  active risks, locale register, fake link sections, checklist/process
-  narration, unsupported priority claims, and causal claims inferred from a
-  user checkmark
-- the same local validator checks direct Qwen reports. It does not ask Qwen to
-  rate its own work: code identifies exact violations, and only invalid drafts
-  receive an isolated Qwen rewrite with those correction codes
+- editor candidates are checked against the original draft and material task
+  anchors for lost dates or estimates, active-risk loss, locale register, fake
+  link sections, process narration, unsupported priority claims, and causal
+  claims inferred from a user checkmark
+- direct Qwen uses a separate, narrower detector derived from captured
+  regressions. It checks required material anchors, evidence-contradicting
+  progress on newly created actions, recurrence/checkmark causal inventions,
+  informal locale register, and explicit deferred-scope leakage. Standalone
+  words or headings such as `Goal`, `Checklist`, and `No blockers` do not
+  trigger it. It is not a semantic validator, quality score, or parser for
+  arbitrary evolved directives
+- direct Qwen does not rate its own work: a local rule match triggers an
+  isolated Qwen rewrite with specific correction codes. The matched codes are
+  written to the `reportEditor` domain log without report text or task data
 - up to two repair attempts receive the sanitized rejected candidate and exact
   failed checks; a candidate that leaks deferred scope is withheld entirely.
   After three invalid attempts, or any editor failure, the original Mistral
@@ -931,14 +938,14 @@ flowchart TD
   Executor --> Route{"Executor route"}
   Route -->|other model| Persist["Persist executor report"]
   Route -->|Mistral| Facts["ID-free current anchors + successful mutations"]
-  Route -->|Qwen direct| DirectValidate{"Deterministic checks pass?"}
-  DirectValidate -->|yes| Persist
-  DirectValidate -->|no| Facts
+  Route -->|Qwen direct| DirectValidate{"Known regressions found?"}
+  DirectValidate -->|no| Persist
+  DirectValidate -->|yes| Facts
   Custom --> Editor
   Facts --> Editor["Directive-aware forced Qwen update_report"]
-  Editor --> Validate{"Deterministic checks pass?"}
-  Validate -->|yes| PersistEdited["Persist edited report"]
-  Validate -->|no, max 2| Persist
+  Editor --> Validate{"Known regressions found?"}
+  Validate -->|no| PersistEdited["Persist edited report"]
+  Validate -->|yes, max 2 repairs| Persist
 ```
 
 The task wake prompt is assembled from:

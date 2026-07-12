@@ -28,6 +28,10 @@ List<AiConfig> _meliousDefaultModelRows({
       providerModelId: meliousMistralSmall4119BInstructModelId,
     ),
     AiTestDataFactory.createTestModel(
+      id: 'model-melious-qwen',
+      providerModelId: meliousQwen35122BA10BModelId,
+    ),
+    AiTestDataFactory.createTestModel(
       id: 'model-melious-deepseek',
       providerModelId: meliousDeepseekV4ProModelId,
     ),
@@ -762,7 +766,7 @@ void main() {
         final healed = captured.single as AiConfigInferenceProfile;
 
         expect(healed.id, profileMeliousId);
-        expect(healed.thinkingModelId, 'model-melious-mistral');
+        expect(healed.thinkingModelId, 'model-melious-qwen');
         expect(healed.imageRecognitionModelId, 'model-melious-mistral');
         // Dangling slots heal straight to the *current* seed defaults.
         expect(healed.thinkingHighEndModelId, 'model-melious-glm-5-2');
@@ -891,8 +895,8 @@ void main() {
     );
 
     test(
-      'moves untouched Melious profiles to GLM 5.2 high-end and Voxtral '
-      'transcription once their model rows exist',
+      'moves untouched Melious profiles to Qwen thinking, GLM 5.2 high-end, '
+      'and Voxtral transcription once their model rows exist',
       () async {
         when(
           () => mockRepo.getConfigsByType(AiConfigType.model),
@@ -925,16 +929,17 @@ void main() {
         final upgraded = captured.single as AiConfigInferenceProfile;
 
         expect(upgraded.id, profileMeliousId);
+        expect(upgraded.thinkingModelId, 'model-melious-qwen');
         expect(upgraded.thinkingHighEndModelId, 'model-melious-glm-5-2');
         expect(upgraded.transcriptionModelId, 'model-melious-voxtral');
-        // Untouched slots keep their rows.
-        expect(upgraded.thinkingModelId, 'model-melious-mistral');
+        // The text-only Qwen default does not replace Mistral vision.
+        expect(upgraded.imageRecognitionModelId, 'model-melious-mistral');
         expect(upgraded.imageGenerationModelId, 'model-melious-flux-klein-9b');
       },
     );
 
     test(
-      'chains a legacy Melious profile through Whisper, Flux, GLM, and '
+      'chains a legacy Melious profile through Qwen, Whisper, Flux, GLM, and '
       'Voxtral in a single upgrade pass',
       () async {
         when(
@@ -968,6 +973,7 @@ void main() {
         final upgraded = captured.single as AiConfigInferenceProfile;
 
         expect(upgraded.id, profileMeliousId);
+        expect(upgraded.thinkingModelId, 'model-melious-qwen');
         expect(upgraded.thinkingHighEndModelId, 'model-melious-glm-5-2');
         expect(upgraded.transcriptionModelId, 'model-melious-voxtral');
         expect(upgraded.imageGenerationModelId, 'model-melious-flux-klein-9b');
@@ -975,8 +981,8 @@ void main() {
     );
 
     test(
-      'leaves the old Melious defaults alone while the GLM and Voxtral '
-      'model rows are missing',
+      'moves untouched Melious thinking to Qwen while GLM and Voxtral rows '
+      'are missing',
       () async {
         when(
           () => mockRepo.getConfigsByType(AiConfigType.model),
@@ -1011,9 +1017,55 @@ void main() {
 
         await service.upgradeExisting();
 
-        verifyNever(() => mockRepo.saveConfig(any()));
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        final upgraded = captured.single as AiConfigInferenceProfile;
+
+        expect(upgraded.thinkingModelId, 'model-melious-qwen');
+        expect(upgraded.thinkingHighEndModelId, 'model-melious-deepseek');
+        expect(upgraded.transcriptionModelId, 'model-melious-whisper');
       },
     );
+
+    test('leaves the current Melious defaults unchanged', () async {
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.model),
+      ).thenAnswer(
+        (_) async => _meliousDefaultModelRows(includeGlmAndVoxtral: true),
+      );
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+      ).thenAnswer(
+        (_) async => [
+          AiConfig.inferenceProfile(
+            id: profileMeliousId,
+            name: 'Melious.ai',
+            thinkingModelId: 'model-melious-qwen',
+            thinkingHighEndModelId: 'model-melious-glm-5-2',
+            imageRecognitionModelId: 'model-melious-mistral',
+            transcriptionModelId: 'model-melious-voxtral',
+            imageGenerationModelId: 'model-melious-flux-klein-9b',
+            skillAssignments: const [
+              SkillAssignment(
+                skillId: skillTranscribeContextId,
+                automate: true,
+              ),
+              SkillAssignment(
+                skillId: skillImageAnalysisContextId,
+                automate: true,
+              ),
+            ],
+            isDefault: true,
+            createdAt: DateTime(2026),
+          ),
+        ],
+      );
+
+      await service.upgradeExisting();
+
+      verifyNever(() => mockRepo.saveConfig(any()));
+    });
 
     test(
       'preserves a user-edited Melious high-end slot during the GLM and '

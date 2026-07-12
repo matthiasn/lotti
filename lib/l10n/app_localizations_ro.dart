@@ -3069,7 +3069,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
-      'Optimizează agenții de sarcini pentru modelele Melious eficiente. Qwen 3.5 este disponibil ca opțiune directă experimentală; cu Mistral Small 4, o etapă Qwen suplimentară și izolată îmbunătățește rapoartele și adaugă puțină latență și utilizare.';
+      'Utilizează instrucțiuni bazate pe dovezi pentru agenții de sarcini cu modelele Melious eficiente. Profilul Melious implicit folosește direct Qwen 3.5; dacă alegeți Mistral Small 4, se adaugă o etapă Qwen izolată pentru raport, cu o ușoară creștere a latenței și consumului.';
 
   @override
   String get configFlagEnableTooltip => 'Activează sfaturile';

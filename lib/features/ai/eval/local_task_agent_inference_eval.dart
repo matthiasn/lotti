@@ -2199,13 +2199,12 @@ class LocalTaskAgentInferenceEvalRunner {
             );
             final initialValidationIssues =
                 route == _LocalTaskAgentProductionRoute.directQwen
-                ? TaskAgentReportEditor.validateRevision(
+                ? TaskAgentReportEditor.detectDirectQwenRegressions(
                     languageCode:
                         materialTaskState['languageCode'] as String? ??
                         scenario.languageCode,
                     materialTaskState: materialTaskState,
-                    draftReport: strategy.latestReportArguments!,
-                    candidateReport: strategy.latestReportArguments!,
+                    report: strategy.latestReportArguments!,
                   ).toSet()
                 : const <TaskAgentReportRevisionIssue>{};
             if (route == _LocalTaskAgentProductionRoute.mistralWithQwen ||

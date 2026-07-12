@@ -110,8 +110,8 @@ release-evidence contracts across English, German, and Spanish. Each case keeps
 the original mutation and grounding checks and adds directive-specific format
 checks. Use `productionRouting` with the evidence-synthesis prompt to reproduce
 the shipped Melious routes: Mistral always uses the isolated Qwen editor, while
-direct Qwen receives a second Qwen call only when deterministic preflight
-rejects its draft. This mode resolves the production Qwen model and
+direct Qwen receives a second Qwen call only when the known-regression detector
+matches its draft. This mode resolves the production Qwen model and
 three-attempt bound automatically and carries each scenario's current material
 task anchors into report validation. `reportEditing` remains an always-edit
 orchestration control for historical experiments.
@@ -271,11 +271,11 @@ as the direct executor three times across the then-current 13-scenario suite:
 | Average latency | 5.792 s |
 
 The one failure omitted the deadline from a German report; the required task
-mutations still succeeded. Direct product, reliability, and editorial review
-found the mutation behavior suitable for a default-off experiment, while report
-prose remained more mechanical and occasionally less conservative than the
-larger-model baseline. Qwen therefore remains single-pass and uses its model or
-profile reasoning default.
+mutations still succeeded. At that checkpoint, direct product, reliability, and
+editorial review found the mutation behavior suitable for a default-off
+experiment, while report prose remained more mechanical and occasionally less
+conservative than the larger-model baseline. Qwen used its model or profile
+reasoning default.
 
 The final Mistral route kept Mistral as the only task-mutation executor and sent
 new built-in reports to an isolated Qwen editor with compact, ID-free successful
@@ -297,13 +297,13 @@ model substitution:
 
 - Qwen3.5 122B A10B directly executes task mutations and writes its report.
 - Mistral Small 4 119B executes task mutations; an isolated Qwen pass may
-  replace its draft only after deterministic validation.
+  replace its draft only after the known-regression checks accept it.
 
 Both models are present in the curated Melious catalog and are selected through
 the normal inference profile. The config flag supplies the evaluated prompt,
-tool contract, and temperature-zero path. It remains off by default, preserves
-custom report directives, and does not claim parity on unsanitized real user
-histories. Full artifacts and the GPT-5.6 Sol simulated expert review are kept
+tool contract, and temperature-zero path. It preserves custom report directives
+and does not claim parity on unsanitized real user histories. Full artifacts and
+the GPT-5.6 Sol simulated expert review are kept
 in the private evaluation archive under `2026-07-12_qwen35` and
 `2026-07-12_qwen-gated-editor-v31`.
 
@@ -372,9 +372,10 @@ records each `AiConsumptionEvent` generated at the conversation boundary.
 Prompt-only Qwen iterations removed unsupported root-cause, reviewer-type, and
 deployment claims but continued to emit process narration and absent-metadata
 filler. Further prompt accretion was stopped. Direct Qwen reports now receive a
-local deterministic preflight; clean drafts stay single-pass, while invalid
-drafts receive an isolated Qwen repair with exact correction codes. This is not
-model self-rating: acceptance remains deterministic code.
+local known-regression preflight; clean drafts stay single-pass, while drafts
+matching captured harmful patterns receive an isolated Qwen repair with exact
+correction codes. This is not model self-rating, but it is also not general
+semantic validation of arbitrary prose.
 
 The final held-out app-path runs both created the six requested actions without
 an explicit checklist request and passed content checks that reject checklist
@@ -394,3 +395,22 @@ seeding fix, pull request, both review passes, merge, and all-platform release
 without claiming that work had started. The retained artifacts are
 `2026-07-12_app-path-implicit-workflow-mistral-final3` and
 `2026-07-12_app-path-implicit-workflow-qwen-r4` in the private archive clone.
+
+### Final production-routing matrix
+
+The exact production route at commit `8d34a3088` was rerun across the expanded
+14-scenario suite for both selectable executors:
+
+| Route | Scenarios | Checks | Total tokens | Latency | Editor attempts |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Mistral executor + Qwen editor | 14 / 14 | 112 / 112 | 232,322 | 145.458 s | 16 |
+| Qwen direct + conditional repair | 14 / 14 | 112 / 112 | 233,490 | 157.180 s | 9 |
+
+Five of twelve direct-Qwen report cases passed preflight without another model
+call; seven triggered repair, and one used the full three-attempt bound. Direct
+GPT-5.6 Sol review found Qwen's final reports richer and more natural, while the
+Mistral route was more compact and conservative. The default Melious profile
+therefore uses Qwen for thinking and retains Mistral as a selectable task-agent
+executor and as the profile's multimodal vision model. Full generated outputs,
+the manifest, and the direct review are archived privately under
+`2026-07-12_production-routing-8d34a3088-full-r4`.

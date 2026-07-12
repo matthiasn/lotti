@@ -426,8 +426,8 @@ the advertised mutation-pass tools and follows with a forced report-only pass;
 source context. `reportEditing` always sends a draft through the configured
 editor and remains a historical orchestration control. `productionRouting`
 mirrors the shipped Melious path: Mistral always uses the isolated Qwen editor,
-clean direct-Qwen reports remain single-pass, and deterministically invalid
-direct-Qwen reports receive a bounded Qwen repair. The production route
+clean direct-Qwen reports remain single-pass, and reports matching the narrow
+known-regression detector receive a bounded Qwen repair. The production route
 resolves the Qwen editor and three-attempt bound automatically. Scenario
 metadata supplies existing material due dates, estimates, and priorities to
 the editor just as the production workflow supplies current task anchors. The
@@ -451,23 +451,24 @@ the same screen: it passed 2/4 cases, made an unauthorized status change, used
 These are one-sample synthetic comparisons, so the artifacts are retained for
 reproduction rather than treated as universal model rankings.
 
-The production `evidenceSynthesis` prompt was then replicated with Qwen3.5 122B
-A10B across all 13 scenarios three times at temperature `0.0`. It passed 38/39
-scenario runs and 257/258 deterministic checks, made all 42 required mutations,
-and made no unauthorized mutation. The single failure was a German report that
-omitted the task deadline. Direct simulated product, reliability, and editorial
-reviews rated the model suitable for an experimental opt-in, not as a
-large-model replacement: mutation handling was strong, while reports still used
-mechanical phrasing, repeated content, and occasionally inflated status from
-weak evidence. A stricter six-scenario report-grounding screen passed only 3/6
-with model-default reasoning and 4/6 with requested high effort.
+The production `evidenceSynthesis` prompt was replicated with Qwen3.5 122B A10B
+across repeated synthetic suites at temperature `0.0`. Early direct runs showed
+strong mutation handling but recurring report defects: pending work described
+as underway, checklist-process narration, deferred-scope leakage, and causal
+claims inferred from user checkmarks. Prompt additions alone did not remove
+those classes reliably. Production therefore runs a narrow local detector for
+these captured regressions. A clean Qwen draft remains single-pass; a matching
+draft receives a bounded isolated Qwen repair. Standalone directive-controlled
+headings and words such as `Goal`, `Checklist`, and `No blockers` are not
+failures. This detector does not establish semantic correctness, score prose
+quality, or enforce arbitrary custom report structure.
 
-That evidence supports Qwen as a direct executor behind the experimental flag.
-`qwen3.5-122b-a10b` is part of the curated Melious catalog, so it is backfilled
-for existing providers and can be selected in an inference profile without a
-separate live-catalog install. The resolved profile remains the model selector;
-the flag supplies the evaluated prompt, tool contract, and temperature rather
-than silently replacing the chosen model.
+`qwen3.5-122b-a10b` is part of the curated Melious catalog and is the seeded
+Melious thinking default. Existing untouched Melious profiles migrate from
+Mistral thinking to Qwen when the Qwen model row exists. Mistral remains in the
+image-recognition slot because this Qwen endpoint is text-only. User-customized
+profile slots remain unchanged, and the resolved profile remains the runtime
+model selector.
 
 Qwen exposes thinking as an on/off capability rather than distinct native
 effort tiers. In one matched state-classifier probe, requesting
@@ -475,37 +476,23 @@ OpenAI-compatible `high` effort left the same three failures while adding 11%
 input tokens, 6% output tokens, and 6% latency. In the final shared-contract
 screen it passed 4/6 rather than 3/6, but retained the same two core grounding
 failures and cost differences were within run noise. Production therefore
-leaves reasoning at the model or profile default. The experimental
-`enable_task_agent_evidence_synthesis` flag reuses the validated prompt, extends
-only the `update_report` description, and selects temperature `0.0`; it does not
-enable a second pass. It replaces the report directive only when the template
-still uses the seeded default, so custom report structure remains flexible.
+leaves reasoning at the model or profile default. The enabled-by-default
+`enable_task_agent_evidence_synthesis` flag supplies the evaluated prompt,
+extends the `update_report` description, and selects temperature `0.0`. It
+replaces the report directive only when the template still uses the seeded
+default, so evolved and manually customized report structure remains
+authoritative.
 
-The final Mistral configuration keeps Mistral as the mutation executor and uses
-an isolated Qwen report-only editor. In the retained 13-scenario run, all 13
-scenarios and all 94 deterministic checks passed; the two no-op cases made no
-editor call, and each of the eleven report cases accepted its first candidate.
-This exact route remains default-off and does not imply that Mistral alone
-matches a larger model.
-
-A fresh release-candidate run on commit `8413b6320` reproduced the Mistral route
-at 13/13 scenarios and 94/94 checks. Three of the eleven report cases needed one
-bounded repair, while both no-op cases still avoided the editor. The matched
-Qwen-direct run passed 10/13 scenarios and 90/94 checks: every requested
-mutation remained correct, but three reports leaked deferred scope or invented
-progress or deployment history. Focused prompt and same-model revision probes
-did not repair those classes reliably. Qwen therefore remains an explicit
-experimental selector; the Mistral-to-Qwen route is the supported release
-candidate under the default-off flag.
-
-The older `conciseReport` variant remains available for reproduction. In the
-full Mistral matrix it improved automated judge scores and reduced tokens, but
-changing that directive also caused a missed checklist mutation. Focused
-Mistral and Qwen report-revision probes did not reliably remove
-process-narration or status-inflation defects. A report polisher is therefore
-not used as a same-model generic stage. The only production post-pass is the
-validated, exact-match Mistral-to-Qwen report editor described above; Qwen used
-as the primary executor remains single-pass.
+The final matched production-routing run on commit `8d34a3088` covered 14
+scenarios per route. Direct Qwen and Mistral plus the isolated Qwen editor each
+passed 14/14 scenarios and 112/112 deterministic scenario checks. Mistral used
+232,322 total tokens and 145.458 seconds; direct Qwen used 233,490 total tokens
+and 157.180 seconds. Of twelve direct-Qwen report cases, five passed local
+preflight and seven received repair; one repair used all three allowed attempts.
+Direct review found Qwen's final reports richer and more natural, while the
+Mistral route remained more compact and conservative. These results support the
+Qwen default and retain Mistral as a selectable alternative; they do not prove
+GLM 5.2 parity or unrestricted reliability on arbitrary user histories.
 
 ```mermaid
 flowchart LR
@@ -967,12 +954,12 @@ Operational details from the seeded definitions:
 - `Local (Ollama)` and `Local Gemma 4 (Ollama)` ship with image-analysis automation but no transcription slot
 - `Local Power (oMLX)` uses `Qwen3.6-35B-A3B-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
 - `Local Gemma 4 (oMLX)` uses `gemma-4-26B-A4B-it-QAT-MLX-4bit` for thinking and image recognition, and `whisper-large-v3-turbo` for transcription
-- `Melious.ai` uses Mistral Small 4 119B Instruct for thinking and image recognition, GLM 5.2 for high-end thinking, Flux 2 Klein 9B for image generation, and Voxtral Small 24B for transcription
+- `Melious.ai` uses Qwen3.5 122B A10B for thinking, Mistral Small 4 119B Instruct for image recognition, GLM 5.2 for high-end thinking, Flux 2 Klein 9B for image generation, and Voxtral Small 24B for transcription
 - `Local Gemma 4 Power (Ollama)` currently ships with no default skill assignments
 
 `seedDefaults()` is **strictly seed-on-create**: it looks up each gated-in profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 
-`upgradeExisting()` backfills migration-safe pieces after model rows exist: dangling model slots on default profiles are healed (deleting a provider cascade-deletes its model rows, but the seeded profile kept pointing at the dead row IDs — each such slot resets to the seed template's provider-native default and re-resolves once the rows are recreated; catalog-known provider-native values are treated as pending, not dangling), legacy provider-native slot values are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, untouched Melious profiles move to the Flux 2 Klein 9B image-generation slot and Whisper Large v3 transcription slot and then on to the GLM 5.2 high-end thinking and Voxtral Small 24B transcription defaults, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. User-edited names, resolvable model slots, and non-empty assignment lists are preserved. Besides startup, `upgradeExisting()` also runs right after a provider is created or re-verified (`runFtueSetupForType`, provider save in the settings form), so reconnecting a provider heals its profile immediately — onboarding's first capture resolves through the profile seconds after the key step.
+`upgradeExisting()` backfills migration-safe pieces after model rows exist: dangling model slots on default profiles are healed (deleting a provider cascade-deletes its model rows, but the seeded profile kept pointing at the dead row IDs — each such slot resets to the seed template's provider-native default and re-resolves once the rows are recreated; catalog-known provider-native values are treated as pending, not dangling), legacy provider-native slot values are rewritten to `AiConfigModel.id` when the match is unambiguous, the untouched old `Local Power (Ollama)` seed is moved to the oMLX `Qwen3.6-35B-A3B-4bit` model, untouched local oMLX profiles gain the `whisper-large-v3-turbo` transcription slot, and untouched Melious profiles move through the Qwen thinking, GLM 5.2 high-end thinking, Flux 2 Klein 9B image-generation, and Voxtral Small 24B transcription defaults. Default `skillAssignments` are added only to existing default profiles whose assignments are still empty. User-edited names, resolvable model slots outside recognized seed generations, and non-empty assignment lists are preserved. Besides startup, `upgradeExisting()` also runs right after a provider is created or re-verified (`runFtueSetupForType`, provider save in the settings form), so reconnecting a provider heals its profile immediately — onboarding's first capture resolves through the profile seconds after the key step.
 
 `ModelPrepopulationService.backfillNewModels()` seeds known model rows for
 configured providers at startup. Known model identity is the

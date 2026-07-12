@@ -45,7 +45,7 @@ Future<void> initConfigFlags(
     const ConfigFlag(
       name: enableTaskAgentEvidenceSynthesisFlag,
       description: 'Enable evidence-first task-agent inference?',
-      status: false,
+      status: true,
     ),
   );
   await db.insertFlagIfNotExists(
