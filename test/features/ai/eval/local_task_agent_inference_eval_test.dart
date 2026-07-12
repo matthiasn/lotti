@@ -1635,6 +1635,7 @@ void main() {
     () async {
       final inferenceRepository = _QueuedInferenceRepository([
         [_toolCalls(_expectedMetadataToolCalls())],
+        [_content('The requested task fields are updated.')],
         [
           _toolCalls([
             _groundedMetadataReportCall(),
@@ -1675,8 +1676,20 @@ void main() {
         [
           meliousMistralSmall4119BInstructModelId,
           meliousMistralSmall4119BInstructModelId,
+          meliousMistralSmall4119BInstructModelId,
           meliousQwen35122BA10BModelId,
         ],
+      );
+      expect(inferenceRepository.requests[2].toolNames, [
+        TaskAgentToolNames.updateReport,
+      ]);
+      expect(
+        jsonEncode(
+          inferenceRepository.requests[2].messages
+              .map((message) => message.toJson())
+              .toList(),
+        ),
+        contains('You did not call `update_report` before stopping.'),
       );
     },
   );

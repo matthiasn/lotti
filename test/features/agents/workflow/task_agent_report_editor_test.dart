@@ -315,6 +315,40 @@ turn task metadata or a checklist edit into an accomplishment.
         },
       ),
       (
+        name: 'German plan false progress from current Melious run',
+        languageCode: 'de',
+        materialTaskState: <String, Object?>{
+          'priority': 'P1',
+          'dueDate': '2026-09-30',
+          'newChecklistItems': ['API-Umfang mit Ben klären'],
+        },
+        report: <String, dynamic>{
+          'oneLiner':
+              'Beta-Vorbereitung läuft mit vier Schritten bis 30. September',
+          'tldr': 'Vier konkrete Arbeitsschritte warten auf Bearbeitung.',
+          'content':
+              'Der Auftrag ist priorisiert (P1) und bereits in Bearbeitung.',
+        },
+        expected: <TaskAgentReportRevisionIssue>{
+          TaskAgentReportRevisionIssue.processNarration,
+        },
+      ),
+      (
+        name: 'Spanish plan false progress from current Melious run',
+        languageCode: 'es',
+        materialTaskState: <String, Object?>{
+          'newChecklistItems': ['Llamar al proveedor'],
+        },
+        report: <String, dynamic>{
+          'oneLiner': 'Dos acciones pendientes para desbloquear la activación',
+          'tldr': 'Faltan las credenciales del proveedor.',
+          'content': 'La activación está en progreso pero bloqueada.',
+        },
+        expected: <TaskAgentReportRevisionIssue>{
+          TaskAgentReportRevisionIssue.processNarration,
+        },
+      ),
+      (
         name: 'recorded priority omission',
         languageCode: 'en',
         materialTaskState: <String, Object?>{
@@ -360,6 +394,23 @@ turn task metadata or a checklist edit into an accomplishment.
         },
         expected: <TaskAgentReportRevisionIssue>{
           TaskAgentReportRevisionIssue.processNarration,
+          TaskAgentReportRevisionIssue.deferredScopeLeak,
+        },
+      ),
+      (
+        name: 'German future-scope phrasing from current Melious run',
+        languageCode: 'de',
+        materialTaskState: <String, Object?>{
+          'newChecklistItems': ['CSV-Export reparieren'],
+        },
+        report: <String, dynamic>{
+          'oneLiner': 'CSV-Export reparieren',
+          'tldr': 'Drei konkrete Aktionen stehen an.',
+          'content':
+              'Ein Newsletter wurde als zukünftige Möglichkeit erwähnt, '
+              'soll aber erst später betrachtet werden.',
+        },
+        expected: <TaskAgentReportRevisionIssue>{
           TaskAgentReportRevisionIssue.deferredScopeLeak,
         },
       ),
@@ -1135,6 +1186,27 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(issues, isEmpty);
   });
 
+  test('validation rejects waiting invented from an unperformed request', () {
+    final issues = TaskAgentReportEditor.validateRevision(
+      languageCode: 'en',
+      materialTaskState: const {
+        'newChecklistItems': ['Request replacement certificate from Security'],
+      },
+      draftReport: const {
+        'oneLiner': 'Awaiting replacement certificate from Security',
+        'tldr': 'Request the replacement certificate next.',
+        'content': 'Request the certificate, then rotate it.',
+      },
+      candidateReport: const {
+        'oneLiner': 'Awaiting replacement certificate from Security',
+        'tldr': 'Three actions remain pending.',
+        'content': 'The certificate must arrive before rotation can proceed.',
+      },
+    );
+
+    expect(issues, [TaskAgentReportRevisionIssue.processNarration]);
+  });
+
   test('validation removes setup filler and evidence disclaimers', () {
     for (final phrase in [
       'Six workflow items queued from implementation to release.',
@@ -1573,6 +1645,10 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(repairMessages, contains('rejectedReport'));
     expect(repairMessages, contains('requiredCorrections'));
     expect(repairMessages, contains('missingPriority'));
+    expect(
+      repairMessages,
+      contains('Include the exact current task priority `P1`'),
+    );
     expect(repairMessages, contains('processNarration'));
   });
 
