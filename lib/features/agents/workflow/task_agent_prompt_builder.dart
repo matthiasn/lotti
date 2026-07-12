@@ -24,14 +24,11 @@ abstract final class TaskAgentPromptBuilder {
     String? evidenceSynthesisModelId,
   }) {
     final trimmedGeneralDirective = version.generalDirective.trim();
-    final configuredReportDirective = version.reportDirective.trim();
-    final usesBuiltInReportDirective = usesBuiltInReportContract(version);
-    final trimmedReportDirective =
-        evidenceSynthesis && usesBuiltInReportDirective
-        ? TaskAgentEvidenceSynthesis.reportDirectiveForModel(
-            evidenceSynthesisModelId,
-          ).trim()
-        : configuredReportDirective;
+    final trimmedReportDirective = effectiveReportDirective(
+      version: version,
+      evidenceSynthesis: evidenceSynthesis,
+      evidenceSynthesisModelId: evidenceSynthesisModelId,
+    );
     final trimmedLegacyDirective = version.directives.trim();
     final hasNewDirectives =
         evidenceSynthesis ||
@@ -114,13 +111,32 @@ abstract final class TaskAgentPromptBuilder {
 
   /// Whether [version] uses Lotti's built-in task-report contract.
   ///
-  /// Experimental report rewriting is safe only for this contract. A custom
-  /// report directive remains authoritative and must not be rewritten by a
-  /// generic post-pass.
+  /// Evidence synthesis substitutes its model-tuned report contract only for
+  /// this seeded value. A custom directive remains authoritative.
   static bool usesBuiltInReportContract(AgentTemplateVersionEntity version) {
     final configuredReportDirective = version.reportDirective.trim();
     return configuredReportDirective.isEmpty ||
         configuredReportDirective == taskAgentReportDirective.trim();
+  }
+
+  /// Resolves the report directive that is authoritative for this wake.
+  ///
+  /// Evidence synthesis replaces only Lotti's seeded report contract with its
+  /// model-tuned contract. An evolved or manually customized directive is
+  /// retained verbatim so the executor and isolated report editor receive the
+  /// same presentation requirements.
+  static String effectiveReportDirective({
+    required AgentTemplateVersionEntity version,
+    required bool evidenceSynthesis,
+    String? evidenceSynthesisModelId,
+  }) {
+    final configuredReportDirective = version.reportDirective.trim();
+    if (evidenceSynthesis && usesBuiltInReportContract(version)) {
+      return TaskAgentEvidenceSynthesis.reportDirectiveForModel(
+        evidenceSynthesisModelId,
+      ).trim();
+    }
+    return configuredReportDirective;
   }
 
   static String _withEvidenceSynthesis(

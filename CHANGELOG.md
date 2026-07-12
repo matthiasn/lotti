@@ -13,9 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Qwen report-only pass improves the user-facing summary. Reports that fail
   grounded quality checks are retried up to twice and otherwise leave the
   original Mistral report untouched. Qwen 3.5 122B A10B is also included in the
-  Melious model picker as an experimental direct task-agent option. Custom
-  report instructions and other executor models do not use the extra pass, and
-  each model's token usage is tracked separately.
+  Melious model picker as an experimental direct task-agent option. Evolved and
+  manually customized report instructions stay authoritative through the
+  report-only pass; other executor models do not use that pass. Each model's
+  token usage is tracked separately.
 ### Fixed
 - **Melious task agents now continue reliably after calling tools.** Follow-up
   requests now preserve the OpenAI-compatible assistant message shape expected

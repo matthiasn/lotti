@@ -506,9 +506,6 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       });
       InferenceUsage? reportEditorUsage;
       if (effectiveReport != null &&
-          TaskAgentPromptBuilder.usesBuiltInReportContract(
-            templateCtx.version,
-          ) &&
           TaskAgentReportEditor.supports(
             enabled: evidenceSynthesisEnabled,
             executorModelId: modelId,
@@ -531,6 +528,12 @@ extension TaskAgentExecute on TaskAgentWorkflow {
                 draft: effectiveReport,
                 languageCode: languageCode,
                 materialTaskState: materialTaskState,
+                reportDirective:
+                    TaskAgentPromptBuilder.effectiveReportDirective(
+                      version: templateCtx.version,
+                      evidenceSynthesis: evidenceSynthesisEnabled,
+                      evidenceSynthesisModelId: modelId,
+                    ),
                 consumptionAgentId: recordConsumption ? agentId : null,
                 consumptionTaskId: recordConsumption ? taskId : null,
                 consumptionCategoryId: consumptionCategoryId,

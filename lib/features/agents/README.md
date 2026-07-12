@@ -864,19 +864,22 @@ backfills both evaluated efficient choices into the model picker:
 - choose `mistral-small-4-119b-instruct` for Mistral task mutations plus the
   exact-match isolated Qwen report editor described below
 
-For the exact Melious `mistral-small-4-119b-instruct` executor and the built-in
-report contract, the same flag also enables the evaluated report-editor path:
+For the exact Melious `mistral-small-4-119b-instruct` executor, the same flag
+also enables the report-editor path:
 
 - Mistral remains the only model allowed to inspect task context and call task
   mutation tools.
 - `TaskAgentStrategy` records only mutations that applied successfully or were
   successfully queued. Failed, denied, duplicate, and redundant calls do not
   become report facts.
-- a fresh, report-only Qwen 3.5 122B A10B conversation receives the Mistral
-  draft plus ID-free material mutation facts: title, language, priority, due
-  date, estimate, and newly added action titles
+- a fresh, report-only Qwen 3.5 122B A10B conversation receives the active
+  report directive, the Mistral draft, and ID-free material mutation facts:
+  title, language, priority, due date, estimate, and newly added action titles
 - Qwen is forced to call only `update_report`; it never receives journal IDs,
   the full task prompt, or mutation tools
+- evolved and manually customized report directives remain authoritative for
+  voice, structure, emphasis, detail, and Markdown presentation; grounding,
+  privacy, and successful-mutation constraints still take precedence
 - deterministic validation checks required metadata, dates and estimates,
   active risks, locale register, fake link sections, checklist/process
   narration, unsupported priority claims, and causal claims inferred from a
@@ -887,28 +890,28 @@ report contract, the same flag also enables the evaluated report-editor path:
 - executor and editor usage are persisted separately, so model-level cost and
   token accounting stays accurate
 
-Custom report directives skip the editor entirely and remain authoritative.
 Other providers and executor models keep the common evidence-first prompt path
-without an extra inference pass. This routing is deliberately exact: the
-report editor is enabled only for the model/provider/contract combination that
-was exercised by the retained evaluation.
+without an extra inference pass. This routing is deliberately exact at the
+model/provider boundary: only the supported Melious Mistral executor invokes
+the isolated Qwen editor.
 
 ```mermaid
 flowchart TD
   Flag["Evidence-synthesis flag"] --> Provider["agentWorkflowProvider"]
   Provider --> Workflow["TaskAgentWorkflow"]
   Profile["Inference profile: Qwen or Mistral"] --> Workflow
-  Workflow --> Prompt["Default directive + evidence protocol"]
+  Workflow --> Prompt["Active directive + evidence protocol"]
   Workflow --> Tools["Evidence-aware update_report description"]
   Workflow --> Sampling["Temperature 0.0"]
   Custom["Custom report directive"] -->|preserved| Prompt
   Prompt --> Executor["Primary conversation"]
   Tools --> Executor
   Sampling --> Executor
-  Executor --> Gate{"Melious Mistral + built-in report + new draft?"}
+  Executor --> Gate{"Melious Mistral + new draft?"}
   Gate -->|no: Qwen direct or other route| Persist["Persist executor report"]
   Gate -->|yes| Facts["ID-free successful mutation facts"]
-  Facts --> Editor["Forced Qwen update_report"]
+  Custom --> Editor
+  Facts --> Editor["Directive-aware forced Qwen update_report"]
   Editor --> Validate{"Deterministic checks pass?"}
   Validate -->|yes| PersistEdited["Persist edited report"]
   Validate -->|no, max 2| Persist

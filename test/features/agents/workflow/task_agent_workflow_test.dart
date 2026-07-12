@@ -1625,15 +1625,21 @@ void main() {
       );
 
       test(
-        'Mistral evidence mode leaves custom report directives unedited',
+        'Mistral evidence mode edits reports under custom directives',
         () async {
           final (:result, :captured) = await runMistralReportEditorSafetyCase(
-            reportDirective: 'Use a custom release-note report structure.',
+            reportDirective: '''
+Write a compact release decision memo. Start with `## Recommendation`, then
+use `## Next moves` for concrete pending actions. Omit empty sections and do
+not describe task configuration or tool activity as progress.
+''',
             editorArguments: [
               jsonEncode({
-                'oneLiner': 'Edited report',
-                'tldr': 'P1 edited summary.',
-                'content': 'This editor output must not be used.',
+                'oneLiner': 'P1 evaluation is the immediate release priority',
+                'tldr': 'The P1 evaluation remains the next release action.',
+                'content':
+                    '## Recommendation\nRun the P1 evaluation.\n\n'
+                    '## Next moves\n- Complete the evaluation.',
               }),
             ],
           );
@@ -1641,12 +1647,16 @@ void main() {
           expect(result.success, isTrue);
           final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
           expect(reports, hasLength(1));
-          expect(reports.single.content, '## Progress\nTask configured.');
+          expect(reports.single.content, contains('## Recommendation'));
+          expect(reports.single.content, contains('## Next moves'));
           final usage = capturedTokenUsageEntities(captured);
-          expect(usage, hasLength(1));
+          expect(usage, hasLength(2));
           expect(
-            usage.single.modelId,
-            meliousMistralSmall4119BInstructModelId,
+            usage.map((entry) => entry.modelId),
+            containsAll([
+              meliousMistralSmall4119BInstructModelId,
+              meliousQwen35122BA10BModelId,
+            ]),
           );
         },
       );

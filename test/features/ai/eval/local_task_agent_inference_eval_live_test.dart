@@ -54,12 +54,17 @@ void main() {
       final requestedVariants = _envList(
         'LOCAL_TASK_AGENT_EVAL_PROMPT_VARIANTS',
       ).map(parseLocalTaskAgentEvalPromptVariant).toList(growable: false);
+      final useEvolvedDirectiveSuite =
+          Platform.environment['LOCAL_TASK_AGENT_EVAL_EVOLVED_DIRECTIVES'] ==
+          '1';
       final defaultScenarios = isMeliousMatrix
-          ? defaultMeliousTaskAgentEvalScenarios(
-              variants: requestedVariants.isEmpty
-                  ? const [LocalTaskAgentEvalPromptVariant.production]
-                  : requestedVariants,
-            )
+          ? useEvolvedDirectiveSuite
+                ? evolvedReportDirectiveTaskAgentEvalScenarios()
+                : defaultMeliousTaskAgentEvalScenarios(
+                    variants: requestedVariants.isEmpty
+                        ? const [LocalTaskAgentEvalPromptVariant.production]
+                        : requestedVariants,
+                  )
           : [defaultLocalTaskAgentWakeScenario()];
       final scenarios = selectLocalTaskAgentEvalScenarios(
         defaultScenarios,

@@ -328,6 +328,64 @@ void main() {
     expect(defaultLocalTaskAgentWakeScenario().languageCode, 'en');
   });
 
+  test('evolved-directive suite covers realistic reporting contracts', () {
+    final scenarios = evolvedReportDirectiveTaskAgentEvalScenarios();
+
+    expect(scenarios, hasLength(7));
+    expect(
+      scenarios.map((scenario) => scenario.id),
+      containsAll([
+        'metadata_explicit_evolved_decision_memo',
+        'german_voice_plan_evolved_delivery_coach',
+        'progress_update_evolved_risk_brief',
+        'messy_german_transcript_evolved_plain_language',
+        'active_deployment_constraint_evolved_decision_memo',
+        'spanish_mixed_context_evolved_localized_partner',
+        'external_link_and_completion_evolved_release_evidence',
+      ]),
+    );
+    expect(
+      scenarios.map((scenario) => scenario.promptVariant).toSet(),
+      {LocalTaskAgentEvalPromptVariant.evidenceSynthesis},
+    );
+    expect(
+      scenarios.map((scenario) => scenario.reportDirective).toSet(),
+      hasLength(6),
+    );
+    expect(
+      scenarios.every(
+        (scenario) => (scenario.reportDirective?.length ?? 0) > 300,
+      ),
+      isTrue,
+    );
+    expect(
+      scenarios.every(
+        (scenario) => scenario.systemPrompt.contains(
+          scenario.reportDirective!,
+        ),
+      ),
+      isTrue,
+    );
+
+    final plainLanguage = scenarios.firstWhere(
+      (scenario) => scenario.id.contains('plain_language'),
+    );
+    expect(plainLanguage.forbiddenReportTerms, contains('##'));
+    expect(
+      plainLanguage.toJson()['reportDirective'],
+      contains('ordinary Markdown bullets'),
+    );
+
+    final localized = scenarios.firstWhere(
+      (scenario) => scenario.id.contains('localized_partner'),
+    );
+    expect(localized.languageCode, 'es');
+    expect(
+      localized.requiredReportTermGroups,
+      contains(equals(['## situación', r'## situaci\u00f3n'])),
+    );
+  });
+
   test('Melious matrix covers every configured prompt variant', () {
     final defaultScenarios = defaultMeliousTaskAgentEvalScenarios();
     final scenarios = defaultMeliousTaskAgentEvalScenarios(
@@ -1416,7 +1474,8 @@ void main() {
                     'This P1 task has a 150-minute budget to validate the '
                     'candidate task-agent model.',
                 'content':
-                    'Run the local app eval, then compare the candidate with '
+                    '## Recommendation\nRun the local app eval by July 4, '
+                    '2026.\n\n## Next moves\n- Compare the candidate with '
                     'the reference model.',
               }),
             ),
@@ -1434,7 +1493,7 @@ void main() {
 
       final report = await runner.run(
         profiles: const [profile],
-        scenarios: [defaultLocalTaskAgentWakeScenario()],
+        scenarios: [evolvedReportDirectiveTaskAgentEvalScenarios().first],
       );
 
       final result = report.results.single;
@@ -1470,6 +1529,9 @@ void main() {
       expect(editorMessages, contains('materialTaskState'));
       expect(editorMessages, contains('estimateMinutes'));
       expect(editorMessages, contains('P1'));
+      expect(editorMessages, contains('reportDirective'));
+      expect(editorMessages, contains('senior delivery partner'));
+      expect(editorMessages, contains('## Recommendation'));
       expect(editorMessages, isNot(contains('committedMutations')));
       expect(
         editorMessages,

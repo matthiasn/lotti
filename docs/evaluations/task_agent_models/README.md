@@ -100,6 +100,14 @@ Set `LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE=twoPass` to reproduce the rejected
 two-pass orchestration experiment described below. The default is
 `singlePass`.
 
+Set `LOCAL_TASK_AGENT_EVAL_EVOLVED_DIRECTIVES=1` to replace the default suite
+with seven synthetic evolved-report cases. They exercise decision-memo,
+delivery-coach, risk-brief, plain-language, localized Spanish, and
+release-evidence contracts across English, German, and Spanish. Each case keeps
+the original mutation and grounding checks and adds directive-specific format
+checks. Use `reportEditing`, a Mistral executor profile, and the Qwen editor to
+reproduce the production mixed-model route.
+
 The judge accepts only HTTP(S) endpoints on `api.melious.ai` by default. When a
 deliberate proxy or alternate endpoint is configured with `MELIOUS_BASE_URL` or
 `UP_UPSTREAM_BASE_URL`, add its exact hostname to the comma-separated

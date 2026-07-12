@@ -23,6 +23,35 @@ void main() {
       }
     });
 
+    test('resolves the same evolved directive for executor and editor', () {
+      const evolvedDirective = '''
+Lead with the delivery decision, then list only evidence-backed next moves.
+Use the task language and omit empty sections.
+''';
+      final version = makeTestTemplateVersion(
+        reportDirective: '  $evolvedDirective  ',
+      );
+
+      expect(
+        TaskAgentPromptBuilder.effectiveReportDirective(
+          version: version,
+          evidenceSynthesis: true,
+          evidenceSynthesisModelId: 'mistral-small-4-119b-instruct',
+        ),
+        evolvedDirective.trim(),
+      );
+      expect(
+        TaskAgentPromptBuilder.effectiveReportDirective(
+          version: makeTestTemplateVersion(
+            reportDirective: taskAgentReportDirective,
+          ),
+          evidenceSynthesis: true,
+          evidenceSynthesisModelId: 'mistral-small-4-119b-instruct',
+        ),
+        contains('## Progress'),
+      );
+    });
+
     test('legacy directives-only template uses the combined heading', () {
       final version = makeTestTemplateVersion(
         directives: 'You are precise and concise.',

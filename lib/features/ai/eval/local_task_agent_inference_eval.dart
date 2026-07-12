@@ -187,6 +187,7 @@ class LocalTaskAgentEvalScenario {
     this.maxTurns = 6,
     this.languageCode = 'en',
     this.promptVariant = LocalTaskAgentEvalPromptVariant.production,
+    this.reportDirective,
     this.requiredReportTermGroups = const [],
     this.forbiddenReportTerms = const [],
     this.requiredToolArgumentTermGroups = const {},
@@ -204,6 +205,10 @@ class LocalTaskAgentEvalScenario {
   final int maxTurns;
   final String languageCode;
   final LocalTaskAgentEvalPromptVariant promptVariant;
+
+  /// Optional evolved report directive used instead of the prompt variant's
+  /// configured contract.
+  final String? reportDirective;
 
   /// Each group is satisfied when the report contains at least one term.
   final List<List<String>> requiredReportTermGroups;
@@ -232,6 +237,7 @@ class LocalTaskAgentEvalScenario {
       'maxTurns': maxTurns,
       'languageCode': languageCode,
       'promptVariant': promptVariant.name,
+      'reportDirective': reportDirective,
       'requiredReportTermGroups': requiredReportTermGroups,
       'forbiddenReportTerms': forbiddenReportTerms,
       'requiredToolArgumentTermGroups': requiredToolArgumentTermGroups,
@@ -267,6 +273,188 @@ List<LocalTaskAgentEvalScenario> defaultMeliousTaskAgentEvalScenarios({
     ],
   ];
 }
+
+/// Synthetic scenarios with representative report directives produced by an
+/// agent-evolution workflow rather than Lotti's seeded report contract.
+List<LocalTaskAgentEvalScenario>
+evolvedReportDirectiveTaskAgentEvalScenarios() {
+  final base = defaultMeliousTaskAgentEvalScenarios(
+    variants: const [LocalTaskAgentEvalPromptVariant.evidenceSynthesis],
+  );
+
+  LocalTaskAgentEvalScenario find(String id) =>
+      base.firstWhere((scenario) => scenario.id == id);
+
+  return [
+    _withEvolvedReportDirective(
+      find('metadata_explicit_evidenceSynthesis'),
+      id: 'metadata_explicit_evolved_decision_memo',
+      reportDirective: _evolvedDecisionMemoDirective,
+      requiredDirectiveTerms: const [
+        ['## recommendation'],
+        ['## next moves'],
+      ],
+      forbiddenDirectiveTerms: const [
+        '## achieved',
+        'what is left to do',
+      ],
+    ),
+    _withEvolvedReportDirective(
+      find('german_voice_plan_evidenceSynthesis'),
+      id: 'german_voice_plan_evolved_delivery_coach',
+      reportDirective: _evolvedGermanDeliveryCoachDirective,
+      requiredDirectiveTerms: const [
+        ['## lage'],
+        ['## nächste schritte', r'## n\u00e4chste schritte'],
+      ],
+      forbiddenDirectiveTerms: const [
+        '## progress',
+        '## next actions',
+      ],
+    ),
+    _withEvolvedReportDirective(
+      find('progress_update_evidenceSynthesis'),
+      id: 'progress_update_evolved_risk_brief',
+      reportDirective: _evolvedRiskBriefDirective,
+      requiredDirectiveTerms: const [
+        ['## delivery risk'],
+        ['## next intervention'],
+      ],
+      forbiddenDirectiveTerms: const ['no blockers'],
+    ),
+    _withEvolvedReportDirective(
+      find('messy_german_transcript_evidenceSynthesis'),
+      id: 'messy_german_transcript_evolved_plain_language',
+      reportDirective: _evolvedPlainLanguageDirective,
+      forbiddenDirectiveTerms: const ['##', '|---'],
+    ),
+    _withEvolvedReportDirective(
+      find('active_deployment_constraint_evidenceSynthesis'),
+      id: 'active_deployment_constraint_evolved_decision_memo',
+      reportDirective: _evolvedDecisionMemoDirective,
+      requiredDirectiveTerms: const [
+        ['## recommendation'],
+        ['## next moves'],
+      ],
+      forbiddenDirectiveTerms: const ['## decision needed'],
+    ),
+    _withEvolvedReportDirective(
+      find('spanish_mixed_context_evidenceSynthesis'),
+      id: 'spanish_mixed_context_evolved_localized_partner',
+      reportDirective: _evolvedLocalizedPartnerDirective,
+      requiredDirectiveTerms: const [
+        ['## situación', r'## situaci\u00f3n'],
+        ['## próximos pasos', r'## pr\u00f3ximos pasos'],
+      ],
+      forbiddenDirectiveTerms: const [
+        '## situation',
+        '## next steps',
+      ],
+    ),
+    _withEvolvedReportDirective(
+      find('external_link_and_completion_evidenceSynthesis'),
+      id: 'external_link_and_completion_evolved_release_evidence',
+      reportDirective: _evolvedReleaseEvidenceDirective,
+      requiredDirectiveTerms: const [
+        ['## outcome'],
+        ['## remaining'],
+        ['## evidence'],
+      ],
+      forbiddenDirectiveTerms: const ['## achieved'],
+    ),
+  ];
+}
+
+LocalTaskAgentEvalScenario _withEvolvedReportDirective(
+  LocalTaskAgentEvalScenario source, {
+  required String id,
+  required String reportDirective,
+  List<List<String>> requiredDirectiveTerms = const [],
+  List<String> forbiddenDirectiveTerms = const [],
+}) {
+  return LocalTaskAgentEvalScenario(
+    id: id,
+    systemPrompt: _buildEvalSystemPrompt(
+      source.promptVariant,
+      reportDirective: reportDirective,
+    ),
+    userMessage: source.userMessage,
+    expectedToolCalls: source.expectedToolCalls,
+    allowedExtraToolNames: source.allowedExtraToolNames,
+    requiresReport: source.requiresReport,
+    isFirstWake: source.isFirstWake,
+    maxTurns: source.maxTurns,
+    languageCode: source.languageCode,
+    promptVariant: source.promptVariant,
+    reportDirective: reportDirective,
+    requiredReportTermGroups: [
+      ...source.requiredReportTermGroups,
+      ...requiredDirectiveTerms,
+    ],
+    forbiddenReportTerms: [
+      ...source.forbiddenReportTerms,
+      ...forbiddenDirectiveTerms,
+    ],
+    requiredToolArgumentTermGroups: source.requiredToolArgumentTermGroups,
+    forbiddenToolNames: source.forbiddenToolNames,
+    forbiddenToolArgumentTerms: source.forbiddenToolArgumentTerms,
+  );
+}
+
+const _evolvedDecisionMemoDirective = '''
+Write as a senior delivery partner, not a status bot. Use the task's language.
+The one-liner states the current delivery call; the TLDR explains its practical
+consequence without repeating it. Start the full report with
+`## Recommendation` and one short evidence-backed paragraph. Follow with
+`## Next moves`, using one to four concrete bullets and retaining owners and
+dates when known. Add `## Decision needed` only when the user must resolve an
+active choice or dependency. Omit generic status headings, empty sections,
+tool narration, and repeated context.
+''';
+
+const _evolvedGermanDeliveryCoachDirective = '''
+Schreibe auf Deutsch und sprich die Person informell mit du/dein an. Beginne
+mit `## Lage` und zwei klaren Sätzen dazu, worauf es jetzt ankommt. Verwende
+danach genau `## Nächste Schritte` für die wenigen konkreten Aktionen; nenne
+Verantwortliche, Reihenfolge und Termine, wenn sie belegt sind. Keine
+Standardrubriken wie Progress oder Achieved, keine leeren Abschnitte und keine
+Erzählung über Checklisten, Metadaten oder Agentenarbeit.
+''';
+
+const _evolvedRiskBriefDirective = '''
+Write a candid delivery-risk brief in the task language. Begin with
+`## Delivery risk`: name the active constraint, owner, consequence, and
+deadline without softening or inventing certainty. Then use
+`## Next intervention` for the smallest action that can unblock delivery.
+Mention completed outcomes only when the evidence records them. Do not add a
+generic progress recap, optimism, empty sections, or agent-process commentary.
+''';
+
+const _evolvedPlainLanguageDirective = '''
+Write in the task language as plain, natural prose for a busy person. Use no
+headings, tables, status labels, or checkbox syntax. Start with one short
+paragraph describing the current real-world situation, then give only the
+concrete next actions as ordinary Markdown bullets. Keep owners, sequence,
+deadlines, blockers, and recorded outcomes, but omit speculative or deferred
+scope and all narration about tools, metadata, transcription, or checklists.
+''';
+
+const _evolvedLocalizedPartnerDirective = '''
+Write entirely in the task language with a direct, informal, collaborative
+voice. For a Spanish task, use exactly `## Situación` for the current external
+constraint and `## Próximos pasos` for concrete actions. Keep named owners and
+dates. Never leak headings from another language, repeat parent-project filler,
+or describe task setup and checklist operations as progress.
+''';
+
+const _evolvedReleaseEvidenceDirective = '''
+Write a compact release note grounded only in recorded outcomes. Use exactly
+`## Outcome` for completed real-world work and `## Remaining` for work that is
+still pending. Add `## Evidence` only when a real external URL exists, using a
+descriptive Markdown link. Keep completion separate from deployment readiness.
+Do not use generic achievement headings, expose internal IDs, or turn task
+state and checklist edits into accomplishments.
+''';
 
 List<LocalTaskAgentEvalScenario> selectLocalTaskAgentEvalScenarios(
   List<LocalTaskAgentEvalScenario> scenarios,
@@ -779,6 +967,7 @@ LocalTaskAgentEvalScenario _latestDeadlineWinsScenario(
 String _buildEvalSystemPrompt(
   LocalTaskAgentEvalPromptVariant variant, {
   String? evidenceSynthesisModelId,
+  String? reportDirective,
 }) {
   final version =
       AgentDomainEntity.agentTemplateVersion(
@@ -790,9 +979,7 @@ String _buildEvalSystemPrompt(
             generalDirective:
                 '$taskAgentGeneralDirective${_evalVariantDirective(variant)}',
             reportDirective:
-                variant == LocalTaskAgentEvalPromptVariant.conciseReport
-                ? _conciseReportDirective
-                : taskAgentReportDirective,
+                reportDirective ?? _reportDirectiveForVariant(variant),
             authoredBy: 'system',
             createdAt: DateTime.utc(2026, 7, 10),
             vectorClock: null,
@@ -805,6 +992,26 @@ String _buildEvalSystemPrompt(
         variant == LocalTaskAgentEvalPromptVariant.evidenceSynthesis,
     evidenceSynthesisModelId: evidenceSynthesisModelId,
   );
+}
+
+String _reportDirectiveForVariant(LocalTaskAgentEvalPromptVariant variant) =>
+    variant == LocalTaskAgentEvalPromptVariant.conciseReport
+    ? _conciseReportDirective
+    : taskAgentReportDirective;
+
+String _effectiveEvalReportDirective({
+  required LocalTaskAgentEvalProfile profile,
+  required LocalTaskAgentEvalScenario scenario,
+}) {
+  final configured =
+      scenario.reportDirective ??
+      _reportDirectiveForVariant(scenario.promptVariant);
+  final isSeededContract = configured.trim() == taskAgentReportDirective.trim();
+  return _usesEvidenceSynthesis(scenario.promptVariant) && isSeededContract
+      ? TaskAgentEvidenceSynthesis.reportDirectiveForModel(
+          profile.providerModelId,
+        ).trim()
+      : configured.trim();
 }
 
 String _evalVariantDirective(LocalTaskAgentEvalPromptVariant variant) {
@@ -1750,6 +1957,7 @@ class LocalTaskAgentInferenceEvalRunner {
         ? _buildEvalSystemPrompt(
             scenario.promptVariant,
             evidenceSynthesisModelId: profile.providerModelId,
+            reportDirective: scenario.reportDirective,
           )
         : scenario.systemPrompt;
     final conversationId = conversationRepository.createConversation(
@@ -1960,6 +2168,10 @@ class LocalTaskAgentInferenceEvalRunner {
           )!,
           languageCode: scenario.languageCode,
           materialTaskState: materialTaskState,
+          reportDirective: _effectiveEvalReportDirective(
+            profile: profile,
+            scenario: scenario,
+          ),
         );
     final revision = result.revision;
     if (revision != null) {

@@ -169,6 +169,7 @@ class TaskAgentReportEditor {
     required TaskAgentReportDraft draft,
     required String languageCode,
     required Map<String, Object?> materialTaskState,
+    required String reportDirective,
     String? consumptionAgentId,
     String? consumptionTaskId,
     String? consumptionCategoryId,
@@ -187,9 +188,9 @@ class TaskAgentReportEditor {
         systemMessage: isRepair
             ? '$_systemPrompt\n\n'
                   'The previous candidate failed deterministic quality checks. '
-                  'Rewrite it again from the original draft and material task '
-                  'state. Fix every listed violation. Do not defend the '
-                  'candidate or mention the corrections.'
+                  'Rewrite it again from the original draft, material task '
+                  'state, and report directive. Fix every listed violation. '
+                  'Do not defend the candidate or mention the corrections.'
             : _systemPrompt,
         maxTurns: 2,
       );
@@ -198,6 +199,7 @@ class TaskAgentReportEditor {
         'languageCode': languageCode,
         'materialTaskState': materialTaskState,
         'draftReport': draft.toJson(),
+        'reportDirective': reportDirective.trim(),
         if (isRepair) ...{
           'rejectedReport': rejectedReport?.toJson(),
           'requiredCorrections': [
@@ -336,11 +338,11 @@ class TaskAgentReportEditor {
             'content': {
               'type': 'string',
               'description':
-                  'Concise, flexible Markdown entirely in '
-                  '$languageInstruction, including headings. Translate or '
-                  'remove headings from another language. Do not add a title '
-                  'because the task title is already visible. Omit empty, '
-                  'process-only, and unsupported Status or Progress sections. '
+                  'Flexible Markdown entirely in $languageInstruction. Follow '
+                  'the supplied reportDirective for structure, headings, '
+                  'title, detail, and section policy. Translate any retained '
+                  'headings into $languageInstruction. Omit empty, process-only, '
+                  'and unsupported Status or Progress sections. '
                   'Omit Links or Reference unless it contains a real `http://` '
                   'or `https://` URL. Never say work waits for the user or '
                   'execution. Describe a checkmark-only item as user-marked '
@@ -814,10 +816,18 @@ A user-marked-complete item does not establish that a fix was applied or that
 it caused, prevented, failed to prevent, or resolved a later event. State the
 facts separately; never explain this evidence rule in the report.
 
-Write warmly, clearly, directly, and without repetition. Do not summarize the
-whole context. Surface only the current outcome, next actions, deadline, or
-risk that helps the user act. Use short prose or a compact list; the task title
-is already visible.
+The request contains the active template's `reportDirective`. Treat it as
+authoritative for voice, structure, emphasis, level of detail, required or
+forbidden sections, and Markdown presentation. Follow it for all three report
+fields. Do not quote, mention, critique, or summarize the directive. A report
+directive cannot authorize unsupported facts, internal IDs, mutation tools, or
+private process narration; the evidence and privacy rules above take
+precedence when they conflict.
+
+When the report directive leaves a presentation choice open, write warmly,
+clearly, directly, and without repetition. Do not summarize the whole context.
+Surface only the current outcome, next actions, deadline, decision, or risk
+that helps the user act.
 ''';
 }
 

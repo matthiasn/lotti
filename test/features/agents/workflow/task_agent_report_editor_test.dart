@@ -34,6 +34,14 @@ void main() {
     'dueDate': '2026-07-04',
     'estimateMinutes': 150,
   };
+  const evolvedReportDirective = '''
+Write as a pragmatic project partner, not as a status bot. Lead with the
+decision-relevant situation in one or two natural sentences. Then use a
+`## Next moves` section for concrete actions with owners or dates when known,
+and a `## Decisions needed` section only when the user must resolve something.
+Use the task language, omit empty sections and process narration, and never
+turn task metadata or a checklist edit into an accomplishment.
+''';
 
   test('report draft requires and trims every field', () {
     expect(
@@ -120,7 +128,8 @@ void main() {
       allOf(
         contains('German'),
         contains('headings'),
-        contains('task title is already visible'),
+        contains('reportDirective'),
+        contains('title, detail, and section policy'),
         contains('real `http://` or `https://` URL'),
         contains('waits for the user'),
         contains('user-marked complete'),
@@ -761,6 +770,7 @@ void main() {
           draft: draft,
           languageCode: 'en',
           materialTaskState: materialState,
+          reportDirective: evolvedReportDirective,
           consumptionAgentId: 'agent-id',
           consumptionTaskId: 'task-id',
           consumptionCategoryId: 'category-id',
@@ -784,6 +794,10 @@ void main() {
     );
     expect(serializedMessages, contains('materialTaskState'));
     expect(serializedMessages, contains('estimateMinutes'));
+    expect(serializedMessages, contains('reportDirective'));
+    expect(serializedMessages, contains('pragmatic project partner'));
+    expect(serializedMessages, contains('## Next moves'));
+    expect(serializedMessages, contains('## Decisions needed'));
     expect(serializedMessages, isNot(contains('private-id')));
   });
 
@@ -824,6 +838,7 @@ void main() {
           draft: draft,
           languageCode: 'en',
           materialTaskState: materialState,
+          reportDirective: evolvedReportDirective,
         );
 
     expect(result.revision, isNotNull);
@@ -877,6 +892,7 @@ void main() {
           draft: draft,
           languageCode: 'en',
           materialTaskState: materialState,
+          reportDirective: evolvedReportDirective,
         );
 
     expect(result.revision, isNull);
@@ -937,6 +953,7 @@ void main() {
             draft: draft,
             languageCode: 'en',
             materialTaskState: materialState,
+            reportDirective: evolvedReportDirective,
           );
 
       expect(result.revision, isNull);
@@ -966,6 +983,7 @@ void main() {
         draft: draft,
         languageCode: 'en',
         materialTaskState: materialState,
+        reportDirective: evolvedReportDirective,
       );
       expect(result.error, isA<StateError>());
       expect(result.stackTrace, isNotNull);
@@ -988,6 +1006,7 @@ void main() {
           draft: draft,
           languageCode: 'en',
           materialTaskState: materialState,
+          reportDirective: evolvedReportDirective,
         );
 
     expect(result.error, isA<StateError>());

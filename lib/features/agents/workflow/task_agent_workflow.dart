@@ -78,8 +78,8 @@ part 'task_agent_execute.dart';
 /// 7. Persist the user message as an [AgentMessageKind.user] entity for
 ///    inspectability (non-fatal if it fails).
 /// 8. Invoke the LLM and execute tool calls via [AgentToolExecutor].
-/// 9. Optionally revise a new built-in Mistral report through the isolated,
-///    validated [TaskAgentReportEditor].
+/// 9. Optionally revise a new Mistral report under the active report directive
+///    through the isolated, validated [TaskAgentReportEditor].
 /// 10. Persist per-model token usage and the final assistant response.
 /// 11. Extract and persist the accepted report (from `update_report`).
 /// 12. Persist new observation notes (agentJournal entries).
@@ -131,8 +131,8 @@ class TaskAgentWorkflow {
   /// Whether to use the experimentally validated low-variance task-agent path.
   ///
   /// This enables the compact prompt/tool contract for efficient models and,
-  /// for the exact supported Melious Mistral plus built-in report contract,
-  /// the isolated validated Qwen report editor.
+  /// for the exact supported Melious Mistral route, the isolated validated
+  /// Qwen report editor under the active template report directive.
   final bool evidenceSynthesisEnabled;
 
   /// Optional domain logger for structured, PII-safe logging.
