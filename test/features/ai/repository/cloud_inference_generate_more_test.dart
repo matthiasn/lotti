@@ -546,6 +546,7 @@ void main() {
             temperature: 0.2,
             provider: meliousProvider,
             maxCompletionTokens: 256,
+            reasoningEffort: ReasoningEffort.high,
           )
           .toList();
 
@@ -559,6 +560,7 @@ void main() {
       expect(call.apiKey, 'key');
       expect(call.temperature, 0.2);
       expect(call.maxCompletionTokens, 256);
+      expect(call.reasoningEffort, ReasoningEffort.high);
     });
   });
 
@@ -671,6 +673,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
           String apiKey,
           double? temperature,
           int? maxCompletionTokens,
+          ReasoningEffort? reasoningEffort,
         })
       >[];
   final imageCalls =
@@ -716,6 +719,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
     messageCalls.add(
@@ -726,6 +730,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
         apiKey: apiKey,
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
+        reasoningEffort: reasoningEffort,
       ),
     );
     return Stream.value(

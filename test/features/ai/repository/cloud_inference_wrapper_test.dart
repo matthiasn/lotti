@@ -68,6 +68,7 @@ void main() {
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
             provider: any(named: 'provider'),
             tools: any(named: 'tools'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).thenAnswer((_) => responseStream);
 
@@ -104,6 +105,8 @@ void main() {
             maxCompletionTokens: 1000,
             provider: provider,
             tools: tools,
+            // ignore: avoid_redundant_argument_values
+            reasoningEffort: null,
           ),
         ).called(1);
       });
@@ -123,6 +126,7 @@ void main() {
             maxCompletionTokens: any(named: 'maxCompletionTokens'),
             provider: any(named: 'provider'),
             tools: any(named: 'tools'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).thenAnswer((_) => responseStream);
 
@@ -144,6 +148,8 @@ void main() {
             baseUrl: 'https://api.test.com',
             apiKey: 'test-key',
             provider: provider,
+            // ignore: avoid_redundant_argument_values
+            reasoningEffort: null,
           ),
         ).called(1);
       });
@@ -183,6 +189,11 @@ void main() {
           ),
         );
 
+        wrapper = CloudInferenceWrapper(
+          cloudRepository: mockCloudRepository,
+          reasoningEffort: ReasoningEffort.high,
+        );
+
         when(
           () => mockCloudRepository.generateWithMessages(
             messages: any(named: 'messages'),
@@ -193,6 +204,7 @@ void main() {
             tools: any(named: 'tools'),
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).thenAnswer((_) => responseStream);
 
@@ -217,6 +229,7 @@ void main() {
             model: 'gpt-4',
             temperature: 0.7,
             provider: provider,
+            reasoningEffort: ReasoningEffort.high,
           ),
         ).called(1);
       });
@@ -249,6 +262,7 @@ void main() {
             tools: any(named: 'tools'),
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).thenAnswer((_) => responseStream);
 
@@ -271,6 +285,7 @@ void main() {
             tools: any(named: 'tools'),
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).called(1);
       });
@@ -295,6 +310,7 @@ void main() {
             tools: any(named: 'tools'),
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).thenAnswer((_) => responseController.stream);
 
@@ -371,6 +387,7 @@ void main() {
             tools: any(named: 'tools'),
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).thenAnswer((_) => responseStream);
 
@@ -393,6 +410,7 @@ void main() {
             tools: any(named: 'tools'),
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).called(1);
       });
@@ -434,6 +452,7 @@ void main() {
             tools: any(named: 'tools'),
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).thenAnswer((_) => responseStream);
 
@@ -457,6 +476,7 @@ void main() {
             tools: tools,
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).called(1);
       });
@@ -484,6 +504,7 @@ void main() {
             tools: any(named: 'tools'),
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).thenAnswer((_) => responseStream);
 
@@ -509,6 +530,8 @@ void main() {
             tools: any(named: 'tools'),
             thoughtSignatures: signatures,
             signatureCollector: collector,
+            // ignore: avoid_redundant_argument_values
+            reasoningEffort: null,
           ),
         ).called(1);
       });
@@ -542,6 +565,7 @@ void main() {
             tools: any(named: 'tools'),
             thoughtSignatures: any(named: 'thoughtSignatures'),
             signatureCollector: any(named: 'signatureCollector'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).thenAnswer((_) => responseStream);
 
@@ -560,6 +584,8 @@ void main() {
             model: 'gemini-pro',
             temperature: 0.7,
             provider: geminiProvider,
+            // ignore: avoid_redundant_argument_values
+            reasoningEffort: null,
           ),
         ).called(1);
       });

@@ -62,11 +62,28 @@ void main() {
         LocalTaskAgentEvalExecutionMode.twoPass,
       );
       expect(
+        parseLocalTaskAgentEvalExecutionMode('reportRevision'),
+        LocalTaskAgentEvalExecutionMode.reportRevision,
+      );
+      expect(
         () => parseLocalTaskAgentEvalExecutionMode('parallel'),
         throwsFormatException,
       );
     },
   );
+
+  test('reasoning effort parser accepts empty and known values', () {
+    expect(parseLocalTaskAgentEvalReasoningEffort(null), isNull);
+    expect(parseLocalTaskAgentEvalReasoningEffort('  '), isNull);
+    expect(
+      parseLocalTaskAgentEvalReasoningEffort(' high '),
+      ReasoningEffort.high,
+    );
+    expect(
+      () => parseLocalTaskAgentEvalReasoningEffort('maximum'),
+      throwsFormatException,
+    );
+  });
 
   test(
     'task-agent eval tool surface uses the full enabled task-agent registry',
@@ -84,6 +101,25 @@ void main() {
       expect(expected, contains(TaskAgentToolNames.recordObservations));
     },
   );
+
+  test('evidence synthesis puts scope policy next to update_report', () {
+    final tools = buildLocalTaskAgentEvalTools(
+      promptVariant: LocalTaskAgentEvalPromptVariant.evidenceSynthesis,
+    );
+    final reportTool = tools.singleWhere(
+      (tool) => tool.function.name == TaskAgentToolNames.updateReport,
+    );
+    final mutationTool = tools.singleWhere(
+      (tool) => tool.function.name == TaskAgentToolNames.setTaskTitle,
+    );
+
+    expect(reportTool.function.description, contains('outside active scope'));
+    expect(
+      reportTool.function.description,
+      allOf(contains('actively block or'), contains('constrain current work')),
+    );
+    expect(mutationTool.function.description, isNot(contains('active scope')));
+  });
 
   test('eval contracts serialize report and markdown details', () {
     final scenario = defaultLocalTaskAgentWakeScenario();
@@ -103,6 +139,8 @@ void main() {
       latencyMs: 42,
       inputTokens: 123,
       outputTokens: 45,
+      thoughtsTokens: 12,
+      cachedInputTokens: 34,
       finalContent: 'The model stopped before writing a valid report.',
       toolCalls: const [nestedToolCall, invalidToolCall],
       failureCategory: LocalTaskAgentEvalFailureCategory.invalidToolArguments,
@@ -114,6 +152,7 @@ void main() {
       results: [result],
       temperature: 0.3,
       executionMode: LocalTaskAgentEvalExecutionMode.singlePass,
+      reasoningEffort: ReasoningEffort.high,
     );
 
     expect(profile.toJson(), {
@@ -140,10 +179,11 @@ void main() {
     expect(invalidToolCall.toJson()['argumentsJsonValid'], isFalse);
 
     final json = report.toJson();
-    expect(json['schemaVersion'], 3);
+    expect(json['schemaVersion'], 4);
     expect(json['kind'], localTaskAgentEvalKind);
     expect(json['temperature'], 0.3);
     expect(json['executionMode'], 'singlePass');
+    expect(json['reasoningEffort'], 'high');
     expect(
       jsonDecode(report.toPrettyJson()),
       isA<Map<String, Object?>>().having(
@@ -164,9 +204,12 @@ void main() {
         TaskAgentToolNames.updateTaskEstimate,
       ]),
     );
+    expect(result.toJson()['thoughtsTokens'], 12);
+    expect(result.toJson()['cachedInputTokens'], 34);
 
     final markdown = report.toMarkdown();
     expect(markdown, contains('| local-model | `local-model-id` |'));
+    expect(markdown, contains('reasoning effort `high`'));
     expect(markdown, contains('## Failures'));
     expect(markdown, contains('invalidToolArguments'));
   });
@@ -179,16 +222,18 @@ void main() {
 
     expect(defaultMeliousTaskAgentEvalProfiles.map((profile) => profile.name), [
       'mistral-small-4-baseline',
+      'qwen3.5-122b-a10b-candidate',
+      'deepseek-v4-flash-candidate',
       'glm-5.2-reference',
     ]);
-    expect(defaultScenarios, hasLength(11));
+    expect(defaultScenarios, hasLength(13));
     expect(
       defaultScenarios.map((scenario) => scenario.promptVariant).toSet(),
       {LocalTaskAgentEvalPromptVariant.production},
     );
     expect(
       scenarios,
-      hasLength(11 * LocalTaskAgentEvalPromptVariant.values.length),
+      hasLength(13 * LocalTaskAgentEvalPromptVariant.values.length),
     );
     expect(
       scenarios.map((scenario) => scenario.promptVariant).toSet(),
@@ -207,12 +252,18 @@ void main() {
         'duplicate_checklist_reconciliation_production',
         'stale_deadline_user_override_production',
         'messy_german_transcript_production',
+        'deferred_scope_filter_production',
+        'active_deployment_constraint_production',
         'user_completed_item_resurfaced_production',
         'spanish_mixed_context_production',
         'external_link_and_completion_production',
         'latest_deadline_wins_production',
         'messy_german_transcript_qualityFocused',
         'latest_deadline_wins_qualityFocused',
+        'messy_german_transcript_evidenceSynthesis',
+        'deferred_scope_filter_evidenceSynthesis',
+        'active_deployment_constraint_evidenceSynthesis',
+        'latest_deadline_wins_evidenceSynthesis',
       ]),
     );
     final compact = scenarios.firstWhere(
@@ -251,6 +302,10 @@ void main() {
         LocalTaskAgentEvalPromptVariant.conciseReport,
       );
       expect(
+        parseLocalTaskAgentEvalPromptVariant('evidenceSynthesis'),
+        LocalTaskAgentEvalPromptVariant.evidenceSynthesis,
+      );
+      expect(
         () => parseLocalTaskAgentEvalPromptVariant('compact'),
         throwsFormatException,
       );
@@ -267,6 +322,119 @@ void main() {
     expect(scenario.systemPrompt, isNot(contains('slightly motivational')));
     expect(scenario.systemPrompt, isNot(contains('1-2 relevant emojis')));
   });
+
+  test(
+    'evidence synthesis variant filters deferred ideas before reporting',
+    () {
+      final scenarios = defaultMeliousTaskAgentEvalScenarios(
+        variants: const [LocalTaskAgentEvalPromptVariant.evidenceSynthesis],
+      );
+      final scenario = scenarios.firstWhere(
+        (scenario) => scenario.id.startsWith('messy_german_transcript'),
+      );
+
+      expect(
+        scenario.systemPrompt,
+        contains('Evidence-First Synthesis Protocol'),
+      );
+      expect(scenario.systemPrompt, contains('public fact set'));
+      expect(scenario.systemPrompt, contains('adopted commitments'));
+      expect(scenario.systemPrompt, isNot(contains('- `## Decisions`:')));
+      expect(scenario.systemPrompt, contains('material qualifiers'));
+      expect(scenario.systemPrompt, contains('private tool handle'));
+      expect(scenario.systemPrompt, contains('## Nächste Schritte'));
+      expect(scenario.systemPrompt, isNot(contains('Worked example')));
+      expect(scenario.systemPrompt, contains('specific current-state tagline'));
+      expect(scenario.systemPrompt, isNot(contains('1-2 relevant emojis')));
+    },
+  );
+
+  test(
+    'held-out scope scenarios distinguish discarded and active constraints',
+    () {
+      final scenarios = defaultMeliousTaskAgentEvalScenarios(
+        variants: const [LocalTaskAgentEvalPromptVariant.evidenceSynthesis],
+      );
+      final deferred = scenarios.firstWhere(
+        (scenario) => scenario.id.startsWith('deferred_scope_filter'),
+      );
+      final activeConstraint = scenarios.firstWhere(
+        (scenario) => scenario.id.startsWith('active_deployment_constraint'),
+      );
+
+      expect(
+        deferred.forbiddenReportTerms,
+        containsAll(['dashboard', 'analytics']),
+      );
+      expect(deferred.userMessage, contains('as checklist items'));
+      expect(
+        deferred.requiredToolArgumentTermGroups[TaskAgentToolNames
+            .addMultipleChecklistItems],
+        containsAll([
+          ['security'],
+          ['priya'],
+          ['webhook'],
+        ]),
+      );
+      expect(
+        activeConstraint.requiredReportTermGroups,
+        containsAll([
+          ['legal'],
+          ['marta'],
+          ['deploy'],
+        ]),
+      );
+      expect(
+        activeConstraint.expectedToolCalls.single.name,
+        TaskAgentToolNames.updateChecklistItems,
+      );
+    },
+  );
+
+  test('progress scenario accepts an unambiguous abbreviated deadline', () {
+    final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+      (scenario) => scenario.id == 'progress_update_production',
+    );
+
+    expect(scenario.requiredReportTermGroups.last, contains('oct 15'));
+  });
+
+  test('resurfaced work accepts natural recurrence wording', () {
+    final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+      (scenario) => scenario.id == 'user_completed_item_resurfaced_production',
+    );
+
+    expect(
+      scenario.requiredReportTermGroups,
+      contains(
+        equals([
+          'reappeared',
+          'resurfaced',
+          'again',
+          'recurrence',
+          'recurred',
+        ]),
+      ),
+    );
+  });
+
+  test(
+    'metadata report checks task specificity without repeating its title',
+    () {
+      final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+        (scenario) => scenario.id == 'metadata_explicit_production',
+      );
+
+      expect(scenario.requiredReportTermGroups.first, [
+        'candidate',
+        'task-agent',
+      ]);
+      expect(
+        scenario.requiredReportTermGroups.expand((group) => group),
+        isNot(contains('validate efficient task-agent model')),
+      );
+    },
+  );
 
   test('scenario selection rejects unknown IDs', () {
     final scenarios = defaultMeliousTaskAgentEvalScenarios();
@@ -880,7 +1048,12 @@ void main() {
       final inferenceRepository = _QueuedInferenceRepository([
         [
           _content('Mutation analysis complete.'),
-          _usage(inputTokens: 100, outputTokens: 20),
+          _usage(
+            inputTokens: 100,
+            outputTokens: 20,
+            thoughtsTokens: 12,
+            cachedInputTokens: 5,
+          ),
         ],
         [
           _toolCalls([
@@ -895,7 +1068,12 @@ void main() {
               }),
             ),
           ]),
-          _usage(inputTokens: 40, outputTokens: 10),
+          _usage(
+            inputTokens: 40,
+            outputTokens: 10,
+            thoughtsTokens: 3,
+            cachedInputTokens: 2,
+          ),
         ],
       ]);
       final runner = _createRunner(
@@ -903,6 +1081,7 @@ void main() {
         inferenceRepository: inferenceRepository,
         executionMode: LocalTaskAgentEvalExecutionMode.twoPass,
         temperature: 0,
+        reasoningEffort: ReasoningEffort.high,
       );
 
       final report = await runner.run(
@@ -913,6 +1092,9 @@ void main() {
       expect(report.results.single.usedForcedReportRetry, isTrue);
       expect(report.results.single.inputTokens, 140);
       expect(report.results.single.outputTokens, 30);
+      expect(report.results.single.thoughtsTokens, 15);
+      expect(report.results.single.cachedInputTokens, 7);
+      expect(report.reasoningEffort, ReasoningEffort.high);
       expect(inferenceRepository.requests, hasLength(2));
       expect(
         inferenceRepository.requests.first.toolNames,
@@ -924,6 +1106,83 @@ void main() {
       expect(
         inferenceRepository.requests.map((request) => request.temperature),
         everyElement(0),
+      );
+    },
+  );
+
+  test(
+    'report revision replaces an unsupported draft with grounded prose',
+    () async {
+      final scenario =
+          defaultMeliousTaskAgentEvalScenarios(
+            variants: const [
+              LocalTaskAgentEvalPromptVariant.evidenceSynthesis,
+            ],
+          ).firstWhere(
+            (scenario) =>
+                scenario.id.startsWith('user_completed_item_resurfaced'),
+          );
+      final inferenceRepository = _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Sync fix deployed',
+                'tldr': 'The sync issue reappeared and is blocked.',
+                'content': 'The deployed fix failed validation.',
+              }),
+            ),
+          ]),
+          _usage(inputTokens: 100, outputTokens: 20),
+        ],
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner':
+                    'Duplicate sync issue resurfaced after reconnection',
+                'tldr':
+                    'The user-marked-complete fix did not prevent recurrence. '
+                    'Root-cause investigation is the current risk.',
+                'content':
+                    'QA observed the sync issue again after reconnecting two '
+                    'devices. Investigate the root cause before deciding '
+                    'whether the completed checklist state needs follow-up.',
+              }),
+            ),
+          ]),
+          _usage(inputTokens: 50, outputTokens: 10),
+        ],
+      ]);
+      final runner = _createRunner(
+        provider: provider,
+        inferenceRepository: inferenceRepository,
+        executionMode: LocalTaskAgentEvalExecutionMode.reportRevision,
+        temperature: 0,
+      );
+
+      final report = await runner.run(
+        profiles: const [profile],
+        scenarios: [scenario],
+      );
+
+      final result = report.results.single;
+      expect(result.failureCategory, LocalTaskAgentEvalFailureCategory.none);
+      expect(result.inputTokens, 150);
+      expect(result.outputTokens, 30);
+      expect(result.usedForcedReportRetry, isTrue);
+      expect(
+        result.toolCalls.where(
+          (call) => call.name == TaskAgentToolNames.updateReport,
+        ),
+        hasLength(2),
+      );
+      expect(inferenceRepository.requests, hasLength(2));
+      expect(
+        inferenceRepository.requests.last.toolNames,
+        [TaskAgentToolNames.updateReport],
       );
     },
   );
@@ -1000,6 +1259,7 @@ LocalTaskAgentInferenceEvalRunner _createRunner({
   required InferenceRepositoryInterface inferenceRepository,
   bool forceReportRetry = true,
   double temperature = 0.3,
+  ReasoningEffort? reasoningEffort,
   LocalTaskAgentEvalExecutionMode executionMode =
       LocalTaskAgentEvalExecutionMode.singlePass,
 }) {
@@ -1012,6 +1272,7 @@ LocalTaskAgentInferenceEvalRunner _createRunner({
     ),
     inferenceRepository: inferenceRepository,
     temperature: temperature,
+    reasoningEffort: reasoningEffort,
     forceReportRetry: forceReportRetry,
     executionMode: executionMode,
   );
@@ -1219,6 +1480,8 @@ CreateChatCompletionStreamResponse _content(String text) {
 CreateChatCompletionStreamResponse _usage({
   required int inputTokens,
   required int outputTokens,
+  int? thoughtsTokens,
+  int? cachedInputTokens,
 }) {
   return CreateChatCompletionStreamResponse(
     id: 'usage',
@@ -1229,6 +1492,12 @@ CreateChatCompletionStreamResponse _usage({
       promptTokens: inputTokens,
       completionTokens: outputTokens,
       totalTokens: inputTokens + outputTokens,
+      promptTokensDetails: cachedInputTokens == null
+          ? null
+          : PromptTokensDetails(cachedTokens: cachedInputTokens),
+      completionTokensDetails: thoughtsTokens == null
+          ? null
+          : CompletionTokensDetails(reasoningTokens: thoughtsTokens),
     ),
   );
 }

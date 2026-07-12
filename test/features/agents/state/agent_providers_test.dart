@@ -48,7 +48,8 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/consts.dart' show enableForkHealingFlag;
+import 'package:lotti/utils/consts.dart'
+    show enableForkHealingFlag, enableTaskAgentEvidenceSynthesisFlag;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -564,6 +565,9 @@ void main() {
           projectRepositoryProvider.overrideWithValue(
             MockProjectRepository(),
           ),
+          configFlagProvider(
+            enableTaskAgentEvidenceSynthesisFlag,
+          ).overrideWith((ref) => Stream.value(false)),
         ],
       );
       addTearDown(container.dispose);
@@ -577,6 +581,7 @@ void main() {
 
       expect(workflow.embeddingStore, isNull);
       expect(workflow.embeddingRepository, isNull);
+      expect(workflow.evidenceSynthesisEnabled, isFalse);
     });
 
     test('wires optional embedding dependencies from GetIt', () {

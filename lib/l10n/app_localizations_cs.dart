@@ -3045,6 +3045,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Synchronizuj upozornění od AI a úkolů mezi zařízeními a dovol jim plánovat místní systémová oznámení.';
 
   @override
+  String get configFlagEnableTaskAgentEvidenceSynthesis =>
+      'Úkolový agent založený na důkazech';
+
+  @override
+  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
+      'Použije experimentální prompty a nízkou variabilitu pro úsporné modely úkolového agenta. Aktualizace úkolů mohou být spolehlivější, ale reporty mohou stále působit mechanicky nebo nepřesně.';
+
+  @override
   String get configFlagEnableTooltip => 'Povolit nápovědy';
 
   @override

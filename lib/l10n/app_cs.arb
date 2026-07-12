@@ -1189,6 +1189,8 @@
   "configFlagEnableSessionRatingsDescription": "Po zastavení časovače zobrazit rychlé hodnocení relace.",
   "configFlagEnableSyncedAlerts": "Synchronizovaná upozornění",
   "configFlagEnableSyncedAlertsDescription": "Synchronizuj upozornění od AI a úkolů mezi zařízeními a dovol jim plánovat místní systémová oznámení.",
+  "configFlagEnableTaskAgentEvidenceSynthesis": "Úkolový agent založený na důkazech",
+  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Použije experimentální prompty a nízkou variabilitu pro úsporné modely úkolového agenta. Aktualizace úkolů mohou být spolehlivější, ale reporty mohou stále působit mechanicky nebo nepřesně.",
   "configFlagEnableTooltip": "Povolit nápovědy",
   "configFlagEnableTooltipDescription": "Zobrazit užitečné nápovědy v celé aplikaci, které vás provedou funkcemi.",
   "configFlagEnableVectorSearch": "Vektorové vyhledávání",

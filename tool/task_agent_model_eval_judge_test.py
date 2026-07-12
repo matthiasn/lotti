@@ -154,8 +154,55 @@ class JudgmentValidationTest(unittest.TestCase):
         self.assertEqual(judgment, _valid_judgment())
         self.assertEqual(
             accounting,
-            {"usage": {}, "environmentImpact": {}, "billingCost": {}},
+            {
+                "attemptCount": 1,
+                "attempts": [
+                    {"usage": {}, "environmentImpact": {}, "billingCost": {}}
+                ],
+                "usage": {},
+                "environmentImpact": {},
+                "billingCost": {},
+            },
         )
+
+    def test_retries_a_malformed_judgment_with_a_repair_turn(self) -> None:
+        scenario = _report()["scenarios"][0]
+        result = _report()["results"][0]
+        malformed = {
+            "choices": [{"message": {"content": "not json"}}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 4},
+            "environment_impact": {"energy_kwh": 0.1},
+            "billing_cost": {"credits": "0.2", "paid_with": "credits"},
+        }
+        valid = {
+            "choices": [
+                {"message": {"content": json.dumps(_valid_judgment())}}
+            ],
+            "usage": {"prompt_tokens": 12, "completion_tokens": 5},
+            "environment_impact": {"energy_kwh": 0.3},
+            "billing_cost": {"credits": "0.4", "paid_with": "credits"},
+        }
+
+        with mock.patch.object(
+            judge,
+            "_post",
+            side_effect=[malformed, valid],
+        ) as post:
+            judgment, accounting = judge._judge_case(
+                "https://example.com/v1", "key", "judge", scenario, result
+            )
+
+        self.assertEqual(judgment, _valid_judgment())
+        self.assertEqual(post.call_count, 2)
+        retry_messages = post.call_args.args[2]["messages"]
+        self.assertEqual(retry_messages[-2]["content"], "not json")
+        self.assertEqual(retry_messages[-1]["content"], judge.REPAIR_PROMPT)
+        self.assertEqual(accounting["attemptCount"], 2)
+        self.assertEqual(accounting["usage"]["prompt_tokens"], 22)
+        self.assertEqual(accounting["usage"]["completion_tokens"], 9)
+        self.assertEqual(accounting["environmentImpact"]["energy_kwh"], 0.4)
+        self.assertEqual(accounting["billingCost"]["credits"], "0.6")
+        self.assertEqual(accounting["billingCost"]["paid_with"], "credits")
 
     def test_case_fingerprint_changes_with_the_judge_rubric(self) -> None:
         report = _report()

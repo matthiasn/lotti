@@ -222,6 +222,10 @@ The request path stays OpenAI-compatible for chat and vision chat; Whisper-class
 IDs (`whisper`, `transcribe`, `voxtral`, `asr`, or `stt`) route to
 `POST /audio/transcriptions`; image-output models route to
 `POST /images/generations` and decode the returned `b64_json` image bytes.
+Chat callers may opt into an OpenAI-compatible `reasoning_effort`; leaving it
+unset preserves the provider's model default. The dedicated Melious path
+forwards the same value for streaming and measured non-streaming calls, and the
+shared usage parser retains nested reasoning-token counts.
 Melious currently documents text-to-image generation there, so reference-image
 generation is rejected explicitly rather than silently ignored.
 
@@ -378,11 +382,15 @@ uses.
 
 `tool/melious_task_agent_model_eval.sh` runs the conversation-level task-agent
 evaluator as a Melious model and prompt matrix. The built-in candidates are
-Mistral Small 4 119B Instruct and GLM 5.2. The default production-prompt suite
-contains eleven synthetic but app-shaped wakes covering explicit mutations,
+Mistral Small 4 119B Instruct, Qwen3.5 122B A10B, DeepSeek V4 Flash, and GLM
+5.2. The runner defaults to the dedicated Melious provider path so live evals
+exercise the same request and impact-accounting implementation as the app. The
+default production-prompt suite
+contains thirteen synthetic but app-shaped wakes covering explicit mutations,
 noisy multilingual transcripts, prior reports, no-op background refreshes,
 stale evidence, user overrides, checklist deduplication, external links, and
-long timelines. Deterministic checks validate required mutations and report
+long timelines, plus held-out deferred scope and active deployment constraints.
+Deterministic checks validate required mutations and report
 facts as well as forbidden tools, speculative checklist content, report churn,
 and internal-ID leakage. Missing first reports go through the same report-only
 forced retry used by `TaskAgentWorkflow`, and each result records whether that
@@ -390,12 +398,16 @@ recovery was needed. The live test is deliberately
 non-gating unless `LOCAL_TASK_AGENT_EVAL_STRICT=1`, because a comparison run must
 persist weak outputs instead of aborting before the other candidates run.
 
-After candidate generation, `tool/task_agent_model_eval_judge.py` sends the
-synthetic context and captured tool calls to an independent judge model
-(`qwen3.5-122b-a10b` by default). The judge rates grounding, coverage,
-checklist quality, summary quality, and format compliance. Its findings are a
-review aid rather than a release gate; deterministic failures remain the
-high-confidence signal. Raw and judged JSON/Markdown artifacts are written to a
+After candidate generation, `tool/task_agent_model_eval_judge.py` can send the
+synthetic context and captured tool calls to a separate rubric pass
+(`qwen3.5-122b-a10b` by default). It rates grounding, coverage, checklist
+quality, summary quality, and format compliance. This automated score is a
+diagnostic only: it is not an acceptance signal, and a candidate is not accepted
+from a score produced by the same model family. Deterministic checks establish
+mutation safety, while report-quality decisions require direct review of the
+candidate text. Malformed judge JSON gets one bounded repair turn, and the
+artifact retains and aggregates accounting for every paid attempt. Raw and
+judged JSON/Markdown artifacts are written to a
 unique run directory under `build/task_agent_model_eval/` by default. Set
 `LOCAL_TASK_AGENT_EVAL_OUTPUT_ROOT` to a local clone of the private evaluation
 archive when a run should be retained; generated reports are not committed to
@@ -405,22 +417,59 @@ Additional Melious candidates can be
 supplied through `LOCAL_TASK_AGENT_EVAL_PROFILES=name=model,...`, and individual
 scenario IDs through `LOCAL_TASK_AGENT_EVAL_SCENARIOS`. Prompt variants are
 selected with `LOCAL_TASK_AGENT_EVAL_PROMPT_VARIANTS`. The evaluator also has
-an orchestration-only `twoPass` mode selected with
-`LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE`; it removes `update_report` from the
-advertised mutation-pass tools and follows with a forced report-only pass. The
-corrected temperature-0 Mistral rerun improved judge-rated summary prose but
-passed only 8 of 11 scenarios and used 135,147 candidate tokens, 52% above the
-single-pass baseline. The mode is retained only to reproduce the rejected
-experiment and is not used by production task agents.
+orchestration-only `twoPass` and `reportRevision` modes selected with
+`LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE`. `twoPass` removes `update_report` from
+the advertised mutation-pass tools and follows with a forced report-only pass;
+`reportRevision` asks the same model to revise its first report against the
+source context. Both exist only to reproduce rejected experiments. The
+optional `LOCAL_TASK_AGENT_EVAL_REASONING_EFFORT` accepts the OpenAI-compatible
+`minimal`, `low`, `medium`, or `high` values. The generated JSON and Markdown
+record the selected effort; leaving it empty records and uses the model default.
+The corrected temperature-0 Mistral two-pass rerun improved automated
+judge-rated summary prose but passed only 8 of 11 scenarios and used 135,147
+candidate tokens, 52% above the single-pass baseline. Neither multi-pass mode
+is used by production task agents.
 
-The `conciseReport` prompt variant replaces, rather than extends, the production
-report directive. In the full Mistral matrix it improved judge overall quality
-from 89% to 93%, summary quality from 93% to 95%, and format compliance from 84%
-to 98%, while reducing tokens by 17% and latency by 19%. It is not used in the
-main mutation wake because changing that shared prompt also caused a missed
-checklist mutation. A separate report-only copy-edit pass was also prototyped,
-but focused Mistral probes did not clear the same process-narration defects.
-Because the eval showed cost without a reliable quality gain, that mechanism is
+An explicit Mistral `reasoning_effort=high` experiment also failed to justify a
+production default. In the matched four-scenario screen, model-default and high
+effort both passed 3/4 cases while high effort was 13-15% slower. The full
+high-effort run at Mistral's recommended temperature `0.7` passed 7/11 cases,
+versus 10/11 in the archived provider-default production run, and was 56%
+slower with nearly identical output-token volume. Melious returned no separate
+reasoning-token counts for these calls. DeepSeek V4 Flash did not advance past
+the same screen: it passed 2/4 cases, made an unauthorized status change, used
+2.6x the input tokens, and took about twice as long as the Mistral baseline.
+These are one-sample synthetic comparisons, so the artifacts are retained for
+reproduction rather than treated as universal model rankings.
+
+The production `evidenceSynthesis` prompt was then replicated with Qwen3.5 122B
+A10B across all 13 scenarios three times at temperature `0.0`. It passed 38/39
+scenario runs and 257/258 deterministic checks, made all 42 required mutations,
+and made no unauthorized mutation. The single failure was a German report that
+omitted the task deadline. Direct simulated product, reliability, and editorial
+reviews rated the model suitable for an experimental opt-in, not as a
+large-model replacement: mutation handling was strong, while reports still used
+mechanical phrasing, repeated content, and occasionally inflated status from
+weak evidence. A stricter six-scenario report-grounding screen passed only 3/6
+with model-default reasoning and 4/6 with requested high effort.
+
+Qwen exposes thinking as an on/off capability rather than distinct native
+effort tiers. In one matched state-classifier probe, requesting
+OpenAI-compatible `high` effort left the same three failures while adding 11%
+input tokens, 6% output tokens, and 6% latency. In the final shared-contract
+screen it passed 4/6 rather than 3/6, but retained the same two core grounding
+failures and cost differences were within run noise. Production therefore
+leaves reasoning at the model or profile default. The experimental
+`enable_task_agent_evidence_synthesis` flag reuses the validated prompt, extends
+only the `update_report` description, and selects temperature `0.0`; it does not
+enable a second pass. It replaces the report directive only when the template
+still uses the seeded default, so custom report structure remains flexible.
+
+The older `conciseReport` variant remains available for reproduction. In the
+full Mistral matrix it improved automated judge scores and reduced tokens, but
+changing that directive also caused a missed checklist mutation. Focused
+Mistral and Qwen report-revision probes did not reliably remove
+process-narration or status-inflation defects. A report polisher is therefore
 not part of the production workflow.
 
 ```mermaid
@@ -429,9 +478,11 @@ flowchart LR
   Matrix --> Conversation["ConversationRepository"]
   Conversation --> Tools["Production task-agent tool schema"]
   Tools --> Deterministic["Tool + report checks"]
-  Tools --> Judge["Independent rubric judge"]
+  Tools --> Judge["Optional rubric diagnostic"]
+  Tools --> Review["Direct report-quality review"]
   Deterministic --> Artifacts["Unique local run directory"]
   Judge --> Artifacts
+  Review --> Artifacts
   Artifacts --> Archive["Optional private archive"]
 ```
 
@@ -685,11 +736,11 @@ It is now a thin **facade**: every public method delegates to one of two collabo
 
 | Operation | Dedicated branches | Fallback |
 | --- | --- | --- |
-| `generate()` | Ollama, Gemini, Mistral | OpenAI-compatible chat streaming |
+| `generate()` | Ollama, Gemini, Mistral, Melious | OpenAI-compatible chat streaming; explicit reasoning effort is forwarded |
 | `generateWithImages()` | Ollama, Melious, Mistral OCR (`/v1/ocr` for `mistral-ocr-*`) | OpenAI-compatible multimodal chat; Gemini receives `reasoning_effort` for its thinking mode |
 | `generateWithAudio()` | Whisper, Voxtral, MLX Audio native bridge, oMLX transcription endpoint, OpenAI transcription endpoint, Mistral transcription endpoint, Melious transcription endpoint | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` for its thinking mode |
-| `generateWithMessages()` | Gemini, Ollama, Mistral | OpenAI-compatible full-history chat |
-| `generateImage()` | Gemini, Alibaba DashScope | Unsupported for all other provider types |
+| `generateWithMessages()` | Gemini, Ollama, Mistral, Melious | OpenAI-compatible full-history chat; explicit reasoning effort is forwarded |
+| `generateImage()` | Gemini, Alibaba DashScope, Melious | Unsupported for all other provider types |
 
 This routing is implemented in code, not inferred from documentation. If a provider type is not branched explicitly for an operation, it falls through to the compatibility client or throws `UnsupportedError`.
 

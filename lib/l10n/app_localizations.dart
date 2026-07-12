@@ -5197,6 +5197,18 @@ abstract class AppLocalizations {
   /// **'Sync AI and task alerts across devices and allow them to schedule local OS notifications.'**
   String get configFlagEnableSyncedAlertsDescription;
 
+  /// No description provided for @configFlagEnableTaskAgentEvidenceSynthesis.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence-first task agent'**
+  String get configFlagEnableTaskAgentEvidenceSynthesis;
+
+  /// No description provided for @configFlagEnableTaskAgentEvidenceSynthesisDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the experimental low-variance prompt and temperature settings for efficient task-agent models. Task updates can be more reliable, but reports may still be mechanical or imprecise.'**
+  String get configFlagEnableTaskAgentEvidenceSynthesisDescription;
+
   /// No description provided for @configFlagEnableTooltip.
   ///
   /// In en, this message translates to:

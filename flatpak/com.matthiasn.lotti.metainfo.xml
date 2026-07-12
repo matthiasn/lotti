@@ -32,8 +32,9 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.1038" date="2026-07-11">
+    <release version="0.9.1038" date="2026-07-12">
       <description>
+          <p>An experimental evidence-first task-agent mode is now available in Settings → Advanced → Flags. It uses an evaluated low-variance prompt and temperature-zero inference path designed to improve task and checklist update reliability with efficient models while preserving custom report instructions; report prose may still be mechanical or imprecise.</p>
           <p>Melious task agents now continue reliably after calling tools. Follow-up requests preserve the OpenAI-compatible assistant message shape expected by strict providers, so checklist updates and the final report are no longer interrupted after an otherwise successful tool call.</p>
       </description>
     </release>

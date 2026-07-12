@@ -20,6 +20,8 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
+const _displayedFlagCount = 15;
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late MockJournalDb mockDb;
@@ -71,6 +73,11 @@ void main() {
           const ConfigFlag(
             name: enableAiSummaryTtsFlag,
             description: 'Enable local AI summary playback?',
+            status: false,
+          ),
+          const ConfigFlag(
+            name: enableTaskAgentEvidenceSynthesisFlag,
+            description: 'Enable evidence-first task-agent inference?',
             status: false,
           ),
           const ConfigFlag(
@@ -146,7 +153,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // 14 flags in the mock data.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(14));
+      expect(
+        find.byType(DesignSystemListItem),
+        findsNWidgets(_displayedFlagCount),
+      );
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -155,7 +165,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(SettingsIcon), findsNWidgets(14));
+      expect(find.byType(SettingsIcon), findsNWidgets(_displayedFlagCount));
     });
 
     testWidgets('shows correct title and description for private flag', (
@@ -332,6 +342,18 @@ void main() {
             expectedToggle: const ConfigFlag(
               name: enableAiSummaryTtsFlag,
               description: 'Enable local AI summary playback?',
+              status: true,
+            ),
+          ),
+          (
+            name: 'task-agent-evidence-synthesis',
+            title: (m) => m.configFlagEnableTaskAgentEvidenceSynthesis,
+            description: (m) =>
+                m.configFlagEnableTaskAgentEvidenceSynthesisDescription,
+            icon: Icons.fact_check_outlined,
+            expectedToggle: const ConfigFlag(
+              name: enableTaskAgentEvidenceSynthesisFlag,
+              description: 'Enable evidence-first task-agent inference?',
               status: true,
             ),
           ),
@@ -559,7 +581,10 @@ void main() {
         await tester.tap(clearIcon);
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.byType(DesignSystemListItem), findsNWidgets(14));
+        expect(
+          find.byType(DesignSystemListItem),
+          findsNWidgets(_displayedFlagCount),
+        );
       },
     );
 
@@ -580,7 +605,10 @@ void main() {
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.byType(DesignSystemListItem), findsNWidgets(14));
+        expect(
+          find.byType(DesignSystemListItem),
+          findsNWidgets(_displayedFlagCount),
+        );
       },
     );
 
@@ -597,7 +625,10 @@ void main() {
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
-        expect(find.byType(DesignSystemListItem), findsNWidgets(14));
+        expect(
+          find.byType(DesignSystemListItem),
+          findsNWidgets(_displayedFlagCount),
+        );
       },
     );
   });

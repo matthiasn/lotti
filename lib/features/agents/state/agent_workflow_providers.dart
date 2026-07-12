@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -24,6 +25,7 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/utils/consts.dart';
 
 /// The template evolution workflow with all dependencies resolved.
 ///
@@ -92,6 +94,11 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
           journalDb: ref.watch(journalDbProvider),
         )
       : null;
+  final evidenceSynthesisEnabled =
+      ref
+          .watch(configFlagProvider(enableTaskAgentEvidenceSynthesisFlag))
+          .value ??
+      false;
 
   return TaskAgentWorkflow(
     agentRepository: ref.watch(agentRepositoryProvider),
@@ -118,6 +125,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     logSummarizer: AgentLogLlmSummarizer(
       inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     ),
+    evidenceSynthesisEnabled: evidenceSynthesisEnabled,
   );
 }
 

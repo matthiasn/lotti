@@ -53,6 +53,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableTaskAgentEvidenceSynthesisFlag,
+    description: 'Enable evidence-first task-agent inference?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: resendAttachments,
     description: 'Resend Attachments',
     status: false,

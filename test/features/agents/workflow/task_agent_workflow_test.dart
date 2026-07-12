@@ -994,6 +994,96 @@ void main() {
         },
       );
 
+      test(
+        'evidence synthesis uses the aligned prompt, report tool, and zero '
+        'temperature',
+        () async {
+          String? systemMessage;
+          double? capturedTemperature;
+          List<ChatCompletionTool>? capturedTools;
+          final capturingRepo =
+              MockConversationRepository(
+                  mockConversationManager,
+                  onSystemMessage: (message) => systemMessage = message,
+                )
+                ..sendMessageDelegate =
+                    ({
+                      required conversationId,
+                      required message,
+                      required model,
+                      required provider,
+                      required inferenceRepo,
+                      tools,
+                      toolChoice,
+                      temperature = 0.7,
+                      strategy,
+                    }) async {
+                      capturedTemperature = temperature;
+                      capturedTools = tools;
+                      if (strategy is TaskAgentStrategy) {
+                        await strategy.processToolCalls(
+                          toolCalls: const [
+                            ChatCompletionMessageToolCall(
+                              id: 'report-call',
+                              type: ChatCompletionMessageToolCallType.function,
+                              function: ChatCompletionMessageFunctionCall(
+                                name: TaskAgentToolNames.updateReport,
+                                arguments:
+                                    '{"oneLiner":"Next action","tldr":"Critical path","content":"Current state"}',
+                              ),
+                            ),
+                          ],
+                          manager: mockConversationManager,
+                        );
+                      }
+                      return null;
+                    };
+          final optimizedWorkflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            evidenceSynthesisEnabled: true,
+          );
+
+          final result = await optimizedWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          final reportTool = capturedTools!.singleWhere(
+            (tool) => tool.function.name == TaskAgentToolNames.updateReport,
+          );
+          final properties =
+              reportTool.function.parameters!['properties']!
+                  as Map<String, dynamic>;
+          expect(result.success, isTrue);
+          expect(optimizedWorkflow.evidenceSynthesisEnabled, isTrue);
+          expect(capturedTemperature, 0);
+          expect(
+            systemMessage,
+            contains('## Evidence-First Synthesis Protocol'),
+          );
+          expect(
+            reportTool.function.description,
+            contains('active execution constraints'),
+          );
+          expect(
+            (properties['tldr']! as Map)['description'],
+            contains('include 1-2 relevant emojis'),
+          );
+        },
+      );
+
       test('queries proposal ledger for deduplication context', () async {
         // Override with a non-empty ledger (pendingSets populated) to
         // exercise the expand/where lambda in the dedup path.
@@ -1873,13 +1963,14 @@ void main() {
 
       test(
         'issues a second sendMessage with toolChoice forced to update_report '
-        'when the strategy ended without a report',
+        'at zero temperature when evidence synthesis has no report',
         () async {
           final calls =
               <
                 ({
                   String message,
                   ChatCompletionToolChoiceOption? toolChoice,
+                  double temperature,
                 })
               >[];
 
@@ -1899,11 +1990,29 @@ void main() {
                   temperature = 0.7,
                   strategy,
                 }) async {
-                  calls.add((message: message, toolChoice: toolChoice));
+                  calls.add((
+                    message: message,
+                    toolChoice: toolChoice,
+                    temperature: temperature,
+                  ));
                   return null;
                 };
 
-          final result = await workflow.execute(
+          final evidenceWorkflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            evidenceSynthesisEnabled: true,
+          );
+          final result = await evidenceWorkflow.execute(
             agentIdentity: testAgentIdentity,
             runKey: runKey,
             triggerTokens: {'entity-a'},
@@ -1912,6 +2021,7 @@ void main() {
 
           expect(result.success, isTrue);
           expect(calls, hasLength(2));
+          expect(calls.map((call) => call.temperature), [0, 0]);
 
           // First call: normal wake, no forced tool choice.
           expect(calls[0].toolChoice, isNull);

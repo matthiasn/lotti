@@ -106,6 +106,7 @@ class CloudInferenceRepository {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
     GeminiThinkingMode? geminiThinkingMode,
+    ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) => _generate.generate(
     prompt,
@@ -120,6 +121,7 @@ class CloudInferenceRepository {
     tools: tools,
     toolChoice: toolChoice,
     geminiThinkingMode: geminiThinkingMode,
+    reasoningEffort: reasoningEffort,
     impactCollector: impactCollector,
   );
 
@@ -198,6 +200,7 @@ class CloudInferenceRepository {
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
     GeminiThinkingMode? geminiThinkingMode,
+    ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) => _generateMore.generateWithMessages(
     messages: messages,
@@ -211,6 +214,7 @@ class CloudInferenceRepository {
     signatureCollector: signatureCollector,
     turnIndex: turnIndex,
     geminiThinkingMode: geminiThinkingMode,
+    reasoningEffort: reasoningEffort,
     impactCollector: impactCollector,
   );
 

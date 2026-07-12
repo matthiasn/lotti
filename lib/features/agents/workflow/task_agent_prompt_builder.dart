@@ -1,4 +1,6 @@
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/seeded_directive_content.dart';
+import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 
 /// Pure system-prompt assembly for the Task Agent.
 ///
@@ -18,12 +20,22 @@ abstract final class TaskAgentPromptBuilder {
   static String buildSystemPrompt({
     required AgentTemplateVersionEntity version,
     required SoulDocumentVersionEntity? soulVersion,
+    bool evidenceSynthesis = false,
   }) {
     final trimmedGeneralDirective = version.generalDirective.trim();
-    final trimmedReportDirective = version.reportDirective.trim();
+    final configuredReportDirective = version.reportDirective.trim();
+    final usesBuiltInReportDirective =
+        configuredReportDirective.isEmpty ||
+        configuredReportDirective == taskAgentReportDirective.trim();
+    final trimmedReportDirective =
+        evidenceSynthesis && usesBuiltInReportDirective
+        ? TaskAgentEvidenceSynthesis.reportDirective.trim()
+        : configuredReportDirective;
     final trimmedLegacyDirective = version.directives.trim();
     final hasNewDirectives =
-        trimmedGeneralDirective.isNotEmpty || trimmedReportDirective.isNotEmpty;
+        evidenceSynthesis ||
+        trimmedGeneralDirective.isNotEmpty ||
+        trimmedReportDirective.isNotEmpty;
 
     if (hasNewDirectives) {
       final buf = StringBuffer()..write(taskAgentScaffoldCore);
@@ -69,14 +81,26 @@ abstract final class TaskAgentPromptBuilder {
         }
       }
 
-      return buf.toString();
+      return _withEvidenceSynthesis(
+        buf.toString(),
+        enabled: evidenceSynthesis,
+      );
     }
 
     // Legacy fallback: single directives field.
-    return '$taskAgentScaffold\n\n'
-        '## Your Personality & Directives\n\n'
-        '${version.directives}';
+    return _withEvidenceSynthesis(
+      '$taskAgentScaffold\n\n'
+      '## Your Personality & Directives\n\n'
+      '${version.directives}',
+      enabled: evidenceSynthesis,
+    );
   }
+
+  static String _withEvidenceSynthesis(
+    String prompt, {
+    required bool enabled,
+  }) =>
+      enabled ? '$prompt${TaskAgentEvidenceSynthesis.systemDirective}' : prompt;
 
   /// Appends soul personality fields to the prompt buffer.
   static void _appendSoulPersonality(

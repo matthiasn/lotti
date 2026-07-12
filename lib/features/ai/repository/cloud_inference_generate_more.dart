@@ -324,6 +324,7 @@ class CloudInferenceGenerateMore {
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
     GeminiThinkingMode? geminiThinkingMode,
+    ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
     developer.log(
@@ -399,6 +400,7 @@ class CloudInferenceGenerateMore {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        reasoningEffort: reasoningEffort,
         impactCollector: impactCollector,
       );
     }
@@ -424,6 +426,7 @@ class CloudInferenceGenerateMore {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        reasoningEffort: reasoningEffort,
       ),
     );
 

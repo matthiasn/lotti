@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1038]
+### Added
+- **Try an evidence-first task-agent mode with efficient models.** Enable the
+  experimental option in Settings → Advanced → Flags to use an evaluated
+  low-variance prompt and temperature-zero inference path. It is designed to
+  improve task and checklist update reliability while preserving custom report
+  instructions; report prose may still be mechanical or imprecise.
 ### Fixed
 - **Melious task agents now continue reliably after calling tools.** Follow-up
   requests now preserve the OpenAI-compatible assistant message shape expected

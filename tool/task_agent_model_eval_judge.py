@@ -12,9 +12,17 @@ import re
 import time
 import urllib.error
 import urllib.request
+from decimal import Decimal
 from pathlib import Path
 
 DEFAULT_JUDGE_MODEL = "qwen3.5-122b-a10b"
+JUDGE_PIPELINE_VERSION = 2
+JUDGE_RESPONSE_ATTEMPTS = 2
+REPAIR_PROMPT = """
+Your previous response was not a valid judgment object. Return only one JSON
+object with every required rubric score, verdict, and findings field. Do not
+wrap it in Markdown and do not include commentary outside the JSON object.
+""".strip()
 SYSTEM_PROMPT = """
 You are an independent evaluator of a personal task-management agent. Judge
 only the supplied synthetic task context and captured model output. Do not
@@ -123,7 +131,9 @@ def _scenario_by_id(report: dict) -> dict[str, dict]:
 
 def _case_fingerprint(scenario: dict, result: dict) -> str:
     relevant = {
+        "judgePipelineVersion": JUDGE_PIPELINE_VERSION,
         "judgePrompt": SYSTEM_PROMPT,
+        "judgeRepairPrompt": REPAIR_PROMPT,
         "scenario": scenario,
         "toolCalls": result["toolCalls"],
         "failureCategory": result["failureCategory"],
@@ -138,6 +148,65 @@ def _display_path(path: Path) -> str:
         return str(path.resolve().relative_to(Path.cwd().resolve()))
     except ValueError:
         return str(path)
+
+
+def _response_accounting(response: dict) -> dict:
+    return {
+        "usage": response.get("usage", {}),
+        "environmentImpact": response.get("environment_impact", {}),
+        "billingCost": response.get("billing_cost", {}),
+    }
+
+
+def _aggregate_accounting(attempts: list[dict]) -> dict:
+    usage_keys = (
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "cached_tokens",
+        "reasoning_tokens",
+    )
+    impact_keys = ("energy_kwh", "carbon_g_co2", "water_liters")
+    usage = {
+        key: sum(int(item.get("usage", {}).get(key, 0) or 0) for item in attempts)
+        for key in usage_keys
+        if any(item.get("usage", {}).get(key) is not None for item in attempts)
+    }
+    impact = {
+        key: sum(
+            float(item.get("environmentImpact", {}).get(key, 0) or 0)
+            for item in attempts
+        )
+        for key in impact_keys
+        if any(
+            item.get("environmentImpact", {}).get(key) is not None
+            for item in attempts
+        )
+    }
+    billing = {
+        key: str(
+            sum(
+                Decimal(str(item.get("billingCost", {}).get(key, 0) or 0))
+                for item in attempts
+            )
+        )
+        for key in ("energy", "credits")
+        if any(item.get("billingCost", {}).get(key) is not None for item in attempts)
+    }
+    payment_methods = {
+        item.get("billingCost", {}).get("paid_with")
+        for item in attempts
+        if item.get("billingCost", {}).get("paid_with")
+    }
+    if len(payment_methods) == 1:
+        billing["paid_with"] = payment_methods.pop()
+    return {
+        "attemptCount": len(attempts),
+        "attempts": attempts,
+        "usage": usage,
+        "environmentImpact": impact,
+        "billingCost": billing,
+    }
 
 
 def _judge_case(
@@ -159,30 +228,41 @@ def _judge_case(
         "finalAssistantContent": result.get("finalContent"),
         "deterministicFailure": result["failureCategory"],
     }
-    response = _post(
-        f"{base_url.rstrip('/')}/chat/completions",
-        key,
-        {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
-            ],
-            "temperature": 0,
-            "max_tokens": 4000,
-            "response_format": {"type": "json_object"},
-            "stream": False,
-        },
-    )
-    content = response["choices"][0]["message"]["content"]
-    judgment = _json_object(content)
-    if not _valid_judgment(judgment):
-        raise ValueError("judge response omitted required rubric fields")
-    return judgment, {
-        "usage": response.get("usage", {}),
-        "environmentImpact": response.get("environment_impact", {}),
-        "billingCost": response.get("billing_cost", {}),
-    }
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+    ]
+    accounting_attempts = []
+    for attempt in range(JUDGE_RESPONSE_ATTEMPTS):
+        response = _post(
+            f"{base_url.rstrip('/')}/chat/completions",
+            key,
+            {
+                "model": model,
+                "messages": messages,
+                "temperature": 0,
+                "max_tokens": 4000,
+                "response_format": {"type": "json_object"},
+                "stream": False,
+            },
+        )
+        accounting_attempts.append(_response_accounting(response))
+        content = response["choices"][0]["message"]["content"]
+        try:
+            judgment = _json_object(content)
+            if not _valid_judgment(judgment):
+                raise ValueError("judge response omitted required rubric fields")
+        except (IndexError, KeyError, TypeError, ValueError):
+            if attempt + 1 == JUDGE_RESPONSE_ATTEMPTS:
+                raise
+            messages = [
+                *messages,
+                {"role": "assistant", "content": content},
+                {"role": "user", "content": REPAIR_PROMPT},
+            ]
+            continue
+        return judgment, _aggregate_accounting(accounting_attempts)
+    raise AssertionError("unreachable")
 
 
 def _write_markdown(path: Path, judged: dict) -> None:

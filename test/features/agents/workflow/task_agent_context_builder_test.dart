@@ -303,6 +303,35 @@ void main() {
       final names = tools.map((t) => t.function.name).toSet();
       expect(names, contains('update_report'));
     });
+
+    test('tightens only update_report for evidence synthesis', () {
+      final baseline = builder.buildToolDefinitions();
+      final optimized = builder.buildToolDefinitions(evidenceSynthesis: true);
+      final baselineByName = {
+        for (final tool in baseline) tool.function.name: tool.function,
+      };
+      final optimizedByName = {
+        for (final tool in optimized) tool.function.name: tool.function,
+      };
+      final optimizedReport = optimizedByName['update_report']!;
+
+      expect(
+        optimizedReport.description,
+        contains('active execution constraints'),
+      );
+      expect(
+        optimizedReport.parameters,
+        equals(baselineByName['update_report']!.parameters),
+      );
+      expect(
+        optimizedByName['set_task_title']!.description,
+        baselineByName['set_task_title']!.description,
+      );
+      expect(
+        optimizedByName['set_task_title']!.parameters,
+        equals(baselineByName['set_task_title']!.parameters),
+      );
+    });
   });
 
   group('extractFinalAssistantContent', () {

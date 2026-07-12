@@ -459,6 +459,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           : null;
 
       // 7. Invoke the LLM and execute tool calls via AgentToolExecutor.
+      final inferenceTemperature = evidenceSynthesisEnabled ? 0.0 : 0.3;
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -466,7 +467,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         provider: provider,
         inferenceRepo: inferenceRepo,
         tools: tools,
-        temperature: 0.3,
+        temperature: inferenceTemperature,
         strategy: strategy,
         consumptionAgentId: recordConsumption ? agentId : null,
         consumptionTaskId: recordConsumption ? taskId : null,
@@ -491,6 +492,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           consumptionCategoryId: consumptionCategoryId,
           consumptionWakeRunKey: recordConsumption ? runKey : null,
           consumptionThreadId: recordConsumption ? threadId : null,
+          temperature: inferenceTemperature,
         );
         if (retryUsage != null) {
           usage = usage == null ? retryUsage : usage.merge(retryUsage);

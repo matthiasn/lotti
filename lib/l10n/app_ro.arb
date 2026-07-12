@@ -1380,6 +1380,8 @@
   "configFlagEnableSessionRatingsDescription": "Solicită o evaluare rapidă a sesiunii la oprirea unui cronometru.",
   "configFlagEnableSyncedAlerts": "Alerte sincronizate",
   "configFlagEnableSyncedAlertsDescription": "Sincronizați alertele AI și de sarcini între dispozitivele dvs. și permiteți programarea notificărilor locale de sistem.",
+  "configFlagEnableTaskAgentEvidenceSynthesis": "Agent de sarcini bazat pe dovezi",
+  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Folosește prompturi experimentale și variabilitate redusă pentru modele eficiente de agent de sarcini. Actualizările sarcinilor pot fi mai fiabile, însă rapoartele pot rămâne mecanice sau imprecise.",
   "configFlagEnableTooltip": "Activează sfaturile",
   "configFlagEnableTooltipDescription": "Afișează sfaturi utile în întreaga aplicație pentru a vă ghida prin funcții.",
   "configFlagEnableVectorSearch": "Căutare vectorială",

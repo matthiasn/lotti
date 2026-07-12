@@ -179,6 +179,13 @@ void main() {
       expect(FlagsBody.displayedItems, contains('enable_ai_summary_tts'));
     });
 
+    test('includes the evidence-first task-agent flag', () {
+      expect(
+        FlagsBody.displayedItems,
+        contains('enable_task_agent_evidence_synthesis'),
+      );
+    });
+
     test('includes the new enable_whats_new flag', () {
       // Locks the wiring contract — the canonical render order must
       // carry `enable_whats_new` so the in-page list and the search

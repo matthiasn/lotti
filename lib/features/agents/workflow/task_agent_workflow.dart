@@ -103,6 +103,7 @@ class TaskAgentWorkflow {
     this.changeSetNotificationService,
     this.inputCaptureService,
     this.logSummarizer,
+    this.evidenceSynthesisEnabled = false,
     this.compactionTailBudgetTokens = 50000,
     this.compactionTailRetainTokens = 20000,
   });
@@ -122,6 +123,10 @@ class TaskAgentWorkflow {
   final LabelsRepository labelsRepository;
   final AgentTemplateService templateService;
   final SoulDocumentService? soulDocumentService;
+
+  /// Whether to use the experimentally validated low-variance prompt and tool
+  /// contract intended for efficient task-agent models.
+  final bool evidenceSynthesisEnabled;
 
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
@@ -277,6 +282,7 @@ class TaskAgentWorkflow {
     required CloudInferenceWrapper inferenceRepo,
     required List<ChatCompletionTool> tools,
     required TaskAgentStrategy strategy,
+    required double temperature,
     String? consumptionAgentId,
     String? consumptionTaskId,
     String? consumptionCategoryId,
@@ -313,7 +319,7 @@ class TaskAgentWorkflow {
         inferenceRepo: inferenceRepo,
         tools: reportOnlyTools,
         toolChoice: forcedToolChoice,
-        temperature: 0.3,
+        temperature: temperature,
         strategy: strategy,
         consumptionAgentId: consumptionAgentId,
         consumptionTaskId: consumptionTaskId,
@@ -390,6 +396,7 @@ class TaskAgentWorkflow {
       TaskAgentPromptBuilder.buildSystemPrompt(
         version: ctx.version,
         soulVersion: ctx.soulVersion,
+        evidenceSynthesis: evidenceSynthesisEnabled,
       );
 
   Future<({String text, int? logStart, int? logEnd})> _buildUserMessage({
@@ -423,7 +430,9 @@ class TaskAgentWorkflow {
   );
 
   List<ChatCompletionTool> _buildToolDefinitions() =>
-      _contextBuilder.buildToolDefinitions();
+      _contextBuilder.buildToolDefinitions(
+        evidenceSynthesis: evidenceSynthesisEnabled,
+      );
 
   String? _extractFinalAssistantContent(ConversationManager? manager) =>
       _contextBuilder.extractFinalAssistantContent(manager);

@@ -1380,6 +1380,8 @@
   "configFlagEnableSessionRatingsDescription": "Solicitar una calificación rápida de sesión al detener un temporizador.",
   "configFlagEnableSyncedAlerts": "Alertas sincronizadas",
   "configFlagEnableSyncedAlertsDescription": "Sincroniza alertas de IA y tareas entre tus dispositivos y permite que programen notificaciones locales del sistema.",
+  "configFlagEnableTaskAgentEvidenceSynthesis": "Agente de tareas basado en evidencias",
+  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Usa prompts experimentales y baja variabilidad para modelos eficientes de agente de tareas. Las actualizaciones pueden ser más fiables, pero los informes aún pueden resultar mecánicos o imprecisos.",
   "configFlagEnableTooltip": "Habilitar información sobre herramientas",
   "configFlagEnableTooltipDescription": "Mostrar información sobre herramientas útil en toda la aplicación para guiarte a través de las funciones.",
   "configFlagEnableVectorSearch": "Búsqueda vectorial",

@@ -50,6 +50,7 @@ class CloudInferenceGenerate {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
     GeminiThinkingMode? geminiThinkingMode,
+    ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
     developer.log(
@@ -122,6 +123,7 @@ class CloudInferenceGenerate {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        reasoningEffort: reasoningEffort,
         impactCollector: impactCollector,
       );
     }
@@ -154,6 +156,7 @@ class CloudInferenceGenerate {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        reasoningEffort: reasoningEffort,
       ),
     );
 

@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/seeded_directive_content.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -34,6 +35,16 @@ const defaultMeliousTaskAgentEvalProfiles = [
     modelClass: 'mistral-small-4-119b-instruct',
   ),
   LocalTaskAgentEvalProfile(
+    name: 'qwen3.5-122b-a10b-candidate',
+    providerModelId: meliousQwen35122BA10BModelId,
+    modelClass: 'qwen3.5-122b-a10b',
+  ),
+  LocalTaskAgentEvalProfile(
+    name: 'deepseek-v4-flash-candidate',
+    providerModelId: meliousDeepseekV4FlashModelId,
+    modelClass: 'deepseek-v4-flash',
+  ),
+  LocalTaskAgentEvalProfile(
     name: 'glm-5.2-reference',
     providerModelId: meliousGlm52ModelId,
     modelClass: 'glm-5.2',
@@ -45,9 +56,22 @@ enum LocalTaskAgentEvalPromptVariant {
   compactModel,
   qualityFocused,
   conciseReport,
+  evidenceSynthesis,
 }
 
-enum LocalTaskAgentEvalExecutionMode { singlePass, twoPass }
+enum LocalTaskAgentEvalExecutionMode { singlePass, twoPass, reportRevision }
+
+ReasoningEffort? parseLocalTaskAgentEvalReasoningEffort(String? value) {
+  final normalized = value?.trim();
+  if (normalized == null || normalized.isEmpty) return null;
+  return ReasoningEffort.values.firstWhere(
+    (effort) => effort.name == normalized,
+    orElse: () => throw FormatException(
+      'Unknown task-agent eval reasoning effort "$value".',
+      value,
+    ),
+  );
+}
 
 LocalTaskAgentEvalExecutionMode parseLocalTaskAgentEvalExecutionMode(
   String value,
@@ -195,6 +219,8 @@ List<LocalTaskAgentEvalScenario> defaultMeliousTaskAgentEvalScenarios({
       _duplicateChecklistScenario(variant),
       _staleDeadlineScenario(variant),
       _messyGermanTranscriptScenario(variant),
+      _deferredScopeScenario(variant),
+      _activeDeploymentConstraintScenario(variant),
       _userCompletedItemScenario(variant),
       _spanishMixedContextScenario(variant),
       _externalLinkScenario(variant),
@@ -243,17 +269,26 @@ LocalTaskAgentEvalProfile parseLocalTaskAgentEvalProfile(String value) {
   );
 }
 
-List<ChatCompletionTool> buildLocalTaskAgentEvalTools() {
+List<ChatCompletionTool> buildLocalTaskAgentEvalTools({
+  LocalTaskAgentEvalPromptVariant? promptVariant,
+}) {
   return AgentToolRegistry.taskAgentTools
       .where((definition) {
         return definition.enabled;
       })
       .map((definition) {
+        final useEvidenceContract =
+            definition.name == TaskAgentToolNames.updateReport &&
+            promptVariant == LocalTaskAgentEvalPromptVariant.evidenceSynthesis;
         return ChatCompletionTool(
           type: ChatCompletionToolType.function,
           function: FunctionObject(
             name: definition.name,
-            description: definition.description,
+            description: useEvidenceContract
+                ? TaskAgentEvidenceSynthesis.updateReportDescription(
+                    definition.description,
+                  )
+                : definition.description,
             parameters: definition.parameters,
           ),
         );
@@ -319,7 +354,7 @@ LocalTaskAgentEvalScenario _metadataScenario(
     expectedToolCalls: base.expectedToolCalls,
     promptVariant: variant,
     requiredReportTermGroups: const [
-      ['validate efficient task-agent model'],
+      ['candidate', 'task-agent'],
       ['p1'],
       ['2026-07-04', 'july 4'],
       ['150', '2.5', 'two and a half'],
@@ -388,7 +423,7 @@ LocalTaskAgentEvalScenario _progressUpdateScenario(
       ['interviews'],
       ['dana'],
       ['legal'],
-      ['2026-10-15', 'october 15'],
+      ['2026-10-15', 'october 15', 'oct 15'],
     ],
     forbiddenReportTerms: const [
       'item-interviews',
@@ -501,6 +536,75 @@ LocalTaskAgentEvalScenario _messyGermanTranscriptScenario(
   );
 }
 
+LocalTaskAgentEvalScenario _deferredScopeScenario(
+  LocalTaskAgentEvalPromptVariant variant,
+) {
+  return LocalTaskAgentEvalScenario(
+    id: 'deferred_scope_filter_${variant.name}',
+    systemPrompt: _buildEvalSystemPrompt(variant),
+    userMessage: _deferredScopeUserMessage,
+    expectedToolCalls: const [
+      LocalTaskAgentExpectedToolCall(
+        name: TaskAgentToolNames.addMultipleChecklistItems,
+      ),
+    ],
+    promptVariant: variant,
+    requiredReportTermGroups: const [
+      ['certificate'],
+      ['security'],
+      ['priya'],
+      ['staging'],
+      ['webhook'],
+    ],
+    forbiddenReportTerms: [
+      'dashboard',
+      'analytics',
+      if (_usesEvidenceSynthesis(variant)) ...['underway', 'awaiting'],
+    ],
+    requiredToolArgumentTermGroups: const {
+      TaskAgentToolNames.addMultipleChecklistItems: [
+        ['certificate'],
+        ['security'],
+        ['priya'],
+        ['staging'],
+        ['webhook'],
+      ],
+    },
+    forbiddenToolArgumentTerms: const {
+      TaskAgentToolNames.addMultipleChecklistItems: ['dashboard', 'analytics'],
+    },
+  );
+}
+
+LocalTaskAgentEvalScenario _activeDeploymentConstraintScenario(
+  LocalTaskAgentEvalPromptVariant variant,
+) {
+  return LocalTaskAgentEvalScenario(
+    id: 'active_deployment_constraint_${variant.name}',
+    systemPrompt: _buildEvalSystemPrompt(variant),
+    userMessage: _activeDeploymentConstraintUserMessage,
+    expectedToolCalls: const [
+      LocalTaskAgentExpectedToolCall(
+        name: TaskAgentToolNames.updateChecklistItems,
+        expectedArgumentsSubset: {
+          'items': [
+            {'id': 'item-rollback', 'isChecked': true},
+          ],
+        },
+      ),
+    ],
+    promptVariant: variant,
+    requiredReportTermGroups: const [
+      ['legal'],
+      ['marta'],
+      ['approval', 'approve'],
+      ['deploy'],
+      ['rollback'],
+    ],
+    forbiddenReportTerms: const ['item-rollback', 'item-deploy'],
+  );
+}
+
 LocalTaskAgentEvalScenario _userCompletedItemScenario(
   LocalTaskAgentEvalPromptVariant variant,
 ) {
@@ -514,10 +618,20 @@ LocalTaskAgentEvalScenario _userCompletedItemScenario(
     promptVariant: variant,
     requiredReportTermGroups: const [
       ['sync'],
-      ['reappeared', 'resurfaced', 'again'],
+      ['reappeared', 'resurfaced', 'again', 'recurrence', 'recurred'],
       ['blocked', 'blocker', 'risk'],
     ],
-    forbiddenReportTerms: const ['item-sync-fix'],
+    forbiddenReportTerms: [
+      'item-sync-fix',
+      if (_usesEvidenceSynthesis(variant)) ...[
+        'deployed',
+        'verified',
+        'validated',
+        'implemented',
+        'applied',
+        'underway',
+      ],
+    ],
   );
 }
 
@@ -620,6 +734,8 @@ String _buildEvalSystemPrompt(LocalTaskAgentEvalPromptVariant variant) {
   return TaskAgentPromptBuilder.buildSystemPrompt(
     version: version,
     soulVersion: null,
+    evidenceSynthesis:
+        variant == LocalTaskAgentEvalPromptVariant.evidenceSynthesis,
   );
 }
 
@@ -629,8 +745,12 @@ String _evalVariantDirective(LocalTaskAgentEvalPromptVariant variant) {
     LocalTaskAgentEvalPromptVariant.compactModel => _compactModelDirective,
     LocalTaskAgentEvalPromptVariant.qualityFocused => _qualityFocusedDirective,
     LocalTaskAgentEvalPromptVariant.conciseReport => '',
+    LocalTaskAgentEvalPromptVariant.evidenceSynthesis => '',
   };
 }
+
+bool _usesEvidenceSynthesis(LocalTaskAgentEvalPromptVariant variant) =>
+    variant == LocalTaskAgentEvalPromptVariant.evidenceSynthesis;
 
 const _compactModelDirective = '''
 
@@ -700,14 +820,12 @@ contain useful, evidence-backed information:
 - `## Next actions`: the few concrete pending actions that matter now. Do not
   reproduce the entire checklist when a shorter synthesis is clearer.
 - `## Blockers`: only active blockers or delivery risks.
-- `## Decisions`: only durable user decisions, deadlines, owners, or constraints
-  that affect execution.
 - `## Links`: only real external URLs from the task context, using descriptive
   Markdown link text.
 
-Omit empty sections. Never include internal IDs, private reasoning, rejected or
-explicitly deferred ideas, invented work, or claims not supported by the task
-context. Preserve user-completed work and user-set task fields.
+Omit empty sections. Use human-readable labels instead of internal IDs. Every
+claim must be evidence-backed and describe the current active task state.
+Preserve user-completed work and user-set task fields.
 ''';
 
 const _germanPlanningUserMessage = '''
@@ -898,6 +1016,57 @@ const _messyGermanTranscriptUserMessage = '''
 
 Interpret the noisy transcript carefully. Add only the three committed actions,
 not speculative future ideas, and publish the initial report in German.
+''';
+
+const _deferredScopeUserMessage = '''
+## Current Task Context
+```json
+{
+  "id": "task-signing-certificate",
+  "title": "Rotate production signing certificate",
+  "status": "IN PROGRESS",
+  "languageCode": "en",
+  "checklist": [],
+  "log": [
+    {
+      "timestamp": "2026-07-10T14:00:00Z",
+      "text": "We might build an administrator analytics dashboard someday, but leave that out for now. The active certificate work is: request the replacement certificate from Security, ask Priya for staging access, then rotate the certificate and verify webhook deliveries."
+    }
+  ]
+}
+```
+
+## First Wake - No prior report exists. Produce an initial report.
+
+Add the three active certificate-rotation actions as checklist items and publish
+a focused report. The future product idea is outside the current task scope.
+''';
+
+const _activeDeploymentConstraintUserMessage = '''
+## Current Task Context
+```json
+{
+  "id": "task-retention-migration",
+  "title": "Deploy retention policy migration",
+  "status": "IN PROGRESS",
+  "languageCode": "en",
+  "checklist": [
+    {"id": "item-rollback", "title": "Complete rollback test", "isChecked": false},
+    {"id": "item-deploy", "title": "Deploy the retention migration", "isChecked": false}
+  ],
+  "log": [
+    {
+      "timestamp": "2026-07-10T15:00:00Z",
+      "text": "The rollback test is complete, so check it off. Do not deploy until Legal approves the retention wording. Marta owns that approval; deployment remains pending."
+    }
+  ]
+}
+```
+
+## First Wake - No prior report exists. Produce an initial report.
+
+Apply the explicit completion while preserving deployment as pending. The Legal
+approval gate is an active constraint and must remain visible in the report.
 ''';
 
 const _userCompletedItemUserMessage = '''
@@ -1182,6 +1351,8 @@ class LocalTaskAgentEvalCaseResult {
     required this.failureCategory,
     this.inputTokens,
     this.outputTokens,
+    this.thoughtsTokens,
+    this.cachedInputTokens,
     this.finalContent,
     this.usedForcedReportRetry = false,
     this.errorMessage,
@@ -1193,6 +1364,8 @@ class LocalTaskAgentEvalCaseResult {
   final int latencyMs;
   final int? inputTokens;
   final int? outputTokens;
+  final int? thoughtsTokens;
+  final int? cachedInputTokens;
   final String? finalContent;
   final bool usedForcedReportRetry;
   final String? errorMessage;
@@ -1276,6 +1449,8 @@ class LocalTaskAgentEvalCaseResult {
       'latencyMs': latencyMs,
       'inputTokens': inputTokens,
       'outputTokens': outputTokens,
+      'thoughtsTokens': thoughtsTokens,
+      'cachedInputTokens': cachedInputTokens,
       'finalContentLength': finalContent?.length ?? 0,
       'toolCallCount': toolCalls.length,
       'toolCallNames': toolCalls.map((call) => call.name).toList(),
@@ -1302,6 +1477,7 @@ class LocalTaskAgentEvalReport {
     required this.results,
     required this.temperature,
     required this.executionMode,
+    this.reasoningEffort,
   });
 
   final AiConfigInferenceProvider provider;
@@ -1310,15 +1486,17 @@ class LocalTaskAgentEvalReport {
   final List<LocalTaskAgentEvalCaseResult> results;
   final double temperature;
   final LocalTaskAgentEvalExecutionMode executionMode;
+  final ReasoningEffort? reasoningEffort;
 
   String toPrettyJson() => const JsonEncoder.withIndent('  ').convert(toJson());
 
   Map<String, Object?> toJson() {
     return {
-      'schemaVersion': 3,
+      'schemaVersion': 4,
       'kind': localTaskAgentEvalKind,
       'temperature': temperature,
       'executionMode': executionMode.name,
+      'reasoningEffort': reasoningEffort?.name,
       'provider': {
         'id': provider.id,
         'name': provider.name,
@@ -1340,7 +1518,8 @@ class LocalTaskAgentEvalReport {
         'at `${provider.baseUrl}`',
       )
       ..writeln(
-        'Execution: `${executionMode.name}` at temperature `$temperature`',
+        'Execution: `${executionMode.name}` at temperature `$temperature`; '
+        'reasoning effort `${reasoningEffort?.name ?? 'modelDefault'}`',
       )
       ..writeln()
       ..writeln(
@@ -1422,6 +1601,7 @@ class LocalTaskAgentInferenceEvalRunner {
     this.temperature = 0.3,
     this.forceReportRetry = true,
     this.executionMode = LocalTaskAgentEvalExecutionMode.singlePass,
+    this.reasoningEffort,
   });
 
   final AiConfigInferenceProvider provider;
@@ -1430,6 +1610,7 @@ class LocalTaskAgentInferenceEvalRunner {
   final double temperature;
   final bool forceReportRetry;
   final LocalTaskAgentEvalExecutionMode executionMode;
+  final ReasoningEffort? reasoningEffort;
 
   Future<LocalTaskAgentEvalReport> run({
     required List<LocalTaskAgentEvalProfile> profiles,
@@ -1460,6 +1641,7 @@ class LocalTaskAgentInferenceEvalRunner {
       results: results,
       temperature: temperature,
       executionMode: executionMode,
+      reasoningEffort: reasoningEffort,
     );
   }
 
@@ -1473,13 +1655,15 @@ class LocalTaskAgentInferenceEvalRunner {
       systemMessage: scenario.systemPrompt,
       maxTurns:
           scenario.maxTurns +
-          (executionMode == LocalTaskAgentEvalExecutionMode.twoPass ? 1 : 0),
+          (executionMode == LocalTaskAgentEvalExecutionMode.singlePass ? 0 : 1),
     );
     final manager = conversationRepository.getConversation(conversationId);
 
     try {
       try {
-        final allTools = buildLocalTaskAgentEvalTools();
+        final allTools = buildLocalTaskAgentEvalTools(
+          promptVariant: scenario.promptVariant,
+        );
         final mutationTools =
             executionMode == LocalTaskAgentEvalExecutionMode.twoPass
             ? allTools
@@ -1503,17 +1687,35 @@ class LocalTaskAgentInferenceEvalRunner {
         final plannedReportPass =
             executionMode == LocalTaskAgentEvalExecutionMode.twoPass &&
             scenario.requiresReport;
+        final plannedReportRevision =
+            executionMode == LocalTaskAgentEvalExecutionMode.reportRevision &&
+            scenario.requiresReport &&
+            strategy.hasReport;
         final recoverMissingInitialReport =
             forceReportRetry &&
             scenario.isFirstWake &&
             scenario.requiresReport &&
             !strategy.hasReport;
-        if (plannedReportPass || recoverMissingInitialReport) {
+        if (plannedReportPass ||
+            plannedReportRevision ||
+            recoverMissingInitialReport) {
           usedForcedReportRetry = true;
           strategy.beginReportPass();
           final retryUsage = await conversationRepository.sendMessage(
             conversationId: conversationId,
-            message: plannedReportPass
+            message: plannedReportRevision
+                ? 'Audit the `update_report` draft you just produced against '
+                      'the original task context. Rebuild its public fact set '
+                      'from evidence before writing. Use `pending` unless the '
+                      'source explicitly records that work started, and treat '
+                      'a checked item as only user-marked complete unless a '
+                      'real-world outcome is stated. Include only facts tied '
+                      'to current actions or active constraints; do not '
+                      'discuss source filtering. Replace the draft by calling '
+                      '`update_report` exactly once with a distinct concise '
+                      '`oneLiner`, `tldr`, and free-form markdown `content`. '
+                      'Do not respond with anything else.'
+                : plannedReportPass
                 ? 'The mutation phase is complete. Review the original task '
                       'context and all tool results, then call `update_report` '
                       'exactly once. Supply a concise `oneLiner`, a 1-3 '
@@ -1582,6 +1784,8 @@ class LocalTaskAgentInferenceEvalRunner {
           latencyMs: stopwatch.elapsedMilliseconds,
           inputTokens: usage?.inputTokens,
           outputTokens: usage?.outputTokens,
+          thoughtsTokens: usage?.thoughtsTokens,
+          cachedInputTokens: usage?.cachedInputTokens,
           finalContent: finalContent,
           usedForcedReportRetry: usedForcedReportRetry,
           errorMessage: manager?.lastError,

@@ -69,6 +69,7 @@ void main() {
         enableTooltipFlag: true,
         enableAiStreamingFlag: true,
         enableAiSummaryTtsFlag: false,
+        enableTaskAgentEvidenceSynthesisFlag: false,
         recordLocationFlag: false,
         resendAttachments: false,
         enableLoggingFlag: false,

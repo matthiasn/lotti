@@ -20,7 +20,15 @@ class _FakeCreateChatCompletionRequest extends Fake
 class _FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
 class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
-  final textCalls = <({String prompt, String model, String baseUrl})>[];
+  final textCalls =
+      <
+        ({
+          String prompt,
+          String model,
+          String baseUrl,
+          ReasoningEffort? reasoningEffort,
+        })
+      >[];
   final imageCalls =
       <({String prompt, String model, String baseUrl, List<String> images})>[];
 
@@ -35,9 +43,15 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
-    textCalls.add((prompt: prompt, model: model, baseUrl: baseUrl));
+    textCalls.add((
+      prompt: prompt,
+      model: model,
+      baseUrl: baseUrl,
+      reasoningEffort: reasoningEffort,
+    ));
     return Stream.value(_chunk('melious text'));
   }
 
@@ -292,6 +306,7 @@ void main() {
             provider: meliousProvider,
             systemMessage: 'be brief',
             maxCompletionTokens: 512,
+            reasoningEffort: ReasoningEffort.high,
           )
           .toList();
 
@@ -299,6 +314,10 @@ void main() {
       expect(fakeMeliousRepo.textCalls, hasLength(1));
       expect(fakeMeliousRepo.textCalls.single.prompt, prompt);
       expect(fakeMeliousRepo.textCalls.single.model, 'qwen/qwen3-vl-plus');
+      expect(
+        fakeMeliousRepo.textCalls.single.reasoningEffort,
+        ReasoningEffort.high,
+      );
       expect(
         fakeMeliousRepo.textCalls.single.baseUrl,
         'https://api.melious.ai/v1',

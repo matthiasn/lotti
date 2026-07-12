@@ -23,6 +23,11 @@ void main() {
         (_, _) {},
       );
       addTearDown(conversationSubscription.close);
+      final cloudRepositorySubscription = container.listen(
+        cloudInferenceRepositoryProvider,
+        (_, _) {},
+      );
+      addTearDown(cloudRepositorySubscription.close);
 
       final providerType = _providerType(
         Platform.environment['LOCAL_TASK_AGENT_EVAL_PROVIDER_TYPE'],
@@ -60,6 +65,9 @@ void main() {
         defaultScenarios,
         _envList('LOCAL_TASK_AGENT_EVAL_SCENARIOS'),
       );
+      final reasoningEffort = parseLocalTaskAgentEvalReasoningEffort(
+        Platform.environment['LOCAL_TASK_AGENT_EVAL_REASONING_EFFORT'],
+      );
 
       final runner = LocalTaskAgentInferenceEvalRunner(
         provider: provider,
@@ -68,8 +76,10 @@ void main() {
         ),
         inferenceRepository: CloudInferenceWrapper(
           cloudRepository: container.read(cloudInferenceRepositoryProvider),
+          reasoningEffort: reasoningEffort,
         ),
         temperature: _envDouble('LOCAL_TASK_AGENT_EVAL_TEMPERATURE') ?? 0.3,
+        reasoningEffort: reasoningEffort,
         executionMode: parseLocalTaskAgentEvalExecutionMode(
           Platform.environment['LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE'] ??
               LocalTaskAgentEvalExecutionMode.singlePass.name,

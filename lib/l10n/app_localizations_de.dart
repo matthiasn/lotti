@@ -3039,6 +3039,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Synchronisiere KI- und Aufgabenhinweise zwischen deinen Geräten und erlaube ihnen, lokale Systemmitteilungen zu planen.';
 
   @override
+  String get configFlagEnableTaskAgentEvidenceSynthesis =>
+      'Belegorientierter Aufgabenagent';
+
+  @override
+  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
+      'Verwendet experimentelle Prompts und geringe Varianz für effiziente Aufgabenagent-Modelle. Aufgabenänderungen können zuverlässiger werden, Berichte können aber weiterhin mechanisch oder ungenau wirken.';
+
+  @override
   String get configFlagEnableTooltip => 'Tooltips aktivieren';
 
   @override

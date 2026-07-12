@@ -3055,6 +3055,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sincroniza alertas de IA y tareas entre tus dispositivos y permite que programen notificaciones locales del sistema.';
 
   @override
+  String get configFlagEnableTaskAgentEvidenceSynthesis =>
+      'Agente de tareas basado en evidencias';
+
+  @override
+  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
+      'Usa prompts experimentales y baja variabilidad para modelos eficientes de agente de tareas. Las actualizaciones pueden ser más fiables, pero los informes aún pueden resultar mecánicos o imprecisos.';
+
+  @override
   String get configFlagEnableTooltip =>
       'Habilitar información sobre herramientas';
 

@@ -833,6 +833,45 @@ the write."
 13. optionally embed the persisted report when both embedding dependencies are
     available
 
+### Evidence-First Inference
+
+The `enable_task_agent_evidence_synthesis` config flag is an experimental,
+default-off execution mode for efficient task-agent models. The settings row is
+exposed under `Settings > Advanced > Flags`. `agentWorkflowProvider` watches the
+flag, so changing it rebuilds the workflow without changing any saved template
+or inference profile.
+
+When enabled, the task-agent path changes four inputs together:
+
+- `TaskAgentPromptBuilder` replaces only the seeded/default report directive
+  with the evaluated compact directive and appends the evidence-synthesis
+  protocol. An explicitly customized template directive remains authoritative.
+- `TaskAgentContextBuilder` adds evidence requirements to the existing
+  `update_report` tool description without changing its parameter schema.
+- the main conversation and forced-report retry both use temperature `0.0`
+  instead of the standard `0.3`
+- model reasoning remains profile/provider driven; the flag does not force a
+  separate high-effort mode
+
+The mode does not add a report polisher or a second inference pass. Those
+variants increased cost and latency without a reliable report-quality gain in
+the retained evaluation. The flag is therefore a low-variance prompt and
+sampling opt-in, not a claim that efficient models match larger models on
+report prose.
+
+```mermaid
+flowchart LR
+  Flag["Evidence-synthesis flag"] --> Provider["agentWorkflowProvider"]
+  Provider --> Workflow["TaskAgentWorkflow"]
+  Workflow --> Prompt["Default directive + evidence protocol"]
+  Workflow --> Tools["Evidence-aware update_report description"]
+  Workflow --> Sampling["Temperature 0.0"]
+  Custom["Custom report directive"] -->|preserved| Prompt
+  Prompt --> Conversation["Single conversation loop"]
+  Tools --> Conversation
+  Sampling --> Conversation
+```
+
 The task wake prompt is assembled from:
 
 - current task JSON

@@ -30,7 +30,7 @@ judgments_json="${LOCAL_TASK_AGENT_EVAL_JUDGMENTS_JSON:-$output_dir/judgments.js
 judgments_markdown="${LOCAL_TASK_AGENT_EVAL_JUDGMENTS_MARKDOWN:-$output_dir/judgments.md}"
 
 export LOTTI_LOCAL_TASK_AGENT_EVAL_LIVE=1
-export LOCAL_TASK_AGENT_EVAL_PROVIDER_TYPE=genericOpenAi
+export LOCAL_TASK_AGENT_EVAL_PROVIDER_TYPE="${LOCAL_TASK_AGENT_EVAL_PROVIDER_TYPE:-melious}"
 export LOCAL_TASK_AGENT_EVAL_MATRIX=melious
 export LOCAL_TASK_AGENT_EVAL_BASE_URL="$base_url"
 export LOCAL_TASK_AGENT_EVAL_API_KEY="$api_key"

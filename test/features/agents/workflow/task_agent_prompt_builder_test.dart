@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/seeded_directive_content.dart';
 import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
 
 import '../test_utils.dart';
@@ -112,6 +113,58 @@ void main() {
       expect(prompt, contains('Custom report.'));
       expect(prompt, contains('## Your Personality & Directives'));
       expect(prompt, contains('Legacy voice.'));
+    });
+
+    test('appends evidence synthesis after the active template directives', () {
+      final version = makeTestTemplateVersion(
+        generalDirective: 'Keep the report conversational.',
+        reportDirective: 'Choose the Markdown structure that fits the task.',
+      );
+
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: version,
+        soulVersion: null,
+        evidenceSynthesis: true,
+      );
+
+      expect(prompt, contains('Choose the Markdown structure that fits'));
+      expect(prompt, contains('## Evidence-First Synthesis Protocol'));
+      expect(
+        prompt.indexOf('## Evidence-First Synthesis Protocol'),
+        greaterThan(prompt.indexOf('Keep the report conversational.')),
+      );
+    });
+
+    test(
+      'replaces only the built-in report directive with compact synthesis',
+      () {
+        final version = makeTestTemplateVersion(
+          generalDirective: 'Remain factual.',
+          reportDirective: taskAgentReportDirective,
+        );
+
+        final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+          version: version,
+          soulVersion: null,
+          evidenceSynthesis: true,
+        );
+
+        expect(prompt, contains('compact current-state report'));
+        expect(prompt, contains('only sections that'));
+        expect(prompt, isNot(contains('Include 1-2 relevant emojis')));
+        expect(prompt, isNot(contains('### Required Sections')));
+      },
+    );
+
+    test('also appends evidence synthesis to legacy templates', () {
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: makeTestTemplateVersion(directives: 'Legacy directive.'),
+        soulVersion: null,
+        evidenceSynthesis: true,
+      );
+
+      expect(prompt, contains('Legacy directive.'));
+      expect(prompt, endsWith('real-world outcome exists.\n'));
     });
   });
 }

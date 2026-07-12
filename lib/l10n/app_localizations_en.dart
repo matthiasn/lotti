@@ -3001,6 +3001,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sync AI and task alerts across devices and allow them to schedule local OS notifications.';
 
   @override
+  String get configFlagEnableTaskAgentEvidenceSynthesis =>
+      'Evidence-first task agent';
+
+  @override
+  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
+      'Use the experimental low-variance prompt and temperature settings for efficient task-agent models. Task updates can be more reliable, but reports may still be mechanical or imprecise.';
+
+  @override
   String get configFlagEnableTooltip => 'Enable tooltips';
 
   @override

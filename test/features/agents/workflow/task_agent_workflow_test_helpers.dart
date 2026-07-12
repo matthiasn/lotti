@@ -227,6 +227,7 @@ TaskAgentWorkflow createTestWorkflow({
   MockSoulDocumentService? soulDocumentService,
   AgentInputCaptureService? inputCaptureService,
   AgentLogLlmSummarizer? logSummarizer,
+  bool evidenceSynthesisEnabled = false,
   int compactionTailBudgetTokens = 50000,
   int compactionTailRetainTokens = 20000,
 }) {
@@ -245,6 +246,7 @@ TaskAgentWorkflow createTestWorkflow({
     soulDocumentService: soulDocumentService,
     inputCaptureService: inputCaptureService,
     logSummarizer: logSummarizer,
+    evidenceSynthesisEnabled: evidenceSynthesisEnabled,
     compactionTailBudgetTokens: compactionTailBudgetTokens,
     compactionTailRetainTokens: compactionTailRetainTokens,
   );
