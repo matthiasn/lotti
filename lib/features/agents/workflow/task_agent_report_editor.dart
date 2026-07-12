@@ -61,8 +61,9 @@ enum TaskAgentReportRevisionIssue {
     'created items; present the actions directly without counting workflow '
     'items. Pending work is never underway, in progress, started, established, '
     'or active without explicit source evidence. When the source says an '
-    'investigation is needed, keep it pending. Do not turn an unperformed '
-    'request into waiting for its result.',
+    'investigation is needed, keep it pending. Do not invent generic '
+    'downstream fixes or validation after a pending investigation. Do not turn '
+    'an unperformed request into waiting for its result.',
   ),
   checkmarkCausality(
     'State a user-marked-complete item neutrally. Remove causal claims and '
@@ -561,6 +562,11 @@ class TaskAgentReportEditor {
         RegExp(
           r'\binvestigat\w*\b.{0,45}\b(needed|required|pending|next)\b',
         ).hasMatch(normalizedCandidate);
+    final inventsGenericDownstreamFix = RegExp(
+      r'\b(additional|further|more)\s+fix(?:es)?\b.{0,50}\b'
+      r'(can|could|may|might|will|would)\s+be\s+'
+      r'(applied|implemented|validated|deployed)\b',
+    ).hasMatch(normalizedCandidate);
     final narratesNewActionsAsQueued =
         hasNewChecklistItems &&
         RegExp(
@@ -587,6 +593,7 @@ class TaskAgentReportEditor {
         describesNewActionsAsSetup ||
         describesNewActionsAsProgress ||
         describesPendingInvestigationAsProgress ||
+        inventsGenericDownstreamFix ||
         narratesNewActionsAsQueued ||
         narratesNewActionsAsReady ||
         (candidateAddsWaitingState && !draftGroundsWaitingState)) {
@@ -691,17 +698,26 @@ class TaskAgentReportEditor {
     final terms = <String>{};
     for (final match in _scopeClause.allMatches(draftText)) {
       final segment = match.group(0)!;
-      if (!_excludedScopeMarker.hasMatch(segment)) continue;
-      for (final wordMatch in _distinctiveWord.allMatches(
-        segment.toLowerCase(),
-      )) {
-        final term = wordMatch.group(0)!;
-        if (!_excludedScopeStopWords.contains(term)) {
-          terms.add(term);
-        }
-      }
+      final markerMatch = _excludedScopeMarker.firstMatch(segment);
+      if (markerMatch == null) continue;
+      final beforeMarker = _distinctiveScopeTerms(
+        segment.substring(0, markerMatch.start),
+      );
+      terms.addAll(
+        beforeMarker.isNotEmpty
+            ? beforeMarker
+            : _distinctiveScopeTerms(segment.substring(markerMatch.end)),
+      );
     }
     return terms.toList(growable: false)..sort();
+  }
+
+  static List<String> _distinctiveScopeTerms(String text) {
+    return _distinctiveWord
+        .allMatches(text.toLowerCase())
+        .map((match) => match.group(0)!)
+        .where((term) => !_excludedScopeStopWords.contains(term))
+        .toList(growable: false);
   }
 
   static Map<String, dynamic> _withoutExcludedDraftScope(
@@ -1037,7 +1053,8 @@ facts separately; never explain this evidence rule in the report.
 Pending work is never underway, in progress, started, established, or active
 without explicit source evidence. An instruction that an investigation is
 needed means the investigation remains pending. Never say a checkmark-only fix
-addressed the symptom or was applied.
+addressed the symptom or was applied. Do not invent generic downstream fixes
+or validation after a pending investigation.
 
 The request contains the active template's `reportDirective`. Treat it as
 authoritative for voice, structure, emphasis, level of detail, required or

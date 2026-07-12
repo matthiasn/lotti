@@ -564,20 +564,53 @@ turn task metadata or a checklist edit into an accomplishment.
       validate('Repair the export, request test data, then run regression.'),
       isNot(contains(TaskAgentReportRevisionIssue.deferredScopeLeak)),
     );
+    const scopedOutDraft = {
+      'oneLiner': 'Rotate the production certificate',
+      'tldr': 'Three certificate actions remain.',
+      'content':
+          'Administrator analytics dashboard work is scoped out for this '
+          'certificate rotation.',
+    };
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'en',
+        materialTaskState: const {},
+        draftReport: scopedOutDraft,
+        candidateReport: const {
+          'oneLiner': 'Request the production certificate',
+          'tldr': 'Three certificate actions remain.',
+          'content': 'The analytics dashboard remains scoped out.',
+        },
+      ),
+      contains(TaskAgentReportRevisionIssue.deferredScopeLeak),
+    );
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'en',
+        materialTaskState: const {},
+        draftReport: scopedOutDraft,
+        candidateReport: const {
+          'oneLiner': 'Request the production certificate',
+          'tldr': 'Three certificate rotation actions remain.',
+          'content':
+              'Request the certificate, get staging access, then rotate it.',
+        },
+      ),
+      isNot(contains(TaskAgentReportRevisionIssue.deferredScopeLeak)),
+    );
     expect(
       TaskAgentReportEditor.validateRevision(
         languageCode: 'en',
         materialTaskState: const {},
         draftReport: const {
-          'oneLiner': 'Rotate the production certificate',
-          'tldr': 'Three certificate actions remain.',
-          'content':
-              'Administrator analytics dashboard work is scoped out for now.',
+          'oneLiner': 'Repair the CSV export',
+          'tldr': 'Three export actions remain.',
+          'content': 'Do not include the newsletter.',
         },
         candidateReport: const {
-          'oneLiner': 'Request the production certificate',
-          'tldr': 'Three certificate actions remain.',
-          'content': 'The analytics dashboard remains scoped out.',
+          'oneLiner': 'Repair the CSV export',
+          'tldr': 'Three export actions remain.',
+          'content': 'Repair the export and include the newsletter.',
         },
       ),
       contains(TaskAgentReportRevisionIssue.deferredScopeLeak),
@@ -725,6 +758,25 @@ turn task metadata or a checklist edit into an accomplishment.
           'oneLiner': 'CSV-Export reparieren',
           'tldr': 'Du hast diese Punkte bereits markiert.',
           'content': 'CSV-Export reparieren und Testdaten bei Sam anfragen.',
+        },
+      ),
+      [TaskAgentReportRevisionIssue.processNarration],
+    );
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'en',
+        materialTaskState: const {},
+        draftReport: const {
+          'oneLiner': 'Duplicate events reappeared',
+          'tldr': 'Root cause investigation is needed.',
+          'content': 'Investigate the root cause of recurring events.',
+        },
+        candidateReport: const {
+          'oneLiner': 'Investigate recurring duplicate events',
+          'tldr': 'Root cause investigation is needed.',
+          'content':
+              'Once the root cause is understood, additional fixes can be '
+              'applied and validated.',
         },
       ),
       [TaskAgentReportRevisionIssue.processNarration],
@@ -1137,6 +1189,7 @@ turn task metadata or a checklist edit into an accomplishment.
       expect(messages, contains('processNarration'));
       expect(messages, contains('Pending work is never underway'));
       expect(messages, contains('investigation is needed'));
+      expect(messages, contains('Do not invent generic downstream fixes'));
       expect(messages, contains('rejectedReport'));
     },
   );

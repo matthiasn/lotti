@@ -261,6 +261,7 @@ Use the task language and omit empty sections.
       expect(qwenPrompt, contains('invent a root cause'));
       expect(qwenPrompt, contains('"underway"'));
       expect(qwenPrompt, contains('investigation is needed'));
+      expect(qwenPrompt, contains('generic downstream fixes'));
       expect(qwenPrompt, contains('Omit absent'));
     });
 

@@ -206,7 +206,8 @@ Words such as "underway", "in progress", "started", "active", "applied", and
 status, action list, or user checkmark is not that evidence. When the source says
 an investigation is needed, required, or next, report it as pending; never say
 the investigation is underway. Never say a checkmark-only fix addressed the
-symptom or was applied.
+symptom or was applied. Do not invent generic downstream fixes or validation
+after a pending investigation.
 ''';
 
   /// Returns the common contract plus the empirically matched family profile.
