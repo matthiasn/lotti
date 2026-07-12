@@ -82,7 +82,16 @@ enum LocalTaskAgentEvalExecutionMode {
   twoPass,
   reportRevision,
   reportEditing,
+  productionRouting,
 }
+
+enum _LocalTaskAgentProductionRoute { none, mistralWithQwen, directQwen }
+
+const _missingInitialReportPrompt =
+    'You did not call `update_report` before stopping. Call it now. You MUST '
+    'supply a concise `oneLiner`, a 1-3 sentence `tldr`, and the full markdown '
+    '`content`. This is the final step of the wake and is mandatory. Do not '
+    'respond with anything else.';
 
 ReasoningEffort? parseLocalTaskAgentEvalReasoningEffort(String? value) {
   final normalized = value?.trim();
@@ -1981,6 +1990,16 @@ class LocalTaskAgentInferenceEvalRunner {
   final String? reportEditorModelId;
   final int reportEditorMaxAttempts;
 
+  String? get _effectiveReportEditorModelId =>
+      executionMode == LocalTaskAgentEvalExecutionMode.productionRouting
+      ? meliousQwen35122BA10BModelId
+      : reportEditorModelId;
+
+  int get _effectiveReportEditorMaxAttempts =>
+      executionMode == LocalTaskAgentEvalExecutionMode.productionRouting
+      ? TaskAgentReportEditor.productionMaxAttempts
+      : reportEditorMaxAttempts;
+
   Future<LocalTaskAgentEvalReport> run({
     required List<LocalTaskAgentEvalProfile> profiles,
     required List<LocalTaskAgentEvalScenario> scenarios,
@@ -2011,9 +2030,23 @@ class LocalTaskAgentInferenceEvalRunner {
       temperature: temperature,
       executionMode: executionMode,
       reasoningEffort: reasoningEffort,
-      reportEditorModelId: reportEditorModelId,
-      reportEditorMaxAttempts: reportEditorMaxAttempts,
+      reportEditorModelId: _effectiveReportEditorModelId,
+      reportEditorMaxAttempts: _effectiveReportEditorMaxAttempts,
     );
+  }
+
+  _LocalTaskAgentProductionRoute _productionReportRoute(
+    LocalTaskAgentEvalProfile profile,
+  ) {
+    if (provider.inferenceProviderType != InferenceProviderType.melious) {
+      return _LocalTaskAgentProductionRoute.none;
+    }
+    return switch (profile.providerModelId.toLowerCase()) {
+      meliousMistralSmall4119BInstructModelId =>
+        _LocalTaskAgentProductionRoute.mistralWithQwen,
+      meliousQwen35122BA10BModelId => _LocalTaskAgentProductionRoute.directQwen,
+      _ => _LocalTaskAgentProductionRoute.none,
+    };
   }
 
   Future<LocalTaskAgentEvalCaseResult> _runScenario(
@@ -2066,70 +2099,28 @@ class LocalTaskAgentInferenceEvalRunner {
         var reportRevisionValid = true;
         var reportEditorAttempts = 0;
         var reportEditorValidationIssues = <TaskAgentReportRevisionIssue>[];
-        final plannedReportPass =
-            executionMode == LocalTaskAgentEvalExecutionMode.twoPass &&
-            scenario.requiresReport;
-        final plannedReportRevision =
-            executionMode == LocalTaskAgentEvalExecutionMode.reportRevision &&
-            scenario.requiresReport &&
-            strategy.hasReport;
-        final plannedReportEditing =
-            executionMode == LocalTaskAgentEvalExecutionMode.reportEditing &&
-            scenario.requiresReport &&
-            strategy.hasReport;
-        final recoverMissingInitialReport =
-            forceReportRetry &&
-            scenario.isFirstWake &&
-            scenario.requiresReport &&
-            !strategy.hasReport;
-        if (plannedReportEditing) {
-          usedForcedReportRetry = true;
-          final editResult = await _editReport(
-            profile: profile,
-            scenario: scenario,
-            strategy: strategy,
-          );
+        void includeUsage(InferenceUsage? additionalUsage) {
+          if (additionalUsage == null) return;
+          final currentUsage = usage;
+          usage = currentUsage == null
+              ? additionalUsage
+              : currentUsage.merge(additionalUsage);
+        }
+
+        void applyEditResult(_LocalTaskAgentReportEditingResult editResult) {
           reportRevisionCompleted = editResult.completed;
           reportEditorValidationIssues = editResult.validationIssues;
           reportRevisionValid = reportEditorValidationIssues.isEmpty;
           reportEditorAttempts = editResult.attempts;
-          if (editResult.usage != null) {
-            usage = usage == null
-                ? editResult.usage
-                : usage.merge(editResult.usage!);
-          }
-        } else if (plannedReportPass ||
-            plannedReportRevision ||
-            recoverMissingInitialReport) {
+          includeUsage(editResult.usage);
+        }
+
+        Future<void> runForcedReportPass(String message) async {
           usedForcedReportRetry = true;
           strategy.beginReportPass();
           final retryUsage = await conversationRepository.sendMessage(
             conversationId: conversationId,
-            message: plannedReportRevision
-                ? 'Audit the `update_report` draft you just produced against '
-                      'the original task context. Rebuild its public fact set '
-                      'from evidence before writing. Use `pending` unless the '
-                      'source explicitly records that work started, and treat '
-                      'a checked item as only user-marked complete unless a '
-                      'real-world outcome is stated. Include only facts tied '
-                      'to current actions or active constraints; do not '
-                      'discuss source filtering. Replace the draft by calling '
-                      '`update_report` exactly once with a distinct concise '
-                      '`oneLiner`, `tldr`, and free-form markdown `content`. '
-                      'Do not respond with anything else.'
-                : plannedReportPass
-                ? 'The mutation phase is complete. Review the original task '
-                      'context and all tool results, then call `update_report` '
-                      'exactly once. Supply a concise `oneLiner`, a 1-3 '
-                      'sentence `tldr`, and the full markdown `content`. '
-                      'Describe the resulting task state and current next '
-                      'actions, not your tool usage. Do not respond with '
-                      'anything else.'
-                : 'You did not call `update_report` before stopping. Call it '
-                      'now. You MUST supply a concise `oneLiner`, a 1-3 '
-                      'sentence `tldr`, and the full markdown `content`. This '
-                      'is the final step of the wake and is mandatory. Do not '
-                      'respond with anything else.',
+            message: message,
             model: profile.providerModelId,
             provider: provider,
             inferenceRepo: inferenceRepository,
@@ -2150,9 +2141,95 @@ class LocalTaskAgentInferenceEvalRunner {
             temperature: temperature,
             strategy: strategy,
           );
-          if (retryUsage != null) {
-            usage = usage == null ? retryUsage : usage.merge(retryUsage);
+          includeUsage(retryUsage);
+        }
+
+        final plannedReportPass =
+            executionMode == LocalTaskAgentEvalExecutionMode.twoPass &&
+            scenario.requiresReport;
+        final plannedReportRevision =
+            executionMode == LocalTaskAgentEvalExecutionMode.reportRevision &&
+            scenario.requiresReport &&
+            strategy.hasReport;
+        final plannedReportEditing =
+            executionMode == LocalTaskAgentEvalExecutionMode.reportEditing &&
+            scenario.requiresReport &&
+            strategy.hasReport;
+        final plannedProductionRouting =
+            executionMode == LocalTaskAgentEvalExecutionMode.productionRouting;
+        final recoverMissingInitialReport =
+            forceReportRetry &&
+            scenario.isFirstWake &&
+            scenario.requiresReport &&
+            !strategy.hasReport;
+        if (plannedProductionRouting) {
+          if (recoverMissingInitialReport) {
+            await runForcedReportPass(_missingInitialReportPrompt);
           }
+          final route = _productionReportRoute(profile);
+          if (scenario.requiresReport && strategy.hasReport) {
+            final materialTaskState = buildLocalTaskAgentEvalMaterialTaskState(
+              strategy.toolCalls,
+            );
+            final initialValidationIssues =
+                route == _LocalTaskAgentProductionRoute.directQwen
+                ? TaskAgentReportEditor.validateRevision(
+                    languageCode:
+                        materialTaskState['languageCode'] as String? ??
+                        scenario.languageCode,
+                    materialTaskState: materialTaskState,
+                    draftReport: strategy.latestReportArguments!,
+                    candidateReport: strategy.latestReportArguments!,
+                  ).toSet()
+                : const <TaskAgentReportRevisionIssue>{};
+            if (route == _LocalTaskAgentProductionRoute.mistralWithQwen ||
+                initialValidationIssues.isNotEmpty) {
+              usedForcedReportRetry = true;
+              applyEditResult(
+                await _editReport(
+                  profile: profile,
+                  scenario: scenario,
+                  strategy: strategy,
+                  initialValidationIssues: initialValidationIssues,
+                ),
+              );
+            }
+          }
+        } else if (plannedReportEditing) {
+          usedForcedReportRetry = true;
+          applyEditResult(
+            await _editReport(
+              profile: profile,
+              scenario: scenario,
+              strategy: strategy,
+            ),
+          );
+        } else if (plannedReportPass ||
+            plannedReportRevision ||
+            recoverMissingInitialReport) {
+          await runForcedReportPass(
+            plannedReportRevision
+                ? 'Audit the `update_report` draft you just produced against '
+                      'the original task context. Rebuild its public fact set '
+                      'from evidence before writing. Use `pending` unless the '
+                      'source explicitly records that work started, and treat '
+                      'a checked item as only user-marked complete unless a '
+                      'real-world outcome is stated. Include only facts tied '
+                      'to current actions or active constraints; do not '
+                      'discuss source filtering. Replace the draft by calling '
+                      '`update_report` exactly once with a distinct concise '
+                      '`oneLiner`, `tldr`, and free-form markdown `content`. '
+                      'Do not respond with anything else.'
+                : plannedReportPass
+                ? 'The mutation phase is complete. Review the original task '
+                      'context and all tool results, then call `update_report` '
+                      'exactly once. Supply a concise `oneLiner`, a 1-3 '
+                      'sentence `tldr`, and the full markdown `content`. '
+                      'Describe the resulting task state and current next '
+                      'actions, not your tool usage. Do not respond with '
+                      'anything else.'
+                : _missingInitialReportPrompt,
+          );
         }
 
         stopwatch.stop();
@@ -2219,6 +2296,7 @@ class LocalTaskAgentInferenceEvalRunner {
     required LocalTaskAgentEvalProfile profile,
     required LocalTaskAgentEvalScenario scenario,
     required _LocalTaskAgentEvalStrategy strategy,
+    Set<TaskAgentReportRevisionIssue> initialValidationIssues = const {},
   }) async {
     final materialTaskState = buildLocalTaskAgentEvalMaterialTaskState(
       strategy.toolCalls,
@@ -2228,8 +2306,8 @@ class LocalTaskAgentInferenceEvalRunner {
           conversationRepository: conversationRepository,
           inferenceRepository: inferenceRepository,
           provider: provider,
-          modelId: reportEditorModelId ?? profile.providerModelId,
-          maxAttempts: reportEditorMaxAttempts,
+          modelId: _effectiveReportEditorModelId ?? profile.providerModelId,
+          maxAttempts: _effectiveReportEditorMaxAttempts,
           temperature: temperature,
         ).edit(
           draft: TaskAgentReportDraft.fromJson(
@@ -2241,6 +2319,7 @@ class LocalTaskAgentInferenceEvalRunner {
             profile: profile,
             scenario: scenario,
           ),
+          initialValidationIssues: initialValidationIssues,
         );
     final revision = result.revision;
     if (revision != null) {

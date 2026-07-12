@@ -386,12 +386,12 @@ evaluator as a Melious model and prompt matrix. The built-in candidates are
 Mistral Small 4 119B Instruct, Qwen3.5 122B A10B, DeepSeek V4 Flash, and GLM
 5.2. The runner defaults to the dedicated Melious provider path so live evals
 exercise the same request and impact-accounting implementation as the app. The
-default production-prompt suite contains thirteen synthetic but app-shaped
-wakes: eleven core scenarios cover explicit mutations, noisy multilingual
-transcripts, prior reports, no-op background refreshes, stale evidence, user
-overrides, checklist deduplication, external links, and long timelines; two
-additional held-out scenarios cover deferred scope and active deployment
-constraints.
+default production-prompt suite contains fourteen synthetic but app-shaped
+wakes: twelve core scenarios cover explicit and implicit-plan mutations, noisy
+multilingual transcripts, prior reports, no-op background refreshes, stale
+evidence, user overrides, checklist deduplication, external links, and long
+timelines; two additional held-out scenarios cover deferred scope and active
+deployment constraints.
 Deterministic checks validate required mutations and report
 facts as well as forbidden tools, speculative checklist content, report churn,
 and internal-ID leakage. Missing first reports go through the same report-only
@@ -419,11 +419,16 @@ Additional Melious candidates can be
 supplied through `LOCAL_TASK_AGENT_EVAL_PROFILES=name=model,...`, and individual
 scenario IDs through `LOCAL_TASK_AGENT_EVAL_SCENARIOS`. Prompt variants are
 selected with `LOCAL_TASK_AGENT_EVAL_PROMPT_VARIANTS`. The evaluator also has
-orchestration-only `twoPass` and `reportRevision` modes selected with
+orchestration modes selected with
 `LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE`. `twoPass` removes `update_report` from
 the advertised mutation-pass tools and follows with a forced report-only pass;
 `reportRevision` asks the same model to revise its first report against the
-source context. Both exist only to reproduce rejected experiments. The
+source context. `reportEditing` always sends a draft through the configured
+editor and remains a historical orchestration control. `productionRouting`
+mirrors the shipped Melious path: Mistral always uses the isolated Qwen editor,
+clean direct-Qwen reports remain single-pass, and deterministically invalid
+direct-Qwen reports receive a bounded Qwen repair. The production route
+resolves the Qwen editor and three-attempt bound automatically. The
 optional `LOCAL_TASK_AGENT_EVAL_REASONING_EFFORT` accepts the OpenAI-compatible
 `minimal`, `low`, `medium`, or `high` values. The generated JSON and Markdown
 record the selected effort; leaving it empty records and uses the model default.

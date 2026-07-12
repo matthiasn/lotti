@@ -42,9 +42,12 @@ and latency but not Melious energy metadata.
 
 ## Scenarios
 
-The default suite contains 13 scenario IDs. The eleven core scenarios are:
+The default suite contains 14 scenario IDs. The twelve core scenarios are:
 
 - `metadata_explicit`: four explicit task-field changes plus a first report.
+- `implicit_workflow_plan`: turn a committed six-action implementation-to-release
+  sequence into checklist work without requiring the words "create a
+  checklist".
 - `german_voice_plan`: German voice-note extraction into four distinct checklist
   actions while preserving owners, sequence, and deadline context.
 - `progress_update`: checklist completion, deadline movement, and a legal-review
@@ -105,8 +108,25 @@ with seven synthetic evolved-report cases. They exercise decision-memo,
 delivery-coach, risk-brief, plain-language, localized Spanish, and
 release-evidence contracts across English, German, and Spanish. Each case keeps
 the original mutation and grounding checks and adds directive-specific format
-checks. Use `reportEditing`, a Mistral executor profile, and the Qwen editor to
-reproduce the production mixed-model route.
+checks. Use `productionRouting` with the evidence-synthesis prompt to reproduce
+the shipped Melious routes: Mistral always uses the isolated Qwen editor, while
+direct Qwen receives a second Qwen call only when deterministic preflight
+rejects its draft. This mode resolves the production Qwen model and
+three-attempt bound automatically. `reportEditing` remains an always-edit
+orchestration control for historical experiments.
+
+Run the two selectable efficient routes together with:
+
+```bash
+LOCAL_TASK_AGENT_EVAL_PROFILES='mistral=mistral-small-4-119b-instruct,qwen=qwen3.5-122b-a10b' \
+LOCAL_TASK_AGENT_EVAL_PROMPT_VARIANTS=evidenceSynthesis \
+LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE=productionRouting \
+LOCAL_TASK_AGENT_EVAL_JUDGE=0 \
+  ./tool/melious_task_agent_model_eval.sh
+```
+
+This comparison intentionally disables the model judge. Candidate acceptance
+comes from deterministic checks plus direct report review.
 
 The judge accepts only HTTP(S) endpoints on `api.melious.ai` by default. When a
 deliberate proxy or alternate endpoint is configured with `MELIOUS_BASE_URL` or

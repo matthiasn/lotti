@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 void main() {
@@ -71,6 +72,10 @@ void main() {
       expect(
         parseLocalTaskAgentEvalExecutionMode('reportEditing'),
         LocalTaskAgentEvalExecutionMode.reportEditing,
+      );
+      expect(
+        parseLocalTaskAgentEvalExecutionMode('productionRouting'),
+        LocalTaskAgentEvalExecutionMode.productionRouting,
       );
       expect(
         () => parseLocalTaskAgentEvalExecutionMode('parallel'),
@@ -1375,6 +1380,231 @@ void main() {
     },
   );
 
+  test(
+    'production routing always edits Melious Mistral reports with Qwen',
+    () async {
+      final meliousProvider = _meliousProvider();
+      final inferenceRepository = _QueuedInferenceRepository([
+        [_toolCalls(_metadataCallsWithReport(processNarration: true))],
+        [
+          _toolCalls([
+            _groundedMetadataReportCall(),
+          ]),
+        ],
+      ]);
+      final runner = _createRunner(
+        provider: meliousProvider,
+        inferenceRepository: inferenceRepository,
+        executionMode: LocalTaskAgentEvalExecutionMode.productionRouting,
+        temperature: 0,
+      );
+
+      final report = await runner.run(
+        profiles: const [
+          LocalTaskAgentEvalProfile(
+            name: 'mistral-production',
+            providerModelId: meliousMistralSmall4119BInstructModelId,
+            modelClass: 'mistral',
+          ),
+        ],
+        scenarios: [defaultLocalTaskAgentWakeScenario()],
+      );
+
+      final result = report.results.single;
+      expect(result.failureCategory, LocalTaskAgentEvalFailureCategory.none);
+      expect(result.reportEditorAttempts, 1);
+      expect(inferenceRepository.requests, hasLength(2));
+      expect(
+        inferenceRepository.requests.map((request) => request.model),
+        [
+          meliousMistralSmall4119BInstructModelId,
+          meliousQwen35122BA10BModelId,
+        ],
+      );
+      expect(report.reportEditorModelId, meliousQwen35122BA10BModelId);
+      expect(
+        report.reportEditorMaxAttempts,
+        TaskAgentReportEditor.productionMaxAttempts,
+      );
+    },
+  );
+
+  test(
+    'production routing keeps a grounded direct Qwen report single-pass',
+    () async {
+      final inferenceRepository = _QueuedInferenceRepository([
+        [_toolCalls(_metadataCallsWithReport())],
+      ]);
+      final runner = _createRunner(
+        provider: _meliousProvider(),
+        inferenceRepository: inferenceRepository,
+        executionMode: LocalTaskAgentEvalExecutionMode.productionRouting,
+        temperature: 0,
+      );
+
+      final report = await runner.run(
+        profiles: const [
+          LocalTaskAgentEvalProfile(
+            name: 'qwen-production',
+            providerModelId: meliousQwen35122BA10BModelId,
+            modelClass: 'qwen',
+          ),
+        ],
+        scenarios: [defaultLocalTaskAgentWakeScenario()],
+      );
+
+      final result = report.results.single;
+      expect(result.failureCategory, LocalTaskAgentEvalFailureCategory.none);
+      expect(result.reportEditorAttempts, 0);
+      expect(inferenceRepository.requests, hasLength(1));
+      expect(report.reportEditorModelId, meliousQwen35122BA10BModelId);
+      expect(
+        report.reportEditorMaxAttempts,
+        TaskAgentReportEditor.productionMaxAttempts,
+      );
+    },
+  );
+
+  test(
+    'production routing repairs direct Qwen from deterministic issues',
+    () async {
+      final inferenceRepository = _QueuedInferenceRepository([
+        [_toolCalls(_metadataCallsWithReport(processNarration: true))],
+        [
+          _toolCalls([
+            _groundedMetadataReportCall(),
+          ]),
+        ],
+      ]);
+      final runner = _createRunner(
+        provider: _meliousProvider(),
+        inferenceRepository: inferenceRepository,
+        executionMode: LocalTaskAgentEvalExecutionMode.productionRouting,
+        temperature: 0,
+      );
+
+      final report = await runner.run(
+        profiles: const [
+          LocalTaskAgentEvalProfile(
+            name: 'qwen-production',
+            providerModelId: meliousQwen35122BA10BModelId,
+            modelClass: 'qwen',
+          ),
+        ],
+        scenarios: [defaultLocalTaskAgentWakeScenario()],
+      );
+
+      final result = report.results.single;
+      expect(result.failureCategory, LocalTaskAgentEvalFailureCategory.none);
+      expect(result.reportEditorAttempts, 1);
+      expect(inferenceRepository.requests, hasLength(2));
+      final editorMessages = jsonEncode(
+        inferenceRepository.requests.last.messages
+            .map((message) => message.toJson())
+            .toList(),
+      );
+      expect(editorMessages, contains('requiredCorrections'));
+      expect(editorMessages, contains('processNarration'));
+    },
+  );
+
+  for (final testCase in [
+    (
+      description: 'non-Melious Qwen',
+      provider: provider,
+      modelId: meliousQwen35122BA10BModelId,
+    ),
+    (
+      description: 'another Melious model',
+      provider: _meliousProvider(),
+      modelId: meliousGlm52ModelId,
+    ),
+  ]) {
+    test(
+      'production routing leaves ${testCase.description} single-pass',
+      () async {
+        final inferenceRepository = _QueuedInferenceRepository([
+          [_toolCalls(_metadataCallsWithReport())],
+        ]);
+        final runner = _createRunner(
+          provider: testCase.provider,
+          inferenceRepository: inferenceRepository,
+          executionMode: LocalTaskAgentEvalExecutionMode.productionRouting,
+          temperature: 0,
+        );
+
+        final report = await runner.run(
+          profiles: [
+            LocalTaskAgentEvalProfile(
+              name: testCase.description,
+              providerModelId: testCase.modelId,
+              modelClass: 'control',
+            ),
+          ],
+          scenarios: [defaultLocalTaskAgentWakeScenario()],
+        );
+
+        expect(
+          report.results.single.failureCategory,
+          LocalTaskAgentEvalFailureCategory.none,
+        );
+        expect(report.results.single.reportEditorAttempts, 0);
+        expect(inferenceRepository.requests, hasLength(1));
+      },
+    );
+  }
+
+  test(
+    'production routing edits a Mistral report created by forced retry',
+    () async {
+      final inferenceRepository = _QueuedInferenceRepository([
+        [_toolCalls(_expectedMetadataToolCalls())],
+        [
+          _toolCalls([
+            _groundedMetadataReportCall(),
+          ]),
+        ],
+        [
+          _toolCalls([
+            _groundedMetadataReportCall(
+              oneLiner: 'Compare the P1 candidate by July 4, 2026',
+            ),
+          ]),
+        ],
+      ]);
+      final runner = _createRunner(
+        provider: _meliousProvider(),
+        inferenceRepository: inferenceRepository,
+        executionMode: LocalTaskAgentEvalExecutionMode.productionRouting,
+        temperature: 0,
+      );
+
+      final report = await runner.run(
+        profiles: const [
+          LocalTaskAgentEvalProfile(
+            name: 'mistral-production',
+            providerModelId: meliousMistralSmall4119BInstructModelId,
+            modelClass: 'mistral',
+          ),
+        ],
+        scenarios: [defaultLocalTaskAgentWakeScenario()],
+      );
+
+      final result = report.results.single;
+      expect(result.failureCategory, LocalTaskAgentEvalFailureCategory.none);
+      expect(result.usedForcedReportRetry, isTrue);
+      expect(result.reportEditorAttempts, 1);
+      expect(
+        inferenceRepository.requests.map((request) => request.model),
+        [
+          meliousMistralSmall4119BInstructModelId,
+          meliousMistralSmall4119BInstructModelId,
+          meliousQwen35122BA10BModelId,
+        ],
+      );
+    },
+  );
+
   test('report editing retries once with exact validation issues', () async {
     final inferenceRepository = _QueuedInferenceRepository([
       [
@@ -1778,6 +2008,52 @@ List<({String name, String argumentsJson})> _expectedMetadataToolCalls({
       name: TaskAgentToolNames.updateTaskPriority,
       argumentsJson: '{"priority":"P1"}',
     ),
+  ];
+}
+
+AiConfigInferenceProvider _meliousProvider() => AiConfigInferenceProvider(
+  id: 'provider-melious',
+  baseUrl: 'https://api.melious.ai/v1',
+  apiKey: 'test-key',
+  name: 'Melious',
+  createdAt: DateTime(2026, 7, 12),
+  inferenceProviderType: InferenceProviderType.melious,
+);
+
+({String name, String argumentsJson}) _groundedMetadataReportCall({
+  String oneLiner = 'Run the P1 candidate evaluation by July 4, 2026',
+}) => (
+  name: TaskAgentToolNames.updateReport,
+  argumentsJson: jsonEncode({
+    'oneLiner': oneLiner,
+    'tldr':
+        'Use the 150-minute evaluation to compare the candidate with the '
+        'reference model.',
+    'content':
+        'Run the local app evaluation, then compare the candidate with the '
+        'reference model.',
+  }),
+);
+
+List<({String name, String argumentsJson})> _metadataCallsWithReport({
+  bool processNarration = false,
+}) {
+  return [
+    ..._expectedMetadataToolCalls(),
+    if (processNarration)
+      (
+        name: TaskAgentToolNames.updateReport,
+        argumentsJson: jsonEncode({
+          'oneLiner': 'Run the P1 candidate evaluation by July 4, 2026',
+          'tldr':
+              'The 150-minute candidate evaluation has no blockers and is '
+              'ready to begin.',
+          'content':
+              'Checklist created for the candidate and reference comparison.',
+        }),
+      )
+    else
+      _groundedMetadataReportCall(),
   ];
 }
 
